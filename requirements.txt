@@ -87,7 +87,8 @@ pycryptodome>=3.20.0  # AES decryption for bayi mode
 # ============================================================================
 # CACHING (Redis - REQUIRED)
 # ============================================================================
-redis>=5.0.0  # Redis client for caching (captcha, rate limiting, sessions)
+redis>=5.2.0  # Redis client for caching (captcha, rate limiting, sessions)
+# Note: Updated for Redis 8.4 compatibility. Use latest version for best support.
 
 # ============================================================================
 # CLOUD STORAGE (Optional)

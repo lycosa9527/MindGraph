@@ -90,8 +90,18 @@ class AuthHelper {
             const response = await fetch(`${this.apiBase}/me`, {
                 credentials: 'same-origin'  // Ensure cookies are sent
             });
-            return response.ok;
+            const isAuth = response.ok;
+            
+            // Start session monitoring if authenticated
+            if (isAuth) {
+                this.startSessionMonitoring();
+            } else {
+                this.stopSessionMonitoring();
+            }
+            
+            return isAuth;
         } catch {
+            this.stopSessionMonitoring();
             return false;
         }
     }
@@ -144,6 +154,9 @@ class AuthHelper {
         
         this.clearAuth();
         
+        // Stop session monitoring
+        this.stopSessionMonitoring();
+        
         // Redirect based on mode: demo users go back to demo page
         if (mode === 'demo') {
             window.location.href = '/demo';
@@ -153,6 +166,106 @@ class AuthHelper {
             window.location.href = '/';
         } else {
             window.location.href = '/auth';
+        }
+    }
+
+    /**
+     * Start session monitoring (polling for session status)
+     */
+    startSessionMonitoring() {
+        // Stop any existing monitoring
+        this.stopSessionMonitoring();
+        
+        // Poll every 45 seconds (configurable)
+        const pollInterval = 45000; // 45 seconds
+        
+        this._sessionMonitorInterval = setInterval(async () => {
+            // Only check if page is visible
+            if (document.visibilityState === 'visible') {
+                await this.checkSessionStatus();
+            }
+        }, pollInterval);
+        
+        // Also check immediately
+        this.checkSessionStatus();
+    }
+
+    /**
+     * Stop session monitoring
+     */
+    stopSessionMonitoring() {
+        if (this._sessionMonitorInterval) {
+            clearInterval(this._sessionMonitorInterval);
+            this._sessionMonitorInterval = null;
+        }
+    }
+
+    /**
+     * Check session status and handle invalidation
+     */
+    async checkSessionStatus() {
+        try {
+            const response = await this.fetch(`${this.apiBase}/session-status`, {
+                method: 'GET',
+                credentials: 'same-origin'
+            });
+            
+            if (response.status === 401) {
+                // Session invalidated - 401 means authentication failed
+                this.handleSessionInvalidation({
+                    status: 'invalidated',
+                    message: 'Your session was invalidated because you logged in from another location'
+                });
+                return;
+            }
+            
+            if (!response.ok) {
+                return; // Ignore other errors, will check again next interval
+            }
+            
+            const data = await response.json();
+            
+            if (data.status === 'invalidated') {
+                // Session was invalidated - show notification and logout
+                this.handleSessionInvalidation(data);
+            }
+        } catch (e) {
+            // Ignore errors, will check again next interval
+            console.debug('Session status check failed:', e);
+        }
+    }
+
+    /**
+     * Handle session invalidation notification
+     */
+    handleSessionInvalidation(data) {
+        // Stop monitoring
+        this.stopSessionMonitoring();
+        
+        // Show notification
+        const message = data.message || 'Your account was logged in from another location. You have been logged out for security.';
+        
+        // Use existing notification system if available
+        if (window.NotificationManager && window.NotificationManager.show) {
+            window.NotificationManager.show(
+                message,
+                'warning',
+                10000,
+                () => this.logout()
+            );
+        } else if (window.languageManager && window.languageManager.getNotification) {
+            // Try to get translated message
+            const translatedMsg = window.languageManager.getNotification('sessionInvalidated') || message;
+            alert(translatedMsg);
+            this.logout();
+        } else {
+            // Fallback: show alert
+            if (confirm(message + '\n\nClick OK to return to login page.')) {
+                this.logout();
+            } else {
+                // User clicked cancel, but still logout after delay
+                setTimeout(() => this.logout(), 5000);
+            }
         }
     }
 

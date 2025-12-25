@@ -47,6 +47,7 @@ from utils.auth import (
     create_access_token,
     hash_password
 )
+from services.redis_session_manager import get_session_manager
 from models.auth import User, Organization
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
@@ -76,8 +77,9 @@ async def index(request: Request):
                 try:
                     user = get_user_from_cookie(auth_cookie, db)
                     if user:
-                        # Detach user from session so it can be used after closing
-                        db.expunge(user)
+                        # Detach user from session if it's attached (cache users are already detached)
+                        if user in db:
+                            db.expunge(user)
                         # Already authenticated, go to editor
                         logger.debug("Standard mode: Authenticated user, redirecting / to /editor")
                         return RedirectResponse(url="/editor", status_code=303)
@@ -138,8 +140,9 @@ async def debug(request: Request):
             try:
                 user = get_user_from_cookie(auth_cookie, db)
                 if user:
-                    # Detach user from session so it can be used after closing
-                    db.expunge(user)
+                    # Detach user from session if it's attached (cache users are already detached)
+                    if user in db:
+                        db.expunge(user)
                     if is_admin(user):
                         logger.debug(f"Admin {user.phone} accessing /debug in production mode")
                         # Store admin status before closing session
@@ -218,11 +221,24 @@ async def editor(request: Request):
                             db.commit()
                             db.refresh(org)
                             logger.info(f"Created bayi organization: {BAYI_DEFAULT_ORG_CODE}")
+                            # Cache the newly created org (non-blocking)
+                            try:
+                                from services.redis_org_cache import org_cache
+                                org_cache.cache_org(org)
+                            except Exception as e:
+                                logger.warning(f"Failed to cache bayi org: {e}")
                         except IntegrityError:
                             db.rollback()
                             org = db.query(Organization).filter(
                                 Organization.code == BAYI_DEFAULT_ORG_CODE
                             ).first()
+                            # Cache the org that was created by another request (race condition)
+                            if org:
+                                try:
+                                    from services.redis_org_cache import org_cache
+                                    org_cache.cache_org(org)
+                                except Exception as e:
+                                    logger.debug(f"Failed to cache org after race condition: {e}")
                         except Exception as e:
                             db.rollback()
                             logger.error(f"Failed to create bayi organization: {e}")
@@ -259,9 +275,22 @@ async def editor(request: Request):
                             db.commit()
                             db.refresh(bayi_user)
                             logger.info(f"Created shared bayi IP user: {user_phone}")
+                            # Cache the newly created user (non-blocking)
+                            try:
+                                from services.redis_user_cache import user_cache
+                                user_cache.cache_user(bayi_user)
+                            except Exception as e:
+                                logger.warning(f"Failed to cache bayi user: {e}")
                         except IntegrityError:
                             db.rollback()
                             bayi_user = db.query(User).filter(User.phone == user_phone).first()
+                            # Cache the user that was created by another request (race condition)
+                            if bayi_user:
+                                try:
+                                    from services.redis_user_cache import user_cache
+                                    user_cache.cache_user(bayi_user)
+                                except Exception as e:
+                                    logger.debug(f"Failed to cache user after race condition: {e}")
                         except Exception as e:
                             db.rollback()
                             logger.error(f"Failed to create bayi IP user: {e}")
@@ -323,10 +352,12 @@ async def editor(request: Request):
         try:
             # Enterprise mode: get enterprise user directly (network-level auth, no cookies)
             if AUTH_MODE == "enterprise":
-                enterprise_user = db.query(User).filter(User.phone == ENTERPRISE_DEFAULT_USER_PHONE).first()
+                from services.redis_user_cache import user_cache
+                enterprise_user = user_cache.get_by_phone(ENTERPRISE_DEFAULT_USER_PHONE)
                 if enterprise_user:
-                    # Detach user from session so it can be used after closing
-                    db.expunge(enterprise_user)
+                    # Detach user from session if it's attached (cache users are already detached)
+                    if enterprise_user in db:
+                        db.expunge(enterprise_user)
                     if is_admin(enterprise_user):
                         user_is_admin = True
             else:
@@ -335,8 +366,9 @@ async def editor(request: Request):
                 if auth_cookie:
                     cookie_user = get_user_from_cookie(auth_cookie, db)
                     if cookie_user:
-                        # Detach user from session so it can be used after closing
-                        db.expunge(cookie_user)
+                        # Detach user from session if it's attached (cache users are already detached)
+                        if cookie_user in db:
+                            db.expunge(cookie_user)
                         # Log admin check for debugging (especially in bayi mode)
                         admin_status = is_admin(cookie_user)
                         if AUTH_MODE == "bayi":
@@ -411,8 +443,9 @@ async def auth_page(request: Request):
             try:
                 user = get_user_from_cookie(auth_cookie, db)
                 if user:
-                    # Detach user from session so it can be used after closing
-                    db.expunge(user)
+                    # Detach user from session if it's attached (cache users are already detached)
+                    if user in db:
+                        db.expunge(user)
                     logger.debug("User already authenticated, redirecting to /editor")
                     return RedirectResponse(url="/editor", status_code=303)
                 else:
@@ -493,6 +526,12 @@ async def login_by_xz(
                         db.commit()
                         db.refresh(org)
                         logger.info(f"Created bayi organization: {BAYI_DEFAULT_ORG_CODE}")
+                        # Cache the newly created org (non-blocking)
+                        try:
+                            from services.redis_org_cache import org_cache
+                            org_cache.cache_org(org)
+                        except Exception as e:
+                            logger.warning(f"Failed to cache bayi org: {e}")
                     except IntegrityError as e:
                         # Organization created by another request (race condition)
                         db.rollback()
@@ -503,6 +542,12 @@ async def login_by_xz(
                         if not org:
                             logger.error(f"Failed to create or retrieve bayi organization")
                             return RedirectResponse(url="/demo", status_code=303)
+                        # Cache the org that was created by another request (race condition)
+                        try:
+                            from services.redis_org_cache import org_cache
+                            org_cache.cache_org(org)
+                        except Exception as e:
+                            logger.debug(f"Failed to cache org after race condition: {e}")
                     except Exception as e:
                         db.rollback()
                         logger.error(f"Failed to create bayi organization: {e}")
@@ -541,6 +586,12 @@ async def login_by_xz(
                         db.commit()
                         db.refresh(bayi_user)
                         logger.info(f"Created shared bayi IP user: {user_phone}")
+                        # Cache the newly created user (non-blocking)
+                        try:
+                            from services.redis_user_cache import user_cache
+                            user_cache.cache_user(bayi_user)
+                        except Exception as e:
+                            logger.warning(f"Failed to cache bayi user: {e}")
                     except IntegrityError as e:
                         # Handle race condition: user created by another request
                         db.rollback()
@@ -549,15 +600,37 @@ async def login_by_xz(
                         if not bayi_user:
                             logger.error(f"Failed to create or retrieve bayi IP user after race condition")
                             return RedirectResponse(url="/demo", status_code=303)
+                        # Cache the user that was created by another request (race condition)
+                        try:
+                            from services.redis_user_cache import user_cache
+                            user_cache.cache_user(bayi_user)
+                        except Exception as e:
+                            logger.debug(f"Failed to cache user after race condition: {e}")
                     except Exception as e:
                         db.rollback()
                         logger.error(f"Failed to create bayi IP user: {e}")
                         bayi_user = db.query(User).filter(User.phone == user_phone).first()
                         if not bayi_user:
                             return RedirectResponse(url="/demo", status_code=303)
+                        # Cache the user if it exists after error recovery
+                        if bayi_user:
+                            try:
+                                from services.redis_user_cache import user_cache
+                                user_cache.cache_user(bayi_user)
+                            except Exception as cache_err:
+                                logger.debug(f"Failed to cache user after error recovery: {cache_err}")
+                
+                # Session management: For IP whitelist users, allow multiple concurrent sessions
+                # (50 teachers can all be logged in simultaneously from whitelisted IP)
+                # We don't invalidate old sessions for shared bayi-ip@system.com account
+                session_manager = get_session_manager()
                 
                 # Generate JWT token (user object is still valid after expunge)
                 jwt_token = create_access_token(bayi_user)
+                
+                # Store new session in Redis (allow_multiple=True for shared account)
+                # This allows multiple teachers to use the system simultaneously
+                session_manager.store_session(bayi_user.id, jwt_token, allow_multiple=True)
                 
                 logger.info(f"Bayi IP whitelist authentication successful: {client_ip}")
             finally:
@@ -593,6 +666,29 @@ async def login_by_xz(
         token_preview = token[:20] + "..." if len(token) > 20 else token
         logger.info(f"Bayi token authentication attempt - IP: {client_ip}, token length: {len(token)}, preview: {token_preview}")
         
+        # Rate limiting: Prevent brute force attacks (10 attempts per 5 minutes per IP)
+        try:
+            from services.redis_bayi_token import get_bayi_token_tracker
+            token_tracker = get_bayi_token_tracker()
+            is_allowed, attempt_count, error_msg = token_tracker.check_rate_limit(client_ip)
+            if not is_allowed:
+                logger.warning(f"Bayi token rate limit exceeded for IP {client_ip}: {attempt_count} attempts")
+                return RedirectResponse(url="/demo", status_code=303)
+        except Exception as e:
+            logger.warning(f"Rate limit check failed (allowing request): {e}")
+            # Fail-open: if rate limiting fails, allow request (backward compatibility)
+        
+        # Replay attack prevention: Check if token was already used
+        try:
+            from services.redis_bayi_token import get_bayi_token_tracker
+            token_tracker = get_bayi_token_tracker()
+            if token_tracker.is_token_used(token):
+                logger.warning(f"Bayi token replay attack detected for IP {client_ip} - token already used")
+                return RedirectResponse(url="/demo", status_code=303)
+        except Exception as e:
+            logger.debug(f"Token usage check failed (allowing request): {e}")
+            # Fail-open: if check fails, allow request (backward compatibility)
+        
         # Decrypt token (no DB needed for this)
         try:
             logger.info(f"Attempting to decrypt token with key length: {len(BAYI_DECRYPTION_KEY)}")
@@ -611,10 +707,28 @@ async def login_by_xz(
         validation_result = validate_bayi_token_body(body)
         if not validation_result:
             logger.error(f"Bayi token validation failed - body: {body}, from field: '{body.get('from')}', timestamp: {body.get('timestamp')} - redirecting to /demo")
+            # Cache invalid result (performance optimization)
+            try:
+                from services.redis_bayi_token import get_bayi_token_tracker
+                token_tracker = get_bayi_token_tracker()
+                token_tracker.cache_token_validation(token, False)
+            except Exception as e:
+                logger.debug(f"Failed to cache invalid token: {e}")
             # Invalid or expired token: redirect to demo passkey page
             return RedirectResponse(url="/demo", status_code=303)
         
         logger.info(f"Token validation passed - proceeding with user creation/retrieval")
+        
+        # Mark token as used (replay attack prevention) and cache validation result
+        try:
+            from services.redis_bayi_token import get_bayi_token_tracker
+            token_tracker = get_bayi_token_tracker()
+            token_tracker.mark_token_used(token)  # Prevent replay attacks
+            token_tracker.cache_token_validation(token, True)  # Cache valid result
+            token_tracker.clear_rate_limit(client_ip)  # Clear rate limit on success (better UX)
+        except Exception as e:
+            logger.debug(f"Failed to mark token as used/cache result: {e}")
+            # Non-critical - continue with authentication
         
         # Use manual session management - close immediately after DB operations
         db = SessionLocal()
@@ -636,6 +750,12 @@ async def login_by_xz(
                 db.commit()
                 db.refresh(org)
                 logger.info(f"Created bayi organization: {BAYI_DEFAULT_ORG_CODE}")
+                # Cache the newly created org (non-blocking)
+                try:
+                    from services.redis_org_cache import org_cache
+                    org_cache.cache_org(org)
+                except Exception as e:
+                    logger.warning(f"Failed to cache bayi org: {e}")
             
             # Extract user info from token body (if available)
             # Default to a generic bayi user if not specified
@@ -658,6 +778,12 @@ async def login_by_xz(
                     db.commit()
                     db.refresh(bayi_user)
                     logger.info(f"Created bayi user: {user_phone}")
+                    # Cache the newly created user (non-blocking)
+                    try:
+                        from services.redis_user_cache import user_cache
+                        user_cache.cache_user(bayi_user)
+                    except Exception as e:
+                        logger.warning(f"Failed to cache bayi user: {e}")
                 except Exception as e:
                     db.rollback()
                     logger.error(f"Failed to create bayi user: {e}")
@@ -666,10 +792,25 @@ async def login_by_xz(
                     if not bayi_user:
                         logger.error(f"Failed to create bayi user after retry: {e}")
                         # Redirect to demo instead of showing error
+                    else:
+                        # Cache the user if it exists after error recovery
+                        try:
+                            from services.redis_user_cache import user_cache
+                            user_cache.cache_user(bayi_user)
+                        except Exception as cache_err:
+                            logger.debug(f"Failed to cache user after error recovery: {cache_err}")
                         return RedirectResponse(url="/demo", status_code=303)
+            
+            # Session management: Invalidate old sessions before creating new one
+            session_manager = get_session_manager()
+            old_token_hash = session_manager.get_session_token(bayi_user.id)
+            session_manager.invalidate_user_sessions(bayi_user.id, old_token_hash=old_token_hash, ip_address=client_ip)
             
             # Generate JWT token (user object is still valid after session close)
             jwt_token = create_access_token(bayi_user)
+            
+            # Store new session in Redis
+            session_manager.store_session(bayi_user.id, jwt_token)
             
             logger.info(f"Bayi mode authentication successful: {user_phone}")
         finally:
@@ -718,8 +859,9 @@ async def demo_page(request: Request):
             try:
                 user = get_user_from_cookie(auth_cookie, db)
                 if user:
-                    # Detach user from session so it can be used after closing
-                    db.expunge(user)
+                    # Detach user from session if it's attached (cache users are already detached)
+                    if user in db:
+                        db.expunge(user)
                     # Redirect based on admin status
                     if is_admin(user):
                         logger.debug(f"{AUTH_MODE.capitalize()} mode: Admin {user.phone} already authenticated, redirecting to /admin")
@@ -756,8 +898,9 @@ async def admin_page(request: Request):
             try:
                 user = get_user_from_cookie(auth_cookie, db)
                 if user:
-                    # Detach user from session so it can be used after closing
-                    db.expunge(user)
+                    # Detach user from session if it's attached (cache users are already detached)
+                    if user in db:
+                        db.expunge(user)
             finally:
                 db.close()  # ✅ Connection released BEFORE template rendering
         

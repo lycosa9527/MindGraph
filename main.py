@@ -774,6 +774,27 @@ async def lifespan(app: FastAPI):
             logger.info("Database initialized successfully")
             # Display demo info if in demo mode
             display_demo_info()
+            
+            # Load cache from SQLite (only on worker 0)
+            try:
+                from services.redis_cache_loader import reload_cache_from_sqlite
+                reload_cache_from_sqlite()
+            except Exception as e:
+                logger.error(f"Failed to load cache from SQLite: {e}", exc_info=True)
+                # Don't fail startup if cache loading fails - system can work without cache
+            
+            # Load IP whitelist from env var into Redis (only on worker 0)
+            try:
+                from services.redis_bayi_whitelist import get_bayi_whitelist
+                from utils.auth import AUTH_MODE
+                if AUTH_MODE == "bayi":
+                    whitelist = get_bayi_whitelist()
+                    count = whitelist.load_from_env()
+                    if count > 0:
+                        logger.info(f"Loaded {count} IP(s) from BAYI_IP_WHITELIST into Redis")
+            except Exception as e:
+                logger.warning(f"Failed to load IP whitelist into Redis: {e}")
+                # Don't fail startup - system can work with in-memory whitelist
     except SystemExit:
         raise  # Re-raise SystemExit to abort startup
     except Exception as e:

@@ -32,9 +32,27 @@ from services.redis_client import is_redis_available, get_redis
 logger = logging.getLogger(__name__)
 
 # Redis key prefixes
-RATE_QPM_KEY = "llm:rate:qpm"
-RATE_CONCURRENT_KEY = "llm:rate:concurrent"
+# Provider-specific keys for separate rate limiting per provider
+RATE_QPM_KEY_DASHSCOPE = "llm:rate:dashscope:qpm"
+RATE_CONCURRENT_KEY_DASHSCOPE = "llm:rate:dashscope:concurrent"
+
+# Volcengine endpoint-specific keys (each endpoint has independent limits)
+RATE_QPM_KEY_VOLCENGINE_DEEPSEEK = "llm:rate:volcengine:deepseek:qpm"
+RATE_QPM_KEY_VOLCENGINE_KIMI = "llm:rate:volcengine:kimi:qpm"
+RATE_QPM_KEY_VOLCENGINE_DOUBAO = "llm:rate:volcengine:doubao:qpm"
+RATE_CONCURRENT_KEY_VOLCENGINE_DEEPSEEK = "llm:rate:volcengine:deepseek:concurrent"
+RATE_CONCURRENT_KEY_VOLCENGINE_KIMI = "llm:rate:volcengine:kimi:concurrent"
+RATE_CONCURRENT_KEY_VOLCENGINE_DOUBAO = "llm:rate:volcengine:doubao:concurrent"
+
+# Legacy Volcengine keys (deprecated - use endpoint-specific keys)
+RATE_QPM_KEY_VOLCENGINE = "llm:rate:volcengine:qpm"  # Deprecated: Use endpoint-specific keys
+RATE_CONCURRENT_KEY_VOLCENGINE = "llm:rate:volcengine:concurrent"  # Deprecated: Use endpoint-specific keys
+
 RATE_STATS_KEY = "llm:rate:stats"
+
+# Legacy keys (for backward compatibility, deprecated)
+RATE_QPM_KEY = "llm:rate:qpm"  # Deprecated: Use provider-specific keys
+RATE_CONCURRENT_KEY = "llm:rate:concurrent"  # Deprecated: Use provider-specific keys
 
 
 class DashscopeRateLimiter:
@@ -64,7 +82,9 @@ class DashscopeRateLimiter:
         self,
         qpm_limit: int = 200,
         concurrent_limit: int = 50,
-        enabled: bool = True
+        enabled: bool = True,
+        provider: str = 'dashscope',
+        endpoint: Optional[str] = None
     ):
         """
         Initialize rate limiter.
@@ -73,15 +93,50 @@ class DashscopeRateLimiter:
             qpm_limit: Maximum queries per minute (default: 200)
             concurrent_limit: Maximum concurrent requests (default: 50)
             enabled: Whether rate limiting is enabled
+            provider: Provider name ('dashscope' or 'volcengine') - determines Redis keys
+            endpoint: Volcengine endpoint name ('ark-deepseek', 'ark-kimi', 'ark-doubao')
+                     Required when provider='volcengine' to select endpoint-specific Redis keys
         """
         self.qpm_limit = qpm_limit
         self.concurrent_limit = concurrent_limit
         self.enabled = enabled
+        self.provider = provider
+        self.endpoint = endpoint
+        
+        # Select provider-specific Redis keys
+        if provider == 'volcengine':
+            # Validate endpoint parameter for Volcengine provider
+            valid_endpoints = ['ark-deepseek', 'ark-kimi', 'ark-doubao']
+            if not endpoint:
+                raise ValueError(
+                    f"Endpoint parameter is required for Volcengine provider. "
+                    f"Valid endpoints: {valid_endpoints}"
+                )
+            if endpoint not in valid_endpoints:
+                raise ValueError(
+                    f"Invalid endpoint '{endpoint}' for Volcengine provider. "
+                    f"Valid endpoints: {valid_endpoints}"
+                )
+            
+            # Map endpoint to specific Redis keys
+            if endpoint == 'ark-deepseek':
+                self.qpm_key = RATE_QPM_KEY_VOLCENGINE_DEEPSEEK
+                self.concurrent_key = RATE_CONCURRENT_KEY_VOLCENGINE_DEEPSEEK
+            elif endpoint == 'ark-kimi':
+                self.qpm_key = RATE_QPM_KEY_VOLCENGINE_KIMI
+                self.concurrent_key = RATE_CONCURRENT_KEY_VOLCENGINE_KIMI
+            elif endpoint == 'ark-doubao':
+                self.qpm_key = RATE_QPM_KEY_VOLCENGINE_DOUBAO
+                self.concurrent_key = RATE_CONCURRENT_KEY_VOLCENGINE_DOUBAO
+        else:  # Default to dashscope
+            self.qpm_key = RATE_QPM_KEY_DASHSCOPE
+            self.concurrent_key = RATE_CONCURRENT_KEY_DASHSCOPE
         
         # Generate unique request ID prefix for this worker
         self._worker_id = os.getenv('WORKER_ID', str(os.getpid()))
         
-        # In-memory fallback (used when Redis unavailable)
+        # In-memory fallback (kept for single-worker testing only)
+        # NOTE: Redis is REQUIRED for multi-worker deployments
         self._memory_timestamps = deque()
         self._memory_active = 0
         self._lock = asyncio.Lock()
@@ -91,12 +146,21 @@ class DashscopeRateLimiter:
         self._local_total_waits = 0
         self._local_total_wait_time = 0.0
         
-        storage = "Redis" if self._use_redis() else "memory"
-        logger.info(
+        # Verify Redis is available (REQUIRED for rate limiting)
+        if not self._use_redis():
+            raise RuntimeError(
+                "Rate limiting requires Redis. Redis is unavailable. "
+                "Please ensure Redis is running and configured correctly."
+            )
+        
+        log_msg = (
             f"[RateLimiter] Initialized: "
-            f"QPM={qpm_limit}, Concurrent={concurrent_limit}, "
-            f"Enabled={enabled}, Storage={storage}"
+            f"Provider={provider}, QPM={qpm_limit}, Concurrent={concurrent_limit}, "
+            f"Enabled={enabled}, Redis keys: QPM={self.qpm_key}, Concurrent={self.concurrent_key}"
         )
+        if endpoint:
+            log_msg += f", Endpoint={endpoint}"
+        logger.info(log_msg)
     
     def _use_redis(self) -> bool:
         """Check if Redis should be used."""
@@ -106,98 +170,203 @@ class DashscopeRateLimiter:
         """
         Acquire permission to make a request.
         Blocks if rate limits would be exceeded.
+        
+        Redis is REQUIRED - raises RuntimeError if Redis unavailable.
         """
         if not self.enabled:
             return
         
-        if self._use_redis():
-            await self._redis_acquire()
-        else:
-            await self._memory_acquire()
+        # Redis is REQUIRED for rate limiting
+        if not self._use_redis():
+            raise RuntimeError(
+                "Rate limiting requires Redis. Redis is unavailable. "
+                "Please ensure Redis is running and configured correctly."
+            )
+        
+        await self._redis_acquire()
     
     async def _redis_acquire(self) -> None:
-        """Acquire using Redis for global coordination."""
+        """
+        Acquire using Redis for global coordination.
+        
+        Uses atomic Lua script to prevent race conditions between checking limits
+        and incrementing counters. This ensures that concurrent requests cannot
+        exceed limits even when checking simultaneously.
+        """
         redis = get_redis()
         if not redis:
-            await self._memory_acquire()
-            return
+            raise RuntimeError(
+                "Rate limiting requires Redis. Redis connection unavailable. "
+                "Please ensure Redis is running and configured correctly."
+            )
         
         wait_start = None
-        request_id = f"{self._worker_id}:{time.time()}:{uuid.uuid4().hex[:8]}"
+        
+        # Lua script for atomic check-and-increment
+        # This prevents race conditions where multiple requests check limits
+        # simultaneously before any increments occur
+        acquire_script = """
+        local concurrent_key = KEYS[1]
+        local qpm_key = KEYS[2]
+        local stats_key = KEYS[3]
+        local concurrent_limit = tonumber(ARGV[1])
+        local qpm_limit = tonumber(ARGV[2])
+        local request_id = ARGV[3]
+        local timestamp = tonumber(ARGV[4])
+        local one_minute_ago = tonumber(ARGV[5])
+        
+        -- Clean old QPM entries
+        redis.call('ZREMRANGEBYSCORE', qpm_key, 0, one_minute_ago)
+        
+        -- Check concurrent limit
+        local current_concurrent = tonumber(redis.call('GET', concurrent_key) or 0)
+        if current_concurrent >= concurrent_limit then
+            return {0, 'concurrent_limit', current_concurrent}
+        end
+        
+        -- Check QPM limit
+        local current_qpm = redis.call('ZCARD', qpm_key)
+        if current_qpm >= qpm_limit then
+            return {0, 'qpm_limit', current_qpm}
+        end
+        
+        -- All checks passed, increment atomically
+        redis.call('ZADD', qpm_key, timestamp, request_id)
+        redis.call('EXPIRE', qpm_key, 120)
+        redis.call('INCR', concurrent_key)
+        redis.call('EXPIRE', concurrent_key, 300)
+        redis.call('HINCRBY', stats_key, 'total_requests', 1)
+        
+        return {1, 'success', current_concurrent + 1, current_qpm + 1}
+        """
         
         try:
-            # 1. Wait if concurrent limit reached
-            while True:
-                current_concurrent = int(redis.get(RATE_CONCURRENT_KEY) or 0)
-                if current_concurrent < self.concurrent_limit:
-                    break
-                
-                if wait_start is None:
-                    wait_start = time.time()
-                    self._local_total_waits += 1
-                    logger.debug(
-                        f"[RateLimiter] Concurrent limit reached "
-                        f"({current_concurrent}/{self.concurrent_limit}), waiting..."
-                    )
-                await asyncio.sleep(0.1)
+            # Register script once (idempotent)
+            if not hasattr(self, '_acquire_script_sha'):
+                try:
+                    self._acquire_script_sha = redis.script_load(acquire_script)
+                except Exception as e:
+                    logger.error(f"[RateLimiter] Failed to load Lua script: {e}")
+                    raise RuntimeError(
+                        f"Rate limiting requires Redis. Failed to load Lua script: {e}. "
+                        "Please ensure Redis is running and configured correctly."
+                    ) from e
             
-            # 2. Wait if QPM limit reached
+            # Loop until we successfully acquire
             while True:
                 now = time.time()
                 one_minute_ago = now - 60
+                # Generate new request_id for each retry attempt to ensure uniqueness
+                request_id = f"{self._worker_id}:{now}:{uuid.uuid4().hex[:8]}"
                 
-                # Atomic: clean old entries and count
-                pipe = redis.pipeline()
-                pipe.zremrangebyscore(RATE_QPM_KEY, 0, one_minute_ago)
-                pipe.zcard(RATE_QPM_KEY)
-                results = pipe.execute()
-                
-                current_qpm = results[1] or 0
-                if current_qpm < self.qpm_limit:
-                    break
-                
-                if wait_start is None:
-                    wait_start = time.time()
-                    self._local_total_waits += 1
-                    logger.warning(
-                        f"[RateLimiter] QPM limit reached "
-                        f"({current_qpm}/{self.qpm_limit}), waiting..."
+                # Execute atomic check-and-increment script
+                try:
+                    result = redis.evalsha(
+                        self._acquire_script_sha,
+                        3,  # Number of keys
+                        self.concurrent_key,
+                        self.qpm_key,
+                        RATE_STATS_KEY,
+                        self.concurrent_limit,
+                        self.qpm_limit,
+                        request_id,
+                        now,
+                        one_minute_ago
                     )
-                await asyncio.sleep(1.0)
-            
-            # 3. Grant permission - atomic add to QPM and increment concurrent
-            now = time.time()
-            pipe = redis.pipeline()
-            pipe.zadd(RATE_QPM_KEY, {request_id: now})
-            pipe.expire(RATE_QPM_KEY, 120)  # 2 minute TTL for cleanup
-            pipe.incr(RATE_CONCURRENT_KEY)
-            pipe.expire(RATE_CONCURRENT_KEY, 300)  # 5 minute TTL as safety
-            pipe.hincrby(RATE_STATS_KEY, "total_requests", 1)
-            pipe.execute()
-            
-            self._local_total_requests += 1
-            
-            # Track wait time
-            if wait_start:
-                wait_duration = time.time() - wait_start
-                self._local_total_wait_time += wait_duration
-                redis.hincrbyfloat(RATE_STATS_KEY, "total_wait_time", wait_duration)
-                redis.hincrby(RATE_STATS_KEY, "total_waits", 1)
-                logger.debug(f"[RateLimiter] Waited {wait_duration:.2f}s before acquiring")
-            
-            # Get current stats for debug log
-            current_concurrent = int(redis.get(RATE_CONCURRENT_KEY) or 0)
-            current_qpm = redis.zcard(RATE_QPM_KEY) or 0
-            
-            logger.debug(
-                f"[RateLimiter] Acquired (Redis): "
-                f"{current_concurrent}/{self.concurrent_limit} concurrent, "
-                f"{current_qpm}/{self.qpm_limit} QPM"
-            )
+                except Exception as script_error:
+                    # Script might not exist (Redis restart), reload it
+                    if 'NOSCRIPT' in str(script_error) or 'not found' in str(script_error).lower():
+                        logger.warning("[RateLimiter] Lua script not found, reloading...")
+                        try:
+                            self._acquire_script_sha = redis.script_load(acquire_script)
+                            # Retry once
+                            result = redis.evalsha(
+                                self._acquire_script_sha,
+                                3,
+                                self.concurrent_key,
+                                self.qpm_key,
+                                RATE_STATS_KEY,
+                                self.concurrent_limit,
+                                self.qpm_limit,
+                                request_id,
+                                now,
+                                one_minute_ago
+                            )
+                        except Exception as retry_error:
+                            logger.error(f"[RateLimiter] Failed to reload Lua script: {retry_error}")
+                            raise RuntimeError(
+                                f"Rate limiting requires Redis. Lua script execution failed: {retry_error}. "
+                                "Please ensure Redis is running and configured correctly."
+                            ) from retry_error
+                    else:
+                        # Other Redis errors
+                        logger.error(f"[RateLimiter] Lua script execution failed: {script_error}")
+                        raise RuntimeError(
+                            f"Rate limiting requires Redis. Lua script execution failed: {script_error}. "
+                            "Please ensure Redis is running and configured correctly."
+                        ) from script_error
+                
+                # Result format: {success, reason, current_value, ...}
+                success = result[0] == 1
+                
+                if success:
+                    # Successfully acquired
+                    self._local_total_requests += 1
+                    
+                    # Track wait time if we waited
+                    if wait_start:
+                        wait_duration = time.time() - wait_start
+                        self._local_total_wait_time += wait_duration
+                        try:
+                            redis.hincrbyfloat(RATE_STATS_KEY, "total_wait_time", wait_duration)
+                            redis.hincrby(RATE_STATS_KEY, "total_waits", 1)
+                        except Exception as e:
+                            logger.warning(f"[RateLimiter] Failed to update wait stats: {e}")
+                        logger.debug(f"[RateLimiter] Waited {wait_duration:.2f}s before acquiring")
+                    
+                    # Get current stats for debug log
+                    try:
+                        current_concurrent = result[2] if len(result) > 2 else int(redis.get(self.concurrent_key) or 0)
+                        current_qpm = result[3] if len(result) > 3 else redis.zcard(self.qpm_key) or 0
+                        
+                        logger.debug(
+                            f"[RateLimiter] Acquired (Redis): "
+                            f"{current_concurrent}/{self.concurrent_limit} concurrent, "
+                            f"{current_qpm}/{self.qpm_limit} QPM"
+                        )
+                    except Exception as e:
+                        logger.debug(f"[RateLimiter] Failed to get stats for logging: {e}")
+                    
+                    break  # Successfully acquired, exit loop
+                
+                else:
+                    # Limit reached, wait and retry
+                    limit_type = result[1] if len(result) > 1 else 'unknown'
+                    current_value = result[2] if len(result) > 2 else 0
+                    
+                    if wait_start is None:
+                        wait_start = time.time()
+                        self._local_total_waits += 1
+                        if limit_type == 'concurrent_limit':
+                            logger.debug(
+                                f"[RateLimiter] Concurrent limit reached "
+                                f"({current_value}/{self.concurrent_limit}), waiting..."
+                            )
+                        elif limit_type == 'qpm_limit':
+                            logger.warning(
+                                f"[RateLimiter] QPM limit reached "
+                                f"({current_value}/{self.qpm_limit}), waiting..."
+                            )
+                    
+                    # Wait before retrying
+                    await asyncio.sleep(0.1 if limit_type == 'concurrent_limit' else 1.0)
             
         except Exception as e:
-            logger.warning(f"[RateLimiter] Redis acquire failed: {e}, falling back to memory")
-            await self._memory_acquire()
+            logger.error(f"[RateLimiter] Redis acquire failed: {e}")
+            raise RuntimeError(
+                f"Rate limiting requires Redis. Redis operation failed: {e}. "
+                "Please ensure Redis is running and configured correctly."
+            ) from e
     
     async def _memory_acquire(self) -> None:
         """Acquire using in-memory storage (fallback)."""
@@ -260,23 +429,29 @@ class DashscopeRateLimiter:
         if not self.enabled:
             return
         
-        if self._use_redis():
-            await self._redis_release()
-        else:
-            await self._memory_release()
+        # Redis is REQUIRED for rate limiting
+        if not self._use_redis():
+            raise RuntimeError(
+                "Rate limiting requires Redis. Redis is unavailable. "
+                "Please ensure Redis is running and configured correctly."
+            )
+        
+        await self._redis_release()
     
     async def _redis_release(self) -> None:
         """Release using Redis."""
         redis = get_redis()
         if not redis:
-            await self._memory_release()
-            return
+            raise RuntimeError(
+                "Rate limiting requires Redis. Redis connection unavailable. "
+                "Please ensure Redis is running and configured correctly."
+            )
         
         try:
-            current = redis.decr(RATE_CONCURRENT_KEY)
+            current = redis.decr(self.concurrent_key)
             # Ensure non-negative (safety check)
             if current < 0:
-                redis.set(RATE_CONCURRENT_KEY, 0)
+                redis.set(self.concurrent_key, 0)
                 current = 0
             
             logger.debug(
@@ -285,8 +460,8 @@ class DashscopeRateLimiter:
             )
             
         except Exception as e:
-            logger.warning(f"[RateLimiter] Redis release failed: {e}")
-            await self._memory_release()
+            logger.error(f"[RateLimiter] Redis release failed: {e}")
+            raise
     
     async def _memory_release(self) -> None:
         """Release using in-memory storage."""
@@ -301,8 +476,11 @@ class DashscopeRateLimiter:
         """Get rate limiter statistics."""
         stats = {
             'enabled': self.enabled,
+            'provider': self.provider,
             'qpm_limit': self.qpm_limit,
             'concurrent_limit': self.concurrent_limit,
+            'qpm_key': self.qpm_key,
+            'concurrent_key': self.concurrent_key,
             'storage': 'redis' if self._use_redis() else 'memory',
             'worker_id': self._worker_id,
             # Local stats (this worker only)
@@ -319,9 +497,9 @@ class DashscopeRateLimiter:
                     one_minute_ago = now - 60
                     
                     # Clean and get current QPM
-                    redis.zremrangebyscore(RATE_QPM_KEY, 0, one_minute_ago)
-                    current_qpm = redis.zcard(RATE_QPM_KEY) or 0
-                    current_concurrent = int(redis.get(RATE_CONCURRENT_KEY) or 0)
+                    redis.zremrangebyscore(self.qpm_key, 0, one_minute_ago)
+                    current_qpm = redis.zcard(self.qpm_key) or 0
+                    current_concurrent = int(redis.get(self.concurrent_key) or 0)
                     
                     # Get global stats
                     global_stats = redis.hgetall(RATE_STATS_KEY) or {}
@@ -360,6 +538,27 @@ class DashscopeRateLimiter:
             })
         
         return stats
+    
+    def clear_state(self) -> None:
+        """
+        Clear rate limiter state in Redis (for testing purposes).
+        
+        WARNING: This should only be used in tests. In production, let entries
+        expire naturally to maintain accurate rate limiting.
+        """
+        if not self._use_redis():
+            return
+        
+        redis = get_redis()
+        if redis:
+            try:
+                # Clear QPM entries
+                redis.delete(self.qpm_key)
+                # Clear concurrent counter
+                redis.delete(self.concurrent_key)
+                logger.debug(f"[RateLimiter] Cleared state: QPM={self.qpm_key}, Concurrent={self.concurrent_key}")
+            except Exception as e:
+                logger.warning(f"[RateLimiter] Failed to clear state: {e}")
     
     async def __aenter__(self):
         """Context manager support."""
@@ -403,3 +602,177 @@ def initialize_rate_limiter(
         enabled=enabled
     )
     return _rate_limiter
+
+
+class LoadBalancerRateLimiter:
+    """
+    Rate limiter for load-balanced models (DeepSeek).
+    
+    Manages separate rate limiters for each provider route:
+    - Dashscope route (deepseek model)
+    - Volcengine route (ark-deepseek endpoint)
+    
+    Provides provider-aware rate limiting to ensure we don't exceed
+    limits on either provider when load balancing.
+    
+    Usage:
+        limiter = LoadBalancerRateLimiter(
+            dashscope_qpm=13500,
+            dashscope_concurrent=500,
+            volcengine_qpm=4500,
+            volcengine_concurrent=500,
+            enabled=True
+        )
+        
+        # Check availability before selecting provider
+        if limiter.can_acquire('dashscope'):
+            provider = 'dashscope'
+        elif limiter.can_acquire('volcengine'):
+            provider = 'volcengine'
+        else:
+            # Both at capacity, wait for dashscope
+            async with limiter.get_limiter('dashscope'):
+                # Make request
+                pass
+    """
+    
+    PROVIDER_DASHSCOPE = 'dashscope'
+    PROVIDER_VOLCENGINE = 'volcengine'
+    
+    def __init__(
+        self,
+        volcengine_qpm: int = 13500,
+        volcengine_concurrent: int = 500,
+        enabled: bool = True
+    ):
+        """
+        Initialize load balancer rate limiter.
+        
+        Args:
+            volcengine_qpm: QPM limit for Volcengine route
+            volcengine_concurrent: Concurrent limit for Volcengine route
+            enabled: Whether rate limiting is enabled
+            
+        Note:
+            Dashscope route should use the shared Dashscope rate limiter
+            (not managed by this class).
+        """
+        self.enabled = enabled
+        
+        # Only manage Volcengine route rate limiter (for DeepSeek ark-deepseek endpoint)
+        # Dashscope route uses shared limiter (passed separately to load balancer)
+        self.volcengine_limiter = DashscopeRateLimiter(
+            qpm_limit=volcengine_qpm,
+            concurrent_limit=volcengine_concurrent,
+            enabled=enabled,
+            provider='volcengine',
+            endpoint='ark-deepseek'  # DeepSeek Volcengine endpoint
+        )
+        
+        logger.info(
+            f"[LoadBalancerRateLimiter] Initialized: "
+            f"Volcengine(QPM={volcengine_qpm}, Concurrent={volcengine_concurrent}), "
+            f"Enabled={enabled}. Note: Dashscope route uses shared Dashscope rate limiter."
+        )
+    
+    def get_limiter(self, provider: str) -> DashscopeRateLimiter:
+        """
+        Get rate limiter for a specific provider.
+        
+        Args:
+            provider: 'volcengine' (Dashscope route uses shared limiter, not this class)
+            
+        Returns:
+            Rate limiter instance for Volcengine provider
+            
+        Raises:
+            ValueError: If provider is 'dashscope' (should use shared limiter instead)
+            ValueError: If provider is unknown
+        """
+        if provider == self.PROVIDER_DASHSCOPE:
+            raise ValueError(
+                "Dashscope route should use the shared Dashscope rate limiter, "
+                "not LoadBalancerRateLimiter. Pass the shared limiter separately."
+            )
+        elif provider == self.PROVIDER_VOLCENGINE:
+            return self.volcengine_limiter
+        else:
+            raise ValueError(f"Unknown provider: {provider}")
+    
+    async def acquire(self, provider: str) -> None:
+        """
+        Acquire permission for a specific provider.
+        
+        Args:
+            provider: 'dashscope' or 'volcengine'
+        """
+        if not self.enabled:
+            return
+        
+        limiter = self.get_limiter(provider)
+        await limiter.acquire()
+    
+    async def release(self, provider: str) -> None:
+        """
+        Release after request completes for a specific provider.
+        
+        Args:
+            provider: 'dashscope' or 'volcengine'
+        """
+        if not self.enabled:
+            return
+        
+        limiter = self.get_limiter(provider)
+        await limiter.release()
+    
+    def can_acquire_now(self, provider: str) -> bool:
+        """
+        Check if a provider can accept a request immediately (non-blocking).
+        
+        This is a best-effort check. The actual acquire() may still block
+        if conditions change between check and acquire.
+        
+        Args:
+            provider: 'dashscope' or 'volcengine'
+            
+        Returns:
+            True if provider likely has capacity, False otherwise
+        """
+        if not self.enabled:
+            return True
+        
+        limiter = self.get_limiter(provider)
+        stats = limiter.get_stats()
+        
+        # Check concurrent limit
+        # FIXED: Removed incorrect 'or' operator - use active_requests directly
+        active = stats.get('active_requests', 0)
+        concurrent_limit = stats.get('concurrent_limit', 0)
+        
+        if active >= concurrent_limit:
+            return False
+        
+        # Check QPM limit (approximate)
+        current_qpm = stats.get('current_qpm', 0)
+        qpm_limit = stats.get('qpm_limit', 0)
+        
+        if current_qpm >= qpm_limit:
+            return False
+        
+        return True
+    
+    def get_stats(self) -> Dict[str, Any]:
+        """Get statistics for Volcengine provider."""
+        return {
+            'enabled': self.enabled,
+            'volcengine': self.volcengine_limiter.get_stats(),
+            'note': 'Dashscope route uses shared Dashscope rate limiter (not included here)'
+        }
+    
+    async def __aenter__(self):
+        """Context manager support - not used directly, use get_limiter()."""
+        raise NotImplementedError("Use get_limiter(provider) to get provider-specific limiter")
+    
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        """Context manager support."""
+        pass

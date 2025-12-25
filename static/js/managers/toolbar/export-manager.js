@@ -609,6 +609,11 @@ class ExportManager {
                 'MindGraph Diagram'
             );
             
+            // Validate result
+            if (!result || typeof result !== 'object') {
+                throw new Error('Invalid result from downloadFileWithPicker');
+            }
+            
             // Handle cancelled save
             if (result.cancelled) {
                 this.logger.debug('ExportManager', 'MG export cancelled by user');
@@ -616,6 +621,16 @@ class ExportManager {
                     success: false,
                     cancelled: true
                 };
+            }
+            
+            // Check if download was successful
+            if (!result.success) {
+                throw new Error(result.error || 'File download failed');
+            }
+            
+            // Validate filename exists
+            if (!result.filename) {
+                throw new Error('Filename not provided in download result');
             }
             
             const filename = result.filename;
@@ -982,11 +997,20 @@ class ExportManager {
         }
         
         // Fallback: use simple download
-        const url = URL.createObjectURL(blob);
-        this.downloadFile(url, suggestedName, mimeType);
-        URL.revokeObjectURL(url);
-        
-        return { success: true, filename: suggestedName, usedPicker: false };
+        try {
+            const url = URL.createObjectURL(blob);
+            this.downloadFile(url, suggestedName, mimeType);
+            URL.revokeObjectURL(url);
+            
+            return { success: true, filename: suggestedName, usedPicker: false };
+        } catch (error) {
+            const errorMsg = error?.message || 'Failed to initiate file download';
+            this.logger.error('ExportManager', `Fallback download failed: ${errorMsg}`, error);
+            return { 
+                success: false, 
+                error: errorMsg 
+            };
+        }
     }
     
     /**

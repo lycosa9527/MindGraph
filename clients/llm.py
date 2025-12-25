@@ -47,7 +47,7 @@ class QwenClient:
         Initialize QwenClient with specific model type
         
         Args:
-            model_type (str): 'classification' for qwen-turbo, 'generation' for qwen-plus
+            model_type (str): 'classification' for qwen-plus-latest, 'generation' for qwen-plus
         """
         self.api_url = config.QWEN_API_URL
         self.api_key = config.QWEN_API_KEY
@@ -849,10 +849,21 @@ class HunyuanClient:
 
 
 class DoubaoClient:
-    """Client for Volcengine Doubao (豆包) using OpenAI-compatible API"""
+    """
+    Client for Volcengine Doubao (豆包) using OpenAI-compatible API.
+    
+    DEPRECATED: This class uses direct model names. For higher RPM limits,
+    use VolcengineClient('ark-doubao') instead, which uses endpoint IDs.
+    
+    This class is kept for backward compatibility only.
+    """
     
     def __init__(self):
         """Initialize Doubao client with OpenAI SDK"""
+        logger.warning(
+            "[DoubaoClient] DEPRECATED: DoubaoClient uses direct model names. "
+            "Use VolcengineClient('ark-doubao') for higher RPM limits via endpoints."
+        )
         self.api_key = config.ARK_API_KEY
         self.base_url = config.ARK_BASE_URL
         self.model_name = config.DOUBAO_MODEL
@@ -1076,13 +1087,290 @@ class DoubaoClient:
             logger.error(f"Doubao streaming error: {e}")
             raise
 
+
+class VolcengineClient:
+    """
+    Volcengine ARK client using endpoint IDs for higher RPM.
+    
+    Uses OpenAI-compatible API with endpoint IDs instead of model names
+    to achieve higher request limits.
+    
+    Supports: ark-deepseek, ark-kimi, ark-doubao
+    """
+    
+    # Endpoint mapping for higher RPM
+    # Maps model aliases to environment variable names for error messages
+    ENDPOINT_MAP = {
+        'ark-qwen': 'ARK_QWEN_ENDPOINT',
+        'ark-deepseek': 'ARK_DEEPSEEK_ENDPOINT',
+        'ark-kimi': 'ARK_KIMI_ENDPOINT',
+        'ark-doubao': 'ARK_DOUBAO_ENDPOINT',
+    }
+    
+    def __init__(self, model_alias: str):
+        """
+        Initialize Volcengine client.
+        
+        Args:
+            model_alias: Model alias ('ark-deepseek', 'ark-kimi', 'ark-doubao')
+            
+        Raises:
+            ValueError: If ARK_API_KEY is not configured
+        """
+        self.api_key = config.ARK_API_KEY
+        self.base_url = config.ARK_BASE_URL
+        self.model_alias = model_alias
+        self.timeout = 60
+        
+        # Validate API key is configured
+        if not self.api_key:
+            raise ValueError(
+                f"ARK_API_KEY not configured for {model_alias}. "
+                "Please set ARK_API_KEY in your environment variables."
+            )
+        
+        # Map alias to endpoint ID (higher RPM!)
+        self.endpoint_id = self._get_endpoint_id(model_alias)
+        
+        # DIVERSITY FIX: Moderate temperature
+        self.default_temperature = 0.8
+        
+        # Initialize AsyncOpenAI client
+        self.client = AsyncOpenAI(
+            api_key=self.api_key,
+            base_url=self.base_url,
+            timeout=self.timeout
+        )
+        
+        logger.debug(
+            f"VolcengineClient initialized: {model_alias} → {self.endpoint_id}"
+        )
+    
+    def _get_endpoint_id(self, alias: str) -> str:
+        """
+        Map model alias to Volcengine endpoint ID.
+        
+        Endpoint IDs provide higher RPM than direct model names!
+        
+        Uses config properties for consistency with other configuration values.
+        Endpoint IDs must be configured in environment variables (see env.example).
+        """
+        endpoint_map = {
+            'ark-deepseek': config.ARK_DEEPSEEK_ENDPOINT,
+            'ark-kimi': config.ARK_KIMI_ENDPOINT,
+            'ark-doubao': config.ARK_DOUBAO_ENDPOINT,
+        }
+        
+        # Get endpoint from config (reads from env var)
+        endpoint = endpoint_map.get(alias)
+        
+        # Validate endpoint is configured (not empty and not dummy value)
+        if not endpoint or endpoint == 'ep-20250101000000-dummy':
+            raise ValueError(
+                f"ARK endpoint ID not configured for {alias}. "
+                f"Please set {self.ENDPOINT_MAP.get(alias, 'ENDPOINT')} in your environment variables. "
+                "See env.example for configuration details."
+            )
+        
+        return endpoint
+    
+    async def async_chat_completion(
+        self,
+        messages: List[Dict],
+        temperature: float = None,
+        max_tokens: int = 2000
+    ) -> Dict[str, Any]:
+        """
+        Non-streaming chat completion using endpoint ID.
+        
+        Args:
+            messages: List of message dictionaries
+            temperature: Sampling temperature
+            max_tokens: Maximum tokens
+            
+        Returns:
+            Dict with 'content' and 'usage' keys
+        """
+        try:
+            if temperature is None:
+                temperature = self.default_temperature
+            
+            logger.debug(f"Volcengine {self.model_alias} request: endpoint={self.endpoint_id}")
+            
+            completion = await self.client.chat.completions.create(
+                model=self.endpoint_id,  # Use endpoint ID for higher RPM!
+                messages=messages,
+                temperature=temperature,
+                max_tokens=max_tokens,
+            )
+            
+            content = completion.choices[0].message.content
+            
+            # Extract usage
+            usage = {}
+            if hasattr(completion, 'usage') and completion.usage:
+                usage = {
+                    'prompt_tokens': getattr(completion.usage, 'prompt_tokens', 0),
+                    'completion_tokens': getattr(completion.usage, 'completion_tokens', 0),
+                    'total_tokens': getattr(completion.usage, 'total_tokens', 0),
+                }
+            
+            return {
+                'content': content,
+                'usage': usage
+            }
+            
+        except RateLimitError as e:
+            logger.error(f"Volcengine {self.model_alias} rate limit: {e}")
+            raise LLMRateLimitError(f"Volcengine rate limit: {e}")
+            
+        except APIStatusError as e:
+            logger.error(f"Volcengine {self.model_alias} API error: {e}")
+            # Use doubao error parser for Volcengine errors
+            error_msg = str(e)
+            status_code = getattr(e, 'status_code', None)
+            error_code = None
+            
+            if hasattr(e, 'code'):
+                error_code = e.code
+            elif hasattr(e, 'response') and hasattr(e.response, 'json'):
+                try:
+                    error_data = e.response.json()
+                    if 'error' in error_data:
+                        error_code = error_data['error'].get('code', 'Unknown')
+                        error_msg = error_data['error'].get('message', error_msg)
+                    if status_code is None:
+                        status_code = error_data.get('status_code')
+                except:
+                    pass
+            
+            if not error_code:
+                code_match = re.search(r'([A-Z][a-zA-Z0-9]+(?:\.[A-Z][a-zA-Z0-9]+)*)', error_msg)
+                if code_match:
+                    error_code = code_match.group(1)
+                else:
+                    error_code = 'Unknown'
+            
+            try:
+                parse_and_raise_doubao_error(error_code, error_msg, status_code=status_code)
+            except (LLMInvalidParameterError, LLMQuotaExhaustedError, LLMModelNotFoundError, 
+                    LLMAccessDeniedError, LLMContentFilterError, LLMRateLimitError, LLMTimeoutError):
+                raise
+            except Exception:
+                raise LLMProviderError(f"Volcengine API error ({error_code}): {error_msg}", provider='volcengine', error_code=error_code)
+            
+        except Exception as e:
+            logger.error(f"Volcengine {self.model_alias} error: {e}")
+            raise
+    
+    async def async_stream_chat_completion(
+        self,
+        messages: List[Dict],
+        temperature: float = None,
+        max_tokens: int = 2000
+    ) -> AsyncGenerator[str, None]:
+        """
+        Streaming chat completion using endpoint ID.
+        
+        Args:
+            messages: List of message dictionaries
+            temperature: Sampling temperature
+            max_tokens: Maximum tokens
+            
+        Yields:
+            Content chunks as strings
+        """
+        try:
+            if temperature is None:
+                temperature = self.default_temperature
+            
+            logger.debug(f"Volcengine {self.model_alias} stream: endpoint={self.endpoint_id}")
+            
+            stream = await self.client.chat.completions.create(
+                model=self.endpoint_id,  # Use endpoint ID for higher RPM!
+                messages=messages,
+                temperature=temperature,
+                max_tokens=max_tokens,
+                stream=True,
+                stream_options={"include_usage": True}  # Request usage in stream
+            )
+            
+            last_usage = None
+            async for chunk in stream:
+                # Check for usage data (usually in last chunk)
+                if hasattr(chunk, 'usage') and chunk.usage:
+                    last_usage = {
+                        'prompt_tokens': chunk.usage.prompt_tokens if hasattr(chunk.usage, 'prompt_tokens') else 0,
+                        'completion_tokens': chunk.usage.completion_tokens if hasattr(chunk.usage, 'completion_tokens') else 0,
+                        'total_tokens': chunk.usage.total_tokens if hasattr(chunk.usage, 'total_tokens') else 0
+                    }
+                
+                if chunk.choices:
+                    delta = chunk.choices[0].delta
+                    if delta.content:
+                        yield {'type': 'token', 'content': delta.content}
+            
+            # Yield usage data as final chunk
+            if last_usage:
+                yield {'type': 'usage', 'usage': last_usage}
+                    
+        except RateLimitError as e:
+            logger.error(f"Volcengine {self.model_alias} stream rate limit: {e}")
+            raise LLMRateLimitError(f"Volcengine rate limit: {e}")
+        
+        except APIStatusError as e:
+            error_msg = str(e)
+            logger.error(f"Volcengine {self.model_alias} streaming API error: {error_msg}")
+            
+            status_code = getattr(e, 'status_code', None)
+            error_code = None
+            
+            if hasattr(e, 'code'):
+                error_code = e.code
+            elif hasattr(e, 'response') and hasattr(e.response, 'json'):
+                try:
+                    error_data = e.response.json()
+                    if 'error' in error_data:
+                        error_code = error_data['error'].get('code', 'Unknown')
+                        error_msg = error_data['error'].get('message', error_msg)
+                    if status_code is None:
+                        status_code = error_data.get('status_code')
+                except:
+                    pass
+            
+            if not error_code:
+                code_match = re.search(r'([A-Z][a-zA-Z0-9]+(?:\.[A-Z][a-zA-Z0-9]+)*)', error_msg)
+                if code_match:
+                    error_code = code_match.group(1)
+                else:
+                    error_code = 'Unknown'
+            
+            try:
+                parse_and_raise_doubao_error(error_code, error_msg, status_code=status_code)
+            except (LLMInvalidParameterError, LLMQuotaExhaustedError, LLMModelNotFoundError, 
+                    LLMAccessDeniedError, LLMContentFilterError, LLMRateLimitError, LLMTimeoutError):
+                raise
+            except Exception:
+                raise LLMProviderError(f"Volcengine stream error ({error_code}): {error_msg}", provider='volcengine', error_code=error_code)
+        
+        except Exception as e:
+            logger.error(f"Volcengine {self.model_alias} stream error: {e}")
+            raise
+    
+    # Alias for compatibility with agents that call chat_completion
+    async def chat_completion(self, messages: List[Dict], temperature: float = None,
+                             max_tokens: int = 2000) -> str:
+        """Alias for async_chat_completion for API consistency"""
+        result = await self.async_chat_completion(messages, temperature, max_tokens)
+        return result.get('content', '') if isinstance(result, dict) else str(result)
+
 # ============================================================================
 # GLOBAL CLIENT INSTANCES
 # ============================================================================
 
 # Global client instances
 try:
-    qwen_client_classification = QwenClient(model_type='classification')  # qwen-turbo
+    qwen_client_classification = QwenClient(model_type='classification')  # qwen-plus-latest
     qwen_client_generation = QwenClient(model_type='generation')         # qwen-plus
     qwen_client = qwen_client_classification  # Legacy compatibility
     
@@ -1090,7 +1378,14 @@ try:
     deepseek_client = DeepSeekClient()
     kimi_client = KimiClient()
     hunyuan_client = HunyuanClient()
-    doubao_client = DoubaoClient()
+    # Note: doubao_client uses VolcengineClient with endpoint for higher RPM
+    # Fallback to DoubaoClient only if endpoint not configured (for backward compatibility)
+    try:
+        doubao_client = VolcengineClient('ark-doubao')
+    except ValueError:
+        # Endpoint not configured, fallback to legacy DoubaoClient
+        logger.warning("[clients.llm] ARK_DOUBAO_ENDPOINT not configured, using legacy DoubaoClient")
+        doubao_client = DoubaoClient()
     
     # Only log from main worker to avoid duplicate messages
     import os

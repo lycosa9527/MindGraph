@@ -26,6 +26,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Request, Response
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import func, and_
+from sqlalchemy.exc import OperationalError
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
 
 from config.database import get_db
@@ -79,6 +80,7 @@ from services.redis_rate_limiter import (
 from services.captcha_storage import get_captcha_storage
 from services.redis_sms_storage import get_sms_storage
 from services.redis_rate_limiter import get_rate_limiter
+from services.redis_session_manager import get_session_manager
 from services.sms_middleware import (
     get_sms_middleware,
     SMSServiceError,
@@ -165,6 +167,26 @@ def get_beijing_today_start_utc() -> datetime:
     # Convert Beijing time to UTC for database queries
     return beijing_today_start.astimezone(timezone.utc).replace(tzinfo=None)
 
+def utc_to_beijing_iso(utc_dt: Optional[datetime]) -> Optional[str]:
+    """
+    Convert UTC datetime to Beijing time ISO string.
+    
+    Args:
+        utc_dt: UTC datetime object (naive or timezone-aware)
+    
+    Returns:
+        ISO format string in Beijing timezone, or None if input is None
+    """
+    if not utc_dt:
+        return None
+    # Add UTC timezone info if naive, convert to Beijing, then format as ISO
+    if utc_dt.tzinfo is None:
+        utc_dt_tz = utc_dt.replace(tzinfo=timezone.utc)
+    else:
+        utc_dt_tz = utc_dt
+    beijing_dt = utc_dt_tz.astimezone(BEIJING_TIMEZONE)
+    return beijing_dt.isoformat()
+
 router = APIRouter(tags=["Authentication"])
 
 # File-based captcha storage (works across multiple server instances)
@@ -222,6 +244,79 @@ async def list_organizations(db: Session = Depends(get_db)):
 # ============================================================================
 # REGISTRATION
 # ============================================================================
+
+async def commit_user_with_retry(
+    db: Session,
+    new_user: User,
+    max_retries: int = 3
+) -> None:
+    """
+    Commit user to SQLite with retry logic for database lock errors.
+    
+    Retries SQLite commits up to max_retries times with exponential backoff
+    if database is locked. This handles transient lock errors during high
+    concurrency scenarios (e.g., 500 concurrent registrations).
+    
+    Args:
+        db: SQLAlchemy database session
+        new_user: User object to commit
+        max_retries: Maximum number of retry attempts (default: 3)
+    
+    Raises:
+        HTTPException: If commit fails after all retries or on non-lock errors
+    """
+    for attempt in range(max_retries):
+        try:
+            db.commit()
+            db.refresh(new_user)  # Get auto-generated ID
+            return  # Success!
+        except OperationalError as e:
+            error_msg = str(e).lower()
+            if "database is locked" in error_msg or "locked" in error_msg:
+                if attempt < max_retries - 1:
+                    # Retry with exponential backoff
+                    delay = 0.1 * (2 ** attempt)  # 0.1s, 0.2s, 0.4s
+                    logger.warning(
+                        f"[Auth] SQLite lock on user registration attempt {attempt + 1}/{max_retries}, "
+                        f"retrying after {delay}s delay. Phone: {new_user.phone[:3] if new_user.phone and len(new_user.phone) >= 3 else '***'}***"
+                    )
+                    await asyncio.sleep(delay)  # Non-blocking async sleep
+                    continue
+                else:
+                    # All retries exhausted
+                    db.rollback()
+                    logger.error(
+                        f"[Auth] SQLite lock persists after {max_retries} retries. "
+                        f"Phone: {new_user.phone[:3] if new_user.phone and len(new_user.phone) >= 3 else '***'}***"
+                    )
+                    raise HTTPException(
+                        status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                        detail="Database temporarily unavailable due to high load. Please try again in a moment."
+                    )
+            else:
+                # Other OperationalError (not a lock) - don't retry
+                db.rollback()
+                logger.error(f"[Auth] SQLite operational error during registration: {e}")
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail="Failed to create user account"
+                )
+        except Exception as e:
+            # Non-OperationalError - don't retry
+            db.rollback()
+            logger.error(f"[Auth] Failed to create user in SQLite: {e}", exc_info=True)
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to create user account"
+            )
+    
+    # Should never reach here, but just in case
+    db.rollback()
+    raise HTTPException(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        detail="Failed to create user account"
+    )
+
 
 @router.post("/register")
 async def register(
@@ -296,8 +391,12 @@ async def register(
     
     logger.debug(f"Captcha verified for registration: {request.phone}")
     
-    # Check if phone already exists
-    existing_user = db.query(User).filter(User.phone == request.phone).first()
+    # Import cache services
+    from services.redis_user_cache import user_cache
+    from services.redis_org_cache import org_cache
+    
+    # Check if phone already exists (use cache with SQLite fallback)
+    existing_user = user_cache.get_by_phone(request.phone)
     if existing_user:
         error_msg = Messages.error("phone_already_registered", lang)
         raise HTTPException(
@@ -322,16 +421,18 @@ async def register(
             detail=error_msg
         )
     
-    org = db.query(Organization).filter(
-        Organization.invitation_code == provided_invite
-    ).first()
-    
+    # Use cache for org lookup (with SQLite fallback)
+    org = org_cache.get_by_invitation_code(provided_invite)
     if not org:
-        error_msg = Messages.error("invitation_code_not_found", lang, request.invitation_code)
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=error_msg
-        )
+        org = db.query(Organization).filter(
+            Organization.invitation_code == provided_invite
+        ).first()
+        if not org:
+            error_msg = Messages.error("invitation_code_not_found", lang, request.invitation_code)
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=error_msg
+            )
     
     logger.debug(f"User registering with invitation code for organization: {org.code} ({org.name})")
     
@@ -344,12 +445,30 @@ async def register(
         created_at=datetime.now(timezone.utc)
     )
     
+    # Write to SQLite FIRST (source of truth) with retry logic for lock errors
     db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
+    await commit_user_with_retry(db, new_user, max_retries=3)
+    
+    # Write to Redis cache SECOND (non-blocking)
+    try:
+        user_cache.cache_user(new_user)  # ✅ Cache in Redis
+        logger.info(f"[Auth] New user registered and cached: ID {new_user.id}, phone {new_user.phone[:3] if len(new_user.phone) >= 3 else '***'}***{new_user.phone[-4:] if len(new_user.phone) >= 4 else ''}")
+    except Exception as e:
+        # Cache failure is non-critical - SQLite is source of truth
+        logger.warning(f"[Auth] Failed to cache new user ID {new_user.id}: {e}")
+        # Don't fail registration - user exists in SQLite
+    
+    # Session management: Invalidate old sessions before creating new one (for existing users)
+    session_manager = get_session_manager()
+    client_ip = http_request.client.host if http_request.client else "unknown"
+    old_token_hash = session_manager.get_session_token(new_user.id)
+    session_manager.invalidate_user_sessions(new_user.id, old_token_hash=old_token_hash, ip_address=client_ip)
     
     # Generate JWT token
     token = create_access_token(new_user)
+    
+    # Store new session in Redis
+    session_manager.store_session(new_user.id, token)
     
     # Set token as HTTP-only cookie
     response.set_cookie(
@@ -371,8 +490,6 @@ async def register(
         max_age=60 * 60  # 1 hour (should be cleared after showing notification)
     )
     
-    # Get client IP address
-    client_ip = http_request.client.host if http_request.client else "unknown"
     org_name = org.name if org else "None"
     
     logger.info(f"User registered: {new_user.phone} (ID: {new_user.id}, Org: {org_name}, Method: captcha, IP: {client_ip})")
@@ -425,8 +542,9 @@ async def login(
             detail=error_msg
         )
     
-    # Find user
-    user = db.query(User).filter(User.phone == request.phone).first()
+    # Find user (use cache with SQLite fallback)
+    from services.redis_user_cache import user_cache
+    user = user_cache.get_by_phone(request.phone)
     
     if not user:
         # Note: check_login_rate_limit already recorded the attempt in Redis
@@ -522,8 +640,9 @@ async def login(
     clear_login_attempts(request.phone)
     reset_failed_attempts(user, db)
     
-    # Get organization
-    org = db.query(Organization).filter(Organization.id == user.organization_id).first()
+    # Get organization (use cache with SQLite fallback)
+    from services.redis_org_cache import org_cache
+    org = org_cache.get_by_id(user.organization_id) if user.organization_id else None
     
     # Check organization status (locked or expired)
     if org:
@@ -549,8 +668,17 @@ async def login(
                     detail=error_msg
                 )
     
+    # Session management: Invalidate old sessions before creating new one
+    session_manager = get_session_manager()
+    client_ip = http_request.client.host if http_request.client else "unknown"
+    old_token_hash = session_manager.get_session_token(user.id)
+    session_manager.invalidate_user_sessions(user.id, old_token_hash=old_token_hash, ip_address=client_ip)
+    
     # Generate JWT token
     token = create_access_token(user)
+    
+    # Store new session in Redis
+    session_manager.store_session(user.id, token)
     
     # Set token as HTTP-only cookie
     response.set_cookie(
@@ -572,8 +700,6 @@ async def login(
         max_age=60 * 60  # 1 hour (should be cleared after showing notification)
     )
     
-    # Get client IP address
-    client_ip = http_request.client.host if http_request.client else "unknown"
     org_name = org.name if org else "None"
     
     logger.info(f"User logged in: {user.phone} (ID: {user.id}, Org: {org_name}, Method: captcha, IP: {client_ip})")
@@ -997,9 +1123,12 @@ async def send_sms_code(
     phone = request.phone
     purpose = request.purpose
     
-    # For registration, check if phone already exists
+    # Import cache service
+    from services.redis_user_cache import user_cache
+    
+    # For registration, check if phone already exists (use cache)
     if purpose == "register":
-        existing_user = db.query(User).filter(User.phone == phone).first()
+        existing_user = user_cache.get_by_phone(phone)
         if existing_user:
             error_msg = Messages.error("phone_already_registered", lang)
             raise HTTPException(
@@ -1007,9 +1136,9 @@ async def send_sms_code(
                 detail=error_msg
             )
     
-    # For login and reset_password, check if user exists
+    # For login and reset_password, check if user exists (use cache)
     if purpose in ["login", "reset_password"]:
-        existing_user = db.query(User).filter(User.phone == phone).first()
+        existing_user = user_cache.get_by_phone(phone)
         if not existing_user:
             if purpose == "login":
                 error_msg = Messages.error("phone_not_registered_login", lang)
@@ -1252,11 +1381,15 @@ async def register_with_sms(
             detail=error_msg
         )
     
+    # Import cache services
+    from services.redis_user_cache import user_cache
+    from services.redis_org_cache import org_cache
+    
     # Validate all prerequisites BEFORE consuming SMS code
     # This prevents wasting codes on validation failures
     
-    # Check if phone already exists
-    existing_user = db.query(User).filter(User.phone == request.phone).first()
+    # Check if phone already exists (use cache with SQLite fallback)
+    existing_user = user_cache.get_by_phone(request.phone)
     if existing_user:
         error_msg = Messages.error("phone_already_registered", lang)
         raise HTTPException(
@@ -1281,16 +1414,18 @@ async def register_with_sms(
             detail=error_msg
         )
     
-    org = db.query(Organization).filter(
-        Organization.invitation_code == provided_invite
-    ).first()
-    
+    # Use cache for org lookup (with SQLite fallback)
+    org = org_cache.get_by_invitation_code(provided_invite)
     if not org:
-        error_msg = Messages.error("invitation_code_not_found", lang, request.invitation_code)
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=error_msg
-        )
+        org = db.query(Organization).filter(
+            Organization.invitation_code == provided_invite
+        ).first()
+        if not org:
+            error_msg = Messages.error("invitation_code_not_found", lang, request.invitation_code)
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=error_msg
+            )
     
     # All validations passed - now consume the SMS code
     _verify_and_consume_sms_code(
@@ -1312,12 +1447,30 @@ async def register_with_sms(
         created_at=datetime.now(timezone.utc)
     )
     
+    # Write to SQLite FIRST (source of truth) with retry logic for lock errors
     db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
+    await commit_user_with_retry(db, new_user, max_retries=3)
+    
+    # Write to Redis cache SECOND (non-blocking)
+    try:
+        user_cache.cache_user(new_user)  # ✅ Cache in Redis
+        logger.info(f"[Auth] New user registered and cached: ID {new_user.id}, phone {new_user.phone[:3] if len(new_user.phone) >= 3 else '***'}***{new_user.phone[-4:] if len(new_user.phone) >= 4 else ''}")
+    except Exception as e:
+        # Cache failure is non-critical - SQLite is source of truth
+        logger.warning(f"[Auth] Failed to cache new user ID {new_user.id}: {e}")
+        # Don't fail registration - user exists in SQLite
+    
+    # Session management: Invalidate old sessions before creating new one (for existing users)
+    session_manager = get_session_manager()
+    client_ip = http_request.client.host if http_request.client else "unknown"
+    old_token_hash = session_manager.get_session_token(new_user.id)
+    session_manager.invalidate_user_sessions(new_user.id, old_token_hash=old_token_hash, ip_address=client_ip)
     
     # Generate JWT token
     token = create_access_token(new_user)
+    
+    # Store new session in Redis
+    session_manager.store_session(new_user.id, token)
     
     # Set token as HTTP-only cookie
     response.set_cookie(
@@ -1339,8 +1492,6 @@ async def register_with_sms(
         max_age=60 * 60  # 1 hour (should be cleared after showing notification)
     )
     
-    # Get client IP address
-    client_ip = http_request.client.host if http_request.client else "unknown"
     org_name = org.name if org else "None"
     
     logger.info(f"User registered via SMS: {new_user.phone} (ID: {new_user.id}, Org: {org_name}, Method: SMS, IP: {client_ip})")
@@ -1386,8 +1537,9 @@ async def login_with_sms(
     # Validate all prerequisites BEFORE consuming SMS code
     # This prevents wasting codes on validation failures
     
-    # Find user first
-    user = db.query(User).filter(User.phone == request.phone).first()
+    # Find user first (use cache with SQLite fallback)
+    from services.redis_user_cache import user_cache
+    user = user_cache.get_by_phone(request.phone)
     
     if not user:
         error_msg = Messages.error("phone_not_registered_login", lang)
@@ -1396,8 +1548,9 @@ async def login_with_sms(
             detail=error_msg
         )
     
-    # Get organization and check status BEFORE consuming code
-    org = db.query(Organization).filter(Organization.id == user.organization_id).first()
+    # Get organization and check status BEFORE consuming code (use cache)
+    from services.redis_org_cache import org_cache
+    org = org_cache.get_by_id(user.organization_id) if user.organization_id else None
     
     # Check organization status
     if org:
@@ -1432,8 +1585,17 @@ async def login_with_sms(
     # Reset any failed attempts (SMS login is verified)
     reset_failed_attempts(user, db)
     
+    # Session management: Invalidate old sessions before creating new one
+    session_manager = get_session_manager()
+    client_ip = http_request.client.host if http_request.client else "unknown"
+    old_token_hash = session_manager.get_session_token(user.id)
+    session_manager.invalidate_user_sessions(user.id, old_token_hash=old_token_hash, ip_address=client_ip)
+    
     # Generate JWT token
     token = create_access_token(user)
+    
+    # Store new session in Redis
+    session_manager.store_session(user.id, token)
     
     # Set token as HTTP-only cookie
     response.set_cookie(
@@ -1454,10 +1616,14 @@ async def login_with_sms(
         samesite="lax",
         max_age=60 * 60  # 1 hour (should be cleared after showing notification)
     )
-    
-    # Get client IP address
-    client_ip = http_request.client.host if http_request.client else "unknown"
-    org = db.query(Organization).filter(Organization.id == user.organization_id).first()
+    # Use cache for org lookup (with SQLite fallback)
+    from services.redis_org_cache import org_cache
+    org = org_cache.get_by_id(user.organization_id) if user.organization_id else None
+    if not org and user.organization_id:
+        org = db.query(Organization).filter(Organization.id == user.organization_id).first()
+        if org:
+            db.expunge(org)
+            org_cache.cache_org(org)  # Cache it for next time
     org_name = org.name if org else "None"
     
     logger.info(f"User logged in via SMS: {user.phone} (ID: {user.id}, Org: {org_name}, Method: SMS, IP: {client_ip})")
@@ -1494,8 +1660,9 @@ async def reset_password_with_sms(
     accept_language = http_request.headers.get("Accept-Language", "")
     lang: Language = get_request_language(x_language, accept_language)
     
-    # Find user
-    user = db.query(User).filter(User.phone == request.phone).first()
+    # Find user (use cache with SQLite fallback)
+    from services.redis_user_cache import user_cache
+    user = user_cache.get_by_phone(request.phone)
     
     if not user:
         error_msg = Messages.error("phone_not_registered_reset", lang)
@@ -1517,7 +1684,26 @@ async def reset_password_with_sms(
     user.password_hash = hash_password(request.new_password)
     user.failed_login_attempts = 0  # Unlock account
     user.locked_until = None
-    db.commit()
+    
+    # Write to SQLite FIRST
+    try:
+        db.commit()  # ✅ SQLite updated
+    except Exception as e:
+        db.rollback()
+        logger.error(f"[Auth] Failed to update password in SQLite: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to reset password"
+        )
+    
+    # Invalidate and re-cache user (password changed)
+    try:
+        user_cache.invalidate(user.id, user.phone)  # Delete old cache
+        user_cache.cache_user(user)  # ✅ Cache updated data
+        logger.info(f"[Auth] Password reset and cache updated for user ID {user.id}")
+    except Exception as e:
+        logger.warning(f"[Auth] Failed to update cache after password reset: {e}")
+        # Non-critical - cache will be updated on next read
     
     # Get client IP address
     client_ip = http_request.client.host if http_request.client else "unknown"
@@ -1542,9 +1728,9 @@ async def get_me(
     """
     Get current authenticated user profile
     """
-    org = db.query(Organization).filter(
-        Organization.id == current_user.organization_id
-    ).first()
+    # Get organization (use cache with SQLite fallback)
+    from services.redis_org_cache import org_cache
+    org = org_cache.get_by_id(current_user.organization_id) if current_user.organization_id else None
     
     return {
         "id": current_user.id,
@@ -1609,8 +1795,10 @@ async def verify_demo(
         user_phone = "demo-admin@system.com" if is_admin_access else "demo@system.com"
         user_name = "Demo Admin" if is_admin_access else "Demo User"
     
-    # Get or create user
-    auth_user = db.query(User).filter(User.phone == user_phone).first()
+    # Get or create user (use cache with SQLite fallback)
+    from services.redis_user_cache import user_cache
+    from services.redis_org_cache import org_cache
+    auth_user = user_cache.get_by_phone(user_phone)
     
     if not auth_user:
         # Get or create organization based on mode
@@ -1630,6 +1818,12 @@ async def verify_demo(
                 db.commit()
                 db.refresh(org)
                 logger.info(f"Created bayi organization: {BAYI_DEFAULT_ORG_CODE}")
+                # Cache the newly created org (non-blocking)
+                try:
+                    from services.redis_org_cache import org_cache
+                    org_cache.cache_org(org)
+                except Exception as e:
+                    logger.warning(f"Failed to cache bayi org: {e}")
         else:
             # Demo mode: use first available organization
             org = db.query(Organization).first()
@@ -1654,13 +1848,21 @@ async def verify_demo(
             db.commit()
             db.refresh(auth_user)
             logger.info(f"Created new {AUTH_MODE} user: {user_phone}")
+            
+            # Cache the newly created user and org (non-blocking)
+            try:
+                user_cache.cache_user(auth_user)
+                if org:
+                    org_cache.cache_org(org)
+            except Exception as e:
+                logger.warning(f"Failed to cache demo user/org: {e}")
         except Exception as e:
             # If creation fails, try to rollback and check if user was somehow created
             db.rollback()
             logger.error(f"Failed to create {AUTH_MODE} user: {e}")
             
-            # Try to get the user again in case it was created by another request
-            auth_user = db.query(User).filter(User.phone == user_phone).first()
+            # Try to get the user again in case it was created by another request (use cache)
+            auth_user = user_cache.get_by_phone(user_phone)
             if not auth_user:
                 # Note: This is an internal error, default to English
                 error_msg = Messages.error("user_creation_failed", "en", str(e))
@@ -1669,8 +1871,17 @@ async def verify_demo(
                     detail=error_msg
                 )
     
+    # Session management: Invalidate old sessions before creating new one
+    session_manager = get_session_manager()
+    client_ip = get_client_ip(request)
+    old_token_hash = session_manager.get_session_token(auth_user.id)
+    session_manager.invalidate_user_sessions(auth_user.id, old_token_hash=old_token_hash, ip_address=client_ip)
+    
     # Generate JWT token
     token = create_access_token(auth_user)
+    
+    # Store new session in Redis
+    session_manager.store_session(auth_user.id, token)
     
     # Set token as HTTP-only cookie (prevents redirect loop between /demo and /editor)
     response.set_cookie(
@@ -1708,6 +1919,79 @@ async def verify_demo(
 
 
 # ============================================================================
+# SESSION STATUS
+# ============================================================================
+
+@router.get("/session-status")
+async def get_session_status(
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    x_language: Optional[str] = Header(None, alias="X-Language")
+):
+    """
+    Check if current session is still valid or has been invalidated.
+    
+    Returns:
+        - {"status": "active"} - Session is valid
+        - {"status": "invalidated", "message": "...", "timestamp": "..."} - Session was invalidated
+    """
+    # Detect user language from headers
+    accept_language = request.headers.get("Accept-Language", "")
+    lang: Language = get_request_language(x_language, accept_language)
+    
+    try:
+        from services.redis_session_manager import get_session_manager
+        import hashlib
+        
+        # Get token from request
+        token = None
+        if request.cookies.get("access_token"):
+            token = request.cookies.get("access_token")
+        elif request.headers.get("Authorization"):
+            auth_header = request.headers.get("Authorization", "")
+            if auth_header.startswith("Bearer "):
+                token = auth_header[7:]
+        
+        if not token:
+            return {
+                "status": "invalidated",
+                "message": "Session invalidated",
+                "timestamp": datetime.utcnow().isoformat()
+            }
+        
+        # Check session validity
+        session_manager = get_session_manager()
+        token_hash = hashlib.sha256(token.encode('utf-8')).hexdigest()
+        
+        # Check if session is valid
+        if session_manager.is_session_valid(current_user.id, token):
+            return {"status": "active"}
+        
+        # Check for invalidation notification
+        notification = session_manager.check_invalidation_notification(current_user.id, token_hash)
+        if notification:
+            # Clear notification after checking
+            session_manager.clear_invalidation_notification(current_user.id, token_hash)
+            return {
+                "status": "invalidated",
+                "message": "Your session was invalidated because you logged in from another location",
+                "timestamp": notification.get("timestamp", datetime.utcnow().isoformat()),
+                "ip_address": notification.get("ip_address", "unknown")
+            }
+        
+        # Session invalid but no notification (expired or manually deleted)
+        return {
+            "status": "invalidated",
+            "message": "Session expired",
+            "timestamp": datetime.utcnow().isoformat()
+        }
+    except Exception as e:
+        logger.error(f"Error checking session status: {e}", exc_info=True)
+        # On error, assume session is active (fail-open)
+        return {"status": "active"}
+
+
+# ============================================================================
 # LOGOUT
 # ============================================================================
 
@@ -1727,6 +2011,23 @@ async def logout(
     # Detect user language from headers
     accept_language = request.headers.get("Accept-Language", "")
     lang: Language = get_request_language(x_language, accept_language)
+    
+    # Delete session from Redis
+    try:
+        from services.redis_session_manager import get_session_manager
+        # Get token from request to remove specific session (for multiple sessions mode)
+        token = None
+        if request.cookies.get("access_token"):
+            token = request.cookies.get("access_token")
+        elif request.headers.get("Authorization"):
+            auth_header = request.headers.get("Authorization", "")
+            if auth_header.startswith("Bearer "):
+                token = auth_header[7:]
+        
+        session_manager = get_session_manager()
+        session_manager.delete_session(current_user.id, token=token)
+    except Exception as e:
+        logger.debug(f"Failed to delete session on logout: {e}")
     
     # Clear the cookie (must match original cookie settings)
     response.delete_cookie(
@@ -1770,10 +2071,23 @@ async def list_organizations_admin(
     orgs = db.query(Organization).all()
     result = []
     
-    # Get token stats for all organizations (this week) - use Beijing time
+    # Performance optimization: Get user counts for all organizations in one GROUP BY query
+    # instead of N+1 queries (one per organization)
+    user_counts_by_org = {}
+    user_counts_query = db.query(
+        User.organization_id,
+        func.count(User.id).label('user_count')
+    ).filter(
+        User.organization_id.isnot(None)
+    ).group_by(
+        User.organization_id
+    ).all()
+    
+    for count_result in user_counts_query:
+        user_counts_by_org[count_result.organization_id] = count_result.user_count
+    
+    # Get token stats for all organizations (all-time totals)
     token_stats_by_org = {}
-    beijing_now = get_beijing_now()
-    week_ago = (beijing_now - timedelta(days=7)).astimezone(timezone.utc).replace(tzinfo=None)
     
     try:
         from models.token_usage import TokenUsage
@@ -1787,7 +2101,6 @@ async def list_organizations_admin(
             TokenUsage,
             and_(
                 Organization.id == TokenUsage.organization_id,
-                TokenUsage.created_at >= week_ago,
                 TokenUsage.success == True
             )
         ).group_by(
@@ -1805,7 +2118,8 @@ async def list_organizations_admin(
         logger.debug(f"TokenUsage not available yet: {e}")
     
     for org in orgs:
-        user_count = db.query(User).filter(User.organization_id == org.id).count()
+        # Use dictionary lookup instead of query (O(1) vs O(N))
+        user_count = user_counts_by_org.get(org.id, 0)
         org_token_stats = token_stats_by_org.get(org.id, {
             "input_tokens": 0,
             "output_tokens": 0,
@@ -1818,9 +2132,9 @@ async def list_organizations_admin(
             "name": org.name,
             "invitation_code": org.invitation_code,
             "user_count": user_count,
-            "expires_at": org.expires_at.isoformat() if org.expires_at else None,
+            "expires_at": utc_to_beijing_iso(org.expires_at),
             "is_active": org.is_active if hasattr(org, 'is_active') else True,
-            "created_at": org.created_at.isoformat() if org.created_at else None,
+            "created_at": utc_to_beijing_iso(org.created_at),
             "token_stats": org_token_stats
         })
     return result
@@ -1846,7 +2160,13 @@ async def create_organization_admin(
         error_msg = Messages.error("missing_required_fields", lang, "code, name")
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
     
-    existing = db.query(Organization).filter(Organization.code == request["code"]).first()
+    # Import cache service
+    from services.redis_org_cache import org_cache
+    
+    # Check code uniqueness (use cache with SQLite fallback)
+    existing = org_cache.get_by_code(request["code"])
+    if not existing:
+        existing = db.query(Organization).filter(Organization.code == request["code"]).first()
     if existing:
         error_msg = Messages.error("organization_exists", lang, request["code"])
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=error_msg)
@@ -1855,14 +2175,19 @@ async def create_organization_admin(
     provided_invite = request.get("invitation_code")
     invitation_code = normalize_or_generate(provided_invite, request.get("name"), request.get("code"))
 
-    # Ensure uniqueness of invitation codes across organizations if possible
-    existing_invite = db.query(Organization).filter(Organization.invitation_code == invitation_code).first()
+    # Ensure uniqueness of invitation codes across organizations if possible (use cache)
+    existing_invite = org_cache.get_by_invitation_code(invitation_code)
+    if not existing_invite:
+        existing_invite = db.query(Organization).filter(Organization.invitation_code == invitation_code).first()
     if existing_invite:
         # Regenerate a few times to avoid collision
         attempts = 0
         while attempts < 5:
             invitation_code = normalize_or_generate(None, request.get("name"), request.get("code"))
-            if not db.query(Organization).filter(Organization.invitation_code == invitation_code).first():
+            existing_invite = org_cache.get_by_invitation_code(invitation_code)
+            if not existing_invite:
+                existing_invite = db.query(Organization).filter(Organization.invitation_code == invitation_code).first()
+            if not existing_invite:
                 break
             attempts += 1
         if attempts == 5:
@@ -1875,9 +2200,27 @@ async def create_organization_admin(
         invitation_code=invitation_code,
         created_at=datetime.now(timezone.utc)
     )
+    
+    # Write to SQLite FIRST
     db.add(new_org)
-    db.commit()
-    db.refresh(new_org)
+    try:
+        db.commit()  # ✅ SQLite committed
+        db.refresh(new_org)  # Get auto-generated ID
+    except Exception as e:
+        db.rollback()
+        logger.error(f"[Auth] Failed to create org in SQLite: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to create organization"
+        )
+    
+    # Write to Redis cache SECOND (non-blocking)
+    try:
+        org_cache.cache_org(new_org)  # ✅ Cache in Redis
+        logger.info(f"[Auth] New org cached: ID {new_org.id}, code {new_org.code}")
+    except Exception as e:
+        logger.warning(f"[Auth] Failed to cache new org ID {new_org.id}: {e}")
+        # Non-critical - org exists in SQLite
     
     logger.info(f"Admin {current_user.phone} created organization: {new_org.code}")
     return {
@@ -1906,10 +2249,20 @@ async def update_organization_admin(
         error_msg = Messages.error("admin_access_required", lang)
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=error_msg)
     
-    org = db.query(Organization).filter(Organization.id == org_id).first()
+    # Import cache service
+    from services.redis_org_cache import org_cache
+    
+    # Load org (use cache with SQLite fallback)
+    org = org_cache.get_by_id(org_id)
     if not org:
-        error_msg = Messages.error("organization_not_found", lang, org_id)
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
+        org = db.query(Organization).filter(Organization.id == org_id).first()
+        if not org:
+            error_msg = Messages.error("organization_not_found", lang, org_id)
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
+    
+    # Save old values for cache invalidation
+    old_code = org.code
+    old_invite = org.invitation_code
     
     # Update code (if provided)
     if "code" in request:
@@ -1921,8 +2274,11 @@ async def update_organization_admin(
             error_msg = Messages.error("organization_code_too_long", lang)
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
         if new_code != org.code:
-            conflict = db.query(Organization).filter(Organization.code == new_code).first()
-            if conflict:
+            # Check code uniqueness (use cache)
+            conflict = org_cache.get_by_code(new_code)
+            if not conflict or conflict.id == org.id:
+                conflict = db.query(Organization).filter(Organization.code == new_code).first()
+            if conflict and conflict.id != org.id:
                 error_msg = Messages.error("organization_exists", lang, new_code)
                 raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=error_msg)
             org.code = new_code
@@ -1937,16 +2293,25 @@ async def update_organization_admin(
             request.get("name", org.name),
             request.get("code", org.code)
         )
-        # Ensure uniqueness across organizations (exclude current org)
-        conflict = db.query(Organization).filter(
-            Organization.invitation_code == normalized,
-            Organization.id != org.id
-        ).first()
+        # Ensure uniqueness across organizations (exclude current org) - use cache
+        conflict = org_cache.get_by_invitation_code(normalized)
+        if conflict and conflict.id == org.id:
+            conflict = None  # Will check SQLite below
+        if not conflict:
+            conflict = db.query(Organization).filter(
+                Organization.invitation_code == normalized,
+                Organization.id != org.id
+            ).first()
         if conflict:
             attempts = 0
             while attempts < 5:
                 normalized = normalize_or_generate(None, request.get("name", org.name), request.get("code", org.code))
-                if not db.query(Organization).filter(Organization.invitation_code == normalized, Organization.id != org.id).first():
+                conflict = org_cache.get_by_invitation_code(normalized)
+                if conflict and conflict.id == org.id:
+                    conflict = None
+                if not conflict:
+                    conflict = db.query(Organization).filter(Organization.invitation_code == normalized, Organization.id != org.id).first()
+                if not conflict:
                     break
                 attempts += 1
             if attempts == 5:
@@ -1972,8 +2337,32 @@ async def update_organization_admin(
     if "is_active" in request:
         org.is_active = bool(request.get("is_active"))
     
-    db.commit()
-    db.refresh(org)
+    # Write to SQLite FIRST
+    try:
+        db.commit()  # ✅ SQLite updated
+        db.refresh(org)  # Get updated data
+    except Exception as e:
+        db.rollback()
+        logger.error(f"[Auth] Failed to update org ID {org_id} in SQLite: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to update organization"
+        )
+    
+    # Invalidate old cache entries
+    try:
+        org_cache.invalidate(org_id, old_code, old_invite)  # Delete old cache
+        logger.debug(f"[Auth] Invalidated old cache for org ID {org_id}")
+    except Exception as e:
+        logger.warning(f"[Auth] Failed to invalidate org cache: {e}")
+    
+    # Re-cache updated org
+    try:
+        org_cache.cache_org(org)  # ✅ Cache updated data
+        logger.info(f"[Auth] Updated and re-cached org ID {org_id}")
+    except Exception as e:
+        logger.warning(f"[Auth] Failed to re-cache org ID {org_id}: {e}")
+        # Non-critical - cache will be updated on next read
     
     logger.info(f"Admin {current_user.phone} updated organization: {org.code}")
     return {
@@ -2003,18 +2392,44 @@ async def delete_organization_admin(
         error_msg = Messages.error("admin_access_required", lang)
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=error_msg)
     
-    org = db.query(Organization).filter(Organization.id == org_id).first()
+    # Import cache service
+    from services.redis_org_cache import org_cache
+    
+    # Load org (use cache with SQLite fallback)
+    org = org_cache.get_by_id(org_id)
     if not org:
-        error_msg = Messages.error("organization_not_found", lang, org_id)
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
+        org = db.query(Organization).filter(Organization.id == org_id).first()
+        if not org:
+            error_msg = Messages.error("organization_not_found", lang, org_id)
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
+    
+    # Save values for cache invalidation
+    org_code = org.code
+    org_invite = org.invitation_code
     
     user_count = db.query(User).filter(User.organization_id == org_id).count()
     if user_count > 0:
         error_msg = Messages.error("cannot_delete_organization_with_users", lang, user_count)
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
     
+    # Delete from SQLite FIRST
     db.delete(org)
-    db.commit()
+    try:
+        db.commit()  # ✅ SQLite deleted
+    except Exception as e:
+        db.rollback()
+        logger.error(f"[Auth] Failed to delete org ID {org_id} in SQLite: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to delete organization"
+        )
+    
+    # Invalidate cache (non-blocking)
+    try:
+        org_cache.invalidate(org_id, org_code, org_invite)  # Delete cache
+        logger.info(f"[Auth] Invalidated cache for deleted org ID {org_id}")
+    except Exception as e:
+        logger.warning(f"[Auth] Failed to invalidate cache for deleted org ID {org_id}: {e}")
     
     logger.warning(f"Admin {current_user.phone} deleted organization: {org.code}")
     return {"message": Messages.success("organization_deleted", lang, org.code)}
@@ -2075,9 +2490,15 @@ async def list_users_admin(
     # Get paginated users
     users = query.order_by(User.created_at.desc()).offset(skip).limit(page_size).all()
     
-    # Get token stats for all users (this week) - use Beijing time
-    beijing_now = get_beijing_now()
-    week_ago = (beijing_now - timedelta(days=7)).astimezone(timezone.utc).replace(tzinfo=None)
+    # Performance optimization: Fetch all organizations in one query instead of N+1 queries
+    # Extract unique organization IDs from users
+    org_ids = {user.organization_id for user in users if user.organization_id}
+    organizations_by_id = {}
+    if org_ids:
+        orgs = db.query(Organization).filter(Organization.id.in_(org_ids)).all()
+        organizations_by_id = {org.id: org for org in orgs}
+    
+    # Get token stats for all users (all-time totals)
     token_stats_by_user = {}
     
     try:
@@ -2088,7 +2509,6 @@ async def list_users_admin(
             func.coalesce(func.sum(TokenUsage.output_tokens), 0).label('output_tokens'),
             func.coalesce(func.sum(TokenUsage.total_tokens), 0).label('total_tokens')
         ).filter(
-            TokenUsage.created_at >= week_ago,
             TokenUsage.success == True,
             TokenUsage.user_id.isnot(None)
         ).group_by(
@@ -2106,7 +2526,8 @@ async def list_users_admin(
     
     result = []
     for user in users:
-        org = db.query(Organization).filter(Organization.id == user.organization_id).first()
+        # Use dictionary lookup instead of query (O(1) vs O(N))
+        org = organizations_by_id.get(user.organization_id) if user.organization_id else None
         
         # Mask phone number for privacy (show first 3 and last 4 digits)
         # Example: 13812345678 -> 138****5678
@@ -2129,8 +2550,8 @@ async def list_users_admin(
             "organization_id": user.organization_id,  # For editing
             "organization_code": org.code if org else None,
             "organization_name": org.name if org else None,
-            "locked_until": user.locked_until.isoformat() if user.locked_until else None,
-            "created_at": user.created_at.isoformat() if user.created_at else None,
+            "locked_until": utc_to_beijing_iso(user.locked_until),
+            "created_at": utc_to_beijing_iso(user.created_at),
             "token_stats": user_token_stats  # Token usage for this user
         })
     
@@ -2162,10 +2583,21 @@ async def update_user_admin(
         error_msg = Messages.error("admin_access_required", lang)
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=error_msg)
     
-    user = db.query(User).filter(User.id == user_id).first()
+    # Import cache services
+    from services.redis_user_cache import user_cache
+    from services.redis_org_cache import org_cache
+    
+    # Load user (use cache with SQLite fallback)
+    user = user_cache.get_by_id(user_id)
     if not user:
-        error_msg = Messages.error("user_not_found", lang, user_id)
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
+        user = db.query(User).filter(User.id == user_id).first()
+        if not user:
+            error_msg = Messages.error("user_not_found", lang, user_id)
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
+    
+    # Save old values for cache invalidation
+    old_phone = user.phone
+    old_org_id = user.organization_id
     
     # Update phone (with validation)
     if "phone" in request:
@@ -2177,10 +2609,10 @@ async def update_user_admin(
             error_msg = Messages.error("phone_format_invalid", lang)
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
         
-        # Check if phone already exists (for another user)
+        # Check if phone already exists (for another user) - use cache
         if new_phone != user.phone:
-            existing = db.query(User).filter(User.phone == new_phone).first()
-            if existing:
+            existing = user_cache.get_by_phone(new_phone)
+            if existing and existing.id != user.id:
                 error_msg = Messages.error("phone_already_registered_other", lang, new_phone)
                 raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=error_msg)
         user.phone = new_phone
@@ -2200,17 +2632,62 @@ async def update_user_admin(
     if "organization_id" in request:
         org_id = request["organization_id"]
         if org_id:
-            org = db.query(Organization).filter(Organization.id == org_id).first()
+            # Use cache for org lookup (with SQLite fallback)
+            org = org_cache.get_by_id(org_id)
             if not org:
-                error_msg = Messages.error("organization_not_found", lang, org_id)
-                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
+                org = db.query(Organization).filter(Organization.id == org_id).first()
+                if not org:
+                    error_msg = Messages.error("organization_not_found", lang, org_id)
+                    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
             user.organization_id = org_id
     
-    db.commit()
-    db.refresh(user)
+    # Write to SQLite FIRST
+    try:
+        db.commit()  # ✅ SQLite updated
+        db.refresh(user)  # Get updated data
+    except Exception as e:
+        db.rollback()
+        logger.error(f"[Auth] Failed to update user ID {user_id} in SQLite: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to update user"
+        )
     
-    # Get updated organization info
-    org = db.query(Organization).filter(Organization.id == user.organization_id).first()
+    # Invalidate old cache entries
+    try:
+        user_cache.invalidate(user_id, old_phone)  # Delete old cache
+        logger.debug(f"[Auth] Invalidated old cache for user ID {user_id}")
+    except Exception as e:
+        logger.warning(f"[Auth] Failed to invalidate cache for user ID {user_id}: {e}")
+        # Continue - will be fixed on next read
+    
+    # Re-cache updated user
+    try:
+        user_cache.cache_user(user)  # ✅ Cache updated data
+        logger.info(f"[Auth] Updated and re-cached user ID {user_id}")
+    except Exception as e:
+        logger.warning(f"[Auth] Failed to re-cache user ID {user_id}: {e}")
+        # Non-critical - cache will be updated on next read
+    
+    # If organization changed, invalidate org cache
+    if old_org_id != user.organization_id:
+        try:
+            # Load orgs to get code/invite_code for proper invalidation
+            if user.organization_id:
+                new_org = org_cache.get_by_id(user.organization_id)
+                if new_org:
+                    org_cache.invalidate(user.organization_id, new_org.code, new_org.invitation_code)
+            if old_org_id:
+                old_org = org_cache.get_by_id(old_org_id)
+                if old_org:
+                    org_cache.invalidate(old_org_id, old_org.code, old_org.invitation_code)
+        except Exception as e:
+            logger.warning(f"[Auth] Failed to invalidate org cache: {e}")
+    
+    # Get updated organization info (use cache)
+    org = org_cache.get_by_id(user.organization_id) if user.organization_id else None
+    if not org and user.organization_id:
+        org = db.query(Organization).filter(Organization.id == user.organization_id).first()
     
     logger.info(f"Admin {current_user.phone} updated user: {user.phone}")
     
@@ -2253,8 +2730,26 @@ async def delete_user_admin(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
     
     user_phone = user.phone
+    
+    # Delete from SQLite FIRST
     db.delete(user)
-    db.commit()
+    try:
+        db.commit()  # ✅ SQLite deleted
+    except Exception as e:
+        db.rollback()
+        logger.error(f"[Auth] Failed to delete user ID {user_id} in SQLite: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to delete user"
+        )
+    
+    # Invalidate cache (non-blocking)
+    try:
+        from services.redis_user_cache import user_cache
+        user_cache.invalidate(user_id, user_phone)
+        logger.info(f"[Auth] Invalidated cache for deleted user ID {user_id}")
+    except Exception as e:
+        logger.warning(f"[Auth] Failed to invalidate cache for deleted user ID {user_id}: {e}")
     
     logger.warning(f"Admin {current_user.phone} deleted user: {user_phone}")
     return {"message": Messages.success("user_deleted", lang, user_phone)}
@@ -2283,7 +2778,28 @@ async def unlock_user_admin(
     
     user.failed_login_attempts = 0
     user.locked_until = None
-    db.commit()
+    
+    # Write to SQLite FIRST
+    try:
+        db.commit()  # ✅ SQLite updated
+        db.refresh(user)  # Get updated data
+    except Exception as e:
+        db.rollback()
+        logger.error(f"[Auth] Failed to unlock user ID {user_id} in SQLite: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to unlock user"
+        )
+    
+    # Invalidate and re-cache user (lock status changed)
+    try:
+        from services.redis_user_cache import user_cache
+        user_cache.invalidate(user.id, user.phone)
+        user_cache.cache_user(user)  # ✅ Cache updated data
+        logger.info(f"[Auth] Unlocked and re-cached user ID {user.id}")
+    except Exception as e:
+        logger.warning(f"[Auth] Failed to update cache after unlock: {e}")
+        # Non-critical - cache will be updated on next read
     
     logger.info(f"Admin {current_user.phone} unlocked user: {user.phone}")
     return {"message": Messages.success("user_unlocked", lang, user.phone)}
@@ -2347,7 +2863,28 @@ async def reset_user_password_admin(
     user.password_hash = hash_password(new_password)
     user.failed_login_attempts = 0  # Also unlock if locked
     user.locked_until = None
-    db.commit()
+    
+    # Write to SQLite FIRST
+    try:
+        db.commit()  # ✅ SQLite updated
+        db.refresh(user)  # Get updated data
+    except Exception as e:
+        db.rollback()
+        logger.error(f"[Auth] Failed to reset password in SQLite: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to reset password"
+        )
+    
+    # Invalidate and re-cache user (password and lock status changed)
+    try:
+        from services.redis_user_cache import user_cache
+        user_cache.invalidate(user.id, user.phone)
+        user_cache.cache_user(user)  # ✅ Cache updated data
+        logger.info(f"[Auth] Admin password reset and cache updated for user ID {user.id}")
+    except Exception as e:
+        logger.warning(f"[Auth] Failed to update cache after admin password reset: {e}")
+        # Non-critical - cache will be updated on next read
     
     logger.info(f"Admin {current_user.phone} reset password for user: {user.phone}")
     return {"message": Messages.success("password_reset_for_user", lang, user.phone)}
@@ -2465,12 +3002,24 @@ async def get_stats_admin(
     total_users = db.query(User).count()
     total_orgs = db.query(Organization).count()
     
-    # Get users by organization (using school name, sorted by count descending)
+    # Performance optimization: Get user counts for all organizations in one GROUP BY query
+    # instead of N+1 queries (one per organization)
     users_by_org = {}
-    orgs = db.query(Organization).all()
-    for org in orgs:
-        count = db.query(User).filter(User.organization_id == org.id).count()
-        users_by_org[org.name] = count
+    user_counts_query = db.query(
+        Organization.id,
+        Organization.name,
+        func.count(User.id).label('user_count')
+    ).outerjoin(
+        User,
+        Organization.id == User.organization_id
+    ).group_by(
+        Organization.id,
+        Organization.name
+    ).all()
+    
+    # Build dictionary with organization name as key
+    for count_result in user_counts_query:
+        users_by_org[count_result.name] = count_result.user_count
     
     # Sort by count (highest first)
     users_by_org = dict(sorted(users_by_org.items(), key=lambda x: x[1], reverse=True))
@@ -3029,6 +3578,241 @@ async def get_stats_trends_admin(
     }
 
 
+@router.get("/admin/stats/trends/organization", dependencies=[Depends(get_current_user)])
+async def get_organization_token_trends_admin(
+    request: Request,
+    organization_id: Optional[int] = None,
+    organization_name: Optional[str] = None,
+    days: int = 30,  # Number of days to look back
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+    x_language: Optional[str] = Header(None, alias="X-Language")
+):
+    """Get token usage trends for a specific organization (ADMIN ONLY)"""
+    accept_language = request.headers.get("Accept-Language", "")
+    lang: Language = get_request_language(x_language, accept_language)
+    
+    if not is_admin(current_user):
+        error_msg = Messages.error("admin_access_required", lang)
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=error_msg)
+    
+    if not organization_id and not organization_name:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Either organization_id or organization_name must be provided"
+        )
+    
+    if days > 90:
+        days = 90  # Cap at 90 days
+    if days < 1:
+        days = 1  # Minimum 1 day
+    
+    # Find organization
+    org = None
+    if organization_id:
+        org = db.query(Organization).filter(Organization.id == organization_id).first()
+    elif organization_name:
+        org = db.query(Organization).filter(Organization.name == organization_name).first()
+    
+    if not org:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Organization not found"
+        )
+    
+    # Use Beijing time for date calculations
+    beijing_now = get_beijing_now()
+    beijing_start = beijing_now - timedelta(days=days)
+    beijing_start = beijing_start.replace(hour=0, minute=0, second=0, microsecond=0)
+    
+    # Convert to UTC for database queries
+    start_date_utc = beijing_start.astimezone(timezone.utc).replace(tzinfo=None)
+    now_utc = beijing_now.astimezone(timezone.utc).replace(tzinfo=None)
+    
+    # Generate all dates in range using Beijing dates (for display)
+    date_list = []
+    current = beijing_start
+    while current <= beijing_now:
+        date_list.append(current.date())
+        current += timedelta(days=1)
+    
+    trends_data = []
+    
+    # Daily token usage for this organization (non-cumulative)
+    try:
+        from models.token_usage import TokenUsage
+        
+        token_counts = db.query(
+            func.date(TokenUsage.created_at).label('date'),
+            func.sum(TokenUsage.total_tokens).label('total_tokens'),
+            func.sum(TokenUsage.input_tokens).label('input_tokens'),
+            func.sum(TokenUsage.output_tokens).label('output_tokens')
+        ).filter(
+            TokenUsage.created_at >= start_date_utc,
+            TokenUsage.organization_id == org.id,
+            TokenUsage.success == True
+        ).group_by(
+            func.date(TokenUsage.created_at)
+        ).all()
+        
+        # Map UTC dates to Beijing dates
+        tokens_by_date = {}
+        for row in token_counts:
+            utc_date = row.date
+            # SQLite returns date as string, need to parse it
+            if isinstance(utc_date, str):
+                utc_date = datetime.strptime(utc_date, "%Y-%m-%d").date()
+            utc_datetime = datetime.combine(utc_date, datetime.min.time())
+            beijing_datetime = utc_datetime.replace(tzinfo=timezone.utc).astimezone(BEIJING_TIMEZONE)
+            beijing_date_str = str(beijing_datetime.date())
+            if beijing_date_str not in tokens_by_date:
+                tokens_by_date[beijing_date_str] = {"total": 0, "input": 0, "output": 0}
+            tokens_by_date[beijing_date_str]["total"] += int(row.total_tokens or 0)
+            tokens_by_date[beijing_date_str]["input"] += int(row.input_tokens or 0)
+            tokens_by_date[beijing_date_str]["output"] += int(row.output_tokens or 0)
+        
+        for date in date_list:
+            date_str = str(date)
+            tokens = tokens_by_date.get(date_str, {"total": 0, "input": 0, "output": 0})
+            trends_data.append({
+                "date": date_str,
+                "value": tokens["total"],
+                "input": tokens["input"],
+                "output": tokens["output"]
+            })
+    except Exception as e:
+        logger.error(f"Error fetching organization token trends: {e}")
+        for date in date_list:
+            trends_data.append({
+                "date": str(date),
+                "value": 0,
+                "input": 0,
+                "output": 0
+            })
+    
+    return {
+        "organization_id": org.id,
+        "organization_name": org.name,
+        "days": days,
+        "data": trends_data
+    }
+
+
+@router.get("/admin/stats/trends/user", dependencies=[Depends(get_current_user)])
+async def get_user_token_trends_admin(
+    request: Request,
+    user_id: Optional[int] = None,
+    days: int = 10,  # Number of days to look back, default 10
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+    x_language: Optional[str] = Header(None, alias="X-Language")
+):
+    """Get token usage trends for a specific user (ADMIN ONLY)"""
+    accept_language = request.headers.get("Accept-Language", "")
+    lang: Language = get_request_language(x_language, accept_language)
+    
+    if not is_admin(current_user):
+        error_msg = Messages.error("admin_access_required", lang)
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=error_msg)
+    
+    if not user_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="user_id must be provided"
+        )
+    
+    if days > 90:
+        days = 90  # Cap at 90 days
+    if days < 1:
+        days = 1  # Minimum 1 day
+    
+    # Find user
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+    
+    # Use Beijing time for date calculations
+    beijing_now = get_beijing_now()
+    beijing_start = beijing_now - timedelta(days=days)
+    beijing_start = beijing_start.replace(hour=0, minute=0, second=0, microsecond=0)
+    
+    # Convert to UTC for database queries
+    start_date_utc = beijing_start.astimezone(timezone.utc).replace(tzinfo=None)
+    now_utc = beijing_now.astimezone(timezone.utc).replace(tzinfo=None)
+    
+    # Generate all dates in range using Beijing dates (for display)
+    date_list = []
+    current = beijing_start
+    while current <= beijing_now:
+        date_list.append(current.date())
+        current += timedelta(days=1)
+    
+    trends_data = []
+    
+    # Daily token usage for this user (non-cumulative)
+    try:
+        from models.token_usage import TokenUsage
+        
+        token_counts = db.query(
+            func.date(TokenUsage.created_at).label('date'),
+            func.sum(TokenUsage.total_tokens).label('total_tokens'),
+            func.sum(TokenUsage.input_tokens).label('input_tokens'),
+            func.sum(TokenUsage.output_tokens).label('output_tokens')
+        ).filter(
+            TokenUsage.created_at >= start_date_utc,
+            TokenUsage.user_id == user.id,
+            TokenUsage.success == True
+        ).group_by(
+            func.date(TokenUsage.created_at)
+        ).all()
+        
+        # Map UTC dates to Beijing dates
+        tokens_by_date = {}
+        for row in token_counts:
+            utc_date = row.date
+            # SQLite returns date as string, need to parse it
+            if isinstance(utc_date, str):
+                utc_date = datetime.strptime(utc_date, "%Y-%m-%d").date()
+            utc_datetime = datetime.combine(utc_date, datetime.min.time())
+            beijing_datetime = utc_datetime.replace(tzinfo=timezone.utc).astimezone(BEIJING_TIMEZONE)
+            beijing_date_str = str(beijing_datetime.date())
+            if beijing_date_str not in tokens_by_date:
+                tokens_by_date[beijing_date_str] = {"total": 0, "input": 0, "output": 0}
+            tokens_by_date[beijing_date_str]["total"] += int(row.total_tokens or 0)
+            tokens_by_date[beijing_date_str]["input"] += int(row.input_tokens or 0)
+            tokens_by_date[beijing_date_str]["output"] += int(row.output_tokens or 0)
+        
+        for date in date_list:
+            date_str = str(date)
+            tokens = tokens_by_date.get(date_str, {"total": 0, "input": 0, "output": 0})
+            trends_data.append({
+                "date": date_str,
+                "value": tokens["total"],
+                "input": tokens["input"],
+                "output": tokens["output"]
+            })
+    except Exception as e:
+        logger.error(f"Error fetching user token trends: {e}")
+        for date in date_list:
+            trends_data.append({
+                "date": str(date),
+                "value": 0,
+                "input": 0,
+                "output": 0
+            })
+    
+    return {
+        "user_id": user.id,
+        "user_name": user.name or user.phone,
+        "user_phone": user.phone,
+        "days": days,
+        "data": trends_data
+    }
+
+
 # ============================================================================
 # API Key Management Endpoints (ADMIN ONLY)
 # ============================================================================
@@ -3100,16 +3884,7 @@ async def list_api_keys_admin(
             "total_tokens": 0
         })
         
-        # Convert UTC timestamps to Beijing time for display
-        def utc_to_beijing_iso(utc_dt):
-            """Convert UTC datetime to Beijing time ISO string"""
-            if not utc_dt:
-                return None
-            # Add UTC timezone info, convert to Beijing, then format as ISO
-            utc_dt_tz = utc_dt.replace(tzinfo=timezone.utc)
-            beijing_dt = utc_dt_tz.astimezone(BEIJING_TIMEZONE)
-            return beijing_dt.isoformat()
-        
+        # Convert UTC timestamps to Beijing time for display (using shared helper function)
         result.append({
             "id": key.id,
             "key": key.key,
@@ -3293,4 +4068,141 @@ async def toggle_api_key_admin(
         "message": message,
         "is_active": key_record.is_active
     }
+
+
+# ============================================================================
+# ADMIN: BAYI IP WHITELIST MANAGEMENT
+# ============================================================================
+
+@router.get("/admin/bayi/ip-whitelist", dependencies=[Depends(get_current_user)])
+async def list_bayi_ip_whitelist(
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    x_language: Optional[str] = Header(None, alias="X-Language")
+):
+    """List all whitelisted IPs for bayi mode (ADMIN ONLY)"""
+    accept_language = request.headers.get("Accept-Language", "")
+    lang: Language = get_request_language(x_language, accept_language)
+    
+    if not is_admin(current_user):
+        error_msg = Messages.error("admin_access_required", lang)
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=error_msg)
+    
+    if AUTH_MODE != "bayi":
+        error_msg = Messages.error("feature_not_available", lang)
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Bayi mode not enabled")
+    
+    try:
+        from services.redis_bayi_whitelist import get_bayi_whitelist
+        whitelist = get_bayi_whitelist()
+        ips = whitelist.list_ips()
+        
+        return {
+            "ips": ips,
+            "count": len(ips)
+        }
+    except Exception as e:
+        logger.error(f"Failed to list IP whitelist: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to list IP whitelist"
+        )
+
+
+@router.post("/admin/bayi/ip-whitelist", dependencies=[Depends(get_current_user)])
+async def add_bayi_ip_whitelist(
+    request: dict,
+    http_request: Request,
+    current_user: User = Depends(get_current_user),
+    x_language: Optional[str] = Header(None, alias="X-Language")
+):
+    """Add IP to bayi IP whitelist (ADMIN ONLY)"""
+    accept_language = http_request.headers.get("Accept-Language", "")
+    lang: Language = get_request_language(x_language, accept_language)
+    
+    if not is_admin(current_user):
+        error_msg = Messages.error("admin_access_required", lang)
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=error_msg)
+    
+    if AUTH_MODE != "bayi":
+        error_msg = Messages.error("feature_not_available", lang)
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Bayi mode not enabled")
+    
+    if "ip" not in request:
+        error_msg = Messages.error("missing_required_fields", lang, "ip")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
+    
+    ip = request["ip"].strip()
+    
+    try:
+        from services.redis_bayi_whitelist import get_bayi_whitelist
+        whitelist = get_bayi_whitelist()
+        success = whitelist.add_ip(ip, added_by=current_user.phone)
+        
+        if success:
+            logger.info(f"Admin {current_user.phone} added IP {ip} to bayi whitelist")
+            return {
+                "message": f"IP {ip} added to whitelist successfully",
+                "ip": ip
+            }
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to add IP to whitelist"
+            )
+    except ValueError as e:
+        error_msg = Messages.error("invalid_ip_address", lang, ip)
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
+    except Exception as e:
+        logger.error(f"Failed to add IP to whitelist: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to add IP to whitelist"
+        )
+
+
+@router.delete("/admin/bayi/ip-whitelist/{ip}", dependencies=[Depends(get_current_user)])
+async def remove_bayi_ip_whitelist(
+    ip: str,
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    x_language: Optional[str] = Header(None, alias="X-Language")
+):
+    """Remove IP from bayi IP whitelist (ADMIN ONLY)"""
+    accept_language = request.headers.get("Accept-Language", "")
+    lang: Language = get_request_language(x_language, accept_language)
+    
+    if not is_admin(current_user):
+        error_msg = Messages.error("admin_access_required", lang)
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=error_msg)
+    
+    if AUTH_MODE != "bayi":
+        error_msg = Messages.error("feature_not_available", lang)
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Bayi mode not enabled")
+    
+    try:
+        from services.redis_bayi_whitelist import get_bayi_whitelist
+        whitelist = get_bayi_whitelist()
+        success = whitelist.remove_ip(ip)
+        
+        if success:
+            logger.info(f"Admin {current_user.phone} removed IP {ip} from bayi whitelist")
+            return {
+                "message": f"IP {ip} removed from whitelist successfully",
+                "ip": ip
+            }
+        else:
+            error_msg = f"IP {ip} not found in whitelist"
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
+    except ValueError as e:
+        error_msg = f"Invalid IP address format: {ip}"
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to remove IP from whitelist: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to remove IP from whitelist"
+        )
 

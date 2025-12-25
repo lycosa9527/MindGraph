@@ -27,7 +27,7 @@ services:
       
       # Qwen API Configuration
       - QWEN_API_URL=${QWEN_API_URL:-https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions}
-      - QWEN_MODEL_CLASSIFICATION=${QWEN_MODEL_CLASSIFICATION:-qwen-turbo}
+      - QWEN_MODEL_CLASSIFICATION=${QWEN_MODEL_CLASSIFICATION:-qwen-plus-latest}
       - QWEN_MODEL_GENERATION=${QWEN_MODEL_GENERATION:-qwen-plus}
       - QWEN_TEMPERATURE=${QWEN_TEMPERATURE:-0.7}
       - QWEN_MAX_TOKENS=${QWEN_MAX_TOKENS:-3000}

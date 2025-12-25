@@ -25,10 +25,16 @@ from services.error_handler import (
     LLMRateLimitError,
     LLMQuotaExhaustedError
 )
-from services.rate_limiter import initialize_rate_limiter, get_rate_limiter
+from services.rate_limiter import initialize_rate_limiter, get_rate_limiter, DashscopeRateLimiter
 from services.prompt_manager import prompt_manager
 from services.performance_tracker import performance_tracker
 from services.redis_token_buffer import get_token_tracker
+from services.load_balancer import (
+    LLMLoadBalancer,
+    initialize_load_balancer,
+    get_load_balancer
+)
+from services.rate_limiter import LoadBalancerRateLimiter
 from config.settings import config
 
 logger = logging.getLogger(__name__)
@@ -50,6 +56,8 @@ class LLMService:
         self.prompt_manager = prompt_manager
         self.performance_tracker = performance_tracker
         self.rate_limiter = None
+        self.load_balancer = None  # Initialized in initialize()
+        self.load_balancer_rate_limiter = None  # Initialized in initialize() if load balancing enabled
         logger.info("[LLMService] Initialized")
     
     def initialize(self) -> None:
@@ -78,6 +86,79 @@ class LLMService:
         else:
             logger.debug("[LLMService] Rate limiting disabled")
             self.rate_limiter = None
+        
+        # Initialize load balancer
+        if config.LOAD_BALANCING_ENABLED:
+            # Initialize load balancer rate limiter if enabled
+            # Note: Only Volcengine route is managed here. Dashscope route uses shared rate limiter.
+            if config.LOAD_BALANCING_RATE_LIMITING_ENABLED:
+                self.load_balancer_rate_limiter = LoadBalancerRateLimiter(
+                    volcengine_qpm=config.DEEPSEEK_VOLCENGINE_QPM_LIMIT,
+                    volcengine_concurrent=config.DEEPSEEK_VOLCENGINE_CONCURRENT_LIMIT,
+                    enabled=True
+                )
+                logger.info(
+                    f"[LLMService] Load balancer rate limiting enabled: "
+                    f"Volcengine(QPM={config.DEEPSEEK_VOLCENGINE_QPM_LIMIT}, "
+                    f"Concurrent={config.DEEPSEEK_VOLCENGINE_CONCURRENT_LIMIT}). "
+                    f"Note: Dashscope route uses shared Dashscope rate limiter."
+                )
+            else:
+                self.load_balancer_rate_limiter = None
+                logger.info("[LLMService] Load balancer rate limiting disabled")
+            
+            self.load_balancer = initialize_load_balancer(
+                strategy=config.LOAD_BALANCING_STRATEGY,
+                weights=config.LOAD_BALANCING_WEIGHTS,
+                enabled=True,
+                dashscope_rate_limiter=self.rate_limiter,  # Pass shared Dashscope limiter
+                load_balancer_rate_limiter=self.load_balancer_rate_limiter,  # Volcengine limiter only
+                rate_limit_aware=config.LOAD_BALANCING_RATE_LIMITING_ENABLED
+            )
+            logger.info(
+                f"[LLMService] Load balancer enabled: "
+                f"strategy={config.LOAD_BALANCING_STRATEGY}, "
+                f"weights={config.LOAD_BALANCING_WEIGHTS}, "
+                f"rate_limit_aware={config.LOAD_BALANCING_RATE_LIMITING_ENABLED}"
+            )
+        else:
+            logger.info("[LLMService] Load balancing disabled")
+            self.load_balancer = None
+            self.load_balancer_rate_limiter = None
+        
+        # Initialize Volcengine endpoint-specific rate limiters
+        # Each endpoint has independent limits per Volcengine provider
+        if config.DASHSCOPE_RATE_LIMITING_ENABLED:
+            # Kimi Volcengine endpoint rate limiter
+            self.kimi_rate_limiter = DashscopeRateLimiter(
+                qpm_limit=config.KIMI_VOLCENGINE_QPM_LIMIT,
+                concurrent_limit=config.KIMI_VOLCENGINE_CONCURRENT_LIMIT,
+                enabled=True,
+                provider='volcengine',
+                endpoint='ark-kimi'
+            )
+            logger.info(
+                f"[LLMService] Kimi Volcengine rate limiting enabled: "
+                f"QPM={config.KIMI_VOLCENGINE_QPM_LIMIT}, "
+                f"Concurrent={config.KIMI_VOLCENGINE_CONCURRENT_LIMIT}"
+            )
+            
+            # Doubao Volcengine endpoint rate limiter
+            self.doubao_rate_limiter = DashscopeRateLimiter(
+                qpm_limit=config.DOUBAO_VOLCENGINE_QPM_LIMIT,
+                concurrent_limit=config.DOUBAO_VOLCENGINE_CONCURRENT_LIMIT,
+                enabled=True,
+                provider='volcengine',
+                endpoint='ark-doubao'
+            )
+            logger.info(
+                f"[LLMService] Doubao Volcengine rate limiting enabled: "
+                f"QPM={config.DOUBAO_VOLCENGINE_QPM_LIMIT}, "
+                f"Concurrent={config.DOUBAO_VOLCENGINE_CONCURRENT_LIMIT}"
+            )
+        else:
+            self.kimi_rate_limiter = None
+            self.doubao_rate_limiter = None
         
         logger.debug("[LLMService] Ready")
     
@@ -108,6 +189,7 @@ class LLMService:
         endpoint_path: Optional[str] = None,
         session_id: Optional[str] = None,
         conversation_id: Optional[str] = None,
+        skip_load_balancing: bool = False,  # Skip load balancing if already applied
         **kwargs
     ) -> str:
         """
@@ -137,8 +219,44 @@ class LLMService:
         try:
             logger.debug(f"[LLMService] chat() - model={model}, prompt_len={len(prompt)}")
             
-            # Get client
-            client = self.client_manager.get_client(model)
+            # Apply load balancing (skip if already applied)
+            actual_model = model
+            provider = None  # Track provider for metrics
+            use_load_balancer_rate_limiter = False
+            
+            if not skip_load_balancing and self.load_balancer and self.load_balancer.enabled:
+                actual_model = self.load_balancer.map_model(model)
+                logger.debug(
+                    f"[LLMService] Load balanced: {model} → {actual_model}"
+                )
+                # Track provider for DeepSeek load balancing metrics
+                if model == 'deepseek':
+                    provider = 'dashscope' if actual_model == 'deepseek' else 'volcengine'
+                    # Use load balancer rate limiter for DeepSeek when load balancing
+                    use_load_balancer_rate_limiter = (
+                        self.load_balancer_rate_limiter is not None and
+                        self.load_balancer_rate_limiter.enabled
+                    )
+            elif skip_load_balancing:
+                # Model is already a physical model
+                actual_model = model
+                logger.debug(f"[LLMService] Skipping load balancing (already applied): {model}")
+                # Determine provider from physical model name for rate limiting
+                if actual_model == 'ark-deepseek':
+                    provider = 'volcengine'
+                    use_load_balancer_rate_limiter = (
+                        self.load_balancer_rate_limiter is not None and
+                        self.load_balancer_rate_limiter.enabled
+                    )
+                elif actual_model == 'deepseek':
+                    provider = 'dashscope'
+                    use_load_balancer_rate_limiter = (
+                        self.load_balancer_rate_limiter is not None and
+                        self.load_balancer_rate_limiter.enabled
+                    )
+            
+            # Get client for actual model
+            client = self.client_manager.get_client(actual_model)
             
             # Build messages
             messages = []
@@ -150,9 +268,11 @@ class LLMService:
             if timeout is None:
                 timeout = self._get_default_timeout(model)
             
-            # Use rate limiter if available
-            if self.rate_limiter:
-                async with self.rate_limiter:
+            # Get appropriate rate limiter
+            rate_limiter = self._get_rate_limiter(model, actual_model, provider)
+            
+            if rate_limiter:
+                async with rate_limiter:
                     # Execute with retry and timeout
                     async def _call():
                         # DeepSeek and Kimi use async_chat_completion
@@ -256,6 +376,14 @@ class LLMService:
                 success=True
             )
             
+            # Record provider metrics for load balancing (if DeepSeek)
+            if provider and self.load_balancer:
+                self.load_balancer.record_provider_metrics(
+                    provider=provider,
+                    success=True,
+                    duration=duration
+                )
+            
             return content
             
         except ValueError as e:
@@ -293,6 +421,15 @@ class LLMService:
                 error=str(e)
             )
             
+            # Record provider metrics for load balancing (if DeepSeek)
+            if provider and self.load_balancer:
+                self.load_balancer.record_provider_metrics(
+                    provider=provider,
+                    success=False,
+                    duration=duration,
+                    error=str(e)
+                )
+            
             raise LLMServiceError(f"Chat failed for model {model}: {e}") from e
     
     async def chat_with_usage(
@@ -329,8 +466,21 @@ class LLMService:
         try:
             logger.debug(f"[LLMService] chat_with_usage() - model={model}, prompt_len={len(prompt)}")
             
-            # Get client
-            client = self.client_manager.get_client(model)
+            # Apply load balancing
+            actual_model = model
+            provider = None  # Track provider for metrics
+            
+            if self.load_balancer and self.load_balancer.enabled:
+                actual_model = self.load_balancer.map_model(model)
+                logger.debug(
+                    f"[LLMService] Load balanced: {model} → {actual_model}"
+                )
+                # Track provider for DeepSeek load balancing metrics
+                if model == 'deepseek':
+                    provider = 'dashscope' if actual_model == 'deepseek' else 'volcengine'
+            
+            # Get client for actual model
+            client = self.client_manager.get_client(actual_model)
             
             # Build messages
             messages = []
@@ -342,9 +492,11 @@ class LLMService:
             if timeout is None:
                 timeout = self._get_default_timeout(model)
             
-            # Use rate limiter if available
-            if self.rate_limiter:
-                async with self.rate_limiter:
+            # Get appropriate rate limiter
+            rate_limiter = self._get_rate_limiter(model, actual_model, provider)
+            
+            if rate_limiter:
+                async with rate_limiter:
                     async def _call():
                         if hasattr(client, 'async_chat_completion'):
                             return await client.async_chat_completion(
@@ -413,6 +565,14 @@ class LLMService:
                 success=True
             )
             
+            # Record provider metrics for load balancing (if DeepSeek)
+            if provider and self.load_balancer:
+                self.load_balancer.record_provider_metrics(
+                    provider=provider,
+                    success=True,
+                    duration=duration
+                )
+            
             return content, usage_data
             
         except ValueError as e:
@@ -427,6 +587,15 @@ class LLMService:
                 success=False,
                 error=str(e)
             )
+            
+            # Record provider metrics for load balancing (if DeepSeek)
+            if provider and self.load_balancer:
+                self.load_balancer.record_provider_metrics(
+                    provider=provider,
+                    success=False,
+                    duration=duration,
+                    error=str(e)
+                )
             
             raise LLMServiceError(f"Chat failed for model {model}: {e}") from e
     
@@ -446,6 +615,7 @@ class LLMService:
         endpoint_path: Optional[str] = None,
         session_id: Optional[str] = None,
         conversation_id: Optional[str] = None,
+        skip_load_balancing: bool = False,  # Skip load balancing if already applied (e.g., from stream_progressive)
         **kwargs
     ):
         """
@@ -468,8 +638,28 @@ class LLMService:
         try:
             logger.debug(f"[LLMService] chat_stream() - model={model}, prompt_len={len(prompt)}")
             
-            # Get client
-            client = self.client_manager.get_client(model)
+            # Apply load balancing (skip if already applied, e.g., from stream_progressive)
+            actual_model = model
+            provider = None  # Track provider for metrics
+            
+            if not skip_load_balancing and self.load_balancer and self.load_balancer.enabled:
+                actual_model = self.load_balancer.map_model(model)
+                logger.debug(
+                    f"[LLMService] Load balanced: {model} → {actual_model}"
+                )
+                # Track provider for DeepSeek load balancing metrics
+                if model == 'deepseek':
+                    provider = 'dashscope' if actual_model == 'deepseek' else 'volcengine'
+            elif skip_load_balancing:
+                # Model is already a physical model from stream_progressive
+                actual_model = model
+                logger.debug(f"[LLMService] Skipping load balancing (already applied): {model}")
+                # Track provider from physical model name
+                if self.load_balancer:
+                    provider = self.load_balancer.get_provider_from_model(actual_model)
+            
+            # Get client for actual model
+            client = self.client_manager.get_client(actual_model)
             
             # Build messages
             messages = []
@@ -488,9 +678,10 @@ class LLMService:
                 stream_method = client.stream_chat_completion
             else:
                 # Fallback: get full response and yield it as one chunk
+                # Use actual_model to ensure load balancing is applied
                 response = await self.chat(
                     prompt=prompt,
-                    model=model,
+                    model=actual_model,
                     temperature=temperature,
                     max_tokens=max_tokens,
                     timeout=timeout,
@@ -561,6 +752,14 @@ class LLMService:
                 success=True
             )
             
+            # Record provider metrics for load balancing (if DeepSeek)
+            if provider and self.load_balancer:
+                self.load_balancer.record_provider_metrics(
+                    provider=provider,
+                    success=True,
+                    duration=duration
+                )
+            
         except ValueError as e:
             # Let ValueError pass through (e.g., invalid model)
             raise
@@ -576,6 +775,15 @@ class LLMService:
                 error=str(e)
             )
             
+            # Record provider metrics for load balancing (if DeepSeek)
+            if provider and self.load_balancer:
+                self.load_balancer.record_provider_metrics(
+                    provider=provider,
+                    success=False,
+                    duration=duration,
+                    error=str(e)
+                )
+            
             raise LLMServiceError(f"Chat stream failed for model {model}: {e}") from e
     
     # ============================================================================
@@ -590,6 +798,8 @@ class LLMService:
             'qwen-turbo': 70.0,
             'qwen-plus': 70.0,
             'deepseek': 70.0,
+            'ark-deepseek': 70.0,  # Volcengine DeepSeek (Route B)
+            'ark-kimi': 70.0,      # Volcengine Kimi (both routes)
             'hunyuan': 70.0,
             'kimi': 70.0,
             'doubao': 70.0,
@@ -598,8 +808,24 @@ class LLMService:
         return timeouts.get(model, 70.0)
     
     def get_available_models(self) -> List[str]:
-        """Get list of all available models."""
-        return self.client_manager.get_available_models()
+        """
+        Get list of all available models.
+        
+        When load balancing is enabled, filters out physical models (ark-*)
+        to avoid redundant health checks and duplicate entries.
+        """
+        all_models = self.client_manager.get_available_models()
+        
+        # Filter out physical models when load balancing is enabled
+        # This prevents health_check() from checking both 'deepseek' and 'ark-deepseek'
+        if self.load_balancer and self.load_balancer.enabled:
+            logical_models = [
+                m for m in all_models 
+                if not m.startswith('ark-')
+            ]
+            return logical_models
+        
+        return all_models
     
     def _categorize_error(self, e: Exception) -> Dict[str, Any]:
         """
@@ -1071,11 +1297,30 @@ class LLMService:
         if models is None:
             models = ['qwen', 'deepseek', 'kimi', 'doubao']
         
-        logger.debug(f"[LLMService] stream_progressive() - streaming from {len(models)} models concurrently")
+        # Map logical models to physical models (each DeepSeek independently selects provider)
+        physical_models = models
+        # Map physical models back to logical names for responses
+        physical_to_logical = {m: m for m in models}
+        
+        if self.load_balancer and self.load_balancer.enabled:
+            physical_models = [
+                self.load_balancer.map_model(m)
+                for m in models
+            ]
+            # Create mapping for converting physical back to logical
+            physical_to_logical = {
+                physical: logical
+                for logical, physical in zip(models, physical_models)
+            }
+            logger.info(
+                f"[LLMService] stream_progressive: models={models} → {physical_models}"
+            )
+        
+        logger.debug(f"[LLMService] stream_progressive() - streaming from {len(physical_models)} models concurrently")
         
         queue = asyncio.Queue()
         
-        async def stream_single(model: str):
+        async def stream_single(physical_model: str):
             """Stream from one LLM, put chunks in queue."""
             start_time = time.time()
             token_count = 0
@@ -1083,9 +1328,10 @@ class LLMService:
             try:
                 # Use existing chat_stream (rate limiter & error handling automatic!)
                 # Pass token tracking parameters
+                # Skip load balancing since we already applied it in stream_progressive
                 async for token in self.chat_stream(
                     prompt=prompt,
-                    model=model,
+                    model=physical_model,
                     temperature=temperature,
                     max_tokens=max_tokens,
                     timeout=timeout,
@@ -1097,21 +1343,26 @@ class LLMService:
                     endpoint_path=endpoint_path,
                     session_id=session_id,
                     conversation_id=conversation_id,
+                    skip_load_balancing=True,  # Skip since already balanced
                     **kwargs
                 ):
                     token_count += 1
+                    # Use logical model name for response (users shouldn't see 'ark-deepseek')
+                    logical_model = physical_to_logical.get(physical_model, physical_model)
                     await queue.put({
                         'event': 'token',
-                        'llm': model,
+                        'llm': logical_model,
                         'token': token,
                         'timestamp': time.time()
                     })
                 
                 # LLM completed successfully
                 duration = time.time() - start_time
+                # Use logical model name for response
+                logical_model = physical_to_logical.get(physical_model, physical_model)
                 await queue.put({
                     'event': 'complete',
-                    'llm': model,
+                    'llm': logical_model,
                     'duration': duration,
                     'token_count': token_count,
                     'timestamp': time.time()
@@ -1119,31 +1370,34 @@ class LLMService:
                 
                 # Smart logging: summary only, no token spam
                 logger.info(
-                    f"[LLMService] {model} stream complete - "
+                    f"[LLMService] {logical_model} stream complete - "
                     f"{token_count} tokens in {duration:.2f}s "
                     f"({token_count/duration:.1f} tok/s)"
                 )
                 
             except Exception as e:
                 duration = time.time() - start_time
-                logger.error(f"[LLMService] {model} stream error: {str(e)}")
+                logical_model = physical_to_logical.get(physical_model, physical_model)
+                logger.error(f"[LLMService] {logical_model} stream error: {str(e)}")
                 await queue.put({
                     'event': 'error',
-                    'llm': model,
+                    'llm': logical_model,
                     'error': str(e),
                     'duration': duration,
                     'timestamp': time.time()
                 })
         
         # Fire all LLM tasks concurrently
-        tasks = [asyncio.create_task(stream_single(model)) for model in models]
+        tasks = [asyncio.create_task(stream_single(model)) for model in physical_models]
         
         completed = 0
         success_count = 0
         total_start = time.time()
         
         # Yield tokens as they arrive from queue
-        while completed < len(models):
+        # Use len(physical_models) to ensure we wait for all physical models to complete
+        # (even though current mappings are 1:1, this is more correct)
+        while completed < len(physical_models):
             chunk = await queue.get()
             
             if chunk['event'] == 'complete':
@@ -1160,7 +1414,7 @@ class LLMService:
         total_duration = time.time() - total_start
         logger.info(
             f"[LLMService] stream_progressive() complete: "
-            f"{success_count}/{len(models)} succeeded in {total_duration:.2f}s"
+            f"{success_count}/{len(physical_models)} succeeded in {total_duration:.2f}s"
         )
     
     async def generate_race(
@@ -1350,6 +1604,41 @@ class LLMService:
     # INTERNAL HELPER METHODS
     # ============================================================================
     
+    def _get_rate_limiter(self, model: str, actual_model: str, provider: Optional[str] = None) -> Optional[Any]:
+        """
+        Get the appropriate rate limiter for a model request.
+        
+        Args:
+            model: Logical model name (e.g., 'deepseek', 'qwen')
+            actual_model: Physical model name after load balancing (e.g., 'deepseek', 'ark-deepseek')
+            provider: Provider name if known ('dashscope' or 'volcengine')
+            
+        Returns:
+            Rate limiter instance or None
+        """
+        # For DeepSeek with load balancing, select appropriate rate limiter
+        if model == 'deepseek':
+            if provider == 'volcengine' or actual_model == 'ark-deepseek':
+                # DeepSeek Volcengine route → use load balancer Volcengine limiter
+                if self.load_balancer_rate_limiter and self.load_balancer_rate_limiter.enabled:
+                    return self.load_balancer_rate_limiter.get_limiter('volcengine')
+            elif provider == 'dashscope' or actual_model == 'deepseek':
+                # DeepSeek Dashscope route → use shared Dashscope limiter (same as Qwen)
+                return self.rate_limiter
+        
+        # For Kimi: use Volcengine endpoint-specific rate limiter
+        if model == 'kimi' or actual_model == 'ark-kimi':
+            if self.kimi_rate_limiter and self.kimi_rate_limiter.enabled:
+                return self.kimi_rate_limiter
+        
+        # For Doubao: use Volcengine endpoint-specific rate limiter
+        if model == 'doubao' or actual_model == 'ark-doubao':
+            if self.doubao_rate_limiter and self.doubao_rate_limiter.enabled:
+                return self.doubao_rate_limiter
+        
+        # For Qwen and other Dashscope models, use shared Dashscope rate limiter
+        return self.rate_limiter
+    
     async def _call_single_model_with_timing(
         self,
         model: str,
@@ -1363,10 +1652,24 @@ class LLMService:
         """
         Internal method to call a single model with timing.
         Used by multi-LLM methods.
+        
+        CRITICAL: Circuit breaker tracks by PHYSICAL model name to prevent
+        one failing route from blocking both routes in load balancing.
         """
-        # Check circuit breaker
-        if not self.performance_tracker.can_call_model(model):
-            logger.warning(f"[LLMService] Circuit breaker OPEN for {model}, skipping call")
+        # Apply load balancing FIRST to get physical model name
+        # Circuit breaker must track by physical model, not logical
+        actual_model = model
+        provider = None  # Track provider for metrics
+        
+        if self.load_balancer and self.load_balancer.enabled:
+            actual_model = self.load_balancer.map_model(model)
+            # Track provider from physical model name (for DeepSeek)
+            provider = self.load_balancer.get_provider_from_model(actual_model)
+        
+        # Check circuit breaker using PHYSICAL model name
+        # This ensures failures from one route don't block the other route
+        if not self.performance_tracker.can_call_model(actual_model):
+            logger.warning(f"[LLMService] Circuit breaker OPEN for {actual_model}, skipping call")
             return {
                 'response': None,
                 'duration': 0.0,
@@ -1377,24 +1680,39 @@ class LLMService:
         start_time = time.time()
         
         try:
+            # Pass actual_model and skip load balancing since we already applied it
+            # This ensures circuit breaker check and actual request use the same physical model
+            # Note: chat() will track performance by the model parameter (actual_model/physical)
+            # but we also track here by physical model for circuit breaker granularity
             response = await self.chat(
                 prompt=prompt,
-                model=model,
+                model=actual_model,  # Pass physical model (chat() will track by this)
                 temperature=temperature,
                 max_tokens=max_tokens,
                 timeout=timeout,
                 system_message=system_message,
+                skip_load_balancing=True,  # Skip since already balanced
                 **kwargs
             )
             
             duration = time.time() - start_time
             
-            # Record success
+            # Record success using PHYSICAL model name for circuit breaker tracking
+            # chat() also tracks by actual_model (physical), but that's for general metrics
+            # We track here specifically for circuit breaker granularity
             self.performance_tracker.record_request(
-                model=model,
+                model=actual_model,  # Use physical model for circuit breaker
                 duration=duration,
                 success=True
             )
+            
+            # Record provider metrics for load balancing (if DeepSeek)
+            if provider and self.load_balancer:
+                self.load_balancer.record_provider_metrics(
+                    provider=provider,
+                    success=True,
+                    duration=duration
+                )
             
             return {
                 'response': response,
@@ -1406,13 +1724,22 @@ class LLMService:
         except Exception as e:
             duration = time.time() - start_time
             
-            # Record failure
+            # Record failure using PHYSICAL model name for circuit breaker tracking
             self.performance_tracker.record_request(
-                model=model,
+                model=actual_model,  # Use physical model for circuit breaker
                 duration=duration,
                 success=False,
                 error=str(e)
             )
+            
+            # Record provider metrics for load balancing (if DeepSeek)
+            if provider and self.load_balancer:
+                self.load_balancer.record_provider_metrics(
+                    provider=provider,
+                    success=False,
+                    duration=duration,
+                    error=str(e)
+                )
             
             return {
                 'response': None,

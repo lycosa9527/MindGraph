@@ -30,7 +30,7 @@ from clients.llm import (
     DeepSeekClient,
     KimiClient,
     HunyuanClient,
-    DoubaoClient
+    VolcengineClient
 )
 from clients.omni_client import OmniClient
 from config.settings import config
@@ -73,9 +73,22 @@ class ClientManager:
                 
                 # Initialize other LLM clients
                 self._clients['deepseek'] = DeepSeekClient()
-                self._clients['kimi'] = KimiClient()
+                # Note: KimiClient (Dashscope) is initialized but NEVER USED
+                # Load balancer always routes 'kimi' → 'ark-kimi' (Volcengine) due to higher limits (5,000 RPM vs 60 RPM)
+                self._clients['kimi'] = KimiClient()  # Dashscope client (not used, kept for backward compatibility)
                 self._clients['hunyuan'] = HunyuanClient()
-                self._clients['doubao'] = DoubaoClient()
+                
+                # Initialize Volcengine ARK clients (using endpoints for higher RPM)
+                # Note: ark-qwen is NOT registered - Qwen always routes to Dashscope
+                # Only DeepSeek is load-balanced (Route A: Dashscope, Route B: Volcengine)
+                # Kimi ALWAYS uses Volcengine endpoint (5,000 RPM vs Dashscope's 60 RPM)
+                # Doubao always uses Volcengine endpoint
+                self._clients['ark-deepseek'] = VolcengineClient('ark-deepseek')
+                self._clients['ark-kimi'] = VolcengineClient('ark-kimi')  # PRIMARY route for Kimi
+                self._clients['ark-doubao'] = VolcengineClient('ark-doubao')
+                # Map logical 'doubao' to 'ark-doubao' for consistency
+                self._clients['doubao'] = self._clients['ark-doubao']
+                logger.debug("[ClientManager] Volcengine ARK clients initialized (using endpoints)")
                 
                 # Initialize Qwen Omni client (for VoiceAgent)
                 self._clients['omni'] = OmniClient()

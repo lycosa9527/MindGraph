@@ -101,8 +101,8 @@ class QwenAPISettings(BaseModel):
         description="Qwen API endpoint URL"
     )
     QWEN_MODEL_CLASSIFICATION: str = Field(
-        default="qwen-turbo",
-        description="Model for classification tasks (faster, cheaper)"
+        default="qwen-plus-latest",
+        description="Model for classification tasks"
     )
     QWEN_MODEL_GENERATION: str = Field(
         default="qwen-plus",
@@ -418,7 +418,7 @@ class EnvSettingsSchema(BaseModel):
                 },
                 "qwen": {
                     "QWEN_API_KEY": "sk-xxx",
-                    "QWEN_MODEL_CLASSIFICATION": "qwen-turbo"
+                    "QWEN_MODEL_CLASSIFICATION": "qwen-plus-latest"
                 }
                 # ... more examples
             }

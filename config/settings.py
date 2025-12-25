@@ -92,8 +92,8 @@ class Config:
     
     @property
     def QWEN_MODEL_CLASSIFICATION(self):
-        """Model for classification tasks (faster, cheaper)"""
-        return self._get_cached_value('QWEN_MODEL_CLASSIFICATION', 'qwen-turbo')
+        """Model for classification tasks"""
+        return self._get_cached_value('QWEN_MODEL_CLASSIFICATION', 'qwen-plus-latest')
     
     @property
     def QWEN_MODEL_GENERATION(self):
@@ -158,6 +158,26 @@ class Config:
         return self._get_cached_value('ARK_BASE_URL', 'https://ark.cn-beijing.volces.com/api/v3')
     
     @property
+    def ARK_QWEN_ENDPOINT(self):
+        """Volcengine ARK Qwen endpoint ID (higher RPM than direct model name)"""
+        return self._get_cached_value('ARK_QWEN_ENDPOINT', 'ep-20250101000000-dummy')
+    
+    @property
+    def ARK_DEEPSEEK_ENDPOINT(self):
+        """Volcengine ARK DeepSeek endpoint ID (higher RPM than direct model name)"""
+        return self._get_cached_value('ARK_DEEPSEEK_ENDPOINT', 'ep-20250101000000-dummy')
+    
+    @property
+    def ARK_KIMI_ENDPOINT(self):
+        """Volcengine ARK Kimi endpoint ID (higher RPM than direct model name)"""
+        return self._get_cached_value('ARK_KIMI_ENDPOINT', 'ep-20250101000000-dummy')
+    
+    @property
+    def ARK_DOUBAO_ENDPOINT(self):
+        """Volcengine ARK Doubao endpoint ID (higher RPM than direct model name)"""
+        return self._get_cached_value('ARK_DOUBAO_ENDPOINT', 'ep-20250101000000-dummy')
+    
+    @property
     def DOUBAO_MODEL(self):
         """Doubao model name"""
         return self._get_cached_value('DOUBAO_MODEL', 'doubao-1-5-pro-32k-250115')
@@ -213,27 +233,245 @@ class Config:
 
     @property
     def DASHSCOPE_QPM_LIMIT(self):
-        """Dashscope Queries Per Minute limit"""
+        """
+        Dashscope Queries Per Minute limit.
+        
+        Default: 13,500 (90% of official 15,000 RPM limit for qwen-plus/deepseek-v3.1).
+        Official limits:
+        - qwen-plus: 15,000 RPM
+        - qwen-plus-latest: 15,000 RPM
+        - deepseek-v3.1/v3.2/r1: 15,000 RPM
+        - Moonshot-Kimi-K2-Instruct: 60 RPM (very low, use separate limit)
+        """
         try:
-            return int(self._get_cached_value('DASHSCOPE_QPM_LIMIT', '200'))
+            return int(self._get_cached_value('DASHSCOPE_QPM_LIMIT', '13500'))
         except (ValueError, TypeError):
-            logger.warning("Invalid DASHSCOPE_QPM_LIMIT, using 200")
-            return 200
+            logger.warning("Invalid DASHSCOPE_QPM_LIMIT, using 13500")
+            return 13500
 
     @property
     def DASHSCOPE_CONCURRENT_LIMIT(self):
         """Dashscope concurrent request limit"""
         try:
-            return int(self._get_cached_value('DASHSCOPE_CONCURRENT_LIMIT', '50'))
+            return int(self._get_cached_value('DASHSCOPE_CONCURRENT_LIMIT', '500'))
         except (ValueError, TypeError):
-            logger.warning("Invalid DASHSCOPE_CONCURRENT_LIMIT, using 50")
-            return 50
+            logger.warning("Invalid DASHSCOPE_CONCURRENT_LIMIT, using 500")
+            return 500
 
     @property
     def DASHSCOPE_RATE_LIMITING_ENABLED(self):
         """Enable/disable Dashscope rate limiting"""
         val = self._get_cached_value('DASHSCOPE_RATE_LIMITING_ENABLED', 'true')
         return val.lower() == 'true'
+
+    # ============================================================================
+    # VOLCENGINE ARK RATE LIMITING
+    # ============================================================================
+
+    @property
+    def ARK_QPM_LIMIT(self):
+        """
+        Volcengine ARK Queries Per Minute limit.
+        
+        Default: 4,500 (90% of official 5,000 RPM limit).
+        Official limits:
+        - ark-kimi: 5,000 RPM, 500,000 TPM
+        - ark-doubao: ~30,000 RPM (very high)
+        - ark-deepseek (v3.2): 15,000 RPM, 1,500,000 TPM
+        """
+        try:
+            return int(self._get_cached_value('ARK_QPM_LIMIT', '4500'))
+        except (ValueError, TypeError):
+            logger.warning("Invalid ARK_QPM_LIMIT, using 4500")
+            return 4500
+
+    @property
+    def ARK_CONCURRENT_LIMIT(self):
+        """Volcengine ARK concurrent request limit"""
+        try:
+            return int(self._get_cached_value('ARK_CONCURRENT_LIMIT', '500'))
+        except (ValueError, TypeError):
+            logger.warning("Invalid ARK_CONCURRENT_LIMIT, using 500")
+            return 500
+
+    @property
+    def ARK_RATE_LIMITING_ENABLED(self):
+        """Enable/disable Volcengine rate limiting"""
+        val = self._get_cached_value('ARK_RATE_LIMITING_ENABLED', 'false')
+        return val.lower() == 'true'
+
+    # ============================================================================
+    # LOAD BALANCING CONFIGURATION
+    # ============================================================================
+
+    @property
+    def LOAD_BALANCING_ENABLED(self):
+        """Enable/disable load balancing (default: false)"""
+        val = self._get_cached_value('LOAD_BALANCING_ENABLED', 'false')
+        return val.lower() == 'true'
+
+    @property
+    def DEEPSEEK_DASHSCOPE_QPM_LIMIT(self):
+        """
+        DeepSeek Dashscope route QPM limit for load balancing.
+        
+        DEPRECATED: DeepSeek Dashscope route now uses shared DASHSCOPE_QPM_LIMIT.
+        This property is kept for backward compatibility but is not used.
+        The shared Dashscope rate limiter handles both Qwen and DeepSeek Dashscope routes together.
+        
+        Default: 13,500 (90% of official 15,000 RPM limit).
+        Official limits:
+        - deepseek-v3.1: 15,000 RPM, 1,200,000 TPM
+        - deepseek-v3.2: 15,000 RPM, 1,500,000 TPM
+        - deepseek-r1: 15,000 RPM, 1,200,000 TPM
+        """
+        try:
+            return int(self._get_cached_value('DEEPSEEK_DASHSCOPE_QPM_LIMIT', '13500'))
+        except (ValueError, TypeError):
+            logger.warning("Invalid DEEPSEEK_DASHSCOPE_QPM_LIMIT, using 13500")
+            return 13500
+
+    @property
+    def DEEPSEEK_DASHSCOPE_CONCURRENT_LIMIT(self):
+        """
+        DeepSeek Dashscope route concurrent limit for load balancing.
+        
+        DEPRECATED: DeepSeek Dashscope route now uses shared DASHSCOPE_CONCURRENT_LIMIT.
+        This property is kept for backward compatibility but is not used.
+        The shared Dashscope rate limiter handles both Qwen and DeepSeek Dashscope routes together.
+        
+        Default: 500
+        """
+        try:
+            return int(self._get_cached_value('DEEPSEEK_DASHSCOPE_CONCURRENT_LIMIT', '500'))
+        except (ValueError, TypeError):
+            logger.warning("Invalid DEEPSEEK_DASHSCOPE_CONCURRENT_LIMIT, using 500")
+            return 500
+
+    @property
+    def DEEPSEEK_VOLCENGINE_QPM_LIMIT(self):
+        """
+        DeepSeek Volcengine route QPM limit for load balancing.
+        
+        Default: 13,500 (90% of official 15,000 RPM limit).
+        Official limit for ark-deepseek (v3.2 endpoint): 15,000 RPM, 1,500,000 TPM.
+        Note: Volcengine endpoint has same limits as Dashscope route for DeepSeek v3.2.
+        """
+        try:
+            return int(self._get_cached_value('DEEPSEEK_VOLCENGINE_QPM_LIMIT', '13500'))
+        except (ValueError, TypeError):
+            logger.warning("Invalid DEEPSEEK_VOLCENGINE_QPM_LIMIT, using 13500")
+            return 13500
+
+    @property
+    def DEEPSEEK_VOLCENGINE_CONCURRENT_LIMIT(self):
+        """DeepSeek Volcengine route concurrent limit for load balancing (default: 500)"""
+        try:
+            return int(self._get_cached_value('DEEPSEEK_VOLCENGINE_CONCURRENT_LIMIT', '500'))
+        except (ValueError, TypeError):
+            logger.warning("Invalid DEEPSEEK_VOLCENGINE_CONCURRENT_LIMIT, using 500")
+            return 500
+
+    @property
+    def KIMI_VOLCENGINE_QPM_LIMIT(self):
+        """
+        Kimi Volcengine endpoint QPM limit.
+        
+        Default: 4,500 (90% of official 5,000 RPM limit).
+        Official limit for ark-kimi endpoint: 5,000 RPM, 500,000 TPM.
+        """
+        try:
+            return int(self._get_cached_value('KIMI_VOLCENGINE_QPM_LIMIT', '4500'))
+        except (ValueError, TypeError):
+            logger.warning("Invalid KIMI_VOLCENGINE_QPM_LIMIT, using 4500")
+            return 4500
+
+    @property
+    def KIMI_VOLCENGINE_CONCURRENT_LIMIT(self):
+        """Kimi Volcengine endpoint concurrent limit (default: 500)"""
+        try:
+            return int(self._get_cached_value('KIMI_VOLCENGINE_CONCURRENT_LIMIT', '500'))
+        except (ValueError, TypeError):
+            logger.warning("Invalid KIMI_VOLCENGINE_CONCURRENT_LIMIT, using 500")
+            return 500
+
+    @property
+    def DOUBAO_VOLCENGINE_QPM_LIMIT(self):
+        """
+        Doubao Volcengine endpoint QPM limit.
+        
+        Default: 27,000 (90% of official 30,000 RPM limit).
+        Official limit for ark-doubao endpoint: 30,000 RPM, 5,000,000 TPM.
+        """
+        try:
+            return int(self._get_cached_value('DOUBAO_VOLCENGINE_QPM_LIMIT', '27000'))
+        except (ValueError, TypeError):
+            logger.warning("Invalid DOUBAO_VOLCENGINE_QPM_LIMIT, using 27000")
+            return 27000
+
+    @property
+    def DOUBAO_VOLCENGINE_CONCURRENT_LIMIT(self):
+        """Doubao Volcengine endpoint concurrent limit (default: 500)"""
+        try:
+            return int(self._get_cached_value('DOUBAO_VOLCENGINE_CONCURRENT_LIMIT', '500'))
+        except (ValueError, TypeError):
+            logger.warning("Invalid DOUBAO_VOLCENGINE_CONCURRENT_LIMIT, using 500")
+            return 500
+
+    @property
+    def LOAD_BALANCING_RATE_LIMITING_ENABLED(self):
+        """Enable/disable rate limiting for load balancing (default: true)"""
+        val = self._get_cached_value('LOAD_BALANCING_RATE_LIMITING_ENABLED', 'true')
+        return val.lower() == 'true'
+
+    @property
+    def LOAD_BALANCING_STRATEGY(self):
+        """Load balancing strategy: 'weighted', 'random', or 'round_robin'"""
+        return self._get_cached_value('LOAD_BALANCING_STRATEGY', 'round_robin')
+
+    @property
+    def LOAD_BALANCING_WEIGHTS(self):
+        """
+        Load balancing weights as dict.
+        Format: 'dashscope:50,volcengine:50' -> {'dashscope': 50, 'volcengine': 50}
+        
+        Validates weights are in 0-100 range and normalizes to sum to 100.
+        """
+        weights_str = self._get_cached_value('LOAD_BALANCING_WEIGHTS', 'dashscope:50,volcengine:50')
+        weights = {}
+        try:
+            for pair in weights_str.split(','):
+                if ':' in pair:
+                    key, weight = pair.strip().split(':', 1)
+                    weights[key] = int(weight)
+        except (ValueError, AttributeError):
+            logger.warning(f"Invalid LOAD_BALANCING_WEIGHTS format: {weights_str}, using default 50/50")
+            weights = {'dashscope': 50, 'volcengine': 50}
+        
+        # Ensure both providers are present
+        if 'dashscope' not in weights:
+            weights['dashscope'] = 50
+        if 'volcengine' not in weights:
+            weights['volcengine'] = 50
+        
+        # Validate weights are in valid range (0-100)
+        for provider in ['dashscope', 'volcengine']:
+            if provider in weights:
+                weights[provider] = max(0, min(100, weights[provider]))
+        
+        # Normalize weights to sum to 100 for proper probability distribution
+        total = weights.get('dashscope', 0) + weights.get('volcengine', 0)
+        if total > 0:
+            # Preserve integer values while normalizing
+            dashscope_weight = weights.get('dashscope', 0)
+            weights['dashscope'] = int(round(dashscope_weight * 100 / total))
+            weights['volcengine'] = 100 - weights['dashscope']  # Ensure they sum to exactly 100
+        else:
+            # If both are 0, default to 50/50
+            logger.warning("LOAD_BALANCING_WEIGHTS sum to 0, using default 50/50")
+            weights = {'dashscope': 50, 'volcengine': 50}
+        
+        return weights
 
     # ============================================================================
     # SMS RATE LIMITING (For Tencent Cloud SMS API)
@@ -603,8 +841,8 @@ class Config:
         logger.info(f"   Version: {self.VERSION}")
         logger.info(f"   FastAPI: {self.HOST}:{self.PORT} (Debug: {self.DEBUG})")
         logger.info(f"   Qwen: {self.QWEN_API_URL}")
-        logger.info(f"     - Classification: {self.QWEN_MODEL_CLASSIFICATION} (fast/cheap)")
-        logger.info(f"     - Generation: {self.QWEN_MODEL_GENERATION} (high quality)")
+        logger.info(f"     - Classification: {self.QWEN_MODEL_CLASSIFICATION}")
+        logger.info(f"     - Generation: {self.QWEN_MODEL_GENERATION}")
         
 
         
@@ -656,7 +894,7 @@ class Config:
         }
     
     def get_qwen_classification_data(self, prompt: str) -> dict:
-        """Get request data for Qwen classification tasks (fast/cheap)"""
+        """Get request data for Qwen classification tasks"""
         return self.get_qwen_data(prompt, self.QWEN_MODEL_CLASSIFICATION)
     
     def get_qwen_generation_data(self, prompt: str) -> dict:

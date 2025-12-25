@@ -288,14 +288,21 @@ def create_access_token(user: User) -> str:
     - sub: user_id
     - phone: user phone number
     - org_id: organization id
+    - jti: JWT ID (unique token identifier for session tracking)
     - exp: expiration timestamp
     """
+    import uuid
+    
     expire = datetime.utcnow() + timedelta(hours=JWT_EXPIRY_HOURS)
+    
+    # Generate unique token ID for session tracking
+    token_id = str(uuid.uuid4())
     
     payload = {
         "sub": str(user.id),
         "phone": user.phone,
         "org_id": user.organization_id,
+        "jti": token_id,
         "exp": expire
     }
     
@@ -358,17 +365,23 @@ def get_current_user(
     if AUTH_MODE == "enterprise":
         db = SessionLocal()
         try:
-            org = db.query(Organization).filter(
-                Organization.code == ENTERPRISE_DEFAULT_ORG_CODE
-            ).first()
+            from services.redis_org_cache import org_cache
+            from services.redis_user_cache import user_cache
             
+            # Use cache for org lookup (with SQLite fallback)
+            org = org_cache.get_by_code(ENTERPRISE_DEFAULT_ORG_CODE)
             if not org:
-                raise HTTPException(
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail=f"Enterprise organization {ENTERPRISE_DEFAULT_ORG_CODE} not found"
-                )
+                org = db.query(Organization).filter(
+                    Organization.code == ENTERPRISE_DEFAULT_ORG_CODE
+                ).first()
+                if not org:
+                    raise HTTPException(
+                        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                        detail=f"Enterprise organization {ENTERPRISE_DEFAULT_ORG_CODE} not found"
+                    )
             
-            user = db.query(User).filter(User.phone == ENTERPRISE_DEFAULT_USER_PHONE).first()
+            # Use cache for user lookup (with SQLite fallback)
+            user = user_cache.get_by_phone(ENTERPRISE_DEFAULT_USER_PHONE)
             
             if not user:
                 # Auto-create enterprise user (use short password for bcrypt compatibility)
@@ -383,9 +396,13 @@ def get_current_user(
                 db.commit()
                 db.refresh(user)
                 logger.info("Created enterprise mode user")
+                
+                # Cache the newly created user (non-blocking)
+                try:
+                    user_cache.cache_user(user)
+                except Exception as e:
+                    logger.warning(f"Failed to cache enterprise user: {e}")
             
-            # Detach user from session so it can be used after close
-            db.expunge(user)
             return user
         finally:
             db.close()  # Release connection immediately
@@ -418,42 +435,48 @@ def get_current_user(
             detail="Invalid token payload"
         )
     
-    # Create session, query, and close immediately
-    db = SessionLocal()
-    try:
-        user = db.query(User).filter(User.id == int(user_id)).first()
-        
-        if not user:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="User not found"
-            )
-        
-        # Check organization status (locked or expired)
-        if user.organization_id:
-            org = db.query(Organization).filter(Organization.id == user.organization_id).first()
-            if org:
-                # Check if organization is locked
-                is_active = org.is_active if hasattr(org, 'is_active') else True
-                if not is_active:
+    # Session validation: Check if session exists in Redis
+    from services.redis_session_manager import get_session_manager
+    session_manager = get_session_manager()
+    if not session_manager.is_session_valid(int(user_id), token):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Session expired or invalidated. Please login again."
+        )
+    
+    # Use cache for user lookup (with SQLite fallback)
+    from services.redis_user_cache import user_cache
+    from services.redis_org_cache import org_cache
+    
+    user = user_cache.get_by_id(int(user_id))
+    
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User not found"
+        )
+    
+    # Check organization status (locked or expired) using cache
+    if user.organization_id:
+        org = org_cache.get_by_id(user.organization_id)
+        if org:
+            # Check if organization is locked
+            is_active = org.is_active if hasattr(org, 'is_active') else True
+            if not is_active:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Organization account is locked. Please contact support."
+                )
+            
+            # Check if organization subscription has expired
+            if hasattr(org, 'expires_at') and org.expires_at:
+                if org.expires_at < datetime.utcnow():
                     raise HTTPException(
                         status_code=status.HTTP_403_FORBIDDEN,
-                        detail="Organization account is locked. Please contact support."
+                        detail="Organization subscription has expired. Please contact support."
                     )
-                
-                # Check if organization subscription has expired
-                if hasattr(org, 'expires_at') and org.expires_at:
-                    if org.expires_at < datetime.utcnow():
-                        raise HTTPException(
-                            status_code=status.HTTP_403_FORBIDDEN,
-                            detail="Organization subscription has expired. Please contact support."
-                        )
-        
-        # Detach user from session so it can be used after close
-        db.expunge(user)
-        return user
-    finally:
-        db.close()  # Release connection immediately
+    
+    return user
 
 
 def get_user_from_cookie(token: str, db: Session) -> Optional[User]:
@@ -478,8 +501,22 @@ def get_user_from_cookie(token: str, db: Session) -> Optional[User]:
         if not user_id:
             return None
         
-        # Get user from database
-        user = db.query(User).filter(User.id == int(user_id)).first()
+        # Session validation: Check if session exists in Redis
+        from services.redis_session_manager import get_session_manager
+        session_manager = get_session_manager()
+        if not session_manager.is_session_valid(int(user_id), token):
+            logger.debug(f"Session invalid for user {user_id} in get_user_from_cookie")
+            return None
+        
+        # Use cache for user lookup (with SQLite fallback)
+        from services.redis_user_cache import user_cache
+        user = user_cache.get_by_id(int(user_id))
+        if not user:
+            # Fallback to DB if not in cache
+            user = db.query(User).filter(User.id == int(user_id)).first()
+            if user:
+                db.expunge(user)
+                user_cache.cache_user(user)  # Cache it for next time
         return user
         
     except JWTError as e:
@@ -678,12 +715,29 @@ def is_ip_whitelisted(client_ip: str) -> bool:
     If IP is whitelisted, teachers from that IP can skip token authentication
     and gain immediate access in bayi mode.
     
+    Uses Redis Set for multi-worker support and dynamic management.
+    Falls back to in-memory set if Redis unavailable (backward compatibility).
+    
     Args:
         client_ip: Client IP address string
     
     Returns:
         True if IP is whitelisted, False otherwise
     """
+    # Try Redis first (for multi-worker support and dynamic management)
+    try:
+        from services.redis_bayi_whitelist import get_bayi_whitelist
+        whitelist = get_bayi_whitelist()
+        if whitelist._use_redis():
+            result = whitelist.is_ip_whitelisted(client_ip)
+            if result:
+                return True
+            # If Redis check returned False, fall through to in-memory check
+            # (in case IP was added to in-memory but not yet synced to Redis)
+    except Exception as e:
+        logger.debug(f"[Auth] Redis IP whitelist check failed, falling back to in-memory: {e}")
+    
+    # Fallback to in-memory set (backward compatibility)
     if not BAYI_IP_WHITELIST:
         return False
     
@@ -695,7 +749,7 @@ def is_ip_whitelisted(client_ip: str) -> bool:
         
         # O(1) lookup in set
         if ip_str in BAYI_IP_WHITELIST:
-            logger.debug(f"IP {client_ip} matched whitelist entry")
+            logger.debug(f"IP {client_ip} matched whitelist entry (in-memory fallback)")
             return True
         
         return False
@@ -812,6 +866,16 @@ def lock_account(user: User, db: Session):
     """Lock user account for LOCKOUT_DURATION_MINUTES"""
     user.locked_until = datetime.utcnow() + timedelta(minutes=LOCKOUT_DURATION_MINUTES)
     db.commit()
+    
+    # Invalidate and re-cache user (lock status changed)
+    try:
+        from services.redis_user_cache import user_cache
+        user_cache.invalidate(user.id, user.phone)
+        user_cache.cache_user(user)  # Non-blocking cache update
+    except Exception as e:
+        # Non-critical - cache will be updated on next read
+        logger.debug(f"[Auth] Failed to update cache after lock_account: {e}")
+    
     logger.warning(f"Account locked: {user.phone}")
 
 
@@ -821,6 +885,15 @@ def reset_failed_attempts(user: User, db: Session):
     user.locked_until = None
     user.last_login = datetime.utcnow()
     db.commit()
+    
+    # Invalidate and re-cache user (lock status and last_login changed)
+    try:
+        from services.redis_user_cache import user_cache
+        user_cache.invalidate(user.id, user.phone)
+        user_cache.cache_user(user)  # Non-blocking cache update
+    except Exception as e:
+        # Non-critical - cache will be updated on next read
+        logger.debug(f"[Auth] Failed to update cache after reset_failed_attempts: {e}")
 
 
 def increment_failed_attempts(user: User, db: Session):
@@ -830,6 +903,15 @@ def increment_failed_attempts(user: User, db: Session):
     
     if user.failed_login_attempts >= MAX_LOGIN_ATTEMPTS:
         lock_account(user, db)
+    else:
+        # Invalidate and re-cache user (failed_login_attempts changed)
+        try:
+            from services.redis_user_cache import user_cache
+            user_cache.invalidate(user.id, user.phone)
+            user_cache.cache_user(user)  # Non-blocking cache update
+        except Exception as e:
+            # Non-critical - cache will be updated on next read
+            logger.debug(f"[Auth] Failed to update cache after increment_failed_attempts: {e}")
 
 
 # ============================================================================
@@ -964,20 +1046,19 @@ def get_current_user_or_api_key(
             user_id = payload.get("sub")
             
             if user_id:
-                # Create session, query, and close immediately
-                db = SessionLocal()
-                try:
-                    user = db.query(User).filter(User.id == int(user_id)).first()
+                # Session validation: Check if session exists in Redis
+                from services.redis_session_manager import get_session_manager
+                session_manager = get_session_manager()
+                if session_manager.is_session_valid(int(user_id), token):
+                    # Use cache for user lookup (with SQLite fallback)
+                    from services.redis_user_cache import user_cache
+                    user = user_cache.get_by_id(int(user_id))
                     if user:
-                        # Detach user from session so it can be used after close
-                        db.expunge(user)
                         worker_id = os.getenv('UVICORN_WORKER_ID', 'main')
                         # Include endpoint path for clarity when multiple parallel requests come in
                         endpoint = request.url.path if request else 'unknown'
                         logger.debug(f"Authenticated teacher: {user.name} (ID: {user.id}, Phone: {user.phone}) [Worker: {worker_id}] [{endpoint}]")
                         return user  # Authenticated teacher - full access
-                finally:
-                    db.close()  # Release connection immediately
         except HTTPException:
             # Invalid JWT, try API key instead
             pass
@@ -1104,8 +1185,22 @@ async def get_current_user_ws(
             await websocket.close(code=4001, reason="Invalid token")
             raise WebSocketDisconnect(code=4001, reason="Invalid token")
         
-        # Get user from database
-        user = db.query(User).filter(User.id == int(user_id)).first()
+        # Session validation: Check if session exists in Redis
+        from services.redis_session_manager import get_session_manager
+        session_manager = get_session_manager()
+        if not session_manager.is_session_valid(int(user_id), token):
+            await websocket.close(code=4001, reason="Session expired or invalidated")
+            raise WebSocketDisconnect(code=4001, reason="Session expired or invalidated")
+        
+        # Use cache for user lookup (with SQLite fallback)
+        from services.redis_user_cache import user_cache
+        user = user_cache.get_by_id(int(user_id))
+        if not user:
+            # Fallback to DB if not in cache
+            user = db.query(User).filter(User.id == int(user_id)).first()
+            if user:
+                db.expunge(user)
+                user_cache.cache_user(user)  # Cache it for next time
         
         if not user:
             await websocket.close(code=4001, reason="User not found")

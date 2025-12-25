@@ -34,6 +34,7 @@ class MindMateManager {
         // Streaming state
         this.currentStreamingMessage = null;
         this.messageBuffer = '';
+        this.currentTypingIndicator = null; // Reference to current typing indicator for correct message ordering
         
         // Markdown renderer
         this.md = window.markdownit ? window.markdownit({
@@ -499,6 +500,7 @@ class MindMateManager {
         
         // Show typing indicator
         const typingIndicator = this.showTypingIndicator();
+        this.currentTypingIndicator = typingIndicator; // Store reference for correct message ordering
         
         // Disable input
         this.setInputEnabled(false);
@@ -542,6 +544,9 @@ class MindMateManager {
                                 this.currentStreamingMessage.classList.remove('streaming');
                             }
                             
+                            // Clear typing indicator reference
+                            this.currentTypingIndicator = null;
+                            
                             // Re-enable input
                             this.setInputEnabled(true);
                             
@@ -573,6 +578,10 @@ class MindMateManager {
                                             if (typingIndicator && typingIndicator.parentNode) {
                                                 typingIndicator.parentNode.removeChild(typingIndicator);
                                             }
+                                            // Clear reference after removal
+                                            if (this.currentTypingIndicator === typingIndicator) {
+                                                this.currentTypingIndicator = null;
+                                            }
                                         }, 500); // Keep cute animation visible for 500ms
                                     }
                                 } catch (e) {
@@ -601,6 +610,10 @@ class MindMateManager {
                         typingIndicatorRemoved = true;
                         if (typingIndicator && typingIndicator.parentNode) {
                             typingIndicator.parentNode.removeChild(typingIndicator);
+                        }
+                        // Clear reference after removal
+                        if (this.currentTypingIndicator === typingIndicator) {
+                            this.currentTypingIndicator = null;
                         }
                         
                         // Re-enable input
@@ -639,6 +652,10 @@ class MindMateManager {
                 typingIndicatorRemoved = true;
                 if (typingIndicator && typingIndicator.parentNode) {
                     typingIndicator.parentNode.removeChild(typingIndicator);
+                }
+                // Clear reference after removal
+                if (this.currentTypingIndicator === typingIndicator) {
+                    this.currentTypingIndicator = null;
                 }
                 
                 // Re-enable input
@@ -691,6 +708,7 @@ class MindMateManager {
             
             this.messageBuffer = '';
             this.currentStreamingMessage = null;
+            this.currentTypingIndicator = null; // Clear typing indicator reference
             
         } else if (event === 'error') {
             // Handle error with error_type for user-friendly messages
@@ -716,6 +734,7 @@ class MindMateManager {
             this.addMessage('assistant', errorMessage);
             this.messageBuffer = '';
             this.currentStreamingMessage = null;
+            this.currentTypingIndicator = null; // Clear typing indicator reference
             
             // Emit error event with error_type
             if (this.eventBus) {
@@ -736,7 +755,42 @@ class MindMateManager {
             // Create new streaming message
             this.currentStreamingMessage = this.createMessageElement('assistant', '');
             this.currentStreamingMessage.classList.add('streaming');
-            this.chatMessages.appendChild(this.currentStreamingMessage);
+            
+            // CRITICAL: Ensure assistant message appears AFTER user message and typing indicator
+            // Use stored typing indicator reference for reliable insertion order
+            if (this.currentTypingIndicator && this.currentTypingIndicator.parentNode === this.chatMessages) {
+                // Typing indicator exists and is in DOM - insert assistant message right after it
+                if (this.currentTypingIndicator.nextSibling) {
+                    this.chatMessages.insertBefore(this.currentStreamingMessage, this.currentTypingIndicator.nextSibling);
+                } else {
+                    // Typing indicator is last child, append assistant message
+                    this.chatMessages.appendChild(this.currentStreamingMessage);
+                }
+            } else {
+                // Typing indicator not found or removed - find last user message and insert after it
+                const messages = Array.from(this.chatMessages.children);
+                let lastUserMessage = null;
+                for (let i = messages.length - 1; i >= 0; i--) {
+                    if (messages[i].classList.contains('ai-message') && 
+                        messages[i].classList.contains('user')) {
+                        lastUserMessage = messages[i];
+                        break;
+                    }
+                }
+                
+                if (lastUserMessage) {
+                    // Insert after last user message
+                    if (lastUserMessage.nextSibling) {
+                        this.chatMessages.insertBefore(this.currentStreamingMessage, lastUserMessage.nextSibling);
+                    } else {
+                        // Last user message is last child, append assistant message
+                        this.chatMessages.appendChild(this.currentStreamingMessage);
+                    }
+                } else {
+                    // Fallback: just append (shouldn't happen in normal flow)
+                    this.chatMessages.appendChild(this.currentStreamingMessage);
+                }
+            }
         }
         
         const contentDiv = this.currentStreamingMessage.querySelector('.ai-message-content');

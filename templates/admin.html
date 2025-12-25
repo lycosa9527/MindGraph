@@ -2367,6 +2367,470 @@ curl -X POST http://your-server/api/generate_graph \
             }
         }
 
+        // Show organization token trend chart
+        async function showOrganizationTrendChart(organizationName, organizationId) {
+            const modal = document.getElementById('trend-chart-modal');
+            const titleElement = document.getElementById('trend-chart-title');
+            const canvas = document.getElementById('trend-chart-canvas');
+            
+            // Set title with organization name
+            titleElement.innerHTML = `<span class="lang-zh">${organizationName} - Token使用趋势</span><span class="lang-en">${organizationName} - Token Usage Trend</span>`;
+            applyCurrentLanguage();
+            
+            // Show modal
+            modal.classList.add('show');
+            
+            // Show loading state
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.font = '16px Inter';
+            ctx.fillStyle = '#64748b';
+            ctx.textAlign = 'center';
+            ctx.fillText('Loading...', canvas.width / 2, canvas.height / 2);
+            
+            try {
+                // Build query parameters - default to 10 days
+                let url = '/api/auth/admin/stats/trends/organization?days=10';
+                // organizationId from dataset is always a string, convert to number if valid
+                const orgIdNum = organizationId && organizationId !== 'null' && !isNaN(organizationId) ? parseInt(organizationId, 10) : null;
+                if (orgIdNum) {
+                    url += `&organization_id=${orgIdNum}`;
+                } else {
+                    url += `&organization_name=${encodeURIComponent(organizationName)}`;
+                }
+                
+                // Fetch trends data
+                const response = await auth.fetch(url);
+                if (!response.ok) {
+                    throw new Error('Failed to fetch organization trends data');
+                }
+                
+                const data = await response.json();
+                
+                // Destroy existing chart if it exists
+                if (trendChartInstance) {
+                    trendChartInstance.destroy();
+                }
+                
+                // Prepare chart data
+                const labels = data.data.map(item => {
+                    // Parse date string and format using Beijing timezone
+                    const date = new Date(item.date + 'T00:00:00');
+                    return date.toLocaleDateString('en-US', { 
+                        month: 'short', 
+                        day: 'numeric',
+                        timeZone: 'Asia/Shanghai'
+                    });
+                });
+                
+                const values = data.data.map(item => item.value);
+                
+                // Calculate adaptive Y-axis range
+                const maxValue = Math.max(...values);
+                const minValue = Math.min(...values);
+                const range = maxValue - minValue;
+                // Handle edge case when all values are the same (e.g., single day)
+                const padding = range === 0 ? maxValue * 0.1 : range * 0.1; // 10% padding
+                const yMin = Math.max(0, minValue - padding);
+                const yMax = maxValue + padding;
+                
+                // Chart configuration
+                const chartConfig = {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Total Tokens',
+                            data: values,
+                            borderColor: '#667eea',
+                            backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.4,
+                            pointRadius: 3,
+                            pointHoverRadius: 5,
+                            pointBackgroundColor: '#667eea',
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: true,
+                                position: 'top',
+                                labels: {
+                                    color: '#64748b',
+                                    font: { size: 12 },
+                                    padding: 15,
+                                    usePointStyle: true
+                                }
+                            },
+                            tooltip: {
+                                backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                                padding: 12,
+                                titleFont: { size: 14, weight: 'bold' },
+                                bodyFont: { size: 13 },
+                                cornerRadius: 8,
+                                displayColors: true
+                            },
+                            datalabels: {
+                                anchor: 'end',
+                                align: 'top',
+                                offset: 4,
+                                color: '#667eea',
+                                font: {
+                                    size: 10,
+                                    weight: 'bold'
+                                },
+                                formatter: function(value) {
+                                    return formatChartLabel(value);
+                                },
+                                display: function(context) {
+                                    return context.datasetIndex === 0;
+                                },
+                                clamp: true,
+                                clip: false
+                            },
+                            zoom: {
+                                zoom: {
+                                    wheel: {
+                                        enabled: true,
+                                        speed: 0.1
+                                    },
+                                    pinch: {
+                                        enabled: true
+                                    },
+                                    mode: 'xy',
+                                    onZoomComplete: function({ chart }) {
+                                        // Optional: save zoom state
+                                    }
+                                },
+                                pan: {
+                                    enabled: true,
+                                    mode: 'xy'
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                grid: {
+                                    display: false
+                                },
+                                ticks: {
+                                    color: '#94a3b8',
+                                    font: { size: 11 }
+                                }
+                            },
+                            y: {
+                                beginAtZero: true,
+                                min: yMin,
+                                max: yMax,
+                                grid: {
+                                    color: 'rgba(148, 163, 184, 0.1)'
+                                },
+                                ticks: {
+                                    color: '#94a3b8',
+                                    font: { size: 11 },
+                                    callback: function(value) {
+                                        return formatChartLabel(value);
+                                    }
+                                }
+                            }
+                        },
+                        interaction: {
+                            intersect: false,
+                            mode: 'index'
+                        }
+                    }
+                };
+                
+                // Add input/output lines if available
+                if (data.data[0] && data.data[0].input !== undefined) {
+                    const inputValues = data.data.map(item => item.input || 0);
+                    const outputValues = data.data.map(item => item.output || 0);
+                    
+                    chartConfig.data.datasets.push({
+                        label: 'Input Tokens',
+                        data: inputValues,
+                        borderColor: '#10b981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        borderWidth: 2,
+                        fill: false,
+                        tension: 0.4,
+                        pointRadius: 2,
+                        pointHoverRadius: 4
+                    });
+                    
+                    chartConfig.data.datasets.push({
+                        label: 'Output Tokens',
+                        data: outputValues,
+                        borderColor: '#f59e0b',
+                        backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                        borderWidth: 2,
+                        fill: false,
+                        tension: 0.4,
+                        pointRadius: 2,
+                        pointHoverRadius: 4
+                    });
+                    
+                    // Update datalabels to show on all datasets
+                    chartConfig.options.plugins.datalabels.display = function(context) {
+                        return true; // Show on all token lines
+                    };
+                    chartConfig.options.plugins.datalabels.color = function(context) {
+                        const colors = ['#667eea', '#10b981', '#f59e0b'];
+                        return colors[context.datasetIndex] || '#667eea';
+                    };
+                }
+                
+                // Create chart
+                trendChartInstance = new Chart(ctx, chartConfig);
+                
+            } catch (error) {
+                console.error('Error loading organization trend chart:', error);
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.font = '16px Inter';
+                ctx.fillStyle = '#ef4444';
+                ctx.textAlign = 'center';
+                ctx.fillText('Failed to load chart data', canvas.width / 2, canvas.height / 2);
+                showAlert('Failed to load organization trend data', 'error');
+            }
+        }
+
+        // Show user token trend chart
+        async function showUserTrendChart(userId, userName) {
+            const modal = document.getElementById('trend-chart-modal');
+            const titleElement = document.getElementById('trend-chart-title');
+            const canvas = document.getElementById('trend-chart-canvas');
+            
+            // Set title with user name
+            titleElement.innerHTML = `<span class="lang-zh">${userName || '用户'} - Token使用趋势</span><span class="lang-en">${userName || 'User'} - Token Usage Trend</span>`;
+            applyCurrentLanguage();
+            
+            // Show modal
+            modal.classList.add('show');
+            
+            // Show loading state
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.font = '16px Inter';
+            ctx.fillStyle = '#64748b';
+            ctx.textAlign = 'center';
+            ctx.fillText('Loading...', canvas.width / 2, canvas.height / 2);
+            
+            try {
+                // Build query parameters - default to 10 days
+                const userIdNum = userId && !isNaN(userId) ? parseInt(userId, 10) : null;
+                if (!userIdNum) {
+                    throw new Error('Invalid user ID');
+                }
+                
+                const url = `/api/auth/admin/stats/trends/user?user_id=${userIdNum}&days=10`;
+                
+                // Fetch trends data
+                const response = await auth.fetch(url);
+                if (!response.ok) {
+                    throw new Error('Failed to fetch user trends data');
+                }
+                
+                const data = await response.json();
+                
+                // Destroy existing chart if it exists
+                if (trendChartInstance) {
+                    trendChartInstance.destroy();
+                }
+                
+                // Prepare chart data
+                const labels = data.data.map(item => {
+                    // Parse date string and format using Beijing timezone
+                    const date = new Date(item.date + 'T00:00:00');
+                    return date.toLocaleDateString('en-US', { 
+                        month: 'short', 
+                        day: 'numeric',
+                        timeZone: 'Asia/Shanghai'
+                    });
+                });
+                
+                const values = data.data.map(item => item.value);
+                
+                // Calculate adaptive Y-axis range
+                const maxValue = Math.max(...values);
+                const minValue = Math.min(...values);
+                const range = maxValue - minValue;
+                // Handle edge case when all values are the same (e.g., single day)
+                const padding = range === 0 ? maxValue * 0.1 : range * 0.1; // 10% padding
+                const yMin = Math.max(0, minValue - padding);
+                const yMax = maxValue + padding;
+                
+                // Chart configuration
+                const chartConfig = {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Total Tokens',
+                            data: values,
+                            borderColor: '#667eea',
+                            backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.4,
+                            pointRadius: 3,
+                            pointHoverRadius: 5,
+                            pointBackgroundColor: '#667eea',
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: true,
+                                position: 'top',
+                                labels: {
+                                    color: '#64748b',
+                                    font: { size: 12 },
+                                    padding: 15,
+                                    usePointStyle: true
+                                }
+                            },
+                            tooltip: {
+                                backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                                padding: 12,
+                                titleFont: { size: 14, weight: 'bold' },
+                                bodyFont: { size: 13 },
+                                cornerRadius: 8,
+                                displayColors: true
+                            },
+                            datalabels: {
+                                anchor: 'end',
+                                align: 'top',
+                                offset: 4,
+                                color: '#667eea',
+                                font: {
+                                    size: 10,
+                                    weight: 'bold'
+                                },
+                                formatter: function(value) {
+                                    return formatChartLabel(value);
+                                },
+                                display: function(context) {
+                                    return context.datasetIndex === 0;
+                                },
+                                clamp: true,
+                                clip: false
+                            },
+                            zoom: {
+                                zoom: {
+                                    wheel: {
+                                        enabled: true,
+                                        speed: 0.1
+                                    },
+                                    pinch: {
+                                        enabled: true
+                                    },
+                                    mode: 'xy',
+                                    onZoomComplete: function({ chart }) {
+                                        // Optional: save zoom state
+                                    }
+                                },
+                                pan: {
+                                    enabled: true,
+                                    mode: 'xy'
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                grid: {
+                                    display: false
+                                },
+                                ticks: {
+                                    color: '#94a3b8',
+                                    font: { size: 11 }
+                                }
+                            },
+                            y: {
+                                beginAtZero: true,
+                                min: yMin,
+                                max: yMax,
+                                grid: {
+                                    color: 'rgba(148, 163, 184, 0.1)'
+                                },
+                                ticks: {
+                                    color: '#94a3b8',
+                                    font: { size: 11 },
+                                    callback: function(value) {
+                                        return formatChartLabel(value);
+                                    }
+                                }
+                            }
+                        },
+                        interaction: {
+                            intersect: false,
+                            mode: 'index'
+                        }
+                    }
+                };
+                
+                // Add input/output lines if available
+                if (data.data[0] && data.data[0].input !== undefined) {
+                    const inputValues = data.data.map(item => item.input || 0);
+                    const outputValues = data.data.map(item => item.output || 0);
+                    
+                    chartConfig.data.datasets.push({
+                        label: 'Input Tokens',
+                        data: inputValues,
+                        borderColor: '#10b981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        borderWidth: 2,
+                        fill: false,
+                        tension: 0.4,
+                        pointRadius: 2,
+                        pointHoverRadius: 4
+                    });
+                    
+                    chartConfig.data.datasets.push({
+                        label: 'Output Tokens',
+                        data: outputValues,
+                        borderColor: '#f59e0b',
+                        backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                        borderWidth: 2,
+                        fill: false,
+                        tension: 0.4,
+                        pointRadius: 2,
+                        pointHoverRadius: 4
+                    });
+                    
+                    // Update datalabels to show on all datasets
+                    chartConfig.options.plugins.datalabels.display = function(context) {
+                        return true; // Show on all token lines
+                    };
+                    chartConfig.options.plugins.datalabels.color = function(context) {
+                        const colors = ['#667eea', '#10b981', '#f59e0b'];
+                        return colors[context.datasetIndex] || '#667eea';
+                    };
+                }
+                
+                // Create chart
+                trendChartInstance = new Chart(ctx, chartConfig);
+                
+            } catch (error) {
+                console.error('Error loading user trend chart:', error);
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.font = '16px Inter';
+                ctx.fillStyle = '#ef4444';
+                ctx.textAlign = 'center';
+                ctx.fillText('Failed to load chart data', canvas.width / 2, canvas.height / 2);
+                showAlert('Failed to load user trend data', 'error');
+            }
+        }
+
         // Dashboard
         async function loadDashboard() {
             try {
@@ -2443,8 +2907,18 @@ curl -X POST http://your-server/api/generate_graph \
                             ? `${formattedInput}+${formattedOutput}` 
                             : '0';
                         
+                        // Get organization ID if available
+                        const orgId = orgTokenStats.org_id || null;
+                        const orgNameEscaped = org.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+                        const orgIdValue = orgId !== null ? orgId : '';
+                        
                         return `
-                            <div style="display:flex;align-items:center;gap:1rem;padding:0.75rem;border-bottom:1px solid #e2e8f0;transition:background 0.2s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
+                            <div style="display:flex;align-items:center;gap:1rem;padding:0.75rem;border-bottom:1px solid #e2e8f0;transition:background 0.2s;cursor:pointer;" 
+                                 onmouseover="this.style.background='#f1f5f9';this.style.transform='translateX(2px)'" 
+                                 onmouseout="this.style.background='transparent';this.style.transform='translateX(0)'"
+                                 data-org-name="${orgNameEscaped}" 
+                                 data-org-id="${orgIdValue}"
+                                 onclick="showOrganizationTrendChart(this.dataset.orgName, this.dataset.orgId || null)">
                                 <div style="min-width:50px;text-align:center;font-weight:700;padding:0.5rem;border-radius:8px;${rankStyle}">
                                     ${rankBadge}
                                 </div>
@@ -2542,19 +3016,22 @@ curl -X POST http://your-server/api/generate_graph \
                                 rankStyle = 'background:#f1f5f9;color:#64748b;';
                             }
                             
-                            const inputTokens = user.input_tokens || 0;
-                            const outputTokens = user.output_tokens || 0;
-                            const formattedInput = formatNumber(inputTokens);
-                            const formattedOutput = formatNumber(outputTokens);
-                            const tokenDisplay = inputTokens > 0 || outputTokens > 0 
-                                ? `${formattedInput}+${formattedOutput}` 
-                                : '0';
+                            const totalTokens = user.total_tokens || 0;
+                            const formattedTotal = formatNumber(totalTokens);
+                            const tokenDisplay = formattedTotal;
                             const maskedPhoneDisplay = maskPhone(user.phone);
                             const orgName = user.organization_name || '';
                             const displayName = user.name || maskedPhoneDisplay;
+                            const userId = user.id || null;
+                            const userNameEscaped = (displayName || '').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
                             
                             return `
-                                <tr style="border-bottom:1px solid #e2e8f0;transition:background 0.2s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
+                                <tr style="border-bottom:1px solid #e2e8f0;transition:background 0.2s;cursor:pointer;" 
+                                    onmouseover="this.style.background='#f1f5f9';this.style.transform='translateX(2px)'" 
+                                    onmouseout="this.style.background='transparent';this.style.transform='translateX(0)'"
+                                    data-user-id="${userId || ''}"
+                                    data-user-name="${userNameEscaped}"
+                                    onclick="showUserTrendChart(this.dataset.userId, this.dataset.userName)">
                                     <td style="padding:0.75rem;text-align:center;">
                                         <span style="display:inline-block;min-width:40px;text-align:center;font-weight:700;padding:0.35rem 0.5rem;border-radius:6px;${rankStyle}">${rankBadge}</span>
                                     </td>
@@ -2601,38 +3078,47 @@ curl -X POST http://your-server/api/generate_graph \
 
                 const tbody = document.getElementById('schools-tbody');
                 tbody.innerHTML = schools.map(school => {
-                    // Use Beijing time for expiration comparison
-                    const now = new Date();
-                    const beijingNow = new Date(now.toLocaleString('en-US', {timeZone: 'Asia/Shanghai'}));
+                    // Backend returns Beijing time ISO strings, parse directly for comparison
                     const expiresAt = school.expires_at ? new Date(school.expires_at) : null;
-                    const isExpired = expiresAt && expiresAt < beijingNow;
+                    const now = new Date();
+                    // Compare dates (backend timestamps are already in Beijing time)
+                    const isExpired = expiresAt && !isNaN(expiresAt.getTime()) && expiresAt < now;
                     const isActive = school.is_active !== false;
                     
                     // Get token stats for this school
                     const tokenStats = school.token_stats || { input_tokens: 0, output_tokens: 0, total_tokens: 0 };
-                    const inputTokens = tokenStats.input_tokens || 0;
-                    const outputTokens = tokenStats.output_tokens || 0;
+                    const totalTokens = tokenStats.total_tokens || 0;
+                    const formattedTotal = formatNumber(totalTokens);
+                    const tokenDisplay = formattedTotal;
                     
-                    // Format token numbers (using global formatNumber function)
-                    const formattedInput = formatNumber(inputTokens);
-                    const formattedOutput = formatNumber(outputTokens);
-                    const tokenDisplay = inputTokens > 0 || outputTokens > 0 
-                        ? `${formattedInput}+${formattedOutput}` 
-                        : '0';
+                    const schoolNameEscaped = (school.name || '').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+                    const schoolId = school.id || null;
                     
                     return `
                         <tr style="${!isActive || isExpired ? 'background:#fee;' : ''}">
-                            <td>${school.name}</td>
+                            <td style="cursor:pointer;" 
+                                onmouseover="this.style.color='#667eea';this.style.textDecoration='underline';" 
+                                onmouseout="this.style.color='';this.style.textDecoration='none';"
+                                data-org-name="${schoolNameEscaped}" 
+                                data-org-id="${schoolId || ''}"
+                                onclick="showOrganizationTrendChart(this.dataset.orgName, this.dataset.orgId || null)">
+                                ${school.name}
+                            </td>
                             <td>
                                 <span class="badge badge-success">${school.invitation_code}</span>
                                 <button class="btn btn-sm" 
-                                        onclick="copySchoolInviteInfo('${school.invitation_code}')" 
+                                        onclick="event.stopPropagation(); copySchoolInviteInfo('${school.invitation_code}')" 
                                         title="复制分享信息"
                                         style="background:transparent;border:none;padding:0.25rem 0.5rem;cursor:pointer;font-size:1.1rem;">
                                     📤
                                 </button>
                             </td>
-                            <td style="font-weight:700;color:#10b981;">
+                            <td style="font-weight:700;color:#10b981;cursor:pointer;" 
+                                onmouseover="this.style.color='#059669';" 
+                                onmouseout="this.style.color='#10b981';"
+                                data-org-name="${schoolNameEscaped}" 
+                                data-org-id="${schoolId || ''}"
+                                onclick="showOrganizationTrendChart(this.dataset.orgName, this.dataset.orgId || null)">
                                 ${tokenDisplay} <span style="font-size:0.85rem;font-weight:400;color:#64748b;"><span class="lang-zh">Token</span><span class="lang-en">tokens</span></span>
                             </td>
                             <td>
@@ -2645,8 +3131,8 @@ curl -X POST http://your-server/api/generate_graph \
                             </td>
                             <td>${school.user_count} <span class="lang-zh">用户</span><span class="lang-en">users</span><span class="lang-az">istifadəçi</span></td>
                             <td>
-                                <button class="btn btn-primary btn-sm" onclick="editSchool(${school.id})"><span class="lang-zh">编辑</span><span class="lang-en">Edit</span><span class="lang-az">Redaktə</span></button>
-                                <button class="btn btn-danger btn-sm" onclick="deleteSchool(${school.id}, '${school.code}')"><span class="lang-zh">删除</span><span class="lang-en">Delete</span><span class="lang-az">Sil</span></button>
+                                <button class="btn btn-primary btn-sm" onclick="event.stopPropagation(); editSchool(${school.id})"><span class="lang-zh">编辑</span><span class="lang-en">Edit</span><span class="lang-az">Redaktə</span></button>
+                                <button class="btn btn-danger btn-sm" onclick="event.stopPropagation(); deleteSchool(${school.id}, '${school.code}')"><span class="lang-zh">删除</span><span class="lang-en">Delete</span><span class="lang-az">Sil</span></button>
                             </td>
                         </tr>
                     `;
@@ -2699,10 +3185,18 @@ curl -X POST http://your-server/api/generate_graph \
             document.getElementById('edit-school-name').value = school.name;
             document.getElementById('edit-school-invite').value = school.invitation_code;
             
-            // Set expiration date (convert from ISO to YYYY-MM-DD format for date input)
+            // Set expiration date (extract date part from Beijing time ISO string)
             if (school.expires_at) {
                 const date = new Date(school.expires_at);
-                document.getElementById('edit-school-expires').value = date.toISOString().split('T')[0];
+                if (!isNaN(date.getTime())) {
+                    // Extract YYYY-MM-DD from the date (backend returns Beijing time ISO string)
+                    const year = date.getFullYear();
+                    const month = String(date.getMonth() + 1).padStart(2, '0');
+                    const day = String(date.getDate()).padStart(2, '0');
+                    document.getElementById('edit-school-expires').value = `${year}-${month}-${day}`;
+                } else {
+                    document.getElementById('edit-school-expires').value = '';
+                }
             } else {
                 document.getElementById('edit-school-expires').value = '';
             }
@@ -2848,13 +3342,9 @@ curl -X POST http://your-server/api/generate_graph \
                     
                     // Get token stats for this user
                     const tokenStats = user.token_stats || { input_tokens: 0, output_tokens: 0, total_tokens: 0 };
-                    const inputTokens = tokenStats.input_tokens || 0;
-                    const outputTokens = tokenStats.output_tokens || 0;
-                    const formattedInput = formatNumber(inputTokens);
-                    const formattedOutput = formatNumber(outputTokens);
-                    const tokenDisplay = inputTokens > 0 || outputTokens > 0 
-                        ? `${formattedInput}+${formattedOutput}` 
-                        : '0';
+                    const totalTokens = tokenStats.total_tokens || 0;
+                    const formattedTotal = formatNumber(totalTokens);
+                    const tokenDisplay = formattedTotal;
                     
                     return `
                         <tr>
@@ -2866,12 +3356,12 @@ curl -X POST http://your-server/api/generate_graph \
                             </td>
                             <td style="color:#64748b;">
                                 ${user.created_at ? (() => {
-                                    // Convert UTC timestamp to Beijing time for display
+                                    // Backend returns Beijing time ISO string, parse and format for display
                                     const date = new Date(user.created_at);
-                                    const beijingDate = new Date(date.toLocaleString('en-US', {timeZone: 'Asia/Shanghai'}));
-                                    const year = beijingDate.getFullYear();
-                                    const month = String(beijingDate.getMonth() + 1).padStart(2, '0');
-                                    const day = String(beijingDate.getDate()).padStart(2, '0');
+                                    if (isNaN(date.getTime())) return '-';
+                                    const year = date.getFullYear();
+                                    const month = String(date.getMonth() + 1).padStart(2, '0');
+                                    const day = String(date.getDate()).padStart(2, '0');
                                     return `${year}-${month}-${day}`;
                                 })() : '-'}
                             </td>

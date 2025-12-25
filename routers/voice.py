@@ -2307,17 +2307,14 @@ async def process_voice_command(
             if user_id_str:
                 try:
                     user_id = int(user_id_str) if isinstance(user_id_str, str) else user_id_str
-                    # Get organization_id from user if available
-                    # Use manual session management - close immediately after query
-                    db = SessionLocal()
+                    # Get organization_id from user if available (use cache)
+                    from services.redis_user_cache import user_cache
                     try:
-                        user = db.query(User).filter(User.id == user_id).first()
+                        user = user_cache.get_by_id(user_id)
                         if user:
                             organization_id = user.organization_id
                     except Exception as e:
                         logger.debug(f"Error getting organization_id for token tracking: {e}")
-                    finally:
-                        db.close()
                 except (ValueError, TypeError) as e:
                     logger.debug(f"Error converting user_id for token tracking: {e}")
         
@@ -2611,21 +2608,24 @@ async def voice_conversation(
             logger.warning("WebSocket auth failed: Invalid token payload")
             return
         
-        # Get user from database using manual session (close immediately after auth)
-        db = SessionLocal()
-        try:
-            current_user = db.query(User).filter(User.id == int(user_id_str)).first()
-            
-            if not current_user:
-                await websocket.close(code=4001, reason="User not found")
-                logger.warning(f"WebSocket auth failed: User {user_id_str} not found")
-                return
-            
-            # Detach user from session so it can be used after closing
-            db.expunge(current_user)
-            logger.debug(f"WebSocket authenticated: user {current_user.id}")
-        finally:
-            db.close()  # ✅ Connection released IMMEDIATELY after auth
+        # Session validation: Check if session exists in Redis
+        from services.redis_session_manager import get_session_manager
+        session_manager = get_session_manager()
+        if not session_manager.is_session_valid(int(user_id_str), token):
+            await websocket.close(code=4001, reason="Session expired or invalidated")
+            logger.warning(f"WebSocket auth failed: Session invalid for user {user_id_str}")
+            return
+        
+        # Get user from cache (with SQLite fallback)
+        from services.redis_user_cache import user_cache
+        current_user = user_cache.get_by_id(int(user_id_str))
+        
+        if not current_user:
+            await websocket.close(code=4001, reason="User not found")
+            logger.warning(f"WebSocket auth failed: User {user_id_str} not found")
+            return
+        
+        logger.debug(f"WebSocket authenticated: user {current_user.id}")
         
     except Exception as e:
         logger.error(f"WebSocket auth error: {e}", exc_info=True)

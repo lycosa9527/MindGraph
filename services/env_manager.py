@@ -511,8 +511,8 @@ class EnvManager:
             'QWEN_MODEL_CLASSIFICATION': {
                 'type': 'string',
                 'category': 'Qwen API',
-                'description': 'Model for classification tasks (faster, cheaper)',
-                'default': 'qwen-turbo',
+                'description': 'Model for classification tasks',
+                'default': 'qwen-plus-latest',
                 'required': False
             },
             'QWEN_MODEL_GENERATION': {

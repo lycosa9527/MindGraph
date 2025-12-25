@@ -2233,17 +2233,12 @@ async def submit_feedback(
                 payload = decode_access_token(token)
                 user_id_from_token = payload.get("sub")
                 if user_id_from_token:
-                    # Use manual session - close immediately after query
-                    db = SessionLocal()
-                    try:
-                        current_user = db.query(User).filter(User.id == int(user_id_from_token)).first()
-                        if current_user:
-                            # Detach user from session so it can be used after closing
-                            db.expunge(current_user)
-                            user_id_from_db = current_user.id
-                            user_name_from_db = current_user.name if hasattr(current_user, 'name') else None
-                    finally:
-                        db.close()
+                    # Use cache for user lookup (with SQLite fallback)
+                    from services.redis_user_cache import user_cache
+                    current_user = user_cache.get_by_id(int(user_id_from_token))
+                    if current_user:
+                        user_id_from_db = current_user.id
+                        user_name_from_db = current_user.name if hasattr(current_user, 'name') else None
         except Exception:
             # No valid token, continue as anonymous (this is OK for feedback)
             pass

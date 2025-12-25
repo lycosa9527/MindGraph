@@ -7,6 +7,178 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.37.16] - 2025-12-25 - Load Balancing, Rate Limiting, and Authentication Enhancements
+
+### Added
+
+- **LLM Load Balancer** (`services/load_balancer.py`)
+  - New load balancing system for DeepSeek requests between Dashscope and Volcengine providers
+  - Maximizes throughput and avoids rate limiting bottlenecks
+  - DeepSeek load-balanced between Dashscope (15,000 RPM) and Volcengine (15,000 RPM)
+  - Qwen always uses Dashscope (cost optimization)
+  - Kimi/Doubao always use Volcengine (higher RPM limits)
+  - Supports round-robin, weighted, and random strategies
+  - Rate-limit aware provider selection
+  - Redis-backed round-robin counter for distributed coordination
+
+- **LoadBalancerRateLimiter** (`services/rate_limiter.py`)
+  - New rate limiter class for Volcengine endpoint-specific rate limiting
+  - Separate QPM tracking for DeepSeek, Kimi, and Doubao endpoints
+  - Independent concurrent request tracking per endpoint
+  - Supports endpoint-specific limits (5,000 RPM for Kimi/Doubao, 15,000 RPM for DeepSeek)
+
+- **Redis User Cache** (`services/redis_user_cache.py`)
+  - High-performance user caching layer with SQLite fallback
+  - Caches user lookups by ID and phone number
+  - Reduces database load for authentication endpoints
+  - Automatic cache invalidation on user updates
+  - Serialization/deserialization of User objects
+
+- **Bayi Token Tracking** (`services/redis_bayi_token.py`)
+  - Replay attack prevention for Bayi authentication tokens
+  - Token usage tracking with Redis-backed storage
+  - Rate limiting for token authentication attempts (10 attempts per 5 minutes per IP)
+  - Token validation caching to reduce redundant checks
+
+- **Bayi Whitelist Management** (`services/redis_bayi_whitelist.py`)
+  - IP whitelist management for Bayi authentication
+  - Redis-backed whitelist with SQLite fallback
+  - Efficient IP lookup and validation
+
+- **Redis Session Manager** (`services/redis_session_manager.py`)
+  - Session management for authentication flows
+  - Session-based rate limiting support
+  - Session token generation and validation
+
+- **Redis Organization Cache** (`services/redis_org_cache.py`)
+  - Organization caching layer for improved performance
+  - Reduces database queries for organization lookups
+
+- **Redis Cache Loader** (`services/redis_cache_loader.py`)
+  - Background cache warming and loading utilities
+  - Preloads frequently accessed data into Redis
+
+### Changed
+
+- **Authentication Router** (`routers/auth.py`) - Major refactoring (1,164 lines changed)
+  - Enhanced rate limiting with Redis-backed shared state across workers
+  - Improved SMS verification flow with better error handling
+  - Session-based captcha rate limiting (30 requests per 15 minutes per session)
+  - Better localization support for error messages
+  - Improved account lockout handling
+  - Enhanced Bayi token authentication with replay attack prevention
+  - Better IP-based rate limiting for token authentication
+  - Improved captcha generation with custom fonts and colors
+
+- **Rate Limiter Service** (`services/rate_limiter.py`) - Significant improvements (557 lines changed)
+  - Added `LoadBalancerRateLimiter` class for Volcengine endpoint-specific limits
+  - Endpoint-specific rate limiting keys for DeepSeek, Kimi, and Doubao
+  - Better separation of concerns between Dashscope and Volcengine rate limiting
+  - Improved concurrent request tracking
+  - Enhanced statistics and metrics collection
+
+- **LLM Service** (`services/llm_service.py`) - Enhanced with load balancing (397 lines changed)
+  - Integrated load balancer for DeepSeek requests
+  - Automatic provider selection based on rate limits and availability
+  - Better error handling and retry logic
+  - Improved performance tracking with provider metrics
+  - Support for rate-limit aware routing
+
+- **Redis Client** (`services/redis_client.py`)
+  - Enhanced Redis connection handling
+  - Better error recovery and retry logic
+  - Improved availability checking
+
+- **Admin Panel** (`templates/admin.html`) - Major updates (570 lines changed)
+  - Enhanced real-time monitoring display
+  - Better performance metrics visualization
+  - Improved user management interface
+  - Enhanced token usage tracking display
+
+- **Client Manager** (`services/client_manager.py`)
+  - Better integration with load balancer
+  - Improved provider selection logic
+
+- **Environment Manager** (`services/env_manager.py`)
+  - Enhanced configuration management
+  - Better validation of environment variables
+
+- **Auth Utilities** (`utils/auth.py`) - Significant improvements (207 lines changed)
+  - Enhanced password hashing and verification
+  - Better token generation and validation
+  - Improved invitation code handling
+  - Enhanced security checks
+
+- **API Router** (`routers/api.py`)
+  - Better integration with new rate limiting system
+  - Improved error handling
+
+- **Pages Router** (`routers/pages.py`)
+  - Enhanced Bayi authentication flow
+  - Better IP whitelist handling
+  - Improved token validation
+
+- **Voice Router** (`routers/voice.py`)
+  - Better integration with LLM service
+  - Improved error handling
+
+- **LLM Client** (`clients/llm.py`) - Significant updates (303 lines changed)
+  - Better provider abstraction
+  - Improved error handling
+  - Enhanced retry logic
+
+- **Settings Configuration** (`config/settings.py`) - Major updates (262 lines changed)
+  - New configuration options for load balancing
+  - Enhanced rate limiting configuration
+  - Better environment variable handling
+
+- **Environment Settings Model** (`models/env_settings.py`)
+  - Updated to support new configuration options
+
+- **Auth Helper JavaScript** (`static/js/auth-helper.js`) - Updates (115 lines changed)
+  - Better error handling
+  - Improved user feedback
+
+- **MindMate Manager** (`static/js/managers/mindmate-manager.js`)
+  - Better integration with authentication flow
+
+- **Export Manager** (`static/js/managers/toolbar/export-manager.js`)
+  - Enhanced export functionality
+
+- **Main Application** (`main.py`)
+  - Better initialization of new services
+  - Improved health check endpoints
+
+- **Docker Configuration** (`docker/docker-compose.yml`, `docker/docker.env.example`)
+  - Updated environment variable examples
+  - Better Redis configuration
+
+- **Environment Example** (`env.example`)
+  - Added new configuration options
+  - Better documentation of environment variables
+
+### Removed
+
+- **Documentation Cleanup** - Removed outdated documentation files:
+  - `SMS_CODE_REVIEW.md` - Review documentation no longer needed
+  - `docs/APPLICATION_ARCHITECTURE.md` - Architecture documentation consolidated
+  - `docs/LOAD_BALANCING_FRAMEWORK.md` - Framework documentation consolidated
+  - `docs/REALTIME_MONITORING_IMPACT_ANALYSIS.md` - Analysis documentation consolidated
+  - `docs/REALTIME_MONITORING_IMPLEMENTATION_REVIEW.md` - Review documentation consolidated
+  - `docs/REDIS_8.4_UPGRADE_ANALYSIS.md` - Upgrade analysis no longer needed
+  - `docs/REDIS_SQLITE_HYBRID_PLAN.md` - Planning documentation consolidated
+  - `docs/STYLE_PERSISTENCE_BUG_REVIEW.md` - Bug review documentation consolidated
+
+### Technical Details
+
+- **Load Balancing Strategy**: Round-robin by default, with rate-limit aware selection
+- **Rate Limiting**: Redis-backed shared state across all workers for accurate limits
+- **Caching**: Multi-layer caching with Redis primary and SQLite fallback
+- **Performance**: Reduced database load through aggressive caching
+- **Security**: Enhanced replay attack prevention and rate limiting
+
+---
+
 ## [4.37.15] - 2025-01-XX - Style Persistence Fix
 
 ### Fixed

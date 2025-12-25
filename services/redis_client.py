@@ -297,6 +297,19 @@ class RedisOperations:
         return results[0]
     
     @staticmethod
+    @_with_retry("INCRBYFLOAT", default_return=None)
+    def increment_float(key: str, amount: float, ttl_seconds: Optional[int] = None) -> Optional[float]:
+        """Increment a float counter by amount. Optionally set TTL on first increment."""
+        if not _redis_available or not _redis_client:
+            return None
+        pipe = _redis_client.pipeline()
+        pipe.incrbyfloat(key, amount)
+        if ttl_seconds:
+            pipe.expire(key, ttl_seconds, nx=True)
+        results = pipe.execute()
+        return results[0]
+    
+    @staticmethod
     @_with_retry("TTL", default_return=-2)
     def get_ttl(key: str) -> int:
         """Get remaining TTL of a key. Returns -1 if no TTL, -2 if key doesn't exist."""
@@ -353,6 +366,14 @@ class RedisOperations:
         if not _redis_available or not _redis_client:
             return 0
         return _redis_client.llen(key) or 0
+    
+    @staticmethod
+    @_with_retry("LRANGE", default_return=[])
+    def list_range(key: str, start: int, end: int) -> List[str]:
+        """Get list elements from start to end index."""
+        if not _redis_available or not _redis_client:
+            return []
+        return _redis_client.lrange(key, start, end) or []
     
     # ========================================================================
     # Sorted Set Operations (for rate limiting with sliding window)
