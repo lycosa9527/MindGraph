@@ -7,6 +7,59 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.37.18] - 2025-12-25 - Multi-Worker Coordination Fixes
+
+### Fixed
+
+- **Cache Loader** (`services/redis_cache_loader.py`)
+  - Added Redis distributed lock to prevent duplicate cache loading across workers
+  - Only one worker loads cache at startup, others skip with informative log message
+  - Prevents duplicate log messages and redundant cache loading operations
+  - Lock automatically released after cache loading completes
+
+- **Backup Scheduler** (`services/backup_scheduler.py`)
+  - Updated lock skip message log level from DEBUG to INFO for better visibility
+  - Consistent logging pattern with other coordinated tasks
+
+- **Database Integrity Check** (`services/database_recovery.py`)
+  - Added Redis distributed lock to prevent multiple workers from running recovery wizard
+  - Critical fix: Prevents multiple interactive recovery wizards from running simultaneously
+  - Lock properly released after integrity check completes
+
+- **WAL Checkpoint Scheduler** (`config/database.py`)
+  - Added Redis distributed lock to ensure only one worker checkpoints WAL
+  - Prevents potential conflicts from multiple workers checkpointing simultaneously
+  - Lock refreshed periodically during operation, auto-releases on worker crash
+
+- **Temp Image Cleaner** (`services/temp_image_cleaner.py`)
+  - Added Redis distributed lock to prevent duplicate cleanup operations
+  - Only one worker cleans temp images, improving efficiency
+  - Prevents wasteful duplicate file operations across workers
+
+- **IP Whitelist Loading** (`services/redis_bayi_whitelist.py`)
+  - Added Redis distributed lock for consistency with other startup tasks
+  - Prevents duplicate whitelist loading operations
+
+### Changed
+
+- **Application Startup** (`main.py`)
+  - Removed `worker_id` checks for cache loading, database integrity check, and IP whitelist loading
+  - Redis distributed locks now handle multi-worker coordination instead of unreliable worker_id
+  - Improved comments explaining lock-based coordination
+
+### Technical Details
+
+- **Problem**: Uvicorn does NOT set `UVICORN_WORKER_ID` automatically, causing all workers to default to `'0'`
+- **Solution**: Redis distributed locks using SETNX with TTL ensure only ONE worker executes each task
+- **Lock Pattern**: Consistent implementation across all modules:
+  - Lock key: `{module}:{task}:lock`
+  - Lock TTL: 5-10 minutes (auto-release on crash)
+  - Lock ID: `{pid}:{uuid}` for worker identification
+  - Fail-open: Falls back to single-worker mode if Redis unavailable
+- **Benefits**: No duplicate work, no duplicate log messages, crash-safe, graceful degradation
+
+---
+
 ## [4.37.17] - 2025-12-25 - High Concurrency Registration Improvements
 
 ### Added

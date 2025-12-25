@@ -761,12 +761,14 @@ async def lifespan(app: FastAPI):
         from utils.auth import display_demo_info
         from services.database_recovery import check_database_on_startup
         
-        # Check database integrity on startup (only on worker 0)
+        # Check database integrity on startup (uses Redis lock to ensure only one worker checks)
+        # Note: Removed worker_id check - Redis lock handles multi-worker coordination
         # If corruption is detected, interactive recovery wizard is triggered
+        if not check_database_on_startup():
+            logger.critical("Database recovery failed or was aborted. Shutting down.")
+            raise SystemExit(1)
+        # Only log from first worker to avoid duplicate messages
         if worker_id == '0' or not worker_id:
-            if not check_database_on_startup():
-                logger.critical("Database recovery failed or was aborted. Shutting down.")
-                raise SystemExit(1)
             logger.info("Database integrity verified")
         
         init_db()
@@ -774,27 +776,30 @@ async def lifespan(app: FastAPI):
             logger.info("Database initialized successfully")
             # Display demo info if in demo mode
             display_demo_info()
-            
-            # Load cache from SQLite (only on worker 0)
-            try:
-                from services.redis_cache_loader import reload_cache_from_sqlite
-                reload_cache_from_sqlite()
-            except Exception as e:
-                logger.error(f"Failed to load cache from SQLite: {e}", exc_info=True)
-                # Don't fail startup if cache loading fails - system can work without cache
-            
-            # Load IP whitelist from env var into Redis (only on worker 0)
-            try:
-                from services.redis_bayi_whitelist import get_bayi_whitelist
-                from utils.auth import AUTH_MODE
-                if AUTH_MODE == "bayi":
-                    whitelist = get_bayi_whitelist()
-                    count = whitelist.load_from_env()
-                    if count > 0:
-                        logger.info(f"Loaded {count} IP(s) from BAYI_IP_WHITELIST into Redis")
-            except Exception as e:
-                logger.warning(f"Failed to load IP whitelist into Redis: {e}")
-                # Don't fail startup - system can work with in-memory whitelist
+        
+        # Load cache from SQLite (uses Redis lock to ensure only one worker loads)
+        # Note: Removed worker_id check - Redis lock handles multi-worker coordination
+        try:
+            from services.redis_cache_loader import reload_cache_from_sqlite
+            reload_cache_from_sqlite()
+        except Exception as e:
+            logger.error(f"Failed to load cache from SQLite: {e}", exc_info=True)
+            # Don't fail startup if cache loading fails - system can work without cache
+        
+        # Load IP whitelist from env var into Redis (uses Redis lock to ensure only one worker loads)
+        # Note: Removed worker_id check - Redis lock handles multi-worker coordination
+        try:
+            from services.redis_bayi_whitelist import get_bayi_whitelist
+            from utils.auth import AUTH_MODE
+            if AUTH_MODE == "bayi":
+                whitelist = get_bayi_whitelist()
+                count = whitelist.load_from_env()
+                # Only log from first worker to avoid duplicate messages
+                if count > 0 and (worker_id == '0' or not worker_id):
+                    logger.info(f"Loaded {count} IP(s) from BAYI_IP_WHITELIST into Redis")
+        except Exception as e:
+            logger.warning(f"Failed to load IP whitelist into Redis: {e}")
+            # Don't fail startup - system can work with in-memory whitelist
     except SystemExit:
         raise  # Re-raise SystemExit to abort startup
     except Exception as e:

@@ -13,7 +13,9 @@ Proprietary License
 import os
 import sys
 import asyncio
+import uuid
 from pathlib import Path
+from typing import Optional
 from sqlalchemy import create_engine, event, inspect
 from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.exc import OperationalError
@@ -40,6 +42,124 @@ except ImportError:
     TokenUsage = None
 
 logger = logging.getLogger(__name__)
+
+# ============================================================================
+# DISTRIBUTED LOCK FOR MULTI-WORKER COORDINATION (WAL Checkpoint)
+# ============================================================================
+# 
+# Problem: Uvicorn does NOT set UVICORN_WORKER_ID automatically.
+# All workers get default '0', causing all to run WAL checkpoint schedulers.
+#
+# Solution: Redis-based distributed lock ensures only ONE worker checkpoints WAL.
+# Uses SETNX (SET if Not eXists) with TTL for crash safety.
+#
+# Key: database:wal_checkpoint:lock
+# Value: {worker_pid}:{uuid} (unique identifier per worker)
+# TTL: 10 minutes (auto-release if worker crashes)
+# ============================================================================
+
+WAL_CHECKPOINT_LOCK_KEY = "database:wal_checkpoint:lock"
+WAL_CHECKPOINT_LOCK_TTL = 600  # 10 minutes - auto-release if worker crashes
+_wal_checkpoint_lock_id: Optional[str] = None  # This worker's unique lock identifier
+
+
+def _generate_wal_checkpoint_lock_id() -> str:
+    """Generate unique lock ID for this worker: {pid}:{uuid}"""
+    return f"{os.getpid()}:{uuid.uuid4().hex[:8]}"
+
+
+def acquire_wal_checkpoint_lock() -> bool:
+    """
+    Attempt to acquire the WAL checkpoint lock.
+    
+    Uses Redis SETNX for atomic lock acquisition.
+    Only ONE worker across all processes can hold this lock.
+    
+    Returns:
+        True if lock acquired (this worker should checkpoint WAL)
+        False if lock held by another worker
+    """
+    global _wal_checkpoint_lock_id
+    
+    try:
+        from services.redis_client import get_redis, is_redis_available
+    except ImportError:
+        # Redis not available, assume single worker mode
+        return True
+    
+    if not is_redis_available():
+        # No Redis = single worker mode, proceed
+        logger.debug("[Database] Redis unavailable, assuming single worker mode for WAL checkpoint")
+        return True
+    
+    redis = get_redis()
+    if not redis:
+        return True  # Fallback to single worker mode
+    
+    try:
+        # Generate unique ID for this worker
+        if _wal_checkpoint_lock_id is None:
+            _wal_checkpoint_lock_id = _generate_wal_checkpoint_lock_id()
+        
+        # Attempt atomic lock acquisition: SETNX with TTL
+        # Returns True only if key did not exist (lock acquired)
+        acquired = redis.set(
+            WAL_CHECKPOINT_LOCK_KEY,
+            _wal_checkpoint_lock_id,
+            nx=True,  # Only set if not exists
+            ex=WAL_CHECKPOINT_LOCK_TTL  # TTL in seconds
+        )
+        
+        if acquired:
+            logger.debug(f"[Database] WAL checkpoint lock acquired by this worker (id={_wal_checkpoint_lock_id})")
+            return True
+        else:
+            # Lock held by another worker - check who
+            holder = redis.get(WAL_CHECKPOINT_LOCK_KEY)
+            logger.info(f"[Database] Another worker holds the WAL checkpoint lock (holder={holder}), this worker will not checkpoint WAL")
+            return False
+            
+    except Exception as e:
+        logger.warning(f"[Database] WAL checkpoint lock acquisition failed: {e}, proceeding anyway")
+        return True  # On error, proceed (better to have duplicate than no checkpoint)
+
+
+def refresh_wal_checkpoint_lock() -> bool:
+    """
+    Refresh the WAL checkpoint lock TTL if held by this worker.
+    
+    Returns:
+        True if lock refreshed, False if not held by this worker
+    """
+    global _wal_checkpoint_lock_id
+    
+    try:
+        from services.redis_client import get_redis, is_redis_available
+    except ImportError:
+        return False
+    
+    if not is_redis_available() or _wal_checkpoint_lock_id is None:
+        return False
+    
+    redis = get_redis()
+    if not redis:
+        return False
+    
+    try:
+        # Check if we still hold the lock
+        holder = redis.get(WAL_CHECKPOINT_LOCK_KEY)
+        if holder != _wal_checkpoint_lock_id:
+            logger.debug(f"[Database] WAL checkpoint lock lost! Holder: {holder}, our ID: {_wal_checkpoint_lock_id}")
+            return False
+        
+        # Refresh TTL
+        redis.expire(WAL_CHECKPOINT_LOCK_KEY, WAL_CHECKPOINT_LOCK_TTL)
+        return True
+        
+    except Exception as e:
+        logger.debug(f"[Database] WAL checkpoint lock refresh failed: {e}")
+        return False
+
 
 # Ensure data directory exists for database files
 DATA_DIR = Path("data")
@@ -483,6 +603,10 @@ async def start_wal_checkpoint_scheduler(interval_minutes: int = 5):
     """
     Run periodic WAL checkpointing in background.
     
+    Uses Redis distributed lock to ensure only ONE worker checkpoints WAL.
+    This prevents multiple workers from checkpointing simultaneously, which could
+    cause conflicts or unnecessary work.
+    
     This is critical for database safety, especially when using kill -9 (SIGKILL)
     which bypasses graceful shutdown. Periodic checkpointing ensures:
     - WAL file doesn't grow too large
@@ -501,12 +625,38 @@ async def start_wal_checkpoint_scheduler(interval_minutes: int = 5):
     if "sqlite" not in DATABASE_URL:
         return  # Not SQLite, no checkpoint needed
     
+    # Attempt to acquire distributed lock
+    # Only ONE worker across all processes will succeed
+    if not acquire_wal_checkpoint_lock():
+        # Lock acquisition already logged the skip message
+        # Keep running but don't do anything - just monitor
+        # If the lock holder dies, this worker can try to acquire on next check
+        while True:
+            try:
+                await asyncio.sleep(60)  # Check every minute
+                if acquire_wal_checkpoint_lock():
+                    logger.info("[Database] WAL checkpoint lock acquired, this worker will now checkpoint WAL")
+                    break
+            except asyncio.CancelledError:
+                logger.info("[Database] WAL checkpoint scheduler monitor stopped")
+                return
+            except Exception:
+                pass
+    
+    # This worker holds the lock - run the scheduler
     interval_seconds = interval_minutes * 60
     logger.info(f"[Database] Starting WAL checkpoint scheduler (every {interval_minutes} min)")
     
     while True:
         try:
             await asyncio.sleep(interval_seconds)
+            
+            # Refresh lock periodically to prevent expiration
+            if not refresh_wal_checkpoint_lock():
+                logger.warning("[Database] Lost WAL checkpoint lock, stopping scheduler on this worker")
+                # Try to reacquire lock
+                if not acquire_wal_checkpoint_lock():
+                    continue  # Another worker has it, keep waiting
             
             # Check if backup is in progress (coordination with backup system)
             try:

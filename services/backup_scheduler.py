@@ -110,7 +110,7 @@ def acquire_backup_scheduler_lock() -> bool:
         else:
             # Lock held by another worker - check who
             holder = redis.get(BACKUP_LOCK_KEY)
-            logger.debug(f"[Backup] Lock held by another worker (holder={holder})")
+            logger.info(f"[Backup] Another worker holds the scheduler lock (holder={holder}), this worker will not run backups")
             return False
             
     except Exception as e:
@@ -1277,7 +1277,7 @@ async def start_backup_scheduler():
     # Attempt to acquire distributed lock
     # Only ONE worker across all processes will succeed
     if not acquire_backup_scheduler_lock():
-        logger.info("[Backup] Another worker holds the scheduler lock, this worker will not run backups")
+        # Lock acquisition already logged the skip message
         # Keep running but don't do anything - just monitor
         # If the lock holder dies, this worker can try to acquire on next check
         while True:

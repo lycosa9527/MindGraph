@@ -24,6 +24,8 @@ Proprietary License
 """
 
 import logging
+import os
+import uuid
 import ipaddress
 from typing import List, Optional
 
@@ -33,6 +35,80 @@ logger = logging.getLogger(__name__)
 
 # Redis key for IP whitelist Set
 WHITELIST_KEY = "bayi:ip_whitelist"
+
+# ============================================================================
+# DISTRIBUTED LOCK FOR MULTI-WORKER COORDINATION
+# ============================================================================
+# 
+# Problem: Uvicorn does NOT set UVICORN_WORKER_ID automatically.
+# All workers get default '0', causing all to load IP whitelist.
+#
+# Solution: Redis-based distributed lock ensures only ONE worker loads whitelist.
+# Uses SETNX (SET if Not eXists) with TTL for crash safety.
+#
+# Key: bayi:whitelist:load:lock
+# Value: {worker_pid}:{uuid} (unique identifier per worker)
+# TTL: 5 minutes (enough for loading, auto-release if worker crashes)
+# ============================================================================
+
+WHITELIST_LOAD_LOCK_KEY = "bayi:whitelist:load:lock"
+WHITELIST_LOAD_LOCK_TTL = 300  # 5 minutes - enough for loading, auto-release on crash
+_whitelist_load_lock_id: Optional[str] = None  # This worker's unique lock identifier
+
+
+def _generate_whitelist_load_lock_id() -> str:
+    """Generate unique lock ID for this worker: {pid}:{uuid}"""
+    return f"{os.getpid()}:{uuid.uuid4().hex[:8]}"
+
+
+def acquire_whitelist_load_lock() -> bool:
+    """
+    Attempt to acquire the whitelist load lock.
+    
+    Uses Redis SETNX for atomic lock acquisition.
+    Only ONE worker across all processes can hold this lock.
+    
+    Returns:
+        True if lock acquired (this worker should load whitelist)
+        False if lock held by another worker
+    """
+    global _whitelist_load_lock_id
+    
+    if not is_redis_available():
+        # No Redis = single worker mode, proceed
+        logger.debug("[BayiWhitelist] Redis unavailable, assuming single worker mode for whitelist loading")
+        return True
+    
+    redis = get_redis()
+    if not redis:
+        return True  # Fallback to single worker mode
+    
+    try:
+        # Generate unique ID for this worker
+        if _whitelist_load_lock_id is None:
+            _whitelist_load_lock_id = _generate_whitelist_load_lock_id()
+        
+        # Attempt atomic lock acquisition: SETNX with TTL
+        # Returns True only if key did not exist (lock acquired)
+        acquired = redis.set(
+            WHITELIST_LOAD_LOCK_KEY,
+            _whitelist_load_lock_id,
+            nx=True,  # Only set if not exists
+            ex=WHITELIST_LOAD_LOCK_TTL  # TTL in seconds
+        )
+        
+        if acquired:
+            logger.debug(f"[BayiWhitelist] Lock acquired by this worker (id={_whitelist_load_lock_id})")
+            return True
+        else:
+            # Lock held by another worker - check who
+            holder = redis.get(WHITELIST_LOAD_LOCK_KEY)
+            logger.info(f"[BayiWhitelist] Another worker holds the whitelist load lock (holder={holder}), skipping whitelist load")
+            return False
+            
+    except Exception as e:
+        logger.warning(f"[BayiWhitelist] Lock acquisition failed: {e}, proceeding anyway")
+        return True  # On error, proceed (better to have duplicate than no whitelist)
 
 
 class BayiIPWhitelist:
@@ -210,12 +286,21 @@ class BayiIPWhitelist:
         """
         Load IPs from environment variable into Redis.
         
+        Uses Redis distributed lock to ensure only ONE worker loads the whitelist.
+        This prevents multiple workers from loading the same IPs simultaneously.
+        
         Reads BAYI_IP_WHITELIST env var (comma-separated) and adds to Redis Set.
         This is called on application startup for backward compatibility.
         
         Returns:
             Number of IPs successfully loaded
         """
+        # Try to acquire lock - only one worker should load whitelist
+        if not acquire_whitelist_load_lock():
+            # Another worker is loading whitelist, skip
+            # Return 0 since whitelist will be loaded by another worker
+            return 0
+        
         import os
         # Import here to avoid circular import
         import utils.auth as auth_module

@@ -8,7 +8,7 @@ Features:
 - Pre-populates cache for fast lookups
 - Handles errors gracefully (continues loading other data)
 - Logs progress and statistics
-- Only runs on worker 0 (same pattern as database init)
+- Uses Redis distributed lock to ensure only ONE worker loads cache
 
 Author: lycosa9527
 Made by: MindSpring Team
@@ -20,14 +20,137 @@ Proprietary License
 
 import logging
 import time
-from typing import Tuple
+import os
+import uuid
+from typing import Tuple, Optional
 
 from services.redis_user_cache import get_user_cache
 from services.redis_org_cache import get_org_cache
+from services.redis_client import get_redis, is_redis_available
 from config.database import SessionLocal
 from models.auth import User, Organization
 
 logger = logging.getLogger(__name__)
+
+# ============================================================================
+# DISTRIBUTED LOCK FOR MULTI-WORKER COORDINATION
+# ============================================================================
+# 
+# Problem: Uvicorn does NOT set UVICORN_WORKER_ID automatically.
+# All workers get default '0', causing all to run cache loaders.
+#
+# Solution: Redis-based distributed lock ensures only ONE worker loads cache.
+# Uses SETNX (SET if Not eXists) with TTL for crash safety.
+#
+# Key: cache:loader:lock
+# Value: {worker_pid}:{uuid} (unique identifier per worker)
+# TTL: 5 minutes (enough for cache loading, auto-release if worker crashes)
+# ============================================================================
+
+CACHE_LOADER_LOCK_KEY = "cache:loader:lock"
+CACHE_LOADER_LOCK_TTL = 300  # 5 minutes - enough for cache loading, auto-release on crash
+_worker_lock_id: Optional[str] = None  # This worker's unique lock identifier
+
+
+def _generate_lock_id() -> str:
+    """Generate unique lock ID for this worker: {pid}:{uuid}"""
+    return f"{os.getpid()}:{uuid.uuid4().hex[:8]}"
+
+
+def acquire_cache_loader_lock() -> bool:
+    """
+    Attempt to acquire the cache loader lock.
+    
+    Uses Redis SETNX for atomic lock acquisition.
+    Only ONE worker across all processes can hold this lock.
+    
+    Returns:
+        True if lock acquired (this worker should load cache)
+        False if lock held by another worker
+    """
+    global _worker_lock_id
+    
+    if not is_redis_available():
+        # No Redis = single worker mode, proceed
+        logger.debug("[CacheLoader] Redis unavailable, assuming single worker mode")
+        return True
+    
+    redis = get_redis()
+    if not redis:
+        return True  # Fallback to single worker mode
+    
+    try:
+        # Generate unique ID for this worker
+        if _worker_lock_id is None:
+            _worker_lock_id = _generate_lock_id()
+        
+        # Attempt atomic lock acquisition: SETNX with TTL
+        # Returns True only if key did not exist (lock acquired)
+        acquired = redis.set(
+            CACHE_LOADER_LOCK_KEY,
+            _worker_lock_id,
+            nx=True,  # Only set if not exists
+            ex=CACHE_LOADER_LOCK_TTL  # TTL in seconds
+        )
+        
+        if acquired:
+            logger.debug(f"[CacheLoader] Lock acquired by this worker (id={_worker_lock_id})")
+            return True
+        else:
+            # Lock held by another worker - check who
+            holder = redis.get(CACHE_LOADER_LOCK_KEY)
+            logger.info(f"[CacheLoader] Another worker holds the cache loader lock (holder={holder}), skipping cache load")
+            return False
+            
+    except Exception as e:
+        logger.warning(f"[CacheLoader] Lock acquisition failed: {e}, proceeding anyway")
+        return True  # On error, proceed (better to have duplicate than no cache)
+
+
+def release_cache_loader_lock() -> bool:
+    """
+    Release the cache loader lock if held by this worker.
+    
+    Uses Lua script to ensure we only release our own lock.
+    This prevents accidentally releasing another worker's lock.
+    
+    Returns:
+        True if lock released, False otherwise
+    """
+    global _worker_lock_id
+    
+    if not is_redis_available() or _worker_lock_id is None:
+        return True
+    
+    redis = get_redis()
+    if not redis:
+        return True
+    
+    try:
+        # Lua script: Only delete if lock value matches our lock_id
+        # This ensures we only release our own lock
+        lua_script = """
+        if redis.call("GET", KEYS[1]) == ARGV[1] then
+            return redis.call("DEL", KEYS[1])
+        else
+            return 0
+        end
+        """
+        
+        result = redis.eval(lua_script, 1, CACHE_LOADER_LOCK_KEY, _worker_lock_id)
+        
+        if result:
+            logger.debug(f"[CacheLoader] Lock released (id={_worker_lock_id})")
+            return True
+        else:
+            # Check current holder for logging
+            current_holder = redis.get(CACHE_LOADER_LOCK_KEY)
+            logger.debug(f"[CacheLoader] Lock not released (not held by us or already released). Current holder: {current_holder}")
+            return False
+            
+    except Exception as e:
+        logger.warning(f"[CacheLoader] Lock release failed: {e}")
+        return False
 
 
 def load_all_users_to_cache() -> Tuple[int, int]:
@@ -127,10 +250,16 @@ def reload_cache_from_sqlite() -> bool:
     Reload all users and organizations from SQLite into Redis cache.
     
     This function is called at application startup to pre-populate the cache.
+    Uses Redis distributed lock to ensure only ONE worker loads the cache.
     
     Returns:
         True if reload completed successfully (even with some errors), False if critical failure
     """
+    # Try to acquire lock - only one worker should load cache
+    if not acquire_cache_loader_lock():
+        # Another worker is loading cache, skip
+        return True  # Return True since cache will be loaded by another worker
+    
     start_time = time.time()
     
     logger.info("[CacheLoader] Starting cache reload from SQLite...")
@@ -164,5 +293,8 @@ def reload_cache_from_sqlite() -> bool:
         elapsed_time = time.time() - start_time
         logger.error(f"[CacheLoader] Cache reload failed after {elapsed_time:.2f}s: {e}", exc_info=True)
         return False
+    finally:
+        # Always release lock after cache loading completes (or fails)
+        release_cache_loader_lock()
 
 

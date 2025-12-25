@@ -28,11 +28,139 @@ import sys
 import sqlite3
 import shutil
 import logging
+import uuid
 from datetime import datetime
 from pathlib import Path
 from typing import Optional, List, Dict, Any, Tuple
 
 logger = logging.getLogger(__name__)
+
+# ============================================================================
+# DISTRIBUTED LOCK FOR MULTI-WORKER COORDINATION
+# ============================================================================
+# 
+# Problem: Uvicorn does NOT set UVICORN_WORKER_ID automatically.
+# All workers get default '0', causing all to run database integrity checks.
+#
+# Solution: Redis-based distributed lock ensures only ONE worker checks integrity.
+# Uses SETNX (SET if Not eXists) with TTL for crash safety.
+#
+# Key: recovery:integrity_check:lock
+# Value: {worker_pid}:{uuid} (unique identifier per worker)
+# TTL: 5 minutes (enough for integrity check, auto-release if worker crashes)
+# ============================================================================
+
+INTEGRITY_CHECK_LOCK_KEY = "recovery:integrity_check:lock"
+INTEGRITY_CHECK_LOCK_TTL = 300  # 5 minutes - enough for integrity check, auto-release on crash
+_integrity_check_lock_id: Optional[str] = None  # This worker's unique lock identifier
+
+
+def _generate_integrity_check_lock_id() -> str:
+    """Generate unique lock ID for this worker: {pid}:{uuid}"""
+    return f"{os.getpid()}:{uuid.uuid4().hex[:8]}"
+
+
+def acquire_integrity_check_lock() -> bool:
+    """
+    Attempt to acquire the integrity check lock.
+    
+    Uses Redis SETNX for atomic lock acquisition.
+    Only ONE worker across all processes can hold this lock.
+    
+    Returns:
+        True if lock acquired (this worker should check integrity)
+        False if lock held by another worker
+    """
+    global _integrity_check_lock_id
+    
+    try:
+        from services.redis_client import get_redis, is_redis_available
+    except ImportError:
+        # Redis not available, assume single worker mode
+        return True
+    
+    if not is_redis_available():
+        # No Redis = single worker mode, proceed
+        logger.debug("[Recovery] Redis unavailable, assuming single worker mode for integrity check")
+        return True
+    
+    redis = get_redis()
+    if not redis:
+        return True  # Fallback to single worker mode
+    
+    try:
+        # Generate unique ID for this worker
+        if _integrity_check_lock_id is None:
+            _integrity_check_lock_id = _generate_integrity_check_lock_id()
+        
+        # Attempt atomic lock acquisition: SETNX with TTL
+        # Returns True only if key did not exist (lock acquired)
+        acquired = redis.set(
+            INTEGRITY_CHECK_LOCK_KEY,
+            _integrity_check_lock_id,
+            nx=True,  # Only set if not exists
+            ex=INTEGRITY_CHECK_LOCK_TTL  # TTL in seconds
+        )
+        
+        if acquired:
+            logger.debug(f"[Recovery] Integrity check lock acquired by this worker (id={_integrity_check_lock_id})")
+            return True
+        else:
+            # Lock held by another worker - check who
+            holder = redis.get(INTEGRITY_CHECK_LOCK_KEY)
+            logger.info(f"[Recovery] Another worker holds the integrity check lock (holder={holder}), skipping integrity check")
+            return False
+            
+    except Exception as e:
+        logger.warning(f"[Recovery] Lock acquisition failed: {e}, proceeding anyway")
+        return True  # On error, proceed (better to have duplicate check than no check)
+
+
+def release_integrity_check_lock() -> bool:
+    """
+    Release the integrity check lock if held by this worker.
+    
+    Uses Lua script to ensure we only release our own lock.
+    
+    Returns:
+        True if lock released, False otherwise
+    """
+    global _integrity_check_lock_id
+    
+    try:
+        from services.redis_client import get_redis, is_redis_available
+    except ImportError:
+        return False
+    
+    if not is_redis_available() or _integrity_check_lock_id is None:
+        return False
+    
+    redis = get_redis()
+    if not redis:
+        return False
+    
+    try:
+        # Lua script: Only delete if lock value matches our lock_id
+        # This ensures we only release our own lock
+        lua_script = """
+        if redis.call("GET", KEYS[1]) == ARGV[1] then
+            return redis.call("DEL", KEYS[1])
+        else
+            return 0
+        end
+        """
+        
+        result = redis.eval(lua_script, 1, INTEGRITY_CHECK_LOCK_KEY, _integrity_check_lock_id)
+        
+        if result:
+            logger.debug(f"[Recovery] Integrity check lock released (id={_integrity_check_lock_id})")
+            return True
+        else:
+            return False
+            
+    except Exception as e:
+        logger.debug(f"[Recovery] Integrity check lock release failed: {e}")
+        return False
 
 # Import backup configuration
 try:
@@ -1010,6 +1138,9 @@ def check_database_on_startup() -> bool:
     Check database integrity on startup.
     Called by main.py during lifespan initialization.
     
+    Uses Redis distributed lock to ensure only ONE worker checks integrity.
+    This prevents multiple workers from running the interactive recovery wizard simultaneously.
+    
     IMPORTANT: When corruption is detected, this function ALWAYS requires
     human intervention. It will NOT automatically restore in non-interactive mode.
     This is a safety measure to prevent data loss from automated decisions.
@@ -1017,14 +1148,25 @@ def check_database_on_startup() -> bool:
     Returns:
         True if startup should continue, False to abort
     """
+    # Try to acquire lock - only one worker should check integrity
+    if not acquire_integrity_check_lock():
+        # Another worker is checking integrity, skip
+        # Return True since integrity check will be done by another worker
+        return True
+    
     recovery = DatabaseRecovery()
     
-    # Quick integrity check
-    is_healthy, message = recovery.check_integrity()
-    
-    if is_healthy:
-        logger.debug(f"[Recovery] {message}")
-        return True
+    try:
+        # Quick integrity check
+        is_healthy, message = recovery.check_integrity()
+        
+        if is_healthy:
+            logger.debug(f"[Recovery] {message}")
+            return True
+    finally:
+        # Always release lock after integrity check completes (success or failure)
+        # This allows other workers to check if this worker crashes
+        release_integrity_check_lock()
     
     # Database is corrupted - ALWAYS require human decision
     logger.error(f"[Recovery] DATABASE CORRUPTION DETECTED: {message}")
