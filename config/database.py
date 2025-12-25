@@ -207,13 +207,12 @@ else:
 # For PostgreSQL/MySQL: configure connection pool for production workloads
 if "sqlite" in DATABASE_URL:
     # SQLite pool configuration for multi-worker deployments
-    # Default pool is too small (5+10=15) for high concurrency
-    # Sized for 200 concurrent users with safety margin:
-    # - Base: 15 connections (handles normal load)
-    # - Overflow: 30 connections (handles bursts)
-    # - Total: 45 connections (3x safety margin for 200 users)
-    SQLITE_POOL_SIZE = int(os.getenv('DATABASE_POOL_SIZE', '15'))       # Base connections
-    SQLITE_MAX_OVERFLOW = int(os.getenv('DATABASE_MAX_OVERFLOW', '30'))  # Overflow connections
+    # Optimized for 500 concurrent registrations with safety margin:
+    # - Base: 50 connections (handles normal load)
+    # - Overflow: 100 connections (handles bursts)
+    # - Total: 150 connections (enough for 500 concurrent registrations)
+    SQLITE_POOL_SIZE = int(os.getenv('DATABASE_POOL_SIZE', '50'))       # Base connections (increased from 15)
+    SQLITE_MAX_OVERFLOW = int(os.getenv('DATABASE_MAX_OVERFLOW', '100'))  # Overflow connections (increased from 30)
     SQLITE_POOL_TIMEOUT = int(os.getenv('DATABASE_POOL_TIMEOUT', '30'))  # Wait time (seconds)
     
     engine = create_engine(
@@ -235,16 +234,16 @@ if "sqlite" in DATABASE_URL:
         """
         Enable WAL mode for SQLite to improve concurrent write performance.
         
-        Optimized for multi-worker deployments (4 workers):
-        - Busy timeout: 150ms (allows queued writes to complete)
+        Optimized for high concurrency (500 concurrent registrations):
+        - Busy timeout: 500ms (allows queued writes to complete)
         - Application-level retry logic handles transient locks with exponential backoff
-        - Total worst-case wait: ~740ms (still < 1 second)
-        - Typical wait: 10-150ms (most locks clear quickly)
-        - Old approach: up to 5 seconds → ~7x faster
+        - Total worst-case wait: ~1.5s (with 5 retries)
+        - Typical wait: 10-500ms (most locks clear quickly)
+        - Increased from 150ms to handle higher concurrency
         """
         cursor = dbapi_conn.cursor()
         cursor.execute("PRAGMA journal_mode=WAL")
-        cursor.execute("PRAGMA busy_timeout=150")  # Optimized for 4 workers: 150ms
+        cursor.execute("PRAGMA busy_timeout=500")  # Optimized for high concurrency: 500ms (increased from 150ms)
         cursor.close()
 else:
     # Production database (PostgreSQL/MySQL) pool configuration

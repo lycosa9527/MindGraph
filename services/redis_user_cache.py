@@ -274,7 +274,7 @@ class UserCache:
                 if redis:
                     redis.set(phone_index_key, str(user.id))  # Permanent storage, no TTL
             
-            logger.info(f"[UserCache] Cached user ID {user.id} (phone: {user.phone[:3] if user.phone and len(user.phone) >= 3 else '***'}***{user.phone[-4:] if user.phone and len(user.phone) >= 4 else ''})")
+            logger.debug(f"[UserCache] Cached user ID {user.id} (phone: {user.phone[:3] if user.phone and len(user.phone) >= 3 else '***'}***{user.phone[-4:] if user.phone and len(user.phone) >= 4 else ''})")
             logger.debug(f"[UserCache] Cached user index: phone {user.phone[:3] if user.phone and len(user.phone) >= 3 else '***'}***{user.phone[-4:] if user.phone and len(user.phone) >= 4 else ''} -> ID {user.id}")
             
             return True

@@ -7,6 +7,58 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.37.17] - 2025-12-25 - High Concurrency Registration Improvements
+
+### Added
+
+- **Redis Distributed Lock Service** (`services/redis_distributed_lock.py`)
+  - Distributed lock implementation using Redis SETNX with TTL
+  - Context manager pattern for easy usage (`async with lock:`)
+  - Auto-release on timeout or exception
+  - Exponential backoff retry if lock is held
+  - Thread-safe and process-safe (works across multiple workers)
+  - Prevents race conditions in phone uniqueness checks during registration
+
+- **Registration Metrics Service** (`services/registration_metrics.py`)
+  - Tracks registration performance metrics for monitoring and observability
+  - Registration attempts, successes, and failures tracking
+  - Failure reasons categorization (lock timeout, SQLite lock, phone exists, etc.)
+  - Average registration time tracking
+  - SQLite commit retry counts
+  - Cache write success rate monitoring
+  - Thread-safe metrics collection across all workers
+
+### Changed
+
+- **Database Configuration** (`config/database.py`)
+  - Increased SQLite connection pool from 45 (15+30) to 150 (50+100) connections
+  - Optimized for 500 concurrent registrations with safety margin
+  - Increased busy timeout from 150ms to 500ms for better lock handling
+  - Improved concurrent write performance for high concurrency scenarios
+
+- **Authentication Router** (`routers/auth.py`) - Major improvements (313 lines changed)
+  - Increased retry attempts from 3 to 5 for SQLite commit operations
+  - Added jitter to exponential backoff to prevent thundering herd effect
+  - Implemented distributed lock for phone uniqueness check to prevent race conditions
+  - Added comprehensive registration metrics tracking
+  - Parallel cache write and session creation for improved performance
+  - Better error tracking and categorization (lock timeout, SQLite lock, phone exists, etc.)
+  - Organization caching after SQLite query for improved subsequent lookups
+  - Enhanced error handling with metrics recording for all failure scenarios
+  - Improved logging with retry attempt details and timing information
+
+- **Redis User Cache** (`services/redis_user_cache.py`)
+  - Changed cache operation log level from info to debug for cleaner logs
+
+### Removed
+
+- **Documentation Cleanup**
+  - Removed `docs/AUTO_COMPLETE_CACHE_FRAMEWORK.md` (3092 lines)
+  - Removed `docs/ERROR_REVIEW_2025-12-20.md` (885 lines)
+  - Removed `docs/WRITE_BEHIND_VS_PARALLEL_ANALYSIS.md` (314 lines)
+
+---
+
 ## [4.37.16] - 2025-12-25 - Load Balancing, Rate Limiting, and Authentication Enhancements
 
 ### Added

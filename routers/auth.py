@@ -248,37 +248,45 @@ async def list_organizations(db: Session = Depends(get_db)):
 async def commit_user_with_retry(
     db: Session,
     new_user: User,
-    max_retries: int = 3
-) -> None:
+    max_retries: int = 5
+) -> int:
     """
     Commit user to SQLite with retry logic for database lock errors.
     
     Retries SQLite commits up to max_retries times with exponential backoff
-    if database is locked. This handles transient lock errors during high
-    concurrency scenarios (e.g., 500 concurrent registrations).
+    and jitter if database is locked. This handles transient lock errors during
+    high concurrency scenarios (e.g., 500 concurrent registrations).
     
     Args:
         db: SQLAlchemy database session
         new_user: User object to commit
-        max_retries: Maximum number of retry attempts (default: 3)
+        max_retries: Maximum number of retry attempts (default: 5, increased from 3)
+    
+    Returns:
+        Number of retries performed (0 = no retries, 1+ = retries)
     
     Raises:
         HTTPException: If commit fails after all retries or on non-lock errors
     """
+    import random
+    
     for attempt in range(max_retries):
         try:
             db.commit()
             db.refresh(new_user)  # Get auto-generated ID
-            return  # Success!
+            return attempt  # Return number of retries (0 = first attempt succeeded)
         except OperationalError as e:
             error_msg = str(e).lower()
             if "database is locked" in error_msg or "locked" in error_msg:
                 if attempt < max_retries - 1:
-                    # Retry with exponential backoff
-                    delay = 0.1 * (2 ** attempt)  # 0.1s, 0.2s, 0.4s
+                    # Retry with exponential backoff + jitter (prevents thundering herd)
+                    base_delay = 0.1 * (2 ** attempt)  # 0.1s, 0.2s, 0.4s, 0.8s, 1.6s
+                    jitter = random.uniform(0, 0.05)  # Random jitter up to 50ms
+                    delay = base_delay + jitter
                     logger.warning(
                         f"[Auth] SQLite lock on user registration attempt {attempt + 1}/{max_retries}, "
-                        f"retrying after {delay}s delay. Phone: {new_user.phone[:3] if new_user.phone and len(new_user.phone) >= 3 else '***'}***"
+                        f"retrying after {delay:.3f}s delay (base: {base_delay:.3f}s + jitter: {jitter:.3f}s). "
+                        f"Phone: {new_user.phone[:3] if new_user.phone and len(new_user.phone) >= 3 else '***'}***"
                     )
                     await asyncio.sleep(delay)  # Non-blocking async sleep
                     continue
@@ -354,10 +362,19 @@ async def register(
             detail=error_msg
         )
     
+    # Import metrics early for failure tracking
+    from services.registration_metrics import registration_metrics
+    
+    # Track registration attempt
+    registration_metrics.record_attempt()
+    start_time = time.time()
+    
     # Validate captcha first (anti-bot protection)
     # Use verify_captcha_with_retry() for better database lock handling
     captcha_valid, captcha_error = await verify_captcha_with_retry(request.captcha_id, request.captcha)
     if not captcha_valid:
+        duration = time.time() - start_time
+        registration_metrics.record_failure('captcha_failed', duration)
         if captcha_error == "expired":
             error_msg = Messages.error("captcha_expired", lang)
             raise HTTPException(
@@ -391,22 +408,19 @@ async def register(
     
     logger.debug(f"Captcha verified for registration: {request.phone}")
     
-    # Import cache services
+    # Import cache services and distributed lock
     from services.redis_user_cache import user_cache
     from services.redis_org_cache import org_cache
+    from services.redis_distributed_lock import phone_registration_lock
     
-    # Check if phone already exists (use cache with SQLite fallback)
-    existing_user = user_cache.get_by_phone(request.phone)
-    if existing_user:
-        error_msg = Messages.error("phone_already_registered", lang)
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail=error_msg
-        )
+    retry_count = 0
+    cache_write_success = False
     
     # Find organization by invitation code (each invitation code is unique)
     provided_invite = (request.invitation_code or "").strip().upper()
     if not provided_invite:
+        duration = time.time() - start_time
+        registration_metrics.record_failure('invitation_code_invalid', duration)
         error_msg = Messages.error("invitation_code_required", lang)
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -415,6 +429,8 @@ async def register(
     
     # Validate invitation code format (AAAA-XXXXX pattern)
     if not INVITE_PATTERN.match(provided_invite):
+        duration = time.time() - start_time
+        registration_metrics.record_failure('invitation_code_invalid', duration)
         error_msg = Messages.error("invitation_code_invalid_format", lang, request.invitation_code)
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -428,35 +444,72 @@ async def register(
             Organization.invitation_code == provided_invite
         ).first()
         if not org:
+            duration = time.time() - start_time
+            registration_metrics.record_failure('invitation_code_invalid', duration)
             error_msg = Messages.error("invitation_code_not_found", lang, request.invitation_code)
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail=error_msg
             )
+        # Cache organization after SQLite query for next time
+        if org:
+            try:
+                org_cache.cache_org(org)
+            except Exception as e:
+                logger.debug(f"[Auth] Failed to cache org after SQLite query: {e}")
     
     logger.debug(f"User registering with invitation code for organization: {org.code} ({org.name})")
     
-    # Create new user
-    new_user = User(
-        phone=request.phone,
-        password_hash=hash_password(request.password),
-        name=request.name,
-        organization_id=org.id,
-        created_at=datetime.now(timezone.utc)
-    )
-    
-    # Write to SQLite FIRST (source of truth) with retry logic for lock errors
-    db.add(new_user)
-    await commit_user_with_retry(db, new_user, max_retries=3)
-    
-    # Write to Redis cache SECOND (non-blocking)
+    # Use distributed lock to prevent race condition on phone uniqueness check
     try:
-        user_cache.cache_user(new_user)  # ✅ Cache in Redis
-        logger.info(f"[Auth] New user registered and cached: ID {new_user.id}, phone {new_user.phone[:3] if len(new_user.phone) >= 3 else '***'}***{new_user.phone[-4:] if len(new_user.phone) >= 4 else ''}")
+        async with phone_registration_lock(request.phone):
+            # Check if phone already exists (use cache with SQLite fallback)
+            existing_user = user_cache.get_by_phone(request.phone)
+            if existing_user:
+                duration = time.time() - start_time
+                registration_metrics.record_failure('phone_exists', duration)
+                error_msg = Messages.error("phone_already_registered", lang)
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail=error_msg
+                )
+            
+            # Create new user
+            new_user = User(
+                phone=request.phone,
+                password_hash=hash_password(request.password),
+                name=request.name,
+                organization_id=org.id,
+                created_at=datetime.now(timezone.utc)
+            )
+            
+            # Write to SQLite FIRST (source of truth) with retry logic for lock errors
+            db.add(new_user)
+            retry_count = await commit_user_with_retry(db, new_user, max_retries=5)
+    except RuntimeError as e:
+        # Lock acquisition failed - fall back to current behavior
+        # SQLite unique constraint will catch duplicates
+        duration = time.time() - start_time
+        registration_metrics.record_failure('lock_timeout', duration)
+        logger.warning(f"[Auth] Failed to acquire distributed lock for phone {request.phone[:3]}***: {e}, proceeding without lock")
+        # Re-raise - let SQLite handle duplicate detection
+        raise
+    except HTTPException as e:
+        # Track specific HTTP exceptions before re-raising
+        duration = time.time() - start_time
+        # Check if it's SMS code failure (400 Bad Request from _verify_and_consume_sms_code)
+        if e.status_code == status.HTTP_400_BAD_REQUEST and "sms_code" in str(e.detail).lower():
+            registration_metrics.record_failure('sms_code_invalid', duration)
+        # Re-raise HTTP exceptions (phone_exists, captcha_failed, etc. already tracked)
+        raise
     except Exception as e:
-        # Cache failure is non-critical - SQLite is source of truth
-        logger.warning(f"[Auth] Failed to cache new user ID {new_user.id}: {e}")
-        # Don't fail registration - user exists in SQLite
+        # Track other failures (SQLite lock, etc.)
+        duration = time.time() - start_time
+        if "database is locked" in str(e).lower() or "locked" in str(e).lower():
+            registration_metrics.record_failure('sqlite_lock', duration)
+        else:
+            registration_metrics.record_failure('other', duration)
+        raise
     
     # Session management: Invalidate old sessions before creating new one (for existing users)
     session_manager = get_session_manager()
@@ -467,8 +520,36 @@ async def register(
     # Generate JWT token
     token = create_access_token(new_user)
     
-    # Store new session in Redis
-    session_manager.store_session(new_user.id, token)
+    # Parallel cache write and session creation (non-blocking, independent operations)
+    async def cache_user_async():
+        """Cache user in Redis (non-blocking)."""
+        nonlocal cache_write_success
+        try:
+            user_cache.cache_user(new_user)
+            cache_write_success = True
+            logger.info(f"[Auth] New user registered and cached: ID {new_user.id}, phone {new_user.phone[:3] if len(new_user.phone) >= 3 else '***'}***{new_user.phone[-4:] if len(new_user.phone) >= 4 else ''}")
+        except Exception as e:
+            # Cache failure is non-critical - SQLite is source of truth
+            cache_write_success = False
+            logger.warning(f"[Auth] Failed to cache new user ID {new_user.id}: {e}")
+    
+    async def store_session_async():
+        """Store session in Redis (non-blocking)."""
+        try:
+            session_manager.store_session(new_user.id, token)
+        except Exception as e:
+            logger.warning(f"[Auth] Failed to store session for user ID {new_user.id}: {e}")
+    
+    # Execute cache write and session creation in parallel
+    await asyncio.gather(
+        cache_user_async(),
+        store_session_async(),
+        return_exceptions=True  # Don't fail if either operation fails
+    )
+    
+    # Track successful registration
+    duration = time.time() - start_time
+    registration_metrics.record_success(duration, retry_count, cache_write_success)
     
     # Set token as HTTP-only cookie
     response.set_cookie(
@@ -1381,25 +1462,23 @@ async def register_with_sms(
             detail=error_msg
         )
     
-    # Import cache services
+    # Import cache services, distributed lock, and metrics
     from services.redis_user_cache import user_cache
     from services.redis_org_cache import org_cache
+    from services.redis_distributed_lock import phone_registration_lock
+    from services.registration_metrics import registration_metrics
     
-    # Validate all prerequisites BEFORE consuming SMS code
-    # This prevents wasting codes on validation failures
-    
-    # Check if phone already exists (use cache with SQLite fallback)
-    existing_user = user_cache.get_by_phone(request.phone)
-    if existing_user:
-        error_msg = Messages.error("phone_already_registered", lang)
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail=error_msg
-        )
+    # Track registration attempt
+    registration_metrics.record_attempt()
+    start_time = time.time()
+    retry_count = 0
+    cache_write_success = False
     
     # Find organization by invitation code
     provided_invite = (request.invitation_code or "").strip().upper()
     if not provided_invite:
+        duration = time.time() - start_time
+        registration_metrics.record_failure('invitation_code_invalid', duration)
         error_msg = Messages.error("invitation_code_required", lang)
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -1408,6 +1487,8 @@ async def register_with_sms(
     
     # Validate invitation code format (AAAA-XXXXX pattern)
     if not INVITE_PATTERN.match(provided_invite):
+        duration = time.time() - start_time
+        registration_metrics.record_failure('invitation_code_invalid', duration)
         error_msg = Messages.error("invitation_code_invalid_format", lang, request.invitation_code)
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -1421,44 +1502,84 @@ async def register_with_sms(
             Organization.invitation_code == provided_invite
         ).first()
         if not org:
+            duration = time.time() - start_time
+            registration_metrics.record_failure('invitation_code_invalid', duration)
             error_msg = Messages.error("invitation_code_not_found", lang, request.invitation_code)
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail=error_msg
             )
+        # Cache organization after SQLite query for next time
+        if org:
+            try:
+                org_cache.cache_org(org)
+            except Exception as e:
+                logger.debug(f"[Auth] Failed to cache org after SQLite query: {e}")
     
-    # All validations passed - now consume the SMS code
-    _verify_and_consume_sms_code(
-        request.phone, 
-        request.sms_code, 
-        "register", 
-        db,
-        lang
-    )
+    # Validate all prerequisites BEFORE consuming SMS code
+    # This prevents wasting codes on validation failures
     
-    logger.debug(f"User registering with SMS for organization: {org.code} ({org.name})")
-    
-    # Create new user
-    new_user = User(
-        phone=request.phone,
-        password_hash=hash_password(request.password),
-        name=request.name,
-        organization_id=org.id,
-        created_at=datetime.now(timezone.utc)
-    )
-    
-    # Write to SQLite FIRST (source of truth) with retry logic for lock errors
-    db.add(new_user)
-    await commit_user_with_retry(db, new_user, max_retries=3)
-    
-    # Write to Redis cache SECOND (non-blocking)
+    # Use distributed lock to prevent race condition on phone uniqueness check
     try:
-        user_cache.cache_user(new_user)  # ✅ Cache in Redis
-        logger.info(f"[Auth] New user registered and cached: ID {new_user.id}, phone {new_user.phone[:3] if len(new_user.phone) >= 3 else '***'}***{new_user.phone[-4:] if len(new_user.phone) >= 4 else ''}")
+        async with phone_registration_lock(request.phone):
+            # Check if phone already exists (use cache with SQLite fallback)
+            existing_user = user_cache.get_by_phone(request.phone)
+            if existing_user:
+                duration = time.time() - start_time
+                registration_metrics.record_failure('phone_exists', duration)
+                error_msg = Messages.error("phone_already_registered", lang)
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail=error_msg
+                )
+            
+            # All validations passed - now consume the SMS code
+            _verify_and_consume_sms_code(
+                request.phone, 
+                request.sms_code, 
+                "register", 
+                db,
+                lang
+            )
+            
+            logger.debug(f"User registering with SMS for organization: {org.code} ({org.name})")
+            
+            # Create new user
+            new_user = User(
+                phone=request.phone,
+                password_hash=hash_password(request.password),
+                name=request.name,
+                organization_id=org.id,
+                created_at=datetime.now(timezone.utc)
+            )
+            
+            # Write to SQLite FIRST (source of truth) with retry logic for lock errors
+            db.add(new_user)
+            retry_count = await commit_user_with_retry(db, new_user, max_retries=5)
+    except RuntimeError as e:
+        # Lock acquisition failed - fall back to current behavior
+        # SQLite unique constraint will catch duplicates
+        duration = time.time() - start_time
+        registration_metrics.record_failure('lock_timeout', duration)
+        logger.warning(f"[Auth] Failed to acquire distributed lock for phone {request.phone[:3]}***: {e}, proceeding without lock")
+        # Re-raise - let SQLite handle duplicate detection
+        raise
+    except HTTPException as e:
+        # Track specific HTTP exceptions before re-raising
+        duration = time.time() - start_time
+        # Check if it's SMS code failure (400 Bad Request from _verify_and_consume_sms_code)
+        if e.status_code == status.HTTP_400_BAD_REQUEST and "sms_code" in str(e.detail).lower():
+            registration_metrics.record_failure('sms_code_invalid', duration)
+        # Re-raise HTTP exceptions (phone_exists, captcha_failed, etc. already tracked)
+        raise
     except Exception as e:
-        # Cache failure is non-critical - SQLite is source of truth
-        logger.warning(f"[Auth] Failed to cache new user ID {new_user.id}: {e}")
-        # Don't fail registration - user exists in SQLite
+        # Track other failures (SQLite lock, etc.)
+        duration = time.time() - start_time
+        if "database is locked" in str(e).lower() or "locked" in str(e).lower():
+            registration_metrics.record_failure('sqlite_lock', duration)
+        else:
+            registration_metrics.record_failure('other', duration)
+        raise
     
     # Session management: Invalidate old sessions before creating new one (for existing users)
     session_manager = get_session_manager()
@@ -1469,8 +1590,36 @@ async def register_with_sms(
     # Generate JWT token
     token = create_access_token(new_user)
     
-    # Store new session in Redis
-    session_manager.store_session(new_user.id, token)
+    # Parallel cache write and session creation (non-blocking, independent operations)
+    async def cache_user_async():
+        """Cache user in Redis (non-blocking)."""
+        nonlocal cache_write_success
+        try:
+            user_cache.cache_user(new_user)
+            cache_write_success = True
+            logger.info(f"[Auth] New user registered and cached: ID {new_user.id}, phone {new_user.phone[:3] if len(new_user.phone) >= 3 else '***'}***{new_user.phone[-4:] if len(new_user.phone) >= 4 else ''}")
+        except Exception as e:
+            # Cache failure is non-critical - SQLite is source of truth
+            cache_write_success = False
+            logger.warning(f"[Auth] Failed to cache new user ID {new_user.id}: {e}")
+    
+    async def store_session_async():
+        """Store session in Redis (non-blocking)."""
+        try:
+            session_manager.store_session(new_user.id, token)
+        except Exception as e:
+            logger.warning(f"[Auth] Failed to store session for user ID {new_user.id}: {e}")
+    
+    # Execute cache write and session creation in parallel
+    await asyncio.gather(
+        cache_user_async(),
+        store_session_async(),
+        return_exceptions=True  # Don't fail if either operation fails
+    )
+    
+    # Track successful registration
+    duration = time.time() - start_time
+    registration_metrics.record_success(duration, retry_count, cache_write_success)
     
     # Set token as HTTP-only cookie
     response.set_cookie(
