@@ -1143,7 +1143,7 @@ class VolcengineClient:
         )
         
         logger.debug(
-            f"VolcengineClient initialized: {model_alias} → {self.endpoint_id}"
+            f"VolcengineClient initialized: {model_alias} → endpoint={self.endpoint_id}"
         )
     
     def _get_endpoint_id(self, alias: str) -> str:
@@ -1163,6 +1163,7 @@ class VolcengineClient:
         
         # Get endpoint from config (reads from env var)
         endpoint = endpoint_map.get(alias)
+        
         
         # Validate endpoint is configured (not empty and not dummy value)
         if not endpoint or endpoint == 'ep-20250101000000-dummy':
