@@ -7,6 +7,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.37.23] - 2025-12-27 - Enhanced Dimension Extraction for Thinking Maps
+
+### Added
+
+- **Dimension Extraction for Brace Maps** (`prompts/prompt_to_diagram_agent.py`)
+  - Added dimension extraction support for brace map decomposition
+  - Extracts decomposition dimension from user prompts (e.g., "从用途出发" → "用途")
+  - JSON schema now includes "dimension" and "alternative_dimensions" fields
+  - Supports multiple decomposition dimensions: Physical Parts, Functional Modules, Life Cycle Stages, etc.
+  - Ensures consistent dimension usage throughout the entire map
+
+- **Dimension Extraction for Bridge Maps** (`prompts/prompt_to_diagram_agent.py`)
+  - Added dimension extraction support for bridge map relationship patterns
+  - Extracts relationship pattern from user prompts (e.g., "Capital to Country", "Author to Work")
+  - JSON schema now includes "dimension" and "alternative_dimensions" fields
+  - Supports various relationship patterns: Capital to Country, Author to Work, Function to Object, etc.
+  - Ensures all analogy pairs follow the same relationship pattern
+
+- **Dimension Extraction for Tree Maps** (`prompts/prompt_to_diagram_agent.py`)
+  - Added dimension extraction support for tree map classification
+  - Extracts classification dimension from user prompts (e.g., "按生物分类" → "生物分类")
+  - JSON schema now includes "dimension" and "alternative_dimensions" fields
+  - Supports various classification dimensions: Biological Taxonomy, Habitat, Diet, Size, etc.
+  - Ensures consistent dimension usage across all categories
+
+### Changed
+
+- **Tree Map JSON Schema Structure** (`prompts/prompt_to_diagram_agent.py`)
+  - Changed from `{"id": "...", "label": "..."}` to `{"text": "...", "children": []}` structure
+  - More consistent with hierarchical tree structure representation
+  - Better alignment with frontend rendering requirements
+
+- **Load Balancing Configuration** (`env.example`)
+  - Removed duplicate LOAD_BALANCING configuration section
+  - Changed default `LOAD_BALANCING_ENABLED` from `false` to `true`
+  - Enables load balancing for DeepSeek requests by default
+
+---
+
 ## [4.37.22] - 2025-01-XX - Security Enhancements, Rate Limiting, and Performance Optimizations
 
 ### Security

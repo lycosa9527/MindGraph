@@ -195,9 +195,25 @@ DOUBLE_BUBBLE_MAP_SPEC_ZH = """3. double_bubble_map:
 BRACE_MAP_SPEC_EN = """4. brace_map:
 Brace maps are used for decomposition, representing the relationship between the whole and its parts.
 - Understanding the physical components of an object, not classifying the central topic.
+
+CRITICAL: DIMENSION EXTRACTION
+A brace map can decompose a topic using DIFFERENT DIMENSIONS. You MUST:
+✓ Extract the decomposition dimension from the user's prompt if explicitly specified
+✓ If user mentions "decompose by X", "using X approach", "break down by X", "from X perspective", "based on X", etc., extract X as the dimension
+✓ Common patterns: "从用途出发" (from usage perspective) → extract "用途" (usage), "从功能角度" (from function angle) → extract "功能" (function), "按物理部件" (by physical parts) → extract "物理部件" (physical parts)
+✓ Use that EXACT dimension for decomposition throughout the entire map
+✓ If no dimension is specified, choose an appropriate one and include it in the output
+
+Common Decomposition Dimensions (examples):
+- Physical Parts, Functional Modules, Life Cycle Stages, User Experience, Manufacturing Process
+- For "Computer": Physical Parts, Functional Modules, Life Cycle, etc.
+- For "Car": Physical Parts, Functional Modules, Price Segments, etc.
+
 {{
-  "topic": "Main topic",
-  "parts": [{{"name": "Part1", "subparts": [{{"name": "Subpart1.1"}}]}}]
+  "whole": "Main topic (the whole to be decomposed)",
+  "dimension": "The decomposition dimension being used (e.g., 'Physical Parts', 'Functional Modules')",
+  "parts": [{{"name": "Part1", "subparts": [{{"name": "Subpart1.1"}}]}}],
+  "alternative_dimensions": ["Dimension1", "Dimension2", "Dimension3", "Dimension4"]
 }}
 Requirements:
 - Generate 3-6 main parts with clear, descriptive names
@@ -206,14 +222,34 @@ Requirements:
 - Ensure logical whole-to-part relationships (whole → parts → subparts)
 - Parts should be major categories or divisions of the topic
 - Subparts should be specific components, features, or elements of each part
+- MUST include "dimension" field describing the decomposition approach used
+- MUST include "alternative_dimensions" array with 4-6 other valid dimensions for this topic
+- ALL parts must follow the SAME dimension consistently
+- If user specifies a dimension, use it EXACTLY as specified
 - Do not include any information about visual layout or braces; only provide the hierarchical data."""
 
 BRACE_MAP_SPEC_ZH = """4. brace_map:
 括号图用于拆分，表示整体与部分之间的关系。
 - 理解一个物体的物理组成部分，不是对中心词进行分类。
+
+关键：维度提取
+括号图可以使用不同的维度来拆解主题。您必须：
+✓ 如果用户在提示中明确指定了拆解维度，请提取它
+✓ 如果用户提到"按X拆解"、"使用X方法"、"按X分解"、"从X出发"、"以X角度"、"基于X"等，请将X提取为维度
+✓ 常见模式："从用途出发" → 提取"用途"、"从功能角度" → 提取"功能"、"按物理部件" → 提取"物理部件"
+✓ 在整个图中使用该确切的维度进行拆解
+✓ 如果未指定维度，请选择适当的维度并在输出中包含它
+
+常见拆解维度（示例）：
+- 物理部件、功能模块、生命周期阶段、用户体验、制造流程
+- 对于"计算机"：物理部件、功能模块、生命周期等
+- 对于"汽车"：物理部件、功能模块、价格区间等
+
 {{
-  "topic": "主题",
-  "parts": [{{"name": "部分1", "subparts": [{{"name": "子部分1.1"}}]}}]
+  "whole": "主题（要拆解的整体）",
+  "dimension": "使用的拆解维度（例如：'物理部件'、'功能模块'）",
+  "parts": [{{"name": "部分1", "subparts": [{{"name": "子部分1.1"}}]}}],
+  "alternative_dimensions": ["维度1", "维度2", "维度3", "维度4"]
 }}
 要求：
 - 生成3-6个主要部分，名称清晰、描述性强
@@ -222,18 +258,37 @@ BRACE_MAP_SPEC_ZH = """4. brace_map:
 - 确保逻辑的整体→部分→子部分关系
 - 部分应为主题的主要类别或分支
 - 子部分应为每个部分的具体组件、特征或元素
+- 必须包含 "dimension" 字段，描述所使用的拆解方法
+- 必须包含 "alternative_dimensions" 数组，列出此主题的 4-6 个其他有效维度
+- 所有部分必须一致地遵循相同的维度
+- 如果用户指定了维度，请完全按照指定使用
 - 不要包含任何关于可视化布局或括号形状的说明；只提供层级数据。"""
 
 # Bridge Map
 BRIDGE_MAP_SPEC_EN = """5. bridge_map:
 You can use analogies to explain the central concept and draw a bridge map. The upper and lower parts of the bridge are groups of things with the same relationship. The core function is to show similar relationships between different things.
+
+CRITICAL: DIMENSION EXTRACTION
+A bridge map uses a relationship pattern (dimension) to create analogies. You MUST:
+✓ Extract the relationship pattern from the user's prompt if explicitly specified
+✓ If user mentions "X to Y", "X and Y", "X like Y", "从X角度" (from X perspective), "基于X" (based on X), or describes a relationship type, extract it as the dimension
+✓ Examples: "Capital to Country", "Author to Book", "Currency to Country", "货币和国家", "首都到国家", "从用途出发" → extract "用途" (usage)
+✓ Use that EXACT relationship pattern for ALL analogy pairs
+✓ If no dimension is specified, identify the relationship pattern from the user's examples or topic
+
+Common Relationship Patterns:
+- Capital to Country, Author to Work, Function to Object, Part to Whole, Tool to Worker
+- Cause to Effect, Animal to Habitat, Product to Company, Inventor to Invention
+
 - Clear Relationship Pattern: Clearly define the core analogy relationship. The relationship between each group of elements must follow the same pattern. The format is usually "A is to B as C is to D".
 - ABSOLUTE UNIQUENESS: Every element must appear EXACTLY ONCE on each side. NO DUPLICATES ALLOWED.
 - Consistent Count: Generate exactly 6 elements for each side (we'll use 5, keeping 1 as backup)
 - No Repetition: Never repeat the same element, category, or similar concept on either side
 - No variations of the same concept (e.g., don't use "China" and "Chinese" or "Beijing" and "Beijing City")
+
 {{
   "relating_factor": "as",
+  "dimension": "The relationship pattern name (e.g., 'Capital to Country', 'Author to Work')",
   "analogies": [
     {{"left": "First item in analogy pair", "right": "Second item in analogy pair", "id": 0}},
     {{"left": "First item in analogy pair", "right": "Second item in analogy pair", "id": 1}},
@@ -241,7 +296,8 @@ You can use analogies to explain the central concept and draw a bridge map. The 
     {{"left": "First item in analogy pair", "right": "Second item in analogy pair", "id": 3}},
     {{"left": "First item in analogy pair", "right": "Second item in analogy pair", "id": 4}},
     {{"left": "First item in analogy pair", "right": "Second item in analogy pair", "id": 5}}
-  ]
+  ],
+  "alternative_dimensions": ["Alternative Pattern 1", "Alternative Pattern 2", "Alternative Pattern 3", "Alternative Pattern 4"]
 }}
 Validation Checklist:
 - [ ] Exactly 6 analogy pairs (6 elements per side)
@@ -249,17 +305,35 @@ Validation Checklist:
 - [ ] Each right element appears only once
 - [ ] No conceptual duplicates (e.g., "China" vs "Chinese")
 - [ ] All analogies follow the same relationship pattern
+- [ ] MUST include "dimension" field with the relationship pattern name
+- [ ] MUST include "alternative_dimensions" array with 4-6 other valid patterns
+- [ ] If user specifies a dimension, use it EXACTLY as specified
 - [ ] JSON format is valid and complete"""
 
 BRIDGE_MAP_SPEC_ZH = """5. bridge_map:
 你能够使用类比的方法来解释中心词，绘制出桥型图，桥梁上下是一组组具有相同关系的事物，核心作用是展示不同事物之间相似的关系。
+
+关键：维度提取
+桥形图使用关系模式（维度）来创建类比。您必须：
+✓ 如果用户在提示中明确指定了关系模式，请提取它
+✓ 如果用户提到"X到Y"、"X和Y"、"X像Y"、"从X出发"、"以X角度"、"基于X"或描述关系类型，请将其提取为维度
+✓ 示例："首都到国家"、"作者到作品"、"货币到国家"、"Capital to Country"、"Author to Book"、"从用途出发" → 提取"用途"
+✓ 所有类比对都使用该确切的关系模式
+✓ 如果未指定维度，请从用户的示例或主题中识别关系模式
+
+常见关系模式：
+- 首都到国家、作者到作品、功能到对象、部分到整体、工具到工人
+- 原因到结果、动物到栖息地、产品到公司、发明者到发明
+
 - 明确关系模式：明确核心的类比关系，每组元素之间的关系必须遵循同一个模式。格式通常是 "A 对于 B，如同 C 对于 D"。
 - 绝对唯一性：每个元素在每一边必须出现且仅出现一次。绝对不允许重复。
 - 数量一致：每一边生成恰好6个元素（我们将使用5个，保留1个作为备用）
 - 无重复：永远不要在任一边重复相同的元素、类别或相似概念
 - 不要使用同一概念的变化形式（例如，不要使用"中国"和"中国的"或"北京"和"北京城"）
+
 {{
   "relating_factor": "as",
+  "dimension": "关系模式名称（例如：'首都到国家'、'作者到作品'）",
   "analogies": [
     {{"left": "类比对中的第一项", "right": "类比对中的第二项", "id": 0}},
     {{"left": "类比对中的第一项", "right": "类比对中的第二项", "id": 1}},
@@ -267,7 +341,8 @@ BRIDGE_MAP_SPEC_ZH = """5. bridge_map:
     {{"left": "类比对中的第一项", "right": "类比对中的第二项", "id": 3}},
     {{"left": "类比对中的第一项", "right": "类比对中的第二项", "id": 4}},
     {{"left": "类比对中的第一项", "right": "类比对中的第二项", "id": 5}}
-  ]
+  ],
+  "alternative_dimensions": ["替代模式1", "替代模式2", "替代模式3", "替代模式4"]
 }}
 验证清单：
 - [ ] 恰好6个类比对（每边6个元素）
@@ -275,53 +350,94 @@ BRIDGE_MAP_SPEC_ZH = """5. bridge_map:
 - [ ] 每个右侧元素只出现一次
 - [ ] 无概念重复（例如，"中国"与"中国的"）
 - [ ] 所有类比遵循相同的关系模式
+- [ ] 必须包含 "dimension" 字段，包含关系模式名称
+- [ ] 必须包含 "alternative_dimensions" 数组，列出 4-6 个其他有效模式
+- [ ] 如果用户指定了维度，请完全按照指定使用
 - [ ] JSON格式有效且完整"""
 
 # Tree Map
 TREE_MAP_SPEC_EN = """6. tree_map:
 You can classify the central topic.
 Purpose: Classification, Induction, Hierarchical organization of information.
+
+CRITICAL: DIMENSION EXTRACTION
+A tree map can classify a topic using DIFFERENT DIMENSIONS. You MUST:
+✓ Extract the classification dimension from the user's prompt if explicitly specified
+✓ If user mentions "classify by X", "using X taxonomy", "categorize by X", "from X perspective", "based on X", "从X出发" (from X perspective), "以X角度" (from X angle), "基于X" (based on X), etc., extract X as the dimension
+✓ Common patterns: "从用途出发" (from usage perspective) → extract "用途" (usage), "从功能角度" (from function angle) → extract "功能" (function), "按生物分类" (by biological taxonomy) → extract "生物分类" (biological taxonomy)
+✓ Use that EXACT dimension for classification throughout the entire map
+✓ If no dimension is specified, choose an appropriate one and include it in the output
+
+Common Classification Dimensions (examples):
+- Biological Taxonomy, Habitat, Diet, Size, Geographic Region, Conservation Status
+- For "Animals": Biological Taxonomy, Habitat, Diet, Size, etc.
+- For "Plants": Botanical Classification, Habitat, Growth Pattern, Uses, etc.
+
 {{
   "topic": "Main topic",
+  "dimension": "The classification dimension being used (e.g., 'Biological Taxonomy', 'Habitat', 'Diet')",
   "children": [
-    {{"id": "category-1", "label": "Category 1", "children": [
-      {{"id": "item-1", "label": "Item 1"}},
-      {{"id": "item-2", "label": "Item 2"}}
+    {{"text": "Category 1", "children": [
+      {{"text": "Item 1", "children": []}},
+      {{"text": "Item 2", "children": []}}
     ]}},
-    {{"id": "category-2", "label": "Category 2", "children": [
-      {{"id": "item-a", "label": "Item A"}}
+    {{"text": "Category 2", "children": [
+      {{"text": "Item A", "children": []}}
     ]}}
-  ]
+  ],
+  "alternative_dimensions": ["Dimension1", "Dimension2", "Dimension3", "Dimension4"]
 }}
 Strict requirements:
 - Top-level children: generate 4–6 categories under "children" (each a short phrase, 1–5 words)
 - For EACH top-level child, generate 2–6 sub-children in its "children" array (short phrases, 1–5 words)
 - Use concise phrases only; no punctuation; no numbering prefixes; avoid full sentences
 - All labels must be unique and non-redundant
-- Do not include extra fields beyond topic, children, id, label
+- MUST include "dimension" field describing the classification approach used
+- MUST include "alternative_dimensions" array with 4-6 other valid dimensions for this topic
+- ALL categories must follow the SAME dimension consistently
+- If user specifies a dimension, use it EXACTLY as specified
 - Return only valid JSON. Do NOT include code block markers."""
 
 TREE_MAP_SPEC_ZH = """6. tree_map:
 你能对中心词进行分类。
 目的是：分类、归纳、层级化组织信息。
+
+关键：维度提取
+树形图可以使用不同的维度来分类主题。您必须：
+✓ 如果用户在提示中明确指定了分类维度，请提取它
+✓ 如果用户提到"按X分类"、"使用X分类法"、"按X分类"、"从X出发"、"以X角度"、"基于X"等，请将X提取为维度
+✓ 常见模式："从用途出发" → 提取"用途"、"从功能角度" → 提取"功能"、"按生物分类" → 提取"生物分类"
+✓ 在整个图中使用该确切的维度进行分类
+✓ 如果未指定维度，请选择适当的维度并在输出中包含它
+
+常见分类维度（示例）：
+- 生物分类、栖息地、食性、体型、地理区域、保护状态
+- 对于"动物"：生物分类、栖息地、食性、体型等
+- 对于"植物"：植物分类、栖息地、生长模式、用途等
+
 {{
   "topic": "主题",
+  "dimension": "使用的分类维度（例如：'生物分类'、'栖息地'、'食性'）",
   "children": [
-    {{"id": "category-1", "label": "类别一", "children": [
-      {{"id": "item-1", "label": "条目一"}},
-      {{"id": "item-2", "label": "条目二"}}
+    {{"text": "类别一", "children": [
+      {{"text": "条目一", "children": []}},
+      {{"text": "条目二", "children": []}}
     ]}},
-    {{"id": "category-2", "label": "类别二", "children": [
-      {{"id": "item-a", "label": "条目甲"}}
+    {{"text": "类别二", "children": [
+      {{"text": "条目甲", "children": []}}
     ]}}
-  ]
+  ],
+  "alternative_dimensions": ["维度1", "维度2", "维度3", "维度4"]
 }}
 严格要求：
 - 顶层 children：生成 4–6 个类别（短语，1–5 个词/字）
 - 每个顶层 child 的 "children" 数组：生成 2–6 个子项（短语，1–5 个词/字）
 - 仅用简短短语；不要标点；不要编号前缀；不要完整句子
 - 所有标签必须唯一且不冗余
-- 不要包含 topic、children、id、label 之外的字段
+- 必须包含 "dimension" 字段，描述所使用的分类方法
+- 必须包含 "alternative_dimensions" 数组，列出此主题的 4-6 个其他有效维度
+- 所有类别必须一致地遵循相同的维度
+- 如果用户指定了维度，请完全按照指定使用
 - 只返回有效 JSON，不要包含代码块标记。"""
 
 # Flow Map
