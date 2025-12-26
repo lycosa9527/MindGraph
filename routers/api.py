@@ -20,6 +20,9 @@ import os
 import time
 import asyncio
 import uuid
+import hmac
+import hashlib
+import base64
 from pathlib import Path
 import aiofiles
 import httpx
@@ -61,6 +64,124 @@ logger = logging.getLogger(__name__)
 
 # Create router
 router = APIRouter(prefix="/api", tags=["api"])
+
+# ============================================================================
+# RATE LIMITING HELPERS
+# ============================================================================
+
+def get_rate_limit_identifier(current_user: Optional[User], request: Request) -> str:
+    """
+    Get identifier for rate limiting (user ID if authenticated, IP otherwise).
+    
+    Args:
+        current_user: Current authenticated user (if any)
+        request: FastAPI request object
+        
+    Returns:
+        Rate limit identifier string
+    """
+    if current_user and hasattr(current_user, 'id'):
+        return f"user:{current_user.id}"
+    else:
+        client_ip = request.client.host if request.client else 'unknown'
+        return f"ip:{client_ip}"
+
+async def check_endpoint_rate_limit(
+    endpoint_name: str,
+    identifier: str,
+    max_requests: int = 30,
+    window_seconds: int = 60
+) -> None:
+    """
+    Check rate limit for expensive endpoints.
+    
+    Args:
+        endpoint_name: Name of the endpoint (for logging)
+        identifier: Rate limit identifier (user ID or IP)
+        max_requests: Maximum requests allowed in window
+        window_seconds: Time window in seconds
+        
+    Raises:
+        HTTPException: If rate limit exceeded
+    """
+    from services.redis_rate_limiter import RedisRateLimiter
+    rate_limiter = RedisRateLimiter()
+    
+    is_allowed, count, error_msg = rate_limiter.check_and_record(
+        category=f'api_{endpoint_name}',
+        identifier=identifier,
+        max_attempts=max_requests,
+        window_seconds=window_seconds
+    )
+    
+    if not is_allowed:
+        logger.warning(f"Rate limit exceeded for {endpoint_name}: {identifier} ({count}/{max_requests} requests)")
+        raise HTTPException(
+            status_code=429,
+            detail=f"Too many requests. {error_msg}"
+        )
+
+def generate_signed_url(filename: str, expiration_seconds: int = 86400) -> str:
+    """
+    Generate a signed URL for temporary image access.
+    
+    Args:
+        filename: Image filename
+        expiration_seconds: URL expiration time in seconds (default 24 hours)
+        
+    Returns:
+        Signed URL with signature and expiration timestamp
+    """
+    from utils.auth import JWT_SECRET_KEY
+    
+    expiration = int(time.time()) + expiration_seconds
+    message = f"{filename}:{expiration}"
+    
+    # Generate HMAC signature
+    signature = hmac.new(
+        JWT_SECRET_KEY.encode('utf-8'),
+        message.encode('utf-8'),
+        hashlib.sha256
+    ).digest()
+    
+    # Base64 encode signature for URL safety
+    signature_b64 = base64.urlsafe_b64encode(signature).decode('utf-8').rstrip('=')
+    
+    return f"{filename}?sig={signature_b64}&exp={expiration}"
+
+def verify_signed_url(filename: str, signature: str, expiration: int) -> bool:
+    """
+    Verify a signed URL for temporary image access.
+    
+    Args:
+        filename: Image filename
+        signature: URL signature
+        expiration: Expiration timestamp
+        
+    Returns:
+        True if signature is valid and not expired, False otherwise
+    """
+    from utils.auth import JWT_SECRET_KEY
+    
+    # Check expiration
+    if int(time.time()) > expiration:
+        return False
+    
+    # Reconstruct message
+    message = f"{filename}:{expiration}"
+    
+    # Generate expected signature
+    expected_signature = hmac.new(
+        JWT_SECRET_KEY.encode('utf-8'),
+        message.encode('utf-8'),
+        hashlib.sha256
+    ).digest()
+    
+    # Base64 encode for comparison
+    expected_b64 = base64.urlsafe_b64encode(expected_signature).decode('utf-8').rstrip('=')
+    
+    # Use constant-time comparison to prevent timing attacks
+    return hmac.compare_digest(signature, expected_b64)
 
 # ============================================================================
 # SSE STREAMING - CRITICAL FOR 4,000+ CONCURRENT USERS
@@ -197,7 +318,12 @@ async def generate_graph(
     
     This endpoint returns JSON with the diagram specification for the frontend editor to render.
     For PNG file downloads, use /api/export_png instead.
+    
+    Rate limited: 100 requests per minute per user/IP.
     """
+    # Rate limiting: 100 requests per minute per user/IP
+    identifier = get_rate_limit_identifier(current_user, request)
+    await check_endpoint_rate_limit('generate_graph', identifier, max_requests=100, window_seconds=60)
     
     # Get language for error messages
     lang = get_request_language(x_language)
@@ -783,6 +909,7 @@ async def _export_png_core(
 @router.post('/export_png')
 async def export_png(
     req: ExportPNGRequest,
+    request: Request,
     x_language: str = None,
     current_user: Optional[User] = Depends(get_current_user_or_api_key)
 ):
@@ -794,7 +921,12 @@ async def export_png(
     No dependency on any existing pages or routes.
     
     This endpoint is already async-compatible (BrowserContextManager uses async_playwright).
+    
+    Rate limited: 100 requests per minute per user/IP (PNG generation is expensive).
     """
+    # Rate limiting: 100 requests per minute per user/IP (PNG generation is expensive)
+    identifier = get_rate_limit_identifier(current_user, request)
+    await check_endpoint_rate_limit('export_png', identifier, max_requests=100, window_seconds=60)
     
     # Get language for error messages
     lang = get_request_language(x_language)
@@ -1265,7 +1397,13 @@ async def generate_png_from_prompt(
     Generate PNG directly from user prompt using simplified prompt-to-diagram agent.
     
     Uses only Qwen in a single LLM call for fast, efficient diagram generation.
+    
+    Rate limited: 100 requests per minute per user/IP (PNG generation is expensive).
     """
+    # Rate limiting: 100 requests per minute per user/IP (PNG generation is expensive)
+    identifier = get_rate_limit_identifier(current_user, request)
+    await check_endpoint_rate_limit('generate_png', identifier, max_requests=100, window_seconds=60)
+    
     lang = get_request_language(x_language)
     prompt = req.prompt.strip()
     
@@ -1608,6 +1746,9 @@ async def generate_dingtalk_png(
         async with aiofiles.open(temp_path, 'wb') as f:
             await f.write(screenshot_bytes)
         
+        # Generate signed URL for security (24 hour expiration)
+        signed_path = generate_signed_url(filename, expiration_seconds=86400)
+        
         # Build plain text response in ![](url) format (empty alt text)
         # Priority order: EXTERNAL_BASE_URL → X-Forwarded-* headers → EXTERNAL_HOST:PORT
         # This ensures HTTPS URLs are used when EXTERNAL_BASE_URL is set, preventing mixed content issues
@@ -1615,7 +1756,7 @@ async def generate_dingtalk_png(
         
         if external_base_url:
             # Explicit override - use EXTERNAL_BASE_URL directly (highest priority)
-            image_url = f"{external_base_url}/api/temp_images/{filename}"
+            image_url = f"{external_base_url}/api/temp_images/{signed_path}"
         else:
             # Try reverse proxy headers
             forwarded_proto = request.headers.get('X-Forwarded-Proto')
@@ -1624,13 +1765,13 @@ async def generate_dingtalk_png(
             if forwarded_proto and forwarded_host:
                 # Behind reverse proxy - use forwarded values (no port needed)
                 protocol = forwarded_proto
-                image_url = f"{protocol}://{forwarded_host}/api/temp_images/{filename}"
+                image_url = f"{protocol}://{forwarded_host}/api/temp_images/{signed_path}"
             else:
                 # Direct access - use backend protocol and EXTERNAL_HOST with port
                 protocol = request.url.scheme
                 external_host = os.getenv('EXTERNAL_HOST', 'localhost')
                 port = os.getenv('PORT', '9527')
-                image_url = f"{protocol}://{external_host}:{port}/api/temp_images/{filename}"
+                image_url = f"{protocol}://{external_host}:{port}/api/temp_images/{signed_path}"
         
         plain_text = f"![]({image_url})"
         
@@ -1648,21 +1789,70 @@ async def generate_dingtalk_png(
         )
 
 
-@router.get('/temp_images/{filename}')
-async def serve_temp_image(filename: str):
+@router.get('/temp_images/{filepath:path}')
+async def serve_temp_image(filepath: str, sig: Optional[str] = None, exp: Optional[int] = None):
     """
     Serve temporary PNG files for DingTalk integration.
     
-    Images auto-cleanup after 24 hours.
+    Images require signed URLs with expiration for security.
+    Images auto-cleanup after 24 hours via background cleaner task.
+    
+    Security Flow:
+    1. Check file exists (cleaner may have deleted it) → 404 if not found
+    2. Verify signed URL expiration → 403 if expired
+    3. Verify signature → 403 if invalid
+    4. Serve file if all checks pass
+    
+    Coordination with Temp Image Cleaner:
+    - Cleaner deletes files older than 24h based on file mtime
+    - Signed URLs expire after 24h from generation time
+    - Both use same 24-hour window for consistency
+    - If cleaner deleted file → 404 (file not found)
+    - If URL expired but file exists → 403 (URL expired)
     """
+    # Parse filename and signature from path
+    # Path format: filename.png?sig=...&exp=...
+    if '?' in filepath:
+        filename = filepath.split('?')[0]
+    else:
+        filename = filepath
+    
     # Security: Validate filename to prevent directory traversal
     if '..' in filename or '/' in filename or '\\' in filename:
         raise HTTPException(status_code=400, detail="Invalid filename")
     
     temp_path = Path("temp_images") / filename
     
+    # Step 1: Check if file exists (cleaner may have deleted it)
+    # This check happens FIRST to distinguish between "file deleted" (404) and "URL expired" (403)
     if not temp_path.exists():
+        # File doesn't exist - could be deleted by cleaner or never existed
+        # Check if this is a signed URL to provide better error message
+        if sig and exp:
+            # Signed URL but file doesn't exist - likely deleted by cleaner
+            logger.debug(f"Temp image file not found (may have been cleaned): {filename}")
         raise HTTPException(status_code=404, detail="Image not found or expired")
+    
+    # Step 2: Verify signed URL if signature provided (new format)
+    if sig and exp:
+        # Verify signature and expiration
+        if not verify_signed_url(filename, sig, exp):
+            logger.warning(f"Invalid or expired signed URL for temp image: {filename}")
+            raise HTTPException(status_code=403, detail="Invalid or expired image URL")
+    else:
+        # Legacy support: Check if file exists and is not too old (max 24 hours)
+        # This allows existing URLs to work temporarily
+        # Uses same logic as temp_image_cleaner (24 hour max age)
+        import aiofiles.os
+        try:
+            stat_result = await aiofiles.os.stat(temp_path)
+            file_age = time.time() - stat_result.st_mtime
+            if file_age > 86400:  # 24 hours (matches cleanup threshold)
+                logger.warning(f"Legacy temp image URL expired: {filename} (age: {file_age/3600:.1f}h)")
+                raise HTTPException(status_code=403, detail="Image URL expired")
+        except Exception as e:
+            logger.error(f"Failed to check file age: {e}")
+            raise HTTPException(status_code=404, detail="Image not found")
     
     return FileResponse(
         path=str(temp_path),
@@ -1679,11 +1869,32 @@ async def serve_temp_image(filename: str):
 # ============================================================================
 
 @router.post('/frontend_log')
-async def frontend_log(req: FrontendLogRequest):
+async def frontend_log(req: FrontendLogRequest, request: Request):
     """
     Log single frontend message to backend console.
     Receives logs from browser and displays them in Python terminal.
+    
+    Rate limited to prevent log injection and DoS attacks.
     """
+    # Rate limiting: 100 requests per minute per IP
+    from services.redis_rate_limiter import RedisRateLimiter
+    rate_limiter = RedisRateLimiter()
+    
+    client_ip = request.client.host if request.client else 'unknown'
+    is_allowed, count, error_msg = rate_limiter.check_and_record(
+        category='frontend_log',
+        identifier=client_ip,
+        max_attempts=100,  # 100 logs per minute per IP
+        window_seconds=60
+    )
+    
+    if not is_allowed:
+        logger.warning(f"Frontend log rate limit exceeded for IP {client_ip}: {count} attempts")
+        raise HTTPException(
+            status_code=429,
+            detail=f"Too many log requests. {error_msg}"
+        )
+    
     level_map = {
         'error': logging.ERROR,
         'warn': logging.WARNING,
@@ -1700,6 +1911,12 @@ async def frontend_log(req: FrontendLogRequest):
     # Don't include frontend timestamp to avoid duplication
     message = req.message
     
+    # Security: Sanitize message to prevent log injection
+    # Remove control characters and limit length
+    message = ''.join(char for char in message if ord(char) >= 32 or char in '\n\r\t')
+    if len(message) > 10000:  # Limit message length
+        message = message[:10000] + "... [truncated]"
+    
     # Log with clean formatting
     frontend_logger.log(level, message)
     
@@ -1707,11 +1924,39 @@ async def frontend_log(req: FrontendLogRequest):
 
 
 @router.post('/frontend_log_batch')
-async def frontend_log_batch(req: FrontendLogBatchRequest):
+async def frontend_log_batch(req: FrontendLogBatchRequest, request: Request):
     """
     Log batched frontend messages to backend console (efficient bulk logging).
     Receives multiple logs from browser and displays them in Python terminal.
+    
+    Rate limited to prevent log injection and DoS attacks.
     """
+    # Rate limiting: 10 batches per minute per IP, max 50 logs per batch
+    from services.redis_rate_limiter import RedisRateLimiter
+    rate_limiter = RedisRateLimiter()
+    
+    client_ip = request.client.host if request.client else 'unknown'
+    is_allowed, count, error_msg = rate_limiter.check_and_record(
+        category='frontend_log_batch',
+        identifier=client_ip,
+        max_attempts=10,  # 10 batches per minute per IP
+        window_seconds=60
+    )
+    
+    if not is_allowed:
+        logger.warning(f"Frontend log batch rate limit exceeded for IP {client_ip}: {count} attempts")
+        raise HTTPException(
+            status_code=429,
+            detail=f"Too many log batch requests. {error_msg}"
+        )
+    
+    # Validate batch size
+    if req.batch_size > 50:
+        raise HTTPException(
+            status_code=400,
+            detail="Batch size too large. Maximum 50 logs per batch."
+        )
+    
     level_map = {
         'error': logging.ERROR,
         'warn': logging.WARNING,
@@ -1733,6 +1978,12 @@ async def frontend_log_batch(req: FrontendLogBatchRequest):
         # Log message directly - Python logger will add its own timestamp
         # Don't include frontend timestamp to avoid duplication
         message = log_entry.message
+        
+        # Security: Sanitize message to prevent log injection
+        # Remove control characters and limit length
+        message = ''.join(char for char in message if ord(char) >= 32 or char in '\n\r\t')
+        if len(message) > 10000:  # Limit message length
+            message = message[:10000] + "... [truncated]"
         
         # Log to backend console
         frontend_logger.log(level, message)

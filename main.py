@@ -1011,6 +1011,102 @@ app.add_middleware(
 # GZip Compression
 app.add_middleware(GZipMiddleware, minimum_size=1000)
 
+# CSRF Protection Middleware
+@app.middleware("http")
+async def csrf_protection(request: Request, call_next):
+    """
+    CSRF protection middleware for state-changing operations.
+    
+    Validates:
+    - Origin header for POST/PUT/DELETE/PATCH requests
+    - CSRF token for authenticated requests (if token provided)
+    
+    Uses SameSite cookies (already set) + Origin validation for defense in depth.
+    """
+    # Only check state-changing methods
+    if request.method in ('POST', 'PUT', 'DELETE', 'PATCH'):
+        # Skip CSRF check for:
+        # - Public endpoints (login, register, etc.)
+        # - API endpoints that use API keys (different auth mechanism)
+        # - Health checks
+        skip_paths = [
+            '/api/auth/login',
+            '/api/auth/register',
+            '/api/auth/demo/verify',
+            '/api/frontend_log',
+            '/api/frontend_log_batch',
+            '/health',
+            '/health/',
+            '/docs',
+            '/redoc',
+            '/openapi.json'
+        ]
+        
+        if any(request.url.path.startswith(path) for path in skip_paths):
+            return await call_next(request)
+        
+        # Validate Origin header for cross-origin requests
+        origin = request.headers.get('Origin')
+        referer = request.headers.get('Referer')
+        
+        if origin:
+            # Extract host from origin
+            try:
+                from urllib.parse import urlparse
+                origin_host = urlparse(origin).netloc
+                request_host = request.url.netloc
+                
+                # Allow same-origin requests
+                if origin_host == request_host:
+                    pass  # Same origin, allow
+                else:
+                    # Cross-origin: Check if origin is allowed
+                    # In production, you might want to maintain a whitelist
+                    # For now, we rely on SameSite cookies which provide good protection
+                    logger.warning(f"Cross-origin request detected: Origin={origin_host}, Host={request_host}")
+                    # Don't block - SameSite cookies will prevent CSRF
+            except Exception as e:
+                logger.debug(f"Origin validation error (non-critical): {e}")
+        
+        # Check for CSRF token in header (optional - for additional protection)
+        csrf_token = request.headers.get('X-CSRF-Token')
+        if csrf_token:
+            # Validate CSRF token from cookie
+            csrf_cookie = request.cookies.get('csrf_token')
+            if csrf_cookie and csrf_token != csrf_cookie:
+                logger.warning(f"CSRF token mismatch for {request.url.path}")
+                return JSONResponse(
+                    status_code=403,
+                    content={"detail": "Invalid CSRF token"}
+                )
+    
+    response = await call_next(request)
+    
+    # Set CSRF token cookie for authenticated users (if not already set)
+    # This enables double-submit cookie pattern
+    if request.cookies.get('access_token') and not request.cookies.get('csrf_token'):
+        import secrets
+        csrf_token = secrets.token_urlsafe(32)
+        response.set_cookie(
+            key='csrf_token',
+            value=csrf_token,
+            httponly=False,  # JavaScript needs to read it for X-CSRF-Token header
+            secure=is_https(request) if hasattr(request, 'url') else False,
+            samesite='strict',  # Strict SameSite for CSRF token
+            max_age=7 * 24 * 60 * 60  # 7 days
+        )
+    
+    return response
+
+def is_https(request: Request) -> bool:
+    """Check if request is over HTTPS."""
+    forwarded_proto = request.headers.get("X-Forwarded-Proto", "").lower()
+    if forwarded_proto == "https":
+        return True
+    if hasattr(request.url, 'scheme') and request.url.scheme == "https":
+        return True
+    return False
+
 # Security Headers Middleware
 @app.middleware("http")
 async def add_security_headers(request: Request, call_next):

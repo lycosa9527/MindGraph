@@ -328,11 +328,12 @@ else:
 if "sqlite" in DATABASE_URL:
     # SQLite pool configuration for multi-worker deployments
     # Optimized for 500 concurrent registrations with safety margin:
-    # - Base: 50 connections (handles normal load)
-    # - Overflow: 100 connections (handles bursts)
-    # - Total: 150 connections (enough for 500 concurrent registrations)
-    SQLITE_POOL_SIZE = int(os.getenv('DATABASE_POOL_SIZE', '50'))       # Base connections (increased from 15)
-    SQLITE_MAX_OVERFLOW = int(os.getenv('DATABASE_MAX_OVERFLOW', '100'))  # Overflow connections (increased from 30)
+    # - Base: 60 connections (handles normal load, increased from 50)
+    # - Overflow: 120 connections (handles bursts, increased from 100)
+    # - Total: 180 connections (enough for 500 concurrent registrations with headroom)
+    # - Uses Redis distributed locks to prevent race conditions on phone uniqueness checks
+    SQLITE_POOL_SIZE = int(os.getenv('DATABASE_POOL_SIZE', '60'))       # Base connections (increased from 50)
+    SQLITE_MAX_OVERFLOW = int(os.getenv('DATABASE_MAX_OVERFLOW', '120'))  # Overflow connections (increased from 100)
     SQLITE_POOL_TIMEOUT = int(os.getenv('DATABASE_POOL_TIMEOUT', '30'))  # Wait time (seconds)
     
     engine = create_engine(
@@ -355,15 +356,16 @@ if "sqlite" in DATABASE_URL:
         Enable WAL mode for SQLite to improve concurrent write performance.
         
         Optimized for high concurrency (500 concurrent registrations):
-        - Busy timeout: 500ms (allows queued writes to complete)
+        - Busy timeout: 1000ms (allows queued writes to complete, increased from 500ms)
         - Application-level retry logic handles transient locks with exponential backoff
-        - Total worst-case wait: ~1.5s (with 5 retries)
+        - Redis distributed locks prevent race conditions on phone uniqueness checks
+        - Total worst-case wait: ~2s (with 5 retries)
         - Typical wait: 10-500ms (most locks clear quickly)
-        - Increased from 150ms to handle higher concurrency
+        - Connection pool: 60 base + 120 overflow = 180 total connections
         """
         cursor = dbapi_conn.cursor()
         cursor.execute("PRAGMA journal_mode=WAL")
-        cursor.execute("PRAGMA busy_timeout=500")  # Optimized for high concurrency: 500ms (increased from 150ms)
+        cursor.execute("PRAGMA busy_timeout=1000")  # Optimized for high concurrency: 1000ms (increased from 500ms)
         cursor.close()
 else:
     # Production database (PostgreSQL/MySQL) pool configuration

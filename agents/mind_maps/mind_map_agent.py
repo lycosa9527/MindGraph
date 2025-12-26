@@ -35,6 +35,7 @@ from config.settings import Config
 
 
 @dataclass
+@dataclass
 class NodePosition:
     """Data structure for node positioning"""
     x: float

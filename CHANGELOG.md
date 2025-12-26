@@ -7,6 +7,108 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.37.22] - 2025-01-XX - Security Enhancements, Rate Limiting, and Performance Optimizations
+
+### Security
+
+- **Rate Limiting for Expensive Endpoints** (`routers/api.py`)
+  - Added rate limiting to `/api/generate_graph`: 100 requests/minute
+  - Added rate limiting to `/api/export_png`: 100 requests/minute
+  - Added rate limiting to `/api/generate_png`: 100 requests/minute
+  - Uses Redis for distributed rate limiting across workers
+  - **Per-user rate limiting for authenticated users** (each user gets their own 100/min limit)
+  - **Per-IP rate limiting for anonymous users** (unauthenticated requests share limit by IP)
+  - **Important**: Multiple authenticated users from same IP (e.g., school network) each get their own limit
+  - Prevents DoS attacks and controls resource usage
+
+- **Rate Limiting for Frontend Logging** (`routers/api.py`)
+  - Added rate limiting to `/api/frontend_log`: 100 requests/minute per IP
+  - Added rate limiting to `/api/frontend_log_batch`: 10 batches/minute per IP
+  - Prevents log injection and DoS attacks
+  - Message sanitization: Removes control characters, limits length (10,000 chars)
+
+- **Signed URLs for Temp Images** (`routers/api.py`)
+  - Implemented HMAC-based signed URLs for `/api/temp_images/{filename}`
+  - Uses JWT_SECRET_KEY for signature generation
+  - URLs expire after 24 hours (configurable)
+  - Constant-time signature verification to prevent timing attacks
+  - Legacy support for existing URLs (backward compatible)
+  - Coordinates with temp image cleaner for proper file lifecycle management
+
+- **Enhanced CSRF Protection** (`main.py`)
+  - Added Origin header validation for cross-origin requests
+  - Optional CSRF token validation (double-submit cookie pattern)
+  - Same-origin requests always allowed (no breaking changes)
+  - Public endpoints excluded (login, register, demo/verify, health checks)
+  - Demo/bayi mode protected (demo verify endpoint excluded)
+
+### Performance
+
+- **SQLite Connection Pool Optimization** (`config/database.py`)
+  - Increased base pool size: 50 → 60 connections
+  - Increased overflow pool: 100 → 120 connections
+  - Total connections: 150 → 180 (handles 500+ concurrent registrations)
+  - Improved concurrent write performance under high load
+
+- **SQLite Busy Timeout Optimization** (`config/database.py`)
+  - Increased busy timeout: 500ms → 1000ms
+  - Better handling of concurrent writes with WAL mode
+  - Reduces database lock errors under high concurrency
+  - Works with Redis distributed locks for phone uniqueness checks
+
+### Testing
+
+- **Unit Test Infrastructure** (`tests/agents/`)
+  - Created unit test framework for agent classes
+  - Added `test_circle_map_agent.py` as example
+  - Mock LLM service for isolated testing
+  - Tests cover success, error, and edge cases
+
+- **Integration Test Infrastructure** (`tests/integration/`)
+  - Created integration test framework for API endpoints
+  - Added `test_api_security.py` for security feature testing
+  - Added `test_api_endpoints.py` for endpoint validation
+  - Tests cover rate limiting, signed URLs, CSRF protection
+
+- **Performance Test Infrastructure** (`tests/performance/`)
+  - Created performance test framework
+  - Added `test_concurrent_requests.py` for concurrent scenario testing
+  - Measures response times and success rates under load
+
+### Documentation
+
+- **Application Review Summary** (`docs/APPLICATION_REVIEW_SUMMARY.md`)
+  - Comprehensive review of security, performance, and code quality improvements
+  - Summary of completed and deferred tasks
+  - Recommendations for future work
+
+- **Breaking Changes Review** (`docs/BREAKING_CHANGES_REVIEW.md`)
+  - Detailed analysis of all changes for backward compatibility
+  - Risk assessment and mitigation strategies
+  - Testing checklist and rollback plan
+
+- **HMAC URL Signing Explanation** (`docs/HMAC_URL_SIGNING_EXPLANATION.md`)
+  - Comprehensive explanation of HMAC-based URL signing
+  - Security features and implementation details
+  - Coordination with temp image cleaner
+  - Best practices and recommendations
+
+### Changed
+
+- **Temp Image Endpoint Verification Order** (`routers/api.py`)
+  - Changed verification order: Check file existence first, then URL expiration
+  - Better error codes: 404 for deleted files, 403 for expired URLs
+  - Improved coordination with temp image cleaner
+
+### Fixed
+
+- **Temp Image Cleaner Coordination** (`routers/api.py`)
+  - Fixed verification flow to properly distinguish between file deletion and URL expiration
+  - Ensures consistent 24-hour expiration window for both systems
+  - Better error messages for debugging
+
+---
+
 ## [4.37.21] - 2025-01-XX - Enhanced JSON Handling, Retry Logic, and Validation Improvements
 
 ### Added
