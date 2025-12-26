@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.37.24] - 2025-12-27 - Code Formatting Cleanup
+
+### Changed
+
+- **Code Formatting** (`services/redis_bayi_token.py`, `tests/README_RATE_LIMITER_TESTS.md`, `tests/test_admin_performance.py`)
+  - Standardized trailing newlines across codebase
+  - Improved code consistency and formatting
+
+---
+
 ## [4.37.23] - 2025-12-27 - Enhanced Dimension Extraction for Thinking Maps
 
 ### Added
