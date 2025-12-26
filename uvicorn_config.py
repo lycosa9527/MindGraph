@@ -181,7 +181,6 @@ log_level = os.getenv('LOG_LEVEL', 'info').lower()
 
 # Access log
 access_log = True
-use_colors = True
 
 # Reload on code changes (development only)
 reload = os.getenv('ENVIRONMENT', 'production') == 'development'

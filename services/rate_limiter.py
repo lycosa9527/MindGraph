@@ -565,7 +565,7 @@ class DashscopeRateLimiter:
         await self.acquire()
         return self
     
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
+    async def __aexit__(self, exc_type, _exc_val, _exc_tb):
         """Context manager support."""
         await self.release()
 
@@ -773,6 +773,6 @@ class LoadBalancerRateLimiter:
         """Context manager support - not used directly, use get_limiter()."""
         raise NotImplementedError("Use get_limiter(provider) to get provider-specific limiter")
     
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
+    async def __aexit__(self, exc_type, _exc_val, _exc_tb):
         """Context manager support."""
         pass

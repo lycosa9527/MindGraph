@@ -50,7 +50,6 @@ from utils.auth import (
     get_current_user,
     verify_demo_passkey,
     is_admin_demo_passkey,
-    validate_invitation_code,
     check_account_lockout,
     increment_failed_attempts,
     reset_failed_attempts,
@@ -58,7 +57,6 @@ from utils.auth import (
     get_client_ip,
     is_https,
     MAX_LOGIN_ATTEMPTS,
-    MAX_CAPTCHA_ATTEMPTS,
     CAPTCHA_SESSION_COOKIE_NAME,
     RATE_LIMIT_WINDOW_MINUTES,
     LOCKOUT_DURATION_MINUTES,
@@ -74,7 +72,6 @@ from services.redis_rate_limiter import (
     check_login_rate_limit,
     check_captcha_rate_limit,
     clear_login_attempts,
-    clear_captcha_attempts,
     get_login_attempts_remaining,
 )
 from services.captcha_storage import get_captcha_storage
@@ -3177,7 +3174,9 @@ async def get_stats_admin(
     # Convert to UTC for database queries since timestamps are stored in UTC
     beijing_now = get_beijing_now()
     today_start = get_beijing_today_start_utc()
-    week_ago = (beijing_now - timedelta(days=7)).astimezone(timezone.utc).replace(tzinfo=None)
+    # Calculate week_ago from today start (00:00:00) to match token-stats endpoint behavior
+    beijing_today_start = beijing_now.replace(hour=0, minute=0, second=0, microsecond=0)
+    week_ago = (beijing_today_start - timedelta(days=7)).astimezone(timezone.utc).replace(tzinfo=None)
     recent_registrations = db.query(User).filter(User.created_at >= today_start).count()
     
     # Token usage stats (this week) - PER USER and PER ORGANIZATION tracking!
@@ -3259,11 +3258,16 @@ async def get_stats_admin(
 @router.get("/admin/token-stats", dependencies=[Depends(get_current_user)])
 async def get_token_stats_admin(
     request: Request,
+    organization_id: Optional[int] = None,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
     x_language: Optional[str] = Header(None, alias="X-Language")
 ):
-    """Get detailed token usage statistics (ADMIN ONLY)"""
+    """Get detailed token usage statistics (ADMIN ONLY)
+    
+    If organization_id is provided, returns stats for that organization only.
+    Otherwise returns global stats.
+    """
     accept_language = request.headers.get("Accept-Language", "")
     lang: Language = get_request_language(x_language, accept_language)
     
@@ -3275,8 +3279,16 @@ async def get_token_stats_admin(
     # Convert to UTC for database queries since timestamps are stored in UTC
     beijing_now = get_beijing_now()
     today_start = get_beijing_today_start_utc()
-    week_ago = (beijing_now - timedelta(days=7)).astimezone(timezone.utc).replace(tzinfo=None)
-    month_ago = (beijing_now - timedelta(days=30)).astimezone(timezone.utc).replace(tzinfo=None)
+    # Calculate week_ago and month_ago from today start (00:00:00) to match trends endpoint behavior
+    # This ensures status cards match graph sums:
+    # - "Past Week" = last 7 days from today 00:00:00 (includes today)
+    # - "Past Month" = last 30 days from today 00:00:00 (includes today)
+    # Example: If today is Jan 15 00:00:00:
+    #   - week_ago = Jan 8 00:00:00 UTC
+    #   - Query includes: Jan 8, 9, 10, 11, 12, 13, 14, 15 (8 days, including today)
+    beijing_today_start = beijing_now.replace(hour=0, minute=0, second=0, microsecond=0)
+    week_ago = (beijing_today_start - timedelta(days=7)).astimezone(timezone.utc).replace(tzinfo=None)
+    month_ago = (beijing_today_start - timedelta(days=30)).astimezone(timezone.utc).replace(tzinfo=None)
     
     # Initialize default stats
     today_stats = {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}
@@ -3285,22 +3297,38 @@ async def get_token_stats_admin(
     total_stats = {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}
     top_users = []
     
+    # Import models first
     try:
         from models.token_usage import TokenUsage
+        from models.auth import Organization, User
+        
+        # Build base filter for organization if specified
+        org_filter = []
+        if organization_id:
+            org = db.query(Organization).filter(Organization.id == organization_id).first()
+            if not org:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Organization not found"
+                )
+            org_filter.append(TokenUsage.organization_id == organization_id)
         
         # Today stats - sum all token usage today (including records with user_id=NULL)
         # Note: This includes API key usage without user_id, so it may be larger than sum of top users
-        today_token_stats = db.query(
+        today_query = db.query(
             func.sum(TokenUsage.input_tokens).label('input_tokens'),
             func.sum(TokenUsage.output_tokens).label('output_tokens'),
             func.sum(TokenUsage.total_tokens).label('total_tokens')
         ).filter(
             TokenUsage.created_at >= today_start,
             TokenUsage.success == True
-        ).first()
+        )
+        if org_filter:
+            today_query = today_query.filter(*org_filter)
+        today_token_stats = today_query.first()
         
         # Also calculate today stats for authenticated users only (for comparison)
-        today_user_token_stats = db.query(
+        today_user_token_stats_query = db.query(
             func.sum(TokenUsage.input_tokens).label('input_tokens'),
             func.sum(TokenUsage.output_tokens).label('output_tokens'),
             func.sum(TokenUsage.total_tokens).label('total_tokens')
@@ -3308,7 +3336,10 @@ async def get_token_stats_admin(
             TokenUsage.created_at >= today_start,
             TokenUsage.success == True,
             TokenUsage.user_id.isnot(None)
-        ).first()
+        )
+        if org_filter:
+            today_user_token_stats_query = today_user_token_stats_query.filter(*org_filter)
+        today_user_token_stats = today_user_token_stats_query.first()
         
         if today_token_stats:
             today_stats = {
@@ -3329,14 +3360,17 @@ async def get_token_stats_admin(
                 logger.warning(f"Token count mismatch: Authenticated users ({authenticated_total}) > All users ({all_total})")
         
         # Past week stats
-        week_token_stats = db.query(
+        week_query = db.query(
             func.sum(TokenUsage.input_tokens).label('input_tokens'),
             func.sum(TokenUsage.output_tokens).label('output_tokens'),
             func.sum(TokenUsage.total_tokens).label('total_tokens')
         ).filter(
             TokenUsage.created_at >= week_ago,
             TokenUsage.success == True
-        ).first()
+        )
+        if org_filter:
+            week_query = week_query.filter(*org_filter)
+        week_token_stats = week_query.first()
         
         if week_token_stats:
             week_stats = {
@@ -3346,14 +3380,17 @@ async def get_token_stats_admin(
             }
         
         # Past month stats
-        month_token_stats = db.query(
+        month_query = db.query(
             func.sum(TokenUsage.input_tokens).label('input_tokens'),
             func.sum(TokenUsage.output_tokens).label('output_tokens'),
             func.sum(TokenUsage.total_tokens).label('total_tokens')
         ).filter(
             TokenUsage.created_at >= month_ago,
             TokenUsage.success == True
-        ).first()
+        )
+        if org_filter:
+            month_query = month_query.filter(*org_filter)
+        month_token_stats = month_query.first()
         
         if month_token_stats:
             month_stats = {
@@ -3363,13 +3400,16 @@ async def get_token_stats_admin(
             }
         
         # Total stats (all time)
-        total_token_stats = db.query(
+        total_query = db.query(
             func.sum(TokenUsage.input_tokens).label('input_tokens'),
             func.sum(TokenUsage.output_tokens).label('output_tokens'),
             func.sum(TokenUsage.total_tokens).label('total_tokens')
         ).filter(
             TokenUsage.success == True
-        ).first()
+        )
+        if org_filter:
+            total_query = total_query.filter(*org_filter)
+        total_token_stats = total_query.first()
         
         if total_token_stats:
             total_stats = {
@@ -3380,6 +3420,7 @@ async def get_token_stats_admin(
         
         # Top 10 users by total tokens (all time), including organization name
         # Group by Organization.id (not name) to avoid issues with duplicate organization names
+        # Skip top_users if organization_id is specified (not needed for organization-specific stats)
         top_users_query = db.query(
             User.id,
             User.phone,
@@ -3398,7 +3439,10 @@ async def get_token_stats_admin(
                 User.id == TokenUsage.user_id,
                 TokenUsage.success == True
             )
-        ).group_by(
+        )
+        if org_filter:
+            top_users_query = top_users_query.filter(*org_filter)
+        top_users_query = top_users_query.group_by(
             User.id,
             User.phone,
             User.name,
@@ -3424,6 +3468,7 @@ async def get_token_stats_admin(
         # Top 10 users by today's token usage, including organization name
         # Use inner join to only include users with actual token usage today
         # Group by Organization.id (not name) to avoid issues with duplicate organization names
+        # Skip top_users_today if organization_id is specified (not needed for organization-specific stats)
         top_users_today_query = db.query(
             User.id,
             User.phone,
@@ -3444,7 +3489,10 @@ async def get_token_stats_admin(
                 TokenUsage.created_at >= today_start,
                 TokenUsage.success == True
             )
-        ).group_by(
+        )
+        if org_filter:
+            top_users_today_query = top_users_today_query.filter(*org_filter)
+        top_users_today_query = top_users_today_query.group_by(
             User.id,
             User.phone,
             User.name,
@@ -3485,8 +3533,11 @@ async def get_token_stats_admin(
             if authenticated_total > all_total:
                 logger.warning(f"Token count mismatch: Authenticated users ({authenticated_total}) > All users ({all_total})")
         
+    except HTTPException:
+        # Re-raise HTTP exceptions (like 404 for organization not found)
+        raise
     except (ImportError, Exception) as e:
-        logger.debug(f"TokenUsage not available yet: {e}")
+        logger.error(f"Error loading token stats: {e}", exc_info=True)
     
     return {
         "today": today_stats,
@@ -3515,21 +3566,42 @@ async def get_stats_trends_admin(
         error_msg = Messages.error("admin_access_required", lang)
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=error_msg)
     
-    if days > 90:
-        days = 90  # Cap at 90 days
-    if days < 1:
+    # Special case: days=0 means all-time (no limit)
+    all_time = False
+    if days == 0:
+        all_time = True
+        days = None  # Will fetch all data
+    elif days > 90:
+        days = 90  # Cap at 90 days for regular queries
+    elif days < 1:
         days = 1  # Minimum 1 day
     
     # Use Beijing time for date calculations
     beijing_now = get_beijing_now()
-    beijing_start = beijing_now - timedelta(days=days)
-    beijing_start = beijing_start.replace(hour=0, minute=0, second=0, microsecond=0)
     
-    # Convert to UTC for database queries
-    start_date_utc = beijing_start.astimezone(timezone.utc).replace(tzinfo=None)
-    now_utc = beijing_now.astimezone(timezone.utc).replace(tzinfo=None)
+    # Handle all-time query (days=None or days=0)
+    if all_time:
+        start_date_utc = None  # No start date limit - fetch all data
+        now_utc = beijing_now.astimezone(timezone.utc).replace(tzinfo=None)
+        # For date list generation, start from a reasonable date (e.g., 1 year ago or system start)
+        # For tokens metric, we'll generate dates based on actual data range
+        beijing_start = beijing_now - timedelta(days=365)  # Default to 1 year for all-time display
+        beijing_start = beijing_start.replace(hour=0, minute=0, second=0, microsecond=0)
+    else:
+        # Calculate start date: N days ago from now, then set to 00:00:00
+        # This ensures consistent date boundaries with token-stats endpoint
+        # Example: If days=7 and today is Jan 15 at 3:00 PM:
+        #   - Calculate: Jan 15 3:00 PM - 7 days = Jan 8 3:00 PM
+        #   - Set hour to 00:00:00 = Jan 8 00:00:00
+        #   - Date list includes: Jan 8, 9, 10, 11, 12, 13, 14, 15 (8 days, including today)
+        beijing_start = beijing_now - timedelta(days=days)
+        beijing_start = beijing_start.replace(hour=0, minute=0, second=0, microsecond=0)
+        # Convert to UTC for database queries
+        start_date_utc = beijing_start.astimezone(timezone.utc).replace(tzinfo=None)
+        now_utc = beijing_now.astimezone(timezone.utc).replace(tzinfo=None)
     
     # Generate all dates in range using Beijing dates (for display)
+    # Includes start date through today (inclusive)
     date_list = []
     current = beijing_start
     while current <= beijing_now:
@@ -3667,15 +3739,18 @@ async def get_stats_trends_admin(
         try:
             from models.token_usage import TokenUsage
             
-            token_counts = db.query(
+            token_counts_query = db.query(
                 func.date(TokenUsage.created_at).label('date'),
                 func.sum(TokenUsage.total_tokens).label('total_tokens'),
                 func.sum(TokenUsage.input_tokens).label('input_tokens'),
                 func.sum(TokenUsage.output_tokens).label('output_tokens')
             ).filter(
-                TokenUsage.created_at >= start_date_utc,
                 TokenUsage.success == True
-            ).group_by(
+            )
+            # Apply date filter only if not all-time query
+            if start_date_utc is not None:
+                token_counts_query = token_counts_query.filter(TokenUsage.created_at >= start_date_utc)
+            token_counts = token_counts_query.group_by(
                 func.date(TokenUsage.created_at)
             ).all()
             
@@ -3733,6 +3808,7 @@ async def get_organization_token_trends_admin(
     organization_id: Optional[int] = None,
     organization_name: Optional[str] = None,
     days: int = 30,  # Number of days to look back
+    hourly: bool = False,  # If True, return hourly data (only for days=1)
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
     x_language: Optional[str] = Header(None, alias="X-Language")
@@ -3751,9 +3827,14 @@ async def get_organization_token_trends_admin(
             detail="Either organization_id or organization_name must be provided"
         )
     
-    if days > 90:
-        days = 90  # Cap at 90 days
-    if days < 1:
+    # Special case: days=0 means all-time (no limit)
+    all_time = False
+    if days == 0:
+        all_time = True
+        days = None  # Will fetch all data
+    elif days > 90:
+        days = 90  # Cap at 90 days for regular queries
+    elif days < 1:
         days = 1  # Minimum 1 day
     
     # Find organization
@@ -3771,73 +3852,146 @@ async def get_organization_token_trends_admin(
     
     # Use Beijing time for date calculations
     beijing_now = get_beijing_now()
-    beijing_start = beijing_now - timedelta(days=days)
-    beijing_start = beijing_start.replace(hour=0, minute=0, second=0, microsecond=0)
     
-    # Convert to UTC for database queries
-    start_date_utc = beijing_start.astimezone(timezone.utc).replace(tzinfo=None)
-    now_utc = beijing_now.astimezone(timezone.utc).replace(tzinfo=None)
-    
-    # Generate all dates in range using Beijing dates (for display)
-    date_list = []
-    current = beijing_start
-    while current <= beijing_now:
-        date_list.append(current.date())
-        current += timedelta(days=1)
+    # Handle all-time query (days=None or days=0)
+    if all_time:
+        start_date_utc = None  # No start date limit - fetch all data
+        now_utc = beijing_now.astimezone(timezone.utc).replace(tzinfo=None)
+        # For date list generation, start from organization creation
+        beijing_start = org.created_at.replace(tzinfo=timezone.utc).astimezone(BEIJING_TIMEZONE)
+        beijing_start = beijing_start.replace(hour=0, minute=0, second=0, microsecond=0)
+    else:
+        beijing_start = beijing_now - timedelta(days=days)
+        beijing_start = beijing_start.replace(hour=0, minute=0, second=0, microsecond=0)
+        # Convert to UTC for database queries
+        start_date_utc = beijing_start.astimezone(timezone.utc).replace(tzinfo=None)
+        now_utc = beijing_now.astimezone(timezone.utc).replace(tzinfo=None)
     
     trends_data = []
     
-    # Daily token usage for this organization (non-cumulative)
-    try:
-        from models.token_usage import TokenUsage
+    # Hourly data (only for days=1, not for all-time)
+    if hourly and days == 1 and start_date_utc is not None:
+        # Generate hourly intervals for today
+        hour_list = []
+        beijing_start = start_date_utc.astimezone(BEIJING_TIMEZONE)
+        current = beijing_start
+        while current <= beijing_now:
+            hour_list.append(current.replace(minute=0, second=0, microsecond=0))
+            current += timedelta(hours=1)
         
-        token_counts = db.query(
-            func.date(TokenUsage.created_at).label('date'),
-            func.sum(TokenUsage.total_tokens).label('total_tokens'),
-            func.sum(TokenUsage.input_tokens).label('input_tokens'),
-            func.sum(TokenUsage.output_tokens).label('output_tokens')
-        ).filter(
-            TokenUsage.created_at >= start_date_utc,
-            TokenUsage.organization_id == org.id,
-            TokenUsage.success == True
-        ).group_by(
-            func.date(TokenUsage.created_at)
-        ).all()
+        try:
+            from models.token_usage import TokenUsage
+            
+            # Query hourly token usage
+            token_counts = db.query(
+                func.strftime('%Y-%m-%d %H:00:00', TokenUsage.created_at).label('datetime'),
+                func.sum(TokenUsage.total_tokens).label('total_tokens'),
+                func.sum(TokenUsage.input_tokens).label('input_tokens'),
+                func.sum(TokenUsage.output_tokens).label('output_tokens')
+            ).filter(
+                TokenUsage.organization_id == org.id,
+                TokenUsage.success == True
+            )
+            if start_date_utc is not None:
+                token_counts = token_counts.filter(TokenUsage.created_at >= start_date_utc)
+            token_counts = token_counts.group_by(
+                func.strftime('%Y-%m-%d %H:00:00', TokenUsage.created_at)
+            ).all()
+            
+            # Map UTC datetimes to Beijing hours
+            tokens_by_hour = {}
+            for row in token_counts:
+                utc_datetime_str = row.datetime
+                # Parse UTC datetime string
+                utc_datetime = datetime.strptime(utc_datetime_str, "%Y-%m-%d %H:00:00")
+                utc_datetime = utc_datetime.replace(tzinfo=timezone.utc)
+                beijing_datetime = utc_datetime.astimezone(BEIJING_TIMEZONE)
+                beijing_hour_str = beijing_datetime.strftime("%Y-%m-%d %H:00:00")
+                if beijing_hour_str not in tokens_by_hour:
+                    tokens_by_hour[beijing_hour_str] = {"total": 0, "input": 0, "output": 0}
+                tokens_by_hour[beijing_hour_str]["total"] += int(row.total_tokens or 0)
+                tokens_by_hour[beijing_hour_str]["input"] += int(row.input_tokens or 0)
+                tokens_by_hour[beijing_hour_str]["output"] += int(row.output_tokens or 0)
+            
+            for hour in hour_list:
+                hour_str = hour.strftime("%Y-%m-%d %H:00:00")
+                tokens = tokens_by_hour.get(hour_str, {"total": 0, "input": 0, "output": 0})
+                trends_data.append({
+                    "date": hour_str,
+                    "value": tokens["total"],
+                    "input": tokens["input"],
+                    "output": tokens["output"]
+                })
+        except Exception as e:
+            logger.error(f"Error fetching hourly organization token trends: {e}")
+            for hour in hour_list:
+                trends_data.append({
+                    "date": hour.strftime("%Y-%m-%d %H:00:00"),
+                    "value": 0,
+                    "input": 0,
+                    "output": 0
+                })
+    else:
+        # Daily token usage for this organization (non-cumulative)
+        # Generate all dates in range using Beijing dates (for display)
+        date_list = []
+        current = beijing_start
+        while current <= beijing_now:
+            date_list.append(current.date())
+            current += timedelta(days=1)
         
-        # Map UTC dates to Beijing dates
-        tokens_by_date = {}
-        for row in token_counts:
-            utc_date = row.date
-            # SQLite returns date as string, need to parse it
-            if isinstance(utc_date, str):
-                utc_date = datetime.strptime(utc_date, "%Y-%m-%d").date()
-            utc_datetime = datetime.combine(utc_date, datetime.min.time())
-            beijing_datetime = utc_datetime.replace(tzinfo=timezone.utc).astimezone(BEIJING_TIMEZONE)
-            beijing_date_str = str(beijing_datetime.date())
-            if beijing_date_str not in tokens_by_date:
-                tokens_by_date[beijing_date_str] = {"total": 0, "input": 0, "output": 0}
-            tokens_by_date[beijing_date_str]["total"] += int(row.total_tokens or 0)
-            tokens_by_date[beijing_date_str]["input"] += int(row.input_tokens or 0)
-            tokens_by_date[beijing_date_str]["output"] += int(row.output_tokens or 0)
-        
-        for date in date_list:
-            date_str = str(date)
-            tokens = tokens_by_date.get(date_str, {"total": 0, "input": 0, "output": 0})
-            trends_data.append({
-                "date": date_str,
-                "value": tokens["total"],
-                "input": tokens["input"],
-                "output": tokens["output"]
-            })
-    except Exception as e:
-        logger.error(f"Error fetching organization token trends: {e}")
-        for date in date_list:
-            trends_data.append({
-                "date": str(date),
-                "value": 0,
-                "input": 0,
-                "output": 0
-            })
+        try:
+            from models.token_usage import TokenUsage
+            
+            token_counts = db.query(
+                func.date(TokenUsage.created_at).label('date'),
+                func.sum(TokenUsage.total_tokens).label('total_tokens'),
+                func.sum(TokenUsage.input_tokens).label('input_tokens'),
+                func.sum(TokenUsage.output_tokens).label('output_tokens')
+            ).filter(
+                TokenUsage.organization_id == org.id,
+                TokenUsage.success == True
+            )
+            if start_date_utc is not None:
+                token_counts = token_counts.filter(TokenUsage.created_at >= start_date_utc)
+            token_counts = token_counts.group_by(
+                func.date(TokenUsage.created_at)
+            ).all()
+            
+            # Map UTC dates to Beijing dates
+            tokens_by_date = {}
+            for row in token_counts:
+                utc_date = row.date
+                # SQLite returns date as string, need to parse it
+                if isinstance(utc_date, str):
+                    utc_date = datetime.strptime(utc_date, "%Y-%m-%d").date()
+                utc_datetime = datetime.combine(utc_date, datetime.min.time())
+                beijing_datetime = utc_datetime.replace(tzinfo=timezone.utc).astimezone(BEIJING_TIMEZONE)
+                beijing_date_str = str(beijing_datetime.date())
+                if beijing_date_str not in tokens_by_date:
+                    tokens_by_date[beijing_date_str] = {"total": 0, "input": 0, "output": 0}
+                tokens_by_date[beijing_date_str]["total"] += int(row.total_tokens or 0)
+                tokens_by_date[beijing_date_str]["input"] += int(row.input_tokens or 0)
+                tokens_by_date[beijing_date_str]["output"] += int(row.output_tokens or 0)
+            
+            for date in date_list:
+                date_str = str(date)
+                tokens = tokens_by_date.get(date_str, {"total": 0, "input": 0, "output": 0})
+                trends_data.append({
+                    "date": date_str,
+                    "value": tokens["total"],
+                    "input": tokens["input"],
+                    "output": tokens["output"]
+                })
+        except Exception as e:
+            logger.error(f"Error fetching organization token trends: {e}")
+            for date in date_list:
+                trends_data.append({
+                    "date": str(date),
+                    "value": 0,
+                    "input": 0,
+                    "output": 0
+                })
     
     return {
         "organization_id": org.id,
@@ -3870,9 +4024,14 @@ async def get_user_token_trends_admin(
             detail="user_id must be provided"
         )
     
-    if days > 90:
-        days = 90  # Cap at 90 days
-    if days < 1:
+    # Special case: days=0 means all-time (no limit)
+    all_time = False
+    if days == 0:
+        all_time = True
+        days = None  # Will fetch all data
+    elif days > 90:
+        days = 90  # Cap at 90 days for regular queries
+    elif days < 1:
         days = 1  # Minimum 1 day
     
     # Find user
@@ -3885,12 +4044,20 @@ async def get_user_token_trends_admin(
     
     # Use Beijing time for date calculations
     beijing_now = get_beijing_now()
-    beijing_start = beijing_now - timedelta(days=days)
-    beijing_start = beijing_start.replace(hour=0, minute=0, second=0, microsecond=0)
     
-    # Convert to UTC for database queries
-    start_date_utc = beijing_start.astimezone(timezone.utc).replace(tzinfo=None)
-    now_utc = beijing_now.astimezone(timezone.utc).replace(tzinfo=None)
+    # Handle all-time query (days=None or days=0)
+    if all_time:
+        start_date_utc = None  # No start date limit - fetch all data
+        now_utc = beijing_now.astimezone(timezone.utc).replace(tzinfo=None)
+        # For date list generation, start from user creation
+        beijing_start = user.created_at.replace(tzinfo=timezone.utc).astimezone(BEIJING_TIMEZONE)
+        beijing_start = beijing_start.replace(hour=0, minute=0, second=0, microsecond=0)
+    else:
+        beijing_start = beijing_now - timedelta(days=days)
+        beijing_start = beijing_start.replace(hour=0, minute=0, second=0, microsecond=0)
+        # Convert to UTC for database queries
+        start_date_utc = beijing_start.astimezone(timezone.utc).replace(tzinfo=None)
+        now_utc = beijing_now.astimezone(timezone.utc).replace(tzinfo=None)
     
     # Generate all dates in range using Beijing dates (for display)
     date_list = []
@@ -3911,10 +4078,12 @@ async def get_user_token_trends_admin(
             func.sum(TokenUsage.input_tokens).label('input_tokens'),
             func.sum(TokenUsage.output_tokens).label('output_tokens')
         ).filter(
-            TokenUsage.created_at >= start_date_utc,
             TokenUsage.user_id == user.id,
             TokenUsage.success == True
-        ).group_by(
+        )
+        if start_date_utc is not None:
+            token_counts = token_counts.filter(TokenUsage.created_at >= start_date_utc)
+        token_counts = token_counts.group_by(
             func.date(TokenUsage.created_at)
         ).all()
         

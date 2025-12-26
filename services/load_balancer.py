@@ -582,16 +582,6 @@ class LLMLoadBalancer:
 _load_balancer: Optional[LLMLoadBalancer] = None
 
 
-def get_load_balancer() -> Optional[LLMLoadBalancer]:
-    """
-    Get the global load balancer instance.
-    
-    Note: Currently unused - load balancer is stored in LLMService instance.
-    Kept for potential future use cases (admin endpoints, monitoring, etc.).
-    """
-    return _load_balancer
-
-
 def initialize_load_balancer(
     strategy: str = 'round_robin',
     weights: Dict[str, int] = None,

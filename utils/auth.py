@@ -831,13 +831,9 @@ def validate_invitation_code(org_code: str, invitation_code: str) -> bool:
 from services.redis_rate_limiter import (
     get_rate_limiter,
     check_login_rate_limit,
-    check_ip_rate_limit,
     check_captcha_rate_limit,
     clear_login_attempts,
-    clear_ip_attempts,
-    clear_captcha_attempts,
     get_login_attempts_remaining,
-    get_attempt_count,
 )
 
 

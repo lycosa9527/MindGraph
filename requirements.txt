@@ -34,7 +34,6 @@ aiohttp>=3.12.0
 openai>=1.58.0
 python-multipart>=0.0.20
 httpx[http2]>=0.28.0  # Modern async HTTP client with HTTP/2 support
-requests>=2.32.0  # Sync HTTP client (fallback) - REVIEW: May be removable if only httpx is used
 websockets>=14.2  # WebSocket support
 
 # ============================================================================

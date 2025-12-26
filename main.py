@@ -23,7 +23,7 @@ import os
 import sys
 import io
 import logging
-from logging.handlers import TimedRotatingFileHandler, BaseRotatingHandler
+from logging.handlers import BaseRotatingHandler
 import time
 import signal
 import asyncio
@@ -82,7 +82,7 @@ def _get_shutdown_event():
     except RuntimeError:
         return None
 
-def _handle_shutdown_signal(signum, frame):
+def _handle_shutdown_signal(signum, _frame):
     """Handle shutdown signals gracefully (SIGINT, SIGTERM)"""
     event = _get_shutdown_event()
     if event and not event.is_set():

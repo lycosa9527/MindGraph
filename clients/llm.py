@@ -17,7 +17,7 @@ import os
 import re
 from typing import Dict, List, Optional, Any, AsyncGenerator
 from dotenv import load_dotenv
-from openai import AsyncOpenAI, APIError, RateLimitError, APIStatusError
+from openai import AsyncOpenAI, RateLimitError, APIStatusError
 from config.settings import config
 from services.error_handler import (
     LLMRateLimitError, 

@@ -21,7 +21,7 @@ Proprietary License
 """
 
 from typing import Optional
-from pydantic import BaseModel, Field, field_validator, HttpUrl
+from pydantic import BaseModel, Field, field_validator
 from enum import Enum
 
 

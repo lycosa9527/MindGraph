@@ -31,8 +31,7 @@ from services.performance_tracker import performance_tracker
 from services.redis_token_buffer import get_token_tracker
 from services.load_balancer import (
     LLMLoadBalancer,
-    initialize_load_balancer,
-    get_load_balancer
+    initialize_load_balancer
 )
 from services.rate_limiter import LoadBalancerRateLimiter
 from config.settings import config

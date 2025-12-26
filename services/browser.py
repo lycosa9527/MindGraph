@@ -25,7 +25,7 @@ import sys
 import asyncio
 from pathlib import Path
 from typing import Optional, Tuple
-from playwright.async_api import async_playwright, Browser, BrowserContext
+from playwright.async_api import async_playwright
 
 logger = logging.getLogger(__name__)
 
@@ -426,7 +426,7 @@ class BrowserContextManager:
         logger.debug(f"Fresh browser context created - type: {type(self.context)}, id: {id(self.context)}")
         return self.context
     
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
+    async def __aexit__(self, exc_type, _exc_val, _exc_tb):
         """Clean up browser resources"""
         if self.context:
             await self.context.close()

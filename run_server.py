@@ -107,7 +107,7 @@ def run_uvicorn():
     # Setup signal handlers for graceful shutdown (Linux/macOS)
     # This ensures SIGTERM kills all worker processes, not just the main process
     if sys.platform != 'win32':
-        def signal_handler(signum, frame):
+        def signal_handler(signum, _frame):
             """Handle SIGTERM/SIGINT by killing entire process group"""
             sig_name = 'SIGTERM' if signum == signal.SIGTERM else 'SIGINT'
             print(f"\n[SHUTDOWN] Received {sig_name}, stopping all workers...")

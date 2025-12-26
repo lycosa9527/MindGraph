@@ -350,7 +350,7 @@ if "sqlite" in DATABASE_URL:
     # Without WAL: Only one writer at a time (database-level lock)
     # With WAL: Better concurrency for high workload scenarios
     @event.listens_for(engine, "connect")
-    def enable_wal_mode(dbapi_conn, connection_record):
+    def enable_wal_mode(dbapi_conn, _connection_record):
         """
         Enable WAL mode for SQLite to improve concurrent write performance.
         

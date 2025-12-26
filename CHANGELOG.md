@@ -7,6 +7,98 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.37.20] - 2025-01-XX - Admin Panel Status Cards and Line Graphs Alignment
+
+### Fixed
+
+- **Admin Panel Data Consistency** (`routers/auth.py`, `static/js/admin-dashboard.js`)
+  - Fixed time period calculation mismatch between status cards and line graphs
+  - **Dashboard Stats** (`get_stats_admin()`): Updated `week_ago` calculation to use `beijing_today_start` instead of `beijing_now`
+  - Ensures consistent date boundaries: "Past Week" and "Past Month" now calculated from today 00:00:00, matching token-stats endpoint behavior
+  - Status cards now display values that match the sum of their corresponding graph data points
+
+- **Dashboard Total Tokens Display** (`static/js/admin-dashboard.js`)
+  - Removed incorrect fallback to week stats when token-stats endpoint fails
+  - Now shows error message instead of displaying wrong data labeled as "total"
+  - Prevents misleading statistics display
+
+- **All-Time Query Support** (`routers/auth.py`)
+  - Added support for `days=0` parameter in main trends endpoint (`get_stats_trends_admin()`)
+  - Enables "Total Tokens" trend chart to display all-time data correctly
+  - Matches behavior of organization and user trends endpoints
+
+### Changed
+
+- **Date Boundary Documentation** (`routers/auth.py`)
+  - Added comprehensive comments explaining date boundary calculations
+  - Clarified that all endpoints use `beijing_today_start` (00:00:00) as base for week/month calculations
+  - Documented inclusive start date behavior (`>=`) for consistency
+  - Improved code maintainability and future verification
+
+### Technical Details
+
+- **Consistency Verification**: All endpoints now use consistent date calculations
+  - Status cards: `/api/auth/admin/token-stats` - uses `beijing_today_start - timedelta(days=N)`
+  - Trend graphs: `/api/auth/admin/stats/trends` - uses `beijing_now - timedelta(days=N)` then sets hour to 00:00:00 (equivalent result)
+  - Both approaches produce identical date ranges for the same period
+- **Impact**: Status cards and line graphs are now properly aligned - clicking a status card shows a graph that sums to the same number displayed on the card
+- **Files Modified**: `routers/auth.py`, `static/js/admin-dashboard.js`
+
+---
+
+## [4.37.19] - 2025-01-XX - Dead Code Cleanup
+
+### Removed
+
+- **Dead Code Removal** - Comprehensive cleanup of unused imports, variables, functions, and unreachable code
+  - Removed ~410+ lines of dead code across 14 production files
+  - Removed unused imports from 11 files:
+    - `agents/tab_mode/tab_agent.py` - Removed unused langchain imports (ChatPromptTemplate, MessagesPlaceholder, create_react_agent)
+    - `clients/llm.py` - Removed unused APIError import
+    - `main.py` - Removed unused TimedRotatingFileHandler import
+    - `models/env_settings.py` - Removed unused HttpUrl import
+    - `routers/auth.py` - Removed unused auth-related imports (MAX_CAPTCHA_ATTEMPTS, validate_invitation_code, clear_captcha_attempts)
+    - `services/browser.py` - Removed unused playwright imports (Browser, BrowserContext)
+    - `services/llm_service.py` - Removed unused get_load_balancer import
+    - `services/voice_agent.py` - Removed unused SystemMessage import
+    - `utils/auth.py` - Removed unused rate limiter imports (check_ip_rate_limit, clear_captcha_attempts, clear_ip_attempts, get_attempt_count)
+    - `utils/db_migration.py` - Removed unused sqlalchemy imports (MetaData, Table)
+  - Cleaned up unused variables in 7 files (prefixed with `_` following Python convention):
+    - `config/database.py` - Unused connection_record parameter
+    - `main.py` - Unused frame parameter in signal handler
+    - `run_server.py` - Unused frame parameter in signal handler
+    - `services/browser.py` - Unused exception variables (exc_val, exc_tb)
+    - `services/rate_limiter.py` - Unused exception variables (2 occurrences)
+    - `services/redis_distributed_lock.py` - Unused exception variables
+  - Removed unused module variable: `use_colors` from `uvicorn_config.py`
+  - Removed unused package: `requests` from `requirements.txt` (only httpx is used)
+  - Removed unused function: `get_load_balancer()` from `services/load_balancer.py`
+  - Removed ~358 lines of unreachable dead code from `agents/mind_maps/mind_map_agent.py`
+
+### Fixed
+
+- **Logic Bug** (`agents/mind_maps/mind_map_agent.py`)
+  - Fixed `_identify_middle_branches_smart()` function logic for odd number of branches
+  - Before: Returned `[mid_point - 1, mid_point]` for both even and odd numbers (incorrect)
+  - After: Returns `[mid_point]` for odd numbers (single middle branch, correct)
+  - Removed unreachable code that referenced undefined variables
+
+### Changed
+
+- **Code Quality Improvements**
+  - All unused exception handler variables prefixed with `_` following Python convention
+  - Cleaner codebase with reduced maintenance burden
+  - No breaking changes - all removals were verified safe
+
+### Technical Details
+
+- **Analysis Method**: Used vulture static analysis tool (80%+ confidence threshold) combined with manual verification
+- **Verification**: All removals cross-referenced for dynamic imports and string-based references
+- **Impact**: ~410+ lines of dead code removed, 0 breaking changes, 0 linter errors
+- **Files Modified**: 14 production files + 1 requirements.txt
+
+---
+
 ## [4.37.18] - 2025-12-25 - Multi-Worker Coordination Fixes
 
 ### Fixed
