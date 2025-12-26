@@ -540,6 +540,8 @@ attributes: ["特征1", "特征2", "特征3", "特征4", "特征5", "特征6", "
 # ============================================================================
 
 DOUBLE_BUBBLE_MAP_GENERATION_EN = """
+CRITICAL: You MUST respond with valid JSON only. Do not ask for more information. If the prompt is unclear, make reasonable assumptions and generate the JSON specification directly.
+
 Please generate a JSON specification for a double bubble map.
 
 You can draw a double bubble map to compare two central topics and output their similarities and differences.
@@ -554,12 +556,23 @@ similarities: ["Feature1", "Feature2", "Feature3", "Feature4", "Feature5"]
 left_differences: ["Feature1", "Feature2", "Feature3", "Feature4", "Feature5"]
 right_differences: ["Feature1", "Feature2", "Feature3", "Feature4", "Feature5"]
 
+Example JSON format:
+{
+  "left": "Apple",
+  "right": "Banana",
+  "similarities": ["Fruit", "Healthy", "Sweet", "Natural", "Nutritious"],
+  "left_differences": ["Red", "Round", "Crisp", "Tree-grown", "Fall harvest"],
+  "right_differences": ["Yellow", "Curved", "Soft", "Tropical", "Year-round"]
+}
+
 Requirements: Each characteristic should be concise and clear. More than 4 words is allowed, but avoid long sentences. Use short phrases, not full sentences.
 
-Please ensure the JSON format is correct, do not include any code block markers.
+IMPORTANT: Output ONLY valid JSON. Do not include code block markers (```json or ```), markdown formatting, or explanatory text. Do not ask for clarification or more information.
 """
 
 DOUBLE_BUBBLE_MAP_GENERATION_ZH = """
+重要：你必须只返回有效的JSON格式，不要询问更多信息。如果提示不清楚，请根据提示内容做出合理假设并直接生成JSON规范。
+
 请生成一个双气泡图的JSON规范。
 你能够绘制双气泡图，对两个中心词进行对比，输出他们的相同点和不同点。
 1. 从多个角度进行对比
@@ -572,9 +585,18 @@ similarities: ["特征1", "特征2", "特征3", "特征4", "特征5"]
 left_differences: ["特点1", "特点2", "特点3", "特点4", "特点5"]
 right_differences: ["特点1", "特点2", "特点3", "特点4", "特点5"]
 
+JSON格式示例：
+{
+  "left": "苹果",
+  "right": "香蕉",
+  "similarities": ["水果", "健康", "甜味", "天然", "营养"],
+  "left_differences": ["红色", "圆形", "脆", "温带", "秋季收获"],
+  "right_differences": ["黄色", "弯曲", "软", "热带", "全年供应"]
+}
+
 要求：每个特征要简洁明了，可以超过4个字，但不要太长，避免完整句子。
 
-请确保JSON格式正确，不要包含任何代码块标记。
+重要：只输出有效的JSON。不要包含代码块标记（```json或```）、markdown格式或解释性文字。不要询问更多信息或要求澄清。
 """
 
 # ============================================================================

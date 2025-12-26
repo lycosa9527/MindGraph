@@ -142,8 +142,35 @@ def extract_json_from_response(response_content, allow_partial=False):
                     json_content = arr_match.group(0)
         
         if not json_content:
-            # No JSON-like content found
+            # No JSON-like content found - check if it's a non-JSON response asking for more info
             content_preview = content[:500] + "..." if len(content) > 500 else content
+            
+            # Detect non-JSON responses (LLM asking for more information)
+            non_json_patterns = [
+                r'请你提供',  # "Please provide"
+                r'请你补充',  # "Please supplement/add"
+                r'这样我就能',  # "so I can"
+                r'Please provide',
+                r'Please.*more.*information',
+                r'so I can',
+                r'需要.*信息',  # "need information"
+                r'告知.*信息',  # "inform about information"
+            ]
+            
+            is_non_json_response = False
+            for pattern in non_json_patterns:
+                if re.search(pattern, content, re.IGNORECASE):
+                    is_non_json_response = True
+                    logger.warning(
+                        f"Detected non-JSON response (LLM asking for more info): Pattern '{pattern}' matched. "
+                        f"Content preview: {content_preview}"
+                    )
+                    break
+            
+            if is_non_json_response:
+                # Return structured error instead of None to allow retry logic
+                return {'_error': 'non_json_response', '_content': content, '_type': 'llm_requesting_info'}
+            
             logger.error(f"Failed to extract JSON: No JSON structure found in response. Content: {content_preview}")
             return None
         
@@ -346,6 +373,25 @@ def _repair_json_structure(text: str, error_pos: int = None) -> str:
     
     import re
     repaired = text
+    
+    # Pattern 0: Fix duplicate keys in brace map structures
+    # Example: {"name":"结识孟"},{"name":"name":"干谒求仕"} -> {"name":"结识孟"},{"name":"干谒求仕"}
+    # This pattern occurs when LLM generates {"name":"value"},{"name":"name":"value"}
+    duplicate_key_pattern = r'\{"name":\s*"([^"]+)"\},\{"name":\s*"name":\s*"([^"]+)"\}'
+    def fix_duplicate_key(match):
+        first_value = match.group(1)
+        second_value = match.group(2)
+        return f'{{"name":"{first_value}"}},{{"name":"{second_value}"}}'
+    repaired = re.sub(duplicate_key_pattern, fix_duplicate_key, repaired)
+    
+    # Pattern 0b: Fix {"name":"name":"value"} -> {"name":"value"}
+    duplicate_name_key = r'\{"name":\s*"name":\s*"([^"]+)"\}'
+    repaired = re.sub(duplicate_name_key, r'{"name":"\1"}', repaired)
+    
+    # Pattern 0c: Fix missing colons in object structures (brace map specific)
+    # Example: {"name":"value"}{"name":"value2"} -> {"name":"value"},{"name":"value2"}
+    missing_comma_between_objects = r'\}\s*(?=\{"name":)'
+    repaired = re.sub(missing_comma_between_objects, '},', repaired)
     
     # Pattern 1: Fix duplicate object entries - incomplete object followed by complete duplicate
     # Example: {"id": "zi_xiang_1_2"        {"id": "zi_xiang_1_2", "label": "外力为零的含义"}

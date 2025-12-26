@@ -1146,6 +1146,23 @@ async def log_requests(request: Request, call_next):
     if request.url.path.startswith('/static/') and request.url.query:
         log_path = f"{request.url.path}?{request.url.query}"
     
+    # For POST requests to generate_graph, check if it's autocomplete before processing
+    # This allows us to set appropriate slow warning thresholds
+    is_autocomplete_request = False
+    if request.method == 'POST' and 'generate_graph' in request.url.path:
+        try:
+            body = await request.body()
+            if body:
+                import json
+                body_data = json.loads(body)
+                is_autocomplete_request = body_data.get('request_type') == 'autocomplete'
+                # Recreate request body stream for downstream consumption
+                async def receive():
+                    return {'type': 'http.request', 'body': body}
+                request._receive = receive
+        except (json.JSONDecodeError, AttributeError, TypeError):
+            pass
+    
     # Process request
     response = await call_next(request)
     
@@ -1156,9 +1173,18 @@ async def log_requests(request: Request, call_next):
     # Monitor slow requests (thresholds based on endpoint type)
     if 'generate_png' in request.url.path and response_time > 20:
         logger.warning(f"Slow PNG generation: {request.method} {request.url.path} took {response_time:.3f}s")
-    elif 'generate_graph' in request.url.path and response_time > 5:
-        # LLM generation typically takes 2-8s, warn above 5s to catch slow requests early
-        logger.warning(f"Slow graph generation: {request.method} {request.url.path} took {response_time:.3f}s")
+    elif 'generate_graph' in request.url.path:
+        if is_autocomplete_request:
+            # Auto-complete: Each LLM call takes 3-5s, total ~10-12s for 3-4 models
+            # Based on actual performance data from CHANGELOG: first result ~3s, total ~10-12s
+            # Warn if individual LLM call exceeds 8s (should be 3-5s normally)
+            if response_time > 8:
+                logger.warning(f"Slow auto-complete generation: {request.method} {request.url.path} took {response_time:.3f}s (expected 3-5s per LLM, total ~10-12s for all models)")
+        else:
+            # Initial generation: Should be fast, 2-8s typical
+            # Based on actual performance: Qwen typically 2-5s, other models 3-8s
+            if response_time > 5:
+                logger.warning(f"Slow graph generation: {request.method} {request.url.path} took {response_time:.3f}s (expected 2-8s)")
     elif 'node_palette' in request.url.path and response_time > 10:
         # Node Palette streams from 4 LLMs, 5-8s is normal
         logger.warning(f"Slow node palette: {request.method} {request.url.path} took {response_time:.3f}s")

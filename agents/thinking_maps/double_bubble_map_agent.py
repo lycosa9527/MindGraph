@@ -69,11 +69,49 @@ class DoubleBubbleMapAgent(BaseAgent):
             # Validate the generated spec
             is_valid, validation_msg = self.validate_output(spec)
             if not is_valid:
-                logger.warning(f"DoubleBubbleMapAgent: Validation failed: {validation_msg}")
-                return {
-                    'success': False,
-                    'error': f'Generated invalid specification: {validation_msg}'
-                }
+                logger.warning(f"DoubleBubbleMapAgent: Validation failed: {validation_msg}. Attempting retry with improved prompt.")
+                
+                # Retry generation with validation error included in original prompt
+                # Reuse original prompt instead of regenerating topics for consistency
+                retry_user_prompt = (
+                    f"{prompt}\n\n"
+                    f"重要：之前的生成未通过验证：{validation_msg}。"
+                    f"请确保生成的JSON规范满足以下要求：左主题和右主题都必须至少包含2个属性，相似性至少包含1个属性。"
+                    if language == "zh" else
+                    f"{prompt}\n\n"
+                    f"IMPORTANT: Previous generation failed validation: {validation_msg}. "
+                    f"Please ensure the generated JSON specification meets these requirements: "
+                    f"both left and right topics must have at least 2 attributes, and similarities must have at least 1 attribute."
+                )
+                
+                # Retry generation by calling the spec generation method again with enhanced prompt
+                retry_spec = await self._generate_double_bubble_map_spec(
+                    retry_user_prompt,
+                    language,
+                    user_id=user_id,
+                    organization_id=organization_id,
+                    request_type=request_type,
+                    endpoint_path=endpoint_path
+                )
+                
+                # Validate retry spec
+                if retry_spec and not (isinstance(retry_spec, dict) and retry_spec.get('_error')):
+                    retry_is_valid, retry_validation_msg = self.validate_output(retry_spec)
+                    if retry_is_valid:
+                        logger.info(f"DoubleBubbleMapAgent: Retry generation succeeded after validation failure")
+                        spec = retry_spec
+                    else:
+                        logger.error(f"DoubleBubbleMapAgent: Retry generation also failed validation: {retry_validation_msg}")
+                        return {
+                            'success': False,
+                            'error': f'Generated invalid specification after retry: {retry_validation_msg}'
+                        }
+                else:
+                    logger.error(f"DoubleBubbleMapAgent: Retry generation failed to extract valid JSON")
+                    return {
+                        'success': False,
+                        'error': f'Generated invalid specification: {validation_msg}'
+                    }
             
             # Enhance the spec with layout and dimensions
             enhanced_spec = self._enhance_spec(spec)
@@ -151,7 +189,53 @@ class DoubleBubbleMapAgent(BaseAgent):
                 response_str = str(response)
                 spec = extract_json_from_response(response_str)
                 
-                if not spec:
+                # Check if we got a non-JSON response error
+                if isinstance(spec, dict) and spec.get('_error') == 'non_json_response':
+                    # LLM returned non-JSON asking for more info - retry with more explicit prompt
+                    logger.warning(
+                        f"DoubleBubbleMapAgent: LLM returned non-JSON response asking for more info. "
+                        f"Retrying with explicit JSON-only prompt."
+                    )
+                    
+                    # Retry with more explicit prompt emphasizing JSON-only output
+                    retry_user_prompt = (
+                        f"{user_prompt}\n\n"
+                        f"重要：你必须只返回有效的JSON格式，不要询问更多信息。"
+                        f"如果提示不清楚，请根据提示内容做出合理假设并直接生成JSON规范。"
+                        if language == "zh" else
+                        f"{user_prompt}\n\n"
+                        f"IMPORTANT: You MUST respond with valid JSON only. Do not ask for more information. "
+                        f"If the prompt is unclear, make reasonable assumptions and generate the JSON specification directly."
+                    )
+                    
+                    retry_response = await llm_service.chat(
+                        prompt=retry_user_prompt,
+                        model=self.model,
+                        system_message=system_prompt,
+                        max_tokens=1000,
+                        temperature=config.LLM_TEMPERATURE,
+                        user_id=user_id,
+                        organization_id=organization_id,
+                        request_type=request_type,
+                        endpoint_path=endpoint_path,
+                        diagram_type='double_bubble_map'
+                    )
+                    
+                    # Try extraction again
+                    if isinstance(retry_response, dict):
+                        spec = retry_response
+                    else:
+                        spec = extract_json_from_response(str(retry_response))
+                        
+                        # If still non-JSON, return None
+                        if isinstance(spec, dict) and spec.get('_error') == 'non_json_response':
+                            logger.error(
+                                f"DoubleBubbleMapAgent: Retry also returned non-JSON response. "
+                                f"Giving up after 1 retry attempt."
+                            )
+                            return None
+                
+                if not spec or (isinstance(spec, dict) and spec.get('_error')):
                     # Log the actual response for debugging with more context
                     response_preview = response_str[:500] + "..." if len(response_str) > 500 else response_str
                     logger.error(f"DoubleBubbleMapAgent: Failed to extract JSON from LLM response")

@@ -3578,6 +3578,7 @@ async def get_stats_trends_admin(
     
     # Use Beijing time for date calculations
     beijing_now = get_beijing_now()
+    beijing_today_start = beijing_now.replace(hour=0, minute=0, second=0, microsecond=0)
     
     # Handle all-time query (days=None or days=0)
     if all_time:
@@ -3585,17 +3586,15 @@ async def get_stats_trends_admin(
         now_utc = beijing_now.astimezone(timezone.utc).replace(tzinfo=None)
         # For date list generation, start from a reasonable date (e.g., 1 year ago or system start)
         # For tokens metric, we'll generate dates based on actual data range
-        beijing_start = beijing_now - timedelta(days=365)  # Default to 1 year for all-time display
-        beijing_start = beijing_start.replace(hour=0, minute=0, second=0, microsecond=0)
+        beijing_start = beijing_today_start - timedelta(days=365)  # Default to 1 year for all-time display
     else:
-        # Calculate start date: N days ago from now, then set to 00:00:00
+        # Calculate start date: N days ago from today start (00:00:00)
         # This ensures consistent date boundaries with token-stats endpoint
-        # Example: If days=7 and today is Jan 15 at 3:00 PM:
-        #   - Calculate: Jan 15 3:00 PM - 7 days = Jan 8 3:00 PM
-        #   - Set hour to 00:00:00 = Jan 8 00:00:00
+        # Example: If days=7 and today is Jan 15 00:00:00:
+        #   - Calculate: Jan 15 00:00:00 - 7 days = Jan 8 00:00:00
         #   - Date list includes: Jan 8, 9, 10, 11, 12, 13, 14, 15 (8 days, including today)
-        beijing_start = beijing_now - timedelta(days=days)
-        beijing_start = beijing_start.replace(hour=0, minute=0, second=0, microsecond=0)
+        # This matches token-stats endpoint behavior: "Past Week" = last 7 days from today 00:00:00
+        beijing_start = beijing_today_start - timedelta(days=days)
         # Convert to UTC for database queries
         start_date_utc = beijing_start.astimezone(timezone.utc).replace(tzinfo=None)
         now_utc = beijing_now.astimezone(timezone.utc).replace(tzinfo=None)
@@ -3852,6 +3851,7 @@ async def get_organization_token_trends_admin(
     
     # Use Beijing time for date calculations
     beijing_now = get_beijing_now()
+    beijing_today_start = beijing_now.replace(hour=0, minute=0, second=0, microsecond=0)
     
     # Handle all-time query (days=None or days=0)
     if all_time:
@@ -3861,8 +3861,13 @@ async def get_organization_token_trends_admin(
         beijing_start = org.created_at.replace(tzinfo=timezone.utc).astimezone(BEIJING_TIMEZONE)
         beijing_start = beijing_start.replace(hour=0, minute=0, second=0, microsecond=0)
     else:
-        beijing_start = beijing_now - timedelta(days=days)
-        beijing_start = beijing_start.replace(hour=0, minute=0, second=0, microsecond=0)
+        # Calculate start date: N days ago from today start (00:00:00)
+        # This ensures consistent date boundaries with token-stats endpoint
+        # Example: If days=7 and today is Jan 15 00:00:00:
+        #   - Calculate: Jan 15 00:00:00 - 7 days = Jan 8 00:00:00
+        #   - Date list includes: Jan 8, 9, 10, 11, 12, 13, 14, 15 (8 days, including today)
+        # This matches token-stats endpoint behavior: "Past Week" = last 7 days from today 00:00:00
+        beijing_start = beijing_today_start - timedelta(days=days)
         # Convert to UTC for database queries
         start_date_utc = beijing_start.astimezone(timezone.utc).replace(tzinfo=None)
         now_utc = beijing_now.astimezone(timezone.utc).replace(tzinfo=None)
@@ -4044,6 +4049,7 @@ async def get_user_token_trends_admin(
     
     # Use Beijing time for date calculations
     beijing_now = get_beijing_now()
+    beijing_today_start = beijing_now.replace(hour=0, minute=0, second=0, microsecond=0)
     
     # Handle all-time query (days=None or days=0)
     if all_time:
@@ -4053,8 +4059,13 @@ async def get_user_token_trends_admin(
         beijing_start = user.created_at.replace(tzinfo=timezone.utc).astimezone(BEIJING_TIMEZONE)
         beijing_start = beijing_start.replace(hour=0, minute=0, second=0, microsecond=0)
     else:
-        beijing_start = beijing_now - timedelta(days=days)
-        beijing_start = beijing_start.replace(hour=0, minute=0, second=0, microsecond=0)
+        # Calculate start date: N days ago from today start (00:00:00)
+        # This ensures consistent date boundaries with token-stats endpoint
+        # Example: If days=7 and today is Jan 15 00:00:00:
+        #   - Calculate: Jan 15 00:00:00 - 7 days = Jan 8 00:00:00
+        #   - Date list includes: Jan 8, 9, 10, 11, 12, 13, 14, 15 (8 days, including today)
+        # This matches token-stats endpoint behavior: "Past Week" = last 7 days from today 00:00:00
+        beijing_start = beijing_today_start - timedelta(days=days)
         # Convert to UTC for database queries
         start_date_utc = beijing_start.astimezone(timezone.utc).replace(tzinfo=None)
         now_utc = beijing_now.astimezone(timezone.utc).replace(tzinfo=None)

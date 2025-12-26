@@ -120,7 +120,82 @@ class AuthHelper {
     }
 
     /**
-     * Make authenticated API call
+     * Attempt to refresh authentication token
+     * 
+     * Note: With httponly cookies, JavaScript cannot directly refresh tokens.
+     * This method checks if the session is still valid by calling /me endpoint.
+     * If the session is valid, the server automatically refreshes it server-side.
+     * If expired, the user will need to re-login (expected behavior).
+     * 
+     * @returns {Promise<boolean>} True if session is still valid, false if expired
+     */
+    async refreshToken() {
+        // Prevent multiple simultaneous refresh attempts
+        if (this._refreshing) {
+            // Wait for existing refresh to complete
+            return new Promise((resolve) => {
+                const checkInterval = setInterval(() => {
+                    if (!this._refreshing) {
+                        clearInterval(checkInterval);
+                        resolve(this._refreshSuccess);
+                    }
+                }, 100);
+            });
+        }
+        
+        this._refreshing = true;
+        this._refreshSuccess = false;
+        
+        try {
+            // Attempt to refresh by calling /me endpoint with credentials
+            // This will refresh the httponly cookie session if still valid
+            const response = await fetch(`${this.apiBase}/me`, {
+                method: 'GET',
+                credentials: 'same-origin'
+            });
+            
+            if (response.ok) {
+                // Session refreshed successfully
+                const data = await response.json();
+                if (data.user) {
+                    this.setUser(data.user);
+                }
+                this._refreshSuccess = true;
+                return true;
+            }
+            
+            // Refresh failed - session expired
+            this._refreshSuccess = false;
+            return false;
+        } catch (e) {
+            console.debug('Token refresh failed:', e);
+            this._refreshSuccess = false;
+            return false;
+        } finally {
+            this._refreshing = false;
+        }
+    }
+
+    /**
+     * Check if token should be refreshed proactively
+     * @returns {Promise<boolean>} True if token should be refreshed
+     */
+    async _shouldRefreshToken() {
+        // For httponly cookie-based auth, we can't check expiration directly
+        // Instead, check if we've refreshed recently (within last 5 minutes)
+        const lastRefresh = sessionStorage.getItem('auth_last_refresh');
+        if (lastRefresh) {
+            const timeSinceRefresh = Date.now() - parseInt(lastRefresh, 10);
+            const fiveMinutes = 5 * 60 * 1000;
+            if (timeSinceRefresh < fiveMinutes) {
+                return false; // Recently refreshed, no need to refresh again
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Make authenticated API call with automatic token refresh on 401
      */
     async fetch(url, options = {}) {
         const token = this.getToken();
@@ -134,10 +209,49 @@ class AuthHelper {
             headers['Authorization'] = `Bearer ${token}`;
         }
 
-        return fetch(url, {
+        let response = await fetch(url, {
             ...options,
-            headers
+            headers,
+            credentials: 'same-origin'
         });
+
+        // Handle 401 errors with automatic token refresh
+        if (response.status === 401) {
+            // Check if we should attempt refresh (avoid loops)
+            const shouldRetry = options._retryAttempt !== true;
+            
+            if (shouldRetry) {
+                // Attempt to refresh token
+                const refreshed = await this.refreshToken();
+                
+                if (refreshed) {
+                    // Retry original request with refreshed token
+                    const retryToken = this.getToken();
+                    if (retryToken) {
+                        headers['Authorization'] = `Bearer ${retryToken}`;
+                    }
+                    
+                    // Mark retry attempt to prevent infinite loops
+                    const retryOptions = {
+                        ...options,
+                        _retryAttempt: true
+                    };
+                    
+                    response = await fetch(url, {
+                        ...retryOptions,
+                        headers,
+                        credentials: 'same-origin'
+                    });
+                    
+                    // If retry succeeded, update last refresh time
+                    if (response.ok) {
+                        sessionStorage.setItem('auth_last_refresh', Date.now().toString());
+                    }
+                }
+            }
+        }
+
+        return response;
     }
 
     /**

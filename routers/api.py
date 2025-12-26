@@ -188,6 +188,7 @@ async def ai_assistant_stream(
 @router.post('/generate_graph', response_model=GenerateResponse)
 async def generate_graph(
     req: GenerateRequest,
+    request: Request,
     x_language: str = None,
     current_user: Optional[User] = Depends(get_current_user_or_api_key)
 ):
@@ -228,6 +229,10 @@ async def generate_graph(
         
         # Determine request type for token tracking (default to 'diagram_generation')
         request_type = req.request_type if req.request_type else 'diagram_generation'
+        
+        # Set request state for middleware slow warning detection
+        # This allows middleware to distinguish autocomplete from initial generation
+        request.state.is_autocomplete = (request_type == 'autocomplete')
         
         # Track user activity
         if current_user and hasattr(current_user, 'id'):

@@ -142,11 +142,15 @@ class ErrorHandler:
             except LLMRateLimitError as e:
                 # Rate limit - retry with longer delay
                 last_exception = e
-                logger.warning(f"[ErrorHandler] Rate limited on attempt {attempt + 1}: {e}")
+                logger.warning(f"[ErrorHandler] Rate limited on attempt {attempt + 1}/{max_retries}: {e}")
                 if attempt < max_retries - 1:
                     # Longer delays for rate limits: 5s, 10s, 20s
-                    delay = min(5.0 * (2 ** attempt), 30.0)
-                    logger.debug(f"[ErrorHandler] Rate limit retry in {delay:.1f}s...")
+                    # Add jitter to prevent thundering herd (random 0-2s)
+                    import random
+                    base_delay = min(5.0 * (2 ** attempt), 30.0)
+                    jitter = random.uniform(0, 2.0)
+                    delay = base_delay + jitter
+                    logger.debug(f"[ErrorHandler] Rate limit retry in {delay:.1f}s (base: {base_delay:.1f}s + jitter: {jitter:.1f}s)...")
                     await asyncio.sleep(delay)
                 continue  # Skip normal delay calculation
                 

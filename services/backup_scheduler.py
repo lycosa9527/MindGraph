@@ -110,7 +110,7 @@ def acquire_backup_scheduler_lock() -> bool:
         else:
             # Lock held by another worker - check who
             holder = redis.get(BACKUP_LOCK_KEY)
-            logger.info(f"[Backup] Another worker holds the scheduler lock (holder={holder}), this worker will not run backups")
+            logger.debug(f"[Backup] Another worker holds the scheduler lock (holder={holder}), this worker will not run backups")
             return False
             
     except Exception as e:
@@ -368,6 +368,30 @@ def backup_database_safely(source_db: Path, backup_db: Path) -> bool:
     
     if not source_db.exists():
         logger.error(f"[Backup] Source database does not exist: {source_db}")
+        return False
+    
+    # Check file permissions before backup
+    try:
+        # Check if source database is readable
+        if not os.access(source_db, os.R_OK):
+            logger.error(f"[Backup] Source database is not readable: {source_db}. Check file permissions.")
+            return False
+        
+        # Check if backup directory is writable
+        backup_dir = backup_db.parent
+        if not backup_dir.exists():
+            backup_dir.mkdir(parents=True, exist_ok=True)
+        
+        if not os.access(backup_dir, os.W_OK):
+            logger.error(f"[Backup] Backup directory is not writable: {backup_dir}. Check directory permissions.")
+            return False
+        
+        # Check if backup file already exists and is writable (or can be overwritten)
+        if backup_db.exists() and not os.access(backup_db, os.W_OK):
+            logger.error(f"[Backup] Backup file exists but is not writable: {backup_db}. Check file permissions.")
+            return False
+    except OSError as e:
+        logger.error(f"[Backup] Permission check failed: {e}")
         return False
     
     try:
@@ -654,7 +678,7 @@ def verify_backup_is_standalone(backup_path: Path) -> Tuple[bool, List[str]]:
     return len(wal_files) == 0, wal_files
 
 
-def upload_backup_to_cos(backup_path: Path) -> bool:
+def upload_backup_to_cos(backup_path: Path, max_retries: int = 3) -> bool:
     """
     Upload backup file to Tencent Cloud Object Storage (COS).
     
@@ -746,31 +770,69 @@ def upload_backup_to_cos(backup_path: Path) -> bool:
             f"size={file_size_mb:.2f} MB, region={COS_REGION}"
         )
         
-        # Use advanced upload interface (supports large files and resumable uploads)
-        # Following demo pattern for large file uploads
-        # PartSize=1 means 1MB per part (good for files up to 5GB)
-        # MAXThread=10 means up to 10 concurrent upload threads
-        # EnableMD5=False for faster upload (MD5 verification optional)
-        response = client.upload_file(
-            Bucket=COS_BUCKET,
-            LocalFilePath=str(backup_path),
-            Key=object_key,
-            PartSize=1,  # 1MB per part
-            MAXThread=10,  # Up to 10 concurrent threads
-            EnableMD5=False  # Disable MD5 for faster upload
-        )
+        # Retry logic with exponential backoff
+        import time
+        last_exception = None
         
-        # Log upload result with details
-        # Response contains ETag, Location, etc.
-        if 'ETag' in response:
-            logger.info(
-                f"[Backup] Successfully uploaded to COS: {object_key} "
-                f"(ETag: {response['ETag']}, bucket: {COS_BUCKET})"
-            )
-        else:
-            logger.info(f"[Backup] Successfully uploaded to COS: {object_key} (bucket: {COS_BUCKET})")
-        
-        return True
+        for attempt in range(max_retries):
+            try:
+                # Use advanced upload interface (supports large files and resumable uploads)
+                # Following demo pattern for large file uploads
+                # PartSize=1 means 1MB per part (good for files up to 5GB)
+                # MAXThread=10 means up to 10 concurrent upload threads
+                # EnableMD5=False for faster upload (MD5 verification optional)
+                response = client.upload_file(
+                    Bucket=COS_BUCKET,
+                    LocalFilePath=str(backup_path),
+                    Key=object_key,
+                    PartSize=1,  # 1MB per part
+                    MAXThread=10,  # Up to 10 concurrent threads
+                    EnableMD5=False  # Disable MD5 for faster upload
+                )
+                
+                # Log upload result with details
+                # Response contains ETag, Location, etc.
+                if 'ETag' in response:
+                    logger.info(
+                        f"[Backup] Successfully uploaded to COS: {object_key} "
+                        f"(ETag: {response['ETag']}, bucket: {COS_BUCKET})"
+                    )
+                else:
+                    logger.info(f"[Backup] Successfully uploaded to COS: {object_key} (bucket: {COS_BUCKET})")
+                
+                return True
+                
+            except (CosClientError, CosServiceError) as e:
+                last_exception = e
+                # Check if error is retryable
+                is_retryable = False
+                if isinstance(e, CosServiceError):
+                    try:
+                        status_code = e.get_status_code() if hasattr(e, 'get_status_code') else None
+                        error_code = e.get_error_code() if hasattr(e, 'get_error_code') else None
+                        # Retry on 5xx errors and rate limits
+                        if status_code and str(status_code).startswith('5'):
+                            is_retryable = True
+                        elif error_code in ('SlowDown', 'RequestLimitExceeded'):
+                            is_retryable = True
+                    except:
+                        pass
+                else:
+                    # Retry on client errors (network issues)
+                    is_retryable = True
+                
+                if not is_retryable or attempt == max_retries - 1:
+                    # Not retryable or last attempt - re-raise to be handled by outer exception handler
+                    raise
+                
+                # Calculate delay with exponential backoff: 5s, 10s, 20s
+                delay = min(5.0 * (2 ** attempt), 30.0)
+                logger.warning(
+                    f"[Backup] COS upload attempt {attempt + 1}/{max_retries} failed: {e}. "
+                    f"Retrying in {delay:.1f}s..."
+                )
+                time.sleep(delay)
+                continue
         
     except ImportError:
         logger.error(

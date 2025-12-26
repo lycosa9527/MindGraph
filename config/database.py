@@ -116,7 +116,7 @@ def acquire_wal_checkpoint_lock() -> bool:
         else:
             # Lock held by another worker - check who
             holder = redis.get(WAL_CHECKPOINT_LOCK_KEY)
-            logger.info(f"[Database] Another worker holds the WAL checkpoint lock (holder={holder}), this worker will not checkpoint WAL")
+            logger.debug(f"[Database] Another worker holds the WAL checkpoint lock (holder={holder}), this worker will not checkpoint WAL")
             return False
             
     except Exception as e:

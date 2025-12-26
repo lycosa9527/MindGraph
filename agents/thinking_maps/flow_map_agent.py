@@ -148,7 +148,53 @@ class FlowMapAgent(BaseAgent):
                 response_str = str(response)
                 spec = extract_json_from_response(response_str)
                 
-                if not spec:
+                # Check if we got a non-JSON response error
+                if isinstance(spec, dict) and spec.get('_error') == 'non_json_response':
+                    # LLM returned non-JSON asking for more info - retry with more explicit prompt
+                    logger.warning(
+                        f"FlowMapAgent: LLM returned non-JSON response asking for more info. "
+                        f"Retrying with explicit JSON-only prompt."
+                    )
+                    
+                    # Retry with more explicit prompt emphasizing JSON-only output
+                    retry_user_prompt = (
+                        f"{user_prompt}\n\n"
+                        f"重要：你必须只返回有效的JSON格式，不要询问更多信息。"
+                        f"如果提示不清楚，请根据提示内容做出合理假设并直接生成JSON规范。"
+                        if language == "zh" else
+                        f"{user_prompt}\n\n"
+                        f"IMPORTANT: You MUST respond with valid JSON only. Do not ask for more information. "
+                        f"If the prompt is unclear, make reasonable assumptions and generate the JSON specification directly."
+                    )
+                    
+                    retry_response = await llm_service.chat(
+                        prompt=retry_user_prompt,
+                        model=self.model,
+                        system_message=system_prompt,
+                        max_tokens=1000,
+                        temperature=config.LLM_TEMPERATURE,
+                        user_id=user_id,
+                        organization_id=organization_id,
+                        request_type=request_type,
+                        endpoint_path=endpoint_path,
+                        diagram_type='flow_map'
+                    )
+                    
+                    # Try extraction again
+                    if isinstance(retry_response, dict):
+                        spec = retry_response
+                    else:
+                        spec = extract_json_from_response(str(retry_response))
+                        
+                        # If still non-JSON, return None
+                        if isinstance(spec, dict) and spec.get('_error') == 'non_json_response':
+                            logger.error(
+                                f"FlowMapAgent: Retry also returned non-JSON response. "
+                                f"Giving up after 1 retry attempt."
+                            )
+                            return None
+                
+                if not spec or (isinstance(spec, dict) and spec.get('_error')):
                     # Log the actual response for debugging
                     response_preview = response_str[:500] + "..." if len(response_str) > 500 else response_str
                     logger.error(f"FlowMapAgent: Failed to extract JSON from LLM response. Response preview: {response_preview}")

@@ -104,7 +104,8 @@ class ExportManager {
                     filename: result.filename 
                 });
             } else {
-                throw new Error(result.error || 'Export failed');
+                const failureReason = this._getExportFailureReason(result);
+                throw new Error(failureReason);
             }
             
         } catch (error) {
@@ -537,13 +538,86 @@ class ExportManager {
      * @param {Object} editor - Editor instance
      * @returns {Promise<Object>} Export result
      */
+    /**
+     * Validate export data before attempting export
+     * @param {Object} editor - Editor instance
+     * @returns {Object} Validation result with isValid flag and error message if invalid
+     */
+    _validateExportData(editor) {
+        if (!editor) {
+            return {
+                isValid: false,
+                error: 'Editor instance not provided'
+            };
+        }
+        
+        if (!editor.currentSpec) {
+            return {
+                isValid: false,
+                error: 'No diagram specification available. Please generate a diagram first.'
+            };
+        }
+        
+        // Validate spec is valid JSON-serializable object
+        try {
+            JSON.stringify(editor.currentSpec);
+        } catch (e) {
+            return {
+                isValid: false,
+                error: `Diagram specification contains invalid data: ${e.message}`
+            };
+        }
+        
+        // Check browser support for File System Access API
+        if (typeof window.showSaveFilePicker === 'undefined' && typeof window.showOpenFilePicker === 'undefined') {
+            // Browser doesn't support File System Access API - fallback to download
+            // This is not an error, just a limitation
+            this.logger.debug('ExportManager', 'File System Access API not available, will use fallback download');
+        }
+        
+        return {
+            isValid: true
+        };
+    }
+
+    /**
+     * Get specific failure reason from export result
+     * @param {Object} result - Export result object
+     * @returns {string} Specific error message
+     */
+    _getExportFailureReason(result) {
+        if (!result) {
+            return 'No result returned from download operation';
+        }
+        
+        if (result.cancelled) {
+            return 'Export cancelled by user';
+        }
+        
+        if (result.error) {
+            return result.error;
+        }
+        
+        if (!result.success) {
+            return 'Download operation failed without specific error';
+        }
+        
+        return 'Unknown export failure';
+    }
+
     async exportToMG(editor) {
         try {
-            if (!editor || !editor.currentSpec) {
-                this.logger.error('ExportManager', 'No diagram data available');
+            // Validate export data first
+            const validation = this._validateExportData(editor);
+            if (!validation.isValid) {
+                this.logger.error('ExportManager', `Export validation failed: ${validation.error}`, {
+                    diagramType: editor?.diagramType,
+                    hasEditor: !!editor,
+                    hasSpec: !!editor?.currentSpec
+                });
                 return {
                     success: false,
-                    error: 'No diagram data to export'
+                    error: validation.error
                 };
             }
             
@@ -593,25 +667,67 @@ class ExportManager {
             };
             
             // Convert to JSON string (pretty printed for readability)
-            const jsonString = JSON.stringify(mgData, null, 2);
+            let jsonString;
+            try {
+                jsonString = JSON.stringify(mgData, null, 2);
+                if (!jsonString || jsonString.length === 0) {
+                    throw new Error('JSON stringification produced empty result');
+                }
+            } catch (e) {
+                this.logger.error('ExportManager', `JSON stringify failed: ${e.message}`, {
+                    diagramType,
+                    specKeys: editor.currentSpec ? Object.keys(editor.currentSpec) : [],
+                    specSize: editor.currentSpec ? JSON.stringify(editor.currentSpec).length : 0
+                });
+                throw new Error(`Failed to serialize diagram data: ${e.message}`);
+            }
             
             // Create blob for download
-            const blob = new Blob([jsonString], { type: 'application/octet-stream' });
+            let blob;
+            try {
+                blob = new Blob([jsonString], { type: 'application/octet-stream' });
+                if (!blob || blob.size === 0) {
+                    throw new Error('Blob creation produced empty blob');
+                }
+            } catch (e) {
+                this.logger.error('ExportManager', `Blob creation failed: ${e.message}`, {
+                    jsonStringLength: jsonString.length,
+                    blobType: 'application/octet-stream'
+                });
+                throw new Error(`Failed to create file blob: ${e.message}`);
+            }
             
             const suggestedFilename = this.generateFilename(editor, 'mg');
             
             // Use Save As picker if available
-            const result = await this.downloadFileWithPicker(
-                blob,
-                suggestedFilename,
-                'mg',
-                'application/octet-stream',
-                'MindGraph Diagram'
-            );
+            let result;
+            try {
+                result = await this.downloadFileWithPicker(
+                    blob,
+                    suggestedFilename,
+                    'mg',
+                    'application/octet-stream',
+                    'MindGraph Diagram'
+                );
+            } catch (e) {
+                this.logger.error('ExportManager', `File picker API failed: ${e.message}`, {
+                    error: e.message,
+                    stack: e.stack,
+                    browserSupport: {
+                        showSaveFilePicker: typeof window.showSaveFilePicker !== 'undefined',
+                        showOpenFilePicker: typeof window.showOpenFilePicker !== 'undefined'
+                    }
+                });
+                throw new Error(`File picker API error: ${e.message}`);
+            }
             
             // Validate result
             if (!result || typeof result !== 'object') {
-                throw new Error('Invalid result from downloadFileWithPicker');
+                this.logger.error('ExportManager', 'Invalid result from downloadFileWithPicker', {
+                    resultType: typeof result,
+                    resultValue: result
+                });
+                throw new Error('Invalid result from download operation');
             }
             
             // Handle cancelled save
@@ -625,11 +741,21 @@ class ExportManager {
             
             // Check if download was successful
             if (!result.success) {
-                throw new Error(result.error || 'File download failed');
+                const failureReason = this._getExportFailureReason(result);
+                this.logger.error('ExportManager', `Download failed: ${failureReason}`, {
+                    result,
+                    diagramType,
+                    filename: suggestedFilename
+                });
+                throw new Error(failureReason);
             }
             
             // Validate filename exists
             if (!result.filename) {
+                this.logger.error('ExportManager', 'Filename not provided in download result', {
+                    result,
+                    suggestedFilename
+                });
                 throw new Error('Filename not provided in download result');
             }
             
@@ -651,13 +777,32 @@ class ExportManager {
             
         } catch (error) {
             const errorMsg = error?.message || 'Unknown error';
-            this.logger.error('ExportManager', `Error exporting to MG: ${errorMsg}`, {
-                error: errorMsg,
+            
+            // Log detailed error information with context
+            const errorDetails = {
+                format: 'mg',
+                message: errorMsg,
                 stack: error?.stack,
                 name: error?.name,
-                format: 'mg'
-            });
+                diagramType: editor?.diagramType,
+                hasEditor: !!editor,
+                hasSpec: !!editor?.currentSpec,
+                specSize: editor?.currentSpec ? JSON.stringify(editor.currentSpec).length : 0,
+                browserInfo: {
+                    userAgent: navigator.userAgent,
+                    platform: navigator.platform,
+                    fileSystemAccessSupported: typeof window.showSaveFilePicker !== 'undefined'
+                }
+            };
+            
+            this.logger.error('ExportManager', `Error exporting to MG: ${errorMsg}`, errorDetails);
             this.eventBus.emit('file:mg_export_error', { error: errorMsg });
+            this.eventBus.emit('export:error', { 
+                format: 'mg', 
+                error: errorMsg, 
+                details: errorDetails 
+            });
+            
             return {
                 success: false,
                 error: `MG export failed: ${errorMsg}`

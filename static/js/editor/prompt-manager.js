@@ -82,12 +82,92 @@ class PromptManager {
     }
     
     /**
+     * Validate prompt before sending
+     * @param {string} prompt - Prompt to validate
+     * @returns {Object} Validation result with isValid flag and error message if invalid
+     */
+    _validatePrompt(prompt) {
+        if (!prompt || prompt.trim().length === 0) {
+            return {
+                isValid: false,
+                error: window.languageManager?.currentLanguage === 'zh'
+                    ? '请输入提示内容'
+                    : 'Please enter a prompt'
+            };
+        }
+        
+        // Check minimum length
+        if (prompt.trim().length < 2) {
+            return {
+                isValid: false,
+                error: window.languageManager?.currentLanguage === 'zh'
+                    ? '提示内容太短，请提供更详细的描述'
+                    : 'Prompt is too short. Please provide more details'
+            };
+        }
+        
+        // Check for common issues
+        // Detect if prompt contains multiple diagram type requests
+        const diagramTypeKeywords = [
+            'mind map', 'mindmap', '思维导图',
+            'concept map', '概念图',
+            'flow map', '流程图',
+            'tree map', '树形图',
+            'bubble map', '气泡图',
+            'double bubble', '双气泡',
+            'brace map', '括号图',
+            'bridge map', '桥形图',
+            'circle map', '圆圈图',
+            'multi-flow', '多流程图'
+        ];
+        
+        const lowerPrompt = prompt.toLowerCase();
+        const matchedTypes = diagramTypeKeywords.filter(keyword => 
+            lowerPrompt.includes(keyword.toLowerCase())
+        );
+        
+        if (matchedTypes.length > 3) {
+            return {
+                isValid: false,
+                error: window.languageManager?.currentLanguage === 'zh'
+                    ? '提示中包含了太多图表类型关键词。请一次只请求一种图表类型。'
+                    : 'Prompt contains too many diagram type keywords. Please request only one diagram type at a time.'
+            };
+        }
+        
+        return {
+            isValid: true
+        };
+    }
+
+    /**
      * Handle send action
      */
     async handleSend() {
         const prompt = this.promptInput.value.trim();
         
         if (!prompt) {
+            return;
+        }
+        
+        // Validate prompt before sending
+        const validation = this._validatePrompt(prompt);
+        if (!validation.isValid) {
+            const errorMsg = validation.error || (window.languageManager?.currentLanguage === 'zh'
+                ? '提示验证失败'
+                : 'Prompt validation failed');
+            
+            logger.warn('PromptManager', `Prompt validation failed: ${errorMsg}`, {
+                promptLength: prompt.length,
+                promptPreview: prompt.substring(0, 100)
+            });
+            
+            // Show error notification
+            if (window.notificationManager) {
+                window.notificationManager.show(errorMsg, 'error', 5000);
+            } else {
+                alert(errorMsg);
+            }
             return;
         }
         

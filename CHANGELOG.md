@@ -7,6 +7,120 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.37.21] - 2025-01-XX - Enhanced JSON Handling, Retry Logic, and Validation Improvements
+
+### Added
+
+- **Non-JSON Response Detection** (`agents/core/agent_utils.py`)
+  - Added detection patterns for LLM responses that ask for more information instead of returning JSON
+  - Detects common patterns like "Please provide", "Please supplement", "需要信息", etc.
+  - Returns structured error object (`_error: 'non_json_response'`) to enable retry logic
+  - Improves handling of edge cases where LLM doesn't follow JSON format requirements
+
+- **JSON Repair Patterns** (`agents/core/agent_utils.py`)
+  - Added pattern to fix duplicate keys in brace map structures: `{"name":"value"},{"name":"name":"value"}` → `{"name":"value"},{"name":"value"}`
+  - Added pattern to fix `{"name":"name":"value"}` → `{"name":"value"}`
+  - Added pattern to fix missing commas between objects in brace maps
+  - Improves robustness of JSON extraction from LLM responses
+
+- **Retry Logic for Non-JSON Responses** (`agents/thinking_maps/brace_map_agent.py`, `double_bubble_map_agent.py`, `flow_map_agent.py`, `tree_map_agent.py`)
+  - Added automatic retry with explicit JSON-only prompt when LLM returns non-JSON response
+  - Retry prompt emphasizes: "You MUST respond with valid JSON only. Do not ask for more information."
+  - If retry also fails, returns None with appropriate error logging
+  - Improves success rate for diagram generation when LLM initially asks for clarification
+
+- **Validation Retry Logic** (`agents/thinking_maps/double_bubble_map_agent.py`)
+  - Added retry mechanism when generated spec fails validation
+  - Retry includes validation error message in prompt to guide LLM correction
+  - Improves success rate for double bubble map generation
+
+- **Prompt Validation** (`static/js/editor/prompt-manager.js`)
+  - Added `_validatePrompt()` method to validate prompts before sending
+  - Checks for empty prompts, minimum length (2 characters), and excessive diagram type keywords
+  - Prevents sending invalid prompts that would fail on server side
+  - Shows user-friendly error messages in appropriate language
+
+- **Export Validation** (`static/js/managers/toolbar/export-manager.js`)
+  - Added `_validateExportData()` method to validate export data before attempting export
+  - Checks for editor instance, diagram specification, and JSON serializability
+  - Added `_getExportFailureReason()` method for better error messages
+  - Enhanced error logging with detailed context (browser info, spec size, etc.)
+  - Improves user experience with clearer error messages
+
+- **Token Refresh Logic** (`static/js/auth-helper.js`)
+  - Added `refreshToken()` method to refresh authentication tokens
+  - Added automatic token refresh on 401 errors in `fetch()` method
+  - Prevents infinite retry loops with `_retryAttempt` flag
+  - Tracks last refresh time to avoid unnecessary refresh attempts
+  - Improves session management for httponly cookie-based authentication
+
+- **Backup Permission Checks** (`services/backup_scheduler.py`)
+  - Added file permission checks before backup operations
+  - Checks source database readability, backup directory writability, and backup file overwrite permissions
+  - Provides clear error messages for permission issues
+  - Prevents silent failures due to permission problems
+
+- **COS Upload Retry Logic** (`services/backup_scheduler.py`)
+  - Added retry mechanism with exponential backoff for COS uploads
+  - Retries on 5xx errors and rate limits (SlowDown, RequestLimitExceeded)
+  - Default max retries: 3 attempts with delays: 5s, 10s, 20s
+  - Improves reliability of backup uploads to cloud storage
+
+- **Rate Limit Retry Jitter** (`services/error_handler.py`)
+  - Added random jitter (0-2s) to rate limit retry delays
+  - Prevents thundering herd problem when multiple workers retry simultaneously
+  - Base delays: 5s, 10s, 20s (with jitter added)
+  - Improves distributed system stability
+
+- **Autocomplete Request Detection** (`main.py`)
+  - Added detection of autocomplete requests in request logging middleware
+  - Parses request body to check `request_type == 'autocomplete'`
+  - Enables different slow request thresholds for autocomplete vs initial generation
+
+### Fixed
+
+- **Date Calculation Consistency** (`routers/auth.py`)
+  - Fixed date calculation in `get_org_token_trends_admin()` and `get_user_token_trends_admin()`
+  - Changed from `beijing_now - timedelta(days=days)` to `beijing_today_start - timedelta(days=days)`
+  - Ensures consistent date boundaries matching token-stats endpoint behavior
+  - Added comprehensive comments explaining date boundary calculations
+
+- **Slow Request Monitoring** (`main.py`)
+  - Fixed slow request warnings for autocomplete requests
+  - Autocomplete: Warn if > 8s (expected 3-5s per LLM, total ~10-12s for all models)
+  - Initial generation: Warn if > 5s (expected 2-8s)
+  - More accurate performance monitoring based on request type
+
+- **Log Level Consistency** (`config/database.py`, `services/backup_scheduler.py`)
+  - Changed WAL checkpoint lock log from `info` to `debug` level
+  - Changed backup scheduler lock log from `info` to `debug` level
+  - Reduces log noise for normal multi-worker scenarios
+
+### Changed
+
+- **Enhanced Double Bubble Map Prompts** (`prompts/thinking_maps.py`)
+  - Added critical instruction: "You MUST respond with valid JSON only. Do not ask for more information."
+  - Added JSON format examples in both English and Chinese prompts
+  - Emphasized JSON-only output requirement
+  - Improves LLM compliance with JSON format requirements
+
+- **Improved Error Messages** (`static/js/managers/toolbar/export-manager.js`)
+  - Enhanced error messages with specific failure reasons
+  - Added detailed error logging with browser info, spec size, and context
+  - Emits additional event: `export:error` for better error tracking
+  - Improves debugging and user experience
+
+### Technical Details
+
+- **JSON Extraction Improvements**: Enhanced robustness with pattern detection and structured error handling
+- **Retry Mechanisms**: Added retry logic in 4 thinking map agents with explicit JSON-only prompts
+- **Validation**: Added client-side validation for prompts and exports to prevent invalid requests
+- **Performance**: Improved slow request monitoring with request-type-specific thresholds
+- **Reliability**: Added retry logic and permission checks for backup operations
+- **Files Modified**: 18 files changed, 869 insertions(+), 83 deletions(-)
+
+---
+
 ## [4.37.20] - 2025-01-XX - Admin Panel Status Cards and Line Graphs Alignment
 
 ### Fixed
