@@ -1119,7 +1119,8 @@ async def generate_png_from_prompt(
                     left = spec.get('left', '')
                     right = spec.get('right', '')
                     if left and right:
-                        topic_display = f"{left} vs {right}"
+                        # Format as "Left vs Right" (English) or "左和右" (Chinese)
+                        topic_display = f"{left} vs {right}" if language == 'en' else f"{left}和{right}"
                     elif left or right:
                         topic_display = left or right
                 
@@ -1329,7 +1330,8 @@ async def generate_dingtalk_png(
                     left = spec.get('left', '')
                     right = spec.get('right', '')
                     if left and right:
-                        topic_display = f"{left} vs {right}"
+                        # Format as "Left vs Right" (English) or "左和右" (Chinese)
+                        topic_display = f"{left} vs {right}" if language == 'en' else f"{left}和{right}"
                     elif left or right:
                         topic_display = left or right
                 
