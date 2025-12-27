@@ -135,6 +135,37 @@ async def generate_graph(
             node_count = len(result.get('nodes', [])) if isinstance(result.get('nodes'), list) else 0
             logger.info(f"[AutoComplete] Completed: User {user_id}, Diagram {diagram_type}, Nodes added: {node_count}, Model: {llm_model}, Request: {request_id[:8]}")
         
+        # Broadcast activity to dashboard stream (if user is authenticated)
+        if user_id:
+            try:
+                from services.activity_stream import get_activity_stream_service
+                activity_service = get_activity_stream_service()
+                user_name = getattr(current_user, 'name', None) if current_user else None
+                
+                # Format topic based on diagram type
+                topic_display = prompt[:50]  # Default: truncate prompt
+                if diagram_type == 'double_bubble_map':
+                    # Extract left and right topics from spec
+                    spec = result.get('spec', {})
+                    if isinstance(spec, dict):
+                        left = spec.get('left', '')
+                        right = spec.get('right', '')
+                        if left and right:
+                            # Format as "Left vs Right" or "左 vs 右"
+                            topic_display = f"{left} vs {right}" if language == 'en' else f"{left} vs {right}"
+                        elif left or right:
+                            topic_display = left or right
+                
+                await activity_service.broadcast_activity(
+                    user_id=user_id,
+                    action="generated",
+                    diagram_type=diagram_type,
+                    topic=topic_display[:50],  # Truncate to 50 chars
+                    user_name=user_name
+                )
+            except Exception as e:
+                logger.debug(f"Failed to broadcast activity: {e}")
+        
         # Add metadata
         result['llm_model'] = llm_model
         result['request_id'] = request_id

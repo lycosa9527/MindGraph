@@ -162,13 +162,20 @@ async def update_user_admin(
     lang: str = Depends(get_language_dependency)
 ):
     """Update user information (ADMIN ONLY)"""
-    # Load user (use cache with SQLite fallback)
-    user = user_cache.get_by_id(user_id)
-    if not user:
-        user = db.query(User).filter(User.id == user_id).first()
-        if not user:
+    # Check if user exists (use cache for quick check)
+    cached_user = user_cache.get_by_id(user_id)
+    if not cached_user:
+        # Check database as fallback
+        cached_user = db.query(User).filter(User.id == user_id).first()
+        if not cached_user:
             error_msg = Messages.error("user_not_found", lang, user_id)
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
+    
+    # Reload from database for modification (cached users are detached)
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        error_msg = Messages.error("user_not_found", lang, user_id)
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
     
     # Save old values for cache invalidation
     old_phone = user.phone
@@ -428,4 +435,5 @@ async def reset_user_password_admin(
     
     logger.info(f"Admin {current_user.phone} reset password for user: {user.phone}")
     return {"message": Messages.success("password_reset_for_user", lang, user.phone)}
+
 

@@ -1106,6 +1106,33 @@ async def generate_png_from_prompt(
             x_language=x_language
         )
         
+        # Broadcast activity to dashboard stream (if user is authenticated)
+        if user_id:
+            try:
+                from services.activity_stream import get_activity_stream_service
+                activity_service = get_activity_stream_service()
+                user_name = getattr(current_user, 'name', None) if current_user else None
+                
+                # Format topic based on diagram type
+                topic_display = prompt[:50]  # Default: truncate prompt
+                if diagram_type == 'double_bubble_map' and isinstance(spec, dict):
+                    left = spec.get('left', '')
+                    right = spec.get('right', '')
+                    if left and right:
+                        topic_display = f"{left} vs {right}"
+                    elif left or right:
+                        topic_display = left or right
+                
+                await activity_service.broadcast_activity(
+                    user_id=user_id,
+                    action="generated",
+                    diagram_type=diagram_type,
+                    topic=topic_display[:50],  # Truncate to 50 chars
+                    user_name=user_name
+                )
+            except Exception as e:
+                logger.debug(f"Failed to broadcast activity: {e}")
+        
         return Response(
             content=screenshot_bytes,
             media_type="image/png",
@@ -1288,6 +1315,33 @@ async def generate_dingtalk_png(
             scale=2,
             x_language=x_language
         )
+        
+        # Broadcast activity to dashboard stream (if user is authenticated)
+        if user_id:
+            try:
+                from services.activity_stream import get_activity_stream_service
+                activity_service = get_activity_stream_service()
+                user_name = getattr(current_user, 'name', None) if current_user else None
+                
+                # Format topic based on diagram type
+                topic_display = prompt[:50]  # Default: truncate prompt
+                if diagram_type == 'double_bubble_map' and isinstance(spec, dict):
+                    left = spec.get('left', '')
+                    right = spec.get('right', '')
+                    if left and right:
+                        topic_display = f"{left} vs {right}"
+                    elif left or right:
+                        topic_display = left or right
+                
+                await activity_service.broadcast_activity(
+                    user_id=user_id,
+                    action="generated",
+                    diagram_type=diagram_type,
+                    topic=topic_display[:50],  # Truncate to 50 chars
+                    user_name=user_name
+                )
+            except Exception as e:
+                logger.debug(f"Failed to broadcast activity: {e}")
         
         # Save PNG to temp directory (ASYNC file I/O)
         temp_dir = Path("temp_images")

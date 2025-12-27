@@ -14,9 +14,16 @@ async function checkAdminAuth() {
         const response = await auth.fetch('/api/auth/me');
         const user = await response.json();
         
-        // Check if user is admin by making a test admin API call
-        const adminCheck = await auth.fetch('/api/auth/admin/stats');
+        // Check if user is admin using lightweight status endpoint
+        const adminCheck = await auth.fetch('/api/auth/admin/status');
         if (!adminCheck.ok) {
+            // Not authenticated
+            document.getElementById('auth-required-overlay').style.display = 'flex';
+            return false;
+        }
+        
+        const adminStatus = await adminCheck.json();
+        if (!adminStatus.is_admin) {
             // User is authenticated but not admin
             alert('⚠️ Admin access denied.\n\n您不是管理员，无法访问此页面。\nYou are not an administrator and cannot access this page.');
             window.location.href = '/editor';

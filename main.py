@@ -1849,7 +1849,7 @@ async def get_status():
 # ROUTER REGISTRATION
 # ============================================================================
 
-from routers import pages, cache, api, node_palette, auth, admin_env, admin_logs, admin_realtime, voice, update_notification, tab_mode
+from routers import pages, cache, api, node_palette, auth, admin_env, admin_logs, admin_realtime, voice, update_notification, tab_mode, public_dashboard
 
 # Register routers
 app.include_router(pages.router)
@@ -1863,6 +1863,7 @@ app.include_router(admin_realtime.router)  # Admin realtime user activity monito
 app.include_router(voice.router)  # VoiceAgent (real-time voice conversation)
 app.include_router(update_notification.router)  # Update notification system
 app.include_router(tab_mode.router)  # Tab Mode (autocomplete and expansion)
+app.include_router(public_dashboard.router, prefix="/api/public", tags=["Public Dashboard"])  # Public dashboard endpoints
 
 # ============================================================================
 # APPLICATION ENTRY POINT

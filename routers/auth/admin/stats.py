@@ -25,6 +25,7 @@ from sqlalchemy.orm import Session
 from config.database import get_db
 from models.auth import User, Organization
 from models.messages import Messages
+from utils.auth import get_current_user
 
 from ..dependencies import get_language_dependency, require_admin
 from ..helpers import get_beijing_now, get_beijing_today_start_utc, utc_to_beijing_iso, BEIJING_TIMEZONE
@@ -32,6 +33,23 @@ from ..helpers import get_beijing_now, get_beijing_today_start_utc, utc_to_beiji
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
+
+@router.get("/admin/status")
+async def get_admin_status(
+    current_user: User = Depends(get_current_user)
+) -> Dict[str, bool]:
+    """
+    Lightweight endpoint to check if current user is admin.
+    
+    This endpoint does NOT require admin access - it returns admin status for any authenticated user.
+    Used by frontend to check admin status without making expensive stats queries.
+    
+    Returns:
+        {"is_admin": true/false}
+    """
+    from utils.auth import is_admin
+    return {"is_admin": is_admin(current_user)}
 
 
 @router.get("/admin/stats", dependencies=[Depends(require_admin)])
@@ -1009,4 +1027,6 @@ async def get_user_token_trends_admin(
         "days": days,
         "data": trends_data
     }
+
+
 

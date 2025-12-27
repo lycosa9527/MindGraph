@@ -1171,8 +1171,8 @@
             if (isAuth) {
                 // User is already logged in, redirect appropriately
                 try {
-                    // Check if admin by testing admin endpoint
-                    const adminTest = await auth.fetch('/api/auth/admin/stats');
+                    // Check if admin using lightweight status endpoint
+                    const adminTest = await auth.fetch('/api/auth/admin/status');
                     
                     // If 401, token expired - clear auth and stay on auth page to prevent redirect loop
                     if (adminTest.status === 401) {
@@ -1182,7 +1182,17 @@
                         return;
                     }
                     
-                    const isAdmin = adminTest.ok;
+                    // Parse admin status from response
+                    let isAdmin = false;
+                    if (adminTest.ok) {
+                        try {
+                            const adminStatus = await adminTest.json();
+                            isAdmin = adminStatus.is_admin === true;
+                        } catch (e) {
+                            // Invalid response - assume not admin
+                            isAdmin = false;
+                        }
+                    }
                     
                     // Check for redirect parameter
                     const urlParams = new URLSearchParams(window.location.search);

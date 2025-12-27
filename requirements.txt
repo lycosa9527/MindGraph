@@ -90,6 +90,13 @@ redis>=5.2.0  # Redis client for caching (captcha, rate limiting, sessions)
 # Note: Updated for Redis 8.4 compatibility. Use latest version for best support.
 
 # ============================================================================
+# IP GEOLOCATION (Local Database - No External APIs)
+# ============================================================================
+py-ip2region>=3.0.0  # Local IP geolocation database (xdb format, loads into memory)
+# Note: Database files (ip2region_v4.xdb and ip2region_v6.xdb) need to be placed in data/ directory
+# Download from: https://github.com/lionsoul2014/ip2region
+
+# ============================================================================
 # CLOUD STORAGE (Optional)
 # ============================================================================
 cos-python-sdk-v5>=1.9.27  # Tencent Cloud Object Storage (COS) SDK for online backups

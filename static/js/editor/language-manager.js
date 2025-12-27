@@ -2025,19 +2025,19 @@ class LanguageManager {
                 return;
             }
             
-            // SECURITY: Check if user is admin by testing admin endpoint
-            // This endpoint requires valid JWT and admin check on backend
-            const adminCheck = await auth.fetch('/api/auth/admin/stats');
+            // SECURITY: Check if user is admin using lightweight status endpoint
+            // This endpoint returns admin status without expensive database queries
+            const adminCheck = await auth.fetch('/api/auth/admin/status');
             
             if (adminCheck.ok) {
-                // User is admin - verify response is valid JSON
+                // User is authenticated - check admin status from response
                 try {
                     const responseData = await adminCheck.json(); // Parse and verify response
-                    // Additional validation: ensure response has expected structure
-                    if (responseData && typeof responseData === 'object') {
+                    // Response format: {"is_admin": true/false}
+                    if (responseData && typeof responseData === 'object' && responseData.is_admin === true) {
                         isAdmin = true;
                     } else {
-                        // Invalid response structure - fail secure
+                        // Not admin or invalid response structure - fail secure
                         isAdmin = false;
                     }
                 } catch (e) {
@@ -2045,7 +2045,7 @@ class LanguageManager {
                     isAdmin = false;
                 }
             } else {
-                // Not admin (403 or other error) - fail secure
+                // Not authenticated or error - fail secure
                 isAdmin = false;
             }
         } catch (error) {

@@ -77,11 +77,20 @@ async def index(request: Request):
                 try:
                     user = get_user_from_cookie(auth_cookie, db)
                     if user:
+                        # Access user attributes before closing session
+                        user_id = user.id
+                        user_phone = user.phone
+                        
                         # Detach user from session if it's attached (cache users are already detached)
-                        if user in db:
-                            db.expunge(user)
+                        try:
+                            if user in db:
+                                db.expunge(user)
+                        except Exception:
+                            # User might already be detached (from cache) - ignore
+                            pass
+                        
                         # Already authenticated, go to editor
-                        logger.debug("Standard mode: Authenticated user, redirecting / to /editor")
+                        logger.debug(f"Standard mode: Authenticated user (ID: {user_id}, Phone: {user_phone}), redirecting / to /editor")
                         return RedirectResponse(url="/editor", status_code=303)
                     else:
                         # Token is invalid or expired - clear cookie before redirecting to /auth
@@ -185,9 +194,16 @@ async def editor(request: Request):
                 db.close()
                 return RedirectResponse(url="/demo", status_code=303)
             
+            # Access user.phone before closing session to ensure it's loaded
+            user_phone = user.phone
             # Detach user from session so it can be used after closing
-            db.expunge(user)
-            logger.debug(f"Demo mode: User {user.phone} accessing /editor")
+            try:
+                if user in db:
+                    db.expunge(user)
+            except Exception:
+                # User might already be detached (from cache) - ignore
+                pass
+            logger.debug(f"Demo mode: User {user_phone} accessing /editor")
         
         # Bayi mode: verify authentication (token via /loginByXz or passkey via /demo)
         elif AUTH_MODE == "bayi":
@@ -302,11 +318,18 @@ async def editor(request: Request):
                         db.close()
                         return RedirectResponse(url="/demo", status_code=303)
                     
-                    # Generate JWT token and check admin status BEFORE closing session
-                    # Detach bayi_user from session so it can be used after closing
-                    db.expunge(bayi_user)
+                    # Access all needed attributes and check admin status BEFORE closing session
+                    user_phone = bayi_user.phone if bayi_user else None
                     jwt_token = create_access_token(bayi_user)
                     user_is_admin = is_admin(bayi_user) if bayi_user else False
+                    
+                    # Detach bayi_user from session after accessing all needed attributes
+                    try:
+                        if bayi_user in db:
+                            db.expunge(bayi_user)
+                    except Exception:
+                        # User might already be detached - ignore
+                        pass
                     logger.info(f"Bayi IP whitelist auto-login successful: {client_ip}")
                     
                     # Close session BEFORE template rendering
@@ -344,7 +367,10 @@ async def editor(request: Request):
                 db.close()
                 return RedirectResponse(url="/demo", status_code=303)
             
-            logger.debug(f"Bayi mode: User {user.phone} accessing /editor")
+            # Access user.phone before closing session to ensure it's loaded
+            user_phone = user.phone if user else None
+            if user_phone:
+                logger.debug(f"Bayi mode: User {user_phone} accessing /editor")
         
         # SECURITY: Check if user is admin for server-side button rendering (defense-in-depth)
         # Note: Client-side check still runs for additional security
@@ -366,13 +392,22 @@ async def editor(request: Request):
                 if auth_cookie:
                     cookie_user = get_user_from_cookie(auth_cookie, db)
                     if cookie_user:
-                        # Detach user from session if it's attached (cache users are already detached)
-                        if cookie_user in db:
-                            db.expunge(cookie_user)
-                        # Log admin check for debugging (especially in bayi mode)
+                        # Cached users are already detached, DB users need to be detached
+                        # Access all needed attributes first (while session is open for DB users)
+                        user_phone = cookie_user.phone
                         admin_status = is_admin(cookie_user)
+                        
+                        # Only expunge if user is actually in this session (not from cache)
+                        try:
+                            if cookie_user in db:
+                                db.expunge(cookie_user)
+                        except Exception:
+                            # User is already detached (from cache) - ignore
+                            pass
+                        
+                        # Log admin check for debugging (especially in bayi mode)
                         if AUTH_MODE == "bayi":
-                            logger.debug(f"Bayi mode admin check: user={cookie_user.phone}, is_admin={admin_status}")
+                            logger.debug(f"Bayi mode admin check: user={user_phone}, is_admin={admin_status}")
                         if admin_status:
                             user_is_admin = True
         except Exception as e:
@@ -443,10 +478,19 @@ async def auth_page(request: Request):
             try:
                 user = get_user_from_cookie(auth_cookie, db)
                 if user:
+                    # Access user attributes before closing session
+                    user_id = user.id
+                    user_phone = user.phone
+                    
                     # Detach user from session if it's attached (cache users are already detached)
-                    if user in db:
-                        db.expunge(user)
-                    logger.debug("User already authenticated, redirecting to /editor")
+                    try:
+                        if user in db:
+                            db.expunge(user)
+                    except Exception:
+                        # User might already be detached (from cache) - ignore
+                        pass
+                    
+                    logger.debug(f"User already authenticated (ID: {user_id}, Phone: {user_phone}), redirecting to /editor")
                     return RedirectResponse(url="/editor", status_code=303)
                 else:
                     # Token is invalid or expired - clear the cookie to prevent redirect loops
@@ -875,6 +919,29 @@ async def demo_page(request: Request):
         return templates.TemplateResponse("demo-login.html", {"request": request, "version": get_app_version()})
     except Exception as e:
         logger.error(f"/demo route failed: {e}", exc_info=True)
+        raise
+
+
+@router.get("/pub-dash", response_class=HTMLResponse)
+async def public_dashboard_page(request: Request):
+    """Public dashboard page - passkey-protected"""
+    try:
+        # Check for dashboard session cookie
+        dashboard_token = request.cookies.get("dashboard_access_token")
+        
+        if dashboard_token:
+            # Verify dashboard session
+            from services.dashboard_session import get_dashboard_session_manager
+            session_manager = get_dashboard_session_manager()
+            if session_manager.verify_session(dashboard_token):
+                # Valid session - show dashboard
+                return templates.TemplateResponse("public_dashboard.html", {"request": request, "version": get_app_version()})
+        
+        # No valid session - show passkey modal
+        return templates.TemplateResponse("public-dashboard-login.html", {"request": request, "version": get_app_version()})
+        
+    except Exception as e:
+        logger.error(f"/pub-dash route failed: {e}", exc_info=True)
         raise
 
 @router.get("/favicon.ico")

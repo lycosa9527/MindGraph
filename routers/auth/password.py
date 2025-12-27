@@ -43,9 +43,9 @@ async def reset_password_with_sms(
     Also unlocks the account if it was locked.
     """
     # Find user (use cache with SQLite fallback)
-    user = user_cache.get_by_phone(request.phone)
+    cached_user = user_cache.get_by_phone(request.phone)
     
-    if not user:
+    if not cached_user:
         error_msg = Messages.error("phone_not_registered_reset", lang)
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -60,6 +60,15 @@ async def reset_password_with_sms(
         db,
         lang
     )
+    
+    # Reload user from database for modification (cached users are detached)
+    user = db.query(User).filter(User.id == cached_user.id).first()
+    if not user:
+        error_msg = Messages.error("phone_not_registered_reset", lang)
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=error_msg
+        )
     
     # Update password
     user.password_hash = hash_password(request.new_password)
@@ -94,4 +103,5 @@ async def reset_password_with_sms(
         "message": Messages.success("password_reset_success", lang),
         "phone": user.phone[:3] + "****" + user.phone[-4:]
     }
+
 

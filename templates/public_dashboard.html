@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MG全国数据中心</title>
+    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+    <link rel="stylesheet" href="/static/css/public-dashboard.css?v={{ version }}">
+    <script src="/static/js/echarts.min.js"></script>
+</head>
+<body>
+    <div class="public-dashboard">
+        <!-- Full-screen China Map -->
+        <div class="map-container">
+            <div id="china-map"></div>
+            <div class="map-title-overlay">
+                <h1>MG全国数据中心</h1>
+                <div class="map-subtitle" data-i18n="map-subtitle">Real-time User Distribution Across China</div>
+            </div>
+        </div>
+        
+        <!-- Floating Status Cards Overlay (Top Left) -->
+        <div class="stats-overlay">
+            <div class="overlay-header">
+                <h2 data-i18n="stats-title">统计信息</h2>
+            </div>
+            <div class="stats-grid">
+                <div class="stat-card premium">
+                    <div class="stat-content">
+                        <h3 data-i18n="connected-users">在线用户</h3>
+                        <div id="connected-users" class="stat-value">-</div>
+                        <div class="stat-label" data-i18n="stat-label-active-now">Active Now</div>
+                    </div>
+                    <div class="stat-glow"></div>
+                </div>
+                <div class="stat-card premium">
+                    <div class="stat-content">
+                        <h3 data-i18n="registered-users">注册用户</h3>
+                        <div id="registered-users" class="stat-value">-</div>
+                        <div class="stat-label" data-i18n="stat-label-total-users">Total Users</div>
+                    </div>
+                    <div class="stat-glow"></div>
+                </div>
+                <div class="stat-card premium">
+                    <div class="stat-content">
+                        <h3 data-i18n="tokens-today">今日tokens</h3>
+                        <div id="tokens-today" class="stat-value">-</div>
+                        <div class="stat-label" data-i18n="stat-label-today">Today</div>
+                    </div>
+                    <div class="stat-glow"></div>
+                </div>
+                <div class="stat-card premium">
+                    <div class="stat-content">
+                        <h3 data-i18n="total-tokens">总tokens</h3>
+                        <div id="total-tokens" class="stat-value">-</div>
+                        <div class="stat-label" data-i18n="stat-label-all-time">All Time</div>
+                    </div>
+                    <div class="stat-glow"></div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Floating Activity Stream Overlay (Bottom Right) -->
+        <div class="activity-overlay">
+            <div class="overlay-header">
+                <h2 data-i18n="activity-title">实时动态</h2>
+                <div class="live-indicator">
+                    <span class="live-dot"></span>
+                    <span>LIVE</span>
+                </div>
+            </div>
+            <div id="activity-stream" class="activity-stream">
+                <!-- Activity items will be appended here -->
+            </div>
+        </div>
+        
+        <!-- Language Toggle -->
+        <div class="lang-toggle">
+            <button onclick="toggleLanguage()" id="langToggle">
+                <span id="langText">English</span>
+            </button>
+        </div>
+    </div>
+    
+    <script src="/static/js/public-dashboard.js?v={{ version }}"></script>
+</body>
+</html>
+

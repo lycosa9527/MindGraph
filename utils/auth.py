@@ -57,6 +57,9 @@ ENTERPRISE_DEFAULT_USER_PHONE = os.getenv("ENTERPRISE_DEFAULT_USER_PHONE", "ente
 DEMO_PASSKEY = os.getenv("DEMO_PASSKEY", "888888").strip()
 ADMIN_DEMO_PASSKEY = os.getenv("ADMIN_DEMO_PASSKEY", "999999").strip()
 
+# Public Dashboard Configuration
+PUBLIC_DASHBOARD_PASSKEY = os.getenv("PUBLIC_DASHBOARD_PASSKEY", "123456").strip()
+
 # Bayi Mode Configuration
 BAYI_DECRYPTION_KEY = os.getenv("BAYI_DECRYPTION_KEY", "v8IT7XujLPsM7FYuDPRhPtZk").strip()
 BAYI_DEFAULT_ORG_CODE = os.getenv("BAYI_DEFAULT_ORG_CODE", "BAYI-001").strip()
@@ -563,6 +566,16 @@ def is_admin_demo_passkey(passkey: str) -> bool:
     # Strip whitespace from input passkey to handle client-side issues
     passkey = passkey.strip() if passkey else ""
     return passkey == ADMIN_DEMO_PASSKEY
+
+
+def verify_dashboard_passkey(passkey: str) -> bool:
+    """
+    Verify public dashboard passkey
+    Returns True if valid, False otherwise
+    """
+    # Strip whitespace from input passkey to handle client-side issues
+    passkey = passkey.strip() if passkey else ""
+    return passkey == PUBLIC_DASHBOARD_PASSKEY
 
 
 # ============================================================================

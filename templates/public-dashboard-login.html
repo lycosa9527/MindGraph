@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Public Dashboard Access</title>
+    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+    <link rel="stylesheet" href="/static/fonts/inter.css?v={{ version }}">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .login-container {
+            background: rgba(30, 41, 59, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 24px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            padding: 60px 50px;
+            text-align: center;
+            max-width: 480px;
+            width: 100%;
+            border: 1px solid rgba(148, 163, 184, 0.1);
+        }
+
+        .logo {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 24px;
+            background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+            box-shadow: 0 10px 30px rgba(59, 130, 246, 0.3);
+        }
+
+        h1 {
+            color: #e2e8f0;
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 12px;
+        }
+
+        .subtitle {
+            color: #94a3b8;
+            font-size: 15px;
+            margin-bottom: 40px;
+            line-height: 1.6;
+        }
+
+        .input-group {
+            margin-bottom: 24px;
+        }
+
+        .passkey-input {
+            width: 100%;
+            padding: 18px 24px;
+            font-size: 20px;
+            font-weight: 600;
+            text-align: center;
+            letter-spacing: 8px;
+            border: 2px solid #334155;
+            border-radius: 16px;
+            outline: none;
+            transition: all 0.3s;
+            background: #1e293b;
+            color: #e2e8f0;
+        }
+
+        .passkey-input:focus {
+            border-color: #3b82f6;
+            background: #0f172a;
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1), 0 0 40px rgba(59, 130, 246, 0.2);
+        }
+
+        .passkey-input.error {
+            border-color: #ef4444;
+            animation: shake 0.5s;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 18px 24px;
+            font-size: 16px;
+            font-weight: 600;
+            color: white;
+            background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+            border: none;
+            border-radius: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .submit-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 20px 25px -5px rgba(59, 130, 246, 0.3);
+        }
+
+        .submit-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .submit-btn .spinner {
+            display: none;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        .submit-btn.loading .spinner {
+            display: block;
+        }
+
+        .submit-btn.loading .btn-text {
+            display: none;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .alert {
+            padding: 14px 20px;
+            border-radius: 12px;
+            margin-top: 20px;
+            font-size: 14px;
+            display: none;
+        }
+
+        .alert.show {
+            display: block;
+        }
+
+        .alert-error {
+            background: #7f1d1d;
+            color: #fecaca;
+            border: 1px solid #991b1b;
+        }
+
+        .alert-success {
+            background: #064e3b;
+            color: #a7f3d0;
+            border: 1px solid #065f46;
+        }
+
+        .success-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            color: white;
+        }
+
+        .success-overlay.show {
+            display: flex;
+        }
+
+        .success-icon {
+            font-size: 80px;
+            margin-bottom: 20px;
+            animation: scaleIn 0.5s ease;
+        }
+
+        @keyframes scaleIn {
+            from {
+                transform: scale(0);
+                opacity: 0;
+            }
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Success Overlay -->
+    <div class="success-overlay" id="successOverlay">
+        <div class="success-icon">✓</div>
+        <h2 data-i18n="success-title">访问已授权</h2>
+        <p data-i18n="success-subtitle">正在跳转至仪表板...</p>
+    </div>
+
+    <div class="login-container">
+        <div class="logo">📊</div>
+        <h1 data-i18n="title">公共仪表板</h1>
+        <p class="subtitle" data-i18n="subtitle">
+            输入6位密码以访问仪表板
+        </p>
+
+        <form id="dashboardForm" onsubmit="handleSubmit(event)">
+            <div class="input-group">
+                <input 
+                    type="text" 
+                    id="passkey" 
+                    class="passkey-input" 
+                    placeholder="• • • • • •" 
+                    maxlength="6"
+                    pattern="[0-9]{6}"
+                    inputmode="numeric"
+                    autocomplete="off"
+                    required
+                    autofocus
+                >
+            </div>
+
+            <button type="submit" class="submit-btn" id="submitBtn">
+                <div class="spinner"></div>
+                <span class="btn-text" data-i18n="submit-btn">访问仪表板 →</span>
+            </button>
+        </form>
+
+        <div id="alert" class="alert"></div>
+        
+        <div style="margin-top: 20px; text-align: center;">
+            <button onclick="toggleLanguage()" style="
+                background: rgba(59, 130, 246, 0.1);
+                border: 1px solid rgba(59, 130, 246, 0.3);
+                color: #60a5fa;
+                padding: 8px 16px;
+                border-radius: 8px;
+                cursor: pointer;
+                font-size: 14px;
+                transition: all 0.2s;
+            " onmouseover="this.style.background='rgba(59, 130, 246, 0.2)'" onmouseout="this.style.background='rgba(59, 130, 246, 0.1)'">
+                <span id="langText">English</span>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Bilingual Support (Default: Chinese)
+        const translations = {
+            zh: {
+                'title': '公共仪表板',
+                'subtitle': '输入6位密码以访问仪表板',
+                'submit-btn': '访问仪表板 →',
+                'success-title': '访问已授权',
+                'success-subtitle': '正在跳转至仪表板...',
+                'error-length': '请输入6位密码',
+                'error-invalid': '密码错误',
+                'error-network': '网络错误',
+                'success-msg': '访问已授权！'
+            },
+            en: {
+                'title': 'Public Dashboard',
+                'subtitle': 'Enter your 6-digit passkey to access the dashboard',
+                'submit-btn': 'Access Dashboard →',
+                'success-title': 'Access Granted',
+                'success-subtitle': 'Redirecting to dashboard...',
+                'error-length': 'Please enter a 6-digit passkey',
+                'error-invalid': 'Invalid passkey',
+                'error-network': 'Network error',
+                'success-msg': 'Access granted!'
+            }
+        };
+
+        // Get saved language or default to Chinese
+        let currentLang = localStorage.getItem('dashboard-lang') || 'zh';
+
+        // Apply translations
+        function applyTranslations() {
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (translations[currentLang][key]) {
+                    el.textContent = translations[currentLang][key];
+                }
+            });
+            
+            // Update language button
+            const langText = document.getElementById('langText');
+            if (langText) {
+                langText.textContent = currentLang === 'zh' ? 'English' : '中文';
+            }
+        }
+
+        // Toggle language
+        function toggleLanguage() {
+            currentLang = currentLang === 'zh' ? 'en' : 'zh';
+            localStorage.setItem('dashboard-lang', currentLang);
+            applyTranslations();
+        }
+
+        // Apply on load
+        applyTranslations();
+
+        const passKeyInput = document.getElementById('passkey');
+        const submitBtn = document.getElementById('submitBtn');
+        const alertBox = document.getElementById('alert');
+
+        function showAlert(message, type) {
+            alertBox.textContent = message;
+            alertBox.className = `alert alert-${type} show`;
+        }
+
+        function hideAlert() {
+            alertBox.classList.remove('show');
+        }
+
+        // Auto-format passkey input (numbers only)
+        passKeyInput.addEventListener('input', (e) => {
+            e.target.value = e.target.value.replace(/[^0-9]/g, '');
+            hideAlert();
+        });
+
+        // Handle form submission
+        async function handleSubmit(e) {
+            e.preventDefault();
+            
+            const passkey = passKeyInput.value.trim();
+            
+            if (passkey.length !== 6) {
+                showAlert(translations[currentLang]['error-length'], 'error');
+                passKeyInput.classList.add('error');
+                setTimeout(() => passKeyInput.classList.remove('error'), 500);
+                return;
+            }
+
+            // Show loading state
+            submitBtn.disabled = true;
+            submitBtn.classList.add('loading');
+
+            try {
+                const response = await fetch('/api/auth/public-dashboard/verify', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ passkey })
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    // Show success animation
+                    showAlert(translations[currentLang]['success-msg'], 'success');
+                    document.getElementById('successOverlay').classList.add('show');
+                    
+                    // Redirect to dashboard
+                    setTimeout(() => {
+                        window.location.href = '/pub-dash';
+                    }, 1500);
+                } else {
+                    // Show error
+                    passKeyInput.classList.add('error');
+                    setTimeout(() => passKeyInput.classList.remove('error'), 500);
+                    
+                    showAlert(result.detail || translations[currentLang]['error-invalid'], 'error');
+                    
+                    // Clear input
+                    passKeyInput.value = '';
+                    passKeyInput.focus();
+                    
+                    // Reset button
+                    submitBtn.disabled = false;
+                    submitBtn.classList.remove('loading');
+                }
+            } catch (error) {
+                showAlert(translations[currentLang]['error-network'], 'error');
+                submitBtn.disabled = false;
+                submitBtn.classList.remove('loading');
+            }
+        }
+    </script>
+</body>
+</html>
+
