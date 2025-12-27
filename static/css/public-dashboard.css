@@ -444,8 +444,10 @@ body {
 .activity-stream {
     flex: 1;
     overflow-y: auto;
+    overflow-x: hidden;
     padding-right: 0.5rem;
     min-height: 200px;
+    max-height: calc(100vh - 250px); /* Ensure scrollability with max height */
 }
 
 .activity-item {

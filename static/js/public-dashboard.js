@@ -138,6 +138,9 @@ document.addEventListener('DOMContentLoaded', async function() {
     await loadStats();
     await loadMapData();
     
+    // Load historical activities first (before connecting to stream)
+    await loadActivityHistory();
+    
     // Connect to activity stream
     connectActivityStream();
     
@@ -363,6 +366,55 @@ function initializeMap() {
                 animation: true,
                 animationDuration: 1000,
                 animationEasing: 'cubicOut'
+            },
+            // Flag series for login indicators
+            {
+                name: '登录标记',
+                type: 'scatter',
+                coordinateSystem: 'geo',
+                data: [],
+                symbol: 'pin',  // Use pin symbol for flags
+                symbolSize: 30,
+                itemStyle: {
+                    color: '#f472b6',  // Pink color for flags
+                    shadowBlur: 15,
+                    shadowColor: 'rgba(244, 114, 182, 0.6)',
+                    borderColor: '#ffffff',
+                    borderWidth: 2,
+                    opacity: 0.9
+                },
+                label: {
+                    show: true,
+                    formatter: function(params) {
+                        return params.name;
+                    },
+                    position: 'bottom',
+                    color: '#e2e8f0',
+                    fontSize: 10,
+                    fontWeight: 'bold',
+                    backgroundColor: 'rgba(244, 114, 182, 0.9)',
+                    padding: [2, 6],
+                    borderRadius: 4,
+                    borderColor: '#ffffff',
+                    borderWidth: 1,
+                    offset: [0, 5]
+                },
+                emphasis: {
+                    itemStyle: {
+                        shadowBlur: 25,
+                        shadowColor: 'rgba(244, 114, 182, 0.9)',
+                        borderWidth: 3,
+                        borderColor: '#ffffff',
+                        scale: 1.2
+                    },
+                    label: {
+                        fontSize: 12,
+                        backgroundColor: 'rgba(244, 114, 182, 1)'
+                    }
+                },
+                animation: true,
+                animationDuration: 800,
+                animationEasing: 'bounceOut'
             }
         ],
         tooltip: {
@@ -379,17 +431,32 @@ function initializeMap() {
             },
             formatter: function(params) {
                 if (params.seriesType === 'scatter') {
-                    const count = params.value[2];
-                    const color = params.color;
-                    return `
-                        <div style="font-weight: bold; margin-bottom: 8px; font-size: 14px;">
-                            ${params.name}
-                        </div>
-                        <div style="display: flex; align-items: center; gap: 8px;">
-                            <span style="display: inline-block; width: 12px; height: 12px; background: ${color}; border-radius: 50%; box-shadow: 0 0 8px ${color};"></span>
-                            <span>${translations[currentLang]['active-users']}: <strong style="color: #60a5fa;">${count}</strong></span>
-                        </div>
-                    `;
+                    // Check if it's a flag (no count in value)
+                    if (params.value.length === 2) {
+                        // Flag marker
+                        return `
+                            <div style="font-weight: bold; margin-bottom: 8px; font-size: 14px;">
+                                ${params.name}
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <span style="display: inline-block; width: 16px; height: 16px; background: #f472b6; border-radius: 2px; transform: rotate(45deg);"></span>
+                                <span>${translations[currentLang]['recent-login'] || 'Recent Login'}</span>
+                            </div>
+                        `;
+                    } else {
+                        // City scatter point with user count
+                        const count = params.value[2];
+                        const color = params.color;
+                        return `
+                            <div style="font-weight: bold; margin-bottom: 8px; font-size: 14px;">
+                                ${params.name}
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <span style="display: inline-block; width: 12px; height: 12px; background: ${color}; border-radius: 50%; box-shadow: 0 0 8px ${color};"></span>
+                                <span>${translations[currentLang]['active-users']}: <strong style="color: #60a5fa;">${count}</strong></span>
+                            </div>
+                        `;
+                    }
                 } else if (params.seriesType === 'map') {
                     const count = params.value || 0;
                     const color = params.color || '#60a5fa';
@@ -668,6 +735,58 @@ async function loadMapData() {
                         animation: true,
                         animationDuration: 800,
                         animationEasing: 'cubicOut'
+                    },
+                    {
+                        // Flag series for login indicators
+                        name: '登录标记',
+                        type: 'scatter',
+                        coordinateSystem: 'geo',
+                        data: (data.flag_data || []).map(flag => ({
+                            name: flag.name,
+                            value: flag.value  // [lng, lat]
+                        })),
+                        symbol: 'pin',
+                        symbolSize: 30,
+                        itemStyle: {
+                            color: '#f472b6',
+                            shadowBlur: 15,
+                            shadowColor: 'rgba(244, 114, 182, 0.6)',
+                            borderColor: '#ffffff',
+                            borderWidth: 2,
+                            opacity: 0.9
+                        },
+                        label: {
+                            show: true,
+                            formatter: function(params) {
+                                return params.name;
+                            },
+                            position: 'bottom',
+                            color: '#e2e8f0',
+                            fontSize: 10,
+                            fontWeight: 'bold',
+                            backgroundColor: 'rgba(244, 114, 182, 0.9)',
+                            padding: [2, 6],
+                            borderRadius: 4,
+                            borderColor: '#ffffff',
+                            borderWidth: 1,
+                            offset: [0, 5]
+                        },
+                        emphasis: {
+                            itemStyle: {
+                                shadowBlur: 25,
+                                shadowColor: 'rgba(244, 114, 182, 0.9)',
+                                borderWidth: 3,
+                                borderColor: '#ffffff',
+                                scale: 1.2
+                            },
+                            label: {
+                                fontSize: 12,
+                                backgroundColor: 'rgba(244, 114, 182, 1)'
+                            }
+                        },
+                        animation: true,
+                        animationDuration: 800,
+                        animationEasing: 'bounceOut'
                     }
                 ]
             }, {
@@ -678,6 +797,79 @@ async function loadMapData() {
         
     } catch (error) {
         console.error('Error loading map data:', error);
+    }
+}
+
+async function loadActivityHistory() {
+    /**
+     * Load historical activities from database on page load.
+     * This ensures activities persist across page refreshes.
+     */
+    try {
+        const response = await fetch('/api/public/activity-history?limit=100', {
+            credentials: 'include'
+        });
+        
+        if (!response.ok) {
+            console.error('Failed to load activity history:', response.status);
+            return;
+        }
+        
+        const data = await response.json();
+        const activities = data.activities || [];
+        
+        // Clear existing activities (in case of reload)
+        const activityStream = document.getElementById('activity-stream');
+        if (!activityStream) return;
+        
+        // Add historical activities (oldest first, so newest appears at top after all are added)
+        // We'll reverse the array to show newest first
+        const reversedActivities = [...activities].reverse();
+        
+        for (const activity of reversedActivities) {
+            // Add without animation for historical items
+            addActivityItemHistorical(activity);
+        }
+        
+        console.log(`Loaded ${activities.length} historical activities`);
+    } catch (error) {
+        console.error('Error loading activity history:', error);
+    }
+}
+
+function addActivityItemHistorical(data) {
+    /**
+     * Add a historical activity item without animation.
+     * Used when loading activities from database on page load.
+     */
+    const activityStream = document.getElementById('activity-stream');
+    if (!activityStream) return;
+    
+    const item = document.createElement('div');
+    item.className = 'activity-item';
+    
+    const timestamp = new Date(data.timestamp).toLocaleTimeString();
+    const formattedDiagramType = formatDiagramType(data.diagram_type || 'unknown');
+    
+    // Simple format: "已生成气泡图" or "generated bubble_map"
+    let activityText;
+    if (currentLang === 'zh') {
+        activityText = `${translations[currentLang]['has-generated']}<strong>${escapeHtml(formattedDiagramType)}</strong>`;
+    } else {
+        activityText = `${translations[currentLang]['has-generated']} <strong>${escapeHtml(formattedDiagramType)}</strong>`;
+    }
+    
+    item.innerHTML = `
+        <span class="timestamp">${timestamp}</span>
+        <strong>${escapeHtml(data.user)}</strong> ${activityText}
+    `;
+    
+    // Insert at the beginning (newest first)
+    activityStream.insertBefore(item, activityStream.firstChild);
+    
+    // Keep only last 100 items (more than real-time limit of 50)
+    while (activityStream.children.length > 100) {
+        activityStream.removeChild(activityStream.lastChild);
     }
 }
 
@@ -790,8 +982,8 @@ function addActivityItem(data) {
         item.style.transform = 'translateX(0)';
     }, 10);
     
-    // Keep only last 50 items
-    while (activityStream.children.length > 50) {
+    // Keep only last 100 items (increased to match historical load limit)
+    while (activityStream.children.length > 100) {
         const lastItem = activityStream.lastChild;
         lastItem.style.transition = 'all 0.3s ease-out';
         lastItem.style.opacity = '0';

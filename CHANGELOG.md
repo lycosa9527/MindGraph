@@ -7,6 +7,74 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.37.31] - 2025-01-20 - Public Dashboard Configuration Fixes and Zero Database Stress
+
+### Fixed
+
+- **Configuration Mismatches** (`routers/public_dashboard.py`)
+  - Fixed `MAP_DATA_CACHE_TTL` to use `config.DASHBOARD_MAP_DATA_CACHE_TTL` instead of hardcoded 3600 seconds
+  - Fixed `TOKEN_USAGE_CACHE_TTL` to use `config.DASHBOARD_TOKEN_USAGE_CACHE_TTL` instead of hardcoded 300 seconds
+  - Configuration settings now properly respected (was ignoring environment variables)
+
+- **Missing flag_data in Error Response** (`routers/public_dashboard.py`)
+  - Added `flag_data: []` to error response in `get_map_data()` endpoint
+  - Ensures consistent API response structure (successful and error responses match)
+
+- **Standardized Error Handling** (`routers/public_dashboard.py`)
+  - Changed `get_dashboard_stats()` to return empty stats dict on error instead of raising HTTPException
+  - All dashboard endpoints now consistently return empty data on error (don't break dashboard UI)
+  - Errors still logged for debugging
+
+### Changed
+
+- **Activity Panel Storage Strategy** (`services/activity_stream.py`, `routers/public_dashboard.py`)
+  - Removed database writes for activity history (activities now stored in Redis only)
+  - Changed `/api/public/activity-history` endpoint to read from Redis instead of SQLite database
+  - Removed unused database methods: `_schedule_db_write()`, `_store_activity_db()`
+  - Removed unused imports: `DashboardActivity`, `desc` from SQLAlchemy
+  - **Result: Zero database stress from activity panel** - all activity data in Redis (max 100 items, TTL 1 hour)
+  - Activities are non-critical information, Redis provides sufficient persistence
+
+### Improved
+
+- **Session Security Documentation** (`services/dashboard_session.py`)
+  - Added comprehensive documentation explaining Redis requirement for dashboard sessions
+  - Documented fail-closed behavior when Redis unavailable
+  - Clarified security rationale: sessions only valid when stored in Redis
+  - Added warnings in `create_session()` and `verify_session()` methods
+
+- **Code Quality** (`services/activity_stream.py`, `routers/public_dashboard.py`)
+  - Removed dead code (unused database write methods)
+  - Updated docstrings to reflect Redis-only storage
+  - Cleaned up unused imports
+  - Improved code comments
+
+### Technical Details
+
+**Configuration Fixes:**
+- Map data cache TTL: Now uses config (default: 45s) instead of hardcoded 3600s
+- Token usage cache TTL: Now uses config (default: 60s) instead of hardcoded 300s
+- Configuration changes now take effect immediately without code deployment
+
+**Database Stress Elimination:**
+- Before: Every diagram generation → 1 database write (blocking async event loop)
+- After: Every diagram generation → 1 Redis write (non-blocking, fast)
+- Activity history: Reads from Redis (no database queries)
+- **Total database impact: ZERO** (no writes, no reads from activity panel)
+
+**Performance Impact:**
+- Database writes eliminated: 0 writes per activity (was 1 write)
+- Database reads eliminated: 0 reads per page load (was 1 query)
+- Redis operations: Event-driven (only when activities occur)
+- Update latency: Real-time (0-5 second delay via SSE)
+
+**Storage Strategy:**
+- Redis: Max 100 activities, TTL 1 hour (sufficient for dashboard)
+- Memory: Fallback when Redis unavailable (per-worker, not shared)
+- Database: Not used (zero stress)
+
+---
+
 ## [4.37.30] - 2025-01-20 - Public Dashboard Security, Performance, and Code Quality Improvements
 
 ### Security Fixes

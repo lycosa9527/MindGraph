@@ -50,7 +50,16 @@ class DashboardSessionManager:
     Redis-based dashboard session manager.
     
     Thread-safe: All operations use Redis atomic commands.
-    Graceful degradation: Falls back gracefully if Redis unavailable.
+    
+    IMPORTANT: Redis is REQUIRED for dashboard sessions to work.
+    - Session creation without Redis will generate tokens that cannot be verified
+    - Session verification will reject all sessions when Redis is unavailable (fail-closed for security)
+    - This ensures security: sessions are only valid when stored in Redis
+    
+    Behavior when Redis unavailable:
+    - create_session() will generate a token but it cannot be verified
+    - verify_session() will reject all sessions (fail-closed)
+    - This prevents security issues but may cause confusion - ensure Redis is available
     """
     
     def __init__(self):
@@ -65,15 +74,19 @@ class DashboardSessionManager:
         """
         Create a new dashboard session.
         
+        NOTE: Redis is REQUIRED for sessions to work. If Redis is unavailable,
+        a token will be generated but it cannot be verified (verify_session will reject it).
+        This is intentional fail-closed behavior for security.
+        
         Args:
             ip_address: Client IP address
             
         Returns:
-            Session token string
+            Session token string (will be unusable if Redis unavailable)
         """
         if not self._use_redis():
-            logger.warning("[DashboardSession] Redis unavailable, creating in-memory session")
-            # Generate token anyway for graceful degradation
+            logger.warning("[DashboardSession] Redis unavailable, creating in-memory session (WARNING: token will not be verifiable)")
+            # Generate token anyway for graceful degradation, but it won't be usable
             token = f"dashboard_{int(datetime.now(timezone.utc).timestamp())}_{secrets.token_hex(8)}"
             return token
         
@@ -116,6 +129,9 @@ class DashboardSessionManager:
         """
         Verify if a dashboard session token is valid.
         
+        NOTE: Redis is REQUIRED. If Redis is unavailable, all sessions are rejected
+        (fail-closed for security). This means sessions created without Redis cannot be verified.
+        
         Args:
             token: Session token to verify
             client_ip: Optional client IP address for validation
@@ -128,7 +144,7 @@ class DashboardSessionManager:
         
         if not self._use_redis():
             logger.warning("[DashboardSession] Redis unavailable, rejecting session (fail-closed for security)")
-            return False  # Fail-closed for security
+            return False  # Fail-closed for security - Redis is required
         
         try:
             session_key = _get_session_key(token)

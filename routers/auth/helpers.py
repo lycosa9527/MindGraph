@@ -115,6 +115,10 @@ def track_user_activity(
                 ip_address=ip_address,
                 reuse_existing=True  # Reuse existing session if user already has one
             )
+            
+            # Record city flag for login (async, fire-and-forget)
+            if ip_address and ip_address != 'unknown':
+                _record_city_flag_async(ip_address)
         else:
             session_id = None  # Let record_activity find/create session
         
@@ -130,6 +134,57 @@ def track_user_activity(
     except Exception as e:
         # Don't fail the request if tracking fails
         logger.debug(f"Failed to track user activity: {e}")
+
+
+def _record_city_flag_async(ip_address: str):
+    """
+    Record city flag asynchronously (fire-and-forget).
+    
+    This function schedules the city flag recording in a background task
+    to avoid blocking the login request.
+    """
+    try:
+        import asyncio
+        from services.city_flag_tracker import get_city_flag_tracker
+        from services.ip_geolocation import get_geolocation_service
+        
+        async def _record_flag():
+            try:
+                geolocation = get_geolocation_service()
+                location = await geolocation.get_location(ip_address)
+                if location:
+                    city = location.get('city', '')
+                    province = location.get('province', '')
+                    lat = location.get('lat')
+                    lng = location.get('lng')
+                    if city or province:
+                        flag_tracker = get_city_flag_tracker()
+                        flag_tracker.record_city_flag(city, province, lat, lng)
+            except Exception as e:
+                logger.debug(f"Failed to record city flag: {e}")
+        
+        # Schedule async task (fire-and-forget)
+        try:
+            # Try to get the current event loop
+            try:
+                loop = asyncio.get_running_loop()
+                # Event loop is running, create a task
+                asyncio.create_task(_record_flag())
+            except RuntimeError:
+                # No running event loop, try to get/create one
+                try:
+                    loop = asyncio.get_event_loop()
+                    if loop.is_running():
+                        asyncio.create_task(_record_flag())
+                    else:
+                        loop.run_until_complete(_record_flag())
+                except RuntimeError:
+                    # No event loop available, create new one
+                    asyncio.run(_record_flag())
+        except Exception as e:
+            logger.debug(f"Failed to schedule city flag recording: {e}")
+    except Exception as e:
+        logger.debug(f"Failed to schedule city flag recording: {e}")
 
 
 # ============================================================================

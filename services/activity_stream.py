@@ -178,7 +178,14 @@ class ActivityStreamService:
             logger.debug(f"[ActivityStream] Removed connection: {connection_id} (remaining: {len(self._connections)})")
     
     def _store_activity(self, activity: Dict):
-        """Store activity in Redis or memory."""
+        """
+        Store activity in Redis and memory.
+        
+        Note: Activities are stored in Redis only (not database) since history
+        is not critical information. Redis provides sufficient persistence with
+        TTL of 1 hour and max 100 items.
+        """
+        # Store in Redis (for real-time access and page load history)
         if self._use_redis():
             try:
                 redis = get_redis()
@@ -189,11 +196,10 @@ class ActivityStreamService:
                     redis.ltrim(ACTIVITIES_KEY, 0, MAX_ACTIVITIES - 1)
                     # Set TTL
                     redis.expire(ACTIVITIES_KEY, ACTIVITIES_TTL_SECONDS)
-                    return
             except Exception as e:
                 logger.error(f"[ActivityStream] Error storing activity in Redis: {e}")
         
-        # Fallback: in-memory storage
+        # Fallback: in-memory storage (when Redis unavailable)
         self._memory_activities.insert(0, activity)
         if len(self._memory_activities) > MAX_ACTIVITIES:
             self._memory_activities = self._memory_activities[:MAX_ACTIVITIES]
@@ -224,11 +230,14 @@ class ActivityStreamService:
             "type": "activity",
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "user": masked_username,
+            "user_id": user_id,  # Include user_id for database storage
             "action": action,
-            "diagram_type": diagram_type
+            "diagram_type": diagram_type,
+            "topic": topic  # Include topic for database storage
         }
         
-        # Store activity
+        # Store activity (Redis and memory - synchronous, fast)
+        # Note: Database write removed - history is not important, Redis is sufficient
         self._store_activity(activity)
         
         # Broadcast to all connections

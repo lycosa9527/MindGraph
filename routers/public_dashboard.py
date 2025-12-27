@@ -26,7 +26,7 @@ from collections import defaultdict
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import func, case
 
 from config.database import get_db
 from models.auth import User
@@ -35,6 +35,7 @@ from services.redis_activity_tracker import get_activity_tracker
 from services.dashboard_session import get_dashboard_session_manager
 from services.ip_geolocation import get_geolocation_service
 from services.activity_stream import get_activity_stream_service
+from services.city_flag_tracker import get_city_flag_tracker
 from routers.auth.helpers import get_beijing_now, get_beijing_today_start_utc
 from config.settings import config
 
@@ -56,11 +57,11 @@ STATS_CACHE_TTL = config.DASHBOARD_STATS_CACHE_TTL
 REGISTERED_USERS_CACHE_KEY = "dashboard:registered_users_cache"
 REGISTERED_USERS_CACHE_TTL = config.DASHBOARD_REGISTERED_USERS_CACHE_TTL
 
-# Token usage cache
+# Token usage cache (increased TTL for better performance)
 TOKEN_USAGE_CACHE_KEY = "dashboard:token_usage_cache"
 TOKEN_USAGE_CACHE_TTL = config.DASHBOARD_TOKEN_USAGE_CACHE_TTL
 
-# Map data cache configuration
+# Map data cache configuration (1 hour for persistent heat map)
 MAP_DATA_CACHE_KEY = "dashboard:map_data_cache"
 MAP_DATA_CACHE_TTL = config.DASHBOARD_MAP_DATA_CACHE_TTL
 
@@ -313,24 +314,28 @@ async def get_dashboard_stats(
                 logger.debug(f"Error reading token usage cache: {e}")
         
         if tokens_used_today is None or total_tokens_used is None:
-            # Tokens used today
-            today_tokens_query = db.query(
+            # Optimize: Use a single query with conditional aggregation to get both values
+            # This is faster than two separate queries - scans table only once
+            # Single query that calculates both today and total in one pass
+            # Uses conditional aggregation to avoid scanning the table twice
+            token_stats_query = db.query(
+                func.sum(
+                    case(
+                        (TokenUsage.created_at >= today_start, TokenUsage.total_tokens),
+                        else_=0
+                    )
+                ).label('today_tokens'),
                 func.sum(TokenUsage.total_tokens).label('total_tokens')
             ).filter(
-                TokenUsage.created_at >= today_start,
                 TokenUsage.success == True
             ).first()
             
-            tokens_used_today = int(today_tokens_query.total_tokens or 0) if today_tokens_query else 0
-            
-            # Total tokens used (all time)
-            total_tokens_query = db.query(
-                func.sum(TokenUsage.total_tokens).label('total_tokens')
-            ).filter(
-                TokenUsage.success == True
-            ).first()
-            
-            total_tokens_used = int(total_tokens_query.total_tokens or 0) if total_tokens_query else 0
+            if token_stats_query:
+                tokens_used_today = int(token_stats_query.today_tokens or 0)
+                total_tokens_used = int(token_stats_query.total_tokens or 0)
+            else:
+                tokens_used_today = 0
+                total_tokens_used = 0
             
             # Cache the result
             if is_redis_available():
@@ -361,10 +366,15 @@ async def get_dashboard_stats(
         raise
     except Exception as e:
         logger.error(f"Error getting dashboard stats: {e}", exc_info=True)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to get dashboard statistics"
-        )
+        # Return empty stats on error (don't break dashboard)
+        beijing_now = get_beijing_now()
+        return {
+            "timestamp": beijing_now.isoformat(),
+            "connected_users": 0,
+            "registered_users": 0,
+            "tokens_used_today": 0,
+            "total_tokens_used": 0
+        }
 
 
 @router.get("/map-data")
@@ -478,9 +488,35 @@ async def get_map_data(
                     "value": [coords[0], coords[1], count]  # [lng, lat, count]
                 })
         
+        # Get city flags (cities with logins in last hour)
+        flag_tracker = get_city_flag_tracker()
+        active_flags = flag_tracker.get_active_flags()
+        
+        # Build flag data with coordinates
+        flag_data = []
+        for flag in active_flags:
+            city_name = flag['city']
+            lat = flag.get('lat')
+            lng = flag.get('lng')
+            
+            # Use stored coordinates if available
+            if lat is not None and lng is not None:
+                coords = [lng, lat]
+            else:
+                # Try to get coordinates from city_coords (if city is in active users)
+                coords = city_coords.get(city_name)
+            
+            if coords:
+                flag_data.append({
+                    "name": city_name,
+                    "value": [coords[0], coords[1]],  # [lng, lat]
+                    "timestamp": flag['timestamp']
+                })
+        
         result = {
             "map_data": map_data,  # For province highlighting
-            "series_data": series_data  # For scatter points
+            "series_data": series_data,  # For scatter points
+            "flag_data": flag_data  # For city flags (login indicators)
         }
         
         # Cache the result
@@ -505,7 +541,67 @@ async def get_map_data(
         # Return empty data on error (don't break dashboard)
         return {
             "map_data": [],
-            "series_data": []
+            "series_data": [],
+            "flag_data": []
+        }
+
+
+@router.get("/activity-history")
+async def get_activity_history(
+    request: Request,
+    limit: int = 100
+) -> Dict[str, Any]:
+    """
+    Get historical activity data for the dashboard.
+    
+    Returns recent activities from Redis to populate the activity panel
+    on page load. Activities are stored in Redis (not database) since
+    history is not critical information.
+    
+    Args:
+        limit: Maximum number of activities to return (default: 100, max: 500)
+        
+    Returns:
+        Dict with 'activities' list containing activity objects
+    """
+    # Verify dashboard session
+    verify_dashboard_session(request)
+    
+    # Rate limiting: 30 requests per minute per IP
+    await check_dashboard_rate_limit(request, 'activity_history', max_requests=30, window_seconds=60)
+    
+    # Clamp limit to reasonable range
+    limit = max(1, min(limit, 500))
+    
+    try:
+        # Get recent activities from Redis (not database - history is not important)
+        activity_service = get_activity_stream_service()
+        activities = activity_service.get_recent_activities(limit=limit)
+        
+        # Convert to JSON-serializable format (activities already in correct format)
+        activity_list = []
+        for activity in activities:
+            activity_list.append({
+                "type": activity.get("type", "activity"),
+                "timestamp": activity.get("timestamp", ""),
+                "user": activity.get("user", "User *"),
+                "action": activity.get("action", ""),
+                "diagram_type": activity.get("diagram_type", "")
+            })
+        
+        return {
+            "activities": activity_list,
+            "count": len(activity_list)
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting activity history: {e}", exc_info=True)
+        # Return empty list on error (don't break dashboard)
+        return {
+            "activities": [],
+            "count": 0
         }
 
 

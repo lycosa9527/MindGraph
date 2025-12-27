@@ -41,6 +41,13 @@ except ImportError:
     # TokenUsage model may not exist yet - that's okay
     TokenUsage = None
 
+# Import DashboardActivity model so it's registered with Base
+try:
+    from models.dashboard_activity import DashboardActivity
+except ImportError:
+    # DashboardActivity model may not exist yet - that's okay
+    DashboardActivity = None
+
 logger = logging.getLogger(__name__)
 
 # ============================================================================
