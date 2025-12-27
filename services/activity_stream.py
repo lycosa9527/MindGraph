@@ -203,7 +203,7 @@ class ActivityStreamService:
         user_id: int,
         action: str,
         diagram_type: str,
-        topic: str,
+        topic: str = "",
         user_name: Optional[str] = None
     ):
         """
@@ -213,20 +213,19 @@ class ActivityStreamService:
             user_id: User ID
             action: Action type (e.g., "generated")
             diagram_type: Diagram type (e.g., "mindmap", "concept_map")
-            topic: Topic/prompt (truncated to 50 chars)
+            topic: Topic/prompt (deprecated, not used in frontend)
             user_name: User's real name (will be masked for privacy)
         """
         # Mask user name for privacy
         masked_username = self._mask_user_name(user_name)
         
-        # Create activity event
+        # Create activity event (topic field removed as it's not used in frontend)
         activity = {
             "type": "activity",
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "user": masked_username,
             "action": action,
-            "diagram_type": diagram_type,
-            "topic": topic[:50] if topic else ""
+            "diagram_type": diagram_type
         }
         
         # Store activity

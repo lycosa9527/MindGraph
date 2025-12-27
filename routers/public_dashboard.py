@@ -36,23 +36,94 @@ from services.dashboard_session import get_dashboard_session_manager
 from services.ip_geolocation import get_geolocation_service
 from services.activity_stream import get_activity_stream_service
 from routers.auth.helpers import get_beijing_now, get_beijing_today_start_utc
+from config.settings import config
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
-# Configuration constants
-MAX_CONCURRENT_SSE_CONNECTIONS = 2  # Max concurrent SSE connections per IP
-SSE_POLL_INTERVAL_SECONDS = 5  # Poll for updates every N seconds
-STATS_UPDATE_INTERVAL = 10  # Send stats update every N seconds
-HEARTBEAT_INTERVAL = 30  # Send heartbeat every N seconds
+# Configuration constants (from environment variables)
+MAX_CONCURRENT_SSE_CONNECTIONS = config.DASHBOARD_MAX_CONCURRENT_SSE_CONNECTIONS
+SSE_POLL_INTERVAL_SECONDS = config.DASHBOARD_SSE_POLL_INTERVAL_SECONDS
+STATS_UPDATE_INTERVAL = config.DASHBOARD_STATS_UPDATE_INTERVAL
+HEARTBEAT_INTERVAL = config.DASHBOARD_HEARTBEAT_INTERVAL
 
 # Stats cache configuration
 STATS_CACHE_KEY = "dashboard:stats_cache"
-STATS_CACHE_TTL = 3  # Cache for 3 seconds
+STATS_CACHE_TTL = config.DASHBOARD_STATS_CACHE_TTL
 
-# Track active SSE connections per IP to prevent DoS
-_active_sse_connections: Dict[str, int] = {}
+# Registered users cache (changes infrequently)
+REGISTERED_USERS_CACHE_KEY = "dashboard:registered_users_cache"
+REGISTERED_USERS_CACHE_TTL = config.DASHBOARD_REGISTERED_USERS_CACHE_TTL
+
+# Token usage cache
+TOKEN_USAGE_CACHE_KEY = "dashboard:token_usage_cache"
+TOKEN_USAGE_CACHE_TTL = config.DASHBOARD_TOKEN_USAGE_CACHE_TTL
+
+# Map data cache configuration
+MAP_DATA_CACHE_KEY = "dashboard:map_data_cache"
+MAP_DATA_CACHE_TTL = config.DASHBOARD_MAP_DATA_CACHE_TTL
+
+# SSE connection tracking key prefix (Redis-based for multi-worker support)
+SSE_CONNECTION_PREFIX = "dashboard:sse_connections:"
+
+
+def is_localhost_ip(ip_address: str) -> bool:
+    """
+    Check if an IP address is localhost/local.
+    
+    Args:
+        ip_address: IP address string
+        
+    Returns:
+        True if IP is localhost/local, False otherwise
+    """
+    if not ip_address:
+        return False
+    
+    ip_lower = ip_address.lower().strip()
+    
+    # Common localhost identifiers
+    if ip_lower in ('localhost', '::1', '::', '0.0.0.0'):
+        return True
+    
+    # Check IPv4 localhost range (127.0.0.0/8)
+    if ip_lower.startswith('127.'):
+        return True
+    
+    # Check IPv6 IPv4-mapped localhost (::ffff:127.x.x.x)
+    if ip_lower.startswith('::ffff:127.'):
+        return True
+    
+    return False
+
+
+def filter_localhost_users(active_users: List[Dict]) -> List[Dict]:
+    """
+    Filter out localhost connections from active users list.
+    
+    Args:
+        active_users: List of user dicts with 'ip_address' field
+        
+    Returns:
+        Filtered list excluding localhost connections
+    """
+    return [user for user in active_users 
+            if not is_localhost_ip(user.get('ip_address', ''))]
+
+
+def count_non_localhost_users(active_users: List[Dict]) -> int:
+    """
+    Count active users excluding localhost connections.
+    
+    Args:
+        active_users: List of user dicts with 'ip_address' field
+        
+    Returns:
+        Count of non-localhost users
+    """
+    return sum(1 for user in active_users 
+               if not is_localhost_ip(user.get('ip_address', '')))
 
 
 def verify_dashboard_session(request: Request) -> bool:
@@ -69,14 +140,52 @@ def verify_dashboard_session(request: Request) -> bool:
             detail="Dashboard session required"
         )
     
+    # Get client IP for validation (handles reverse proxies)
+    from utils.auth import get_client_ip
+    client_ip = get_client_ip(request) if request else None
+    
     session_manager = get_dashboard_session_manager()
-    if not session_manager.verify_session(dashboard_token):
+    if not session_manager.verify_session(dashboard_token, client_ip=client_ip):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or expired dashboard session"
         )
     
     return True
+
+
+async def check_dashboard_rate_limit(request: Request, endpoint_name: str, max_requests: int = 60, window_seconds: int = 60):
+    """
+    Check rate limit for dashboard endpoints.
+    
+    Args:
+        request: FastAPI request object
+        endpoint_name: Name of the endpoint for logging
+        max_requests: Maximum requests allowed in window (default: 60)
+        window_seconds: Time window in seconds (default: 60)
+        
+    Raises:
+        HTTPException: If rate limit exceeded
+    """
+    from services.redis_rate_limiter import RedisRateLimiter
+    from utils.auth import get_client_ip
+    
+    client_ip = get_client_ip(request) if request else "unknown"
+    rate_limiter = RedisRateLimiter()
+    
+    is_allowed, count, error_msg = rate_limiter.check_and_record(
+        category=f'dashboard_{endpoint_name}',
+        identifier=client_ip,
+        max_attempts=max_requests,
+        window_seconds=window_seconds
+    )
+    
+    if not is_allowed:
+        logger.warning(f"Dashboard rate limit exceeded for {endpoint_name}: {client_ip} ({count}/{max_requests} requests)")
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=f"Too many requests. {error_msg}"
+        )
 
 
 def get_cached_stats(tracker) -> Dict:
@@ -150,37 +259,95 @@ async def get_dashboard_stats(
     # Verify dashboard session
     verify_dashboard_session(request)
     
+    # Rate limiting: 60 requests per minute per IP
+    await check_dashboard_rate_limit(request, 'stats', max_requests=60, window_seconds=60)
+    
     try:
-        # Get connected users count
+        # Get connected users count (excluding localhost)
         tracker = get_activity_tracker()
-        stats = get_cached_stats(tracker)
-        connected_users = stats.get('active_users_count', 0)
+        active_users = tracker.get_active_users()
+        # Filter out localhost connections
+        connected_users = count_non_localhost_users(active_users)
         
-        # Get registered users count
-        registered_users = db.query(User).count()
+        # Get registered users count (cached)
+        from services.redis_client import is_redis_available, get_redis
         
-        # Get token usage stats
         beijing_now = get_beijing_now()
         today_start = get_beijing_today_start_utc()
         
-        # Tokens used today
-        today_tokens_query = db.query(
-            func.sum(TokenUsage.total_tokens).label('total_tokens')
-        ).filter(
-            TokenUsage.created_at >= today_start,
-            TokenUsage.success == True
-        ).first()
+        # Check Redis availability once (optimization)
+        redis_available = is_redis_available()
+        redis = get_redis() if redis_available else None
         
-        tokens_used_today = int(today_tokens_query.total_tokens or 0) if today_tokens_query else 0
+        # Get registered users count (cached)
+        registered_users = None
+        if redis:
+            try:
+                cached_count = redis.get(REGISTERED_USERS_CACHE_KEY)
+                if cached_count:
+                    registered_users = int(cached_count)
+            except Exception as e:
+                logger.debug(f"Error reading registered users cache: {e}")
         
-        # Total tokens used (all time)
-        total_tokens_query = db.query(
-            func.sum(TokenUsage.total_tokens).label('total_tokens')
-        ).filter(
-            TokenUsage.success == True
-        ).first()
+        if registered_users is None:
+            registered_users = db.query(User).count()
+            # Cache the result
+            if redis:
+                try:
+                    redis.setex(REGISTERED_USERS_CACHE_KEY, REGISTERED_USERS_CACHE_TTL, str(registered_users))
+                except Exception as e:
+                    logger.debug(f"Failed to cache registered users count: {e}")
         
-        total_tokens_used = int(total_tokens_query.total_tokens or 0) if total_tokens_query else 0
+        # Get token usage stats (cached)
+        tokens_used_today = None
+        total_tokens_used = None
+        
+        if redis:
+            try:
+                cached_tokens = redis.get(TOKEN_USAGE_CACHE_KEY)
+                if cached_tokens:
+                    token_data = json.loads(cached_tokens)
+                    tokens_used_today = token_data.get('today', None)
+                    total_tokens_used = token_data.get('total', None)
+            except Exception as e:
+                logger.debug(f"Error reading token usage cache: {e}")
+        
+        if tokens_used_today is None or total_tokens_used is None:
+            # Tokens used today
+            today_tokens_query = db.query(
+                func.sum(TokenUsage.total_tokens).label('total_tokens')
+            ).filter(
+                TokenUsage.created_at >= today_start,
+                TokenUsage.success == True
+            ).first()
+            
+            tokens_used_today = int(today_tokens_query.total_tokens or 0) if today_tokens_query else 0
+            
+            # Total tokens used (all time)
+            total_tokens_query = db.query(
+                func.sum(TokenUsage.total_tokens).label('total_tokens')
+            ).filter(
+                TokenUsage.success == True
+            ).first()
+            
+            total_tokens_used = int(total_tokens_query.total_tokens or 0) if total_tokens_query else 0
+            
+            # Cache the result
+            if is_redis_available():
+                redis = get_redis()
+                if redis:
+                    try:
+                        token_data = {
+                            'today': tokens_used_today,
+                            'total': total_tokens_used
+                        }
+                        redis.setex(
+                            TOKEN_USAGE_CACHE_KEY,
+                            TOKEN_USAGE_CACHE_TTL,
+                            json.dumps(token_data)
+                        )
+                    except Exception as e:
+                        logger.debug(f"Failed to cache token usage: {e}")
         
         return {
             "timestamp": beijing_now.isoformat(),
@@ -190,6 +357,8 @@ async def get_dashboard_stats(
             "total_tokens_used": total_tokens_used
         }
         
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error getting dashboard stats: {e}", exc_info=True)
         raise HTTPException(
@@ -213,38 +382,76 @@ async def get_map_data(
     # Verify dashboard session
     verify_dashboard_session(request)
     
+    # Rate limiting: 30 requests per minute per IP (more expensive endpoint)
+    await check_dashboard_rate_limit(request, 'map_data', max_requests=30, window_seconds=60)
+    
+    # Try to get from cache first
+    from services.redis_client import is_redis_available, get_redis
+    if is_redis_available():
+        redis = get_redis()
+        if redis:
+            try:
+                cached = redis.get(MAP_DATA_CACHE_KEY)
+                if cached:
+                    try:
+                        return json.loads(cached)
+                    except json.JSONDecodeError:
+                        # Invalid cache entry - delete it
+                        try:
+                            redis.delete(MAP_DATA_CACHE_KEY)
+                        except Exception:
+                            pass
+            except Exception as e:
+                logger.debug(f"Error reading map data cache: {e}")
+    
     try:
         # Get active users
         tracker = get_activity_tracker()
         active_users = tracker.get_active_users()
         
-        # Group by IP address and lookup locations
+        # Filter out localhost connections
+        active_users = filter_localhost_users(active_users)
+        
+        # Extract unique IP addresses
+        ip_addresses = []
+        ip_to_user = {}
+        for user in active_users:
+            ip_address = user.get('ip_address', '')
+            if ip_address and ip_address != 'unknown':
+                if ip_address not in ip_to_user:
+                    ip_addresses.append(ip_address)
+                    ip_to_user[ip_address] = []
+                ip_to_user[ip_address].append(user)
+        
+        # Parallelize IP geolocation lookups
         ip_geolocation = get_geolocation_service()
+        location_tasks = [ip_geolocation.get_location(ip) for ip in ip_addresses]
+        locations = await asyncio.gather(*location_tasks, return_exceptions=True)
+        
+        # Process locations and aggregate data
         province_data = defaultdict(int)  # {province_name: count}
         city_data = defaultdict(int)  # {city_name: count}
         city_coords = {}  # {city_name: [lng, lat]}
         
-        for user in active_users:
-            ip_address = user.get('ip_address', '')
-            if not ip_address or ip_address == 'unknown':
-                continue
-            
-            # Lookup location
-            location = await ip_geolocation.get_location(ip_address)
-            if not location:
+        for ip_address, location in zip(ip_addresses, locations):
+            # Skip failed lookups
+            if isinstance(location, Exception) or not location:
                 continue
             
             city = location.get('city', '')
             province = location.get('province', '')
             
+            # Count users for this IP
+            user_count = len(ip_to_user[ip_address])
+            
             # Count by province for map highlighting
             if province:
-                province_data[province] += 1
+                province_data[province] += user_count
             
             # Also track city-level data for scatter points
             location_name = city if city else province
             if location_name:
-                city_data[location_name] += 1
+                city_data[location_name] += user_count
                 
                 # Store coordinates (use first occurrence)
                 if location_name not in city_coords:
@@ -271,11 +478,28 @@ async def get_map_data(
                     "value": [coords[0], coords[1], count]  # [lng, lat, count]
                 })
         
-        return {
+        result = {
             "map_data": map_data,  # For province highlighting
             "series_data": series_data  # For scatter points
         }
         
+        # Cache the result
+        if is_redis_available():
+            redis = get_redis()
+            if redis:
+                try:
+                    redis.setex(
+                        MAP_DATA_CACHE_KEY,
+                        MAP_DATA_CACHE_TTL,
+                        json.dumps(result, ensure_ascii=False)
+                    )
+                except Exception as e:
+                    logger.debug(f"Failed to cache map data: {e}")
+        
+        return result
+        
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error getting map data: {e}", exc_info=True)
         # Return empty data on error (don't break dashboard)
@@ -306,19 +530,43 @@ async def stream_activity_updates(
     # Verify dashboard session
     verify_dashboard_session(request)
     
-    # Rate limiting: Check concurrent connections per IP
-    client_ip = request.client.host if request.client else "unknown"
-    current_connections = _active_sse_connections.get(client_ip, 0)
-    if current_connections >= MAX_CONCURRENT_SSE_CONNECTIONS:
-        logger.warning(f"IP {client_ip} exceeded max concurrent SSE connections ({MAX_CONCURRENT_SSE_CONNECTIONS})")
-        raise HTTPException(
-            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail=f"Maximum {MAX_CONCURRENT_SSE_CONNECTIONS} concurrent connections allowed"
-        )
+    # Rate limiting: Check concurrent connections per IP (Redis-based)
+    from utils.auth import get_client_ip
+    from services.redis_client import is_redis_available, get_redis
     
-    # Increment connection count
-    _active_sse_connections[client_ip] = current_connections + 1
-    logger.info(f"Dashboard SSE connection started for IP {client_ip} (connections: {_active_sse_connections[client_ip]})")
+    client_ip = get_client_ip(request) if request else "unknown"
+    connection_key = f"{SSE_CONNECTION_PREFIX}{client_ip}"
+    
+    # Track connection in Redis for multi-worker support
+    connection_tracked = False
+    if is_redis_available():
+        redis = get_redis()
+        if redis:
+            try:
+                # Atomic increment and get current count
+                current_connections = redis.incr(connection_key)
+                # Set expiration (5 minutes) to auto-cleanup stale entries
+                redis.expire(connection_key, 300)
+                connection_tracked = True
+                
+                if current_connections > MAX_CONCURRENT_SSE_CONNECTIONS:
+                    # Decrement since we're rejecting
+                    redis.decr(connection_key)
+                    logger.warning(f"IP {client_ip} exceeded max concurrent SSE connections ({MAX_CONCURRENT_SSE_CONNECTIONS})")
+                    raise HTTPException(
+                        status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                        detail=f"Maximum {MAX_CONCURRENT_SSE_CONNECTIONS} concurrent connections allowed"
+                    )
+                
+                logger.info(f"Dashboard SSE connection started for IP {client_ip} (connections: {current_connections})")
+            except HTTPException:
+                raise
+            except Exception as e:
+                logger.warning(f"Error tracking SSE connection in Redis: {e}, continuing without tracking")
+                # Continue without tracking - don't block on Redis errors
+    
+    if not connection_tracked:
+        logger.debug("SSE connection tracking skipped (Redis unavailable or error)")
     
     # Register connection with activity stream service
     connection_id = str(uuid.uuid4())
@@ -333,9 +581,11 @@ async def stream_activity_updates(
         try:
             # Send initial state
             try:
-                stats = get_cached_stats(tracker)
+                active_users = tracker.get_active_users()
+                # Filter out localhost connections
+                connected_users_count = count_non_localhost_users(active_users)
                 initial_stats = {
-                    "connected_users": stats.get('active_users_count', 0),
+                    "connected_users": connected_users_count,
                     "registered_users": 0,  # Will be updated by stats endpoint
                     "tokens_used_today": 0,  # Will be updated by stats endpoint
                     "total_tokens_used": 0  # Will be updated by stats endpoint
@@ -379,9 +629,11 @@ async def stream_activity_updates(
                 stats_counter += 1
                 if stats_counter >= (STATS_UPDATE_INTERVAL // SSE_POLL_INTERVAL_SECONDS):
                     try:
-                        current_stats = get_cached_stats(tracker)
+                        active_users = tracker.get_active_users()
+                        # Filter out localhost connections
+                        connected_users_count = count_non_localhost_users(active_users)
                         stats_update = {
-                            "connected_users": current_stats.get('active_users_count', 0)
+                            "connected_users": connected_users_count
                         }
                         
                         stats_data = json.dumps({
@@ -419,11 +671,21 @@ async def stream_activity_updates(
         finally:
             # Cleanup
             activity_service.remove_connection(connection_id)
-            if client_ip in _active_sse_connections:
-                _active_sse_connections[client_ip] = max(0, _active_sse_connections[client_ip] - 1)
-                if _active_sse_connections[client_ip] == 0:
-                    del _active_sse_connections[client_ip]
-                logger.debug(f"Dashboard SSE connection closed for IP {client_ip} (remaining: {_active_sse_connections.get(client_ip, 0)})")
+            
+            # Decrement connection count in Redis (only if we tracked it)
+            # Use variables from outer scope (closure)
+            if connection_tracked:
+                from services.redis_client import is_redis_available, get_redis
+                if is_redis_available():
+                    redis = get_redis()
+                    if redis:
+                        try:
+                            remaining = redis.decr(connection_key)
+                            if remaining <= 0:
+                                redis.delete(connection_key)
+                            logger.debug(f"Dashboard SSE connection closed for IP {client_ip} (remaining: {max(0, remaining)})")
+                        except Exception as e:
+                            logger.debug(f"Error decrementing SSE connection count: {e}")
     
     return StreamingResponse(
         event_generator(),

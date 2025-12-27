@@ -501,6 +501,82 @@ class Config:
         val = self._get_cached_value('SMS_RATE_LIMITING_ENABLED', 'true')
         return val.lower() == 'true'
 
+    # ============================================================================
+    # PUBLIC DASHBOARD CONFIGURATION
+    # ============================================================================
+
+    @property
+    def DASHBOARD_MAX_CONCURRENT_SSE_CONNECTIONS(self):
+        """Maximum concurrent SSE connections per IP for dashboard (default: 2)"""
+        try:
+            return int(self._get_cached_value('DASHBOARD_MAX_CONCURRENT_SSE_CONNECTIONS', '2'))
+        except (ValueError, TypeError):
+            logger.warning("Invalid DASHBOARD_MAX_CONCURRENT_SSE_CONNECTIONS, using 2")
+            return 2
+
+    @property
+    def DASHBOARD_SSE_POLL_INTERVAL_SECONDS(self):
+        """SSE poll interval in seconds (default: 5)"""
+        try:
+            return int(self._get_cached_value('DASHBOARD_SSE_POLL_INTERVAL_SECONDS', '5'))
+        except (ValueError, TypeError):
+            logger.warning("Invalid DASHBOARD_SSE_POLL_INTERVAL_SECONDS, using 5")
+            return 5
+
+    @property
+    def DASHBOARD_STATS_UPDATE_INTERVAL(self):
+        """Stats update interval in seconds (default: 10)"""
+        try:
+            return int(self._get_cached_value('DASHBOARD_STATS_UPDATE_INTERVAL', '10'))
+        except (ValueError, TypeError):
+            logger.warning("Invalid DASHBOARD_STATS_UPDATE_INTERVAL, using 10")
+            return 10
+
+    @property
+    def DASHBOARD_HEARTBEAT_INTERVAL(self):
+        """Heartbeat interval in seconds (default: 30)"""
+        try:
+            return int(self._get_cached_value('DASHBOARD_HEARTBEAT_INTERVAL', '30'))
+        except (ValueError, TypeError):
+            logger.warning("Invalid DASHBOARD_HEARTBEAT_INTERVAL, using 30")
+            return 30
+
+    @property
+    def DASHBOARD_STATS_CACHE_TTL(self):
+        """Stats cache TTL in seconds (default: 3)"""
+        try:
+            return int(self._get_cached_value('DASHBOARD_STATS_CACHE_TTL', '3'))
+        except (ValueError, TypeError):
+            logger.warning("Invalid DASHBOARD_STATS_CACHE_TTL, using 3")
+            return 3
+
+    @property
+    def DASHBOARD_MAP_DATA_CACHE_TTL(self):
+        """Map data cache TTL in seconds (default: 45)"""
+        try:
+            return int(self._get_cached_value('DASHBOARD_MAP_DATA_CACHE_TTL', '45'))
+        except (ValueError, TypeError):
+            logger.warning("Invalid DASHBOARD_MAP_DATA_CACHE_TTL, using 45")
+            return 45
+
+    @property
+    def DASHBOARD_REGISTERED_USERS_CACHE_TTL(self):
+        """Registered users cache TTL in seconds (default: 300)"""
+        try:
+            return int(self._get_cached_value('DASHBOARD_REGISTERED_USERS_CACHE_TTL', '300'))
+        except (ValueError, TypeError):
+            logger.warning("Invalid DASHBOARD_REGISTERED_USERS_CACHE_TTL, using 300")
+            return 300
+
+    @property
+    def DASHBOARD_TOKEN_USAGE_CACHE_TTL(self):
+        """Token usage cache TTL in seconds (default: 60)"""
+        try:
+            return int(self._get_cached_value('DASHBOARD_TOKEN_USAGE_CACHE_TTL', '60'))
+        except (ValueError, TypeError):
+            logger.warning("Invalid DASHBOARD_TOKEN_USAGE_CACHE_TTL, using 60")
+            return 60
+
     @property
     def HOST(self):
         """FastAPI application host address."""

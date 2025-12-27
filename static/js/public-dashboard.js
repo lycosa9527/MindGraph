@@ -715,14 +715,42 @@ function connectActivityStream() {
     };
     
     eventSource.onerror = function(error) {
-        console.error('SSE connection error:', error);
-        // Attempt to reconnect after 5 seconds
-        setTimeout(function() {
-            if (eventSource && eventSource.readyState === EventSource.CLOSED) {
-                console.log('Reconnecting to activity stream...');
-                connectActivityStream();
-            }
-        }, 5000);
+        // Only log errors if connection is actually closed
+        if (eventSource.readyState === EventSource.CLOSED) {
+            console.error('SSE connection closed');
+            
+            // Check if session expired by making a lightweight request
+            fetch('/api/public/stats', { 
+                credentials: 'include',
+                method: 'HEAD'  // Use HEAD to minimize overhead
+            })
+                .then(response => {
+                    if (response.status === 401) {
+                        // Session expired - redirect to login
+                        console.log('Session expired, redirecting to login...');
+                        window.location.href = '/pub-dash';
+                        return;
+                    }
+                    // Other error - attempt to reconnect after delay
+                    setTimeout(function() {
+                        if (eventSource && eventSource.readyState === EventSource.CLOSED) {
+                            console.log('Reconnecting to activity stream...');
+                            connectActivityStream();
+                        }
+                    }, 5000);
+                })
+                .catch(() => {
+                    // Network error - attempt to reconnect after delay
+                    setTimeout(function() {
+                        if (eventSource && eventSource.readyState === EventSource.CLOSED) {
+                            console.log('Reconnecting to activity stream...');
+                            connectActivityStream();
+                        }
+                    }, 5000);
+                });
+        }
+        // If connection is still CONNECTING or OPEN, don't do anything
+        // (browser will retry automatically)
     };
 }
 
@@ -736,14 +764,12 @@ function addActivityItem(data) {
     const timestamp = new Date(data.timestamp).toLocaleTimeString();
     const formattedDiagramType = formatDiagramType(data.diagram_type || 'unknown');
     
-    // Format based on language for better readability
+    // Simple format: "已生成气泡图" or "generated bubble_map"
     let activityText;
     if (currentLang === 'zh') {
-        // Chinese: "已生成关于{topic}的{diagram_type}"
-        activityText = `${translations[currentLang]['has-generated']}${translations[currentLang]['about']}<em>${escapeHtml(data.topic)}</em>的<strong>${escapeHtml(formattedDiagramType)}</strong>`;
+        activityText = `${translations[currentLang]['has-generated']}<strong>${escapeHtml(formattedDiagramType)}</strong>`;
     } else {
-        // English: "has generated {diagram_type} about {topic}"
-        activityText = `${translations[currentLang]['has-generated']} <strong>${escapeHtml(formattedDiagramType)}</strong> ${translations[currentLang]['about']} <em>${escapeHtml(data.topic)}</em>`;
+        activityText = `${translations[currentLang]['has-generated']} <strong>${escapeHtml(formattedDiagramType)}</strong>`;
     }
     
     item.innerHTML = `

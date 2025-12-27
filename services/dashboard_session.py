@@ -112,12 +112,13 @@ class DashboardSessionManager:
             token = f"dashboard_{int(datetime.now(timezone.utc).timestamp())}_{secrets.token_hex(8)}"
             return token
     
-    def verify_session(self, token: str) -> bool:
+    def verify_session(self, token: str, client_ip: Optional[str] = None) -> bool:
         """
         Verify if a dashboard session token is valid.
         
         Args:
             token: Session token to verify
+            client_ip: Optional client IP address for validation
             
         Returns:
             True if session is valid, False otherwise
@@ -126,14 +127,15 @@ class DashboardSessionManager:
             return False
         
         if not self._use_redis():
-            logger.debug("[DashboardSession] Redis unavailable, allowing session (graceful degradation)")
-            return True  # Fail-open for graceful degradation
+            logger.warning("[DashboardSession] Redis unavailable, rejecting session (fail-closed for security)")
+            return False  # Fail-closed for security
         
         try:
             session_key = _get_session_key(token)
             redis = get_redis()
             if not redis:
-                return True  # Fail-open
+                logger.warning("[DashboardSession] Redis connection unavailable, rejecting session")
+                return False  # Fail-closed
             
             session_data_str = redis.get(session_key)
             if not session_data_str:
@@ -145,11 +147,21 @@ class DashboardSessionManager:
                 session_data = json.loads(session_data_str)
                 expires_at_str = session_data.get("expires_at")
                 
+                # Check expiration
                 if expires_at_str:
                     expires_at = datetime.fromisoformat(expires_at_str.replace('Z', '+00:00'))
                     if datetime.now(timezone.utc) > expires_at:
                         logger.debug(f"[DashboardSession] Session expired: {token[:20]}...")
                         redis.delete(session_key)  # Clean up expired session
+                        return False
+                
+                # Validate IP address if provided (lenient - only reject if both are present and don't match)
+                if client_ip:
+                    session_ip = session_data.get("ip")
+                    # Only reject if both IPs are present and don't match
+                    # This allows sessions created without IP to work, and handles proxy scenarios
+                    if session_ip and client_ip and session_ip != client_ip:
+                        logger.warning(f"[DashboardSession] IP mismatch: session IP {session_ip} != client IP {client_ip}")
                         return False
                 
                 return True

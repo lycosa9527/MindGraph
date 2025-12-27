@@ -932,8 +932,10 @@ async def public_dashboard_page(request: Request):
         if dashboard_token:
             # Verify dashboard session
             from services.dashboard_session import get_dashboard_session_manager
+            from utils.auth import get_client_ip
             session_manager = get_dashboard_session_manager()
-            if session_manager.verify_session(dashboard_token):
+            client_ip = get_client_ip(request) if request else None
+            if session_manager.verify_session(dashboard_token, client_ip=client_ip):
                 # Valid session - show dashboard
                 return templates.TemplateResponse("public_dashboard.html", {"request": request, "version": get_app_version()})
         
