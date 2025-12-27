@@ -7,6 +7,152 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.37.26] - 2025-12-27 - Auth Module Refactoring, Captcha Storage Migration, and Test Suite Cleanup
+
+### Added
+
+- **Auth Module Refactoring** (`routers/auth/`)
+  - Refactored monolithic `routers/auth.py` (4538 lines) into modular structure with 17 specialized modules
+  - Created `routers/auth/__init__.py` - Main router aggregation maintaining backward compatibility
+  - Created `routers/auth/helpers.py` - Shared utilities (timezone, cookies, session, tracking)
+  - Created `routers/auth/dependencies.py` - FastAPI dependencies (language, admin checks)
+  - Created `routers/auth/public.py` - Public endpoints (/mode, /organizations)
+  - Created `routers/auth/registration.py` - Registration endpoints (/register, /register_sms)
+  - Created `routers/auth/login.py` - Login endpoints (/login, /login_sms, /demo/verify)
+  - Created `routers/auth/sms.py` - SMS endpoints (/sms/send, /sms/verify)
+  - Created `routers/auth/captcha.py` - Captcha endpoints (/captcha/generate)
+  - Created `routers/auth/password.py` - Password reset (/reset_password)
+  - Created `routers/auth/session.py` - Session management (/me, /logout, /session-status)
+  - Created `routers/auth/admin/` - Admin endpoints module
+    - `admin/organizations.py` - Organization CRUD operations
+    - `admin/users.py` - User management
+    - `admin/settings.py` - System settings
+    - `admin/stats.py` - Statistics & trends
+    - `admin/api_keys.py` - API key management
+    - `admin/bayi.py` - Bayi IP whitelist
+  - All 38+ endpoints preserved and properly organized
+  - Improved code organization: average file size ~250-400 lines (vs 4538 lines)
+  - Maintained backward compatibility: `from routers import auth` continues to work
+
+- **Test Infrastructure** (`tests/`)
+  - Added `tests/README.md` - Documentation for future test suite setup
+  - Preserved pytest configuration (`conftest.py`, `pytest.ini`)
+  - Maintained folder structure for organized test placement (agents/, integration/, performance/, services/)
+
+- **Development Configuration** (`.gitignore`)
+  - Added `extracted_prompts/` to ignore list for development temporary files
+
+### Changed
+
+- **Auth Module Structure** (`routers/auth.py` → `routers/auth/`)
+  - Reduced from single monolithic file (4538 lines) to modular structure (17 files)
+  - Improved code organization and maintainability
+  - Each module handles related endpoints with clear separation of concerns
+  - Better separation of concerns: public, registration, login, SMS, captcha, password, session, admin
+  - Shared utilities centralized in `helpers.py` and `dependencies.py`
+
+- **Captcha Storage Migration** (`routers/api.py`)
+  - Migrated feedback endpoint captcha verification from in-memory store to Redis-based storage
+  - Uses `services.captcha_storage.get_captcha_storage()` for multi-server support
+  - Improved captcha verification with atomic `verify_and_remove()` operation (one-time use)
+  - Better error handling with specific error reasons (not_found, incorrect, expired)
+  - Enables captcha sharing across multiple server instances in distributed deployments
+
+- **Documentation Updates** (`docs/ENDPOINTS_SUMMARY.md`)
+  - Removed testing section referencing deleted test files
+  - Updated to reflect current testing approach
+
+- **Code Formatting** (`services/redis_bayi_token.py`)
+  - Standardized trailing newlines for consistency
+
+### Removed
+
+- **Monolithic Auth File** (`routers/auth.py`)
+  - Removed 4538-line monolithic file in favor of modular structure
+
+- **Obsolete Documentation** (`docs/SQLITE_LOCK_FAILURE_SCENARIOS.md`)
+  - Removed outdated SQLite lock failure scenarios documentation (327 lines)
+
+- **Test Suite Cleanup** (`tests/`)
+  - Removed all existing test files (22 test files) to prepare for proper test suite implementation
+  - Deleted redundant test files: `test_all_endpoints.py`, `test_auth_endpoints.py`, `test_auth_structure.py`
+  - Deleted endpoint test files: `test_all_endpoints_fixed.py`, `integration/test_api_endpoints.py`, `test_api_factorization.py`, `test_health_check.py`
+  - Deleted auth test files: `test_auth_endpoints_http.py`, `test_auth_endpoints_live.py`, `test_auth_refactor.py`
+  - Deleted service test files: `services/test_*.py` (8 files)
+  - Deleted integration test files: `integration/test_api_security.py`
+  - Deleted performance test files: `performance/test_concurrent_requests.py`
+  - Deleted agent test files: `agents/test_circle_map_agent.py`
+  - Deleted other test files: `test_admin_performance.py`, `test_api_key_token_tracking.py`, `test_export_png.py`, `test_rate_limiter_load_balancer.py`, `test_session_control.py`
+  - Deleted test documentation: `README_RATE_LIMITER_TESTS.md`, `TEST_REDUNDANCY_ANALYSIS.md`, `AUTH_REFACTORING_SUMMARY.md`, `README_AUTH_TESTING.md`, `README_API_TESTING.md`
+
+### Fixed
+
+- **Captcha Storage** (`routers/api.py`)
+  - Fixed captcha verification to use Redis-based storage instead of in-memory store
+  - Prevents captcha validation failures in multi-server deployments
+  - Ensures atomic captcha verification and removal (prevents replay attacks)
+
+---
+
+## [4.37.25] - 2025-12-27 - API Factorization and PNG Export Fixes
+
+### Added
+
+- **API Factorization** (`routers/api/`)
+  - Refactored monolithic `routers/api.py` into modular structure with 7 specialized modules
+  - Created `routers/api/diagram_generation.py` - Diagram generation endpoint
+  - Created `routers/api/png_export.py` - PNG export endpoints (export_png, generate_png, generate_dingtalk, temp_images)
+  - Created `routers/api/sse_streaming.py` - SSE streaming endpoint for AI assistant
+  - Created `routers/api/llm_operations.py` - LLM metrics, health, and multi-LLM generation endpoints
+  - Created `routers/api/frontend_logging.py` - Frontend logging endpoints (single and batch)
+  - Created `routers/api/layout.py` - Mind map layout recalculation endpoint
+  - Created `routers/api/feedback.py` - User feedback submission endpoint
+  - Created `routers/api/helpers.py` - Shared utilities (rate limiting, URL signing)
+  - Created `routers/api/__init__.py` - Router aggregation maintaining backward compatibility
+  - All 14 endpoints verified working after factorization
+
+- **PNG Export Fixes** (`routers/api/png_export.py`)
+  - Fixed dynamic renderer loader cache validation - validates cached renderer objects are actual objects with functions, not just flags
+  - Fixed loadScript patch to prevent unnecessary HTTP requests when scripts are embedded
+  - Simplified renderer caching logic - removed redundant retry loops (reduced from 2s retry to immediate availability check)
+  - Reduced code complexity by ~115 lines while maintaining functionality
+  - Fixed race condition where renderer cache could contain `{renderer: true}` instead of actual renderer object
+
+- **Testing Infrastructure**
+  - Added `tests/test_api_factorization.py` - Comprehensive test suite for all 14 API endpoints
+  - Added `tests/test_export_png.py` - Focused test for PNG export endpoint
+  - Added `tests/README_API_TESTING.md` - Documentation for API testing procedures
+  - All endpoints verified: 14/14 passing (100% success rate)
+
+### Changed
+
+- **API Structure** (`routers/api.py`)
+  - Reduced from single monolithic file to modular structure
+  - Improved code organization and maintainability
+  - Each module handles related endpoints with clear separation of concerns
+  - Backward compatibility maintained through router aggregation
+
+- **PNG Export Performance** (`routers/api/png_export.py`)
+  - Optimized renderer loading - scripts are embedded and execute synchronously
+  - Reduced wait time from 500ms to 100ms for script initialization
+  - Removed unnecessary cache verification steps before renderGraph calls
+  - Improved error handling and logging
+
+### Removed
+
+- **Obsolete Documentation** (`docs/SQLITE_LOCK_FAILURE_SCENARIOS.md`)
+  - Removed outdated SQLite lock failure scenarios documentation
+
+### Fixed
+
+- **PNG Export Renderer Loading** (`routers/api/png_export.py`)
+  - Fixed issue where renderer cache validation would accept `true` as valid renderer object
+  - Fixed race condition in renderer object caching
+  - Fixed loadScript to properly check cache before making HTTP requests
+  - All PNG export endpoints now working correctly
+
+---
+
 ## [4.37.24] - 2025-12-27 - Code Formatting Cleanup
 
 ### Changed

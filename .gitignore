@@ -111,6 +111,7 @@ keys/
 
 # Development temporary files
 development_prompts/*.md
+extracted_prompts/
 
 # Test outputs
 tests/images/

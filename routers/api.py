@@ -2436,38 +2436,35 @@ async def submit_feedback(
     Includes captcha verification to prevent spam.
     """
     try:
-        import time
+        # Use Redis-based captcha storage (multi-server support)
+        from services.captcha_storage import get_captcha_storage
         
-        # Import captcha store from auth router
-        # Note: In production, use Redis for multi-server support
-        from routers.auth import captcha_store
+        captcha_storage = get_captcha_storage()
         
         # Validate captcha first (anti-spam protection)
-        if req.captcha_id not in captcha_store:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Captcha expired or invalid. Please refresh."
-            )
+        # verify_and_remove() atomically verifies and removes (one-time use)
+        is_valid, error_reason = captcha_storage.verify_and_remove(
+            req.captcha_id,
+            req.captcha
+        )
         
-        stored_captcha = captcha_store[req.captcha_id]
+        if not is_valid:
+            if error_reason == "not_found":
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Captcha expired or invalid. Please refresh."
+                )
+            elif error_reason == "incorrect":
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Incorrect captcha code"
+                )
+            else:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Captcha verification failed. Please refresh."
+                )
         
-        # Check expiration
-        if time.time() > stored_captcha["expires"]:
-            del captcha_store[req.captcha_id]
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Captcha expired. Please refresh."
-            )
-        
-        # Verify captcha code (case-insensitive)
-        if stored_captcha['code'].upper() != req.captcha.upper():
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Incorrect captcha code"
-            )
-        
-        # Captcha verified, remove from store (one-time use)
-        del captcha_store[req.captcha_id]
         logger.debug(f"Captcha verified for feedback from user {req.user_id or 'anonymous'}")
         
         # Try to get user from JWT token if available (optional - allows anonymous feedback)

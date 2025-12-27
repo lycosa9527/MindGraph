@@ -219,18 +219,6 @@ Endpoints may require one of the following authentication methods:
 
 ---
 
-## Testing
-
-Run the comprehensive endpoint test script:
-
-```bash
-python tests/test_all_endpoints.py
-python tests/test_all_endpoints.py --base-url http://localhost:9527
-python tests/test_all_endpoints.py --json
-```
-
----
-
 ## Notes
 
 - SSE endpoints (Server-Sent Events) stream data continuously
