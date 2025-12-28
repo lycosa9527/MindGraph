@@ -347,6 +347,105 @@ function renderConceptMap(spec, theme = null, dimensions = null) {
         return p;
     }
 
+    // Helper functions for curved edges and advanced labels (shared by both layout paths)
+    function rectBorderPoint(rect, targetX, targetY) {
+        const halfW = rect.width / 2;
+        const halfH = rect.height / 2;
+        const dx = targetX - rect.x;
+        const dy = targetY - rect.y;
+        if (dx === 0 && dy === 0) return { x: rect.x, y: rect.y };
+        const absDx = Math.abs(dx);
+        const absDy = Math.abs(dy);
+        const scaleX = halfW / absDx;
+        const scaleY = halfH / absDy;
+        if (scaleX < scaleY) {
+            const x = rect.x + Math.sign(dx) * halfW;
+            const y = rect.y + dy * scaleX;
+            return { x, y };
+        } else {
+            const y = rect.y + Math.sign(dy) * halfH;
+            const x = rect.x + dx * scaleY;
+            return { x, y };
+        }
+    }
+
+    function drawEdgeLabel(x, y, text, fontSize, color) {
+        const paddingX = 4;
+        const paddingY = 2;
+        const group = svg.append('g');
+        const label = group.append('text')
+            .attr('x', x)
+            .attr('y', y)
+            .attr('text-anchor', 'middle')
+            .attr('dominant-baseline', 'middle')
+            .attr('fill', color)
+            .attr('font-size', fontSize)
+            .style('font-style', 'italic')
+            .text(text || '');
+        try {
+            const bbox = label.node().getBBox();
+            group.insert('rect', 'text')
+                .attr('x', bbox.x - paddingX)
+                .attr('y', bbox.y - paddingY)
+                .attr('width', bbox.width + 2 * paddingX)
+                .attr('height', bbox.height + 2 * paddingY)
+                .attr('rx', 3)
+                .attr('ry', 3)
+                .attr('fill', '#ffffff')
+                .attr('fill-opacity', 0.9);
+        } catch (e) {
+            // If bbox fails, fallback to stroke halo
+            label
+                .style('paint-order', 'stroke')
+                .style('stroke', '#ffffff')
+                .style('stroke-width', '3px');
+        }
+    }
+
+    function measureLabelBox(text, fontSize) {
+        const paddingX = 4;
+        const paddingY = 2;
+        const width = measureLineWidth(text || '', fontSize) + 2 * paddingX;
+        const height = Math.round(fontSize * 1.2) + 2 * paddingY;
+        return { width, height };
+    }
+
+    function rectsOverlap(a, b) {
+        // a, b: {x, y, width, height} centered at a.x,a.y
+        const ax1 = a.x - a.width / 2; const ax2 = a.x + a.width / 2;
+        const ay1 = a.y - a.height / 2; const ay2 = a.y + a.height / 2;
+        const bx1 = b.x - b.width / 2; const bx2 = b.x + b.width / 2;
+        const by1 = b.y - b.height / 2; const by2 = b.y + b.height / 2;
+        return !(ax2 < bx1 || ax1 > bx2 || ay2 < by1 || ay1 > by2);
+    }
+
+    function findNonOverlappingLabelPosition(midX, midY, nx, ny, tx, ty, labelW, labelH, nodeRects, placedRects) {
+        const attempts = [];
+        const distances = [0, 10, 20, 30, 40, 50, 60];
+        for (const d of distances) {
+            attempts.push({ x: midX + nx * d, y: midY + ny * d });  // along normal
+            attempts.push({ x: midX - nx * d, y: midY - ny * d });  // opposite normal
+            attempts.push({ x: midX + tx * d, y: midY + ty * d });  // along tangent
+            attempts.push({ x: midX - tx * d, y: midY - ty * d });  // opposite tangent
+            // small diagonal mixes
+            attempts.push({ x: midX + (nx + tx) * d * 0.7, y: midY + (ny + ty) * d * 0.7 });
+            attempts.push({ x: midX + (nx - tx) * d * 0.7, y: midY + (ny - ty) * d * 0.7 });
+        }
+        for (const p of attempts) {
+            const candidate = { x: p.x, y: p.y, width: labelW, height: labelH };
+            let overlaps = false;
+            for (const nr of nodeRects) {
+                if (rectsOverlap(candidate, nr)) { overlaps = true; break; }
+            }
+            if (overlaps) continue;
+            for (const pr of placedRects) {
+                if (rectsOverlap(candidate, pr)) { overlaps = true; break; }
+            }
+            if (!overlaps) return { x: p.x, y: p.y };
+        }
+        return { x: midX, y: midY }; // fallback
+    }
+
     // Check if we have pre-computed positions from the backend
     if (spec._layout && spec._layout.positions) {
         // Using backend-calculated positions
@@ -397,105 +496,6 @@ function renderConceptMap(spec, theme = null, dimensions = null) {
                 logger.warn('ConceptMapRenderer', 'No position found for concept', concept);
             }
         });
-        
-        // Add missing functions from old renderer for curved edges and advanced labels
-        function rectBorderPoint(rect, targetX, targetY) {
-            const halfW = rect.width / 2;
-            const halfH = rect.height / 2;
-            const dx = targetX - rect.x;
-            const dy = targetY - rect.y;
-            if (dx === 0 && dy === 0) return { x: rect.x, y: rect.y };
-            const absDx = Math.abs(dx);
-            const absDy = Math.abs(dy);
-            const scaleX = halfW / absDx;
-            const scaleY = halfH / absDy;
-            if (scaleX < scaleY) {
-                const x = rect.x + Math.sign(dx) * halfW;
-                const y = rect.y + dy * scaleX;
-                return { x, y };
-            } else {
-                const y = rect.y + Math.sign(dy) * halfH;
-                const x = rect.x + dx * scaleY;
-                return { x, y };
-            }
-        }
-
-        function drawEdgeLabel(x, y, text, fontSize, color) {
-            const paddingX = 4;
-            const paddingY = 2;
-            const group = svg.append('g');
-            const label = group.append('text')
-                .attr('x', x)
-                .attr('y', y)
-                .attr('text-anchor', 'middle')
-                .attr('dominant-baseline', 'middle')
-                .attr('fill', color)
-                .attr('font-size', fontSize)
-                .style('font-style', 'italic')
-                .text(text || '');
-            try {
-                const bbox = label.node().getBBox();
-                group.insert('rect', 'text')
-                    .attr('x', bbox.x - paddingX)
-                    .attr('y', bbox.y - paddingY)
-                    .attr('width', bbox.width + 2 * paddingX)
-                    .attr('height', bbox.height + 2 * paddingY)
-                    .attr('rx', 3)
-                    .attr('ry', 3)
-                    .attr('fill', '#ffffff')
-                    .attr('fill-opacity', 0.9);
-            } catch (e) {
-                // If bbox fails, fallback to stroke halo
-                label
-                    .style('paint-order', 'stroke')
-                    .style('stroke', '#ffffff')
-                    .style('stroke-width', '3px');
-            }
-        }
-
-        function measureLabelBox(text, fontSize) {
-            const paddingX = 4;
-            const paddingY = 2;
-            const width = measureLineWidth(text || '', fontSize) + 2 * paddingX;
-            const height = Math.round(fontSize * 1.2) + 2 * paddingY;
-            return { width, height };
-        }
-
-        function rectsOverlap(a, b) {
-            // a, b: {x, y, width, height} centered at a.x,a.y
-            const ax1 = a.x - a.width / 2; const ax2 = a.x + a.width / 2;
-            const ay1 = a.y - a.height / 2; const ay2 = a.y + a.height / 2;
-            const bx1 = b.x - b.width / 2; const bx2 = b.x + b.width / 2;
-            const by1 = b.y - b.height / 2; const by2 = b.y + b.height / 2;
-            return !(ax2 < bx1 || ax1 > bx2 || ay2 < by1 || ay1 > by2);
-        }
-
-        function findNonOverlappingLabelPosition(midX, midY, nx, ny, tx, ty, labelW, labelH, nodeRects, placedRects) {
-            const attempts = [];
-            const distances = [0, 10, 20, 30, 40, 50, 60];
-            for (const d of distances) {
-                attempts.push({ x: midX + nx * d, y: midY + ny * d });  // along normal
-                attempts.push({ x: midX - nx * d, y: midY - ny * d });  // opposite normal
-                attempts.push({ x: midX + tx * d, y: midY + ty * d });  // along tangent
-                attempts.push({ x: midX - tx * d, y: midY - ty * d });  // opposite tangent
-                // small diagonal mixes
-                attempts.push({ x: midX + (nx + tx) * d * 0.7, y: midY + (ny + ty) * d * 0.7 });
-                attempts.push({ x: midX + (nx - tx) * d * 0.7, y: midY + (ny - ty) * d * 0.7 });
-            }
-            for (const p of attempts) {
-                const candidate = { x: p.x, y: p.y, width: labelW, height: labelH };
-                let overlaps = false;
-                for (const nr of nodeRects) {
-                    if (rectsOverlap(candidate, nr)) { overlaps = true; break; }
-                }
-                if (overlaps) continue;
-                for (const pr of placedRects) {
-                    if (rectsOverlap(candidate, pr)) { overlaps = true; break; }
-                }
-                if (!overlaps) return { x: p.x, y: p.y };
-            }
-            return { x: midX, y: midY }; // fallback
-        }
 
         // Prepare node rectangles for label overlap checks
         const nodeRects = [

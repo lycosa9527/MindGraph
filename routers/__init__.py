@@ -5,7 +5,7 @@ MindGraph FastAPI Routers
 This package contains all FastAPI route modules organized by functionality.
 
 Routers:
-- api.py: Main API endpoints (diagrams, LLM, agents)
+- api/: Main API endpoints package (diagrams, LLM, agents) - refactored into modular structure
 - pages.py: Template rendering routes (HTML pages)
 - cache.py: JavaScript cache status endpoints
 - auth.py: Authentication endpoints

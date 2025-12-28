@@ -63,10 +63,11 @@ async def start_node_palette(
     current_user: User = Depends(get_current_user)
 ):
     """
-    Initialize Node Palette and fire ALL 5 LLMs concurrently.
+    Initialize Node Palette and fire 3 LLMs concurrently (qwen, deepseek, doubao).
     
     Returns SSE stream with progressive results as each LLM completes.
     No limits - this is the start of infinite scrolling!
+    NOTE: Kimi removed due to Volcengine server load issues
     """
     session_id = req.session_id
     user_id = current_user.id if current_user else None
@@ -150,11 +151,11 @@ async def start_node_palette(
         # Keep debug logs for LLM firing details
         if req.diagram_type == 'bridge_map':
             if center_topic and center_topic.strip():
-                logger.debug("[NodePalette-API] Type: bridge_map | Dimension: '%s' (SPECIFIC) | Firing 5 LLMs concurrently", center_topic)
+                logger.debug("[NodePalette-API] Type: bridge_map | Dimension: '%s' (SPECIFIC) | Firing 3 LLMs concurrently (qwen, deepseek, doubao)", center_topic)
             else:
-                logger.debug("[NodePalette-API] Type: bridge_map | Dimension: (EMPTY - DIVERSE mode) | Firing 5 LLMs concurrently")
+                logger.debug("[NodePalette-API] Type: bridge_map | Dimension: (EMPTY - DIVERSE mode) | Firing 3 LLMs concurrently (qwen, deepseek, doubao)")
         else:
-            logger.debug("[NodePalette-API] Type: %s | Topic: '%s' | Firing 5 LLMs concurrently", 
+            logger.debug("[NodePalette-API] Type: %s | Topic: '%s' | Firing 3 LLMs concurrently (qwen, deepseek, doubao)", 
                        req.diagram_type, center_topic)
         
         # Get appropriate generator based on diagram type (with fallback)
@@ -380,10 +381,11 @@ async def get_next_batch(
     current_user: User = Depends(get_current_user)
 ):
     """
-    Generate next batch - fires ALL 5 LLMs concurrently again!
+    Generate next batch - fires 3 LLMs concurrently again (qwen, deepseek, doubao)!
     
     Called when user scrolls to 2/3 of content.
-    Infinite scroll - keeps firing 5 concurrent LLMs on each trigger.
+    Infinite scroll - keeps firing 3 concurrent LLMs on each trigger.
+    NOTE: Kimi removed due to Volcengine server load issues
     """
     session_id = req.session_id
     logger.debug("[NodePalette-API] POST /next_batch (V2 Concurrent) | Session: %s", session_id[:8])
@@ -413,7 +415,7 @@ async def get_next_batch(
             logger.warning(f"[NodePalette-API] No specialized generator for {req.diagram_type}, using circle_map fallback")
             generator = get_circle_map_palette_generator()
         
-        logger.debug("[NodePalette-API] Type: %s | Firing 5 LLMs concurrently for next batch...", req.diagram_type)
+        logger.debug("[NodePalette-API] Type: %s | Firing 3 LLMs concurrently for next batch (qwen, deepseek, doubao)...", req.diagram_type)
         
         # Stream next batch with concurrent execution
         async def generate():

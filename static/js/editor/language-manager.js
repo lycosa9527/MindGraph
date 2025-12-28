@@ -294,7 +294,7 @@ class LanguageManager {
                     saveFailed: 'Failed to save diagram',
                     importSuccess: 'Diagram imported successfully!',
                     importFailed: 'Failed to import diagram',
-                    invalidFileFormat: 'Invalid file format',
+                    invalidFileFormat: 'Invalid file format. Please upload a .mg file.',
                     // Interactive Editor Notifications
                     couldNotDetermineNodeType: 'Could not determine node type. Please try again.',
                     cannotAddMainTopics: 'Cannot add main topics. Please select a similarity or difference node.',
@@ -604,7 +604,7 @@ class LanguageManager {
                     saveFailed: '保存图表失败',
                     importSuccess: '图表导入成功！',
                     importFailed: '图表导入失败',
-                    invalidFileFormat: '无效的文件格式',
+                    invalidFileFormat: '无效的文件格式。请上传 .mg 文件。',
                     // Interactive Editor Notifications
                     couldNotDetermineNodeType: '无法确定节点类型。请重试。',
                     cannotAddMainTopics: '无法添加主主题。请选择相似或不同点节点。',
@@ -882,7 +882,7 @@ class LanguageManager {
                     saveFailed: 'Diaqramı saxlamaq mümkün olmadı',
                     importSuccess: 'Diaqram uğurla idxal edildi!',
                     importFailed: 'Diaqramı idxal etmək mümkün olmadı',
-                    invalidFileFormat: 'Yanlış fayl formatı',
+                    invalidFileFormat: 'Yanlış fayl formatı. Zəhmət olmasa .mg faylını yükləyin.',
                     // Interactive Editor Notifications
                     couldNotDetermineNodeType: 'Düyün növünü müəyyən etmək mümkün olmadı. Xahiş edirik yenidən cəhd edin.',
                     cannotAddMainTopics: 'Əsas mövzular əlavə edilə bilməz. Xahiş edirik oxşar və ya fərq düyünü seçin.',

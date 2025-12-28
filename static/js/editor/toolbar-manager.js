@@ -12,14 +12,14 @@
 
 // Multi-LLM Configuration
 // NOTE: Hunyuan disabled due to 5 concurrent connection limit
+// NOTE: Kimi removed from auto-complete and node palette - Volcengine server cannot handle load
 const LLM_CONFIG = {
-    MODELS: ['qwen', 'deepseek', 'kimi', 'doubao'],
+    MODELS: ['qwen', 'deepseek', 'doubao'],
     TIMEOUT_MS: 60000, // 60 seconds per LLM request
     RENDER_DELAY_MS: 300, // Delay before fitting diagram to window
     MODEL_NAMES: {
         'qwen': 'Qwen',
         'deepseek': 'DeepSeek',
-        'kimi': 'Kimi',
         'doubao': 'Doubao'
     }
 };
@@ -1702,12 +1702,12 @@ class ToolbarManager {
         }
         
         try {
-            // Validate file type before reading
+            // Validate file type before reading - only accept .mg files
             const fileName = file.name.toLowerCase();
-            const isJsonFile = fileName.endsWith('.json') || fileName.endsWith('.mg');
+            const isMgFile = fileName.endsWith('.mg');
             
-            if (!isJsonFile) {
-                logger.error('ToolbarManager', 'Invalid file type - expected .json or .mg file', {
+            if (!isMgFile) {
+                logger.error('ToolbarManager', 'Invalid file type - expected .mg file', {
                     fileName: file.name,
                     type: file.type
                 });
@@ -1750,11 +1750,19 @@ class ToolbarManager {
     }
     
     /**
-     * Show notification - EVENT BUS WRAPPER
+     * Show notification - Direct call to notification manager
      */
-    showNotification(message, type = 'info') {
-        window.eventBus.emit('notification:show', { message, type });
-        logger.debug('ToolbarManager', 'Show notification via Event Bus', { message, type });
+    showNotification(message, type = 'info', duration = null) {
+        if (window.notificationManager) {
+            window.notificationManager.show(message, type, duration);
+            logger.debug('ToolbarManager', 'Show notification', { message, type });
+        } else {
+            logger.error('ToolbarManager', 'NotificationManager not available');
+            // Fallback: emit via event bus in case there's a listener elsewhere
+            if (window.eventBus) {
+                window.eventBus.emit('notification:show', { message, type });
+            }
+        }
     }
     
     /**

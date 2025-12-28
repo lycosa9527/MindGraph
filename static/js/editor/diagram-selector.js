@@ -301,20 +301,20 @@ class DiagramSelector {
      * Select a diagram type
      */
     selectDiagram(diagramType) {
-        // Check if concept map - show under development notification
+        // Check if concept map - show notification that it will be released in January 2026
         if (diagramType === 'concept_map') {
             const language = window.languageManager?.currentLanguage || 'en';
             const message = language === 'zh' 
-                ? '概念图功能正在开发中，敬请期待！' 
-                : 'Concept Map is under development. Coming soon!';
+                ? '概念图功能将于2026年1月发布，敬请期待。' 
+                : 'Concept map feature will be released in January 2026, please wait.';
             
             // Show browser notification
             if (window.notificationManager) {
-                window.notificationManager.show(message, 'info');
+                window.notificationManager.show(message, 'info', 8000);
             } else {
                 alert(message);
             }
-            logger.debug('DiagramSelector', 'Concept map blocked - under development');
+            logger.debug('DiagramSelector', 'Concept map blocked - will be released in January 2026');
             return;
         }
         

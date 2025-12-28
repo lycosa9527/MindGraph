@@ -777,14 +777,55 @@ async def lifespan(app: FastAPI):
             # Display demo info if in demo mode
             display_demo_info()
         
-        # Load cache from SQLite (uses Redis lock to ensure only one worker loads)
-        # Note: Removed worker_id check - Redis lock handles multi-worker coordination
-        try:
-            from services.redis_cache_loader import reload_cache_from_sqlite
-            reload_cache_from_sqlite()
-        except Exception as e:
-            logger.error(f"Failed to load cache from SQLite: {e}", exc_info=True)
-            # Don't fail startup if cache loading fails - system can work without cache
+        # Load cache from SQLite and IP geolocation database in parallel to save startup time
+        # Note: Both use Redis lock/distributed coordination to ensure only one worker loads
+        def load_user_cache():
+            """Load user cache from SQLite (runs in thread pool)."""
+            try:
+                from services.redis_cache_loader import reload_cache_from_sqlite
+                return reload_cache_from_sqlite()
+            except Exception as e:
+                logger.error(f"Failed to load cache from SQLite: {e}", exc_info=True)
+                return False
+        
+        def load_ip_database():
+            """Initialize IP geolocation database (runs in thread pool)."""
+            try:
+                from services.ip_geolocation import get_geolocation_service
+                geolocation_service = get_geolocation_service()
+                if geolocation_service.is_ready():
+                    if worker_id == '0' or not worker_id:
+                        logger.info("IP Geolocation Service initialized successfully")
+                    return True
+                else:
+                    if worker_id == '0' or not worker_id:
+                        logger.warning("IP Geolocation database not available (database file missing or failed to load)")
+                    return False
+            except Exception as e:
+                if worker_id == '0' or not worker_id:
+                    logger.warning(f"Failed to initialize IP Geolocation Service: {e}")
+                return False
+        
+        # Run both operations in parallel using thread pool
+        cache_result, ip_db_result = await asyncio.gather(
+            asyncio.to_thread(load_user_cache),
+            asyncio.to_thread(load_ip_database),
+            return_exceptions=True
+        )
+        
+        # Handle results
+        if isinstance(cache_result, Exception):
+            logger.error(f"Failed to load cache from SQLite: {cache_result}", exc_info=True)
+        elif cache_result:
+            if worker_id == '0' or not worker_id:
+                logger.info("User cache loaded successfully")
+        
+        if isinstance(ip_db_result, Exception):
+            if worker_id == '0' or not worker_id:
+                logger.warning(f"Failed to initialize IP Geolocation Service: {ip_db_result}")
+        elif not ip_db_result:
+            # Already logged in load_ip_database
+            pass
         
         # Load IP whitelist from env var into Redis (uses Redis lock to ensure only one worker loads)
         # Note: Removed worker_id check - Redis lock handles multi-worker coordination

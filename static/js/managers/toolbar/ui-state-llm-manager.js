@@ -464,8 +464,8 @@ class UIStateLLMManager {
                 const modelNames = {
                     'qwen': 'Qwen',
                     'deepseek': 'DeepSeek',
-                    'kimi': 'Kimi',
                     'doubao': 'Doubao'
+                    // NOTE: Kimi removed from auto-complete - Volcengine server cannot handle load
                 };
                 this.logger.debug('UIStateLLMManager', `Switched to ${modelNames[llmModel] || llmModel} result`);
             } else {
@@ -488,8 +488,8 @@ class UIStateLLMManager {
             const modelNames = {
                 'qwen': 'Qwen',
                 'deepseek': 'DeepSeek',
-                'kimi': 'Kimi',
                 'doubao': 'Doubao'
+                // NOTE: Kimi removed from auto-complete - Volcengine server cannot handle load
             };
             const modelName = modelNames[llmModel] || llmModel;
             const message = lang === 'zh' 

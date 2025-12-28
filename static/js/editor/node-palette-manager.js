@@ -3635,13 +3635,14 @@ class NodePaletteManager {
     
     async loadNextBatch() {
         /**
-         * CATAPULT - Fire 4 LLMs concurrently for next batch!
+         * CATAPULT - Fire 3 LLMs concurrently for next batch!
          * 
          * INFINITE SCROLL: This gets called repeatedly as user scrolls down.
          * - Batch 1: Initial load
          * - Batch 2, 3, 4, 5...: Triggered at 2/3 scroll position, NO LIMIT!
          * 
-         * Each batch = 1 CATAPULT = 4 LLMs fire concurrently = ~60 new nodes
+         * Each batch = 1 CATAPULT = 3 LLMs fire concurrently (qwen, deepseek, doubao) = ~45 new nodes
+         * NOTE: Kimi removed due to Volcengine server load issues
          */
         if (this.isLoadingBatch) {
             console.warn('[NodePalette] Batch load already in progress, skipping');
@@ -3666,7 +3667,7 @@ class NodePaletteManager {
         // Hide transition animation as new batch starts
         this.hideBatchTransition();
         
-        console.log(`[NodePalette] CATAPULT batch #${this.currentBatch} (4 LLMs launching)...`);
+        console.log(`[NodePalette] CATAPULT batch #${this.currentBatch} (3 LLMs launching: qwen, deepseek, doubao)...`);
         
         // Show loading animation immediately
         const lang = window.languageManager?.getCurrentLanguage() || 'en';
@@ -3674,7 +3675,7 @@ class NodePaletteManager {
             ? '正在加载节点...' 
             : 'Loading nodes...';
         this.showCatapultLoading();
-        this.updateCatapultLoading(loadingMsg, 0, 4);
+        this.updateCatapultLoading(loadingMsg, 0, 3);
         
         // Determine URL based on batch number
         const url = this.currentBatch === 1
@@ -4502,7 +4503,7 @@ class NodePaletteManager {
     updateLlmStatus(llmName, status, nodeCount, errorType = null) {
         /**
          * Track LLM status for UI display
-         * @param {string} llmName - 'qwen', 'deepseek', 'kimi', 'doubao'
+         * @param {string} llmName - 'qwen', 'deepseek', 'doubao' (Kimi removed due to Volcengine load issues)
          * @param {string} status - 'success' or 'error'
          * @param {number} nodeCount - Number of nodes generated
          * @param {string} errorType - Error type if failed ('rate_limit', 'content_filter', 'timeout')

@@ -75,20 +75,25 @@ def acquire_backup_scheduler_lock() -> bool:
     Uses Redis SETNX for atomic lock acquisition.
     Only ONE worker across all processes can hold this lock.
     
+    CRITICAL: Redis is REQUIRED. If Redis is unavailable, this function returns False
+    to prevent duplicate backups. The application should not start without Redis.
+    
     Returns:
         True if lock acquired (this worker should run scheduler)
-        False if lock held by another worker
+        False if lock held by another worker or Redis unavailable
     """
     global _worker_lock_id
     
     if not is_redis_available():
-        # No Redis = single worker mode, proceed
-        logger.warning("[Backup] Redis unavailable, assuming single worker mode")
-        return True
+        # Redis is REQUIRED for multi-worker coordination
+        # Without Redis, we cannot guarantee only one worker runs backups
+        logger.error("[Backup] Redis unavailable - cannot coordinate backups across workers. Backup scheduler disabled.")
+        return False
     
     redis = get_redis()
     if not redis:
-        return True  # Fallback to single worker mode
+        logger.error("[Backup] Redis client not available - cannot coordinate backups. Backup scheduler disabled.")
+        return False
     
     try:
         # Generate unique ID for this worker
@@ -114,8 +119,9 @@ def acquire_backup_scheduler_lock() -> bool:
             return False
             
     except Exception as e:
-        logger.warning(f"[Backup] Lock acquisition failed: {e}, proceeding anyway")
-        return True  # On error, proceed (better to have duplicate than no backup)
+        # On Redis error, fail safe - do not allow backup to prevent duplicates
+        logger.error(f"[Backup] Lock acquisition failed: {e}. Backup scheduler disabled to prevent duplicate backups.")
+        return False
 
 
 def release_backup_scheduler_lock() -> bool:
@@ -163,29 +169,46 @@ def refresh_backup_scheduler_lock() -> bool:
     """
     Refresh the lock TTL if held by this worker.
     
+    Uses atomic Lua script to check-and-refresh in one operation,
+    preventing race conditions where lock could be lost between check and refresh.
+    
     Returns:
         True if lock refreshed, False if not held by this worker
     """
     global _worker_lock_id
     
     if not is_redis_available() or _worker_lock_id is None:
-        return True
+        # Redis unavailable - cannot verify lock, but this should not happen
+        # in production since Redis is required
+        logger.error("[Backup] Cannot refresh lock: Redis unavailable or lock ID not set")
+        return False
     
     redis = get_redis()
     if not redis:
-        return True
+        logger.error("[Backup] Cannot refresh lock: Redis client not available")
+        return False
     
     try:
-        # Check if we still hold the lock
-        holder = redis.get(BACKUP_LOCK_KEY)
-        if holder != _worker_lock_id:
+        # Atomic check-and-refresh using Lua script
+        # Only refreshes TTL if current holder matches our ID
+        lua_script = """
+        if redis.call("get", KEYS[1]) == ARGV[1] then
+            redis.call("expire", KEYS[1], ARGV[2])
+            return 1
+        else
+            return 0
+        end
+        """
+        result = redis.eval(lua_script, 1, BACKUP_LOCK_KEY, _worker_lock_id, BACKUP_LOCK_TTL)
+        
+        if result == 1:
+            logger.debug(f"[Backup] Lock refreshed (TTL={BACKUP_LOCK_TTL}s)")
+            return True
+        else:
+            # Lock not held by us - check who holds it
+            holder = redis.get(BACKUP_LOCK_KEY)
             logger.warning(f"[Backup] Lock lost! Holder: {holder}, our ID: {_worker_lock_id}")
             return False
-        
-        # Refresh TTL
-        redis.expire(BACKUP_LOCK_KEY, BACKUP_LOCK_TTL)
-        logger.debug(f"[Backup] Lock refreshed (TTL={BACKUP_LOCK_TTL}s)")
-        return True
         
     except Exception as e:
         logger.warning(f"[Backup] Lock refresh failed: {e}")
@@ -196,23 +219,32 @@ def is_backup_lock_holder() -> bool:
     """
     Check if this worker currently holds the backup lock.
     
+    CRITICAL: Redis is REQUIRED. Returns False if Redis unavailable to prevent
+    duplicate backups when Redis coordination is not possible.
+    
     Returns:
         True if this worker holds the lock
+        False if lock held by another worker or Redis unavailable
     """
     global _worker_lock_id
     
     if not is_redis_available() or _worker_lock_id is None:
-        return True  # Single worker mode
+        # Redis unavailable - cannot verify lock ownership
+        logger.error("[Backup] Cannot verify lock ownership: Redis unavailable or lock ID not set")
+        return False
     
     redis = get_redis()
     if not redis:
-        return True
+        logger.error("[Backup] Cannot verify lock ownership: Redis client not available")
+        return False
     
     try:
         holder = redis.get(BACKUP_LOCK_KEY)
         return holder == _worker_lock_id
-    except Exception:
-        return True  # On error, assume we hold it
+    except Exception as e:
+        # On error, fail safe - do not assume we hold the lock
+        logger.warning(f"[Backup] Error checking lock ownership: {e}")
+        return False
 
 # Thread-safe flag to coordinate with WAL checkpoint scheduler
 # When backup is running, WAL checkpoint should skip (backup API handles WAL correctly)
@@ -1217,6 +1249,14 @@ def create_backup() -> bool:
     Returns:
         True if backup succeeded, False otherwise
     """
+    # CRITICAL: Verify this worker holds the lock before creating backup
+    # This prevents race conditions where multiple workers pass the initial lock check
+    # The atomic lock refresh in the scheduler loop should prevent this, but this is
+    # a final safety check
+    if not is_backup_lock_holder():
+        logger.warning("[Backup] Backup rejected: this worker does not hold the scheduler lock")
+        return False
+    
     source_db = get_database_path()
     if source_db is None:
         logger.warning("[Backup] Not using SQLite database, skipping backup")
@@ -1390,14 +1430,14 @@ async def start_backup_scheduler():
                     logger.warning("[Backup] Lost scheduler lock during wait")
                     return
             
-            # Verify we still hold the lock before running backup
-            if not is_backup_lock_holder():
+            # CRITICAL: Verify we still hold the lock before running backup
+            # Use atomic refresh to verify ownership and extend TTL in one operation
+            if not refresh_backup_scheduler_lock():
                 logger.warning("[Backup] Lock lost before backup execution, skipping")
                 continue
             
             # Perform backup
             logger.info("[Backup] Starting scheduled backup...")
-            refresh_backup_scheduler_lock()
             
             try:
                 success = await asyncio.to_thread(create_backup)
@@ -1408,6 +1448,7 @@ async def start_backup_scheduler():
             except Exception as e:
                 logger.error(f"[Backup] Scheduled backup failed with exception: {e}", exc_info=True)
             
+            # Refresh lock after backup completes
             refresh_backup_scheduler_lock()
             
             # Wait a bit to avoid running twice in the same minute

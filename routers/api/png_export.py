@@ -1027,13 +1027,23 @@ async def generate_png_from_prompt(
         )
         
         if not response:
-            raise HTTPException(status_code=500, detail=Messages.error("generation_failed", lang, "No response from LLM"))
+            error_msg = "无法理解您的意图，请更具体地说明图表类型和主题，或点击下方的图表卡片。" if lang == 'zh' else "Unable to process user's intention, please be more specific about the diagram type and topic, or click the diagrams card below."
+            raise HTTPException(status_code=500, detail=error_msg)
         
         # Extract JSON from response
         result = extract_json_from_response(response)
         
+        # Check for non-JSON response (LLM asking for more information)
+        if isinstance(result, dict) and result.get('_error') == 'non_json_response':
+            logger.warning(f"[GeneratePNG] LLM returned non-JSON response asking for more info")
+            error_msg = "无法理解您的意图，请更具体地说明图表类型和主题，或点击下方的图表卡片。" if lang == 'zh' else "Unable to process user's intention, please be more specific about the diagram type and topic, or click the diagrams card below."
+            raise HTTPException(status_code=400, detail=error_msg)
+        
+        # Check if JSON extraction failed
         if not isinstance(result, dict) or 'spec' not in result:
-            raise HTTPException(status_code=500, detail=Messages.error("generation_failed", lang, "Invalid response format from LLM"))
+            logger.error(f"[GeneratePNG] Invalid response format from LLM: {type(result)}")
+            error_msg = "无法理解您的意图，请更具体地说明图表类型和主题，或点击下方的图表卡片。" if lang == 'zh' else "Unable to process user's intention, please be more specific about the diagram type and topic, or click the diagrams card below."
+            raise HTTPException(status_code=500, detail=error_msg)
         
         spec = result.get('spec', {})
         diagram_type = result.get('diagram_type', 'bubble_map')
@@ -1041,6 +1051,14 @@ async def generate_png_from_prompt(
         # Normalize diagram type
         if diagram_type == 'mindmap':
             diagram_type = 'mind_map'
+        
+        # Check if spec contains an error field (from LLM)
+        if isinstance(spec, dict) and spec.get('error'):
+            error_from_spec = spec.get('error')
+            logger.warning(f"[GeneratePNG] Spec contains error field: {error_from_spec}")
+            # Use user-friendly message instead of raw error
+            error_msg = "无法理解您的意图，请更具体地说明图表类型和主题，或点击下方的图表卡片。" if lang == 'zh' else "Unable to process user's intention, please be more specific about the diagram type and topic, or click the diagrams card below."
+            raise HTTPException(status_code=400, detail=error_msg)
         
         # Add learning sheet metadata to spec object so renderers can access it
         if isinstance(spec, dict):
@@ -1074,9 +1092,6 @@ async def generate_png_from_prompt(
                 )
             except Exception as e:
                 logger.warning(f"[GeneratePNG] Token tracking failed (non-critical): {e}", exc_info=False)
-        
-        if isinstance(spec, dict) and spec.get('error'):
-            raise HTTPException(status_code=400, detail=spec.get('error'))
         
         # For mindmaps, enhance spec with layout data if missing
         if diagram_type == 'mind_map' and isinstance(spec, dict):
@@ -1232,19 +1247,23 @@ async def generate_dingtalk_png(
         )
         
         if not response:
-            raise HTTPException(
-                status_code=500,
-                detail=Messages.error("generation_failed", lang, "No response from LLM")
-            )
+            error_msg = "无法理解您的意图，请更具体地说明图表类型和主题，或点击下方的图表卡片。" if lang == 'zh' else "Unable to process user's intention, please be more specific about the diagram type and topic, or click the diagrams card below."
+            raise HTTPException(status_code=500, detail=error_msg)
         
         # Extract JSON from response
         result = extract_json_from_response(response)
         
+        # Check for non-JSON response (LLM asking for more information)
+        if isinstance(result, dict) and result.get('_error') == 'non_json_response':
+            logger.warning(f"[GenerateDingTalk] LLM returned non-JSON response asking for more info")
+            error_msg = "无法理解您的意图，请更具体地说明图表类型和主题，或点击下方的图表卡片。" if lang == 'zh' else "Unable to process user's intention, please be more specific about the diagram type and topic, or click the diagrams card below."
+            raise HTTPException(status_code=400, detail=error_msg)
+        
+        # Check if JSON extraction failed
         if not isinstance(result, dict) or 'spec' not in result:
-            raise HTTPException(
-                status_code=500,
-                detail=Messages.error("generation_failed", lang, "Invalid response format from LLM")
-            )
+            logger.error(f"[GenerateDingTalk] Invalid response format from LLM: {type(result)}")
+            error_msg = "无法理解您的意图，请更具体地说明图表类型和主题，或点击下方的图表卡片。" if lang == 'zh' else "Unable to process user's intention, please be more specific about the diagram type and topic, or click the diagrams card below."
+            raise HTTPException(status_code=500, detail=error_msg)
         
         spec = result.get('spec', {})
         diagram_type = result.get('diagram_type', 'bubble_map')
@@ -1252,6 +1271,14 @@ async def generate_dingtalk_png(
         # Normalize diagram type
         if diagram_type == 'mindmap':
             diagram_type = 'mind_map'
+        
+        # Check if spec contains an error field (from LLM)
+        if isinstance(spec, dict) and spec.get('error'):
+            error_from_spec = spec.get('error')
+            logger.warning(f"[GenerateDingTalk] Spec contains error field: {error_from_spec}")
+            # Use user-friendly message instead of raw error
+            error_msg = "无法理解您的意图，请更具体地说明图表类型和主题，或点击下方的图表卡片。" if lang == 'zh' else "Unable to process user's intention, please be more specific about the diagram type and topic, or click the diagrams card below."
+            raise HTTPException(status_code=400, detail=error_msg)
         
         # Add learning sheet metadata to spec object so renderers can access it
         if isinstance(spec, dict):
@@ -1285,9 +1312,6 @@ async def generate_dingtalk_png(
                 )
             except Exception as e:
                 logger.warning(f"[GenerateDingTalk] Token tracking failed (non-critical): {e}", exc_info=False)
-        
-        if isinstance(spec, dict) and spec.get('error'):
-            raise HTTPException(status_code=400, detail=spec.get('error'))
         
         # For mindmaps, enhance spec with layout data if missing
         if diagram_type == 'mind_map' and isinstance(spec, dict):

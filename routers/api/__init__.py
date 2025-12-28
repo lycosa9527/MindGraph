@@ -2,9 +2,9 @@
 API Router Package
 ==================
 
-Aggregates all API route modules into a single router for backward compatibility.
+Aggregates all API route modules into a single router.
 
-This package maintains the same interface as the original routers/api.py:
+Usage:
     from routers import api
     app.include_router(api.router)
 
@@ -26,7 +26,7 @@ from . import (
     feedback,
 )
 
-# Create main router with prefix and tags (matches original api.py)
+# Create main router with prefix and tags
 router = APIRouter(prefix="/api", tags=["api"])
 
 # Include all sub-routers

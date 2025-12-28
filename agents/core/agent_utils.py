@@ -267,8 +267,9 @@ def _extract_partial_json(text: str) -> Optional[Dict]:
                 topic = topic_match.group(1).replace('\\"', '"').replace('\\n', '\n')
         
         # Step 2: Find all complete branch objects
-        # Pattern: {"id": "...", "label": "...", "children": [...]}
-        # We'll look for complete objects that have id, label, and optionally children
+        # Pattern: {"id": "...", "label": "...", "children": [...]} (mind maps)
+        #          {"id": "...", "text": "...", "children": [...]} (tree maps)
+        # We'll look for complete objects that have id, label/text, and optionally children
         
         # First, try to find the children array
         children_start = text.find('"children"')
@@ -280,18 +281,21 @@ def _extract_partial_json(text: str) -> Optional[Dict]:
             array_start = text.find('[', children_start)
             if array_start != -1:
                 # Extract branch objects from the array
-                # Look for complete branch objects: {"id": "...", "label": "...", ...}
-                branch_pattern = r'\{\s*"id"\s*:\s*"([^"]+)"\s*,\s*"label"\s*:\s*"([^"]*(?:\\.[^"]*)*)"[^}]*\}'
+                # Look for complete branch objects with either "label" (mind maps) or "text" (tree maps)
+                # Pattern 1: Mind map format with "label"
+                branch_pattern_label = r'\{\s*"id"\s*:\s*"([^"]+)"\s*,\s*"label"\s*:\s*"([^"]*(?:\\.[^"]*)*)"[^}]*\}'
+                # Pattern 2: Tree map format with "text"
+                branch_pattern_text = r'\{\s*"id"\s*:\s*"([^"]+)"\s*,\s*"text"\s*:\s*"([^"]*(?:\\.[^"]*)*)"[^}]*\}'
+                # Pattern 3: Tree map format without id (just "text")
+                branch_pattern_text_no_id = r'\{\s*"text"\s*:\s*"([^"]*(?:\\.[^"]*)*)"[^}]*\}'
                 
-                # Find all potential branch objects
-                for match in re.finditer(branch_pattern, text[array_start:], re.DOTALL):
+                # Try mind map pattern first
+                for match in re.finditer(branch_pattern_label, text[array_start:], re.DOTALL):
                     branch_text = match.group(0)
                     branch_id = match.group(1)
                     branch_label = match.group(2).replace('\\"', '"').replace('\\n', '\n')
                     
-                    # Try to parse this branch object to ensure it's valid
                     try:
-                        # Check if it has children field
                         children_match = re.search(r'"children"\s*:\s*\[(.*?)\]', branch_text, re.DOTALL)
                         children_list = []
                         
@@ -307,7 +311,6 @@ def _extract_partial_json(text: str) -> Optional[Dict]:
                                     "label": child_label
                                 })
                         
-                        # Build complete branch object
                         branch_obj = {
                             "id": branch_id,
                             "label": branch_label
@@ -316,10 +319,87 @@ def _extract_partial_json(text: str) -> Optional[Dict]:
                             branch_obj["children"] = children_list
                         
                         recovered_branches.append(branch_obj)
-                        
                     except Exception as e:
                         logger.debug(f"Skipping invalid branch object: {e}")
-                        warnings.append(f"Skipped invalid branch: {branch_id}")
+                        continue
+                
+                # Try tree map pattern with id
+                for match in re.finditer(branch_pattern_text, text[array_start:], re.DOTALL):
+                    branch_text = match.group(0)
+                    branch_id = match.group(1)
+                    branch_text_value = match.group(2).replace('\\"', '"').replace('\\n', '\n')
+                    
+                    try:
+                        children_match = re.search(r'"children"\s*:\s*\[(.*?)\]', branch_text, re.DOTALL)
+                        children_list = []
+                        
+                        if children_match:
+                            children_content = children_match.group(1)
+                            # Extract child objects: {"id": "...", "text": "..."} or {"text": "..."}
+                            child_pattern_with_id = r'\{\s*"id"\s*:\s*"([^"]+)"\s*,\s*"text"\s*:\s*"([^"]*(?:\\.[^"]*)*)"\s*\}'
+                            child_pattern_text_only = r'\{\s*"text"\s*:\s*"([^"]*(?:\\.[^"]*)*)"\s*\}'
+                            
+                            for child_match in re.finditer(child_pattern_with_id, children_content):
+                                child_id = child_match.group(1)
+                                child_text = child_match.group(2).replace('\\"', '"').replace('\\n', '\n')
+                                children_list.append({
+                                    "id": child_id,
+                                    "text": child_text
+                                })
+                            
+                            for child_match in re.finditer(child_pattern_text_only, children_content):
+                                child_text = child_match.group(1).replace('\\"', '"').replace('\\n', '\n')
+                                # Generate a simple id from text
+                                child_id = child_text.lower().replace(' ', '-')[:20]
+                                children_list.append({
+                                    "id": child_id,
+                                    "text": child_text
+                                })
+                        
+                        branch_obj = {
+                            "id": branch_id,
+                            "text": branch_text_value
+                        }
+                        if children_list:
+                            branch_obj["children"] = children_list
+                        
+                        recovered_branches.append(branch_obj)
+                    except Exception as e:
+                        logger.debug(f"Skipping invalid branch object: {e}")
+                        continue
+                
+                # Try tree map pattern without id (just text)
+                for match in re.finditer(branch_pattern_text_no_id, text[array_start:], re.DOTALL):
+                    branch_text = match.group(0)
+                    branch_text_value = match.group(1).replace('\\"', '"').replace('\\n', '\n')
+                    
+                    try:
+                        children_match = re.search(r'"children"\s*:\s*\[(.*?)\]', branch_text, re.DOTALL)
+                        children_list = []
+                        
+                        if children_match:
+                            children_content = children_match.group(1)
+                            child_pattern_text_only = r'\{\s*"text"\s*:\s*"([^"]*(?:\\.[^"]*)*)"\s*\}'
+                            for child_match in re.finditer(child_pattern_text_only, children_content):
+                                child_text = child_match.group(1).replace('\\"', '"').replace('\\n', '\n')
+                                child_id = child_text.lower().replace(' ', '-')[:20]
+                                children_list.append({
+                                    "id": child_id,
+                                    "text": child_text
+                                })
+                        
+                        # Generate id from text
+                        branch_id = branch_text_value.lower().replace(' ', '-')[:20]
+                        branch_obj = {
+                            "id": branch_id,
+                            "text": branch_text_value
+                        }
+                        if children_list:
+                            branch_obj["children"] = children_list
+                        
+                        recovered_branches.append(branch_obj)
+                    except Exception as e:
+                        logger.debug(f"Skipping invalid branch object: {e}")
                         continue
         
         # Step 3: Build result structure
@@ -360,6 +440,7 @@ def _repair_json_structure(text: str, error_pos: int = None) -> str:
     - Duplicate object entries (e.g., {"id": "x"        {"id": "x", "label": "y"})
     - Missing closing braces/commas
     - Incomplete objects in arrays
+    - Missing commas between array elements or object properties
     
     Args:
         text: JSON text that failed to parse
@@ -392,6 +473,41 @@ def _repair_json_structure(text: str, error_pos: int = None) -> str:
     # Example: {"name":"value"}{"name":"value2"} -> {"name":"value"},{"name":"value2"}
     missing_comma_between_objects = r'\}\s*(?=\{"name":)'
     repaired = re.sub(missing_comma_between_objects, '},', repaired)
+    
+    # Pattern 0d: Fix missing commas between objects in arrays (general case)
+    # Example: {"text": "..."}{"text": "..."} -> {"text": "..."},{"text": "..."}
+    # This handles cases where objects in arrays are missing commas
+    missing_comma_between_array_objects = r'\}\s*(?=\{"text":)'
+    repaired = re.sub(missing_comma_between_array_objects, '},', repaired)
+    
+    # Pattern 0e: Fix missing commas between children array elements
+    # Example: {"text": "..."}{"text": "..."} -> {"text": "..."},{"text": "..."}
+    # More general pattern for any object followed by another object without comma
+    missing_comma_between_any_objects = r'\}\s*(?=\{)'
+    # But we need to be careful - only add comma if we're in an array context
+    # We'll check if there's a ] or } after the next object, or if we're between [ and ]
+    def add_comma_if_needed(match):
+        # Check context around the match
+        start_pos = match.start()
+        end_pos = match.end()
+        
+        # Look backwards to see if we're in an array context
+        before = repaired[:start_pos]
+        after = repaired[end_pos:]
+        
+        # Count unclosed brackets/braces before this position
+        open_braces = before.count('{') - before.count('}')
+        open_brackets = before.count('[') - before.count(']')
+        
+        # If we're inside an array (open_brackets > 0) or inside an object (open_braces > 0),
+        # and the next char is {, we likely need a comma
+        if (open_brackets > 0 or open_braces > 0) and after.startswith('{'):
+            return '},'
+        return match.group(0)
+    
+    # Apply the fix more carefully - only in array/object contexts
+    # First, try a simpler pattern for common cases
+    repaired = re.sub(r'\}\s*(?=\{"(?:text|id|label|name)":)', '},', repaired)
     
     # Pattern 1: Fix duplicate object entries - incomplete object followed by complete duplicate
     # Example: {"id": "zi_xiang_1_2"        {"id": "zi_xiang_1_2", "label": "外力为零的含义"}
@@ -466,6 +582,23 @@ def _repair_json_structure(text: str, error_pos: int = None) -> str:
     # Pattern 4: Remove consecutive duplicate complete objects
     consecutive_duplicate = r'(\{"id":\s*"([^"]+)",\s*"[^"]+":\s*"[^"]+"[^}]*\})\s*,\s*\1'
     repaired = re.sub(consecutive_duplicate, r'\1', repaired)
+    
+    # Pattern 5: Fix missing commas around error position (if error_pos is provided)
+    # This is a targeted fix for the specific error location
+    if error_pos is not None and error_pos < len(repaired):
+        # Look around the error position for missing commas
+        # Check if there's a } followed by { or [ without a comma
+        start_check = max(0, error_pos - 50)
+        end_check = min(len(repaired), error_pos + 50)
+        error_context = repaired[start_check:end_check]
+        
+        # Look for } followed by whitespace and then { or [
+        missing_comma_pattern = r'\}\s+(?=[\{\[])'
+        if re.search(missing_comma_pattern, error_context):
+            # Fix missing commas in the error context
+            fixed_context = re.sub(r'\}\s+(?=\{)', '},', error_context)
+            repaired = repaired[:start_check] + fixed_context + repaired[end_check:]
+            logger.debug(f"Fixed missing comma around error position {error_pos}")
     
     return repaired if repaired != text else None
 

@@ -34,7 +34,7 @@ class BasePaletteGenerator(ABC):
     
     Architecture:
     - Uses llm_service.stream_progressive() for concurrent token streaming
-    - All 4 LLMs (qwen, deepseek, kimi, doubao) fire simultaneously (Hunyuan disabled)
+    - 3 LLMs (qwen, deepseek, doubao) fire simultaneously (Hunyuan disabled, Kimi removed due to Volcengine load issues)
     - Nodes render progressively as tokens arrive from any LLM
     - Deduplication across all batches and LLMs
     - Subclasses override _build_prompt() for diagram-specific generation
@@ -44,7 +44,8 @@ class BasePaletteGenerator(ABC):
         """Initialize base palette generator"""
         self.llm_service = llm_service
         # NOTE: Hunyuan disabled due to 5 concurrent connection limit
-        self.llm_models = ['qwen', 'deepseek', 'kimi', 'doubao']
+        # NOTE: Kimi removed from node palette - Volcengine server cannot handle load
+        self.llm_models = ['qwen', 'deepseek', 'doubao']
         
         # Session storage
         self.generated_nodes = {}  # session_id -> List[Dict]
@@ -70,7 +71,7 @@ class BasePaletteGenerator(ABC):
         endpoint_path: Optional[str] = None
     ) -> AsyncGenerator[Dict, None]:
         """
-        Generate batch of nodes using ALL 4 LLMs with concurrent token streaming.
+        Generate batch of nodes using 3 LLMs (qwen, deepseek, doubao) with concurrent token streaming.
         
         Nodes render progressively as tokens arrive from any LLM!
         
@@ -131,7 +132,7 @@ class BasePaletteGenerator(ABC):
         llm_yield_order = self.llm_models.copy()  # Round-robin order
         next_llm_index = 0
         
-        # 🚀 CONCURRENT TOKEN STREAMING - All 4 LLMs fire simultaneously!
+        # 🚀 CONCURRENT TOKEN STREAMING - 3 LLMs fire simultaneously (qwen, deepseek, doubao)!
         logger.debug("[NodePalette] Streaming from %d LLMs with progressive rendering (round-robin interleaving)...", len(self.llm_models))
         
         async for chunk in self.llm_service.stream_progressive(

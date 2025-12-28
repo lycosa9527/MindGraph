@@ -115,16 +115,20 @@ def filter_localhost_users(active_users: List[Dict]) -> List[Dict]:
 
 def count_non_localhost_users(active_users: List[Dict]) -> int:
     """
-    Count active users excluding localhost connections.
+    Count active users excluding localhost connections and users without valid IPs.
+    
+    This matches the map endpoint logic which filters out empty/unknown IPs.
     
     Args:
         active_users: List of user dicts with 'ip_address' field
         
     Returns:
-        Count of non-localhost users
+        Count of non-localhost users with valid IP addresses
     """
-    return sum(1 for user in active_users 
-               if not is_localhost_ip(user.get('ip_address', '')))
+    return sum(1 for user in active_users
+               if (ip_address := user.get('ip_address', '')) 
+               and ip_address != 'unknown' 
+               and not is_localhost_ip(ip_address))
 
 
 def verify_dashboard_session(request: Request) -> bool:
@@ -266,7 +270,7 @@ async def get_dashboard_stats(
     try:
         # Get connected users count (excluding localhost)
         tracker = get_activity_tracker()
-        active_users = tracker.get_active_users()
+        active_users = tracker.get_active_users(hours=1)  # Match map endpoint time window
         # Filter out localhost connections
         connected_users = count_non_localhost_users(active_users)
         
@@ -415,6 +419,17 @@ async def get_map_data(
                 logger.debug(f"Error reading map data cache: {e}")
     
     try:
+        # Check if IP geolocation database is ready
+        ip_geolocation = get_geolocation_service()
+        if not ip_geolocation.is_ready():
+            # Database not ready yet - return empty data with loading flag
+            logger.debug("[MapData] IP geolocation database not ready, returning empty data")
+            return {
+                "map_data": [],
+                "flag_data": [],
+                "database_loading": True
+            }
+        
         # Get active users within last hour
         tracker = get_activity_tracker()
         active_users = tracker.get_active_users(hours=1)  # Show all users active within last hour
@@ -433,8 +448,7 @@ async def get_map_data(
                     ip_to_user[ip_address] = []
                 ip_to_user[ip_address].append(user)
         
-        # Parallelize IP geolocation lookups
-        ip_geolocation = get_geolocation_service()
+        # Parallelize IP geolocation lookups (database already checked above)
         location_tasks = [ip_geolocation.get_location(ip) for ip in ip_addresses]
         locations = await asyncio.gather(*location_tasks, return_exceptions=True)
         
@@ -444,8 +458,8 @@ async def get_map_data(
         city_to_location = {}  # {city_name: location_info}
         
         for ip_address, location in zip(ip_addresses, locations):
-            # Skip failed lookups and fallback locations
-            if isinstance(location, Exception) or not location or location.get('is_fallback'):
+            # Skip only failed lookups (include fallback Beijing locations)
+            if isinstance(location, Exception) or not location:
                 continue
             
             city = location.get('city', '')
@@ -537,7 +551,8 @@ async def get_map_data(
         
         result = {
             "map_data": map_data,  # For province highlighting
-            "flag_data": flag_data  # For city flags (active session indicators)
+            "flag_data": flag_data,  # For city flags (active session indicators)
+            "database_loading": False  # Database is ready
         }
         
         # Cache the result
@@ -563,7 +578,8 @@ async def get_map_data(
         return {
             "map_data": [],
             "series_data": [],
-            "flag_data": []
+            "flag_data": [],
+            "database_loading": False  # Error occurred, not a loading state
         }
 
 

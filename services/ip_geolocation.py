@@ -26,6 +26,7 @@ import json
 import logging
 import os
 import ipaddress
+import threading
 from pathlib import Path
 from typing import Optional, Dict
 from datetime import datetime, timezone
@@ -85,6 +86,15 @@ class IPGeolocationService:
         self.patch_cache = {}  # Patch override cache
         self._init_database()
         self._load_patch_cache()
+    
+    def is_ready(self) -> bool:
+        """
+        Check if the geolocation database is ready for lookups.
+        
+        Returns:
+            True if at least IPv4 database is loaded, False otherwise
+        """
+        return self.searcher_v4 is not None
     
     def _init_database(self):
         """Initialize ip2region xdb databases (IPv4 and IPv6)."""
@@ -642,13 +652,22 @@ class IPGeolocationService:
         return default_location
 
 
-# Global singleton instance
+# Global singleton instance with thread-safe initialization
 _geolocation_service: Optional[IPGeolocationService] = None
+_geolocation_lock = threading.Lock()
 
 
 def get_geolocation_service() -> IPGeolocationService:
-    """Get global IP geolocation service instance."""
+    """
+    Get global IP geolocation service instance (thread-safe singleton).
+    
+    Uses double-checked locking pattern to ensure only one instance is created
+    even when multiple requests initialize the service simultaneously during startup.
+    """
     global _geolocation_service
     if _geolocation_service is None:
-        _geolocation_service = IPGeolocationService()
+        with _geolocation_lock:
+            # Double-check after acquiring lock (another thread might have created it)
+            if _geolocation_service is None:
+                _geolocation_service = IPGeolocationService()
     return _geolocation_service

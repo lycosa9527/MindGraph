@@ -201,6 +201,7 @@ class DashscopeRateLimiter:
             )
         
         wait_start = None
+        last_log_time = None  # Track last periodic log time
         
         # Lua script for atomic check-and-increment
         # This prevents race conditions where multiple requests check limits
@@ -322,7 +323,14 @@ class DashscopeRateLimiter:
                             redis.hincrby(RATE_STATS_KEY, "total_waits", 1)
                         except Exception as e:
                             logger.warning(f"[RateLimiter] Failed to update wait stats: {e}")
-                        logger.debug(f"[RateLimiter] Waited {wait_duration:.2f}s before acquiring")
+                        # Log at INFO level if wait was significant (>1s), DEBUG otherwise
+                        if wait_duration > 1.0:
+                            logger.info(
+                                f"[RateLimiter] {self.provider or 'unknown'} {self.endpoint or ''} "
+                                f"Waited {wait_duration:.2f}s before acquiring rate limit slot"
+                            )
+                        else:
+                            logger.debug(f"[RateLimiter] Waited {wait_duration:.2f}s before acquiring")
                     
                     # Get current stats for debug log
                     try:
@@ -346,17 +354,29 @@ class DashscopeRateLimiter:
                     
                     if wait_start is None:
                         wait_start = time.time()
+                        last_log_time = wait_start
                         self._local_total_waits += 1
                         if limit_type == 'concurrent_limit':
-                            logger.debug(
-                                f"[RateLimiter] Concurrent limit reached "
-                                f"({current_value}/{self.concurrent_limit}), waiting..."
+                            logger.info(
+                                f"[RateLimiter] {self.provider or 'unknown'} {self.endpoint or ''} "
+                                f"Concurrent limit reached ({current_value}/{self.concurrent_limit}), waiting..."
                             )
                         elif limit_type == 'qpm_limit':
                             logger.warning(
-                                f"[RateLimiter] QPM limit reached "
-                                f"({current_value}/{self.qpm_limit}), waiting..."
+                                f"[RateLimiter] {self.provider or 'unknown'} {self.endpoint or ''} "
+                                f"QPM limit reached ({current_value}/{self.qpm_limit}), waiting..."
                             )
+                    
+                    # Log periodic updates during long waits (every 5 seconds)
+                    wait_duration = time.time() - wait_start
+                    current_time = time.time()
+                    if wait_duration > 5.0 and (last_log_time is None or current_time - last_log_time >= 5.0):
+                        logger.warning(
+                            f"[RateLimiter] {self.provider or 'unknown'} {self.endpoint or ''} "
+                            f"Still waiting for {limit_type} ({current_value}/{self.concurrent_limit if limit_type == 'concurrent_limit' else self.qpm_limit}), "
+                            f"waited {wait_duration:.1f}s..."
+                        )
+                        last_log_time = current_time
                     
                     # Wait before retrying
                     await asyncio.sleep(0.1 if limit_type == 'concurrent_limit' else 1.0)

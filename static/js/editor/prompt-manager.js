@@ -202,29 +202,94 @@ class PromptManager {
             });
             
             if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            
-            const data = await response.json();
-            
-            // Check for prompt too complex error - show guidance modal
-            if (data.error_type === 'prompt_too_complex' || data.show_guidance) {
+                // Try to get error message from response body
+                let errorMessage = null;
+                try {
+                    const errorData = await response.json();
+                    errorMessage = errorData.detail || errorData.error || errorData.message;
+                } catch (e) {
+                    // If JSON parsing fails, use status-based message
+                    logger.debug('PromptManager', 'Could not parse error response as JSON', e);
+                }
+                
                 // Hide loading spinner
                 this.hideLoadingSpinner();
                 
                 // Re-enable send button
                 this.sendBtn.disabled = false;
                 
-                // Show friendly guidance modal
-                if (window.modalManager) {
-                    window.modalManager.showPromptGuidance(language);
-                } else {
-                    // Fallback to notification if modal manager not available
+                // Show specific error message based on status code or response
+                if (errorMessage) {
+                    // Use error message from backend if available
+                    this.showNotification(errorMessage, 'error', 8000);
+                } else if (response.status === 400) {
+                    // Bad request - user input issue
                     const errorMsg = language === 'zh' 
-                        ? '您的指令有点复杂，请尝试使用更简单明确的描述，包括主题和想做什么。'
-                        : 'Your prompt is a bit complex. Please try using simpler and clearer instructions with a topic and what you want to do.';
-                    window.notificationManager?.show(errorMsg, 'warning', 6000);
+                        ? '请求无效，请检查您的输入后重试。'
+                        : 'Invalid request. Please check your input and try again.';
+                    this.showNotification(errorMsg, 'error', 8000);
+                } else if (response.status === 401) {
+                    // Unauthorized
+                    const errorMsg = language === 'zh' 
+                        ? '身份验证失败，请重新登录。'
+                        : 'Authentication failed. Please log in again.';
+                    this.showNotification(errorMsg, 'error', 8000);
+                } else if (response.status === 429) {
+                    // Rate limited
+                    const errorMsg = language === 'zh' 
+                        ? '请求过于频繁，请稍后再试。'
+                        : 'Too many requests. Please try again later.';
+                    this.showNotification(errorMsg, 'warning', 8000);
+                } else if (response.status >= 500) {
+                    // Server error
+                    const errorMsg = language === 'zh' 
+                        ? '服务器错误，请稍后重试。'
+                        : 'Server error. Please try again later.';
+                    this.showNotification(errorMsg, 'error', 8000);
+                } else {
+                    // Other HTTP errors
+                    const errorMsg = language === 'zh' 
+                        ? '生成失败，请重试。'
+                        : 'Generation failed, please try again.';
+                    this.showNotification(errorMsg, 'error', 8000);
                 }
+                return;
+            }
+            
+            const data = await response.json();
+            
+            // Check if diagram type is concept_map - show notification that it will be released in January 2026
+            const diagramType = data.diagram_type || data.type;
+            if (diagramType === 'concept_map') {
+                // Hide loading spinner
+                this.hideLoadingSpinner();
+                
+                // Re-enable send button
+                this.sendBtn.disabled = false;
+                
+                // Show notification
+                const notificationMsg = language === 'zh' 
+                    ? '概念图功能将于2026年1月发布，敬请期待。'
+                    : 'Concept map feature will be released in January 2026, please wait.';
+                this.showNotification(notificationMsg, 'info', 8000);
+                return;
+            }
+            
+            // Check for prompt too complex error or unable to understand - show notification
+            if (data.success === false || data.error_type === 'prompt_too_complex' || data.show_guidance || 
+                data.error === 'Unable to understand the request' || 
+                (data.error && data.error.toLowerCase().includes('unable to understand'))) {
+                // Hide loading spinner
+                this.hideLoadingSpinner();
+                
+                // Re-enable send button
+                this.sendBtn.disabled = false;
+                
+                // Show notification with specific message
+                const errorMsg = language === 'zh' 
+                    ? '无法理解您的意图，请更具体地说明图表类型和主题，或点击下方的图表卡片。'
+                    : 'Unable to process user\'s intention, please be more specific about the diagram type and topic, or click the diagrams card below.';
+                this.showNotification(errorMsg, 'warning', 8000);
                 return;
             }
             
@@ -261,16 +326,45 @@ class PromptManager {
             // Hide loading spinner
             this.hideLoadingSpinner();
             
-            // Show error notification
-            this.showNotification(
-                window.languageManager?.currentLanguage === 'zh' 
-                    ? '生成失败，请重试' 
-                    : 'Generation failed, please try again',
-                'error'
-            );
-            
             // Re-enable send button
             this.sendBtn.disabled = false;
+            
+            // Determine error type and show specific notification
+            const language = window.languageManager?.currentLanguage || 'en';
+            let errorMessage = null;
+            
+            // Check if it's a network error (fetch failed, no internet, etc.)
+            if (error.name === 'TypeError' && error.message.includes('fetch')) {
+                errorMessage = language === 'zh' 
+                    ? '网络连接失败，请检查您的网络连接后重试。'
+                    : 'Network connection failed. Please check your internet connection and try again.';
+            } else if (error.message && error.message.includes('HTTP error')) {
+                // HTTP error was already handled above, but if it reaches here, show generic message
+                errorMessage = language === 'zh' 
+                    ? '服务器响应错误，请稍后重试。'
+                    : 'Server responded with an error. Please try again later.';
+            } else if (error.message) {
+                // Use error message from backend if available
+                // Check if it's already a user-friendly message
+                if (error.message.includes('Unable to process') || 
+                    error.message.includes('无法理解') ||
+                    error.message.includes('concept map') ||
+                    error.message.includes('概念图')) {
+                    errorMessage = error.message;
+                } else {
+                    // Generic error message
+                    errorMessage = language === 'zh' 
+                        ? '生成失败，请重试。'
+                        : 'Generation failed, please try again.';
+                }
+            } else {
+                // Unknown error
+                errorMessage = language === 'zh' 
+                    ? '生成失败，请重试。'
+                    : 'Generation failed, please try again.';
+            }
+            
+            this.showNotification(errorMessage, 'error', 8000);
         }
     }
     
@@ -809,8 +903,8 @@ class PromptManager {
                 logger.info('PromptManager', 'Triggering auto-complete with all models');
             }
             
-            // Count of models to run (4 models: qwen, deepseek, kimi, doubao)
-            const modelCount = excludeModel ? 3 : 4;
+            // Count of models to run (3 models: qwen, deepseek, doubao - Kimi removed due to Volcengine load issues)
+            const modelCount = excludeModel ? 2 : 3;
             
             // Show info notification
             this.showNotification(

@@ -135,6 +135,9 @@ def refresh_wal_checkpoint_lock() -> bool:
     """
     Refresh the WAL checkpoint lock TTL if held by this worker.
     
+    Uses atomic Lua script to check-and-refresh in one operation,
+    preventing race conditions where lock could be lost between check and refresh.
+    
     Returns:
         True if lock refreshed, False if not held by this worker
     """
@@ -153,15 +156,25 @@ def refresh_wal_checkpoint_lock() -> bool:
         return False
     
     try:
-        # Check if we still hold the lock
-        holder = redis.get(WAL_CHECKPOINT_LOCK_KEY)
-        if holder != _wal_checkpoint_lock_id:
+        # Atomic check-and-refresh using Lua script
+        # Only refreshes TTL if current holder matches our ID
+        lua_script = """
+        if redis.call("get", KEYS[1]) == ARGV[1] then
+            redis.call("expire", KEYS[1], ARGV[2])
+            return 1
+        else
+            return 0
+        end
+        """
+        result = redis.eval(lua_script, 1, WAL_CHECKPOINT_LOCK_KEY, _wal_checkpoint_lock_id, WAL_CHECKPOINT_LOCK_TTL)
+        
+        if result == 1:
+            return True
+        else:
+            # Lock not held by us - check who holds it
+            holder = redis.get(WAL_CHECKPOINT_LOCK_KEY)
             logger.debug(f"[Database] WAL checkpoint lock lost! Holder: {holder}, our ID: {_wal_checkpoint_lock_id}")
             return False
-        
-        # Refresh TTL
-        redis.expire(WAL_CHECKPOINT_LOCK_KEY, WAL_CHECKPOINT_LOCK_TTL)
-        return True
         
     except Exception as e:
         logger.debug(f"[Database] WAL checkpoint lock refresh failed: {e}")

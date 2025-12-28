@@ -209,10 +209,11 @@ CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" - do NOT c
             if isinstance(response, dict):
                 spec = response
             else:
-                # Try to extract JSON from string response
+                # Try to extract JSON from string response with partial recovery enabled
+                # This allows recovery from corrupted JSON structures
                 response_str = str(response)
                 logger.debug(f"TreeMapAgent: Raw LLM response: {response_str[:500]}...")
-                spec = extract_json_from_response(response_str)
+                spec = extract_json_from_response(response_str, allow_partial=True)
                 
                 # Check if we got a non-JSON response error
                 if isinstance(spec, dict) and spec.get('_error') == 'non_json_response':

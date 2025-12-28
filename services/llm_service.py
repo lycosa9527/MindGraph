@@ -271,8 +271,19 @@ class LLMService:
             rate_limiter = self._get_rate_limiter(model, actual_model, provider)
             
             if rate_limiter:
+                # Time rate limiter operations to diagnose delays
+                rate_limit_start = time.time()
                 async with rate_limiter:
+                    rate_limit_duration = time.time() - rate_limit_start
+                    # Always log rate limiter timing for Kimi to diagnose delays
+                    if model == 'kimi' or rate_limit_duration > 0.1:
+                        logger.info(
+                            f"[LLMService] Rate limiter acquire: {rate_limit_duration:.3f}s "
+                            f"for {model} ({actual_model})"
+                        )
+                    
                     # Execute with retry and timeout
+                    api_start = time.time()
                     async def _call():
                         # DeepSeek and Kimi use async_chat_completion
                         if hasattr(client, 'async_chat_completion'):
@@ -296,6 +307,13 @@ class LLMService:
                         error_handler.with_retry(_call),
                         timeout=timeout
                     )
+                    api_duration = time.time() - api_start
+                    # Always log API timing for Kimi to diagnose delays
+                    if model == 'kimi' or api_duration > 2.0:
+                        logger.info(
+                            f"[LLMService] API call duration: {api_duration:.2f}s "
+                            f"for {model} ({actual_model})"
+                        )
             else:
                 # No rate limiting
                 async def _call():
@@ -1262,7 +1280,7 @@ class LLMService:
         
         Args:
             prompt: Prompt to send to all LLMs
-            models: List of model names (default: ['qwen', 'deepseek', 'kimi', 'doubao'])
+            models: List of model names (default: ['qwen', 'deepseek', 'doubao'])
             temperature: Sampling temperature (None uses model default)
             max_tokens: Maximum tokens to generate
             timeout: Per-LLM timeout in seconds (None uses default)
@@ -1283,7 +1301,7 @@ class LLMService:
         Example:
             async for chunk in llm_service.stream_progressive(
                 prompt="Generate observations about cars",
-                models=['qwen', 'deepseek', 'kimi', 'doubao']
+                models=['qwen', 'deepseek', 'doubao']
             ):
                 if chunk['event'] == 'token':
                     print(f"{chunk['llm']}: {chunk['token']}", end='', flush=True)
@@ -1293,8 +1311,9 @@ class LLMService:
                     print(f"\n{chunk['llm']} error: {chunk['error']}")
         """
         # NOTE: Hunyuan disabled due to 5 concurrent connection limit
+        # NOTE: Kimi removed from node palette default - Volcengine server cannot handle load
         if models is None:
-            models = ['qwen', 'deepseek', 'kimi', 'doubao']
+            models = ['qwen', 'deepseek', 'doubao']
         
         # Map logical models to physical models (each DeepSeek independently selects provider)
         physical_models = models

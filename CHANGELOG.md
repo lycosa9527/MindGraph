@@ -7,6 +7,189 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.37.39] - 2025-01-20 - Redis Distributed Lock Race Condition Fixes
+
+### Fixed
+
+- **Backup Scheduler Lock Race Condition** (`services/backup_scheduler.py`)
+  - Fixed non-atomic lock refresh operation that could allow multiple workers to run backups simultaneously
+  - Replaced separate check-then-refresh operations with atomic Lua script for check-and-refresh in one operation
+  - Changed fallback behavior: when Redis unavailable, backup scheduler now fails safely (returns False) instead of allowing all workers to proceed
+  - Added lock verification at start of `create_backup()` function as final safety check
+  - Removed workaround 5-minute recent backup check (proper atomic lock prevents duplicates)
+  - **Impact**: Prevents duplicate backups from race conditions in multi-worker deployments
+
+- **WAL Checkpoint Lock Race Condition** (`config/database.py`)
+  - Fixed non-atomic lock refresh in `refresh_wal_checkpoint_lock()` function
+  - Replaced separate check-then-refresh operations with atomic Lua script
+  - **Impact**: Prevents multiple workers from checkpointing WAL simultaneously, reducing database contention
+
+- **Temp Image Cleanup Lock Expiration** (`services/temp_image_cleaner.py`)
+  - Added `refresh_cleanup_lock()` function with atomic Lua script for lock refresh
+  - Added lock refresh before each cleanup cycle to prevent lock expiration during long scheduler runs
+  - Lock TTL is 10 minutes, scheduler runs hourly - refresh prevents another worker from acquiring lock mid-cycle
+  - **Impact**: Ensures only one worker cleans temp images, preventing duplicate cleanup operations
+
+### Technical Details
+
+- **Atomic Operations**: All lock refresh operations now use Redis Lua scripts to atomically check lock ownership and refresh TTL in a single operation
+- **Fail-Safe Behavior**: Critical operations (backup, WAL checkpoint) now fail safely when Redis is unavailable instead of allowing duplicate execution
+- **Lock Coordination**: All periodic operations now have consistent, race-condition-free Redis lock coordination
+- **Pattern Consistency**: All modules follow the same pattern:
+  - Atomic lock acquisition using `SETNX` with TTL
+  - Atomic lock refresh using Lua scripts
+  - Fail-safe behavior when Redis unavailable (critical operations fail, non-critical operations may proceed)
+
+### Files Modified
+
+- `services/backup_scheduler.py` - Fixed atomic lock refresh, fail-safe behavior, removed workaround check
+- `config/database.py` - Fixed WAL checkpoint lock refresh to be atomic
+- `services/temp_image_cleaner.py` - Added lock refresh mechanism with atomic operations
+
+---
+
+## [4.37.38] - 2025-01-20 - Removed Kimi LLM from Auto-Complete, Node Palette, and UI
+
+### Changed
+
+- **Kimi LLM Removed from Auto-Complete and Node Palette** - Removed Kimi from multi-model generation features due to Volcengine server load issues
+  - **Auto-Complete**: Removed 'kimi' from models list in `llm-autocomplete-manager.js` (now uses: qwen, deepseek, doubao)
+  - **Node Palette**: Removed 'kimi' from `base_palette_generator.py` LLM models list (now uses: qwen, deepseek, doubao)
+  - **Toolbar Manager**: Removed 'kimi' from `LLM_CONFIG.MODELS` and `MODEL_NAMES` configuration
+  - **LLM Service**: Updated `stream_progressive()` default models to exclude Kimi
+  - **UI State Manager**: Removed Kimi from model name mappings used for auto-complete result switching
+  - Updated all related comments, docstrings, and debug logs to reflect 3 models instead of 4
+  - Fixed hardcoded model counts to use dynamic values
+
+- **Kimi Button Removed from Status Bar** (`templates/editor.html`)
+  - Removed Kimi button from editor status bar LLM selector
+  - Status bar now displays 3 LLM buttons: Qwen, DeepSeek, Doubao
+  - CSS styles for Kimi button retained but unused (button no longer exists in DOM)
+
+### Technical Details
+
+- **Active LLM Models**: Now using 3 models for auto-complete and node palette - Qwen, DeepSeek, Doubao
+- **Infrastructure Preserved**: Kimi client code, error parser, rate limiters, and configuration remain in place for potential future use (only removed from auto-complete/node palette features)
+- **Backward Compatibility**: Existing Kimi infrastructure (Volcengine routing, rate limiting) remains functional for other potential uses
+
+### Files Modified
+
+- `static/js/managers/toolbar/llm-autocomplete-manager.js` - Removed Kimi from models list, updated comments
+- `agents/node_palette/base_palette_generator.py` - Removed Kimi from LLM models list, updated docstrings
+- `static/js/editor/toolbar-manager.js` - Removed Kimi from LLM_CONFIG
+- `services/llm_service.py` - Updated stream_progressive() default models
+- `static/js/managers/toolbar/ui-state-llm-manager.js` - Removed Kimi from model name mappings
+- `static/js/editor/node-palette-manager.js` - Updated comments and loading counts
+- `static/js/editor/prompt-manager.js` - Updated model count comments
+- `static/js/managers/toolbar/llm-result-cache.js` - Updated maxResults from 4 to 3
+- `routers/node_palette.py` - Updated docstrings and debug logs
+- `templates/editor.html` - Removed Kimi button from status bar
+
+---
+
+## [4.37.37] - 2025-01-20 - Error Handling Improvements and Concept Map Blocking
+
+### Fixed
+
+- **Concept Map Renderer Function Scope Error** (`static/js/renderers/concept-map-renderer.js`)
+  - Fixed `TypeError: rectBorderPoint is not a function` error during PNG export
+  - Root cause: Helper functions (`rectBorderPoint`, `drawEdgeLabel`, `measureLabelBox`, `rectsOverlap`, `findNonOverlappingLabelPosition`) were defined inside an `if` block, making them inaccessible in the `else` (fallback radial layout) block
+  - Moved helper functions to main function scope (before layout check) so they're accessible by both rendering paths
+  - Concept map rendering now works correctly for both backend-calculated positions and fallback radial layout
+
+- **Notification Display Issue** (`static/js/editor/toolbar-manager.js`)
+  - Fixed notifications not displaying when uploading invalid files
+  - Changed `showNotification()` from event bus emit to direct `window.notificationManager.show()` call
+  - Matches pattern used in `PromptManager` for consistency
+  - Added fallback to event bus if notification manager unavailable
+
+### Added
+
+- **Concept Map Feature Blocking** (`static/js/editor/prompt-manager.js`, `static/js/editor/diagram-selector.js`)
+  - Concept map feature blocked with notification: "概念图功能将于2026年1月发布，敬请期待。" / "Concept map feature will be released in January 2026, please wait."
+  - Blocks concept map generation in prompt manager after API response
+  - Blocks concept map selection in diagram selector gallery
+  - Shows info notification and prevents further processing
+
+- **Comprehensive Error Handling in Prompt Manager** (`static/js/editor/prompt-manager.js`)
+  - Enhanced HTTP error handling with specific messages for different status codes:
+    - HTTP 400 (Bad Request): "请求无效，请检查您的输入后重试。" / "Invalid request. Please check your input and try again."
+    - HTTP 401 (Unauthorized): "身份验证失败，请重新登录。" / "Authentication failed. Please log in again."
+    - HTTP 429 (Rate Limited): "请求过于频繁，请稍后再试。" / "Too many requests. Please try again later."
+    - HTTP 500+ (Server Error): "服务器错误，请稍后重试。" / "Server error. Please try again later."
+  - Network error detection: "网络连接失败，请检查您的网络连接后重试。" / "Network connection failed. Please check your internet connection and try again."
+  - Attempts to parse error messages from backend response body (`errorData.detail`, `errorData.error`, `errorData.message`)
+  - User-friendly error messages for unclear prompts: "无法理解您的意图，请更具体地说明图表类型和主题，或点击下方的图表卡片。" / "Unable to process user's intention, please be more specific about the diagram type and topic, or click the diagrams card below."
+
+- **Enhanced Error Handling in PNG Export Endpoints** (`routers/api/png_export.py`)
+  - Improved error handling in `/api/generate_png` and `/api/generate_dingtalk` endpoints
+  - Added checks for non-JSON responses (LLM asking for more information)
+  - Added checks for invalid JSON extraction failures
+  - Added checks for error fields in spec object
+  - All errors now return user-friendly bilingual messages instead of raw error strings
+  - Consistent error message format across all error scenarios
+
+### Changed
+
+- **File Upload Restriction** (`static/js/editor/toolbar-manager.js`, `static/js/editor/language-manager.js`, `templates/editor.html`)
+  - File input now only accepts `.mg` files (removed `.json` support)
+  - HTML `accept=".mg"` attribute restricts file picker dialog
+  - JavaScript validation enforces `.mg` only
+  - Updated error messages in all languages:
+    - English: "Invalid file format. Please upload a .mg file."
+    - Chinese: "无效的文件格式。请上传 .mg 文件。"
+    - Azerbaijani: "Yanlış fayl formatı. Zəhmət olmasa .mg faylını yükləyin."
+
+- **Concept Map Notification Message** (`static/js/editor/diagram-selector.js`)
+  - Updated notification message to specify release date: "概念图功能将于2026年1月发布，敬请期待。" / "Concept map feature will be released in January 2026, please wait."
+  - Increased notification duration to 8000ms for better visibility
+
+### Removed
+
+- **Legacy API Router File** (`routers/api.py`)
+  - Deleted redundant monolithic `routers/api.py` file (2527 lines)
+  - All functionality already migrated to modular `routers/api/` package structure
+  - Updated comments in `routers/__init__.py` and `routers/api/__init__.py` to reflect modular structure
+  - No breaking changes - `from routers import api` still works correctly via package `__init__.py`
+
+### Technical Details
+
+**Error Handling Improvements:**
+- Prompt manager now handles 11 distinct error scenarios with specific user-friendly messages
+- All error messages are bilingual (Chinese/English)
+- Proper cleanup (spinner hidden, button re-enabled) in all error paths
+- Backend error messages are used when available, with fallbacks for different error types
+
+**Concept Map Blocking:**
+- Two-layer blocking: prompt manager (after API response) and diagram selector (on card click)
+- Both paths show consistent notification and prevent further processing
+- Early returns ensure no diagram generation occurs
+
+**File Upload:**
+- Browser-level restriction via HTML `accept` attribute
+- JavaScript-level validation as backup
+- Clear error messages guide users to upload correct file type
+
+---
+
+## [4.37.36] - 2025-01-20 - Public Dashboard Map Data Cache TTL Optimization
+
+### Changed
+
+- **Reduced Map Data Cache TTL** (`config/settings.py`, `env.example`)
+  - Reduced `DASHBOARD_MAP_DATA_CACHE_TTL` from 45 seconds to 20 seconds
+  - Enables faster map dot auto-refresh for more up-to-date user location data
+  - Improves real-time accuracy of active user locations on China map visualization
+  - Balance between performance and data freshness for public dashboard
+
+### Technical Details
+
+- Map data cache now refreshes every 20 seconds instead of 45 seconds
+- Reduces maximum delay for new user locations to appear on map
+- Maintains reasonable cache performance while improving user experience
+
+---
+
 ## [4.37.35] - 2025-01-20 - IP Geolocation Service Initialization Fix
 
 ### Fixed

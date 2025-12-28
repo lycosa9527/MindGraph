@@ -22,7 +22,7 @@ class LLMResultCache {
         
         // Configuration
         this.ttlMs = options.ttlMs || 10 * 60 * 1000; // 10 minutes default
-        this.maxResults = options.maxResults || 4; // Max 4 models (qwen, deepseek, kimi, doubao) - Hunyuan disabled
+        this.maxResults = options.maxResults || 3; // Max 3 models (qwen, deepseek, doubao) - Hunyuan disabled, Kimi removed due to Volcengine load issues
         
         this.logger.debug('LLMResultCache', 'Cache initialized', {
             ttlMs: this.ttlMs,

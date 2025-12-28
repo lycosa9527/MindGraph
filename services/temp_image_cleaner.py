@@ -49,6 +49,63 @@ CLEANUP_LOCK_TTL = 600  # 10 minutes - auto-release if worker crashes
 _cleanup_lock_id: Optional[str] = None  # This worker's unique lock identifier
 
 
+async def refresh_cleanup_lock() -> bool:
+    """
+    Refresh the cleanup lock TTL if held by this worker.
+    
+    Uses atomic Lua script to check-and-refresh in one operation,
+    preventing race conditions where lock could be lost between check and refresh.
+    
+    Returns:
+        True if lock refreshed, False if not held by this worker
+    """
+    global _cleanup_lock_id
+    
+    try:
+        from services.redis_client import get_redis, is_redis_available
+    except ImportError:
+        return False
+    
+    if not is_redis_available() or _cleanup_lock_id is None:
+        return False
+    
+    redis = get_redis()
+    if not redis:
+        return False
+    
+    try:
+        # Atomic check-and-refresh using Lua script
+        # Only refreshes TTL if current holder matches our ID
+        lua_script = """
+        if redis.call("get", KEYS[1]) == ARGV[1] then
+            redis.call("expire", KEYS[1], ARGV[2])
+            return 1
+        else
+            return 0
+        end
+        """
+        result = await asyncio.to_thread(
+            redis.eval,
+            lua_script,
+            1,
+            CLEANUP_LOCK_KEY,
+            _cleanup_lock_id,
+            CLEANUP_LOCK_TTL
+        )
+        
+        if result == 1:
+            return True
+        else:
+            # Lock not held by us
+            holder = await asyncio.to_thread(redis.get, CLEANUP_LOCK_KEY)
+            logger.debug(f"[Cleanup] Lock lost! Holder: {holder}, our ID: {_cleanup_lock_id}")
+            return False
+        
+    except Exception as e:
+        logger.debug(f"[Cleanup] Lock refresh failed: {e}")
+        return False
+
+
 def _generate_cleanup_lock_id() -> str:
     """Generate unique lock ID for this worker: {pid}:{uuid}"""
     return f"{os.getpid()}:{uuid.uuid4().hex[:8]}"
@@ -201,6 +258,15 @@ async def start_cleanup_scheduler(interval_hours: int = 1):
     while True:
         try:
             await asyncio.sleep(interval_seconds)
+            
+            # Refresh lock before cleanup to prevent expiration
+            if not await refresh_cleanup_lock():
+                logger.warning("[Cleanup] Lost cleanup lock, stopping scheduler on this worker")
+                # Try to reacquire lock
+                if not await acquire_cleanup_lock():
+                    continue  # Another worker has it, keep waiting
+                    # Lock reacquired, continue with cleanup
+            
             await cleanup_temp_images()
         except asyncio.CancelledError:
             logger.info("[Cleanup] Cleanup scheduler stopped")

@@ -3,8 +3,9 @@
  * ==========================
  * 
  * Orchestrator for LLM-based diagram auto-completion with multi-model support.
- * Coordinates with multiple LLM providers (Qwen, DeepSeek, Kimi, Doubao)
+ * Coordinates with multiple LLM providers (Qwen, DeepSeek, Doubao)
  * using sub-managers for specific concerns.
+ * NOTE: Kimi removed due to Volcengine server load issues
  * 
  * Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
  * All Rights Reserved
@@ -352,7 +353,8 @@ class LLMAutoCompleteManager {
             // Run multi-model generation
             // Check if a model should be excluded (e.g., already used for initial generation)
             // NOTE: Hunyuan disabled due to 5 concurrent connection limit
-            let models = ['qwen', 'deepseek', 'kimi', 'doubao'];
+            // NOTE: Kimi removed from auto-complete - Volcengine server cannot handle load
+            let models = ['qwen', 'deepseek', 'doubao'];
             
             // Catapult mode: exclude model that was already used for initial generation
             if (window._autoCompleteExcludeModel) {
@@ -551,7 +553,7 @@ class LLMAutoCompleteManager {
                     'error'
                 );
             } else {
-                this.logger.info('LLMAutoCompleteManager', `${successCount}/4 models succeeded`);
+                this.logger.info('LLMAutoCompleteManager', `${successCount}/${totalCount} models succeeded`);
                 this.toolbarManager.showNotification(
                     language === 'zh' ? '内容生成成功' : 'Content generated successfully',
                     'success'
