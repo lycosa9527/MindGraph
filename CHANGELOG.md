@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.37.35] - 2025-01-20 - IP Geolocation Service Initialization Fix
+
+### Fixed
+
+- **IP Geolocation Database Initialization Error** (`services/ip_geolocation.py`)
+  - Fixed `new_with_file_only() missing 1 required positional argument: 'db_path'` error
+  - Root cause: py-ip2region v3.0.2+ requires `version` parameter (IPv4/IPv6 Version object) as first argument
+  - Updated IPv4 database initialization: `new_with_file_only(IPv4, str(DB_FILE_PATH_V4))`
+  - Updated IPv6 database initialization: `new_with_file_only(IPv6, str(DB_FILE_PATH_V6))`
+  - Service now initializes correctly without errors in multi-worker setups
+  - IP lookups now work properly (verified with test for IP 223.104.40.135)
+
+### Added
+
+- **IP Geolocation Service Test Suite** (`tests/services/test_ip_geolocation.py`, `tests/test_ip_lookup.py`)
+  - Added comprehensive test suite for IP geolocation service
+  - Tests service initialization, database loading, and IP lookup functionality
+  - Includes specific test for IP 223.104.40.135 that was failing in logs
+  - Standalone test script for quick verification without pytest dependencies
+
+---
+
 ## [4.37.34] - 2025-01-20 - Public Dashboard Activity Panel and China Map Improvements
 
 ### Fixed

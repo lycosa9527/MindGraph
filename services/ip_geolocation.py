@@ -103,7 +103,7 @@ class IPGeolocationService:
                     # In multi-worker setups, this prevents ~45MB memory duplication per worker
                     # Performance is still good due to OS page caching and Redis caching (30-day TTL)
                     # Based on: https://github.com/lionsoul2014/ip2region/tree/master/binding/python
-                    self.searcher_v4 = new_with_file_only(str(DB_FILE_PATH_V4))
+                    self.searcher_v4 = new_with_file_only(IPv4, str(DB_FILE_PATH_V4))
                     
                     file_size_mb = DB_FILE_PATH_V4.stat().st_size / 1024 / 1024
                     logger.info(f"[IPGeo] IPv4 database initialized from {DB_FILE_PATH_V4} ({file_size_mb:.2f} MB, file mode)")
@@ -117,7 +117,7 @@ class IPGeolocationService:
                 try:
                     # Use file-only mode to avoid loading entire database into memory per worker
                     # In multi-worker setups, this prevents ~35MB memory duplication per worker
-                    self.searcher_v6 = new_with_file_only(str(DB_FILE_PATH_V6))
+                    self.searcher_v6 = new_with_file_only(IPv6, str(DB_FILE_PATH_V6))
                     
                     file_size_mb = DB_FILE_PATH_V6.stat().st_size / 1024 / 1024
                     logger.info(f"[IPGeo] IPv6 database initialized from {DB_FILE_PATH_V6} ({file_size_mb:.2f} MB, file mode)")
