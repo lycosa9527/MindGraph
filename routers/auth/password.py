@@ -20,7 +20,7 @@ from models.auth import User
 from models.messages import Messages
 from models.requests import ResetPasswordWithSMSRequest
 from services.redis_user_cache import user_cache
-from utils.auth import hash_password
+from utils.auth import hash_password, get_client_ip
 
 from .dependencies import get_language_dependency
 from .sms import _verify_and_consume_sms_code
@@ -98,7 +98,7 @@ async def reset_password_with_sms(
         logger.warning(f"[Auth] Failed to update cache after password reset: {e}")
     
     # Get client IP address
-    client_ip = http_request.client.host if http_request.client else "unknown"
+    client_ip = get_client_ip(http_request) if http_request else "unknown"
     
     logger.info(f"Password reset via SMS for user: {user.phone} (ID: {user.id}, Method: SMS, IP: {client_ip})")
     

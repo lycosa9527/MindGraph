@@ -225,7 +225,7 @@ async def login(
     
     # Session management: Invalidate old sessions before creating new one
     session_manager = get_session_manager()
-    client_ip = http_request.client.host if http_request.client else "unknown"
+    client_ip = get_client_ip(http_request) if http_request else "unknown"
     old_token_hash = session_manager.get_session_token(user.id)
     session_manager.invalidate_user_sessions(user.id, old_token_hash=old_token_hash, ip_address=client_ip)
     
@@ -323,7 +323,7 @@ async def login_with_sms(
     
     # Session management: Invalidate old sessions before creating new one
     session_manager = get_session_manager()
-    client_ip = http_request.client.host if http_request.client else "unknown"
+    client_ip = get_client_ip(http_request) if http_request else "unknown"
     old_token_hash = session_manager.get_session_token(user.id)
     session_manager.invalidate_user_sessions(user.id, old_token_hash=old_token_hash, ip_address=client_ip)
     

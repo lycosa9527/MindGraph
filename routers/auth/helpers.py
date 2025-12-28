@@ -27,7 +27,7 @@ from sqlalchemy.orm import Session
 
 from models.auth import User
 from services.redis_session_manager import get_session_manager
-from utils.auth import create_access_token, is_https
+from utils.auth import create_access_token, is_https, get_client_ip
 
 logger = logging.getLogger(__name__)
 
@@ -102,8 +102,8 @@ def track_user_activity(
         
         tracker = get_activity_tracker()
         ip_address = None
-        if request and request.client:
-            ip_address = request.client.host
+        if request:
+            ip_address = get_client_ip(request)
         
         # For login activities, start a new session (or reuse existing)
         # For other activities, just record (will find/create session automatically)
@@ -287,7 +287,7 @@ async def create_user_session(
         Tuple of (token, client_ip)
     """
     session_manager = get_session_manager()
-    client_ip = http_request.client.host if http_request.client else "unknown"
+    client_ip = get_client_ip(http_request) if http_request else "unknown"
     old_token_hash = session_manager.get_session_token(user.id)
     session_manager.invalidate_user_sessions(user.id, old_token_hash=old_token_hash, ip_address=client_ip)
     

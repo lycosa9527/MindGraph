@@ -7,6 +7,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.37.33] - 2025-01-20 - Fix IP Address Capture for Public Dashboard Geolocation
+
+### Fixed
+
+- **IP Address Capture Behind Reverse Proxy** (`routers/auth/helpers.py`, `routers/auth/login.py`, `routers/auth/registration.py`, `routers/auth/password.py`)
+  - Fixed IP address extraction to use `get_client_ip()` instead of `request.client.host` in all authentication endpoints
+  - Resolves issue where all users showed as Beijing in public dashboard due to proxy IPs being captured
+  - `get_client_ip()` correctly handles reverse proxy headers (X-Forwarded-For, X-Real-IP) to extract real client IPs
+  - Affected functions: `track_user_activity()`, `create_user_session()`, login endpoints, registration endpoints, password reset
+  - Real client IPs are now properly stored in activity tracker sessions for accurate geolocation
+
+### Technical Details
+
+**Root Cause:**
+- Application runs behind nginx reverse proxy
+- `request.client.host` returns proxy IP (e.g., `127.0.0.1`, `::1`) instead of real client IP
+- Real client IPs are in `X-Forwarded-For` or `X-Real-IP` headers
+- Proxy IPs cannot be geolocated, causing all lookups to fail and return Beijing fallback
+
+**Solution:**
+- Use `get_client_ip()` helper function which checks headers in order:
+  1. `X-Forwarded-For` header (most common, takes leftmost IP = original client)
+  2. `X-Real-IP` header (nginx-specific)
+  3. `request.client.host` (fallback for direct connections)
+- This is the standard industry approach for reverse proxy IP extraction (RFC 7239)
+
+**Files Changed:**
+- `routers/auth/helpers.py`: Fixed `track_user_activity()` and `create_user_session()`
+- `routers/auth/login.py`: Fixed captcha and SMS login endpoints
+- `routers/auth/registration.py`: Fixed SMS and captcha registration endpoints
+- `routers/auth/password.py`: Fixed password reset endpoint
+
+**Impact:**
+- Real client IPs are now captured and stored correctly
+- IP geolocation lookups will succeed with real IPs
+- Public dashboard will show users in correct locations instead of all Beijing
+- Existing sessions will continue with old IPs until they expire (30 minutes)
+- New sessions will use correct IPs immediately after deployment
+
+---
+
 ## [4.37.32] - 2025-12-28 - IP Geolocation Fallback Handling and Map Visualization Improvements
 
 ### Fixed

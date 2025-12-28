@@ -23,7 +23,7 @@ from config.database import get_db
 from models.messages import Messages
 from models.auth import Organization, User
 from models.requests import RegisterRequest, RegisterWithSMSRequest
-from utils.auth import AUTH_MODE, hash_password
+from utils.auth import AUTH_MODE, hash_password, get_client_ip
 from utils.invitations import INVITE_PATTERN
 from services.redis_user_cache import user_cache
 from services.redis_org_cache import org_cache
@@ -215,7 +215,7 @@ async def register(
     
     # Session management: Invalidate old sessions before creating new one
     session_manager = get_session_manager()
-    client_ip = http_request.client.host if http_request.client else "unknown"
+    client_ip = get_client_ip(http_request) if http_request else "unknown"
     old_token_hash = session_manager.get_session_token(new_user.id)
     session_manager.invalidate_user_sessions(new_user.id, old_token_hash=old_token_hash, ip_address=client_ip)
     
@@ -408,7 +408,7 @@ async def register_with_sms(
     
     # Session management: Invalidate old sessions before creating new one
     session_manager = get_session_manager()
-    client_ip = http_request.client.host if http_request.client else "unknown"
+    client_ip = get_client_ip(http_request) if http_request else "unknown"
     old_token_hash = session_manager.get_session_token(new_user.id)
     session_manager.invalidate_user_sessions(new_user.id, old_token_hash=old_token_hash, ip_address=client_ip)
     
