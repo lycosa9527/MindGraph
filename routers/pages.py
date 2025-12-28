@@ -209,9 +209,23 @@ async def editor(request: Request):
         elif AUTH_MODE == "bayi":
             auth_cookie = request.cookies.get("access_token")
             user = get_user_from_cookie(auth_cookie, db) if auth_cookie else None
+            user_phone = None  # Initialize for use later
             if user:
+                # Access all needed attributes BEFORE expunging/closing session
+                try:
+                    user_phone = user.phone
+                except Exception as e:
+                    # If accessing phone fails (session issue), log and continue
+                    logger.warning(f"Failed to access user.phone in bayi mode: {e}")
+                    user_phone = None
                 # Detach user from session so it can be used after closing
-                db.expunge(user)
+                # Cached users are already detached, so wrap in try-except
+                try:
+                    if user in db:
+                        db.expunge(user)
+                except Exception:
+                    # User might already be detached (from cache) - ignore
+                    pass
             
             if not user:
                 # Check IP whitelist for passkey-free access
@@ -323,6 +337,11 @@ async def editor(request: Request):
                     jwt_token = create_access_token(bayi_user)
                     user_is_admin = is_admin(bayi_user) if bayi_user else False
                     
+                    # Session management: Store session in Redis (allow_multiple=True for shared account)
+                    # This allows multiple teachers to use the system simultaneously from whitelisted IPs
+                    session_manager = get_session_manager()
+                    session_manager.store_session(bayi_user.id, jwt_token, allow_multiple=True)
+                    
                     # Detach bayi_user from session after accessing all needed attributes
                     try:
                         if bayi_user in db:
@@ -367,9 +386,8 @@ async def editor(request: Request):
                 db.close()
                 return RedirectResponse(url="/demo", status_code=303)
             
-            # Access user.phone before closing session to ensure it's loaded
-            user_phone = user.phone if user else None
-            if user_phone:
+            # User was found from cookie - user_phone was already accessed above
+            if user and user_phone:
                 logger.debug(f"Bayi mode: User {user_phone} accessing /editor")
         
         # SECURITY: Check if user is admin for server-side button rendering (defense-in-depth)
@@ -394,8 +412,15 @@ async def editor(request: Request):
                     if cookie_user:
                         # Cached users are already detached, DB users need to be detached
                         # Access all needed attributes first (while session is open for DB users)
-                        user_phone = cookie_user.phone
-                        admin_status = is_admin(cookie_user)
+                        # Use getattr with default to safely access phone attribute
+                        try:
+                            user_phone = cookie_user.phone
+                            admin_status = is_admin(cookie_user)
+                        except Exception as e:
+                            # If accessing attributes fails (session issue), log and skip admin check
+                            logger.warning(f"Failed to access user attributes for admin check: {e}")
+                            user_phone = None
+                            admin_status = False
                         
                         # Only expunge if user is actually in this session (not from cache)
                         try:
@@ -406,7 +431,7 @@ async def editor(request: Request):
                             pass
                         
                         # Log admin check for debugging (especially in bayi mode)
-                        if AUTH_MODE == "bayi":
+                        if AUTH_MODE == "bayi" and user_phone:
                             logger.debug(f"Bayi mode admin check: user={user_phone}, is_admin={admin_status}")
                         if admin_status:
                             user_is_admin = True

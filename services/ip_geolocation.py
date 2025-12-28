@@ -99,43 +99,30 @@ class IPGeolocationService:
             # Initialize IPv4 database
             if DB_FILE_PATH_V4.exists():
                 try:
-                    # Load database into memory using buffer mode (recommended)
+                    # Use file-only mode to avoid loading entire database into memory per worker
+                    # In multi-worker setups, this prevents ~45MB memory duplication per worker
+                    # Performance is still good due to OS page caching and Redis caching (30-day TTL)
                     # Based on: https://github.com/lionsoul2014/ip2region/tree/master/binding/python
-                    with open(DB_FILE_PATH_V4, 'rb') as f:
-                        buf_v4 = f.read()
-                    
-                    # Get version from header
-                    header = load_header_from_file(str(DB_FILE_PATH_V4))
-                    version = IPv4 if header.version == 3 else IPv6  # Version 3 = IPv4 structure
-                    
-                    # Create searcher with buffer (loads into memory)
-                    self.searcher_v4 = new_with_buffer(version=version, c_buffer=buf_v4)
+                    self.searcher_v4 = new_with_file_only(str(DB_FILE_PATH_V4))
                     
                     file_size_mb = DB_FILE_PATH_V4.stat().st_size / 1024 / 1024
-                    logger.info(f"[IPGeo] IPv4 database loaded into memory from {DB_FILE_PATH_V4} ({file_size_mb:.2f} MB)")
+                    logger.info(f"[IPGeo] IPv4 database initialized from {DB_FILE_PATH_V4} ({file_size_mb:.2f} MB, file mode)")
                 except Exception as e:
-                    logger.error(f"[IPGeo] Failed to load IPv4 database: {e}", exc_info=True)
+                    logger.error(f"[IPGeo] Failed to initialize IPv4 database: {e}", exc_info=True)
             else:
                 logger.warning(f"[IPGeo] IPv4 database file not found at {DB_FILE_PATH_V4}")
             
             # Initialize IPv6 database (optional)
             if DB_FILE_PATH_V6.exists():
                 try:
-                    # Load database into memory using buffer mode
-                    with open(DB_FILE_PATH_V6, 'rb') as f:
-                        buf_v6 = f.read()
-                    
-                    # Get version from header
-                    header = load_header_from_file(str(DB_FILE_PATH_V6))
-                    version = IPv6 if header.version == 4 else IPv4  # Version 4 = IPv6 structure
-                    
-                    # Create searcher with buffer (loads into memory)
-                    self.searcher_v6 = new_with_buffer(version=version, c_buffer=buf_v6)
+                    # Use file-only mode to avoid loading entire database into memory per worker
+                    # In multi-worker setups, this prevents ~35MB memory duplication per worker
+                    self.searcher_v6 = new_with_file_only(str(DB_FILE_PATH_V6))
                     
                     file_size_mb = DB_FILE_PATH_V6.stat().st_size / 1024 / 1024
-                    logger.info(f"[IPGeo] IPv6 database loaded into memory from {DB_FILE_PATH_V6} ({file_size_mb:.2f} MB)")
+                    logger.info(f"[IPGeo] IPv6 database initialized from {DB_FILE_PATH_V6} ({file_size_mb:.2f} MB, file mode)")
                 except Exception as e:
-                    logger.warning(f"[IPGeo] Failed to load IPv6 database: {e}")
+                    logger.warning(f"[IPGeo] Failed to initialize IPv6 database: {e}")
             else:
                 logger.info(f"[IPGeo] IPv6 database not found at {DB_FILE_PATH_V6} (optional)")
             
