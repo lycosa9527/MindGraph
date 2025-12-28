@@ -391,13 +391,14 @@ class RedisActivityTracker:
         activity_type: str,
         details: Optional[Dict] = None,
         session_id: Optional[str] = None,
-        user_name: Optional[str] = None
+        user_name: Optional[str] = None,
+        ip_address: Optional[str] = None
     ):
         """Record a user activity."""
         if self._use_redis():
-            self._redis_record_activity(user_id, user_phone, activity_type, details, session_id, user_name)
+            self._redis_record_activity(user_id, user_phone, activity_type, details, session_id, user_name, ip_address)
         else:
-            self._memory_record_activity(user_id, user_phone, activity_type, details, session_id, user_name)
+            self._memory_record_activity(user_id, user_phone, activity_type, details, session_id, user_name, ip_address)
     
     def _redis_record_activity(
         self,
@@ -406,27 +407,29 @@ class RedisActivityTracker:
         activity_type: str,
         details: Optional[Dict],
         session_id: Optional[str],
-        user_name: Optional[str]
+        user_name: Optional[str],
+        ip_address: Optional[str]
     ):
         """Record activity using Redis."""
         redis = get_redis()
         if not redis:
-            return self._memory_record_activity(user_id, user_phone, activity_type, details, session_id, user_name)
+            return self._memory_record_activity(user_id, user_phone, activity_type, details, session_id, user_name, ip_address)
         
         try:
             now = get_beijing_now()
             
             # Find or create session
-            # Note: We need IP address for city flag recording, but record_activity doesn't have it
-            # So we'll get it from the session if it exists, or pass None (flag won't be recorded)
             if session_id is None:
-                # Try to get IP from existing session first
-                existing_ip = None
-                # For new sessions created here, IP won't be available, so flag won't be recorded
-                # This is acceptable - flags will be recorded when session is created with IP (e.g., on login)
-                session_id = self.start_session(user_id, user_phone, user_name=user_name, ip_address=None)
+                session_id = self.start_session(user_id, user_phone, user_name=user_name, ip_address=ip_address)
             
             session_key = f"{SESSION_PREFIX}{session_id}"
+            
+            # Get IP address from session if not provided
+            session_ip = ip_address
+            if not session_ip and redis.exists(session_key):
+                session_ip = redis.hget(session_key, "ip_address")
+                if session_ip:
+                    session_ip = session_ip.decode('utf-8') if isinstance(session_ip, bytes) else session_ip
             
             if redis.exists(session_key):
                 # Update session
@@ -434,6 +437,11 @@ class RedisActivityTracker:
                 pipe.hset(session_key, "last_activity", now.isoformat())
                 pipe.hset(session_key, "current_activity", activity_type)
                 pipe.hincrby(session_key, "activity_count", 1)
+                # Update IP address if provided and session doesn't have one
+                if session_ip and session_ip != 'unknown':
+                    existing_ip = redis.hget(session_key, "ip_address")
+                    if not existing_ip or existing_ip == b'unknown' or existing_ip == 'unknown':
+                        pipe.hset(session_key, "ip_address", session_ip)
                 # Update user_name if provided and session doesn't have one or it's empty
                 if user_name:
                     existing_name = redis.hget(session_key, "user_name")
@@ -441,6 +449,11 @@ class RedisActivityTracker:
                         pipe.hset(session_key, "user_name", user_name)
                 pipe.expire(session_key, SESSION_TTL)
                 pipe.execute()
+            
+            # Record city flag if IP address is available
+            # This ensures flags appear when users use the app, not just at login
+            if session_ip and session_ip != 'unknown':
+                self._record_city_flag_async(session_ip)
             
             # Log activity
             self._log_activity(user_id, user_phone, activity_type, details, session_id)
@@ -455,15 +468,25 @@ class RedisActivityTracker:
         activity_type: str,
         details: Optional[Dict],
         session_id: Optional[str],
-        user_name: Optional[str]
+        user_name: Optional[str],
+        ip_address: Optional[str]
     ):
         """Record activity using in-memory storage."""
         now = get_beijing_now()
         
         if session_id is None:
-            session_id = self.start_session(user_id, user_phone, user_name=user_name)
+            session_id = self.start_session(user_id, user_phone, user_name=user_name, ip_address=ip_address)
+        
+        # Get IP address from session if not provided
+        session_ip = ip_address
+        if not session_ip and session_id in self._memory_sessions:
+            session_ip = self._memory_sessions[session_id].get('ip_address')
         
         if session_id in self._memory_sessions:
+            # Update IP address if provided
+            if session_ip and session_ip != 'unknown':
+                if not self._memory_sessions[session_id].get('ip_address') or self._memory_sessions[session_id].get('ip_address') == 'unknown':
+                    self._memory_sessions[session_id]['ip_address'] = session_ip
             session = self._memory_sessions[session_id]
             session['last_activity'] = now
             session['current_activity'] = activity_type
@@ -471,6 +494,14 @@ class RedisActivityTracker:
             # Update user_name if provided and session doesn't have one or it's empty
             if user_name and (not session.get('user_name') or session.get('user_name') == ""):
                 session['user_name'] = user_name
+        
+        # Record city flag if IP address is available
+        # This ensures flags appear when users use the app, not just at login
+        if session_ip and session_ip != 'unknown':
+            self._record_city_flag_async(session_ip)
+        
+        # Log activity
+        self._log_activity(user_id, user_phone, activity_type, details, session_id)
     
     def _log_activity(
         self,
@@ -509,20 +540,34 @@ class RedisActivityTracker:
         if len(self._memory_history) > MAX_HISTORY:
             self._memory_history = self._memory_history[-MAX_HISTORY:]
     
-    def get_active_users(self) -> List[Dict]:
-        """Get list of currently active users."""
+    def get_active_users(self, hours: int = 1) -> List[Dict]:
+        """
+        Get list of currently active users.
+        
+        Args:
+            hours: Time window in hours - only return users active within this window (default: 1 hour)
+        """
         if self._use_redis():
-            return self._redis_get_active_users()
+            return self._redis_get_active_users(hours)
         else:
-            return self._memory_get_active_users()
+            return self._memory_get_active_users(hours)
     
-    def _redis_get_active_users(self) -> List[Dict]:
-        """Get active users from Redis."""
+    def _redis_get_active_users(self, hours: int = 1) -> List[Dict]:
+        """
+        Get active users from Redis.
+        
+        Args:
+            hours: Time window in hours - only return users active within this window (default: 1 hour)
+        """
         redis = get_redis()
         if not redis:
-            return self._memory_get_active_users()
+            return self._memory_get_active_users(hours)
         
         try:
+            # Calculate cutoff time (users active within last N hours)
+            now = get_beijing_now()
+            cutoff_time = now - timedelta(hours=hours)
+            
             # Scan for all session keys
             active_users = []
             cursor = 0
@@ -547,9 +592,13 @@ class RedisActivityTracker:
                                 last_activity = get_beijing_now()
                                 logger.debug(f"Invalid last_activity for session {session_data.get('session_id', 'unknown')}, using current time")
                             
+                            # Filter: Only include users active within the time window
+                            if last_activity < cutoff_time:
+                                continue  # Skip sessions inactive for longer than the window
+                            
                             # Calculate duration with error handling
                             try:
-                                duration = str(get_beijing_now() - created_at).split('.')[0]
+                                duration = str(now - created_at).split('.')[0]
                             except Exception:
                                 duration = '0:00:00'
                             
@@ -583,19 +632,31 @@ class RedisActivityTracker:
             logger.error(f"[ActivityTracker] Redis error getting active users: {e}")
             return self._memory_get_active_users()
     
-    def _memory_get_active_users(self) -> List[Dict]:
-        """Get active users from in-memory storage."""
-        now = get_beijing_now()
-        timeout = timedelta(minutes=30)
+    def _memory_get_active_users(self, hours: int = 1) -> List[Dict]:
+        """
+        Get active users from in-memory storage.
         
-        # Clean stale sessions
+        Args:
+            hours: Time window in hours - only return users active within this window (default: 1 hour)
+        """
+        now = get_beijing_now()
+        timeout = timedelta(hours=hours)  # Use configurable time window instead of fixed 30 minutes
+        
+        # Clean stale sessions (older than timeout)
         stale = [sid for sid, s in self._memory_sessions.items() 
                  if now - s['last_activity'] > timeout]
         for sid in stale:
             self.end_session(session_id=sid)
         
+        # Calculate cutoff time for filtering
+        cutoff_time = now - timeout
+        
         active_users = []
         for session_id, session in self._memory_sessions.items():
+            # Filter: Only include users active within the time window
+            if session['last_activity'] < cutoff_time:
+                continue  # Skip sessions inactive for longer than the window
+            
             user_data = {
                 'session_id': session_id,
                 'user_id': session['user_id'],

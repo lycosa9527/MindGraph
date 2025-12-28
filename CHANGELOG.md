@@ -7,6 +7,88 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.37.34] - 2025-01-20 - Public Dashboard Activity Panel and China Map Improvements
+
+### Fixed
+
+- **Critical SSE Stream Indentation Error** (`routers/public_dashboard.py`)
+  - Fixed incorrect indentation in `event_generator()` function that prevented SSE stream from working
+  - Activity panel now receives real-time updates correctly via Server-Sent Events
+  - Fixes issue where activity panel would not auto-refresh
+
+### Changed
+
+- **Simplified China Map Visualization** (`static/js/public-dashboard.js`, `routers/public_dashboard.py`)
+  - Removed colored scatter points (red/orange/yellow/green dots with user counts)
+  - Map now displays only blue pulsing dots representing active user sessions
+  - Simpler, cleaner visualization with single consistent dot type
+  - Removed `series_data` from map-data endpoint response
+
+- **Enhanced Flag Recording for Active Users** (`services/redis_activity_tracker.py`, `routers/auth/helpers.py`, `routers/public_dashboard.py`)
+  - City flags are now recorded when users perform activities, not just at login
+  - Map-data endpoint refreshes flags for ALL active user cities
+  - Ensures all active users from last hour appear on map
+  - Flags stay active as long as users are active (automatic TTL refresh)
+
+### Added
+
+- **Manual Refresh Button for Activity Panel** (`templates/public_dashboard.html`, `static/js/public-dashboard.js`, `static/css/public-dashboard.css`)
+  - Added refresh button to activity panel header
+  - Allows users to manually refresh activity list if SSE connection issues occur
+  - Button includes spinning animation during refresh
+
+- **Fallback Polling Mechanism** (`static/js/public-dashboard.js`)
+  - If SSE connection fails for >30 seconds, automatically falls back to polling `/api/public/activity-history` every 10 seconds
+  - Ensures activity panel stays updated even if SSE connection is lost
+  - Automatically stops fallback polling when SSE connection is restored
+
+### Improved
+
+- **Activity Panel Reliability** (`static/js/public-dashboard.js`)
+  - Three-layer redundancy: SSE updates + manual refresh + fallback polling
+  - Better error handling and reconnection logic
+  - Activity timestamp tracking to prevent duplicates in fallback polling
+
+- **Map Data Accuracy** (`routers/public_dashboard.py`)
+  - Enhanced flag refresh logic ensures all active users are represented
+  - Flags are refreshed for all cities with active users, not just new logins
+  - Guarantees comprehensive coverage of all users active within last hour
+
+### Technical Details
+
+**SSE Stream Fix:**
+- Fixed indentation error in `event_generator()` async function (line 718)
+- `try` block was incorrectly indented, causing syntax error
+- Now properly structured with correct exception handling
+
+**Flag Recording Improvements:**
+- `record_activity()` now accepts optional `ip_address` parameter
+- Flags recorded in both Redis and memory implementations
+- `record_city_flag()` uses `redis.setex()` which refreshes TTL if flag exists
+- Map-data endpoint proactively refreshes flags for all active user cities
+
+**Activity Panel Enhancements:**
+- SSE connection tracks failure time
+- Fallback polling starts after 30 seconds of connection failure
+- Manual refresh button provides user control
+- All three mechanisms work together for maximum reliability
+
+**Files Changed:**
+- `routers/public_dashboard.py`: Fixed SSE indentation, enhanced flag refresh, removed scatter data
+- `static/js/public-dashboard.js`: Removed scatter series, added refresh button, added fallback polling
+- `templates/public_dashboard.html`: Added refresh button UI element
+- `static/css/public-dashboard.css`: Added refresh button styles
+- `services/redis_activity_tracker.py`: Added flag recording to `record_activity()`
+- `routers/auth/helpers.py`: Updated to pass IP address to `record_activity()`
+
+**Impact:**
+- Activity panel now auto-refreshes correctly via SSE
+- Map shows all active users from last hour with single dot type
+- Better user experience with manual refresh option
+- More reliable activity updates with fallback mechanisms
+
+---
+
 ## [4.37.33] - 2025-01-20 - Fix IP Address Capture for Public Dashboard Geolocation
 
 ### Fixed

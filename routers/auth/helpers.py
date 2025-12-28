@@ -125,7 +125,8 @@ def track_user_activity(
             activity_type=activity_type,
             details=details or {},
             session_id=session_id,
-            user_name=user.name
+            user_name=user.name,
+            ip_address=ip_address
         )
     except Exception as e:
         # Don't fail the request if tracking fails

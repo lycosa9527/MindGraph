@@ -400,6 +400,9 @@ body {
 .activity-overlay .overlay-header {
     margin-bottom: 1rem;
     padding: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
 .activity-overlay .overlay-header h2 {
@@ -408,6 +411,54 @@ body {
     color: #e2e8f0;
     margin: 0;
     text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+}
+
+.activity-overlay .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.refresh-btn {
+    background: rgba(96, 165, 250, 0.1);
+    border: 1px solid rgba(96, 165, 250, 0.3);
+    border-radius: 6px;
+    padding: 0.5rem;
+    cursor: pointer;
+    color: #60a5fa;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    width: 32px;
+    height: 32px;
+}
+
+.refresh-btn:hover {
+    background: rgba(96, 165, 250, 0.2);
+    border-color: rgba(96, 165, 250, 0.5);
+    transform: scale(1.05);
+}
+
+.refresh-btn:active {
+    transform: scale(0.95);
+}
+
+.refresh-btn.refreshing {
+    animation: refreshSpin 0.6s ease-in-out;
+}
+
+.refresh-btn.refreshing svg {
+    animation: refreshSpin 0.6s ease-in-out;
+}
+
+@keyframes refreshSpin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 .live-indicator {

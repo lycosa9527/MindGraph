@@ -415,14 +415,14 @@ async def get_map_data(
                 logger.debug(f"Error reading map data cache: {e}")
     
     try:
-        # Get active users
+        # Get active users within last hour
         tracker = get_activity_tracker()
-        active_users = tracker.get_active_users()
+        active_users = tracker.get_active_users(hours=1)  # Show all users active within last hour
         
         # Filter out localhost connections
         active_users = filter_localhost_users(active_users)
         
-        # Extract unique IP addresses
+        # Extract unique IP addresses for geolocation
         ip_addresses = []
         ip_to_user = {}
         for user in active_users:
@@ -438,10 +438,10 @@ async def get_map_data(
         location_tasks = [ip_geolocation.get_location(ip) for ip in ip_addresses]
         locations = await asyncio.gather(*location_tasks, return_exceptions=True)
         
-        # Process locations and aggregate data
+        # Process locations for province highlighting and flag creation
         province_data = defaultdict(int)  # {province_name: count}
-        city_data = defaultdict(int)  # {city_name: count}
         city_coords = {}  # {city_name: [lng, lat]}
+        city_to_location = {}  # {city_name: location_info}
         
         for ip_address, location in zip(ip_addresses, locations):
             # Skip failed lookups and fallback locations
@@ -458,17 +458,24 @@ async def get_map_data(
             if province:
                 province_data[province] += user_count
             
-            # Also track city-level data for scatter points
+            # Track city coordinates and location info for flags
             location_name = city if city else province
             if location_name:
-                city_data[location_name] += user_count
-                
                 # Store coordinates (use first occurrence)
                 if location_name not in city_coords:
                     lat = location.get('lat')
                     lng = location.get('lng')
                     if lat is not None and lng is not None:
                         city_coords[location_name] = [lng, lat]
+                
+                # Store location info for flag creation
+                if location_name not in city_to_location:
+                    city_to_location[location_name] = {
+                        'city': city,
+                        'province': province,
+                        'lat': location.get('lat'),
+                        'lng': location.get('lng')
+                    }
         
         # Build map data for province highlighting (ECharts map series format)
         map_data = []
@@ -478,60 +485,34 @@ async def get_map_data(
                 "value": count
             })
         
-        # Build series data for scatter points
-        series_data = []
-        for city_name, count in city_data.items():
-            coords = city_coords.get(city_name)
-            if coords:
-                series_data.append({
-                    "name": city_name,
-                    "value": [coords[0], coords[1], count]  # [lng, lat, count]
-                })
-        
-        # Get city flags (cities with logins in last hour)
+        # Get city flags (cities with logins/activities in last hour)
         flag_tracker = get_city_flag_tracker()
         active_flags = flag_tracker.get_active_flags()
         
-        # Also ensure flags exist for cities with currently active users
-        # This handles cases where users are already logged in (no new login = no flag recorded)
-        # Build a map of city -> location info for easier lookup
-        city_to_location = {}
-        for ip_address, location in zip(ip_addresses, locations):
-            if isinstance(location, Exception) or not location or location.get('is_fallback'):
-                continue
-            city = location.get('city', '')
-            province = location.get('province', '')
-            location_name = city if city else province
-            if location_name and location_name not in city_to_location:
-                city_to_location[location_name] = {
-                    'city': city,
-                    'province': province,
-                    'lat': location.get('lat'),
-                    'lng': location.get('lng')
-                }
-        
-        # Create flags for active user cities that don't have flags yet
+        # Refresh/create flags for ALL cities with currently active users
+        # This ensures flags stay active as long as users are active, and all active users are represented
+        # record_city_flag() refreshes TTL if flag exists, or creates new flag if it doesn't
         for city_name, coords in city_coords.items():
-            # Check if flag already exists for this city
-            flag_exists = any(flag['city'] == city_name for flag in active_flags)
-            if not flag_exists:
-                # Get location info for this city
-                location_info = city_to_location.get(city_name)
-                if location_info:
-                    lat = location_info.get('lat') or coords[1]  # Prefer geolocation lat, fallback to coords
-                    lng = location_info.get('lng') or coords[0]  # Prefer geolocation lng, fallback to coords
-                    city = location_info.get('city') or city_name
-                    province = location_info.get('province')
-                    
-                    # Record flag for this city
-                    flag_tracker.record_city_flag(city, province, lat, lng)
-                    # Add to active_flags list for this response
-                    active_flags.append({
-                        'city': city_name,
-                        'timestamp': datetime.now(timezone.utc).isoformat(),
-                        'lat': lat,
-                        'lng': lng
-                    })
+            # Get location info for this city
+            location_info = city_to_location.get(city_name)
+            if location_info:
+                lat = location_info.get('lat') or coords[1]  # Prefer geolocation lat, fallback to coords
+                lng = location_info.get('lng') or coords[0]  # Prefer geolocation lng, fallback to coords
+                city = location_info.get('city') or city_name
+                province = location_info.get('province')
+                
+                # Record/refresh flag for this city (record_city_flag refreshes TTL if flag exists)
+                flag_tracker.record_city_flag(city, province, lat, lng)
+                
+                # Update active_flags list for this response
+                # Remove existing flag if present, then add refreshed one
+                active_flags = [f for f in active_flags if f['city'] != city_name]
+                active_flags.append({
+                    'city': city_name,
+                    'timestamp': datetime.now(timezone.utc).isoformat(),
+                    'lat': lat,
+                    'lng': lng
+                })
         
         # Build flag data with coordinates
         flag_data = []
@@ -556,8 +537,7 @@ async def get_map_data(
         
         result = {
             "map_data": map_data,  # For province highlighting
-            "series_data": series_data,  # For scatter points
-            "flag_data": flag_data  # For city flags (login indicators)
+            "flag_data": flag_data  # For city flags (active session indicators)
         }
         
         # Cache the result
@@ -718,7 +698,7 @@ async def stream_activity_updates(
         try:
             # Send initial state
             try:
-                active_users = tracker.get_active_users()
+                active_users = tracker.get_active_users(hours=1)  # Get users active within last hour
                 # Filter out localhost connections
                 connected_users_count = count_non_localhost_users(active_users)
                 initial_stats = {
@@ -728,7 +708,7 @@ async def stream_activity_updates(
                     "total_tokens_used": 0  # Will be updated by stats endpoint
                 }
             except Exception as e:
-                logger.error(f"Error getting initial state: {e}")
+                logger.error(f"Error getting initial state: {e}", exc_info=True)
                 error_data = json.dumps({
                     'type': 'error',
                     'error': 'Failed to fetch initial state'
@@ -766,7 +746,7 @@ async def stream_activity_updates(
                 stats_counter += 1
                 if stats_counter >= (STATS_UPDATE_INTERVAL // SSE_POLL_INTERVAL_SECONDS):
                     try:
-                        active_users = tracker.get_active_users()
+                        active_users = tracker.get_active_users(hours=1)  # Get users active within last hour
                         # Filter out localhost connections
                         connected_users_count = count_non_localhost_users(active_users)
                         stats_update = {
@@ -780,7 +760,7 @@ async def stream_activity_updates(
                         yield f"data: {stats_data}\n\n"
                         stats_counter = 0
                     except Exception as e:
-                        logger.error(f"Error getting stats: {e}")
+                        logger.error(f"Error getting stats: {e}", exc_info=True)
                 
                 # Send heartbeat periodically
                 heartbeat_counter += 1
