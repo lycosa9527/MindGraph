@@ -44,3 +44,5 @@ class DashboardActivity(Base):
         Index('idx_dashboard_activities_created_at', 'created_at'),
     )
 
+
+

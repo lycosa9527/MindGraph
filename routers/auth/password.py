@@ -16,6 +16,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
 from config.database import get_db
+from models.auth import User
 from models.messages import Messages
 from models.requests import ResetPasswordWithSMSRequest
 from services.redis_user_cache import user_cache
@@ -70,7 +71,9 @@ async def reset_password_with_sms(
             detail=error_msg
         )
     
-    # Update password
+    # Update password and unlock account
+    # Note: We manually unlock instead of using reset_failed_attempts() because
+    # password reset is not a login event, so last_login should not be updated
     user.password_hash = hash_password(request.new_password)
     user.failed_login_attempts = 0  # Unlock account
     user.locked_until = None
