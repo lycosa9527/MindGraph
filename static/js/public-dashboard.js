@@ -311,13 +311,15 @@ function initializeMap() {
                 coordinateSystem: 'geo',
                 data: [],
                 symbolSize: function(val) {
-                    const baseSize = Math.sqrt(val[2]) * 4;
+                    const count = Array.isArray(val) && val.length > 2 ? val[2] : 0;
+                    const baseSize = Math.sqrt(count) * 4;
                     return Math.max(8, Math.min(baseSize, 40));  // Min 8, Max 40
                 },
                 itemStyle: {
                     color: function(params) {
                         // Gradient colors based on user count
-                        const count = params.value[2];
+                        const value = params.value || params.data?.value || [];
+                        const count = Array.isArray(value) && value.length > 2 ? value[2] : 0;
                         if (count >= 20) return '#ef4444';  // Red for high activity
                         if (count >= 10) return '#f59e0b';  // Orange for medium-high
                         if (count >= 5) return '#eab308';   // Yellow for medium
@@ -325,7 +327,8 @@ function initializeMap() {
                     },
                     shadowBlur: 20,
                     shadowColor: function(params) {
-                        const count = params.value[2];
+                        const value = params.value || params.data?.value || [];
+                        const count = Array.isArray(value) && value.length > 2 ? value[2] : 0;
                         if (count >= 20) return 'rgba(239, 68, 68, 0.8)';
                         if (count >= 10) return 'rgba(245, 158, 11, 0.8)';
                         if (count >= 5) return 'rgba(234, 179, 8, 0.8)';
@@ -338,7 +341,10 @@ function initializeMap() {
                 label: {
                     show: true,
                     formatter: function(params) {
-                        return `${params.name}\n${params.value[2]} ${translations[currentLang]['users']}`;
+                        const name = params.name || params.data?.name || '';
+                        const value = params.value || params.data?.value || [];
+                        const count = Array.isArray(value) && value.length > 2 ? value[2] : 0;
+                        return `${name}\n${count} ${translations[currentLang]['users']}`;
                     },
                     position: 'right',
                     color: '#e2e8f0',
@@ -443,7 +449,8 @@ function initializeMap() {
                         `;
                     } else {
                         // City scatter point with user count
-                        const count = params.value[2];
+                        const value = params.value || params.data?.value || [];
+                        const count = Array.isArray(value) && value.length > 2 ? value[2] : 0;
                         const color = params.color;
                         return `
                             <div style="font-weight: bold; margin-bottom: 8px; font-size: 14px;">
@@ -727,7 +734,10 @@ async function loadMapData() {
                 ? Math.max(...data.map_data.map(item => item.value), 1)
                 : 1;
             const scatterMaxValue = data.series_data && data.series_data.length > 0
-                ? Math.max(...data.series_data.map(item => item.value[2]), 1)
+                ? Math.max(...data.series_data.map(item => {
+                    const value = item.value || [];
+                    return Array.isArray(value) && value.length > 2 ? value[2] : 0;
+                }), 1)
                 : 1;
             const maxValue = Math.max(mapMaxValue, scatterMaxValue, 50);
             
@@ -780,7 +790,8 @@ async function loadMapData() {
                         coordinateSystem: 'geo',
                         data: data.series_data || [],
                         symbolSize: function(val) {
-                            return Math.sqrt(val[2]) * 8 + 5;
+                            const count = Array.isArray(val) && val.length > 2 ? val[2] : 0;
+                            return Math.sqrt(count) * 8 + 5;
                         },
                         itemStyle: {
                             color: '#ef4444',
@@ -789,7 +800,12 @@ async function loadMapData() {
                         },
                         label: {
                             show: true,
-                            formatter: '{b}\n{c[2]}',
+                            formatter: function(params) {
+                                const name = params.name || params.data?.name || '';
+                                const value = params.value || params.data?.value || [];
+                                const count = Array.isArray(value) && value.length > 2 ? value[2] : 0;
+                                return name + '\n' + count;
+                            },
                             position: 'right',
                             color: '#e2e8f0',
                             fontSize: 12
