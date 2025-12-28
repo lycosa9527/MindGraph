@@ -492,6 +492,47 @@ async def get_map_data(
         flag_tracker = get_city_flag_tracker()
         active_flags = flag_tracker.get_active_flags()
         
+        # Also ensure flags exist for cities with currently active users
+        # This handles cases where users are already logged in (no new login = no flag recorded)
+        # Build a map of city -> location info for easier lookup
+        city_to_location = {}
+        for ip_address, location in zip(ip_addresses, locations):
+            if isinstance(location, Exception) or not location:
+                continue
+            city = location.get('city', '')
+            province = location.get('province', '')
+            location_name = city if city else province
+            if location_name and location_name not in city_to_location:
+                city_to_location[location_name] = {
+                    'city': city,
+                    'province': province,
+                    'lat': location.get('lat'),
+                    'lng': location.get('lng')
+                }
+        
+        # Create flags for active user cities that don't have flags yet
+        for city_name, coords in city_coords.items():
+            # Check if flag already exists for this city
+            flag_exists = any(flag['city'] == city_name for flag in active_flags)
+            if not flag_exists:
+                # Get location info for this city
+                location_info = city_to_location.get(city_name)
+                if location_info:
+                    lat = location_info.get('lat') or coords[1]  # Prefer geolocation lat, fallback to coords
+                    lng = location_info.get('lng') or coords[0]  # Prefer geolocation lng, fallback to coords
+                    city = location_info.get('city') or city_name
+                    province = location_info.get('province')
+                    
+                    # Record flag for this city
+                    flag_tracker.record_city_flag(city, province, lat, lng)
+                    # Add to active_flags list for this response
+                    active_flags.append({
+                        'city': city_name,
+                        'timestamp': datetime.now(timezone.utc).isoformat(),
+                        'lat': lat,
+                        'lng': lng
+                    })
+        
         # Build flag data with coordinates
         flag_data = []
         for flag in active_flags:

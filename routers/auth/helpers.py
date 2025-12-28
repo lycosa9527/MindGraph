@@ -115,10 +115,6 @@ def track_user_activity(
                 ip_address=ip_address,
                 reuse_existing=True  # Reuse existing session if user already has one
             )
-            
-            # Record city flag for login (async, fire-and-forget)
-            if ip_address and ip_address != 'unknown':
-                _record_city_flag_async(ip_address)
         else:
             session_id = None  # Let record_activity find/create session
         

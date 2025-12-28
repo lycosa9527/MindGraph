@@ -187,6 +187,11 @@ class RedisActivityTracker:
             # Log activity
             self._log_activity(user_id, user_phone, 'login', session_id=session_id)
             
+            # Record city flag for new session (async, fire-and-forget)
+            # This ensures flags are shown for all active sessions, not just logins
+            if ip_address and ip_address != 'unknown':
+                self._record_city_flag_async(ip_address)
+            
             logger.debug(f"Started session {session_id[:8]} for user {user_id}")
             return session_id
             
@@ -195,6 +200,56 @@ class RedisActivityTracker:
             return self._memory_start_session(
                 user_id, user_phone, user_name, session_id, ip_address, reuse_existing
             )
+    
+    def _record_city_flag_async(self, ip_address: str):
+        """
+        Record city flag asynchronously (fire-and-forget).
+        
+        This function schedules the city flag recording in a background task
+        to avoid blocking the session creation.
+        """
+        try:
+            import asyncio
+            from services.city_flag_tracker import get_city_flag_tracker
+            from services.ip_geolocation import get_geolocation_service
+            
+            async def _record_flag():
+                try:
+                    geolocation = get_geolocation_service()
+                    location = await geolocation.get_location(ip_address)
+                    if location:
+                        city = location.get('city', '')
+                        province = location.get('province', '')
+                        lat = location.get('lat')
+                        lng = location.get('lng')
+                        if city or province:
+                            flag_tracker = get_city_flag_tracker()
+                            flag_tracker.record_city_flag(city, province, lat, lng)
+                except Exception as e:
+                    logger.debug(f"Failed to record city flag: {e}")
+            
+            # Schedule async task (fire-and-forget)
+            try:
+                # Try to get the current event loop
+                try:
+                    loop = asyncio.get_running_loop()
+                    # Event loop is running, create a task
+                    asyncio.create_task(_record_flag())
+                except RuntimeError:
+                    # No running event loop, try to get/create one
+                    try:
+                        loop = asyncio.get_event_loop()
+                        if loop.is_running():
+                            asyncio.create_task(_record_flag())
+                        else:
+                            loop.run_until_complete(_record_flag())
+                    except RuntimeError:
+                        # No event loop available, create new one
+                        asyncio.run(_record_flag())
+            except Exception as e:
+                logger.debug(f"Failed to schedule city flag recording: {e}")
+        except Exception as e:
+            logger.debug(f"Failed to record city flag: {e}")
     
     def _memory_start_session(
         self,
@@ -239,6 +294,11 @@ class RedisActivityTracker:
         if user_id not in self._memory_user_sessions:
             self._memory_user_sessions[user_id] = set()
         self._memory_user_sessions[user_id].add(session_id)
+        
+        # Record city flag for new session (async, fire-and-forget)
+        # This ensures flags are shown for all active sessions, not just logins
+        if ip_address and ip_address != 'unknown':
+            self._record_city_flag_async(ip_address)
         
         return session_id
     
@@ -345,8 +405,14 @@ class RedisActivityTracker:
             now = get_beijing_now()
             
             # Find or create session
+            # Note: We need IP address for city flag recording, but record_activity doesn't have it
+            # So we'll get it from the session if it exists, or pass None (flag won't be recorded)
             if session_id is None:
-                session_id = self.start_session(user_id, user_phone, user_name=user_name)
+                # Try to get IP from existing session first
+                existing_ip = None
+                # For new sessions created here, IP won't be available, so flag won't be recorded
+                # This is acceptable - flags will be recorded when session is created with IP (e.g., on login)
+                session_id = self.start_session(user_id, user_phone, user_name=user_name, ip_address=None)
             
             session_key = f"{SESSION_PREFIX}{session_id}"
             

@@ -176,6 +176,62 @@ function initializeMap() {
         }
     }
     
+    // Register custom pulsing dot symbol for active sessions
+    echarts.registerSymbol('pulsingDot', function(x, y, w, h) {
+        const time = Date.now() / 1000;
+        const pulse = Math.sin(time * 2) * 0.3 + 1; // Oscillates between 0.7 and 1.3
+        const size = Math.min(w, h) * pulse;
+        const glow = Math.sin(time * 2) * 0.4 + 0.6; // Oscillates between 0.2 and 1.0
+        
+        return {
+            type: 'group',
+            children: [
+                // Outer glow ring (pulsing)
+                {
+                    type: 'circle',
+                    shape: {
+                        cx: x,
+                        cy: y,
+                        r: size * 1.5
+                    },
+                    style: {
+                        fill: 'rgba(96, 165, 250, ' + (0.3 * glow) + ')',
+                        stroke: 'rgba(96, 165, 250, ' + (0.5 * glow) + ')',
+                        lineWidth: 1
+                    }
+                },
+                // Middle glow ring
+                {
+                    type: 'circle',
+                    shape: {
+                        cx: x,
+                        cy: y,
+                        r: size * 1.2
+                    },
+                    style: {
+                        fill: 'rgba(96, 165, 250, ' + (0.5 * glow) + ')',
+                        stroke: 'rgba(96, 165, 250, ' + (0.7 * glow) + ')',
+                        lineWidth: 1
+                    }
+                },
+                // Main dot
+                {
+                    type: 'circle',
+                    shape: {
+                        cx: x,
+                        cy: y,
+                        r: size * 0.5
+                    },
+                    style: {
+                        fill: '#60a5fa',
+                        stroke: '#ffffff',
+                        lineWidth: 2
+                    }
+                }
+            ]
+        };
+    });
+    
     // Enhanced map configuration with premium styling and province highlighting
     const option = {
         backgroundColor: 'transparent',
@@ -367,54 +423,42 @@ function initializeMap() {
                 animationDuration: 1000,
                 animationEasing: 'cubicOut'
             },
-            // Flag series for login indicators
+            // Active session dots (animated pulsing)
             {
-                name: '登录标记',
+                name: '活跃会话',
                 type: 'scatter',
                 coordinateSystem: 'geo',
                 data: [],
-                symbol: 'pin',  // Use pin symbol for flags
-                symbolSize: 30,
+                symbol: 'pulsingDot',
+                symbolSize: 20,
                 itemStyle: {
-                    color: '#f472b6',  // Pink color for flags
-                    shadowBlur: 15,
-                    shadowColor: 'rgba(244, 114, 182, 0.6)',
-                    borderColor: '#ffffff',
-                    borderWidth: 2,
-                    opacity: 0.9
+                    opacity: 0.95
                 },
                 label: {
-                    show: true,
-                    formatter: function(params) {
-                        return params.name;
-                    },
-                    position: 'bottom',
-                    color: '#e2e8f0',
-                    fontSize: 10,
-                    fontWeight: 'bold',
-                    backgroundColor: 'rgba(244, 114, 182, 0.9)',
-                    padding: [2, 6],
-                    borderRadius: 4,
-                    borderColor: '#ffffff',
-                    borderWidth: 1,
-                    offset: [0, 5]
+                    show: false  // Hide labels for cleaner look
                 },
                 emphasis: {
                     itemStyle: {
-                        shadowBlur: 25,
-                        shadowColor: 'rgba(244, 114, 182, 0.9)',
-                        borderWidth: 3,
-                        borderColor: '#ffffff',
-                        scale: 1.2
+                        opacity: 1
                     },
                     label: {
-                        fontSize: 12,
-                        backgroundColor: 'rgba(244, 114, 182, 1)'
+                        show: true,
+                        formatter: function(params) {
+                            return params.name;
+                        },
+                        position: 'bottom',
+                        color: '#e2e8f0',
+                        fontSize: 10,
+                        fontWeight: 'bold',
+                        backgroundColor: 'rgba(96, 165, 250, 0.9)',
+                        padding: [2, 6],
+                        borderRadius: 4,
+                        borderColor: '#ffffff',
+                        borderWidth: 1,
+                        offset: [0, 5]
                     }
                 },
-                animation: true,
-                animationDuration: 800,
-                animationEasing: 'bounceOut'
+                animation: false  // Custom symbol handles animation
             }
         ],
         tooltip: {
@@ -501,6 +545,23 @@ function initializeMap() {
             }
         }, 250);
     });
+    
+    // Animate pulsing dots by updating chart periodically
+    let pulseAnimationFrame;
+    function animatePulsingDots() {
+        if (chart && !chart.isDisposed()) {
+            // Force redraw to update custom symbol animation
+            chart.setOption({
+                series: chart.getOption().series
+            }, {
+                notMerge: true,
+                lazyUpdate: true
+            });
+        }
+        pulseAnimationFrame = requestAnimationFrame(animatePulsingDots);
+    }
+    // Start animation loop
+    animatePulsingDots();
 }
 
 // Animate number counting
@@ -737,56 +798,44 @@ async function loadMapData() {
                         animationEasing: 'cubicOut'
                     },
                     {
-                        // Flag series for login indicators
-                        name: '登录标记',
+                        // Active session dots (animated pulsing)
+                        name: '活跃会话',
                         type: 'scatter',
                         coordinateSystem: 'geo',
                         data: (data.flag_data || []).map(flag => ({
                             name: flag.name,
                             value: flag.value  // [lng, lat]
                         })),
-                        symbol: 'pin',
-                        symbolSize: 30,
+                        symbol: 'pulsingDot',
+                        symbolSize: 20,
                         itemStyle: {
-                            color: '#f472b6',
-                            shadowBlur: 15,
-                            shadowColor: 'rgba(244, 114, 182, 0.6)',
-                            borderColor: '#ffffff',
-                            borderWidth: 2,
-                            opacity: 0.9
+                            opacity: 0.95
                         },
                         label: {
-                            show: true,
-                            formatter: function(params) {
-                                return params.name;
-                            },
-                            position: 'bottom',
-                            color: '#e2e8f0',
-                            fontSize: 10,
-                            fontWeight: 'bold',
-                            backgroundColor: 'rgba(244, 114, 182, 0.9)',
-                            padding: [2, 6],
-                            borderRadius: 4,
-                            borderColor: '#ffffff',
-                            borderWidth: 1,
-                            offset: [0, 5]
+                            show: false  // Hide labels for cleaner look
                         },
                         emphasis: {
                             itemStyle: {
-                                shadowBlur: 25,
-                                shadowColor: 'rgba(244, 114, 182, 0.9)',
-                                borderWidth: 3,
-                                borderColor: '#ffffff',
-                                scale: 1.2
+                                opacity: 1
                             },
                             label: {
-                                fontSize: 12,
-                                backgroundColor: 'rgba(244, 114, 182, 1)'
+                                show: true,
+                                formatter: function(params) {
+                                    return params.name;
+                                },
+                                position: 'bottom',
+                                color: '#e2e8f0',
+                                fontSize: 10,
+                                fontWeight: 'bold',
+                                backgroundColor: 'rgba(96, 165, 250, 0.9)',
+                                padding: [2, 6],
+                                borderRadius: 4,
+                                borderColor: '#ffffff',
+                                borderWidth: 1,
+                                offset: [0, 5]
                             }
                         },
-                        animation: true,
-                        animationDuration: 800,
-                        animationEasing: 'bounceOut'
+                        animation: false  // Custom symbol handles animation
                     }
                 ]
             }, {

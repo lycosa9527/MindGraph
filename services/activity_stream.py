@@ -38,12 +38,18 @@ logger = logging.getLogger(__name__)
 # Key prefixes
 ACTIVITIES_KEY = "dashboard:activities"
 ANON_USER_PREFIX = "user:anon:"
+DEDUP_PREFIX = "dashboard:activity_dedup:"
 
 # Max activities to store
 MAX_ACTIVITIES = 100
 
 # Activities TTL: 1 hour
 ACTIVITIES_TTL_SECONDS = 3600
+
+# Deduplication window: 60 seconds (to catch concurrent auto-complete requests)
+# Some diagram types (e.g., mindmap) can take up to 30 seconds to generate,
+# so we use a longer window to ensure all concurrent requests are deduplicated
+DEDUP_WINDOW_SECONDS = 60
 
 
 class ActivityStreamService:
@@ -177,6 +183,45 @@ class ActivityStreamService:
             del self._connections[connection_id]
             logger.debug(f"[ActivityStream] Removed connection: {connection_id} (remaining: {len(self._connections)})")
     
+    def _check_and_set_dedup(self, user_id: int, action: str, diagram_type: str) -> bool:
+        """
+        Check if activity was already broadcast recently (deduplication).
+        Uses Redis SETNX with TTL for atomic check-and-set operation.
+        
+        Args:
+            user_id: User ID
+            action: Action type (e.g., "generated")
+            diagram_type: Diagram type (e.g., "mindmap")
+            
+        Returns:
+            True if this is a duplicate (should skip), False if new (should broadcast)
+        """
+        # Create deduplication key: user_id + action + diagram_type
+        dedup_key = f"{DEDUP_PREFIX}{user_id}:{action}:{diagram_type}"
+        
+        try:
+            redis = get_redis()
+            if not redis:
+                # Redis unavailable - allow broadcast (shouldn't happen in production)
+                logger.warning(f"[ActivityStream] Redis unavailable, skipping deduplication check")
+                return False
+            
+            # SETNX: Set if not exists, returns True if set, False if already exists
+            # This is atomic - perfect for deduplication
+            was_set = redis.set(
+                dedup_key,
+                "1",
+                ex=DEDUP_WINDOW_SECONDS,  # TTL: 60 seconds
+                nx=True  # Only set if not exists
+            )
+            # If was_set is True, this is the first request (not duplicate)
+            # If was_set is False, key already exists (duplicate)
+            return not was_set  # Return True if duplicate
+        except Exception as e:
+            logger.error(f"[ActivityStream] Error checking dedup in Redis: {e}")
+            # On error, allow broadcast (fail open)
+            return False
+    
     def _store_activity(self, activity: Dict):
         """
         Store activity in Redis and memory.
@@ -215,6 +260,11 @@ class ActivityStreamService:
         """
         Broadcast an activity event to all connected clients.
         
+        Deduplication: Prevents duplicate broadcasts for the same user/action/diagram_type
+        within a 60-second window. This prevents multiple activity entries when
+        auto-complete makes concurrent API calls to multiple LLM models (which can take
+        up to 30 seconds for some diagram types like mindmap).
+        
         Args:
             user_id: User ID
             action: Action type (e.g., "generated")
@@ -222,6 +272,13 @@ class ActivityStreamService:
             topic: Topic/prompt (deprecated, not used in frontend)
             user_name: User's real name (will be masked for privacy)
         """
+        # Check for duplicate activity (deduplication)
+        # This prevents multiple broadcasts when auto-complete makes concurrent requests
+        is_duplicate = self._check_and_set_dedup(user_id, action, diagram_type)
+        if is_duplicate:
+            logger.debug(f"[ActivityStream] Skipping duplicate activity: user {user_id}, {action} {diagram_type}")
+            return
+        
         # Mask user name for privacy
         masked_username = self._mask_user_name(user_name)
         
