@@ -552,12 +552,12 @@ class Config:
 
     @property
     def DASHBOARD_MAP_DATA_CACHE_TTL(self):
-        """Map data cache TTL in seconds (default: 45)"""
+        """Map data cache TTL in seconds (default: 20) - reasonable TTL for map updates"""
         try:
-            return int(self._get_cached_value('DASHBOARD_MAP_DATA_CACHE_TTL', '45'))
+            return int(self._get_cached_value('DASHBOARD_MAP_DATA_CACHE_TTL', '20'))
         except (ValueError, TypeError):
-            logger.warning("Invalid DASHBOARD_MAP_DATA_CACHE_TTL, using 45")
-            return 45
+            logger.warning("Invalid DASHBOARD_MAP_DATA_CACHE_TTL, using 20")
+            return 20
 
     @property
     def DASHBOARD_REGISTERED_USERS_CACHE_TTL(self):
