@@ -148,7 +148,7 @@ def _record_city_flag_async(ip_address: str):
             try:
                 geolocation = get_geolocation_service()
                 location = await geolocation.get_location(ip_address)
-                if location:
+                if location and not location.get('is_fallback'):
                     city = location.get('city', '')
                     province = location.get('province', '')
                     lat = location.get('lat')

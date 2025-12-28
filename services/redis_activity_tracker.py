@@ -154,6 +154,12 @@ class RedisActivityTracker:
                                 redis.hset(session_key, "ip_address", ip_address)
                             redis.hset(session_key, "last_activity", get_beijing_now().isoformat())
                             logger.debug(f"Reusing session {sid[:8]} for user {user_id}")
+                            
+                            # Record city flag for reused session (async, fire-and-forget)
+                            # This ensures flags are shown for all active sessions, including returning users
+                            if ip_address and ip_address != 'unknown':
+                                self._record_city_flag_async(ip_address)
+                            
                             return sid
             
             # Create new session
@@ -217,7 +223,7 @@ class RedisActivityTracker:
                 try:
                     geolocation = get_geolocation_service()
                     location = await geolocation.get_location(ip_address)
-                    if location:
+                    if location and not location.get('is_fallback'):
                         city = location.get('city', '')
                         province = location.get('province', '')
                         lat = location.get('lat')
@@ -272,6 +278,12 @@ class RedisActivityTracker:
                             self._memory_sessions[sid]['user_name'] = user_name
                         if ip_address:
                             self._memory_sessions[sid]['ip_address'] = ip_address
+                        
+                        # Record city flag for reused session (async, fire-and-forget)
+                        # This ensures flags are shown for all active sessions, including returning users
+                        if ip_address and ip_address != 'unknown':
+                            self._record_city_flag_async(ip_address)
+                        
                         return sid
         
         # Create new session
@@ -709,4 +721,3 @@ def get_activity_tracker() -> RedisActivityTracker:
     if _tracker is None:
         _tracker = RedisActivityTracker()
     return _tracker
-

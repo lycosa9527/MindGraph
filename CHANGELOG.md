@@ -7,6 +7,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.37.32] - 2025-12-28 - IP Geolocation Fallback Handling and Map Visualization Improvements
+
+### Fixed
+
+- **IP Geolocation Fallback Handling** (`services/ip_geolocation.py`, `routers/public_dashboard.py`, `routers/auth/helpers.py`, `services/redis_activity_tracker.py`)
+  - Changed failed IP lookups to return default Beijing location with `is_fallback: True` flag instead of `None`
+  - Added checks to skip fallback locations in map data visualization and city flag recording
+  - Prevents display of incorrect location data when geolocation lookup fails
+  - Fallback locations are not cached to allow retries on subsequent lookups
+  - Ensures only real geolocation data is shown on dashboard map
+
+- **City Flag Recording for Reused Sessions** (`services/redis_activity_tracker.py`)
+  - Added city flag recording for reused sessions (both Redis and memory fallback)
+  - Ensures flags are shown for all active sessions, including returning users
+  - Flags recorded asynchronously (fire-and-forget) to avoid blocking session operations
+
+### Improved
+
+- **Map Visualization Animation** (`static/js/public-dashboard.js`)
+  - Refactored pulsing dot animation from custom ECharts symbol to `requestAnimationFrame`-based animation
+  - Improved animation performance and memory management
+  - Added proper cleanup on page unload to prevent memory leaks
+  - Animation now uses standard circle symbols with dynamic size and shadow blur updates
+  - Better handling of chart disposal to prevent errors
+
+### Technical Details
+
+**IP Geolocation Fallback Strategy:**
+- Failed lookups return default Beijing location: `{province: "北京", city: "北京", lat: 39.9042, lng: 116.4074, is_fallback: True}`
+- Fallback locations are NOT cached to prevent corrupting location data
+- All map data endpoints filter out fallback locations before display
+- City flag recording skips fallback locations to maintain data accuracy
+
+**Animation Improvements:**
+- Before: Custom ECharts symbol with complex group rendering
+- After: Standard circle symbol with `requestAnimationFrame` updating size and shadow
+- Animation loop properly checks for chart disposal before updating
+- Cleanup function registered for `beforeunload` event
+
+---
+
 ## [4.37.31] - 2025-01-20 - Public Dashboard Configuration Fixes and Zero Database Stress
 
 ### Fixed

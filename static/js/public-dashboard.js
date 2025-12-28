@@ -176,62 +176,6 @@ function initializeMap() {
         }
     }
     
-    // Register custom pulsing dot symbol for active sessions
-    echarts.registerSymbol('pulsingDot', function(x, y, w, h) {
-        const time = Date.now() / 1000;
-        const pulse = Math.sin(time * 2) * 0.3 + 1; // Oscillates between 0.7 and 1.3
-        const size = Math.min(w, h) * pulse;
-        const glow = Math.sin(time * 2) * 0.4 + 0.6; // Oscillates between 0.2 and 1.0
-        
-        return {
-            type: 'group',
-            children: [
-                // Outer glow ring (pulsing)
-                {
-                    type: 'circle',
-                    shape: {
-                        cx: x,
-                        cy: y,
-                        r: size * 1.5
-                    },
-                    style: {
-                        fill: 'rgba(96, 165, 250, ' + (0.3 * glow) + ')',
-                        stroke: 'rgba(96, 165, 250, ' + (0.5 * glow) + ')',
-                        lineWidth: 1
-                    }
-                },
-                // Middle glow ring
-                {
-                    type: 'circle',
-                    shape: {
-                        cx: x,
-                        cy: y,
-                        r: size * 1.2
-                    },
-                    style: {
-                        fill: 'rgba(96, 165, 250, ' + (0.5 * glow) + ')',
-                        stroke: 'rgba(96, 165, 250, ' + (0.7 * glow) + ')',
-                        lineWidth: 1
-                    }
-                },
-                // Main dot
-                {
-                    type: 'circle',
-                    shape: {
-                        cx: x,
-                        cy: y,
-                        r: size * 0.5
-                    },
-                    style: {
-                        fill: '#60a5fa',
-                        stroke: '#ffffff',
-                        lineWidth: 2
-                    }
-                }
-            ]
-        };
-    });
-    
     // Enhanced map configuration with premium styling and province highlighting
     const option = {
         backgroundColor: 'transparent',
@@ -429,9 +373,14 @@ function initializeMap() {
                 type: 'scatter',
                 coordinateSystem: 'geo',
                 data: [],
-                symbol: 'pulsingDot',
-                symbolSize: 20,
+                symbol: 'circle',
+                symbolSize: 10,  // Will be updated by animation loop
                 itemStyle: {
+                    color: '#60a5fa',
+                    shadowBlur: 20,  // Will be updated by animation loop
+                    shadowColor: 'rgba(96, 165, 250, 0.8)',
+                    borderColor: '#ffffff',
+                    borderWidth: 2,
                     opacity: 0.95
                 },
                 label: {
@@ -439,6 +388,11 @@ function initializeMap() {
                 },
                 emphasis: {
                     itemStyle: {
+                        shadowBlur: 30,
+                        shadowColor: 'rgba(96, 165, 250, 1)',
+                        borderWidth: 3,
+                        borderColor: '#ffffff',
+                        scale: 1.3,
                         opacity: 1
                     },
                     label: {
@@ -458,7 +412,7 @@ function initializeMap() {
                         offset: [0, 5]
                     }
                 },
-                animation: false  // Custom symbol handles animation
+                animation: false  // We handle animation via requestAnimationFrame
             }
         ],
         tooltip: {
@@ -547,21 +501,68 @@ function initializeMap() {
     });
     
     // Animate pulsing dots by updating chart periodically
-    let pulseAnimationFrame;
+    let pulseAnimationFrame = null;
     function animatePulsingDots() {
-        if (chart && !chart.isDisposed()) {
-            // Force redraw to update custom symbol animation
-            chart.setOption({
-                series: chart.getOption().series
-            }, {
-                notMerge: true,
-                lazyUpdate: true
-            });
+        // Stop animation if chart is disposed or doesn't exist
+        if (!chart || chart.isDisposed()) {
+            pulseAnimationFrame = null;
+            return;
         }
-        pulseAnimationFrame = requestAnimationFrame(animatePulsingDots);
+        
+        const time = Date.now() / 1000;
+        const pulse = Math.sin(time * 2) * 3 + 10; // Oscillates between 7 and 13
+        const glow = Math.sin(time * 2) * 8 + 20; // Oscillates between 12 and 28
+        
+        // Update pulsing dot series by finding its index and updating
+        // Use replaceMerge to only update the specific series without affecting others
+        const option = chart.getOption();
+        if (option.series && Array.isArray(option.series)) {
+            const series = option.series;
+            for (let i = 0; i < series.length; i++) {
+                if (series[i] && series[i].name === '活跃会话') {
+                    // Update only the specific series index using sparse array
+                    // With notMerge: false, ECharts will merge this with existing series
+                    // Only the specified index will be updated, others remain unchanged
+                    const seriesUpdate = [];
+                    seriesUpdate[i] = {
+                        symbolSize: pulse,
+                        itemStyle: {
+                            shadowBlur: glow
+                        }
+                    };
+                    
+                    chart.setOption({
+                        series: seriesUpdate
+                    }, {
+                        notMerge: false,  // Merge with existing options (preserves geo, visualMap, etc.)
+                        lazyUpdate: true  // Batch updates for better performance
+                    });
+                    break;
+                }
+            }
+        }
+        
+        // Continue animation loop only if chart still exists
+        if (chart && !chart.isDisposed()) {
+            pulseAnimationFrame = requestAnimationFrame(animatePulsingDots);
+        } else {
+            pulseAnimationFrame = null;
+        }
     }
+    
+    // Function to stop animation
+    function stopPulsingAnimation() {
+        if (pulseAnimationFrame !== null) {
+            cancelAnimationFrame(pulseAnimationFrame);
+            pulseAnimationFrame = null;
+        }
+    }
+    
     // Start animation loop
     animatePulsingDots();
+    
+    // Store stop function for cleanup
+    window._stopPulsingAnimation = stopPulsingAnimation;
 }
 
 // Animate number counting
@@ -806,9 +807,14 @@ async function loadMapData() {
                             name: flag.name,
                             value: flag.value  // [lng, lat]
                         })),
-                        symbol: 'pulsingDot',
-                        symbolSize: 20,
+                        symbol: 'circle',
+                        symbolSize: 10,  // Will be updated by animation loop
                         itemStyle: {
+                            color: '#60a5fa',
+                            shadowBlur: 20,  // Will be updated by animation loop
+                            shadowColor: 'rgba(96, 165, 250, 0.8)',
+                            borderColor: '#ffffff',
+                            borderWidth: 2,
                             opacity: 0.95
                         },
                         label: {
@@ -816,6 +822,11 @@ async function loadMapData() {
                         },
                         emphasis: {
                             itemStyle: {
+                                shadowBlur: 30,
+                                shadowColor: 'rgba(96, 165, 250, 1)',
+                                borderWidth: 3,
+                                borderColor: '#ffffff',
+                                scale: 1.3,
                                 opacity: 1
                             },
                             label: {
@@ -835,7 +846,7 @@ async function loadMapData() {
                                 offset: [0, 5]
                             }
                         },
-                        animation: false  // Custom symbol handles animation
+                        animation: false  // We handle animation via requestAnimationFrame
                     }
                 ]
             }, {
@@ -1084,5 +1095,8 @@ window.addEventListener('beforeunload', function() {
     if (eventSource) {
         eventSource.close();
     }
+    // Stop pulsing animation to prevent memory leak
+    if (window._stopPulsingAnimation) {
+        window._stopPulsingAnimation();
+    }
 });
-

@@ -444,8 +444,8 @@ async def get_map_data(
         city_coords = {}  # {city_name: [lng, lat]}
         
         for ip_address, location in zip(ip_addresses, locations):
-            # Skip failed lookups
-            if isinstance(location, Exception) or not location:
+            # Skip failed lookups and fallback locations
+            if isinstance(location, Exception) or not location or location.get('is_fallback'):
                 continue
             
             city = location.get('city', '')
@@ -497,7 +497,7 @@ async def get_map_data(
         # Build a map of city -> location info for easier lookup
         city_to_location = {}
         for ip_address, location in zip(ip_addresses, locations):
-            if isinstance(location, Exception) or not location:
+            if isinstance(location, Exception) or not location or location.get('is_fallback'):
                 continue
             city = location.get('city', '')
             province = location.get('province', '')

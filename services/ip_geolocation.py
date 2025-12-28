@@ -638,9 +638,21 @@ class IPGeolocationService:
             logger.debug(f"[IPGeo] Local lookup successful for IP {ip}: {location.get('province')}, {location.get('city')}")
             return location
         
-        # Lookup failed
-        logger.warning(f"[IPGeo] Lookup failed for IP {ip}")
-        return None
+        # Lookup failed - return default Beijing location for display purposes
+        # Do NOT cache this default to avoid corrupting location data:
+        # - Foreign IPs/VPNs won't be permanently marked as Beijing
+        # - Transient failures won't persist incorrect data after recovery
+        logger.warning(f"[IPGeo] Lookup failed for IP {ip}, returning Beijing as fallback (not cached)")
+        default_location = {
+            "province": "北京",
+            "city": "北京",
+            "lat": 39.9042,
+            "lng": 116.4074,
+            "country": "中国",
+            "is_fallback": True  # Flag to indicate this is a default location, not a real lookup
+        }
+        # Intentionally NOT caching the default location to allow retries on next lookup
+        return default_location
 
 
 # Global singleton instance
