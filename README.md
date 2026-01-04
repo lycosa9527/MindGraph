@@ -4,8 +4,10 @@
 
 [![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.104+-green.svg)](https://fastapi.tiangolo.com/)
+[![Vue](https://img.shields.io/badge/Vue-3.5+-42b883.svg)](https://vuejs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.6+-3178c6.svg)](https://www.typescriptlang.org/)
 [![License](https://img.shields.io/badge/License-Proprietary-red.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/Version-4.37.5-brightgreen.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-5.0.0-brightgreen.svg)](CHANGELOG.md)
 [![Built with Cursor](https://img.shields.io/badge/Built%20with-Cursor%20AI-blueviolet.svg)](https://cursor.sh)
 [![wakatime](https://wakatime.com/badge/user/60ba0518-3829-457f-ae10-3eff184d5f69/project/a278db63-dcfb-4dae-b731-330443000199.svg)](https://wakatime.com/@lyc9527/projects/tkidgnziyn)
 
@@ -24,8 +26,8 @@ Transform natural language into professional visual diagrams. **API-first platfo
 > **中文:** 这个**完整的企业级应用**由一个**零编程知识**的人使用 [Cursor AI](https://cursor.sh)（AI驱动的代码编辑器）创建。从FastAPI后端到交互式前端，从数据库设计到API安全，**一切都通过AI结对编程完成**。这个项目证明了在AI时代，**任何有愿景和想法的人都可以构建专业软件**，无论技术背景如何。
 >
 > **Key Achievement | 关键成就:**
-> - ✅ **113,700+ lines** of production code | **113,700+行**生产代码
-> - ✅ **230+ files** in the codebase | **230+个文件**的代码库
+> - ✅ **Vue 3 + TypeScript** modern frontend | **Vue 3 + TypeScript** 现代前端
+> - ✅ **FastAPI + Python** high-performance backend | **FastAPI + Python** 高性能后端
 > - ✅ **4,000+ concurrent connections** supported | 支持**4,000+并发连接**
 > - ✅ **10 diagram types** with AI generation | **10种图表类型**的AI生成
 > - ✅ **9 thinking tools** for deep analysis | **9种思考工具**深度分析
@@ -101,11 +103,39 @@ Transform natural language into professional visual diagrams. **API-first platfo
 
 ---
 
+## 🏗️ Tech Stack | 技术栈
+
+### Frontend | 前端
+- **Vue 3.5+** - Composition API with `<script setup>` syntax
+- **TypeScript 5.6+** - Type-safe development
+- **Vite 6.0+** - Next-generation frontend tooling
+- **Tailwind CSS 4.0+** - Utility-first CSS framework
+- **Pinia** - Intuitive state management
+- **Vue Router** - Official routing solution
+- **Vue Flow** - Interactive diagram canvas
+
+### Backend | 后端
+- **Python 3.8+** - High-performance backend
+- **FastAPI** - Modern async web framework
+- **Uvicorn** - Lightning-fast ASGI server
+- **SQLite** - Persistent data storage
+- **Redis** - Caching and session management
+- **Playwright** - PNG diagram generation
+
+### AI/LLM | AI/大语言模型
+- **Qwen** - Primary LLM for diagram generation
+- **DeepSeek** - Alternative LLM option
+- **Doubao (Volcengine)** - Bytedance LLM integration
+- **Hunyuan** - Tencent LLM integration
+
+---
+
 ## 🚀 Quick Start | 快速开始
 
 ### Prerequisites | 前置要求
 
 - **Python 3.8+** (Recommended: 3.13+ for best performance | 推荐：3.13+以获得最佳性能)
+- **Node.js 18+** (Required for frontend build | 前端构建必需)
 - **Redis 7.0+** (Required | 必需) - For caching, rate limiting, and session management | 用于缓存、速率限制和会话管理
 - Internet connection for LLM API access | 互联网连接以访问LLM API
 - Modern web browser | 现代网页浏览器
@@ -136,11 +166,17 @@ redis-cli ping  # Should return: PONG
 git clone https://github.com/lycosa9527/MindGraph.git
 cd MindGraph
 
-# 2. Install dependencies and Playwright browsers
+# 2. Install backend dependencies and Playwright browsers
 python scripts/setup.py
 # This will automatically install Python packages and Playwright Chromium browser
 
-# 3. Configure environment
+# 3. Build frontend (Vue 3 + TypeScript)
+cd frontend
+npm install
+npm run build
+cd ..
+
+# 4. Configure environment
 cp env.example .env
 # Edit .env and add your QWEN_API_KEY (required for diagram generation)
 ```
@@ -150,6 +186,14 @@ cp env.example .env
 
 ```bash
 playwright install chromium
+```
+
+**Frontend Development | 前端开发:**
+
+```bash
+# For development with hot reload | 热重载开发模式
+cd frontend
+npm run dev
 ```
 
 ### Configuration | 配置
@@ -413,6 +457,9 @@ docker logs -f mindgraph-redis
 ```bash
 # Start Redis first
 docker run -d --name redis -p 6379:6379 redis:8.4-alpine
+
+# Build frontend first | 先构建前端
+cd frontend && npm install && npm run build && cd ..
 
 # Build and run MindGraph
 docker build -f docker/Dockerfile -t mindgraph:latest .
