@@ -1,0 +1,77 @@
+<script setup lang="ts">
+/**
+ * TopicNode - Central topic node for diagrams (non-draggable)
+ * Used as the main/central node in bubble maps, mind maps, etc.
+ */
+import { computed } from 'vue'
+
+import { Handle, Position } from '@vue-flow/core'
+
+import { useTheme } from '@/composables/useTheme'
+import type { MindGraphNodeProps } from '@/types'
+
+const props = defineProps<MindGraphNodeProps>()
+
+// Get theme defaults matching old StyleManager
+const { getNodeStyle } = useTheme({
+  diagramType: computed(() => props.data.diagramType),
+})
+
+const defaultStyle = computed(() => getNodeStyle('topic'))
+
+const nodeStyle = computed(() => ({
+  backgroundColor: props.data.style?.backgroundColor || defaultStyle.value.backgroundColor || '#1976d2',
+  borderColor: props.data.style?.borderColor || defaultStyle.value.borderColor || '#0d47a1',
+  color: props.data.style?.textColor || defaultStyle.value.textColor || '#ffffff',
+  fontSize: `${props.data.style?.fontSize || defaultStyle.value.fontSize || 18}px`,
+  fontWeight: props.data.style?.fontWeight || defaultStyle.value.fontWeight || 'bold',
+  borderWidth: `${props.data.style?.borderWidth || defaultStyle.value.borderWidth || 3}px`,
+  borderRadius: `${props.data.style?.borderRadius || 50}%`,
+}))
+</script>
+
+<template>
+  <div
+    class="topic-node flex items-center justify-center px-6 py-4 border-solid cursor-default select-none"
+    :style="nodeStyle"
+  >
+    <span class="text-center whitespace-pre-wrap max-w-[200px]">
+      {{ data.label }}
+    </span>
+
+    <!-- Connection handles -->
+    <Handle
+      type="source"
+      :position="Position.Right"
+      class="!bg-blue-500"
+    />
+    <Handle
+      type="source"
+      :position="Position.Left"
+      class="!bg-blue-500"
+    />
+    <Handle
+      type="source"
+      :position="Position.Top"
+      class="!bg-blue-500"
+    />
+    <Handle
+      type="source"
+      :position="Position.Bottom"
+      class="!bg-blue-500"
+    />
+  </div>
+</template>
+
+<style scoped>
+.topic-node {
+  min-width: 120px;
+  min-height: 60px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transition: box-shadow 0.2s ease;
+}
+
+.topic-node:hover {
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+}
+</style>

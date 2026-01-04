@@ -1,0 +1,204 @@
+/**
+ * MindGraph Global Styles
+ */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom CSS Variables */
+:root {
+  --mg-header-height: 56px;
+  --mg-sidebar-width: 240px;
+  --mg-panel-width: 320px;
+  --mg-toolbar-height: 48px;
+
+  /* Colors */
+  --mg-primary: #409eff;
+  --mg-primary-light: #66b1ff;
+  --mg-primary-dark: #337ecc;
+  --mg-success: #67c23a;
+  --mg-warning: #e6a23c;
+  --mg-danger: #f56c6c;
+  --mg-info: #909399;
+
+  /* Background */
+  --mg-bg-primary: #ffffff;
+  --mg-bg-secondary: #f5f7fa;
+  --mg-bg-tertiary: #e4e7ed;
+
+  /* Text */
+  --mg-text-primary: #303133;
+  --mg-text-regular: #606266;
+  --mg-text-secondary: #909399;
+  --mg-text-placeholder: #c0c4cc;
+
+  /* Border */
+  --mg-border-color: #dcdfe6;
+  --mg-border-light: #e4e7ed;
+
+  /* Shadow */
+  --mg-shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.05);
+  --mg-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1);
+  --mg-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+
+/* Dark mode variables */
+.dark {
+  --mg-bg-primary: #1a1a2e;
+  --mg-bg-secondary: #16213e;
+  --mg-bg-tertiary: #0f3460;
+
+  --mg-text-primary: #e4e7ed;
+  --mg-text-regular: #c0c4cc;
+  --mg-text-secondary: #909399;
+  --mg-text-placeholder: #606266;
+
+  --mg-border-color: #4a4a5e;
+  --mg-border-light: #3a3a4e;
+
+  --mg-shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.2);
+  --mg-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.3);
+  --mg-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+/* Base styles */
+* {
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  background-color: var(--mg-bg-secondary);
+  color: var(--mg-text-primary);
+  line-height: 1.5;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--mg-bg-secondary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--mg-border-color);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--mg-text-secondary);
+}
+
+/* Focus styles */
+:focus-visible {
+  outline: 2px solid var(--mg-primary);
+  outline-offset: 2px;
+}
+
+/* Selection */
+::selection {
+  background: var(--mg-primary);
+  color: white;
+}
+
+/* Element Plus overrides for dark mode */
+.dark .el-button--default {
+  background-color: var(--mg-bg-tertiary);
+  border-color: var(--mg-border-color);
+  color: var(--mg-text-primary);
+}
+
+.dark .el-input__wrapper {
+  background-color: var(--mg-bg-tertiary);
+}
+
+.dark .el-card {
+  background-color: var(--mg-bg-primary);
+  border-color: var(--mg-border-color);
+}
+
+.dark .el-dropdown-menu {
+  background-color: var(--mg-bg-primary);
+  border-color: var(--mg-border-color);
+}
+
+.dark .el-dropdown-menu__item {
+  color: var(--mg-text-primary);
+}
+
+.dark .el-dropdown-menu__item:hover {
+  background-color: var(--mg-bg-tertiary);
+}
+
+/* Utility classes */
+.text-truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.no-select {
+  user-select: none;
+}
+
+.cursor-grab {
+  cursor: grab;
+}
+
+.cursor-grabbing {
+  cursor: grabbing;
+}
+
+/* Hide scrollbar utility */
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* MindGraph slot editing styles */
+[data-placeholder]:empty:before {
+  content: attr(data-placeholder);
+  color: #9ca3af;
+  pointer-events: none;
+}
+
+[data-slot]:focus,
+#mindgraph-free-input:focus {
+  outline: 2px solid #60a5fa;
+  outline-offset: 1px;
+  color: #000 !important;
+}
+
+#mindgraph-free-input:empty:before {
+  content: attr(data-placeholder);
+  color: #9ca3af;
+  pointer-events: none;
+}
+
+/* Animation for typing indicator */
+@keyframes bounce {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+.animate-bounce {
+  animation: bounce 0.6s infinite;
+}

@@ -176,6 +176,9 @@ dmypy.json
 *.7z
 *.iso
 
+# Prototype folder
+prototype/
+
 # Browser binaries (offline Chromium installer)
 # Ignore entire browsers folder (transfer via personal methods, keep GitHub small)
 browsers/ 

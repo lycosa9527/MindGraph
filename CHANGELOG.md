@@ -7,6 +7,60 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [5.0.0] - 2025-01-04 - Vue Frontend Migration (BREAKING CHANGE)
+
+### Changed
+
+- **Complete Frontend Migration to Vue 3** - Migrated the entire frontend from vanilla JavaScript to Vue 3 with TypeScript
+  - Modern Vue 3 Composition API with `<script setup>` syntax
+  - TypeScript for type safety across all components
+  - Vite as the build tool for fast development and optimized production builds
+  - Tailwind CSS for utility-first styling
+  - Pinia for state management
+
+### Added
+
+- **New Vue Component Architecture**
+  - `frontend/src/components/canvas/` - Canvas toolbar, top bar, zoom controls, AI model selector
+  - `frontend/src/components/chat/` - Chat container, input, and message components
+  - `frontend/src/components/common/` - Shared components (image preview modal, suggestion bubbles)
+  - `frontend/src/components/editor/` - Editor canvas, toolbar, status bar, diagram gallery
+  - `frontend/src/components/mindgraph/` - MindGraph-specific components
+
+- **Modern Development Tooling**
+  - ESLint with Vue and TypeScript support
+  - Prettier for code formatting
+  - PostCSS for CSS processing
+  - TypeScript configuration for strict type checking
+
+### Archived
+
+- **Legacy Static Files Moved to Archive** - All vanilla JavaScript, CSS, and HTML templates moved to `archive/` directory
+  - `archive/static/css/` - Legacy stylesheets (admin, editor, comic-bubble, node-palette, public-dashboard)
+  - `archive/static/js/` - Legacy JavaScript modules (~84,000 lines of code)
+    - Core modules (event-bus, state-manager, session-lifecycle)
+    - Editor modules (interactive-editor, toolbar-manager, node-palette-manager)
+    - Renderer modules (mind-map, concept-map, flow, tree, bubble-map, brace renderers)
+    - Manager modules (export, LLM, voice-agent, drag-drop, history)
+  - `archive/static/fonts/` - Inter font files
+  - `archive/static/qr/` - QR code images
+  - `archive/templates/` - Legacy HTML templates (editor, admin, auth, public-dashboard)
+
+### Technical Details
+
+- **Frontend Stack**: Vue 3 + TypeScript + Vite + Tailwind CSS + Pinia
+- **Build Output**: Production-ready SPA with code splitting and optimized assets
+- **Backward Compatibility**: Backend API remains unchanged; legacy files preserved in archive for reference
+- **Migration Scope**: 127 files moved/modified, ~84,000 lines of legacy code archived
+
+### Breaking Changes
+
+- Frontend now requires Node.js build step (`npm run build` in `frontend/` directory)
+- Static file serving structure changed (Vue app served from `frontend/dist/`)
+- Legacy HTML templates no longer served directly; Vue router handles routing
+
+---
+
 ## [4.37.39] - 2025-01-20 - Redis Distributed Lock Race Condition Fixes
 
 ### Fixed
