@@ -8,7 +8,7 @@ import { defineStore } from 'pinia'
 
 import type { AuthMode, CaptchaResponse, LoginCredentials, LoginResponse, User } from '@/types'
 
-const TOKEN_KEY = 'auth_token'
+const TOKEN_KEY = 'access_token'
 const USER_KEY = 'auth_user'
 const MODE_KEY = 'auth_mode'
 const API_BASE = '/api/auth'
@@ -24,6 +24,8 @@ export const useAuthStore = defineStore('auth', () => {
   // Getters
   const isAuthenticated = computed(() => !!user.value)
   const isAdmin = computed(() => user.value?.role === 'admin' || user.value?.role === 'superadmin')
+  const isManager = computed(() => user.value?.role === 'manager')
+  const isAdminOrManager = computed(() => isAdmin.value || isManager.value)
   const isSuperAdmin = computed(() => user.value?.role === 'superadmin')
 
   // Actions
@@ -126,14 +128,17 @@ export const useAuthStore = defineStore('auth', () => {
   async function logout(): Promise<void> {
     const currentMode = mode.value
 
-    try {
-      await fetch(`${API_BASE}/logout`, {
-        method: 'POST',
-        credentials: 'same-origin',
-        headers: token.value ? { Authorization: `Bearer ${token.value}` } : {},
-      })
-    } catch (error) {
-      console.error('Logout error:', error)
+    // Only call logout endpoint if we have a token
+    if (token.value) {
+      try {
+        await fetch(`${API_BASE}/logout`, {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: { Authorization: `Bearer ${token.value}` },
+        })
+      } catch (error) {
+        console.error('Logout error:', error)
+      }
     }
 
     clearAuth()
@@ -147,10 +152,16 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function checkAuth(): Promise<boolean> {
+    // If no token exists, user is definitely not authenticated
+    // Skip the API call to avoid unnecessary 401 errors
+    if (!token.value) {
+      return false
+    }
+
     try {
       const response = await fetch(`${API_BASE}/me`, {
         credentials: 'same-origin',
-        headers: token.value ? { Authorization: `Bearer ${token.value}` } : {},
+        headers: { Authorization: `Bearer ${token.value}` },
       })
 
       if (response.ok) {
@@ -181,11 +192,16 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function refreshToken(): Promise<boolean> {
+    // If no token exists, nothing to refresh
+    if (!token.value) {
+      return false
+    }
+
     try {
       const response = await fetch(`${API_BASE}/me`, {
         method: 'GET',
         credentials: 'same-origin',
-        headers: token.value ? { Authorization: `Bearer ${token.value}` } : {},
+        headers: { Authorization: `Bearer ${token.value}` },
       })
 
       if (response.ok) {
@@ -229,7 +245,7 @@ export const useAuthStore = defineStore('auth', () => {
       if (document.visibilityState === 'visible') {
         await checkSessionStatus()
       }
-    }, 45000)
+    }, 120000) // 2 minutes - balance between responsiveness and server load
 
     checkSessionStatus()
   }
@@ -242,11 +258,16 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function checkSessionStatus(): Promise<void> {
+    // Skip session check if no token exists
+    if (!token.value) {
+      return
+    }
+
     try {
       const response = await fetch(`${API_BASE}/session-status`, {
         method: 'GET',
         credentials: 'same-origin',
-        headers: token.value ? { Authorization: `Bearer ${token.value}` } : {},
+        headers: { Authorization: `Bearer ${token.value}` },
       })
 
       if (response.status === 401) {
@@ -307,6 +328,8 @@ export const useAuthStore = defineStore('auth', () => {
     // Getters
     isAuthenticated,
     isAdmin,
+    isManager,
+    isAdminOrManager,
     isSuperAdmin,
 
     // Actions

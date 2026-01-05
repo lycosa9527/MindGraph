@@ -4,12 +4,21 @@
 
 export type AuthMode = 'standard' | 'demo' | 'bayi' | 'enterprise'
 
+/**
+ * User roles hierarchy:
+ * - user: Regular user (default)
+ * - manager: Organization manager - can access org-scoped admin dashboard
+ * - admin: Full admin access to all organizations
+ * - superadmin: Reserved for future use (currently same as admin)
+ */
+export type UserRole = 'user' | 'manager' | 'admin' | 'superadmin'
+
 export interface User {
   id: string
   username: string
   phone?: string
   email?: string
-  role: 'user' | 'admin' | 'superadmin'
+  role: UserRole
   schoolId?: string
   schoolName?: string
   avatar?: string

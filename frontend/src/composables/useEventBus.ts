@@ -248,6 +248,11 @@ export type EventTypes = {
     title?: string
   }
   'mindmate:start_new_conversation': Record<string, never>
+  'mindmate:title_updated': {
+    conversationId: string | null
+    title: string
+    oldTitle?: string
+  }
 
   // LLM Events
   'llm:generation_started': { topic?: string; diagramType?: string }

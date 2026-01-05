@@ -456,6 +456,16 @@ class Messages:
             "en": "Admin access required",
             "az": "İdarəçi girişi tələb olunur"
         },
+        "manager_access_required": {
+            "zh": "需要管理员权限",
+            "en": "Manager access required",
+            "az": "Menecer girişi tələb olunur"
+        },
+        "elevated_access_required": {
+            "zh": "需要管理员或管理者权限",
+            "en": "Admin or manager access required",
+            "az": "İdarəçi və ya menecer girişi tələb olunur"
+        },
         "missing_required_fields": {
             "zh": "缺少必填字段：{}",
             "en": "Missing required fields: {}",
@@ -500,6 +510,11 @@ class Messages:
             "zh": "未找到用户 ID {}",
             "en": "User ID {} not found",
             "az": "İstifadəçi ID {} tapılmadı"
+        },
+        "user_not_in_organization": {
+            "zh": "用户不属于该组织",
+            "en": "User does not belong to this organization",
+            "az": "İstifadəçi bu təşkilata aid deyil"
         },
         "phone_cannot_be_empty": {
             "zh": "手机号不能为空",
@@ -644,6 +659,16 @@ class Messages:
             "zh": "组织 {} 已成功删除",
             "en": "Organization {} deleted successfully",
             "az": "Təşkilat {} uğurla silindi"
+        },
+        "manager_role_set": {
+            "zh": "已将 {} 设置为管理员",
+            "en": "{} has been set as manager",
+            "az": "{} menecer olaraq təyin edildi"
+        },
+        "manager_role_removed": {
+            "zh": "已移除 {} 的管理员权限",
+            "en": "Manager role removed from {}",
+            "az": "{} üçün menecer rolu silindi"
         },
         "user_updated": {
             "zh": "用户更新成功",

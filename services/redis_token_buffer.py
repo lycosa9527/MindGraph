@@ -67,6 +67,8 @@ class RedisTokenBuffer:
         'kimi': {'input': 2.0, 'output': 6.0, 'provider': 'dashscope'},
         'hunyuan': {'input': 0.45, 'output': 0.5, 'provider': 'tencent'},
         'doubao': {'input': 0.8, 'output': 2.0, 'provider': 'volcengine'},
+        # Dify MindMate - uses Dify's hosted models (pricing estimated based on typical usage)
+        'dify': {'input': 0.5, 'output': 1.5, 'provider': 'dify'},
     }
     
     # Model name mapping
@@ -78,6 +80,7 @@ class RedisTokenBuffer:
         'kimi': 'moonshot-v1-32k',
         'hunyuan': 'hunyuan-turbo',
         'doubao': 'doubao-1-5-pro-32k',
+        'dify': 'dify-mindmate',
     }
     
     def __init__(self):

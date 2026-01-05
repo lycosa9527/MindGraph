@@ -6,12 +6,16 @@
 import { computed, defineAsyncComponent, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
+import { ElMessage } from 'element-plus'
+
 import VersionNotification from '@/components/common/VersionNotification.vue'
+import { useLanguage } from '@/composables'
 import { useAuthStore, useUIStore } from '@/stores'
 
 const route = useRoute()
 const uiStore = useUIStore()
 const authStore = useAuthStore()
+const { isZh } = useLanguage()
 
 // Dynamically import layouts
 const layouts = {
@@ -38,9 +42,21 @@ watch(
   { immediate: true }
 )
 
-// Check auth status on mount
+// Check auth status on mount and show AI disclaimer
 onMounted(async () => {
   await authStore.checkAuth()
+
+  // Show AI content disclaimer
+  setTimeout(() => {
+    ElMessage({
+      message: isZh.value
+        ? '内容由AI生成，请仔细甄别'
+        : 'Content is AI-generated, please verify carefully',
+      type: 'info',
+      duration: 3000,
+      showClose: true,
+    })
+  }, 500)
 })
 </script>
 

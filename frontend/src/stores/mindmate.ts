@@ -94,6 +94,7 @@ export const useMindMateStore = defineStore('mindmate', () => {
    * Set the current conversation (when loading from history)
    */
   function setCurrentConversation(convId: string | null, title?: string): void {
+    const hasChanged = currentConversationId.value !== convId
     currentConversationId.value = convId
 
     if (convId && title) {
@@ -107,11 +108,13 @@ export const useMindMateStore = defineStore('mindmate', () => {
       conversationTitle.value = 'MindMate'
     }
 
-    // Emit event for other components to react
-    eventBus.emit('mindmate:conversation_changed', {
-      conversationId: convId,
-      title: conversationTitle.value,
-    })
+    // Only emit event if conversation actually changed
+    if (hasChanged) {
+      eventBus.emit('mindmate:conversation_changed', {
+        conversationId: convId,
+        title: conversationTitle.value,
+      })
+    }
   }
 
   /**
@@ -191,6 +194,7 @@ export const useMindMateStore = defineStore('mindmate', () => {
    * Update conversation title (after Dify generates it)
    */
   function updateConversationTitle(title: string): void {
+    const oldTitle = conversationTitle.value // Capture BEFORE updating
     conversationTitle.value = title
 
     // Update in conversations list if exists
@@ -198,20 +202,35 @@ export const useMindMateStore = defineStore('mindmate', () => {
       const conv = conversations.value.find((c) => c.id === currentConversationId.value)
       if (conv) {
         conv.name = title
+        conv.updated_at = Math.floor(Date.now() / 1000) // Use seconds like Dify
       }
     }
+
+    // Emit event for components that need to react to title changes
+    eventBus.emit('mindmate:title_updated', {
+      conversationId: currentConversationId.value,
+      title,
+      oldTitle, // Pass old title for animation
+    })
   }
 
   /**
    * Increment message count and set initial title from first message
    */
-  function trackMessage(userMessage: string): void {
+  function trackMessage(userMessage: string, files?: { name: string }[]): void {
     messageCount.value++
 
     // First message: use truncated message as immediate title
-    if (messageCount.value === 1 && userMessage.trim()) {
-      const truncated = userMessage.trim().substring(0, 30)
-      conversationTitle.value = truncated + (userMessage.length > 30 ? '...' : '')
+    if (messageCount.value === 1) {
+      if (userMessage.trim()) {
+        const truncated = userMessage.trim().substring(0, 30)
+        conversationTitle.value = truncated + (userMessage.length > 30 ? '...' : '')
+      } else if (files && files.length > 0) {
+        // File-only message: use first file name as title
+        const fileName = files[0].name
+        const truncated = fileName.length > 25 ? fileName.substring(0, 25) + '...' : fileName
+        conversationTitle.value = truncated
+      }
     }
   }
 

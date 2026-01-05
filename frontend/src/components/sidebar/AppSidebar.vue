@@ -5,15 +5,18 @@
  */
 import { computed, ref } from 'vue'
 
-import { ChatLineSquare, Connection, Grid, Plus } from '@element-plus/icons-vue'
+import { ChatLineSquare, Connection, Grid } from '@element-plus/icons-vue'
 
-import { ChevronDown, KeyRound, LogIn, LogOut, Menu, UserRound } from 'lucide-vue-next'
+import { useRouter } from 'vue-router'
+
+import { ChevronDown, KeyRound, LogIn, LogOut, Menu, Settings, UserRound } from 'lucide-vue-next'
 
 import { AccountInfoModal, ChangePasswordModal, LoginModal } from '@/components/auth'
 import { useAuthStore, useMindMateStore, useUIStore } from '@/stores'
 
 import ChatHistory from './ChatHistory.vue'
 
+const router = useRouter()
 const uiStore = useUIStore()
 const authStore = useAuthStore()
 const mindMateStore = useMindMateStore()
@@ -21,10 +24,10 @@ const mindMateStore = useMindMateStore()
 const isCollapsed = computed(() => uiStore.sidebarCollapsed)
 const currentMode = computed(() => uiStore.currentMode)
 const isAuthenticated = computed(() => authStore.isAuthenticated)
+const isAdminOrManager = computed(() => authStore.isAdminOrManager)
 
 // User info
 const userName = computed(() => authStore.user?.username || '')
-const userOrg = computed(() => authStore.user?.schoolName || '')
 const userAvatar = computed(() => {
   const avatar = authStore.user?.avatar || '🐈‍⬛'
   // Handle legacy avatar_01 format
@@ -65,6 +68,10 @@ async function handleLogout() {
   await authStore.logout()
 }
 
+function goToAdmin() {
+  router.push('/admin')
+}
+
 // Start new MindMate conversation
 function startNewChat() {
   mindMateStore.startNewConversation()
@@ -82,7 +89,10 @@ function startNewChat() {
   >
     <!-- Header with logo and toggle -->
     <div class="p-4 flex items-center justify-between border-b border-stone-200">
-      <div class="flex items-center space-x-2">
+      <div
+        class="logo-link flex items-center space-x-2 cursor-pointer hover:opacity-80 transition-opacity"
+        @click="startNewChat"
+      >
         <div
           class="w-7 h-7 bg-stone-900 rounded-lg flex items-center justify-center text-white font-semibold text-sm"
         >
@@ -102,18 +112,6 @@ function startNewChat() {
         @click="toggleSidebar"
       >
         <Menu class="w-4 h-4" />
-      </el-button>
-    </div>
-
-    <!-- New Chat Button -->
-    <div :class="isCollapsed ? 'px-2 py-3' : 'px-3 py-3'">
-      <el-button
-        type="primary"
-        class="new-chat-btn w-full"
-        @click="startNewChat"
-      >
-        <el-icon :class="isCollapsed ? '' : 'mr-2'"><Plus /></el-icon>
-        <span v-if="!isCollapsed">新建对话</span>
       </el-button>
     </div>
 
@@ -218,7 +216,7 @@ function startNewChat() {
                   {{ userName }}
                 </div>
                 <div class="text-xs text-stone-500 truncate leading-tight mt-0.5">
-                  {{ userOrg || '未设置组织' }}
+                  MindGraph专业版
                 </div>
               </div>
             </div>
@@ -233,6 +231,15 @@ function startNewChat() {
               <el-dropdown-item @click="openPasswordModal">
                 <KeyRound class="w-4 h-4 mr-2" />
                 修改密码
+              </el-dropdown-item>
+              <!-- Admin option -->
+              <el-dropdown-item
+                v-if="isAdminOrManager"
+                divided
+                @click="goToAdmin"
+              >
+                <Settings class="w-4 h-4 mr-2" />
+                管理面板
               </el-dropdown-item>
               <el-dropdown-item
                 divided
@@ -282,6 +289,15 @@ function startNewChat() {
                 <KeyRound class="w-4 h-4 mr-2" />
                 修改密码
               </el-dropdown-item>
+              <!-- Admin option -->
+              <el-dropdown-item
+                v-if="isAdminOrManager"
+                divided
+                @click="goToAdmin"
+              >
+                <Settings class="w-4 h-4 mr-2" />
+                管理面板
+              </el-dropdown-item>
               <el-dropdown-item
                 divided
                 @click="handleLogout"
@@ -306,19 +322,6 @@ function startNewChat() {
 </template>
 
 <style scoped>
-/* New Chat button - Swiss Design style (grey, round) */
-.new-chat-btn {
-  --el-button-bg-color: #e7e5e4;
-  --el-button-border-color: #d6d3d1;
-  --el-button-hover-bg-color: #d6d3d1;
-  --el-button-hover-border-color: #a8a29e;
-  --el-button-active-bg-color: #a8a29e;
-  --el-button-active-border-color: #78716c;
-  --el-button-text-color: #1c1917;
-  font-weight: 500;
-  border-radius: 9999px;
-}
-
 /* Login button - Swiss Design style */
 .login-btn {
   --el-button-bg-color: #1c1917;
@@ -448,6 +451,14 @@ function startNewChat() {
   border-top: 1px solid #e7e5e4;
   margin-top: 4px;
   padding-top: 8px;
+}
+
+.logo-link {
+  text-decoration: none;
+}
+
+.logo-link:hover {
+  text-decoration: none;
 }
 </style>
 

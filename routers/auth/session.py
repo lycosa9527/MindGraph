@@ -26,7 +26,7 @@ from models.messages import get_request_language, Language
 from services.redis_activity_tracker import get_activity_tracker
 from services.redis_org_cache import org_cache
 from services.redis_session_manager import get_session_manager
-from utils.auth import get_current_user, is_https
+from utils.auth import get_current_user, get_user_role, is_https
 
 from .dependencies import get_language_dependency
 
@@ -46,11 +46,15 @@ async def get_me(
     # Get organization (use cache with SQLite fallback)
     org = org_cache.get_by_id(current_user.organization_id) if current_user.organization_id else None
     
+    # Determine user role
+    role = get_user_role(current_user)
+    
     return {
         "id": current_user.id,
         "phone": current_user.phone,
         "name": current_user.name,
         "avatar": current_user.avatar or "🐈‍⬛",
+        "role": role,
         "organization": {
             "id": org.id if org else None,
             "code": org.code if org else None,

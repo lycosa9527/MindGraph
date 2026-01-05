@@ -29,6 +29,8 @@ from .helpers import (
 from .dependencies import (
     get_language_dependency,
     require_admin,
+    require_admin_or_manager,
+    require_manager,
 )
 
 # Create main auth router
@@ -58,5 +60,7 @@ __all__ = [
     'commit_user_with_retry',
     'get_language_dependency',
     'require_admin',
+    'require_admin_or_manager',
+    'require_manager',
 ]
 

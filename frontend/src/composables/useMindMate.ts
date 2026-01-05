@@ -59,7 +59,7 @@ export interface MindMateOptions {
   onMessageChunk?: (chunk: string) => void
   onMessageComplete?: () => void
   onError?: (error: string) => void
-  onTitleChanged?: (title: string) => void
+  onTitleChanged?: (title: string, oldTitle?: string) => void
 }
 
 export type MindMateState = 'idle' | 'loading' | 'streaming' | 'error'
@@ -315,7 +315,7 @@ export function useMindMate(options: MindMateOptions = {}) {
         msg.files = filesToSend
       }
       // Track user message for title generation (via store)
-      mindMateStore.trackMessage(message)
+      mindMateStore.trackMessage(message, filesToSend)
     }
 
     // Clear pending files
@@ -532,10 +532,19 @@ export function useMindMate(options: MindMateOptions = {}) {
           onMessageChunk?.(data.answer)
         }
 
-        // Save conversation ID (both locally and in store)
+        // Save conversation ID and add to history immediately (first message creates conversation)
         if (data.conversation_id && !conversationId.value) {
           conversationId.value = data.conversation_id
           mindMateStore.setCurrentConversation(data.conversation_id)
+
+          // Add new conversation to history list immediately
+          const now = Math.floor(Date.now() / 1000) // Use seconds like Dify
+          mindMateStore.addConversation({
+            id: data.conversation_id,
+            name: mindMateStore.conversationTitle,
+            created_at: now,
+            updated_at: now,
+          })
         }
         break
 
@@ -545,7 +554,8 @@ export function useMindMate(options: MindMateOptions = {}) {
           updateMessage(currentStreamingId.value, streamingBuffer.value, false, data.message_id)
         }
 
-        if (data.conversation_id) {
+        // Update conversation ID if needed (conversation was already added in 'message' event)
+        if (data.conversation_id && !conversationId.value) {
           conversationId.value = data.conversation_id
           mindMateStore.setCurrentConversation(data.conversation_id)
         }
@@ -707,10 +717,22 @@ export function useMindMate(options: MindMateOptions = {}) {
    * Load a specific conversation's messages
    */
   async function loadConversation(convId: string): Promise<void> {
+    // Abort any ongoing stream first
+    if (abortController.value) {
+      abortController.value.abort()
+      abortController.value = null
+    }
+
     // Clear current messages and load from history
     messages.value = []
     conversationId.value = convId
     state.value = 'loading'
+
+    // Sync with store - update current conversation and title
+    mindMateStore.setCurrentConversation(convId)
+
+    // Set high message count to prevent title auto-generation for loaded conversations
+    mindMateStore.messageCount = 999
 
     try {
       const token = localStorage.getItem('access_token')
@@ -755,9 +777,9 @@ export function useMindMate(options: MindMateOptions = {}) {
     const result = await mindMateStore.deleteConversation(convId)
 
     // If deleted current conversation, reset local state
+    // Welcome screen will show when no messages
     if (result && conversationId.value === convId) {
       resetConversation()
-      sendGreeting()
     }
 
     return result
@@ -765,11 +787,12 @@ export function useMindMate(options: MindMateOptions = {}) {
 
   /**
    * Start a new conversation (resets local state and notifies store)
+   * Welcome screen will be shown instead of auto-greeting
    */
   function startNewConversation(): void {
     resetConversation()
     mindMateStore.startNewConversation()
-    sendGreeting()
+    // Welcome screen shows automatically when no messages
   }
 
   // =========================================================================
@@ -799,12 +822,13 @@ export function useMindMate(options: MindMateOptions = {}) {
     ownerId
   )
 
-  // Listen for panel open to send greeting
+  // Listen for panel open (welcome screen shows instead of auto-greeting)
   eventBus.onWithOwner(
     'panel:opened',
     (data) => {
-      if (data.panel === 'mindmate' && !hasGreeted.value) {
-        setTimeout(() => sendGreeting(), 300)
+      if (data.panel === 'mindmate') {
+        // Welcome screen is now shown by default, no auto-greeting
+        // User will see welcome screen until they send their first message
       }
     },
     ownerId
@@ -826,6 +850,8 @@ export function useMindMate(options: MindMateOptions = {}) {
     'mindmate:conversation_changed',
     (data) => {
       const newConvId = data.conversationId as string | null
+      // Load the conversation if it's different from current
+      // (store only emits when conversation actually changes)
       if (newConvId && newConvId !== conversationId.value) {
         loadConversation(newConvId)
       }
@@ -838,7 +864,18 @@ export function useMindMate(options: MindMateOptions = {}) {
     'mindmate:start_new_conversation',
     () => {
       resetConversation()
-      sendGreeting()
+      // Welcome screen shows automatically when no messages
+    },
+    ownerId
+  )
+
+  // Listen for title updates from store (after Dify auto-generates title)
+  eventBus.onWithOwner(
+    'mindmate:title_updated',
+    (data) => {
+      if (data.title && onTitleChanged) {
+        onTitleChanged(data.title as string, data.oldTitle as string | undefined)
+      }
     },
     ownerId
   )
@@ -848,15 +885,29 @@ export function useMindMate(options: MindMateOptions = {}) {
   // =========================================================================
 
   function destroy(): void {
+    // 1. Abort any ongoing SSE stream
+    if (abortController.value) {
+      abortController.value.abort()
+      abortController.value = null
+    }
+
+    // 2. Revoke blob URLs for pending files
+    pendingFiles.value.forEach((f) => {
+      if (f.preview_url) URL.revokeObjectURL(f.preview_url)
+    })
+    pendingFiles.value = []
+
+    // 3. Remove event listeners
     eventBus.removeAllListenersForOwner(ownerId)
 
-    // Clear state
+    // 4. Clear state
     conversationId.value = null
     diagramSessionId.value = null
     hasGreeted.value = false
     messages.value = []
     streamingBuffer.value = ''
     currentStreamingId.value = null
+    state.value = 'idle'
   }
 
   onUnmounted(() => {

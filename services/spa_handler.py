@@ -7,7 +7,13 @@ In development, the Vite dev server handles frontend routing.
 
 Usage:
     - Production: Build Vue app with `npm run build`, then serve from /frontend/dist
-    - Development: Run Vite dev server on port 3000, backend on port 8000
+    - Development: Run Vite dev server (e.g., `npm run dev`), backend will skip SPA serving
+    
+Environment Variables:
+    - SPA_MODE: 'vue' (force Vue SPA), 'legacy' (disable Vue SPA), 'auto' (default, auto-detect)
+    - DEBUG=True: Automatically disables Vue SPA serving in auto mode
+    - ENVIRONMENT=development: Automatically disables Vue SPA serving in auto mode
+    - VITE_DEV_PORT: Automatically disables Vue SPA serving in auto mode
 
 Copyright 2024-2025 Beijing Siyuan Zhijiao Technology Co., Ltd.
 All Rights Reserved
@@ -47,8 +53,22 @@ def get_spa_env_mode() -> str:
 def should_serve_vue_spa() -> bool:
     """
     Determine if we should serve Vue SPA based on mode and availability.
+    
+    In development mode (when VITE_DEV_PORT is set or DEBUG=True),
+    we skip serving the built SPA to allow Vite dev server to handle it.
     """
     mode = get_spa_env_mode()
+    
+    # Check if we're in development mode
+    is_dev_mode = (
+        os.getenv("VITE_DEV_PORT") is not None
+        or os.getenv("DEBUG", "").lower() == "true"
+        or os.getenv("ENVIRONMENT", "").lower() == "development"
+    )
+    
+    if is_dev_mode and mode == "auto":
+        logger.info("Development mode detected. Skipping Vue SPA serving (Vite dev server will handle frontend).")
+        return False
     
     if mode == "vue":
         if not is_vue_spa_available():

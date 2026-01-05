@@ -47,6 +47,11 @@ class User(Base):
     
     Stores user credentials and security information.
     Password is hashed using bcrypt.
+    
+    Roles:
+    - 'user': Regular user (default)
+    - 'manager': Organization manager, can access org-scoped admin dashboard
+    - 'admin': Full admin access to all data
     """
     __tablename__ = "users"
     
@@ -56,6 +61,7 @@ class User(Base):
     name = Column(String(100), nullable=True)  # Teacher's name (optional)
     organization_id = Column(Integer, ForeignKey("organizations.id"), nullable=True)
     avatar = Column(String(50), nullable=True, default="🐈‍⬛")  # Avatar emoji
+    role = Column(String(20), nullable=False, default="user")  # user, manager, admin
     
     # Security fields
     failed_login_attempts = Column(Integer, default=0)  # Track failed logins

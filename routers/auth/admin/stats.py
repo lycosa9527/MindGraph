@@ -182,6 +182,10 @@ async def get_token_stats_admin(
     
     If organization_id is provided, returns stats for that organization only.
     Otherwise returns global stats.
+    
+    Returns separate stats for:
+    - mindgraph: Diagram generation and related features
+    - mindmate: AI assistant (Dify) conversations
     """
     # Use Beijing time for "today" calculations
     # Convert to UTC for database queries since timestamps are stored in UTC
@@ -204,6 +208,13 @@ async def get_token_stats_admin(
     month_stats = {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}
     total_stats = {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}
     top_users = []
+    
+    # Initialize breakdown by service type
+    empty_breakdown = {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0, "request_count": 0}
+    by_service = {
+        "mindgraph": {"today": empty_breakdown.copy(), "week": empty_breakdown.copy(), "month": empty_breakdown.copy(), "total": empty_breakdown.copy()},
+        "mindmate": {"today": empty_breakdown.copy(), "week": empty_breakdown.copy(), "month": empty_breakdown.copy(), "total": empty_breakdown.copy()}
+    }
     
     # Import models first
     try:
@@ -325,6 +336,42 @@ async def get_token_stats_admin(
                 "output_tokens": int(total_token_stats.output_tokens or 0),
                 "total_tokens": int(total_token_stats.total_tokens or 0)
             }
+        
+        # Service breakdown: MindGraph vs MindMate
+        # Query stats grouped by request_type for different time periods
+        def get_service_stats(date_filter=None):
+            """Get stats grouped by service type (mindgraph vs mindmate)"""
+            query = db.query(
+                TokenUsage.request_type,
+                func.sum(TokenUsage.input_tokens).label('input_tokens'),
+                func.sum(TokenUsage.output_tokens).label('output_tokens'),
+                func.sum(TokenUsage.total_tokens).label('total_tokens'),
+                func.count(TokenUsage.id).label('request_count')
+            ).filter(TokenUsage.success == True)
+            
+            if date_filter is not None:
+                query = query.filter(TokenUsage.created_at >= date_filter)
+            if org_filter:
+                query = query.filter(*org_filter)
+            
+            return query.group_by(TokenUsage.request_type).all()
+        
+        # Get breakdown for each time period
+        for period, date_filter in [("today", today_start), ("week", week_ago), ("month", month_ago), ("total", None)]:
+            service_results = get_service_stats(date_filter)
+            for result in service_results:
+                request_type = result.request_type or 'unknown'
+                # Map request_type to service category
+                if request_type == 'mindmate':
+                    service = 'mindmate'
+                else:
+                    # All other types (diagram_generation, node_palette, autocomplete, etc.) are MindGraph
+                    service = 'mindgraph'
+                
+                by_service[service][period]["input_tokens"] += int(result.input_tokens or 0)
+                by_service[service][period]["output_tokens"] += int(result.output_tokens or 0)
+                by_service[service][period]["total_tokens"] += int(result.total_tokens or 0)
+                by_service[service][period]["request_count"] += int(result.request_count or 0)
         
         # Top 10 users by total tokens (all time), including organization name
         # Group by Organization.id (not name) to avoid issues with duplicate organization names
@@ -453,7 +500,8 @@ async def get_token_stats_admin(
         "past_month": month_stats,
         "total": total_stats,
         "top_users": top_users,
-        "top_users_today": top_users_today if 'top_users_today' in locals() else []
+        "top_users_today": top_users_today if 'top_users_today' in locals() else [],
+        "by_service": by_service  # MindGraph vs MindMate breakdown
     }
 
 

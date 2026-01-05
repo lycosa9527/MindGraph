@@ -26,10 +26,159 @@ import json
 import time
 import logging
 import os
-from typing import AsyncGenerator, Dict, Any, Optional, List
+from typing import AsyncGenerator, Dict, Any, Optional, List, Tuple
 from dataclasses import dataclass
+from io import BytesIO
 
 logger = logging.getLogger(__name__)
+
+
+# =========================================================================
+# Error Classes
+# =========================================================================
+
+class DifyAPIError(Exception):
+    """Base Dify API error"""
+    def __init__(self, message: str, status_code: Optional[int] = None, error_code: Optional[str] = None):
+        self.message = message
+        self.status_code = status_code
+        self.error_code = error_code
+        super().__init__(self.message)
+
+
+class DifyConversationNotFoundError(DifyAPIError):
+    """404: Conversation does not exist"""
+    def __init__(self, message: str = "Conversation does not exist"):
+        super().__init__(message, status_code=404, error_code="conversation_not_exists")
+
+
+class DifyInvalidParamError(DifyAPIError):
+    """400: Invalid parameter input"""
+    def __init__(self, message: str = "Invalid parameter input"):
+        super().__init__(message, status_code=400, error_code="invalid_param")
+
+
+class DifyAppUnavailableError(DifyAPIError):
+    """400: App configuration unavailable"""
+    def __init__(self, message: str = "App configuration unavailable"):
+        super().__init__(message, status_code=400, error_code="app_unavailable")
+
+
+class DifyProviderNotInitializeError(DifyAPIError):
+    """400: No available model credential configuration"""
+    def __init__(self, message: str = "No available model credential configuration"):
+        super().__init__(message, status_code=400, error_code="provider_not_initialize")
+
+
+class DifyQuotaExceededError(DifyAPIError):
+    """400: Model invocation quota insufficient"""
+    def __init__(self, message: str = "Model invocation quota insufficient"):
+        super().__init__(message, status_code=400, error_code="provider_quota_exceeded")
+
+
+class DifyModelNotSupportError(DifyAPIError):
+    """400: Current model unavailable"""
+    def __init__(self, message: str = "Current model unavailable"):
+        super().__init__(message, status_code=400, error_code="model_currently_not_support")
+
+
+class DifyWorkflowNotFoundError(DifyAPIError):
+    """400: Specified workflow version not found"""
+    def __init__(self, message: str = "Specified workflow version not found"):
+        super().__init__(message, status_code=400, error_code="workflow_not_found")
+
+
+class DifyDraftWorkflowError(DifyAPIError):
+    """400: Cannot use draft workflow version"""
+    def __init__(self, message: str = "Cannot use draft workflow version"):
+        super().__init__(message, status_code=400, error_code="draft_workflow_error")
+
+
+class DifyWorkflowIdFormatError(DifyAPIError):
+    """400: Invalid workflow_id format, expected UUID format"""
+    def __init__(self, message: str = "Invalid workflow_id format, expected UUID format"):
+        super().__init__(message, status_code=400, error_code="workflow_id_format_error")
+
+
+class DifyCompletionRequestError(DifyAPIError):
+    """400: Text generation failed"""
+    def __init__(self, message: str = "Text generation failed"):
+        super().__init__(message, status_code=400, error_code="completion_request_error")
+
+
+class DifyFileAccessDeniedError(DifyAPIError):
+    """403: File access denied or file does not belong to current application"""
+    def __init__(self, message: str = "File access denied or file does not belong to current application"):
+        super().__init__(message, status_code=403, error_code="file_access_denied")
+
+
+class DifyFileNotFoundError(DifyAPIError):
+    """404: File not found or has been deleted"""
+    def __init__(self, message: str = "File not found or has been deleted"):
+        super().__init__(message, status_code=404, error_code="file_not_found")
+
+
+# =========================================================================
+# Response Models
+# =========================================================================
+
+@dataclass
+class ChatCompletionResponse:
+    """Response model for blocking chat completion"""
+    event: str
+    task_id: str
+    id: str
+    message_id: str
+    conversation_id: str
+    mode: str
+    answer: str
+    metadata: Optional[Dict[str, Any]] = None
+    usage: Optional[Dict[str, Any]] = None
+    retriever_resources: Optional[List[Dict[str, Any]]] = None
+    created_at: int = 0
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> 'ChatCompletionResponse':
+        """Create from API response dict"""
+        metadata = data.get('metadata', {})
+        return cls(
+            event=data.get('event', 'message'),
+            task_id=data.get('task_id', ''),
+            id=data.get('id', ''),
+            message_id=data.get('message_id', ''),
+            conversation_id=data.get('conversation_id', ''),
+            mode=data.get('mode', 'chat'),
+            answer=data.get('answer', ''),
+            metadata=metadata,
+            usage=metadata.get('usage') if metadata else None,
+            retriever_resources=metadata.get('retriever_resources') if metadata else None,
+            created_at=data.get('created_at', 0)
+        )
+
+
+@dataclass
+class FileUploadResponse:
+    """Response model for file upload"""
+    id: str
+    name: str
+    size: int
+    extension: str
+    mime_type: str
+    created_by: str
+    created_at: int
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> 'FileUploadResponse':
+        """Create from API response dict"""
+        return cls(
+            id=data.get('id', ''),
+            name=data.get('name', ''),
+            size=data.get('size', 0),
+            extension=data.get('extension', ''),
+            mime_type=data.get('mime_type', ''),
+            created_by=data.get('created_by', ''),
+            created_at=data.get('created_at', 0)
+        )
 
 
 @dataclass
@@ -70,13 +219,16 @@ class AsyncDifyClient:
         endpoint: str, 
         json_data: Optional[Dict] = None,
         params: Optional[Dict] = None,
-        data: Optional[aiohttp.FormData] = None
+        data: Optional[aiohttp.FormData] = None,
+        custom_headers: Optional[Dict[str, str]] = None
     ) -> Dict[str, Any]:
         """Make a non-streaming HTTP request to Dify API"""
         url = f"{self.api_url}/{endpoint.lstrip('/')}"
         timeout = aiohttp.ClientTimeout(total=self.timeout)
         
         headers = self._get_headers() if not data else self._get_headers(content_type="")
+        if custom_headers:
+            headers.update(custom_headers)
         
         async with aiohttp.ClientSession(timeout=timeout) as session:
             async with session.request(
@@ -86,12 +238,44 @@ class AsyncDifyClient:
                     return {"result": "success"}
                 if response.status != 200:
                     error_msg = f"HTTP {response.status}"
+                    error_code = None
                     try:
                         error_data = await response.json()
                         error_msg = error_data.get('message', error_msg)
+                        error_code = error_data.get('code')
                     except:
                         pass
-                    raise Exception(error_msg)
+                    
+                    # Map status codes and error codes to specific exceptions
+                    if response.status == 404:
+                        if 'conversation' in endpoint.lower() or error_code == 'conversation_not_exists':
+                            raise DifyConversationNotFoundError(error_msg)
+                        elif 'file' in endpoint.lower() or error_code == 'file_not_found':
+                            raise DifyFileNotFoundError(error_msg)
+                    elif response.status == 403 and error_code == 'file_access_denied':
+                        raise DifyFileAccessDeniedError(error_msg)
+                    elif response.status == 400:
+                        if error_code == 'invalid_param':
+                            raise DifyInvalidParamError(error_msg)
+                        elif error_code == 'app_unavailable':
+                            raise DifyAppUnavailableError(error_msg)
+                        elif error_code == 'provider_not_initialize':
+                            raise DifyProviderNotInitializeError(error_msg)
+                        elif error_code == 'provider_quota_exceeded':
+                            raise DifyQuotaExceededError(error_msg)
+                        elif error_code == 'model_currently_not_support':
+                            raise DifyModelNotSupportError(error_msg)
+                        elif error_code == 'workflow_not_found':
+                            raise DifyWorkflowNotFoundError(error_msg)
+                        elif error_code == 'draft_workflow_error':
+                            raise DifyDraftWorkflowError(error_msg)
+                        elif error_code == 'workflow_id_format_error':
+                            raise DifyWorkflowIdFormatError(error_msg)
+                        elif error_code == 'completion_request_error':
+                            raise DifyCompletionRequestError(error_msg)
+                    
+                    # Generic error for unmapped cases
+                    raise DifyAPIError(error_msg, status_code=response.status, error_code=error_code)
                 return await response.json()
 
     # =========================================================================
@@ -107,7 +291,8 @@ class AsyncDifyClient:
         inputs: Optional[Dict[str, Any]] = None,
         auto_generate_name: bool = True,
         workflow_id: Optional[str] = None,
-        trace_id: Optional[str] = None
+        trace_id: Optional[str] = None,
+        trace_id_header: bool = True
     ) -> AsyncGenerator[Dict[str, Any], None]:
         """
         Stream chat response from Dify API (async version).
@@ -121,6 +306,8 @@ class AsyncDifyClient:
             auto_generate_name: Auto-generate conversation title (default True)
             workflow_id: Optional workflow version ID
             trace_id: Optional trace ID for distributed tracing
+            trace_id_header: If True, use X-Trace-Id header (highest priority per docs).
+                           If False, use trace_id in request body.
             
         Yields:
             Dict containing event data from Dify API
@@ -145,10 +332,14 @@ class AsyncDifyClient:
             payload["files"] = [f.to_dict() for f in files]
         if workflow_id:
             payload["workflow_id"] = workflow_id
-        if trace_id:
-            payload["trace_id"] = trace_id
-            
+        
+        # Trace ID handling: header has highest priority per official docs
         headers = self._get_headers()
+        if trace_id:
+            if trace_id_header:
+                headers["X-Trace-Id"] = trace_id
+            else:
+                payload["trace_id"] = trace_id
         
         try:
             url = f"{self.api_url}/chat-messages"
@@ -348,11 +539,48 @@ class AsyncDifyClient:
     # Files
     # =========================================================================
     
-    async def upload_file(self, file_path: str, user_id: str) -> Dict[str, Any]:
-        """Upload a file for use in chat messages"""
+    async def upload_file(
+        self,
+        user_id: str,
+        file_path: Optional[str] = None,
+        file_bytes: Optional[bytes] = None,
+        filename: Optional[str] = None,
+        content_type: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        Upload a file for use in chat messages.
+        
+        Args:
+            user_id: User identifier
+            file_path: Path to file (mutually exclusive with file_bytes)
+            file_bytes: File content as bytes (mutually exclusive with file_path)
+            filename: Filename (required if using file_bytes, optional if using file_path)
+            content_type: MIME type (optional, will be inferred if not provided)
+            
+        Returns:
+            Dict containing file upload response with id, name, size, etc.
+        """
+        if not file_path and not file_bytes:
+            raise ValueError("Either file_path or file_bytes must be provided")
+        if file_path and file_bytes:
+            raise ValueError("Cannot provide both file_path and file_bytes")
+        
         data = aiohttp.FormData()
         data.add_field('user', user_id)
-        data.add_field('file', open(file_path, 'rb'), filename=os.path.basename(file_path))
+        
+        if file_path:
+            if not os.path.exists(file_path):
+                raise FileNotFoundError(f"File not found: {file_path}")
+            filename = filename or os.path.basename(file_path)
+            # Read file content to avoid file handle closure issues
+            with open(file_path, 'rb') as f:
+                file_content = f.read()
+            data.add_field('file', BytesIO(file_content), filename=filename, content_type=content_type)
+        else:
+            if not filename:
+                raise ValueError("filename is required when using file_bytes")
+            data.add_field('file', BytesIO(file_bytes), filename=filename, content_type=content_type)
+        
         return await self._request("POST", "/files/upload", data=data)
 
     async def get_file_preview_url(self, file_id: str, as_attachment: bool = False) -> str:
@@ -361,6 +589,61 @@ class AsyncDifyClient:
         if as_attachment:
             url += "?as_attachment=true"
         return url
+
+    async def download_file(
+        self,
+        file_id: str,
+        as_attachment: bool = False
+    ) -> Tuple[bytes, Dict[str, str]]:
+        """
+        Download/preview a file from Dify API.
+        
+        Args:
+            file_id: The unique identifier of the file
+            as_attachment: Whether to force download as attachment (default False for preview)
+            
+        Returns:
+            Tuple of (file_content_bytes, response_headers_dict)
+            
+        Raises:
+            DifyFileNotFoundError: If file not found (404)
+            DifyFileAccessDeniedError: If file access denied (403)
+            DifyAPIError: For other API errors
+        """
+        url = f"{self.api_url}/files/{file_id}/preview"
+        params = {}
+        if as_attachment:
+            params["as_attachment"] = "true"
+        
+        timeout = aiohttp.ClientTimeout(total=self.timeout)
+        headers = self._get_headers()
+        
+        async with aiohttp.ClientSession(timeout=timeout) as session:
+            async with session.get(url, params=params, headers=headers) as response:
+                if response.status == 404:
+                    raise DifyFileNotFoundError("File not found or has been deleted")
+                if response.status == 403:
+                    raise DifyFileAccessDeniedError("File access denied or file does not belong to current application")
+                if response.status != 200:
+                    error_msg = f"HTTP {response.status}"
+                    try:
+                        error_data = await response.json()
+                        error_msg = error_data.get('message', error_msg)
+                    except:
+                        pass
+                    raise DifyAPIError(error_msg, status_code=response.status)
+                
+                # Extract response headers
+                response_headers = {
+                    'Content-Type': response.headers.get('Content-Type', ''),
+                    'Content-Length': response.headers.get('Content-Length', ''),
+                    'Content-Disposition': response.headers.get('Content-Disposition', ''),
+                    'Cache-Control': response.headers.get('Cache-Control', ''),
+                    'Accept-Ranges': response.headers.get('Accept-Ranges', '')
+                }
+                
+                content = await response.read()
+                return content, response_headers
 
     # =========================================================================
     # Audio

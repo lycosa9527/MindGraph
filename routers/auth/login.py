@@ -41,6 +41,7 @@ from utils.auth import (
     check_account_lockout,
     create_access_token,
     get_client_ip,
+    get_user_role,
     hash_password,
     increment_failed_attempts,
     is_admin_demo_passkey,
@@ -252,7 +253,8 @@ async def login(
             "phone": user.phone,
             "name": user.name,
             "organization": org.name if org else None,
-            "avatar": user.avatar or "🐈‍⬛"
+            "avatar": user.avatar or "🐈‍⬛",
+            "role": get_user_role(user)
         }
     }
 
@@ -359,7 +361,8 @@ async def login_with_sms(
             "phone": user.phone,
             "name": user.name,
             "organization": org.name if org else None,
-            "avatar": user.avatar or "🐈‍⬛"
+            "avatar": user.avatar or "🐈‍⬛",
+            "role": get_user_role(user)
         }
     }
 
@@ -500,7 +503,7 @@ async def verify_demo(
             "id": auth_user.id,
             "phone": auth_user.phone,
             "name": auth_user.name,
-            "is_admin": is_admin_access
+            "role": "admin" if is_admin_access else "user"
         }
     }
 

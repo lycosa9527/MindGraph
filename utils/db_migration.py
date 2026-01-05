@@ -5,6 +5,12 @@ Database Migration Manager
 Automatically validates and patches database schema on startup.
 Detects missing columns and adds them automatically.
 
+Safety features:
+- Creates verified backup before any changes
+- Runs integrity checks before and after migration
+- Supports dry-run mode to preview changes
+- Verifies columns were actually added after migration
+
 Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved
 Proprietary License
@@ -12,10 +18,11 @@ Proprietary License
 
 import logging
 import os
+import re
 import shutil
+import sqlite3
 from datetime import datetime
-from pathlib import Path
-from typing import Dict, List, Optional, Any
+from typing import List, Optional, Any, Tuple
 from sqlalchemy import inspect, text
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session
@@ -23,6 +30,9 @@ from sqlalchemy.exc import OperationalError
 from config.database import engine, SessionLocal
 
 logger = logging.getLogger(__name__)
+
+# Valid identifier pattern for table/column names (prevent SQL injection)
+VALID_IDENTIFIER_PATTERN = re.compile(r'^[a-zA-Z_][a-zA-Z0-9_]*$')
 
 
 class DatabaseMigrationManager:
@@ -48,6 +58,8 @@ class DatabaseMigrationManager:
         """
         self.engine = engine
         self.inspector = inspect(engine)
+        self._db_path: Optional[str] = None
+        
         # Verify we're using SQLite (only supported database)
         db_url = str(self.engine.url)
         if 'sqlite' not in db_url.lower():
@@ -56,10 +68,159 @@ class DatabaseMigrationManager:
                 f"Migration manager is optimized for SQLite only. "
                 f"Unexpected behavior may occur."
             )
+        else:
+            self._db_path = self._extract_db_path(db_url)
+    
+    def _extract_db_path(self, db_url: str) -> Optional[str]:
+        """Extract file path from SQLite URL"""
+        if db_url.startswith("sqlite:////"):
+            db_path = db_url.replace("sqlite:////", "/")
+        elif db_url.startswith("sqlite:///"):
+            db_path = db_url.replace("sqlite:///", "")
+            if db_path.startswith("./"):
+                db_path = db_path[2:]
+            if not os.path.isabs(db_path):
+                db_path = os.path.join(os.getcwd(), db_path)
+        else:
+            db_path = db_url.replace("sqlite:///", "")
+        return db_path
+    
+    def _validate_identifier(self, name: str) -> bool:
+        """Validate table/column name to prevent SQL injection"""
+        if not name or not VALID_IDENTIFIER_PATTERN.match(name):
+            logger.error(f"[DBMigration] Invalid identifier: '{name}' - rejected for safety")
+            return False
+        return True
+    
+    def _run_integrity_check(self) -> Tuple[bool, str]:
+        """
+        Run SQLite integrity check on the database.
+        
+        Returns:
+            Tuple of (passed: bool, message: str)
+        """
+        if not self._db_path or not os.path.exists(self._db_path):
+            return False, "Database file not found"
+        
+        try:
+            conn = sqlite3.connect(self._db_path, timeout=30.0)
+            cursor = conn.cursor()
+            cursor.execute("PRAGMA integrity_check")
+            result = cursor.fetchone()
+            conn.close()
+            
+            if result and result[0] == 'ok':
+                return True, "Integrity check passed"
+            else:
+                return False, f"Integrity check failed: {result}"
+        except Exception as e:
+            return False, f"Integrity check error: {e}"
+    
+    def _verify_backup(self, backup_path: str) -> bool:
+        """
+        Verify that a backup file is valid and readable.
+        
+        Args:
+            backup_path: Path to backup file
+            
+        Returns:
+            True if backup is valid, False otherwise
+        """
+        if not os.path.exists(backup_path):
+            logger.error(f"[DBMigration] Backup file does not exist: {backup_path}")
+            return False
+        
+        try:
+            # Open backup and run integrity check
+            conn = sqlite3.connect(backup_path, timeout=30.0)
+            cursor = conn.cursor()
+            
+            # Check integrity
+            cursor.execute("PRAGMA integrity_check")
+            result = cursor.fetchone()
+            if not result or result[0] != 'ok':
+                logger.error(f"[DBMigration] Backup integrity check failed: {result}")
+                conn.close()
+                return False
+            
+            # Verify tables exist
+            cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
+            tables = cursor.fetchall()
+            if not tables:
+                logger.error("[DBMigration] Backup has no tables - invalid backup")
+                conn.close()
+                return False
+            
+            conn.close()
+            logger.info(f"[DBMigration] Backup verified: {len(tables)} tables, integrity OK")
+            return True
+            
+        except Exception as e:
+            logger.error(f"[DBMigration] Backup verification failed: {e}")
+            return False
+    
+    def dry_run(self) -> List[dict]:
+        """
+        Preview what migrations would be applied without making changes.
+        
+        Returns:
+            List of pending migrations with details
+        """
+        pending = []
+        try:
+            from sqlalchemy import inspect
+            fresh_inspector = inspect(self.engine)
+            
+            for table_name, table_class in self._get_registered_tables():
+                if not table_name or not fresh_inspector.has_table(table_name):
+                    continue
+                
+                existing_columns = {
+                    col['name'].lower(): col['name']
+                    for col in fresh_inspector.get_columns(table_name)
+                }
+                
+                if table_class is None:
+                    from models.auth import Base
+                    table_metadata = Base.metadata.tables.get(table_name)
+                    if table_metadata is None:
+                        continue
+                    expected_columns = {col.name: col for col in table_metadata.columns}
+                else:
+                    try:
+                        expected_columns = {
+                            col.name: col 
+                            for col in table_class.__table__.columns
+                        }
+                    except AttributeError:
+                        continue
+                
+                for col_name, col_def in expected_columns.items():
+                    if col_name.lower() not in existing_columns:
+                        pending.append({
+                            'table': table_name,
+                            'column': col_name,
+                            'type': self._get_sqlite_type(col_def),
+                            'nullable': col_def.nullable,
+                            'default': self._get_sql_default_value(col_def.default) if col_def.default else None
+                        })
+            
+            return pending
+        except Exception as e:
+            logger.error(f"[DBMigration] Dry run failed: {e}")
+            return []
         
     def validate_and_migrate(self) -> bool:
         """
         Validate database schema and apply migrations.
+        
+        Safety steps:
+        1. Run integrity check on database
+        2. Detect what changes are needed (dry-run)
+        3. Create and verify backup
+        4. Apply migrations
+        5. Verify migrations were applied
+        6. Run post-migration integrity check
         
         Returns:
             True if migration successful, False otherwise
@@ -67,24 +228,41 @@ class DatabaseMigrationManager:
         try:
             logger.info("[DBMigration] Starting database schema validation...")
             
-            # Step 1: Detect missing columns (will trigger backup and migration)
-            changes_detected = self._detect_changes()
+            # Step 1: Pre-migration integrity check
+            integrity_ok, integrity_msg = self._run_integrity_check()
+            if not integrity_ok:
+                logger.error(f"[DBMigration] Pre-migration integrity check FAILED: {integrity_msg}")
+                logger.error("[DBMigration] Aborting migration - database may be corrupt")
+                return False
+            logger.info(f"[DBMigration] Pre-migration integrity check: {integrity_msg}")
             
-            # Step 2: Create backup if missing columns detected
+            # Step 2: Detect missing columns (dry-run first)
+            pending_migrations = self.dry_run()
+            if pending_migrations:
+                logger.info(f"[DBMigration] Found {len(pending_migrations)} pending column addition(s):")
+                for m in pending_migrations:
+                    logger.info(f"[DBMigration]   - {m['table']}.{m['column']} ({m['type']})")
+            
+            changes_detected = len(pending_migrations) > 0
+            
+            # Step 3: Create and verify backup if changes needed
             backup_path = None
             if changes_detected:
                 backup_path = self._create_backup()
                 if not backup_path:
                     logger.error("[DBMigration] Backup creation failed - aborting migration for safety")
                     return False
+                
+                # Verify backup is valid before proceeding
+                if not self._verify_backup(backup_path):
+                    logger.error("[DBMigration] Backup verification failed - aborting migration for safety")
+                    return False
+                
+                logger.info(f"[DBMigration] Backup created and verified: {backup_path}")
             
-            # Step 3: Check and migrate all registered models
-            migrations_applied = 0
-            
-            # Import all models to register them with Base
+            # Step 4: Import all models to register them with Base
             from models.auth import Organization, User, APIKey, Base
             
-            # Try to import TokenUsage if it exists
             try:
                 from models.token_usage import TokenUsage
                 logger.debug("[DBMigration] TokenUsage model found")
@@ -92,17 +270,25 @@ class DatabaseMigrationManager:
                 logger.debug("[DBMigration] TokenUsage model not found (okay if not implemented yet)")
                 TokenUsage = None
             
-            # Migrate each table
+            # Step 5: Apply migrations
+            migrations_applied = 0
             for table_name, table_class in self._get_registered_tables():
                 if table_name and table_class:
                     migrated = self._migrate_table(table_name, table_class)
                     if migrated:
                         migrations_applied += 1
             
+            # Step 6: Post-migration integrity check
             if migrations_applied > 0:
-                logger.info(f"[DBMigration] Applied {migrations_applied} table migration(s)")
-                if backup_path:
-                    logger.info(f"[DBMigration] Backup available at: {backup_path}")
+                post_integrity_ok, post_integrity_msg = self._run_integrity_check()
+                if not post_integrity_ok:
+                    logger.error(f"[DBMigration] Post-migration integrity check FAILED: {post_integrity_msg}")
+                    logger.error(f"[DBMigration] CRITICAL: Database may be corrupted!")
+                    logger.error(f"[DBMigration] Restore from backup: {backup_path}")
+                    return False
+                logger.info(f"[DBMigration] Post-migration integrity check: {post_integrity_msg}")
+                logger.info(f"[DBMigration] Applied {migrations_applied} table migration(s) successfully")
+                logger.info(f"[DBMigration] Backup available at: {backup_path}")
             else:
                 logger.info("[DBMigration] Database schema is up to date - no migrations needed")
             
@@ -195,31 +381,15 @@ class DatabaseMigrationManager:
             return None
     
     def _backup_sqlite(self) -> Optional[str]:
-        """Create backup for SQLite database by copying the file"""
+        """Create backup for SQLite database using SQLite backup API"""
         try:
-            db_url = str(self.engine.url)
-            # Extract file path from SQLite URL
-            # SQLite URL formats:
-            # - sqlite:///./path/to/db (relative path)
-            # - sqlite:////absolute/path/to/db (absolute path - note 4 slashes)
-            # - sqlite:///path/to/db (relative path - 3 slashes)
-            if db_url.startswith("sqlite:////"):
-                # Absolute path (4 slashes: sqlite:////absolute/path)
-                db_path = db_url.replace("sqlite:////", "/")
-            elif db_url.startswith("sqlite:///"):
-                # Relative path (3 slashes: sqlite:///./path or sqlite:///path)
-                db_path = db_url.replace("sqlite:///", "")
-                if db_path.startswith("./"):
-                    db_path = db_path[2:]  # Remove "./"
-                # Convert to absolute path
-                if not os.path.isabs(db_path):
-                    db_path = os.path.join(os.getcwd(), db_path)
-            else:
-                # Fallback: try to extract path
-                db_path = db_url.replace("sqlite:///", "")
+            db_path = self._db_path
+            if not db_path:
+                logger.error("[DBMigration] Database path not set - cannot create backup")
+                return None
             
             if not os.path.exists(db_path):
-                logger.warning(f"[DBMigration] Database file not found: {db_path} - skipping backup")
+                logger.error(f"[DBMigration] Database file not found: {db_path} - cannot create backup")
                 return None
             
             # Create backup directory
@@ -234,7 +404,6 @@ class DatabaseMigrationManager:
             
             # Use SQLite backup API for safe backup (handles WAL mode correctly)
             # This ensures we get a consistent snapshot even if database is in use
-            import sqlite3
             source_conn = None
             backup_conn = None
             try:
@@ -481,9 +650,11 @@ class DatabaseMigrationManager:
                 successfully_added_columns = []  # Track which columns were actually added
                 for col_name, col_def in missing_columns:
                     try:
-                        self._add_column(table_name, col_name, col_def, db)
+                        if not self._add_column(table_name, col_name, col_def, db):
+                            logger.error(f"[DBMigration] Skipping column '{col_name}' due to validation failure")
+                            continue
                         db.commit()  # Commit each successful addition immediately
-                        logger.info(f"[DBMigration] ✅ Added column '{col_name}' to table '{table_name}'")
+                        logger.info(f"[DBMigration] Added column '{col_name}' to table '{table_name}'")
                         columns_added += 1
                         successfully_added_columns.append(col_name)
                     except OperationalError as e:
@@ -545,7 +716,7 @@ class DatabaseMigrationManager:
             logger.error(f"[DBMigration] Error migrating table '{table_name}': {e}", exc_info=True)
             return False
     
-    def _add_column(self, table_name: str, column_name: str, column_def: Any, db: Session):
+    def _add_column(self, table_name: str, column_name: str, column_def: Any, db: Session) -> bool:
         """
         Add a column to a table.
         
@@ -554,14 +725,22 @@ class DatabaseMigrationManager:
             column_name: Column name to add
             column_def: SQLAlchemy Column definition
             db: Database session
+            
+        Returns:
+            True if column was added, False if validation failed
         """
         # Build SQLite ALTER TABLE statement
         sql = self._build_sqlite_alter_table(table_name, column_name, column_def)
         
+        if sql is None:
+            logger.error(f"[DBMigration] Failed to build ALTER TABLE statement for {table_name}.{column_name}")
+            return False
+        
         logger.debug(f"[DBMigration] Executing: {sql}")
         db.execute(text(sql))
+        return True
     
-    def _build_sqlite_alter_table(self, table_name: str, column_name: str, column_def: Any) -> str:
+    def _build_sqlite_alter_table(self, table_name: str, column_name: str, column_def: Any) -> Optional[str]:
         """
         Build ALTER TABLE statement for SQLite.
         
@@ -576,8 +755,16 @@ class DatabaseMigrationManager:
             column_def: Column definition
             
         Returns:
-            SQL ALTER TABLE statement
+            SQL ALTER TABLE statement, or None if validation fails
         """
+        # Validate identifiers to prevent SQL injection
+        if not self._validate_identifier(table_name):
+            logger.error(f"[DBMigration] Invalid table name: '{table_name}' - SQL injection protection")
+            return None
+        if not self._validate_identifier(column_name):
+            logger.error(f"[DBMigration] Invalid column name: '{column_name}' - SQL injection protection")
+            return None
+        
         col_type = self._get_sqlite_type(column_def)
         nullable = "NULL" if column_def.nullable else "NOT NULL"
         
@@ -596,7 +783,8 @@ class DatabaseMigrationManager:
             if default_value:
                 default_clause = f" DEFAULT {default_value}"
         
-        return f"ALTER TABLE {table_name} ADD COLUMN {column_name} {col_type} {nullable}{default_clause}"
+        # Use double quotes for identifiers (SQL standard)
+        return f'ALTER TABLE "{table_name}" ADD COLUMN "{column_name}" {col_type} {nullable}{default_clause}'
     
     def _get_sqlite_type(self, column_def: Any) -> str:
         """Convert SQLAlchemy type to SQLite type"""
@@ -700,4 +888,48 @@ def restore_from_backup(backup_path: str) -> bool:
     except Exception as e:
         logger.error(f"[DBMigration] Restore failed: {e}", exc_info=True)
         return False
+
+
+def preview_migrations() -> List[dict]:
+    """
+    Preview what migrations would be applied without making changes.
+    
+    Use this to see what will happen before running migrations.
+    
+    Returns:
+        List of pending migrations with details:
+        [{'table': 'users', 'column': 'role', 'type': 'VARCHAR(20)', ...}, ...]
+        
+    Example:
+        from utils.db_migration import preview_migrations
+        pending = preview_migrations()
+        for m in pending:
+            print(f"Will add: {m['table']}.{m['column']} ({m['type']})")
+    """
+    try:
+        manager = get_migration_manager()
+        return manager.dry_run()
+    except Exception as e:
+        logger.error(f"[DBMigration] Preview failed: {e}", exc_info=True)
+        return []
+
+
+def check_database_integrity() -> Tuple[bool, str]:
+    """
+    Run integrity check on the database.
+    
+    Returns:
+        Tuple of (passed: bool, message: str)
+        
+    Example:
+        from utils.db_migration import check_database_integrity
+        ok, msg = check_database_integrity()
+        if not ok:
+            print(f"Database corrupted: {msg}")
+    """
+    try:
+        manager = get_migration_manager()
+        return manager._run_integrity_check()
+    except Exception as e:
+        return False, f"Integrity check error: {e}"
 

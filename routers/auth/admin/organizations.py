@@ -60,6 +60,21 @@ async def list_organizations_admin(
     for count_result in user_counts_query:
         user_counts_by_org[count_result.organization_id] = count_result.user_count
     
+    # Get manager counts for all organizations
+    manager_counts_by_org = {}
+    manager_counts_query = db.query(
+        User.organization_id,
+        func.count(User.id).label('manager_count')
+    ).filter(
+        User.organization_id.isnot(None),
+        User.role == 'manager'
+    ).group_by(
+        User.organization_id
+    ).all()
+    
+    for count_result in manager_counts_query:
+        manager_counts_by_org[count_result.organization_id] = count_result.manager_count
+    
     # Get token stats for all organizations (all-time totals)
     token_stats_by_org = {}
     
@@ -93,6 +108,7 @@ async def list_organizations_admin(
     
     for org in orgs:
         user_count = user_counts_by_org.get(org.id, 0)
+        manager_count = manager_counts_by_org.get(org.id, 0)
         org_token_stats = token_stats_by_org.get(org.id, {
             "input_tokens": 0,
             "output_tokens": 0,
@@ -105,6 +121,7 @@ async def list_organizations_admin(
             "name": org.name,
             "invitation_code": org.invitation_code,
             "user_count": user_count,
+            "manager_count": manager_count,
             "expires_at": utc_to_beijing_iso(org.expires_at),
             "is_active": org.is_active if hasattr(org, 'is_active') else True,
             "created_at": utc_to_beijing_iso(org.created_at),
@@ -370,6 +387,233 @@ async def delete_organization_admin(
     
     logger.warning(f"Admin {current_user.phone} deleted organization: {org.code}")
     return {"message": Messages.success("organization_deleted", lang, org.code)}
+
+
+# =============================================================================
+# Organization Manager Endpoints
+# =============================================================================
+
+@router.get("/admin/organizations/{org_id}/users", dependencies=[Depends(require_admin)])
+async def list_organization_users(
+    org_id: int,
+    request: Request,
+    current_user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+    lang: str = Depends(get_language_dependency)
+):
+    """
+    List all users in an organization (ADMIN ONLY)
+    
+    Used for manager selection dropdown in admin panel.
+    """
+    # Verify organization exists
+    org = org_cache.get_by_id(org_id)
+    if not org:
+        org = db.query(Organization).filter(Organization.id == org_id).first()
+        if not org:
+            error_msg = Messages.error("organization_not_found", lang, org_id)
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
+    
+    # Get all users in this organization
+    users = db.query(User).filter(User.organization_id == org_id).order_by(User.name).all()
+    
+    result = []
+    for user in users:
+        # Get role (default to 'user' if not set)
+        role = getattr(user, 'role', 'user') or 'user'
+        result.append({
+            "id": user.id,
+            "phone": user.phone[:3] + "****" + user.phone[-4:] if len(user.phone) == 11 else user.phone,
+            "name": user.name or user.phone,
+            "role": role,
+            "is_manager": role == 'manager'
+        })
+    
+    return {
+        "organization": {
+            "id": org.id,
+            "code": org.code,
+            "name": org.name
+        },
+        "users": result
+    }
+
+
+@router.get("/admin/organizations/{org_id}/managers", dependencies=[Depends(require_admin)])
+async def list_organization_managers(
+    org_id: int,
+    request: Request,
+    current_user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+    lang: str = Depends(get_language_dependency)
+):
+    """
+    List managers of an organization (ADMIN ONLY)
+    """
+    # Verify organization exists
+    org = org_cache.get_by_id(org_id)
+    if not org:
+        org = db.query(Organization).filter(Organization.id == org_id).first()
+        if not org:
+            error_msg = Messages.error("organization_not_found", lang, org_id)
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
+    
+    # Get managers in this organization
+    managers = db.query(User).filter(
+        User.organization_id == org_id,
+        User.role == 'manager'
+    ).order_by(User.name).all()
+    
+    result = []
+    for user in managers:
+        result.append({
+            "id": user.id,
+            "phone": user.phone[:3] + "****" + user.phone[-4:] if len(user.phone) == 11 else user.phone,
+            "name": user.name or user.phone
+        })
+    
+    return {
+        "organization": {
+            "id": org.id,
+            "code": org.code,
+            "name": org.name
+        },
+        "managers": result
+    }
+
+
+@router.put("/admin/organizations/{org_id}/managers/{user_id}", dependencies=[Depends(require_admin)])
+async def set_organization_manager(
+    org_id: int,
+    user_id: int,
+    request: Request,
+    current_user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+    lang: str = Depends(get_language_dependency)
+):
+    """
+    Set a user as manager of their organization (ADMIN ONLY)
+    
+    The user must belong to the specified organization.
+    """
+    # Verify organization exists
+    org = org_cache.get_by_id(org_id)
+    if not org:
+        org = db.query(Organization).filter(Organization.id == org_id).first()
+        if not org:
+            error_msg = Messages.error("organization_not_found", lang, org_id)
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
+    
+    # Get user
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        error_msg = Messages.error("user_not_found", lang, user_id)
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
+    
+    # Verify user belongs to this organization
+    if user.organization_id != org_id:
+        error_msg = Messages.error("user_not_in_organization", lang)
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
+    
+    # Set role to manager
+    user.role = 'manager'
+    
+    try:
+        db.commit()
+        db.refresh(user)
+    except Exception as e:
+        db.rollback()
+        logger.error(f"[Auth] Failed to set manager role for user ID {user_id}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to set manager role"
+        )
+    
+    # Invalidate user cache
+    try:
+        from services.redis_user_cache import user_cache
+        user_cache.invalidate(user.id, user.phone)
+        user_cache.cache_user(user)
+    except Exception as e:
+        logger.warning(f"[Auth] Failed to update user cache: {e}")
+    
+    logger.info(f"Admin {current_user.phone} set user {user.phone} as manager of org {org.code}")
+    
+    return {
+        "message": Messages.success("manager_role_set", lang, user.name or user.phone),
+        "user": {
+            "id": user.id,
+            "name": user.name,
+            "role": user.role
+        }
+    }
+
+
+@router.delete("/admin/organizations/{org_id}/managers/{user_id}", dependencies=[Depends(require_admin)])
+async def remove_organization_manager(
+    org_id: int,
+    user_id: int,
+    request: Request,
+    current_user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+    lang: str = Depends(get_language_dependency)
+):
+    """
+    Remove manager role from a user (ADMIN ONLY)
+    
+    Resets the user's role back to 'user'.
+    """
+    # Verify organization exists
+    org = org_cache.get_by_id(org_id)
+    if not org:
+        org = db.query(Organization).filter(Organization.id == org_id).first()
+        if not org:
+            error_msg = Messages.error("organization_not_found", lang, org_id)
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
+    
+    # Get user
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        error_msg = Messages.error("user_not_found", lang, user_id)
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
+    
+    # Verify user belongs to this organization
+    if user.organization_id != org_id:
+        error_msg = Messages.error("user_not_in_organization", lang)
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
+    
+    # Reset role to user
+    user.role = 'user'
+    
+    try:
+        db.commit()
+        db.refresh(user)
+    except Exception as e:
+        db.rollback()
+        logger.error(f"[Auth] Failed to remove manager role from user ID {user_id}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to remove manager role"
+        )
+    
+    # Invalidate user cache
+    try:
+        from services.redis_user_cache import user_cache
+        user_cache.invalidate(user.id, user.phone)
+        user_cache.cache_user(user)
+    except Exception as e:
+        logger.warning(f"[Auth] Failed to update user cache: {e}")
+    
+    logger.info(f"Admin {current_user.phone} removed manager role from user {user.phone} in org {org.code}")
+    
+    return {
+        "message": Messages.success("manager_role_removed", lang, user.name or user.phone),
+        "user": {
+            "id": user.id,
+            "name": user.name,
+            "role": user.role
+        }
+    }
 
 
 

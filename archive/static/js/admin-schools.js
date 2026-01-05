@@ -329,7 +329,7 @@ function copySchoolInviteInfo(invitationCode) {
     const shareText = `尊敬的校领导，您好！
 诚挚邀请您与学校团队体验 MindGraph —— 我们倾力打造的AI思维图示生成软件，致力于开发思维教学信息化平台。
 贵校的专属邀请码是：${invitationCode}
-请您访问 mg.mingspringedu.com 完成注册，开启高效、直观的思维可视化协作。
+请您访问 mg.mindspringedu.com 完成注册，开启高效、直观的思维可视化协作。
 期待能为贵校的教育创新增添一份力量。`;
     
     // Set the text in the modal

@@ -133,6 +133,7 @@ async def list_users_admin(
             "phone": masked_phone,
             "phone_real": user.phone,
             "name": user.name,
+            "role": getattr(user, 'role', 'user') or 'user',
             "organization_id": user.organization_id,
             "organization_code": org.code if org else None,
             "organization_name": org.name if org else None,

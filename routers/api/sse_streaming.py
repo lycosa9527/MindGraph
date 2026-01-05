@@ -14,13 +14,14 @@ import json
 import logging
 import os
 import time
-from typing import Optional
+from typing import Optional, Dict, Any
 from fastapi import APIRouter, HTTPException, Depends
 from fastapi.responses import StreamingResponse
 from models.auth import User
 from utils.auth import get_current_user_or_api_key
 from models import AIAssistantRequest, Messages, get_request_language
 from clients.dify import AsyncDifyClient, DifyFile
+from services.redis_token_buffer import get_token_tracker
 
 logger = logging.getLogger(__name__)
 
@@ -83,10 +84,21 @@ async def ai_assistant_stream(
     
     logger.debug(f"AI assistant request from user {req.user_id}: {message[:50]}...")
     
+    # Get user info for token tracking
+    user_id_for_tracking = None
+    organization_id_for_tracking = None
+    if current_user and hasattr(current_user, 'id'):
+        user_id_for_tracking = current_user.id
+        organization_id_for_tracking = getattr(current_user, 'organization_id', None)
+    
     async def generate():
         """Async generator function for SSE streaming"""
         logger.debug(f"[GENERATOR] Async generator function called - starting execution")
         chunk_count = 0  # Initialize outside try block for finally access
+        start_time = time.time()
+        captured_usage: Dict[str, Any] = {}  # Store usage from message_end
+        captured_conversation_id: Optional[str] = None
+        
         try:
             logger.debug(f"[STREAM] Creating AsyncDifyClient with URL: {api_url}")
             client = AsyncDifyClient(api_key=api_key, api_url=api_url, timeout=timeout)
@@ -118,11 +130,54 @@ async def ai_assistant_stream(
                 trace_id=req.trace_id
             ):
                 chunk_count += 1
-                logger.debug(f"[STREAM] Received chunk {chunk_count}: {chunk.get('event', 'unknown')}")
+                event_type = chunk.get('event', 'unknown')
+                logger.debug(f"[STREAM] Received chunk {chunk_count}: {event_type}")
+                
+                # Capture conversation_id from any event
+                if chunk.get('conversation_id'):
+                    captured_conversation_id = chunk.get('conversation_id')
+                
+                # Capture usage data from message_end event
+                if event_type == 'message_end':
+                    metadata = chunk.get('metadata', {})
+                    usage = metadata.get('usage', {})
+                    if usage:
+                        captured_usage = usage
+                        logger.debug(f"[STREAM] Captured Dify usage: {usage}")
+                
                 # Format as SSE
                 yield f"data: {json.dumps(chunk)}\n\n"
             
             logger.debug(f"[STREAM] Streaming completed. Total chunks: {chunk_count}")
+            
+            # Track token usage after streaming completes
+            if captured_usage:
+                try:
+                    token_tracker = get_token_tracker()
+                    input_tokens = captured_usage.get('prompt_tokens', 0)
+                    output_tokens = captured_usage.get('completion_tokens', 0)
+                    total_tokens = captured_usage.get('total_tokens', input_tokens + output_tokens)
+                    response_time = time.time() - start_time
+                    
+                    await token_tracker.track_usage(
+                        model_alias='dify',
+                        input_tokens=input_tokens,
+                        output_tokens=output_tokens,
+                        total_tokens=total_tokens,
+                        request_type='mindmate',
+                        user_id=user_id_for_tracking,
+                        organization_id=organization_id_for_tracking,
+                        conversation_id=captured_conversation_id or req.conversation_id,
+                        endpoint_path='/api/ai_assistant/stream',
+                        response_time=response_time,
+                        success=True
+                    )
+                    logger.debug(
+                        f"[STREAM] Tracked Dify token usage: input={input_tokens}, "
+                        f"output={output_tokens}, total={total_tokens}"
+                    )
+                except Exception as track_error:
+                    logger.warning(f"[STREAM] Failed to track token usage: {track_error}")
             
             # Ensure at least one event is yielded to prevent RuntimeError
             if chunk_count == 0:

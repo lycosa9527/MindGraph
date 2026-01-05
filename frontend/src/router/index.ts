@@ -85,8 +85,8 @@ router.beforeEach(async (to, _from, next) => {
     }
   }
 
-  // Check admin access
-  if (to.meta.requiresAdmin && !authStore.isAdmin) {
+  // Check admin/manager access
+  if (to.meta.requiresAdmin && !authStore.isAdminOrManager) {
     return next({ name: 'Main' })
   }
 

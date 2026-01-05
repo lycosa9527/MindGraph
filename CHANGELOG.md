@@ -7,6 +7,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [5.0.3] - 2025-01-06 - MindMate Conversation Flow & UX Improvements
+
+### Fixed
+
+- **Conversation History Timing** (`frontend/src/composables/useMindMate.ts`)
+  - Conversation now added to history immediately when streaming starts (not after it ends)
+  - User sees the conversation appear in sidebar right away
+
+- **Page Flash After Streaming** (`frontend/src/stores/mindmate.ts`)
+  - Fixed issue where page would flash to welcome screen after streaming completed
+  - Store now only emits `mindmate:conversation_changed` event when conversation actually changes
+  - Prevents redundant event emissions that triggered unwanted `loadConversation` calls
+
+- **Stream Cleanup on Conversation Switch** (`frontend/src/composables/useMindMate.ts`)
+  - Added proper stream abort when switching to a different conversation
+  - Prevents orphaned streams from running in background
+
+- **File-Only Message Titles** (`frontend/src/stores/mindmate.ts`)
+  - File-only messages now get file name as conversation title instead of generic "MindMate"
+  - Updated `trackMessage()` to accept optional files parameter
+
+### Changed
+
+- **MindMate Input Width** (`frontend/src/components/panels/mindmate/mindmate.css`)
+  - Narrowed input area from 800px to 680px for more focused, ChatGPT-like appearance
+  - Also narrowed suggestion bubbles container to match
+
+- **User Profile Display** (`frontend/src/components/sidebar/AppSidebar.vue`)
+  - Changed subtitle under username from organization name to "MindGraph专业版"
+  - Removed unused `userOrg` computed property
+
+- **Avatar Source Location** (`scripts/process_avatar.py`)
+  - Moved `avatar.png` from project root to `static/avatars/mindmate-source.png`
+  - Updated processing script to use new path
+
+---
+
 ## [5.0.2] - 2025-01-05 - MindMate UI Improvements & Cleanup
 
 ### Changed
