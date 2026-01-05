@@ -87,7 +87,10 @@ export function useDoubleBubbleMap(options: DoubleBubbleMapOptions = {}) {
       result.push({
         id: `similarity-${index}`,
         type: 'bubble',
-        position: { x: centerX - bubbleRadius, y: simStartY + index * verticalSpacing - bubbleRadius },
+        position: {
+          x: centerX - bubbleRadius,
+          y: simStartY + index * verticalSpacing - bubbleRadius,
+        },
         data: {
           label: sim,
           nodeType: 'bubble',

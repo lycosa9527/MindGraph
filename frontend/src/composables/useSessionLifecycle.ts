@@ -396,10 +396,7 @@ if (typeof window !== 'undefined' && import.meta.env.DEV) {
     debug: (enabled: boolean) => sessionLifecycle.setDebugMode(enabled),
   }
 
-  console.log(
-    '%c[SessionLifecycle] Debug tools available:',
-    'color: #2196f3; font-weight: bold;'
-  )
+  console.log('%c[SessionLifecycle] Debug tools available:', 'color: #2196f3; font-weight: bold;')
   console.log('  window.debugSessionLifecycle.info()    - View session info')
   console.log('  window.debugSessionLifecycle.managers() - List registered managers')
   console.log('  window.debugSessionLifecycle.cleanup()  - Force cleanup')
@@ -455,5 +452,6 @@ export function useSessionLifecycle() {
 
 export { sessionLifecycle }
 
-// Re-export types
-export type { Destroyable, SessionInfo, CleanupResult }
+// Types are already exported at definition
+// SessionInfo and CleanupResult can be re-exported if not already exported
+export type { SessionInfo, CleanupResult }

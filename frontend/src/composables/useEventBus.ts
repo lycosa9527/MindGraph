@@ -23,34 +23,77 @@ import mitt, { type Emitter, type Handler } from 'mitt'
  */
 export type EventTypes = {
   // Panel Events
-  'panel:open_requested': { panel: string; options?: Record<string, unknown> }
-  'panel:close_requested': { panel: string }
-  'panel:toggle_requested': { panel: string }
+  'panel:open_requested': { panel: string; options?: Record<string, unknown>; source?: string }
+  'panel:close_requested': { panel: string; source?: string }
+  'panel:toggle_requested': { panel: string; source?: string }
   'panel:close_all_requested': { source?: string }
-  'panel:opened': { panel: string; isOpen: boolean; options?: Record<string, unknown> }
+  'panel:opened': {
+    panel: string
+    isOpen: boolean
+    options?: Record<string, unknown>
+    source?: string
+  }
   'panel:closed': { panel: string; isOpen: boolean; source?: string }
   'panel:error': { panel: string; error: string }
   'panel:all_closed': Record<string, never>
+  'panel:coordinated_open': {
+    panel: string
+    source?: string
+    options?: Record<string, unknown>
+    previousPanel?: string
+  }
 
   // Diagram Events
   'diagram:render_requested': { source?: string }
   'diagram:rendered': { diagramType: string; nodeCount?: number }
   'diagram:type_changed': { diagramType: string }
   'diagram:spec_updated': { spec: unknown }
-  'diagram:operations_loaded': { diagramType: string }
+  'diagram:operations_loaded': { diagramType: string; available?: string[] | boolean }
   'diagram:operations_unavailable': { diagramType: string; reason: string }
-  'diagram:node_added': { node: unknown; category?: string }
-  'diagram:nodes_deleted': { nodeIds: string[] }
-  'diagram:node_updated': { nodeId: string; updates: unknown }
-  'diagram:operation_completed': { operation: string; details?: unknown }
+  'diagram:node_added': {
+    node?: unknown
+    category?: string
+    diagramType?: string
+    nodeType?: string
+    nodeIndex?: number
+  }
+  'diagram:nodes_deleted': {
+    nodeIds?: string[]
+    deletedIds?: string[]
+    deletedIndices?: number[]
+    diagramType?: string
+  }
+  'diagram:node_updated': {
+    nodeId: string
+    updates: unknown
+    diagramType?: string
+    nodeType?: string
+  }
+  'diagram:operation_completed': {
+    operation: string
+    details?: unknown
+    snapshot?: unknown
+    spec?: unknown
+  }
   'diagram:operation_warning': { message: string; operation?: string }
   'diagram:update_center': { source?: string; [key: string]: unknown }
   'diagram:update_nodes': { nodes: unknown[]; source?: string }
   'diagram:add_nodes': { nodes: unknown[]; source?: string }
   'diagram:remove_nodes': { nodeIds: unknown[]; source?: string }
   'diagram:auto_complete_requested': { source?: string }
-  'diagram:position_saved': { nodeId: string; position: { x: number; y: number } }
-  'diagram:positions_cleared': Record<string, never>
+  'diagram:position_saved': {
+    nodeId: string
+    position: { x: number; y: number }
+    diagramType?: string
+  }
+  'diagram:positions_cleared': { diagramType?: string }
+  'diagram:loaded': { diagramType: string; spec?: unknown }
+  'diagram:update_requested': {
+    updates?: unknown
+    source?: string
+    action?: string
+    params?: unknown
+  }
 
   // Voice Events
   'voice:start_requested': Record<string, never>
@@ -73,17 +116,48 @@ export type EventTypes = {
   'voice:cleanup_backend_requested': { diagramSessionId?: string }
   'voice:cleanup_backend_completed': { diagramSessionId?: string }
   'voice:cleanup_backend_failed': { diagramSessionId?: string; error?: string }
+  'voice:server_error': { error: string; code?: string }
 
   // History Events
   'history:undo_requested': Record<string, never>
   'history:redo_requested': Record<string, never>
-  'history:undo_completed': { action?: string }
-  'history:redo_completed': { action?: string }
+  'history:undo_completed': {
+    action?: string
+    metadata?: unknown
+    spec?: unknown
+    historyIndex?: number
+    canUndo?: boolean
+    canRedo?: boolean
+  }
+  'history:redo_completed': {
+    action?: string
+    metadata?: unknown
+    spec?: unknown
+    historyIndex?: number
+    canUndo?: boolean
+    canRedo?: boolean
+  }
   'history:undo_failed': { reason: string }
   'history:redo_failed': { reason: string }
-  'history:saved': { action: string; index: number }
-  'history:cleared': Record<string, never>
-  'history:state_changed': { canUndo: boolean; canRedo: boolean; historyLength: number }
+  'history:saved': {
+    action: string
+    index?: number
+    historySize?: number
+    historyIndex?: number
+    metadata?: unknown
+    canUndo?: boolean
+    canRedo?: boolean
+  }
+  'history:cleared': { canUndo?: boolean; canRedo?: boolean }
+  'history:clear_requested': Record<string, never>
+  'history:state_changed': {
+    canUndo: boolean
+    canRedo: boolean
+    historyLength?: number
+    historySize?: number
+    historyIndex?: number
+  }
+  'history:restored': { snapshot?: unknown; spec?: unknown }
 
   // View Events
   'view:zoom_in_requested': Record<string, never>
@@ -92,9 +166,32 @@ export type EventTypes = {
   'view:fit_to_canvas_requested': { animate?: boolean }
   'view:fit_diagram_requested': Record<string, never>
   'view:flip_orientation_requested': Record<string, never>
-  'view:zoomed': { scale: number; direction?: 'in' | 'out' }
+  'view:zoomed': {
+    scale?: number
+    direction?: 'in' | 'out' | 'reset'
+    level?: number
+    zoom?: number
+  }
   'view:fitted': { scale: number; translateX: number; translateY: number }
   'view:orientation_flipped': { orientation: string }
+  'view:zoom_changed': {
+    scale?: number
+    direction?: 'in' | 'out' | 'reset'
+    level?: number
+    zoom?: number
+    zoomPercent?: number
+  }
+  'view:pan_changed': { translateX?: number; translateY?: number; panX?: number; panY?: number }
+  'view:fit_completed': {
+    scale?: number
+    translateX?: number
+    translateY?: number
+    method?: string
+    mode?: string
+    viewBox?: unknown
+    animate?: boolean
+  }
+  'view:zoom_reset_requested': Record<string, never>
 
   // Interaction Events
   'interaction:selection_changed': { selectedNodes: string[] }
@@ -125,11 +222,32 @@ export type EventTypes = {
   'mindmate:opened': { diagramSessionId?: string }
   'mindmate:closed': Record<string, never>
   'mindmate:send_message': { message: string }
-  'mindmate:message_sending': { message: string }
+  'mindmate:message_sending': { message: string; files?: unknown[] }
   'mindmate:message_chunk': { chunk: string }
   'mindmate:message_completed': { conversationId?: string }
   'mindmate:error': { error: string }
-  'mindmate:stream_error': { error: string }
+  'mindmate:stream_error': { error: string | undefined; error_type?: string; message?: string }
+  'mindmate:file_uploaded': { file: unknown }
+  'mindmate:file_received': { id?: string; type?: string; url?: string; belongs_to?: string }
+  'mindmate:workflow_event': {
+    event: string
+    workflow_run_id?: string
+    task_id?: string
+    data?: Record<string, unknown>
+  }
+  'mindmate:tts_chunk': { data?: Record<string, unknown> }
+  'mindmate:tts_complete': Record<string, never>
+  'mindmate:suggested_questions': { questions: string[] }
+  'mindmate:feedback_submitted': {
+    messageId: string
+    difyMessageId: string
+    rating: 'like' | 'dislike' | null
+  }
+  'mindmate:conversation_changed': {
+    conversationId: string | null
+    title?: string
+  }
+  'mindmate:start_new_conversation': Record<string, never>
 
   // LLM Events
   'llm:generation_started': { topic?: string; diagramType?: string }
@@ -154,6 +272,7 @@ export type EventTypes = {
   'autocomplete:cancel_requested': Record<string, never>
 
   // Lifecycle Events
+  'lifecycle:session_starting': { sessionId: string }
   'lifecycle:session_ending': { sessionId?: string; diagramType?: string; managerCount?: number }
   'session:register_requested': { manager: unknown; name: string }
   'session:validate_requested': { operation?: string }
@@ -578,11 +697,17 @@ class EnhancedEventBus {
   // Private Helpers
   // ==========================================================================
 
-  private removeFromRegistry(owner: string, event: EventKey, handler: EventHandler<EventKey>): void {
+  private removeFromRegistry(
+    owner: string,
+    event: EventKey,
+    handler: EventHandler<EventKey>
+  ): void {
     const ownerListeners = this.ownerRegistry.get(owner)
     if (!ownerListeners) return
 
-    const index = ownerListeners.findIndex((item) => item.event === event && item.handler === handler)
+    const index = ownerListeners.findIndex(
+      (item) => item.event === event && item.handler === handler
+    )
     if (index > -1) {
       ownerListeners.splice(index, 1)
     }

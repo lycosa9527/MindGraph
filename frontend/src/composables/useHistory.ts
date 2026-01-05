@@ -11,9 +11,9 @@
  */
 import { computed, onUnmounted, ref, shallowRef } from 'vue'
 
-import { eventBus } from './useEventBus'
-
 import type { DiagramSpec } from '@/types'
+
+import { eventBus } from './useEventBus'
 
 // ============================================================================
 // Types

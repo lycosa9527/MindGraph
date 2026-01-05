@@ -55,6 +55,7 @@ class User(Base):
     password_hash = Column(String(255), nullable=False)  # bcrypt hashed password
     name = Column(String(100), nullable=True)  # Teacher's name (optional)
     organization_id = Column(Integer, ForeignKey("organizations.id"), nullable=True)
+    avatar = Column(String(50), nullable=True, default="🐈‍⬛")  # Avatar emoji
     
     # Security fields
     failed_login_attempts = Column(Integer, default=0)  # Track failed logins

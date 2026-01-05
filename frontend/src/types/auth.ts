@@ -7,19 +7,22 @@ export type AuthMode = 'standard' | 'demo' | 'bayi' | 'enterprise'
 export interface User {
   id: string
   username: string
+  phone?: string
   email?: string
   role: 'user' | 'admin' | 'superadmin'
   schoolId?: string
   schoolName?: string
+  avatar?: string
   createdAt?: string
   lastLogin?: string
 }
 
 export interface LoginCredentials {
-  phone: string
+  phone?: string
+  username?: string
   password: string
-  captcha: string
-  captcha_id: string
+  captcha?: string
+  captcha_id?: string
 }
 
 export interface CaptchaResponse {

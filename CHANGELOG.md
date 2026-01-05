@@ -7,6 +7,73 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [5.0.2] - 2025-01-05 - MindMate UI Improvements & Cleanup
+
+### Changed
+
+- **MindMate Architecture Consolidation**
+  - Removed legacy `ChatContainer.vue`, `ChatMessage.vue`, `ChatInput.vue` components (1,047 lines removed)
+  - Removed legacy `chat.ts` store with mock responses
+  - `MindmatePanel.vue` is now the single, unified MindMate implementation with both panel and fullpage modes
+
+- **Sidebar New Chat Button** (`frontend/src/components/sidebar/AppSidebar.vue`)
+  - Added "新建对话 / New Chat" button at the top of sidebar, above MindMate/MindGraph menu
+  - Swiss Design styling with grey pill-shaped button
+  - Automatically switches to MindMate mode when clicked
+
+- **Conversation History Improvements** (`frontend/src/components/sidebar/ChatHistory.vue`)
+  - Replaced delete button with three-dots menu (MoreHorizontal icon) on hover
+  - Added dropdown menu with Rename and Delete options
+  - Rename uses Element Plus prompt dialog with validation
+  - Delete shows confirmation dialog before action
+  - Removed plus icon from history header (redundant with new sidebar button)
+
+- **MindMate Store** (`frontend/src/stores/mindmate.ts`)
+  - Added `renameConversation()` function using Dify's native API
+  - Uses `POST /api/dify/conversations/{id}/name` endpoint
+
+### Removed
+
+- **Legacy 'start' Message Fallback** (`frontend/src/composables/useMindMate.ts`)
+  - Removed legacy workflow trigger that sent 'start' message to Dify
+  - Now relies entirely on Dify's Opening Statement feature
+
+- **Unused Components**
+  - Removed `frontend/src/components/chat/` folder (ChatContainer, ChatMessage, ChatInput, index.ts)
+  - Removed `frontend/src/stores/chat.ts` (legacy mock chat store)
+  - Cleaned up unused exports from `components/index.ts` and `stores/index.ts`
+
+- **Redundant UI Elements**
+  - Removed Plus and Delete icons from MindmatePanel header
+  - Removed New Chat button from history drawer (moved to sidebar)
+
+### Fixed
+
+- **Cleaner Codebase**
+  - Eliminated duplicate MindMate implementations
+  - Single source of truth for chat functionality
+
+---
+
+## [5.0.1] - 2025-01-05 - MindMate Action Buttons Fix
+
+### Fixed
+
+- **MindMate Panel Action Buttons** (`frontend/src/components/panels/MindmatePanel.vue`)
+  - Fixed Vue reactivity issue where action buttons (Copy, Like, Dislike, Share) were not appearing after AI response completed streaming
+  - Updated `updateMessage` function in `useMindMate.ts` to use object replacement instead of direct property mutation for proper Vue reactivity
+  - Replaced Lucide icons (ThumbsUp, ThumbsDown) with Element Plus icons (Top, Bottom) for consistent icon rendering
+  - Simplified action button structure by removing ElTooltip wrappers and using native title attributes
+  - Added flex-wrap to action-bar for better responsive layout
+
+### Changed
+
+- **useMindMate Composable** (`frontend/src/composables/useMindMate.ts`)
+  - Refactored `updateMessage` function to replace array element instead of mutating properties in place
+  - Ensures Vue reactivity system properly detects `isStreaming` state changes
+
+---
+
 ## [5.0.0] - 2025-01-04 - Vue Frontend Migration (BREAKING CHANGE)
 
 ### Changed

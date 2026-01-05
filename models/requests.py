@@ -141,8 +141,28 @@ class GenerateDingTalkRequest(BaseModel):
         }
 
 
+class AIAssistantFile(BaseModel):
+    """File object for AI assistant requests (Dify API compatible)"""
+    type: str = Field(..., description="File type: document, image, audio, video, custom")
+    transfer_method: str = Field(..., description="Transfer method: remote_url or local_file")
+    url: Optional[str] = Field(None, description="File URL (for remote_url transfer method)")
+    upload_file_id: Optional[str] = Field(None, description="Uploaded file ID (for local_file transfer method)")
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "type": "image",
+                "transfer_method": "remote_url",
+                "url": "https://example.com/image.png"
+            }
+        }
+
+
 class AIAssistantRequest(BaseModel):
-    """Request model for /api/ai_assistant/stream endpoint (SSE)"""
+    """Request model for /api/ai_assistant/stream endpoint (SSE)
+    
+    Supports Dify Chatflow API with file uploads for Vision/document processing.
+    """
     message: str = Field(
         ..., 
         min_length=1, 
@@ -151,13 +171,25 @@ class AIAssistantRequest(BaseModel):
     )
     user_id: str = Field(..., min_length=1, max_length=100, description="Unique user identifier")
     conversation_id: Optional[str] = Field(None, max_length=100, description="Conversation ID for context (null for new conversation)")
+    files: Optional[List[AIAssistantFile]] = Field(None, description="Files for Vision/document processing")
+    inputs: Optional[Dict[str, Any]] = Field(None, description="App-defined variable values")
+    auto_generate_name: bool = Field(True, description="Auto-generate conversation title")
+    workflow_id: Optional[str] = Field(None, description="Specific workflow version ID")
+    trace_id: Optional[str] = Field(None, description="Trace ID for distributed tracing")
     
     class Config:
         json_schema_extra = {
             "example": {
                 "message": "帮我解释一下概念图的作用",
                 "user_id": "user_123",
-                "conversation_id": "conv_456"
+                "conversation_id": "conv_456",
+                "files": [
+                    {
+                        "type": "image",
+                        "transfer_method": "remote_url",
+                        "url": "https://example.com/diagram.png"
+                    }
+                ]
             }
         }
 
@@ -549,7 +581,7 @@ class SendSMSCodeRequest(BaseModel):
     @classmethod
     def validate_purpose(cls, v):
         """Validate SMS purpose"""
-        valid_purposes = ['register', 'login', 'reset_password']
+        valid_purposes = ['register', 'login', 'reset_password', 'change_phone']
         if v not in valid_purposes:
             raise ValueError(f"Purpose must be one of: {', '.join(valid_purposes)}")
         return v
@@ -697,6 +729,12 @@ class LoginWithSMSRequest(BaseModel):
         }
 
 
+class ChangePasswordRequest(BaseModel):
+    """Request model for /api/auth/change-password endpoint"""
+    current_password: str = Field(..., min_length=4, description="Current password")
+    new_password: str = Field(..., min_length=8, description="New password (minimum 8 characters)")
+
+
 class ResetPasswordWithSMSRequest(BaseModel):
     """Request model for password reset with SMS verification"""
     phone: str = Field(..., min_length=11, max_length=11, description="11-digit Chinese mobile number")
@@ -733,6 +771,74 @@ class ResetPasswordWithSMSRequest(BaseModel):
                 "phone": "13812345678",
                 "sms_code": "123456",
                 "new_password": "NewPassword123!"
+            }
+        }
+
+
+class SendChangePhoneSMSRequest(BaseModel):
+    """Request model for sending SMS code to new phone number for phone change"""
+    new_phone: str = Field(..., min_length=11, max_length=11, description="New 11-digit Chinese mobile number")
+    captcha: str = Field(..., min_length=4, max_length=4, description="4-character captcha code")
+    captcha_id: str = Field(..., description="Captcha session ID")
+    
+    @field_validator('new_phone')
+    @classmethod
+    def validate_new_phone(cls, v):
+        """Validate 11-digit Chinese mobile format"""
+        if not v.isdigit():
+            raise ValueError("Phone number must contain only digits. Please enter a valid 11-digit Chinese mobile number.")
+        if len(v) < 11:
+            raise ValueError(f"Phone number is too short ({len(v)} digits). Must be exactly 11 digits starting with 1.")
+        if len(v) > 11:
+            raise ValueError(f"Phone number is too long ({len(v)} digits). Must be exactly 11 digits starting with 1.")
+        if not v.startswith('1'):
+            raise ValueError("Chinese mobile numbers must start with 1. Please enter a valid 11-digit number starting with 1.")
+        return v
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "new_phone": "13987654321",
+                "captcha": "AB3D",
+                "captcha_id": "uuid-captcha-session"
+            }
+        }
+
+
+class ChangePhoneRequest(BaseModel):
+    """Request model for completing phone number change with SMS verification"""
+    new_phone: str = Field(..., min_length=11, max_length=11, description="New 11-digit Chinese mobile number")
+    sms_code: str = Field(..., min_length=6, max_length=6, description="6-digit SMS verification code")
+    
+    @field_validator('new_phone')
+    @classmethod
+    def validate_new_phone(cls, v):
+        """Validate 11-digit Chinese mobile format"""
+        if not v.isdigit():
+            raise ValueError("Phone number must contain only digits. Please enter a valid 11-digit Chinese mobile number.")
+        if len(v) < 11:
+            raise ValueError(f"Phone number is too short ({len(v)} digits). Must be exactly 11 digits starting with 1.")
+        if len(v) > 11:
+            raise ValueError(f"Phone number is too long ({len(v)} digits). Must be exactly 11 digits starting with 1.")
+        if not v.startswith('1'):
+            raise ValueError("Chinese mobile numbers must start with 1. Please enter a valid 11-digit number starting with 1.")
+        return v
+    
+    @field_validator('sms_code')
+    @classmethod
+    def validate_sms_code(cls, v):
+        """Validate 6-digit SMS code"""
+        if not v.isdigit():
+            raise ValueError("SMS verification code must contain only digits. Please enter the 6-digit code sent to your phone.")
+        if len(v) != 6:
+            raise ValueError(f"SMS verification code must be exactly 6 digits. You entered {len(v)} digit(s).")
+        return v
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "new_phone": "13987654321",
+                "sms_code": "123456"
             }
         }
 

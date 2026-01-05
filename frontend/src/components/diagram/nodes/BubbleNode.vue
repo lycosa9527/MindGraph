@@ -20,7 +20,8 @@ const { getNodeStyle } = useTheme({
 const defaultStyle = computed(() => getNodeStyle('bubble'))
 
 const nodeStyle = computed(() => ({
-  backgroundColor: props.data.style?.backgroundColor || defaultStyle.value.backgroundColor || '#e3f2fd',
+  backgroundColor:
+    props.data.style?.backgroundColor || defaultStyle.value.backgroundColor || '#e3f2fd',
   borderColor: props.data.style?.borderColor || defaultStyle.value.borderColor || '#000000',
   color: props.data.style?.textColor || defaultStyle.value.textColor || '#333333',
   fontSize: `${props.data.style?.fontSize || defaultStyle.value.fontSize || 14}px`,

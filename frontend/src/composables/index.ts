@@ -26,6 +26,8 @@ export { useViewManager, createVueFlowViewport } from './useViewManager'
 export { usePanelCoordination, getPanelCoordinator } from './usePanelCoordination'
 export { useDragConstraints } from './useDragConstraints'
 export { useTheme } from './useTheme'
+export { useVersionCheck } from './useVersionCheck'
+export type { VersionCheckOptions } from './useVersionCheck'
 
 // Diagram-specific composables
 export * from './diagrams'

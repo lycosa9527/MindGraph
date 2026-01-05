@@ -20,7 +20,7 @@ from fastapi.responses import StreamingResponse
 from models.auth import User
 from utils.auth import get_current_user_or_api_key
 from models import AIAssistantRequest, Messages, get_request_language
-from clients.dify import AsyncDifyClient
+from clients.dify import AsyncDifyClient, DifyFile
 
 logger = logging.getLogger(__name__)
 
@@ -92,8 +92,31 @@ async def ai_assistant_stream(
             client = AsyncDifyClient(api_key=api_key, api_url=api_url, timeout=timeout)
             logger.debug(f"[STREAM] AsyncDifyClient created successfully")
             
+            # Convert request files to DifyFile objects
+            dify_files = None
+            if req.files:
+                dify_files = [
+                    DifyFile(
+                        type=f.type,
+                        transfer_method=f.transfer_method,
+                        url=f.url,
+                        upload_file_id=f.upload_file_id
+                    )
+                    for f in req.files
+                ]
+                logger.debug(f"[STREAM] Attached {len(dify_files)} files to request")
+            
             logger.debug(f"[STREAM] Starting async stream_chat for message: {message[:50]}...")
-            async for chunk in client.stream_chat(message, req.user_id, req.conversation_id):
+            async for chunk in client.stream_chat(
+                message=message,
+                user_id=req.user_id,
+                conversation_id=req.conversation_id,
+                files=dify_files,
+                inputs=req.inputs,
+                auto_generate_name=req.auto_generate_name,
+                workflow_id=req.workflow_id,
+                trace_id=req.trace_id
+            ):
                 chunk_count += 1
                 logger.debug(f"[STREAM] Received chunk {chunk_count}: {chunk.get('event', 'unknown')}")
                 # Format as SSE

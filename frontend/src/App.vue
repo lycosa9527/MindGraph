@@ -6,6 +6,7 @@
 import { computed, defineAsyncComponent, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
+import VersionNotification from '@/components/common/VersionNotification.vue'
 import { useAuthStore, useUIStore } from '@/stores'
 
 const route = useRoute()
@@ -54,6 +55,9 @@ onMounted(async () => {
       </transition>
     </router-view>
   </component>
+
+  <!-- Global version update notification -->
+  <VersionNotification />
 </template>
 
 <style>

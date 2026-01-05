@@ -93,6 +93,11 @@ class Messages:
             "en": "Database is temporarily busy, captcha verification failed. The system is automatically retrying. Please wait a moment and try again. If the problem persists, please refresh the page to get a new captcha.",
             "az": "Verilənlər bazası müvəqqəti olaraq məşğuldur, captcha yoxlanışı uğursuz oldu. Sistem avtomatik olaraq yenidən cəhd edir. Bir az gözləyin və yenidən cəhd edin."
         },
+        "database_temporarily_unavailable": {
+            "zh": "数据库暂时繁忙，请稍后重试。",
+            "en": "Database is temporarily unavailable. Please try again later.",
+            "az": "Verilənlər bazası müvəqqəti olaraq mövcud deyil. Daha sonra yenidən cəhd edin."
+        },
         "captcha_retry_attempts": {
             "zh": "账户锁定前还有 {} 次尝试机会。",
             "en": " {} attempt(s) remaining before account lockout.",
@@ -511,6 +516,16 @@ class Messages:
             "en": "Phone number {} is already registered by another user",
             "az": "Telefon nömrəsi {} artıq başqa istifadəçi tərəfindən qeydiyyatdan keçib"
         },
+        "phone_same_as_current": {
+            "zh": "新手机号与当前手机号相同，无需更改",
+            "en": "New phone number is the same as current phone number",
+            "az": "Yeni telefon nömrəsi cari nömrə ilə eynidir"
+        },
+        "phone_already_in_use": {
+            "zh": "该手机号已被其他用户使用",
+            "en": "This phone number is already in use by another user",
+            "az": "Bu telefon nömrəsi artıq başqa istifadəçi tərəfindən istifadə olunur"
+        },
         "name_too_short": {
             "zh": "姓名至少需要2个字符",
             "en": "Name must be at least 2 characters",
@@ -565,6 +580,21 @@ class Messages:
             "zh": "没有可用的组织",
             "en": "No organizations available",
             "az": "Mövcud təşkilat yoxdur"
+        },
+        "invalid_password_change": {
+            "zh": "当前密码不正确",
+            "en": "Current password is incorrect",
+            "az": "Cari parol yanlışdır"
+        },
+        "password_same_as_current": {
+            "zh": "新密码不能与当前密码相同",
+            "en": "New password cannot be the same as current password",
+            "az": "Yeni parol cari parolla eyni ola bilməz"
+        },
+        "avatar_not_found": {
+            "zh": "头像未找到",
+            "en": "Avatar not found",
+            "az": "Avatar tapılmadı"
         }
     }
     
@@ -624,6 +654,21 @@ class Messages:
             "zh": "用户 {} 已成功删除",
             "en": "User {} deleted successfully",
             "az": "İstifadəçi {} uğurla silindi"
+        },
+        "password_change_success": {
+            "zh": "密码修改成功",
+            "en": "Password changed successfully",
+            "az": "Parol uğurla dəyişdirildi"
+        },
+        "avatar_update_success": {
+            "zh": "头像更新成功",
+            "en": "Avatar updated successfully",
+            "az": "Avatar uğurla yeniləndi"
+        },
+        "phone_changed_success": {
+            "zh": "手机号更换成功",
+            "en": "Phone number changed successfully",
+            "az": "Telefon nömrəsi uğurla dəyişdirildi"
         },
         "user_unlocked": {
             "zh": "用户 {} 已成功解锁",

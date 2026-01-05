@@ -139,18 +139,12 @@ export function useViewManager(options: UseViewManagerOptions = {}) {
    * Calculate viewBox for fit-to-canvas
    */
   function calculateFitViewBox(opts: FitOptions = {}): ViewBounds | null {
-    const { reserveForPanel = false, padding = 0.1 } = opts
+    const { reserveForPanel: _reserveForPanel = false, padding = 0.1 } = opts
 
     if (!contentBounds.value) return null
 
     const bounds = contentBounds.value
     const paddingAmount = Math.min(bounds.width, bounds.height) * padding
-
-    // Calculate available width (accounting for panel)
-    let availableWidth = containerWidth.value
-    if (reserveForPanel) {
-      availableWidth -= 320 // Property panel width
-    }
 
     // Calculate viewBox with padding
     const viewBox: ViewBounds = {
@@ -255,7 +249,7 @@ export function useViewManager(options: UseViewManagerOptions = {}) {
     const aiPanel = document.getElementById('ai-assistant-panel')
     const isAIVisible = aiPanel && !aiPanel.classList.contains('collapsed')
 
-    return isPropertyVisible || isAIVisible
+    return !!(isPropertyVisible || isAIVisible)
   }
 
   // =========================================================================

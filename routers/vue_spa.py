@@ -74,6 +74,18 @@ async def vue_dashboard_login(request: Request):
     return await _serve_index()
 
 
+@router.get("/pub-dash", response_class=HTMLResponse)
+async def vue_pub_dash(request: Request):
+    """Serve Vue SPA for public dashboard route."""
+    return await _serve_index()
+
+
+@router.get("/debug", response_class=HTMLResponse)
+async def vue_debug(request: Request):
+    """Serve Vue SPA for debug route."""
+    return await _serve_index()
+
+
 async def _serve_index() -> FileResponse:
     """Serve Vue SPA index.html."""
     index_path = VUE_DIST_DIR / "index.html"

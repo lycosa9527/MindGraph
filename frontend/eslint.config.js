@@ -45,7 +45,9 @@ export default tseslint.config(
       'vue/require-default-prop': 'off',
       'vue/require-explicit-emits': 'error',
       'vue/component-definition-name-casing': ['error', 'PascalCase'],
-      'vue/component-name-in-template-casing': ['error', 'PascalCase'],
+      'vue/component-name-in-template-casing': ['error', 'PascalCase', {
+        ignores: ['/^el-/'],  // Allow Element Plus kebab-case components
+      }],
       'vue/custom-event-name-casing': ['error', 'camelCase'],
       'vue/html-self-closing': [
         'error',

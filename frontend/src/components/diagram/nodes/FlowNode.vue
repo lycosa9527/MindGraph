@@ -20,7 +20,8 @@ const { getNodeStyle } = useTheme({
 const defaultStyle = computed(() => getNodeStyle('step'))
 
 const nodeStyle = computed(() => ({
-  backgroundColor: props.data.style?.backgroundColor || defaultStyle.value.backgroundColor || '#ffffff',
+  backgroundColor:
+    props.data.style?.backgroundColor || defaultStyle.value.backgroundColor || '#ffffff',
   borderColor: props.data.style?.borderColor || defaultStyle.value.borderColor || '#409eff',
   color: props.data.style?.textColor || defaultStyle.value.textColor || '#303133',
   fontSize: `${props.data.style?.fontSize || defaultStyle.value.fontSize || 13}px`,

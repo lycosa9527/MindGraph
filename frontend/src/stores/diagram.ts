@@ -77,10 +77,16 @@ function emitEvent(type: DiagramEventType, payload?: unknown): void {
       eventBus.emit('interaction:selection_changed', payload as { selectedNodes: string[] })
       break
     case 'diagram:position_changed':
-      eventBus.emit('diagram:position_saved', payload as { nodeId: string; position: { x: number; y: number } })
+      eventBus.emit(
+        'diagram:position_saved',
+        payload as { nodeId: string; position: { x: number; y: number } }
+      )
       break
     case 'diagram:operation_completed':
-      eventBus.emit('diagram:operation_completed', payload as { operation: string; details?: unknown })
+      eventBus.emit(
+        'diagram:operation_completed',
+        payload as { operation: string; details?: unknown }
+      )
       break
     case 'diagram:layout_reset':
       eventBus.emit('diagram:positions_cleared', {})

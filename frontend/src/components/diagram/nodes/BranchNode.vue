@@ -23,7 +23,8 @@ const isChild = computed(() => props.data.nodeType === 'branch' && props.data.pa
 const defaultStyle = computed(() => getNodeStyle(isChild.value ? 'child' : 'branch'))
 
 const nodeStyle = computed(() => ({
-  backgroundColor: props.data.style?.backgroundColor || defaultStyle.value.backgroundColor || '#e3f2fd',
+  backgroundColor:
+    props.data.style?.backgroundColor || defaultStyle.value.backgroundColor || '#e3f2fd',
   borderColor: props.data.style?.borderColor || defaultStyle.value.borderColor || '#4e79a7',
   color: props.data.style?.textColor || defaultStyle.value.textColor || '#333333',
   fontSize: `${props.data.style?.fontSize || defaultStyle.value.fontSize || 16}px`,

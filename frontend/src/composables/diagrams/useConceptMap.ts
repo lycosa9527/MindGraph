@@ -219,8 +219,7 @@ export function useConceptMap(options: ConceptMapOptions = {}) {
     if (!data.value) return null
 
     // Check if both concepts exist
-    const fromExists =
-      fromId === 'topic' || data.value.concepts.some((c) => c.id === fromId)
+    const fromExists = fromId === 'topic' || data.value.concepts.some((c) => c.id === fromId)
     const toExists = toId === 'topic' || data.value.concepts.some((c) => c.id === toId)
 
     if (!fromExists || !toExists) {
@@ -229,9 +228,7 @@ export function useConceptMap(options: ConceptMapOptions = {}) {
     }
 
     // Check if connection already exists
-    const exists = data.value.connections.some(
-      (c) => c.from === fromId && c.to === toId
-    )
+    const exists = data.value.connections.some((c) => c.from === fromId && c.to === toId)
     if (exists) {
       console.warn('Connection already exists')
       return null

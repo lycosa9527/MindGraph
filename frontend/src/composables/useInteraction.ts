@@ -11,10 +11,10 @@
  */
 import { onUnmounted, ref } from 'vue'
 
+import type { MindGraphNode } from '@/types'
+
 import { eventBus } from './useEventBus'
 import { useSelection } from './useSelection'
-
-import type { MindGraphNode } from '@/types'
 
 // ============================================================================
 // Types
@@ -93,7 +93,8 @@ export function useInteraction(options: InteractionOptions = {}) {
     const now = Date.now()
     const tracker = clickTracker.value
     const timeSinceLastClick = now - tracker.lastClickTime
-    const isDoubleClick = timeSinceLastClick < doubleClickThreshold && tracker.lastClickNodeId === nodeId
+    const isDoubleClick =
+      timeSinceLastClick < doubleClickThreshold && tracker.lastClickNodeId === nodeId
 
     if (isDoubleClick) {
       // DOUBLE-CLICK: Cancel pending single-click and open editor
@@ -349,7 +350,8 @@ export function createVueFlowHandlers(interaction: ReturnType<typeof useInteract
     },
 
     onNodeDoubleClick: (_event: MouseEvent, node: MindGraphNode) => {
-      const currentText = node.data?.label || node.data?.text || 'Edit me'
+      const currentText =
+        node.data?.label || (typeof node.data?.text === 'string' ? node.data.text : 'Edit me')
       interaction.startEditing(node.id, currentText)
     },
 
@@ -368,7 +370,7 @@ export function createVueFlowHandlers(interaction: ReturnType<typeof useInteract
     onSelectionChange: (params: { nodes: MindGraphNode[] }) => {
       const changes = params.nodes.map((node) => ({
         id: node.id,
-        selected: node.selected ?? false,
+        selected: (node as unknown as { selected?: boolean }).selected ?? false,
       }))
       interaction.onNodesSelectionChange(changes)
     },

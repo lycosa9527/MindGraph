@@ -18,9 +18,9 @@ from sqlalchemy.orm import Session
 from config.database import get_db
 from models.auth import User
 from models.messages import Messages
-from models.requests import ResetPasswordWithSMSRequest
+from models.requests import ChangePasswordRequest, ResetPasswordWithSMSRequest
 from services.redis_user_cache import user_cache
-from utils.auth import hash_password, get_client_ip
+from utils.auth import hash_password, get_client_ip, get_current_user, verify_password
 
 from .dependencies import get_language_dependency
 from .sms import _verify_and_consume_sms_code
@@ -108,3 +108,68 @@ async def reset_password_with_sms(
     }
 
 
+@router.put("/change-password")
+async def change_password(
+    request: ChangePasswordRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+    lang: str = Depends(get_language_dependency)
+):
+    """
+    Change password (for authenticated users)
+    
+    Allows authenticated users to change their password.
+    Requires current password verification.
+    """
+    # Verify current password
+    if not verify_password(request.current_password, current_user.password_hash):
+        error_msg = Messages.error("invalid_password_change", lang)
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=error_msg
+        )
+    
+    # Check if new password is different
+    if verify_password(request.new_password, current_user.password_hash):
+        error_msg = Messages.error("password_same_as_current", lang)
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=error_msg
+        )
+    
+    # Reload user from database for modification
+    user = db.query(User).filter(User.id == current_user.id).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+    
+    # Update password
+    user.password_hash = hash_password(request.new_password)
+    user.failed_login_attempts = 0  # Clear any failed attempts
+    user.locked_until = None
+    
+    try:
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Failed to change password for user {user.id}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to change password"
+        )
+    
+    # Invalidate and re-cache user
+    try:
+        user_cache.invalidate(user.id, user.phone)
+        user_cache.cache_user(user)
+        logger.info(f"Password changed for user ID {user.id}")
+    except Exception as e:
+        logger.warning(f"Failed to update cache after password change: {e}")
+    
+    logger.info(f"Password changed for user: {user.phone} (ID: {user.id})")
+    
+    return {
+        "message": Messages.success("password_change_success", lang)
+    }

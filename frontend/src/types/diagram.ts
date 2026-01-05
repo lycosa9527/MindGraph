@@ -91,6 +91,8 @@ export interface DiagramData {
   _node_styles?: Record<string, NodeStyle>
   /** Custom positions set by user dragging (distinct from auto-layout) */
   _customPositions?: Record<string, Position>
+  /** Index signature for dynamic property access (e.g., 'attributes', 'steps', etc.) */
+  [key: string]: unknown
 }
 
 export interface HistoryEntry {
@@ -106,3 +108,9 @@ export interface DiagramSession {
   createdAt: string
   updatedAt: string
 }
+
+/**
+ * DiagramSpec is an alias for DiagramData, used in operations/history
+ * for compatibility with legacy code patterns.
+ */
+export type DiagramSpec = DiagramData

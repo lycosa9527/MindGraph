@@ -9,10 +9,10 @@ import { computed, ref } from 'vue'
 import { useLanguage } from '@/composables/useLanguage'
 import type { Connection, DiagramNode, MindGraphEdge, MindGraphNode } from '@/types'
 import {
-  diagramDataToMindMapSpec,
-  recalculateMindMapLayout,
   type MindMapLayout,
   type MindMapSpec,
+  diagramDataToMindMapSpec,
+  recalculateMindMapLayout,
 } from '@/utils'
 
 interface MindMapBranch {
@@ -226,11 +226,7 @@ export function useMindMap(options: MindMapOptions = {}) {
   }
 
   // Add child to a branch (requires selection of a branch)
-  function addChildToBranch(
-    branchId: string,
-    text?: string,
-    selectedNodeId?: string
-  ): boolean {
+  function addChildToBranch(branchId: string, text?: string, selectedNodeId?: string): boolean {
     if (!data.value) return false
 
     // Selection validation - must select a branch
@@ -244,13 +240,8 @@ export function useMindMap(options: MindMapOptions = {}) {
     const branchIndex = allBranches.findIndex((_, idx) => {
       const leftIndex = idx < data.value!.leftBranches.length ? idx : -1
       const rightIndex =
-        idx >= data.value!.leftBranches.length
-          ? idx - data.value!.leftBranches.length
-          : -1
-      const nodeId =
-        leftIndex >= 0
-          ? `branch-l-1-${leftIndex}`
-          : `branch-r-1-${rightIndex}`
+        idx >= data.value!.leftBranches.length ? idx - data.value!.leftBranches.length : -1
+      const nodeId = leftIndex >= 0 ? `branch-l-1-${leftIndex}` : `branch-r-1-${rightIndex}`
       return nodeId === selectedNodeId
     })
 
@@ -354,7 +345,10 @@ export function useMindMap(options: MindMapOptions = {}) {
   /**
    * Set data and optionally recalculate layout
    */
-  async function setDataWithLayout(newData: MindMapData, recalculate: boolean = true): Promise<void> {
+  async function setDataWithLayout(
+    newData: MindMapData,
+    recalculate: boolean = true
+  ): Promise<void> {
     data.value = newData
     if (recalculate && useBackendLayout) {
       await recalculateLayout()

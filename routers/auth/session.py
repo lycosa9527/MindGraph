@@ -50,6 +50,7 @@ async def get_me(
         "id": current_user.id,
         "phone": current_user.phone,
         "name": current_user.name,
+        "avatar": current_user.avatar or "🐈‍⬛",
         "organization": {
             "id": org.id if org else None,
             "code": org.code if org else None,

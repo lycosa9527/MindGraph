@@ -18,7 +18,7 @@ const { getNodeStyle } = useTheme({
 })
 
 const isWholeNode = computed(() => props.data.originalNode?.type === 'topic')
-const isPart = computed(() => !isWholeNode.value && !props.data.parentId)
+const _isPart = computed(() => !isWholeNode.value && !props.data.parentId)
 const isSubpart = computed(() => !isWholeNode.value && !!props.data.parentId)
 
 const defaultStyle = computed(() => {
@@ -28,11 +28,22 @@ const defaultStyle = computed(() => {
 })
 
 const nodeStyle = computed(() => ({
-  backgroundColor: props.data.style?.backgroundColor || defaultStyle.value.backgroundColor || (isWholeNode.value ? '#1976d2' : '#e3f2fd'),
-  borderColor: props.data.style?.borderColor || defaultStyle.value.borderColor || (isWholeNode.value ? '#0d47a1' : '#4e79a7'),
-  color: props.data.style?.textColor || defaultStyle.value.textColor || (isWholeNode.value ? '#ffffff' : '#333333'),
+  backgroundColor:
+    props.data.style?.backgroundColor ||
+    defaultStyle.value.backgroundColor ||
+    (isWholeNode.value ? '#1976d2' : '#e3f2fd'),
+  borderColor:
+    props.data.style?.borderColor ||
+    defaultStyle.value.borderColor ||
+    (isWholeNode.value ? '#0d47a1' : '#4e79a7'),
+  color:
+    props.data.style?.textColor ||
+    defaultStyle.value.textColor ||
+    (isWholeNode.value ? '#ffffff' : '#333333'),
   fontSize: `${props.data.style?.fontSize || defaultStyle.value.fontSize || (isWholeNode.value ? 18 : isSubpart.value ? 12 : 16)}px`,
-  fontWeight: isWholeNode.value ? 'bold' : props.data.style?.fontWeight || defaultStyle.value.fontWeight || 'normal',
+  fontWeight: isWholeNode.value
+    ? 'bold'
+    : props.data.style?.fontWeight || defaultStyle.value.fontWeight || 'normal',
   borderWidth: `${props.data.style?.borderWidth || defaultStyle.value.borderWidth || (isWholeNode.value ? 3 : isSubpart.value ? 1 : 2)}px`,
   borderRadius: `${props.data.style?.borderRadius || 6}px`,
 }))

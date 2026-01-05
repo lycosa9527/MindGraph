@@ -5,10 +5,8 @@
  */
 import { computed } from 'vue'
 
-import { PlusCircle } from 'lucide-vue-next'
-
-import { ChatContainer } from '@/components/chat'
 import { MindGraphContainer } from '@/components/mindgraph'
+import { MindmatePanel } from '@/components/panels'
 import { useAuthStore, useUIStore } from '@/stores'
 
 const uiStore = useUIStore()
@@ -25,23 +23,10 @@ const isMindGraphMode = computed(() => currentMode.value === 'mindgraph')
     class="main-page flex-1 flex flex-col transition-all duration-300 ease-in-out"
     :style="{ backgroundColor: isMindGraphMode ? '#f9fafb' : 'white' }"
   >
-    <!-- Top header (only for MindMate mode) -->
-    <div
+    <!-- MindMate Chat Mode (Full-featured) -->
+    <MindmatePanel
       v-if="isMindMateMode"
-      class="p-4 border-b border-gray-200 flex justify-between items-center"
-    >
-      <div class="font-semibold text-gray-800">MindMate</div>
-      <button
-        class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors text-sm font-medium flex items-center"
-      >
-        <PlusCircle class="w-4 h-4 mr-1" />
-        新建对话
-      </button>
-    </div>
-
-    <!-- MindMate Chat Mode -->
-    <ChatContainer
-      v-if="isMindMateMode"
+      mode="fullpage"
       class="flex-1"
     />
 

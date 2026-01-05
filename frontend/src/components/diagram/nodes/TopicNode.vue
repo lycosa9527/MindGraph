@@ -20,7 +20,8 @@ const { getNodeStyle } = useTheme({
 const defaultStyle = computed(() => getNodeStyle('topic'))
 
 const nodeStyle = computed(() => ({
-  backgroundColor: props.data.style?.backgroundColor || defaultStyle.value.backgroundColor || '#1976d2',
+  backgroundColor:
+    props.data.style?.backgroundColor || defaultStyle.value.backgroundColor || '#1976d2',
   borderColor: props.data.style?.borderColor || defaultStyle.value.borderColor || '#0d47a1',
   color: props.data.style?.textColor || defaultStyle.value.textColor || '#ffffff',
   fontSize: `${props.data.style?.fontSize || defaultStyle.value.fontSize || 18}px`,

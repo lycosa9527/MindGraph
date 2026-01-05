@@ -60,6 +60,7 @@ SMS_REGION = os.getenv("TENCENT_SMS_REGION", "ap-guangzhou").strip()
 SMS_TEMPLATE_REGISTER = os.getenv("TENCENT_SMS_TEMPLATE_REGISTER", "").strip()
 SMS_TEMPLATE_LOGIN = os.getenv("TENCENT_SMS_TEMPLATE_LOGIN", "").strip()
 SMS_TEMPLATE_RESET_PASSWORD = os.getenv("TENCENT_SMS_TEMPLATE_RESET_PASSWORD", "").strip()
+SMS_TEMPLATE_CHANGE_PHONE = os.getenv("TENCENT_SMS_TEMPLATE_CHANGE_PHONE", "").strip()
 
 # Rate limiting configuration (database-level)
 SMS_CODE_EXPIRY_MINUTES = int(os.getenv("SMS_CODE_EXPIRY_MINUTES", "5"))
@@ -148,6 +149,7 @@ class SMSService:
             "register": SMS_TEMPLATE_REGISTER,
             "login": SMS_TEMPLATE_LOGIN,
             "reset_password": SMS_TEMPLATE_RESET_PASSWORD,
+            "change_phone": SMS_TEMPLATE_CHANGE_PHONE or SMS_TEMPLATE_REGISTER,  # Fallback to register template
         }
         
         template_id = templates.get(purpose)

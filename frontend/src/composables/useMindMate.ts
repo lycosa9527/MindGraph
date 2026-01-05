@@ -8,9 +8,14 @@
  * - Panel integration via EventBus
  * - Markdown rendering
  *
+ * Conversation history list is managed by useMindMateStore (Pinia).
+ * This composable handles messages for a single conversation.
+ *
  * Migrated from archive/static/js/managers/mindmate-manager.js
  */
-import { computed, onUnmounted, ref, shallowRef } from 'vue'
+import { computed, onUnmounted, ref, shallowRef, watch } from 'vue'
+
+import { useAuthStore, useMindMateStore } from '@/stores'
 
 import { eventBus } from './useEventBus'
 
@@ -18,12 +23,34 @@ import { eventBus } from './useEventBus'
 // Types
 // ============================================================================
 
+export type FeedbackRating = 'like' | 'dislike' | null
+
 export interface MindMateMessage {
   id: string
   role: 'user' | 'assistant' | 'system'
   content: string
   timestamp: number
   isStreaming?: boolean
+  files?: MindMateFile[]
+  difyMessageId?: string // Dify's message ID for feedback API
+  feedback?: FeedbackRating // Current feedback status
+}
+
+export interface MindMateFile {
+  id: string
+  name: string
+  type: 'image' | 'document' | 'audio' | 'video' | 'custom'
+  size: number
+  extension: string
+  mime_type: string
+  preview_url?: string
+}
+
+export interface MindMateConversation {
+  id: string
+  name: string
+  created_at: number
+  updated_at: number
 }
 
 export interface MindMateOptions {
@@ -32,6 +59,7 @@ export interface MindMateOptions {
   onMessageChunk?: (chunk: string) => void
   onMessageComplete?: () => void
   onError?: (error: string) => void
+  onTitleChanged?: (title: string) => void
 }
 
 export type MindMateState = 'idle' | 'loading' | 'streaming' | 'error'
@@ -40,9 +68,19 @@ interface SSEData {
   event: string
   answer?: string
   conversation_id?: string
+  message_id?: string // Dify message ID for feedback
   error?: string
   error_type?: string
   message?: string
+  // message_file event fields
+  id?: string
+  type?: string
+  url?: string
+  belongs_to?: string
+  // workflow event fields
+  workflow_run_id?: string
+  task_id?: string
+  data?: Record<string, unknown>
 }
 
 // ============================================================================
@@ -56,10 +94,18 @@ export function useMindMate(options: MindMateOptions = {}) {
     onMessageChunk,
     onMessageComplete,
     onError,
+    onTitleChanged,
   } = options
 
   // =========================================================================
-  // State
+  // Stores
+  // =========================================================================
+
+  const authStore = useAuthStore()
+  const mindMateStore = useMindMateStore()
+
+  // =========================================================================
+  // State (local to this composable instance)
   // =========================================================================
 
   const state = ref<MindMateState>('idle')
@@ -72,12 +118,17 @@ export function useMindMate(options: MindMateOptions = {}) {
   // Streaming state
   const streamingBuffer = ref('')
   const currentStreamingId = ref<string | null>(null)
+  const abortController = ref<AbortController | null>(null)
 
-  // User ID (persisted)
-  const userId = shallowRef(getUserId())
+  // File upload state
+  const pendingFiles = ref<MindMateFile[]>([])
+  const isUploading = ref(false)
+
+  // User ID - derived from authenticated user
+  const userId = shallowRef(getDifyUserId())
 
   // =========================================================================
-  // Computed
+  // Computed (proxied from store for convenience)
   // =========================================================================
 
   const isStreaming = computed(() => state.value === 'streaming')
@@ -85,18 +136,37 @@ export function useMindMate(options: MindMateOptions = {}) {
   const hasMessages = computed(() => messages.value.length > 0)
   const lastMessage = computed(() => messages.value[messages.value.length - 1] || null)
 
+  // Proxy store state for backward compatibility
+  const conversations = computed(() => mindMateStore.conversations)
+  const conversationTitle = computed(() => mindMateStore.conversationTitle)
+  const isLoadingConversations = computed(() => mindMateStore.isLoadingConversations)
+  const messageCount = computed(() => mindMateStore.messageCount)
+
   // =========================================================================
   // Helpers
   // =========================================================================
 
-  function getUserId(): string {
-    let id = localStorage.getItem('mindgraph_user_id')
+  function getDifyUserId(): string {
+    // Use authenticated MindGraph user ID for consistent conversation history
+    if (authStore.user?.id) {
+      return `mg_user_${authStore.user.id}`
+    }
+    // Fallback for unauthenticated users (should not happen in practice)
+    let id = localStorage.getItem('mindgraph_guest_id')
     if (!id) {
-      id = `user_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`
-      localStorage.setItem('mindgraph_user_id', id)
+      id = `guest_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`
+      localStorage.setItem('mindgraph_guest_id', id)
     }
     return id
   }
+
+  // Watch for auth changes and update userId
+  watch(
+    () => authStore.user?.id,
+    () => {
+      userId.value = getDifyUserId()
+    }
+  )
 
   function generateMessageId(): string {
     return `msg_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`
@@ -114,35 +184,149 @@ export function useMindMate(options: MindMateOptions = {}) {
     return id
   }
 
-  function updateMessage(id: string, content: string, isStreaming = false): void {
-    const msg = messages.value.find((m) => m.id === id)
-    if (msg) {
-      msg.content = content
-      msg.isStreaming = isStreaming
+  function updateMessage(
+    id: string,
+    content: string,
+    isStreaming = false,
+    difyMessageId?: string
+  ): void {
+    const index = messages.value.findIndex((m) => m.id === id)
+    if (index !== -1) {
+      // Replace the object to ensure Vue reactivity triggers properly
+      messages.value[index] = {
+        ...messages.value[index],
+        content,
+        isStreaming,
+        ...(difyMessageId && { difyMessageId }),
+      }
     }
+  }
+
+  // =========================================================================
+  // File Upload
+  // =========================================================================
+
+  function getFileType(mimeType: string): MindMateFile['type'] {
+    if (mimeType.startsWith('image/')) return 'image'
+    if (mimeType.startsWith('audio/')) return 'audio'
+    if (mimeType.startsWith('video/')) return 'video'
+    if (
+      mimeType.includes('pdf') ||
+      mimeType.includes('document') ||
+      mimeType.includes('text') ||
+      mimeType.includes('spreadsheet') ||
+      mimeType.includes('presentation')
+    ) {
+      return 'document'
+    }
+    return 'custom'
+  }
+
+  async function uploadFile(file: File): Promise<MindMateFile | null> {
+    isUploading.value = true
+
+    try {
+      const token = localStorage.getItem('access_token')
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('user_id', userId.value)
+
+      const headers: Record<string, string> = {}
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`
+      }
+
+      const response = await fetch('/api/dify/files/upload', {
+        method: 'POST',
+        headers,
+        body: formData,
+      })
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ detail: 'Upload failed' }))
+        throw new Error(error.detail || 'Upload failed')
+      }
+
+      const result = await response.json()
+      const data = result.data
+
+      const uploadedFile: MindMateFile = {
+        id: data.id,
+        name: data.name,
+        type: getFileType(data.mime_type || file.type),
+        size: data.size,
+        extension: data.extension,
+        mime_type: data.mime_type,
+        preview_url: file.type.startsWith('image/') ? URL.createObjectURL(file) : undefined,
+      }
+
+      pendingFiles.value.push(uploadedFile)
+      eventBus.emit('mindmate:file_uploaded', { file: uploadedFile })
+
+      return uploadedFile
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : 'File upload failed'
+      eventBus.emit('mindmate:error', { error: errorMsg })
+      onError?.(errorMsg)
+      return null
+    } finally {
+      isUploading.value = false
+    }
+  }
+
+  function removeFile(fileId: string): void {
+    const file = pendingFiles.value.find((f) => f.id === fileId)
+    if (file?.preview_url) {
+      URL.revokeObjectURL(file.preview_url)
+    }
+    pendingFiles.value = pendingFiles.value.filter((f) => f.id !== fileId)
+  }
+
+  function clearPendingFiles(): void {
+    pendingFiles.value.forEach((f) => {
+      if (f.preview_url) URL.revokeObjectURL(f.preview_url)
+    })
+    pendingFiles.value = []
   }
 
   // =========================================================================
   // SSE Streaming
   // =========================================================================
 
-  async function sendMessage(
-    message: string,
-    showUserMessage = true
-  ): Promise<void> {
-    if (!message.trim()) return
+  async function sendMessage(message: string, showUserMessage = true): Promise<void> {
+    if (!message.trim() && pendingFiles.value.length === 0) return
 
-    // Add user message
-    if (showUserMessage) {
-      addMessage('user', message)
+    // Cancel any ongoing stream
+    if (abortController.value) {
+      abortController.value.abort()
     }
+
+    // Create new abort controller
+    abortController.value = new AbortController()
+
+    // Capture files to send
+    const filesToSend = [...pendingFiles.value]
+
+    // Add user message with files
+    if (showUserMessage) {
+      const msgId = addMessage('user', message)
+      const msg = messages.value.find((m) => m.id === msgId)
+      if (msg && filesToSend.length > 0) {
+        msg.files = filesToSend
+      }
+      // Track user message for title generation (via store)
+      mindMateStore.trackMessage(message)
+    }
+
+    // Clear pending files
+    pendingFiles.value = []
 
     state.value = 'loading'
     streamingBuffer.value = ''
     currentStreamingId.value = null
 
     // Emit event
-    eventBus.emit('mindmate:message_sending', { message })
+    eventBus.emit('mindmate:message_sending', { message, files: filesToSend })
 
     try {
       const token = localStorage.getItem('access_token')
@@ -153,14 +337,27 @@ export function useMindMate(options: MindMateOptions = {}) {
         headers['Authorization'] = `Bearer ${token}`
       }
 
+      // Build request with files
+      const requestBody: Record<string, unknown> = {
+        message: message || (filesToSend.length > 0 ? 'Please analyze this file.' : ''),
+        user_id: userId.value,
+        conversation_id: conversationId.value,
+      }
+
+      // Add files in Dify format
+      if (filesToSend.length > 0) {
+        requestBody.files = filesToSend.map((f) => ({
+          type: f.type,
+          transfer_method: 'local_file',
+          upload_file_id: f.id,
+        }))
+      }
+
       const response = await fetch('/api/ai_assistant/stream', {
         method: 'POST',
         headers,
-        body: JSON.stringify({
-          message,
-          user_id: userId.value,
-          conversation_id: conversationId.value,
-        }),
+        body: JSON.stringify(requestBody),
+        signal: abortController.value.signal,
       })
 
       if (!response.ok) {
@@ -191,9 +388,10 @@ export function useMindMate(options: MindMateOptions = {}) {
           state.value = 'idle'
           currentStreamingId.value = null
           streamingBuffer.value = ''
+          abortController.value = null
 
           eventBus.emit('mindmate:message_completed', {
-            conversationId: conversationId.value,
+            conversationId: conversationId.value ?? undefined,
           })
           onMessageComplete?.()
           return
@@ -220,6 +418,18 @@ export function useMindMate(options: MindMateOptions = {}) {
 
       await readChunk()
     } catch (error) {
+      // Ignore abort errors (user cancelled)
+      if (error instanceof Error && error.name === 'AbortError') {
+        if (currentStreamingId.value) {
+          updateMessage(currentStreamingId.value, streamingBuffer.value, false)
+        }
+        state.value = 'idle'
+        currentStreamingId.value = null
+        streamingBuffer.value = ''
+        abortController.value = null
+        return
+      }
+
       const errorMsg = error instanceof Error ? error.message : 'Unknown error'
       state.value = 'error'
 
@@ -230,9 +440,81 @@ export function useMindMate(options: MindMateOptions = {}) {
 
       currentStreamingId.value = null
       streamingBuffer.value = ''
+      abortController.value = null
 
       eventBus.emit('mindmate:error', { error: errorMsg })
       onError?.(errorMsg)
+    }
+  }
+
+  function stopGeneration(): void {
+    if (abortController.value) {
+      abortController.value.abort()
+    }
+  }
+
+  function regenerateMessage(messageId: string): void {
+    // Find the user message before this assistant message
+    const msgIndex = messages.value.findIndex((m) => m.id === messageId)
+    if (msgIndex <= 0) return
+
+    // Find the previous user message
+    let userMsgIndex = -1
+    for (let i = msgIndex - 1; i >= 0; i--) {
+      if (messages.value[i].role === 'user') {
+        userMsgIndex = i
+        break
+      }
+    }
+
+    if (userMsgIndex === -1) return
+
+    // Remove this assistant message and any after it
+    messages.value = messages.value.slice(0, msgIndex)
+
+    // Resend the user message
+    const userMessage = messages.value[userMsgIndex].content
+    sendMessage(userMessage, false)
+  }
+
+  async function submitFeedback(localMessageId: string, rating: FeedbackRating): Promise<boolean> {
+    // Find the message to get its Dify message ID
+    const msg = messages.value.find((m) => m.id === localMessageId)
+    if (!msg?.difyMessageId) {
+      console.warn('[MindMate] Cannot submit feedback: no Dify message ID')
+      return false
+    }
+
+    try {
+      const token = localStorage.getItem('access_token')
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      }
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`
+      }
+
+      const response = await fetch(`/api/dify/messages/${msg.difyMessageId}/feedback`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ rating }),
+      })
+
+      if (response.ok) {
+        // Update local message state
+        msg.feedback = rating
+        eventBus.emit('mindmate:feedback_submitted', {
+          messageId: localMessageId,
+          difyMessageId: msg.difyMessageId,
+          rating,
+        })
+        return true
+      }
+
+      return false
+    } catch (error) {
+      console.error('[MindMate] Failed to submit feedback:', error)
+      return false
     }
   }
 
@@ -250,26 +532,80 @@ export function useMindMate(options: MindMateOptions = {}) {
           onMessageChunk?.(data.answer)
         }
 
-        // Save conversation ID
+        // Save conversation ID (both locally and in store)
         if (data.conversation_id && !conversationId.value) {
           conversationId.value = data.conversation_id
+          mindMateStore.setCurrentConversation(data.conversation_id)
         }
         break
 
       case 'message_end':
         if (currentStreamingId.value) {
-          updateMessage(currentStreamingId.value, streamingBuffer.value, false)
+          // Capture the Dify message ID for feedback functionality
+          updateMessage(currentStreamingId.value, streamingBuffer.value, false, data.message_id)
         }
 
         if (data.conversation_id) {
           conversationId.value = data.conversation_id
+          mindMateStore.setCurrentConversation(data.conversation_id)
         }
 
         streamingBuffer.value = ''
         currentStreamingId.value = null
+        abortController.value = null
+
+        // Fetch Dify's auto-generated title after second message
+        if (mindMateStore.messageCount === 2) {
+          setTimeout(() => mindMateStore.fetchDifyTitle(), 1000)
+        }
         break
 
-      case 'error':
+      case 'message_replace':
+        // Replace entire message content (used by Dify for content edits)
+        if (data.answer && currentStreamingId.value) {
+          streamingBuffer.value = data.answer
+          updateMessage(currentStreamingId.value, streamingBuffer.value, true)
+        }
+        break
+
+      case 'message_file':
+        // File output from AI (images, documents generated by AI)
+        eventBus.emit('mindmate:file_received', {
+          id: data.id,
+          type: data.type,
+          url: data.url,
+          belongs_to: data.belongs_to,
+        })
+        break
+
+      case 'workflow_started':
+      case 'node_started':
+      case 'node_finished':
+      case 'workflow_finished':
+        // Workflow status events - emit for potential UI updates
+        eventBus.emit('mindmate:workflow_event', {
+          event: data.event,
+          workflow_run_id: data.workflow_run_id,
+          task_id: data.task_id,
+          data: data.data,
+        })
+        break
+
+      case 'tts_message':
+        // TTS audio chunk - emit for audio playback
+        eventBus.emit('mindmate:tts_chunk', { data: data.data })
+        break
+
+      case 'tts_message_end':
+        // TTS complete
+        eventBus.emit('mindmate:tts_complete', {})
+        break
+
+      case 'ping':
+        // Keepalive - ignore
+        break
+
+      case 'error': {
         const errorMsg = data.message || data.error || 'An error occurred'
 
         if (currentStreamingId.value) {
@@ -280,15 +616,17 @@ export function useMindMate(options: MindMateOptions = {}) {
 
         streamingBuffer.value = ''
         currentStreamingId.value = null
+        abortController.value = null
         state.value = 'error'
 
         eventBus.emit('mindmate:stream_error', {
-          error: data.error,
-          error_type: data.error_type,
+          error: typeof data.error === 'string' ? data.error : undefined,
+          error_type: typeof data.error_type === 'string' ? data.error_type : undefined,
           message: errorMsg,
         })
         onError?.(errorMsg)
         break
+      }
     }
   }
 
@@ -301,15 +639,33 @@ export function useMindMate(options: MindMateOptions = {}) {
 
     hasGreeted.value = true
 
+    // Fetch opening statement from Dify parameters
     try {
-      await sendMessage('start', false)
-    } catch {
-      // Show fallback welcome
-      const welcomeText =
-        currentLang.value === 'zh'
-          ? '✨ MindMate AI 已就绪\n有什么可以帮助您的吗？'
-          : '✨ MindMate AI is ready\nHow can I help you today?'
-      addMessage('assistant', welcomeText)
+      const token = localStorage.getItem('access_token')
+      const headers: Record<string, string> = {}
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`
+      }
+
+      const response = await fetch('/api/dify/app/parameters', { headers })
+
+      if (response.ok) {
+        const params = await response.json()
+
+        // Use opening_statement if configured
+        if (params.opening_statement) {
+          addMessage('assistant', params.opening_statement)
+
+          // Store suggested questions if available
+          if (params.suggested_questions?.length > 0) {
+            eventBus.emit('mindmate:suggested_questions', {
+              questions: params.suggested_questions,
+            })
+          }
+        }
+      }
+    } catch (error) {
+      console.debug('[MindMate] Failed to fetch opening statement:', error)
     }
   }
 
@@ -334,6 +690,86 @@ export function useMindMate(options: MindMateOptions = {}) {
     conversationId.value = null
     hasGreeted.value = false
     clearMessages()
+  }
+
+  // =========================================================================
+  // Conversation History - Delegated to Store
+  // =========================================================================
+
+  /**
+   * Fetch conversations from API (delegates to store)
+   */
+  function fetchConversations(): Promise<void> {
+    return mindMateStore.fetchConversations()
+  }
+
+  /**
+   * Load a specific conversation's messages
+   */
+  async function loadConversation(convId: string): Promise<void> {
+    // Clear current messages and load from history
+    messages.value = []
+    conversationId.value = convId
+    state.value = 'loading'
+
+    try {
+      const token = localStorage.getItem('access_token')
+      const headers: Record<string, string> = {}
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`
+      }
+
+      const response = await fetch(`/api/dify/conversations/${convId}/messages?limit=100`, {
+        headers,
+      })
+
+      if (response.ok) {
+        const result = await response.json()
+        const difyMessages = result.data || []
+
+        // Convert Dify messages to MindMate format (reverse to get chronological order)
+        for (const msg of difyMessages.reverse()) {
+          // Dify returns query (user) and answer (assistant) in each message
+          if (msg.query) {
+            addMessage('user', msg.query)
+          }
+          if (msg.answer) {
+            addMessage('assistant', msg.answer)
+          }
+        }
+
+        hasGreeted.value = true
+      }
+    } catch (error) {
+      console.debug('[MindMate] Failed to load conversation:', error)
+      onError?.('Failed to load conversation')
+    } finally {
+      state.value = 'idle'
+    }
+  }
+
+  /**
+   * Delete a conversation (delegates to store)
+   */
+  async function deleteConversation(convId: string): Promise<boolean> {
+    const result = await mindMateStore.deleteConversation(convId)
+
+    // If deleted current conversation, reset local state
+    if (result && conversationId.value === convId) {
+      resetConversation()
+      sendGreeting()
+    }
+
+    return result
+  }
+
+  /**
+   * Start a new conversation (resets local state and notifies store)
+   */
+  function startNewConversation(): void {
+    resetConversation()
+    mindMateStore.startNewConversation()
+    sendGreeting()
   }
 
   // =========================================================================
@@ -385,6 +821,28 @@ export function useMindMate(options: MindMateOptions = {}) {
     ownerId
   )
 
+  // Listen for conversation changes from store (e.g., sidebar click)
+  eventBus.onWithOwner(
+    'mindmate:conversation_changed',
+    (data) => {
+      const newConvId = data.conversationId as string | null
+      if (newConvId && newConvId !== conversationId.value) {
+        loadConversation(newConvId)
+      }
+    },
+    ownerId
+  )
+
+  // Listen for new conversation request from store (e.g., sidebar "New Chat")
+  eventBus.onWithOwner(
+    'mindmate:start_new_conversation',
+    () => {
+      resetConversation()
+      sendGreeting()
+    },
+    ownerId
+  )
+
   // =========================================================================
   // Cleanup
   // =========================================================================
@@ -418,6 +876,14 @@ export function useMindMate(options: MindMateOptions = {}) {
     hasGreeted,
     userId,
     currentLang,
+    pendingFiles,
+    isUploading,
+
+    // Conversation history state (proxied from store)
+    conversations,
+    conversationTitle,
+    isLoadingConversations,
+    messageCount,
 
     // Computed
     isStreaming,
@@ -431,8 +897,22 @@ export function useMindMate(options: MindMateOptions = {}) {
     startNewSession,
     clearMessages,
     resetConversation,
+    regenerateMessage,
+    stopGeneration,
+    submitFeedback,
     openPanel,
     closePanel,
+
+    // Conversation history actions (delegated to store)
+    fetchConversations,
+    loadConversation,
+    deleteConversation,
+    startNewConversation,
+
+    // File actions
+    uploadFile,
+    removeFile,
+    clearPendingFiles,
 
     // Cleanup
     destroy,
@@ -448,17 +928,19 @@ export function useMindMate(options: MindMateOptions = {}) {
  * For full markdown support, use markdown-it in the component
  */
 export function simpleMarkdown(text: string): string {
-  return text
-    // Bold
-    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-    // Italic
-    .replace(/\*(.+?)\*/g, '<em>$1</em>')
-    // Code blocks
-    .replace(/```(\w*)\n([\s\S]*?)```/g, '<pre><code class="language-$1">$2</code></pre>')
-    // Inline code
-    .replace(/`(.+?)`/g, '<code>$1</code>')
-    // Links
-    .replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>')
-    // Line breaks
-    .replace(/\n/g, '<br>')
+  return (
+    text
+      // Bold
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      // Italic
+      .replace(/\*(.+?)\*/g, '<em>$1</em>')
+      // Code blocks
+      .replace(/```(\w*)\n([\s\S]*?)```/g, '<pre><code class="language-$1">$2</code></pre>')
+      // Inline code
+      .replace(/`(.+?)`/g, '<code>$1</code>')
+      // Links
+      .replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>')
+      // Line breaks
+      .replace(/\n/g, '<br>')
+  )
 }

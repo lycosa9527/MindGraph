@@ -251,7 +251,8 @@ async def login(
             "id": user.id,
             "phone": user.phone,
             "name": user.name,
-            "organization": org.name if org else None
+            "organization": org.name if org else None,
+            "avatar": user.avatar or "🐈‍⬛"
         }
     }
 
@@ -357,7 +358,8 @@ async def login_with_sms(
             "id": user.id,
             "phone": user.phone,
             "name": user.name,
-            "organization": org.name if org else None
+            "organization": org.name if org else None,
+            "avatar": user.avatar or "🐈‍⬛"
         }
     }
 

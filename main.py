@@ -706,7 +706,6 @@ if os.getenv('UVICORN_WORKER_ID') is None:
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.exceptions import RequestValidationError
@@ -744,16 +743,8 @@ async def lifespan(app: FastAPI):
     if worker_id == '0' or not worker_id:
         logger.info("Redis initialized successfully")
     
-    # Initialize JavaScript cache (log only from first worker)
-    try:
-        from static.js.lazy_cache_manager import lazy_js_cache
-        if not lazy_js_cache.is_initialized():
-            logger.error("JavaScript cache failed to initialize")
-        elif worker_id == '0' or not worker_id:
-            logger.info(f"JavaScript cache initialized (version: {config.VERSION})")
-    except Exception as e:
-        if worker_id == '0' or not worker_id:
-            logger.warning(f"Failed to initialize JavaScript cache: {e}")
+    # Note: Legacy JavaScript cache removed in v5.0.0 (Vue migration)
+    # Frontend assets are now served from frontend/dist/ via Vue SPA handler
     
     # Initialize Database with corruption detection and recovery
     try:
@@ -1243,16 +1234,10 @@ async def add_cache_control_headers(request: Request, call_next):
     path = request.url.path
     query = str(request.url.query)
     
-    # Static files
-    if path.startswith('/static/'):
-        # If version query parameter is present, cache aggressively
-        if 'v=' in query:
-            # Versioned assets can be cached for a long time (1 year)
-            # Browser will fetch new version when VERSION changes
-            response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
-        else:
-            # Unversioned static files: short cache with revalidation
-            response.headers["Cache-Control"] = "public, max-age=3600, must-revalidate"
+    # Vue SPA assets (v5.0.0+) - served from /assets/
+    if path.startswith('/assets/'):
+        # Vue build assets are content-hashed, cache aggressively
+        response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
     # HTML pages: no cache
     elif path.endswith('.html') or path in ['/', '/editor', '/debug', '/auth', '/admin', '/demo']:
         response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
@@ -1270,17 +1255,9 @@ async def log_requests(request: Request, call_next):
     """
     start_time = time.time()
     
-    # Block access to deprecated files
-    if request.url.path == '/static/js/d3-renderers.js':
-        logger.warning(f"BLOCKED: Attempted access to old d3-renderers.js from {request.client.host}")
-        return JSONResponse(
-            status_code=403,
-            content={"error": "Access Denied: This file is deprecated and should not be accessed"}
-        )
-    
-    # For static files, include version query param in log to verify cache busting
+    # For Vue assets, include version info in log for debugging
     log_path = request.url.path
-    if request.url.path.startswith('/static/') and request.url.query:
+    if request.url.path.startswith('/assets/') and request.url.query:
         log_path = f"{request.url.path}?{request.url.query}"
     
     # For POST requests to generate_graph, check if it's autocomplete before processing
@@ -1335,15 +1312,21 @@ async def log_requests(request: Request, call_next):
     return response
 
 # ============================================================================
-# STATIC FILES AND TEMPLATES
+# STATIC FILES AND VUE SPA
 # ============================================================================
 
-# Mount static files
-app.mount("/static", StaticFiles(directory="static"), name="static")
+# Vue SPA setup (v5.0.0+)
+# In production: Serve Vue app from frontend/dist/
+# In development: Vite dev server handles frontend on port 3000
+from services.spa_handler import setup_vue_spa, is_vue_spa_available
 
-# Jinja2 templates with auto-reload enabled
-templates = Jinja2Templates(directory="templates")
-templates.env.auto_reload = True  # Enable template auto-reload for development
+# Setup Vue SPA - mounts /assets from frontend/dist/assets/
+_vue_spa_enabled = setup_vue_spa(app)
+
+if _vue_spa_enabled:
+    logger.info("Vue SPA mode: Frontend served from frontend/dist/")
+else:
+    logger.warning("Vue SPA not available - run 'npm run build' in frontend/ directory")
 
 # ============================================================================
 # GLOBAL EXCEPTION HANDLERS
@@ -1891,8 +1874,12 @@ async def get_status():
 # ============================================================================
 
 from routers import pages, cache, api, node_palette, auth, admin_env, admin_logs, admin_realtime, voice, update_notification, tab_mode, public_dashboard
+from routers import vue_spa
 
 # Register routers
+# Vue SPA handles all page routes (v5.0.0+)
+app.include_router(vue_spa.router)
+# Authentication & utility routes (loginByXz, favicon)
 app.include_router(pages.router)
 app.include_router(cache.router)
 app.include_router(api.router)

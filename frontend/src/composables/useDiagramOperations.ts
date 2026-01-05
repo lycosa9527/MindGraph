@@ -8,9 +8,9 @@
  */
 import { computed, onUnmounted, ref, shallowRef, watch } from 'vue'
 
-import { eventBus } from './useEventBus'
-
 import type { DiagramSpec, DiagramType } from '@/types'
+
+import { eventBus } from './useEventBus'
 
 // ============================================================================
 // Types
@@ -76,7 +76,7 @@ interface DiagramConfig {
   arrayFields: Record<string, string>
   protectedNodes: string[]
   maxNodes?: Record<string, number>
-  defaultTexts: Record<string, { en: string; zh: string }>
+  defaultTexts: Record<string, { en: string | string[]; zh: string | string[] }>
 }
 
 const DIAGRAM_CONFIGS: Record<string, DiagramConfig> = {
@@ -373,15 +373,15 @@ export function useDiagramOperations(options: UseDiagramOperationsOptions = {}) 
 
         // Handle protected nodes (topic, main, etc.)
         if (cfg.protectedNodes.includes(nodeInfo.type) && updates.text !== undefined) {
-          // Update the main field directly
+          // Update the main field directly (use index access since DiagramSpec has index signature)
           if (nodeInfo.type === 'topic' && 'topic' in spec) {
-            ;(spec as { topic: string }).topic = updates.text
+            spec['topic'] = updates.text
           } else if (nodeInfo.type === 'whole' && 'whole' in spec) {
-            ;(spec as { whole: string }).whole = updates.text
+            spec['whole'] = updates.text
           } else if (nodeInfo.type === 'main' && 'main' in spec) {
-            ;(spec as { main: string }).main = updates.text
+            spec['main'] = updates.text
           } else if (nodeInfo.type === 'event' && 'event' in spec) {
-            ;(spec as { event: string }).event = updates.text
+            spec['event'] = updates.text
           }
         }
 
@@ -562,9 +562,10 @@ export function useDiagramOperations(options: UseDiagramOperationsOptions = {}) 
 
         let addedCount = 0
         nodes.forEach((node) => {
-          const nodeType = typeof node === 'object' && node !== null
-            ? (node as Record<string, unknown>).type as string
-            : undefined
+          const nodeType =
+            typeof node === 'object' && node !== null
+              ? ((node as Record<string, unknown>).type as string)
+              : undefined
           const result = operations.value?.addNode(spec, nodeType)
           if (result) addedCount++
         })
@@ -598,8 +599,8 @@ export function useDiagramOperations(options: UseDiagramOperationsOptions = {}) 
           if (typeof nodeData !== 'object' || nodeData === null) return
 
           const obj = nodeData as Record<string, unknown>
-          const nodeId = obj.node_id as string || obj.id as string
-          const text = obj.text as string || obj.new_text as string
+          const nodeId = (obj.node_id as string) || (obj.id as string)
+          const text = (obj.text as string) || (obj.new_text as string)
 
           if (nodeId && text !== undefined) {
             const result = operations.value?.updateNode(spec, nodeId, { text })
@@ -632,14 +633,18 @@ export function useDiagramOperations(options: UseDiagramOperationsOptions = {}) 
         if (!spec) return
 
         // Extract node IDs from various formats
-        const ids = nodeIds.map((item) => {
-          if (typeof item === 'string') return item
-          if (typeof item === 'object' && item !== null) {
-            return (item as Record<string, unknown>).node_id as string ||
-                   (item as Record<string, unknown>).id as string
-          }
-          return null
-        }).filter((id): id is string => id !== null)
+        const ids = nodeIds
+          .map((item) => {
+            if (typeof item === 'string') return item
+            if (typeof item === 'object' && item !== null) {
+              return (
+                ((item as Record<string, unknown>).node_id as string) ||
+                ((item as Record<string, unknown>).id as string)
+              )
+            }
+            return null
+          })
+          .filter((id): id is string => id !== null)
 
         if (ids.length > 0) {
           const result = operations.value?.deleteNodes(spec, ids)
@@ -665,7 +670,7 @@ export function useDiagramOperations(options: UseDiagramOperationsOptions = {}) 
         if (!spec) return
 
         // Update center/topic text based on diagram type
-        const newText = data.new_text as string || data.text as string
+        const newText = (data.new_text as string) || (data.text as string)
         if (newText !== undefined) {
           // Determine the center node ID based on diagram type
           const centerNodeId = 'topic' // Most diagram types use 'topic' for center

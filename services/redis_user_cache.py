@@ -67,6 +67,7 @@ class UserCache:
             'password_hash': user.password_hash or '',
             'name': user.name or '',
             'organization_id': str(user.organization_id) if user.organization_id else '',
+            'avatar': user.avatar or '',
             'failed_login_attempts': str(user.failed_login_attempts) if user.failed_login_attempts else '0',
             'locked_until': user.locked_until.isoformat() if user.locked_until else '',
             'created_at': user.created_at.isoformat() if user.created_at else '',
@@ -89,6 +90,7 @@ class UserCache:
         user.password_hash = data.get('password_hash') or None
         user.name = data.get('name') or None
         user.organization_id = int(data['organization_id']) if data.get('organization_id') else None
+        user.avatar = data.get('avatar') or None
         user.failed_login_attempts = int(data.get('failed_login_attempts', '0'))
         
         # Parse datetime fields

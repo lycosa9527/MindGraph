@@ -10,7 +10,7 @@ const routes: RouteRecordRaw[] = [
     path: '/',
     name: 'Main',
     component: () => import('@/pages/MainPage.vue'),
-    meta: { requiresAuth: true, layout: 'main' },
+    meta: { layout: 'main' },
   },
   {
     path: '/canvas',

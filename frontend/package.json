@@ -24,6 +24,7 @@
     "axios": "^1.7.9",
     "dompurify": "^3.2.4",
     "element-plus": "^2.13.0",
+    "html-to-image": "^1.11.13",
     "lucide-vue-next": "^0.562.0",
     "markdown-it": "^14.1.0",
     "mitt": "^3.0.1",

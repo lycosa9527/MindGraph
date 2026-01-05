@@ -3,7 +3,7 @@
  * Migrated from archive/static/js/style-manager.js
  * Provides centralized theme handling matching the old JavaScript implementation
  */
-import { computed, type Ref } from 'vue'
+import { type Ref, computed } from 'vue'
 
 import type { DiagramType, NodeStyle } from '@/types'
 
@@ -213,6 +213,20 @@ export interface DiagramTheme {
   contextText?: string
   contextStroke?: string
   contextStrokeWidth?: number
+  // Left/Right topic styles (double bubble maps)
+  leftTopicFill?: string
+  leftTopicText?: string
+  leftTopicStroke?: string
+  leftTopicStrokeWidth?: number
+  rightTopicFill?: string
+  rightTopicText?: string
+  rightTopicStroke?: string
+  rightTopicStrokeWidth?: number
+  // Concept map styles
+  conceptFill?: string
+  conceptText?: string
+  conceptStroke?: string
+  conceptStrokeWidth?: number
   // Font sizes
   fontTopic?: number
   fontAttribute?: number
@@ -274,7 +288,20 @@ export function useTheme(options: UseThemeOptions = {}) {
   /**
    * Get NodeStyle for a specific node type
    */
-  function getNodeStyle(nodeType: 'topic' | 'branch' | 'child' | 'bubble' | 'attribute' | 'part' | 'subpart' | 'root' | 'leaf' | 'step' | 'context'): NodeStyle {
+  function getNodeStyle(
+    nodeType:
+      | 'topic'
+      | 'branch'
+      | 'child'
+      | 'bubble'
+      | 'attribute'
+      | 'part'
+      | 'subpart'
+      | 'root'
+      | 'leaf'
+      | 'step'
+      | 'context'
+  ): NodeStyle {
     const t = theme.value
 
     switch (nodeType) {

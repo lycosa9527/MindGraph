@@ -11,9 +11,9 @@
  */
 import { computed, onUnmounted, ref } from 'vue'
 
-import { eventBus } from './useEventBus'
-
 import { usePanelsStore } from '@/stores/panels'
+
+import { eventBus } from './useEventBus'
 
 // ============================================================================
 // Types
@@ -102,10 +102,7 @@ export function usePanelCoordination(options: UsePanelCoordinationOptions = {}) 
         break
       case 'property':
         if (data?.nodeId && data?.nodeData) {
-          panelsStore.openProperty(
-            data.nodeId as string,
-            data.nodeData as Record<string, unknown>
-          )
+          panelsStore.openProperty(data.nodeId as string, data.nodeData as Record<string, unknown>)
         } else {
           console.warn('[PanelCoordination] Property panel requires nodeId and nodeData')
           return false

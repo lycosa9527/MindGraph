@@ -2,7 +2,6 @@
  * API Utilities
  * Centralized API calls with authentication support
  */
-
 import { useAuthStore } from '@/stores/auth'
 
 const API_BASE = '/api'
@@ -10,10 +9,7 @@ const API_BASE = '/api'
 /**
  * Make an authenticated fetch request
  */
-export async function authFetch(
-  endpoint: string,
-  options: RequestInit = {}
-): Promise<Response> {
+export async function authFetch(endpoint: string, options: RequestInit = {}): Promise<Response> {
   const authStore = useAuthStore()
 
   const headers: Record<string, string> = {

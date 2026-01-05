@@ -13,9 +13,9 @@
  */
 import { computed, onUnmounted, ref, shallowRef } from 'vue'
 
-import { eventBus } from './useEventBus'
-
 import type { DiagramType } from '@/types'
+
+import { eventBus } from './useEventBus'
 
 // ============================================================================
 // Types
@@ -47,7 +47,13 @@ interface AudioChunk {
 // ============================================================================
 
 export function useVoiceAgent(options: VoiceAgentOptions = {}) {
-  const { ownerId = `VoiceAgent_${Date.now()}`, sampleRate = 24000, onTranscription, onTextChunk, onError } = options
+  const {
+    ownerId = `VoiceAgent_${Date.now()}`,
+    sampleRate = 24000,
+    onTranscription,
+    onTextChunk,
+    onError,
+  } = options
 
   // =========================================================================
   // State
@@ -230,7 +236,7 @@ export function useVoiceAgent(options: VoiceAgentOptions = {}) {
       source.connect(workletNode)
       audioWorkletNode.value = workletNode
       audioSource.value = source
-    } catch (error) {
+    } catch {
       // Fallback to ScriptProcessor for older browsers
       console.warn('[VoiceAgent] AudioWorklet not supported, falling back to ScriptProcessor')
       await startAudioCaptureFallback()
@@ -241,7 +247,7 @@ export function useVoiceAgent(options: VoiceAgentOptions = {}) {
     if (!audioContext.value || !micStream.value) return
 
     const source = audioContext.value.createMediaStreamSource(micStream.value)
-    // eslint-disable-next-line @typescript-eslint/no-deprecated
+
     const processor = audioContext.value.createScriptProcessor(4096, 1, 1)
 
     processor.onaudioprocess = (e) => {
@@ -278,37 +284,41 @@ export function useVoiceAgent(options: VoiceAgentOptions = {}) {
 
     switch (data.type) {
       case 'connected':
-        sessionId.value = data.session_id as string
+        sessionId.value = String(data.session_id ?? '')
         state.value = 'active'
-        eventBus.emit('voice:connected', { sessionId: data.session_id })
+        eventBus.emit('voice:connected', { sessionId: String(data.session_id ?? '') })
         break
 
       case 'transcription':
-        lastTranscription.value = data.text as string
-        eventBus.emit('voice:transcription', { text: data.text })
-        onTranscription?.(data.text as string)
+        lastTranscription.value = String(data.text ?? '')
+        eventBus.emit('voice:transcription', { text: String(data.text ?? '') })
+        onTranscription?.(String(data.text ?? ''))
         state.value = 'speaking'
         break
 
       case 'text_chunk':
-        eventBus.emit('voice:text_chunk', { text: data.text })
-        onTextChunk?.(data.text as string)
+        eventBus.emit('voice:text_chunk', { text: String(data.text ?? '') })
+        onTextChunk?.(String(data.text ?? ''))
         break
 
       case 'audio_chunk':
         if (!_destroyed && !_cleaningUp) {
-          playAudioChunk(data.audio as string)
+          playAudioChunk(String(data.audio ?? ''))
           state.value = 'speaking'
         }
         break
 
       case 'speech_started':
-        eventBus.emit('voice:speech_started', { audioStartMs: data.audio_start_ms })
+        eventBus.emit('voice:speech_started', {
+          audioStartMs: typeof data.audio_start_ms === 'number' ? data.audio_start_ms : undefined,
+        })
         audioQueue.length = 0 // Interrupt playback
         break
 
       case 'speech_stopped':
-        eventBus.emit('voice:speech_stopped', { audioEndMs: data.audio_end_ms })
+        eventBus.emit('voice:speech_stopped', {
+          audioEndMs: typeof data.audio_end_ms === 'number' ? data.audio_end_ms : undefined,
+        })
         break
 
       case 'response_done':
@@ -317,18 +327,21 @@ export function useVoiceAgent(options: VoiceAgentOptions = {}) {
         break
 
       case 'action':
-        executeAction(data.action as string, data.params as Record<string, unknown>)
+        executeAction(String(data.action ?? ''), (data.params as Record<string, unknown>) ?? {})
         break
 
       case 'diagram_update':
-        applyDiagramUpdate(data.action as string, data.updates as Record<string, unknown>)
+        applyDiagramUpdate(
+          String(data.action ?? ''),
+          (data.updates as Record<string, unknown>) ?? {}
+        )
         break
 
       case 'error':
-        lastError.value = data.error as string
+        lastError.value = String(data.error ?? '')
         state.value = 'error'
-        eventBus.emit('voice:server_error', { error: data.error })
-        onError?.(data.error as string)
+        eventBus.emit('voice:server_error', { error: String(data.error ?? '') })
+        onError?.(String(data.error ?? ''))
         break
 
       default:
@@ -402,22 +415,25 @@ export function useVoiceAgent(options: VoiceAgentOptions = {}) {
         break
 
       case 'update_node':
-      case 'update_nodes':
+      case 'update_nodes': {
         const nodeUpdates = Array.isArray(updates) ? updates : [updates]
         eventBus.emit('diagram:update_nodes', { nodes: nodeUpdates, source: 'voice_agent' })
         break
+      }
 
       case 'add_node':
-      case 'add_nodes':
+      case 'add_nodes': {
         const nodesToAdd = Array.isArray(updates) ? updates : [updates]
         eventBus.emit('diagram:add_nodes', { nodes: nodesToAdd, source: 'voice_agent' })
         break
+      }
 
       case 'delete_node':
-      case 'remove_nodes':
+      case 'remove_nodes': {
         const nodeIds = Array.isArray(updates) ? updates : [updates]
         eventBus.emit('diagram:remove_nodes', { nodeIds, source: 'voice_agent' })
         break
+      }
 
       default:
         eventBus.emit('diagram:update_requested', { action, updates, source: 'voice_agent' })
@@ -528,13 +544,16 @@ export function useVoiceAgent(options: VoiceAgentOptions = {}) {
 
     // Initialize audio context if needed
     if (!audioContext.value) {
-      audioContext.value = new (window.AudioContext || (window as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext!)({
+      audioContext.value = new (
+        window.AudioContext ||
+        (window as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext!
+      )({
         sampleRate,
       })
     }
 
     await connect(diagSessionId, context)
-    eventBus.emit('voice:started', { sessionId: sessionId.value })
+    eventBus.emit('voice:started', { sessionId: sessionId.value ?? '' })
   }
 
   async function startVoiceInput(): Promise<void> {
@@ -681,7 +700,9 @@ export function useVoiceAgent(options: VoiceAgentOptions = {}) {
     isVoiceActive.value = false
     state.value = 'idle'
 
-    eventBus.emit('voice:cleanup_started', { diagramSessionId: diagramSessionId.value })
+    eventBus.emit('voice:cleanup_started', {
+      diagramSessionId: diagramSessionId.value ?? undefined,
+    })
   }
 
   function destroy(): void {

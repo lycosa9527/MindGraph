@@ -90,6 +90,12 @@ def setup_vue_spa(app: FastAPI) -> bool:
     if assets_dir.exists():
         app.mount("/assets", StaticFiles(directory=str(assets_dir)), name="vue-assets")
     
+    # Mount static folder for runtime uploads (announcement images, etc.)
+    static_dir = Path(__file__).parent.parent / "static"
+    if static_dir.exists():
+        app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
+        logger.debug("Mounted /static for runtime uploads")
+    
     return True
 
 

@@ -48,9 +48,36 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.setItem(TOKEN_KEY, newToken)
   }
 
-  function setUser(newUser: User): void {
-    user.value = newUser
-    localStorage.setItem(USER_KEY, JSON.stringify(newUser))
+  function normalizeUser(backendUser: any): User {
+    // Backend returns: id, phone, name, organization (string or object), avatar
+    // Frontend expects: id, username, phone, schoolName, avatar, etc.
+    let avatar = backendUser.avatar || '🐈‍⬛'
+    // Handle legacy avatar_01 format - convert to emoji
+    if (avatar.startsWith('avatar_')) {
+      avatar = '🐈‍⬛'
+    }
+    return {
+      id: String(backendUser.id || backendUser.user?.id || ''),
+      username: backendUser.name || backendUser.username || backendUser.phone || '',
+      phone: backendUser.phone || backendUser.user?.phone || '',
+      email: backendUser.email,
+      role: backendUser.role || 'user',
+      schoolId: backendUser.organization?.id
+        ? String(backendUser.organization.id)
+        : backendUser.schoolId,
+      schoolName:
+        backendUser.organization?.name || backendUser.organization || backendUser.schoolName || '',
+      avatar,
+      createdAt: backendUser.created_at || backendUser.createdAt,
+      lastLogin: backendUser.last_login || backendUser.lastLogin,
+    }
+  }
+
+  function setUser(newUser: User | any): void {
+    // Normalize backend user format to frontend format
+    const normalizedUser = normalizeUser(newUser)
+    user.value = normalizedUser
+    localStorage.setItem(USER_KEY, JSON.stringify(normalizedUser))
   }
 
   function setMode(newMode: AuthMode): void {
@@ -81,10 +108,11 @@ export const useAuthStore = defineStore('auth', () => {
       const data = await response.json()
 
       if (response.ok && data.user) {
-        setUser(data.user)
-        if (data.token) setToken(data.token)
+        const normalizedUser = normalizeUser(data.user)
+        setUser(normalizedUser)
+        if (data.access_token || data.token) setToken(data.access_token || data.token)
         startSessionMonitoring()
-        return { success: true, user: data.user, token: data.token }
+        return { success: true, user: normalizedUser, token: data.access_token || data.token }
       }
 
       return { success: false, message: data.message || 'Login failed' }
@@ -110,13 +138,11 @@ export const useAuthStore = defineStore('auth', () => {
 
     clearAuth()
 
-    // Redirect based on mode
+    // Redirect to main page after logout
     if (currentMode === 'demo') {
       window.location.href = '/demo'
-    } else if (currentMode === 'bayi') {
-      window.location.href = '/'
     } else {
-      window.location.href = '/auth'
+      window.location.href = '/'
     }
   }
 
@@ -164,7 +190,11 @@ export const useAuthStore = defineStore('auth', () => {
 
       if (response.ok) {
         const data = await response.json()
-        if (data.user) setUser(data.user)
+        if (data.user || data.id) {
+          const userData = data.user || data
+          const normalizedUser = normalizeUser(userData)
+          setUser(normalizedUser)
+        }
         return true
       }
       return false
@@ -253,7 +283,7 @@ export const useAuthStore = defineStore('auth', () => {
         } else if (currentMode === 'bayi') {
           return false
         } else {
-          redirectUrl = '/auth'
+          redirectUrl = '/login'
         }
       }
       if (redirectUrl) {

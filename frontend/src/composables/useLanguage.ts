@@ -20,9 +20,11 @@ const translations: Record<Language, Record<string, string>> = {
     'common.success': 'Success',
     'common.error': 'Error',
     'common.warning': 'Warning',
+    'common.refresh': 'Refresh',
 
     // Auth
     'auth.login': 'Login',
+    'auth.register': 'Register',
     'auth.logout': 'Logout',
     'auth.username': 'Username',
     'auth.phone': 'Phone Number',
@@ -32,6 +34,9 @@ const translations: Record<Language, Record<string, string>> = {
     'auth.clickToRefresh': 'Click image to refresh',
     'auth.loginFailed': 'Login failed',
     'auth.sessionExpired': 'Session expired. Please login again.',
+    'auth.smsLogin': 'SMS Login',
+    'auth.resetPassword': 'Reset Password',
+    'auth.backToLogin': 'Back to Login',
 
     // Editor
     'editor.newDiagram': 'New Diagram',
@@ -76,9 +81,11 @@ const translations: Record<Language, Record<string, string>> = {
     'common.success': '成功',
     'common.error': '错误',
     'common.warning': '警告',
+    'common.refresh': '刷新',
 
     // Auth
     'auth.login': '登录',
+    'auth.register': '注册',
     'auth.logout': '退出登录',
     'auth.username': '用户名',
     'auth.phone': '手机号',
@@ -88,6 +95,10 @@ const translations: Record<Language, Record<string, string>> = {
     'auth.clickToRefresh': '点击图片刷新验证码',
     'auth.loginFailed': '登录失败',
     'auth.sessionExpired': '会话已过期，请重新登录。',
+    'auth.smsLogin': '短信登录',
+    'auth.resetPassword': '重置密码',
+    'auth.backToLogin': '返回登录',
+    'auth.forgotPassword': '忘记密码',
 
     // Editor
     'editor.newDiagram': '新建图表',

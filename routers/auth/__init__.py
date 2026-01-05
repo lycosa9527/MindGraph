@@ -13,7 +13,7 @@ Proprietary License
 from fastapi import APIRouter
 
 # Import all sub-routers
-from . import registration, login, sms, captcha, password, session, public
+from . import registration, login, sms, captcha, password, session, public, avatar, phone
 from .admin import admin_router
 
 # Import utilities
@@ -42,6 +42,8 @@ router.include_router(sms.router)
 router.include_router(captcha.router)
 router.include_router(password.router)
 router.include_router(session.router)
+router.include_router(avatar.router)
+router.include_router(phone.router)
 router.include_router(admin_router)
 
 # Export router and utilities
