@@ -3,10 +3,10 @@ import { computed } from 'vue'
 
 import { ElAvatar } from 'element-plus'
 
-import { useLanguage } from '@/composables'
-
 import mindmateAvatarLg from '@/assets/mindmate-avatar-lg.png'
 import mindmateAvatarMd from '@/assets/mindmate-avatar-md.png'
+import { useLanguage } from '@/composables'
+import { useAuthStore } from '@/stores/auth'
 
 const props = withDefaults(
   defineProps<{
@@ -18,7 +18,9 @@ const props = withDefaults(
 )
 
 const { isZh } = useLanguage()
+const authStore = useAuthStore()
 const isFullpageMode = computed(() => props.mode === 'fullpage')
+const username = computed(() => authStore.user?.username || '')
 </script>
 
 <template>
@@ -34,14 +36,12 @@ const isFullpageMode = computed(() => props.mode === 'fullpage')
       class="mindmate-avatar-welcome"
     />
     <div class="text-center mt-6">
-      <div class="text-2xl font-medium text-gray-800 mb-2">
-        {{ isZh ? '你好' : 'Hello' }}
-      </div>
+      <div class="text-2xl font-medium text-gray-800 mb-2">MindMate</div>
       <div class="text-lg text-gray-600">
         {{
           isZh
-            ? '我是你的虚拟教研伙伴MindMate'
-            : "I'm MindMate, your virtual teaching partner"
+            ? `${username}你好，我是你的虚拟教研伙伴`
+            : `Hello ${username}, I'm your virtual teaching partner`
         }}
       </div>
     </div>
@@ -61,11 +61,13 @@ const isFullpageMode = computed(() => props.mode === 'fullpage')
         :size="64"
         class="mindmate-avatar mx-auto mb-3"
       />
-      <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-2">
-        {{ isZh ? 'MindMate AI 已就绪' : 'MindMate AI is Ready' }}
-      </h3>
+      <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-2">MindMate</h3>
       <p class="text-sm text-gray-600 dark:text-gray-300">
-        {{ isZh ? '有什么可以帮助您的吗？' : 'How can I help you today?' }}
+        {{
+          isZh
+            ? `${username}你好，我是你的虚拟教研伙伴`
+            : `Hello ${username}, I'm your virtual teaching partner`
+        }}
       </p>
     </div>
   </div>

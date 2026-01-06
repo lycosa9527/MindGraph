@@ -2,7 +2,9 @@
 import { computed, ref } from 'vue'
 
 import { ElButton, ElIcon, ElInput, ElTooltip } from 'element-plus'
-import { CircleClose, Close, Promotion, UploadFilled } from '@element-plus/icons-vue'
+
+import { Close, Promotion, UploadFilled, VideoPause } from '@element-plus/icons-vue'
+
 import { Paperclip, Send } from 'lucide-vue-next'
 
 import { useLanguage } from '@/composables'
@@ -36,8 +38,8 @@ const emit = defineEmits<{
   (e: 'send'): void
   (e: 'stop'): void
   (e: 'upload', files: FileList): void
-  (e: 'remove-file', fileId: string): void
-  (e: 'suggestion-select', suggestion: string): void
+  (e: 'removeFile', fileId: string): void
+  (e: 'suggestionSelect', suggestion: string): void
 }>()
 
 const { isZh } = useLanguage()
@@ -87,7 +89,7 @@ function handleFileSelect(event: Event) {
 function handleKeydown(event: Event | KeyboardEvent) {
   // Type guard for KeyboardEvent
   if (!('key' in event)) return
-  
+
   if (event.key === 'Enter' && !event.shiftKey) {
     event.preventDefault()
     emit('send')
@@ -97,7 +99,7 @@ function handleKeydown(event: Event | KeyboardEvent) {
 // Handle suggestion bubble click
 function handleSuggestionSelect(suggestion: string) {
   emit('update:inputText', suggestion)
-  emit('suggestion-select', suggestion)
+  emit('suggestionSelect', suggestion)
 }
 </script>
 
@@ -157,7 +159,7 @@ function handleSuggestionSelect(suggestion: string) {
             circle
             size="small"
             class="file-remove-btn"
-            @click="emit('remove-file', file.id)"
+            @click="emit('removeFile', file.id)"
           >
             <ElIcon :size="12"><Close /></ElIcon>
           </ElButton>
@@ -208,7 +210,7 @@ function handleSuggestionSelect(suggestion: string) {
             class="send-btn-fullpage stop"
             @click="emit('stop')"
           >
-            <ElIcon><CircleClose /></ElIcon>
+            <ElIcon><VideoPause /></ElIcon>
           </ElButton>
           <ElButton
             v-else
@@ -253,7 +255,7 @@ function handleSuggestionSelect(suggestion: string) {
           <span class="file-size">{{ formatFileSize(file.size) }}</span>
           <button
             class="file-remove"
-            @click="emit('remove-file', file.id)"
+            @click="emit('removeFile', file.id)"
           >
             <ElIcon><Close /></ElIcon>
           </button>
@@ -310,7 +312,7 @@ function handleSuggestionSelect(suggestion: string) {
           class="send-btn stop-btn"
           @click="emit('stop')"
         >
-          <ElIcon><CircleClose /></ElIcon>
+          <ElIcon><VideoPause /></ElIcon>
         </button>
         <button
           v-else

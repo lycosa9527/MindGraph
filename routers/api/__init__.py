@@ -26,6 +26,7 @@ from . import (
     feedback,
     dify_files,
     dify_conversations,
+    image_proxy,
 )
 
 # Create main router with prefix and tags
@@ -41,6 +42,7 @@ router.include_router(layout.router)
 router.include_router(feedback.router)
 router.include_router(dify_files.router)
 router.include_router(dify_conversations.router)
+router.include_router(image_proxy.router)
 
 __all__ = ["router"]
 

@@ -143,14 +143,15 @@
   opacity: 1;
 }
 
-/* Large action buttons */
+/* Large action buttons with cute animations */
 .action-btn-lg {
   padding: 8px;
   border-radius: 8px;
   color: #6b7280;
   transition:
-    color 0.15s,
-    background-color 0.15s;
+    color 0.2s ease,
+    background-color 0.2s ease,
+    transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .dark .action-btn-lg {
@@ -160,6 +161,7 @@
 .action-btn-lg:hover {
   color: #374151;
   background-color: #f3f4f6;
+  transform: scale(1.15);
 }
 
 .dark .action-btn-lg:hover {
@@ -167,8 +169,14 @@
   background-color: #4b5563;
 }
 
+.action-btn-lg:active {
+  transform: scale(0.9);
+  transition: transform 0.1s ease;
+}
+
 .action-btn-lg.is-active {
   color: #3b82f6;
+  animation: pop-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .action-btn-lg.is-active:hover {
@@ -178,6 +186,7 @@
 
 .action-btn-lg.is-active-dislike {
   color: #ef4444;
+  animation: wiggle 0.4s ease;
 }
 
 .action-btn-lg.is-active-dislike:hover {
@@ -188,6 +197,33 @@
 .action-btn-lg:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+  transform: none;
+}
+
+/* Cute pop-in animation */
+@keyframes pop-in {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.3);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* Cute wiggle animation */
+@keyframes wiggle {
+  0%, 100% {
+    transform: rotate(0deg);
+  }
+  25% {
+    transform: rotate(-10deg);
+  }
+  75% {
+    transform: rotate(10deg);
+  }
 }
 
 /* Legacy small action buttons (for backward compatibility) */
@@ -372,6 +408,13 @@
   height: auto;
   border-radius: 8px;
   margin: 8px 0;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+:deep(.markdown-content img:hover) {
+  transform: scale(1.02);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 :deep(.markdown-content h1),
@@ -697,7 +740,7 @@
 .input-area-fullpage {
   flex-shrink: 0;
   padding: 20px;
-  padding-bottom: 40px;
+  padding-bottom: 64px;
   max-width: 680px;
   margin: 0 auto;
   width: 100%;
@@ -905,7 +948,7 @@
   max-width: 680px;
   width: 100%;
   margin: 0 auto;
-  padding: 16px 20px;
+  padding: 8px 20px;
 }
 
 /* Suggestion Bubbles - Above Input (Panel) */

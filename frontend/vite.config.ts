@@ -21,19 +21,19 @@ export default defineConfig({
     port: 3000,
     proxy: {
       '/api': {
-        target: 'http://172.17.230.234:9527',
+        target: 'http://localhost:9527',
         changeOrigin: true,
       },
       '/ws': {
-        target: 'ws://172.17.230.234:9527',
+        target: 'ws://localhost:9527',
         ws: true,
       },
       '/static': {
-        target: 'http://172.17.230.234:9527',
+        target: 'http://localhost:9527',
         changeOrigin: true,
       },
       '/health': {
-        target: 'http://172.17.230.234:9527',
+        target: 'http://localhost:9527',
         changeOrigin: true,
       },
     },

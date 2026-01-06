@@ -1318,14 +1318,15 @@ async def log_requests(request: Request, call_next):
 # Vue SPA setup (v5.0.0+)
 # In production: Serve Vue app from frontend/dist/
 # In development: Vite dev server handles frontend on port 3000
-from services.spa_handler import setup_vue_spa, is_vue_spa_available
+from services.spa_handler import setup_vue_spa, is_vue_spa_available, is_dev_mode
 
 # Setup Vue SPA - mounts /assets from frontend/dist/assets/
 _vue_spa_enabled = setup_vue_spa(app)
 
 if _vue_spa_enabled:
     logger.info("Vue SPA mode: Frontend served from frontend/dist/")
-else:
+elif not is_dev_mode():
+    # Only warn in production - in dev mode, Vite handles frontend
     logger.warning("Vue SPA not available - run 'npm run build' in frontend/ directory")
 
 # ============================================================================

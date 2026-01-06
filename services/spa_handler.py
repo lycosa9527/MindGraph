@@ -50,6 +50,15 @@ def get_spa_env_mode() -> str:
     return os.getenv("SPA_MODE", "auto").lower()
 
 
+def is_dev_mode() -> bool:
+    """Check if we're running in development mode."""
+    return (
+        os.getenv("VITE_DEV_PORT") is not None
+        or os.getenv("DEBUG", "").lower() == "true"
+        or os.getenv("ENVIRONMENT", "").lower() == "development"
+    )
+
+
 def should_serve_vue_spa() -> bool:
     """
     Determine if we should serve Vue SPA based on mode and availability.
@@ -59,14 +68,7 @@ def should_serve_vue_spa() -> bool:
     """
     mode = get_spa_env_mode()
     
-    # Check if we're in development mode
-    is_dev_mode = (
-        os.getenv("VITE_DEV_PORT") is not None
-        or os.getenv("DEBUG", "").lower() == "true"
-        or os.getenv("ENVIRONMENT", "").lower() == "development"
-    )
-    
-    if is_dev_mode and mode == "auto":
+    if is_dev_mode() and mode == "auto":
         logger.info("Development mode detected. Skipping Vue SPA serving (Vite dev server will handle frontend).")
         return False
     
@@ -97,10 +99,12 @@ def setup_vue_spa(app: FastAPI) -> bool:
         app: FastAPI application instance
         
     Returns:
-        True if Vue SPA was configured, False if using legacy templates
+        True if Vue SPA was configured, False if not serving SPA
     """
     if not should_serve_vue_spa():
-        logger.info("Using legacy Jinja2 templates for frontend")
+        # Don't log misleading message in dev mode - Vite handles frontend, not legacy templates
+        if not is_dev_mode():
+            logger.info("Using legacy Jinja2 templates for frontend")
         return False
     
     logger.info(f"Configuring Vue SPA from: {VUE_DIST_DIR}")

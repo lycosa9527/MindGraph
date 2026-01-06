@@ -7,6 +7,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [5.0.5] - 2025-01-06 - Share Conversation Export Improvements
+
+### Added
+
+- **Image Proxy API** (`routers/api/image_proxy.py`)
+  - New backend endpoint `/api/proxy-image` to fetch external images
+  - Bypasses CORS restrictions for PNG export when Dify responses contain images
+  - Security whitelist for allowed domains
+  - Integrated into API router (`routers/api/__init__.py`)
+
+### Changed
+
+- **Share Export Modal Redesign** (`frontend/src/components/panels/ShareExportModal.vue`)
+  - Removed preview panel - now only shows scrollable message selection list
+  - Added purple gradient header with improved styling
+  - Message list now has fixed 380px height with proper Element Plus scrollbar
+  - Added avatars (user emoji + MindMate image) in selection list
+  - Shows actual username instead of "我", "MindMate" instead of "AI"
+  - Selection counter shows "X/Y selected" with styled numbers
+  - Added selection tip at bottom (warning if none selected)
+  - Uses Element Plus components throughout (ElCheckbox, ElScrollbar, ElButton)
+  - Custom purple-tinted scrollbar thumb
+
+- **PNG Export Layout - Chat Style** (`frontend/src/components/panels/ShareExportModal.vue`)
+  - User messages now aligned to the right with avatar on right
+  - MindMate messages aligned to the left with avatar on left
+  - Message bubbles now have adaptive width (max 75%, shrinks for short messages)
+  - User bubbles: blue gradient with rounded corners (chat-style bottom-right corner)
+  - MindMate bubbles: light gray gradient with subtle border
+  - Improved spacing (20px gap between messages)
+
+- **Image Export CORS Fix** (`frontend/src/components/panels/ShareExportModal.vue`)
+  - Local/bundled assets (like MindMate avatar) fetched directly without proxy
+  - External URLs (http/https) routed through `/api/proxy-image` to avoid CORS
+  - All images converted to base64 before html-to-image capture
+
+- **Vite Dev Server Proxy** (`frontend/vite.config.ts`)
+  - Changed proxy target from remote IP to `localhost:9527` for local development
+
+---
+
 ## [5.0.4] - 2025-01-06 - MindMate Conversation History Performance
 
 ### Added

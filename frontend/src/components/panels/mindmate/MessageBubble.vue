@@ -22,6 +22,7 @@ import MarkdownIt from 'markdown-it'
 import { useLanguage } from '@/composables'
 import type { FeedbackRating, MindMateMessage } from '@/composables/useMindMate'
 
+import ImagePreviewModal from '@/components/common/ImagePreviewModal.vue'
 import mindmateAvatarMd from '@/assets/mindmate-avatar-md.png'
 
 const props = defineProps<{
@@ -70,10 +71,17 @@ watch(
   }
 )
 
+// Remove <think> blocks from content
+function removeThinkBlocks(content: string): string {
+  // Remove <think>...</think> blocks (including multiline)
+  return content.replace(/<think>[\s\S]*?<\/think>/gi, '').trim()
+}
+
 // Render markdown with sanitization
 function renderMarkdown(content: string): string {
   if (!content) return ''
-  const html = md.render(content)
+  const cleanedContent = removeThinkBlocks(content)
+  const html = md.render(cleanedContent)
   return DOMPurify.sanitize(html)
 }
 
@@ -101,6 +109,22 @@ function handleCancelEdit() {
   localEditingContent.value = props.message.content
   emit('cancel-edit')
 }
+
+// Image preview state
+const showImagePreview = ref(false)
+const previewImageUrl = ref('')
+
+// Handle click on markdown content to detect image clicks
+function handleMarkdownClick(event: MouseEvent) {
+  const target = event.target as HTMLElement
+  if (target.tagName === 'IMG') {
+    const imgSrc = (target as HTMLImageElement).src
+    if (imgSrc) {
+      previewImageUrl.value = imgSrc
+      showImagePreview.value = true
+    }
+  }
+}
 </script>
 
 <template>
@@ -118,7 +142,7 @@ function handleCancelEdit() {
       <template v-if="message.role === 'user'">
         <ElAvatar
           :size="40"
-          class="flex-shrink-0 bg-primary-500"
+          class="flex-shrink-0 bg-[#FAFAFA] border-2 border-[#303133]"
         >
           {{ userAvatar }}
         </ElAvatar>
@@ -142,7 +166,7 @@ function handleCancelEdit() {
       >
         <!-- User message editing -->
         <template v-if="message.role === 'user' && isEditing">
-          <div class="edit-input-wrapper w-full max-w-[85%]">
+          <div class="edit-input-wrapper w-full max-w-[70%]">
             <ElInput
               v-model="localEditingContent"
               type="textarea"
@@ -171,10 +195,10 @@ function handleCancelEdit() {
         <!-- Message content -->
         <template v-else>
           <div
-            class="message-content max-w-[85%] relative"
+            class="message-content max-w-[70%] relative"
             :class="[
               message.role === 'user'
-                ? 'bg-primary-500 text-white px-4 py-1.5 rounded-2xl'
+                ? 'bg-[#606266] text-white px-4 py-1.5 rounded-2xl'
                 : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white px-3 py-2 rounded-lg',
               message.isStreaming ? 'streaming' : '',
             ]"
@@ -212,6 +236,7 @@ function handleCancelEdit() {
               <div
                 class="markdown-content text-sm leading-normal"
                 v-html="renderMarkdown(message.content)"
+                @click="handleMarkdownClick"
               />
               <!-- eslint-enable vue/no-v-html -->
               <!-- Streaming cursor -->
@@ -340,6 +365,13 @@ function handleCancelEdit() {
         </template>
       </div>
     </div>
+
+    <!-- Image Preview Modal -->
+    <ImagePreviewModal
+      v-model:visible="showImagePreview"
+      :title="isZh ? '图片预览' : 'Image Preview'"
+      :image-url="previewImageUrl"
+    />
   </div>
 </template>
 
