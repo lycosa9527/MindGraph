@@ -33,10 +33,9 @@ function handleSelectType(name: string) {
 }
 
 function handleNewCanvas(name: string) {
-  router.push({
-    path: '/canvas',
-    query: { type: name },
-  })
+  // Store diagram type in UI store, then navigate (keeps URL clean)
+  uiStore.setSelectedChartType(name)
+  router.push('/canvas')
 }
 </script>
 

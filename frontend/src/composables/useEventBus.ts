@@ -95,6 +95,9 @@ export type EventTypes = {
     params?: unknown
   }
 
+  // Canvas Events
+  'canvas:generate_with_prompt': { prompt: string }
+
   // Voice Events
   'voice:start_requested': Record<string, never>
   'voice:stop_requested': Record<string, never>
@@ -190,7 +193,9 @@ export type EventTypes = {
     mode?: string
     viewBox?: unknown
     animate?: boolean
+    panelWidth?: number
   }
+  'view:fit_for_export_requested': Record<string, never>
   'view:zoom_reset_requested': Record<string, never>
 
   // Interaction Events
@@ -312,6 +317,7 @@ export type EventTypes = {
   'node:empty_requested': { nodeId: string }
   'node:duplicate_requested': Record<string, never>
   'node:selected': { nodeId: string; nodeData?: unknown }
+  'node:text_updated': { nodeId: string; text: string }
 
   // Canvas Events
   'canvas:fitted_with_panel': { panelWidth: number }

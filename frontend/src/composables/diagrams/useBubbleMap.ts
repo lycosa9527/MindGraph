@@ -7,6 +7,13 @@ import { computed, ref } from 'vue'
 import { useLanguage } from '@/composables/useLanguage'
 import type { Connection, DiagramNode, MindGraphEdge, MindGraphNode } from '@/types'
 
+import {
+  DEFAULT_BUBBLE_RADIUS,
+  DEFAULT_CENTER_X,
+  DEFAULT_CENTER_Y,
+  DEFAULT_TOPIC_RADIUS,
+} from './layoutConfig'
+
 interface BubbleMapData {
   topic: string
   attributes: string[]
@@ -22,11 +29,11 @@ interface BubbleMapOptions {
 
 export function useBubbleMap(options: BubbleMapOptions = {}) {
   const {
-    centerX = 400,
-    centerY = 300,
+    centerX = DEFAULT_CENTER_X,
+    centerY = DEFAULT_CENTER_Y,
     radius = 150,
-    topicRadius = 60,
-    bubbleRadius = 40,
+    topicRadius = DEFAULT_TOPIC_RADIUS,
+    bubbleRadius = DEFAULT_BUBBLE_RADIUS,
   } = options
 
   const { t } = useLanguage()

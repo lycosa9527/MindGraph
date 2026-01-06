@@ -2,13 +2,17 @@
 /**
  * TopicNode - Central topic node for diagrams (non-draggable)
  * Used as the main/central node in bubble maps, mind maps, etc.
+ * Supports inline text editing on double-click
  */
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 
 import { Handle, Position } from '@vue-flow/core'
 
+import { eventBus } from '@/composables/useEventBus'
 import { useTheme } from '@/composables/useTheme'
 import type { MindGraphNodeProps } from '@/types'
+
+import InlineEditableText from './InlineEditableText.vue'
 
 const props = defineProps<MindGraphNodeProps>()
 
@@ -29,6 +33,22 @@ const nodeStyle = computed(() => ({
   borderWidth: `${props.data.style?.borderWidth || defaultStyle.value.borderWidth || 3}px`,
   borderRadius: `${props.data.style?.borderRadius || 50}%`,
 }))
+
+// Inline editing state
+const isEditing = ref(false)
+
+function handleTextSave(newText: string) {
+  isEditing.value = false
+  // Emit event to update the node text in the store
+  eventBus.emit('node:text_updated', {
+    nodeId: props.id,
+    text: newText,
+  })
+}
+
+function handleEditCancel() {
+  isEditing.value = false
+}
 </script>
 
 <template>
@@ -36,9 +56,16 @@ const nodeStyle = computed(() => ({
     class="topic-node flex items-center justify-center px-6 py-4 border-solid cursor-default select-none"
     :style="nodeStyle"
   >
-    <span class="text-center whitespace-pre-wrap max-w-[200px]">
-      {{ data.label }}
-    </span>
+    <InlineEditableText
+      :text="data.label || ''"
+      :node-id="id"
+      :is-editing="isEditing"
+      max-width="200px"
+      text-align="center"
+      @save="handleTextSave"
+      @cancel="handleEditCancel"
+      @edit-start="isEditing = true"
+    />
 
     <!-- Connection handles -->
     <Handle

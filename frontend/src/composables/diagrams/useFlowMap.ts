@@ -7,6 +7,15 @@ import { computed, ref } from 'vue'
 import { useLanguage } from '@/composables/useLanguage'
 import type { Connection, DiagramNode, MindGraphEdge, MindGraphNode } from '@/types'
 
+import {
+  DEFAULT_CENTER_X,
+  DEFAULT_CENTER_Y,
+  DEFAULT_NODE_HEIGHT,
+  DEFAULT_NODE_WIDTH,
+  DEFAULT_PADDING,
+  DEFAULT_STEP_SPACING,
+} from './layoutConfig'
+
 interface FlowStep {
   id: string
   text: string
@@ -16,39 +25,62 @@ interface FlowStep {
 interface FlowMapData {
   title?: string
   steps: FlowStep[]
+  orientation?: 'horizontal' | 'vertical'
 }
 
 interface FlowMapOptions {
   startX?: number
+  startY?: number
+  centerX?: number
   centerY?: number
   stepSpacing?: number
   nodeWidth?: number
   nodeHeight?: number
+  orientation?: 'horizontal' | 'vertical'
 }
 
 export function useFlowMap(options: FlowMapOptions = {}) {
   const {
-    startX = 100,
-    centerY = 300,
-    stepSpacing = 200,
-    nodeWidth = 140,
-    nodeHeight = 60,
+    startX = DEFAULT_PADDING + DEFAULT_NODE_WIDTH / 2,
+    startY = DEFAULT_PADDING + DEFAULT_NODE_HEIGHT / 2,
+    centerX = DEFAULT_CENTER_X,
+    centerY = DEFAULT_CENTER_Y,
+    stepSpacing = DEFAULT_STEP_SPACING,
+    nodeWidth = DEFAULT_NODE_WIDTH + 20, // Flow nodes are slightly wider
+    nodeHeight = DEFAULT_NODE_HEIGHT + 10, // Flow nodes are slightly taller
+    orientation: defaultOrientation = 'horizontal',
   } = options
 
   const { t } = useLanguage()
   const data = ref<FlowMapData | null>(null)
 
+  // Get current orientation (from data or default)
+  const orientation = computed(() => data.value?.orientation || defaultOrientation)
+
   // Convert flow map data to Vue Flow nodes
   const nodes = computed<MindGraphNode[]>(() => {
     if (!data.value) return []
 
+    const isVertical = orientation.value === 'vertical'
+
     return data.value.steps.map((step, index) => {
-      const x = startX + index * stepSpacing
+      let x: number
+      let y: number
+
+      if (isVertical) {
+        // Vertical layout: nodes stacked top-to-bottom
+        x = centerX - nodeWidth / 2
+        y = startY + index * stepSpacing
+      } else {
+        // Horizontal layout: nodes arranged left-to-right
+        x = startX + index * stepSpacing - nodeWidth / 2
+        y = centerY - nodeHeight / 2
+      }
 
       return {
         id: step.id || `flow-step-${index}`,
         type: 'flow',
-        position: { x: x - nodeWidth / 2, y: centerY - nodeHeight / 2 },
+        position: { x, y },
         data: {
           label: step.text,
           nodeType: 'flow',
@@ -223,15 +255,33 @@ export function useFlowMap(options: FlowMapOptions = {}) {
     data.value.steps.splice(toIndex, 0, step)
   }
 
+  // Set orientation (horizontal or vertical)
+  function setOrientation(newOrientation: 'horizontal' | 'vertical') {
+    if (!data.value) {
+      data.value = { steps: [], orientation: newOrientation }
+    } else {
+      data.value.orientation = newOrientation
+    }
+  }
+
+  // Toggle orientation
+  function toggleOrientation() {
+    const current = orientation.value
+    setOrientation(current === 'horizontal' ? 'vertical' : 'horizontal')
+  }
+
   return {
     data,
     nodes,
     edges,
+    orientation,
     setData,
     fromDiagramNodes,
     addStep,
     removeStep,
     updateStep,
     reorderSteps,
+    setOrientation,
+    toggleOrientation,
   }
 }

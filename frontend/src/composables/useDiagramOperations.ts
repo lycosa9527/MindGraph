@@ -80,36 +80,42 @@ interface DiagramConfig {
 }
 
 const DIAGRAM_CONFIGS: Record<string, DiagramConfig> = {
+  // Circle Map - old JS uses '新联想' for new context nodes
   circle_map: {
     nodeTypes: ['topic', 'context'],
     arrayFields: { context: 'context' },
     protectedNodes: ['topic'],
     defaultTexts: {
       context: { en: 'New Context', zh: '新联想' },
+      topic: { en: 'Main Topic', zh: '主题' },
     },
   },
+  // Bubble Map - old JS uses '新属性' for new attribute nodes
   bubble_map: {
     nodeTypes: ['topic', 'attribute'],
     arrayFields: { attribute: 'attributes' },
     protectedNodes: ['topic'],
     defaultTexts: {
       attribute: { en: 'New Attribute', zh: '新属性' },
+      topic: { en: 'Main Topic', zh: '主题' },
     },
   },
+  // Double Bubble Map - old JS uses '新相似点' and '左不同点'/'右不同点'
   double_bubble_map: {
-    nodeTypes: ['topic1', 'topic2', 'shared', 'unique1', 'unique2'],
+    nodeTypes: ['topic1', 'topic2', 'similarity', 'difference'],
     arrayFields: {
-      shared: 'shared',
-      unique1: 'unique1',
-      unique2: 'unique2',
+      similarity: 'similarities',
+      left_difference: 'left_differences',
+      right_difference: 'right_differences',
     },
     protectedNodes: ['topic1', 'topic2'],
     defaultTexts: {
-      shared: { en: 'New Shared', zh: '新共同点' },
-      unique1: { en: 'New Unique', zh: '新独特点' },
-      unique2: { en: 'New Unique', zh: '新独特点' },
+      similarity: { en: 'New Similarity', zh: '新相似点' },
+      left_difference: { en: 'Left Difference', zh: '左不同点' },
+      right_difference: { en: 'Right Difference', zh: '右不同点' },
     },
   },
+  // Brace Map - old JS uses '新部分' and '新子部分'
   brace_map: {
     nodeTypes: ['whole', 'part', 'subpart'],
     arrayFields: { part: 'parts' },
@@ -119,31 +125,36 @@ const DIAGRAM_CONFIGS: Record<string, DiagramConfig> = {
       subpart: { en: 'New Subpart', zh: '新子部分' },
     },
   },
+  // Bridge Map - old JS uses '新事物A'/'新事物B'
   bridge_map: {
     nodeTypes: ['relation', 'pair'],
-    arrayFields: { pair: 'pairs' },
+    arrayFields: { pair: 'analogies' },
     protectedNodes: [],
     defaultTexts: {
-      pair: { en: ['Top', 'Bottom'], zh: ['上方', '下方'] },
+      pair: { en: ['New Left', 'New Right'], zh: ['新事物A', '新事物B'] },
     },
   },
+  // Tree Map - old JS uses '新类别' and '新项目'
   tree_map: {
     nodeTypes: ['main', 'category', 'item'],
-    arrayFields: { category: 'categories' },
+    arrayFields: { category: 'children' },
     protectedNodes: ['main'],
     defaultTexts: {
       category: { en: 'New Category', zh: '新类别' },
       item: { en: 'New Item', zh: '新项目' },
     },
   },
+  // Flow Map - old JS uses '新步骤' and '新子步骤'
   flow_map: {
-    nodeTypes: ['title', 'step'],
+    nodeTypes: ['title', 'step', 'substep'],
     arrayFields: { step: 'steps' },
-    protectedNodes: [],
+    protectedNodes: ['title'],
     defaultTexts: {
       step: { en: 'New Step', zh: '新步骤' },
+      substep: { en: 'New Substep', zh: '新子步骤' },
     },
   },
+  // Multi-Flow Map - old JS uses '新原因' and '新结果'
   multi_flow_map: {
     nodeTypes: ['event', 'cause', 'effect'],
     arrayFields: { cause: 'causes', effect: 'effects' },
@@ -153,21 +164,24 @@ const DIAGRAM_CONFIGS: Record<string, DiagramConfig> = {
       effect: { en: 'New Effect', zh: '新结果' },
     },
   },
+  // Concept Map - old JS uses '新概念' and '关联'
   concept_map: {
     nodeTypes: ['concept', 'link'],
-    arrayFields: { concept: 'nodes' },
+    arrayFields: { concept: 'concepts' },
     protectedNodes: [],
     defaultTexts: {
       concept: { en: 'New Concept', zh: '新概念' },
+      relation: { en: 'relates to', zh: '关联' },
     },
   },
+  // Mind Map - old JS uses '新分支' and '新子项'
   mindmap: {
     nodeTypes: ['topic', 'branch', 'child'],
-    arrayFields: { branch: 'branches' },
+    arrayFields: { branch: 'children' },
     protectedNodes: ['topic'],
     defaultTexts: {
       branch: { en: 'New Branch', zh: '新分支' },
-      child: { en: 'New Child', zh: '新子节点' },
+      child: { en: 'New Subitem', zh: '新子项' },
     },
   },
 }
@@ -285,6 +299,12 @@ export function useDiagramOperations(options: UseDiagramOperationsOptions = {}) 
         const index = arr.length - 1
         const newNodeId = `${addType}_${index}`
 
+        // For circle_map, clear custom positions to trigger even redistribution
+        // This matches the original D3 behavior where new nodes are evenly spaced
+        if (type === 'circle_map') {
+          delete (spec as Record<string, unknown>)._customPositions
+        }
+
         // Emit events
         eventBus.emit('diagram:node_added', {
           diagramType: type,
@@ -317,10 +337,12 @@ export function useDiagramOperations(options: UseDiagramOperationsOptions = {}) 
           }
 
           if (nodeInfo.field && nodeInfo.index !== undefined) {
-            if (!toDelete.has(nodeInfo.field)) {
-              toDelete.set(nodeInfo.field, [])
+            let indices = toDelete.get(nodeInfo.field)
+            if (!indices) {
+              indices = []
+              toDelete.set(nodeInfo.field, indices)
             }
-            toDelete.get(nodeInfo.field)!.push(nodeInfo.index)
+            indices.push(nodeInfo.index)
           }
         }
 
@@ -350,6 +372,12 @@ export function useDiagramOperations(options: UseDiagramOperationsOptions = {}) 
         }
 
         if (deletedIds.length > 0) {
+          // For circle_map, clear custom positions to trigger even redistribution
+          // This matches the original D3 behavior where remaining nodes are evenly spaced
+          if (type === 'circle_map') {
+            delete (spec as Record<string, unknown>)._customPositions
+          }
+
           eventBus.emit('diagram:nodes_deleted', {
             diagramType: type,
             deletedIds,

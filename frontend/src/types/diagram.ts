@@ -25,7 +25,17 @@ export type DiagramType =
   | 'four_quadrant'
   | 'diagram'
 
-export type NodeType = 'topic' | 'child' | 'bubble' | 'branch' | 'center' | 'left' | 'right'
+export type NodeType =
+  | 'topic'
+  | 'child'
+  | 'bubble'
+  | 'branch'
+  | 'center'
+  | 'left'
+  | 'right'
+  | 'boundary' // Circle map outer boundary ring
+  | 'flow' // Flow map step node
+  | 'brace' // Brace map part node
 
 export interface NodeStyle {
   backgroundColor?: string
@@ -35,6 +45,10 @@ export interface NodeStyle {
   fontWeight?: 'normal' | 'bold'
   borderWidth?: number
   borderRadius?: number
+  // Dimension overrides (for boundary nodes and circle nodes)
+  width?: number
+  height?: number
+  size?: number // Uniform size for perfect circles (diameter)
 }
 
 export interface Position {

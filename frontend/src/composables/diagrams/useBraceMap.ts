@@ -7,6 +7,14 @@ import { computed, ref } from 'vue'
 import { useLanguage } from '@/composables/useLanguage'
 import type { Connection, DiagramNode, MindGraphEdge, MindGraphNode } from '@/types'
 
+import {
+  DEFAULT_CENTER_Y,
+  DEFAULT_LEVEL_WIDTH,
+  DEFAULT_NODE_HEIGHT,
+  DEFAULT_PADDING,
+  DEFAULT_VERTICAL_SPACING,
+} from './layoutConfig'
+
 interface BraceNode {
   id: string
   text: string
@@ -36,12 +44,12 @@ interface LayoutResult {
 
 export function useBraceMap(options: BraceMapOptions = {}) {
   const {
-    startX = 100,
-    centerY = 300,
-    levelWidth = 200,
-    nodeSpacing = 60,
+    startX = DEFAULT_PADDING + 60, // 100px
+    centerY = DEFAULT_CENTER_Y,
+    levelWidth = DEFAULT_LEVEL_WIDTH,
+    nodeSpacing = DEFAULT_VERTICAL_SPACING, // 60px
     nodeWidth: _nodeWidth = 140,
-    nodeHeight = 50,
+    nodeHeight = DEFAULT_NODE_HEIGHT,
   } = options
   // nodeWidth reserved for future use
   void _nodeWidth

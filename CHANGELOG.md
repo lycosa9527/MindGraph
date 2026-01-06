@@ -7,6 +7,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [5.0.6] - 2025-01-07 - Inline Node Text Editing
+
+### Added
+
+- **Inline Text Editing for Nodes** (`frontend/src/components/diagram/nodes/InlineEditableText.vue`)
+  - New reusable component for seamless inline text editing on diagram nodes
+  - Double-click on any node to enter edit mode - text gets highlighted automatically
+  - Edit text directly on the node without modal popups
+  - Press Enter to save, Escape to cancel
+  - Click outside the node to save changes
+  - Borderless editing for seamless visual experience
+
+- **useInlineEdit Composable** (`frontend/src/composables/useInlineEdit.ts`)
+  - Reusable composable for inline editing state management
+  - Handles double-click detection, text validation, and save/cancel logic
+  - Supports min/max length validation
+  - Emits events for integration with diagram store
+
+- **Node Text Update Event** (`frontend/src/composables/useEventBus.ts`)
+  - Added `node:text_updated` event type for inline editing communication
+  - Enables decoupled communication between node components and diagram store
+
+### Changed
+
+- **All Node Components Updated for Inline Editing**
+  - `TopicNode.vue` - Central topic nodes now support inline editing
+  - `BranchNode.vue` - Branch/child nodes for mind maps and tree maps
+  - `BubbleNode.vue` - Circular attribute nodes for bubble maps
+  - `FlowNode.vue` - Step nodes for flow maps
+  - `BraceNode.vue` - Part nodes for brace maps
+  - `CircleNode.vue` - Perfect circular nodes for circle maps
+  - `LabelNode.vue` - Classification dimension labels
+
+- **DiagramCanvas Event Handling** (`frontend/src/components/diagram/DiagramCanvas.vue`)
+  - Added listener for `node:text_updated` event
+  - Automatically updates diagram store and pushes to history when text is edited
+  - Proper cleanup of event subscriptions on unmount
+
+---
+
 ## [5.0.5] - 2025-01-06 - Share Conversation Export Improvements
 
 ### Added

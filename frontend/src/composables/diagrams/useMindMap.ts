@@ -15,6 +15,13 @@ import {
   recalculateMindMapLayout,
 } from '@/utils'
 
+import {
+  DEFAULT_CENTER_X,
+  DEFAULT_CENTER_Y,
+  DEFAULT_HORIZONTAL_SPACING,
+  DEFAULT_VERTICAL_SPACING,
+} from './layoutConfig'
+
 interface MindMapBranch {
   text: string
   children?: MindMapBranch[]
@@ -37,10 +44,10 @@ interface MindMapOptions {
 
 export function useMindMap(options: MindMapOptions = {}) {
   const {
-    centerX = 400,
-    centerY = 300,
-    horizontalSpacing = 180,
-    verticalSpacing = 60,
+    centerX = DEFAULT_CENTER_X,
+    centerY = DEFAULT_CENTER_Y,
+    horizontalSpacing = DEFAULT_HORIZONTAL_SPACING,
+    verticalSpacing = DEFAULT_VERTICAL_SPACING,
     useBackendLayout = false,
   } = options
 

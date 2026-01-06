@@ -7,6 +7,13 @@ import { computed, ref } from 'vue'
 import { useLanguage } from '@/composables/useLanguage'
 import type { Connection, DiagramNode, MindGraphEdge, MindGraphNode } from '@/types'
 
+import {
+  DEFAULT_CENTER_X,
+  DEFAULT_LEVEL_HEIGHT,
+  DEFAULT_NODE_WIDTH,
+  DEFAULT_PADDING,
+} from './layoutConfig'
+
 interface TreeNode {
   id: string
   text: string
@@ -15,6 +22,8 @@ interface TreeNode {
 
 interface TreeMapData {
   root: TreeNode
+  dimension?: string
+  alternativeDimensions?: string[]
 }
 
 interface TreeMapOptions {
@@ -34,12 +43,12 @@ interface LayoutResult {
 
 export function useTreeMap(options: TreeMapOptions = {}) {
   const {
-    startX = 400,
-    startY = 60,
-    levelHeight = 100,
-    nodeSpacing = 40,
-    nodeWidth = 120,
-    nodeHeight: _nodeHeight = 40,
+    startX = DEFAULT_CENTER_X,
+    startY = DEFAULT_PADDING + 20, // 60px
+    levelHeight = DEFAULT_LEVEL_HEIGHT,
+    nodeSpacing = DEFAULT_PADDING,
+    nodeWidth = DEFAULT_NODE_WIDTH,
+    nodeHeight: _nodeHeight = DEFAULT_PADDING, // 40px
   } = options
   // nodeHeight reserved for future use
   void _nodeHeight
@@ -129,7 +138,29 @@ export function useTreeMap(options: TreeMapOptions = {}) {
     if (!data.value) return []
 
     const result = layoutNode(data.value.root, startX, startY, 0)
-    return result.nodes
+    const allNodes = [...result.nodes]
+
+    // Add dimension label node below topic if dimension exists
+    if (data.value.dimension !== undefined) {
+      const dimensionY = startY + 50 // Position below topic
+      allNodes.push({
+        id: 'dimension-label',
+        type: 'label',
+        position: { x: startX - 100, y: dimensionY },
+        data: {
+          label: data.value.dimension || t('diagram.dimensionPlaceholder', 'Classification by: click to specify...'),
+          nodeType: 'dimension',
+          diagramType: 'tree_map',
+          isDraggable: false,
+          isSelectable: true,
+          isPlaceholder: !data.value.dimension,
+        },
+        draggable: false,
+        selectable: true,
+      })
+    }
+
+    return allNodes
   })
 
   // Generate edges
@@ -249,6 +280,12 @@ export function useTreeMap(options: TreeMapOptions = {}) {
   function updateNodeText(nodeId: string, text: string) {
     if (!data.value) return
 
+    // Handle dimension label updates
+    if (nodeId === 'dimension-label') {
+      data.value.dimension = text
+      return
+    }
+
     function findAndUpdate(node: TreeNode): boolean {
       if (node.id === nodeId) {
         node.text = text
@@ -266,6 +303,18 @@ export function useTreeMap(options: TreeMapOptions = {}) {
     findAndUpdate(data.value.root)
   }
 
+  // Update dimension label
+  function updateDimension(dimension: string) {
+    if (!data.value) return
+    data.value.dimension = dimension
+  }
+
+  // Set alternative dimensions
+  function setAlternativeDimensions(alternatives: string[]) {
+    if (!data.value) return
+    data.value.alternativeDimensions = alternatives
+  }
+
   return {
     data,
     nodes,
@@ -275,5 +324,7 @@ export function useTreeMap(options: TreeMapOptions = {}) {
     addChild,
     removeNode,
     updateNodeText,
+    updateDimension,
+    setAlternativeDimensions,
   }
 }

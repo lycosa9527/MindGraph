@@ -16,6 +16,7 @@ export type MindGraphNodeType =
   | 'bridge' // Bridge map pair node
   | 'tree' // Tree map category node
   | 'circle' // Circle map context node
+  | 'boundary' // Circle map outer boundary ring (non-interactive)
 
 // Custom edge types
 export type MindGraphEdgeType =
@@ -74,35 +75,61 @@ export function diagramNodeToVueFlowNode(
   diagramType: DiagramType,
   position?: { x: number; y: number }
 ): MindGraphNode {
+  // For circle maps, use 'circle' type for topic and bubble nodes (perfect circles)
+  const isCircleMap = diagramType === 'circle_map'
+  
   const nodeTypeMap: Record<string, MindGraphNodeType> = {
-    topic: 'topic',
-    center: 'topic',
+    topic: isCircleMap ? 'circle' : 'topic',
+    center: isCircleMap ? 'circle' : 'topic',
     child: 'branch',
-    bubble: 'bubble',
+    bubble: isCircleMap ? 'circle' : 'bubble',
     branch: 'branch',
     left: 'branch',
     right: 'branch',
+    boundary: 'boundary',
+    flow: 'flow',
+    brace: 'brace',
   }
 
   const mappedType = nodeTypeMap[node.type] || 'branch'
-  const isDraggable = !['topic', 'center'].includes(node.type)
+  // Topic, center, and boundary nodes are not draggable
+  const isDraggable = !['topic', 'center', 'boundary'].includes(node.type)
+  // Boundary nodes are not selectable
+  const isSelectable = node.type !== 'boundary'
+
+  // Determine nodeType for data (used by CircleNode to differentiate topic vs context)
+  let dataNodeType: MindGraphNodeType = mappedType
+  if (isCircleMap && (node.type === 'topic' || node.type === 'center')) {
+    dataNodeType = 'topic' // Keep 'topic' in data for CircleNode styling
+  }
+
+  // Boundary nodes should render behind other nodes
+  const zIndex = node.type === 'boundary' ? -1 : undefined
+
+  // For boundary nodes, set width/height on the node object directly
+  // This tells Vue Flow the actual dimensions of the node
+  const nodeWidth = node.type === 'boundary' ? node.style?.width : undefined
+  const nodeHeight = node.type === 'boundary' ? node.style?.height : undefined
 
   return {
     id: node.id,
     type: mappedType,
     position: position || node.position || { x: 0, y: 0 },
+    zIndex,
+    width: nodeWidth,
+    height: nodeHeight,
     data: {
       label: node.text,
-      nodeType: mappedType,
+      nodeType: dataNodeType,
       diagramType,
       style: node.style,
       parentId: node.parentId,
       isDraggable,
-      isSelectable: true,
+      isSelectable,
       originalNode: node,
     },
     draggable: isDraggable,
-    selectable: true,
+    selectable: isSelectable,
   }
 }
 
@@ -129,11 +156,12 @@ export function vueFlowNodeToDiagramNode(node: MindGraphNode): DiagramNode {
     topic: 'topic',
     bubble: 'bubble',
     branch: 'child',
-    flow: 'child',
-    brace: 'child',
-    bridge: 'child',
-    tree: 'child',
-    circle: 'child',
+    flow: 'flow',
+    brace: 'brace',
+    boundary: 'boundary',
+    bridge: 'branch',
+    tree: 'branch',
+    circle: 'bubble',
   }
 
   const data = node.data

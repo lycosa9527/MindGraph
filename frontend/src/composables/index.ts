@@ -28,6 +28,8 @@ export { useDragConstraints } from './useDragConstraints'
 export { useTheme } from './useTheme'
 export { useVersionCheck } from './useVersionCheck'
 export type { VersionCheckOptions } from './useVersionCheck'
+export { useInlineEdit } from './useInlineEdit'
+export type { InlineEditOptions } from './useInlineEdit'
 
 // Diagram-specific composables
 export * from './diagrams'

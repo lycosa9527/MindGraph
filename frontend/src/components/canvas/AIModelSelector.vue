@@ -1,22 +1,18 @@
 <script setup lang="ts">
 /**
  * AIModelSelector - Bottom center AI model selection
- * Migrated from prototype MindGraphCanvasPage model selector
+ * Shows available AI models: Qwen, DeepSeek, Doubao
  */
 import { ref } from 'vue'
 
-interface AIModel {
-  name: string
-  icon: string
-}
+import { ElTooltip } from 'element-plus'
+import { Sparkles } from 'lucide-vue-next'
 
-const models: AIModel[] = [
-  { name: 'Qwen', icon: 'Q' },
-  { name: 'DeepSeek', icon: 'D' },
-  { name: 'Hunyuan', icon: 'H' },
-  { name: 'Kimi', icon: 'K' },
-  { name: 'Doubao', icon: '豆' },
-]
+import { useLanguage } from '@/composables'
+
+const { isZh } = useLanguage()
+
+const models = ['Qwen', 'DeepSeek', 'Doubao']
 
 const selectedModel = ref<string>('Qwen')
 
@@ -31,37 +27,79 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <div
-    class="ai-model-selector absolute left-1/2 bottom-4 transform -translate-x-1/2 bg-white border border-gray-200 rounded-lg shadow-md p-2 flex items-center"
-  >
-    <div class="text-sm font-medium text-gray-700">选择AI模型：</div>
-    <div class="flex gap-2 ml-3 overflow-x-auto hide-scrollbar">
-      <button
-        v-for="model in models"
-        :key="model.name"
-        class="px-3 py-1 border rounded-md hover:border-blue-400 hover:bg-blue-50 transition-colors text-xs font-medium text-gray-800 flex items-center gap-1 whitespace-nowrap"
-        :class="selectedModel === model.name ? 'border-blue-400 bg-blue-50' : 'border-gray-200'"
-        :title="`使用${model.name}模型`"
-        @click="selectModel(model.name)"
-      >
-        <div
-          class="w-5 h-5 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold text-[10px]"
+  <div class="ai-model-selector absolute left-1/2 bottom-4 transform -translate-x-1/2 z-20">
+    <div
+      class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg px-3 py-2 flex items-center gap-3"
+    >
+      <!-- Label with icon -->
+      <div class="flex items-center gap-1.5 text-sm font-medium text-gray-600 dark:text-gray-300">
+        <Sparkles class="w-4 h-4 text-purple-500" />
+        <span>{{ isZh ? 'AI模型' : 'AI Model' }}</span>
+      </div>
+
+      <!-- Model buttons -->
+      <div class="flex gap-1.5">
+        <ElTooltip
+          v-for="model in models"
+          :key="model"
+          :content="isZh ? `使用 ${model} 模型` : `Use ${model} model`"
+          placement="top"
         >
-          {{ model.icon }}
-        </div>
-        <span>{{ model.name }}</span>
-      </button>
+          <button
+            class="model-btn"
+            :class="{ active: selectedModel === model }"
+            @click="selectModel(model)"
+          >
+            {{ model }}
+          </button>
+        </ElTooltip>
+      </div>
     </div>
   </div>
 </template>
 
 <style scoped>
-.hide-scrollbar::-webkit-scrollbar {
-  display: none;
+.model-btn {
+  padding: 6px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  background: white;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-size: 12px;
+  font-weight: 500;
+  color: #4b5563;
+  white-space: nowrap;
 }
 
-.hide-scrollbar {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
+.model-btn:hover {
+  border-color: #3b82f6;
+  background-color: #eff6ff;
+  color: #1d4ed8;
+}
+
+.model-btn.active {
+  border-color: #3b82f6;
+  background-color: #dbeafe;
+  color: #1d4ed8;
+}
+
+/* Dark mode */
+.dark .model-btn {
+  background: #374151;
+  border-color: #4b5563;
+  color: #d1d5db;
+}
+
+.dark .model-btn:hover {
+  border-color: #60a5fa;
+  background-color: #1e3a5f;
+  color: #93c5fd;
+}
+
+.dark .model-btn.active {
+  border-color: #60a5fa;
+  background-color: #1e3a5f;
+  color: #93c5fd;
 }
 </style>

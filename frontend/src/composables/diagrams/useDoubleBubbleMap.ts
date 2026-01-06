@@ -14,6 +14,13 @@ import { computed, ref } from 'vue'
 import { useLanguage } from '@/composables/useLanguage'
 import type { Connection, DiagramNode, MindGraphEdge, MindGraphNode } from '@/types'
 
+import {
+  DEFAULT_BUBBLE_RADIUS,
+  DEFAULT_CENTER_X,
+  DEFAULT_CENTER_Y,
+  DEFAULT_VERTICAL_SPACING,
+} from './layoutConfig'
+
 interface DoubleBubbleMapData {
   left: string
   right: string
@@ -32,11 +39,11 @@ interface DoubleBubbleMapOptions {
 
 export function useDoubleBubbleMap(options: DoubleBubbleMapOptions = {}) {
   const {
-    centerX = 400,
-    centerY = 300,
+    centerX = DEFAULT_CENTER_X,
+    centerY = DEFAULT_CENTER_Y,
     topicSpacing = 300,
-    verticalSpacing = 80,
-    bubbleRadius = 40,
+    verticalSpacing = DEFAULT_VERTICAL_SPACING + 20, // 80px
+    bubbleRadius = DEFAULT_BUBBLE_RADIUS,
   } = options
 
   const { t } = useLanguage()

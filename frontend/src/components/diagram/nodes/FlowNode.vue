@@ -2,13 +2,17 @@
 /**
  * FlowNode - Step node for flow maps
  * Represents sequential steps in a process flow
+ * Supports inline text editing on double-click
  */
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 
 import { Handle, Position } from '@vue-flow/core'
 
+import { eventBus } from '@/composables/useEventBus'
 import { useTheme } from '@/composables/useTheme'
 import type { MindGraphNodeProps } from '@/types'
+
+import InlineEditableText from './InlineEditableText.vue'
 
 const props = defineProps<MindGraphNodeProps>()
 
@@ -29,6 +33,21 @@ const nodeStyle = computed(() => ({
   borderWidth: `${props.data.style?.borderWidth || defaultStyle.value.borderWidth || 2}px`,
   borderRadius: `${props.data.style?.borderRadius || 6}px`,
 }))
+
+// Inline editing state
+const isEditing = ref(false)
+
+function handleTextSave(newText: string) {
+  isEditing.value = false
+  eventBus.emit('node:text_updated', {
+    nodeId: props.id,
+    text: newText,
+  })
+}
+
+function handleEditCancel() {
+  isEditing.value = false
+}
 </script>
 
 <template>
@@ -36,9 +55,16 @@ const nodeStyle = computed(() => ({
     class="flow-node flex items-center justify-center px-5 py-3 border-solid cursor-grab select-none"
     :style="nodeStyle"
   >
-    <span class="text-center whitespace-pre-wrap max-w-[180px]">
-      {{ data.label }}
-    </span>
+    <InlineEditableText
+      :text="data.label || ''"
+      :node-id="id"
+      :is-editing="isEditing"
+      max-width="180px"
+      text-align="center"
+      @save="handleTextSave"
+      @cancel="handleEditCancel"
+      @edit-start="isEditing = true"
+    />
 
     <!-- Connection handles -->
     <Handle

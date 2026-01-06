@@ -3,15 +3,27 @@
  *
  * Handles:
  * - Zoom in/out/reset operations
- * - Fit-to-canvas with panel space awareness
+ * - Fit-to-canvas with panel space awareness (two-view zoom system)
  * - Window resize handling
  * - EventBus integration for view commands
  *
+ * Two-View Zoom System:
+ * - fitToFullCanvas(): Fits diagram to full canvas width
+ * - fitWithPanel(): Fits diagram with space reserved for right-side panels
+ * - Uses Pinia panels store for reactive panel state (not DOM queries)
+ *
  * Migrated from archive/static/js/managers/editor/view-manager.js
  */
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+
+import { usePanelsStore } from '@/stores'
 
 import { eventBus } from './useEventBus'
+
+// Panel width constants (matching DiagramCanvas.vue and old JS view-manager.js)
+const PROPERTY_PANEL_WIDTH = 320
+const MINDMATE_PANEL_WIDTH = 384 // w-96 = 24rem = 384px
+const NODE_PALETTE_WIDTH = 288 // w-72 = 18rem = 288px
 
 // ============================================================================
 // Types
@@ -235,22 +247,53 @@ export function useViewManager(options: UseViewManagerOptions = {}) {
   }
 
   // =========================================================================
-  // Panel Visibility Check
+  // Panel Visibility Check (using Pinia store)
   // =========================================================================
 
+  // Get panels store for reactive panel state
+  const panelsStore = usePanelsStore()
+
+  /**
+   * Check if any panel is currently visible
+   * Uses Pinia store instead of DOM queries for better reactivity
+   */
   function checkPanelVisibility(): boolean {
-    // This can be overridden by the component or use Pinia store
-    // Default implementation checks DOM (for compatibility)
-    if (typeof document === 'undefined') return false
-
-    const propertyPanel = document.getElementById('property-panel')
-    const isPropertyVisible = propertyPanel && propertyPanel.style.display !== 'none'
-
-    const aiPanel = document.getElementById('ai-assistant-panel')
-    const isAIVisible = aiPanel && !aiPanel.classList.contains('collapsed')
-
-    return !!(isPropertyVisible || isAIVisible)
+    return panelsStore.anyPanelOpen
   }
+
+  /**
+   * Get the total width of open panels (right-side panels)
+   */
+  function getRightPanelWidth(): number {
+    let width = 0
+    if (panelsStore.propertyPanel.isOpen) {
+      width = PROPERTY_PANEL_WIDTH
+    } else if (panelsStore.mindmatePanel.isOpen) {
+      width = MINDMATE_PANEL_WIDTH
+    }
+    return width
+  }
+
+  /**
+   * Get the width of left-side panels
+   */
+  function getLeftPanelWidth(): number {
+    if (panelsStore.nodePalettePanel.isOpen) {
+      return NODE_PALETTE_WIDTH
+    }
+    return 0
+  }
+
+  /**
+   * Get total panel width (left + right)
+   */
+  function getTotalPanelWidth(): number {
+    return getRightPanelWidth() + getLeftPanelWidth()
+  }
+
+  // Computed for reactive panel state
+  const isAnyPanelOpen = computed(() => panelsStore.anyPanelOpen)
+  const totalPanelWidth = computed(() => getTotalPanelWidth())
 
   // =========================================================================
   // Content Bounds Management
@@ -346,6 +389,24 @@ export function useViewManager(options: UseViewManagerOptions = {}) {
 
   eventBus.onWithOwner('window:resized', () => handleWindowResize(), ownerId)
 
+  eventBus.onWithOwner('view:fit_for_export_requested', () => fitForExport(), ownerId)
+
+  // =========================================================================
+  // Panel State Watcher
+  // =========================================================================
+
+  // Watch panel state changes and re-fit diagram when panels open/close
+  watch(
+    () => panelsStore.anyPanelOpen,
+    (isOpen, wasOpen) => {
+      // Only re-fit if panel state actually changed and we have content
+      if (isOpen !== wasOpen && contentBounds.value) {
+        // Delay to allow panel animation to start
+        setTimeout(() => fitDiagram(true), 50)
+      }
+    }
+  )
+
   // =========================================================================
   // Lifecycle
   // =========================================================================
@@ -391,6 +452,8 @@ export function useViewManager(options: UseViewManagerOptions = {}) {
     canZoomIn,
     canZoomOut,
     viewState,
+    isAnyPanelOpen,
+    totalPanelWidth,
 
     // Zoom actions
     zoomIn,
@@ -410,9 +473,14 @@ export function useViewManager(options: UseViewManagerOptions = {}) {
     setContentBounds,
     updateContainerSize,
 
+    // Panel utilities
+    checkPanelVisibility,
+    getRightPanelWidth,
+    getLeftPanelWidth,
+    getTotalPanelWidth,
+
     // Utilities
     isMobileDevice,
-    checkPanelVisibility,
   }
 }
 

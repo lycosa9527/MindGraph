@@ -25,3 +25,6 @@ export { useBridgeMap } from './useBridgeMap'
 export { useDoubleBubbleMap } from './useDoubleBubbleMap'
 export { useMultiFlowMap } from './useMultiFlowMap'
 export { useConceptMap } from './useConceptMap'
+
+// Layout configuration and constants
+export * from './layoutConfig'

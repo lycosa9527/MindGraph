@@ -137,16 +137,27 @@ const DEFAULT_THEMES: Partial<Record<DiagramType, DiagramTheme>> = {
     firstPairStroke: '#0d47a1',
     firstPairStrokeWidth: 2,
   },
+  multi_flow_map: {
+    background: '#f5f5f5',
+    stepFill: '#ffffff',
+    stepText: '#303133',
+    stepStroke: '#409eff',
+    stepStrokeWidth: 2,
+    fontStep: 13,
+  },
+  // Circle Map colors matching old JS bubble-map-renderer.js THEME
   circle_map: {
     background: '#f5f5f5',
-    topicFill: '#1976d2',
-    topicText: '#ffffff',
-    topicStroke: '#000000',
-    topicStrokeWidth: 2,
-    contextFill: '#e3f2fd',
-    contextText: '#333333',
-    contextStroke: '#000000',
+    topicFill: '#1976d2', // Blue
+    topicText: '#ffffff', // White
+    topicStroke: '#0d47a1', // Dark blue
+    topicStrokeWidth: 3,
+    contextFill: '#e3f2fd', // Light blue
+    contextText: '#333333', // Dark gray
+    contextStroke: '#1976d2', // Blue
     contextStrokeWidth: 2,
+    boundaryStroke: '#666666', // Gray
+    boundaryStrokeWidth: 2,
     fontTopic: 20,
     fontContext: 14,
   },
@@ -213,6 +224,9 @@ export interface DiagramTheme {
   contextText?: string
   contextStroke?: string
   contextStrokeWidth?: number
+  // Boundary styles (circle map outer ring)
+  boundaryStroke?: string
+  boundaryStrokeWidth?: number
   // Left/Right topic styles (double bubble maps)
   leftTopicFill?: string
   leftTopicText?: string
@@ -301,6 +315,7 @@ export function useTheme(options: UseThemeOptions = {}) {
       | 'leaf'
       | 'step'
       | 'context'
+      | 'boundary'
   ): NodeStyle {
     const t = theme.value
 
@@ -400,9 +415,19 @@ export function useTheme(options: UseThemeOptions = {}) {
         return {
           backgroundColor: t.contextFill || '#e3f2fd',
           textColor: t.contextText || '#333333',
-          borderColor: t.contextStroke || '#000000',
+          borderColor: t.contextStroke || '#1976d2', // Blue, matching old JS
           borderWidth: t.contextStrokeWidth || 2,
           fontSize: t.fontContext || 14,
+          fontWeight: 'normal',
+        }
+
+      case 'boundary':
+        return {
+          backgroundColor: 'transparent',
+          textColor: 'transparent',
+          borderColor: t.boundaryStroke || '#666666',
+          borderWidth: t.boundaryStrokeWidth || 2,
+          fontSize: 0,
           fontWeight: 'normal',
         }
 

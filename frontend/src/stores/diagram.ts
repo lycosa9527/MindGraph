@@ -31,6 +31,12 @@ import {
   vueFlowNodeToDiagramNode,
 } from '@/types/vueflow'
 
+import {
+  getDefaultTemplate,
+  loadSpecForDiagramType,
+  recalculateCircleMapLayout,
+} from './specLoader'
+
 // Event types for diagram store events
 export type DiagramEventType =
   | 'diagram:node_added'
@@ -99,10 +105,12 @@ export function subscribeToDiagramEvents(
   eventType: DiagramEventType | '*',
   callback: EventCallback
 ): () => void {
-  if (!eventSubscribers.has(eventType)) {
-    eventSubscribers.set(eventType, new Set())
+  let subscribers = eventSubscribers.get(eventType)
+  if (!subscribers) {
+    subscribers = new Set()
+    eventSubscribers.set(eventType, subscribers)
   }
-  eventSubscribers.get(eventType)!.add(callback)
+  subscribers.add(callback)
 
   // Return unsubscribe function
   return () => {
@@ -171,11 +179,23 @@ export const useDiagramStore = defineStore('diagram', () => {
 
   // Vue Flow computed properties
   const vueFlowNodes = computed<MindGraphNode[]>(() => {
-    if (!data.value?.nodes || !type.value) return []
-    return data.value.nodes.map((node) => diagramNodeToVueFlowNode(node, type.value!))
+    const diagramType = type.value
+    if (!data.value?.nodes || !diagramType) return []
+
+    // For circle maps, recalculate layout to ensure boundary and positions are correct
+    // This makes the layout adaptive when nodes are added/deleted
+    if (diagramType === 'circle_map') {
+      const recalculatedNodes = recalculateCircleMapLayout(data.value.nodes)
+      return recalculatedNodes.map((node) => diagramNodeToVueFlowNode(node, diagramType))
+    }
+
+    return data.value.nodes.map((node) => diagramNodeToVueFlowNode(node, diagramType))
   })
 
   const vueFlowEdges = computed<MindGraphEdge[]>(() => {
+    // Circle maps have NO edges (no connection lines)
+    if (type.value === 'circle_map') return []
+
     if (!data.value?.connections) return []
     const edgeType = getEdgeTypeForDiagram(type.value)
     return data.value.connections.map((conn) => connectionToVueFlowEdge(conn, edgeType))
@@ -502,13 +522,14 @@ export const useDiagramStore = defineStore('diagram', () => {
   }
 
   function updateNodesFromVueFlow(vfNodes: MindGraphNode[]): void {
-    if (!data.value) return
+    const diagramData = data.value
+    if (!diagramData) return
 
     vfNodes.forEach((vfNode) => {
-      const nodeIndex = data.value!.nodes.findIndex((n) => n.id === vfNode.id)
+      const nodeIndex = diagramData.nodes.findIndex((n) => n.id === vfNode.id)
       if (nodeIndex !== -1 && vfNode.data) {
-        data.value!.nodes[nodeIndex] = {
-          ...data.value!.nodes[nodeIndex],
+        diagramData.nodes[nodeIndex] = {
+          ...diagramData.nodes[nodeIndex],
           position: { x: vfNode.position.x, y: vfNode.position.y },
           text: vfNode.data.label,
         }
@@ -532,6 +553,70 @@ export const useDiagramStore = defineStore('diagram', () => {
       label: edge.data?.label,
       style: edge.data?.style,
     }))
+  }
+
+  /**
+   * Load diagram from API spec response
+   * Converts API spec format to DiagramData format
+   * Uses specLoader for diagram-type-specific conversion
+   */
+  function loadFromSpec(spec: Record<string, unknown>, diagramTypeValue: DiagramType): boolean {
+    if (!spec || !diagramTypeValue) return false
+
+    // Set diagram type
+    if (!setDiagramType(diagramTypeValue)) return false
+
+    // Use spec loader for diagram-type-specific conversion
+    const result = loadSpecForDiagramType(spec, diagramTypeValue)
+
+    // Create diagram data
+    data.value = {
+      type: diagramTypeValue,
+      nodes: result.nodes,
+      connections: result.connections,
+      // Preserve spec metadata (for custom positions, styles, etc.)
+      ...Object.fromEntries(
+        Object.entries(spec).filter(
+          ([key]) =>
+            ![
+              'nodes',
+              'connections',
+              'topic',
+              'context',
+              'attributes',
+              'root',
+              'whole',
+              'steps',
+              'pairs',
+              'concepts',
+              'event',
+              'causes',
+              'effects',
+              'left',
+              'right',
+              'similarities',
+              'leftDifferences',
+              'rightDifferences',
+              'leftBranches',
+              'rightBranches',
+            ].includes(key)
+        )
+      ),
+      // Include layout metadata if available
+      ...(result.metadata || {}),
+    }
+
+    return true
+  }
+
+  /**
+   * Load default template for a diagram type
+   * Creates a blank canvas with placeholder text
+   */
+  function loadDefaultTemplate(diagramTypeValue: DiagramType): boolean {
+    const template = getDefaultTemplate(diagramTypeValue)
+    if (!template) return false
+    return loadFromSpec(template, diagramTypeValue)
   }
 
   return {
@@ -587,5 +672,9 @@ export const useDiagramStore = defineStore('diagram', () => {
     getNodeStyle,
     clearNodeStyle,
     clearAllNodeStyles,
+
+    // Spec loading
+    loadFromSpec,
+    loadDefaultTemplate,
   }
 })

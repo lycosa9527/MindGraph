@@ -6,6 +6,14 @@ import { computed, ref } from 'vue'
 
 import type { Connection, DiagramNode, MindGraphEdge, MindGraphNode } from '@/types'
 
+import {
+  DEFAULT_CENTER_Y,
+  DEFAULT_LEVEL_HEIGHT,
+  DEFAULT_NODE_HEIGHT,
+  DEFAULT_NODE_WIDTH,
+  DEFAULT_STEP_SPACING,
+} from './layoutConfig'
+
 interface AnalogyPair {
   id: string
   top: string
@@ -30,11 +38,11 @@ interface BridgeMapOptions {
 export function useBridgeMap(options: BridgeMapOptions = {}) {
   const {
     startX = 150,
-    centerY = 300,
-    pairSpacing = 250,
-    verticalGap = 100,
-    nodeWidth = 120,
-    nodeHeight = 45,
+    centerY = DEFAULT_CENTER_Y,
+    pairSpacing = DEFAULT_STEP_SPACING + 50, // 250px
+    verticalGap = DEFAULT_LEVEL_HEIGHT, // 100px - import added below
+    nodeWidth = DEFAULT_NODE_WIDTH,
+    nodeHeight = DEFAULT_NODE_HEIGHT - 5, // 45px
   } = options
 
   const data = ref<BridgeMapData | null>(null)

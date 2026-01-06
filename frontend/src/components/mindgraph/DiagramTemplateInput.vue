@@ -77,12 +77,15 @@ function handleSlotBlur(e: FocusEvent) {
 function handleSubmit() {
   if (!uiStore.hasValidSlots()) return
 
-  // Navigate to canvas with the generated request
   const requestText = uiStore.getTemplateText()
-  router.push({
-    path: '/canvas',
-    query: { type: selectedType.value, prompt: requestText },
+  // Store diagram type and prompt, then navigate
+  uiStore.setSelectedChartType(selectedType.value)
+  // Store prompt temporarily in UI store (we'll add a method for this)
+  // For now, emit event that canvas can listen to
+  import('@/composables/useEventBus').then(({ eventBus }) => {
+    eventBus.emit('canvas:generate_with_prompt', { prompt: requestText })
   })
+  router.push('/canvas')
 }
 
 // Parse template into parts with slots

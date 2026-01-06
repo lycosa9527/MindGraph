@@ -12,6 +12,14 @@ import { computed, ref } from 'vue'
 import { useLanguage } from '@/composables/useLanguage'
 import type { Connection, DiagramNode, MindGraphEdge, MindGraphNode } from '@/types'
 
+import {
+  DEFAULT_CENTER_X,
+  DEFAULT_CENTER_Y,
+  DEFAULT_NODE_HEIGHT,
+  DEFAULT_NODE_WIDTH,
+  DEFAULT_VERTICAL_SPACING,
+} from './layoutConfig'
+
 interface MultiFlowMapData {
   event: string
   causes: string[]
@@ -29,12 +37,12 @@ interface MultiFlowMapOptions {
 
 export function useMultiFlowMap(options: MultiFlowMapOptions = {}) {
   const {
-    centerX = 400,
-    centerY = 300,
+    centerX = DEFAULT_CENTER_X,
+    centerY = DEFAULT_CENTER_Y,
     sideSpacing = 200,
-    verticalSpacing = 70,
-    nodeWidth = 120,
-    nodeHeight = 50,
+    verticalSpacing = DEFAULT_VERTICAL_SPACING + 10, // 70px
+    nodeWidth = DEFAULT_NODE_WIDTH,
+    nodeHeight = DEFAULT_NODE_HEIGHT,
   } = options
 
   const { t } = useLanguage()
