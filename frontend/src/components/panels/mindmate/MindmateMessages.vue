@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import { ElAvatar, ElButton, ElIcon, ElLoading, ElScrollbar } from 'element-plus'
 import { Bottom } from '@element-plus/icons-vue'
@@ -7,6 +7,11 @@ import { Bottom } from '@element-plus/icons-vue'
 import { useLanguage } from '@/composables'
 import type { MindMateMessage } from '@/composables/useMindMate'
 import { useUIStore } from '@/stores'
+
+import mindmateAvatarMd from '@/assets/mindmate-avatar-md.png'
+
+import MessageBubble from './MessageBubble.vue'
+import MindmateWelcome from './MindmateWelcome.vue'
 
 // v-loading directive
 const vLoading = ElLoading.directive
@@ -18,11 +23,6 @@ const uiStore = useUIStore()
 const loadingBackground = computed(() =>
   uiStore.isDark ? 'rgba(31, 41, 55, 0.9)' : 'rgba(255, 255, 255, 0.9)'
 )
-
-import mindmateAvatarMd from '@/assets/mindmate-avatar-md.png'
-
-import MessageBubble from './MessageBubble.vue'
-import MindmateWelcome from './MindmateWelcome.vue'
 
 const props = defineProps<{
   mode?: 'panel' | 'fullpage'
@@ -158,13 +158,9 @@ watch(
 )
 </script>
 
-<script lang="ts">
-import { computed } from 'vue'
-</script>
-
 <template>
   <div
-    v-loading="isLoadingHistory"
+    v-loading="isLoadingHistory ?? false"
     :element-loading-text="isZh ? '加载中...' : 'Loading...'"
     :element-loading-background="loadingBackground"
     class="messages-container"
@@ -201,7 +197,7 @@ import { computed } from 'vue'
           @save-edit="emit('save-edit', $event)"
           @copy="emit('copy', $event)"
           @regenerate="emit('regenerate', $event)"
-          @feedback="(messageId, rating) => emit('feedback', messageId, rating)"
+          @feedback="(messageId: string, rating: 'like' | 'dislike' | null) => emit('feedback', messageId, rating)"
           @share="emit('share')"
           @mouseenter="emit('message-hover', message.id)"
           @mouseleave="emit('message-hover', null)"
