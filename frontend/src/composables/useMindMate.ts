@@ -124,6 +124,9 @@ export function useMindMate(options: MindMateOptions = {}) {
   const pendingFiles = ref<MindMateFile[]>([])
   const isUploading = ref(false)
 
+  // History loading state (distinct from isLoading which is for AI response)
+  const isLoadingHistory = ref(false)
+
   // User ID - derived from authenticated user
   const userId = shallowRef(getDifyUserId())
 
@@ -727,6 +730,7 @@ export function useMindMate(options: MindMateOptions = {}) {
     messages.value = []
     conversationId.value = convId
     state.value = 'loading'
+    isLoadingHistory.value = true
 
     // Sync with store - update current conversation and title
     mindMateStore.setCurrentConversation(convId)
@@ -749,8 +753,12 @@ export function useMindMate(options: MindMateOptions = {}) {
         const result = await response.json()
         const difyMessages = result.data || []
 
-        // Convert Dify messages to MindMate format (reverse to get chronological order)
-        for (const msg of difyMessages.reverse()) {
+        // Sort messages by created_at timestamp (ascending) to ensure chronological order
+        // This is more robust than depending on API response order
+        const sortedMessages = [...difyMessages].sort((a, b) => a.created_at - b.created_at)
+
+        // Convert Dify messages to MindMate format
+        for (const msg of sortedMessages) {
           // Dify returns query (user) and answer (assistant) in each message
           if (msg.query) {
             addMessage('user', msg.query)
@@ -767,6 +775,7 @@ export function useMindMate(options: MindMateOptions = {}) {
       onError?.('Failed to load conversation')
     } finally {
       state.value = 'idle'
+      isLoadingHistory.value = false
     }
   }
 
@@ -929,6 +938,7 @@ export function useMindMate(options: MindMateOptions = {}) {
     currentLang,
     pendingFiles,
     isUploading,
+    isLoadingHistory,
 
     // Conversation history state (proxied from store)
     conversations,

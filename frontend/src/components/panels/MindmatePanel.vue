@@ -314,6 +314,7 @@ function isLastAssistantMessage(messageId: string): boolean {
       :show-welcome="showWelcome"
       :is-loading="mindMate.isLoading.value"
       :is-streaming="mindMate.isStreaming.value"
+      :is-loading-history="mindMate.isLoadingHistory.value"
       :editing-message-id="editingMessageId"
       :editing-content="editingContent"
       :hovered-message-id="hoveredMessageId"

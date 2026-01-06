@@ -1,10 +1,23 @@
 <script setup lang="ts">
 import { nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 
-import { ElAvatar, ElButton, ElIcon, ElScrollbar } from 'element-plus'
+import { ElAvatar, ElButton, ElIcon, ElLoading, ElScrollbar } from 'element-plus'
 import { Bottom } from '@element-plus/icons-vue'
 
+import { useLanguage } from '@/composables'
 import type { MindMateMessage } from '@/composables/useMindMate'
+import { useUIStore } from '@/stores'
+
+// v-loading directive
+const vLoading = ElLoading.directive
+
+const { isZh } = useLanguage()
+const uiStore = useUIStore()
+
+// Loading background color (dark mode aware)
+const loadingBackground = computed(() =>
+  uiStore.isDark ? 'rgba(31, 41, 55, 0.9)' : 'rgba(255, 255, 255, 0.9)'
+)
 
 import mindmateAvatarMd from '@/assets/mindmate-avatar-md.png'
 
@@ -18,6 +31,7 @@ const props = defineProps<{
   showWelcome?: boolean
   isLoading?: boolean
   isStreaming?: boolean
+  isLoadingHistory?: boolean
   editingMessageId?: string | null
   editingContent?: string
   hoveredMessageId?: string | null
@@ -38,7 +52,9 @@ const emit = defineEmits<{
 }>()
 
 const scrollbarRef = ref<InstanceType<typeof ElScrollbar> | null>(null)
+const messagesWrapperRef = ref<HTMLElement | null>(null)
 const userAtBottom = ref(true) // Track if user is at/near bottom for smart auto-scroll
+const resizeObserver = ref<ResizeObserver | null>(null)
 
 // Show scroll-to-bottom button when user is scrolled up and has messages
 const showScrollButton = computed(() => {
@@ -82,7 +98,7 @@ function forceScrollToBottom() {
   emit('scroll-to-bottom', true)
 }
 
-// Set up scroll listener for smart auto-scroll
+// Set up scroll listener and ResizeObserver for smart auto-scroll
 onMounted(() => {
   nextTick(() => {
     if (scrollbarRef.value) {
@@ -91,16 +107,32 @@ onMounted(() => {
         scrollContainer.addEventListener('scroll', handleScroll, { passive: true })
       }
     }
+
+    // Set up ResizeObserver to detect content height changes (e.g., when images load)
+    if (messagesWrapperRef.value) {
+      resizeObserver.value = new ResizeObserver(() => {
+        // Auto-scroll when content height changes (images loaded) if user is at bottom
+        if (userAtBottom.value) {
+          scrollToBottom()
+        }
+      })
+      resizeObserver.value.observe(messagesWrapperRef.value)
+    }
   })
 })
 
-// Clean up scroll listener
+// Clean up scroll listener and ResizeObserver
 onUnmounted(() => {
   if (scrollbarRef.value) {
     const scrollContainer = scrollbarRef.value.$el.querySelector('.el-scrollbar__wrap')
     if (scrollContainer) {
       scrollContainer.removeEventListener('scroll', handleScroll)
     }
+  }
+
+  if (resizeObserver.value) {
+    resizeObserver.value.disconnect()
+    resizeObserver.value = null
   }
 })
 
@@ -131,13 +163,21 @@ import { computed } from 'vue'
 </script>
 
 <template>
-  <div class="messages-container">
+  <div
+    v-loading="isLoadingHistory"
+    :element-loading-text="isZh ? '加载中...' : 'Loading...'"
+    :element-loading-background="loadingBackground"
+    class="messages-container"
+  >
     <!-- Messages with Element Plus Scrollbar -->
     <ElScrollbar
       ref="scrollbarRef"
       class="messages-scrollbar"
     >
-      <div class="messages-wrapper p-4 space-y-6">
+      <div
+        ref="messagesWrapperRef"
+        class="messages-wrapper p-4 space-y-6"
+      >
         <!-- Welcome Message -->
         <MindmateWelcome
           v-if="showWelcome"
