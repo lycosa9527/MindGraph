@@ -31,6 +31,15 @@ export interface CachedDifyMessage {
   created_at: number
 }
 
+// localStorage cache entry with TTL
+interface CacheEntry {
+  messages: CachedDifyMessage[]
+  cachedAt: number // Unix timestamp in milliseconds
+}
+
+// Cache TTL: 1 hour
+const CACHE_TTL_MS = 60 * 60 * 1000
+
 // ============================================================================
 // Store
 // ============================================================================
@@ -74,6 +83,126 @@ export const useMindMateStore = defineStore('mindmate', () => {
     return headers
   }
 
+  /**
+   * localStorage key for message cache
+   */
+  function getCacheKey(convId: string): string {
+    return `mindmate_msg_cache_${convId}`
+  }
+
+  /**
+   * Save messages to localStorage with timestamp for TTL
+   */
+  function saveMessagesToStorage(convId: string, messages: CachedDifyMessage[]): void {
+    try {
+      const key = getCacheKey(convId)
+      const entry: CacheEntry = {
+        messages,
+        cachedAt: Date.now(),
+      }
+      localStorage.setItem(key, JSON.stringify(entry))
+      console.debug(`[MindMateStore] Saved ${messages.length} messages to localStorage for ${convId}`)
+    } catch (error) {
+      console.debug(`[MindMateStore] Failed to save messages to localStorage:`, error)
+      // localStorage might be full or disabled - continue without error
+    }
+  }
+
+  /**
+   * Load messages from localStorage (with TTL check)
+   */
+  function loadMessagesFromStorage(convId: string): CachedDifyMessage[] | null {
+    try {
+      const key = getCacheKey(convId)
+      const stored = localStorage.getItem(key)
+      if (!stored) return null
+
+      const parsed = JSON.parse(stored)
+
+      // Handle legacy format (direct array) vs new format (CacheEntry)
+      if (Array.isArray(parsed)) {
+        // Legacy format without TTL - treat as valid but migrate on next save
+        console.debug(`[MindMateStore] Loaded ${parsed.length} messages from localStorage (legacy format) for ${convId}`)
+        return parsed as CachedDifyMessage[]
+      }
+
+      const entry = parsed as CacheEntry
+
+      // Check TTL - if cache is stale, remove it and return null
+      if (Date.now() - entry.cachedAt > CACHE_TTL_MS) {
+        console.debug(`[MindMateStore] Cache expired for ${convId} (age: ${Math.round((Date.now() - entry.cachedAt) / 60000)}min)`)
+        localStorage.removeItem(key)
+        return null
+      }
+
+      console.debug(`[MindMateStore] Loaded ${entry.messages.length} messages from localStorage for ${convId}`)
+      return entry.messages
+    } catch (error) {
+      console.debug(`[MindMateStore] Failed to load messages from localStorage:`, error)
+      return null
+    }
+  }
+
+  /**
+   * Clear messages from localStorage
+   */
+  function clearMessagesFromStorage(convId: string): void {
+    try {
+      const key = getCacheKey(convId)
+      localStorage.removeItem(key)
+      console.debug(`[MindMateStore] Cleared localStorage cache for ${convId}`)
+    } catch (error) {
+      console.debug(`[MindMateStore] Failed to clear localStorage cache:`, error)
+    }
+  }
+
+  /**
+   * Clear all message caches from localStorage
+   */
+  function clearAllMessagesFromStorage(): void {
+    try {
+      const keysToRemove: string[] = []
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i)
+        if (key && key.startsWith('mindmate_msg_cache_')) {
+          keysToRemove.push(key)
+        }
+      }
+      keysToRemove.forEach((key) => localStorage.removeItem(key))
+      console.debug(`[MindMateStore] Cleared ${keysToRemove.length} cached conversations from localStorage`)
+    } catch (error) {
+      console.debug(`[MindMateStore] Failed to clear all localStorage cache:`, error)
+    }
+  }
+
+  /**
+   * Prune old localStorage entries that are not in top 3 conversations
+   * Keeps localStorage clean and within size limits
+   */
+  function pruneOldCacheEntries(): void {
+    try {
+      const top3Ids = new Set(conversations.value.slice(0, 3).map((c) => c.id))
+      const keysToRemove: string[] = []
+
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i)
+        if (key && key.startsWith('mindmate_msg_cache_')) {
+          const convId = key.replace('mindmate_msg_cache_', '')
+          if (!top3Ids.has(convId)) {
+            keysToRemove.push(key)
+          }
+        }
+      }
+
+      keysToRemove.forEach((key) => localStorage.removeItem(key))
+      if (keysToRemove.length > 0) {
+        console.debug(`[MindMateStore] Pruned ${keysToRemove.length} old cache entries from localStorage`)
+      }
+    } catch (error) {
+      console.debug(`[MindMateStore] Failed to prune old cache entries:`, error)
+    }
+  }
+
   // =========================================================================
   // Actions
   // =========================================================================
@@ -103,22 +232,46 @@ export const useMindMateStore = defineStore('mindmate', () => {
 
     // Prefetch messages for the 3 most recent conversations
     prefetchRecentConversations(3)
+
+    // Clean up old cache entries that are no longer in top 3
+    pruneOldCacheEntries()
   }
 
   /**
    * Prefetch messages for the N most recent conversations
+   * Loads from localStorage first if available, otherwise fetches from API
    */
   async function prefetchRecentConversations(count: number = 3): Promise<void> {
     const recentConvs = conversations.value.slice(0, count)
 
     for (const conv of recentConvs) {
-      // Skip if already cached or currently prefetching
+      // Skip if already in memory cache or currently prefetching
       if (messageCache.value.has(conv.id) || prefetchingConversations.value.has(conv.id)) {
         continue
       }
 
-      // Prefetch in background (don't await)
+      // Check localStorage first
+      const storageCache = loadMessagesFromStorage(conv.id)
+      if (storageCache) {
+        // Load into memory cache for faster access
+        messageCache.value.set(conv.id, storageCache)
+        console.debug(`[MindMateStore] Loaded ${storageCache.length} messages from localStorage for ${conv.id}`)
+        continue
+      }
+
+      // Not in localStorage - fetch from API in background (don't await)
       prefetchConversationMessages(conv.id)
+    }
+  }
+
+  /**
+   * Re-prefetch a conversation if it's in the top 3 (after cache was cleared)
+   */
+  function rePrefetchIfInTop3(convId: string): void {
+    const top3Ids = conversations.value.slice(0, 3).map((c) => c.id)
+    if (top3Ids.includes(convId)) {
+      // Conversation is in top 3, prefetch in background
+      prefetchConversationMessages(convId)
     }
   }
 
@@ -144,6 +297,9 @@ export const useMindMateStore = defineStore('mindmate', () => {
         )
         messageCache.value.set(convId, sortedMessages)
 
+        // Save to localStorage for persistence across page refreshes
+        saveMessagesToStorage(convId, sortedMessages)
+
         console.debug(`[MindMateStore] Prefetched ${sortedMessages.length} messages for conversation ${convId}`)
       }
     } catch (error) {
@@ -155,9 +311,24 @@ export const useMindMateStore = defineStore('mindmate', () => {
 
   /**
    * Get cached messages for a conversation (returns null if not cached)
+   * Checks memory cache first, then localStorage
    */
   function getCachedMessages(convId: string): CachedDifyMessage[] | null {
-    return messageCache.value.get(convId) || null
+    // Check memory cache first
+    const memoryCache = messageCache.value.get(convId)
+    if (memoryCache) {
+      return memoryCache
+    }
+
+    // Check localStorage if not in memory
+    const storageCache = loadMessagesFromStorage(convId)
+    if (storageCache) {
+      // Load into memory cache for faster subsequent access
+      messageCache.value.set(convId, storageCache)
+      return storageCache
+    }
+
+    return null
   }
 
   /**
@@ -165,6 +336,7 @@ export const useMindMateStore = defineStore('mindmate', () => {
    */
   function clearMessageCache(convId: string): void {
     messageCache.value.delete(convId)
+    clearMessagesFromStorage(convId)
   }
 
   /**
@@ -208,8 +380,9 @@ export const useMindMateStore = defineStore('mindmate', () => {
         // Remove from local list
         conversations.value = conversations.value.filter((c) => c.id !== convId)
 
-        // Clear cached messages for this conversation
+        // Clear cached messages for this conversation (memory and localStorage)
         messageCache.value.delete(convId)
+        clearMessagesFromStorage(convId)
 
         // If deleted current conversation, emit event to start new one
         if (currentConversationId.value === convId) {
@@ -345,6 +518,11 @@ export const useMindMateStore = defineStore('mindmate', () => {
   function addConversation(conv: MindMateConversation): void {
     // Add to beginning of list
     conversations.value.unshift(conv)
+
+    // New conversation is now #1, so top 3 might have changed
+    // Re-prefetch top 3 to ensure cache is up to date
+    // (New conversation doesn't need prefetch - it only has 1 message already in memory)
+    prefetchRecentConversations(3)
   }
 
   /**
@@ -358,6 +536,7 @@ export const useMindMateStore = defineStore('mindmate', () => {
     messageCount.value = 0
     messageCache.value.clear()
     prefetchingConversations.value.clear()
+    clearAllMessagesFromStorage()
   }
 
   // =========================================================================
@@ -392,5 +571,6 @@ export const useMindMateStore = defineStore('mindmate', () => {
     getCachedMessages,
     clearMessageCache,
     prefetchRecentConversations,
+    rePrefetchIfInTop3,
   }
 })

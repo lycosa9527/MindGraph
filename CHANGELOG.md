@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [5.0.4] - 2025-01-06 - MindMate Conversation History Performance
+
+### Added
+
+- **Loading Animation for Conversation History** (`frontend/src/components/panels/mindmate/MindmateMessages.vue`)
+  - Added Element Plus v-loading overlay when loading conversation messages from Dify
+  - Added `isLoadingHistory` state to distinguish from AI response loading
+  - Dark mode aware loading background color
+
+- **Auto-Scroll on Image Load** (`frontend/src/components/panels/mindmate/MindmateMessages.vue`)
+  - Added ResizeObserver to detect content height changes when images load
+  - Messages area now auto-scrolls when images finish loading (if user is at bottom)
+
+- **Conversation Prefetch for 3 Most Recent Conversations** (`frontend/src/stores/mindmate.ts`)
+  - Added message cache (Map) to store prefetched conversation messages
+  - Automatically prefetch messages for top 3 conversations when panel opens
+  - Clicking a prefetched conversation loads instantly (no loading spinner)
+  - Added `getCachedMessages()`, `clearMessageCache()`, `prefetchRecentConversations()` functions
+  - Cache cleared when new message is sent or conversation is deleted
+
+### Fixed
+
+- **Conversation History Order** (`frontend/src/composables/useMindMate.ts`)
+  - Fixed messages appearing in reverse order when loading conversation history
+  - Removed incorrect `.reverse()` call - now explicitly sorts by `created_at` timestamp
+  - Ensures chronological order regardless of Dify API response order
+
+---
+
 ## [5.0.3] - 2025-01-06 - MindMate Conversation Flow & UX Improvements
 
 ### Fixed

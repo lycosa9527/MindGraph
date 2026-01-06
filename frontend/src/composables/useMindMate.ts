@@ -322,6 +322,7 @@ export function useMindMate(options: MindMateOptions = {}) {
     }
 
     // Clear message cache for this conversation (new message invalidates cache)
+    // Note: Re-prefetch happens after stream completes (in message_end handler)
     if (conversationId.value) {
       mindMateStore.clearMessageCache(conversationId.value)
     }
@@ -572,6 +573,12 @@ export function useMindMate(options: MindMateOptions = {}) {
         currentStreamingId.value = null
         abortController.value = null
 
+        // Re-prefetch cache for this conversation now that new message is saved to Dify
+        // This ensures the cache has the latest messages including the one just sent
+        if (conversationId.value) {
+          mindMateStore.rePrefetchIfInTop3(conversationId.value)
+        }
+
         // Fetch Dify's auto-generated title after second message
         if (mindMateStore.messageCount === 2) {
           setTimeout(() => mindMateStore.fetchDifyTitle(), 1000)
@@ -743,9 +750,9 @@ export function useMindMate(options: MindMateOptions = {}) {
 
     // Check if messages are cached (prefetched)
     const cachedMessages = mindMateStore.getCachedMessages(convId)
-    if (cachedMessages) {
+    if (cachedMessages && cachedMessages.length > 0) {
       // Use cached messages - instant load, no loading state needed
-      console.debug(`[MindMate] Using cached messages for conversation ${convId}`)
+      console.debug(`[MindMate] Using ${cachedMessages.length} cached messages for conversation ${convId}`)
 
       for (const msg of cachedMessages) {
         if (msg.query) {
@@ -780,12 +787,9 @@ export function useMindMate(options: MindMateOptions = {}) {
         const difyMessages = result.data || []
 
         // Sort messages by created_at timestamp (ascending) to ensure chronological order
-        // This is more robust than depending on API response order
         const sortedMessages = [...difyMessages].sort((a, b) => a.created_at - b.created_at)
 
-        // Convert Dify messages to MindMate format
         for (const msg of sortedMessages) {
-          // Dify returns query (user) and answer (assistant) in each message
           if (msg.query) {
             addMessage('user', msg.query)
           }
