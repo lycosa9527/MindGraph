@@ -36,6 +36,7 @@ export type NodeType =
   | 'boundary' // Circle map outer boundary ring
   | 'flow' // Flow map step node
   | 'brace' // Brace map part node
+  | 'label' // Classification dimension label
 
 export interface NodeStyle {
   backgroundColor?: string

@@ -17,6 +17,7 @@ export type MindGraphNodeType =
   | 'tree' // Tree map category node
   | 'circle' // Circle map context node
   | 'boundary' // Circle map outer boundary ring (non-interactive)
+  | 'label' // Classification dimension label
 
 // Custom edge types
 export type MindGraphEdgeType =

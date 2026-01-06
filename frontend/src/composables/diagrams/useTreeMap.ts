@@ -149,7 +149,7 @@ export function useTreeMap(options: TreeMapOptions = {}) {
         position: { x: startX - 100, y: dimensionY },
         data: {
           label: data.value.dimension || t('diagram.dimensionPlaceholder', 'Classification by: click to specify...'),
-          nodeType: 'dimension',
+          nodeType: 'label',
           diagramType: 'tree_map',
           isDraggable: false,
           isSelectable: true,
