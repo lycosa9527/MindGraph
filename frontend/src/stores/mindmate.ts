@@ -23,6 +23,14 @@ export interface MindMateConversation {
   updated_at: number
 }
 
+// Cached message structure (raw Dify format)
+export interface CachedDifyMessage {
+  id: string
+  query: string
+  answer: string
+  created_at: number
+}
+
 // ============================================================================
 // Store
 // ============================================================================
@@ -37,6 +45,10 @@ export const useMindMateStore = defineStore('mindmate', () => {
   const conversationTitle = ref<string>('MindMate')
   const isLoadingConversations = ref(false)
   const messageCount = ref(0)
+
+  // Message cache for prefetched conversations (convId -> messages)
+  const messageCache = ref<Map<string, CachedDifyMessage[]>>(new Map())
+  const prefetchingConversations = ref<Set<string>>(new Set())
 
   // =========================================================================
   // Computed
@@ -88,6 +100,71 @@ export const useMindMateStore = defineStore('mindmate', () => {
     } finally {
       isLoadingConversations.value = false
     }
+
+    // Prefetch messages for the 3 most recent conversations
+    prefetchRecentConversations(3)
+  }
+
+  /**
+   * Prefetch messages for the N most recent conversations
+   */
+  async function prefetchRecentConversations(count: number = 3): Promise<void> {
+    const recentConvs = conversations.value.slice(0, count)
+
+    for (const conv of recentConvs) {
+      // Skip if already cached or currently prefetching
+      if (messageCache.value.has(conv.id) || prefetchingConversations.value.has(conv.id)) {
+        continue
+      }
+
+      // Prefetch in background (don't await)
+      prefetchConversationMessages(conv.id)
+    }
+  }
+
+  /**
+   * Prefetch messages for a specific conversation (background)
+   */
+  async function prefetchConversationMessages(convId: string): Promise<void> {
+    // Mark as prefetching to avoid duplicate requests
+    prefetchingConversations.value.add(convId)
+
+    try {
+      const response = await fetch(`/api/dify/conversations/${convId}/messages?limit=100`, {
+        headers: getAuthHeaders(),
+      })
+
+      if (response.ok) {
+        const result = await response.json()
+        const difyMessages = result.data || []
+
+        // Sort by created_at and cache
+        const sortedMessages = [...difyMessages].sort(
+          (a: CachedDifyMessage, b: CachedDifyMessage) => a.created_at - b.created_at
+        )
+        messageCache.value.set(convId, sortedMessages)
+
+        console.debug(`[MindMateStore] Prefetched ${sortedMessages.length} messages for conversation ${convId}`)
+      }
+    } catch (error) {
+      console.debug(`[MindMateStore] Failed to prefetch conversation ${convId}:`, error)
+    } finally {
+      prefetchingConversations.value.delete(convId)
+    }
+  }
+
+  /**
+   * Get cached messages for a conversation (returns null if not cached)
+   */
+  function getCachedMessages(convId: string): CachedDifyMessage[] | null {
+    return messageCache.value.get(convId) || null
+  }
+
+  /**
+   * Clear message cache for a conversation (e.g., after new message)
+   */
+  function clearMessageCache(convId: string): void {
+    messageCache.value.delete(convId)
   }
 
   /**
@@ -130,6 +207,9 @@ export const useMindMateStore = defineStore('mindmate', () => {
       if (response.ok) {
         // Remove from local list
         conversations.value = conversations.value.filter((c) => c.id !== convId)
+
+        // Clear cached messages for this conversation
+        messageCache.value.delete(convId)
 
         // If deleted current conversation, emit event to start new one
         if (currentConversationId.value === convId) {
@@ -276,6 +356,8 @@ export const useMindMateStore = defineStore('mindmate', () => {
     conversationTitle.value = 'MindMate'
     isLoadingConversations.value = false
     messageCount.value = 0
+    messageCache.value.clear()
+    prefetchingConversations.value.clear()
   }
 
   // =========================================================================
@@ -305,5 +387,10 @@ export const useMindMateStore = defineStore('mindmate', () => {
     fetchDifyTitle,
     addConversation,
     reset,
+
+    // Message cache actions
+    getCachedMessages,
+    clearMessageCache,
+    prefetchRecentConversations,
   }
 })

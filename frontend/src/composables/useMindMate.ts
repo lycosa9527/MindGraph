@@ -321,6 +321,11 @@ export function useMindMate(options: MindMateOptions = {}) {
       mindMateStore.trackMessage(message, filesToSend)
     }
 
+    // Clear message cache for this conversation (new message invalidates cache)
+    if (conversationId.value) {
+      mindMateStore.clearMessageCache(conversationId.value)
+    }
+
     // Clear pending files
     pendingFiles.value = []
 
@@ -729,14 +734,35 @@ export function useMindMate(options: MindMateOptions = {}) {
     // Clear current messages and load from history
     messages.value = []
     conversationId.value = convId
-    state.value = 'loading'
-    isLoadingHistory.value = true
 
     // Sync with store - update current conversation and title
     mindMateStore.setCurrentConversation(convId)
 
     // Set high message count to prevent title auto-generation for loaded conversations
     mindMateStore.messageCount = 999
+
+    // Check if messages are cached (prefetched)
+    const cachedMessages = mindMateStore.getCachedMessages(convId)
+    if (cachedMessages) {
+      // Use cached messages - instant load, no loading state needed
+      console.debug(`[MindMate] Using cached messages for conversation ${convId}`)
+
+      for (const msg of cachedMessages) {
+        if (msg.query) {
+          addMessage('user', msg.query)
+        }
+        if (msg.answer) {
+          addMessage('assistant', msg.answer)
+        }
+      }
+
+      hasGreeted.value = true
+      return
+    }
+
+    // Not cached - fetch from API with loading state
+    state.value = 'loading'
+    isLoadingHistory.value = true
 
     try {
       const token = localStorage.getItem('access_token')
