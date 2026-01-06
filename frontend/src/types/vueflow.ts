@@ -163,6 +163,7 @@ export function vueFlowNodeToDiagramNode(node: MindGraphNode): DiagramNode {
     bridge: 'branch',
     tree: 'branch',
     circle: 'bubble',
+    label: 'label',
   }
 
   const data = node.data
