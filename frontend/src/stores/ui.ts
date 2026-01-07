@@ -8,7 +8,7 @@ import { defineStore } from 'pinia'
 
 export type Theme = 'light' | 'dark' | 'system'
 export type Language = 'en' | 'zh'
-export type AppMode = 'mindmate' | 'mindgraph'
+export type AppMode = 'mindmate' | 'mindgraph' | 'template' | 'course' | 'community'
 
 const THEME_KEY = 'mindgraph_theme'
 const LANGUAGE_KEY = 'language'

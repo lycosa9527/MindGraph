@@ -1,71 +1,113 @@
 /**
  * useBubbleMap - Composable for Bubble Map layout and data management
  * Bubble maps describe qualities and attributes around a central topic
+ *
+ * Layout logic matches the original D3 implementation from bubble-map-renderer.js
  */
 import { computed, ref } from 'vue'
 
 import { useLanguage } from '@/composables/useLanguage'
 import type { Connection, DiagramNode, MindGraphEdge, MindGraphNode } from '@/types'
 
-import {
-  DEFAULT_BUBBLE_RADIUS,
-  DEFAULT_CENTER_X,
-  DEFAULT_CENTER_Y,
-  DEFAULT_TOPIC_RADIUS,
-} from './layoutConfig'
+import { DEFAULT_BUBBLE_RADIUS, DEFAULT_PADDING, DEFAULT_TOPIC_RADIUS } from './layoutConfig'
 
 interface BubbleMapData {
   topic: string
   attributes: string[]
 }
 
+interface BubbleMapLayout {
+  centerX: number
+  centerY: number
+  topicR: number
+  uniformAttributeR: number
+  childrenRadius: number
+}
+
 interface BubbleMapOptions {
-  centerX?: number
-  centerY?: number
-  radius?: number
-  topicRadius?: number
-  bubbleRadius?: number
+  padding?: number
+}
+
+/**
+ * Calculate bubble map layout based on node count
+ * Uses the same formulas as the original D3 renderer
+ */
+function calculateLayout(nodeCount: number, padding: number = DEFAULT_PADDING): BubbleMapLayout {
+  const uniformAttributeR = DEFAULT_BUBBLE_RADIUS // 40px
+  const topicR = DEFAULT_TOPIC_RADIUS // 60px
+
+  // Target distance from center (matching old JS: topicR + uniformAttributeR + 50)
+  const targetDistance = topicR + uniformAttributeR + 50
+
+  // Circumferential constraint for many nodes
+  // Dynamic spacing multiplier based on node count
+  const spacingMultiplier = nodeCount <= 3 ? 2.0 : nodeCount <= 6 ? 2.05 : 2.1
+  const circumferentialMinRadius =
+    nodeCount > 0 ? (uniformAttributeR * nodeCount * spacingMultiplier) / (2 * Math.PI) : 0
+
+  // Use the larger of both constraints (minimum 100px)
+  const childrenRadius = Math.max(targetDistance, circumferentialMinRadius, 100)
+
+  // Dynamic canvas center based on calculated sizes
+  const centerX = childrenRadius + uniformAttributeR + padding
+  const centerY = childrenRadius + uniformAttributeR + padding
+
+  return {
+    centerX,
+    centerY,
+    topicR,
+    uniformAttributeR,
+    childrenRadius,
+  }
 }
 
 export function useBubbleMap(options: BubbleMapOptions = {}) {
-  const {
-    centerX = DEFAULT_CENTER_X,
-    centerY = DEFAULT_CENTER_Y,
-    radius = 150,
-    topicRadius = DEFAULT_TOPIC_RADIUS,
-    bubbleRadius = DEFAULT_BUBBLE_RADIUS,
-  } = options
+  const { padding = DEFAULT_PADDING } = options
 
   const { t } = useLanguage()
   const data = ref<BubbleMapData | null>(null)
+
+  // Calculate layout based on current data
+  const layout = computed<BubbleMapLayout>(() => {
+    const nodeCount = data.value?.attributes.length || 0
+    return calculateLayout(nodeCount, padding)
+  })
 
   // Convert bubble map data to Vue Flow nodes
   const nodes = computed<MindGraphNode[]>(() => {
     if (!data.value) return []
 
     const result: MindGraphNode[] = []
+    const l = layout.value
+    const nodeCount = data.value.attributes.length
 
-    // Central topic node
+    // Central topic node - centered, non-draggable, perfect circle
     result.push({
       id: 'topic',
-      type: 'topic',
-      position: { x: centerX - topicRadius, y: centerY - topicRadius / 2 },
+      type: 'circle', // Use CircleNode for perfect circle rendering
+      position: { x: l.centerX - l.topicR, y: l.centerY - l.topicR },
       data: {
         label: data.value.topic,
-        nodeType: 'topic',
+        nodeType: 'topic', // Keep 'topic' in data for CircleNode styling
         diagramType: 'bubble_map',
         isDraggable: false,
         isSelectable: true,
+        style: {
+          size: l.topicR * 2, // Diameter for perfect circle
+        },
       },
       draggable: false,
     })
 
     // Attribute bubble nodes arranged in a circle
-    const attributeCount = data.value.attributes.length
+    // Start from top (-90 degrees) with even angle distribution
     data.value.attributes.forEach((attr, index) => {
-      const angle = (2 * Math.PI * index) / attributeCount - Math.PI / 2
-      const x = centerX + radius * Math.cos(angle) - bubbleRadius
-      const y = centerY + radius * Math.sin(angle) - bubbleRadius
+      const angleDeg = (index * 360) / nodeCount - 90 // Start from top
+      const angleRad = (angleDeg * Math.PI) / 180
+
+      // Position at childrenRadius from center
+      const x = l.centerX + l.childrenRadius * Math.cos(angleRad) - l.uniformAttributeR
+      const y = l.centerY + l.childrenRadius * Math.sin(angleRad) - l.uniformAttributeR
 
       result.push({
         id: `bubble-${index}`,
@@ -85,7 +127,7 @@ export function useBubbleMap(options: BubbleMapOptions = {}) {
     return result
   })
 
-  // Generate edges from topic to each bubble
+  // Generate edges from topic to each bubble (radial center-to-center lines)
   const edges = computed<MindGraphEdge[]>(() => {
     if (!data.value) return []
 
@@ -93,9 +135,9 @@ export function useBubbleMap(options: BubbleMapOptions = {}) {
       id: `edge-topic-bubble-${index}`,
       source: 'topic',
       target: `bubble-${index}`,
-      type: 'curved',
+      type: 'radial',
       data: {
-        edgeType: 'curved' as const,
+        edgeType: 'radial' as const,
       },
     }))
   })
@@ -154,6 +196,7 @@ export function useBubbleMap(options: BubbleMapOptions = {}) {
 
   return {
     data,
+    layout,
     nodes,
     edges,
     setData,

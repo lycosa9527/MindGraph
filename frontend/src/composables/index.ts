@@ -30,6 +30,7 @@ export { useVersionCheck } from './useVersionCheck'
 export type { VersionCheckOptions } from './useVersionCheck'
 export { useInlineEdit } from './useInlineEdit'
 export type { InlineEditOptions } from './useInlineEdit'
+export { useAutoComplete, isPlaceholderText } from './useAutoComplete'
 
 // Diagram-specific composables
 export * from './diagrams'

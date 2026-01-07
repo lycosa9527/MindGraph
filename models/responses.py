@@ -13,6 +13,7 @@ Proprietary License
 """
 
 from typing import Optional, Dict, Any, List
+from datetime import datetime
 from pydantic import BaseModel, Field
 
 
@@ -205,6 +206,86 @@ class TabExpandResponse(BaseModel):
                     {"text": "Case Studies", "id": "child_2"}
                 ],
                 "request_id": "tab_expand_1234567890"
+            }
+        }
+
+
+# ============================================================================
+# DIAGRAM STORAGE RESPONSE MODELS
+# ============================================================================
+
+class DiagramResponse(BaseModel):
+    """Response model for a single diagram"""
+    id: int = Field(..., description="Diagram ID")
+    title: str = Field(..., description="Diagram title")
+    diagram_type: str = Field(..., description="Type of diagram")
+    spec: Dict[str, Any] = Field(..., description="Diagram specification")
+    language: str = Field(..., description="Language code")
+    thumbnail: Optional[str] = Field(None, description="Base64 encoded thumbnail")
+    created_at: datetime = Field(..., description="Creation timestamp")
+    updated_at: datetime = Field(..., description="Last update timestamp")
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "id": 1,
+                "title": "My Mind Map",
+                "diagram_type": "mind_map",
+                "spec": {"topic": "Central Topic", "children": []},
+                "language": "zh",
+                "thumbnail": None,
+                "created_at": "2026-01-07T12:00:00",
+                "updated_at": "2026-01-07T12:00:00"
+            }
+        }
+
+
+class DiagramListItem(BaseModel):
+    """List item for diagram gallery view"""
+    id: int = Field(..., description="Diagram ID")
+    title: str = Field(..., description="Diagram title")
+    diagram_type: str = Field(..., description="Type of diagram")
+    thumbnail: Optional[str] = Field(None, description="Base64 encoded thumbnail")
+    updated_at: datetime = Field(..., description="Last update timestamp")
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "id": 1,
+                "title": "My Mind Map",
+                "diagram_type": "mind_map",
+                "thumbnail": None,
+                "updated_at": "2026-01-07T12:00:00"
+            }
+        }
+
+
+class DiagramListResponse(BaseModel):
+    """Response model for diagram list with pagination"""
+    diagrams: List[DiagramListItem] = Field(default_factory=list, description="List of diagrams")
+    total: int = Field(..., description="Total number of diagrams")
+    page: int = Field(..., description="Current page number")
+    page_size: int = Field(..., description="Number of items per page")
+    has_more: bool = Field(..., description="Whether there are more pages")
+    max_diagrams: int = Field(10, description="Maximum diagrams allowed per user")
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "diagrams": [
+                    {
+                        "id": 1,
+                        "title": "My Mind Map",
+                        "diagram_type": "mind_map",
+                        "thumbnail": None,
+                        "updated_at": "2026-01-07T12:00:00"
+                    }
+                ],
+                "total": 1,
+                "page": 1,
+                "page_size": 10,
+                "has_more": False,
+                "max_diagrams": 10
             }
         }
 

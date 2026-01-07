@@ -80,7 +80,7 @@ export type EventTypes = {
   'diagram:update_nodes': { nodes: unknown[]; source?: string }
   'diagram:add_nodes': { nodes: unknown[]; source?: string }
   'diagram:remove_nodes': { nodeIds: unknown[]; source?: string }
-  'diagram:auto_complete_requested': { source?: string }
+  'diagram:auto_complete_requested': { source?: string; topic?: string; diagramType?: string }
   'diagram:position_saved': {
     nodeId: string
     position: { x: number; y: number }
@@ -260,12 +260,21 @@ export type EventTypes = {
   }
 
   // LLM Events
-  'llm:generation_started': { topic?: string; diagramType?: string }
-  'llm:generation_completed': { nodeCount?: number }
+  'llm:generation_started': {
+    models?: string[]
+    diagramType?: string
+    mainTopic?: string | null
+    language?: string
+  }
+  'llm:generation_completed': {
+    successCount?: number
+    totalCount?: number
+    allFailed?: boolean
+  }
   'llm:generation_failed': { error: string }
   'llm:model_completed': { model?: string }
-  'llm:first_result_available': { result?: unknown }
-  'llm:result_rendered': { resultIndex?: number }
+  'llm:first_result_available': { model?: string; elapsedTime?: number }
+  'llm:result_rendered': { model?: string; diagramType?: string | null; nodeCount?: number }
   'llm:topic_identified': { topic: string }
   'llm:nodes_extracted': { nodes: unknown[] }
   'llm:spec_validated': { isValid: boolean }
@@ -280,6 +289,7 @@ export type EventTypes = {
   'autocomplete:render_cached_requested': Record<string, never>
   'autocomplete:update_button_states_requested': Record<string, never>
   'autocomplete:cancel_requested': Record<string, never>
+  'autocomplete:completed': { success: boolean; error?: string }
 
   // Lifecycle Events
   'lifecycle:session_starting': { sessionId: string }

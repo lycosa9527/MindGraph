@@ -23,6 +23,7 @@ export type MindGraphNodeType =
 export type MindGraphEdgeType =
   | 'curved' // For mind maps, tree maps
   | 'straight' // For flow maps
+  | 'radial' // For bubble maps (center-to-center)
   | 'brace' // For brace maps (bracket shape)
   | 'bridge' // For bridge maps (analogy connection)
 
@@ -76,14 +77,17 @@ export function diagramNodeToVueFlowNode(
   diagramType: DiagramType,
   position?: { x: number; y: number }
 ): MindGraphNode {
-  // For circle maps, use 'circle' type for topic and bubble nodes (perfect circles)
+  // For circle maps and bubble maps, use 'circle' type for topic nodes (perfect circles)
   const isCircleMap = diagramType === 'circle_map'
+  const isBubbleMap = diagramType === 'bubble_map'
+  const isDoubleBubbleMap = diagramType === 'double_bubble_map'
+  const useCircleForTopic = isCircleMap || isBubbleMap || isDoubleBubbleMap
   
   const nodeTypeMap: Record<string, MindGraphNodeType> = {
-    topic: isCircleMap ? 'circle' : 'topic',
-    center: isCircleMap ? 'circle' : 'topic',
+    topic: useCircleForTopic ? 'circle' : 'topic',
+    center: useCircleForTopic ? 'circle' : 'topic',
     child: 'branch',
-    bubble: isCircleMap ? 'circle' : 'bubble',
+    bubble: isCircleMap ? 'circle' : 'bubble', // bubble_map keeps BubbleNode for attributes
     branch: 'branch',
     left: 'branch',
     right: 'branch',
@@ -100,7 +104,7 @@ export function diagramNodeToVueFlowNode(
 
   // Determine nodeType for data (used by CircleNode to differentiate topic vs context)
   let dataNodeType: MindGraphNodeType = mappedType
-  if (isCircleMap && (node.type === 'topic' || node.type === 'center')) {
+  if (useCircleForTopic && (node.type === 'topic' || node.type === 'center')) {
     dataNodeType = 'topic' // Keep 'topic' in data for CircleNode styling
   }
 

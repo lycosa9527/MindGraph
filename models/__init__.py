@@ -23,6 +23,8 @@ from .requests import (
     FrontendLogBatchRequest,
     RecalculateLayoutRequest,
     FeedbackRequest,
+    DiagramCreateRequest,
+    DiagramUpdateRequest,
 )
 
 from .responses import (
@@ -33,6 +35,9 @@ from .responses import (
     DatabaseHealthResponse,
     ModelHealthStatus,
     StatusResponse,
+    DiagramResponse,
+    DiagramListItem,
+    DiagramListResponse,
 )
 
 from .common import DiagramType, LLMModel, Language
@@ -50,6 +55,8 @@ __all__ = [
     "FrontendLogBatchRequest",
     "RecalculateLayoutRequest",
     "FeedbackRequest",
+    "DiagramCreateRequest",
+    "DiagramUpdateRequest",
     # Responses
     "GenerateResponse",
     "ErrorResponse",
@@ -58,6 +65,9 @@ __all__ = [
     "LLMHealthResponse",
     "DatabaseHealthResponse",
     "ModelHealthStatus",
+    "DiagramResponse",
+    "DiagramListItem",
+    "DiagramListResponse",
     # Common
     "DiagramType",
     "LLMModel",

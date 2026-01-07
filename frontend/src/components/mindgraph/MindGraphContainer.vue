@@ -3,30 +3,47 @@
  * MindGraphContainer - MindGraph mode content area
  * Shows diagram type selection and discovery gallery
  */
+import { computed } from 'vue'
+
+import { ElAvatar } from 'element-plus'
+
+import mindgraphLogo from '@/assets/mindgraph-logo.png'
+import { useLanguage } from '@/composables'
+import { useAuthStore } from '@/stores/auth'
+
 import DiagramTemplateInput from './DiagramTemplateInput.vue'
 import DiagramTypeGrid from './DiagramTypeGrid.vue'
 import DiscoveryGallery from './DiscoveryGallery.vue'
+
+const { isZh } = useLanguage()
+const authStore = useAuthStore()
+const username = computed(() => authStore.user?.username || '')
 </script>
 
 <template>
   <div class="mindgraph-container flex flex-col h-full">
-    <!-- Main content area -->
-    <div
-      class="flex-1 overflow-y-auto p-8"
-      style="background-color: transparent; margin-left: 8px; margin-right: 8px"
-    >
-      <!-- Welcome header -->
-      <div class="flex flex-col items-center justify-center mb-12">
-        <div class="text-center mt-12">
-          <div class="text-4xl font-bold text-gray-800 mb-2">MindGraph</div>
-          <div class="text-base text-gray-500 mb-3 font-normal">AI高效赋能思维图示工具</div>
-          <div class="text-base text-gray-600">我是你的思维图示助手MindGraph</div>
-        </div>
-      </div>
-    </div>
+    <!-- Spacer to push content down -->
+    <div class="flex-1"></div>
 
     <!-- Input and grid area -->
     <div class="p-5 w-[70%] mx-auto">
+      <!-- Welcome header - above input -->
+      <div class="flex flex-col items-center justify-center mb-8">
+        <ElAvatar
+          :src="mindgraphLogo"
+          alt="MindGraph"
+          :size="96"
+          class="mindgraph-logo mb-4"
+        />
+        <div class="text-lg text-gray-600">
+          {{
+            isZh
+              ? `${username}你好，我是你的AI思维图示助手`
+              : `Hello ${username}, I'm your AI visual thinking assistant`
+          }}
+        </div>
+      </div>
+
       <!-- Template input -->
       <DiagramTemplateInput />
 
@@ -40,3 +57,14 @@ import DiscoveryGallery from './DiscoveryGallery.vue'
     </div>
   </div>
 </template>
+
+<style scoped>
+.mindgraph-logo {
+  border-radius: 16px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
+
+.mindgraph-logo :deep(img) {
+  object-fit: cover;
+}
+</style>

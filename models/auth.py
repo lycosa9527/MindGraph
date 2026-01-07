@@ -71,8 +71,9 @@ class User(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     last_login = Column(DateTime, nullable=True)
     
-    # Relationship
+    # Relationships
     organization = relationship("Organization", back_populates="users")
+    diagrams = relationship("Diagram", back_populates="user", lazy="dynamic")
 
 
 class APIKey(Base):

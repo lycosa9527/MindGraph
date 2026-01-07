@@ -20,8 +20,8 @@ async function handleLogout(): Promise<void> {
   await authStore.logout()
 }
 
-function goToEditor(): void {
-  router.push('/editor')
+function goToHome(): void {
+  router.push('/')
 }
 
 function goToAdmin(): void {
@@ -68,7 +68,7 @@ function goToAdmin(): void {
             </el-button>
             <template #dropdown>
               <el-dropdown-menu>
-                <el-dropdown-item @click="goToEditor">
+                <el-dropdown-item @click="goToHome">
                   {{ t('editor.newDiagram') }}
                 </el-dropdown-item>
                 <el-dropdown-item

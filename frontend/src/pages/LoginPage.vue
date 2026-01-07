@@ -99,8 +99,8 @@ async function handleLogin() {
 
     if (success) {
       notify.success(t('common.success'))
-      // Redirect to intended page or editor
-      const redirect = (route.query.redirect as string) || '/editor'
+      // Redirect to intended page or main page
+      const redirect = (route.query.redirect as string) || '/'
       router.push(redirect)
     } else {
       notify.error(result.message || t('auth.loginFailed'))

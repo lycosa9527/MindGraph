@@ -226,6 +226,14 @@ export function useMindMate(options: MindMateOptions = {}) {
   }
 
   async function uploadFile(file: File): Promise<MindMateFile | null> {
+    // Only allow image files
+    if (!file.type.startsWith('image/')) {
+      const errorMsg = 'Only image files are allowed'
+      eventBus.emit('mindmate:error', { error: errorMsg })
+      onError?.(errorMsg)
+      return null
+    }
+
     isUploading.value = true
 
     try {
@@ -253,13 +261,18 @@ export function useMindMate(options: MindMateOptions = {}) {
       const result = await response.json()
       const data = result.data
 
+      // Validate response data exists
+      if (!data || !data.id) {
+        throw new Error('Invalid response from file upload API')
+      }
+
       const uploadedFile: MindMateFile = {
         id: data.id,
-        name: data.name,
+        name: data.name || file.name,
         type: getFileType(data.mime_type || file.type),
-        size: data.size,
-        extension: data.extension,
-        mime_type: data.mime_type,
+        size: data.size || file.size,
+        extension: data.extension || file.name.split('.').pop() || '',
+        mime_type: data.mime_type || file.type,
         preview_url: file.type.startsWith('image/') ? URL.createObjectURL(file) : undefined,
       }
 

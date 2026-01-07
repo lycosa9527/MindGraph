@@ -3,7 +3,6 @@
  */
 
 export * from './auth'
-export * from './editor'
 export * from './panels'
 export * from './common'
 export * from './sidebar'

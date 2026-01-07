@@ -2,9 +2,11 @@
  * useDoubleBubbleMap - Composable for Double Bubble Map layout and data management
  * Double bubble maps compare two topics with shared similarities and paired differences
  *
+ * Layout logic matches the original D3 implementation from bubble-map-renderer.js
+ *
  * Structure:
- * - Left topic (non-draggable)
- * - Right topic (non-draggable)
+ * - Left topic (non-draggable, perfect circle)
+ * - Right topic (non-draggable, perfect circle)
  * - Similarities (shared, in the middle)
  * - Left differences (left side only)
  * - Right differences (right side only)
@@ -16,8 +18,8 @@ import type { Connection, DiagramNode, MindGraphEdge, MindGraphNode } from '@/ty
 
 import {
   DEFAULT_BUBBLE_RADIUS,
-  DEFAULT_CENTER_X,
-  DEFAULT_CENTER_Y,
+  DEFAULT_PADDING,
+  DEFAULT_TOPIC_RADIUS,
   DEFAULT_VERTICAL_SPACING,
 } from './layoutConfig'
 
@@ -29,74 +31,157 @@ interface DoubleBubbleMapData {
   rightDifferences: string[]
 }
 
+interface DoubleBubbleMapLayout {
+  centerX: number
+  centerY: number
+  // Column X positions (left to right: leftDiff, leftTopic, sim, rightTopic, rightDiff)
+  leftDiffX: number
+  leftTopicX: number
+  simX: number
+  rightTopicX: number
+  rightDiffX: number
+  // Node sizes
+  topicR: number
+  simR: number
+  diffR: number
+  // Spacing
+  simVerticalSpacing: number
+  diffVerticalSpacing: number
+}
+
 interface DoubleBubbleMapOptions {
-  centerX?: number
-  centerY?: number
-  topicSpacing?: number
-  verticalSpacing?: number
-  bubbleRadius?: number
+  padding?: number
+}
+
+/**
+ * Calculate double bubble map layout based on node counts
+ * Uses column-based layout matching the original D3 renderer:
+ * [leftDiff] - [leftTopic] - [similarities] - [rightTopic] - [rightDiff]
+ */
+function calculateLayout(
+  simCount: number,
+  leftDiffCount: number,
+  rightDiffCount: number,
+  padding: number = DEFAULT_PADDING
+): DoubleBubbleMapLayout {
+  const topicR = DEFAULT_TOPIC_RADIUS // 60px
+  const simR = DEFAULT_BUBBLE_RADIUS // 40px for similarities
+  const diffR = DEFAULT_BUBBLE_RADIUS - 10 // 30px for differences (smaller)
+
+  // Vertical spacing between nodes in each column
+  const simVerticalSpacing = simR * 2 + 12 // diameter + gap
+  const diffVerticalSpacing = diffR * 2 + 10 // diameter + gap
+
+  // Column spacing (50px matching original)
+  const columnSpacing = 50
+
+  // Calculate X positions from left to right
+  const leftDiffX = padding + diffR
+  const leftTopicX = leftDiffX + diffR + columnSpacing + topicR
+  const simX = leftTopicX + topicR + columnSpacing + simR
+  const rightTopicX = simX + simR + columnSpacing + topicR
+  const rightDiffX = rightTopicX + topicR + columnSpacing + diffR
+
+  // Calculate required width
+  const requiredWidth = rightDiffX + diffR + padding
+
+  // Calculate column heights (differences are paired, so use max count)
+  const simColHeight = simCount > 0 ? (simCount - 1) * simVerticalSpacing + simR * 2 : 0
+  const maxDiffCount = Math.max(leftDiffCount, rightDiffCount)
+  const diffColHeight = maxDiffCount > 0 ? (maxDiffCount - 1) * diffVerticalSpacing + diffR * 2 : 0
+  const maxColHeight = Math.max(simColHeight, diffColHeight, topicR * 2)
+
+  // Calculate required height
+  const requiredHeight = maxColHeight + padding * 2
+
+  // Center positions
+  const centerX = requiredWidth / 2
+  const centerY = requiredHeight / 2
+
+  return {
+    centerX,
+    centerY,
+    leftDiffX,
+    leftTopicX,
+    simX,
+    rightTopicX,
+    rightDiffX,
+    topicR,
+    simR,
+    diffR,
+    simVerticalSpacing,
+    diffVerticalSpacing,
+  }
 }
 
 export function useDoubleBubbleMap(options: DoubleBubbleMapOptions = {}) {
-  const {
-    centerX = DEFAULT_CENTER_X,
-    centerY = DEFAULT_CENTER_Y,
-    topicSpacing = 300,
-    verticalSpacing = DEFAULT_VERTICAL_SPACING + 20, // 80px
-    bubbleRadius = DEFAULT_BUBBLE_RADIUS,
-  } = options
+  const { padding = DEFAULT_PADDING } = options
 
   const { t } = useLanguage()
   const data = ref<DoubleBubbleMapData | null>(null)
+
+  // Calculate layout based on current data
+  const layout = computed<DoubleBubbleMapLayout>(() => {
+    const simCount = data.value?.similarities.length || 0
+    const leftDiffCount = data.value?.leftDifferences.length || 0
+    const rightDiffCount = data.value?.rightDifferences.length || 0
+    return calculateLayout(simCount, leftDiffCount, rightDiffCount, padding)
+  })
 
   // Convert double bubble map data to Vue Flow nodes
   const nodes = computed<MindGraphNode[]>(() => {
     if (!data.value) return []
 
     const result: MindGraphNode[] = []
-    const leftX = centerX - topicSpacing / 2
-    const rightX = centerX + topicSpacing / 2
+    const l = layout.value
 
-    // Left topic node
+    // Left topic node - perfect circle (column 2)
     result.push({
       id: 'left-topic',
-      type: 'topic',
-      position: { x: leftX - 60, y: centerY - 30 },
+      type: 'circle', // Use CircleNode for perfect circle
+      position: { x: l.leftTopicX - l.topicR, y: l.centerY - l.topicR },
       data: {
         label: data.value.left,
-        nodeType: 'topic',
+        nodeType: 'topic', // Keep 'topic' for styling
         diagramType: 'double_bubble_map',
         isDraggable: false,
         isSelectable: true,
+        style: {
+          size: l.topicR * 2, // Diameter for perfect circle
+        },
       },
       draggable: false,
     })
 
-    // Right topic node
+    // Right topic node - perfect circle (column 4)
     result.push({
       id: 'right-topic',
-      type: 'topic',
-      position: { x: rightX - 60, y: centerY - 30 },
+      type: 'circle', // Use CircleNode for perfect circle
+      position: { x: l.rightTopicX - l.topicR, y: l.centerY - l.topicR },
       data: {
         label: data.value.right,
-        nodeType: 'topic',
+        nodeType: 'topic', // Keep 'topic' for styling
         diagramType: 'double_bubble_map',
         isDraggable: false,
         isSelectable: true,
+        style: {
+          size: l.topicR * 2, // Diameter for perfect circle
+        },
       },
       draggable: false,
     })
 
-    // Similarities (between the two topics, stacked vertically)
+    // Similarities (center column 3, stacked vertically)
     const simCount = data.value.similarities.length
-    const simStartY = centerY - ((simCount - 1) * verticalSpacing) / 2
+    const simColHeight = simCount > 0 ? (simCount - 1) * l.simVerticalSpacing + l.simR * 2 : 0
+    const simStartY = l.centerY - simColHeight / 2 + l.simR
     data.value.similarities.forEach((sim, index) => {
       result.push({
         id: `similarity-${index}`,
         type: 'bubble',
         position: {
-          x: centerX - bubbleRadius,
-          y: simStartY + index * verticalSpacing - bubbleRadius,
+          x: l.simX - l.simR,
+          y: simStartY + index * l.simVerticalSpacing - l.simR,
         },
         data: {
           label: sim,
@@ -109,16 +194,22 @@ export function useDoubleBubbleMap(options: DoubleBubbleMapOptions = {}) {
       })
     })
 
-    // Left differences (stacked vertically on the left side)
+    // Left and Right differences are PAIRED - they share the same Y positions
     const leftDiffCount = data.value.leftDifferences.length
-    const leftDiffStartY = centerY - ((leftDiffCount - 1) * verticalSpacing) / 2
+    const rightDiffCount = data.value.rightDifferences.length
+    const maxDiffCount = Math.max(leftDiffCount, rightDiffCount)
+    const diffColHeight =
+      maxDiffCount > 0 ? (maxDiffCount - 1) * l.diffVerticalSpacing + l.diffR * 2 : 0
+    const diffStartY = l.centerY - diffColHeight / 2 + l.diffR
+
+    // Left differences (column 1)
     data.value.leftDifferences.forEach((diff, index) => {
       result.push({
         id: `left-diff-${index}`,
         type: 'bubble',
         position: {
-          x: leftX - topicSpacing / 2 - bubbleRadius,
-          y: leftDiffStartY + index * verticalSpacing - bubbleRadius,
+          x: l.leftDiffX - l.diffR,
+          y: diffStartY + index * l.diffVerticalSpacing - l.diffR,
         },
         data: {
           label: diff,
@@ -131,16 +222,14 @@ export function useDoubleBubbleMap(options: DoubleBubbleMapOptions = {}) {
       })
     })
 
-    // Right differences (stacked vertically on the right side)
-    const rightDiffCount = data.value.rightDifferences.length
-    const rightDiffStartY = centerY - ((rightDiffCount - 1) * verticalSpacing) / 2
+    // Right differences (column 5) - same Y positions as left differences
     data.value.rightDifferences.forEach((diff, index) => {
       result.push({
         id: `right-diff-${index}`,
         type: 'bubble',
         position: {
-          x: rightX + topicSpacing / 2 - bubbleRadius,
-          y: rightDiffStartY + index * verticalSpacing - bubbleRadius,
+          x: l.rightDiffX - l.diffR,
+          y: diffStartY + index * l.diffVerticalSpacing - l.diffR,
         },
         data: {
           label: diff,
@@ -156,7 +245,7 @@ export function useDoubleBubbleMap(options: DoubleBubbleMapOptions = {}) {
     return result
   })
 
-  // Generate edges
+  // Generate edges (radial center-to-center lines)
   const edges = computed<MindGraphEdge[]>(() => {
     if (!data.value) return []
 
@@ -168,8 +257,8 @@ export function useDoubleBubbleMap(options: DoubleBubbleMapOptions = {}) {
         id: `edge-left-sim-${index}`,
         source: 'left-topic',
         target: `similarity-${index}`,
-        type: 'curved',
-        data: { edgeType: 'curved' as const },
+        type: 'radial',
+        data: { edgeType: 'radial' as const },
       })
     })
 
@@ -179,8 +268,8 @@ export function useDoubleBubbleMap(options: DoubleBubbleMapOptions = {}) {
         id: `edge-right-sim-${index}`,
         source: 'right-topic',
         target: `similarity-${index}`,
-        type: 'curved',
-        data: { edgeType: 'curved' as const },
+        type: 'radial',
+        data: { edgeType: 'radial' as const },
       })
     })
 
@@ -190,8 +279,8 @@ export function useDoubleBubbleMap(options: DoubleBubbleMapOptions = {}) {
         id: `edge-left-diff-${index}`,
         source: 'left-topic',
         target: `left-diff-${index}`,
-        type: 'curved',
-        data: { edgeType: 'curved' as const },
+        type: 'radial',
+        data: { edgeType: 'radial' as const },
       })
     })
 
@@ -201,8 +290,8 @@ export function useDoubleBubbleMap(options: DoubleBubbleMapOptions = {}) {
         id: `edge-right-diff-${index}`,
         source: 'right-topic',
         target: `right-diff-${index}`,
-        type: 'curved',
-        data: { edgeType: 'curved' as const },
+        type: 'radial',
+        data: { edgeType: 'radial' as const },
       })
     })
 
@@ -313,6 +402,7 @@ export function useDoubleBubbleMap(options: DoubleBubbleMapOptions = {}) {
 
   return {
     data,
+    layout,
     nodes,
     edges,
     setData,

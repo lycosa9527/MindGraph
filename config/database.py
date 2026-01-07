@@ -48,6 +48,20 @@ except ImportError:
     # DashboardActivity model may not exist yet - that's okay
     DashboardActivity = None
 
+# Import SchoolZone models so they're registered with Base
+try:
+    from models.school_zone import SharedDiagram, SharedDiagramLike, SharedDiagramComment
+except ImportError:
+    # SchoolZone models may not exist yet - that's okay
+    pass
+
+# Import Diagram model so it's registered with Base
+try:
+    from models.diagrams import Diagram
+except ImportError:
+    # Diagram model may not exist yet - that's okay
+    Diagram = None
+
 logger = logging.getLogger(__name__)
 
 # ============================================================================

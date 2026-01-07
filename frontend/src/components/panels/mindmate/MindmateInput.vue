@@ -74,13 +74,27 @@ function triggerFileUpload() {
   fileInputRef.value?.click()
 }
 
-// Handle file selection
+// Handle file selection - only images allowed
 function handleFileSelect(event: Event) {
   const input = event.target as HTMLInputElement
   const files = input.files
   if (!files || files.length === 0) return
 
-  emit('upload', files)
+  // Filter to only image files
+  const imageFiles = Array.from(files).filter((file) => file.type.startsWith('image/'))
+
+  if (imageFiles.length === 0) {
+    // No valid images selected
+    console.warn('Only image files are allowed')
+    input.value = ''
+    return
+  }
+
+  // Create a new FileList-like object with only images
+  const dataTransfer = new DataTransfer()
+  imageFiles.forEach((file) => dataTransfer.items.add(file))
+
+  emit('upload', dataTransfer.files)
   // Reset input
   input.value = ''
 }
@@ -131,7 +145,7 @@ function handleSuggestionSelect(suggestion: string) {
         ref="fileInputRef"
         type="file"
         class="hidden"
-        accept="image/*,audio/*,video/*,.pdf,.doc,.docx,.txt,.md,.csv,.xlsx,.xls,.ppt,.pptx"
+        accept="image/*"
         multiple
         @change="handleFileSelect"
       />
@@ -267,7 +281,7 @@ function handleSuggestionSelect(suggestion: string) {
         ref="fileInputRef"
         type="file"
         class="hidden"
-        accept="image/*,audio/*,video/*,.pdf,.doc,.docx,.txt,.md,.csv,.xlsx,.xls,.ppt,.pptx"
+        accept="image/*"
         multiple
         @change="handleFileSelect"
       />

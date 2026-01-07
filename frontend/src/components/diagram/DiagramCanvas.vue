@@ -8,7 +8,7 @@
  * - fitWithPanel(): Fits diagram with space reserved for right-side panels
  * - Automatically re-fits when panels open/close
  */
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, markRaw, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import { Background } from '@vue-flow/background'
 import { Controls } from '@vue-flow/controls'
@@ -23,6 +23,7 @@ import type { MindGraphNode } from '@/types'
 import BraceEdge from './edges/BraceEdge.vue'
 // Import custom edge components
 import CurvedEdge from './edges/CurvedEdge.vue'
+import RadialEdge from './edges/RadialEdge.vue'
 import StraightEdge from './edges/StraightEdge.vue'
 import BoundaryNode from './nodes/BoundaryNode.vue'
 import BraceNode from './nodes/BraceNode.vue'
@@ -91,26 +92,29 @@ const isFittedForPanel = ref(false)
 const canvasContainer = ref<HTMLElement | null>(null)
 
 // Custom node types registration
+// Use markRaw to prevent Vue from making components reactive (performance optimization)
 const nodeTypes = {
-  topic: TopicNode,
-  bubble: BubbleNode,
-  branch: BranchNode,
-  flow: FlowNode,
-  brace: BraceNode,
-  boundary: BoundaryNode,
-  label: LabelNode,
-  circle: CircleNode, // Perfect circular nodes for circle maps
+  topic: markRaw(TopicNode),
+  bubble: markRaw(BubbleNode),
+  branch: markRaw(BranchNode),
+  flow: markRaw(FlowNode),
+  brace: markRaw(BraceNode),
+  boundary: markRaw(BoundaryNode),
+  label: markRaw(LabelNode),
+  circle: markRaw(CircleNode), // Perfect circular nodes for circle maps
   // Default fallbacks
-  tree: BranchNode,
-  bridge: BranchNode,
+  tree: markRaw(BranchNode),
+  bridge: markRaw(BranchNode),
 }
 
 // Custom edge types registration
+// Use markRaw to prevent Vue from making components reactive (performance optimization)
 const edgeTypes = {
-  curved: CurvedEdge,
-  straight: StraightEdge,
-  brace: BraceEdge,
-  bridge: StraightEdge, // Use straight for bridge maps
+  curved: markRaw(CurvedEdge),
+  straight: markRaw(StraightEdge),
+  radial: markRaw(RadialEdge), // Center-to-center for radial layouts (bubble maps)
+  brace: markRaw(BraceEdge),
+  bridge: markRaw(StraightEdge), // Use straight for bridge maps
 }
 
 // Computed nodes and edges from store
@@ -424,8 +428,8 @@ defineExpose({
     class="diagram-canvas w-full h-full"
   >
     <VueFlow
-      v-model:nodes="nodes"
-      v-model:edges="edges"
+      :nodes="nodes"
+      :edges="edges"
       :node-types="nodeTypes"
       :edge-types="edgeTypes"
       :default-viewport="{ x: 0, y: 0, zoom: 1 }"
@@ -436,7 +440,7 @@ defineExpose({
       :nodes-draggable="true"
       :nodes-connectable="false"
       :elements-selectable="true"
-      :pan-on-scroll="true"
+      :pan-on-scroll="false"
       :zoom-on-scroll="true"
       :pan-on-drag="[1, 2]"
       fit-view-on-init

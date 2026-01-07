@@ -5,7 +5,7 @@
  */
 import { computed, ref } from 'vue'
 
-import { ChatLineSquare, Connection, Grid } from '@element-plus/icons-vue'
+import { ChatLineSquare, Connection, Files, OfficeBuilding, Share, VideoPlay } from '@element-plus/icons-vue'
 
 import { useRouter } from 'vue-router'
 
@@ -13,16 +13,36 @@ import { ChevronDown, KeyRound, LogIn, LogOut, Menu, Settings, UserRound } from 
 
 import { AccountInfoModal, ChangePasswordModal, LoginModal } from '@/components/auth'
 import { useAuthStore, useMindMateStore, useUIStore } from '@/stores'
+import { useSavedDiagramsStore, type SavedDiagram } from '@/stores/savedDiagrams'
 
 import ChatHistory from './ChatHistory.vue'
+import DiagramHistory from './DiagramHistory.vue'
 
 const router = useRouter()
 const uiStore = useUIStore()
 const authStore = useAuthStore()
 const mindMateStore = useMindMateStore()
+const savedDiagramsStore = useSavedDiagramsStore()
 
 const isCollapsed = computed(() => uiStore.sidebarCollapsed)
-const currentMode = computed(() => uiStore.currentMode)
+
+// Derive current mode from route path
+const currentMode = computed(() => {
+  const path = router.currentRoute.value.path
+  if (path.startsWith('/mindmate')) return 'mindmate'
+  if (path.startsWith('/mindgraph') || path.startsWith('/canvas')) return 'mindgraph'
+  if (path.startsWith('/school-zone')) return 'school-zone'
+  if (path.startsWith('/template')) return 'template'
+  if (path.startsWith('/course')) return 'course'
+  if (path.startsWith('/community')) return 'community'
+  return 'mindmate' // Default
+})
+
+// Check if user belongs to an organization (for school zone visibility)
+const hasOrganization = computed(() => {
+  return isAuthenticated.value && authStore.user?.schoolId
+})
+
 const isAuthenticated = computed(() => authStore.isAuthenticated)
 const isAdminOrManager = computed(() => authStore.isAdminOrManager)
 
@@ -47,8 +67,19 @@ function toggleSidebar() {
 }
 
 function setMode(index: string) {
-  if (index === 'mindmate' || index === 'mindgraph') {
-    uiStore.setCurrentMode(index)
+  // All modes now use routing
+  if (index === 'mindmate') {
+    router.push('/mindmate')
+  } else if (index === 'mindgraph') {
+    router.push('/mindgraph')
+  } else if (index === 'school-zone') {
+    router.push('/school-zone')
+  } else if (index === 'template') {
+    router.push('/template')
+  } else if (index === 'course') {
+    router.push('/course')
+  } else if (index === 'community') {
+    router.push('/community')
   }
 }
 
@@ -75,10 +106,19 @@ function goToAdmin() {
 // Start new MindMate conversation
 function startNewChat() {
   mindMateStore.startNewConversation()
-  // Switch to MindMate mode if not already
+  // Navigate to MindMate if not already there
   if (currentMode.value !== 'mindmate') {
-    uiStore.setCurrentMode('mindmate')
+    router.push('/mindmate')
   }
+}
+
+// Handle diagram selection from history
+async function handleDiagramSelect(diagram: SavedDiagram) {
+  // Navigate to canvas with the diagram
+  router.push({
+    path: '/canvas',
+    query: { diagramId: diagram.id.toString() }
+  })
 }
 </script>
 
@@ -101,7 +141,7 @@ function startNewChat() {
         <span
           v-if="!isCollapsed"
           class="font-semibold text-lg text-stone-900 tracking-tight"
-          >MindSpring</span
+          >Mind思维平台</span
         >
       </div>
       <el-button
@@ -131,24 +171,44 @@ function startNewChat() {
         <template #title>MindGraph</template>
       </el-menu-item>
       <el-menu-item
-        index="more"
-        disabled
+        v-if="hasOrganization"
+        index="school-zone"
       >
-        <el-icon><Grid /></el-icon>
-        <template #title>更多应用</template>
+        <el-icon><OfficeBuilding /></el-icon>
+        <template #title>学校专区</template>
+      </el-menu-item>
+      <el-menu-item index="template">
+        <el-icon><Files /></el-icon>
+        <template #title>模板资源</template>
+      </el-menu-item>
+      <el-menu-item index="course">
+        <el-icon><VideoPlay /></el-icon>
+        <template #title>思维课程</template>
+      </el-menu-item>
+      <el-menu-item index="community">
+        <el-icon><Share /></el-icon>
+        <template #title>社区分享</template>
       </el-menu-item>
     </el-menu>
 
-    <!-- Chat history (only in expanded mode) -->
+    <!-- History section (only in expanded mode) -->
+    <!-- MindMate: Show chat history -->
     <ChatHistory
-      v-if="!isCollapsed"
+      v-if="!isCollapsed && currentMode === 'mindmate'"
       :is-blurred="!isAuthenticated"
       class="flex-1 overflow-hidden"
     />
+    <!-- MindGraph: Show diagram history -->
+    <DiagramHistory
+      v-else-if="!isCollapsed && currentMode === 'mindgraph'"
+      :is-blurred="!isAuthenticated"
+      class="flex-1 overflow-hidden"
+      @select="handleDiagramSelect"
+    />
 
-    <!-- Spacer (only when collapsed) -->
+    <!-- Spacer to push user section to bottom (when no history shown) -->
     <div
-      v-if="isCollapsed"
+      v-if="isCollapsed || (currentMode !== 'mindmate' && currentMode !== 'mindgraph')"
       class="flex-1"
     />
 

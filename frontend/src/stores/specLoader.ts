@@ -195,29 +195,47 @@ export function loadBubbleMapSpec(spec: Record<string, unknown>): SpecLoaderResu
   const topic = (spec.topic as string) || ''
   const attributes = (spec.attributes as string[]) || []
 
-  const centerX = 400
-  const centerY = 300
-  const radius = 150
-  const topicRadius = 60
-  const bubbleRadius = 40
+  // Layout constants matching useBubbleMap.ts
+  const uniformAttributeR = 40 // DEFAULT_BUBBLE_RADIUS
+  const topicR = 60 // DEFAULT_TOPIC_RADIUS
+  const padding = 40 // DEFAULT_PADDING
+
+  // Dynamic layout calculation (matching old JS: topicR + uniformAttributeR + 50)
+  const nodeCount = attributes.length
+  const targetDistance = topicR + uniformAttributeR + 50
+
+  // Circumferential constraint for many nodes
+  const spacingMultiplier = nodeCount <= 3 ? 2.0 : nodeCount <= 6 ? 2.05 : 2.1
+  const circumferentialMinRadius =
+    nodeCount > 0 ? (uniformAttributeR * nodeCount * spacingMultiplier) / (2 * Math.PI) : 0
+
+  // Use the larger of both constraints (minimum 100px)
+  const childrenRadius = Math.max(targetDistance, circumferentialMinRadius, 100)
+
+  // Dynamic canvas center
+  const centerX = childrenRadius + uniformAttributeR + padding
+  const centerY = childrenRadius + uniformAttributeR + padding
 
   const nodes: DiagramNode[] = []
   const connections: Connection[] = []
 
-  // Topic node
+  // Topic node - perfect circle (uses CircleNode)
   nodes.push({
     id: 'topic',
     text: topic,
     type: 'topic',
-    position: { x: centerX - topicRadius, y: centerY - topicRadius / 2 },
+    position: { x: centerX - topicR, y: centerY - topicR },
   })
 
-  // Attribute bubbles
-  const count = attributes.length
+  // Attribute bubbles arranged in a circle
+  // Start from top (-90 degrees) with even angle distribution
   attributes.forEach((attr, index) => {
-    const angle = (2 * Math.PI * index) / count - Math.PI / 2
-    const x = centerX + radius * Math.cos(angle) - bubbleRadius
-    const y = centerY + radius * Math.sin(angle) - bubbleRadius
+    const angleDeg = (index * 360) / nodeCount - 90 // Start from top
+    const angleRad = (angleDeg * Math.PI) / 180
+
+    // Position at childrenRadius from center
+    const x = centerX + childrenRadius * Math.cos(angleRad) - uniformAttributeR
+    const y = centerY + childrenRadius * Math.sin(angleRad) - uniformAttributeR
 
     nodes.push({
       id: `bubble-${index}`,
@@ -243,49 +261,78 @@ export function loadDoubleBubbleMapSpec(spec: Record<string, unknown>): SpecLoad
   const left = (spec.left as string) || (spec.topic1 as string) || ''
   const right = (spec.right as string) || (spec.topic2 as string) || ''
   const similarities = (spec.similarities as string[]) || (spec.shared as string[]) || []
-  const leftDifferences = (spec.leftDifferences as string[]) || (spec.left_unique as string[]) || []
+  const leftDifferences =
+    (spec.leftDifferences as string[]) ||
+    (spec.left_differences as string[]) ||
+    (spec.left_unique as string[]) ||
+    []
   const rightDifferences =
-    (spec.rightDifferences as string[]) || (spec.right_unique as string[]) || []
+    (spec.rightDifferences as string[]) ||
+    (spec.right_differences as string[]) ||
+    (spec.right_unique as string[]) ||
+    []
 
-  const centerX = 400
-  const centerY = 300
-  const topicSpacing = 300
-  const verticalSpacing = 80
-  const bubbleRadius = 40
+  // Layout constants matching useDoubleBubbleMap.ts
+  const padding = 40
+  const topicR = 60
+  const simR = 40
+  const diffR = 30
+  const columnSpacing = 50
+
+  // Vertical spacing
+  const simVerticalSpacing = simR * 2 + 12
+  const diffVerticalSpacing = diffR * 2 + 10
+
+  // Calculate X positions (column-based layout from left to right)
+  const leftDiffX = padding + diffR
+  const leftTopicX = leftDiffX + diffR + columnSpacing + topicR
+  const simX = leftTopicX + topicR + columnSpacing + simR
+  const rightTopicX = simX + simR + columnSpacing + topicR
+  const rightDiffX = rightTopicX + topicR + columnSpacing + diffR
+
+  // Calculate heights
+  const simCount = similarities.length
+  const leftDiffCount = leftDifferences.length
+  const rightDiffCount = rightDifferences.length
+
+  // Calculate column heights (differences are paired, so use max count)
+  const simColHeight = simCount > 0 ? (simCount - 1) * simVerticalSpacing + simR * 2 : 0
+  const maxDiffCount = Math.max(leftDiffCount, rightDiffCount)
+  const diffColHeight = maxDiffCount > 0 ? (maxDiffCount - 1) * diffVerticalSpacing + diffR * 2 : 0
+  const maxColHeight = Math.max(simColHeight, diffColHeight, topicR * 2)
+
+  const requiredHeight = maxColHeight + padding * 2
+  const centerY = requiredHeight / 2
 
   const nodes: DiagramNode[] = []
   const connections: Connection[] = []
 
-  const leftX = centerX - topicSpacing / 2
-  const rightX = centerX + topicSpacing / 2
-
-  // Left topic
+  // Left topic (column 2) - perfect circle
   nodes.push({
     id: 'left-topic',
     text: left,
     type: 'topic',
-    position: { x: leftX - 60, y: centerY - 30 },
+    position: { x: leftTopicX - topicR, y: centerY - topicR },
   })
 
-  // Right topic
+  // Right topic (column 4) - perfect circle
   nodes.push({
     id: 'right-topic',
     text: right,
     type: 'topic',
-    position: { x: rightX - 60, y: centerY - 30 },
+    position: { x: rightTopicX - topicR, y: centerY - topicR },
   })
 
-  // Similarities (middle)
-  const simCount = similarities.length
-  const simStartY = centerY - ((simCount - 1) * verticalSpacing) / 2
+  // Similarities (column 3, center)
+  const simStartY = centerY - simColHeight / 2 + simR
   similarities.forEach((sim, index) => {
     nodes.push({
       id: `similarity-${index}`,
       text: sim,
       type: 'bubble',
       position: {
-        x: centerX - bubbleRadius,
-        y: simStartY + index * verticalSpacing - bubbleRadius,
+        x: simX - simR,
+        y: simStartY + index * simVerticalSpacing - simR,
       },
     })
     connections.push(
@@ -294,17 +341,18 @@ export function loadDoubleBubbleMapSpec(spec: Record<string, unknown>): SpecLoad
     )
   })
 
-  // Left differences
-  const leftDiffCount = leftDifferences.length
-  const leftDiffStartY = centerY - ((leftDiffCount - 1) * verticalSpacing) / 2
+  // Left and Right differences are PAIRED - they share the same Y positions
+  const diffStartY = centerY - diffColHeight / 2 + diffR
+
+  // Left differences (column 1, far left)
   leftDifferences.forEach((diff, index) => {
     nodes.push({
       id: `left-diff-${index}`,
       text: diff,
       type: 'bubble',
       position: {
-        x: leftX - topicSpacing / 2 - bubbleRadius,
-        y: leftDiffStartY + index * verticalSpacing - bubbleRadius,
+        x: leftDiffX - diffR,
+        y: diffStartY + index * diffVerticalSpacing - diffR,
       },
     })
     connections.push({
@@ -314,17 +362,15 @@ export function loadDoubleBubbleMapSpec(spec: Record<string, unknown>): SpecLoad
     })
   })
 
-  // Right differences
-  const rightDiffCount = rightDifferences.length
-  const rightDiffStartY = centerY - ((rightDiffCount - 1) * verticalSpacing) / 2
+  // Right differences (column 5, far right) - same Y positions as left
   rightDifferences.forEach((diff, index) => {
     nodes.push({
       id: `right-diff-${index}`,
       text: diff,
       type: 'bubble',
       position: {
-        x: rightX + topicSpacing / 2 - bubbleRadius,
-        y: rightDiffStartY + index * verticalSpacing - bubbleRadius,
+        x: rightDiffX - diffR,
+        y: diffStartY + index * diffVerticalSpacing - diffR,
       },
     })
     connections.push({

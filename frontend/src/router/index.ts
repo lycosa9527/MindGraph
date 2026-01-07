@@ -9,7 +9,18 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/',
     name: 'Main',
-    component: () => import('@/pages/MainPage.vue'),
+    redirect: '/mindmate',
+  },
+  {
+    path: '/mindmate',
+    name: 'MindMate',
+    component: () => import('@/pages/MindMatePage.vue'),
+    meta: { layout: 'main' },
+  },
+  {
+    path: '/mindgraph',
+    name: 'MindGraph',
+    component: () => import('@/pages/MindGraphPage.vue'),
     meta: { layout: 'main' },
   },
   {
@@ -17,12 +28,6 @@ const routes: RouteRecordRaw[] = [
     name: 'Canvas',
     component: () => import('@/pages/CanvasPage.vue'),
     meta: { requiresAuth: true, layout: 'canvas' },
-  },
-  {
-    path: '/editor',
-    name: 'Editor',
-    component: () => import('@/pages/EditorPage.vue'),
-    meta: { requiresAuth: true, layout: 'editor' },
   },
   {
     path: '/admin',
@@ -47,6 +52,30 @@ const routes: RouteRecordRaw[] = [
     name: 'DemoLogin',
     component: () => import('@/pages/DemoLoginPage.vue'),
     meta: { layout: 'auth', guestOnly: true },
+  },
+  {
+    path: '/template',
+    name: 'Template',
+    component: () => import('@/pages/TemplatePage.vue'),
+    meta: { layout: 'main' },
+  },
+  {
+    path: '/course',
+    name: 'Course',
+    component: () => import('@/pages/CoursePage.vue'),
+    meta: { layout: 'main' },
+  },
+  {
+    path: '/community',
+    name: 'Community',
+    component: () => import('@/pages/CommunityPage.vue'),
+    meta: { layout: 'main' },
+  },
+  {
+    path: '/school-zone',
+    name: 'SchoolZone',
+    component: () => import('@/pages/SchoolZonePage.vue'),
+    meta: { requiresAuth: true, requiresOrganization: true, layout: 'main' },
   },
   {
     path: '/dashboard',
@@ -87,12 +116,17 @@ router.beforeEach(async (to, _from, next) => {
 
   // Check admin/manager access
   if (to.meta.requiresAdmin && !authStore.isAdminOrManager) {
-    return next({ name: 'Main' })
+    return next({ name: 'MindMate' })
+  }
+
+  // Check organization membership for school zone
+  if (to.meta.requiresOrganization && !authStore.user?.schoolId) {
+    return next({ name: 'MindMate' })
   }
 
   // Redirect authenticated users away from guest-only pages
   if (to.meta.guestOnly && authStore.isAuthenticated) {
-    return next({ name: 'Main' })
+    return next({ name: 'MindMate' })
   }
 
   next()

@@ -879,3 +879,49 @@ class RecalculateLayoutRequest(BaseModel):
                 }
             }
         }
+
+
+# ============================================================================
+# DIAGRAM STORAGE REQUEST MODELS
+# ============================================================================
+
+class DiagramCreateRequest(BaseModel):
+    """Request model for creating a new diagram"""
+    title: str = Field(..., min_length=1, max_length=200, description="Diagram title")
+    diagram_type: str = Field(..., description="Type of diagram (e.g., 'mind_map', 'concept_map')")
+    spec: Dict[str, Any] = Field(..., description="Diagram specification as JSON")
+    language: str = Field('zh', description="Language code (zh or en)")
+    thumbnail: Optional[str] = Field(None, description="Base64 encoded thumbnail image")
+    
+    @field_validator('language')
+    @classmethod
+    def validate_language(cls, v):
+        """Validate language code"""
+        if v not in ['zh', 'en']:
+            raise ValueError("Language must be 'zh' or 'en'")
+        return v
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "title": "My Mind Map",
+                "diagram_type": "mind_map",
+                "spec": {"topic": "Central Topic", "children": []},
+                "language": "zh"
+            }
+        }
+
+
+class DiagramUpdateRequest(BaseModel):
+    """Request model for updating an existing diagram"""
+    title: Optional[str] = Field(None, min_length=1, max_length=200, description="New diagram title")
+    spec: Optional[Dict[str, Any]] = Field(None, description="Updated diagram specification")
+    thumbnail: Optional[str] = Field(None, description="Base64 encoded thumbnail image")
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "title": "Updated Title",
+                "spec": {"topic": "Updated Topic", "children": []}
+            }
+        }

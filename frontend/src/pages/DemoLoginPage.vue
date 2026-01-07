@@ -31,7 +31,7 @@ async function handleDemoLogin() {
 
     if (success) {
       notify.success(t('common.success'))
-      router.push('/editor')
+      router.push('/')
     } else {
       notify.error('Invalid demo code')
     }

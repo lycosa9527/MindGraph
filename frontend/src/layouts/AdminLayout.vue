@@ -32,8 +32,8 @@ function handleMenuSelect(path: string) {
   router.push(path)
 }
 
-function goToEditor() {
-  router.push('/editor')
+function goToHome() {
+  router.push('/')
 }
 
 async function handleLogout() {
@@ -101,7 +101,7 @@ function toggleSidebar() {
       <div class="p-4 border-t border-gray-700 space-y-2">
         <button
           class="w-full flex items-center gap-3 px-3 py-2 text-gray-300 hover:text-white hover:bg-gray-700 rounded-lg transition-colors"
-          @click="goToEditor"
+          @click="goToHome"
         >
           <el-icon :size="18"><Edit /></el-icon>
           <span
@@ -165,7 +165,7 @@ function toggleSidebar() {
             </el-button>
             <template #dropdown>
               <el-dropdown-menu>
-                <el-dropdown-item @click="goToEditor">
+                <el-dropdown-item @click="goToHome">
                   <el-icon><Edit /></el-icon>
                   Editor
                 </el-dropdown-item>

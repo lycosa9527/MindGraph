@@ -7,6 +7,107 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [5.1.0] - 2025-01-08 - Navigation Restructure, AI Model Selector Enhancements, and Auto-Save
+
+### Added
+
+- **New Navigation Routes** (`frontend/src/router/index.ts`)
+  - Added `/mindmate` route for MindMate AI assistant page
+  - Added `/mindgraph` route for MindGraph diagram creation page
+  - Added `/template` route for template gallery
+  - Added `/course` route for course content
+  - Added `/community` route for community features
+  - Added `/school-zone` route with organization-based access control
+  - Root path `/` now redirects to `/mindmate`
+
+- **AI Model Selector Enhancements** (`frontend/src/components/canvas/AIModelSelector.vue`)
+  - Shows all 3 AI models simultaneously: Qwen, DeepSeek, Doubao
+  - Per-model loading/ready/error states with visual feedback
+  - Click any ready model to switch to its cached result
+  - Glow effect when a model's result becomes available
+  - Checkmark icon indicates currently displayed result
+  - Migrated from old JavaScript llm-progress-renderer.js and llm-autocomplete-manager.js
+
+- **Canvas Auto-Save** (`frontend/src/pages/CanvasPage.vue`)
+  - Debounced auto-save on diagram changes (2 second delay)
+  - Auto-updates if diagram is already in library
+  - Auto-saves new diagrams if slots available
+  - Silently skips if slots full (user must manually save via File menu)
+  - Route-based initialization with prompt and diagram type parameters
+
+- **Diagram Storage API Models** (`models/requests.py`, `models/responses.py`)
+  - Added `DiagramCreateRequest` for creating new diagrams
+  - Added `DiagramUpdateRequest` for updating existing diagrams
+  - Added `DiagramResponse`, `DiagramListItem`, `DiagramListResponse` for API responses
+  - Proper validation for title, diagram_type, spec, language fields
+
+- **Database Configuration** (`config/database.py`)
+  - Added database configuration module for diagram storage
+
+- **Canvas Top Bar Improvements** (`frontend/src/components/canvas/CanvasTopBar.vue`)
+  - Enhanced top bar with additional functionality
+
+- **RadialEdge Support** (`frontend/src/components/diagram/edges/index.ts`, `DiagramCanvas.vue`)
+  - Added RadialEdge for center-to-center connections in radial layouts (bubble maps)
+
+### Changed
+
+- **Bubble Map Layout** (`frontend/src/composables/diagrams/useBubbleMap.ts`)
+  - Refactored layout calculation to match original D3 implementation
+  - Dynamic canvas center based on calculated sizes
+  - Proper circumferential constraint for many nodes
+  - Dynamic spacing multiplier based on node count
+
+- **Double Bubble Map Layout** (`frontend/src/composables/diagrams/useDoubleBubbleMap.ts`)
+  - Improved layout algorithm with better spacing
+  - Enhanced similarity and difference node positioning
+
+- **Sidebar Navigation** (`frontend/src/components/sidebar/AppSidebar.vue`)
+  - Updated sidebar to support new navigation structure
+  - Added new menu items for template, course, community, school-zone
+
+- **MindGraph Container** (`frontend/src/components/mindgraph/MindGraphContainer.vue`)
+  - Enhanced container with additional features
+
+- **Layout Updates** (`frontend/src/layouts/AdminLayout.vue`, `DefaultLayout.vue`)
+  - Updated layouts to support new page structure
+
+- **Store Improvements** (`frontend/src/stores/specLoader.ts`, `diagram.ts`, `ui.ts`)
+  - Enhanced spec loader with better error handling
+  - Updated diagram store with additional functionality
+  - UI store improvements
+
+### Fixed
+
+- **Vue Warnings Resolved** (`frontend/src/components/diagram/DiagramCanvas.vue`)
+  - Fixed "Write operation failed: computed value is readonly" by changing `v-model:nodes` to one-way `:nodes` binding
+  - Fixed "Component was made a reactive object" warnings by wrapping node/edge components with `markRaw()`
+  - Improved performance by preventing unnecessary reactivity on component definitions
+
+- **Canvas Scroll Behavior** (`frontend/src/components/diagram/DiagramCanvas.vue`)
+  - Changed `:pan-on-scroll` from `true` to `false`
+  - Scroll wheel now zooms in/out instead of panning (canvas-style behavior)
+  - Panning available via mouse drag (left, middle, or right button)
+
+### Removed
+
+- **Deprecated Editor Components** (`frontend/src/components/editor/`)
+  - Removed `DiagramCard.vue` - replaced by new gallery system
+  - Removed `DiagramGallery.vue` - replaced by saved diagrams store
+  - Removed `EditorStatusBar.vue` - functionality moved to canvas toolbar
+  - Removed `EditorToolbar.vue` - replaced by CanvasToolbar
+  - Removed `PromptInput.vue` - replaced by DiagramTemplateInput
+  - Removed `index.ts` - editor components no longer exported
+
+- **Deprecated Pages** (`frontend/src/pages/`)
+  - Removed `EditorPage.vue` - replaced by CanvasPage with enhanced features
+  - Removed `MainPage.vue` - replaced by MindMate and MindGraph pages
+
+- **Removed Routes**
+  - Removed `/editor` route - functionality merged into `/canvas`
+
+---
+
 ## [5.0.6] - 2025-01-07 - Inline Node Text Editing
 
 ### Added

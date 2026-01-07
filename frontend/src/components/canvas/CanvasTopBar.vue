@@ -3,6 +3,10 @@
  * CanvasTopBar - Top navigation bar for canvas page
  * Uses Element Plus components for polished menu bar
  * Migrated from prototype MindGraphCanvasPage top bar
+ * 
+ * Enhanced with Save to Gallery functionality:
+ * - Saves diagram to user's library
+ * - Shows slot management modal when library is full
  */
 import { computed, nextTick, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -20,17 +24,18 @@ import {
 // Using Lucide icons for a more modern, cute look
 import {
   ArrowLeft,
+  Check,
   ClipboardCopy,
   ClipboardPaste,
   Download,
   Eye,
-  FileDown,
   FileImage,
   FileJson,
   FilePlus2,
   FileText,
   FolderHeart,
   ImageDown,
+  Loader2,
   Maximize,
   Redo2,
   Save,
@@ -41,11 +46,15 @@ import {
   ZoomOut,
 } from 'lucide-vue-next'
 
+import { DiagramSlotFullModal } from '@/components/canvas'
 import { useLanguage } from '@/composables'
+import { useDiagramStore, useSavedDiagramsStore } from '@/stores'
 
 const route = useRoute()
 const router = useRouter()
 const { isZh } = useLanguage()
+const diagramStore = useDiagramStore()
+const savedDiagramsStore = useSavedDiagramsStore()
 
 // Get chart type from route query
 const chartType = computed(() => (route.query.type as string) || '复流程图')
@@ -55,12 +64,28 @@ const fileName = ref('')
 const isFileNameEditing = ref(false)
 const fileNameInputRef = ref<InstanceType<typeof ElInput> | null>(null)
 
+// Save to gallery state
+const isSaving = ref(false)
+const showSlotFullModal = ref(false)
+
+// Computed for save button state
+const isAlreadySaved = computed(() => savedDiagramsStore.isActiveDiagramSaved)
+
 onMounted(() => {
   fileName.value = isZh.value ? `未命名${chartType.value}` : `Untitled ${chartType.value}`
+  // Fetch diagrams to get current slot count
+  savedDiagramsStore.fetchDiagrams()
 })
 
 function handleBack() {
-  router.push('/')
+  // Use browser history to go back to where user came from
+  // (could be /mindgraph or /mindmate depending on navigation path)
+  // Fallback to /mindgraph if no history (e.g., direct URL access)
+  if (window.history.length > 1) {
+    router.back()
+  } else {
+    router.push('/mindgraph')
+  }
 }
 
 function handleFileNameClick() {
@@ -83,6 +108,74 @@ function handleFileNameKeyPress(e: KeyboardEvent) {
   }
 }
 
+// Get current diagram spec for saving
+function getDiagramSpec(): Record<string, unknown> | null {
+  if (!diagramStore.data) return null
+  
+  return {
+    type: diagramStore.type,
+    nodes: diagramStore.data.nodes,
+    connections: diagramStore.data.connections,
+    _customPositions: diagramStore.data._customPositions,
+    _node_styles: diagramStore.data._node_styles,
+  }
+}
+
+// Save to gallery
+async function saveToGallery(): Promise<void> {
+  if (!diagramStore.type || !diagramStore.data) {
+    ElMessage.warning(isZh.value ? '没有可保存的图示' : 'No diagram to save')
+    return
+  }
+
+  const spec = getDiagramSpec()
+  if (!spec) {
+    ElMessage.warning(isZh.value ? '图示数据无效' : 'Invalid diagram data')
+    return
+  }
+
+  isSaving.value = true
+
+  try {
+    const result = await savedDiagramsStore.manualSaveDiagram(
+      fileName.value,
+      diagramStore.type,
+      spec,
+      isZh.value ? 'zh' : 'en',
+      null // TODO: Generate thumbnail
+    )
+
+    if (result.success) {
+      ElMessage.success(
+        result.action === 'updated'
+          ? (isZh.value ? '图示已更新' : 'Diagram updated')
+          : (isZh.value ? '图示已保存到图库' : 'Diagram saved to gallery')
+      )
+    } else if (result.needsSlotClear) {
+      // Show modal to let user delete a diagram
+      showSlotFullModal.value = true
+    } else {
+      ElMessage.error(result.error || (isZh.value ? '保存失败' : 'Save failed'))
+    }
+  } catch (error) {
+    console.error('Save to gallery error:', error)
+    ElMessage.error(isZh.value ? '保存失败' : 'Save failed')
+  } finally {
+    isSaving.value = false
+  }
+}
+
+// Handle slot full modal success
+function handleSlotModalSuccess(diagramId: number): void {
+  showSlotFullModal.value = false
+  // The diagram is now saved and activeDiagramId is set in the store
+}
+
+// Handle slot full modal cancel
+function handleSlotModalCancel(): void {
+  showSlotFullModal.value = false
+}
+
 // File menu actions
 function handleFileCommand(command: string) {
   switch (command) {
@@ -93,7 +186,7 @@ function handleFileCommand(command: string) {
       ElMessage.info(isZh.value ? '另存为功能开发中' : 'Save as feature in development')
       break
     case 'save-gallery':
-      ElMessage.info(isZh.value ? '保存到我的图库功能开发中' : 'Save to gallery feature in development')
+      saveToGallery()
       break
     case 'import':
       ElMessage.info(isZh.value ? '从文件中导入功能开发中' : 'Import from file feature in development')
@@ -203,8 +296,22 @@ function handleExportCommand(command: string) {
               {{ isZh ? '另存为' : 'Save As' }}
             </ElDropdownItem>
             <ElDropdownItem command="save-gallery">
-              <FolderHeart class="w-4 h-4 mr-2 text-pink-500" />
-              {{ isZh ? '保存到我的图库' : 'Save to Gallery' }}
+              <Loader2
+                v-if="isSaving"
+                class="w-4 h-4 mr-2 text-pink-500 animate-spin"
+              />
+              <Check
+                v-else-if="isAlreadySaved"
+                class="w-4 h-4 mr-2 text-green-500"
+              />
+              <FolderHeart
+                v-else
+                class="w-4 h-4 mr-2 text-pink-500"
+              />
+              {{ isAlreadySaved 
+                ? (isZh ? '已保存到图库' : 'Saved to Gallery') 
+                : (isZh ? '保存到我的图库' : 'Save to Gallery') 
+              }}
             </ElDropdownItem>
             <ElDropdownItem
               divided
@@ -375,6 +482,17 @@ function handleExportCommand(command: string) {
         </template>
       </ElDropdown>
     </div>
+
+    <!-- Diagram slot full modal -->
+    <DiagramSlotFullModal
+      v-model:visible="showSlotFullModal"
+      :pending-title="fileName"
+      :pending-diagram-type="diagramStore.type || ''"
+      :pending-spec="getDiagramSpec() || {}"
+      :pending-language="isZh ? 'zh' : 'en'"
+      @success="handleSlotModalSuccess"
+      @cancel="handleSlotModalCancel"
+    />
   </div>
 </template>
 

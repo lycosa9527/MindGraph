@@ -898,6 +898,17 @@ async def lifespan(app: FastAPI):
         if worker_id == '0' or not worker_id:
             logger.warning(f"Failed to start backup scheduler: {e}")
     
+    # Initialize Diagram Cache (Redis with SQLite persistence)
+    # Starts background sync worker for dirty tracking
+    try:
+        from services.redis_diagram_cache import get_diagram_cache
+        diagram_cache = get_diagram_cache()
+        if worker_id == '0' or not worker_id:
+            logger.info("Diagram cache initialized")
+    except Exception as e:
+        if worker_id == '0' or not worker_id:
+            logger.warning(f"Failed to initialize diagram cache: {e}")
+    
     # Yield control to application
     try:
         yield
@@ -967,6 +978,17 @@ async def lifespan(app: FastAPI):
         except Exception as e:
             if worker_id == '0' or not worker_id:
                 logger.warning(f"Failed to flush TokenTracker: {e}")
+        
+        # Flush Diagram Cache before closing database
+        try:
+            from services.redis_diagram_cache import get_diagram_cache
+            diagram_cache = get_diagram_cache()
+            await diagram_cache.flush()
+            if worker_id == '0' or not worker_id:
+                logger.info("Diagram cache flushed")
+        except Exception as e:
+            if worker_id == '0' or not worker_id:
+                logger.warning(f"Failed to flush diagram cache: {e}")
         
         # Shutdown SMS service (close httpx async client)
         try:
@@ -1874,7 +1896,7 @@ async def get_status():
 # ROUTER REGISTRATION
 # ============================================================================
 
-from routers import pages, cache, api, node_palette, auth, admin_env, admin_logs, admin_realtime, voice, update_notification, tab_mode, public_dashboard
+from routers import pages, cache, api, node_palette, auth, admin_env, admin_logs, admin_realtime, voice, update_notification, tab_mode, public_dashboard, school_zone
 from routers import vue_spa
 
 # Register routers
@@ -1893,6 +1915,7 @@ app.include_router(voice.router)  # VoiceAgent (real-time voice conversation)
 app.include_router(update_notification.router)  # Update notification system
 app.include_router(tab_mode.router)  # Tab Mode (autocomplete and expansion)
 app.include_router(public_dashboard.router, prefix="/api/public", tags=["Public Dashboard"])  # Public dashboard endpoints
+app.include_router(school_zone.router)  # School Zone (organization-scoped sharing)
 
 # ============================================================================
 # APPLICATION ENTRY POINT

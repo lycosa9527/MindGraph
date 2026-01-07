@@ -24,9 +24,10 @@ import {
   Wand2,
 } from 'lucide-vue-next'
 
-import { useLanguage } from '@/composables'
+import { useAutoComplete, useLanguage } from '@/composables'
 
 const { isZh } = useLanguage()
+const { isGenerating: isAIGenerating, autoComplete, validateForAutoComplete } = useAutoComplete()
 
 import { useDiagramStore } from '@/stores'
 
@@ -181,8 +182,24 @@ function handleFormatBrush() {
   ElMessage.info('格式刷功能开发中')
 }
 
-function handleAIGenerate() {
-  ElMessage.info('AI生成图示功能开发中')
+/**
+ * Handle AI Generate button click
+ * Uses the useAutoComplete composable which mirrors the old JS "Auto" button behavior
+ */
+async function handleAIGenerate() {
+  // Validate before generating
+  const validation = validateForAutoComplete()
+  if (!validation.valid) {
+    ElMessage.warning(validation.error || (isZh.value ? '无法生成' : 'Cannot generate'))
+    return
+  }
+
+  // Use the composable's autoComplete method
+  const result = await autoComplete()
+  if (!result.success && result.error) {
+    // Error is already shown by the composable, but we can show it again if needed
+    console.error('Auto-complete failed:', result.error)
+  }
 }
 
 function handleMoreApp(appName: string) {
@@ -398,10 +415,11 @@ function handleMoreApp(appName: string) {
           type="primary"
           size="small"
           class="ai-btn"
+          :loading="isAIGenerating"
           @click="handleAIGenerate"
         >
-          <Wand2 class="w-4 h-4" />
-          <span>{{ isZh ? 'AI生成图示' : 'AI Generate' }}</span>
+          <Wand2 v-if="!isAIGenerating" class="w-4 h-4" />
+          <span>{{ isAIGenerating ? (isZh ? '生成中...' : 'Generating...') : (isZh ? 'AI生成图示' : 'AI Generate') }}</span>
         </ElButton>
 
         <!-- More apps dropdown -->
