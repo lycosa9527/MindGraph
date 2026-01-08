@@ -20,6 +20,26 @@ logger = logging.getLogger(__name__)
 router = APIRouter(tags=["Vue SPA"])
 
 
+@router.get("/favicon.svg")
+async def vue_favicon():
+    """Serve favicon from Vue dist."""
+    favicon_path = VUE_DIST_DIR / "favicon.svg"
+    if favicon_path.exists():
+        return FileResponse(
+            path=str(favicon_path),
+            media_type="image/svg+xml"
+        )
+    # Fallback to public folder (dev mode)
+    fallback_path = VUE_DIST_DIR.parent / "public" / "favicon.svg"
+    if fallback_path.exists():
+        return FileResponse(
+            path=str(fallback_path),
+            media_type="image/svg+xml"
+        )
+    from fastapi import HTTPException
+    raise HTTPException(status_code=404, detail="Favicon not found")
+
+
 @router.get("/", response_class=HTMLResponse)
 async def vue_index(request: Request):
     """Serve Vue SPA index for root path."""

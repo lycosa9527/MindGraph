@@ -114,6 +114,12 @@ def setup_vue_spa(app: FastAPI) -> bool:
     if assets_dir.exists():
         app.mount("/assets", StaticFiles(directory=str(assets_dir)), name="vue-assets")
     
+    # Mount gallery folder for featured diagrams
+    gallery_dir = VUE_DIST_DIR / "gallery"
+    if gallery_dir.exists():
+        app.mount("/gallery", StaticFiles(directory=str(gallery_dir)), name="vue-gallery")
+        logger.debug("Mounted /gallery for featured diagrams")
+    
     # Mount static folder for runtime uploads (announcement images, etc.)
     static_dir = Path(__file__).parent.parent / "static"
     if static_dir.exists():
