@@ -86,6 +86,54 @@ async def vue_debug(request: Request):
     return await _serve_index()
 
 
+@router.get("/mindmate", response_class=HTMLResponse)
+async def vue_mindmate(request: Request):
+    """Serve Vue SPA for mindmate route."""
+    return await _serve_index()
+
+
+@router.get("/mindgraph", response_class=HTMLResponse)
+async def vue_mindgraph(request: Request):
+    """Serve Vue SPA for mindgraph route."""
+    return await _serve_index()
+
+
+@router.get("/canvas", response_class=HTMLResponse)
+async def vue_canvas(request: Request):
+    """Serve Vue SPA for canvas route."""
+    return await _serve_index()
+
+
+@router.get("/template", response_class=HTMLResponse)
+async def vue_template(request: Request):
+    """Serve Vue SPA for template route."""
+    return await _serve_index()
+
+
+@router.get("/course", response_class=HTMLResponse)
+async def vue_course(request: Request):
+    """Serve Vue SPA for course route."""
+    return await _serve_index()
+
+
+@router.get("/community", response_class=HTMLResponse)
+async def vue_community(request: Request):
+    """Serve Vue SPA for community route."""
+    return await _serve_index()
+
+
+@router.get("/school-zone", response_class=HTMLResponse)
+async def vue_school_zone(request: Request):
+    """Serve Vue SPA for school-zone route."""
+    return await _serve_index()
+
+
+@router.get("/school-zone/{path:path}", response_class=HTMLResponse)
+async def vue_school_zone_sub(request: Request, path: str):
+    """Serve Vue SPA for school-zone sub-routes."""
+    return await _serve_index()
+
+
 async def _serve_index() -> FileResponse:
     """Serve Vue SPA index.html."""
     index_path = VUE_DIST_DIR / "index.html"
