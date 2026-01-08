@@ -14,38 +14,32 @@ interface GalleryItem {
   thumbnailUrl: string
 }
 
+// Gallery images are stored in frontend/public/gallery/
+// Files: gallery-1.png, gallery-2.png, gallery-3.png, gallery-4.png
 const galleryItems: GalleryItem[] = [
   {
     title: '物理变化与化学变化对比',
     date: '2025-12-18',
-    imageUrl:
-      'https://lf-code-agent.coze.cn/obj/x-ai-cn/337061914370/attachment/image_20251222200208.png',
-    thumbnailUrl:
-      'https://space-static.coze.site/coze_space/7586606221064585514/upload/d245a6f94b8e860afa94091ee599507d_1351x973.png?sign=1769000279-dc597019c9-0-2948baacf80238e6e3e4cd0f1546eaafb0d10c6f02eb2dfda8f761f7a2aa0ddc',
+    imageUrl: '/gallery/gallery-1.png',
+    thumbnailUrl: '/gallery/gallery-1.png',
   },
   {
     title: '项目规划思维导图',
     date: '2025-12-17',
-    imageUrl:
-      'https://lf-code-agent.coze.cn/obj/x-ai-cn/337061914370/attachment/image_20251222200208.png',
-    thumbnailUrl:
-      'https://space-static.coze.site/coze_space/7586606221064585514/upload/d245a6f94b8e860afa94091ee599507d_1351x973.png?sign=1769000279-dc597019c9-0-2948baacf80238e6e3e4cd0f1546eaafb0d10c6f02eb2dfda8f761f7a2aa0ddc',
+    imageUrl: '/gallery/gallery-2.png',
+    thumbnailUrl: '/gallery/gallery-2.png',
   },
   {
     title: '一元二次方程解题步骤',
     date: '2025-12-16',
-    imageUrl:
-      'https://lf-code-agent.coze.cn/obj/x-ai-cn/337061914370/attachment/image_20251222200208.png',
-    thumbnailUrl:
-      'https://space-static.coze.site/coze_space/7586606221064585514/upload/d245a6f94b8e860afa94091ee599507d_1351x973.png?sign=1769000279-dc597019c9-0-2948baacf80238e6e3e4cd0f1546eaafb0d10c6f02eb2dfda8f761f7a2aa0ddc',
+    imageUrl: '/gallery/gallery-3.png',
+    thumbnailUrl: '/gallery/gallery-3.png',
   },
   {
     title: '力与场的关系',
     date: '2025-12-15',
-    imageUrl:
-      'https://lf-code-agent.coze.cn/obj/x-ai-cn/337061914370/attachment/image_20251222200208.png',
-    thumbnailUrl:
-      'https://space-static.coze.site/coze_space/7586606221064585514/upload/d245a6f94b8e860afa94091ee599507d_1351x973.png?sign=1769000279-dc597019c9-0-2948baacf80238e6e3e4cd0f1546eaafb0d10c6f02eb2dfda8f761f7a2aa0ddc',
+    imageUrl: '/gallery/gallery-4.png',
+    thumbnailUrl: '/gallery/gallery-4.png',
   },
 ]
 

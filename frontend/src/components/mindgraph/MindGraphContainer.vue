@@ -7,7 +7,7 @@ import { computed } from 'vue'
 
 import { ElAvatar } from 'element-plus'
 
-import mindgraphLogo from '@/assets/mindgraph-logo.png'
+import mindgraphLogo from '@/assets/mindgraph-logo-md.png'
 import { useLanguage } from '@/composables'
 import { useAuthStore } from '@/stores/auth'
 
