@@ -23,6 +23,9 @@ const { getNodeStyle } = useTheme({
 
 const defaultStyle = computed(() => getNodeStyle('topic'))
 
+// Tree map uses pill shape (fully rounded ends), others use default circle
+const isTreeMap = computed(() => props.data.diagramType === 'tree_map')
+
 const nodeStyle = computed(() => ({
   backgroundColor:
     props.data.style?.backgroundColor || defaultStyle.value.backgroundColor || '#1976d2',
@@ -31,7 +34,8 @@ const nodeStyle = computed(() => ({
   fontSize: `${props.data.style?.fontSize || defaultStyle.value.fontSize || 18}px`,
   fontWeight: props.data.style?.fontWeight || defaultStyle.value.fontWeight || 'bold',
   borderWidth: `${props.data.style?.borderWidth || defaultStyle.value.borderWidth || 3}px`,
-  borderRadius: `${props.data.style?.borderRadius || 50}%`,
+  // Pill shape for tree map (9999px creates fully rounded ends), circle for others
+  borderRadius: isTreeMap.value ? '9999px' : `${props.data.style?.borderRadius || 50}%`,
 }))
 
 // Inline editing state
@@ -54,6 +58,7 @@ function handleEditCancel() {
 <template>
   <div
     class="topic-node flex items-center justify-center px-6 py-4 border-solid cursor-default select-none"
+    :class="{ 'pill-shape': isTreeMap }"
     :style="nodeStyle"
   >
     <InlineEditableText
@@ -67,23 +72,35 @@ function handleEditCancel() {
       @edit-start="isEditing = true"
     />
 
-    <!-- Connection handles -->
+    <!-- Connection handles for horizontal layouts (mind maps, bubble maps, etc.) -->
     <Handle
+      v-if="!isTreeMap"
       type="source"
       :position="Position.Right"
       class="!bg-blue-500"
     />
     <Handle
+      v-if="!isTreeMap"
       type="source"
       :position="Position.Left"
       class="!bg-blue-500"
     />
     <Handle
+      v-if="!isTreeMap"
       type="source"
       :position="Position.Top"
       class="!bg-blue-500"
     />
     <Handle
+      v-if="!isTreeMap"
+      type="source"
+      :position="Position.Bottom"
+      class="!bg-blue-500"
+    />
+
+    <!-- Connection handle for tree maps (vertical layout - only bottom) -->
+    <Handle
+      v-if="isTreeMap"
       type="source"
       :position="Position.Bottom"
       class="!bg-blue-500"
@@ -94,12 +111,19 @@ function handleEditCancel() {
 <style scoped>
 .topic-node {
   min-width: 120px;
-  min-height: 60px;
+  min-height: 48px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   transition: box-shadow 0.2s ease;
 }
 
 .topic-node:hover {
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+}
+
+/* Tree map pill shape adjustments */
+.topic-node.pill-shape {
+  min-height: 40px;
+  padding-left: 24px;
+  padding-right: 24px;
 }
 </style>

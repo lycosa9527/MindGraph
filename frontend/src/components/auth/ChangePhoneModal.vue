@@ -12,9 +12,13 @@
  */
 import { computed, ref, watch } from 'vue'
 
-import { ElButton, ElInput, ElMessage } from 'element-plus'
+import { ElButton, ElInput } from 'element-plus'
 
 import { Close } from '@element-plus/icons-vue'
+
+import { useNotifications } from '@/composables'
+
+const notify = useNotifications()
 
 import { useAuthStore } from '@/stores'
 
@@ -178,7 +182,7 @@ async function sendSmsCode() {
 
     if (response.ok) {
       smsSent.value = true
-      ElMessage.success('验证码发送成功')
+      notify.success('验证码发送成功')
       startCountdown(data.resend_after || 60)
     } else {
       // Handle specific errors
@@ -190,11 +194,11 @@ async function sendSmsCode() {
       } else if (errorMsg.includes('手机号')) {
         phoneError.value = errorMsg
       } else {
-        ElMessage.error(errorMsg)
+        notify.error(errorMsg)
       }
     }
   } catch {
-    ElMessage.error('网络错误，请重试')
+    notify.error('网络错误，请重试')
   } finally {
     smsLoading.value = false
   }
@@ -238,7 +242,7 @@ async function handleSubmit() {
     const data = await response.json()
 
     if (response.ok) {
-      ElMessage.success('手机号更换成功')
+      notify.success('手机号更换成功')
       emit('success')
       closeModal()
     } else {
@@ -248,11 +252,11 @@ async function handleSubmit() {
       } else if (errorMsg.includes('手机号')) {
         phoneError.value = errorMsg
       } else {
-        ElMessage.error(errorMsg)
+        notify.error(errorMsg)
       }
     }
   } catch {
-    ElMessage.error('网络错误，请重试')
+    notify.error('网络错误，请重试')
   } finally {
     submitting.value = false
   }

@@ -8,7 +8,7 @@
  * - Saves diagram to user's library
  * - Shows slot management modal when library is full
  */
-import { computed, nextTick, onMounted, ref } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import {
@@ -17,9 +17,12 @@ import {
   ElDropdownItem,
   ElDropdownMenu,
   ElInput,
-  ElMessage,
   ElTooltip,
 } from 'element-plus'
+
+import { useNotifications } from '@/composables'
+
+const notify = useNotifications()
 
 // Using Lucide icons for a more modern, cute look
 import {
@@ -59,10 +62,30 @@ const savedDiagramsStore = useSavedDiagramsStore()
 // Get chart type from route query
 const chartType = computed(() => (route.query.type as string) || '复流程图')
 
-// File name state
-const fileName = ref('')
+/**
+ * Generate default diagram name with date stamp
+ * Format: "新圆圈图 01-08" / "New Circle Map 01-08"
+ */
+function generateDefaultName(): string {
+  const now = new Date()
+  const month = String(now.getMonth() + 1).padStart(2, '0')
+  const day = String(now.getDate()).padStart(2, '0')
+  const dateStamp = `${month}-${day}`
+  
+  return isZh.value 
+    ? `新${chartType.value} ${dateStamp}` 
+    : `New ${chartType.value} ${dateStamp}`
+}
+
+// File name editing state (UI only)
 const isFileNameEditing = ref(false)
 const fileNameInputRef = ref<InstanceType<typeof ElInput> | null>(null)
+
+// Use Pinia store for title (synced with diagram state)
+const fileName = computed({
+  get: () => diagramStore.effectiveTitle || generateDefaultName(),
+  set: (value: string) => diagramStore.setTitle(value, true)
+})
 
 // Save to gallery state
 const isSaving = ref(false)
@@ -72,10 +95,34 @@ const showSlotFullModal = ref(false)
 const isAlreadySaved = computed(() => savedDiagramsStore.isActiveDiagramSaved)
 
 onMounted(() => {
-  fileName.value = isZh.value ? `未命名${chartType.value}` : `Untitled ${chartType.value}`
+  // Initialize title if not already set (new diagram)
+  if (!diagramStore.title) {
+    const topicText = diagramStore.getTopicNodeText()
+    if (topicText) {
+      diagramStore.initTitle(topicText)
+    } else {
+      diagramStore.initTitle(generateDefaultName())
+    }
+  }
   // Fetch diagrams to get current slot count
   savedDiagramsStore.fetchDiagrams()
 })
+
+// Watch for topic node text changes and auto-update title
+// Only if user hasn't manually edited the name
+watch(
+  () => diagramStore.getTopicNodeText(),
+  (newTopicText) => {
+    // Don't auto-update if user has manually edited the title
+    if (!diagramStore.shouldAutoUpdateTitle()) return
+    // Don't auto-update if currently editing the name
+    if (isFileNameEditing.value) return
+    
+    if (newTopicText) {
+      diagramStore.initTitle(newTopicText)
+    }
+  }
+)
 
 function handleBack() {
   // Use browser history to go back to where user came from
@@ -97,9 +144,12 @@ function handleFileNameClick() {
 
 function handleFileNameBlur() {
   isFileNameEditing.value = false
-  if (!fileName.value.trim()) {
-    fileName.value = isZh.value ? `未命名${chartType.value}` : `Untitled ${chartType.value}`
+  const currentValue = diagramStore.title?.trim()
+  if (!currentValue) {
+    // Reset to default if empty (and allow auto-updates again)
+    diagramStore.initTitle(generateDefaultName())
   }
+  // If there's a value, isUserEditedTitle is already set by the computed setter
 }
 
 function handleFileNameKeyPress(e: KeyboardEvent) {
@@ -124,13 +174,13 @@ function getDiagramSpec(): Record<string, unknown> | null {
 // Save to gallery
 async function saveToGallery(): Promise<void> {
   if (!diagramStore.type || !diagramStore.data) {
-    ElMessage.warning(isZh.value ? '没有可保存的图示' : 'No diagram to save')
+    notify.warning(isZh.value ? '没有可保存的图示' : 'No diagram to save')
     return
   }
 
   const spec = getDiagramSpec()
   if (!spec) {
-    ElMessage.warning(isZh.value ? '图示数据无效' : 'Invalid diagram data')
+    notify.warning(isZh.value ? '图示数据无效' : 'Invalid diagram data')
     return
   }
 
@@ -146,7 +196,7 @@ async function saveToGallery(): Promise<void> {
     )
 
     if (result.success) {
-      ElMessage.success(
+      notify.success(
         result.action === 'updated'
           ? (isZh.value ? '图示已更新' : 'Diagram updated')
           : (isZh.value ? '图示已保存到图库' : 'Diagram saved to gallery')
@@ -155,11 +205,11 @@ async function saveToGallery(): Promise<void> {
       // Show modal to let user delete a diagram
       showSlotFullModal.value = true
     } else {
-      ElMessage.error(result.error || (isZh.value ? '保存失败' : 'Save failed'))
+      notify.error(result.error || (isZh.value ? '保存失败' : 'Save failed'))
     }
   } catch (error) {
     console.error('Save to gallery error:', error)
-    ElMessage.error(isZh.value ? '保存失败' : 'Save failed')
+    notify.error(isZh.value ? '网络错误，保存失败' : 'Network error, save failed')
   } finally {
     isSaving.value = false
   }
@@ -180,16 +230,16 @@ function handleSlotModalCancel(): void {
 function handleFileCommand(command: string) {
   switch (command) {
     case 'new':
-      ElMessage.info(isZh.value ? '新建画布功能开发中' : 'New canvas feature in development')
+      notify.info(isZh.value ? '新建画布功能开发中' : 'New canvas feature in development')
       break
     case 'save-as':
-      ElMessage.info(isZh.value ? '另存为功能开发中' : 'Save as feature in development')
+      notify.info(isZh.value ? '另存为功能开发中' : 'Save as feature in development')
       break
     case 'save-gallery':
       saveToGallery()
       break
     case 'import':
-      ElMessage.info(isZh.value ? '从文件中导入功能开发中' : 'Import from file feature in development')
+      notify.info(isZh.value ? '从文件中导入功能开发中' : 'Import from file feature in development')
       break
   }
 }
@@ -198,19 +248,19 @@ function handleFileCommand(command: string) {
 function handleEditCommand(command: string) {
   switch (command) {
     case 'undo':
-      ElMessage.info(isZh.value ? '撤销' : 'Undo')
+      notify.info(isZh.value ? '撤销' : 'Undo')
       break
     case 'redo':
-      ElMessage.info(isZh.value ? '重做' : 'Redo')
+      notify.info(isZh.value ? '重做' : 'Redo')
       break
     case 'copy':
-      ElMessage.info(isZh.value ? '复制功能开发中' : 'Copy feature in development')
+      notify.info(isZh.value ? '复制功能开发中' : 'Copy feature in development')
       break
     case 'paste':
-      ElMessage.info(isZh.value ? '粘贴功能开发中' : 'Paste feature in development')
+      notify.info(isZh.value ? '粘贴功能开发中' : 'Paste feature in development')
       break
     case 'delete':
-      ElMessage.info(isZh.value ? '删除功能开发中' : 'Delete feature in development')
+      notify.info(isZh.value ? '删除功能开发中' : 'Delete feature in development')
       break
   }
 }
@@ -219,16 +269,16 @@ function handleEditCommand(command: string) {
 function handleViewCommand(command: string) {
   switch (command) {
     case 'zoom-in':
-      ElMessage.info(isZh.value ? '放大' : 'Zoom In')
+      notify.info(isZh.value ? '放大' : 'Zoom In')
       break
     case 'zoom-out':
-      ElMessage.info(isZh.value ? '缩小' : 'Zoom Out')
+      notify.info(isZh.value ? '缩小' : 'Zoom Out')
       break
     case 'fit-view':
-      ElMessage.info(isZh.value ? '适应画布' : 'Fit to View')
+      notify.info(isZh.value ? '适应画布' : 'Fit to View')
       break
     case 'fullscreen':
-      ElMessage.info(isZh.value ? '全屏功能开发中' : 'Fullscreen feature in development')
+      notify.info(isZh.value ? '全屏功能开发中' : 'Fullscreen feature in development')
       break
   }
 }
@@ -237,16 +287,16 @@ function handleViewCommand(command: string) {
 function handleExportCommand(command: string) {
   switch (command) {
     case 'png':
-      ElMessage.success(isZh.value ? 'PNG图片导出成功' : 'PNG exported successfully')
+      notify.success(isZh.value ? 'PNG图片导出成功' : 'PNG exported successfully')
       break
     case 'svg':
-      ElMessage.info(isZh.value ? 'SVG导出功能开发中' : 'SVG export in development')
+      notify.info(isZh.value ? 'SVG导出功能开发中' : 'SVG export in development')
       break
     case 'pdf':
-      ElMessage.info(isZh.value ? 'PDF导出功能开发中' : 'PDF export in development')
+      notify.info(isZh.value ? 'PDF导出功能开发中' : 'PDF export in development')
       break
     case 'json':
-      ElMessage.info(isZh.value ? 'JSON导出功能开发中' : 'JSON export in development')
+      notify.info(isZh.value ? 'JSON导出功能开发中' : 'JSON export in development')
       break
   }
 }

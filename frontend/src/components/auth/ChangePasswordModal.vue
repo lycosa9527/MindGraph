@@ -111,7 +111,7 @@ async function handleSubmit() {
     }
   } catch (error) {
     console.error('Failed to change password:', error)
-    notify.error('密码修改失败')
+    notify.error('网络错误，密码修改失败')
   } finally {
     isLoading.value = false
   }

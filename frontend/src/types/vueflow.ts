@@ -21,8 +21,10 @@ export type MindGraphNodeType =
 
 // Custom edge types
 export type MindGraphEdgeType =
-  | 'curved' // For mind maps, tree maps
+  | 'curved' // For mind maps
   | 'straight' // For flow maps
+  | 'step' // For tree maps (T/L shaped orthogonal connectors)
+  | 'tree' // For tree maps (straight vertical lines, no arrowhead)
   | 'radial' // For bubble maps (center-to-center)
   | 'brace' // For brace maps (bracket shape)
   | 'bridge' // For bridge maps (analogy connection)
@@ -66,7 +68,11 @@ export interface MindGraphEdgeData {
 }
 
 // Vue Flow edge with MindGraph data
-export type MindGraphEdge = Edge<MindGraphEdgeData>
+// Extends base Edge with sourcePosition and targetPosition for tree maps
+export type MindGraphEdge = Edge<MindGraphEdgeData> & {
+  sourcePosition?: 'top' | 'bottom' | 'left' | 'right'
+  targetPosition?: 'top' | 'bottom' | 'left' | 'right'
+}
 
 // Props for custom node components
 export type MindGraphNodeProps = NodeProps<MindGraphNodeData>
@@ -149,6 +155,9 @@ export function connectionToVueFlowEdge(
     target: connection.target,
     type: edgeType,
     label: connection.label,
+    // Map position strings to Vue Flow position format
+    sourcePosition: connection.sourcePosition as 'top' | 'bottom' | 'left' | 'right' | undefined,
+    targetPosition: connection.targetPosition as 'top' | 'bottom' | 'left' | 'right' | undefined,
     data: {
       label: connection.label,
       edgeType,

@@ -1,7 +1,14 @@
 /**
  * useTreeMap - Composable for Tree Map layout and data management
  * Tree maps display hierarchical classification with top-down structure
+ *
+ * Layout matches old JS tree-renderer.js:
+ * - Topic (root) at top center with pill shape
+ * - Categories (depth 1) spread horizontally below topic
+ * - Leaves (depth 2+) stacked vertically below their parent category
+ * - Connectors: topic bottom -> category top, category bottom -> leaves top
  */
+import { Position } from '@vue-flow/core'
 import { computed, ref } from 'vue'
 
 import { useLanguage } from '@/composables/useLanguage'
@@ -9,7 +16,7 @@ import type { Connection, DiagramNode, MindGraphEdge, MindGraphNode } from '@/ty
 
 import {
   DEFAULT_CENTER_X,
-  DEFAULT_LEVEL_HEIGHT,
+  DEFAULT_NODE_HEIGHT,
   DEFAULT_NODE_WIDTH,
   DEFAULT_PADDING,
 } from './layoutConfig'
@@ -29,126 +36,164 @@ interface TreeMapData {
 interface TreeMapOptions {
   startX?: number
   startY?: number
-  levelHeight?: number
-  nodeSpacing?: number
+  categorySpacing?: number // Horizontal spacing between categories
+  leafSpacing?: number // Vertical spacing between leaves
   nodeWidth?: number
   nodeHeight?: number
-}
-
-interface LayoutResult {
-  nodes: MindGraphNode[]
-  edges: MindGraphEdge[]
-  width: number
 }
 
 export function useTreeMap(options: TreeMapOptions = {}) {
   const {
     startX = DEFAULT_CENTER_X,
-    startY = DEFAULT_PADDING + 20, // 60px
-    levelHeight = DEFAULT_LEVEL_HEIGHT,
-    nodeSpacing = DEFAULT_PADDING,
+    startY = DEFAULT_PADDING + 20, // 60px - topic position
+    categorySpacing = 160, // Horizontal spacing between category nodes
+    leafSpacing = 60, // Vertical spacing between leaf nodes
     nodeWidth = DEFAULT_NODE_WIDTH,
-    nodeHeight: _nodeHeight = DEFAULT_PADDING, // 40px
+    nodeHeight = DEFAULT_NODE_HEIGHT,
   } = options
-  // nodeHeight reserved for future use
-  void _nodeHeight
 
   const { t } = useLanguage()
   const data = ref<TreeMapData | null>(null)
 
-  // Recursively calculate subtree width
-  function calculateSubtreeWidth(node: TreeNode): number {
-    if (!node.children || node.children.length === 0) {
+  // Layout constants matching old JS
+  const TOPIC_TO_CATEGORY_GAP = 100 // Distance from topic bottom to category row
+  const CATEGORY_TO_LEAF_GAP = 80 // Distance from category bottom to first leaf
+
+  // Calculate category column width (max of category width and its leaves)
+  function calculateCategoryWidth(category: TreeNode): number {
+    if (!category.children || category.children.length === 0) {
       return nodeWidth
     }
-
-    const childrenWidth = node.children.reduce((sum, child) => {
-      return sum + calculateSubtreeWidth(child) + nodeSpacing
-    }, -nodeSpacing)
-
-    return Math.max(nodeWidth, childrenWidth)
+    // Column width is just the node width since leaves stack vertically
+    return nodeWidth
   }
 
-  // Recursively layout tree nodes
-  function layoutNode(
-    node: TreeNode,
-    centerX: number,
-    y: number,
-    depth: number,
-    parentId?: string
-  ): LayoutResult {
-    const result: LayoutResult = { nodes: [], edges: [], width: 0 }
+  // Generate nodes and edges for tree map
+  function generateLayout(): { nodes: MindGraphNode[]; edges: MindGraphEdge[] } {
+    if (!data.value) return { nodes: [], edges: [] }
 
-    const nodeId = node.id || `tree-${depth}-${Date.now()}`
+    const nodes: MindGraphNode[] = []
+    const edges: MindGraphEdge[] = []
 
-    // Create node
-    const vueFlowNode: MindGraphNode = {
-      id: nodeId,
-      type: depth === 0 ? 'topic' : 'branch',
-      position: { x: centerX - nodeWidth / 2, y },
+    const root = data.value.root
+    const rootId = root.id || 'tree-topic'
+
+    // Topic node at top center
+    nodes.push({
+      id: rootId,
+      type: 'topic',
+      position: { x: startX - nodeWidth / 2, y: startY },
       data: {
-        label: node.text,
-        nodeType: depth === 0 ? 'topic' : 'branch',
+        label: root.text,
+        nodeType: 'topic',
         diagramType: 'tree_map',
-        isDraggable: depth > 0,
+        isDraggable: false,
         isSelectable: true,
       },
-      draggable: depth > 0,
-    }
-    result.nodes.push(vueFlowNode)
+      draggable: false,
+    })
 
-    // Create edge to parent
-    if (parentId) {
-      result.edges.push({
-        id: `edge-${parentId}-${nodeId}`,
-        source: parentId,
-        target: nodeId,
-        type: 'straight',
-        data: { edgeType: 'straight' as const },
+    // Categories (depth 1) - spread horizontally
+    const categories = root.children || []
+    if (categories.length > 0) {
+      // Calculate total width for categories
+      const totalWidth = categories.length * nodeWidth + (categories.length - 1) * categorySpacing
+      // First category left edge X
+      let categoryX = startX - totalWidth / 2
+
+      // Category Y position (below topic)
+      const categoryY = startY + nodeHeight + TOPIC_TO_CATEGORY_GAP
+
+      categories.forEach((category, catIndex) => {
+        const categoryId = category.id || `tree-cat-${catIndex}`
+
+        // Category node - position.x is the LEFT edge
+        nodes.push({
+          id: categoryId,
+          type: 'branch',
+          position: { x: categoryX, y: categoryY },
+          data: {
+            label: category.text,
+            nodeType: 'branch',
+            diagramType: 'tree_map',
+            isDraggable: true,
+            isSelectable: true,
+          },
+          draggable: true,
+        })
+
+        // Edge from topic to category (bottom to top)
+        edges.push({
+          id: `edge-${rootId}-${categoryId}`,
+          source: rootId,
+          target: categoryId,
+          type: 'step',
+          sourcePosition: Position.Bottom,
+          targetPosition: Position.Top,
+          data: {
+            edgeType: 'step' as const,
+            style: { strokeColor: '#bbb' },
+          },
+        })
+
+        // Leaves (depth 2+) - stacked vertically below category
+        const leaves = category.children || []
+        if (leaves.length > 0) {
+          let leafY = categoryY + nodeHeight + CATEGORY_TO_LEAF_GAP
+
+          leaves.forEach((leaf, leafIndex) => {
+            const leafId = leaf.id || `tree-leaf-${catIndex}-${leafIndex}`
+
+            // Leaf node - same X as category for vertical alignment
+            nodes.push({
+              id: leafId,
+              type: 'branch',
+              position: { x: categoryX, y: leafY },
+              data: {
+                label: leaf.text,
+                nodeType: 'branch',
+                diagramType: 'tree_map',
+                isDraggable: true,
+                isSelectable: true,
+              },
+              draggable: true,
+            })
+
+            // Edge from category/previous leaf to this leaf
+            // Use 'tree' type for straight vertical lines (no arrowhead)
+            const sourceId = leafIndex === 0 ? categoryId : leaves[leafIndex - 1].id || `tree-leaf-${catIndex}-${leafIndex - 1}`
+            edges.push({
+              id: `edge-${sourceId}-${leafId}`,
+              source: sourceId,
+              target: leafId,
+              type: 'tree',
+              sourcePosition: Position.Bottom,
+              targetPosition: Position.Top,
+              data: {
+                edgeType: 'step' as const,
+                style: { strokeColor: '#ccc' },
+              },
+            })
+
+            leafY += nodeHeight + leafSpacing
+          })
+        }
+
+        categoryX += nodeWidth + categorySpacing
       })
     }
-
-    // Layout children
-    if (node.children && node.children.length > 0) {
-      const childrenWidths = node.children.map((child) => calculateSubtreeWidth(child))
-      const totalChildrenWidth =
-        childrenWidths.reduce((sum, w) => sum + w, 0) + (node.children.length - 1) * nodeSpacing
-
-      let childX = centerX - totalChildrenWidth / 2
-
-      node.children.forEach((child, index) => {
-        const childWidth = childrenWidths[index]
-        const childCenterX = childX + childWidth / 2
-        const childY = y + levelHeight
-
-        const childResult = layoutNode(child, childCenterX, childY, depth + 1, nodeId)
-        result.nodes.push(...childResult.nodes)
-        result.edges.push(...childResult.edges)
-
-        childX += childWidth + nodeSpacing
-      })
-    }
-
-    result.width = calculateSubtreeWidth(node)
-    return result
-  }
-
-  // Convert tree data to Vue Flow nodes
-  const nodes = computed<MindGraphNode[]>(() => {
-    if (!data.value) return []
-
-    const result = layoutNode(data.value.root, startX, startY, 0)
-    const allNodes = [...result.nodes]
 
     // Add dimension label node below topic if dimension exists
     if (data.value.dimension !== undefined) {
-      const dimensionY = startY + 50 // Position below topic
-      allNodes.push({
+      const dimensionY = startY + nodeHeight + 20 // Just below topic
+      nodes.push({
         id: 'dimension-label',
         type: 'label',
         position: { x: startX - 100, y: dimensionY },
         data: {
-          label: data.value.dimension || t('diagram.dimensionPlaceholder', 'Classification by: click to specify...'),
+          label:
+            data.value.dimension ||
+            t('diagram.dimensionPlaceholder', 'Classification by: click to specify...'),
           nodeType: 'label',
           diagramType: 'tree_map',
           isDraggable: false,
@@ -160,15 +205,17 @@ export function useTreeMap(options: TreeMapOptions = {}) {
       })
     }
 
-    return allNodes
+    return { nodes, edges }
+  }
+
+  // Convert tree data to Vue Flow nodes
+  const nodes = computed<MindGraphNode[]>(() => {
+    return generateLayout().nodes
   })
 
   // Generate edges
   const edges = computed<MindGraphEdge[]>(() => {
-    if (!data.value) return []
-
-    const result = layoutNode(data.value.root, startX, startY, 0)
-    return result.edges
+    return generateLayout().edges
   })
 
   // Set tree map data
@@ -212,7 +259,7 @@ export function useTreeMap(options: TreeMapOptions = {}) {
     }
   }
 
-  // Add child to a node (requires selection context matching old JS behavior)
+  // Add child to a node
   function addChild(parentId: string, text?: string, selectedNodeId?: string): boolean {
     if (!data.value) return false
 
@@ -225,7 +272,7 @@ export function useTreeMap(options: TreeMapOptions = {}) {
     // If selectedNodeId is provided, use it as parentId
     const targetParentId = selectedNodeId || parentId
 
-    // Use default translated text if not provided (matching old JS behavior)
+    // Use default translated text if not provided
     const childText = text || t('diagram.newChild', 'New Child')
 
     function findAndAddChild(node: TreeNode): boolean {

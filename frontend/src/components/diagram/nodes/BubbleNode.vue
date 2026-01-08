@@ -6,8 +6,6 @@
  */
 import { computed, ref } from 'vue'
 
-import { Handle, Position } from '@vue-flow/core'
-
 import { eventBus } from '@/composables/useEventBus'
 import { useTheme } from '@/composables/useTheme'
 import type { MindGraphNodeProps } from '@/types'
@@ -65,20 +63,14 @@ function handleEditCancel() {
       @cancel="handleEditCancel"
       @edit-start="isEditing = true"
     />
-
-    <!-- Connection handle (center) -->
-    <Handle
-      type="target"
-      :position="Position.Left"
-      class="!bg-slate-400"
-    />
   </div>
 </template>
 
 <style scoped>
 .bubble-node {
-  min-width: 70px;
-  min-height: 70px;
+  min-width: 90px;
+  min-height: 50px;
+  padding: 8px 16px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   transition:
     box-shadow 0.2s ease,

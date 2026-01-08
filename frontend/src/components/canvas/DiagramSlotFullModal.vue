@@ -7,9 +7,13 @@
  */
 import { computed, ref, watch } from 'vue'
 
-import { ElButton, ElMessage, ElRadio, ElRadioGroup } from 'element-plus'
+import { ElButton, ElRadio, ElRadioGroup } from 'element-plus'
 
 import { AlertTriangle, Loader2, Trash2 } from 'lucide-vue-next'
+
+import { useNotifications } from '@/composables'
+
+const notify = useNotifications()
 
 import { useLanguage } from '@/composables'
 import { useSavedDiagramsStore, type SavedDiagram } from '@/stores'
@@ -108,7 +112,7 @@ function closeModal(): void {
 // Handle delete and save
 async function handleDeleteAndSave(): Promise<void> {
   if (!selectedDiagramId.value) {
-    ElMessage.warning(isZh.value ? '请选择要删除的图示' : 'Please select a diagram to delete')
+    notify.warning(isZh.value ? '请选择要删除的图示' : 'Please select a diagram to delete')
     return
   }
 
@@ -125,15 +129,15 @@ async function handleDeleteAndSave(): Promise<void> {
     )
 
     if (result.success && result.diagramId) {
-      ElMessage.success(isZh.value ? '图示保存成功' : 'Diagram saved successfully')
+      notify.success(isZh.value ? '图示保存成功' : 'Diagram saved successfully')
       isVisible.value = false
       emit('success', result.diagramId)
     } else {
-      ElMessage.error(result.error || (isZh.value ? '保存失败' : 'Save failed'))
+      notify.error(result.error || (isZh.value ? '保存失败' : 'Save failed'))
     }
   } catch (error) {
     console.error('Delete and save error:', error)
-    ElMessage.error(isZh.value ? '操作失败' : 'Operation failed')
+    notify.error(isZh.value ? '网络错误，操作失败' : 'Network error, operation failed')
   } finally {
     isDeleting.value = false
   }

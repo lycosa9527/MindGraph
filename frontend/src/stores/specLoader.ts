@@ -392,67 +392,25 @@ interface TreeNode {
   children?: TreeNode[]
 }
 
-function layoutTreeNode(
-  node: TreeNode,
-  centerX: number,
-  y: number,
-  depth: number,
-  parentId: string | null,
-  nodes: DiagramNode[],
-  connections: Connection[],
-  nodeWidth: number,
-  levelHeight: number,
-  nodeSpacing: number
-): number {
-  const nodeId = node.id || `tree-${depth}-${nodes.length}`
-
-  // Calculate subtree width
-  function calcWidth(n: TreeNode): number {
-    if (!n.children || n.children.length === 0) return nodeWidth
-    const childW = n.children.reduce((sum, c) => sum + calcWidth(c) + nodeSpacing, -nodeSpacing)
-    return Math.max(nodeWidth, childW)
-  }
-
-  nodes.push({
-    id: nodeId,
-    text: node.text,
-    type: depth === 0 ? 'topic' : 'branch',
-    position: { x: centerX - nodeWidth / 2, y },
-  })
-
-  if (parentId) {
-    connections.push({ id: `edge-${parentId}-${nodeId}`, source: parentId, target: nodeId })
-  }
-
-  if (node.children && node.children.length > 0) {
-    const childWidths = node.children.map(calcWidth)
-    const totalW = childWidths.reduce((s, w) => s + w, 0) + (node.children.length - 1) * nodeSpacing
-    let childX = centerX - totalW / 2
-
-    node.children.forEach((child, i) => {
-      const childCenterX = childX + childWidths[i] / 2
-      layoutTreeNode(
-        child,
-        childCenterX,
-        y + levelHeight,
-        depth + 1,
-        nodeId,
-        nodes,
-        connections,
-        nodeWidth,
-        levelHeight,
-        nodeSpacing
-      )
-      childX += childWidths[i] + nodeSpacing
-    })
-  }
-
-  return calcWidth(node)
-}
-
+/**
+ * Tree Map Layout - Matches old JS tree-renderer.js:
+ * - Topic (root) at top center with pill shape
+ * - Categories (depth 1) spread horizontally below topic
+ * - Leaves (depth 2+) stacked vertically below their parent category
+ */
 export function loadTreeMapSpec(spec: Record<string, unknown>): SpecLoaderResult {
   const nodes: DiagramNode[] = []
   const connections: Connection[] = []
+
+  // Layout constants matching old JS
+  const NODE_WIDTH = 120
+  const NODE_HEIGHT = 50
+  const CATEGORY_SPACING = 160 // Horizontal spacing between categories
+  const LEAF_SPACING = 60 // Vertical spacing between leaves
+  const TOPIC_TO_CATEGORY_GAP = 100 // Distance from topic to category row
+  const CATEGORY_TO_LEAF_GAP = 80 // Distance from category to first leaf
+  const START_X = 400 // Center X
+  const START_Y = 60 // Topic Y position
 
   // Support both new format (root object) and old format (topic + children)
   let root: TreeNode | undefined = spec.root as TreeNode | undefined
@@ -469,7 +427,87 @@ export function loadTreeMapSpec(spec: Record<string, unknown>): SpecLoaderResult
   const alternativeDimensions = spec.alternative_dimensions as string[] | undefined
 
   if (root) {
-    layoutTreeNode(root, 400, 60, 0, null, nodes, connections, 120, 100, 40)
+    const rootId = root.id || 'tree-topic'
+
+    // Topic node at top center
+    nodes.push({
+      id: rootId,
+      text: root.text,
+      type: 'topic',
+      position: { x: START_X - NODE_WIDTH / 2, y: START_Y },
+    })
+
+    // Categories (depth 1) - spread horizontally
+    const categories = root.children || []
+    if (categories.length > 0) {
+      // Calculate total width for categories
+      const totalWidth = categories.length * NODE_WIDTH + (categories.length - 1) * CATEGORY_SPACING
+      // First category left edge X
+      let categoryX = START_X - totalWidth / 2
+
+      // Category Y position (below topic)
+      const categoryY = START_Y + NODE_HEIGHT + TOPIC_TO_CATEGORY_GAP
+
+      categories.forEach((category, catIndex) => {
+        const categoryId = category.id || `tree-cat-${catIndex}`
+        // Calculate center X for this category (used for edge connections)
+        const categoryCenterX = categoryX + NODE_WIDTH / 2
+
+        // Category node - position.x is the LEFT edge
+        nodes.push({
+          id: categoryId,
+          text: category.text,
+          type: 'branch',
+          position: { x: categoryX, y: categoryY },
+        })
+
+        // Connection from topic to category (T-shape step edge)
+        connections.push({
+          id: `edge-${rootId}-${categoryId}`,
+          source: rootId,
+          target: categoryId,
+          edgeType: 'step', // T-shape for topic to categories
+          sourcePosition: 'bottom',
+          targetPosition: 'top',
+        })
+
+        // Leaves (depth 2+) - stacked vertically below category
+        const leaves = category.children || []
+        if (leaves.length > 0) {
+          let leafY = categoryY + NODE_HEIGHT + CATEGORY_TO_LEAF_GAP
+
+          leaves.forEach((leaf, leafIndex) => {
+            const leafId = leaf.id || `tree-leaf-${catIndex}-${leafIndex}`
+
+            // Leaf node - same X as category for vertical alignment
+            nodes.push({
+              id: leafId,
+              text: leaf.text,
+              type: 'branch',
+              position: { x: categoryX, y: leafY },
+            })
+
+            // Connection from category/previous leaf to this leaf (straight vertical)
+            const sourceId =
+              leafIndex === 0
+                ? categoryId
+                : leaves[leafIndex - 1].id || `tree-leaf-${catIndex}-${leafIndex - 1}`
+            connections.push({
+              id: `edge-${sourceId}-${leafId}`,
+              source: sourceId,
+              target: leafId,
+              edgeType: 'tree', // Straight vertical line
+              sourcePosition: 'bottom',
+              targetPosition: 'top',
+            })
+
+            leafY += NODE_HEIGHT + LEAF_SPACING
+          })
+        }
+
+        categoryX += NODE_WIDTH + CATEGORY_SPACING
+      })
+    }
   }
 
   // Add dimension label node if dimension field exists
@@ -478,7 +516,7 @@ export function loadTreeMapSpec(spec: Record<string, unknown>): SpecLoaderResult
       id: 'dimension-label',
       text: dimension || '',
       type: 'label',
-      position: { x: 300, y: 110 }, // Below topic
+      position: { x: START_X - 100, y: START_Y + NODE_HEIGHT + 20 }, // Below topic
     })
   }
 
@@ -958,11 +996,23 @@ const SPEC_LOADERS: Partial<
  * @param spec - The API spec object
  * @param diagramType - The type of diagram
  * @returns SpecLoaderResult with nodes, connections, and optional metadata
+ * 
+ * Note: Saved diagrams use a generic format with { nodes, connections },
+ * while LLM-generated specs use type-specific formats (e.g., { topic, attributes }).
+ * We detect saved diagrams by checking for the 'nodes' array and use loadGenericSpec.
  */
 export function loadSpecForDiagramType(
   spec: Record<string, unknown>,
   diagramType: DiagramType
 ): SpecLoaderResult {
+  // Check if this is a saved diagram (has nodes array)
+  // Saved diagrams use generic format: { nodes: [...], connections: [...] }
+  // LLM-generated specs use type-specific format: { topic, attributes, ... }
+  if (Array.isArray(spec.nodes) && spec.nodes.length > 0) {
+    return loadGenericSpec(spec)
+  }
+
+  // Use type-specific loader for LLM-generated specs
   const loader = SPEC_LOADERS[diagramType]
   if (loader) {
     return loader(spec)

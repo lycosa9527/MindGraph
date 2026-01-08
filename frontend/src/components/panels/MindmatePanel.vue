@@ -279,6 +279,7 @@ function isLastAssistantMessage(messageId: string): boolean {
     class="mindmate-panel bg-white dark:bg-gray-800 flex flex-col h-full overflow-hidden"
     :class="{
       'border-l border-gray-200 dark:border-gray-700 shadow-lg': !isFullpageMode,
+      'welcome-mode': showWelcome,
     }"
   >
     <!-- Header -->

@@ -6,12 +6,12 @@
 import { computed, defineAsyncComponent, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
-import { ElMessage } from 'element-plus'
-
 import { LoginModal } from '@/components/auth'
 import VersionNotification from '@/components/common/VersionNotification.vue'
-import { useLanguage } from '@/composables'
+import { useLanguage, useNotifications } from '@/composables'
 import { useAuthStore, useUIStore } from '@/stores'
+
+const notify = useNotifications()
 
 const route = useRoute()
 const uiStore = useUIStore()
@@ -46,7 +46,7 @@ watch(
 // Handle successful login after session expired
 function handleSessionExpiredLoginSuccess() {
   authStore.closeSessionExpiredModal()
-  ElMessage.success(isZh.value ? '登录成功' : 'Login successful')
+  // Note: notification is already shown in LoginModal.vue, no need to duplicate here
 }
 
 // Check auth status on mount and show AI disclaimer
@@ -55,14 +55,9 @@ onMounted(async () => {
 
   // Show AI content disclaimer
   setTimeout(() => {
-    ElMessage({
-      message: isZh.value
-        ? '内容由AI生成，请仔细甄别'
-        : 'Content is AI-generated, please verify carefully',
-      type: 'info',
-      duration: 3000,
-      showClose: true,
-    })
+    notify.info(
+      isZh.value ? '内容由AI生成，请仔细甄别' : 'Content is AI-generated, please verify carefully'
+    )
   }, 500)
 })
 </script>

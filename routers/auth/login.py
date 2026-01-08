@@ -12,6 +12,7 @@ All Rights Reserved
 Proprietary License
 """
 
+import asyncio
 import logging
 from datetime import datetime, timezone
 
@@ -58,6 +59,34 @@ from utils.auth import (
 from .captcha import verify_captcha_with_retry
 from .dependencies import get_language_dependency
 from .helpers import set_auth_cookies, track_user_activity
+
+
+def _preload_user_diagrams(user_id: int):
+    """
+    Fire-and-forget preload of user's diagram list into Redis cache.
+    Non-blocking - runs in background after login returns.
+    """
+    try:
+        from services.redis_diagram_cache import get_diagram_cache
+        
+        async def _do_preload():
+            try:
+                cache = get_diagram_cache()
+                await cache.preload_user_diagrams(user_id)
+            except Exception as e:
+                logging.getLogger(__name__).debug(f"[Login] Diagram preload failed for user {user_id}: {e}")
+        
+        # Schedule as background task
+        try:
+            loop = asyncio.get_running_loop()
+            loop.create_task(_do_preload())
+        except RuntimeError:
+            # No running loop - skip preload
+            pass
+    except Exception:
+        pass  # Silently fail - preload is optional optimization
+
+
 from .sms import _verify_and_consume_sms_code
 
 logger = logging.getLogger(__name__)
@@ -263,6 +292,9 @@ async def login(
     # Track user activity
     track_user_activity(user, 'login', {'method': 'captcha', 'org': org_name}, http_request)
     
+    # Preload diagram list for instant library access (fire-and-forget)
+    _preload_user_diagrams(user.id)
+    
     return {
         "access_token": token,
         "token_type": "bearer",
@@ -278,7 +310,7 @@ async def login(
     }
 
 
-@router.post("/login_sms")
+@router.post("/sms/login")
 async def login_with_sms(
     request: LoginWithSMSRequest,
     http_request: Request,
@@ -340,8 +372,12 @@ async def login_with_sms(
         lang
     )
     
-    # Reset any failed attempts (SMS login is verified)
-    reset_failed_attempts(user, db)
+    # Reload user from database for modification (cached user is detached)
+    db_user = db.query(User).filter(User.id == user.id).first()
+    if db_user:
+        # Reset any failed attempts (SMS login is verified)
+        reset_failed_attempts(db_user, db)
+        user = db_user  # Use attached user for rest of function
     
     # Session management: Invalidate old sessions before creating new one
     session_manager = get_session_manager()
@@ -386,6 +422,9 @@ async def login_with_sms(
     
     # Track user activity
     track_user_activity(user, 'login', {'method': 'sms', 'org': org_name}, http_request)
+    
+    # Preload diagram list for instant library access (fire-and-forget)
+    _preload_user_diagrams(user.id)
     
     return {
         "access_token": token,
@@ -546,6 +585,9 @@ async def verify_demo(
     
     log_msg = f"[TokenAudit] Login success: user={auth_user.id}, mode={AUTH_MODE}, admin={is_admin_access}, ip={client_ip}"
     logger.info(log_msg)
+    
+    # Preload diagram list for instant library access (fire-and-forget)
+    _preload_user_diagrams(auth_user.id)
     
     return {
         "access_token": token,

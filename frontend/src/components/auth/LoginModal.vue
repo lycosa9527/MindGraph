@@ -103,7 +103,7 @@ function closeModal() {
   resetAllForms()
   currentView.value = 'login'
   activeTab.value = 'login'
-  // Clear session expired message when modal closes
+  // Clear session expired state when modal closes
   if (authStore.sessionExpiredMessage) {
     authStore.closeSessionExpiredModal()
   }
@@ -160,7 +160,7 @@ async function refreshCaptcha() {
     }
   } catch (error) {
     console.error('Captcha error:', error)
-    notify.error('验证码加载失败')
+    notify.error('网络错误，验证码加载失败')
   } finally {
     captchaLoading.value = false
   }
@@ -204,9 +204,12 @@ async function handleLogin() {
     })
 
     if (result.success) {
-      notify.success(t('common.success'))
-      closeModal()
-      emit('success')
+      const userName = result.user?.username || ''
+      notify.success(userName ? `登录成功，${userName}欢迎你` : '登录成功')
+      setTimeout(() => {
+        closeModal()
+        emit('success')
+      }, 1500)
     } else {
       notify.error(result.message || t('auth.loginFailed'))
       loginForm.value.captcha = ''
@@ -214,7 +217,7 @@ async function handleLogin() {
     }
   } catch (error) {
     console.error('Login error:', error)
-    notify.error(t('auth.loginFailed'))
+    notify.error('网络错误，登录失败')
     loginForm.value.captcha = ''
     refreshCaptcha()
   } finally {
@@ -273,7 +276,7 @@ async function handleRegister() {
     }
   } catch (error) {
     console.error('Register error:', error)
-    notify.error('注册失败')
+    notify.error('网络错误，注册失败')
     registerForm.value.captcha = ''
     refreshCaptcha()
   } finally {
@@ -322,7 +325,7 @@ async function sendSmsCode(type: 'login' | 'reset') {
     }
   } catch (error) {
     console.error('SMS error:', error)
-    notify.error('短信发送失败')
+    notify.error('网络错误，短信发送失败')
     form.captcha = ''
     refreshCaptcha()
   } finally {
@@ -365,15 +368,18 @@ async function handleSmsLogin() {
     if (response.ok && data.user) {
       authStore.setUser(data.user)
       if (data.token) authStore.setToken(data.token)
-      notify.success(t('common.success'))
-      closeModal()
-      emit('success')
+      const userName = data.user?.name || ''
+      notify.success(userName ? `登录成功，${userName}欢迎你` : '登录成功')
+      setTimeout(() => {
+        closeModal()
+        emit('success')
+      }, 1500)
     } else {
       notify.error(data.detail || '短信登录失败')
     }
   } catch (error) {
     console.error('SMS login error:', error)
-    notify.error('短信登录失败')
+    notify.error('网络错误，短信登录失败')
   } finally {
     isLoading.value = false
   }
@@ -420,7 +426,7 @@ async function handleResetPassword() {
     }
   } catch (error) {
     console.error('Reset password error:', error)
-    notify.error('密码重置失败')
+    notify.error('网络错误，密码重置失败')
   } finally {
     isLoading.value = false
   }
@@ -468,17 +474,7 @@ function handleBackdropClick(event: MouseEvent) {
                 MindSpring
               </h2>
               <p class="text-xs text-stone-400 tracking-widest uppercase mt-1.5">
-                思维教学信息化平台
-              </p>
-            </div>
-
-            <!-- Session expired notification -->
-            <div
-              v-if="authStore.sessionExpiredMessage"
-              class="mx-6 mt-4 px-4 py-3 bg-amber-50 border border-amber-200 rounded-lg"
-            >
-              <p class="text-sm text-amber-800 text-center">
-                {{ authStore.sessionExpiredMessage }}
+                思维教学数智化平台
               </p>
             </div>
 

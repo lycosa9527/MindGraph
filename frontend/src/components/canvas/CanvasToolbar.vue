@@ -5,7 +5,11 @@
  */
 import { ref } from 'vue'
 
-import { ElButton, ElDropdown, ElDropdownItem, ElDropdownMenu, ElMessage, ElTooltip } from 'element-plus'
+import { ElButton, ElDropdown, ElDropdownItem, ElDropdownMenu, ElTooltip } from 'element-plus'
+
+import { useNotifications } from '@/composables'
+
+const notify = useNotifications()
 
 import {
   Brush,
@@ -100,7 +104,7 @@ function handleAddNode() {
   const diagramType = diagramStore.type
   
   if (!diagramStore.data?.nodes) {
-    ElMessage.warning('请先创建图示')
+    notify.warning('请先创建图示')
     return
   }
 
@@ -121,25 +125,25 @@ function handleAddNode() {
     })
     
     diagramStore.pushHistory('添加节点')
-    ElMessage.success('已添加新节点')
+    notify.success('已添加新节点')
     return
   }
 
   // For other diagram types, show under development message
-  ElMessage.info('增加节点功能开发中')
+  notify.info('增加节点功能开发中')
 }
 
 function handleDeleteNode() {
   const diagramType = diagramStore.type
   
   if (!diagramStore.data?.nodes) {
-    ElMessage.warning('请先创建图示')
+    notify.warning('请先创建图示')
     return
   }
 
   // Check if any nodes are selected
   if (diagramStore.selectedNodes.length === 0) {
-    ElMessage.warning('请先选择要删除的节点')
+    notify.warning('请先选择要删除的节点')
     return
   }
 
@@ -167,19 +171,19 @@ function handleDeleteNode() {
       
       diagramStore.clearSelection()
       diagramStore.pushHistory('删除节点')
-      ElMessage.success(`已删除 ${deletedCount} 个节点`)
+      notify.success(`已删除 ${deletedCount} 个节点`)
     } else {
-      ElMessage.warning('无法删除主题节点')
+      notify.warning('无法删除主题节点')
     }
     return
   }
 
   // For other diagram types, show under development message
-  ElMessage.info('删除节点功能开发中')
+  notify.info('删除节点功能开发中')
 }
 
 function handleFormatBrush() {
-  ElMessage.info('格式刷功能开发中')
+  notify.info('格式刷功能开发中')
 }
 
 /**
@@ -190,7 +194,7 @@ async function handleAIGenerate() {
   // Validate before generating
   const validation = validateForAutoComplete()
   if (!validation.valid) {
-    ElMessage.warning(validation.error || (isZh.value ? '无法生成' : 'Cannot generate'))
+    notify.warning(validation.error || (isZh.value ? '无法生成' : 'Cannot generate'))
     return
   }
 
@@ -203,7 +207,7 @@ async function handleAIGenerate() {
 }
 
 function handleMoreApp(appName: string) {
-  ElMessage.info(`${appName}功能开发中`)
+  notify.info(`${appName}功能开发中`)
 }
 </script>
 

@@ -7,11 +7,14 @@
  */
 import { computed, ref, watch } from 'vue'
 
-import { ElButton, ElMessage } from 'element-plus'
+import { ElButton } from 'element-plus'
 
 import { Close } from '@element-plus/icons-vue'
 
+import { useNotifications } from '@/composables'
 import { useAuthStore } from '@/stores'
+
+const notify = useNotifications()
 
 const props = defineProps<{
   visible: boolean
@@ -662,7 +665,7 @@ function loadMore() {
 
 async function saveAvatar() {
   if (!selectedEmoji.value) {
-    ElMessage.warning('请选择头像')
+    notify.warning('请选择头像')
     return
   }
 
@@ -680,16 +683,16 @@ async function saveAvatar() {
     const data = await response.json()
 
     if (response.ok) {
-      ElMessage.success(data.message || '头像更新成功')
+      notify.success(data.message || '头像更新成功')
       await authStore.checkAuth()
       emit('success')
       closeModal()
     } else {
-      ElMessage.error(data.detail || data.message || '更新头像失败')
+      notify.error(data.detail || data.message || '更新头像失败')
     }
   } catch (error) {
     console.error('Failed to update avatar:', error)
-    ElMessage.error('更新头像失败')
+    notify.error('网络错误，更新头像失败')
   } finally {
     isSaving.value = false
   }

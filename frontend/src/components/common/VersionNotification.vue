@@ -43,6 +43,7 @@ function showUpdateNotification() {
     position: 'top-right',
     duration: 0, // Don't auto-close
     showClose: true,
+    customClass: 'dark-alert-notification',
     onClose: () => {
       dismissUpdate()
       notificationInstance = null

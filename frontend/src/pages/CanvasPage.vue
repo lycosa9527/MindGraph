@@ -196,17 +196,26 @@ watch(
 )
 
 /**
+ * Generate default diagram name with date stamp
+ * Format: "新圆圈图 01-08" / "New Circle Map 01-08"
+ */
+function generateDefaultName(): string {
+  const now = new Date()
+  const month = String(now.getMonth() + 1).padStart(2, '0')
+  const day = String(now.getDate()).padStart(2, '0')
+  const dateStamp = `${month}-${day}`
+  
+  return isZh.value 
+    ? `新${chartType.value} ${dateStamp}` 
+    : `New ${chartType.value} ${dateStamp}`
+}
+
+/**
  * Get the diagram title for auto-save
- * Uses topic node text or default name
+ * Uses Pinia store's effectiveTitle or generates default
  */
 function getDiagramTitle(): string {
-  const topicNode = diagramStore.data?.nodes?.find(
-    (n) => n.type === 'topic' || n.type === 'center' || n.id === 'root'
-  )
-  if (topicNode?.text) {
-    return topicNode.text
-  }
-  return isZh.value ? `未命名${chartType.value}` : `Untitled ${chartType.value}`
+  return diagramStore.effectiveTitle || generateDefaultName()
 }
 
 /**

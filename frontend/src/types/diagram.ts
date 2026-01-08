@@ -85,6 +85,9 @@ export interface Connection {
   source: string
   target: string
   label?: string
+  edgeType?: string // Optional edge type override (e.g., 'step', 'tree', 'straight')
+  sourcePosition?: 'top' | 'bottom' | 'left' | 'right' // Handle position on source node
+  targetPosition?: 'top' | 'bottom' | 'left' | 'right' // Handle position on target node
   style?: {
     strokeColor?: string
     strokeWidth?: number

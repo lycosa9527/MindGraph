@@ -24,7 +24,9 @@ import BraceEdge from './edges/BraceEdge.vue'
 // Import custom edge components
 import CurvedEdge from './edges/CurvedEdge.vue'
 import RadialEdge from './edges/RadialEdge.vue'
+import StepEdge from './edges/StepEdge.vue'
 import StraightEdge from './edges/StraightEdge.vue'
+import TreeEdge from './edges/TreeEdge.vue'
 import BoundaryNode from './nodes/BoundaryNode.vue'
 import BraceNode from './nodes/BraceNode.vue'
 import BranchNode from './nodes/BranchNode.vue'
@@ -112,6 +114,8 @@ const nodeTypes = {
 const edgeTypes = {
   curved: markRaw(CurvedEdge),
   straight: markRaw(StraightEdge),
+  step: markRaw(StepEdge), // T/L shaped orthogonal connectors for tree maps
+  tree: markRaw(TreeEdge), // Straight vertical lines for tree maps (no arrowhead)
   radial: markRaw(RadialEdge), // Center-to-center for radial layouts (bubble maps)
   brace: markRaw(BraceEdge),
   bridge: markRaw(StraightEdge), // Use straight for bridge maps

@@ -7,6 +7,121 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [5.1.3] - 2025-01-08 - Saved Diagram Loading Fix and Smart Title Management
+
+### Added
+
+- **Pinia-Based Title Management** (`frontend/src/stores/diagram.ts`)
+  - Added `title` and `isUserEditedTitle` state for persistent title tracking
+  - Added `effectiveTitle` computed property (prioritizes user title > topic text)
+  - Added `setTitle()`, `initTitle()`, `resetTitle()` actions
+  - Added `getTopicNodeText()` helper to extract topic ignoring placeholders
+  - Added `shouldAutoUpdateTitle()` to check if auto-update is allowed
+  - Title state persists across component remounts
+
+- **Smart Default Diagram Names** (`frontend/src/components/canvas/CanvasTopBar.vue`)
+  - New format: `新圆圈图 01-08` / `New Circle Map 01-08` with date stamp
+  - Auto-updates title when topic node text changes
+  - Stops auto-updating once user manually edits the title
+  - Resumes auto-updating if user clears the title
+
+### Changed
+
+- **Spec Loader Enhancement** (`frontend/src/stores/specLoader.ts`)
+  - `loadSpecForDiagramType()` now detects saved diagrams by checking for `nodes` array
+  - Saved diagrams (with `nodes`/`connections` format) use `loadGenericSpec()`
+  - LLM-generated specs (with type-specific format) use type-specific loaders
+  - Fixes all 10 diagram types loading from saved library
+
+- **CanvasTopBar Title Binding** (`frontend/src/components/canvas/CanvasTopBar.vue`)
+  - Changed from local `fileName` ref to computed binding with Pinia store
+  - Watcher now uses store's `getTopicNodeText()` for consistency
+  - `handleFileNameBlur()` uses store's `initTitle()` for reset
+
+- **CanvasPage Auto-Save** (`frontend/src/pages/CanvasPage.vue`)
+  - `getDiagramTitle()` now uses store's `effectiveTitle`
+  - Fallback to date-stamped default name
+
+### Fixed
+
+- **Saved Diagram Loading Shows Content** (`frontend/src/stores/specLoader.ts`)
+  - Fixed issue where clicking recent diagrams showed "Enter text..." placeholders
+  - Root cause: saved specs use `{ nodes, connections }` format, but type-specific loaders expected original API format (e.g., `{ topic, attributes }`)
+  - Solution: detect saved format and use `loadGenericSpec()` which correctly extracts nodes/connections
+
+---
+
+## [5.1.2] - 2025-01-08 - Redis-First Architecture, Tree Map Layout Fix, and Dark Theme Notifications
+
+### Added
+
+- **Redis-First Diagram Storage** (`services/redis_diagram_cache.py`)
+  - All writes go to Redis first for sub-millisecond response times
+  - Background worker syncs pending creates and dirty updates to SQLite
+  - Added `PENDING_CREATE_KEY` for tracking new diagrams not yet in SQLite
+  - Added `USER_LIST_KEY` for cached diagram lists with fast pagination
+  - Added `preload_user_diagrams()` for pre-caching on login
+
+- **Diagram Preload on Login** (`routers/auth/login.py`)
+  - Fire-and-forget preload of user's diagram list into Redis cache
+  - Runs in background after login returns for instant library access
+  - Added to all login methods: captcha, SMS, and demo
+
+- **Purpose-Specific SMS Endpoints** (`routers/auth/sms.py`)
+  - Added `/sms/send-login` for SMS login verification
+  - Added `/sms/send-reset` for password reset verification
+  - Added `/sms/send-register` for registration verification
+  - Added `SendSMSCodeSimpleRequest` model without purpose field
+
+- **Dark Theme Notification Styles** (`frontend/src/styles/index.css`)
+  - Added `.dark-message` styles for Element Plus ElMessage
+  - Added `.dark-alert-notification` styles for Element Plus ElNotification
+  - Type-specific colors: success (green), error (red), warning (yellow), info (blue)
+
+- **Tree Edge Type** (`frontend/src/components/diagram/edges/index.ts`)
+  - Added TreeEdge for straight vertical connections in tree map layouts
+
+### Changed
+
+- **Tree Map Layout Refactored** (`frontend/src/composables/diagrams/useTreeMap.ts`, `frontend/src/stores/specLoader.ts`)
+  - Refactored layout to match original D3 tree-renderer.js behavior
+  - Topic (root) at top center with pill shape
+  - Categories (depth 1) spread horizontally below topic with step edges
+  - Leaves (depth 2+) stacked vertically below parent category with tree edges
+  - Proper T-shape connectors from topic to categories
+
+- **Notifications Composable** (`frontend/src/composables/useNotifications.ts`)
+  - Migrated from ElMessage to ElNotification for alert-style notifications
+  - Added Lucide icons (Check, CircleX, AlertTriangle, Info) per notification type
+  - Uses dark theme styling with customClass
+  - Legacy `showMessage()` preserved for backward compatibility
+
+- **SMS Login Endpoint Renamed** (`routers/auth/login.py`)
+  - Changed `/login_sms` to `/sms/login` for consistent API naming
+
+- **Auth Store Improvements** (`frontend/src/stores/auth.ts`)
+  - Added Dify query invalidation on `setUser()` to trigger refetch after login
+  - Session expired notification now uses ElNotification with dark theme
+  - Improved error message extraction with `detail` fallback
+
+- **Database Migration Enhanced** (`utils/db_migration.py`)
+  - Added column type mismatch detection in dry_run
+  - Added table recreation support for fixing type mismatches
+  - Reuses DatabaseRecovery and backup_scheduler for integrity checks
+  - Categorizes migrations into column additions vs type mismatches
+
+### Fixed
+
+- **SMS Login Session Handling** (`routers/auth/login.py`)
+  - Fixed detached user object issue by reloading from database before modification
+  - Ensures `reset_failed_attempts()` works on attached session user
+
+- **Diagram Save Preserves Metadata** (`services/redis_diagram_cache.py`)
+  - Updates now preserve `created_at` and `is_pinned` from existing data
+  - Fixed missing `is_pinned` field in diagram data structure
+
+---
+
 ## [5.1.1] - 2025-01-08 - Security Enhancements and TypeScript Improvements
 
 ### Security

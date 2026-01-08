@@ -151,6 +151,7 @@ function getEdgeTypeForDiagram(diagramType: DiagramType | null): MindGraphEdgeTy
   const edgeTypeMap: Partial<Record<DiagramType, MindGraphEdgeType>> = {
     bubble_map: 'radial', // Center-to-center straight lines for radial layout
     double_bubble_map: 'radial', // Center-to-center straight lines for radial layout
+    tree_map: 'step', // T/L shaped orthogonal connectors
     flow_map: 'straight',
     multi_flow_map: 'straight',
     brace_map: 'brace',
@@ -160,6 +161,9 @@ function getEdgeTypeForDiagram(diagramType: DiagramType | null): MindGraphEdgeTy
   return edgeTypeMap[diagramType] || 'curved'
 }
 
+// Default placeholder texts that should not be used as title
+const PLACEHOLDER_TEXTS = ['主题', '中心主题', '根主题', '事件', 'Topic', 'Central Topic', 'Root', 'Event']
+
 export const useDiagramStore = defineStore('diagram', () => {
   // State
   const type = ref<DiagramType | null>(null)
@@ -168,6 +172,10 @@ export const useDiagramStore = defineStore('diagram', () => {
   const selectedNodes = ref<string[]>([])
   const history = ref<HistoryEntry[]>([])
   const historyIndex = ref(-1)
+  
+  // Title management state
+  const title = ref<string>('')
+  const isUserEditedTitle = ref<boolean>(false)
 
   // Getters
   const canUndo = computed(() => historyIndex.value > 0)
@@ -199,8 +207,12 @@ export const useDiagramStore = defineStore('diagram', () => {
     if (type.value === 'circle_map') return []
 
     if (!data.value?.connections) return []
-    const edgeType = getEdgeTypeForDiagram(type.value)
-    return data.value.connections.map((conn) => connectionToVueFlowEdge(conn, edgeType))
+    const defaultEdgeType = getEdgeTypeForDiagram(type.value)
+    return data.value.connections.map((conn) => {
+      // Use connection's edgeType if specified, otherwise use diagram default
+      const edgeType = (conn.edgeType as MindGraphEdgeType) || defaultEdgeType
+      return connectionToVueFlowEdge(conn, edgeType)
+    })
   })
 
   // Actions
@@ -393,6 +405,9 @@ export const useDiagramStore = defineStore('diagram', () => {
     selectedNodes.value = []
     history.value = []
     historyIndex.value = -1
+    // Reset title state
+    title.value = ''
+    isUserEditedTitle.value = false
   }
 
   // ===== Custom Positions Tracking (Phase 3) =====
@@ -621,6 +636,73 @@ export const useDiagramStore = defineStore('diagram', () => {
     return loadFromSpec(template, diagramTypeValue)
   }
 
+  // ===== Title Management =====
+
+  /**
+   * Get topic node text from current diagram
+   * Returns null if no topic or if topic is default placeholder
+   */
+  function getTopicNodeText(): string | null {
+    const topicNode = data.value?.nodes?.find(
+      (n) => n.type === 'topic' || n.type === 'center' || n.id === 'root'
+    )
+    if (!topicNode?.text) return null
+    const text = topicNode.text.trim()
+    if (PLACEHOLDER_TEXTS.includes(text)) return null
+    return text
+  }
+
+  /**
+   * Computed: Get the effective title
+   * Priority: user-edited title > topic node text > stored title
+   */
+  const effectiveTitle = computed(() => {
+    if (isUserEditedTitle.value && title.value) {
+      return title.value
+    }
+    const topicText = getTopicNodeText()
+    if (topicText) {
+      return topicText
+    }
+    return title.value
+  })
+
+  /**
+   * Set the diagram title
+   * @param newTitle - The new title
+   * @param userEdited - Whether this was a manual user edit (disables auto-update)
+   */
+  function setTitle(newTitle: string, userEdited: boolean = false): void {
+    title.value = newTitle
+    if (userEdited) {
+      isUserEditedTitle.value = true
+    }
+  }
+
+  /**
+   * Initialize title with default name (used when creating new diagram)
+   * Resets userEdited flag to allow auto-updates
+   */
+  function initTitle(defaultTitle: string): void {
+    title.value = defaultTitle
+    isUserEditedTitle.value = false
+  }
+
+  /**
+   * Reset title state (when creating new diagram or clearing)
+   */
+  function resetTitle(): void {
+    title.value = ''
+    isUserEditedTitle.value = false
+  }
+
+  /**
+   * Check if title should auto-update from topic changes
+   */
+  function shouldAutoUpdateTitle(): boolean {
+    return !isUserEditedTitle.value
+  }
+
   return {
     // State
     type,
@@ -629,6 +711,8 @@ export const useDiagramStore = defineStore('diagram', () => {
     selectedNodes,
     history,
     historyIndex,
+    title,
+    isUserEditedTitle,
 
     // Getters
     canUndo,
@@ -636,6 +720,7 @@ export const useDiagramStore = defineStore('diagram', () => {
     nodeCount,
     hasSelection,
     selectedNodeData,
+    effectiveTitle,
 
     // Vue Flow computed
     vueFlowNodes,
@@ -678,5 +763,12 @@ export const useDiagramStore = defineStore('diagram', () => {
     // Spec loading
     loadFromSpec,
     loadDefaultTemplate,
+
+    // Title management
+    getTopicNodeText,
+    setTitle,
+    initTitle,
+    resetTitle,
+    shouldAutoUpdateTitle,
   }
 })

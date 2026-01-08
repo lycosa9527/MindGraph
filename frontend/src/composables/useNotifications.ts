@@ -1,11 +1,19 @@
 /**
- * Notifications Composable - Toast notifications
- * Migrated from notification-manager.js
+ * Notifications Composable - Alert-style notifications at top of screen
+ *
+ * Features:
+ * - Uses Element Plus ElNotification styled like el-alert
+ * - Dark theme styling
+ * - Type-specific icons
+ * - Configurable durations per type
+ * - Shows at top-right of screen
  */
-import { ref } from 'vue'
+import { h, ref } from 'vue'
 
 import { ElMessage, ElNotification } from 'element-plus'
 import type { MessageHandler } from 'element-plus'
+
+import { AlertTriangle, Check, CircleX, Info } from 'lucide-vue-next'
 
 export type NotificationType = 'success' | 'warning' | 'info' | 'error'
 
@@ -18,36 +26,62 @@ export interface NotificationOptions {
   onClick?: () => void
 }
 
+// Icon mapping for each notification type
+const iconMap = {
+  success: Check,
+  error: CircleX,
+  warning: AlertTriangle,
+  info: Info,
+}
+
 export function useNotifications() {
   const loading = ref<MessageHandler | null>(null)
 
+  function showAlert(message: string, type: NotificationType = 'info', duration = 3000): void {
+    const IconComponent = iconMap[type]
+    ElNotification({
+      message,
+      type,
+      duration,
+      showClose: true,
+      icon: h(IconComponent, { size: 20 }),
+      customClass: 'dark-alert-notification',
+      position: 'top-right',
+      offset: 16,
+    })
+  }
+
+  function success(message: string, duration = 3000): void {
+    showAlert(message, 'success', duration)
+  }
+
+  function error(message: string, duration = 5000): void {
+    showAlert(message, 'error', duration)
+  }
+
+  function warning(message: string, duration = 5000): void {
+    showAlert(message, 'warning', duration)
+  }
+
+  function info(message: string, duration = 3000): void {
+    showAlert(message, 'info', duration)
+  }
+
+  // Legacy ElMessage for backward compatibility
   function showMessage(
     message: string,
     type: NotificationType = 'info',
     duration = 3000
   ): MessageHandler {
+    const IconComponent = iconMap[type]
     return ElMessage({
       message,
       type,
       duration,
       showClose: true,
+      icon: h(IconComponent, { size: 18 }),
+      customClass: 'dark-message',
     })
-  }
-
-  function success(message: string, duration = 3000): MessageHandler {
-    return showMessage(message, 'success', duration)
-  }
-
-  function error(message: string, duration = 5000): MessageHandler {
-    return showMessage(message, 'error', duration)
-  }
-
-  function warning(message: string, duration = 4000): MessageHandler {
-    return showMessage(message, 'warning', duration)
-  }
-
-  function info(message: string, duration = 3000): MessageHandler {
-    return showMessage(message, 'info', duration)
   }
 
   function showNotification(options: NotificationOptions): void {

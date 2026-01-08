@@ -6,8 +6,7 @@ import { onMounted, ref } from 'vue'
 
 import { useLanguage, useNotifications } from '@/composables'
 
-// t reserved for future i18n
-const { t: _t } = useLanguage()
+const { isZh } = useLanguage()
 const notify = useNotifications()
 
 const isLoading = ref(true)
@@ -35,7 +34,7 @@ async function loadPublicStats() {
       ],
     }
   } catch {
-    notify.error('Failed to load dashboard')
+    notify.error(isZh.value ? '网络错误，加载仪表盘失败' : 'Network error, failed to load dashboard')
   } finally {
     isLoading.value = false
   }

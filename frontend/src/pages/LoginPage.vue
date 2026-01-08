@@ -11,7 +11,7 @@ import { useAuthStore } from '@/stores'
 const router = useRouter()
 const route = useRoute()
 const authStore = useAuthStore()
-const { t } = useLanguage()
+const { t, isZh } = useLanguage()
 const notify = useNotifications()
 
 // Form data
@@ -54,11 +54,11 @@ async function refreshCaptcha() {
       captchaId.value = result.captcha_id
       captchaImage.value = result.captcha_image
     } else {
-      notify.error('Failed to load captcha')
+      notify.error(isZh.value ? '验证码加载失败' : 'Failed to load captcha')
     }
   } catch (error) {
     console.error('Captcha error:', error)
-    notify.error('Failed to load captcha')
+    notify.error(isZh.value ? '网络错误，验证码加载失败' : 'Network error, failed to load captcha')
   } finally {
     captchaLoading.value = false
   }
@@ -72,17 +72,17 @@ onMounted(() => {
 // Handle login
 async function handleLogin() {
   if (!formData.value.phone || !formData.value.password) {
-    notify.warning('Please fill in all fields')
+    notify.warning(isZh.value ? '请填写所有字段' : 'Please fill in all fields')
     return
   }
 
   if (!formData.value.captcha || formData.value.captcha.length !== 4) {
-    notify.warning('Please enter the 4-character captcha')
+    notify.warning(isZh.value ? '请输入4位验证码' : 'Please enter the 4-character captcha')
     return
   }
 
   if (!captchaId.value) {
-    notify.warning('Please wait for captcha to load')
+    notify.warning(isZh.value ? '请等待验证码加载' : 'Please wait for captcha to load')
     return
   }
 
@@ -98,19 +98,24 @@ async function handleLogin() {
     const success = result.success
 
     if (success) {
-      notify.success(t('common.success'))
+      const userName = result.user?.username || ''
+      notify.success(
+        isZh.value
+          ? (userName ? `${userName}，登录成功` : '登录成功')
+          : (userName ? `Welcome, ${userName}` : 'Login successful')
+      )
       // Redirect to intended page or main page
       const redirect = (route.query.redirect as string) || '/'
       router.push(redirect)
     } else {
-      notify.error(result.message || t('auth.loginFailed'))
+      notify.error(result.message || (isZh.value ? '登录失败' : 'Login failed'))
       // Refresh captcha on failed login
       formData.value.captcha = ''
       refreshCaptcha()
     }
   } catch (error) {
     console.error('Login error:', error)
-    notify.error(t('auth.loginFailed'))
+    notify.error(isZh.value ? '网络错误，登录失败' : 'Network error, login failed')
     // Refresh captcha on error
     formData.value.captcha = ''
     refreshCaptcha()

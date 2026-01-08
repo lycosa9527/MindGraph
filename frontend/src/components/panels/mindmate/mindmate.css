@@ -12,6 +12,35 @@
   overflow: hidden;
 }
 
+/* Welcome Mode - Content positioned at top */
+.mindmate-panel.welcome-mode {
+  justify-content: flex-start;
+}
+
+.mindmate-panel.welcome-mode .messages-container {
+  flex: 0 0 auto;
+  height: auto;
+  min-height: auto;
+}
+
+.mindmate-panel.welcome-mode .messages-scrollbar {
+  height: auto;
+  flex: 0 0 auto;
+}
+
+.mindmate-panel.welcome-mode .messages-scrollbar :deep(.el-scrollbar__wrap) {
+  height: auto;
+  overflow: visible;
+}
+
+.mindmate-panel.welcome-mode .messages-scrollbar :deep(.el-scrollbar__view) {
+  min-height: auto;
+}
+
+.mindmate-panel.welcome-mode .messages-wrapper {
+  padding-bottom: 0;
+}
+
 /* Messages container - takes available space, prevents overflow */
 .messages-container {
   flex: 1 1 0;
@@ -942,6 +971,19 @@
   min-height: 200px;
 }
 
+/* Welcome Mode - Panel doesn't expand */
+.mindmate-panel.welcome-mode .welcome-panel {
+  flex: 0 0 auto;
+  min-height: auto;
+  padding: 120px 0 0;
+}
+
+.mindmate-panel.welcome-mode .welcome-fullpage {
+  flex: 0 0 auto;
+  min-height: auto;
+  padding: 140px 0 0;
+}
+
 /* Suggestion Bubbles - Above Input (Fullpage) */
 .suggestions-above-input {
   flex-shrink: 0;
@@ -960,4 +1002,22 @@
 
 .dark .suggestions-above-input-panel {
   border-top-color: #374151;
+}
+
+/* Welcome Mode - Suggestions and Input positioned right below welcome message */
+.mindmate-panel.welcome-mode .suggestions-above-input-panel {
+  margin-top: 50px;
+  border-top: none;
+}
+
+.mindmate-panel.welcome-mode .suggestions-above-input {
+  margin-top: 50px;
+}
+
+.mindmate-panel.welcome-mode .input-area-swiss {
+  border-top: none;
+}
+
+.mindmate-panel.welcome-mode .input-area-fullpage {
+  padding-top: 0;
 }

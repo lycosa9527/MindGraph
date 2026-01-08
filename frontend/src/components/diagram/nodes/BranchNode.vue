@@ -26,6 +26,9 @@ const isChild = computed(() => props.data.nodeType === 'branch' && props.data.pa
 
 const defaultStyle = computed(() => getNodeStyle(isChild.value ? 'child' : 'branch'))
 
+// Check if this is a tree map (needs vertical handles)
+const isTreeMap = computed(() => props.data.diagramType === 'tree_map')
+
 const nodeStyle = computed(() => ({
   backgroundColor:
     props.data.style?.backgroundColor || defaultStyle.value.backgroundColor || '#e3f2fd',
@@ -56,6 +59,7 @@ function handleEditCancel() {
 <template>
   <div
     class="branch-node flex items-center justify-center px-4 py-2 border-solid cursor-grab select-none"
+    :class="{ 'tree-map-node': isTreeMap }"
     :style="nodeStyle"
   >
     <InlineEditableText
@@ -69,15 +73,31 @@ function handleEditCancel() {
       @edit-start="isEditing = true"
     />
 
-    <!-- Connection handles -->
+    <!-- Connection handles for horizontal layouts (mind maps, etc.) -->
     <Handle
+      v-if="!isTreeMap"
       type="target"
       :position="Position.Left"
       class="!bg-blue-400"
     />
     <Handle
+      v-if="!isTreeMap"
       type="source"
       :position="Position.Right"
+      class="!bg-blue-400"
+    />
+
+    <!-- Connection handles for tree maps (vertical layout) -->
+    <Handle
+      v-if="isTreeMap"
+      type="target"
+      :position="Position.Top"
+      class="!bg-blue-400"
+    />
+    <Handle
+      v-if="isTreeMap"
+      type="source"
+      :position="Position.Bottom"
       class="!bg-blue-400"
     />
   </div>
@@ -91,6 +111,12 @@ function handleEditCancel() {
   transition:
     box-shadow 0.2s ease,
     border-color 0.2s ease;
+}
+
+/* Tree map nodes have fixed width for consistent vertical alignment */
+.branch-node.tree-map-node {
+  width: 120px;
+  min-width: 120px;
 }
 
 .branch-node:hover {

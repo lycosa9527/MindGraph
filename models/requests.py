@@ -597,6 +597,36 @@ class SendSMSCodeRequest(BaseModel):
         }
 
 
+class SendSMSCodeSimpleRequest(BaseModel):
+    """Simplified request model for purpose-specific SMS endpoints (no purpose field)"""
+    phone: str = Field(..., min_length=11, max_length=11, description="11-digit Chinese mobile number")
+    captcha: str = Field(..., min_length=4, max_length=4, description="4-character captcha code")
+    captcha_id: str = Field(..., description="Captcha session ID")
+    
+    @field_validator('phone')
+    @classmethod
+    def validate_phone(cls, v):
+        """Validate 11-digit Chinese mobile format"""
+        if not v.isdigit():
+            raise ValueError("Phone number must contain only digits. Please enter a valid 11-digit Chinese mobile number.")
+        if len(v) < 11:
+            raise ValueError(f"Phone number is too short ({len(v)} digits). Must be exactly 11 digits starting with 1.")
+        if len(v) > 11:
+            raise ValueError(f"Phone number is too long ({len(v)} digits). Must be exactly 11 digits starting with 1.")
+        if not v.startswith('1'):
+            raise ValueError("Chinese mobile numbers must start with 1. Please enter a valid 11-digit number starting with 1.")
+        return v
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "phone": "13812345678",
+                "captcha": "AB3D",
+                "captcha_id": "uuid-captcha-session"
+            }
+        }
+
+
 class VerifySMSCodeRequest(BaseModel):
     """Request model for verifying SMS code (standalone verification)"""
     phone: str = Field(..., min_length=11, max_length=11, description="11-digit Chinese mobile number")

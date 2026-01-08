@@ -8,10 +8,11 @@
  */
 import { computed, onMounted, ref, watch } from 'vue'
 
-import { useNotifications } from '@/composables'
+import { useLanguage, useNotifications } from '@/composables'
 import { useAuthStore } from '@/stores'
 
 const authStore = useAuthStore()
+const { isZh } = useLanguage()
 const notify = useNotifications()
 
 const activeTab = ref('dashboard')
@@ -90,7 +91,7 @@ async function loadDashboardStats() {
       apiCalls: 45678,
     }
   } catch {
-    notify.error('Failed to load dashboard stats')
+    notify.error(isZh.value ? '网络错误，加载仪表盘统计失败' : 'Network error, failed to load dashboard stats')
   } finally {
     isLoading.value = false
   }
@@ -108,11 +109,12 @@ async function loadTokenStats() {
     if (response.ok) {
       tokenStats.value = await response.json()
     } else {
-      notify.error('Failed to load token stats')
+      const data = await response.json().catch(() => ({}))
+      notify.error(data.detail || (isZh.value ? '加载Token统计失败' : 'Failed to load token stats'))
     }
   } catch (error) {
     console.error('Failed to load token stats:', error)
-    notify.error('Failed to load token stats')
+    notify.error(isZh.value ? '网络错误，加载Token统计失败' : 'Network error, failed to load token stats')
   } finally {
     isLoadingTokens.value = false
   }

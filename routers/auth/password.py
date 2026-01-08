@@ -31,7 +31,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-@router.post("/reset_password")
+@router.post("/reset-password")
 async def reset_password_with_sms(
     request: ResetPasswordWithSMSRequest,
     http_request: Request,

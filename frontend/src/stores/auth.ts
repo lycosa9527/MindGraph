@@ -9,12 +9,16 @@
  * - Refresh tokens (7 days) stored in httpOnly cookie with restricted path
  * - User data stored in sessionStorage (cleared on browser close)
  */
-import { computed, ref } from 'vue'
+import { computed, h, ref } from 'vue'
 
 import { defineStore } from 'pinia'
 
-import { useQueryClient } from '@tanstack/vue-query'
+import { ElNotification } from 'element-plus'
 
+import { useQueryClient } from '@tanstack/vue-query'
+import { AlertTriangle } from 'lucide-vue-next'
+
+import { difyKeys } from '@/composables/queries/difyKeys'
 import type {
   AuthMode,
   BackendUser,
@@ -122,6 +126,14 @@ export const useAuthStore = defineStore('auth', () => {
     user.value = normalizedUser
     // Store in sessionStorage (cleared on browser close, not a security risk like localStorage)
     sessionStorage.setItem(USER_KEY, JSON.stringify(normalizedUser))
+
+    // Invalidate Dify queries to trigger refetch after login
+    try {
+      const queryClient = useQueryClient()
+      queryClient.invalidateQueries({ queryKey: difyKeys.all })
+    } catch (error) {
+      console.debug('Failed to invalidate queries on setUser:', error)
+    }
   }
 
   function setMode(newMode: AuthMode): void {
@@ -163,7 +175,7 @@ export const useAuthStore = defineStore('auth', () => {
         return { success: true, user: normalizedUser, token: data.access_token || data.token }
       }
 
-      return { success: false, message: data.message || 'Login failed' }
+      return { success: false, message: data.detail || data.message || 'Login failed' }
     } catch {
       return { success: false, message: 'Network error' }
     } finally {
@@ -407,8 +419,19 @@ export const useAuthStore = defineStore('auth', () => {
       // Query client might not be available
     }
 
-    // Set message and show modal
-    sessionExpiredMessage.value = message || '您的登录已过期，请重新登录'
+    // Show notification at top of screen
+    ElNotification({
+      message: message || '您的登录已过期，请重新登录',
+      type: 'warning',
+      duration: 5000,
+      showClose: true,
+      icon: h(AlertTriangle, { size: 20 }),
+      customClass: 'dark-alert-notification',
+      position: 'top-right',
+      offset: 16,
+    })
+
+    // Show login modal
     showSessionExpiredModal.value = true
   }
 
