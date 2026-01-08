@@ -10,11 +10,17 @@ All Rights Reserved
 Proprietary License
 """
 
+import uuid
 from datetime import datetime
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Boolean, Text, Index
 from sqlalchemy.orm import relationship
 
 from models.auth import Base
+
+
+def generate_uuid():
+    """Generate a UUID string for shared diagram IDs."""
+    return str(uuid.uuid4())
 
 
 class SharedDiagram(Base):
@@ -23,10 +29,11 @@ class SharedDiagram(Base):
     
     Represents diagrams or MindMate courses shared within an organization.
     Only users from the same organization can view shared content.
+    Uses UUID for secure, non-guessable IDs.
     """
     __tablename__ = "shared_diagrams"
     
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(String(36), primary_key=True, default=generate_uuid, index=True)
     
     # Content info
     title = Column(String(200), nullable=False)
@@ -78,7 +85,7 @@ class SharedDiagramLike(Base):
     __tablename__ = "shared_diagram_likes"
     
     id = Column(Integer, primary_key=True, index=True)
-    diagram_id = Column(Integer, ForeignKey("shared_diagrams.id"), nullable=False, index=True)
+    diagram_id = Column(String(36), ForeignKey("shared_diagrams.id"), nullable=False, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     
@@ -99,7 +106,7 @@ class SharedDiagramComment(Base):
     __tablename__ = "shared_diagram_comments"
     
     id = Column(Integer, primary_key=True, index=True)
-    diagram_id = Column(Integer, ForeignKey("shared_diagrams.id"), nullable=False, index=True)
+    diagram_id = Column(String(36), ForeignKey("shared_diagrams.id"), nullable=False, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     content = Column(Text, nullable=False)
     

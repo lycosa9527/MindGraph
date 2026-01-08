@@ -223,6 +223,9 @@ export type EventTypes = {
   'property_panel:closed': Record<string, never>
   'property_panel:changed': { property: string; value: unknown }
 
+  // Auth Events
+  'auth:session_expired': { message?: string }
+
   // MindMate Events
   'mindmate:opened': { diagramSessionId?: string }
   'mindmate:closed': Record<string, never>

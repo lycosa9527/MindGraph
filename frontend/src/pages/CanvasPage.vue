@@ -289,7 +289,7 @@ watch(
 )
 
 // Load diagram from library if diagramId is in query
-async function loadDiagramFromLibrary(diagramId: number): Promise<void> {
+async function loadDiagramFromLibrary(diagramId: string): Promise<void> {
   const diagram = await savedDiagramsStore.getDiagram(diagramId)
   if (diagram) {
     // Set active diagram ID
@@ -317,7 +317,7 @@ onMounted(async () => {
   // Check if loading a saved diagram from library
   const diagramId = route.query.diagramId
   if (diagramId) {
-    await loadDiagramFromLibrary(Number(diagramId))
+    await loadDiagramFromLibrary(String(diagramId))
     return // Don't load default template if loading from library
   }
 

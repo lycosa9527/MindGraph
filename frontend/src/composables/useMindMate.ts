@@ -15,8 +15,11 @@
  */
 import { computed, onUnmounted, ref, shallowRef, watch } from 'vue'
 
+import { useQueryClient } from '@tanstack/vue-query'
+
 import { useAuthStore, useMindMateStore } from '@/stores'
 
+import { difyKeys, useAppParameters, useGenerateTitle } from './queries'
 import { eventBus } from './useEventBus'
 
 // ============================================================================
@@ -83,6 +86,13 @@ interface SSEData {
   data?: Record<string, unknown>
 }
 
+interface DifyMessage {
+  id: string
+  query?: string
+  answer?: string
+  created_at: number
+}
+
 // ============================================================================
 // Composable
 // ============================================================================
@@ -103,6 +113,14 @@ export function useMindMate(options: MindMateOptions = {}) {
 
   const authStore = useAuthStore()
   const mindMateStore = useMindMateStore()
+  const queryClient = useQueryClient()
+
+  // =========================================================================
+  // Vue Query
+  // =========================================================================
+
+  // Fetch app parameters (opening statement, suggested questions)
+  const { data: appParams } = useAppParameters()
 
   // =========================================================================
   // State (local to this composable instance)
@@ -237,23 +255,23 @@ export function useMindMate(options: MindMateOptions = {}) {
     isUploading.value = true
 
     try {
-      const token = localStorage.getItem('access_token')
       const formData = new FormData()
       formData.append('file', file)
       formData.append('user_id', userId.value)
 
-      const headers: Record<string, string> = {}
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`
-      }
-
+      // Use fetch with credentials (token in httpOnly cookie)
       const response = await fetch('/api/dify/files/upload', {
         method: 'POST',
-        headers,
+        credentials: 'same-origin',
         body: formData,
       })
 
       if (!response.ok) {
+        // Handle token expiration - show login modal
+        if (response.status === 401) {
+          authStore.handleTokenExpired('您的登录已过期，请重新登录后上传文件')
+          throw new Error('Session expired')
+        }
         const error = await response.json().catch(() => ({ detail: 'Upload failed' }))
         throw new Error(error.detail || 'Upload failed')
       }
@@ -351,14 +369,6 @@ export function useMindMate(options: MindMateOptions = {}) {
     eventBus.emit('mindmate:message_sending', { message, files: filesToSend })
 
     try {
-      const token = localStorage.getItem('access_token')
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-      }
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`
-      }
-
       // Build request with files
       const requestBody: Record<string, unknown> = {
         message: message || (filesToSend.length > 0 ? 'Please analyze this file.' : ''),
@@ -375,14 +385,21 @@ export function useMindMate(options: MindMateOptions = {}) {
         }))
       }
 
+      // Use fetch with credentials (token in httpOnly cookie)
       const response = await fetch('/api/ai_assistant/stream', {
         method: 'POST',
-        headers,
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(requestBody),
         signal: abortController.value.signal,
       })
 
       if (!response.ok) {
+        // Handle token expiration - show login modal
+        if (response.status === 401) {
+          authStore.handleTokenExpired('您的登录已过期，请重新登录后继续使用MindMate')
+          throw new Error('Session expired')
+        }
         throw new Error(`HTTP error! status: ${response.status}`)
       }
 
@@ -508,19 +525,19 @@ export function useMindMate(options: MindMateOptions = {}) {
     }
 
     try {
-      const token = localStorage.getItem('access_token')
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-      }
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`
-      }
-
+      // Use fetch with credentials (token in httpOnly cookie)
       const response = await fetch(`/api/dify/messages/${msg.difyMessageId}/feedback`, {
         method: 'POST',
-        headers,
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ rating }),
       })
+
+      // Handle token expiration
+      if (response.status === 401) {
+        authStore.handleTokenExpired('您的登录已过期，请重新登录')
+        return false
+      }
 
       if (response.ok) {
         // Update local message state
@@ -559,14 +576,27 @@ export function useMindMate(options: MindMateOptions = {}) {
           conversationId.value = data.conversation_id
           mindMateStore.setCurrentConversation(data.conversation_id)
 
-          // Add new conversation to history list immediately
+          // Optimistic update: Add new conversation to Vue Query cache
+          const queryClient = useQueryClient()
           const now = Math.floor(Date.now() / 1000) // Use seconds like Dify
-          mindMateStore.addConversation({
+          const newConv = {
             id: data.conversation_id,
             name: mindMateStore.conversationTitle,
             created_at: now,
             updated_at: now,
-          })
+          }
+
+          // Update conversations cache optimistically
+          queryClient.setQueryData(
+            difyKeys.conversations(),
+            (old: MindMateConversation[] | undefined) => {
+              if (!old) return [newConv]
+              return [newConv, ...old]
+            }
+          )
+
+          // Also update store for backward compatibility
+          mindMateStore.addConversation(newConv)
         }
         break
 
@@ -586,15 +616,13 @@ export function useMindMate(options: MindMateOptions = {}) {
         currentStreamingId.value = null
         abortController.value = null
 
-        // Re-prefetch cache for this conversation now that new message is saved to Dify
-        // This ensures the cache has the latest messages including the one just sent
-        if (conversationId.value) {
-          mindMateStore.rePrefetchIfInTop3(conversationId.value)
-        }
-
-        // Fetch Dify's auto-generated title after second message
-        if (mindMateStore.messageCount === 2) {
-          setTimeout(() => mindMateStore.fetchDifyTitle(), 1000)
+        // Fetch Dify's auto-generated title after second message (with 1-second delay)
+        if (mindMateStore.messageCount === 2 && conversationId.value) {
+          const convId = conversationId.value
+          setTimeout(() => {
+            const { mutate: generateTitle } = useGenerateTitle()
+            generateTitle(convId)
+          }, 1000)
         }
         break
 
@@ -677,34 +705,29 @@ export function useMindMate(options: MindMateOptions = {}) {
 
     hasGreeted.value = true
 
-    // Fetch opening statement from Dify parameters
-    try {
-      const token = localStorage.getItem('access_token')
-      const headers: Record<string, string> = {}
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`
-      }
+    // Use cached app parameters from Vue Query
+    // Watch for data in case it loads asynchronously
+    const unwatch = watch(
+      () => appParams.value,
+      (params) => {
+        if (params) {
+          // Use opening_statement if configured
+          if (params.opening_statement) {
+            addMessage('assistant', params.opening_statement)
 
-      const response = await fetch('/api/dify/app/parameters', { headers })
-
-      if (response.ok) {
-        const params = await response.json()
-
-        // Use opening_statement if configured
-        if (params.opening_statement) {
-          addMessage('assistant', params.opening_statement)
-
-          // Store suggested questions if available
-          if (params.suggested_questions?.length > 0) {
-            eventBus.emit('mindmate:suggested_questions', {
-              questions: params.suggested_questions,
-            })
+            // Store suggested questions if available
+            if (params.suggested_questions && params.suggested_questions.length > 0) {
+              eventBus.emit('mindmate:suggested_questions', {
+                questions: params.suggested_questions,
+              })
+            }
           }
+          // Stop watching once we have the data
+          unwatch()
         }
-      }
-    } catch (error) {
-      console.debug('[MindMate] Failed to fetch opening statement:', error)
-    }
+      },
+      { immediate: true }
+    )
   }
 
   function startNewSession(sessionId: string): void {
@@ -735,10 +758,10 @@ export function useMindMate(options: MindMateOptions = {}) {
   // =========================================================================
 
   /**
-   * Fetch conversations from API (delegates to store)
+   * Fetch conversations from API (via Vue Query refetch)
    */
-  function fetchConversations(): Promise<void> {
-    return mindMateStore.fetchConversations()
+  async function fetchConversations(): Promise<void> {
+    await queryClient.invalidateQueries({ queryKey: difyKeys.conversations() })
   }
 
   /**
@@ -748,26 +771,39 @@ export function useMindMate(options: MindMateOptions = {}) {
     // Abort any ongoing stream first
     if (abortController.value) {
       abortController.value.abort()
-      abortController.value = null
     }
 
-    // Clear current messages and load from history
-    messages.value = []
-    conversationId.value = convId
+    state.value = 'loading'
+    isLoadingHistory.value = true
+    clearMessages()
 
-    // Sync with store - update current conversation and title
-    mindMateStore.setCurrentConversation(convId)
+    try {
+      // Use Vue Query to fetch messages (will use cache if available)
+      const difyMessages = await queryClient.fetchQuery({
+        queryKey: difyKeys.messages(convId),
+        queryFn: async () => {
+          // Use fetch with credentials (token in httpOnly cookie)
+          const response = await fetch(`/api/dify/conversations/${convId}/messages?limit=100`, {
+            credentials: 'same-origin',
+          })
 
-    // Set high message count to prevent title auto-generation for loaded conversations
-    mindMateStore.messageCount = 999
+          if (!response.ok) {
+            // Handle token expiration - show login modal
+            if (response.status === 401) {
+              authStore.handleTokenExpired('您的登录已过期，请重新登录后查看对话历史')
+              throw new Error('Session expired')
+            }
+            throw new Error('Failed to fetch conversation messages')
+          }
 
-    // Check if messages are cached (prefetched)
-    const cachedMessages = mindMateStore.getCachedMessages(convId)
-    if (cachedMessages && cachedMessages.length > 0) {
-      // Use cached messages - instant load, no loading state needed
-      console.debug(`[MindMate] Using ${cachedMessages.length} cached messages for conversation ${convId}`)
+          const result = await response.json()
+          const messages: DifyMessage[] = result.data || []
+          return messages.sort((a, b) => a.created_at - b.created_at)
+        },
+      })
 
-      for (const msg of cachedMessages) {
+      // Load messages into UI
+      for (const msg of difyMessages) {
         if (msg.query) {
           addMessage('user', msg.query)
         }
@@ -777,42 +813,6 @@ export function useMindMate(options: MindMateOptions = {}) {
       }
 
       hasGreeted.value = true
-      return
-    }
-
-    // Not cached - fetch from API with loading state
-    state.value = 'loading'
-    isLoadingHistory.value = true
-
-    try {
-      const token = localStorage.getItem('access_token')
-      const headers: Record<string, string> = {}
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`
-      }
-
-      const response = await fetch(`/api/dify/conversations/${convId}/messages?limit=100`, {
-        headers,
-      })
-
-      if (response.ok) {
-        const result = await response.json()
-        const difyMessages = result.data || []
-
-        // Sort messages by created_at timestamp (ascending) to ensure chronological order
-        const sortedMessages = [...difyMessages].sort((a, b) => a.created_at - b.created_at)
-
-        for (const msg of sortedMessages) {
-          if (msg.query) {
-            addMessage('user', msg.query)
-          }
-          if (msg.answer) {
-            addMessage('assistant', msg.answer)
-          }
-        }
-
-        hasGreeted.value = true
-      }
     } catch (error) {
       console.debug('[MindMate] Failed to load conversation:', error)
       onError?.('Failed to load conversation')

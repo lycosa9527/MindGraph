@@ -1,14 +1,30 @@
 /**
  * Auth Store - Pinia store for authentication state
- * Migrated from auth-helper.js
+ *
+ * Security: Tokens are stored in httpOnly cookies, not accessible to JavaScript.
+ * Only user metadata is stored in sessionStorage for UI display.
+ *
+ * Token Flow:
+ * - Access tokens (1 hour) stored in httpOnly cookie, auto-refreshed via refresh token
+ * - Refresh tokens (7 days) stored in httpOnly cookie with restricted path
+ * - User data stored in sessionStorage (cleared on browser close)
  */
 import { computed, ref } from 'vue'
 
 import { defineStore } from 'pinia'
 
-import type { AuthMode, CaptchaResponse, LoginCredentials, LoginResponse, User } from '@/types'
+import { useQueryClient } from '@tanstack/vue-query'
 
-const TOKEN_KEY = 'access_token'
+import type {
+  AuthMode,
+  BackendUser,
+  CaptchaResponse,
+  LoginCredentials,
+  LoginResponse,
+  User,
+} from '@/types'
+
+// User data stored in sessionStorage (not tokens - those are in httpOnly cookies)
 const USER_KEY = 'auth_user'
 const MODE_KEY = 'auth_mode'
 const API_BASE = '/api/auth'
@@ -16,10 +32,14 @@ const API_BASE = '/api/auth'
 export const useAuthStore = defineStore('auth', () => {
   // State
   const user = ref<User | null>(null)
+  // Token is no longer stored in JavaScript - it's in httpOnly cookies
+  // This ref is kept for backward compatibility but should not be relied upon
   const token = ref<string | null>(null)
   const mode = ref<AuthMode>('standard')
   const loading = ref(false)
   const sessionMonitorInterval = ref<number | null>(null)
+  const showSessionExpiredModal = ref(false)
+  const sessionExpiredMessage = ref('')
 
   // Getters
   const isAuthenticated = computed(() => !!user.value)
@@ -30,11 +50,10 @@ export const useAuthStore = defineStore('auth', () => {
 
   // Actions
   function initFromStorage(): void {
-    const storedToken = localStorage.getItem(TOKEN_KEY)
-    const storedUser = localStorage.getItem(USER_KEY)
-    const storedMode = localStorage.getItem(MODE_KEY) as AuthMode
+    // Load user data from sessionStorage (not tokens - those are in httpOnly cookies)
+    const storedUser = sessionStorage.getItem(USER_KEY)
+    const storedMode = sessionStorage.getItem(MODE_KEY) as AuthMode
 
-    if (storedToken) token.value = storedToken
     if (storedUser) {
       try {
         user.value = JSON.parse(storedUser)
@@ -43,14 +62,33 @@ export const useAuthStore = defineStore('auth', () => {
       }
     }
     if (storedMode) mode.value = storedMode
+
+    // Also check localStorage for migration from old storage (one-time migration)
+    if (!user.value) {
+      const legacyUser = localStorage.getItem(USER_KEY)
+      if (legacyUser) {
+        try {
+          user.value = JSON.parse(legacyUser)
+          // Migrate to sessionStorage
+          sessionStorage.setItem(USER_KEY, legacyUser)
+          // Clean up localStorage (tokens should not be there)
+          localStorage.removeItem(USER_KEY)
+          localStorage.removeItem('access_token')
+        } catch {
+          user.value = null
+        }
+      }
+    }
   }
 
   function setToken(newToken: string): void {
+    // Token is stored in httpOnly cookie by backend, not in JavaScript
+    // This is kept for backward compatibility during transition
     token.value = newToken
-    localStorage.setItem(TOKEN_KEY, newToken)
+    // Do NOT store in localStorage - security risk
   }
 
-  function normalizeUser(backendUser: any): User {
+  function normalizeUser(backendUser: BackendUser): User {
     // Backend returns: id, phone, name, organization (string or object), avatar
     // Frontend expects: id, username, phone, schoolName, avatar, etc.
     let avatar = backendUser.avatar || '🐈‍⬛'
@@ -58,42 +96,50 @@ export const useAuthStore = defineStore('auth', () => {
     if (avatar.startsWith('avatar_')) {
       avatar = '🐈‍⬛'
     }
+    // Handle organization which can be string or object
+    const org = backendUser.organization
+    const orgIsObject = typeof org === 'object' && org !== null
+    const orgId = orgIsObject ? org.id : undefined
+    const orgName = orgIsObject ? org.name : typeof org === 'string' ? org : undefined
+
     return {
       id: String(backendUser.id || backendUser.user?.id || ''),
       username: backendUser.name || backendUser.username || backendUser.phone || '',
       phone: backendUser.phone || backendUser.user?.phone || '',
       email: backendUser.email,
       role: backendUser.role || 'user',
-      schoolId: backendUser.organization?.id
-        ? String(backendUser.organization.id)
-        : backendUser.schoolId,
-      schoolName:
-        backendUser.organization?.name || backendUser.organization || backendUser.schoolName || '',
+      schoolId: orgId ? String(orgId) : backendUser.schoolId,
+      schoolName: orgName || backendUser.schoolName || '',
       avatar,
       createdAt: backendUser.created_at || backendUser.createdAt,
       lastLogin: backendUser.last_login || backendUser.lastLogin,
     }
   }
 
-  function setUser(newUser: User | any): void {
+  function setUser(newUser: User | BackendUser): void {
     // Normalize backend user format to frontend format
     const normalizedUser = normalizeUser(newUser)
     user.value = normalizedUser
-    localStorage.setItem(USER_KEY, JSON.stringify(normalizedUser))
+    // Store in sessionStorage (cleared on browser close, not a security risk like localStorage)
+    sessionStorage.setItem(USER_KEY, JSON.stringify(normalizedUser))
   }
 
   function setMode(newMode: AuthMode): void {
     mode.value = newMode
-    localStorage.setItem(MODE_KEY, newMode)
+    sessionStorage.setItem(MODE_KEY, newMode)
   }
 
   function clearAuth(): void {
     user.value = null
     token.value = null
     mode.value = 'standard'
-    localStorage.removeItem(TOKEN_KEY)
+    // Clear sessionStorage
+    sessionStorage.removeItem(USER_KEY)
+    sessionStorage.removeItem(MODE_KEY)
+    // Also clear any legacy localStorage (migration cleanup)
     localStorage.removeItem(USER_KEY)
     localStorage.removeItem(MODE_KEY)
+    localStorage.removeItem('access_token')
     stopSessionMonitoring()
   }
 
@@ -128,17 +174,23 @@ export const useAuthStore = defineStore('auth', () => {
   async function logout(): Promise<void> {
     const currentMode = mode.value
 
-    // Only call logout endpoint if we have a token
-    if (token.value) {
-      try {
-        await fetch(`${API_BASE}/logout`, {
-          method: 'POST',
-          credentials: 'same-origin',
-          headers: { Authorization: `Bearer ${token.value}` },
-        })
-      } catch (error) {
-        console.error('Logout error:', error)
-      }
+    // Call logout endpoint - token is in httpOnly cookie
+    try {
+      await fetch(`${API_BASE}/logout`, {
+        method: 'POST',
+        credentials: 'same-origin',
+      })
+    } catch (error) {
+      console.error('Logout error:', error)
+    }
+
+    // Clear Vue Query cache to prevent data leakage between users
+    try {
+      const queryClient = useQueryClient()
+      queryClient.clear()
+    } catch (error) {
+      // Query client might not be available in some contexts, ignore
+      console.debug('Failed to clear query cache on logout:', error)
     }
 
     clearAuth()
@@ -152,16 +204,11 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function checkAuth(): Promise<boolean> {
-    // If no token exists, user is definitely not authenticated
-    // Skip the API call to avoid unnecessary 401 errors
-    if (!token.value) {
-      return false
-    }
-
+    // Token is in httpOnly cookie, so we just make the API call
+    // The cookie will be sent automatically
     try {
       const response = await fetch(`${API_BASE}/me`, {
         credentials: 'same-origin',
-        headers: { Authorization: `Bearer ${token.value}` },
       })
 
       if (response.ok) {
@@ -173,7 +220,41 @@ export const useAuthStore = defineStore('auth', () => {
         }
       }
 
+      // If 401, try to refresh the token silently
+      if (response.status === 401) {
+        const refreshed = await refreshAccessToken()
+        if (refreshed) {
+          // Retry the auth check
+          const retryResponse = await fetch(`${API_BASE}/me`, {
+            credentials: 'same-origin',
+          })
+          if (retryResponse.ok) {
+            const data = await retryResponse.json()
+            if (data.user || data.id) {
+              setUser(data.user || data)
+              startSessionMonitoring()
+              return true
+            }
+          }
+        }
+      }
+
       return false
+    } catch {
+      return false
+    }
+  }
+
+  /**
+   * Attempt to refresh the access token using the refresh token cookie
+   */
+  async function refreshAccessToken(): Promise<boolean> {
+    try {
+      const response = await fetch(`${API_BASE}/refresh`, {
+        method: 'POST',
+        credentials: 'same-origin',
+      })
+      return response.ok
     } catch {
       return false
     }
@@ -192,16 +273,17 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function refreshToken(): Promise<boolean> {
-    // If no token exists, nothing to refresh
-    if (!token.value) {
+    // First try to refresh the access token using the refresh token
+    const refreshed = await refreshAccessToken()
+    if (!refreshed) {
       return false
     }
 
+    // Then fetch fresh user data
     try {
       const response = await fetch(`${API_BASE}/me`, {
         method: 'GET',
         credentials: 'same-origin',
-        headers: { Authorization: `Bearer ${token.value}` },
       })
 
       if (response.ok) {
@@ -258,8 +340,8 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function checkSessionStatus(): Promise<void> {
-    // Skip session check if no token exists
-    if (!token.value) {
+    // Skip session check if no user in state
+    if (!user.value) {
       return
     }
 
@@ -267,13 +349,16 @@ export const useAuthStore = defineStore('auth', () => {
       const response = await fetch(`${API_BASE}/session-status`, {
         method: 'GET',
         credentials: 'same-origin',
-        headers: { Authorization: `Bearer ${token.value}` },
       })
 
       if (response.status === 401) {
-        handleSessionInvalidation(
-          'Your session was invalidated because you logged in from another location'
-        )
+        // Try to refresh the token first
+        const refreshed = await refreshAccessToken()
+        if (!refreshed) {
+          handleSessionInvalidation(
+            'Your session was invalidated because you logged in from another location'
+          )
+        }
         return
       }
 
@@ -292,6 +377,47 @@ export const useAuthStore = defineStore('auth', () => {
     stopSessionMonitoring()
     alert(message || 'Your account was logged in from another location.')
     logout()
+  }
+
+  /**
+   * Handle token expiration - clears auth state and shows login modal
+   * This is called when API calls return 401 due to expired JWT token
+   */
+  function handleTokenExpired(message?: string): void {
+    // Prevent multiple triggers
+    if (showSessionExpiredModal.value) {
+      return
+    }
+
+    stopSessionMonitoring()
+
+    // Clear auth state without redirect (unlike logout)
+    user.value = null
+    token.value = null
+    sessionStorage.removeItem(USER_KEY)
+    // Clear any legacy localStorage
+    localStorage.removeItem('access_token')
+    localStorage.removeItem('auth_user')
+
+    // Clear Vue Query cache
+    try {
+      const queryClient = useQueryClient()
+      queryClient.clear()
+    } catch {
+      // Query client might not be available
+    }
+
+    // Set message and show modal
+    sessionExpiredMessage.value = message || '您的登录已过期，请重新登录'
+    showSessionExpiredModal.value = true
+  }
+
+  /**
+   * Close the session expired modal
+   */
+  function closeSessionExpiredModal(): void {
+    showSessionExpiredModal.value = false
+    sessionExpiredMessage.value = ''
   }
 
   async function requireAuth(redirectUrl?: string): Promise<boolean> {
@@ -324,6 +450,8 @@ export const useAuthStore = defineStore('auth', () => {
     token,
     mode,
     loading,
+    showSessionExpiredModal,
+    sessionExpiredMessage,
 
     // Getters
     isAuthenticated,
@@ -347,5 +475,8 @@ export const useAuthStore = defineStore('auth', () => {
     startSessionMonitoring,
     stopSessionMonitoring,
     requireAuth,
+    handleTokenExpired,
+    closeSessionExpiredModal,
+    refreshAccessToken,
   }
 })

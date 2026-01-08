@@ -1,37 +1,44 @@
 # MindGraph API Endpoints Summary
 
-## Total Endpoints: **91**
+## Total Endpoints: **134**
 
 This document provides a comprehensive list of all API endpoints in the MindGraph application.
 
 ---
 
-## Health & Status Endpoints (3)
+## Health & Status Endpoints (5)
 
 | Method | Path | Description | Auth Required |
 |--------|------|-------------|---------------|
 | GET | `/health` | Basic health check | No |
-| GET | `/status` | Application status with metrics | No |
+| GET | `/health/redis` | Redis health check | No |
 | GET | `/health/database` | Database health check | No |
+| GET | `/health/all` | Comprehensive health check (all components) | No |
+| GET | `/status` | Application status with metrics | No |
 
 ---
 
-## Page Routes (8)
+## Page Routes (13)
 
 | Method | Path | Description | Auth Required |
 |--------|------|-------------|---------------|
-| GET | `/` | Root page (redirects based on auth mode) | No |
-| GET | `/debug` | Debug page | Admin (or DEBUG mode) |
+| GET | `/` | Root page (Vue SPA) | No |
 | GET | `/editor` | Interactive editor | Yes (varies by mode) |
-| GET | `/auth` | Authentication page | No |
-| GET | `/loginByXz` | Bayi mode authentication | No |
-| GET | `/demo` | Demo/Bayi passkey page | No |
-| GET | `/favicon.ico` | Favicon | No |
 | GET | `/admin` | Admin management panel | Admin |
+| GET | `/admin/{path}` | Admin sub-routes | Admin |
+| GET | `/login` | Login page | No |
+| GET | `/auth` | Authentication page | No |
+| GET | `/demo` | Demo/Bayi passkey page | No |
+| GET | `/dashboard` | Dashboard page | Yes |
+| GET | `/dashboard/login` | Dashboard login page | No |
+| GET | `/pub-dash` | Public dashboard | No |
+| GET | `/debug` | Debug page | Admin (or DEBUG mode) |
+| GET | `/loginByXz` | Bayi mode authentication | No |
+| GET | `/favicon.ico` | Favicon | No |
 
 ---
 
-## Main API Endpoints (13)
+## Main API Endpoints (14)
 
 | Method | Path | Description | Auth Required |
 |--------|------|-------------|---------------|
@@ -52,7 +59,7 @@ This document provides a comprehensive list of all API endpoints in the MindGrap
 
 ---
 
-## Authentication Endpoints (33)
+## Authentication Endpoints (37)
 
 ### Public Auth Endpoints
 
@@ -71,6 +78,10 @@ This document provides a comprehensive list of all API endpoints in the MindGrap
 | GET | `/api/auth/me` | Get current user | Yes |
 | POST | `/api/auth/demo/verify` | Verify demo passkey | No |
 | POST | `/api/auth/logout` | User logout | Yes |
+| GET | `/api/auth/avatars` | Get available avatars | No |
+| PUT | `/api/auth/avatar` | Update user avatar | Yes |
+| POST | `/api/auth/phone/send-code` | Send SMS code for phone change | Yes |
+| POST | `/api/auth/phone/change` | Complete phone number change | Yes |
 
 ### Admin Auth Endpoints
 
@@ -188,14 +199,86 @@ This document provides a comprehensive list of all API endpoints in the MindGrap
 
 ---
 
+## Public Dashboard Endpoints (4)
+
+| Method | Path | Description | Auth Required |
+|--------|------|-------------|---------------|
+| GET | `/api/public/stats` | Get dashboard statistics | Dashboard Session |
+| GET | `/api/public/map-data` | Get active users map data | Dashboard Session |
+| GET | `/api/public/activity-history` | Get activity history | Dashboard Session |
+| GET | `/api/public/activity-stream` | SSE stream for real-time activity | Dashboard Session |
+
+---
+
+## School Zone Endpoints (9)
+
+Organization-scoped content sharing for MindMate courses and MindGraph diagrams.
+
+| Method | Path | Description | Auth Required |
+|--------|------|-------------|---------------|
+| GET | `/api/school-zone/posts` | List shared diagrams | Yes + Org |
+| POST | `/api/school-zone/posts` | Create shared diagram | Yes + Org |
+| GET | `/api/school-zone/posts/{post_id}` | Get specific diagram | Yes + Org |
+| DELETE | `/api/school-zone/posts/{post_id}` | Delete shared diagram | Yes + Org |
+| POST | `/api/school-zone/posts/{post_id}/like` | Toggle like on diagram | Yes + Org |
+| GET | `/api/school-zone/posts/{post_id}/comments` | List comments | Yes + Org |
+| POST | `/api/school-zone/posts/{post_id}/comments` | Add comment | Yes + Org |
+| DELETE | `/api/school-zone/posts/{post_id}/comments/{comment_id}` | Delete comment | Yes + Org |
+| GET | `/api/school-zone/categories` | List available categories | Yes + Org |
+
+---
+
+## Diagram Storage Endpoints (7)
+
+User diagram storage with CRUD operations.
+
+| Method | Path | Description | Auth Required |
+|--------|------|-------------|---------------|
+| POST | `/api/diagrams` | Create new diagram | Yes |
+| GET | `/api/diagrams` | List user's diagrams (paginated) | Yes |
+| GET | `/api/diagrams/{diagram_id}` | Get specific diagram | Yes |
+| PUT | `/api/diagrams/{diagram_id}` | Update diagram | Yes |
+| DELETE | `/api/diagrams/{diagram_id}` | Soft delete diagram | Yes |
+| POST | `/api/diagrams/{diagram_id}/duplicate` | Duplicate diagram | Yes |
+| POST | `/api/diagrams/{diagram_id}/pin` | Pin/unpin diagram | Yes |
+
+---
+
+## Dify Integration Endpoints (10)
+
+Integration with Dify AI platform for chat and file handling.
+
+| Method | Path | Description | Auth Required |
+|--------|------|-------------|---------------|
+| POST | `/api/dify/files/upload` | Upload file to Dify | Yes |
+| GET | `/api/dify/app/parameters` | Get Dify app parameters | Yes |
+| GET | `/api/dify/conversations` | List user's conversations | Yes |
+| DELETE | `/api/dify/conversations/{id}` | Delete conversation | Yes |
+| POST | `/api/dify/conversations/{id}/name` | Rename conversation | Yes |
+| GET | `/api/dify/conversations/{id}/messages` | Get conversation messages | Yes |
+| GET | `/api/dify/user-id` | Get user's Dify ID | Yes |
+| POST | `/api/dify/messages/{message_id}/feedback` | Submit message feedback | Yes |
+| GET | `/api/dify/pinned` | List pinned conversation IDs | Yes |
+| POST | `/api/dify/conversations/{id}/pin` | Toggle pin status | Yes |
+
+---
+
+## Image Proxy Endpoint (1)
+
+| Method | Path | Description | Auth Required |
+|--------|------|-------------|---------------|
+| GET | `/api/proxy-image` | Proxy external images (CORS bypass) | No |
+
+---
+
 ## Endpoint Categories Summary
 
 | Category | Count |
 |----------|-------|
-| Health & Status | 3 |
-| Page Routes | 8 |
-| Main API | 13 |
-| Authentication | 33 |
+| Health & Status | 5 |
+| Page Routes | 13 |
+| Main API | 14 |
+| Authentication | 37 |
 | Cache | 3 |
 | Node Palette | 6 |
 | Admin Environment | 6 |
@@ -204,7 +287,12 @@ This document provides a comprehensive list of all API endpoints in the MindGrap
 | Update Notification | 7 |
 | Tab Mode | 2 |
 | Voice Agent | 1 |
-| **Total** | **91** |
+| Public Dashboard | 4 |
+| School Zone | 9 |
+| Diagram Storage | 7 |
+| Dify Integration | 10 |
+| Image Proxy | 1 |
+| **Total** | **134** |
 
 ---
 
@@ -215,7 +303,8 @@ Endpoints may require one of the following authentication methods:
 1. **JWT Token**: `Authorization: Bearer <token>` header
 2. **API Key**: `X-API-Key: <key>` header
 3. **Cookie**: `access_token` cookie (for browser sessions)
-4. **None**: Public endpoints
+4. **Dashboard Session**: `dashboard_access_token` cookie (for public dashboard)
+5. **None**: Public endpoints
 
 ---
 
@@ -226,10 +315,11 @@ Endpoints may require one of the following authentication methods:
 - Some endpoints have different behavior based on `AUTH_MODE` (standard, demo, enterprise, bayi)
 - API key authentication is supported for external integrations
 - All endpoints support CORS for configured origins
+- School Zone endpoints require user to belong to an organization (Yes + Org)
+- Rate limiting is applied to most endpoints (varies by endpoint type)
 
 ---
 
-*Last Updated: 2025-12-21*
-*Version: 4.37.3*
-
+*Last Updated: 2025-01-08*
+*Version: 5.1.1*
 

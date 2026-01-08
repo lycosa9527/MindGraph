@@ -7,6 +7,49 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [5.1.1] - 2025-01-08 - Security Enhancements and TypeScript Improvements
+
+### Security
+
+- **httpOnly Cookie Token Storage** (`frontend/src/stores/auth.ts`, `routers/auth/session.py`)
+  - Migrated JWT tokens from localStorage to httpOnly cookies (not accessible to JavaScript)
+  - Access tokens (1 hour) stored in httpOnly cookie with auto-refresh
+  - Refresh tokens (7 days) stored in httpOnly cookie with restricted path
+  - User metadata stored in sessionStorage (cleared on browser close)
+  - Added automatic token refresh on 401 responses
+  - Added Vue Query cache clearing on logout to prevent data leakage between users
+
+- **Session Management Improvements** (`routers/auth/session.py`, `services/redis_session_manager.py`)
+  - Enhanced session status checking with token refresh fallback
+  - Added session expired modal with user-friendly messaging
+  - Improved session invalidation handling for multi-device login scenarios
+
+### Changed
+
+- **Auth Store Refactoring** (`frontend/src/stores/auth.ts`)
+  - Removed direct token storage in JavaScript for security
+  - Added `refreshAccessToken()` function for silent token refresh
+  - Added `handleTokenExpired()` and `closeSessionExpiredModal()` for expiration handling
+  - Added one-time migration from localStorage to sessionStorage for existing users
+  - Updated all API calls to rely on cookie-based authentication
+
+### Fixed
+
+- **TypeScript Type Safety** (`frontend/src/stores/auth.ts`, `frontend/src/types/auth.ts`)
+  - Added `BackendUser` interface to properly type API responses
+  - Fixed `any` type warnings in `normalizeUser()` and `setUser()` functions
+  - Improved type narrowing for organization field (string or object)
+
+- **Linting Fix** (`frontend/src/types/vueflow.ts`)
+  - Removed trailing whitespace causing linting errors
+
+### Removed
+
+- **Housekeeping**
+  - Removed unused `mindgraph_logo.png` from root folder (proper location: `frontend/src/assets/`)
+
+---
+
 ## [5.1.0] - 2025-01-08 - Navigation Restructure, AI Model Selector Enhancements, and Auto-Save
 
 ### Added

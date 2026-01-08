@@ -19,6 +19,7 @@ from config.database import get_db
 from models.auth import User
 from models.messages import Messages
 from models.requests import ChangePasswordRequest, ResetPasswordWithSMSRequest
+from services.redis_session_manager import get_refresh_token_manager, get_session_manager
 from services.redis_user_cache import user_cache
 from utils.auth import hash_password, get_client_ip, get_current_user, verify_password
 
@@ -97,10 +98,29 @@ async def reset_password_with_sms(
     except Exception as e:
         logger.warning(f"[Auth] Failed to update cache after password reset: {e}")
     
+    # Revoke all refresh tokens (security: password changed)
+    try:
+        refresh_manager = get_refresh_token_manager()
+        revoked_count = refresh_manager.revoke_all_refresh_tokens(
+            user_id=user.id, 
+            reason="password_reset"
+        )
+        if revoked_count > 0:
+            logger.info(f"[TokenAudit] Password reset: revoked {revoked_count} refresh tokens for user {user.id}")
+    except Exception as e:
+        logger.warning(f"[Auth] Failed to revoke refresh tokens after password reset: {e}")
+    
+    # Invalidate all access token sessions
+    try:
+        session_manager = get_session_manager()
+        session_manager.invalidate_user_sessions(user.id)
+    except Exception as e:
+        logger.warning(f"[Auth] Failed to invalidate sessions after password reset: {e}")
+    
     # Get client IP address
     client_ip = get_client_ip(http_request) if http_request else "unknown"
     
-    logger.info(f"Password reset via SMS for user: {user.phone} (ID: {user.id}, Method: SMS, IP: {client_ip})")
+    logger.info(f"[TokenAudit] Password reset: user={user.id}, phone={user.phone}, method=sms, ip={client_ip}")
     
     return {
         "message": Messages.success("password_reset_success", lang),
@@ -168,7 +188,26 @@ async def change_password(
     except Exception as e:
         logger.warning(f"Failed to update cache after password change: {e}")
     
-    logger.info(f"Password changed for user: {user.phone} (ID: {user.id})")
+    # Revoke all refresh tokens (security: password changed)
+    try:
+        refresh_manager = get_refresh_token_manager()
+        revoked_count = refresh_manager.revoke_all_refresh_tokens(
+            user_id=user.id, 
+            reason="password_change"
+        )
+        if revoked_count > 0:
+            logger.info(f"[TokenAudit] Password change: revoked {revoked_count} refresh tokens for user {user.id}")
+    except Exception as e:
+        logger.warning(f"Failed to revoke refresh tokens after password change: {e}")
+    
+    # Invalidate all access token sessions (except current one will need re-auth)
+    try:
+        session_manager = get_session_manager()
+        session_manager.invalidate_user_sessions(user.id)
+    except Exception as e:
+        logger.warning(f"Failed to invalidate sessions after password change: {e}")
+    
+    logger.info(f"[TokenAudit] Password changed: user={user.id}, phone={user.phone}")
     
     return {
         "message": Messages.success("password_change_success", lang)

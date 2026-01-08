@@ -21,6 +21,7 @@ export interface MindMateConversation {
   name: string
   created_at: number
   updated_at: number
+  is_pinned?: boolean
 }
 
 // Cached message structure (raw Dify format)
@@ -50,6 +51,7 @@ export const useMindMateStore = defineStore('mindmate', () => {
   // =========================================================================
 
   const conversations = ref<MindMateConversation[]>([])
+  const pinnedConversationIds = ref<Set<string>>(new Set())
   const currentConversationId = ref<string | null>(null)
   const conversationTitle = ref<string>('MindMate')
   const isLoadingConversations = ref(false)
@@ -73,15 +75,6 @@ export const useMindMateStore = defineStore('mindmate', () => {
   // =========================================================================
   // Helpers
   // =========================================================================
-
-  function getAuthHeaders(): Record<string, string> {
-    const token = localStorage.getItem('access_token')
-    const headers: Record<string, string> = {}
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`
-    }
-    return headers
-  }
 
   /**
    * localStorage key for message cache
@@ -208,105 +201,44 @@ export const useMindMateStore = defineStore('mindmate', () => {
   // =========================================================================
 
   /**
-   * Fetch all conversations from the API
+   * Sync conversations from Vue Query data
+   * Called by components that use useConversations() query
    */
-  async function fetchConversations(): Promise<void> {
-    if (isLoadingConversations.value) return
-
-    isLoadingConversations.value = true
-
-    try {
-      const response = await fetch('/api/dify/conversations?limit=50', {
-        headers: getAuthHeaders(),
-      })
-
-      if (response.ok) {
-        const result = await response.json()
-        conversations.value = result.data || []
-      }
-    } catch (error) {
-      console.debug('[MindMateStore] Failed to fetch conversations:', error)
-    } finally {
-      isLoadingConversations.value = false
-    }
-
-    // Prefetch messages for the 3 most recent conversations
-    prefetchRecentConversations(3)
-
-    // Clean up old cache entries that are no longer in top 3
-    pruneOldCacheEntries()
+  function syncConversationsFromQuery(
+    convs: MindMateConversation[],
+    pinnedIds: Set<string>
+  ): void {
+    pinnedConversationIds.value = pinnedIds
+    conversations.value = convs.map((conv) => ({
+      ...conv,
+      is_pinned: pinnedIds.has(conv.id),
+    }))
+    sortConversations()
   }
 
   /**
-   * Prefetch messages for the N most recent conversations
-   * Loads from localStorage first if available, otherwise fetches from API
+   * Sort conversations: pinned first, then by updated_at descending
    */
-  async function prefetchRecentConversations(count: number = 3): Promise<void> {
-    const recentConvs = conversations.value.slice(0, count)
-
-    for (const conv of recentConvs) {
-      // Skip if already in memory cache or currently prefetching
-      if (messageCache.value.has(conv.id) || prefetchingConversations.value.has(conv.id)) {
-        continue
-      }
-
-      // Check localStorage first
-      const storageCache = loadMessagesFromStorage(conv.id)
-      if (storageCache) {
-        // Load into memory cache for faster access
-        messageCache.value.set(conv.id, storageCache)
-        console.debug(`[MindMateStore] Loaded ${storageCache.length} messages from localStorage for ${conv.id}`)
-        continue
-      }
-
-      // Not in localStorage - fetch from API in background (don't await)
-      prefetchConversationMessages(conv.id)
-    }
+  function sortConversations(): void {
+    conversations.value.sort((a, b) => {
+      // Pinned items first
+      if (a.is_pinned && !b.is_pinned) return -1
+      if (!a.is_pinned && b.is_pinned) return 1
+      // Then by updated_at (most recent first)
+      return b.updated_at - a.updated_at
+    })
   }
 
   /**
-   * Re-prefetch a conversation if it's in the top 3 (after cache was cleared)
+   * Toggle pin status for a conversation
+   * Thin wrapper - actual mutation handled by Vue Query
+   * This function is kept for backward compatibility but should use usePinConversation() mutation
    */
-  function rePrefetchIfInTop3(convId: string): void {
-    const top3Ids = conversations.value.slice(0, 3).map((c) => c.id)
-    if (top3Ids.includes(convId)) {
-      // Conversation is in top 3, prefetch in background
-      prefetchConversationMessages(convId)
-    }
-  }
-
-  /**
-   * Prefetch messages for a specific conversation (background)
-   */
-  async function prefetchConversationMessages(convId: string): Promise<void> {
-    // Mark as prefetching to avoid duplicate requests
-    prefetchingConversations.value.add(convId)
-
-    try {
-      const response = await fetch(`/api/dify/conversations/${convId}/messages?limit=100`, {
-        headers: getAuthHeaders(),
-      })
-
-      if (response.ok) {
-        const result = await response.json()
-        const difyMessages = result.data || []
-
-        // Sort by created_at and cache
-        const sortedMessages = [...difyMessages].sort(
-          (a: CachedDifyMessage, b: CachedDifyMessage) => a.created_at - b.created_at
-        )
-        messageCache.value.set(convId, sortedMessages)
-
-        // Save to localStorage for persistence across page refreshes
-        saveMessagesToStorage(convId, sortedMessages)
-
-        console.debug(`[MindMateStore] Prefetched ${sortedMessages.length} messages for conversation ${convId}`)
-      }
-    } catch (error) {
-      console.debug(`[MindMateStore] Failed to prefetch conversation ${convId}:`, error)
-    } finally {
-      prefetchingConversations.value.delete(convId)
-    }
+  async function pinConversation(convId: string): Promise<boolean> {
+    // This is now a no-op - mutations handle the API call
+    // Components should use usePinConversation() mutation directly
+    console.debug('[MindMateStore] pinConversation called - use usePinConversation() mutation instead')
+    return false
   }
 
   /**
@@ -368,69 +300,51 @@ export const useMindMateStore = defineStore('mindmate', () => {
 
   /**
    * Delete a conversation
+   * Thin wrapper - actual mutation handled by Vue Query
+   * This function handles local state cleanup after deletion
    */
   async function deleteConversation(convId: string): Promise<boolean> {
-    try {
-      const response = await fetch(`/api/dify/conversations/${convId}`, {
-        method: 'DELETE',
-        headers: getAuthHeaders(),
-      })
+    // Remove from local list (optimistic update)
+    conversations.value = conversations.value.filter((c) => c.id !== convId)
 
-      if (response.ok) {
-        // Remove from local list
-        conversations.value = conversations.value.filter((c) => c.id !== convId)
+    // Remove from pinned set if it was pinned
+    pinnedConversationIds.value.delete(convId)
 
-        // Clear cached messages for this conversation (memory and localStorage)
-        messageCache.value.delete(convId)
-        clearMessagesFromStorage(convId)
+    // Clear cached messages for this conversation (memory and localStorage)
+    messageCache.value.delete(convId)
+    clearMessagesFromStorage(convId)
 
-        // If deleted current conversation, emit event to start new one
-        if (currentConversationId.value === convId) {
-          currentConversationId.value = null
-          conversationTitle.value = 'MindMate'
-          messageCount.value = 0
-          eventBus.emit('mindmate:start_new_conversation', {})
-        }
-
-        return true
-      }
-    } catch (error) {
-      console.debug('[MindMateStore] Failed to delete conversation:', error)
+    // If deleted current conversation, emit event to start new one
+    if (currentConversationId.value === convId) {
+      currentConversationId.value = null
+      conversationTitle.value = 'MindMate'
+      messageCount.value = 0
+      eventBus.emit('mindmate:start_new_conversation', {})
     }
 
-    return false
+    // Actual API call should be handled by useDeleteConversation() mutation
+    return true
   }
 
   /**
    * Rename a conversation
+   * Thin wrapper - actual mutation handled by Vue Query
+   * This function handles local state updates
    */
   async function renameConversation(convId: string, newName: string): Promise<boolean> {
-    try {
-      const response = await fetch(`/api/dify/conversations/${convId}/name`, {
-        method: 'POST',
-        headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: newName, auto_generate: false }),
-      })
-
-      if (response.ok) {
-        // Update in local list
-        const conv = conversations.value.find((c) => c.id === convId)
-        if (conv) {
-          conv.name = newName
-        }
-
-        // Update title if this is the current conversation
-        if (currentConversationId.value === convId) {
-          conversationTitle.value = newName
-        }
-
-        return true
-      }
-    } catch (error) {
-      console.debug('[MindMateStore] Failed to rename conversation:', error)
+    // Update in local list (optimistic update)
+    const conv = conversations.value.find((c) => c.id === convId)
+    if (conv) {
+      conv.name = newName
     }
 
-    return false
+    // Update title if this is the current conversation
+    if (currentConversationId.value === convId) {
+      conversationTitle.value = newName
+    }
+
+    // Actual API call should be handled by useRenameConversation() mutation
+    return true
   }
 
   /**
@@ -489,40 +403,25 @@ export const useMindMateStore = defineStore('mindmate', () => {
 
   /**
    * Fetch Dify's auto-generated title
+   * Thin wrapper - actual mutation handled by Vue Query
+   * This function handles local state updates after title generation
    */
   async function fetchDifyTitle(): Promise<void> {
     if (!currentConversationId.value) return
 
-    try {
-      const response = await fetch(`/api/dify/conversations/${currentConversationId.value}/name`, {
-        method: 'POST',
-        headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
-        body: JSON.stringify({ auto_generate: true }),
-      })
-
-      if (response.ok) {
-        const result = await response.json()
-        const newTitle = result.data?.name || result.data?.title
-        if (newTitle && newTitle !== conversationTitle.value) {
-          updateConversationTitle(newTitle)
-        }
-      }
-    } catch (error) {
-      console.debug('[MindMateStore] Failed to fetch Dify title:', error)
-    }
+    // Actual API call should be handled by useGenerateTitle() mutation
+    // This function is kept for backward compatibility
+    // The mutation's onSuccess will trigger cache invalidation
   }
 
   /**
    * Add a new conversation to the list (after first message creates it)
+   * Used for optimistic updates when SSE creates a new conversation
    */
   function addConversation(conv: MindMateConversation): void {
-    // Add to beginning of list
+    // Add to beginning of list (optimistic update)
     conversations.value.unshift(conv)
-
-    // New conversation is now #1, so top 3 might have changed
-    // Re-prefetch top 3 to ensure cache is up to date
-    // (New conversation doesn't need prefetch - it only has 1 message already in memory)
-    prefetchRecentConversations(3)
+    sortConversations()
   }
 
   /**
@@ -530,6 +429,7 @@ export const useMindMateStore = defineStore('mindmate', () => {
    */
   function reset(): void {
     conversations.value = []
+    pinnedConversationIds.value.clear()
     currentConversationId.value = null
     conversationTitle.value = 'MindMate'
     isLoadingConversations.value = false
@@ -546,6 +446,7 @@ export const useMindMateStore = defineStore('mindmate', () => {
   return {
     // State
     conversations,
+    pinnedConversationIds,
     currentConversationId,
     conversationTitle,
     isLoadingConversations,
@@ -556,10 +457,11 @@ export const useMindMateStore = defineStore('mindmate', () => {
     currentConversation,
 
     // Actions
-    fetchConversations,
+    syncConversationsFromQuery,
     setCurrentConversation,
     deleteConversation,
     renameConversation,
+    pinConversation,
     startNewConversation,
     updateConversationTitle,
     trackMessage,
@@ -570,7 +472,5 @@ export const useMindMateStore = defineStore('mindmate', () => {
     // Message cache actions
     getCachedMessages,
     clearMessageCache,
-    prefetchRecentConversations,
-    rePrefetchIfInTop3,
   }
 })

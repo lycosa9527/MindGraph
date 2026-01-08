@@ -216,7 +216,7 @@ class TabExpandResponse(BaseModel):
 
 class DiagramResponse(BaseModel):
     """Response model for a single diagram"""
-    id: int = Field(..., description="Diagram ID")
+    id: str = Field(..., description="Diagram UUID")
     title: str = Field(..., description="Diagram title")
     diagram_type: str = Field(..., description="Type of diagram")
     spec: Dict[str, Any] = Field(..., description="Diagram specification")
@@ -228,7 +228,7 @@ class DiagramResponse(BaseModel):
     class Config:
         json_schema_extra = {
             "example": {
-                "id": 1,
+                "id": "550e8400-e29b-41d4-a716-446655440000",
                 "title": "My Mind Map",
                 "diagram_type": "mind_map",
                 "spec": {"topic": "Central Topic", "children": []},
@@ -242,20 +242,22 @@ class DiagramResponse(BaseModel):
 
 class DiagramListItem(BaseModel):
     """List item for diagram gallery view"""
-    id: int = Field(..., description="Diagram ID")
+    id: str = Field(..., description="Diagram UUID")
     title: str = Field(..., description="Diagram title")
     diagram_type: str = Field(..., description="Type of diagram")
     thumbnail: Optional[str] = Field(None, description="Base64 encoded thumbnail")
     updated_at: datetime = Field(..., description="Last update timestamp")
+    is_pinned: bool = Field(False, description="Whether diagram is pinned to top")
     
     class Config:
         json_schema_extra = {
             "example": {
-                "id": 1,
+                "id": "550e8400-e29b-41d4-a716-446655440000",
                 "title": "My Mind Map",
                 "diagram_type": "mind_map",
                 "thumbnail": None,
-                "updated_at": "2026-01-07T12:00:00"
+                "updated_at": "2026-01-07T12:00:00",
+                "is_pinned": False
             }
         }
 
@@ -267,14 +269,14 @@ class DiagramListResponse(BaseModel):
     page: int = Field(..., description="Current page number")
     page_size: int = Field(..., description="Number of items per page")
     has_more: bool = Field(..., description="Whether there are more pages")
-    max_diagrams: int = Field(10, description="Maximum diagrams allowed per user")
+    max_diagrams: int = Field(20, description="Maximum diagrams allowed per user")
     
     class Config:
         json_schema_extra = {
             "example": {
                 "diagrams": [
                     {
-                        "id": 1,
+                        "id": "550e8400-e29b-41d4-a716-446655440000",
                         "title": "My Mind Map",
                         "diagram_type": "mind_map",
                         "thumbnail": None,
@@ -285,7 +287,7 @@ class DiagramListResponse(BaseModel):
                 "page": 1,
                 "page_size": 10,
                 "has_more": False,
-                "max_diagrams": 10
+                "max_diagrams": 20
             }
         }
 

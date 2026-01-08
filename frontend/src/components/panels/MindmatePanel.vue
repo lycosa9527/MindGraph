@@ -4,7 +4,7 @@
  * Uses useMindMate composable for SSE streaming
  * Features: Markdown rendering, code highlighting, message actions, stop generation
  */
-import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 
 import { useLanguage, useMindMate, useNotifications } from '@/composables'
 import type { FeedbackRating } from '@/composables/useMindMate'
@@ -78,10 +78,7 @@ const showWelcome = computed(() => {
   return !mindMate.hasMessages.value && !mindMate.isLoading.value && !mindMate.isStreaming.value
 })
 
-// Fetch conversations on mount
-onMounted(() => {
-  mindMate.fetchConversations()
-})
+// No need to fetch - Vue Query handles it automatically
 
 // Watch for title changes to sync display (from store)
 watch(
@@ -119,9 +116,7 @@ async function animateTitleChange(newTitle: string, oldTitle?: string) {
 // Toggle history sidebar
 function toggleHistorySidebar() {
   showHistorySidebar.value = !showHistorySidebar.value
-  if (showHistorySidebar.value) {
-    mindMate.fetchConversations()
-  }
+  // No need to fetch - Vue Query handles it automatically
 }
 
 // Start a new conversation

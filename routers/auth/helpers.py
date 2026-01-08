@@ -27,7 +27,10 @@ from sqlalchemy.orm import Session
 
 from models.auth import User
 from services.redis_session_manager import get_session_manager
-from utils.auth import create_access_token, is_https, get_client_ip
+from utils.auth import (
+    create_access_token, is_https, get_client_ip,
+    ACCESS_TOKEN_EXPIRY_MINUTES, REFRESH_TOKEN_EXPIRY_DAYS
+)
 
 logger = logging.getLogger(__name__)
 
@@ -312,23 +315,49 @@ async def create_user_session(
 # COOKIE MANAGEMENT HELPERS
 # ============================================================================
 
-def set_auth_cookies(response: Response, token: str, http_request: Request):
+def set_auth_cookies(
+    response: Response, 
+    access_token: str, 
+    refresh_token: str,
+    http_request: Request
+):
     """
-    Set authentication cookies (access_token and show_ai_disclaimer).
+    Set authentication cookies for both access and refresh tokens.
+    
+    Security:
+    - Both tokens stored in httpOnly cookies (not accessible to JavaScript)
+    - Secure flag set based on HTTPS detection
+    - Access token: max_age = 1 hour, path = / 
+    - Refresh token: max_age = 7 days, path = /api/auth (restricted)
     
     Args:
         response: FastAPI Response object
-        token: JWT access token
+        access_token: JWT access token
+        refresh_token: Refresh token for silent refresh
         http_request: FastAPI Request object for HTTPS detection
     """
-    # Set token as HTTP-only cookie
+    is_secure = is_https(http_request)
+    
+    # Set access token as httpOnly cookie
     response.set_cookie(
         key="access_token",
-        value=token,
+        value=access_token,
         httponly=True,
-        secure=is_https(http_request),  # SECURITY: Auto-detect HTTPS
+        secure=is_secure,
         samesite="lax",
-        max_age=7 * 24 * 60 * 60  # 7 days
+        path="/",
+        max_age=ACCESS_TOKEN_EXPIRY_MINUTES * 60  # 1 hour default
+    )
+    
+    # Set refresh token as httpOnly cookie with restricted path
+    response.set_cookie(
+        key="refresh_token",
+        value=refresh_token,
+        httponly=True,
+        secure=is_secure,
+        samesite="strict",  # Stricter for refresh token
+        path="/api/auth",  # Only sent to auth endpoints
+        max_age=REFRESH_TOKEN_EXPIRY_DAYS * 24 * 60 * 60  # 7 days default
     )
     
     # Set flag cookie to indicate new login session (for AI disclaimer notification)
@@ -336,7 +365,7 @@ def set_auth_cookies(response: Response, token: str, http_request: Request):
         key="show_ai_disclaimer",
         value="true",
         httponly=False,  # Allow JavaScript to read it
-        secure=is_https(http_request),
+        secure=is_secure,
         samesite="lax",
         max_age=60 * 60  # 1 hour (should be cleared after showing notification)
     )

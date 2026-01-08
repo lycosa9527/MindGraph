@@ -30,15 +30,15 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'update:visible', value: boolean): void
-  (e: 'success', diagramId: number): void
+  (e: 'success', diagramId: string): void
   (e: 'cancel'): void
 }>()
 
 const savedDiagramsStore = useSavedDiagramsStore()
 const { isZh } = useLanguage()
 
-// State
-const selectedDiagramId = ref<number | null>(null)
+// State - use empty string instead of null for ElRadioGroup compatibility
+const selectedDiagramId = ref<string>('')
 const isDeleting = ref(false)
 
 // Computed
@@ -53,7 +53,7 @@ const maxDiagrams = computed(() => savedDiagramsStore.maxDiagrams)
 // Watch for visibility changes to reset state
 watch(() => props.visible, (visible) => {
   if (visible) {
-    selectedDiagramId.value = null
+    selectedDiagramId.value = ''
     isDeleting.value = false
     // Fetch latest diagrams
     savedDiagramsStore.fetchDiagrams()

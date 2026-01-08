@@ -2,9 +2,9 @@
 /**
  * ChatHistory - Grouped list of recent chat conversations
  * Design: Clean minimalist grouped by time periods
- * Shows max 10 items with "More" option
+ * Shows max 10 items initially with "Show more" option
  */
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import {
   ElDropdown,
@@ -17,9 +17,10 @@ import {
 
 import { Loading } from '@element-plus/icons-vue'
 
-import { Edit3, Lock, MessageCircle, MoreHorizontal, Trash2 } from 'lucide-vue-next'
+import { Edit3, Lock, MessageCircle, MoreHorizontal, Pin, Trash2 } from 'lucide-vue-next'
 
 import { useLanguage } from '@/composables'
+import { useConversations, usePinnedConversations, useDeleteConversation, useRenameConversation, usePinConversation } from '@/composables/queries'
 import { useAuthStore, useMindMateStore, type MindMateConversation } from '@/stores'
 
 const props = defineProps<{
@@ -34,39 +35,77 @@ const mindMateStore = useMindMateStore()
 const showAll = ref(false)
 const INITIAL_LIMIT = 10
 
-// Computed
-const conversations = computed(() => mindMateStore.conversations)
-const isLoading = computed(() => mindMateStore.isLoadingConversations)
+// Vue Query queries
+const { data: conversationsData, isLoading: isLoadingConversations } = useConversations()
+const { data: pinnedData } = usePinnedConversations()
+
+// Mutations
+const { mutate: deleteConv } = useDeleteConversation()
+const { mutate: renameConv } = useRenameConversation()
+const { mutate: pinConv } = usePinConversation()
+
+// Computed - sync conversations from query data
+const conversations = computed(() => {
+  if (!conversationsData.value) return []
+  const pinnedIds = pinnedData.value || new Set()
+  
+  // Mark conversations as pinned and sort
+  const convs = conversationsData.value.map((conv) => ({
+    ...conv,
+    is_pinned: pinnedIds.has(conv.id),
+  }))
+  
+  // Sort: pinned first, then by updated_at descending
+  return convs.sort((a, b) => {
+    if (a.is_pinned && !b.is_pinned) return -1
+    if (!a.is_pinned && b.is_pinned) return 1
+    return b.updated_at - a.updated_at
+  })
+})
+
+const isLoading = computed(() => isLoadingConversations.value)
 const currentConversationId = computed(() => mindMateStore.currentConversationId)
+
+// Sync conversations to store for backward compatibility
+watch([conversationsData, pinnedData], ([convs, pinned]) => {
+  if (convs && pinned) {
+    mindMateStore.syncConversationsFromQuery(convs, pinned)
+  }
+}, { immediate: true })
 
 // Group conversations by time period
 interface GroupedConversations {
+  pinned: MindMateConversation[]
   today: MindMateConversation[]
   yesterday: MindMateConversation[]
   week: MindMateConversation[]
   month: MindMateConversation[]
-  older: MindMateConversation[]
 }
 
 const groupedConversations = computed((): GroupedConversations => {
   const groups: GroupedConversations = {
+    pinned: [],
     today: [],
     yesterday: [],
     week: [],
     month: [],
-    older: [],
   }
 
   const now = new Date()
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()
   const yesterdayStart = todayStart - 24 * 60 * 60 * 1000
   const weekStart = todayStart - 7 * 24 * 60 * 60 * 1000
-  const monthStart = todayStart - 30 * 24 * 60 * 60 * 1000
 
   // Limit to 10 unless showAll
   const items = showAll.value ? conversations.value : conversations.value.slice(0, INITIAL_LIMIT)
 
   items.forEach((conv) => {
+    // Pinned items go to pinned group regardless of time
+    if (conv.is_pinned) {
+      groups.pinned.push(conv)
+      return
+    }
+
     const convTime = conv.updated_at * 1000
 
     if (convTime >= todayStart) {
@@ -75,10 +114,9 @@ const groupedConversations = computed((): GroupedConversations => {
       groups.yesterday.push(conv)
     } else if (convTime >= weekStart) {
       groups.week.push(conv)
-    } else if (convTime >= monthStart) {
-      groups.month.push(conv)
     } else {
-      groups.older.push(conv)
+      // Everything older goes to Past Month
+      groups.month.push(conv)
     }
   })
 
@@ -91,29 +129,14 @@ const remainingCount = computed(() => conversations.value.length - INITIAL_LIMIT
 
 // Group labels
 const groupLabels = computed(() => ({
+  pinned: isZh.value ? '置顶' : 'Pinned',
   today: isZh.value ? '今天' : 'Today',
   yesterday: isZh.value ? '昨天' : 'Yesterday',
-  week: isZh.value ? '7天内' : 'Last 7 days',
-  month: isZh.value ? '30天内' : 'Last 30 days',
-  older: isZh.value ? '更早' : 'Older',
+  week: isZh.value ? '上周' : 'Past Week',
+  month: isZh.value ? '上月' : 'Past Month',
 }))
 
-// Fetch conversations on mount if authenticated
-onMounted(() => {
-  if (authStore.isAuthenticated && !props.isBlurred) {
-    mindMateStore.fetchConversations()
-  }
-})
-
-// Re-fetch when authentication changes
-watch(
-  () => authStore.isAuthenticated,
-  (isAuth) => {
-    if (isAuth) {
-      mindMateStore.fetchConversations()
-    }
-  }
-)
+// No need to fetch - Vue Query handles it automatically via enabled flag
 
 // Handle conversation click
 function handleConversationClick(convId: string, name: string): void {
@@ -139,7 +162,10 @@ async function handleRenameConversation(convId: string): Promise<void> {
     )
 
     if (value && value.trim() !== currentName) {
-      await mindMateStore.renameConversation(convId, value.trim())
+      // Update store optimistically
+      mindMateStore.renameConversation(convId, value.trim())
+      // Call mutation to update server and invalidate cache
+      renameConv({ convId, name: value.trim() })
     }
   } catch {
     // User cancelled
@@ -159,10 +185,19 @@ async function handleDeleteConversation(convId: string): Promise<void> {
       }
     )
 
-    await mindMateStore.deleteConversation(convId)
+    // Update store optimistically
+    mindMateStore.deleteConversation(convId)
+    // Call mutation to update server and invalidate cache
+    deleteConv(convId)
   } catch {
     // User cancelled
   }
+}
+
+// Handle pin/unpin conversation
+async function handlePinConversation(convId: string): Promise<void> {
+  // Call mutation to update server and invalidate cache
+  pinConv(convId)
 }
 
 // Toggle show all
@@ -206,6 +241,59 @@ function toggleShowAll(): void {
 
         <!-- Grouped Conversation List -->
         <template v-else>
+          <!-- Pinned -->
+          <div
+            v-if="groupedConversations.pinned.length > 0"
+            class="group-section"
+          >
+            <div class="group-label">{{ groupLabels.pinned }}</div>
+            <div
+              v-for="conv in groupedConversations.pinned"
+              :key="conv.id"
+              class="conversation-item"
+              :class="{ active: currentConversationId === conv.id }"
+              @click="handleConversationClick(conv.id, conv.name)"
+            >
+              <span class="conv-name">
+                <Pin class="w-3 h-3 inline-block mr-1 text-amber-500" />
+                {{ conv.name || (isZh ? '未命名' : 'Untitled') }}
+              </span>
+              <ElDropdown
+                trigger="click"
+                class="more-dropdown"
+                @click.stop
+              >
+                <button
+                  class="more-btn"
+                  @click.stop
+                >
+                  <MoreHorizontal class="w-4 h-4" />
+                </button>
+                <template #dropdown>
+                  <ElDropdownMenu>
+                    <ElDropdownItem @click="handlePinConversation(conv.id)">
+                      <Pin class="w-4 h-4 mr-2 text-amber-500 rotate-45" />
+                      {{ isZh ? '取消置顶' : 'Unpin' }}
+                    </ElDropdownItem>
+                    <ElDropdownItem @click="handleRenameConversation(conv.id)">
+                      <Edit3 class="w-4 h-4 mr-2" />
+                      {{ isZh ? '重命名' : 'Rename' }}
+                    </ElDropdownItem>
+                    <ElDropdownItem
+                      divided
+                      @click="handleDeleteConversation(conv.id)"
+                    >
+                      <span class="delete-option">
+                        <Trash2 class="w-4 h-4 mr-2" />
+                        {{ isZh ? '删除' : 'Delete' }}
+                      </span>
+                    </ElDropdownItem>
+                  </ElDropdownMenu>
+                </template>
+              </ElDropdown>
+            </div>
+          </div>
+
           <!-- Today -->
           <div
             v-if="groupedConversations.today.length > 0"
@@ -235,6 +323,10 @@ function toggleShowAll(): void {
                 </button>
                 <template #dropdown>
                   <ElDropdownMenu>
+                    <ElDropdownItem @click="handlePinConversation(conv.id)">
+                      <Pin class="w-4 h-4 mr-2" />
+                      {{ isZh ? '置顶' : 'Pin to Top' }}
+                    </ElDropdownItem>
                     <ElDropdownItem @click="handleRenameConversation(conv.id)">
                       <Edit3 class="w-4 h-4 mr-2" />
                       {{ isZh ? '重命名' : 'Rename' }}
@@ -283,6 +375,10 @@ function toggleShowAll(): void {
                 </button>
                 <template #dropdown>
                   <ElDropdownMenu>
+                    <ElDropdownItem @click="handlePinConversation(conv.id)">
+                      <Pin class="w-4 h-4 mr-2" />
+                      {{ isZh ? '置顶' : 'Pin to Top' }}
+                    </ElDropdownItem>
                     <ElDropdownItem @click="handleRenameConversation(conv.id)">
                       <Edit3 class="w-4 h-4 mr-2" />
                       {{ isZh ? '重命名' : 'Rename' }}
@@ -302,7 +398,7 @@ function toggleShowAll(): void {
             </div>
           </div>
 
-          <!-- Last 7 days -->
+          <!-- Past Week -->
           <div
             v-if="groupedConversations.week.length > 0"
             class="group-section"
@@ -331,6 +427,10 @@ function toggleShowAll(): void {
                 </button>
                 <template #dropdown>
                   <ElDropdownMenu>
+                    <ElDropdownItem @click="handlePinConversation(conv.id)">
+                      <Pin class="w-4 h-4 mr-2" />
+                      {{ isZh ? '置顶' : 'Pin to Top' }}
+                    </ElDropdownItem>
                     <ElDropdownItem @click="handleRenameConversation(conv.id)">
                       <Edit3 class="w-4 h-4 mr-2" />
                       {{ isZh ? '重命名' : 'Rename' }}
@@ -350,7 +450,7 @@ function toggleShowAll(): void {
             </div>
           </div>
 
-          <!-- Last 30 days -->
+          <!-- Past Month -->
           <div
             v-if="groupedConversations.month.length > 0"
             class="group-section"
@@ -379,54 +479,10 @@ function toggleShowAll(): void {
                 </button>
                 <template #dropdown>
                   <ElDropdownMenu>
-                    <ElDropdownItem @click="handleRenameConversation(conv.id)">
-                      <Edit3 class="w-4 h-4 mr-2" />
-                      {{ isZh ? '重命名' : 'Rename' }}
+                    <ElDropdownItem @click="handlePinConversation(conv.id)">
+                      <Pin class="w-4 h-4 mr-2" />
+                      {{ isZh ? '置顶' : 'Pin to Top' }}
                     </ElDropdownItem>
-                    <ElDropdownItem
-                      divided
-                      @click="handleDeleteConversation(conv.id)"
-                    >
-                      <span class="delete-option">
-                        <Trash2 class="w-4 h-4 mr-2" />
-                        {{ isZh ? '删除' : 'Delete' }}
-                      </span>
-                    </ElDropdownItem>
-                  </ElDropdownMenu>
-                </template>
-              </ElDropdown>
-            </div>
-          </div>
-
-          <!-- Older -->
-          <div
-            v-if="groupedConversations.older.length > 0"
-            class="group-section"
-          >
-            <div class="group-label">{{ groupLabels.older }}</div>
-            <div
-              v-for="conv in groupedConversations.older"
-              :key="conv.id"
-              class="conversation-item"
-              :class="{ active: currentConversationId === conv.id }"
-              @click="handleConversationClick(conv.id, conv.name)"
-            >
-              <span class="conv-name">
-                {{ conv.name || (isZh ? '未命名' : 'Untitled') }}
-              </span>
-              <ElDropdown
-                trigger="click"
-                class="more-dropdown"
-                @click.stop
-              >
-                <button
-                  class="more-btn"
-                  @click.stop
-                >
-                  <MoreHorizontal class="w-4 h-4" />
-                </button>
-                <template #dropdown>
-                  <ElDropdownMenu>
                     <ElDropdownItem @click="handleRenameConversation(conv.id)">
                       <Edit3 class="w-4 h-4 mr-2" />
                       {{ isZh ? '重命名' : 'Rename' }}

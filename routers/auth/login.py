@@ -30,7 +30,7 @@ from services.redis_rate_limiter import (
     RedisRateLimiter
 )
 from services.dashboard_session import get_dashboard_session_manager
-from services.redis_session_manager import get_session_manager
+from services.redis_session_manager import get_session_manager, get_refresh_token_manager
 from services.redis_user_cache import user_cache
 from utils.auth import (
     AUTH_MODE,
@@ -40,6 +40,8 @@ from utils.auth import (
     RATE_LIMIT_WINDOW_MINUTES,
     check_account_lockout,
     create_access_token,
+    create_refresh_token,
+    compute_device_hash,
     get_client_ip,
     get_user_role,
     hash_password,
@@ -49,7 +51,8 @@ from utils.auth import (
     reset_failed_attempts,
     verify_dashboard_passkey,
     verify_demo_passkey,
-    verify_password
+    verify_password,
+    ACCESS_TOKEN_EXPIRY_MINUTES
 )
 
 from .captcha import verify_captcha_with_retry
@@ -230,17 +233,32 @@ async def login(
     old_token_hash = session_manager.get_session_token(user.id)
     session_manager.invalidate_user_sessions(user.id, old_token_hash=old_token_hash, ip_address=client_ip)
     
-    # Generate JWT token
+    # Generate JWT access token
     token = create_access_token(user)
     
-    # Store new session in Redis
+    # Generate refresh token
+    refresh_token_value, refresh_token_hash = create_refresh_token(user.id)
+    
+    # Store access token session in Redis
     session_manager.store_session(user.id, token)
     
-    # Set cookies
-    set_auth_cookies(response, token, http_request)
+    # Store refresh token with device binding
+    user_agent = http_request.headers.get("User-Agent", "")
+    device_hash = compute_device_hash(http_request)
+    refresh_manager = get_refresh_token_manager()
+    refresh_manager.store_refresh_token(
+        user_id=user.id,
+        token_hash=refresh_token_hash,
+        ip_address=client_ip,
+        user_agent=user_agent,
+        device_hash=device_hash
+    )
+    
+    # Set cookies (both access and refresh tokens)
+    set_auth_cookies(response, token, refresh_token_value, http_request)
     
     org_name = org.name if org else "None"
-    logger.info(f"User logged in: {user.phone} (ID: {user.id}, Org: {org_name}, Method: captcha, IP: {client_ip})")
+    logger.info(f"[TokenAudit] Login success: user={user.id}, phone={user.phone}, org={org_name}, method=captcha, ip={client_ip}")
     
     # Track user activity
     track_user_activity(user, 'login', {'method': 'captcha', 'org': org_name}, http_request)
@@ -248,6 +266,7 @@ async def login(
     return {
         "access_token": token,
         "token_type": "bearer",
+        "expires_in": ACCESS_TOKEN_EXPIRY_MINUTES * 60,
         "user": {
             "id": user.id,
             "phone": user.phone,
@@ -330,14 +349,29 @@ async def login_with_sms(
     old_token_hash = session_manager.get_session_token(user.id)
     session_manager.invalidate_user_sessions(user.id, old_token_hash=old_token_hash, ip_address=client_ip)
     
-    # Generate JWT token
+    # Generate JWT access token
     token = create_access_token(user)
     
-    # Store new session in Redis
+    # Generate refresh token
+    refresh_token_value, refresh_token_hash = create_refresh_token(user.id)
+    
+    # Store access token session in Redis
     session_manager.store_session(user.id, token)
     
-    # Set cookies
-    set_auth_cookies(response, token, http_request)
+    # Store refresh token with device binding
+    user_agent = http_request.headers.get("User-Agent", "")
+    device_hash = compute_device_hash(http_request)
+    refresh_manager = get_refresh_token_manager()
+    refresh_manager.store_refresh_token(
+        user_id=user.id,
+        token_hash=refresh_token_hash,
+        ip_address=client_ip,
+        user_agent=user_agent,
+        device_hash=device_hash
+    )
+    
+    # Set cookies (both access and refresh tokens)
+    set_auth_cookies(response, token, refresh_token_value, http_request)
     
     # Use cache for org lookup (with SQLite fallback)
     org = org_cache.get_by_id(user.organization_id) if user.organization_id else None
@@ -348,7 +382,7 @@ async def login_with_sms(
             org_cache.cache_org(org)
     org_name = org.name if org else "None"
     
-    logger.info(f"User logged in via SMS: {user.phone} (ID: {user.id}, Org: {org_name}, Method: SMS, IP: {client_ip})")
+    logger.info(f"[TokenAudit] Login success: user={user.id}, phone={user.phone}, org={org_name}, method=sms, ip={client_ip}")
     
     # Track user activity
     track_user_activity(user, 'login', {'method': 'sms', 'org': org_name}, http_request)
@@ -356,6 +390,7 @@ async def login_with_sms(
     return {
         "access_token": token,
         "token_type": "bearer",
+        "expires_in": ACCESS_TOKEN_EXPIRY_MINUTES * 60,
         "user": {
             "id": user.id,
             "phone": user.phone,
@@ -484,21 +519,38 @@ async def verify_demo(
     old_token_hash = session_manager.get_session_token(auth_user.id)
     session_manager.invalidate_user_sessions(auth_user.id, old_token_hash=old_token_hash, ip_address=client_ip)
     
-    # Generate JWT token
+    # Generate JWT access token
     token = create_access_token(auth_user)
     
-    # Store new session in Redis
+    # Generate refresh token
+    client_ip = get_client_ip(request)
+    refresh_token_value, refresh_token_hash = create_refresh_token(auth_user.id)
+    
+    # Store access token session in Redis
     session_manager.store_session(auth_user.id, token)
     
-    # Set cookies
-    set_auth_cookies(response, token, request)
+    # Store refresh token with device binding
+    user_agent = request.headers.get("User-Agent", "")
+    device_hash = compute_device_hash(request)
+    refresh_manager = get_refresh_token_manager()
+    refresh_manager.store_refresh_token(
+        user_id=auth_user.id,
+        token_hash=refresh_token_hash,
+        ip_address=client_ip,
+        user_agent=user_agent,
+        device_hash=device_hash
+    )
     
-    log_msg = f"{AUTH_MODE.upper()} {'ADMIN' if is_admin_access else ''} access granted"
+    # Set cookies (both access and refresh tokens)
+    set_auth_cookies(response, token, refresh_token_value, request)
+    
+    log_msg = f"[TokenAudit] Login success: user={auth_user.id}, mode={AUTH_MODE}, admin={is_admin_access}, ip={client_ip}"
     logger.info(log_msg)
     
     return {
         "access_token": token,
         "token_type": "bearer",
+        "expires_in": ACCESS_TOKEN_EXPIRY_MINUTES * 60,
         "user": {
             "id": auth_user.id,
             "phone": auth_user.phone,

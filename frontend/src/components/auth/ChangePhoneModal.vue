@@ -162,13 +162,11 @@ async function sendSmsCode() {
   smsError.value = ''
 
   try {
+    // Use credentials (token in httpOnly cookie)
     const response = await fetch('/api/auth/phone/send-code', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(authStore.token ? { Authorization: `Bearer ${authStore.token}` } : {}),
-      },
       credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         new_phone: newPhone.value,
         captcha: captchaCode.value,
@@ -226,13 +224,11 @@ async function handleSubmit() {
   submitting.value = true
 
   try {
+    // Use credentials (token in httpOnly cookie)
     const response = await fetch('/api/auth/phone/change', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(authStore.token ? { Authorization: `Bearer ${authStore.token}` } : {}),
-      },
       credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         new_phone: newPhone.value,
         sms_code: smsCode.value,

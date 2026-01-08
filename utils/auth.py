@@ -41,7 +41,12 @@ logger = logging.getLogger(__name__)
 # JWT Configuration
 JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "your-secret-key-change-in-production")
 JWT_ALGORITHM = "HS256"
-JWT_EXPIRY_HOURS = int(os.getenv("JWT_EXPIRY_HOURS", "24"))
+# Access token: Short-lived (1 hour default), refreshed automatically
+ACCESS_TOKEN_EXPIRY_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRY_MINUTES", "60"))
+# Refresh token: Long-lived (7 days default), stored in httpOnly cookie
+REFRESH_TOKEN_EXPIRY_DAYS = int(os.getenv("REFRESH_TOKEN_EXPIRY_DAYS", "7"))
+# Legacy - kept for backward compatibility during transition
+JWT_EXPIRY_HOURS = ACCESS_TOKEN_EXPIRY_MINUTES // 60 if ACCESS_TOKEN_EXPIRY_MINUTES >= 60 else 1
 
 # Reverse Proxy Configuration
 TRUSTED_PROXY_IPS = os.getenv("TRUSTED_PROXY_IPS", "").split(",") if os.getenv("TRUSTED_PROXY_IPS") else []
@@ -293,10 +298,11 @@ def create_access_token(user: User) -> str:
     - org_id: organization id
     - jti: JWT ID (unique token identifier for session tracking)
     - exp: expiration timestamp
+    - type: token type (access)
     """
     import uuid
     
-    expire = datetime.utcnow() + timedelta(hours=JWT_EXPIRY_HOURS)
+    expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRY_MINUTES)
     
     # Generate unique token ID for session tracking
     token_id = str(uuid.uuid4())
@@ -306,11 +312,53 @@ def create_access_token(user: User) -> str:
         "phone": user.phone,
         "org_id": user.organization_id,
         "jti": token_id,
+        "type": "access",
         "exp": expire
     }
     
     token = jwt.encode(payload, JWT_SECRET_KEY, algorithm=JWT_ALGORITHM)
     return token
+
+
+def create_refresh_token(user_id: int) -> tuple[str, str]:
+    """
+    Create a secure refresh token
+    
+    Returns:
+        tuple: (refresh_token, token_hash) - the raw token and its hash for storage
+    """
+    import secrets
+    import hashlib
+    
+    # Generate cryptographically secure random token
+    refresh_token = secrets.token_urlsafe(32)
+    
+    # Hash for storage (never store the raw token)
+    token_hash = hashlib.sha256(refresh_token.encode('utf-8')).hexdigest()
+    
+    return refresh_token, token_hash
+
+
+def hash_refresh_token(token: str) -> str:
+    """Hash a refresh token for lookup"""
+    import hashlib
+    return hashlib.sha256(token.encode('utf-8')).hexdigest()
+
+
+def compute_device_hash(request: Request) -> str:
+    """
+    Compute a device fingerprint hash from request headers
+    
+    Uses User-Agent and Accept-Language for basic device binding.
+    This is not foolproof but adds a layer of security.
+    """
+    import hashlib
+    
+    user_agent = request.headers.get("User-Agent", "")
+    accept_language = request.headers.get("Accept-Language", "")
+    
+    fingerprint = f"{user_agent}|{accept_language}"
+    return hashlib.sha256(fingerprint.encode('utf-8')).hexdigest()[:16]
 
 
 def decode_access_token(token: str) -> dict:

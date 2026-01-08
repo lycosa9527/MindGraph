@@ -101,13 +101,10 @@ async function loadTokenStats() {
   isLoadingTokens.value = true
   
   try {
-    const token = localStorage.getItem('access_token')
-    const headers: Record<string, string> = {}
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`
-    }
-    
-    const response = await fetch('/auth/admin/token-stats', { headers })
+    // Use credentials (token in httpOnly cookie)
+    const response = await fetch('/auth/admin/token-stats', { 
+      credentials: 'same-origin',
+    })
     if (response.ok) {
       tokenStats.value = await response.json()
     } else {

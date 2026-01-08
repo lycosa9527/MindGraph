@@ -5,6 +5,8 @@ import { createApp } from 'vue'
 
 import { createPinia } from 'pinia'
 
+import { VueQueryPlugin, QueryClient } from '@tanstack/vue-query'
+
 import ElementPlus from 'element-plus'
 import 'element-plus/dist/index.css'
 
@@ -24,6 +26,19 @@ app.use(pinia)
 
 // Install Router
 app.use(router)
+
+// Install Vue Query
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 60 * 1000, // 1 minute default
+      gcTime: 30 * 60 * 1000, // Keep unused data 30 min
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+})
+app.use(VueQueryPlugin, { queryClient })
 
 // Install Element Plus
 app.use(ElementPlus)

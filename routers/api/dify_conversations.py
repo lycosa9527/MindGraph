@@ -7,6 +7,8 @@ API endpoints for managing Dify conversations:
 - DELETE /api/dify/conversations/{id} - Delete a conversation
 - POST /api/dify/conversations/{id}/name - Rename/auto-generate title
 - GET /api/dify/conversations/{id}/messages - Get conversation messages
+- POST /api/dify/conversations/{id}/pin - Toggle pin status
+- GET /api/dify/pinned - List pinned conversation IDs
 
 Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved
@@ -15,10 +17,13 @@ Proprietary License
 
 import logging
 import os
-from typing import Optional
+from typing import Optional, List
 from fastapi import APIRouter, HTTPException, Depends, Query
 from pydantic import BaseModel
+from sqlalchemy.orm import Session
 from models.auth import User
+from models.pinned_conversations import PinnedConversation
+from config.database import get_db
 from utils.auth import get_current_user
 from clients.dify import AsyncDifyClient
 
@@ -265,4 +270,79 @@ async def submit_message_feedback(
         raise
     except Exception as e:
         logger.error(f"Failed to submit message feedback: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get('/dify/pinned')
+async def list_pinned_conversations(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Get list of pinned conversation IDs for the current user.
+    
+    Returns a list of conversation IDs that the user has pinned.
+    """
+    try:
+        pinned = db.query(PinnedConversation).filter(
+            PinnedConversation.user_id == current_user.id
+        ).order_by(PinnedConversation.pinned_at.desc()).all()
+        
+        return {
+            "success": True,
+            "data": [p.conversation_id for p in pinned]
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to fetch pinned conversations: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post('/dify/conversations/{conversation_id}/pin')
+async def toggle_pin_conversation(
+    conversation_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Toggle pin status for a conversation.
+    
+    If the conversation is already pinned, it will be unpinned.
+    If not pinned, it will be pinned to the top.
+    """
+    try:
+        # Check if already pinned
+        existing = db.query(PinnedConversation).filter(
+            PinnedConversation.user_id == current_user.id,
+            PinnedConversation.conversation_id == conversation_id
+        ).first()
+        
+        if existing:
+            # Unpin
+            db.delete(existing)
+            db.commit()
+            logger.info(f"User {current_user.id} unpinned conversation {conversation_id}")
+            return {
+                "success": True,
+                "is_pinned": False,
+                "message": "Conversation unpinned"
+            }
+        else:
+            # Pin
+            pinned = PinnedConversation(
+                user_id=current_user.id,
+                conversation_id=conversation_id
+            )
+            db.add(pinned)
+            db.commit()
+            logger.info(f"User {current_user.id} pinned conversation {conversation_id}")
+            return {
+                "success": True,
+                "is_pinned": True,
+                "message": "Conversation pinned"
+            }
+        
+    except Exception as e:
+        logger.error(f"Failed to toggle pin for conversation: {e}")
+        db.rollback()
         raise HTTPException(status_code=500, detail=str(e))

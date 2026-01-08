@@ -2,7 +2,7 @@
 /**
  * DiagramHistory - Grouped list of saved diagrams
  * Design: Clean minimalist grouped by time periods
- * Shows max 10 items with "More" option
+ * Shows max 20 items with "More" option
  */
 import { computed, onMounted, ref, watch } from 'vue'
 
@@ -17,7 +17,7 @@ import {
 
 import { Loading } from '@element-plus/icons-vue'
 
-import { Copy, Edit3, FileImage, Lock, MoreHorizontal, Trash2 } from 'lucide-vue-next'
+import { Edit3, FileImage, Lock, MoreHorizontal, Pin, Trash2 } from 'lucide-vue-next'
 
 import { useLanguage } from '@/composables'
 import { useAuthStore } from '@/stores'
@@ -46,34 +46,39 @@ const currentDiagramId = computed(() => savedDiagramsStore.currentDiagramId)
 const maxDiagrams = computed(() => savedDiagramsStore.maxDiagrams)
 const remainingSlots = computed(() => savedDiagramsStore.remainingSlots)
 
-// Group diagrams by time period
+// Group diagrams by time period with pinned at top
 interface GroupedDiagrams {
+  pinned: SavedDiagram[]
   today: SavedDiagram[]
   yesterday: SavedDiagram[]
   week: SavedDiagram[]
   month: SavedDiagram[]
-  older: SavedDiagram[]
 }
 
 const groupedDiagrams = computed((): GroupedDiagrams => {
   const groups: GroupedDiagrams = {
+    pinned: [],
     today: [],
     yesterday: [],
     week: [],
     month: [],
-    older: [],
   }
 
   const now = new Date()
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()
   const yesterdayStart = todayStart - 24 * 60 * 60 * 1000
   const weekStart = todayStart - 7 * 24 * 60 * 60 * 1000
-  const monthStart = todayStart - 30 * 24 * 60 * 60 * 1000
 
-  // Limit to 10 unless showAll
+  // Limit unless showAll
   const items = showAll.value ? diagrams.value : diagrams.value.slice(0, INITIAL_LIMIT)
 
   items.forEach((diagram) => {
+    // Pinned items go to the top group
+    if (diagram.is_pinned) {
+      groups.pinned.push(diagram)
+      return
+    }
+
     const diagramTime = new Date(diagram.updated_at).getTime()
 
     if (diagramTime >= todayStart) {
@@ -82,10 +87,9 @@ const groupedDiagrams = computed((): GroupedDiagrams => {
       groups.yesterday.push(diagram)
     } else if (diagramTime >= weekStart) {
       groups.week.push(diagram)
-    } else if (diagramTime >= monthStart) {
-      groups.month.push(diagram)
     } else {
-      groups.older.push(diagram)
+      // Everything older goes to Past Month
+      groups.month.push(diagram)
     }
   })
 
@@ -98,11 +102,11 @@ const remainingCount = computed(() => diagrams.value.length - INITIAL_LIMIT)
 
 // Group labels
 const groupLabels = computed(() => ({
+  pinned: isZh.value ? '置顶' : 'Pinned',
   today: isZh.value ? '今天' : 'Today',
   yesterday: isZh.value ? '昨天' : 'Yesterday',
-  week: isZh.value ? '7天内' : 'Last 7 days',
-  month: isZh.value ? '30天内' : 'Last 30 days',
-  older: isZh.value ? '更早' : 'Older',
+  week: isZh.value ? '上周' : 'Past Week',
+  month: isZh.value ? '上月' : 'Past Month',
 }))
 
 // Diagram type labels
@@ -154,7 +158,7 @@ function handleDiagramClick(diagram: SavedDiagram): void {
 }
 
 // Handle rename diagram
-async function handleRenameDiagram(diagramId: number): Promise<void> {
+async function handleRenameDiagram(diagramId: string): Promise<void> {
   const diagram = diagrams.value.find((d) => d.id === diagramId)
   const currentName = diagram?.title || ''
 
@@ -180,7 +184,7 @@ async function handleRenameDiagram(diagramId: number): Promise<void> {
 }
 
 // Handle delete diagram
-async function handleDeleteDiagram(diagramId: number): Promise<void> {
+async function handleDeleteDiagram(diagramId: string): Promise<void> {
   try {
     await ElMessageBox.confirm(
       isZh.value ? '确定要删除这个图示吗？此操作不可撤销。' : 'Are you sure you want to delete this diagram? This cannot be undone.',
@@ -198,16 +202,13 @@ async function handleDeleteDiagram(diagramId: number): Promise<void> {
   }
 }
 
-// Handle duplicate diagram
-async function handleDuplicateDiagram(diagramId: number): Promise<void> {
-  const result = await savedDiagramsStore.duplicateDiagram(diagramId)
-  if (!result && savedDiagramsStore.error) {
-    ElMessageBox.alert(
-      isZh.value ? `复制失败: ${savedDiagramsStore.error}` : `Duplicate failed: ${savedDiagramsStore.error}`,
-      isZh.value ? '错误' : 'Error',
-      { type: 'error' }
-    )
-  }
+// Handle pin/unpin diagram
+async function handlePinDiagram(diagramId: string): Promise<void> {
+  const diagram = diagrams.value.find((d) => d.id === diagramId)
+  if (!diagram) return
+  
+  const newPinned = !diagram.is_pinned
+  await savedDiagramsStore.pinDiagram(diagramId, newPinned)
 }
 
 // Toggle show all
@@ -260,6 +261,64 @@ function toggleShowAll(): void {
 
         <!-- Grouped Diagram List -->
         <template v-else>
+          <!-- Top (Pinned) -->
+          <div
+            v-if="groupedDiagrams.pinned.length > 0"
+            class="group-section"
+          >
+            <div class="group-label">{{ groupLabels.pinned }}</div>
+            <div
+              v-for="diagram in groupedDiagrams.pinned"
+              :key="diagram.id"
+              class="diagram-item"
+              :class="{ active: currentDiagramId === diagram.id }"
+              @click="handleDiagramClick(diagram)"
+            >
+              <div class="diagram-info">
+                <span class="diagram-name">
+                  <Pin class="w-3 h-3 inline-block mr-1 text-amber-500" />
+                  {{ diagram.title || (isZh ? '未命名' : 'Untitled') }}
+                </span>
+                <span class="diagram-type">
+                  {{ getDiagramTypeLabel(diagram.diagram_type) }}
+                </span>
+              </div>
+              <ElDropdown
+                trigger="click"
+                class="more-dropdown"
+                @click.stop
+              >
+                <button
+                  class="more-btn"
+                  @click.stop
+                >
+                  <MoreHorizontal class="w-4 h-4" />
+                </button>
+                <template #dropdown>
+                  <ElDropdownMenu>
+                    <ElDropdownItem @click="handlePinDiagram(diagram.id)">
+                      <Pin class="w-4 h-4 mr-2 text-amber-500 rotate-45" />
+                      {{ isZh ? '取消置顶' : 'Unpin' }}
+                    </ElDropdownItem>
+                    <ElDropdownItem @click="handleRenameDiagram(diagram.id)">
+                      <Edit3 class="w-4 h-4 mr-2" />
+                      {{ isZh ? '重命名' : 'Rename' }}
+                    </ElDropdownItem>
+                    <ElDropdownItem
+                      divided
+                      @click="handleDeleteDiagram(diagram.id)"
+                    >
+                      <span class="delete-option">
+                        <Trash2 class="w-4 h-4 mr-2" />
+                        {{ isZh ? '删除' : 'Delete' }}
+                      </span>
+                    </ElDropdownItem>
+                  </ElDropdownMenu>
+                </template>
+              </ElDropdown>
+            </div>
+          </div>
+
           <!-- Today -->
           <div
             v-if="groupedDiagrams.today.length > 0"
@@ -294,13 +353,13 @@ function toggleShowAll(): void {
                 </button>
                 <template #dropdown>
                   <ElDropdownMenu>
+                    <ElDropdownItem @click="handlePinDiagram(diagram.id)">
+                      <Pin class="w-4 h-4 mr-2" />
+                      {{ isZh ? '置顶' : 'Pin to Top' }}
+                    </ElDropdownItem>
                     <ElDropdownItem @click="handleRenameDiagram(diagram.id)">
                       <Edit3 class="w-4 h-4 mr-2" />
                       {{ isZh ? '重命名' : 'Rename' }}
-                    </ElDropdownItem>
-                    <ElDropdownItem @click="handleDuplicateDiagram(diagram.id)">
-                      <Copy class="w-4 h-4 mr-2" />
-                      {{ isZh ? '复制' : 'Duplicate' }}
                     </ElDropdownItem>
                     <ElDropdownItem
                       divided
@@ -351,13 +410,13 @@ function toggleShowAll(): void {
                 </button>
                 <template #dropdown>
                   <ElDropdownMenu>
+                    <ElDropdownItem @click="handlePinDiagram(diagram.id)">
+                      <Pin class="w-4 h-4 mr-2" />
+                      {{ isZh ? '置顶' : 'Pin to Top' }}
+                    </ElDropdownItem>
                     <ElDropdownItem @click="handleRenameDiagram(diagram.id)">
                       <Edit3 class="w-4 h-4 mr-2" />
                       {{ isZh ? '重命名' : 'Rename' }}
-                    </ElDropdownItem>
-                    <ElDropdownItem @click="handleDuplicateDiagram(diagram.id)">
-                      <Copy class="w-4 h-4 mr-2" />
-                      {{ isZh ? '复制' : 'Duplicate' }}
                     </ElDropdownItem>
                     <ElDropdownItem
                       divided
@@ -374,7 +433,7 @@ function toggleShowAll(): void {
             </div>
           </div>
 
-          <!-- Last 7 days -->
+          <!-- Past Week -->
           <div
             v-if="groupedDiagrams.week.length > 0"
             class="group-section"
@@ -408,13 +467,13 @@ function toggleShowAll(): void {
                 </button>
                 <template #dropdown>
                   <ElDropdownMenu>
+                    <ElDropdownItem @click="handlePinDiagram(diagram.id)">
+                      <Pin class="w-4 h-4 mr-2" />
+                      {{ isZh ? '置顶' : 'Pin to Top' }}
+                    </ElDropdownItem>
                     <ElDropdownItem @click="handleRenameDiagram(diagram.id)">
                       <Edit3 class="w-4 h-4 mr-2" />
                       {{ isZh ? '重命名' : 'Rename' }}
-                    </ElDropdownItem>
-                    <ElDropdownItem @click="handleDuplicateDiagram(diagram.id)">
-                      <Copy class="w-4 h-4 mr-2" />
-                      {{ isZh ? '复制' : 'Duplicate' }}
                     </ElDropdownItem>
                     <ElDropdownItem
                       divided
@@ -431,7 +490,7 @@ function toggleShowAll(): void {
             </div>
           </div>
 
-          <!-- Last 30 days -->
+          <!-- Past Month -->
           <div
             v-if="groupedDiagrams.month.length > 0"
             class="group-section"
@@ -465,70 +524,13 @@ function toggleShowAll(): void {
                 </button>
                 <template #dropdown>
                   <ElDropdownMenu>
+                    <ElDropdownItem @click="handlePinDiagram(diagram.id)">
+                      <Pin class="w-4 h-4 mr-2" />
+                      {{ isZh ? '置顶' : 'Pin to Top' }}
+                    </ElDropdownItem>
                     <ElDropdownItem @click="handleRenameDiagram(diagram.id)">
                       <Edit3 class="w-4 h-4 mr-2" />
                       {{ isZh ? '重命名' : 'Rename' }}
-                    </ElDropdownItem>
-                    <ElDropdownItem @click="handleDuplicateDiagram(diagram.id)">
-                      <Copy class="w-4 h-4 mr-2" />
-                      {{ isZh ? '复制' : 'Duplicate' }}
-                    </ElDropdownItem>
-                    <ElDropdownItem
-                      divided
-                      @click="handleDeleteDiagram(diagram.id)"
-                    >
-                      <span class="delete-option">
-                        <Trash2 class="w-4 h-4 mr-2" />
-                        {{ isZh ? '删除' : 'Delete' }}
-                      </span>
-                    </ElDropdownItem>
-                  </ElDropdownMenu>
-                </template>
-              </ElDropdown>
-            </div>
-          </div>
-
-          <!-- Older -->
-          <div
-            v-if="groupedDiagrams.older.length > 0"
-            class="group-section"
-          >
-            <div class="group-label">{{ groupLabels.older }}</div>
-            <div
-              v-for="diagram in groupedDiagrams.older"
-              :key="diagram.id"
-              class="diagram-item"
-              :class="{ active: currentDiagramId === diagram.id }"
-              @click="handleDiagramClick(diagram)"
-            >
-              <div class="diagram-info">
-                <span class="diagram-name">
-                  {{ diagram.title || (isZh ? '未命名' : 'Untitled') }}
-                </span>
-                <span class="diagram-type">
-                  {{ getDiagramTypeLabel(diagram.diagram_type) }}
-                </span>
-              </div>
-              <ElDropdown
-                trigger="click"
-                class="more-dropdown"
-                @click.stop
-              >
-                <button
-                  class="more-btn"
-                  @click.stop
-                >
-                  <MoreHorizontal class="w-4 h-4" />
-                </button>
-                <template #dropdown>
-                  <ElDropdownMenu>
-                    <ElDropdownItem @click="handleRenameDiagram(diagram.id)">
-                      <Edit3 class="w-4 h-4 mr-2" />
-                      {{ isZh ? '重命名' : 'Rename' }}
-                    </ElDropdownItem>
-                    <ElDropdownItem @click="handleDuplicateDiagram(diagram.id)">
-                      <Copy class="w-4 h-4 mr-2" />
-                      {{ isZh ? '复制' : 'Duplicate' }}
                     </ElDropdownItem>
                     <ElDropdownItem
                       divided

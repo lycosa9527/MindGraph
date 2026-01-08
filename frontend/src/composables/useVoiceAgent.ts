@@ -472,12 +472,10 @@ export function useVoiceAgent(options: VoiceAgentOptions = {}) {
 
     return new Promise((resolve, reject) => {
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+      // Token is in httpOnly cookie - browser will send it automatically during WebSocket handshake
       const wsUrl = `${protocol}//${window.location.host}/ws/voice/${diagSessionId}`
 
-      const token = localStorage.getItem('access_token')
-      const wsUrlWithAuth = token ? `${wsUrl}?token=${token}` : wsUrl
-
-      const socket = new WebSocket(wsUrlWithAuth)
+      const socket = new WebSocket(wsUrl)
       ws.value = socket
 
       socket.onopen = () => {
@@ -742,13 +740,11 @@ export function useVoiceAgent(options: VoiceAgentOptions = {}) {
       cleanup()
       // Call backend cleanup if needed
       if (data.sessionId && typeof window !== 'undefined') {
-        const token = localStorage.getItem('access_token')
+        // Use credentials (token in httpOnly cookie)
         fetch(`/api/voice/cleanup/${data.sessionId}`, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          },
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
         }).catch(() => {})
       }
     },

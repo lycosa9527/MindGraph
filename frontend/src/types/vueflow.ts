@@ -82,7 +82,7 @@ export function diagramNodeToVueFlowNode(
   const isBubbleMap = diagramType === 'bubble_map'
   const isDoubleBubbleMap = diagramType === 'double_bubble_map'
   const useCircleForTopic = isCircleMap || isBubbleMap || isDoubleBubbleMap
-  
+
   const nodeTypeMap: Record<string, MindGraphNodeType> = {
     topic: useCircleForTopic ? 'circle' : 'topic',
     center: useCircleForTopic ? 'circle' : 'topic',
@@ -94,6 +94,7 @@ export function diagramNodeToVueFlowNode(
     boundary: 'boundary',
     flow: 'flow',
     brace: 'brace',
+    label: 'label', // Classification dimension label for tree_map and brace_map
   }
 
   const mappedType = nodeTypeMap[node.type] || 'branch'

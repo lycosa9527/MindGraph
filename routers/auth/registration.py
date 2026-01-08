@@ -23,12 +23,16 @@ from config.database import get_db
 from models.messages import Messages
 from models.auth import Organization, User
 from models.requests import RegisterRequest, RegisterWithSMSRequest
-from utils.auth import AUTH_MODE, hash_password, get_client_ip
+from utils.auth import (
+    AUTH_MODE, hash_password, get_client_ip, 
+    create_access_token, create_refresh_token, compute_device_hash,
+    ACCESS_TOKEN_EXPIRY_MINUTES
+)
 from utils.invitations import INVITE_PATTERN
 from services.redis_user_cache import user_cache
 from services.redis_org_cache import org_cache
 from services.redis_distributed_lock import phone_registration_lock
-from services.redis_session_manager import get_session_manager
+from services.redis_session_manager import get_session_manager, get_refresh_token_manager
 from services.registration_metrics import registration_metrics
 
 from .dependencies import get_language_dependency
@@ -219,11 +223,13 @@ async def register(
     old_token_hash = session_manager.get_session_token(new_user.id)
     session_manager.invalidate_user_sessions(new_user.id, old_token_hash=old_token_hash, ip_address=client_ip)
     
-    # Generate JWT token
-    from utils.auth import create_access_token
+    # Generate JWT access token
     token = create_access_token(new_user)
     
-    # Parallel cache write and session creation (non-blocking, independent operations)
+    # Generate refresh token
+    refresh_token_value, refresh_token_hash = create_refresh_token(new_user.id)
+    
+    # Parallel cache write, session creation, and refresh token storage
     async def cache_user_async():
         """Cache user in Redis (non-blocking)."""
         nonlocal cache_write_success
@@ -242,10 +248,27 @@ async def register(
         except Exception as e:
             logger.warning(f"[Auth] Failed to store session for user ID {new_user.id}: {e}")
     
-    # Execute cache write and session creation in parallel
+    async def store_refresh_token_async():
+        """Store refresh token in Redis with device binding."""
+        try:
+            user_agent = http_request.headers.get("User-Agent", "")
+            device_hash = compute_device_hash(http_request)
+            refresh_manager = get_refresh_token_manager()
+            refresh_manager.store_refresh_token(
+                user_id=new_user.id,
+                token_hash=refresh_token_hash,
+                ip_address=client_ip,
+                user_agent=user_agent,
+                device_hash=device_hash
+            )
+        except Exception as e:
+            logger.warning(f"[Auth] Failed to store refresh token for user ID {new_user.id}: {e}")
+    
+    # Execute cache write, session creation, and refresh token storage in parallel
     await asyncio.gather(
         cache_user_async(),
         store_session_async(),
+        store_refresh_token_async(),
         return_exceptions=True
     )
     
@@ -253,15 +276,16 @@ async def register(
     duration = time.time() - start_time
     registration_metrics.record_success(duration, retry_count, cache_write_success)
     
-    # Set cookies
-    set_auth_cookies(response, token, http_request)
+    # Set cookies (both access and refresh tokens)
+    set_auth_cookies(response, token, refresh_token_value, http_request)
     
     org_name = org.name if org else "None"
-    logger.info(f"User registered: {new_user.phone} (ID: {new_user.id}, Org: {org_name}, Method: captcha, IP: {client_ip})")
+    logger.info(f"[TokenAudit] Registration success: user={new_user.id}, phone={new_user.phone}, org={org_name}, method=captcha, ip={client_ip}")
     
     return {
         "access_token": token,
         "token_type": "bearer",
+        "expires_in": ACCESS_TOKEN_EXPIRY_MINUTES * 60,
         "user": {
             "id": new_user.id,
             "phone": new_user.phone,
@@ -412,11 +436,13 @@ async def register_with_sms(
     old_token_hash = session_manager.get_session_token(new_user.id)
     session_manager.invalidate_user_sessions(new_user.id, old_token_hash=old_token_hash, ip_address=client_ip)
     
-    # Generate JWT token
-    from utils.auth import create_access_token
+    # Generate JWT access token
     token = create_access_token(new_user)
     
-    # Parallel cache write and session creation (non-blocking, independent operations)
+    # Generate refresh token
+    refresh_token_value, refresh_token_hash = create_refresh_token(new_user.id)
+    
+    # Parallel cache write, session creation, and refresh token storage
     async def cache_user_async():
         """Cache user in Redis (non-blocking)."""
         nonlocal cache_write_success
@@ -435,10 +461,27 @@ async def register_with_sms(
         except Exception as e:
             logger.warning(f"[Auth] Failed to store session for user ID {new_user.id}: {e}")
     
-    # Execute cache write and session creation in parallel
+    async def store_refresh_token_async():
+        """Store refresh token in Redis with device binding."""
+        try:
+            user_agent = http_request.headers.get("User-Agent", "")
+            device_hash = compute_device_hash(http_request)
+            refresh_manager = get_refresh_token_manager()
+            refresh_manager.store_refresh_token(
+                user_id=new_user.id,
+                token_hash=refresh_token_hash,
+                ip_address=client_ip,
+                user_agent=user_agent,
+                device_hash=device_hash
+            )
+        except Exception as e:
+            logger.warning(f"[Auth] Failed to store refresh token for user ID {new_user.id}: {e}")
+    
+    # Execute cache write, session creation, and refresh token storage in parallel
     await asyncio.gather(
         cache_user_async(),
         store_session_async(),
+        store_refresh_token_async(),
         return_exceptions=True
     )
     
@@ -446,11 +489,11 @@ async def register_with_sms(
     duration = time.time() - start_time
     registration_metrics.record_success(duration, retry_count, cache_write_success)
     
-    # Set cookies
-    set_auth_cookies(response, token, http_request)
+    # Set cookies (both access and refresh tokens)
+    set_auth_cookies(response, token, refresh_token_value, http_request)
     
     org_name = org.name if org else "None"
-    logger.info(f"User registered via SMS: {new_user.phone} (ID: {new_user.id}, Org: {org_name}, Method: SMS, IP: {client_ip})")
+    logger.info(f"[TokenAudit] Registration success: user={new_user.id}, phone={new_user.phone}, org={org_name}, method=sms, ip={client_ip}")
     
     # Track user activity
     track_user_activity(new_user, 'login', {'method': 'sms', 'org': org_name, 'action': 'register'}, http_request)
@@ -458,6 +501,7 @@ async def register_with_sms(
     return {
         "access_token": token,
         "token_type": "bearer",
+        "expires_in": ACCESS_TOKEN_EXPIRY_MINUTES * 60,
         "user": {
             "id": new_user.id,
             "phone": new_user.phone,

@@ -166,7 +166,7 @@ async function saveToGallery(): Promise<void> {
 }
 
 // Handle slot full modal success
-function handleSlotModalSuccess(diagramId: number): void {
+function handleSlotModalSuccess(diagramId: string): void {
   showSlotFullModal.value = false
   // The diagram is now saved and activeDiagramId is set in the store
 }

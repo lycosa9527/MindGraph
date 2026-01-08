@@ -6,7 +6,7 @@
  */
 import { computed, onMounted, ref } from 'vue'
 
-import { Connection, Files, Heart, MessageCircle, Search, Share2, Users, VideoPlay } from 'lucide-vue-next'
+import { Network, Files, Heart, MessageCircle, Search, Share2, Users, Video } from 'lucide-vue-next'
 
 import { useAuthStore } from '@/stores'
 
@@ -122,13 +122,17 @@ function formatRelativeTime(isoString: string): string {
 
 async function toggleLike(post: SharedPost) {
   try {
+    // Use credentials (token in httpOnly cookie)
     const response = await fetch(`/api/school-zone/posts/${post.id}/like`, {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${authStore.token}`,
-        'Content-Type': 'application/json'
-      }
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' }
     })
+    
+    if (response.status === 401) {
+      authStore.handleTokenExpired('您的登录已过期，请重新登录')
+      return
+    }
     
     if (response.ok) {
       const data = await response.json()
@@ -140,7 +144,7 @@ async function toggleLike(post: SharedPost) {
   }
 }
 
-// Generate placeholder colors based on post id
+// Generate placeholder colors based on post id (works with UUID)
 function getPlaceholderColor(id: string): string {
   const colors = [
     'from-blue-400 to-indigo-500',
@@ -150,14 +154,19 @@ function getPlaceholderColor(id: string): string {
     'from-cyan-400 to-blue-500',
     'from-rose-400 to-pink-500',
   ]
-  const index = parseInt(id) % colors.length
+  // Simple hash from string: sum of char codes
+  let hash = 0
+  for (let i = 0; i < id.length; i++) {
+    hash += id.charCodeAt(i)
+  }
+  const index = hash % colors.length
   return colors[index]
 }
 
 // Get icon for post type
 function getTypeIcon(contentType: string) {
-  if (contentType === 'mindmate') return VideoPlay
-  return Connection
+  if (contentType === 'mindmate') return Video
+  return Network
 }
 
 // Load posts from API
@@ -180,11 +189,16 @@ async function loadPosts() {
     // Add sort
     params.append('sort', getApiSort(activeSort.value))
     
+    // Use credentials (token in httpOnly cookie)
     const response = await fetch(`/api/school-zone/posts?${params.toString()}`, {
-      headers: {
-        'Authorization': `Bearer ${authStore.token}`
-      }
+      credentials: 'same-origin',
     })
+    
+    if (response.status === 401) {
+      authStore.handleTokenExpired('您的登录已过期，请重新登录后查看校园动态')
+      posts.value = []
+      return
+    }
     
     if (response.ok) {
       const data = await response.json()

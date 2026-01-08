@@ -8,6 +8,7 @@ import { useRoute } from 'vue-router'
 
 import { ElMessage } from 'element-plus'
 
+import { LoginModal } from '@/components/auth'
 import VersionNotification from '@/components/common/VersionNotification.vue'
 import { useLanguage } from '@/composables'
 import { useAuthStore, useUIStore } from '@/stores'
@@ -42,6 +43,12 @@ watch(
   { immediate: true }
 )
 
+// Handle successful login after session expired
+function handleSessionExpiredLoginSuccess() {
+  authStore.closeSessionExpiredModal()
+  ElMessage.success(isZh.value ? '登录成功' : 'Login successful')
+}
+
 // Check auth status on mount and show AI disclaimer
 onMounted(async () => {
   await authStore.checkAuth()
@@ -74,6 +81,12 @@ onMounted(async () => {
 
   <!-- Global version update notification -->
   <VersionNotification />
+
+  <!-- Global session expired login modal -->
+  <LoginModal
+    v-model:visible="authStore.showSessionExpiredModal"
+    @success="handleSessionExpiredLoginSuccess"
+  />
 </template>
 
 <style>

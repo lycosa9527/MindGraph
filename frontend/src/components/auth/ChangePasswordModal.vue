@@ -89,13 +89,11 @@ async function handleSubmit() {
   isLoading.value = true
 
   try {
+    // Use credentials (token in httpOnly cookie)
     const response = await fetch('/api/auth/change-password', {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: authStore.token ? `Bearer ${authStore.token}` : '',
-      },
       credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         current_password: formData.value.currentPassword,
         new_password: formData.value.newPassword,

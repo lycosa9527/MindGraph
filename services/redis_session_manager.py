@@ -39,9 +39,13 @@ SESSION_PREFIX = "session:user:"
 SESSION_SET_PREFIX = "session:user:set:"  # For multiple concurrent sessions (bayi IP whitelist)
 INVALIDATION_NOTIFICATION_PREFIX = "session_invalidated:"
 
-# TTL matches JWT expiration (default: 24 hours)
-JWT_EXPIRY_HOURS = int(os.getenv("JWT_EXPIRY_HOURS", "24"))
-SESSION_TTL_SECONDS = JWT_EXPIRY_HOURS * 3600
+# TTL for access token sessions (1 hour with refresh tokens)
+ACCESS_TOKEN_EXPIRY_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRY_MINUTES", "60"))
+SESSION_TTL_SECONDS = ACCESS_TOKEN_EXPIRY_MINUTES * 60
+
+# TTL for refresh tokens (7 days)
+REFRESH_TOKEN_EXPIRY_DAYS = int(os.getenv("REFRESH_TOKEN_EXPIRY_DAYS", "7"))
+REFRESH_TOKEN_TTL_SECONDS = REFRESH_TOKEN_EXPIRY_DAYS * 24 * 3600
 
 
 def _hash_token(token: str) -> str:
@@ -410,8 +414,292 @@ class RedisSessionManager:
             return False
 
 
-# Global instance
+# ============================================================================
+# Refresh Token Storage
+# ============================================================================
+
+# Key prefixes for refresh tokens
+REFRESH_TOKEN_PREFIX = "refresh:"
+REFRESH_TOKEN_USER_SET_PREFIX = "refresh:user:"
+
+
+class RefreshTokenManager:
+    """
+    Redis-based refresh token manager with device binding and audit logging.
+    
+    Key Schema:
+    - refresh:{user_id}:{token_hash} -> JSON{created_at, ip_address, user_agent, device_hash}
+    - refresh:user:{user_id} -> SET of token_hashes (for revoke-all)
+    
+    All tokens auto-expire via Redis TTL.
+    """
+    
+    def __init__(self):
+        """Initialize refresh token manager."""
+        pass
+    
+    def _use_redis(self) -> bool:
+        """Check if Redis should be used."""
+        return is_redis_available()
+    
+    def _get_token_key(self, user_id: int, token_hash: str) -> str:
+        """Get Redis key for a specific refresh token."""
+        return f"{REFRESH_TOKEN_PREFIX}{user_id}:{token_hash}"
+    
+    def _get_user_tokens_key(self, user_id: int) -> str:
+        """Get Redis key for user's token set."""
+        return f"{REFRESH_TOKEN_USER_SET_PREFIX}{user_id}"
+    
+    def store_refresh_token(
+        self, 
+        user_id: int, 
+        token_hash: str,
+        ip_address: str,
+        user_agent: str,
+        device_hash: str
+    ) -> bool:
+        """
+        Store a refresh token with device binding.
+        
+        Args:
+            user_id: User ID
+            token_hash: SHA256 hash of the refresh token
+            ip_address: Client IP address
+            user_agent: Client User-Agent header
+            device_hash: Device fingerprint hash
+            
+        Returns:
+            True if stored successfully, False otherwise
+        """
+        if not self._use_redis():
+            logger.warning("[RefreshToken] Redis unavailable, cannot store refresh token")
+            return False
+        
+        try:
+            redis = get_redis()
+            if not redis:
+                return False
+            
+            token_key = self._get_token_key(user_id, token_hash)
+            user_tokens_key = self._get_user_tokens_key(user_id)
+            
+            # Token data with device binding
+            token_data = {
+                "created_at": datetime.utcnow().isoformat(),
+                "ip_address": ip_address,
+                "user_agent": user_agent[:200],  # Truncate to prevent bloat
+                "device_hash": device_hash
+            }
+            
+            # Store token with TTL
+            redis_ops.set_with_ttl(
+                token_key, 
+                json.dumps(token_data), 
+                REFRESH_TOKEN_TTL_SECONDS
+            )
+            
+            # Add to user's token set (for revoke-all)
+            redis.sadd(user_tokens_key, token_hash)
+            redis.expire(user_tokens_key, REFRESH_TOKEN_TTL_SECONDS)
+            
+            logger.info(f"[TokenAudit] Refresh token created: user={user_id}, ip={ip_address}, device={device_hash}")
+            return True
+            
+        except Exception as e:
+            logger.error(f"[RefreshToken] Error storing refresh token for user {user_id}: {e}", exc_info=True)
+            return False
+    
+    def validate_refresh_token(
+        self, 
+        user_id: int, 
+        token_hash: str,
+        current_device_hash: Optional[str] = None,
+        strict_device_check: bool = True
+    ) -> tuple[bool, Optional[Dict[str, Any]], Optional[str]]:
+        """
+        Validate a refresh token and check device binding.
+        
+        Args:
+            user_id: User ID
+            token_hash: SHA256 hash of the refresh token
+            current_device_hash: Current device fingerprint (for device binding check)
+            strict_device_check: If True, reject on device mismatch. If False, log warning only.
+            
+        Returns:
+            Tuple of (is_valid, token_data, error_message)
+        """
+        if not self._use_redis():
+            logger.warning("[RefreshToken] Redis unavailable, cannot validate refresh token")
+            return False, None, "Redis unavailable"
+        
+        try:
+            token_key = self._get_token_key(user_id, token_hash)
+            token_json = redis_ops.get(token_key)
+            
+            if not token_json:
+                logger.warning(f"[TokenAudit] Refresh failed - invalid token: user={user_id}")
+                return False, None, "Invalid or expired refresh token"
+            
+            token_data = json.loads(token_json)
+            
+            # Check device binding
+            if current_device_hash and strict_device_check:
+                stored_device_hash = token_data.get("device_hash")
+                if stored_device_hash and stored_device_hash != current_device_hash:
+                    logger.warning(
+                        f"[TokenAudit] Device mismatch on refresh: user={user_id}, "
+                        f"stored={stored_device_hash}, current={current_device_hash}"
+                    )
+                    return False, token_data, "Device mismatch"
+            
+            return True, token_data, None
+            
+        except Exception as e:
+            logger.error(f"[RefreshToken] Error validating refresh token for user {user_id}: {e}", exc_info=True)
+            return False, None, "Validation error"
+    
+    def revoke_refresh_token(self, user_id: int, token_hash: str, reason: str = "logout") -> bool:
+        """
+        Revoke a single refresh token.
+        
+        Args:
+            user_id: User ID
+            token_hash: SHA256 hash of the refresh token
+            reason: Reason for revocation (for audit logging)
+            
+        Returns:
+            True if revoked successfully, False otherwise
+        """
+        if not self._use_redis():
+            return False
+        
+        try:
+            redis = get_redis()
+            if not redis:
+                return False
+            
+            token_key = self._get_token_key(user_id, token_hash)
+            user_tokens_key = self._get_user_tokens_key(user_id)
+            
+            # Delete the token
+            deleted = redis_ops.delete(token_key)
+            
+            # Remove from user's token set
+            redis.srem(user_tokens_key, token_hash)
+            
+            if deleted:
+                logger.info(f"[TokenAudit] Token revoked: user={user_id}, reason={reason}")
+            
+            return deleted
+            
+        except Exception as e:
+            logger.error(f"[RefreshToken] Error revoking refresh token for user {user_id}: {e}", exc_info=True)
+            return False
+    
+    def revoke_all_refresh_tokens(self, user_id: int, reason: str = "security") -> int:
+        """
+        Revoke all refresh tokens for a user.
+        
+        Args:
+            user_id: User ID
+            reason: Reason for revocation (for audit logging)
+            
+        Returns:
+            Number of tokens revoked
+        """
+        if not self._use_redis():
+            return 0
+        
+        try:
+            redis = get_redis()
+            if not redis:
+                return 0
+            
+            user_tokens_key = self._get_user_tokens_key(user_id)
+            
+            # Get all token hashes for user
+            token_hashes = redis.smembers(user_tokens_key)
+            
+            if not token_hashes:
+                logger.debug(f"[RefreshToken] No refresh tokens to revoke for user {user_id}")
+                return 0
+            
+            # Delete each token
+            count = 0
+            for token_hash in token_hashes:
+                token_key = self._get_token_key(user_id, token_hash)
+                if redis_ops.delete(token_key):
+                    count += 1
+            
+            # Delete the user's token set
+            redis.delete(user_tokens_key)
+            
+            logger.info(f"[TokenAudit] All tokens revoked: user={user_id}, count={count}, reason={reason}")
+            return count
+            
+        except Exception as e:
+            logger.error(f"[RefreshToken] Error revoking all refresh tokens for user {user_id}: {e}", exc_info=True)
+            return 0
+    
+    def get_user_token_count(self, user_id: int) -> int:
+        """Get the number of active refresh tokens for a user."""
+        if not self._use_redis():
+            return 0
+        
+        try:
+            redis = get_redis()
+            if not redis:
+                return 0
+            
+            user_tokens_key = self._get_user_tokens_key(user_id)
+            return redis.scard(user_tokens_key)
+            
+        except Exception as e:
+            logger.error(f"[RefreshToken] Error counting tokens for user {user_id}: {e}", exc_info=True)
+            return 0
+    
+    def rotate_refresh_token(
+        self, 
+        user_id: int, 
+        old_token_hash: str,
+        new_token_hash: str,
+        ip_address: str,
+        user_agent: str,
+        device_hash: str
+    ) -> bool:
+        """
+        Rotate a refresh token (revoke old, create new).
+        
+        This is called after a successful token refresh to issue a new refresh token.
+        Helps detect token theft (if old token is reused, it won't exist).
+        
+        Args:
+            user_id: User ID
+            old_token_hash: Hash of the old refresh token (to revoke)
+            new_token_hash: Hash of the new refresh token
+            ip_address: Client IP address
+            user_agent: Client User-Agent header
+            device_hash: Device fingerprint hash
+            
+        Returns:
+            True if rotation successful, False otherwise
+        """
+        # First revoke the old token
+        self.revoke_refresh_token(user_id, old_token_hash, reason="rotation")
+        
+        # Then store the new token
+        return self.store_refresh_token(
+            user_id=user_id,
+            token_hash=new_token_hash,
+            ip_address=ip_address,
+            user_agent=user_agent,
+            device_hash=device_hash
+        )
+
+
+# Global instances
 _session_manager = None
+_refresh_token_manager = None
 
 
 def get_session_manager() -> RedisSessionManager:
@@ -420,4 +708,12 @@ def get_session_manager() -> RedisSessionManager:
     if _session_manager is None:
         _session_manager = RedisSessionManager()
     return _session_manager
+
+
+def get_refresh_token_manager() -> RefreshTokenManager:
+    """Get global refresh token manager instance."""
+    global _refresh_token_manager
+    if _refresh_token_manager is None:
+        _refresh_token_manager = RefreshTokenManager()
+    return _refresh_token_manager
 

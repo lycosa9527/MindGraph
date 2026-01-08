@@ -12,10 +12,16 @@ All Rights Reserved
 Proprietary License
 """
 
+import uuid
 from datetime import datetime
 from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Boolean, Index
 from sqlalchemy.orm import relationship
 from models.auth import Base
+
+
+def generate_uuid():
+    """Generate a UUID string for diagram IDs."""
+    return str(uuid.uuid4())
 
 
 class Diagram(Base):
@@ -24,10 +30,11 @@ class Diagram(Base):
     
     Stores the complete diagram spec as JSON text for flexibility.
     Supports soft delete for data recovery.
+    Uses UUID for secure, non-guessable diagram IDs.
     """
     __tablename__ = "diagrams"
     
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(String(36), primary_key=True, default=generate_uuid, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     
     # Metadata (queryable)
@@ -43,6 +50,9 @@ class Diagram(Base):
     
     # Soft delete support
     is_deleted = Column(Boolean, default=False, index=True)
+    
+    # Pin support - pinned diagrams appear at top
+    is_pinned = Column(Boolean, default=False, index=True)
     
     # Timestamps
     created_at = Column(DateTime, default=datetime.utcnow)

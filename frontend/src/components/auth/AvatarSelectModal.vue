@@ -669,13 +669,11 @@ async function saveAvatar() {
   isSaving.value = true
 
   try {
+    // Use credentials (token in httpOnly cookie)
     const response = await fetch('/api/auth/avatar', {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: authStore.token ? `Bearer ${authStore.token}` : '',
-      },
       credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ avatar: selectedEmoji.value }),
     })
 

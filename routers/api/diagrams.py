@@ -9,9 +9,10 @@ API endpoints for user diagram storage:
 - PUT /api/diagrams/{id} - Update diagram
 - DELETE /api/diagrams/{id} - Soft delete diagram
 - POST /api/diagrams/{id}/duplicate - Duplicate diagram
+- POST /api/diagrams/{id}/pin - Pin/unpin diagram to top
 
 Rate limited: 100 requests per minute per user.
-Max diagrams per user: 10 (configurable via DIAGRAM_MAX_PER_USER).
+Max diagrams per user: 20 (configurable via DIAGRAM_MAX_PER_USER).
 
 Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved
@@ -44,7 +45,7 @@ async def create_diagram(
     Create a new diagram.
     
     Rate limited: 100 requests per minute per user.
-    Max diagrams per user: 10.
+    Max diagrams per user: 20.
     """
     # Rate limiting
     identifier = get_rate_limit_identifier(current_user, request)
@@ -113,7 +114,8 @@ async def list_diagrams(
             title=d['title'],
             diagram_type=d['diagram_type'],
             thumbnail=d.get('thumbnail'),
-            updated_at=datetime.fromisoformat(d['updated_at']) if d.get('updated_at') else datetime.utcnow()
+            updated_at=datetime.fromisoformat(d['updated_at']) if d.get('updated_at') else datetime.utcnow(),
+            is_pinned=d.get('is_pinned', False)
         ))
     
     return DiagramListResponse(
@@ -128,7 +130,7 @@ async def list_diagrams(
 
 @router.get('/diagrams/{diagram_id}', response_model=DiagramResponse)
 async def get_diagram(
-    diagram_id: int,
+    diagram_id: str,
     request: Request,
     current_user: User = Depends(get_current_user)
 ):
@@ -161,7 +163,7 @@ async def get_diagram(
 
 @router.put('/diagrams/{diagram_id}', response_model=DiagramResponse)
 async def update_diagram(
-    diagram_id: int,
+    diagram_id: str,
     req: DiagramUpdateRequest,
     request: Request,
     current_user: User = Depends(get_current_user)
@@ -221,7 +223,7 @@ async def update_diagram(
 
 @router.delete('/diagrams/{diagram_id}')
 async def delete_diagram(
-    diagram_id: int,
+    diagram_id: str,
     request: Request,
     current_user: User = Depends(get_current_user)
 ):
@@ -249,7 +251,7 @@ async def delete_diagram(
 
 @router.post('/diagrams/{diagram_id}/duplicate', response_model=DiagramResponse)
 async def duplicate_diagram(
-    diagram_id: int,
+    diagram_id: str,
     request: Request,
     current_user: User = Depends(get_current_user)
 ):
@@ -257,7 +259,7 @@ async def duplicate_diagram(
     Duplicate an existing diagram.
     
     Rate limited: 100 requests per minute per user.
-    Max diagrams per user: 10.
+    Max diagrams per user: 20.
     """
     # Rate limiting
     identifier = get_rate_limit_identifier(current_user, request)
@@ -290,3 +292,33 @@ async def duplicate_diagram(
         created_at=datetime.fromisoformat(diagram['created_at']) if diagram.get('created_at') else datetime.utcnow(),
         updated_at=datetime.fromisoformat(diagram['updated_at']) if diagram.get('updated_at') else datetime.utcnow()
     )
+
+
+@router.post('/diagrams/{diagram_id}/pin')
+async def pin_diagram(
+    diagram_id: str,
+    request: Request,
+    pinned: bool = Query(True, description="True to pin, False to unpin"),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Pin or unpin a diagram to appear at the top of the list.
+    
+    Rate limited: 100 requests per minute per user.
+    """
+    # Rate limiting
+    identifier = get_rate_limit_identifier(current_user, request)
+    await check_endpoint_rate_limit('diagrams', identifier, max_requests=100, window_seconds=60)
+    
+    cache = get_diagram_cache()
+    success, error = await cache.pin_diagram(current_user.id, diagram_id, pinned)
+    
+    if not success:
+        if "not found" in (error or "").lower():
+            raise HTTPException(status_code=404, detail=error)
+        raise HTTPException(status_code=400, detail=error or "Failed to pin diagram")
+    
+    action = "Pinned" if pinned else "Unpinned"
+    logger.info(f"[Diagrams] {action} diagram {diagram_id} for user {current_user.id}")
+    
+    return {"success": True, "message": f"Diagram {action.lower()}", "is_pinned": pinned}

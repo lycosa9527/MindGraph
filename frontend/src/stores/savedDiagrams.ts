@@ -15,11 +15,12 @@ import { useAuthStore } from './auth'
 
 // Types
 export interface SavedDiagram {
-  id: number
+  id: string  // UUID
   title: string
   diagram_type: string
   thumbnail: string | null
   updated_at: string // ISO date string
+  is_pinned: boolean
 }
 
 export interface SavedDiagramFull extends SavedDiagram {
@@ -27,6 +28,9 @@ export interface SavedDiagramFull extends SavedDiagram {
   language: string
   created_at: string
 }
+
+// Type for diagram IDs (UUID strings)
+export type DiagramId = string
 
 export interface DiagramListResponse {
   diagrams: SavedDiagram[]
@@ -41,7 +45,7 @@ export interface DiagramListResponse {
 export interface AutoSaveResult {
   success: boolean
   action: 'saved' | 'updated' | 'skipped' | 'error'
-  diagramId?: number
+  diagramId?: string
   error?: string
 }
 
@@ -49,13 +53,13 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
   // State
   const diagrams = ref<SavedDiagram[]>([])
   const total = ref(0)
-  const maxDiagrams = ref(10)
+  const maxDiagrams = ref(20)
   const isLoading = ref(false)
   const error = ref<string | null>(null)
-  const currentDiagramId = ref<number | null>(null)
+  const currentDiagramId = ref<string | null>(null)
   
   // Active diagram tracking - tracks if current canvas diagram is saved to library
-  const activeDiagramId = ref<number | null>(null)
+  const activeDiagramId = ref<string | null>(null)
   const isAutoSaving = ref(false)
 
   // Getters
@@ -76,16 +80,14 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
     error.value = null
 
     try {
-      const token = authStore.token
+      // Use credentials (token in httpOnly cookie)
       const response = await fetch(`/api/diagrams?page=${page}&page_size=${pageSize}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        credentials: 'same-origin',
       })
 
       if (!response.ok) {
         if (response.status === 401) {
-          error.value = 'Please login to view saved diagrams'
+          authStore.handleTokenExpired('您的登录已过期，请重新登录后查看图表')
           return false
         }
         throw new Error(`Failed to fetch diagrams: ${response.status}`)
@@ -105,18 +107,19 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
     }
   }
 
-  async function getDiagram(diagramId: number): Promise<SavedDiagramFull | null> {
+  async function getDiagram(diagramId: string): Promise<SavedDiagramFull | null> {
     if (!authStore.isAuthenticated) return null
 
     try {
-      const token = authStore.token
       const response = await fetch(`/api/diagrams/${diagramId}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        credentials: 'same-origin',
       })
 
       if (!response.ok) {
+        if (response.status === 401) {
+          authStore.handleTokenExpired('您的登录已过期，请重新登录')
+          return null
+        }
         throw new Error(`Failed to fetch diagram: ${response.status}`)
       }
 
@@ -137,13 +140,10 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
     if (!authStore.isAuthenticated) return null
 
     try {
-      const token = authStore.token
       const response = await fetch('/api/diagrams', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title,
           diagram_type: diagramType,
@@ -154,6 +154,10 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
       })
 
       if (!response.ok) {
+        if (response.status === 401) {
+          authStore.handleTokenExpired('您的登录已过期，请重新登录后保存图表')
+          return null
+        }
         if (response.status === 403) {
           error.value = 'Diagram limit reached'
           return null
@@ -170,6 +174,7 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
         diagram_type: saved.diagram_type,
         thumbnail: saved.thumbnail,
         updated_at: saved.updated_at,
+        is_pinned: false,
       })
       total.value++
 
@@ -181,23 +186,24 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
   }
 
   async function updateDiagram(
-    diagramId: number,
+    diagramId: string,
     updates: { title?: string; spec?: Record<string, unknown>; thumbnail?: string }
   ): Promise<boolean> {
     if (!authStore.isAuthenticated) return false
 
     try {
-      const token = authStore.token
       const response = await fetch(`/api/diagrams/${diagramId}`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updates),
       })
 
       if (!response.ok) {
+        if (response.status === 401) {
+          authStore.handleTokenExpired('您的登录已过期，请重新登录后更新图表')
+          return false
+        }
         throw new Error(`Failed to update diagram: ${response.status}`)
       }
 
@@ -212,6 +218,7 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
           diagram_type: updated.diagram_type,
           thumbnail: updated.thumbnail,
           updated_at: updated.updated_at,
+          is_pinned: updated.is_pinned ?? diagrams.value[index].is_pinned,
         }
       }
 
@@ -222,19 +229,20 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
     }
   }
 
-  async function deleteDiagram(diagramId: number): Promise<boolean> {
+  async function deleteDiagram(diagramId: string): Promise<boolean> {
     if (!authStore.isAuthenticated) return false
 
     try {
-      const token = authStore.token
       const response = await fetch(`/api/diagrams/${diagramId}`, {
         method: 'DELETE',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        credentials: 'same-origin',
       })
 
       if (!response.ok) {
+        if (response.status === 401) {
+          authStore.handleTokenExpired('您的登录已过期，请重新登录后删除图表')
+          return false
+        }
         throw new Error(`Failed to delete diagram: ${response.status}`)
       }
 
@@ -254,19 +262,20 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
     }
   }
 
-  async function duplicateDiagram(diagramId: number): Promise<SavedDiagramFull | null> {
+  async function duplicateDiagram(diagramId: string): Promise<SavedDiagramFull | null> {
     if (!authStore.isAuthenticated) return null
 
     try {
-      const token = authStore.token
       const response = await fetch(`/api/diagrams/${diagramId}/duplicate`, {
         method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        credentials: 'same-origin',
       })
 
       if (!response.ok) {
+        if (response.status === 401) {
+          authStore.handleTokenExpired('您的登录已过期，请重新登录')
+          return null
+        }
         if (response.status === 403) {
           error.value = 'Diagram limit reached'
           return null
@@ -283,6 +292,7 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
         diagram_type: duplicated.diagram_type,
         thumbnail: duplicated.thumbnail,
         updated_at: duplicated.updated_at,
+        is_pinned: false,
       })
       total.value++
 
@@ -293,7 +303,44 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
     }
   }
 
-  function setCurrentDiagram(diagramId: number | null): void {
+  async function pinDiagram(diagramId: string, pinned: boolean): Promise<boolean> {
+    if (!authStore.isAuthenticated) return false
+
+    try {
+      const response = await fetch(`/api/diagrams/${diagramId}/pin?pinned=${pinned}`, {
+        method: 'POST',
+        credentials: 'same-origin',
+      })
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          authStore.handleTokenExpired('您的登录已过期，请重新登录')
+          return false
+        }
+        throw new Error(`Failed to ${pinned ? 'pin' : 'unpin'} diagram: ${response.status}`)
+      }
+
+      // Update local list - move pinned to front, unpinned back to natural position
+      const index = diagrams.value.findIndex((d) => d.id === diagramId)
+      if (index !== -1) {
+        diagrams.value[index].is_pinned = pinned
+        // Re-sort: pinned first, then by updated_at
+        diagrams.value.sort((a, b) => {
+          if (a.is_pinned !== b.is_pinned) {
+            return a.is_pinned ? -1 : 1
+          }
+          return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+        })
+      }
+
+      return true
+    } catch (e) {
+      console.error('[SavedDiagrams] Pin error:', e)
+      return false
+    }
+  }
+
+  function setCurrentDiagram(diagramId: string | null): void {
     currentDiagramId.value = diagramId
   }
 
@@ -301,7 +348,7 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
    * Set the active diagram ID (diagram currently open in canvas)
    * Call this when loading a diagram from library into canvas
    */
-  function setActiveDiagram(diagramId: number | null): void {
+  function setActiveDiagram(diagramId: string | null): void {
     activeDiagramId.value = diagramId
   }
 
@@ -441,7 +488,7 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
    * Used when slots are full and user selects a diagram to delete
    */
   async function deleteAndSave(
-    diagramIdToDelete: number,
+    diagramIdToDelete: string,
     title: string,
     diagramType: string,
     spec: Record<string, unknown>,
@@ -498,6 +545,7 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
     updateDiagram,
     deleteDiagram,
     duplicateDiagram,
+    pinDiagram,
     setCurrentDiagram,
     setActiveDiagram,
     clearActiveDiagram,

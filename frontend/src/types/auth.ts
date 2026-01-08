@@ -26,6 +26,31 @@ export interface User {
   lastLogin?: string
 }
 
+/**
+ * Backend user response format - the raw format returned by the API
+ * This differs from the frontend User interface and needs normalization
+ */
+export interface BackendUser {
+  id?: string | number
+  name?: string
+  username?: string
+  phone?: string
+  email?: string
+  role?: UserRole
+  avatar?: string
+  organization?: string | { id?: string | number; name?: string }
+  schoolId?: string
+  schoolName?: string
+  created_at?: string
+  createdAt?: string
+  last_login?: string
+  lastLogin?: string
+  user?: {
+    id?: string | number
+    phone?: string
+  }
+}
+
 export interface LoginCredentials {
   phone?: string
   username?: string

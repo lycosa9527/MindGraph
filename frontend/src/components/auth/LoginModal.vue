@@ -103,6 +103,10 @@ function closeModal() {
   resetAllForms()
   currentView.value = 'login'
   activeTab.value = 'login'
+  // Clear session expired message when modal closes
+  if (authStore.sessionExpiredMessage) {
+    authStore.closeSessionExpiredModal()
+  }
 }
 
 // Reset all forms
@@ -465,6 +469,16 @@ function handleBackdropClick(event: MouseEvent) {
               </h2>
               <p class="text-xs text-stone-400 tracking-widest uppercase mt-1.5">
                 思维教学信息化平台
+              </p>
+            </div>
+
+            <!-- Session expired notification -->
+            <div
+              v-if="authStore.sessionExpiredMessage"
+              class="mx-6 mt-4 px-4 py-3 bg-amber-50 border border-amber-200 rounded-lg"
+            >
+              <p class="text-sm text-amber-800 text-center">
+                {{ authStore.sessionExpiredMessage }}
               </p>
             </div>
 

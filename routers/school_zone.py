@@ -49,7 +49,7 @@ class SharedDiagramCreate(BaseModel):
 
 class SharedDiagramResponse(BaseModel):
     """Response model for a shared diagram"""
-    id: int
+    id: str
     title: str
     description: Optional[str]
     content_type: str
@@ -228,7 +228,7 @@ async def create_shared_diagram(
 
 @router.get("/posts/{post_id}")
 async def get_shared_diagram(
-    post_id: int,
+    post_id: str,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
     lang: Language = Depends(get_language_dependency)
@@ -264,7 +264,7 @@ async def get_shared_diagram(
 
 @router.delete("/posts/{post_id}")
 async def delete_shared_diagram(
-    post_id: int,
+    post_id: str,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
     lang: Language = Depends(get_language_dependency)
@@ -308,7 +308,7 @@ async def delete_shared_diagram(
 
 @router.post("/posts/{post_id}/like")
 async def toggle_like(
-    post_id: int,
+    post_id: str,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
     lang: Language = Depends(get_language_dependency)
@@ -365,7 +365,7 @@ async def toggle_like(
 
 @router.get("/posts/{post_id}/comments")
 async def list_comments(
-    post_id: int,
+    post_id: str,
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     current_user: User = Depends(get_current_user),
@@ -421,7 +421,7 @@ async def list_comments(
 
 @router.post("/posts/{post_id}/comments")
 async def create_comment(
-    post_id: int,
+    post_id: str,
     data: CommentCreate,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -475,7 +475,7 @@ async def create_comment(
 
 @router.delete("/posts/{post_id}/comments/{comment_id}")
 async def delete_comment(
-    post_id: int,
+    post_id: str,
     comment_id: int,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
