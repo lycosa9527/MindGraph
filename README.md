@@ -224,8 +224,7 @@ DEBUG=False  # Set to True for development
 # Authentication Mode (standard, enterprise, demo, bayi)
 AUTH_MODE=standard
 
-# JWT Configuration
-JWT_SECRET_KEY=your-super-secret-jwt-key-change-this-in-production
+# JWT Configuration (JWT_SECRET_KEY auto-generated via Redis)
 JWT_EXPIRY_HOURS=168
 
 # Optional: Database backup (enabled by default)

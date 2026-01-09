@@ -12,7 +12,6 @@
 #   - Set feature flags (FEATURE_MINDMATE, FEATURE_VOICE_AGENT, etc.)
 #   - Configure database URL for your environment
 #   - Set DEBUG=False for production
-#   - Configure proper JWT_SECRET_KEY (min 32 characters)
 #   - Optional: Configure Sentry DSN for error tracking
 
 # ============================================================================
