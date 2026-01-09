@@ -84,7 +84,8 @@ def get_jwt_secret() -> str:
         # Try to get existing secret
         secret = redis.get(_JWT_SECRET_REDIS_KEY)
         if secret:
-            _jwt_secret_cache = secret.decode('utf-8')
+            # Handle both bytes and string (depends on Redis client decode_responses setting)
+            _jwt_secret_cache = secret.decode('utf-8') if isinstance(secret, bytes) else secret
             logger.debug("[Auth] Retrieved JWT secret from Redis")
             return _jwt_secret_cache
         
@@ -101,7 +102,8 @@ def get_jwt_secret() -> str:
         # Another worker created it first, fetch theirs
         secret = redis.get(_JWT_SECRET_REDIS_KEY)
         if secret:
-            _jwt_secret_cache = secret.decode('utf-8')
+            # Handle both bytes and string (depends on Redis client decode_responses setting)
+            _jwt_secret_cache = secret.decode('utf-8') if isinstance(secret, bytes) else secret
             return _jwt_secret_cache
         
         # Should never happen, but handle gracefully
