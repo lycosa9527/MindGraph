@@ -921,7 +921,8 @@ class DiagramCreateRequest(BaseModel):
     diagram_type: str = Field(..., description="Type of diagram (e.g., 'mind_map', 'concept_map')")
     spec: Dict[str, Any] = Field(..., description="Diagram specification as JSON")
     language: str = Field('zh', description="Language code (zh or en)")
-    thumbnail: Optional[str] = Field(None, description="Base64 encoded thumbnail image")
+    # Max ~100KB base64 thumbnail (150000 chars = ~112KB decoded)
+    thumbnail: Optional[str] = Field(None, max_length=150000, description="Base64 encoded thumbnail image (max ~100KB)")
     
     @field_validator('language')
     @classmethod
@@ -946,7 +947,8 @@ class DiagramUpdateRequest(BaseModel):
     """Request model for updating an existing diagram"""
     title: Optional[str] = Field(None, min_length=1, max_length=200, description="New diagram title")
     spec: Optional[Dict[str, Any]] = Field(None, description="Updated diagram specification")
-    thumbnail: Optional[str] = Field(None, description="Base64 encoded thumbnail image")
+    # Max ~100KB base64 thumbnail (150000 chars = ~112KB decoded)
+    thumbnail: Optional[str] = Field(None, max_length=150000, description="Base64 encoded thumbnail image (max ~100KB)")
     
     class Config:
         json_schema_extra = {

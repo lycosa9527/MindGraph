@@ -51,7 +51,8 @@ async def get_env_settings(
     
     Security:
         - Masks API keys, secrets, passkeys (shows last 4 chars only)
-        - Hides JWT_SECRET_KEY and DATABASE_URL completely
+        - Hides DATABASE_URL completely
+        - JWT_SECRET_KEY is auto-managed via Redis (not in .env)
     """
     if not is_admin(current_user):
         raise HTTPException(
@@ -76,7 +77,8 @@ async def get_env_settings(
                 continue
             
             # Completely hide these critical settings
-            if key in ['JWT_SECRET_KEY', 'DATABASE_URL']:
+            # Note: JWT_SECRET_KEY is now auto-managed via Redis (not in .env)
+            if key in ['DATABASE_URL']:
                 masked_settings[key] = "***HIDDEN***"
                 continue
             
@@ -124,7 +126,8 @@ async def update_env_settings(
     Security:
     - Validates all inputs before writing
     - Creates automatic backup before changes
-    - Prevents modification of JWT_SECRET_KEY and DATABASE_URL via this endpoint
+    - Prevents modification of DATABASE_URL via this endpoint
+    - JWT_SECRET_KEY is auto-managed via Redis (not configurable)
     - Logs all changes with admin user ID
     - Skips masked values to preserve existing secrets
     
@@ -146,7 +149,8 @@ async def update_env_settings(
         )
     
     # Security: Prevent modification of critical settings via web UI
-    forbidden_keys = ['JWT_SECRET_KEY', 'DATABASE_URL']
+    # Note: JWT_SECRET_KEY is now auto-managed via Redis (not in .env)
+    forbidden_keys = ['DATABASE_URL']
     for key in request:
         if key in forbidden_keys:
             raise HTTPException(

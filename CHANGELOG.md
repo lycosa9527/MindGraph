@@ -7,6 +7,54 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [5.1.4] - 2025-01-09 - Redis-Based JWT Secret and Security Hardening
+
+### Added
+
+- **Request Body Size Limit Middleware** (`main.py`)
+  - Added 5MB maximum request body size limit
+  - Prevents DoS attacks via large payloads
+  - Logs security violations via security_logger
+  - Returns 413 status code when limit exceeded
+
+- **Frontend Input Validation** (`frontend/src/pages/CanvasPage.vue`, `frontend/src/stores/savedDiagrams.ts`)
+  - Added MAX_PROMPT_LENGTH (10,000 chars) validation in CanvasPage
+  - Added MAX_SPEC_SIZE_KB (500KB) validation for diagram specs
+  - Added MAX_THUMBNAIL_SIZE (150,000 chars) validation for thumbnails
+  - User-friendly error messages when limits exceeded
+
+- **Backend Thumbnail Size Limits** (`models/requests.py`)
+  - Added max_length=150000 to thumbnail fields in DiagramCreateRequest
+  - Added max_length=150000 to thumbnail fields in DiagramUpdateRequest
+
+### Changed
+
+- **JWT Secret Auto-Generation via Redis** (`utils/auth.py`)
+  - JWT_SECRET_KEY is now auto-generated and stored in Redis
+  - Removed from .env configuration - no manual setup required
+  - Shared across all workers via Redis (multi-worker safe)
+  - Uses SET NX for atomic creation to prevent race conditions
+  - Cached locally to avoid Redis lookup on every JWT operation
+  - Users only need to re-login if Redis is flushed (rare event)
+
+- **Environment Configuration** (`env.example`, `models/env_settings.py`)
+  - Removed JWT_SECRET_KEY from required configuration
+  - Updated documentation explaining Redis-based JWT secret
+  - Added Redis authentication examples for production
+
+- **Admin Settings Endpoints** (`routers/admin_env.py`, `routers/auth/admin/settings.py`)
+  - Removed JWT_SECRET_KEY from forbidden/hidden settings list
+  - Updated comments explaining auto-managed JWT secret
+
+- **JWT Token Operations** (`routers/auth/session.py`, `routers/api/helpers.py`)
+  - Changed JWT_SECRET_KEY references to use get_jwt_secret()
+  - Updated imports for new function-based access
+
+- **Frontend Version** (`frontend/package.json`)
+  - Updated from 5.1.1 to 5.1.3
+
+---
+
 ## [5.1.3] - 2025-01-08 - Saved Diagram Loading Fix and Smart Title Management
 
 ### Added

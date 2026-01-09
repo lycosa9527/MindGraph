@@ -63,6 +63,9 @@ const diagramType = computed<DiagramType | null>(() => {
   return diagramTypeMap[chartType.value] || null
 })
 
+// Security constants - must match backend limits
+const MAX_PROMPT_LENGTH = 10000  // Backend limit from GenerateRequest
+
 /**
  * Generate diagram from a prompt
  * Used when user provides a prompt via DiagramTemplateInput
@@ -70,13 +73,24 @@ const diagramType = computed<DiagramType | null>(() => {
 async function generateDiagram(prompt: string) {
   if (!prompt.trim() || !diagramType.value) return
 
+  // Validate prompt length before sending
+  const trimmedPrompt = prompt.trim()
+  if (trimmedPrompt.length > MAX_PROMPT_LENGTH) {
+    notify.error(
+      isZh.value 
+        ? `输入内容过长（${trimmedPrompt.length}字符）。最大允许${MAX_PROMPT_LENGTH}字符。`
+        : `Prompt too long (${trimmedPrompt.length} chars). Maximum is ${MAX_PROMPT_LENGTH} chars.`
+    )
+    return
+  }
+
   isGenerating.value = true
 
   try {
     const response = await authFetch('/api/generate_graph', {
       method: 'POST',
       body: JSON.stringify({
-        prompt: prompt.trim(),
+        prompt: trimmedPrompt,
         diagram_type: diagramType.value,
         language: isZh.value ? 'zh' : 'en',
         llm: 'qwen',

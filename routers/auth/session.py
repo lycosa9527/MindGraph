@@ -32,7 +32,7 @@ from services.redis_user_cache import user_cache
 from utils.auth import (
     get_current_user, get_user_role, is_https, get_client_ip,
     create_access_token, create_refresh_token, hash_refresh_token, compute_device_hash,
-    ACCESS_TOKEN_EXPIRY_MINUTES, REFRESH_TOKEN_EXPIRY_DAYS, JWT_SECRET_KEY, JWT_ALGORITHM
+    ACCESS_TOKEN_EXPIRY_MINUTES, REFRESH_TOKEN_EXPIRY_DAYS, get_jwt_secret, JWT_ALGORITHM
 )
 
 from .dependencies import get_language_dependency
@@ -103,12 +103,12 @@ async def refresh_token(
     # Decode access token without verifying expiration
     try:
         import jwt
-        from utils.auth import JWT_SECRET_KEY, JWT_ALGORITHM
+        from utils.auth import get_jwt_secret, JWT_ALGORITHM
         
         # Decode without verifying expiration
         payload = jwt.decode(
             access_token, 
-            JWT_SECRET_KEY, 
+            get_jwt_secret(), 
             algorithms=[JWT_ALGORITHM],
             options={"verify_exp": False}
         )

@@ -310,11 +310,10 @@ class AuthSettings(BaseModel):
     """Authentication and security settings"""
     __category__ = "Authentication & Security"
     
-    JWT_SECRET_KEY: str = Field(
-        ...,
-        min_length=32,
-        description="JWT secret key (minimum 32 characters, CHANGE IN PRODUCTION!)"
-    )
+    # NOTE: JWT_SECRET_KEY is no longer configurable via .env
+    # It is auto-generated and stored in Redis for security
+    # See utils/auth.py get_jwt_secret() for implementation
+    
     JWT_EXPIRY_HOURS: int = Field(
         default=24,
         gt=0,
@@ -368,19 +367,6 @@ class AuthSettings(BaseModel):
         """Validate passkey is 6 digits"""
         if v and (not v.isdigit() or len(v) != 6):
             raise ValueError("Passkey must be exactly 6 digits")
-        return v
-    
-    @field_validator('JWT_SECRET_KEY')
-    @classmethod
-    def validate_jwt_secret(cls, v):
-        """Warn if using default/weak JWT secret"""
-        if len(v) < 32:
-            raise ValueError("JWT secret must be at least 32 characters")
-        if "change" in v.lower() or "secret" in v.lower() or "your-" in v.lower():
-            # This is likely the default from env.example
-            import logging
-            logger = logging.getLogger(__name__)
-            logger.warning("JWT_SECRET_KEY appears to be default value - CHANGE IN PRODUCTION!")
         return v
 
 

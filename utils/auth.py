@@ -39,8 +39,81 @@ logger = logging.getLogger(__name__)
 # ============================================================================
 
 # JWT Configuration
-JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "your-secret-key-change-in-production")
 JWT_ALGORITHM = "HS256"
+# Redis key for JWT secret storage
+_JWT_SECRET_REDIS_KEY = "jwt:secret"
+# Cached JWT secret (to avoid Redis lookup on every request)
+_jwt_secret_cache: str = None
+
+def get_jwt_secret() -> str:
+    """
+    Get or generate JWT secret from Redis (shared across all workers).
+    
+    Security benefits:
+    - Auto-generated cryptographically secure 64-char secret
+    - Shared across all workers via Redis (multi-worker safe)
+    - No manual configuration required (removed from .env)
+    - Users only re-login if Redis is flushed (rare event)
+    
+    Uses SET NX (set if not exists) to ensure only one worker generates
+    the secret, preventing race conditions.
+    
+    Returns:
+        JWT secret string (64 chars, cryptographically secure)
+    """
+    global _jwt_secret_cache
+    
+    # Return cached value if available (avoids Redis lookup on every JWT operation)
+    if _jwt_secret_cache:
+        return _jwt_secret_cache
+    
+    try:
+        from services.redis_client import get_redis, is_redis_available
+        
+        if not is_redis_available():
+            # Redis required - fail with clear error
+            raise RuntimeError(
+                "Redis is required for JWT secret storage. "
+                "Please ensure Redis is running and REDIS_URL is configured."
+            )
+        
+        redis = get_redis()
+        if not redis:
+            raise RuntimeError("Failed to connect to Redis for JWT secret retrieval")
+        
+        # Try to get existing secret
+        secret = redis.get(_JWT_SECRET_REDIS_KEY)
+        if secret:
+            _jwt_secret_cache = secret.decode('utf-8')
+            logger.debug("[Auth] Retrieved JWT secret from Redis")
+            return _jwt_secret_cache
+        
+        # Generate new secret (SET NX ensures only one worker creates it)
+        import secrets
+        new_secret = secrets.token_urlsafe(48)  # 64 chars, cryptographically secure
+        
+        # Atomic set-if-not-exists to handle race condition
+        if redis.set(_JWT_SECRET_REDIS_KEY, new_secret, nx=True):
+            logger.info("[Auth] Generated new JWT secret (stored in Redis)")
+            _jwt_secret_cache = new_secret
+            return _jwt_secret_cache
+        
+        # Another worker created it first, fetch theirs
+        secret = redis.get(_JWT_SECRET_REDIS_KEY)
+        if secret:
+            _jwt_secret_cache = secret.decode('utf-8')
+            return _jwt_secret_cache
+        
+        # Should never happen, but handle gracefully
+        raise RuntimeError("Failed to retrieve or generate JWT secret from Redis")
+        
+    except ImportError:
+        raise RuntimeError(
+            "Redis client not available. Redis is required for JWT secret storage."
+        )
+    except Exception as e:
+        logger.error(f"[Auth] JWT secret retrieval failed: {e}")
+        raise
 # Access token: Short-lived (1 hour default), refreshed automatically
 ACCESS_TOKEN_EXPIRY_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRY_MINUTES", "60"))
 # Refresh token: Long-lived (7 days default), stored in httpOnly cookie
@@ -316,7 +389,7 @@ def create_access_token(user: User) -> str:
         "exp": expire
     }
     
-    token = jwt.encode(payload, JWT_SECRET_KEY, algorithm=JWT_ALGORITHM)
+    token = jwt.encode(payload, get_jwt_secret(), algorithm=JWT_ALGORITHM)
     return token
 
 
@@ -368,7 +441,7 @@ def decode_access_token(token: str) -> dict:
     Returns payload if valid, raises HTTPException if invalid/expired
     """
     try:
-        payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM])
+        payload = jwt.decode(token, get_jwt_secret(), algorithms=[JWT_ALGORITHM])
         return payload
     except JWTError as e:
         # Token expiration is expected behavior when users are inactive
@@ -546,7 +619,7 @@ def get_user_from_cookie(token: str, db: Session) -> Optional[User]:
     
     try:
         # Decode token - jwt.decode automatically validates expiration
-        payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM])
+        payload = jwt.decode(token, get_jwt_secret(), algorithms=[JWT_ALGORITHM])
         user_id = payload.get("sub")
         
         if not user_id:

@@ -1065,6 +1065,49 @@ app.add_middleware(
 # GZip Compression
 app.add_middleware(GZipMiddleware, minimum_size=1000)
 
+# ============================================================================
+# REQUEST BODY SIZE LIMIT MIDDLEWARE
+# ============================================================================
+# Maximum request body size (5MB) - prevents DoS attacks via large payloads
+MAX_REQUEST_BODY_SIZE = 5 * 1024 * 1024  # 5MB
+
+@app.middleware("http")
+async def limit_request_body_size(request: Request, call_next):
+    """
+    Limit request body size to prevent DoS attacks.
+    
+    Rejects requests with Content-Length exceeding MAX_REQUEST_BODY_SIZE.
+    This protects against attackers trying to exhaust server memory/disk
+    by sending extremely large payloads (e.g., 100MB diagram specs).
+    
+    Note: This checks Content-Length header, which can be spoofed.
+    For complete protection, also limit at reverse proxy level (Nginx).
+    """
+    content_length = request.headers.get('content-length')
+    if content_length:
+        try:
+            size = int(content_length)
+            if size > MAX_REQUEST_BODY_SIZE:
+                from services.security_logger import security_log
+                client_ip = request.client.host if request.client else 'unknown'
+                security_log.input_validation_failed(
+                    field="request_body",
+                    reason=f"size {size / 1024 / 1024:.1f}MB exceeds {MAX_REQUEST_BODY_SIZE / 1024 / 1024:.0f}MB limit",
+                    ip=client_ip,
+                    value_size=size
+                )
+                return JSONResponse(
+                    status_code=413,
+                    content={
+                        "detail": f"Request body too large. Maximum size is {MAX_REQUEST_BODY_SIZE // 1024 // 1024}MB"
+                    }
+                )
+        except ValueError:
+            # Invalid Content-Length header, let it pass (will fail elsewhere if malformed)
+            pass
+    
+    return await call_next(request)
+
 # CSRF Protection Middleware
 @app.middleware("http")
 async def csrf_protection(request: Request, call_next):

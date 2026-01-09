@@ -6,12 +6,20 @@
  * - Tracks active diagram on canvas (if already saved to library)
  * - Auto-saves diagrams in background when slots available
  * - Supports manual save with slot management modal
+ * 
+ * Security:
+ * - Validates spec size before sending to backend (max 500KB)
+ * - Validates thumbnail size (max ~100KB base64)
  */
 import { computed, ref } from 'vue'
 
 import { defineStore } from 'pinia'
 
 import { useAuthStore } from './auth'
+
+// Security constants - must match backend limits
+const MAX_SPEC_SIZE_KB = 500  // Backend limit from DIAGRAM_MAX_SPEC_SIZE_KB
+const MAX_THUMBNAIL_SIZE = 150000  // Max base64 chars (~100KB decoded)
 
 // Types
 export interface SavedDiagram {
@@ -139,6 +147,21 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
   ): Promise<SavedDiagramFull | null> {
     if (!authStore.isAuthenticated) return null
 
+    // Validate spec size before sending
+    const specJson = JSON.stringify(spec)
+    const specSizeKB = new Blob([specJson]).size / 1024
+    if (specSizeKB > MAX_SPEC_SIZE_KB) {
+      console.error(`[SavedDiagrams] Spec too large: ${specSizeKB.toFixed(1)}KB > ${MAX_SPEC_SIZE_KB}KB`)
+      error.value = `Diagram data too large (${specSizeKB.toFixed(0)}KB). Maximum is ${MAX_SPEC_SIZE_KB}KB.`
+      return null
+    }
+
+    // Validate thumbnail size if provided
+    if (thumbnail && thumbnail.length > MAX_THUMBNAIL_SIZE) {
+      console.warn(`[SavedDiagrams] Thumbnail too large (${thumbnail.length} chars), skipping`)
+      thumbnail = null  // Skip thumbnail rather than fail
+    }
+
     try {
       const response = await fetch('/api/diagrams', {
         method: 'POST',
@@ -190,6 +213,23 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
     updates: { title?: string; spec?: Record<string, unknown>; thumbnail?: string }
   ): Promise<boolean> {
     if (!authStore.isAuthenticated) return false
+
+    // Validate spec size if provided
+    if (updates.spec) {
+      const specJson = JSON.stringify(updates.spec)
+      const specSizeKB = new Blob([specJson]).size / 1024
+      if (specSizeKB > MAX_SPEC_SIZE_KB) {
+        console.error(`[SavedDiagrams] Spec too large: ${specSizeKB.toFixed(1)}KB > ${MAX_SPEC_SIZE_KB}KB`)
+        error.value = `Diagram data too large (${specSizeKB.toFixed(0)}KB). Maximum is ${MAX_SPEC_SIZE_KB}KB.`
+        return false
+      }
+    }
+
+    // Validate thumbnail size if provided
+    if (updates.thumbnail && updates.thumbnail.length > MAX_THUMBNAIL_SIZE) {
+      console.warn(`[SavedDiagrams] Thumbnail too large (${updates.thumbnail.length} chars), skipping`)
+      delete updates.thumbnail  // Skip thumbnail rather than fail
+    }
 
     try {
       const response = await fetch(`/api/diagrams/${diagramId}`, {

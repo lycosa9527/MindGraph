@@ -86,14 +86,14 @@ def generate_signed_url(filename: str, expiration_seconds: int = 86400) -> str:
     Returns:
         Signed URL with signature and expiration timestamp
     """
-    from utils.auth import JWT_SECRET_KEY
+    from utils.auth import get_jwt_secret
     
     expiration = int(time.time()) + expiration_seconds
     message = f"{filename}:{expiration}"
     
     # Generate HMAC signature
     signature = hmac.new(
-        JWT_SECRET_KEY.encode('utf-8'),
+        get_jwt_secret().encode('utf-8'),
         message.encode('utf-8'),
         hashlib.sha256
     ).digest()
@@ -116,7 +116,7 @@ def verify_signed_url(filename: str, signature: str, expiration: int) -> bool:
     Returns:
         True if signature is valid and not expired, False otherwise
     """
-    from utils.auth import JWT_SECRET_KEY
+    from utils.auth import get_jwt_secret
     
     # Check expiration
     if int(time.time()) > expiration:
@@ -127,7 +127,7 @@ def verify_signed_url(filename: str, signature: str, expiration: int) -> bool:
     
     # Generate expected signature
     expected_signature = hmac.new(
-        JWT_SECRET_KEY.encode('utf-8'),
+        get_jwt_secret().encode('utf-8'),
         message.encode('utf-8'),
         hashlib.sha256
     ).digest()

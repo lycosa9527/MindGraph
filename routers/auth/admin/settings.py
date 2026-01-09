@@ -45,7 +45,8 @@ async def get_settings_admin(
                     key = key.strip()
                     value = value.strip()
                     
-                    if key in ['JWT_SECRET_KEY', 'DATABASE_URL']:
+                    # Skip critical settings (JWT_SECRET_KEY is now auto-managed via Redis)
+                    if key in ['DATABASE_URL']:
                         continue
                     
                     if 'PASSWORD' in key or 'SECRET' in key or 'PASSKEY' in key:
@@ -64,7 +65,8 @@ async def update_settings_admin(
     lang: str = Depends(get_language_dependency)
 ):
     """Update system settings in .env (ADMIN ONLY)"""
-    forbidden_keys = ['JWT_SECRET_KEY', 'DATABASE_URL']
+    # JWT_SECRET_KEY is now auto-managed via Redis (not in .env)
+    forbidden_keys = ['DATABASE_URL']
     for key in request:
         if key in forbidden_keys:
             error_msg = Messages.error("cannot_modify_field_via_api", lang, key)
