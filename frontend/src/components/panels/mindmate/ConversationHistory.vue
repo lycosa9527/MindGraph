@@ -2,10 +2,11 @@
 import { computed } from 'vue'
 
 import { ElButton, ElDrawer, ElIcon } from 'element-plus'
+
 import { Delete, DocumentCopy } from '@element-plus/icons-vue'
 
 import { useLanguage } from '@/composables'
-import { useMindMateStore, type MindMateConversation } from '@/stores'
+import { type MindMateConversation, useMindMateStore } from '@/stores'
 
 const props = defineProps<{
   visible: boolean
@@ -21,7 +22,7 @@ const emit = defineEmits<{
 }>()
 
 const { isZh } = useLanguage()
-const mindMateStore = useMindMateStore()
+const _mindMateStore = useMindMateStore()
 
 const showHistory = computed({
   get: () => props.visible,

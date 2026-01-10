@@ -1,6 +1,6 @@
 /**
  * Dify Mutation Composables
- * 
+ *
  * Vue Query mutations for modifying Dify data with automatic cache invalidation.
  */
 import { useMutation, useQueryClient } from '@tanstack/vue-query'
@@ -52,10 +52,7 @@ async function deleteConversationAPI(convId: string): Promise<void> {
   }
 }
 
-async function renameConversationAPI(
-  convId: string,
-  name: string
-): Promise<{ name: string }> {
+async function renameConversationAPI(convId: string, name: string): Promise<{ name: string }> {
   const response = await fetch(`/api/dify/conversations/${convId}/name`, {
     method: 'POST',
     credentials: 'same-origin',

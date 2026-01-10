@@ -112,7 +112,18 @@ def _log_redis_error(title: str, details: List[str]) -> None:
 
 
 class RedisConnectionError(Exception):
-    """Raised when Redis connection fails."""
+    """Raised when Redis connection fails during operation."""
+    pass
+
+
+class RedisStartupError(Exception):
+    """
+    Raised when Redis connection fails during startup.
+    
+    This is a controlled startup failure - the error message has already
+    been logged with instructions. Catching this exception should exit
+    cleanly without logging additional tracebacks.
+    """
     pass
 
 
@@ -180,7 +191,7 @@ def init_redis_sync() -> bool:
                 "  pip install redis>=5.0.0",
             ]
         )
-        raise SystemExit(1)
+        raise RedisStartupError("Redis package not installed")
         
     except Exception as e:
         _log_redis_error(
@@ -199,7 +210,7 @@ def init_redis_sync() -> bool:
                 "Then set REDIS_URL in your .env file (default: redis://localhost:6379/0)",
             ]
         )
-        raise SystemExit(1)
+        raise RedisStartupError(f"Failed to connect to Redis: {e}")
 
 
 def close_redis_sync():

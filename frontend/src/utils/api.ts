@@ -1,7 +1,7 @@
 /**
  * API Utilities
  * Centralized API calls with authentication support
- * 
+ *
  * Note: Authentication is now handled via httpOnly cookies (set by backend).
  * The Authorization header is no longer needed - cookies are sent automatically.
  */

@@ -32,7 +32,8 @@ from utils.auth import (
     validate_bayi_token_body,
     is_ip_whitelisted,
     create_access_token,
-    hash_password
+    hash_password,
+    compute_device_hash
 )
 from services.redis_session_manager import get_session_manager
 from models.auth import User, Organization
@@ -214,9 +215,12 @@ async def login_by_xz(
                 # Generate JWT token (user object is still valid after expunge)
                 jwt_token = create_access_token(bayi_user)
                 
+                # Compute device hash for session tracking
+                device_hash = compute_device_hash(request)
+                
                 # Store new session in Redis (allow_multiple=True for shared account)
                 # This allows multiple teachers to use the system simultaneously
-                session_manager.store_session(bayi_user.id, jwt_token, allow_multiple=True)
+                session_manager.store_session(bayi_user.id, jwt_token, device_hash=device_hash, allow_multiple=True)
                 
                 logger.info(f"Bayi IP whitelist authentication successful: {client_ip}")
             finally:
@@ -394,8 +398,11 @@ async def login_by_xz(
             # Generate JWT token (user object is still valid after session close)
             jwt_token = create_access_token(bayi_user)
             
+            # Compute device hash for session tracking
+            device_hash = compute_device_hash(request)
+            
             # Store new session in Redis
-            session_manager.store_session(bayi_user.id, jwt_token)
+            session_manager.store_session(bayi_user.id, jwt_token, device_hash=device_hash)
             
             logger.info(f"Bayi mode authentication successful: {user_phone}")
         finally:

@@ -12,13 +12,13 @@ import { AppSidebar } from '@/components/sidebar'
     <AppSidebar />
 
     <!-- Main content -->
-    <main class="main-content flex-1 flex flex-col overflow-hidden transition-all duration-300 ease-in-out relative">
+    <main
+      class="main-content flex-1 flex flex-col overflow-hidden transition-all duration-300 ease-in-out relative"
+    >
       <slot />
 
       <!-- ICP Registration Footer - centered relative to panel -->
-      <div class="icp-footer">
-        京ICP备2025126228号
-      </div>
+      <div class="icp-footer">京ICP备2025126228号</div>
     </main>
   </div>
 </template>

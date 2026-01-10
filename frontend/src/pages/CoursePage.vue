@@ -210,8 +210,7 @@ const filteredCourses = computed(() => {
     const matchesScene = activeScene.value === '全部' || course.scene === activeScene.value
     const matchesDiagram = activeDiagram.value === '全部' || course.diagram === activeDiagram.value
     const matchesSearch =
-      !searchQuery.value ||
-      course.title.toLowerCase().includes(searchQuery.value.toLowerCase())
+      !searchQuery.value || course.title.toLowerCase().includes(searchQuery.value.toLowerCase())
     return matchesType && matchesScene && matchesDiagram && matchesSearch
   })
 })
@@ -365,25 +364,45 @@ function getPlaceholderColor(id: string): string {
           >
             <!-- Placeholder pattern -->
             <div class="absolute inset-0 flex items-center justify-center opacity-30">
-              <svg class="w-12 h-12 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                <polygon points="5 3 19 12 5 21 5 3" fill="currentColor" />
+              <svg
+                class="w-12 h-12 text-white"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+              >
+                <polygon
+                  points="5 3 19 12 5 21 5 3"
+                  fill="currentColor"
+                />
               </svg>
             </div>
             <!-- Play button overlay -->
-            <div class="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
-              <div class="w-12 h-12 rounded-full bg-white/90 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all transform scale-90 group-hover:scale-100">
-                <Play class="w-5 h-5 text-stone-800 ml-0.5" fill="currentColor" />
+            <div
+              class="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center"
+            >
+              <div
+                class="w-12 h-12 rounded-full bg-white/90 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all transform scale-90 group-hover:scale-100"
+              >
+                <Play
+                  class="w-5 h-5 text-stone-800 ml-0.5"
+                  fill="currentColor"
+                />
               </div>
             </div>
             <!-- Duration badge -->
-            <div class="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-2 py-0.5 rounded">
+            <div
+              class="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-2 py-0.5 rounded"
+            >
               {{ course.duration }}
             </div>
           </div>
 
           <!-- Info -->
           <div class="px-1">
-            <h3 class="text-sm font-medium text-stone-800 line-clamp-2 mb-2 group-hover:text-indigo-600 transition-colors">
+            <h3
+              class="text-sm font-medium text-stone-800 line-clamp-2 mb-2 group-hover:text-indigo-600 transition-colors"
+            >
               {{ course.title }}
             </h3>
             <div class="flex items-center gap-3 text-xs text-stone-400">

@@ -4,16 +4,22 @@
  * Migrated from prototype MindMateChatPage sidebar
  */
 import { computed, ref } from 'vue'
-
-import { ChatLineSquare, Connection, Files, OfficeBuilding, Share, VideoPlay } from '@element-plus/icons-vue'
-
 import { useRouter } from 'vue-router'
+
+import {
+  ChatLineSquare,
+  Connection,
+  Files,
+  OfficeBuilding,
+  Share,
+  VideoPlay,
+} from '@element-plus/icons-vue'
 
 import { ChevronDown, KeyRound, LogIn, LogOut, Menu, Settings, UserRound } from 'lucide-vue-next'
 
 import { AccountInfoModal, ChangePasswordModal, LoginModal } from '@/components/auth'
 import { useAuthStore, useMindMateStore, useUIStore } from '@/stores'
-import { useSavedDiagramsStore, type SavedDiagram } from '@/stores/savedDiagrams'
+import { type SavedDiagram, useSavedDiagramsStore } from '@/stores/savedDiagrams'
 
 import ChatHistory from './ChatHistory.vue'
 import DiagramHistory from './DiagramHistory.vue'
@@ -22,7 +28,7 @@ const router = useRouter()
 const uiStore = useUIStore()
 const authStore = useAuthStore()
 const mindMateStore = useMindMateStore()
-const savedDiagramsStore = useSavedDiagramsStore()
+const _savedDiagramsStore = useSavedDiagramsStore()
 
 const isCollapsed = computed(() => uiStore.sidebarCollapsed)
 
@@ -117,7 +123,7 @@ async function handleDiagramSelect(diagram: SavedDiagram) {
   // Navigate to canvas with the diagram
   router.push({
     path: '/canvas',
-    query: { diagramId: diagram.id.toString() }
+    query: { diagramId: diagram.id.toString() },
   })
 }
 </script>

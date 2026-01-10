@@ -113,9 +113,8 @@ function handleEditCancel() {
     border-color 0.2s ease;
 }
 
-/* Tree map nodes have fixed width for consistent vertical alignment */
+/* Tree map nodes have min-width for consistent vertical alignment (no fixed width for NodeResizer support) */
 .branch-node.tree-map-node {
-  width: 120px;
   min-width: 120px;
 }
 

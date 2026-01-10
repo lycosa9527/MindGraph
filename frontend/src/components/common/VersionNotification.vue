@@ -6,13 +6,15 @@
  */
 import { h, watch } from 'vue'
 
-import { Refresh } from '@element-plus/icons-vue'
 import { ElButton, ElNotification } from 'element-plus'
+
+import { Refresh } from '@element-plus/icons-vue'
 
 import { useLanguage, useVersionCheck } from '@/composables'
 
 const { t } = useLanguage()
-const { needsUpdate, currentVersion, serverVersion, forceRefresh, dismissUpdate } = useVersionCheck()
+const { needsUpdate, currentVersion, serverVersion, forceRefresh, dismissUpdate } =
+  useVersionCheck()
 
 let notificationInstance: ReturnType<typeof ElNotification> | null = null
 
@@ -68,6 +70,7 @@ watch(
 
 <template>
   <!-- This component renders nothing - it uses ElNotification programmatically -->
+  <div style="display: none" />
 </template>
 
 <style>

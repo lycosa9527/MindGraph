@@ -23,8 +23,14 @@ const { getNodeStyle } = useTheme({
 
 const defaultStyle = computed(() => getNodeStyle('topic'))
 
-// Tree map uses pill shape (fully rounded ends), others use default circle
+// Tree map and brace map use pill shape (fully rounded ends), others use default circle
+const isPillShape = computed(
+  () => props.data.diagramType === 'tree_map' || props.data.diagramType === 'brace_map'
+)
+
+// Specific diagram type checks for handle positioning
 const isTreeMap = computed(() => props.data.diagramType === 'tree_map')
+const isBraceMap = computed(() => props.data.diagramType === 'brace_map')
 
 const nodeStyle = computed(() => ({
   backgroundColor:
@@ -35,7 +41,7 @@ const nodeStyle = computed(() => ({
   fontWeight: props.data.style?.fontWeight || defaultStyle.value.fontWeight || 'bold',
   borderWidth: `${props.data.style?.borderWidth || defaultStyle.value.borderWidth || 3}px`,
   // Pill shape for tree map (9999px creates fully rounded ends), circle for others
-  borderRadius: isTreeMap.value ? '9999px' : `${props.data.style?.borderRadius || 50}%`,
+  borderRadius: isPillShape.value ? '9999px' : `${props.data.style?.borderRadius || 50}%`,
 }))
 
 // Inline editing state
@@ -58,7 +64,7 @@ function handleEditCancel() {
 <template>
   <div
     class="topic-node flex items-center justify-center px-6 py-4 border-solid cursor-default select-none"
-    :class="{ 'pill-shape': isTreeMap }"
+    :class="{ 'pill-shape': isPillShape }"
     :style="nodeStyle"
   >
     <InlineEditableText
@@ -74,35 +80,43 @@ function handleEditCancel() {
 
     <!-- Connection handles for horizontal layouts (mind maps, bubble maps, etc.) -->
     <Handle
-      v-if="!isTreeMap"
+      v-if="!isPillShape"
       type="source"
       :position="Position.Right"
       class="!bg-blue-500"
     />
     <Handle
-      v-if="!isTreeMap"
+      v-if="!isPillShape"
       type="source"
       :position="Position.Left"
       class="!bg-blue-500"
     />
     <Handle
-      v-if="!isTreeMap"
+      v-if="!isPillShape"
       type="source"
       :position="Position.Top"
       class="!bg-blue-500"
     />
     <Handle
-      v-if="!isTreeMap"
+      v-if="!isPillShape"
       type="source"
       :position="Position.Bottom"
       class="!bg-blue-500"
     />
 
-    <!-- Connection handle for tree maps (vertical layout - only bottom) -->
+    <!-- Connection handle for tree maps (vertical layout - bottom only) -->
     <Handle
       v-if="isTreeMap"
       type="source"
       :position="Position.Bottom"
+      class="!bg-blue-500"
+    />
+
+    <!-- Connection handle for brace maps (horizontal layout - right only) -->
+    <Handle
+      v-if="isBraceMap"
+      type="source"
+      :position="Position.Right"
       class="!bg-blue-500"
     />
   </div>

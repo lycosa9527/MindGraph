@@ -23,7 +23,7 @@ const username = computed(() => authStore.user?.username || '')
 <template>
   <div class="mindgraph-container flex flex-col h-full">
     <!-- Spacer to push content down -->
-    <div class="flex-1"></div>
+    <div class="flex-1" />
 
     <!-- Input and grid area -->
     <div class="p-5 w-[70%] mx-auto">

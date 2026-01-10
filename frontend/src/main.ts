@@ -5,12 +5,12 @@ import { createApp } from 'vue'
 
 import { createPinia } from 'pinia'
 
-import { VueQueryPlugin, QueryClient } from '@tanstack/vue-query'
-
 import ElementPlus from 'element-plus'
 import 'element-plus/dist/index.css'
 
 import * as ElementPlusIconsVue from '@element-plus/icons-vue'
+
+import { QueryClient, VueQueryPlugin } from '@tanstack/vue-query'
 
 import App from './App.vue'
 import router from './router'

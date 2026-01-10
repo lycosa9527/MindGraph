@@ -2,9 +2,35 @@
  * MindGraph Global Styles
  */
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss/theme" layer(theme);
+@import "tailwindcss/utilities" layer(utilities);
+
+/* Tailwind 4 Theme Configuration (migrated from tailwind.config.js) */
+@theme {
+  /* Primary color palette */
+  --color-primary-50: #ecf5ff;
+  --color-primary-100: #d9ecff;
+  --color-primary-200: #b3d8ff;
+  --color-primary-300: #8cc5ff;
+  --color-primary-400: #66b1ff;
+  --color-primary-500: #409eff;
+  --color-primary-600: #337ecc;
+  --color-primary-700: #265f99;
+  --color-primary-800: #1a3f66;
+  --color-primary-900: #0d2033;
+  --color-primary: #409eff;
+  --color-primary-light: #66b1ff;
+  --color-primary-dark: #337ecc;
+
+  /* Semantic colors */
+  --color-success: #67c23a;
+  --color-warning: #e6a23c;
+  --color-danger: #f56c6c;
+  --color-info: #909399;
+
+  /* Font family */
+  --font-sans: 'Inter', system-ui, sans-serif;
+}
 
 /* Custom CSS Variables */
 :root {

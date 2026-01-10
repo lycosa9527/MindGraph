@@ -331,6 +331,7 @@ export type EventTypes = {
   'node:duplicate_requested': Record<string, never>
   'node:selected': { nodeId: string; nodeData?: unknown }
   'node:text_updated': { nodeId: string; text: string }
+  'node:resized': { nodeId?: string }
 
   // Canvas Events
   'canvas:fitted_with_panel': { panelWidth: number }

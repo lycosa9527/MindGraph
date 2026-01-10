@@ -14,16 +14,14 @@
  *
  * Migrated from archive/static/js/managers/editor/view-manager.js
  */
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch, type Ref } from 'vue'
 
+import { useDebounceFn, useElementSize } from '@vueuse/core'
+
+import { ANIMATION, BREAKPOINTS, FIT_PADDING, PANEL, ZOOM } from '@/config/uiConfig'
 import { usePanelsStore } from '@/stores'
 
 import { eventBus } from './useEventBus'
-
-// Panel width constants (matching DiagramCanvas.vue and old JS view-manager.js)
-const PROPERTY_PANEL_WIDTH = 320
-const MINDMATE_PANEL_WIDTH = 384 // w-96 = 24rem = 384px
-const NODE_PALETTE_WIDTH = 288 // w-72 = 18rem = 288px
 
 // ============================================================================
 // Types
@@ -55,6 +53,8 @@ export interface UseViewManagerOptions {
   zoomStep?: number
   onZoomChange?: (zoom: number) => void
   onFit?: (bounds: ViewBounds) => void
+  /** Optional ref to container element for reactive size tracking via VueUse */
+  containerRef?: Ref<HTMLElement | null>
 }
 
 // ============================================================================
@@ -64,11 +64,12 @@ export interface UseViewManagerOptions {
 export function useViewManager(options: UseViewManagerOptions = {}) {
   const {
     ownerId = `ViewManager_${Date.now()}`,
-    minZoom = 0.1,
-    maxZoom = 10,
-    zoomStep = 1.3,
+    minZoom = ZOOM.MIN,
+    maxZoom = ZOOM.MAX,
+    zoomStep = ZOOM.STEP,
     onZoomChange,
     onFit,
+    containerRef,
   } = options
 
   // =========================================================================
@@ -80,9 +81,15 @@ export function useViewManager(options: UseViewManagerOptions = {}) {
   const panY = ref(0)
   const isFittedForPanel = ref(false)
 
-  // Container dimensions (updated on resize)
-  const containerWidth = ref(0)
-  const containerHeight = ref(0)
+  // Container dimensions - use VueUse's useElementSize if containerRef provided
+  // This provides reactive, auto-updating dimensions with automatic cleanup
+  const { width: vueUseWidth, height: vueUseHeight } = containerRef
+    ? useElementSize(containerRef)
+    : { width: ref(0), height: ref(0) }
+
+  // Use VueUse dimensions if containerRef provided, otherwise fall back to manual tracking
+  const containerWidth = containerRef ? vueUseWidth : ref(0)
+  const containerHeight = containerRef ? vueUseHeight : ref(0)
 
   // Content bounds (set by renderer)
   const contentBounds = ref<ViewBounds | null>(null)
@@ -151,7 +158,7 @@ export function useViewManager(options: UseViewManagerOptions = {}) {
    * Calculate viewBox for fit-to-canvas
    */
   function calculateFitViewBox(opts: FitOptions = {}): ViewBounds | null {
-    const { reserveForPanel: _reserveForPanel = false, padding = 0.1 } = opts
+    const { reserveForPanel: _reserveForPanel = false, padding = FIT_PADDING.STANDARD } = opts
 
     if (!contentBounds.value) return null
 
@@ -231,7 +238,7 @@ export function useViewManager(options: UseViewManagerOptions = {}) {
    * Fit for export (no animation, minimal padding)
    */
   function fitForExport(): ViewBounds | null {
-    const viewBox = calculateFitViewBox({ padding: 0.02 }) // 2% padding for export
+    const viewBox = calculateFitViewBox({ padding: FIT_PADDING.MINIMAL }) // Minimal padding for export
 
     if (viewBox) {
       resetZoom()
@@ -267,9 +274,9 @@ export function useViewManager(options: UseViewManagerOptions = {}) {
   function getRightPanelWidth(): number {
     let width = 0
     if (panelsStore.propertyPanel.isOpen) {
-      width = PROPERTY_PANEL_WIDTH
+      width = PANEL.PROPERTY_WIDTH
     } else if (panelsStore.mindmatePanel.isOpen) {
-      width = MINDMATE_PANEL_WIDTH
+      width = PANEL.MINDMATE_WIDTH
     }
     return width
   }
@@ -279,7 +286,7 @@ export function useViewManager(options: UseViewManagerOptions = {}) {
    */
   function getLeftPanelWidth(): number {
     if (panelsStore.nodePalettePanel.isOpen) {
-      return NODE_PALETTE_WIDTH
+      return PANEL.NODE_PALETTE_WIDTH
     }
     return 0
   }
@@ -312,24 +319,20 @@ export function useViewManager(options: UseViewManagerOptions = {}) {
   // Window Resize Handling
   // =========================================================================
 
-  let resizeTimeout: ReturnType<typeof setTimeout> | null = null
-
-  function handleWindowResize(): void {
-    if (resizeTimeout) {
-      clearTimeout(resizeTimeout)
-    }
-
-    resizeTimeout = setTimeout(() => {
-      // Update container size (Vue Flow container)
+  // Debounced resize handler using VueUse
+  const handleWindowResize = useDebounceFn(() => {
+    // If using VueUse's useElementSize (containerRef provided), dimensions update automatically
+    // Otherwise, manually query the container
+    if (!containerRef) {
       const container = document.querySelector('.vue-flow') as HTMLElement
       if (container) {
         updateContainerSize(container.clientWidth, container.clientHeight)
       }
+    }
 
-      // Refit diagram (no animation for responsive feel)
-      fitDiagram(false)
-    }, 150)
-  }
+    // Refit diagram (no animation for responsive feel)
+    fitDiagram(false)
+  }, ANIMATION.RESIZE_DEBOUNCE)
 
   // =========================================================================
   // Mobile Detection
@@ -338,7 +341,7 @@ export function useViewManager(options: UseViewManagerOptions = {}) {
   function isMobileDevice(): boolean {
     return (
       /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
-      window.innerWidth <= 768
+      window.innerWidth <= BREAKPOINTS.MOBILE
     )
   }
 
@@ -408,28 +411,49 @@ export function useViewManager(options: UseViewManagerOptions = {}) {
   )
 
   // =========================================================================
+  // VueUse Container Size Watcher
+  // =========================================================================
+
+  // When using VueUse's useElementSize (containerRef provided), watch for size changes
+  // and refit diagram automatically
+  if (containerRef) {
+    watch(
+      [containerWidth, containerHeight],
+      ([newWidth, newHeight], [oldWidth, oldHeight]) => {
+        // Only refit if size actually changed significantly (avoid initial 0 -> value triggers)
+        if (
+          oldWidth > 0 &&
+          oldHeight > 0 &&
+          (Math.abs(newWidth - oldWidth) > 10 || Math.abs(newHeight - oldHeight) > 10)
+        ) {
+          fitDiagram(false)
+        }
+      }
+    )
+  }
+
+  // =========================================================================
   // Lifecycle
   // =========================================================================
 
   onMounted(() => {
-    // Initialize container size (Vue Flow container)
-    const container = document.querySelector('.vue-flow') as HTMLElement
-    if (container) {
-      updateContainerSize(container.clientWidth, container.clientHeight)
+    // If not using containerRef (VueUse), manually initialize container size
+    if (!containerRef) {
+      const container = document.querySelector('.vue-flow') as HTMLElement
+      if (container) {
+        updateContainerSize(container.clientWidth, container.clientHeight)
+      }
     }
 
-    // Add window resize listener
+    // Add window resize listener (still needed for orientation changes, etc.)
     window.addEventListener('resize', handleWindowResize)
   })
 
   onUnmounted(() => {
-    // Cleanup
+    // Cleanup event bus listeners
     eventBus.removeAllListenersForOwner(ownerId)
 
-    if (resizeTimeout) {
-      clearTimeout(resizeTimeout)
-    }
-
+    // VueUse automatically cleans up useElementSize, no manual cleanup needed
     window.removeEventListener('resize', handleWindowResize)
   })
 

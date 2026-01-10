@@ -421,7 +421,7 @@ class FlowMapAgent(BaseAgent):
                 ],
                 "_agent": {
                     "type": "flow_map",
-                    "layout": "vertical",
+                    "layout": "horizontal",
                     "hasSubsteps": any(step_to_substeps.values()),
                     "substepCounts": {k: len(v) for k, v in step_to_substeps.items()},
                 },

@@ -2,7 +2,7 @@
 /**
  * DiagramSlotFullModal - Modal shown when diagram slots are full
  * Allows user to delete an existing diagram to make space for saving
- * 
+ *
  * Design: Swiss Design style matching other modals in the app
  */
 import { computed, ref, watch } from 'vue'
@@ -12,11 +12,10 @@ import { ElButton, ElRadio, ElRadioGroup } from 'element-plus'
 import { AlertTriangle, Loader2, Trash2 } from 'lucide-vue-next'
 
 import { useNotifications } from '@/composables'
+import { useLanguage } from '@/composables'
+import { useSavedDiagramsStore } from '@/stores'
 
 const notify = useNotifications()
-
-import { useLanguage } from '@/composables'
-import { useSavedDiagramsStore, type SavedDiagram } from '@/stores'
 
 const props = defineProps<{
   visible: boolean
@@ -55,14 +54,17 @@ const diagrams = computed(() => savedDiagramsStore.diagrams)
 const maxDiagrams = computed(() => savedDiagramsStore.maxDiagrams)
 
 // Watch for visibility changes to reset state
-watch(() => props.visible, (visible) => {
-  if (visible) {
-    selectedDiagramId.value = ''
-    isDeleting.value = false
-    // Fetch latest diagrams
-    savedDiagramsStore.fetchDiagrams()
+watch(
+  () => props.visible,
+  (visible) => {
+    if (visible) {
+      selectedDiagramId.value = ''
+      isDeleting.value = false
+      // Fetch latest diagrams
+      savedDiagramsStore.fetchDiagrams()
+    }
   }
-})
+)
 
 // Get diagram type display name
 function getDiagramTypeName(type: string): string {
@@ -162,9 +164,10 @@ async function handleDeleteAndSave(): Promise<void> {
               {{ isZh ? '图库已满' : 'Gallery Full' }}
             </h2>
             <p class="modal-subtitle">
-              {{ isZh 
-                ? `您已保存 ${maxDiagrams} 个图示，请删除一个以保存新图示` 
-                : `You have ${maxDiagrams} saved diagrams. Delete one to save new diagram` 
+              {{
+                isZh
+                  ? `您已保存 ${maxDiagrams} 个图示，请删除一个以保存新图示`
+                  : `You have ${maxDiagrams} saved diagrams. Delete one to save new diagram`
               }}
             </p>
           </div>
@@ -204,13 +207,15 @@ async function handleDeleteAndSave(): Promise<void> {
                         </span>
                       </div>
                     </div>
-                    
+
                     <!-- Info -->
                     <div class="diagram-info">
                       <div class="diagram-title">{{ diagram.title }}</div>
                       <div class="diagram-meta">
-                        <span class="diagram-type">{{ getDiagramTypeName(diagram.diagram_type) }}</span>
-                        <span class="meta-dot"></span>
+                        <span class="diagram-type">{{
+                          getDiagramTypeName(diagram.diagram_type)
+                        }}</span>
+                        <span class="meta-dot" />
                         <span class="diagram-date">{{ formatDate(diagram.updated_at) }}</span>
                       </div>
                     </div>
@@ -442,7 +447,9 @@ async function handleDeleteAndSave(): Promise<void> {
 
 .modal-fade-enter-active .modal-container,
 .modal-fade-leave-active .modal-container {
-  transition: transform 0.2s ease, opacity 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    opacity 0.2s ease;
 }
 
 .modal-fade-enter-from,

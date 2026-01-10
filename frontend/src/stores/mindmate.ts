@@ -86,7 +86,7 @@ export const useMindMateStore = defineStore('mindmate', () => {
   /**
    * Save messages to localStorage with timestamp for TTL
    */
-  function saveMessagesToStorage(convId: string, messages: CachedDifyMessage[]): void {
+  function _saveMessagesToStorage(convId: string, messages: CachedDifyMessage[]): void {
     try {
       const key = getCacheKey(convId)
       const entry: CacheEntry = {
@@ -94,7 +94,9 @@ export const useMindMateStore = defineStore('mindmate', () => {
         cachedAt: Date.now(),
       }
       localStorage.setItem(key, JSON.stringify(entry))
-      console.debug(`[MindMateStore] Saved ${messages.length} messages to localStorage for ${convId}`)
+      console.debug(
+        `[MindMateStore] Saved ${messages.length} messages to localStorage for ${convId}`
+      )
     } catch (error) {
       console.debug(`[MindMateStore] Failed to save messages to localStorage:`, error)
       // localStorage might be full or disabled - continue without error
@@ -115,7 +117,9 @@ export const useMindMateStore = defineStore('mindmate', () => {
       // Handle legacy format (direct array) vs new format (CacheEntry)
       if (Array.isArray(parsed)) {
         // Legacy format without TTL - treat as valid but migrate on next save
-        console.debug(`[MindMateStore] Loaded ${parsed.length} messages from localStorage (legacy format) for ${convId}`)
+        console.debug(
+          `[MindMateStore] Loaded ${parsed.length} messages from localStorage (legacy format) for ${convId}`
+        )
         return parsed as CachedDifyMessage[]
       }
 
@@ -123,12 +127,16 @@ export const useMindMateStore = defineStore('mindmate', () => {
 
       // Check TTL - if cache is stale, remove it and return null
       if (Date.now() - entry.cachedAt > CACHE_TTL_MS) {
-        console.debug(`[MindMateStore] Cache expired for ${convId} (age: ${Math.round((Date.now() - entry.cachedAt) / 60000)}min)`)
+        console.debug(
+          `[MindMateStore] Cache expired for ${convId} (age: ${Math.round((Date.now() - entry.cachedAt) / 60000)}min)`
+        )
         localStorage.removeItem(key)
         return null
       }
 
-      console.debug(`[MindMateStore] Loaded ${entry.messages.length} messages from localStorage for ${convId}`)
+      console.debug(
+        `[MindMateStore] Loaded ${entry.messages.length} messages from localStorage for ${convId}`
+      )
       return entry.messages
     } catch (error) {
       console.debug(`[MindMateStore] Failed to load messages from localStorage:`, error)
@@ -162,7 +170,9 @@ export const useMindMateStore = defineStore('mindmate', () => {
         }
       }
       keysToRemove.forEach((key) => localStorage.removeItem(key))
-      console.debug(`[MindMateStore] Cleared ${keysToRemove.length} cached conversations from localStorage`)
+      console.debug(
+        `[MindMateStore] Cleared ${keysToRemove.length} cached conversations from localStorage`
+      )
     } catch (error) {
       console.debug(`[MindMateStore] Failed to clear all localStorage cache:`, error)
     }
@@ -172,7 +182,7 @@ export const useMindMateStore = defineStore('mindmate', () => {
    * Prune old localStorage entries that are not in top 3 conversations
    * Keeps localStorage clean and within size limits
    */
-  function pruneOldCacheEntries(): void {
+  function _pruneOldCacheEntries(): void {
     try {
       const top3Ids = new Set(conversations.value.slice(0, 3).map((c) => c.id))
       const keysToRemove: string[] = []
@@ -189,7 +199,9 @@ export const useMindMateStore = defineStore('mindmate', () => {
 
       keysToRemove.forEach((key) => localStorage.removeItem(key))
       if (keysToRemove.length > 0) {
-        console.debug(`[MindMateStore] Pruned ${keysToRemove.length} old cache entries from localStorage`)
+        console.debug(
+          `[MindMateStore] Pruned ${keysToRemove.length} old cache entries from localStorage`
+        )
       }
     } catch (error) {
       console.debug(`[MindMateStore] Failed to prune old cache entries:`, error)
@@ -204,10 +216,7 @@ export const useMindMateStore = defineStore('mindmate', () => {
    * Sync conversations from Vue Query data
    * Called by components that use useConversations() query
    */
-  function syncConversationsFromQuery(
-    convs: MindMateConversation[],
-    pinnedIds: Set<string>
-  ): void {
+  function syncConversationsFromQuery(convs: MindMateConversation[], pinnedIds: Set<string>): void {
     pinnedConversationIds.value = pinnedIds
     conversations.value = convs.map((conv) => ({
       ...conv,
@@ -234,10 +243,12 @@ export const useMindMateStore = defineStore('mindmate', () => {
    * Thin wrapper - actual mutation handled by Vue Query
    * This function is kept for backward compatibility but should use usePinConversation() mutation
    */
-  async function pinConversation(convId: string): Promise<boolean> {
+  async function pinConversation(_convId: string): Promise<boolean> {
     // This is now a no-op - mutations handle the API call
     // Components should use usePinConversation() mutation directly
-    console.debug('[MindMateStore] pinConversation called - use usePinConversation() mutation instead')
+    console.debug(
+      '[MindMateStore] pinConversation called - use usePinConversation() mutation instead'
+    )
     return false
   }
 

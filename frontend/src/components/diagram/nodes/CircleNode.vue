@@ -53,7 +53,10 @@ const nodeStyle = computed(() => ({
     defaultStyle.value.textColor ||
     (isTopicNode.value ? '#ffffff' : '#333333'),
   fontSize: `${props.data.style?.fontSize || defaultStyle.value.fontSize || (isTopicNode.value ? 20 : 14)}px`,
-  fontWeight: props.data.style?.fontWeight || defaultStyle.value.fontWeight || (isTopicNode.value ? 'bold' : 'normal'),
+  fontWeight:
+    props.data.style?.fontWeight ||
+    defaultStyle.value.fontWeight ||
+    (isTopicNode.value ? 'bold' : 'normal'),
   borderWidth: `${props.data.style?.borderWidth || defaultStyle.value.borderWidth || (isTopicNode.value ? 3 : 2)}px`,
 }))
 
@@ -78,7 +81,7 @@ function handleEditCancel() {
     class="circle-node flex items-center justify-center rounded-full border-solid select-none"
     :class="[
       isTopicNode ? 'cursor-default' : 'cursor-grab',
-      isTopicNode ? 'topic-circle' : 'context-circle'
+      isTopicNode ? 'topic-circle' : 'context-circle',
     ]"
     :style="nodeStyle"
   >

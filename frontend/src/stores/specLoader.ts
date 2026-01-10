@@ -5,6 +5,38 @@
  * This separates the spec-to-data conversion logic from the store,
  * making it easier to maintain and test each diagram type independently.
  */
+import {
+  DEFAULT_BUBBLE_RADIUS,
+  DEFAULT_CATEGORY_SPACING,
+  DEFAULT_CATEGORY_TO_LEAF_GAP,
+  DEFAULT_CENTER_X,
+  DEFAULT_CENTER_Y,
+  DEFAULT_COLUMN_SPACING,
+  DEFAULT_CONTEXT_RADIUS,
+  DEFAULT_DIFF_RADIUS,
+  DEFAULT_HORIZONTAL_SPACING,
+  DEFAULT_LEAF_SPACING,
+  DEFAULT_LEVEL_HEIGHT,
+  DEFAULT_LEVEL_WIDTH,
+  DEFAULT_NODE_HEIGHT,
+  DEFAULT_NODE_WIDTH,
+  DEFAULT_PADDING,
+  DEFAULT_PAIR_SPACING,
+  DEFAULT_SIDE_SPACING,
+  DEFAULT_STEP_SPACING,
+  DEFAULT_TOPIC_RADIUS,
+  DEFAULT_TOPIC_TO_CATEGORY_GAP,
+  DEFAULT_VERTICAL_SPACING,
+  FLOW_GROUP_GAP,
+  FLOW_MIN_STEP_SPACING,
+  FLOW_NODE_HEIGHT,
+  FLOW_NODE_WIDTH,
+  FLOW_SUBSTEP_NODE_HEIGHT,
+  FLOW_SUBSTEP_NODE_WIDTH,
+  FLOW_SUBSTEP_OFFSET_X,
+  FLOW_SUBSTEP_SPACING,
+} from '@/composables/diagrams/layoutConfig'
+import { calculateDagreLayout } from '@/composables/diagrams/useDagreLayout'
 import type { Connection, DiagramNode, DiagramType } from '@/types'
 
 export interface SpecLoaderResult {
@@ -27,12 +59,10 @@ interface CircleMapLayoutResult {
 }
 
 function calculateCircleMapLayout(nodeCount: number): CircleMapLayoutResult {
-  // Node size constants (matching VueFlow node components)
-  // Context nodes: 70px diameter circles
-  // Topic node: 120px diameter circle
-  const uniformContextR = 35
-  const topicR = 60
-  const padding = 40
+  // Node size constants from layoutConfig
+  const uniformContextR = DEFAULT_CONTEXT_RADIUS
+  const topicR = DEFAULT_TOPIC_RADIUS
+  const padding = DEFAULT_PADDING
 
   // Calculate childrenRadius using both constraints (matching original D3 logic)
   const targetRadialDistance = topicR + topicR * 0.5 + uniformContextR + 5
@@ -54,9 +84,7 @@ function calculateCircleMapLayout(nodeCount: number): CircleMapLayoutResult {
 export function recalculateCircleMapLayout(nodes: DiagramNode[]): DiagramNode[] {
   // Find topic node and context nodes
   const topicNode = nodes.find((n) => n.type === 'topic' || n.type === 'center')
-  const contextNodes = nodes.filter(
-    (n) => n.type === 'bubble' && n.id.startsWith('context-')
-  )
+  const contextNodes = nodes.filter((n) => n.type === 'bubble' && n.id.startsWith('context-'))
   const nodeCount = contextNodes.length
 
   // Calculate layout based on current node count
@@ -113,12 +141,10 @@ export function loadCircleMapSpec(spec: Record<string, unknown>): SpecLoaderResu
   const context = (spec.context as string[]) || []
   const nodeCount = context.length
 
-  // Node size constants (matching VueFlow node components)
-  // Context nodes: 70px diameter circles
-  // Topic node: 120px diameter circle
-  const uniformContextR = 35
-  const topicR = 60
-  const padding = 40
+  // Node size constants from layoutConfig
+  const uniformContextR = DEFAULT_CONTEXT_RADIUS
+  const topicR = DEFAULT_TOPIC_RADIUS
+  const padding = DEFAULT_PADDING
 
   // Calculate childrenRadius using both constraints (matching original D3 logic)
   const targetRadialDistance = topicR + topicR * 0.5 + uniformContextR + 5
@@ -195,10 +221,10 @@ export function loadBubbleMapSpec(spec: Record<string, unknown>): SpecLoaderResu
   const topic = (spec.topic as string) || ''
   const attributes = (spec.attributes as string[]) || []
 
-  // Layout constants matching useBubbleMap.ts
-  const uniformAttributeR = 40 // DEFAULT_BUBBLE_RADIUS
-  const topicR = 60 // DEFAULT_TOPIC_RADIUS
-  const padding = 40 // DEFAULT_PADDING
+  // Layout constants from layoutConfig
+  const uniformAttributeR = DEFAULT_BUBBLE_RADIUS
+  const topicR = DEFAULT_TOPIC_RADIUS
+  const padding = DEFAULT_PADDING
 
   // Dynamic layout calculation (matching old JS: topicR + uniformAttributeR + 50)
   const nodeCount = attributes.length
@@ -272,12 +298,12 @@ export function loadDoubleBubbleMapSpec(spec: Record<string, unknown>): SpecLoad
     (spec.right_unique as string[]) ||
     []
 
-  // Layout constants matching useDoubleBubbleMap.ts
-  const padding = 40
-  const topicR = 60
-  const simR = 40
-  const diffR = 30
-  const columnSpacing = 50
+  // Layout constants from layoutConfig
+  const padding = DEFAULT_PADDING
+  const topicR = DEFAULT_TOPIC_RADIUS
+  const simR = DEFAULT_BUBBLE_RADIUS
+  const diffR = DEFAULT_DIFF_RADIUS
+  const columnSpacing = DEFAULT_COLUMN_SPACING
 
   // Vertical spacing
   const simVerticalSpacing = simR * 2 + 12
@@ -402,15 +428,9 @@ export function loadTreeMapSpec(spec: Record<string, unknown>): SpecLoaderResult
   const nodes: DiagramNode[] = []
   const connections: Connection[] = []
 
-  // Layout constants matching old JS
-  const NODE_WIDTH = 120
-  const NODE_HEIGHT = 50
-  const CATEGORY_SPACING = 160 // Horizontal spacing between categories
-  const LEAF_SPACING = 60 // Vertical spacing between leaves
-  const TOPIC_TO_CATEGORY_GAP = 100 // Distance from topic to category row
-  const CATEGORY_TO_LEAF_GAP = 80 // Distance from category to first leaf
-  const START_X = 400 // Center X
-  const START_Y = 60 // Topic Y position
+  // Layout constants from layoutConfig
+  const NODE_WIDTH = DEFAULT_NODE_WIDTH
+  const NODE_HEIGHT = DEFAULT_NODE_HEIGHT
 
   // Support both new format (root object) and old format (topic + children)
   let root: TreeNode | undefined = spec.root as TreeNode | undefined
@@ -428,96 +448,129 @@ export function loadTreeMapSpec(spec: Record<string, unknown>): SpecLoaderResult
 
   if (root) {
     const rootId = root.id || 'tree-topic'
+    const categories = root.children || []
 
-    // Topic node at top center
+    // Build node list for Dagre layout
+    interface DagreNode {
+      id: string
+      width: number
+      height: number
+    }
+    interface DagreEdge {
+      source: string
+      target: string
+    }
+
+    const dagreNodes: DagreNode[] = []
+    const dagreEdges: DagreEdge[] = []
+
+    // Add topic node
+    dagreNodes.push({ id: rootId, width: NODE_WIDTH, height: NODE_HEIGHT })
+
+    // Add category and leaf nodes
+    categories.forEach((category, catIndex) => {
+      const categoryId = category.id || `tree-cat-${catIndex}`
+      dagreNodes.push({ id: categoryId, width: NODE_WIDTH, height: NODE_HEIGHT })
+      dagreEdges.push({ source: rootId, target: categoryId })
+
+      // Add leaf nodes
+      const leaves = category.children || []
+      leaves.forEach((leaf, leafIndex) => {
+        const leafId = leaf.id || `tree-leaf-${catIndex}-${leafIndex}`
+        dagreNodes.push({ id: leafId, width: NODE_WIDTH, height: NODE_HEIGHT })
+
+        // Connect leaf to category (first leaf) or previous leaf (chained)
+        const sourceId =
+          leafIndex === 0
+            ? categoryId
+            : leaves[leafIndex - 1].id || `tree-leaf-${catIndex}-${leafIndex - 1}`
+        dagreEdges.push({ source: sourceId, target: leafId })
+      })
+    })
+
+    // Calculate layout using Dagre (top-to-bottom direction)
+    const layoutResult = calculateDagreLayout(dagreNodes, dagreEdges, {
+      direction: 'TB',
+      nodeSeparation: DEFAULT_CATEGORY_SPACING,
+      rankSeparation: DEFAULT_TOPIC_TO_CATEGORY_GAP,
+      align: 'UL',
+      marginX: DEFAULT_PADDING,
+      marginY: DEFAULT_PADDING,
+    })
+
+    // Create topic node with Dagre position
+    const topicPos = layoutResult.positions.get(rootId)
     nodes.push({
       id: rootId,
       text: root.text,
       type: 'topic',
-      position: { x: START_X - NODE_WIDTH / 2, y: START_Y },
+      position: topicPos ? { x: topicPos.x, y: topicPos.y } : { x: DEFAULT_CENTER_X - NODE_WIDTH / 2, y: 60 },
     })
 
-    // Categories (depth 1) - spread horizontally
-    const categories = root.children || []
-    if (categories.length > 0) {
-      // Calculate total width for categories
-      const totalWidth = categories.length * NODE_WIDTH + (categories.length - 1) * CATEGORY_SPACING
-      // First category left edge X
-      let categoryX = START_X - totalWidth / 2
+    // Create category and leaf nodes with Dagre positions
+    categories.forEach((category, catIndex) => {
+      const categoryId = category.id || `tree-cat-${catIndex}`
+      const categoryPos = layoutResult.positions.get(categoryId)
 
-      // Category Y position (below topic)
-      const categoryY = START_Y + NODE_HEIGHT + TOPIC_TO_CATEGORY_GAP
+      nodes.push({
+        id: categoryId,
+        text: category.text,
+        type: 'branch',
+        position: categoryPos ? { x: categoryPos.x, y: categoryPos.y } : { x: 0, y: 0 },
+      })
 
-      categories.forEach((category, catIndex) => {
-        const categoryId = category.id || `tree-cat-${catIndex}`
-        // Calculate center X for this category (used for edge connections)
-        const categoryCenterX = categoryX + NODE_WIDTH / 2
+      // Connection from topic to category (T-shape step edge)
+      connections.push({
+        id: `edge-${rootId}-${categoryId}`,
+        source: rootId,
+        target: categoryId,
+        edgeType: 'step',
+        sourcePosition: 'bottom',
+        targetPosition: 'top',
+      })
 
-        // Category node - position.x is the LEFT edge
+      // Add leaf nodes
+      const leaves = category.children || []
+      leaves.forEach((leaf, leafIndex) => {
+        const leafId = leaf.id || `tree-leaf-${catIndex}-${leafIndex}`
+        const leafPos = layoutResult.positions.get(leafId)
+
         nodes.push({
-          id: categoryId,
-          text: category.text,
+          id: leafId,
+          text: leaf.text,
           type: 'branch',
-          position: { x: categoryX, y: categoryY },
+          position: leafPos ? { x: leafPos.x, y: leafPos.y } : { x: 0, y: 0 },
         })
 
-        // Connection from topic to category (T-shape step edge)
+        // Connection from category/previous leaf to this leaf (straight vertical)
+        const sourceId =
+          leafIndex === 0
+            ? categoryId
+            : leaves[leafIndex - 1].id || `tree-leaf-${catIndex}-${leafIndex - 1}`
         connections.push({
-          id: `edge-${rootId}-${categoryId}`,
-          source: rootId,
-          target: categoryId,
-          edgeType: 'step', // T-shape for topic to categories
+          id: `edge-${sourceId}-${leafId}`,
+          source: sourceId,
+          target: leafId,
+          edgeType: 'tree',
           sourcePosition: 'bottom',
           targetPosition: 'top',
         })
+      })
+    })
 
-        // Leaves (depth 2+) - stacked vertically below category
-        const leaves = category.children || []
-        if (leaves.length > 0) {
-          let leafY = categoryY + NODE_HEIGHT + CATEGORY_TO_LEAF_GAP
-
-          leaves.forEach((leaf, leafIndex) => {
-            const leafId = leaf.id || `tree-leaf-${catIndex}-${leafIndex}`
-
-            // Leaf node - same X as category for vertical alignment
-            nodes.push({
-              id: leafId,
-              text: leaf.text,
-              type: 'branch',
-              position: { x: categoryX, y: leafY },
-            })
-
-            // Connection from category/previous leaf to this leaf (straight vertical)
-            const sourceId =
-              leafIndex === 0
-                ? categoryId
-                : leaves[leafIndex - 1].id || `tree-leaf-${catIndex}-${leafIndex - 1}`
-            connections.push({
-              id: `edge-${sourceId}-${leafId}`,
-              source: sourceId,
-              target: leafId,
-              edgeType: 'tree', // Straight vertical line
-              sourcePosition: 'bottom',
-              targetPosition: 'top',
-            })
-
-            leafY += NODE_HEIGHT + LEAF_SPACING
-          })
-        }
-
-        categoryX += NODE_WIDTH + CATEGORY_SPACING
+    // Add dimension label node if dimension field exists
+    // Position it below the topic node
+    if (dimension !== undefined) {
+      const topicPosition = layoutResult.positions.get(rootId)
+      const labelY = topicPosition ? topicPosition.y + NODE_HEIGHT + 20 : 60 + NODE_HEIGHT + 20
+      const labelX = topicPosition ? topicPosition.x : DEFAULT_CENTER_X - NODE_WIDTH / 2
+      nodes.push({
+        id: 'dimension-label',
+        text: dimension || '',
+        type: 'label',
+        position: { x: labelX, y: labelY },
       })
     }
-  }
-
-  // Add dimension label node if dimension field exists
-  if (dimension !== undefined) {
-    nodes.push({
-      id: 'dimension-label',
-      text: dimension || '',
-      type: 'label',
-      position: { x: START_X - 100, y: START_Y + NODE_HEIGHT + 20 }, // Below topic
-    })
   }
 
   return {
@@ -531,53 +584,242 @@ export function loadTreeMapSpec(spec: Record<string, unknown>): SpecLoaderResult
 }
 
 // ============================================================================
-// Flow Map
+// Flow Map (Using Dagre for substep layout, fixed X for step alignment)
 // ============================================================================
-export function loadFlowMapSpec(spec: Record<string, unknown>): SpecLoaderResult {
-  const steps = (spec.steps as Array<{ id?: string; text: string }>) || []
-  const orientation = (spec.orientation as 'horizontal' | 'vertical') || 'horizontal'
 
-  const startX = 100
-  const startY = 100
-  const centerX = 400
-  const centerY = 300
-  const stepSpacing = 200
-  const nodeWidth = 140
-  const nodeHeight = 60
+interface FlowSubstepEntry {
+  step: string
+  substeps: string[]
+}
+
+export function loadFlowMapSpec(spec: Record<string, unknown>): SpecLoaderResult {
+  // Steps can be strings or objects with text property
+  const rawSteps = (spec.steps as Array<string | { id?: string; text: string }>) || []
+  const orientation = (spec.orientation as 'horizontal' | 'vertical') || 'horizontal'
+  const substepsData = (spec.substeps as FlowSubstepEntry[]) || []
+
+  // Normalize steps to objects with text
+  const steps = rawSteps.map((step, index) => {
+    if (typeof step === 'string') {
+      return { id: `flow-step-${index}`, text: step }
+    }
+    return { id: step.id || `flow-step-${index}`, text: step.text }
+  })
+
+  // Build substeps mapping: stepText -> substeps array
+  const stepToSubsteps: Record<string, string[]> = {}
+  substepsData.forEach((entry) => {
+    if (entry && entry.step && Array.isArray(entry.substeps)) {
+      stepToSubsteps[entry.step] = entry.substeps
+    }
+  })
 
   const isVertical = orientation === 'vertical'
-
   const nodes: DiagramNode[] = []
   const connections: Connection[] = []
 
-  steps.forEach((step, index) => {
-    const id = step.id || `flow-step-${index}`
+  // Substep node dimensions (from layout config for consistency)
+  const substepWidth = FLOW_SUBSTEP_NODE_WIDTH
+  const substepHeight = FLOW_SUBSTEP_NODE_HEIGHT
 
-    let x: number
-    let y: number
+  if (isVertical) {
+    // =========================================================================
+    // VERTICAL LAYOUT: Steps stacked vertically (same X), substeps to the right
+    // Use dagre for each substep group to get proper vertical distribution
+    // =========================================================================
+    const stepX = DEFAULT_CENTER_X - FLOW_NODE_WIDTH / 2 // All steps at same X
+    const substepX = DEFAULT_CENTER_X + FLOW_NODE_WIDTH / 2 + FLOW_SUBSTEP_OFFSET_X
 
-    if (isVertical) {
-      // Vertical layout: nodes stacked top-to-bottom
-      x = centerX - nodeWidth / 2
-      y = startY + index * stepSpacing
-    } else {
-      // Horizontal layout: nodes arranged left-to-right
-      x = startX + index * stepSpacing - nodeWidth / 2
-      y = centerY - nodeHeight / 2
+    // For each step, calculate substep positions using dagre
+    interface SubstepGroup {
+      stepId: string
+      stepText: string
+      substepIds: string[]
+      substepTexts: string[]
+      groupHeight: number
+      substepPositions: { id: string; y: number }[]
     }
 
-    nodes.push({
-      id,
-      text: step.text,
-      type: 'flow',
-      position: { x, y },
+    const substepGroups: SubstepGroup[] = []
+
+    steps.forEach((step, stepIndex) => {
+      const stepId = step.id
+      const substeps = stepToSubsteps[step.text] || []
+
+      if (substeps.length > 0) {
+        // Calculate substep positions manually (simple vertical stack)
+        // This is more predictable than dagre for a simple stack
+        const positions: { id: string; y: number }[] = []
+
+        substeps.forEach((_, i) => {
+          const substepId = `flow-substep-${stepIndex}-${i}`
+          // Each substep is positioned with FLOW_SUBSTEP_SPACING between them
+          const y = i * (substepHeight + FLOW_SUBSTEP_SPACING)
+          positions.push({ id: substepId, y })
+        })
+
+        // Group height = all substeps + spacing between them
+        const groupHeight =
+          substeps.length * substepHeight + (substeps.length - 1) * FLOW_SUBSTEP_SPACING
+
+        substepGroups.push({
+          stepId,
+          stepText: step.text,
+          substepIds: positions.map((p) => p.id),
+          substepTexts: substeps,
+          groupHeight,
+          substepPositions: positions,
+        })
+      } else {
+        // No substeps
+        substepGroups.push({
+          stepId,
+          stepText: step.text,
+          substepIds: [],
+          substepTexts: [],
+          groupHeight: FLOW_NODE_HEIGHT,
+          substepPositions: [],
+        })
+      }
     })
 
-    if (index > 0) {
-      const prevId = steps[index - 1].id || `flow-step-${index - 1}`
-      connections.push({ id: `edge-${prevId}-${id}`, source: prevId, target: id })
-    }
-  })
+    // =========================================================================
+    // Position steps vertically, centered on their substep groups
+    // =========================================================================
+    let currentY = DEFAULT_PADDING + 40
+
+    substepGroups.forEach((group, groupIndex) => {
+      const hasSubsteps = group.substepIds.length > 0
+
+      if (hasSubsteps) {
+        // Step Y is centered on substep group
+        const groupCenterY = currentY + group.groupHeight / 2
+        const stepY = groupCenterY - FLOW_NODE_HEIGHT / 2
+
+        // Create step node
+        nodes.push({
+          id: group.stepId,
+          text: group.stepText,
+          type: 'flow',
+          position: { x: stepX, y: stepY },
+        })
+
+        // Create substep nodes (center-aligned in a straight vertical line at substepX)
+        // All substeps share the same X coordinate for consistent alignment
+        group.substepPositions.forEach((pos, i) => {
+          nodes.push({
+            id: pos.id,
+            text: group.substepTexts[i],
+            type: 'flowSubstep',
+            position: { x: substepX, y: currentY + pos.y },
+          })
+        })
+
+        currentY += group.groupHeight + FLOW_GROUP_GAP + FLOW_MIN_STEP_SPACING
+      } else {
+        // No substeps - just place step
+        nodes.push({
+          id: group.stepId,
+          text: group.stepText,
+          type: 'flow',
+          position: { x: stepX, y: currentY },
+        })
+
+        currentY += FLOW_NODE_HEIGHT + FLOW_MIN_STEP_SPACING
+      }
+
+      // Create edge to previous step (vertical: bottom-to-top flow)
+      if (groupIndex > 0) {
+        const prevId = substepGroups[groupIndex - 1].stepId
+        connections.push({
+          id: `edge-${prevId}-${group.stepId}`,
+          source: prevId,
+          target: group.stepId,
+          sourcePosition: 'bottom',
+          targetPosition: 'top',
+          sourceHandle: 'bottom',
+          targetHandle: 'top',
+          edgeType: 'straight',
+        })
+      }
+
+      // Create edges to substeps
+      group.substepIds.forEach((substepId) => {
+        connections.push({
+          id: `edge-${group.stepId}-${substepId}`,
+          source: group.stepId,
+          target: substepId,
+          sourcePosition: 'right',
+          targetPosition: 'left',
+          sourceHandle: 'substep-source',
+          edgeType: 'horizontalStep',
+        })
+      })
+    })
+  } else {
+    // =========================================================================
+    // HORIZONTAL LAYOUT: Steps left-to-right (same Y), substeps below
+    // =========================================================================
+    const stepY = DEFAULT_CENTER_Y - FLOW_NODE_HEIGHT / 2
+
+    steps.forEach((step, stepIndex) => {
+      const stepId = step.id
+      const substeps = stepToSubsteps[step.text] || []
+      const stepX = DEFAULT_PADDING + stepIndex * DEFAULT_STEP_SPACING
+
+      // Create step node
+      nodes.push({
+        id: stepId,
+        text: step.text,
+        type: 'flow',
+        position: { x: stepX, y: stepY },
+      })
+
+      // Create edge to previous step (horizontal: right-to-left flow)
+      if (stepIndex > 0) {
+        const prevId = steps[stepIndex - 1].id
+        connections.push({
+          id: `edge-${prevId}-${stepId}`,
+          source: prevId,
+          target: stepId,
+          sourcePosition: 'right',
+          targetPosition: 'left',
+          sourceHandle: 'right',
+          targetHandle: 'left',
+          edgeType: 'straight',
+        })
+      }
+
+      // Create substep nodes below (center-aligned under the step, in a straight vertical line)
+      // All substeps share the same X center as the parent step
+      const stepCenterX = stepX + FLOW_NODE_WIDTH / 2
+      const substepCenterAlignedX = stepCenterX - substepWidth / 2
+
+      substeps.forEach((substepText, substepIndex) => {
+        const substepId = `flow-substep-${stepIndex}-${substepIndex}`
+        const substepY =
+          stepY + FLOW_NODE_HEIGHT + FLOW_SUBSTEP_OFFSET_X + substepIndex * (substepHeight + FLOW_SUBSTEP_SPACING)
+
+        nodes.push({
+          id: substepId,
+          text: substepText,
+          type: 'flowSubstep',
+          position: { x: substepCenterAlignedX, y: substepY },
+        })
+
+        connections.push({
+          id: `edge-${stepId}-${substepId}`,
+          source: stepId,
+          target: substepId,
+          sourcePosition: 'bottom',
+          targetPosition: 'top',
+          sourceHandle: 'bottom',
+          targetHandle: 'top-target',
+          edgeType: 'step',
+        })
+      })
+    })
+  }
 
   return {
     nodes,
@@ -594,12 +836,13 @@ export function loadMultiFlowMapSpec(spec: Record<string, unknown>): SpecLoaderR
   const causes = (spec.causes as string[]) || []
   const effects = (spec.effects as string[]) || []
 
-  const centerX = 400
-  const centerY = 300
-  const sideSpacing = 200
-  const verticalSpacing = 70
-  const nodeWidth = 120
-  const nodeHeight = 50
+  // Layout constants from layoutConfig
+  const centerX = DEFAULT_CENTER_X
+  const centerY = DEFAULT_CENTER_Y
+  const sideSpacing = DEFAULT_SIDE_SPACING
+  const verticalSpacing = DEFAULT_VERTICAL_SPACING + 10 // 70px
+  const nodeWidth = DEFAULT_NODE_WIDTH
+  const nodeHeight = DEFAULT_NODE_HEIGHT
 
   const nodes: DiagramNode[] = []
   const connections: Connection[] = []
@@ -654,65 +897,38 @@ interface BraceNode {
   parts?: BraceNode[]
 }
 
-function layoutBraceNode(
+// Helper to flatten brace tree into nodes and edges for Dagre
+interface FlattenedBraceData {
+  dagreNodes: { id: string; width: number; height: number }[]
+  dagreEdges: { source: string; target: string }[]
+  nodeInfos: Map<string, { text: string; depth: number }>
+}
+
+function flattenBraceTree(
   node: BraceNode,
-  x: number,
-  centerY: number,
   depth: number,
   parentId: string | null,
-  nodes: DiagramNode[],
-  connections: Connection[],
-  levelWidth: number,
-  nodeSpacing: number,
-  nodeHeight: number
-): { topY: number; bottomY: number } {
-  const nodeId = node.id || `brace-${depth}-${nodes.length}`
+  nodeWidth: number,
+  nodeHeight: number,
+  result: FlattenedBraceData,
+  counter: { value: number }
+): string {
+  const nodeId = node.id || `brace-${depth}-${counter.value++}`
 
-  function calcHeight(n: BraceNode): number {
-    if (!n.parts || n.parts.length === 0) return nodeHeight
-    return n.parts.reduce((sum, p) => sum + calcHeight(p) + nodeSpacing, -nodeSpacing)
-  }
-
-  nodes.push({
-    id: nodeId,
-    text: node.text,
-    type: depth === 0 ? 'topic' : 'brace',
-    position: { x, y: centerY - nodeHeight / 2 },
-  })
+  result.dagreNodes.push({ id: nodeId, width: nodeWidth, height: nodeHeight })
+  result.nodeInfos.set(nodeId, { text: node.text, depth })
 
   if (parentId) {
-    connections.push({ id: `edge-${parentId}-${nodeId}`, source: parentId, target: nodeId })
+    result.dagreEdges.push({ source: parentId, target: nodeId })
   }
 
-  let topY = centerY - nodeHeight / 2
-  let bottomY = centerY + nodeHeight / 2
-
   if (node.parts && node.parts.length > 0) {
-    const heights = node.parts.map(calcHeight)
-    const totalH = heights.reduce((s, h) => s + h, 0) + (node.parts.length - 1) * nodeSpacing
-    let partY = centerY - totalH / 2
-
-    node.parts.forEach((part, i) => {
-      const partCenterY = partY + heights[i] / 2
-      const result = layoutBraceNode(
-        part,
-        x + levelWidth,
-        partCenterY,
-        depth + 1,
-        nodeId,
-        nodes,
-        connections,
-        levelWidth,
-        nodeSpacing,
-        nodeHeight
-      )
-      topY = Math.min(topY, result.topY)
-      bottomY = Math.max(bottomY, result.bottomY)
-      partY += heights[i] + nodeSpacing
+    node.parts.forEach((part) => {
+      flattenBraceTree(part, depth + 1, nodeId, nodeWidth, nodeHeight, result, counter)
     })
   }
 
-  return { topY, bottomY }
+  return nodeId
 }
 
 export function loadBraceMapSpec(spec: Record<string, unknown>): SpecLoaderResult {
@@ -727,7 +943,9 @@ export function loadBraceMapSpec(spec: Record<string, unknown>): SpecLoaderResul
     wholeNode = spec.whole as BraceNode
   } else if (typeof spec.whole === 'string') {
     // Old format: whole is string, parts is array
-    const parts = spec.parts as Array<{ name: string; subparts?: Array<{ name: string }> }> | undefined
+    const parts = spec.parts as
+      | Array<{ name: string; subparts?: Array<{ name: string }> }>
+      | undefined
     wholeNode = {
       id: 'brace-whole',
       text: spec.whole,
@@ -743,17 +961,58 @@ export function loadBraceMapSpec(spec: Record<string, unknown>): SpecLoaderResul
   }
 
   if (wholeNode) {
-    layoutBraceNode(wholeNode, 100, 300, 0, null, nodes, connections, 200, 60, 50)
+    // Flatten brace tree for Dagre
+    const flatData: FlattenedBraceData = {
+      dagreNodes: [],
+      dagreEdges: [],
+      nodeInfos: new Map(),
+    }
+    flattenBraceTree(wholeNode, 0, null, DEFAULT_NODE_WIDTH, DEFAULT_NODE_HEIGHT, flatData, { value: 0 })
+
+    // Calculate layout using Dagre (left-to-right direction for brace maps)
+    const layoutResult = calculateDagreLayout(flatData.dagreNodes, flatData.dagreEdges, {
+      direction: 'LR',
+      nodeSeparation: DEFAULT_VERTICAL_SPACING,
+      rankSeparation: DEFAULT_LEVEL_WIDTH,
+      align: 'UL',
+      marginX: DEFAULT_PADDING,
+      marginY: DEFAULT_PADDING,
+    })
+
+    // Create nodes with Dagre positions
+    flatData.dagreNodes.forEach((dagreNode) => {
+      const info = flatData.nodeInfos.get(dagreNode.id)
+      const pos = layoutResult.positions.get(dagreNode.id)
+
+      nodes.push({
+        id: dagreNode.id,
+        text: info?.text || '',
+        type: info?.depth === 0 ? 'topic' : 'brace',
+        position: pos ? { x: pos.x, y: pos.y } : { x: 0, y: 0 },
+      })
+    })
+
+    // Create connections
+    flatData.dagreEdges.forEach((edge) => {
+      connections.push({
+        id: `edge-${edge.source}-${edge.target}`,
+        source: edge.source,
+        target: edge.target,
+      })
+    })
   }
 
   // Add dimension label if exists
   const dimension = spec.dimension as string | undefined
   if (dimension !== undefined) {
+    // Position below the whole node using Dagre layout info
+    const wholeId = wholeNode?.id || 'brace-0-0'
+    const wholePos = nodes.find((n) => n.id === wholeId)?.position
     nodes.push({
       id: 'dimension-label',
       text: dimension || '',
       type: 'label',
-      position: { x: 100, y: 360 }, // Below whole
+      position: { x: wholePos?.x || 100, y: (wholePos?.y || 300) + DEFAULT_NODE_HEIGHT + 20 },
     })
   }
 
@@ -776,12 +1035,13 @@ export function loadBridgeMapSpec(spec: Record<string, unknown>): SpecLoaderResu
     (spec.analogies as Array<{ top: string; bottom: string; relation?: string }>) ||
     []
 
-  const startX = 150
-  const centerY = 300
-  const pairSpacing = 250
-  const verticalGap = 100
-  const nodeWidth = 120
-  const nodeHeight = 45
+  // Layout constants from layoutConfig
+  const startX = DEFAULT_PADDING + DEFAULT_NODE_WIDTH / 2 + 50
+  const centerY = DEFAULT_CENTER_Y
+  const pairSpacing = DEFAULT_PAIR_SPACING
+  const verticalGap = DEFAULT_LEVEL_HEIGHT
+  const nodeWidth = DEFAULT_NODE_WIDTH
+  const nodeHeight = DEFAULT_NODE_HEIGHT - 5 // Bridge nodes slightly shorter
 
   const nodes: DiagramNode[] = []
   const connections: Connection[] = []
@@ -840,51 +1100,103 @@ interface MindMapBranch {
   children?: MindMapBranch[]
 }
 
-function layoutMindMapBranches(
+// Helper to flatten mind map branch tree for Dagre
+interface MindMapNodeInfo {
+  text: string
+  depth: number
+  direction: 1 | -1
+}
+
+function flattenMindMapBranches(
   branches: MindMapBranch[],
-  centerX: number,
-  centerY: number,
+  parentId: string,
   direction: 1 | -1,
   depth: number,
+  dagreNodes: { id: string; width: number; height: number }[],
+  dagreEdges: { source: string; target: string }[],
+  nodeInfos: Map<string, MindMapNodeInfo>
+): void {
+  branches.forEach((branch, index) => {
+    const nodeId = `branch-${direction > 0 ? 'r' : 'l'}-${depth}-${index}`
+
+    dagreNodes.push({ id: nodeId, width: DEFAULT_NODE_WIDTH, height: DEFAULT_NODE_HEIGHT })
+    nodeInfos.set(nodeId, { text: branch.text, depth, direction })
+    dagreEdges.push({ source: parentId, target: nodeId })
+
+    if (branch.children && branch.children.length > 0) {
+      flattenMindMapBranches(branch.children, nodeId, direction, depth + 1, dagreNodes, dagreEdges, nodeInfos)
+    }
+  })
+}
+
+function layoutMindMapSideWithDagre(
+  branches: MindMapBranch[],
+  side: 'left' | 'right',
+  topicX: number,
+  topicY: number,
   horizontalSpacing: number,
   verticalSpacing: number,
   nodes: DiagramNode[],
-  connections: Connection[],
-  parentId: string
+  connections: Connection[]
 ): void {
-  const totalHeight = (branches.length - 1) * verticalSpacing
-  let currentY = centerY - totalHeight / 2
+  if (branches.length === 0) return
 
-  branches.forEach((branch, index) => {
-    const nodeId = `branch-${direction > 0 ? 'r' : 'l'}-${depth}-${index}`
-    const x = centerX + direction * horizontalSpacing * depth
-    const y = currentY
+  const direction = side === 'right' ? 1 : -1
+  const dagreNodes: { id: string; width: number; height: number }[] = []
+  const dagreEdges: { source: string; target: string }[] = []
+  const nodeInfos = new Map<string, MindMapNodeInfo>()
 
-    nodes.push({
-      id: nodeId,
-      text: branch.text,
-      type: 'branch',
-      position: { x: x - 60, y: y - 18 },
-    })
+  // Add virtual root for connecting to topic
+  const virtualRoot = `virtual-${side}`
+  dagreNodes.push({ id: virtualRoot, width: 1, height: 1 })
 
-    connections.push({ id: `edge-${parentId}-${nodeId}`, source: parentId, target: nodeId })
+  // Flatten branch tree
+  flattenMindMapBranches(branches, virtualRoot, direction, 1, dagreNodes, dagreEdges, nodeInfos)
 
-    if (branch.children && branch.children.length > 0) {
-      layoutMindMapBranches(
-        branch.children,
-        x,
-        y,
-        direction,
-        depth + 1,
-        horizontalSpacing,
-        verticalSpacing,
-        nodes,
-        connections,
-        nodeId
-      )
+  // Calculate layout with Dagre (LR for right side, RL for left side)
+  const layoutDirection = side === 'right' ? 'LR' : 'RL'
+  const layoutResult = calculateDagreLayout(dagreNodes, dagreEdges, {
+    direction: layoutDirection as 'LR' | 'RL',
+    nodeSeparation: verticalSpacing,
+    rankSeparation: horizontalSpacing,
+    align: 'UL',
+    marginX: DEFAULT_PADDING,
+    marginY: DEFAULT_PADDING,
+  })
+
+  // Get virtual root position to calculate offset
+  const virtualPos = layoutResult.positions.get(virtualRoot)
+  const offsetX = topicX - (virtualPos?.x || 0) + (direction * DEFAULT_NODE_WIDTH / 2)
+  const offsetY = topicY - (virtualPos?.y || 0)
+
+  // Create nodes with adjusted positions
+  nodeInfos.forEach((info, nodeId) => {
+    const pos = layoutResult.positions.get(nodeId)
+    if (pos) {
+      nodes.push({
+        id: nodeId,
+        text: info.text,
+        type: 'branch',
+        position: { x: pos.x + offsetX - DEFAULT_NODE_WIDTH / 2, y: pos.y + offsetY - DEFAULT_NODE_HEIGHT / 2 },
+      })
     }
+  })
 
-    currentY += verticalSpacing
+  // Create connections (skip virtual root edges, connect to topic instead)
+  dagreEdges.forEach((edge) => {
+    if (edge.source === virtualRoot) {
+      connections.push({
+        id: `edge-topic-${edge.target}`,
+        source: 'topic',
+        target: edge.target,
+      })
+    } else {
+      connections.push({
+        id: `edge-${edge.source}-${edge.target}`,
+        source: edge.source,
+        target: edge.target,
+      })
+    }
   })
 }
 
@@ -898,8 +1210,7 @@ export function loadMindMapSpec(spec: Record<string, unknown>): SpecLoaderResult
   if (spec.leftBranches || spec.left) {
     // New format with explicit left/right branches
     leftBranches = (spec.leftBranches as MindMapBranch[]) || (spec.left as MindMapBranch[]) || []
-    rightBranches =
-      (spec.rightBranches as MindMapBranch[]) || (spec.right as MindMapBranch[]) || []
+    rightBranches = (spec.rightBranches as MindMapBranch[]) || (spec.right as MindMapBranch[]) || []
   } else if (Array.isArray(spec.children)) {
     // Old format: single children array, split into left and right
     const children = spec.children as MindMapBranch[]
@@ -908,48 +1219,48 @@ export function loadMindMapSpec(spec: Record<string, unknown>): SpecLoaderResult
     rightBranches = children.slice(half)
   }
 
-  const centerX = 400
-  const centerY = 300
-  const horizontalSpacing = 180
-  const verticalSpacing = 60
+  // Layout constants from layoutConfig
+  const centerX = DEFAULT_CENTER_X
+  const centerY = DEFAULT_CENTER_Y
+  const horizontalSpacing = DEFAULT_HORIZONTAL_SPACING
+  const verticalSpacing = DEFAULT_VERTICAL_SPACING
 
   const nodes: DiagramNode[] = []
   const connections: Connection[] = []
 
-  // Topic node
+  // Topic node at center
   nodes.push({
     id: 'topic',
     text: topic,
     type: 'topic',
-    position: { x: centerX - 80, y: centerY - 30 },
+    position: {
+      x: centerX - DEFAULT_NODE_WIDTH / 2,
+      y: centerY - DEFAULT_NODE_HEIGHT / 2,
+    },
   })
 
-  // Left branches
-  layoutMindMapBranches(
+  // Layout left side with Dagre
+  layoutMindMapSideWithDagre(
     leftBranches,
+    'left',
     centerX,
     centerY,
-    -1,
-    1,
     horizontalSpacing,
     verticalSpacing,
     nodes,
-    connections,
-    'topic'
+    connections
   )
 
-  // Right branches
-  layoutMindMapBranches(
+  // Layout right side with Dagre
+  layoutMindMapSideWithDagre(
     rightBranches,
+    'right',
     centerX,
     centerY,
-    1,
-    1,
     horizontalSpacing,
     verticalSpacing,
     nodes,
-    connections,
-    'topic'
+    connections
   )
 
   return { nodes, connections }
@@ -996,7 +1307,7 @@ const SPEC_LOADERS: Partial<
  * @param spec - The API spec object
  * @param diagramType - The type of diagram
  * @returns SpecLoaderResult with nodes, connections, and optional metadata
- * 
+ *
  * Note: Saved diagrams use a generic format with { nodes, connections },
  * while LLM-generated specs use type-specific formats (e.g., { topic, attributes }).
  * We detect saved diagrams by checking for the 'nodes' array and use loadGenericSpec.

@@ -16,12 +16,7 @@ import { computed, ref } from 'vue'
 import { useLanguage } from '@/composables/useLanguage'
 import type { Connection, DiagramNode, MindGraphEdge, MindGraphNode } from '@/types'
 
-import {
-  DEFAULT_BUBBLE_RADIUS,
-  DEFAULT_PADDING,
-  DEFAULT_TOPIC_RADIUS,
-  DEFAULT_VERTICAL_SPACING,
-} from './layoutConfig'
+import { DEFAULT_BUBBLE_RADIUS, DEFAULT_PADDING, DEFAULT_TOPIC_RADIUS } from './layoutConfig'
 
 interface DoubleBubbleMapData {
   left: string

@@ -1,12 +1,12 @@
 /**
  * Saved Diagrams Store - Pinia store for user's saved diagram history
  * Fetches from /api/diagrams endpoint
- * 
+ *
  * Enhanced with auto-save functionality:
  * - Tracks active diagram on canvas (if already saved to library)
  * - Auto-saves diagrams in background when slots available
  * - Supports manual save with slot management modal
- * 
+ *
  * Security:
  * - Validates spec size before sending to backend (max 500KB)
  * - Validates thumbnail size (max ~100KB base64)
@@ -18,12 +18,12 @@ import { defineStore } from 'pinia'
 import { useAuthStore } from './auth'
 
 // Security constants - must match backend limits
-const MAX_SPEC_SIZE_KB = 500  // Backend limit from DIAGRAM_MAX_SPEC_SIZE_KB
-const MAX_THUMBNAIL_SIZE = 150000  // Max base64 chars (~100KB decoded)
+const MAX_SPEC_SIZE_KB = 500 // Backend limit from DIAGRAM_MAX_SPEC_SIZE_KB
+const MAX_THUMBNAIL_SIZE = 150000 // Max base64 chars (~100KB decoded)
 
 // Types
 export interface SavedDiagram {
-  id: string  // UUID
+  id: string // UUID
   title: string
   diagram_type: string
   thumbnail: string | null
@@ -65,7 +65,7 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
   const isLoading = ref(false)
   const error = ref<string | null>(null)
   const currentDiagramId = ref<string | null>(null)
-  
+
   // Active diagram tracking - tracks if current canvas diagram is saved to library
   const activeDiagramId = ref<string | null>(null)
   const isAutoSaving = ref(false)
@@ -151,7 +151,9 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
     const specJson = JSON.stringify(spec)
     const specSizeKB = new Blob([specJson]).size / 1024
     if (specSizeKB > MAX_SPEC_SIZE_KB) {
-      console.error(`[SavedDiagrams] Spec too large: ${specSizeKB.toFixed(1)}KB > ${MAX_SPEC_SIZE_KB}KB`)
+      console.error(
+        `[SavedDiagrams] Spec too large: ${specSizeKB.toFixed(1)}KB > ${MAX_SPEC_SIZE_KB}KB`
+      )
       error.value = `Diagram data too large (${specSizeKB.toFixed(0)}KB). Maximum is ${MAX_SPEC_SIZE_KB}KB.`
       return null
     }
@@ -159,7 +161,7 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
     // Validate thumbnail size if provided
     if (thumbnail && thumbnail.length > MAX_THUMBNAIL_SIZE) {
       console.warn(`[SavedDiagrams] Thumbnail too large (${thumbnail.length} chars), skipping`)
-      thumbnail = null  // Skip thumbnail rather than fail
+      thumbnail = null // Skip thumbnail rather than fail
     }
 
     try {
@@ -189,7 +191,7 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
       }
 
       const saved: SavedDiagramFull = await response.json()
-      
+
       // Add to local list
       diagrams.value.unshift({
         id: saved.id,
@@ -219,7 +221,9 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
       const specJson = JSON.stringify(updates.spec)
       const specSizeKB = new Blob([specJson]).size / 1024
       if (specSizeKB > MAX_SPEC_SIZE_KB) {
-        console.error(`[SavedDiagrams] Spec too large: ${specSizeKB.toFixed(1)}KB > ${MAX_SPEC_SIZE_KB}KB`)
+        console.error(
+          `[SavedDiagrams] Spec too large: ${specSizeKB.toFixed(1)}KB > ${MAX_SPEC_SIZE_KB}KB`
+        )
         error.value = `Diagram data too large (${specSizeKB.toFixed(0)}KB). Maximum is ${MAX_SPEC_SIZE_KB}KB.`
         return false
       }
@@ -227,8 +231,10 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
 
     // Validate thumbnail size if provided
     if (updates.thumbnail && updates.thumbnail.length > MAX_THUMBNAIL_SIZE) {
-      console.warn(`[SavedDiagrams] Thumbnail too large (${updates.thumbnail.length} chars), skipping`)
-      delete updates.thumbnail  // Skip thumbnail rather than fail
+      console.warn(
+        `[SavedDiagrams] Thumbnail too large (${updates.thumbnail.length} chars), skipping`
+      )
+      delete updates.thumbnail // Skip thumbnail rather than fail
     }
 
     try {
@@ -248,7 +254,7 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
       }
 
       const updated: SavedDiagramFull = await response.json()
-      
+
       // Update local list
       const index = diagrams.value.findIndex((d) => d.id === diagramId)
       if (index !== -1) {
@@ -324,7 +330,7 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
       }
 
       const duplicated: SavedDiagramFull = await response.json()
-      
+
       // Add to local list
       diagrams.value.unshift({
         id: duplicated.id,
@@ -404,7 +410,7 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
    * - If diagram is already saved (activeDiagramId set): update existing
    * - If new diagram and slots available: save as new
    * - If new diagram and slots full: skip (return skipped status)
-   * 
+   *
    * @param title - Diagram title
    * @param diagramType - Type of diagram
    * @param spec - Diagram spec data
@@ -433,7 +439,7 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
           spec,
           thumbnail: thumbnail || undefined,
         })
-        
+
         if (updated) {
           return { success: true, action: 'updated', diagramId: activeDiagramId.value }
         } else {
@@ -449,7 +455,7 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
 
       // Case 3: New diagram with available slots - save it
       const saved = await saveDiagram(title, diagramType, spec, language, thumbnail)
-      
+
       if (saved) {
         // Track this as the active diagram
         activeDiagramId.value = saved.id
@@ -459,10 +465,10 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
       }
     } catch (e) {
       console.error('[SavedDiagrams] Auto-save error:', e)
-      return { 
-        success: false, 
-        action: 'error', 
-        error: e instanceof Error ? e.message : 'Auto-save failed' 
+      return {
+        success: false,
+        action: 'error',
+        error: e instanceof Error ? e.message : 'Auto-save failed',
       }
     } finally {
       isAutoSaving.value = false
@@ -473,7 +479,7 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
    * Manual save with slot management
    * Unlike auto-save, this will return an error if slots are full
    * so the UI can show a modal to let user delete a diagram first
-   * 
+   *
    * @returns Result with needsSlotClear flag if slots are full
    */
   async function manualSaveDiagram(
@@ -494,7 +500,7 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
         spec,
         thumbnail: thumbnail || undefined,
       })
-      
+
       if (updated) {
         return { success: true, action: 'updated', diagramId: activeDiagramId.value }
       } else {
@@ -504,17 +510,17 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
 
     // New diagram - check slots
     if (!canSaveMore.value) {
-      return { 
-        success: false, 
-        action: 'skipped', 
+      return {
+        success: false,
+        action: 'skipped',
         error: 'Diagram slots full',
-        needsSlotClear: true 
+        needsSlotClear: true,
       }
     }
 
     // Save new diagram
     const saved = await saveDiagram(title, diagramType, spec, language, thumbnail)
-    
+
     if (saved) {
       activeDiagramId.value = saved.id
       return { success: true, action: 'saved', diagramId: saved.id }

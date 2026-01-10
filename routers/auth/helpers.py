@@ -28,7 +28,7 @@ from sqlalchemy.orm import Session
 from models.auth import User
 from services.redis_session_manager import get_session_manager
 from utils.auth import (
-    create_access_token, is_https, get_client_ip,
+    create_access_token, is_https, get_client_ip, compute_device_hash,
     ACCESS_TOKEN_EXPIRY_MINUTES, REFRESH_TOKEN_EXPIRY_DAYS
 )
 
@@ -280,7 +280,9 @@ async def create_user_session(
     cache_user_func: Optional[Callable[[], Awaitable[None]]] = None
 ) -> tuple[str, str]:
     """
-    Create a new user session by invalidating old sessions and generating a new token.
+    Create a new user session and generate a new token.
+    
+    Supports multiple concurrent sessions (up to MAX_CONCURRENT_SESSIONS).
     
     Args:
         user: User object
@@ -292,14 +294,15 @@ async def create_user_session(
     """
     session_manager = get_session_manager()
     client_ip = get_client_ip(http_request) if http_request else "unknown"
-    old_token_hash = session_manager.get_session_token(user.id)
-    session_manager.invalidate_user_sessions(user.id, old_token_hash=old_token_hash, ip_address=client_ip)
     
     # Generate JWT token
     token = create_access_token(user)
     
-    # Store new session in Redis
-    session_manager.store_session(user.id, token)
+    # Compute device hash for session tracking
+    device_hash = compute_device_hash(http_request) if http_request else ""
+    
+    # Store new session in Redis (automatically limits concurrent sessions)
+    session_manager.store_session(user.id, token, device_hash=device_hash)
     
     # If cache_user_func is provided (for registration), execute it in parallel
     if cache_user_func:

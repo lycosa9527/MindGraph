@@ -3,7 +3,7 @@
  * CanvasTopBar - Top navigation bar for canvas page
  * Uses Element Plus components for polished menu bar
  * Migrated from prototype MindGraphCanvasPage top bar
- * 
+ *
  * Enhanced with Save to Gallery functionality:
  * - Saves diagram to user's library
  * - Shows slot management modal when library is full
@@ -19,10 +19,6 @@ import {
   ElInput,
   ElTooltip,
 } from 'element-plus'
-
-import { useNotifications } from '@/composables'
-
-const notify = useNotifications()
 
 // Using Lucide icons for a more modern, cute look
 import {
@@ -50,8 +46,11 @@ import {
 } from 'lucide-vue-next'
 
 import { DiagramSlotFullModal } from '@/components/canvas'
+import { useNotifications } from '@/composables'
 import { useLanguage } from '@/composables'
 import { useDiagramStore, useSavedDiagramsStore } from '@/stores'
+
+const notify = useNotifications()
 
 const route = useRoute()
 const router = useRouter()
@@ -71,10 +70,8 @@ function generateDefaultName(): string {
   const month = String(now.getMonth() + 1).padStart(2, '0')
   const day = String(now.getDate()).padStart(2, '0')
   const dateStamp = `${month}-${day}`
-  
-  return isZh.value 
-    ? `新${chartType.value} ${dateStamp}` 
-    : `New ${chartType.value} ${dateStamp}`
+
+  return isZh.value ? `新${chartType.value} ${dateStamp}` : `New ${chartType.value} ${dateStamp}`
 }
 
 // File name editing state (UI only)
@@ -84,7 +81,7 @@ const fileNameInputRef = ref<InstanceType<typeof ElInput> | null>(null)
 // Use Pinia store for title (synced with diagram state)
 const fileName = computed({
   get: () => diagramStore.effectiveTitle || generateDefaultName(),
-  set: (value: string) => diagramStore.setTitle(value, true)
+  set: (value: string) => diagramStore.setTitle(value, true),
 })
 
 // Save to gallery state
@@ -117,7 +114,7 @@ watch(
     if (!diagramStore.shouldAutoUpdateTitle()) return
     // Don't auto-update if currently editing the name
     if (isFileNameEditing.value) return
-    
+
     if (newTopicText) {
       diagramStore.initTitle(newTopicText)
     }
@@ -161,7 +158,7 @@ function handleFileNameKeyPress(e: KeyboardEvent) {
 // Get current diagram spec for saving
 function getDiagramSpec(): Record<string, unknown> | null {
   if (!diagramStore.data) return null
-  
+
   return {
     type: diagramStore.type,
     nodes: diagramStore.data.nodes,
@@ -198,8 +195,12 @@ async function saveToGallery(): Promise<void> {
     if (result.success) {
       notify.success(
         result.action === 'updated'
-          ? (isZh.value ? '图示已更新' : 'Diagram updated')
-          : (isZh.value ? '图示已保存到图库' : 'Diagram saved to gallery')
+          ? isZh.value
+            ? '图示已更新'
+            : 'Diagram updated'
+          : isZh.value
+            ? '图示已保存到图库'
+            : 'Diagram saved to gallery'
       )
     } else if (result.needsSlotClear) {
       // Show modal to let user delete a diagram
@@ -216,7 +217,7 @@ async function saveToGallery(): Promise<void> {
 }
 
 // Handle slot full modal success
-function handleSlotModalSuccess(diagramId: string): void {
+function handleSlotModalSuccess(_diagramId: string): void {
   showSlotFullModal.value = false
   // The diagram is now saved and activeDiagramId is set in the store
 }
@@ -303,7 +304,9 @@ function handleExportCommand(command: string) {
 </script>
 
 <template>
-  <div class="canvas-top-bar w-full bg-white dark:bg-gray-800 h-12 px-3 flex items-center justify-between shadow-sm border-b border-gray-200 dark:border-gray-700">
+  <div
+    class="canvas-top-bar w-full bg-white dark:bg-gray-800 h-12 px-3 flex items-center justify-between shadow-sm border-b border-gray-200 dark:border-gray-700"
+  >
     <!-- Left section: Back + Menu bar -->
     <div class="flex items-center gap-1">
       <!-- Back button -->
@@ -358,9 +361,14 @@ function handleExportCommand(command: string) {
                 v-else
                 class="w-4 h-4 mr-2 text-pink-500"
               />
-              {{ isAlreadySaved 
-                ? (isZh ? '已保存到图库' : 'Saved to Gallery') 
-                : (isZh ? '保存到我的图库' : 'Save to Gallery') 
+              {{
+                isAlreadySaved
+                  ? isZh
+                    ? '已保存到图库'
+                    : 'Saved to Gallery'
+                  : isZh
+                    ? '保存到我的图库'
+                    : 'Save to Gallery'
               }}
             </ElDropdownItem>
             <ElDropdownItem

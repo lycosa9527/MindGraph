@@ -34,7 +34,12 @@ from datetime import datetime, timedelta
 from dotenv import load_dotenv
 from services.temp_image_cleaner import start_cleanup_scheduler
 from services.backup_scheduler import start_backup_scheduler
-from services.redis_client import init_redis_sync, close_redis_sync, is_redis_available
+from services.redis_client import (
+    init_redis_sync, 
+    close_redis_sync, 
+    is_redis_available,
+    RedisStartupError,
+)
 from utils.env_utils import ensure_utf8_env_file
 
 # Fix for Windows: Set event loop policy to support subprocesses (required for Playwright)
@@ -739,9 +744,16 @@ async def lifespan(app: FastAPI):
     
     # Initialize Redis (REQUIRED for caching, rate limiting, sessions)
     # Application will exit if Redis is not available
-    init_redis_sync()
-    if worker_id == '0' or not worker_id:
-        logger.info("Redis initialized successfully")
+    try:
+        init_redis_sync()
+        if worker_id == '0' or not worker_id:
+            logger.info("Redis initialized successfully")
+    except RedisStartupError:
+        # Error message already logged by init_redis_sync with instructions
+        # Exit cleanly without traceback using os._exit to prevent Starlette
+        # from catching and logging the full stack trace
+        logger.error("Application startup failed. Exiting.")
+        os._exit(1)
     
     # Note: Legacy JavaScript cache removed in v5.0.0 (Vue migration)
     # Frontend assets are now served from frontend/dist/ via Vue SPA handler

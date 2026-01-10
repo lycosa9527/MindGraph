@@ -2,7 +2,7 @@
 /**
  * ImagePreviewModal - Simple modal for previewing images
  */
-const props = defineProps<{
+const _props = defineProps<{
   visible: boolean
   title: string
   imageUrl: string

@@ -14,3 +14,6 @@ export { default as BraceNode } from './nodes/BraceNode.vue'
 export { default as CurvedEdge } from './edges/CurvedEdge.vue'
 export { default as StraightEdge } from './edges/StraightEdge.vue'
 export { default as BraceEdge } from './edges/BraceEdge.vue'
+
+// UI components
+export { default as IMEAutocompleteDropdown } from './IMEAutocompleteDropdown.vue'

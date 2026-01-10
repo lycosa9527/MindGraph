@@ -34,7 +34,9 @@ async function loadPublicStats() {
       ],
     }
   } catch {
-    notify.error(isZh.value ? '网络错误，加载仪表盘失败' : 'Network error, failed to load dashboard')
+    notify.error(
+      isZh.value ? '网络错误，加载仪表盘失败' : 'Network error, failed to load dashboard'
+    )
   } finally {
     isLoading.value = false
   }

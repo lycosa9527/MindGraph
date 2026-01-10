@@ -1,6 +1,6 @@
 /**
  * Dify Query Keys Factory
- * 
+ *
  * Centralized query keys for Vue Query cache management.
  * Ensures consistent cache key structure across all Dify-related queries.
  */

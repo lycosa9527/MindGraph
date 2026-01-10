@@ -12,6 +12,7 @@ export type MindGraphNodeType =
   | 'bubble' // Circular attribute node
   | 'branch' // Mind map branch node
   | 'flow' // Flow map step node
+  | 'flowSubstep' // Flow map substep node
   | 'brace' // Brace map part node
   | 'bridge' // Bridge map pair node
   | 'tree' // Tree map category node
@@ -23,7 +24,8 @@ export type MindGraphNodeType =
 export type MindGraphEdgeType =
   | 'curved' // For mind maps
   | 'straight' // For flow maps
-  | 'step' // For tree maps (T/L shaped orthogonal connectors)
+  | 'step' // For tree maps (T/L shaped orthogonal connectors, vertical-first)
+  | 'horizontalStep' // For flow map substeps (T/L shaped, horizontal-first)
   | 'tree' // For tree maps (straight vertical lines, no arrowhead)
   | 'radial' // For bubble maps (center-to-center)
   | 'brace' // For brace maps (bracket shape)
@@ -99,6 +101,7 @@ export function diagramNodeToVueFlowNode(
     right: 'branch',
     boundary: 'boundary',
     flow: 'flow',
+    flowSubstep: 'flowSubstep', // Substep nodes for flow maps
     brace: 'brace',
     label: 'label', // Classification dimension label for tree_map and brace_map
   }
@@ -158,6 +161,9 @@ export function connectionToVueFlowEdge(
     // Map position strings to Vue Flow position format
     sourcePosition: connection.sourcePosition as 'top' | 'bottom' | 'left' | 'right' | undefined,
     targetPosition: connection.targetPosition as 'top' | 'bottom' | 'left' | 'right' | undefined,
+    // Pass through specific handle IDs if provided
+    sourceHandle: connection.sourceHandle,
+    targetHandle: connection.targetHandle,
     data: {
       label: connection.label,
       edgeType,
@@ -172,6 +178,7 @@ export function vueFlowNodeToDiagramNode(node: MindGraphNode): DiagramNode {
     bubble: 'bubble',
     branch: 'child',
     flow: 'flow',
+    flowSubstep: 'flowSubstep',
     brace: 'brace',
     boundary: 'boundary',
     bridge: 'branch',

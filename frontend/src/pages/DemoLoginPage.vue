@@ -33,8 +33,12 @@ async function handleDemoLogin() {
       const userName = result.user?.username || ''
       notify.success(
         isZh.value
-          ? (userName ? `${userName}，登录成功` : '登录成功')
-          : (userName ? `Welcome, ${userName}` : 'Login successful')
+          ? userName
+            ? `${userName}，登录成功`
+            : '登录成功'
+          : userName
+            ? `Welcome, ${userName}`
+            : 'Login successful'
       )
       router.push('/')
     } else {

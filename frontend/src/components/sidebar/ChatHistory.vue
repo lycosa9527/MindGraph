@@ -20,15 +20,21 @@ import { Loading } from '@element-plus/icons-vue'
 import { Edit3, Lock, MessageCircle, MoreHorizontal, Pin, Trash2 } from 'lucide-vue-next'
 
 import { useLanguage } from '@/composables'
-import { useConversations, usePinnedConversations, useDeleteConversation, useRenameConversation, usePinConversation } from '@/composables/queries'
-import { useAuthStore, useMindMateStore, type MindMateConversation } from '@/stores'
+import {
+  useConversations,
+  useDeleteConversation,
+  usePinConversation,
+  usePinnedConversations,
+  useRenameConversation,
+} from '@/composables/queries'
+import { type MindMateConversation, useAuthStore, useMindMateStore } from '@/stores'
 
-const props = defineProps<{
+const _props = defineProps<{
   isBlurred?: boolean
 }>()
 
 const { isZh } = useLanguage()
-const authStore = useAuthStore()
+const _authStore = useAuthStore()
 const mindMateStore = useMindMateStore()
 
 // Show all or just 10
@@ -48,13 +54,13 @@ const { mutate: pinConv } = usePinConversation()
 const conversations = computed(() => {
   if (!conversationsData.value) return []
   const pinnedIds = pinnedData.value || new Set()
-  
+
   // Mark conversations as pinned and sort
   const convs = conversationsData.value.map((conv) => ({
     ...conv,
     is_pinned: pinnedIds.has(conv.id),
   }))
-  
+
   // Sort: pinned first, then by updated_at descending
   return convs.sort((a, b) => {
     if (a.is_pinned && !b.is_pinned) return -1
@@ -67,11 +73,15 @@ const isLoading = computed(() => isLoadingConversations.value)
 const currentConversationId = computed(() => mindMateStore.currentConversationId)
 
 // Sync conversations to store for backward compatibility
-watch([conversationsData, pinnedData], ([convs, pinned]) => {
-  if (convs && pinned) {
-    mindMateStore.syncConversationsFromQuery(convs, pinned)
-  }
-}, { immediate: true })
+watch(
+  [conversationsData, pinnedData],
+  ([convs, pinned]) => {
+    if (convs && pinned) {
+      mindMateStore.syncConversationsFromQuery(convs, pinned)
+    }
+  },
+  { immediate: true }
+)
 
 // Group conversations by time period
 interface GroupedConversations {
@@ -176,7 +186,9 @@ async function handleRenameConversation(convId: string): Promise<void> {
 async function handleDeleteConversation(convId: string): Promise<void> {
   try {
     await ElMessageBox.confirm(
-      isZh.value ? '确定要删除这个对话吗？此操作不可撤销。' : 'Are you sure you want to delete this conversation? This cannot be undone.',
+      isZh.value
+        ? '确定要删除这个对话吗？此操作不可撤销。'
+        : 'Are you sure you want to delete this conversation? This cannot be undone.',
       isZh.value ? '删除对话' : 'Delete Conversation',
       {
         confirmButtonText: isZh.value ? '删除' : 'Delete',

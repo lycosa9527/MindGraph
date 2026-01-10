@@ -9,9 +9,24 @@ import { useRouter } from 'vue-router'
 import { ArrowRight, ChevronDown, X } from 'lucide-vue-next'
 
 import { DIAGRAM_TEMPLATES, useUIStore } from '@/stores'
+import type { DiagramType } from '@/types'
 
 const uiStore = useUIStore()
 const router = useRouter()
+
+// Map Chinese diagram type names to DiagramType for URL
+const diagramTypeMap: Record<string, DiagramType> = {
+  圆圈图: 'circle_map',
+  气泡图: 'bubble_map',
+  双气泡图: 'double_bubble_map',
+  树形图: 'tree_map',
+  括号图: 'brace_map',
+  流程图: 'flow_map',
+  复流程图: 'multi_flow_map',
+  桥型图: 'bridge_map',
+  思维导图: 'mindmap',
+  概念图: 'concept_map',
+}
 
 const chartTypes = [
   '选择图示',
@@ -78,14 +93,17 @@ function handleSubmit() {
   if (!uiStore.hasValidSlots()) return
 
   const requestText = uiStore.getTemplateText()
-  // Store diagram type and prompt, then navigate
+  // Store diagram type and prompt, then navigate with type in URL for refresh persistence
   uiStore.setSelectedChartType(selectedType.value)
-  // Store prompt temporarily in UI store (we'll add a method for this)
-  // For now, emit event that canvas can listen to
+  // Emit event that canvas can listen to for auto-generation
   import('@/composables/useEventBus').then(({ eventBus }) => {
     eventBus.emit('canvas:generate_with_prompt', { prompt: requestText })
   })
-  router.push('/canvas')
+  const diagramType = diagramTypeMap[selectedType.value]
+  router.push({
+    path: '/canvas',
+    query: diagramType ? { type: diagramType } : undefined,
+  })
 }
 
 // Parse template into parts with slots

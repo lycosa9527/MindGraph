@@ -42,7 +42,7 @@ export function useVersionCheck(options: VersionCheckOptions = {}) {
         method: 'GET',
         cache: 'no-store',
         headers: {
-          'Accept': 'application/json',
+          Accept: 'application/json',
         },
       })
 

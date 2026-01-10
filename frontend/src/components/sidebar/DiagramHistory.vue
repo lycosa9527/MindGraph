@@ -21,7 +21,7 @@ import { Edit3, FileImage, Lock, MoreHorizontal, Pin, Trash2 } from 'lucide-vue-
 
 import { useLanguage } from '@/composables'
 import { useAuthStore } from '@/stores'
-import { useSavedDiagramsStore, type SavedDiagram } from '@/stores/savedDiagrams'
+import { type SavedDiagram, useSavedDiagramsStore } from '@/stores/savedDiagrams'
 
 const props = defineProps<{
   isBlurred?: boolean
@@ -44,7 +44,7 @@ const diagrams = computed(() => savedDiagramsStore.diagrams)
 const isLoading = computed(() => savedDiagramsStore.isLoading)
 const currentDiagramId = computed(() => savedDiagramsStore.currentDiagramId)
 const maxDiagrams = computed(() => savedDiagramsStore.maxDiagrams)
-const remainingSlots = computed(() => savedDiagramsStore.remainingSlots)
+const _remainingSlots = computed(() => savedDiagramsStore.remainingSlots)
 
 // Group diagrams by time period with pinned at top
 interface GroupedDiagrams {
@@ -187,7 +187,9 @@ async function handleRenameDiagram(diagramId: string): Promise<void> {
 async function handleDeleteDiagram(diagramId: string): Promise<void> {
   try {
     await ElMessageBox.confirm(
-      isZh.value ? '确定要删除这个图示吗？此操作不可撤销。' : 'Are you sure you want to delete this diagram? This cannot be undone.',
+      isZh.value
+        ? '确定要删除这个图示吗？此操作不可撤销。'
+        : 'Are you sure you want to delete this diagram? This cannot be undone.',
       isZh.value ? '删除图示' : 'Delete Diagram',
       {
         confirmButtonText: isZh.value ? '删除' : 'Delete',
@@ -206,7 +208,7 @@ async function handleDeleteDiagram(diagramId: string): Promise<void> {
 async function handlePinDiagram(diagramId: string): Promise<void> {
   const diagram = diagrams.value.find((d) => d.id === diagramId)
   if (!diagram) return
-  
+
   const newPinned = !diagram.is_pinned
   await savedDiagramsStore.pinDiagram(diagramId, newPinned)
 }

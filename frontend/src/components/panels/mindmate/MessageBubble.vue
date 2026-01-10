@@ -1,29 +1,18 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 
-import {
-  ElAvatar,
-  ElButton,
-  ElIcon,
-  ElInput,
-  ElTooltip,
-} from 'element-plus'
-import {
-  CopyDocument,
-  Edit,
-  RefreshRight,
-  Share,
-} from '@element-plus/icons-vue'
-import { ThumbsDown, ThumbsUp } from 'lucide-vue-next'
+import { ElAvatar, ElButton, ElIcon, ElInput, ElTooltip } from 'element-plus'
+
+import { CopyDocument, Edit, RefreshRight, Share } from '@element-plus/icons-vue'
 
 import DOMPurify from 'dompurify'
+import { ThumbsDown, ThumbsUp } from 'lucide-vue-next'
 import MarkdownIt from 'markdown-it'
 
+import mindmateAvatarMd from '@/assets/mindmate-avatar-md.png'
+import ImagePreviewModal from '@/components/common/ImagePreviewModal.vue'
 import { useLanguage } from '@/composables'
 import type { FeedbackRating, MindMateMessage } from '@/composables/useMindMate'
-
-import ImagePreviewModal from '@/components/common/ImagePreviewModal.vue'
-import mindmateAvatarMd from '@/assets/mindmate-avatar-md.png'
 
 const props = defineProps<{
   message: MindMateMessage
@@ -38,8 +27,8 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'edit', message: MindMateMessage): void
-  (e: 'cancel-edit'): void
-  (e: 'save-edit', content: string): void
+  (e: 'cancelEdit'): void
+  (e: 'saveEdit', content: string): void
   (e: 'copy', content: string): void
   (e: 'regenerate', messageId: string): void
   (e: 'feedback', messageId: string, rating: FeedbackRating): void
@@ -102,12 +91,12 @@ function getFileIcon(type: string): string {
 }
 
 function handleSaveEdit() {
-  emit('save-edit', localEditingContent.value.trim())
+  emit('saveEdit', localEditingContent.value.trim())
 }
 
 function handleCancelEdit() {
   localEditingContent.value = props.message.content
-  emit('cancel-edit')
+  emit('cancelEdit')
 }
 
 // Image preview state
@@ -160,9 +149,7 @@ function handleMarkdownClick(event: MouseEvent) {
       <!-- Content -->
       <div
         class="message-content-wrapper flex-1"
-        :class="
-          message.role === 'user' ? 'flex flex-col items-end' : 'flex flex-col items-start'
-        "
+        :class="message.role === 'user' ? 'flex flex-col items-end' : 'flex flex-col items-start'"
       >
         <!-- User message editing -->
         <template v-if="message.role === 'user' && isEditing">
@@ -235,8 +222,8 @@ function handleMarkdownClick(event: MouseEvent) {
               <!-- eslint-disable vue/no-v-html -- Content is sanitized via DOMPurify -->
               <div
                 class="markdown-content text-sm leading-normal"
-                v-html="renderMarkdown(message.content)"
                 @click="handleMarkdownClick"
+                v-html="renderMarkdown(message.content)"
               />
               <!-- eslint-enable vue/no-v-html -->
               <!-- Streaming cursor -->

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
  * Admin Page - Admin dashboard with tabs
- * 
+ *
  * Access levels:
  * - Admin: Full access to all organizations' data
  * - Manager: Access to their organization's data only
@@ -77,7 +77,7 @@ const tabs = computed(() => {
     return allTabs
   }
   // Managers only see non-admin-only tabs
-  return allTabs.filter(tab => !tab.adminOnly)
+  return allTabs.filter((tab) => !tab.adminOnly)
 })
 
 async function loadDashboardStats() {
@@ -91,7 +91,9 @@ async function loadDashboardStats() {
       apiCalls: 45678,
     }
   } catch {
-    notify.error(isZh.value ? '网络错误，加载仪表盘统计失败' : 'Network error, failed to load dashboard stats')
+    notify.error(
+      isZh.value ? '网络错误，加载仪表盘统计失败' : 'Network error, failed to load dashboard stats'
+    )
   } finally {
     isLoading.value = false
   }
@@ -100,10 +102,10 @@ async function loadDashboardStats() {
 async function loadTokenStats() {
   if (isLoadingTokens.value) return
   isLoadingTokens.value = true
-  
+
   try {
     // Use credentials (token in httpOnly cookie)
-    const response = await fetch('/auth/admin/token-stats', { 
+    const response = await fetch('/auth/admin/token-stats', {
       credentials: 'same-origin',
     })
     if (response.ok) {
@@ -114,7 +116,9 @@ async function loadTokenStats() {
     }
   } catch (error) {
     console.error('Failed to load token stats:', error)
-    notify.error(isZh.value ? '网络错误，加载Token统计失败' : 'Network error, failed to load token stats')
+    notify.error(
+      isZh.value ? '网络错误，加载Token统计失败' : 'Network error, failed to load token stats'
+    )
   } finally {
     isLoadingTokens.value = false
   }
@@ -348,26 +352,46 @@ onMounted(() => {
 
       <!-- Tokens Tab -->
       <template v-else-if="activeTab === 'tokens'">
-        <div v-if="isLoadingTokens" class="text-center py-12">
-          <el-icon class="is-loading" :size="32"><Loading /></el-icon>
+        <div
+          v-if="isLoadingTokens"
+          class="text-center py-12"
+        >
+          <el-icon
+            class="is-loading"
+            :size="32"
+            ><Loading
+          /></el-icon>
           <p class="mt-4 text-gray-500">Loading token statistics...</p>
         </div>
-        
+
         <div v-else-if="tokenStats">
           <!-- Service Breakdown Header -->
           <div class="mb-6">
-            <h2 class="text-lg font-semibold text-gray-800 dark:text-white mb-2">Token Usage by Service</h2>
-            <p class="text-sm text-gray-500">Compare token usage between MindGraph (diagrams) and MindMate (AI assistant)</p>
+            <h2 class="text-lg font-semibold text-gray-800 dark:text-white mb-2">
+              Token Usage by Service
+            </h2>
+            <p class="text-sm text-gray-500">
+              Compare token usage between MindGraph (diagrams) and MindMate (AI assistant)
+            </p>
           </div>
 
           <!-- Service Cards Grid -->
           <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
             <!-- MindGraph Card -->
-            <el-card shadow="hover" class="service-card mindgraph-card">
+            <el-card
+              shadow="hover"
+              class="service-card mindgraph-card"
+            >
               <template #header>
                 <div class="flex items-center gap-3">
-                  <div class="w-10 h-10 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center">
-                    <el-icon :size="20" class="text-blue-500"><Connection /></el-icon>
+                  <div
+                    class="w-10 h-10 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center"
+                  >
+                    <el-icon
+                      :size="20"
+                      class="text-blue-500"
+                      ><Connection
+                    /></el-icon>
                   </div>
                   <div>
                     <h3 class="font-semibold text-gray-800 dark:text-white">MindGraph</h3>
@@ -375,7 +399,7 @@ onMounted(() => {
                   </div>
                 </div>
               </template>
-              
+
               <div class="grid grid-cols-2 gap-4">
                 <div class="stat-item">
                   <p class="text-xs text-gray-500 mb-1">Today</p>
@@ -383,7 +407,10 @@ onMounted(() => {
                     {{ formatNumber(tokenStats.by_service?.mindgraph?.today?.total_tokens || 0) }}
                   </p>
                   <p class="text-xs text-gray-400">
-                    {{ (tokenStats.by_service?.mindgraph?.today?.request_count || 0).toLocaleString() }} requests
+                    {{
+                      (tokenStats.by_service?.mindgraph?.today?.request_count || 0).toLocaleString()
+                    }}
+                    requests
                   </p>
                 </div>
                 <div class="stat-item">
@@ -392,7 +419,10 @@ onMounted(() => {
                     {{ formatNumber(tokenStats.by_service?.mindgraph?.week?.total_tokens || 0) }}
                   </p>
                   <p class="text-xs text-gray-400">
-                    {{ (tokenStats.by_service?.mindgraph?.week?.request_count || 0).toLocaleString() }} requests
+                    {{
+                      (tokenStats.by_service?.mindgraph?.week?.request_count || 0).toLocaleString()
+                    }}
+                    requests
                   </p>
                 </div>
                 <div class="stat-item">
@@ -401,7 +431,10 @@ onMounted(() => {
                     {{ formatNumber(tokenStats.by_service?.mindgraph?.month?.total_tokens || 0) }}
                   </p>
                   <p class="text-xs text-gray-400">
-                    {{ (tokenStats.by_service?.mindgraph?.month?.request_count || 0).toLocaleString() }} requests
+                    {{
+                      (tokenStats.by_service?.mindgraph?.month?.request_count || 0).toLocaleString()
+                    }}
+                    requests
                   </p>
                 </div>
                 <div class="stat-item">
@@ -410,11 +443,14 @@ onMounted(() => {
                     {{ formatNumber(tokenStats.by_service?.mindgraph?.total?.total_tokens || 0) }}
                   </p>
                   <p class="text-xs text-gray-400">
-                    {{ (tokenStats.by_service?.mindgraph?.total?.request_count || 0).toLocaleString() }} requests
+                    {{
+                      (tokenStats.by_service?.mindgraph?.total?.request_count || 0).toLocaleString()
+                    }}
+                    requests
                   </p>
                 </div>
               </div>
-              
+
               <!-- Input/Output breakdown -->
               <div class="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
                 <div class="flex justify-between text-sm">
@@ -433,11 +469,20 @@ onMounted(() => {
             </el-card>
 
             <!-- MindMate Card -->
-            <el-card shadow="hover" class="service-card mindmate-card">
+            <el-card
+              shadow="hover"
+              class="service-card mindmate-card"
+            >
               <template #header>
                 <div class="flex items-center gap-3">
-                  <div class="w-10 h-10 bg-purple-100 dark:bg-purple-900 rounded-lg flex items-center justify-center">
-                    <el-icon :size="20" class="text-purple-500"><ChatDotRound /></el-icon>
+                  <div
+                    class="w-10 h-10 bg-purple-100 dark:bg-purple-900 rounded-lg flex items-center justify-center"
+                  >
+                    <el-icon
+                      :size="20"
+                      class="text-purple-500"
+                      ><ChatDotRound
+                    /></el-icon>
                   </div>
                   <div>
                     <h3 class="font-semibold text-gray-800 dark:text-white">MindMate</h3>
@@ -445,7 +490,7 @@ onMounted(() => {
                   </div>
                 </div>
               </template>
-              
+
               <div class="grid grid-cols-2 gap-4">
                 <div class="stat-item">
                   <p class="text-xs text-gray-500 mb-1">Today</p>
@@ -453,7 +498,10 @@ onMounted(() => {
                     {{ formatNumber(tokenStats.by_service?.mindmate?.today?.total_tokens || 0) }}
                   </p>
                   <p class="text-xs text-gray-400">
-                    {{ (tokenStats.by_service?.mindmate?.today?.request_count || 0).toLocaleString() }} requests
+                    {{
+                      (tokenStats.by_service?.mindmate?.today?.request_count || 0).toLocaleString()
+                    }}
+                    requests
                   </p>
                 </div>
                 <div class="stat-item">
@@ -462,7 +510,10 @@ onMounted(() => {
                     {{ formatNumber(tokenStats.by_service?.mindmate?.week?.total_tokens || 0) }}
                   </p>
                   <p class="text-xs text-gray-400">
-                    {{ (tokenStats.by_service?.mindmate?.week?.request_count || 0).toLocaleString() }} requests
+                    {{
+                      (tokenStats.by_service?.mindmate?.week?.request_count || 0).toLocaleString()
+                    }}
+                    requests
                   </p>
                 </div>
                 <div class="stat-item">
@@ -471,7 +522,10 @@ onMounted(() => {
                     {{ formatNumber(tokenStats.by_service?.mindmate?.month?.total_tokens || 0) }}
                   </p>
                   <p class="text-xs text-gray-400">
-                    {{ (tokenStats.by_service?.mindmate?.month?.request_count || 0).toLocaleString() }} requests
+                    {{
+                      (tokenStats.by_service?.mindmate?.month?.request_count || 0).toLocaleString()
+                    }}
+                    requests
                   </p>
                 </div>
                 <div class="stat-item">
@@ -480,11 +534,14 @@ onMounted(() => {
                     {{ formatNumber(tokenStats.by_service?.mindmate?.total?.total_tokens || 0) }}
                   </p>
                   <p class="text-xs text-gray-400">
-                    {{ (tokenStats.by_service?.mindmate?.total?.request_count || 0).toLocaleString() }} requests
+                    {{
+                      (tokenStats.by_service?.mindmate?.total?.request_count || 0).toLocaleString()
+                    }}
+                    requests
                   </p>
                 </div>
               </div>
-              
+
               <!-- Input/Output breakdown -->
               <div class="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
                 <div class="flex justify-between text-sm">
@@ -508,13 +565,17 @@ onMounted(() => {
             <template #header>
               <div class="flex items-center justify-between">
                 <span class="font-medium">Overall Token Usage Summary</span>
-                <el-button text size="small" @click="loadTokenStats">
+                <el-button
+                  text
+                  size="small"
+                  @click="loadTokenStats"
+                >
                   <el-icon class="mr-1"><Refresh /></el-icon>
                   Refresh
                 </el-button>
               </div>
             </template>
-            
+
             <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
               <div class="text-center">
                 <p class="text-sm text-gray-500 mb-2">Today</p>
@@ -560,10 +621,17 @@ onMounted(() => {
           </el-card>
         </div>
 
-        <div v-else class="text-center py-12 text-gray-400">
+        <div
+          v-else
+          class="text-center py-12 text-gray-400"
+        >
           <el-icon :size="48"><Warning /></el-icon>
           <p class="mt-4">No token statistics available</p>
-          <el-button type="primary" class="mt-4" @click="loadTokenStats">
+          <el-button
+            type="primary"
+            class="mt-4"
+            @click="loadTokenStats"
+          >
             Load Statistics
           </el-button>
         </div>

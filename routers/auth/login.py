@@ -256,11 +256,9 @@ async def login(
                     detail=error_msg
                 )
     
-    # Session management: Invalidate old sessions before creating new one
+    # Session management: Allow multiple concurrent sessions (up to MAX_CONCURRENT_SESSIONS)
     session_manager = get_session_manager()
     client_ip = get_client_ip(http_request) if http_request else "unknown"
-    old_token_hash = session_manager.get_session_token(user.id)
-    session_manager.invalidate_user_sessions(user.id, old_token_hash=old_token_hash, ip_address=client_ip)
     
     # Generate JWT access token
     token = create_access_token(user)
@@ -268,12 +266,14 @@ async def login(
     # Generate refresh token
     refresh_token_value, refresh_token_hash = create_refresh_token(user.id)
     
-    # Store access token session in Redis
-    session_manager.store_session(user.id, token)
+    # Compute device hash for session and token binding
+    device_hash = compute_device_hash(http_request)
+    
+    # Store access token session in Redis (automatically limits concurrent sessions)
+    session_manager.store_session(user.id, token, device_hash=device_hash)
     
     # Store refresh token with device binding
     user_agent = http_request.headers.get("User-Agent", "")
-    device_hash = compute_device_hash(http_request)
     refresh_manager = get_refresh_token_manager()
     refresh_manager.store_refresh_token(
         user_id=user.id,
@@ -379,11 +379,9 @@ async def login_with_sms(
         reset_failed_attempts(db_user, db)
         user = db_user  # Use attached user for rest of function
     
-    # Session management: Invalidate old sessions before creating new one
+    # Session management: Allow multiple concurrent sessions (up to MAX_CONCURRENT_SESSIONS)
     session_manager = get_session_manager()
     client_ip = get_client_ip(http_request) if http_request else "unknown"
-    old_token_hash = session_manager.get_session_token(user.id)
-    session_manager.invalidate_user_sessions(user.id, old_token_hash=old_token_hash, ip_address=client_ip)
     
     # Generate JWT access token
     token = create_access_token(user)
@@ -391,12 +389,14 @@ async def login_with_sms(
     # Generate refresh token
     refresh_token_value, refresh_token_hash = create_refresh_token(user.id)
     
-    # Store access token session in Redis
-    session_manager.store_session(user.id, token)
+    # Compute device hash for session and token binding
+    device_hash = compute_device_hash(http_request)
+    
+    # Store access token session in Redis (automatically limits concurrent sessions)
+    session_manager.store_session(user.id, token, device_hash=device_hash)
     
     # Store refresh token with device binding
     user_agent = http_request.headers.get("User-Agent", "")
-    device_hash = compute_device_hash(http_request)
     refresh_manager = get_refresh_token_manager()
     refresh_manager.store_refresh_token(
         user_id=user.id,
@@ -552,25 +552,24 @@ async def verify_demo(
                     detail=error_msg
                 )
     
-    # Session management: Invalidate old sessions before creating new one
+    # Session management: Allow multiple concurrent sessions (up to MAX_CONCURRENT_SESSIONS)
     session_manager = get_session_manager()
     client_ip = get_client_ip(request)
-    old_token_hash = session_manager.get_session_token(auth_user.id)
-    session_manager.invalidate_user_sessions(auth_user.id, old_token_hash=old_token_hash, ip_address=client_ip)
     
     # Generate JWT access token
     token = create_access_token(auth_user)
     
     # Generate refresh token
-    client_ip = get_client_ip(request)
     refresh_token_value, refresh_token_hash = create_refresh_token(auth_user.id)
     
-    # Store access token session in Redis
-    session_manager.store_session(auth_user.id, token)
+    # Compute device hash for session and token binding
+    device_hash = compute_device_hash(request)
+    
+    # Store access token session in Redis (automatically limits concurrent sessions)
+    session_manager.store_session(auth_user.id, token, device_hash=device_hash)
     
     # Store refresh token with device binding
     user_agent = request.headers.get("User-Agent", "")
-    device_hash = compute_device_hash(request)
     refresh_manager = get_refresh_token_manager()
     refresh_manager.store_refresh_token(
         user_id=auth_user.id,

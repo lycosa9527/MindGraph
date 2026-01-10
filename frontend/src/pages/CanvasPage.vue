@@ -8,7 +8,7 @@
  *
  * The "AI生成图示" button in the toolbar uses useAutoComplete composable
  * to generate content based on the topic extracted from existing nodes.
- * 
+ *
  * Auto-save functionality:
  * - Debounced auto-save on diagram changes (2 second delay)
  * - Auto-updates if diagram is already in library
@@ -16,7 +16,7 @@
  * - Silently skips if slots full (user must manually save via File menu)
  */
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
 import { AIModelSelector, CanvasToolbar, CanvasTopBar, ZoomControls } from '@/components/canvas'
 import DiagramCanvas from '@/components/diagram/DiagramCanvas.vue'
@@ -26,6 +26,7 @@ import type { DiagramType } from '@/types'
 import { authFetch } from '@/utils/api'
 
 const route = useRoute()
+const router = useRouter()
 const diagramStore = useDiagramStore()
 const uiStore = useUIStore()
 const authStore = useAuthStore()
@@ -55,6 +56,34 @@ const diagramTypeMap: Record<string, DiagramType> = {
   概念图: 'concept_map',
 }
 
+// Reverse map: DiagramType to Chinese name (for UI store sync)
+const diagramTypeToChineseMap: Record<DiagramType, string> = {
+  circle_map: '圆圈图',
+  bubble_map: '气泡图',
+  double_bubble_map: '双气泡图',
+  tree_map: '树形图',
+  brace_map: '括号图',
+  flow_map: '流程图',
+  multi_flow_map: '复流程图',
+  bridge_map: '桥型图',
+  mindmap: '思维导图',
+  concept_map: '概念图',
+}
+
+// Valid diagram types for URL validation
+const VALID_DIAGRAM_TYPES: DiagramType[] = [
+  'circle_map',
+  'bubble_map',
+  'double_bubble_map',
+  'tree_map',
+  'brace_map',
+  'flow_map',
+  'multi_flow_map',
+  'bridge_map',
+  'mindmap',
+  'concept_map',
+]
+
 // Get diagram type from UI store (set before navigation)
 const chartType = computed(() => uiStore.selectedChartType)
 
@@ -64,7 +93,7 @@ const diagramType = computed<DiagramType | null>(() => {
 })
 
 // Security constants - must match backend limits
-const MAX_PROMPT_LENGTH = 10000  // Backend limit from GenerateRequest
+const MAX_PROMPT_LENGTH = 10000 // Backend limit from GenerateRequest
 
 /**
  * Generate diagram from a prompt
@@ -77,7 +106,7 @@ async function generateDiagram(prompt: string) {
   const trimmedPrompt = prompt.trim()
   if (trimmedPrompt.length > MAX_PROMPT_LENGTH) {
     notify.error(
-      isZh.value 
+      isZh.value
         ? `输入内容过长（${trimmedPrompt.length}字符）。最大允许${MAX_PROMPT_LENGTH}字符。`
         : `Prompt too long (${trimmedPrompt.length} chars). Maximum is ${MAX_PROMPT_LENGTH} chars.`
     )
@@ -218,10 +247,8 @@ function generateDefaultName(): string {
   const month = String(now.getMonth() + 1).padStart(2, '0')
   const day = String(now.getDate()).padStart(2, '0')
   const dateStamp = `${month}-${day}`
-  
-  return isZh.value 
-    ? `新${chartType.value} ${dateStamp}` 
-    : `New ${chartType.value} ${dateStamp}`
+
+  return isZh.value ? `新${chartType.value} ${dateStamp}` : `New ${chartType.value} ${dateStamp}`
 }
 
 /**
@@ -237,7 +264,7 @@ function getDiagramTitle(): string {
  */
 function getDiagramSpec(): Record<string, unknown> | null {
   if (!diagramStore.data) return null
-  
+
   return {
     type: diagramStore.type,
     nodes: diagramStore.data.nodes,
@@ -254,10 +281,10 @@ function getDiagramSpec(): Record<string, unknown> | null {
 async function performAutoSave(): Promise<void> {
   // Don't auto-save if not authenticated
   if (!authStore.isAuthenticated) return
-  
+
   // Don't auto-save if no diagram data
   if (!diagramStore.type || !diagramStore.data) return
-  
+
   // Don't auto-save while generating
   if (isGenerating.value) return
 
@@ -278,6 +305,15 @@ async function performAutoSave(): Promise<void> {
     // Log result for debugging (can be removed in production)
     if (result.success) {
       console.log(`[CanvasPage] Auto-save ${result.action}: diagram ${result.diagramId}`)
+
+      // Sync URL with diagramId when a new diagram is saved
+      // This ensures the diagram persists on page refresh
+      if (result.action === 'saved' && result.diagramId) {
+        router.replace({
+          path: '/canvas',
+          query: { diagramId: result.diagramId },
+        })
+      }
     } else if (result.action === 'skipped') {
       // Silent skip when slots full - this is expected
       console.log('[CanvasPage] Auto-save skipped: no available slots')
@@ -317,17 +353,14 @@ async function loadDiagramFromLibrary(diagramId: string): Promise<void> {
   if (diagram) {
     // Set active diagram ID
     savedDiagramsStore.setActiveDiagram(diagramId)
-    
+
     // Load the diagram into store
-    const loaded = diagramStore.loadFromSpec(
-      diagram.spec, 
-      diagram.diagram_type as DiagramType
-    )
-    
+    const loaded = diagramStore.loadFromSpec(diagram.spec, diagram.diagram_type as DiagramType)
+
     if (loaded) {
       uiStore.setSelectedChartType(
-        Object.entries(diagramTypeMap).find(([_, v]) => v === diagram.diagram_type)?.[0] || 
-        diagram.diagram_type
+        Object.entries(diagramTypeMap).find(([_, v]) => v === diagram.diagram_type)?.[0] ||
+          diagram.diagram_type
       )
     }
   }
@@ -336,15 +369,30 @@ async function loadDiagramFromLibrary(diagramId: string): Promise<void> {
 onMounted(async () => {
   // Fetch diagrams to know current slot count
   await savedDiagramsStore.fetchDiagrams()
-  
-  // Check if loading a saved diagram from library
+
+  // Priority 1: Load saved diagram by ID from library
   const diagramId = route.query.diagramId
   if (diagramId) {
     await loadDiagramFromLibrary(String(diagramId))
     return // Don't load default template if loading from library
   }
 
-  // Initialize diagram type from store
+  // Priority 2: Load new diagram by type from URL (survives page refresh)
+  const typeFromUrl = route.query.type as DiagramType | undefined
+  if (typeFromUrl && VALID_DIAGRAM_TYPES.includes(typeFromUrl)) {
+    // Sync UI store with type from URL
+    const chineseName = diagramTypeToChineseMap[typeFromUrl]
+    if (chineseName) {
+      uiStore.setSelectedChartType(chineseName)
+    }
+    diagramStore.setDiagramType(typeFromUrl)
+    if (!diagramStore.data) {
+      diagramStore.loadDefaultTemplate(typeFromUrl)
+    }
+    return
+  }
+
+  // Priority 3: Use UI store (backward compat, will be lost on refresh)
   if (diagramType.value) {
     diagramStore.setDiagramType(diagramType.value)
     // Load default template on mount if type is provided and no existing diagram
@@ -363,7 +411,7 @@ onUnmounted(() => {
     clearTimeout(autoSaveTimer)
     autoSaveTimer = null
   }
-  
+
   unsubPrompt()
   // Clean up state when leaving canvas - matches old JS behavior
   diagramStore.reset()

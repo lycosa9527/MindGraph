@@ -1,18 +1,17 @@
 /**
  * API Client with Automatic Token Refresh
- * 
+ *
  * This module provides a centralized API client that:
  * - Automatically refreshes expired access tokens using refresh tokens
  * - Retries failed requests after token refresh
  * - Handles session expiration gracefully
  * - Uses httpOnly cookies for token storage (no localStorage)
- * 
+ *
  * Security:
  * - Tokens stored in httpOnly cookies (not accessible to JavaScript)
  * - Refresh tokens have restricted path (/api/auth)
  * - Device binding prevents token theft across devices
  */
-
 import { useAuthStore } from '@/stores/auth'
 
 const API_BASE = '/api'
@@ -65,17 +64,14 @@ async function refreshAccessToken(): Promise<boolean> {
 
 /**
  * Make an API request with automatic token refresh
- * 
+ *
  * @param endpoint - API endpoint (with or without leading slash)
  * @param options - Fetch options
  * @returns Promise<Response>
  */
-export async function apiRequest(
-  endpoint: string,
-  options: RequestInit = {}
-): Promise<Response> {
+export async function apiRequest(endpoint: string, options: RequestInit = {}): Promise<Response> {
   const url = endpoint.startsWith('/') ? endpoint : `${API_BASE}/${endpoint}`
-  
+
   // Prepare headers
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -186,7 +182,7 @@ export async function apiUpload(
   options: RequestInit = {}
 ): Promise<Response> {
   const url = endpoint.startsWith('/') ? endpoint : `${API_BASE}/${endpoint}`
-  
+
   // Don't set Content-Type for FormData - browser will set it with boundary
   const headers: Record<string, string> = {
     ...(options.headers as Record<string, string>),

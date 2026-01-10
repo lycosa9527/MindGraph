@@ -2,7 +2,10 @@
  * useMindMap - Composable for Mind Map layout and data management
  * Mind maps organize thoughts with a central topic and branching ideas
  *
- * Phase 3: Added backend layout integration for recalculating positions
+ * Hybrid Layout System:
+ * - Backend layout: Python MindMapAgent for initial generation (sophisticated positioning)
+ * - Dagre layout: For local sub-tree recalculation when nodes are added/edited
+ * - Falls back to Dagre for faster local updates without API calls
  */
 import { computed, ref } from 'vue'
 
@@ -19,8 +22,12 @@ import {
   DEFAULT_CENTER_X,
   DEFAULT_CENTER_Y,
   DEFAULT_HORIZONTAL_SPACING,
+  DEFAULT_NODE_HEIGHT,
+  DEFAULT_NODE_WIDTH,
+  DEFAULT_PADDING,
   DEFAULT_VERTICAL_SPACING,
 } from './layoutConfig'
+import { calculateDagreLayout, type DagreEdgeInput, type DagreNodeInput } from './useDagreLayout'
 
 interface MindMapBranch {
   text: string
@@ -38,8 +45,10 @@ interface MindMapOptions {
   centerY?: number
   horizontalSpacing?: number
   verticalSpacing?: number
-  /** Enable backend layout calculation (recommended for better positioning) */
+  /** Enable backend layout calculation (recommended for initial generation) */
   useBackendLayout?: boolean
+  /** Use Dagre for local layout (faster for edits, no API calls) */
+  useDagreLayout?: boolean
 }
 
 export function useMindMap(options: MindMapOptions = {}) {
@@ -49,6 +58,7 @@ export function useMindMap(options: MindMapOptions = {}) {
     horizontalSpacing = DEFAULT_HORIZONTAL_SPACING,
     verticalSpacing = DEFAULT_VERTICAL_SPACING,
     useBackendLayout = false,
+    useDagreLayout = true, // Default to Dagre for local operations
   } = options
 
   const { t } = useLanguage()
@@ -59,7 +69,125 @@ export function useMindMap(options: MindMapOptions = {}) {
   const isRecalculating = ref(false)
   const layoutError = ref<string | null>(null)
 
-  // Recursively layout branches
+  // ===== Dagre-based Layout (Hybrid Approach) =====
+
+  /**
+   * Flatten a branch tree into nodes and edges for Dagre layout
+   * Used for sub-tree layout calculation
+   */
+  function flattenBranchTree(
+    branches: MindMapBranch[],
+    parentId: string,
+    direction: 1 | -1,
+    depth: number,
+    dagreNodes: DagreNodeInput[],
+    dagreEdges: DagreEdgeInput[],
+    nodeInfos: Map<string, { text: string; depth: number; direction: 1 | -1 }>
+  ): void {
+    branches.forEach((branch, index) => {
+      const nodeId = `branch-${direction > 0 ? 'r' : 'l'}-${depth}-${index}`
+
+      dagreNodes.push({ id: nodeId, width: DEFAULT_NODE_WIDTH, height: DEFAULT_NODE_HEIGHT })
+      nodeInfos.set(nodeId, { text: branch.text, depth, direction })
+      dagreEdges.push({ source: parentId, target: nodeId })
+
+      if (branch.children && branch.children.length > 0) {
+        flattenBranchTree(branch.children, nodeId, direction, depth + 1, dagreNodes, dagreEdges, nodeInfos)
+      }
+    })
+  }
+
+  /**
+   * Calculate layout for one side using Dagre
+   * Returns positioned nodes for that side
+   */
+  function layoutSideWithDagre(
+    branches: MindMapBranch[],
+    side: 'left' | 'right',
+    topicX: number,
+    topicY: number
+  ): { nodes: MindGraphNode[]; edges: MindGraphEdge[] } {
+    if (branches.length === 0) return { nodes: [], edges: [] }
+
+    const direction = side === 'right' ? 1 : -1
+    const dagreNodes: DagreNodeInput[] = []
+    const dagreEdges: DagreEdgeInput[] = []
+    const nodeInfos = new Map<string, { text: string; depth: number; direction: 1 | -1 }>()
+
+    // Add virtual root for connecting to topic
+    const virtualRoot = `virtual-${side}`
+    dagreNodes.push({ id: virtualRoot, width: 1, height: 1 })
+
+    // Flatten branch tree
+    flattenBranchTree(branches, virtualRoot, direction, 1, dagreNodes, dagreEdges, nodeInfos)
+
+    // Calculate layout with Dagre
+    // Use LR for right side, RL for left side
+    const layoutDirection = side === 'right' ? 'LR' : 'RL'
+    const layoutResult = calculateDagreLayout(dagreNodes, dagreEdges, {
+      direction: layoutDirection,
+      nodeSeparation: verticalSpacing,
+      rankSeparation: horizontalSpacing,
+      align: 'UL',
+      marginX: DEFAULT_PADDING,
+      marginY: DEFAULT_PADDING,
+    })
+
+    // Get virtual root position to calculate offset
+    const virtualPos = layoutResult.positions.get(virtualRoot)
+    const offsetX = topicX - (virtualPos?.x || 0) + (direction * DEFAULT_NODE_WIDTH / 2)
+    const offsetY = topicY - (virtualPos?.y || 0)
+
+    const nodes: MindGraphNode[] = []
+    const edges: MindGraphEdge[] = []
+
+    // Create nodes with adjusted positions
+    nodeInfos.forEach((info, nodeId) => {
+      const pos = layoutResult.positions.get(nodeId)
+      if (pos) {
+        nodes.push({
+          id: nodeId,
+          type: 'branch',
+          position: { x: pos.x + offsetX - DEFAULT_NODE_WIDTH / 2, y: pos.y + offsetY - DEFAULT_NODE_HEIGHT / 2 },
+          data: {
+            label: info.text,
+            nodeType: 'branch',
+            diagramType: 'mindmap',
+            isDraggable: true,
+            isSelectable: true,
+          },
+          draggable: true,
+        })
+      }
+    })
+
+    // Create edges (skip virtual root edges, connect to topic instead)
+    dagreEdges.forEach((edge) => {
+      if (edge.source === virtualRoot) {
+        edges.push({
+          id: `edge-topic-${edge.target}`,
+          source: 'topic',
+          target: edge.target,
+          type: 'curved',
+          data: { edgeType: 'curved' as const },
+        })
+      } else {
+        edges.push({
+          id: `edge-${edge.source}-${edge.target}`,
+          source: edge.source,
+          target: edge.target,
+          type: 'curved',
+          data: { edgeType: 'curved' as const },
+        })
+      }
+    })
+
+    return { nodes, edges }
+  }
+
+  // ===== Legacy recursive layout (fallback) =====
+
+  // Recursively layout branches (original algorithm, kept as fallback)
   function layoutBranches(
     branches: MindMapBranch[],
     startX: number,
@@ -114,8 +242,59 @@ export function useMindMap(options: MindMapOptions = {}) {
     return results
   }
 
+  // ===== Dagre-based layout computation =====
+
+  const dagreNodes = computed<MindGraphNode[]>(() => {
+    if (!data.value) return []
+
+    const result: MindGraphNode[] = []
+
+    // Central topic node
+    result.push({
+      id: 'topic',
+      type: 'topic',
+      position: { x: centerX - DEFAULT_NODE_WIDTH / 2, y: centerY - DEFAULT_NODE_HEIGHT / 2 },
+      data: {
+        label: data.value.topic,
+        nodeType: 'topic',
+        diagramType: 'mindmap',
+        isDraggable: false,
+        isSelectable: true,
+      },
+      draggable: false,
+    })
+
+    // Layout left side with Dagre
+    const leftLayout = layoutSideWithDagre(data.value.leftBranches, 'left', centerX, centerY)
+    result.push(...leftLayout.nodes)
+
+    // Layout right side with Dagre
+    const rightLayout = layoutSideWithDagre(data.value.rightBranches, 'right', centerX, centerY)
+    result.push(...rightLayout.nodes)
+
+    return result
+  })
+
+  const dagreEdges = computed<MindGraphEdge[]>(() => {
+    if (!data.value) return []
+
+    const result: MindGraphEdge[] = []
+
+    // Layout left side with Dagre
+    const leftLayout = layoutSideWithDagre(data.value.leftBranches, 'left', centerX, centerY)
+    result.push(...leftLayout.edges)
+
+    // Layout right side with Dagre
+    const rightLayout = layoutSideWithDagre(data.value.rightBranches, 'right', centerX, centerY)
+    result.push(...rightLayout.edges)
+
+    return result
+  })
+
+  // ===== Legacy layout computation (fallback) =====
+
   // Convert mind map data to Vue Flow nodes
-  const nodes = computed<MindGraphNode[]>(() => {
+  const legacyNodes = computed<MindGraphNode[]>(() => {
     if (!data.value) return []
 
     const result: MindGraphNode[] = []
@@ -147,7 +326,7 @@ export function useMindMap(options: MindMapOptions = {}) {
   })
 
   // Generate edges
-  const edges = computed<MindGraphEdge[]>(() => {
+  const legacyEdges = computed<MindGraphEdge[]>(() => {
     if (!data.value) return []
 
     const result: MindGraphEdge[] = []
@@ -181,6 +360,15 @@ export function useMindMap(options: MindMapOptions = {}) {
     rightResults.forEach((r) => result.push(...r.edges))
 
     return result
+  })
+
+  // Select which layout to use based on options
+  const nodes = computed<MindGraphNode[]>(() => {
+    return useDagreLayout ? dagreNodes.value : legacyNodes.value
+  })
+
+  const edges = computed<MindGraphEdge[]>(() => {
+    return useDagreLayout ? dagreEdges.value : legacyEdges.value
   })
 
   // Set mind map data
@@ -362,6 +550,18 @@ export function useMindMap(options: MindMapOptions = {}) {
     }
   }
 
+  /**
+   * Recalculate layout locally using Dagre (no API call)
+   * Faster than backend recalculation for real-time editing
+   */
+  function recalculateLocalLayout(): void {
+    // Dagre layout is reactive - just trigger a re-computation
+    // by touching the data ref
+    if (data.value) {
+      data.value = { ...data.value }
+    }
+  }
+
   return {
     data,
     nodes: useBackendLayout ? nodesWithBackendLayout : nodes,
@@ -379,5 +579,9 @@ export function useMindMap(options: MindMapOptions = {}) {
     recalculateLayout,
     clearBackendLayout,
     setDataWithLayout,
+
+    // Dagre layout (hybrid approach)
+    recalculateLocalLayout,
+    useDagreLayout,
   }
 }

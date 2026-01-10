@@ -3,6 +3,7 @@ import pluginVue from 'eslint-plugin-vue'
 import pluginPrettier from 'eslint-plugin-prettier/recommended'
 import tseslint from 'typescript-eslint'
 import vueParser from 'vue-eslint-parser'
+import globals from 'globals'
 
 export default tseslint.config(
   // Global ignores
@@ -12,6 +13,16 @@ export default tseslint.config(
 
   // Base JS recommended rules
   js.configs.recommended,
+
+  // Browser globals
+  {
+    languageOptions: {
+      globals: {
+        ...globals.browser,
+        ...globals.es2021,
+      },
+    },
+  },
 
   // TypeScript recommended rules
   ...tseslint.configs.recommended,

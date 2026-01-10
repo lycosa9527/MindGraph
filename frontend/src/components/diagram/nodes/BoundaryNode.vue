@@ -21,13 +21,17 @@ const defaultStyle = computed(() => getNodeStyle('boundary'))
 // Check both data.style and originalNode.style for width/height
 const width = computed(() => {
   const directStyle = props.data.style as { width?: number; height?: number } | undefined
-  const originalStyle = props.data.originalNode?.style as { width?: number; height?: number } | undefined
+  const originalStyle = props.data.originalNode?.style as
+    | { width?: number; height?: number }
+    | undefined
   return directStyle?.width || originalStyle?.width || 400
 })
 
 const height = computed(() => {
   const directStyle = props.data.style as { width?: number; height?: number } | undefined
-  const originalStyle = props.data.originalNode?.style as { width?: number; height?: number } | undefined
+  const originalStyle = props.data.originalNode?.style as
+    | { width?: number; height?: number }
+    | undefined
   return directStyle?.height || originalStyle?.height || 400
 })
 

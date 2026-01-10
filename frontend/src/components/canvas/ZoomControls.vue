@@ -6,6 +6,7 @@
 import { ref } from 'vue'
 
 import { ElButton, ElTooltip } from 'element-plus'
+
 import { Hand, Maximize2, Minus, Play, Plus } from 'lucide-vue-next'
 
 import { useLanguage } from '@/composables'
@@ -59,7 +60,10 @@ defineExpose({
       class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-1.5 flex items-center gap-0.5"
     >
       <!-- Hand tool -->
-      <ElTooltip :content="isZh ? '抓手工具' : 'Hand Tool'" placement="top">
+      <ElTooltip
+        :content="isZh ? '抓手工具' : 'Hand Tool'"
+        placement="top"
+      >
         <ElButton
           text
           size="small"
@@ -73,7 +77,10 @@ defineExpose({
       <div class="divider" />
 
       <!-- Zoom out -->
-      <ElTooltip :content="isZh ? '缩小' : 'Zoom Out'" placement="top">
+      <ElTooltip
+        :content="isZh ? '缩小' : 'Zoom Out'"
+        placement="top"
+      >
         <ElButton
           text
           size="small"
@@ -85,12 +92,13 @@ defineExpose({
       </ElTooltip>
 
       <!-- Zoom level display -->
-      <div class="zoom-level">
-        {{ zoomLevel }}%
-      </div>
+      <div class="zoom-level">{{ zoomLevel }}%</div>
 
       <!-- Zoom in -->
-      <ElTooltip :content="isZh ? '放大' : 'Zoom In'" placement="top">
+      <ElTooltip
+        :content="isZh ? '放大' : 'Zoom In'"
+        placement="top"
+      >
         <ElButton
           text
           size="small"
@@ -104,7 +112,10 @@ defineExpose({
       <div class="divider" />
 
       <!-- Fit to screen -->
-      <ElTooltip :content="isZh ? '适应画布' : 'Fit to Screen'" placement="top">
+      <ElTooltip
+        :content="isZh ? '适应画布' : 'Fit to Screen'"
+        placement="top"
+      >
         <ElButton
           text
           size="small"
@@ -118,7 +129,10 @@ defineExpose({
       <div class="divider" />
 
       <!-- Presentation mode -->
-      <ElTooltip :content="isZh ? '演示模式' : 'Presentation'" placement="top">
+      <ElTooltip
+        :content="isZh ? '演示模式' : 'Presentation'"
+        placement="top"
+      >
         <ElButton
           text
           size="small"

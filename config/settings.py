@@ -676,6 +676,11 @@ class Config:
         """Enable Tab Mode (autocomplete suggestions and node expansion)."""
         return self._get_cached_value('FEATURE_TAB_MODE', 'False').lower() == 'true'
     
+    @property
+    def FEATURE_IME_AUTOCOMPLETE(self):
+        """Enable IME-style autocomplete for node editing (experimental)."""
+        return self._get_cached_value('FEATURE_IME_AUTOCOMPLETE', 'False').lower() == 'true'
+    
     # ============================================================================
     # AI ASSISTANT BRANDING
     # ============================================================================

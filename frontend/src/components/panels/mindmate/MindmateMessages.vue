@@ -2,13 +2,14 @@
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import { ElAvatar, ElButton, ElIcon, ElLoading, ElScrollbar } from 'element-plus'
+import { useResizeObserver } from '@vueuse/core'
+
 import { Bottom } from '@element-plus/icons-vue'
 
+import mindmateAvatarMd from '@/assets/mindmate-avatar-md.png'
 import { useLanguage } from '@/composables'
 import type { MindMateMessage } from '@/composables/useMindMate'
 import { useUIStore } from '@/stores'
-
-import mindmateAvatarMd from '@/assets/mindmate-avatar-md.png'
 
 import MessageBubble from './MessageBubble.vue'
 import MindmateWelcome from './MindmateWelcome.vue'
@@ -41,20 +42,27 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'edit', message: MindMateMessage): void
-  (e: 'cancel-edit'): void
-  (e: 'save-edit', content: string): void
+  (e: 'cancelEdit'): void
+  (e: 'saveEdit', content: string): void
   (e: 'copy', content: string): void
   (e: 'regenerate', messageId: string): void
   (e: 'feedback', messageId: string, rating: 'like' | 'dislike' | null): void
   (e: 'share'): void
-  (e: 'message-hover', messageId: string | null): void
-  (e: 'scroll-to-bottom', force?: boolean): void
+  (e: 'messageHover', messageId: string | null): void
+  (e: 'scrollToBottom', force?: boolean): void
 }>()
 
 const scrollbarRef = ref<InstanceType<typeof ElScrollbar> | null>(null)
 const messagesWrapperRef = ref<HTMLElement | null>(null)
 const userAtBottom = ref(true) // Track if user is at/near bottom for smart auto-scroll
-const resizeObserver = ref<ResizeObserver | null>(null)
+
+// Use VueUse's useResizeObserver for automatic cleanup
+// Auto-scroll when content height changes (e.g., images load) if user is at bottom
+useResizeObserver(messagesWrapperRef, () => {
+  if (userAtBottom.value) {
+    scrollToBottom()
+  }
+})
 
 // Show scroll-to-bottom button when user is scrolled up and has messages
 const showScrollButton = computed(() => {
@@ -95,10 +103,11 @@ async function scrollToBottom(force = false) {
 // Force scroll to bottom (for button click)
 function forceScrollToBottom() {
   scrollToBottom(true)
-  emit('scroll-to-bottom', true)
+  emit('scrollToBottom', true)
 }
 
-// Set up scroll listener and ResizeObserver for smart auto-scroll
+// Set up scroll listener for smart auto-scroll
+// Note: ResizeObserver is handled by VueUse's useResizeObserver above (auto-cleanup)
 onMounted(() => {
   nextTick(() => {
     if (scrollbarRef.value) {
@@ -107,32 +116,16 @@ onMounted(() => {
         scrollContainer.addEventListener('scroll', handleScroll, { passive: true })
       }
     }
-
-    // Set up ResizeObserver to detect content height changes (e.g., when images load)
-    if (messagesWrapperRef.value) {
-      resizeObserver.value = new ResizeObserver(() => {
-        // Auto-scroll when content height changes (images loaded) if user is at bottom
-        if (userAtBottom.value) {
-          scrollToBottom()
-        }
-      })
-      resizeObserver.value.observe(messagesWrapperRef.value)
-    }
   })
 })
 
-// Clean up scroll listener and ResizeObserver
+// Clean up scroll listener (VueUse's useResizeObserver auto-cleans up)
 onUnmounted(() => {
   if (scrollbarRef.value) {
     const scrollContainer = scrollbarRef.value.$el.querySelector('.el-scrollbar__wrap')
     if (scrollContainer) {
       scrollContainer.removeEventListener('scroll', handleScroll)
     }
-  }
-
-  if (resizeObserver.value) {
-    resizeObserver.value.disconnect()
-    resizeObserver.value = null
   }
 })
 
@@ -141,8 +134,7 @@ watch(
   () => props.messages.length,
   async (newLen, oldLen) => {
     // Force scroll when user sends a message (new message added)
-    const isNewUserMessage =
-      newLen > oldLen && props.messages[newLen - 1]?.role === 'user'
+    const isNewUserMessage = newLen > oldLen && props.messages[newLen - 1]?.role === 'user'
     await scrollToBottom(isNewUserMessage)
   }
 )
@@ -193,14 +185,17 @@ watch(
           :has-previous-user-message="hasPreviousUserMessage?.(message.id) ?? false"
           :is-loading="isLoading"
           @edit="emit('edit', $event)"
-          @cancel-edit="emit('cancel-edit')"
-          @save-edit="emit('save-edit', $event)"
+          @cancel-edit="emit('cancelEdit')"
+          @save-edit="emit('saveEdit', $event)"
           @copy="emit('copy', $event)"
           @regenerate="emit('regenerate', $event)"
-          @feedback="(messageId: string, rating: 'like' | 'dislike' | null) => emit('feedback', messageId, rating)"
+          @feedback="
+            (messageId: string, rating: 'like' | 'dislike' | null) =>
+              emit('feedback', messageId, rating)
+          "
           @share="emit('share')"
-          @mouseenter="emit('message-hover', message.id)"
-          @mouseleave="emit('message-hover', null)"
+          @mouseenter="emit('messageHover', message.id)"
+          @mouseleave="emit('messageHover', null)"
         />
 
         <!-- Loading indicator (before first response) -->

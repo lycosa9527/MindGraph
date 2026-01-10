@@ -71,18 +71,15 @@ async def tab_suggestions(
         user_id = current_user.id if current_user and hasattr(current_user, 'id') else None
         organization_id = getattr(current_user, 'organization_id', None) if current_user and hasattr(current_user, 'id') else None
         
-        # Determine model (default to qwen-plus for generation)
-        model = 'qwen-plus'
+        # Determine model (default to doubao for generation)
+        model = 'doubao'
         if req.llm:
             if hasattr(req.llm, 'value'):
                 model_str = req.llm.value
             else:
                 model_str = str(req.llm)
-            # Map 'qwen' to 'qwen-plus' for generation tasks
-            if model_str == 'qwen':
-                model = 'qwen-plus'
-            else:
-                model = model_str
+            # Use specified model (doubao is default)
+            model = model_str
         
         # Create agent
         agent = TabAgent(model=model)
@@ -96,7 +93,8 @@ async def tab_suggestions(
             existing_nodes=req.existing_nodes,
             language=req.language.value if hasattr(req.language, 'value') else str(req.language),
             user_id=user_id,
-            organization_id=organization_id
+            organization_id=organization_id,
+            page_offset=req.page_offset
         )
         
         # Format suggestions
@@ -210,18 +208,15 @@ async def tab_expand(
         user_id = current_user.id if current_user and hasattr(current_user, 'id') else None
         organization_id = getattr(current_user, 'organization_id', None) if current_user and hasattr(current_user, 'id') else None
         
-        # Determine model (default to qwen-plus for generation)
-        model = 'qwen-plus'
+        # Determine model (default to doubao for generation)
+        model = 'doubao'
         if req.llm:
             if hasattr(req.llm, 'value'):
                 model_str = req.llm.value
             else:
                 model_str = str(req.llm)
-            # Map 'qwen' to 'qwen-plus' for generation tasks
-            if model_str == 'qwen':
-                model = 'qwen-plus'
-            else:
-                model = model_str
+            # Use specified model (doubao is default)
+            model = model_str
         
         # Create agent
         agent = TabAgent(model=model)

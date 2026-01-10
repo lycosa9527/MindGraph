@@ -101,8 +101,12 @@ async function handleLogin() {
       const userName = result.user?.username || ''
       notify.success(
         isZh.value
-          ? (userName ? `${userName}，登录成功` : '登录成功')
-          : (userName ? `Welcome, ${userName}` : 'Login successful')
+          ? userName
+            ? `${userName}，登录成功`
+            : '登录成功'
+          : userName
+            ? `Welcome, ${userName}`
+            : 'Login successful'
       )
       // Redirect to intended page or main page
       const redirect = (route.query.redirect as string) || '/'

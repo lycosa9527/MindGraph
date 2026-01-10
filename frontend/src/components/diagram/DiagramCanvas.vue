@@ -17,12 +17,15 @@ import { MiniMap } from '@vue-flow/minimap'
 
 import { eventBus } from '@/composables/useEventBus'
 import { useTheme } from '@/composables/useTheme'
+import { ANIMATION, FIT_PADDING, GRID, PANEL, ZOOM } from '@/config/uiConfig'
 import { useDiagramStore, usePanelsStore } from '@/stores'
 import type { MindGraphNode } from '@/types'
 
+import BraceOverlay from './BraceOverlay.vue'
 import BraceEdge from './edges/BraceEdge.vue'
 // Import custom edge components
 import CurvedEdge from './edges/CurvedEdge.vue'
+import HorizontalStepEdge from './edges/HorizontalStepEdge.vue'
 import RadialEdge from './edges/RadialEdge.vue'
 import StepEdge from './edges/StepEdge.vue'
 import StraightEdge from './edges/StraightEdge.vue'
@@ -33,14 +36,10 @@ import BranchNode from './nodes/BranchNode.vue'
 import BubbleNode from './nodes/BubbleNode.vue'
 import CircleNode from './nodes/CircleNode.vue'
 import FlowNode from './nodes/FlowNode.vue'
+import FlowSubstepNode from './nodes/FlowSubstepNode.vue'
 import LabelNode from './nodes/LabelNode.vue'
 // Import custom node components
 import TopicNode from './nodes/TopicNode.vue'
-
-// Panel width constants (matching old JS view-manager.js)
-const PROPERTY_PANEL_WIDTH = 320
-const MINDMATE_PANEL_WIDTH = 384 // w-96 = 24rem = 384px
-const NODE_PALETTE_WIDTH = 288 // w-72 = 18rem = 288px
 
 // Props
 interface Props {
@@ -100,6 +99,7 @@ const nodeTypes = {
   bubble: markRaw(BubbleNode),
   branch: markRaw(BranchNode),
   flow: markRaw(FlowNode),
+  flowSubstep: markRaw(FlowSubstepNode), // Substep nodes for flow maps
   brace: markRaw(BraceNode),
   boundary: markRaw(BoundaryNode),
   label: markRaw(LabelNode),
@@ -115,6 +115,7 @@ const edgeTypes = {
   curved: markRaw(CurvedEdge),
   straight: markRaw(StraightEdge),
   step: markRaw(StepEdge), // T/L shaped orthogonal connectors for tree maps
+  horizontalStep: markRaw(HorizontalStepEdge), // Horizontal-first T/L for flow map substeps
   tree: markRaw(TreeEdge), // Straight vertical lines for tree maps (no arrowhead)
   radial: markRaw(RadialEdge), // Center-to-center for radial layouts (bubble maps)
   brace: markRaw(BraceEdge),
@@ -123,7 +124,14 @@ const edgeTypes = {
 
 // Computed nodes and edges from store
 const nodes = computed(() => diagramStore.vueFlowNodes)
-const edges = computed(() => diagramStore.vueFlowEdges)
+// For brace maps, hide individual edges since BraceOverlay draws the braces
+const edges = computed(() => {
+  if (diagramStore.type === 'brace_map') {
+    // Hide edges for brace maps - the BraceOverlay component draws them
+    return []
+  }
+  return diagramStore.vueFlowEdges
+})
 
 // Handle node changes (position updates, etc.)
 onNodesChange((changes) => {
@@ -160,6 +168,12 @@ function handlePaneClick() {
   emit('paneClick')
 }
 
+// Handle nodes initialized - flow maps now use fixed dimensions, no recalculation needed
+function handleNodesInitialized() {
+  // Flow maps use fixed node dimensions, layout is deterministic from specLoader
+  // No runtime measurement or recalculation required
+}
+
 // ============================================================================
 // Two-View Zoom System
 // ============================================================================
@@ -170,9 +184,9 @@ function handlePaneClick() {
 function getRightPanelWidth(): number {
   let width = 0
   if (panelsStore.propertyPanel.isOpen) {
-    width = PROPERTY_PANEL_WIDTH
+    width = PANEL.PROPERTY_WIDTH
   } else if (panelsStore.mindmatePanel.isOpen) {
-    width = MINDMATE_PANEL_WIDTH
+    width = PANEL.MINDMATE_WIDTH
   }
   return width
 }
@@ -182,7 +196,7 @@ function getRightPanelWidth(): number {
  */
 function getLeftPanelWidth(): number {
   if (panelsStore.nodePalettePanel.isOpen) {
-    return NODE_PALETTE_WIDTH
+    return PANEL.NODE_PALETTE_WIDTH
   }
   return 0
 }
@@ -205,8 +219,8 @@ function fitToFullCanvas(animate = true): void {
 
   // Use Vue Flow's fitView with standard padding
   fitView({
-    padding: 0.15,
-    duration: animate ? 300 : 0,
+    padding: FIT_PADDING.STANDARD,
+    duration: animate ? ANIMATION.DURATION_NORMAL : 0,
   })
 
   eventBus.emit('view:fit_completed', {
@@ -238,7 +252,7 @@ function fitWithPanel(animate = true): void {
   const container = canvasContainer.value
   if (!container) {
     // Fallback to standard fitView if container not available
-    fitView({ padding: 0.15, duration: animate ? 300 : 0 })
+    fitView({ padding: FIT_PADDING.STANDARD, duration: animate ? ANIMATION.DURATION_NORMAL : 0 })
     return
   }
 
@@ -251,7 +265,7 @@ function fitWithPanel(animate = true): void {
 
   // Calculate padding ratio based on panel width
   // More panel = more padding to shift diagram away from panel
-  const basePadding = 0.15
+  const basePadding = FIT_PADDING.STANDARD
   const panelPaddingRatio = totalPanelWidth / containerWidth
   const adjustedPadding = basePadding + panelPaddingRatio * 0.3
 
@@ -259,12 +273,12 @@ function fitWithPanel(animate = true): void {
   // The diagram will be slightly smaller to leave visual space for the panel
   fitView({
     padding: adjustedPadding,
-    duration: animate ? 300 : 0,
+    duration: animate ? ANIMATION.DURATION_NORMAL : 0,
   })
 
   // After fitView, adjust the viewport to account for panel offset
   // This shifts the diagram left/right to center it in the available space
-  const delay = animate ? 350 : 50
+  const delay = animate ? ANIMATION.FIT_VIEWPORT_DELAY : ANIMATION.PANEL_DELAY
   setTimeout(() => {
     const currentViewport = getViewport()
 
@@ -281,7 +295,7 @@ function fitWithPanel(animate = true): void {
         y: currentViewport.y,
         zoom: currentViewport.zoom,
       },
-      { duration: animate ? 150 : 0 }
+      { duration: animate ? ANIMATION.DURATION_FAST : 0 }
     )
   }, delay)
 
@@ -309,7 +323,7 @@ function fitDiagram(animate = true): void {
  */
 function fitForExport(): void {
   fitView({
-    padding: 0.05,
+    padding: FIT_PADDING.EXPORT,
     duration: 0,
   })
 }
@@ -333,7 +347,7 @@ watch(
         } else {
           fitDiagram(true)
         }
-      }, 100)
+      }, ANIMATION.FIT_DELAY)
     }
   }
 )
@@ -345,7 +359,7 @@ watch(
     // Only re-fit if we have nodes and panel state actually changed
     if (nodes.value.length > 0 && isOpen !== wasOpen) {
       // Delay to allow panel animation to start
-      setTimeout(() => fitDiagram(true), 50)
+      setTimeout(() => fitDiagram(true), ANIMATION.PANEL_DELAY)
     }
   }
 )
@@ -360,7 +374,7 @@ watch(
   () => {
     // Re-fit when any panel opens/closes
     if (nodes.value.length > 0) {
-      setTimeout(() => fitDiagram(true), 50)
+      setTimeout(() => fitDiagram(true), ANIMATION.PANEL_DELAY)
     }
   }
 )
@@ -406,6 +420,7 @@ onMounted(() => {
       // Update the node text in the diagram store
       diagramStore.pushHistory('Edit node text')
       diagramStore.updateNode(nodeId, { text })
+      // Flow maps use fixed dimensions with text truncation, no layout recalculation needed
     })
   )
 })
@@ -424,6 +439,22 @@ defineExpose({
   fitForExport,
   isFittedForPanel,
 })
+
+// ============================================================================
+// Template Constants (expose config values for template use)
+// ============================================================================
+
+const zoomConfig = {
+  min: ZOOM.MIN,
+  max: ZOOM.MAX,
+  default: ZOOM.DEFAULT,
+}
+
+const gridConfig = {
+  snapSize: [...GRID.SNAP_SIZE] as [number, number],
+  backgroundGap: GRID.BACKGROUND_GAP,
+  backgroundDotSize: GRID.BACKGROUND_DOT_SIZE,
+}
 </script>
 
 <template>
@@ -436,11 +467,11 @@ defineExpose({
       :edges="edges"
       :node-types="nodeTypes"
       :edge-types="edgeTypes"
-      :default-viewport="{ x: 0, y: 0, zoom: 1 }"
-      :min-zoom="0.1"
-      :max-zoom="4"
+      :default-viewport="{ x: 0, y: 0, zoom: zoomConfig.default }"
+      :min-zoom="zoomConfig.min"
+      :max-zoom="zoomConfig.max"
       :snap-to-grid="true"
-      :snap-grid="[10, 10]"
+      :snap-grid="gridConfig.snapSize"
       :nodes-draggable="true"
       :nodes-connectable="false"
       :elements-selectable="true"
@@ -451,12 +482,13 @@ defineExpose({
       class="bg-gray-50 dark:bg-gray-900"
       :style="{ backgroundColor: backgroundColor }"
       @pane-click="handlePaneClick"
+      @nodes-initialized="handleNodesInitialized"
     >
       <!-- Background pattern -->
       <Background
         v-if="showBackground"
-        :gap="20"
-        :size="1"
+        :gap="gridConfig.backgroundGap"
+        :size="gridConfig.backgroundDotSize"
         pattern-color="#e5e7eb"
       />
 
@@ -476,6 +508,9 @@ defineExpose({
         :pannable="true"
         :zoomable="true"
       />
+
+      <!-- Brace overlay for brace maps (draws unified curly braces) -->
+      <BraceOverlay />
     </VueFlow>
   </div>
 </template>

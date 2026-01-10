@@ -75,16 +75,16 @@ const startAutoScroll = () => {
   scrollInterval = setInterval(() => {
     if (!isHovering.value && containerRef.value) {
       const container = containerRef.value
-      
+
       // Calculate scroll amount (width of approximately one bubble)
       const scrollAmount = 200
-      
+
       // Scroll right
       container.scrollBy({
         left: scrollAmount,
         behavior: 'smooth',
       })
-      
+
       // Reset to beginning when near end
       setTimeout(() => {
         if (container.scrollLeft + container.clientWidth >= container.scrollWidth - 100) {

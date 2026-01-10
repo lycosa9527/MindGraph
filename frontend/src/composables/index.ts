@@ -12,7 +12,8 @@ export { useNotifications } from './useNotifications'
 export { useLanguage } from './useLanguage'
 
 // Keyboard and input
-export { useKeyboard, useEditorShortcuts } from './useKeyboard'
+export { useKeyboard, useEditorShortcuts, useVueFlowKeyboard } from './useKeyboard'
+export type { KeyboardShortcut, UseVueFlowKeyboardOptions } from './useKeyboard'
 export { useEditorKeyboard, createDefaultEditorHandlers } from './useEditorKeyboard'
 
 // Canvas and interaction
@@ -31,6 +32,16 @@ export type { VersionCheckOptions } from './useVersionCheck'
 export { useInlineEdit } from './useInlineEdit'
 export type { InlineEditOptions } from './useInlineEdit'
 export { useAutoComplete, isPlaceholderText } from './useAutoComplete'
+export { useIMEAutocomplete } from './useIMEAutocomplete'
+export type { IMESuggestion, IMEAutocompleteOptions, IMEAutocompleteState } from './useIMEAutocomplete'
+
+// VueFlow + VueUse integration
+export { useCanvasState } from './useCanvasState'
+export type { UseCanvasStateOptions, CanvasState } from './useCanvasState'
+export { useDiagramPersistence } from './useDiagramPersistence'
+export type { UseDiagramPersistenceOptions, DiagramPersistenceState } from './useDiagramPersistence'
+export { useAsyncFetch, useAuthFetch, useAsyncAction, useAsyncPost } from './useAsyncApi'
+export type { AsyncFetchOptions, AsyncActionOptions } from './useAsyncApi'
 
 // Diagram-specific composables
 export * from './diagrams'

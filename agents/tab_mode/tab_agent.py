@@ -3,7 +3,7 @@ Tab Mode Agent
 ==============
 
 Agent for generating tab completion suggestions and node expansions.
-Uses LangChain with Qwen-plus for structured, tool-based context extraction.
+Uses LangChain with Doubao for structured, tool-based context extraction.
 
 @author MindGraph Team
 
@@ -68,12 +68,12 @@ class TabAgent(BaseAgent):
     - Spec structure parsing
     """
     
-    def __init__(self, model='qwen-plus'):
+    def __init__(self, model='doubao'):
         """
         Initialize Tab Agent with LangChain.
         
         Args:
-            model: LLM model to use. Default 'qwen-plus' for generation tasks.
+            model: LLM model to use. Default 'doubao' for generation tasks.
         """
         super().__init__(model=model)
         self.diagram_type = "tab_mode"
@@ -349,10 +349,16 @@ class TabAgent(BaseAgent):
         existing_nodes: Optional[List[str]] = None,
         language: str = "en",
         user_id: Optional[int] = None,
-        organization_id: Optional[int] = None
+        organization_id: Optional[int] = None,
+        page_offset: int = 0
     ) -> List[str]:
         """
         Generate completion suggestions using LangChain with structured outputs.
+        
+        Args:
+            page_offset: Page number for pagination (0 = first page). When > 0,
+                         the prompt instructs LLM to provide different suggestions
+                         than those in existing_nodes (which should include previous pages).
         """
         try:
             logger.info("TabAgent: Generating suggestions", {
@@ -365,7 +371,8 @@ class TabAgent(BaseAgent):
                 'existing_nodes_preview': existing_nodes[:3] if existing_nodes else [],
                 'language': language,
                 'user_id': user_id,
-                'organization_id': organization_id
+                'organization_id': organization_id,
+                'page_offset': page_offset
             })
             
             # Get prompt template
@@ -398,7 +405,8 @@ class TabAgent(BaseAgent):
                 main_topics,
                 partial_input,
                 node_category,
-                existing_nodes
+                existing_nodes,
+                page_offset
             )
             
             logger.debug("TabAgent: Prompt formatted", {
@@ -408,7 +416,7 @@ class TabAgent(BaseAgent):
             
             # Use llm_service directly (maintains middleware benefits)
             logger.info("TabAgent: Calling LLM service", {
-                'model': 'qwen-plus',
+                'model': 'doubao',
                 'max_tokens': 100,
                 'temperature': 0.3,
                 'timeout': 15.0,
@@ -421,7 +429,7 @@ class TabAgent(BaseAgent):
             
             response = await llm_service.chat(
                 prompt=partial_input or "Provide suggestions",
-                model='qwen-plus',
+                model='doubao',
                 system_message=system_prompt,
                 max_tokens=100,
                 temperature=0.3,
@@ -558,7 +566,7 @@ class TabAgent(BaseAgent):
             
             # Use llm_service directly (maintains middleware)
             logger.info("TabAgent: Calling LLM service for expansion", {
-                'model': 'qwen-plus',
+                'model': 'doubao',
                 'max_tokens': 150,
                 'temperature': 0.5,
                 'timeout': 20.0,
@@ -571,7 +579,7 @@ class TabAgent(BaseAgent):
             
             response = await llm_service.chat(
                 prompt=f"Generate {num_children} child nodes for: {node_text}",
-                model='qwen-plus',
+                model='doubao',
                 system_message=system_prompt,
                 max_tokens=150,
                 temperature=0.5,
@@ -649,27 +657,34 @@ class TabAgent(BaseAgent):
         main_topics: List[str],
         partial_input: str,
         node_category: Optional[str],
-        existing_nodes: Optional[List[str]]
+        existing_nodes: Optional[List[str]],
+        page_offset: int = 0
     ) -> str:
-        """Format autocomplete prompt based on diagram type."""
+        """Format autocomplete prompt based on diagram type.
+        
+        Args:
+            page_offset: When > 0, adds instruction to provide different suggestions.
+        """
         logger.debug("TabAgent: Formatting autocomplete prompt", {
             'diagram_type': diagram_type,
             'node_category': node_category,
             'main_topics_count': len(main_topics),
-            'has_existing_nodes': bool(existing_nodes)
+            'has_existing_nodes': bool(existing_nodes),
+            'page_offset': page_offset
         })
         
+        # Base prompt formatting
         if diagram_type == 'mindmap' and node_category == 'children':
             branch_label = main_topics[1] if len(main_topics) > 1 and main_topics[1] else ""
             main_topic = main_topics[0] if len(main_topics) > 0 and main_topics[0] else ""
-            return prompt_template.format(
+            formatted = prompt_template.format(
                 main_topic=main_topic,
                 branch_label=branch_label,
                 partial_input=partial_input or "",
                 existing_children=", ".join(existing_nodes) if existing_nodes else "None"
             )
         elif diagram_type == 'double_bubble_map':
-            return prompt_template.format(
+            formatted = prompt_template.format(
                 left_topic=main_topics[0] if len(main_topics) > 0 and main_topics[0] else "Topic 1",
                 right_topic=main_topics[1] if len(main_topics) > 1 and main_topics[1] else "Topic 2",
                 main_topic=main_topics[0] if len(main_topics) > 0 and main_topics[0] else "",
@@ -678,12 +693,23 @@ class TabAgent(BaseAgent):
                 existing_nodes=", ".join(existing_nodes) if existing_nodes else "None"
             )
         else:
-            return prompt_template.format(
+            formatted = prompt_template.format(
                 main_topic=main_topics[0] if len(main_topics) > 0 and main_topics[0] else "Main Topic",
                 node_category=node_category or "general",
                 partial_input=partial_input or "",
                 existing_nodes=", ".join(existing_nodes) if existing_nodes else "None"
             )
+        
+        # Add pagination instruction if not first page
+        if page_offset > 0:
+            pagination_instruction = (
+                "\n\nIMPORTANT: This is page {} of suggestions. "
+                "Provide DIFFERENT suggestions than those already listed in 'existing_nodes'. "
+                "Do NOT repeat any suggestions from previous pages."
+            ).format(page_offset + 1)
+            formatted += pagination_instruction
+        
+        return formatted
     
     def _parse_suggestions(self, response: str) -> List[str]:
         """Parse LLM response into list of suggestions."""

@@ -375,6 +375,7 @@ class TabSuggestionRequest(BaseModel):
     language: Language = Field(Language.EN, description="Language code")
     llm: LLMModel = Field(LLMModel.QWEN, description="LLM model to use")
     cursor_position: Optional[int] = Field(None, description="Cursor position in input")
+    page_offset: int = Field(0, ge=0, description="Page offset for pagination (0 = first page)")
     
     @field_validator('diagram_type', mode='before')
     @classmethod

@@ -2,17 +2,17 @@
 Redis Session Manager Service
 =============================
 
-Manages user sessions in Redis for single-session control.
-Ensures one account can only be logged in at one place at a time.
+Manages user sessions in Redis with support for multiple concurrent sessions.
+Allows up to MAX_CONCURRENT_SESSIONS devices to be logged in at the same time.
 
 Features:
-- Store active JWT token sessions
-- Invalidate old sessions when new login occurs
+- Store active JWT token sessions (supports multiple concurrent sessions)
+- Automatically remove oldest sessions when max is exceeded
 - Track session invalidation notifications
 - Validate session tokens on each request
 
 Key Schema:
-- session:user:{user_id} -> token_hash (TTL: JWT_EXPIRY_HOURS)
+- session:user:set:{user_id} -> SET of token_hashes (TTL: JWT_EXPIRY_HOURS)
 - session_invalidated:{user_id}:{old_token_hash} -> notification JSON (TTL: JWT_EXPIRY_HOURS)
 
 Author: lycosa9527
@@ -47,6 +47,9 @@ SESSION_TTL_SECONDS = ACCESS_TOKEN_EXPIRY_MINUTES * 60
 REFRESH_TOKEN_EXPIRY_DAYS = int(os.getenv("REFRESH_TOKEN_EXPIRY_DAYS", "7"))
 REFRESH_TOKEN_TTL_SECONDS = REFRESH_TOKEN_EXPIRY_DAYS * 24 * 3600
 
+# Maximum concurrent sessions per user (default: 2 devices)
+MAX_CONCURRENT_SESSIONS = int(os.getenv("MAX_CONCURRENT_SESSIONS", "2"))
+
 
 def _hash_token(token: str) -> str:
     """Generate SHA256 hash of token for secure storage."""
@@ -69,7 +72,7 @@ def _get_invalidation_notification_key(user_id: int, token_hash: str) -> str:
 
 class RedisSessionManager:
     """
-    Redis-based session manager for single-session control.
+    Redis-based session manager with support for multiple concurrent sessions.
     
     Thread-safe: All operations use Redis atomic commands.
     Graceful degradation: Falls back gracefully if Redis unavailable.
@@ -83,14 +86,105 @@ class RedisSessionManager:
         """Check if Redis should be used."""
         return is_redis_available()
     
-    def store_session(self, user_id: int, token: str, allow_multiple: bool = False) -> bool:
+    def _parse_session_entry(self, session_entry: str) -> tuple[float, str, str]:
+        """
+        Parse a session entry string into its components.
+        
+        Supports two formats:
+        - New format: timestamp:device_hash:token_hash
+        - Legacy format: timestamp:token_hash (device_hash will be empty)
+        
+        Args:
+            session_entry: Session entry string from Redis
+            
+        Returns:
+            Tuple of (timestamp, device_hash, token_hash)
+        """
+        parts = session_entry.split(':')
+        if len(parts) >= 3:
+            # New format: timestamp:device_hash:token_hash
+            try:
+                timestamp = float(parts[0])
+                device_hash = parts[1]
+                token_hash = ':'.join(parts[2:])  # Handle token hashes that might contain ':'
+                return timestamp, device_hash, token_hash
+            except ValueError:
+                # Invalid timestamp, treat as legacy
+                pass
+        
+        if len(parts) == 2:
+            # Legacy format: timestamp:token_hash
+            try:
+                timestamp = float(parts[0])
+                return timestamp, "", parts[1]
+            except ValueError:
+                # Invalid timestamp
+                return 0.0, "", session_entry
+        
+        # Unknown format
+        return 0.0, "", session_entry
+    
+    def _revoke_existing_device_sessions(self, user_id: int, device_hash: str, redis, session_set_key: str) -> int:
+        """
+        Revoke any existing access token sessions for the same device.
+        
+        This prevents session accumulation when a user logs in multiple times
+        from the same device. Each device should only have one active session.
+        
+        Uses Redis pipeline for atomic operations.
+        
+        Args:
+            user_id: User ID
+            device_hash: Device fingerprint hash
+            redis: Redis connection
+            session_set_key: Redis key for session set
+            
+        Returns:
+            Number of sessions revoked
+        """
+        if not device_hash:
+            return 0
+        
+        try:
+            if not redis.exists(session_set_key):
+                return 0
+            
+            all_sessions = redis.smembers(session_set_key)
+            sessions_to_revoke = []
+            
+            for session_entry in all_sessions:
+                _, entry_device_hash, _ = self._parse_session_entry(session_entry)
+                if entry_device_hash == device_hash:
+                    sessions_to_revoke.append(session_entry)
+            
+            if sessions_to_revoke:
+                # Use pipeline for atomic removal
+                pipe = redis.pipeline()
+                for session_entry in sessions_to_revoke:
+                    pipe.srem(session_set_key, session_entry)
+                pipe.execute()
+                logger.debug(f"[Session] Revoked {len(sessions_to_revoke)} old session(s) for device relogin: user={user_id}")
+            
+            return len(sessions_to_revoke)
+            
+        except Exception as e:
+            logger.error(f"[Session] Error revoking device sessions for user {user_id}: {e}", exc_info=True)
+            return 0
+    
+    def store_session(self, user_id: int, token: str, device_hash: str = "", allow_multiple: bool = True) -> bool:
         """
         Store active session for user.
+        
+        Supports multiple concurrent sessions up to MAX_CONCURRENT_SESSIONS.
+        When the limit is exceeded, oldest sessions are automatically removed.
+        
+        Uses Redis pipeline for atomic operations to prevent race conditions.
         
         Args:
             user_id: User ID
             token: JWT token string
-            allow_multiple: If True, allow multiple concurrent sessions (for shared accounts like bayi-ip@system.com)
+            device_hash: Device fingerprint hash (for same-device session replacement)
+            allow_multiple: If True (default), allow up to MAX_CONCURRENT_SESSIONS concurrent sessions
             
         Returns:
             True if stored successfully, False otherwise
@@ -101,21 +195,99 @@ class RedisSessionManager:
         
         try:
             token_hash = _hash_token(token)
+            redis = get_redis()
+            if not redis:
+                return False
             
             if allow_multiple:
-                # Multiple concurrent sessions mode: Use Redis SET
+                # Multiple concurrent sessions mode: Use Redis SET with timestamp tracking
                 session_set_key = _get_session_set_key(user_id)
-                redis = get_redis()
-                if redis:
-                    # Add token hash to set
-                    redis.sadd(session_set_key, token_hash)
-                    # Set TTL on the set
-                    redis.expire(session_set_key, SESSION_TTL_SECONDS)
-                    logger.debug(f"[Session] Added session to set for user {user_id} (multiple sessions allowed)")
-                    return True
-                return False
+                
+                # Clean up old single-key format if it exists (migration)
+                old_session_key = _get_session_key(user_id)
+                if redis.exists(old_session_key):
+                    redis.delete(old_session_key)
+                    logger.info(f"[Session] Migrated user {user_id} from single-session to multi-session mode")
+                
+                # Revoke any existing sessions from the same device first
+                # This prevents session accumulation from repeated logins on the same device
+                if device_hash:
+                    self._revoke_existing_device_sessions(user_id, device_hash, redis, session_set_key)
+                
+                # Store token with timestamp and device hash for ordering and identification
+                # Token format: timestamp:device_hash:token_hash
+                import time
+                current_time = time.time()
+                token_entry = f"{current_time}:{device_hash}:{token_hash}"
+                
+                # Get existing sessions for cleanup
+                all_sessions = redis.smembers(session_set_key) if redis.exists(session_set_key) else set()
+                stale_sessions = []
+                
+                for session_entry in all_sessions:
+                    entry_time, _, _ = self._parse_session_entry(session_entry)
+                    if entry_time > 0 and current_time - entry_time > SESSION_TTL_SECONDS:
+                        stale_sessions.append(session_entry)
+                
+                # Use pipeline for atomic add + cleanup + TTL
+                pipe = redis.pipeline()
+                
+                # Remove stale sessions
+                for stale_entry in stale_sessions:
+                    pipe.srem(session_set_key, stale_entry)
+                
+                # Add new token
+                pipe.sadd(session_set_key, token_entry)
+                
+                # Set TTL
+                pipe.expire(session_set_key, SESSION_TTL_SECONDS)
+                
+                # Get count after operations
+                pipe.scard(session_set_key)
+                
+                # Execute pipeline atomically
+                results = pipe.execute()
+                session_count = results[-1]  # Last result is scard
+                
+                if stale_sessions:
+                    logger.debug(f"[Session] Cleaned up {len(stale_sessions)} stale session(s) for user {user_id}")
+                
+                # Check if we exceed max concurrent sessions
+                if session_count > MAX_CONCURRENT_SESSIONS:
+                    # Get all sessions and sort by timestamp (oldest first)
+                    all_sessions = redis.smembers(session_set_key)
+                    # Sort by timestamp (entries are timestamp:device_hash:token_hash)
+                    sorted_sessions = sorted(
+                        all_sessions, 
+                        key=lambda x: self._parse_session_entry(x)[0]
+                    )
+                    
+                    # Use pipeline for atomic removal of excess sessions
+                    sessions_to_remove = session_count - MAX_CONCURRENT_SESSIONS
+                    old_sessions_to_notify = []
+                    
+                    remove_pipe = redis.pipeline()
+                    for i in range(sessions_to_remove):
+                        old_session = sorted_sessions[i]
+                        remove_pipe.srem(session_set_key, old_session)
+                        # Collect token hashes for notifications
+                        _, _, old_token_hash = self._parse_session_entry(old_session)
+                        old_sessions_to_notify.append(old_token_hash)
+                    
+                    # Execute removals atomically
+                    remove_pipe.execute()
+                    
+                    # Create invalidation notifications (outside pipeline as they use different keys)
+                    for old_token_hash in old_sessions_to_notify:
+                        self.create_invalidation_notification(user_id, old_token_hash)
+                        logger.info(f"[Session] Removed oldest session for user {user_id} (max {MAX_CONCURRENT_SESSIONS} reached)")
+                    
+                    session_count = MAX_CONCURRENT_SESSIONS
+                
+                logger.debug(f"[Session] Added session for user {user_id} (sessions: {session_count}/{MAX_CONCURRENT_SESSIONS})")
+                return True
             else:
-                # Single session mode: Use single key-value
+                # Single session mode: Use single key-value (legacy mode)
                 session_key = _get_session_key(user_id)
                 success = redis_ops.set_with_ttl(session_key, token_hash, SESSION_TTL_SECONDS)
                 
@@ -170,22 +342,30 @@ class RedisSessionManager:
             if not redis:
                 return False
             
-            # Check multiple sessions mode first
+            # Check multiple sessions mode first (default mode)
             session_set_key = _get_session_set_key(user_id)
             if redis.exists(session_set_key):
                 if token:
                     # Remove specific token from set
                     token_hash = _hash_token(token)
-                    removed = redis.srem(session_set_key, token_hash)
+                    # Find and remove the entry containing this token hash
+                    all_sessions = redis.smembers(session_set_key)
+                    removed = False
+                    for session_entry in all_sessions:
+                        _, _, entry_token_hash = self._parse_session_entry(session_entry)
+                        if entry_token_hash == token_hash:
+                            redis.srem(session_set_key, session_entry)
+                            removed = True
+                            break
                     logger.debug(f"[Session] Removed token from session set for user {user_id}")
-                    return removed > 0
+                    return removed
                 else:
                     # Remove entire set
                     redis.delete(session_set_key)
                     logger.debug(f"[Session] Deleted session set for user {user_id}")
                     return True
             
-            # Single session mode
+            # Single session mode (legacy)
             session_key = _get_session_key(user_id)
             success = redis_ops.delete(session_key)
             
@@ -223,17 +403,20 @@ class RedisSessionManager:
             if not redis:
                 return True  # Fail-open
             
-            # Check multiple sessions mode first (for shared accounts)
+            # Check multiple sessions mode first (default mode)
             session_set_key = _get_session_set_key(user_id)
             if redis.exists(session_set_key):
-                # Multiple sessions mode: Check if token hash is in set
-                is_member = redis.sismember(session_set_key, token_hash)
-                if is_member:
-                    return True
+                # Multiple sessions mode: Check if token hash is in any session entry
+                # Sessions are stored as timestamp:device_hash:token_hash
+                all_sessions = redis.smembers(session_set_key)
+                for session_entry in all_sessions:
+                    _, _, entry_token_hash = self._parse_session_entry(session_entry)
+                    if entry_token_hash == token_hash:
+                        return True
                 logger.debug(f"[Session] Token not found in session set for user {user_id}")
                 return False
             
-            # Check single session mode
+            # Check single session mode (legacy)
             session_key = _get_session_key(user_id)
             stored_hash = redis_ops.get(session_key)
             
@@ -284,18 +467,18 @@ class RedisSessionManager:
             session_set_key = _get_session_set_key(user_id)
             if redis.exists(session_set_key):
                 # Multiple sessions mode: Get all tokens and create notifications
-                token_hashes = redis.smembers(session_set_key)
-                for hash_val in token_hashes:
-                    if old_token_hash is None:
-                        old_token_hash = hash_val
+                all_sessions = redis.smembers(session_set_key)
+                for session_entry in all_sessions:
+                    # Extract token hash from timestamp:device_hash:token_hash format
+                    _, _, actual_token_hash = self._parse_session_entry(session_entry)
                     self.create_invalidation_notification(
                         user_id,
-                        hash_val,
+                        actual_token_hash,
                         ip_address=ip_address
                     )
                 # Delete the entire set
                 redis.delete(session_set_key)
-                logger.info(f"[Session] Invalidated {len(token_hashes)} sessions for user {user_id} (multiple sessions mode)")
+                logger.info(f"[Session] Invalidated {len(all_sessions)} sessions for user {user_id} (multiple sessions mode)")
                 return True
             
             # Single session mode
@@ -450,6 +633,54 @@ class RefreshTokenManager:
         """Get Redis key for user's token set."""
         return f"{REFRESH_TOKEN_USER_SET_PREFIX}{user_id}"
     
+    def _revoke_existing_device_tokens(self, user_id: int, device_hash: str) -> int:
+        """
+        Revoke any existing refresh tokens for the same device.
+        
+        This prevents token accumulation when a user logs in multiple times
+        from the same device. Each device should only have one active refresh token.
+        
+        Args:
+            user_id: User ID
+            device_hash: Device fingerprint hash
+            
+        Returns:
+            Number of tokens revoked
+        """
+        if not self._use_redis():
+            return 0
+        
+        try:
+            redis = get_redis()
+            if not redis:
+                return 0
+            
+            user_tokens_key = self._get_user_tokens_key(user_id)
+            token_hashes = redis.smembers(user_tokens_key)
+            
+            revoked = 0
+            for existing_token_hash in token_hashes:
+                token_key = self._get_token_key(user_id, existing_token_hash)
+                token_json = redis_ops.get(token_key)
+                if token_json:
+                    try:
+                        token_data = json.loads(token_json)
+                        if token_data.get("device_hash") == device_hash:
+                            # Same device - revoke old token
+                            self.revoke_refresh_token(user_id, existing_token_hash, reason="device_relogin")
+                            revoked += 1
+                    except json.JSONDecodeError:
+                        pass
+            
+            if revoked > 0:
+                logger.debug(f"[TokenAudit] Revoked {revoked} old token(s) for device relogin: user={user_id}")
+            
+            return revoked
+            
+        except Exception as e:
+            logger.error(f"[RefreshToken] Error revoking device tokens for user {user_id}: {e}", exc_info=True)
+            return 0
+    
     def store_refresh_token(
         self, 
         user_id: int, 
@@ -480,6 +711,10 @@ class RefreshTokenManager:
             if not redis:
                 return False
             
+            # Revoke any existing tokens from the same device first
+            # This prevents token accumulation from repeated logins on the same device
+            self._revoke_existing_device_tokens(user_id, device_hash)
+            
             token_key = self._get_token_key(user_id, token_hash)
             user_tokens_key = self._get_user_tokens_key(user_id)
             
@@ -501,6 +736,9 @@ class RefreshTokenManager:
             # Add to user's token set (for revoke-all)
             redis.sadd(user_tokens_key, token_hash)
             redis.expire(user_tokens_key, REFRESH_TOKEN_TTL_SECONDS)
+            
+            # Enforce max concurrent sessions limit on refresh tokens
+            self.enforce_max_tokens(user_id)
             
             logger.info(f"[TokenAudit] Refresh token created: user={user_id}, ip={ip_address}, device={device_hash}")
             return True
@@ -656,6 +894,73 @@ class RefreshTokenManager:
             
         except Exception as e:
             logger.error(f"[RefreshToken] Error counting tokens for user {user_id}: {e}", exc_info=True)
+            return 0
+    
+    def enforce_max_tokens(self, user_id: int) -> int:
+        """
+        Enforce MAX_CONCURRENT_SESSIONS limit on refresh tokens.
+        
+        If user has more refresh tokens than allowed, revoke the oldest ones.
+        
+        Args:
+            user_id: User ID
+            
+        Returns:
+            Number of tokens revoked
+        """
+        if not self._use_redis():
+            return 0
+        
+        try:
+            redis = get_redis()
+            if not redis:
+                return 0
+            
+            user_tokens_key = self._get_user_tokens_key(user_id)
+            token_count = redis.scard(user_tokens_key)
+            
+            if token_count <= MAX_CONCURRENT_SESSIONS:
+                return 0
+            
+            # Get all token hashes and their creation times
+            token_hashes = redis.smembers(user_tokens_key)
+            tokens_with_time = []
+            
+            for token_hash in token_hashes:
+                token_key = self._get_token_key(user_id, token_hash)
+                token_json = redis_ops.get(token_key)
+                if token_json:
+                    try:
+                        token_data = json.loads(token_json)
+                        created_at = token_data.get("created_at", "")
+                        tokens_with_time.append((token_hash, created_at))
+                    except json.JSONDecodeError:
+                        # Invalid JSON, mark for removal
+                        tokens_with_time.append((token_hash, ""))
+                else:
+                    # Token expired but still in set, mark for cleanup
+                    redis.srem(user_tokens_key, token_hash)
+            
+            # Sort by creation time (oldest first)
+            tokens_with_time.sort(key=lambda x: x[1])
+            
+            # Revoke oldest tokens to stay within limit
+            tokens_to_revoke = len(tokens_with_time) - MAX_CONCURRENT_SESSIONS
+            revoked = 0
+            
+            for i in range(tokens_to_revoke):
+                if i < len(tokens_with_time):
+                    token_hash = tokens_with_time[i][0]
+                    if self.revoke_refresh_token(user_id, token_hash, reason="max_devices_exceeded"):
+                        revoked += 1
+            
+            if revoked > 0:
+                logger.info(f"[TokenAudit] Enforced max tokens: user={user_id}, revoked={revoked}, limit={MAX_CONCURRENT_SESSIONS}")
+            
+            return revoked
+            
+        except Exception as e:
+            logger.error(f"[RefreshToken] Error enforcing max tokens for user {user_id}: {e}", exc_info=True)
             return 0
     
     def rotate_refresh_token(

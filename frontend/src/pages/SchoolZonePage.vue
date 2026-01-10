@@ -6,7 +6,7 @@
  */
 import { computed, onMounted, ref } from 'vue'
 
-import { Network, Files, Heart, MessageCircle, Search, Share2, Users, Video } from 'lucide-vue-next'
+import { Files, Heart, MessageCircle, Network, Search, Share2, Users, Video } from 'lucide-vue-next'
 
 import { useAuthStore } from '@/stores'
 
@@ -17,7 +17,15 @@ const organizationName = computed(() => authStore.user?.schoolName || '我的学
 
 // Filter options
 const typeOptions = ['全部', 'MindMate课程', 'MindGraph图示'] as const
-const categoryOptions = ['全部', '教学设计', '学科资源', '班级管理', '教研活动', '学生作品', '校本课程'] as const
+const categoryOptions = [
+  '全部',
+  '教学设计',
+  '学科资源',
+  '班级管理',
+  '教研活动',
+  '学生作品',
+  '校本课程',
+] as const
 const sortOptions = ['最新发布', '最多点赞', '最多评论'] as const
 
 // Active filters
@@ -72,11 +80,12 @@ function getApiSort(displaySort: string): string {
 // Filtered posts (search is done client-side for responsiveness)
 const filteredPosts = computed(() => {
   if (!searchQuery.value) return posts.value
-  
+
   const query = searchQuery.value.toLowerCase()
-  return posts.value.filter((post) =>
-    post.title.toLowerCase().includes(query) ||
-    (post.description && post.description.toLowerCase().includes(query))
+  return posts.value.filter(
+    (post) =>
+      post.title.toLowerCase().includes(query) ||
+      (post.description && post.description.toLowerCase().includes(query))
   )
 })
 
@@ -111,7 +120,7 @@ function formatRelativeTime(isoString: string): string {
   const diffMins = Math.floor(diffMs / 60000)
   const diffHours = Math.floor(diffMs / 3600000)
   const diffDays = Math.floor(diffMs / 86400000)
-  
+
   if (diffMins < 1) return '刚刚'
   if (diffMins < 60) return `${diffMins}分钟前`
   if (diffHours < 24) return `${diffHours}小时前`
@@ -126,14 +135,14 @@ async function toggleLike(post: SharedPost) {
     const response = await fetch(`/api/school-zone/posts/${post.id}/like`, {
       method: 'POST',
       credentials: 'same-origin',
-      headers: { 'Content-Type': 'application/json' }
+      headers: { 'Content-Type': 'application/json' },
     })
-    
+
     if (response.status === 401) {
       authStore.handleTokenExpired('您的登录已过期，请重新登录')
       return
     }
-    
+
     if (response.ok) {
       const data = await response.json()
       post.is_liked = data.is_liked
@@ -174,32 +183,32 @@ async function loadPosts() {
   isLoading.value = true
   try {
     const params = new URLSearchParams()
-    
+
     // Add content type filter
     const apiType = getApiType(activeType.value)
     if (apiType) {
       params.append('content_type', apiType)
     }
-    
+
     // Add category filter
     if (activeCategory.value !== '全部') {
       params.append('category', activeCategory.value)
     }
-    
+
     // Add sort
     params.append('sort', getApiSort(activeSort.value))
-    
+
     // Use credentials (token in httpOnly cookie)
     const response = await fetch(`/api/school-zone/posts?${params.toString()}`, {
       credentials: 'same-origin',
     })
-    
+
     if (response.status === 401) {
       authStore.handleTokenExpired('您的登录已过期，请重新登录后查看校园动态')
       posts.value = []
       return
     }
-    
+
     if (response.ok) {
       const data = await response.json()
       posts.value = data.posts || []
@@ -226,7 +235,9 @@ onMounted(() => {
     <div class="school-zone-header px-6 py-5 bg-white border-b border-stone-200">
       <div class="flex items-center justify-between mb-4">
         <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white">
+          <div
+            class="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white"
+          >
             <Files class="w-5 h-5" />
           </div>
           <div>
@@ -332,11 +343,7 @@ onMounted(() => {
         >
           <!-- Thumbnail -->
           <div
-            :class="[
-              'aspect-[16/10] relative',
-              'bg-gradient-to-br',
-              getPlaceholderColor(post.id),
-            ]"
+            :class="['aspect-[16/10] relative', 'bg-gradient-to-br', getPlaceholderColor(post.id)]"
           >
             <!-- Placeholder pattern -->
             <div class="absolute inset-0 flex items-center justify-center opacity-20">
@@ -346,7 +353,9 @@ onMounted(() => {
               />
             </div>
             <!-- Type badge -->
-            <div class="absolute top-2 left-2 bg-white/90 text-xs font-medium px-2 py-1 rounded-full text-stone-700 flex items-center gap-1">
+            <div
+              class="absolute top-2 left-2 bg-white/90 text-xs font-medium px-2 py-1 rounded-full text-stone-700 flex items-center gap-1"
+            >
               <component
                 :is="getTypeIcon(post.content_type)"
                 class="w-3 h-3"
@@ -354,7 +363,9 @@ onMounted(() => {
               {{ getDisplayType(post.content_type) }}
             </div>
             <!-- Category badge -->
-            <div class="absolute top-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded-full">
+            <div
+              class="absolute top-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded-full"
+            >
               {{ post.category || '未分类' }}
             </div>
           </div>
@@ -363,15 +374,21 @@ onMounted(() => {
           <div class="p-4">
             <!-- Author -->
             <div class="flex items-center gap-2 mb-3">
-              <div class="w-7 h-7 rounded-full bg-stone-100 flex items-center justify-center text-sm">
+              <div
+                class="w-7 h-7 rounded-full bg-stone-100 flex items-center justify-center text-sm"
+              >
                 {{ post.author.avatar }}
               </div>
               <span class="text-sm text-stone-600">{{ post.author.name }}</span>
-              <span class="text-xs text-stone-400 ml-auto">{{ formatRelativeTime(post.created_at) }}</span>
+              <span class="text-xs text-stone-400 ml-auto">{{
+                formatRelativeTime(post.created_at)
+              }}</span>
             </div>
 
             <!-- Title & Description -->
-            <h3 class="text-sm font-semibold text-stone-800 mb-2 line-clamp-1 group-hover:text-blue-600 transition-colors">
+            <h3
+              class="text-sm font-semibold text-stone-800 mb-2 line-clamp-1 group-hover:text-blue-600 transition-colors"
+            >
               {{ post.title }}
             </h3>
             <p class="text-xs text-stone-500 line-clamp-2 mb-3">
@@ -393,11 +410,15 @@ onMounted(() => {
                 />
                 {{ formatNumber(post.likes_count) }}
               </button>
-              <button class="flex items-center gap-1 text-xs text-stone-400 hover:text-blue-500 transition-colors">
+              <button
+                class="flex items-center gap-1 text-xs text-stone-400 hover:text-blue-500 transition-colors"
+              >
                 <MessageCircle class="w-4 h-4" />
                 {{ formatNumber(post.comments_count) }}
               </button>
-              <button class="flex items-center gap-1 text-xs text-stone-400 hover:text-green-500 transition-colors ml-auto">
+              <button
+                class="flex items-center gap-1 text-xs text-stone-400 hover:text-green-500 transition-colors ml-auto"
+              >
                 <Share2 class="w-4 h-4" />
                 {{ formatNumber(post.shares_count) }}
               </button>
@@ -425,7 +446,9 @@ onMounted(() => {
 }
 
 .post-card {
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .post-card:hover {

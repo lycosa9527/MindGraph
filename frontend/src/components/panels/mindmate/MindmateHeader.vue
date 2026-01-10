@@ -2,11 +2,11 @@
 import { computed } from 'vue'
 
 import { ElAvatar, ElButton, ElIcon, ElTooltip } from 'element-plus'
+
 import { Close, Menu, Plus } from '@element-plus/icons-vue'
 
-import { useLanguage } from '@/composables'
-
 import mindmateAvatarMd from '@/assets/mindmate-avatar-md.png'
+import { useLanguage } from '@/composables'
 
 const props = withDefaults(
   defineProps<{
@@ -22,8 +22,8 @@ const props = withDefaults(
 )
 
 const emit = defineEmits<{
-  (e: 'toggle-history'): void
-  (e: 'new-conversation'): void
+  (e: 'toggleHistory'): void
+  (e: 'newConversation'): void
   (e: 'close'): void
 }>()
 
@@ -46,7 +46,7 @@ const isFullpageMode = computed(() => props.mode === 'fullpage')
           circle
           size="small"
           class="flex-shrink-0"
-          @click="emit('toggle-history')"
+          @click="emit('toggleHistory')"
         >
           <ElIcon><Menu /></ElIcon>
         </ElButton>
@@ -71,7 +71,7 @@ const isFullpageMode = computed(() => props.mode === 'fullpage')
       <ElButton
         class="new-chat-btn"
         size="small"
-        @click="emit('new-conversation')"
+        @click="emit('newConversation')"
       >
         <ElIcon class="mr-1"><Plus /></ElIcon>
         {{ isZh ? '新建对话' : 'New Chat' }}

@@ -7,6 +7,102 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [5.1.6] - 2025-01-11 - Frontend Refactoring and Diagram Layout Improvements
+
+### Changed
+
+- **Diagram Layout System** (`frontend/src/composables/diagrams/`)
+  - Refactored layout configuration for better maintainability
+  - Improved Mind Map, Brace Map, and Tree Map rendering logic
+  - Enhanced diagram composables structure
+
+- **Canvas Components** (`frontend/src/components/canvas/`)
+  - Updated toolbar and top bar components
+  - Improved zoom controls and AI model selector
+  - Refined diagram slot modal behavior
+
+- **Node Rendering** (`frontend/src/components/diagram/nodes/`)
+  - Enhanced inline editable text component
+  - Updated flow node and topic node styling
+  - Improved node type exports and structure
+
+- **Pages and Layouts** (`frontend/src/pages/`)
+  - Refactored Admin, Canvas, Community, and School Zone pages
+  - Updated authentication pages styling
+  - Improved template page behavior
+
+- **State Management** (`frontend/src/stores/`)
+  - Enhanced spec loader with improved data handling
+  - Updated diagram and auth store logic
+  - Refined mindmate and saved diagrams stores
+
+- **Backend Auth** (`routers/auth/`, `utils/auth.py`)
+  - Improved session management and authentication flow
+  - Enhanced Redis session manager reliability
+
+- **Build Configuration**
+  - Updated frontend dependencies and configuration
+  - Migrated from Tailwind CSS config to inline styles
+  - Removed deprecated build scripts
+
+### Fixed
+
+- Flow map agent styling consistency
+
+---
+
+## [5.1.5] - 2025-01-09 - Multi-Session Support and Brace Map Overlay
+
+### Added
+
+- **Multi-Session Support** (`services/redis_session_manager.py`)
+  - Users can now be logged in on multiple devices simultaneously (default: 2)
+  - Added `MAX_CONCURRENT_SESSIONS` environment variable for configuration
+  - Sessions stored with timestamps for proper ordering
+  - When limit is exceeded, oldest sessions are automatically logged out
+  - Invalidation notifications sent to affected sessions
+
+- **Brace Map Overlay Rendering** (`frontend/src/components/diagram/DiagramCanvas.vue`)
+  - Added `BraceOverlay` component for unified curly brace rendering
+  - Brace maps now hide individual edges (overlay draws them)
+
+- **Brace Map Node Support** (`frontend/src/components/diagram/nodes/TopicNode.vue`)
+  - Topic nodes now use pill shape for brace maps
+  - Added right-only connection handle for brace map horizontal layout
+
+- **Refresh Token Limit Enforcement** (`services/redis_session_manager.py`)
+  - Added `enforce_max_tokens()` method to limit refresh tokens per user
+  - Automatically revokes oldest refresh tokens when limit exceeded
+
+### Changed
+
+- **Session Invalidation Messages** (`frontend/src/composables/useLanguage.ts`, `frontend/src/stores/auth.ts`)
+  - Updated translations to reflect device limit messaging
+  - English: "You have been logged out because you exceeded the maximum number of devices"
+  - Chinese: "您已被登出，因为登录设备数量超过上限"
+  - Exported `translations` dictionary for use in auth store
+
+- **Login Flow Simplification** (`routers/auth/login.py`, `routers/auth/registration.py`, `routers/auth/helpers.py`)
+  - Removed manual session invalidation before login
+  - Session manager now automatically handles concurrent session limits
+  - Simplified code by removing redundant `invalidate_user_sessions` calls
+
+- **Token Refresh Session Management** (`routers/auth/session.py`)
+  - Old access token session is now explicitly deleted before storing new one
+  - Prevents session accumulation during token refresh operations
+  - Updated invalidation message: "Session ended: maximum device limit exceeded"
+
+- **Environment Configuration** (`env.example`)
+  - Added `MAX_CONCURRENT_SESSIONS=2` with documentation
+  - Comments explain automatic oldest-session logout behavior
+
+### Fixed
+
+- **Import Order in DiagramCanvas** (`frontend/src/components/diagram/DiagramCanvas.vue`)
+  - Fixed ESLint import ordering for BraceOverlay component
+
+---
+
 ## [5.1.4] - 2025-01-09 - Redis-Based JWT Secret and Security Hardening
 
 ### Added

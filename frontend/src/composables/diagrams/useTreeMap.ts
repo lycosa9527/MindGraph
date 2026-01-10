@@ -2,24 +2,27 @@
  * useTreeMap - Composable for Tree Map layout and data management
  * Tree maps display hierarchical classification with top-down structure
  *
- * Layout matches old JS tree-renderer.js:
+ * Uses Dagre for automatic layout:
  * - Topic (root) at top center with pill shape
  * - Categories (depth 1) spread horizontally below topic
  * - Leaves (depth 2+) stacked vertically below their parent category
  * - Connectors: topic bottom -> category top, category bottom -> leaves top
  */
-import { Position } from '@vue-flow/core'
 import { computed, ref } from 'vue'
+
+import { Position } from '@vue-flow/core'
 
 import { useLanguage } from '@/composables/useLanguage'
 import type { Connection, DiagramNode, MindGraphEdge, MindGraphNode } from '@/types'
 
 import {
-  DEFAULT_CENTER_X,
+  DEFAULT_CATEGORY_SPACING,
   DEFAULT_NODE_HEIGHT,
   DEFAULT_NODE_WIDTH,
   DEFAULT_PADDING,
+  DEFAULT_TOPIC_TO_CATEGORY_GAP,
 } from './layoutConfig'
+import { calculateDagreLayout, type DagreEdgeInput, type DagreNodeInput } from './useDagreLayout'
 
 interface TreeNode {
   id: string
@@ -34,20 +37,16 @@ interface TreeMapData {
 }
 
 interface TreeMapOptions {
-  startX?: number
-  startY?: number
-  categorySpacing?: number // Horizontal spacing between categories
-  leafSpacing?: number // Vertical spacing between leaves
+  categorySpacing?: number // Horizontal spacing between categories (nodeSeparation)
+  rankSpacing?: number // Vertical spacing between levels (rankSeparation)
   nodeWidth?: number
   nodeHeight?: number
 }
 
 export function useTreeMap(options: TreeMapOptions = {}) {
   const {
-    startX = DEFAULT_CENTER_X,
-    startY = DEFAULT_PADDING + 20, // 60px - topic position
-    categorySpacing = 160, // Horizontal spacing between category nodes
-    leafSpacing = 60, // Vertical spacing between leaf nodes
+    categorySpacing = DEFAULT_CATEGORY_SPACING, // Horizontal spacing between category nodes
+    rankSpacing = DEFAULT_TOPIC_TO_CATEGORY_GAP, // Vertical spacing between levels
     nodeWidth = DEFAULT_NODE_WIDTH,
     nodeHeight = DEFAULT_NODE_HEIGHT,
   } = options
@@ -55,20 +54,7 @@ export function useTreeMap(options: TreeMapOptions = {}) {
   const { t } = useLanguage()
   const data = ref<TreeMapData | null>(null)
 
-  // Layout constants matching old JS
-  const TOPIC_TO_CATEGORY_GAP = 100 // Distance from topic bottom to category row
-  const CATEGORY_TO_LEAF_GAP = 80 // Distance from category bottom to first leaf
-
-  // Calculate category column width (max of category width and its leaves)
-  function calculateCategoryWidth(category: TreeNode): number {
-    if (!category.children || category.children.length === 0) {
-      return nodeWidth
-    }
-    // Column width is just the node width since leaves stack vertically
-    return nodeWidth
-  }
-
-  // Generate nodes and edges for tree map
+  // Generate nodes and edges for tree map using Dagre layout
   function generateLayout(): { nodes: MindGraphNode[]; edges: MindGraphEdge[] } {
     if (!data.value) return { nodes: [], edges: [] }
 
@@ -77,12 +63,52 @@ export function useTreeMap(options: TreeMapOptions = {}) {
 
     const root = data.value.root
     const rootId = root.id || 'tree-topic'
+    const categories = root.children || []
 
-    // Topic node at top center
+    // Build Dagre node and edge lists
+    const dagreNodes: DagreNodeInput[] = []
+    const dagreEdges: DagreEdgeInput[] = []
+
+    // Add topic node
+    dagreNodes.push({ id: rootId, width: nodeWidth, height: nodeHeight })
+
+    // Add category and leaf nodes
+    categories.forEach((category, catIndex) => {
+      const categoryId = category.id || `tree-cat-${catIndex}`
+      dagreNodes.push({ id: categoryId, width: nodeWidth, height: nodeHeight })
+      dagreEdges.push({ source: rootId, target: categoryId })
+
+      // Add leaf nodes
+      const leaves = category.children || []
+      leaves.forEach((leaf, leafIndex) => {
+        const leafId = leaf.id || `tree-leaf-${catIndex}-${leafIndex}`
+        dagreNodes.push({ id: leafId, width: nodeWidth, height: nodeHeight })
+
+        // Connect leaf to category (first leaf) or previous leaf (chained)
+        const sourceId =
+          leafIndex === 0
+            ? categoryId
+            : leaves[leafIndex - 1].id || `tree-leaf-${catIndex}-${leafIndex - 1}`
+        dagreEdges.push({ source: sourceId, target: leafId })
+      })
+    })
+
+    // Calculate layout using Dagre (top-to-bottom direction)
+    const layoutResult = calculateDagreLayout(dagreNodes, dagreEdges, {
+      direction: 'TB',
+      nodeSeparation: categorySpacing,
+      rankSeparation: rankSpacing,
+      align: 'UL',
+      marginX: DEFAULT_PADDING,
+      marginY: DEFAULT_PADDING,
+    })
+
+    // Create topic node with Dagre position
+    const topicPos = layoutResult.positions.get(rootId)
     nodes.push({
       id: rootId,
       type: 'topic',
-      position: { x: startX - nodeWidth / 2, y: startY },
+      position: topicPos ? { x: topicPos.x, y: topicPos.y } : { x: 0, y: 0 },
       data: {
         label: root.text,
         nodeType: 'topic',
@@ -93,27 +119,51 @@ export function useTreeMap(options: TreeMapOptions = {}) {
       draggable: false,
     })
 
-    // Categories (depth 1) - spread horizontally
-    const categories = root.children || []
-    if (categories.length > 0) {
-      // Calculate total width for categories
-      const totalWidth = categories.length * nodeWidth + (categories.length - 1) * categorySpacing
-      // First category left edge X
-      let categoryX = startX - totalWidth / 2
+    // Create category and leaf nodes with Dagre positions
+    categories.forEach((category, catIndex) => {
+      const categoryId = category.id || `tree-cat-${catIndex}`
+      const categoryPos = layoutResult.positions.get(categoryId)
 
-      // Category Y position (below topic)
-      const categoryY = startY + nodeHeight + TOPIC_TO_CATEGORY_GAP
+      nodes.push({
+        id: categoryId,
+        type: 'branch',
+        position: categoryPos ? { x: categoryPos.x, y: categoryPos.y } : { x: 0, y: 0 },
+        data: {
+          label: category.text,
+          nodeType: 'branch',
+          diagramType: 'tree_map',
+          isDraggable: true,
+          isSelectable: true,
+        },
+        draggable: true,
+      })
 
-      categories.forEach((category, catIndex) => {
-        const categoryId = category.id || `tree-cat-${catIndex}`
+      // Edge from topic to category (bottom to top)
+      edges.push({
+        id: `edge-${rootId}-${categoryId}`,
+        source: rootId,
+        target: categoryId,
+        type: 'step',
+        sourcePosition: Position.Bottom,
+        targetPosition: Position.Top,
+        data: {
+          edgeType: 'step' as const,
+          style: { strokeColor: '#bbb' },
+        },
+      })
 
-        // Category node - position.x is the LEFT edge
+      // Add leaf nodes
+      const leaves = category.children || []
+      leaves.forEach((leaf, leafIndex) => {
+        const leafId = leaf.id || `tree-leaf-${catIndex}-${leafIndex}`
+        const leafPos = layoutResult.positions.get(leafId)
+
         nodes.push({
-          id: categoryId,
+          id: leafId,
           type: 'branch',
-          position: { x: categoryX, y: categoryY },
+          position: leafPos ? { x: leafPos.x, y: leafPos.y } : { x: 0, y: 0 },
           data: {
-            label: category.text,
+            label: leaf.text,
             nodeType: 'branch',
             diagramType: 'tree_map',
             isDraggable: true,
@@ -122,74 +172,35 @@ export function useTreeMap(options: TreeMapOptions = {}) {
           draggable: true,
         })
 
-        // Edge from topic to category (bottom to top)
+        // Edge from category/previous leaf to this leaf
+        const sourceId =
+          leafIndex === 0
+            ? categoryId
+            : leaves[leafIndex - 1].id || `tree-leaf-${catIndex}-${leafIndex - 1}`
         edges.push({
-          id: `edge-${rootId}-${categoryId}`,
-          source: rootId,
-          target: categoryId,
-          type: 'step',
+          id: `edge-${sourceId}-${leafId}`,
+          source: sourceId,
+          target: leafId,
+          type: 'tree',
           sourcePosition: Position.Bottom,
           targetPosition: Position.Top,
           data: {
             edgeType: 'step' as const,
-            style: { strokeColor: '#bbb' },
+            style: { strokeColor: '#ccc' },
           },
         })
-
-        // Leaves (depth 2+) - stacked vertically below category
-        const leaves = category.children || []
-        if (leaves.length > 0) {
-          let leafY = categoryY + nodeHeight + CATEGORY_TO_LEAF_GAP
-
-          leaves.forEach((leaf, leafIndex) => {
-            const leafId = leaf.id || `tree-leaf-${catIndex}-${leafIndex}`
-
-            // Leaf node - same X as category for vertical alignment
-            nodes.push({
-              id: leafId,
-              type: 'branch',
-              position: { x: categoryX, y: leafY },
-              data: {
-                label: leaf.text,
-                nodeType: 'branch',
-                diagramType: 'tree_map',
-                isDraggable: true,
-                isSelectable: true,
-              },
-              draggable: true,
-            })
-
-            // Edge from category/previous leaf to this leaf
-            // Use 'tree' type for straight vertical lines (no arrowhead)
-            const sourceId = leafIndex === 0 ? categoryId : leaves[leafIndex - 1].id || `tree-leaf-${catIndex}-${leafIndex - 1}`
-            edges.push({
-              id: `edge-${sourceId}-${leafId}`,
-              source: sourceId,
-              target: leafId,
-              type: 'tree',
-              sourcePosition: Position.Bottom,
-              targetPosition: Position.Top,
-              data: {
-                edgeType: 'step' as const,
-                style: { strokeColor: '#ccc' },
-              },
-            })
-
-            leafY += nodeHeight + leafSpacing
-          })
-        }
-
-        categoryX += nodeWidth + categorySpacing
       })
-    }
+    })
 
     // Add dimension label node below topic if dimension exists
     if (data.value.dimension !== undefined) {
-      const dimensionY = startY + nodeHeight + 20 // Just below topic
+      const topicPosition = layoutResult.positions.get(rootId)
+      const dimensionY = topicPosition ? topicPosition.y + nodeHeight + 20 : nodeHeight + 20
+      const dimensionX = topicPosition ? topicPosition.x : 0
       nodes.push({
         id: 'dimension-label',
         type: 'label',
-        position: { x: startX - 100, y: dimensionY },
+        position: { x: dimensionX, y: dimensionY },
         data: {
           label:
             data.value.dimension ||

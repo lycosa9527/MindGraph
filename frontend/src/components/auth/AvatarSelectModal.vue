@@ -732,8 +732,8 @@ async function saveAvatar() {
             <el-scrollbar
               ref="scrollbarRef"
               height="400px"
-              @scroll="handleScroll"
               class="flex-1"
+              @scroll="handleScroll"
             >
               <div class="p-8">
                 <!-- Avatar grid (5 columns) -->

@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
+import tailwindcss from '@tailwindcss/vite'
 import { resolve } from 'path'
 import { readFileSync } from 'fs'
 
@@ -7,7 +8,7 @@ import { readFileSync } from 'fs'
 const version = readFileSync(resolve(__dirname, '../VERSION'), 'utf-8').trim()
 
 export default defineConfig({
-  plugins: [vue()],
+  plugins: [vue(), tailwindcss()],
   define: {
     __APP_VERSION__: JSON.stringify(version),
     __BUILD_TIME__: JSON.stringify(Date.now()),

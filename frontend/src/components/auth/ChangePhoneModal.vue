@@ -17,10 +17,9 @@ import { ElButton, ElInput } from 'element-plus'
 import { Close } from '@element-plus/icons-vue'
 
 import { useNotifications } from '@/composables'
+import { useAuthStore } from '@/stores'
 
 const notify = useNotifications()
-
-import { useAuthStore } from '@/stores'
 
 const props = defineProps<{
   visible: boolean

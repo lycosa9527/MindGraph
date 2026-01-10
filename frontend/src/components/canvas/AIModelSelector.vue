@@ -1,9 +1,9 @@
 <script setup lang="ts">
 /**
  * AIModelSelector - Bottom center AI model selection and result switching
- * 
+ *
  * Migrated from old JavaScript llm-progress-renderer.js and llm-autocomplete-manager.js
- * 
+ *
  * Features:
  * - Shows all 3 AI models: Qwen, DeepSeek, Doubao
  * - Per-model loading/ready/error states with visual feedback
@@ -14,6 +14,7 @@
 import { computed, watch } from 'vue'
 
 import { ElTooltip } from 'element-plus'
+
 import { Check, Loader2, Sparkles, X } from 'lucide-vue-next'
 
 import { useAutoComplete, useLanguage } from '@/composables'
@@ -41,7 +42,7 @@ const isSelectedModel = (modelKey: string) => {
 }
 
 // Check if model has valid result (for clicking)
-const canSwitchTo = (modelKey: string) => {
+const _canSwitchTo = (modelKey: string) => {
   const state = getModelState(modelKey)
   return state === 'ready' && !isSelectedModel(modelKey)
 }
@@ -49,7 +50,7 @@ const canSwitchTo = (modelKey: string) => {
 // Handle model click
 function handleModelClick(modelKey: string) {
   const state = getModelState(modelKey)
-  
+
   if (state === 'ready') {
     // Switch to this model's result
     switchToModel(modelKey)
@@ -60,15 +61,19 @@ function handleModelClick(modelKey: string) {
 function getTooltipContent(modelKey: string): string {
   const state = getModelState(modelKey)
   const displayName = modelDisplayNames[modelKey]
-  
+
   switch (state) {
     case 'loading':
       return isZh.value ? `${displayName} 生成中...` : `${displayName} generating...`
     case 'ready':
       if (isSelectedModel(modelKey)) {
-        return isZh.value ? `当前显示 ${displayName} 结果` : `Currently showing ${displayName} result`
+        return isZh.value
+          ? `当前显示 ${displayName} 结果`
+          : `Currently showing ${displayName} result`
       }
-      return isZh.value ? `点击切换到 ${displayName} 结果` : `Click to switch to ${displayName} result`
+      return isZh.value
+        ? `点击切换到 ${displayName} 结果`
+        : `Click to switch to ${displayName} result`
     case 'error':
       return isZh.value ? `${displayName} 生成失败` : `${displayName} generation failed`
     default:
@@ -80,7 +85,7 @@ function getTooltipContent(modelKey: string): string {
 function getButtonClass(modelKey: string): string {
   const state = getModelState(modelKey)
   const classes = ['model-btn']
-  
+
   if (state === 'loading') {
     classes.push('loading')
   } else if (state === 'ready') {
@@ -91,19 +96,19 @@ function getButtonClass(modelKey: string): string {
   } else if (state === 'error') {
     classes.push('error')
   }
-  
+
   return classes.join(' ')
 }
 
 // Should show glow animation
-const glowingModels = computed(() => {
+const _glowingModels = computed(() => {
   return Object.entries(llmResultsStore.modelStates)
     .filter(([_, state]) => state === 'ready')
     .map(([model]) => model)
 })
 
 // Watch for new ready models to trigger glow animation
-const recentlyReady = computed(() => new Set<string>())
+const _recentlyReady = computed(() => new Set<string>())
 watch(
   () => llmResultsStore.modelStates,
   (newStates, oldStates) => {
@@ -157,7 +162,7 @@ watch(
                 class="w-3.5 h-3.5"
               />
             </span>
-            
+
             <!-- Model name -->
             <span class="btn-label">{{ modelDisplayNames[modelKey] }}</span>
           </button>
@@ -169,11 +174,14 @@ watch(
         v-if="llmResultsStore.isGenerating || llmResultsStore.hasAnyResults"
         class="text-xs text-gray-500 dark:text-gray-400 ml-1"
       >
-        <span v-if="llmResultsStore.isGenerating">
-          {{ llmResultsStore.successCount }}/3
-        </span>
-        <span v-else-if="llmResultsStore.hasAnyResults" class="text-green-600 dark:text-green-400">
-          {{ isZh ? `${llmResultsStore.successCount}个就绪` : `${llmResultsStore.successCount} ready` }}
+        <span v-if="llmResultsStore.isGenerating"> {{ llmResultsStore.successCount }}/3 </span>
+        <span
+          v-else-if="llmResultsStore.hasAnyResults"
+          class="text-green-600 dark:text-green-400"
+        >
+          {{
+            isZh ? `${llmResultsStore.successCount}个就绪` : `${llmResultsStore.successCount} ready`
+          }}
         </span>
       </div>
     </div>
@@ -252,7 +260,8 @@ watch(
 
 /* Glow animation for newly ready results */
 @keyframes glow {
-  0%, 100% {
+  0%,
+  100% {
     box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
   }
   50% {
@@ -299,7 +308,8 @@ watch(
 }
 
 @keyframes glow-dark {
-  0%, 100% {
+  0%,
+  100% {
     box-shadow: 0 0 0 0 rgba(110, 231, 183, 0);
   }
   50% {

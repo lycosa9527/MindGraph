@@ -44,6 +44,71 @@ JWT_ALGORITHM = "HS256"
 _JWT_SECRET_REDIS_KEY = "jwt:secret"
 # Cached JWT secret (to avoid Redis lookup on every request)
 _jwt_secret_cache: str = None
+# File path for JWT secret backup (for recovery after Redis flush)
+_JWT_SECRET_BACKUP_FILE = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", ".jwt_secret")
+
+
+def _save_jwt_secret_backup(secret: str) -> bool:
+    """
+    Save JWT secret to a file for backup/recovery.
+    
+    This allows recovery after Redis flush without invalidating all user tokens.
+    The file is stored in the data directory with restricted permissions.
+    
+    Args:
+        secret: JWT secret to backup
+        
+    Returns:
+        True if saved successfully, False otherwise
+    """
+    try:
+        # Ensure data directory exists
+        data_dir = os.path.dirname(_JWT_SECRET_BACKUP_FILE)
+        if not os.path.exists(data_dir):
+            os.makedirs(data_dir, exist_ok=True)
+        
+        # Write secret to file with restricted permissions
+        with open(_JWT_SECRET_BACKUP_FILE, 'w') as f:
+            f.write(secret)
+        
+        # Set file permissions to owner-only (Unix)
+        try:
+            os.chmod(_JWT_SECRET_BACKUP_FILE, 0o600)
+        except (OSError, AttributeError):
+            # Windows doesn't support chmod, skip
+            pass
+        
+        logger.info("[Auth] JWT secret backed up to file")
+        return True
+    except Exception as e:
+        logger.warning(f"[Auth] Failed to backup JWT secret to file: {e}")
+        return False
+
+
+def _load_jwt_secret_backup() -> Optional[str]:
+    """
+    Load JWT secret from backup file.
+    
+    Returns:
+        JWT secret if found and valid, None otherwise
+    """
+    try:
+        if not os.path.exists(_JWT_SECRET_BACKUP_FILE):
+            return None
+        
+        with open(_JWT_SECRET_BACKUP_FILE, 'r') as f:
+            secret = f.read().strip()
+        
+        # Validate secret format (should be URL-safe base64)
+        if secret and len(secret) >= 32:
+            logger.info("[Auth] Restored JWT secret from backup file")
+            return secret
+        
+        return None
+    except Exception as e:
+        logger.warning(f"[Auth] Failed to load JWT secret backup: {e}")
+        return None
+
 
 def get_jwt_secret() -> str:
     """
@@ -53,7 +118,8 @@ def get_jwt_secret() -> str:
     - Auto-generated cryptographically secure 64-char secret
     - Shared across all workers via Redis (multi-worker safe)
     - No manual configuration required (removed from .env)
-    - Users only re-login if Redis is flushed (rare event)
+    - Persistent backup to file for recovery after Redis flush
+    - Users only re-login if both Redis AND backup file are lost (very rare)
     
     Uses SET NX (set if not exists) to ensure only one worker generates
     the secret, preventing race conditions.
@@ -81,13 +147,28 @@ def get_jwt_secret() -> str:
         if not redis:
             raise RuntimeError("Failed to connect to Redis for JWT secret retrieval")
         
-        # Try to get existing secret
+        # Try to get existing secret from Redis
         secret = redis.get(_JWT_SECRET_REDIS_KEY)
         if secret:
             # Handle both bytes and string (depends on Redis client decode_responses setting)
             _jwt_secret_cache = secret.decode('utf-8') if isinstance(secret, bytes) else secret
             logger.debug("[Auth] Retrieved JWT secret from Redis")
             return _jwt_secret_cache
+        
+        # Redis doesn't have the secret - try to restore from backup
+        backup_secret = _load_jwt_secret_backup()
+        if backup_secret:
+            # Restore to Redis (atomic set-if-not-exists)
+            if redis.set(_JWT_SECRET_REDIS_KEY, backup_secret, nx=True):
+                logger.info("[Auth] Restored JWT secret from backup to Redis")
+                _jwt_secret_cache = backup_secret
+                return _jwt_secret_cache
+            
+            # Another worker restored it first, fetch theirs
+            secret = redis.get(_JWT_SECRET_REDIS_KEY)
+            if secret:
+                _jwt_secret_cache = secret.decode('utf-8') if isinstance(secret, bytes) else secret
+                return _jwt_secret_cache
         
         # Generate new secret (SET NX ensures only one worker creates it)
         import secrets
@@ -97,6 +178,8 @@ def get_jwt_secret() -> str:
         if redis.set(_JWT_SECRET_REDIS_KEY, new_secret, nx=True):
             logger.info("[Auth] Generated new JWT secret (stored in Redis)")
             _jwt_secret_cache = new_secret
+            # Backup to file for future recovery
+            _save_jwt_secret_backup(new_secret)
             return _jwt_secret_cache
         
         # Another worker created it first, fetch theirs
@@ -104,6 +187,8 @@ def get_jwt_secret() -> str:
         if secret:
             # Handle both bytes and string (depends on Redis client decode_responses setting)
             _jwt_secret_cache = secret.decode('utf-8') if isinstance(secret, bytes) else secret
+            # Backup to file (in case they didn't)
+            _save_jwt_secret_backup(_jwt_secret_cache)
             return _jwt_secret_cache
         
         # Should never happen, but handle gracefully
@@ -422,17 +507,43 @@ def hash_refresh_token(token: str) -> str:
 
 def compute_device_hash(request: Request) -> str:
     """
-    Compute a device fingerprint hash from request headers
+    Compute a device fingerprint hash from request headers.
     
-    Uses User-Agent and Accept-Language for basic device binding.
-    This is not foolproof but adds a layer of security.
+    Uses multiple signals for more robust device identification:
+    - User-Agent: Browser and OS identification
+    - Accept-Language: Language preferences
+    - Accept-Encoding: Compression support (stable across sessions)
+    - Sec-CH-UA-Platform: Client hint for OS platform (if available)
+    - Sec-CH-UA-Mobile: Client hint for mobile/desktop (if available)
+    
+    Note: We deliberately exclude IP address as it can change frequently
+    (e.g., mobile networks, VPN). The goal is to identify the same browser
+    on the same device, not the network location.
+    
+    This is not foolproof but adds a layer of security. The hash is
+    truncated to 16 characters to balance uniqueness with storage efficiency.
     """
     import hashlib
     
+    # Core headers (always present)
     user_agent = request.headers.get("User-Agent", "")
     accept_language = request.headers.get("Accept-Language", "")
+    accept_encoding = request.headers.get("Accept-Encoding", "")
     
-    fingerprint = f"{user_agent}|{accept_language}"
+    # Client hints (modern browsers only, more stable than User-Agent)
+    sec_ch_platform = request.headers.get("Sec-CH-UA-Platform", "")
+    sec_ch_mobile = request.headers.get("Sec-CH-UA-Mobile", "")
+    
+    # Build fingerprint from stable signals
+    fingerprint_parts = [
+        user_agent,
+        accept_language,
+        accept_encoding,
+        sec_ch_platform,
+        sec_ch_mobile
+    ]
+    
+    fingerprint = "|".join(fingerprint_parts)
     return hashlib.sha256(fingerprint.encode('utf-8')).hexdigest()[:16]
 
 

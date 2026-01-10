@@ -6,8 +6,8 @@ import { computed } from 'vue'
 
 import { type Language, useUIStore } from '@/stores/ui'
 
-// Translation dictionaries
-const translations: Record<Language, Record<string, string>> = {
+// Translation dictionaries - exported for use in stores
+export const translations: Record<Language, Record<string, string>> = {
   en: {
     // Common
     'common.save': 'Save',
@@ -66,7 +66,8 @@ const translations: Record<Language, Record<string, string>> = {
     // Notifications
     'notification.saved': 'Changes saved successfully',
     'notification.deleted': 'Item deleted successfully',
-    'notification.sessionInvalidated': 'Your account was logged in from another location',
+    'notification.sessionInvalidated':
+      'You have been logged out because you exceeded the maximum number of devices',
     'notification.newVersionAvailable': 'New version available. Click to refresh.',
   },
   zh: {
@@ -128,7 +129,7 @@ const translations: Record<Language, Record<string, string>> = {
     // Notifications
     'notification.saved': '保存成功',
     'notification.deleted': '删除成功',
-    'notification.sessionInvalidated': '您的账号已在其他位置登录',
+    'notification.sessionInvalidated': '您已被登出，因为登录设备数量超过上限',
     'notification.newVersionAvailable': '新版本已发布，点击刷新。',
   },
 }

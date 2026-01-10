@@ -175,10 +175,10 @@ const filteredTemplates = computed(() => {
   return mockTemplates.filter((template) => {
     const matchesType = activeType.value === '全部' || template.type === activeType.value
     const matchesScene = activeScene.value === '全部' || template.scene === activeScene.value
-    const matchesSubject = activeSubject.value === '全部' || template.subject === activeSubject.value
+    const matchesSubject =
+      activeSubject.value === '全部' || template.subject === activeSubject.value
     const matchesSearch =
-      !searchQuery.value ||
-      template.title.toLowerCase().includes(searchQuery.value.toLowerCase())
+      !searchQuery.value || template.title.toLowerCase().includes(searchQuery.value.toLowerCase())
     return matchesType && matchesScene && matchesSubject && matchesSearch
   })
 })
@@ -333,8 +333,18 @@ function getPlaceholderColor(id: string): string {
           >
             <!-- Placeholder pattern -->
             <div class="absolute inset-0 flex items-center justify-center opacity-30">
-              <svg class="w-16 h-16 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                <circle cx="12" cy="12" r="3" />
+              <svg
+                class="w-16 h-16 text-white"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+              >
+                <circle
+                  cx="12"
+                  cy="12"
+                  r="3"
+                />
                 <path d="M12 9V3" />
                 <path d="M12 15v6" />
                 <path d="M9 12H3" />
@@ -346,8 +356,12 @@ function getPlaceholderColor(id: string): string {
               </svg>
             </div>
             <!-- Hover overlay -->
-            <div class="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
-              <span class="text-white text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity bg-black/40 px-3 py-1.5 rounded-full">
+            <div
+              class="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center"
+            >
+              <span
+                class="text-white text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity bg-black/40 px-3 py-1.5 rounded-full"
+              >
                 使用模板
               </span>
             </div>
@@ -355,7 +369,9 @@ function getPlaceholderColor(id: string): string {
 
           <!-- Info -->
           <div class="px-1">
-            <h3 class="text-sm font-medium text-stone-800 line-clamp-2 mb-2 group-hover:text-amber-600 transition-colors">
+            <h3
+              class="text-sm font-medium text-stone-800 line-clamp-2 mb-2 group-hover:text-amber-600 transition-colors"
+            >
               {{ template.title }}
             </h3>
             <div class="flex items-center gap-3 text-xs text-stone-400">

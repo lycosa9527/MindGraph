@@ -175,9 +175,15 @@ async def refresh_token(
         device_hash=current_device_hash
     )
     
-    # Store new session
+    # Remove old access token session before storing new one
+    # This prevents session accumulation on token refresh
     session_manager = get_session_manager()
-    session_manager.store_session(user_id, new_access_token)
+    old_access_token = request.cookies.get("access_token")
+    if old_access_token:
+        session_manager.delete_session(user_id, token=old_access_token)
+    
+    # Store new session with device hash for same-device session tracking
+    session_manager.store_session(user_id, new_access_token, device_hash=current_device_hash)
     
     # Set new cookies
     set_auth_cookies(response, new_access_token, new_refresh_token, request)
@@ -269,7 +275,7 @@ async def get_session_status(
             session_manager.clear_invalidation_notification(current_user.id, token_hash)
             return {
                 "status": "invalidated",
-                "message": "Your session was invalidated because you logged in from another location",
+                "message": "Session ended: maximum device limit exceeded",
                 "timestamp": notification.get("timestamp", datetime.utcnow().isoformat()),
                 "ip_address": notification.get("ip_address", "unknown")
             }

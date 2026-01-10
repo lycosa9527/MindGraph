@@ -1,11 +1,11 @@
 /**
  * LLM Results Store - Pinia store for multi-LLM auto-complete results
- * 
+ *
  * Migrated from old JavaScript:
  * - llm-autocomplete-manager.js
  * - llm-result-cache.js
  * - llm-progress-renderer.js
- * 
+ *
  * Features:
  * - Caches results from 3 LLMs (Qwen, DeepSeek, Doubao)
  * - TTL-based cache validation (10 minutes)
@@ -42,7 +42,7 @@ export interface LLMResultsState {
 
 // Constants
 const MODELS = ['qwen', 'deepseek', 'doubao'] as const
-export type LLMModel = typeof MODELS[number]
+export type LLMModel = (typeof MODELS)[number]
 
 const CACHE_TTL_MS = 10 * 60 * 1000 // 10 minutes
 
@@ -60,7 +60,7 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
   const isGenerating = ref(false)
   const sessionId = ref<string | null>(null)
   const expectedDiagramType = ref<string | null>(null)
-  
+
   // Track abort controllers for cancellation
   const abortControllers = ref<AbortController[]>([])
 
@@ -68,7 +68,7 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
   const models = computed(() => MODELS)
 
   const hasAnyResults = computed(() => {
-    return Object.values(results.value).some(r => r.success)
+    return Object.values(results.value).some((r) => r.success)
   })
 
   const readyModels = computed(() => {
@@ -78,14 +78,14 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
   })
 
   const successCount = computed(() => {
-    return Object.values(results.value).filter(r => r.success).length
+    return Object.values(results.value).filter((r) => r.success).length
   })
 
   // Check if a result is still valid (within TTL)
   function isResultValid(model: string): boolean {
     const result = results.value[model]
     if (!result || !result.success) return false
-    
+
     const age = Date.now() - result.timestamp
     return age < CACHE_TTL_MS
   }
@@ -120,7 +120,7 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
   // Set all models to a state
   function setAllModelsState(state: ModelState, modelsToSet?: string[]): void {
     const targetModels = modelsToSet || [...MODELS]
-    targetModels.forEach(model => {
+    targetModels.forEach((model) => {
       modelStates.value[model] = state
     })
   }
@@ -145,7 +145,10 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
     }
 
     // Load into diagram store
-    const loaded = diagramStore.loadFromSpec(result.spec, diagramType as import('@/types').DiagramType)
+    const loaded = diagramStore.loadFromSpec(
+      result.spec,
+      diagramType as import('@/types').DiagramType
+    )
     if (loaded) {
       selectedModel.value = model
       console.log(`[LLMResults] Switched to ${model} result`)
@@ -169,7 +172,7 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
 
   // Cancel all active requests
   function cancelAllRequests(): void {
-    abortControllers.value.forEach(controller => {
+    abortControllers.value.forEach((controller) => {
       controller.abort()
     })
     abortControllers.value = []
@@ -179,27 +182,27 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
 
   // Start generation (called before parallel API calls)
   function startGeneration(
-    newSessionId: string, 
+    newSessionId: string,
     diagramType: string,
     modelsToRun?: string[]
   ): void {
     // Cancel any existing requests
     cancelAllRequests()
-    
+
     // Clear previous cache
     clearCache()
-    
+
     // Set state
     isGenerating.value = true
     sessionId.value = newSessionId
-    
+
     // Normalize diagram type
     let normalizedType = diagramType
     if (normalizedType === 'mind_map') {
       normalizedType = 'mindmap'
     }
     expectedDiagramType.value = normalizedType
-    
+
     // Set loading state for models that will run
     const targetModels = modelsToRun || [...MODELS]
     setAllModelsState('loading', targetModels)
@@ -256,7 +259,7 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
   // Complete generation (called when all models finish)
   function completeGeneration(): void {
     isGenerating.value = false
-    
+
     // Clear loading states for any models still loading
     Object.entries(modelStates.value).forEach(([model, state]) => {
       if (state === 'loading') {
@@ -294,13 +297,13 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
     isGenerating,
     sessionId,
     expectedDiagramType,
-    
+
     // Getters
     models,
     hasAnyResults,
     readyModels,
     successCount,
-    
+
     // Actions
     isResultValid,
     getValidResult,

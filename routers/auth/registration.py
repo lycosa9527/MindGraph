@@ -217,17 +217,19 @@ async def register(
             registration_metrics.record_failure('other', duration)
         raise
     
-    # Session management: Invalidate old sessions before creating new one
+    # Session management: Allow multiple concurrent sessions (up to MAX_CONCURRENT_SESSIONS)
     session_manager = get_session_manager()
     client_ip = get_client_ip(http_request) if http_request else "unknown"
-    old_token_hash = session_manager.get_session_token(new_user.id)
-    session_manager.invalidate_user_sessions(new_user.id, old_token_hash=old_token_hash, ip_address=client_ip)
     
     # Generate JWT access token
     token = create_access_token(new_user)
     
     # Generate refresh token
     refresh_token_value, refresh_token_hash = create_refresh_token(new_user.id)
+    
+    # Compute device hash for session and token binding
+    device_hash = compute_device_hash(http_request)
+    user_agent = http_request.headers.get("User-Agent", "")
     
     # Parallel cache write, session creation, and refresh token storage
     async def cache_user_async():
@@ -244,15 +246,13 @@ async def register(
     async def store_session_async():
         """Store session in Redis (non-blocking)."""
         try:
-            session_manager.store_session(new_user.id, token)
+            session_manager.store_session(new_user.id, token, device_hash=device_hash)
         except Exception as e:
             logger.warning(f"[Auth] Failed to store session for user ID {new_user.id}: {e}")
     
     async def store_refresh_token_async():
         """Store refresh token in Redis with device binding."""
         try:
-            user_agent = http_request.headers.get("User-Agent", "")
-            device_hash = compute_device_hash(http_request)
             refresh_manager = get_refresh_token_manager()
             refresh_manager.store_refresh_token(
                 user_id=new_user.id,
@@ -442,6 +442,10 @@ async def register_with_sms(
     # Generate refresh token
     refresh_token_value, refresh_token_hash = create_refresh_token(new_user.id)
     
+    # Compute device hash for session and token binding
+    device_hash = compute_device_hash(http_request)
+    user_agent = http_request.headers.get("User-Agent", "")
+    
     # Parallel cache write, session creation, and refresh token storage
     async def cache_user_async():
         """Cache user in Redis (non-blocking)."""
@@ -457,15 +461,13 @@ async def register_with_sms(
     async def store_session_async():
         """Store session in Redis (non-blocking)."""
         try:
-            session_manager.store_session(new_user.id, token)
+            session_manager.store_session(new_user.id, token, device_hash=device_hash)
         except Exception as e:
             logger.warning(f"[Auth] Failed to store session for user ID {new_user.id}: {e}")
     
     async def store_refresh_token_async():
         """Store refresh token in Redis with device binding."""
         try:
-            user_agent = http_request.headers.get("User-Agent", "")
-            device_hash = compute_device_hash(http_request)
             refresh_manager = get_refresh_token_manager()
             refresh_manager.store_refresh_token(
                 user_id=new_user.id,

@@ -6,9 +6,24 @@
 import { useRouter } from 'vue-router'
 
 import { useUIStore } from '@/stores'
+import type { DiagramType } from '@/types'
 
 const uiStore = useUIStore()
 const router = useRouter()
+
+// Map Chinese diagram type names to DiagramType for URL
+const diagramTypeMap: Record<string, DiagramType> = {
+  圆圈图: 'circle_map',
+  气泡图: 'bubble_map',
+  双气泡图: 'double_bubble_map',
+  树形图: 'tree_map',
+  括号图: 'brace_map',
+  流程图: 'flow_map',
+  复流程图: 'multi_flow_map',
+  桥型图: 'bridge_map',
+  思维导图: 'mindmap',
+  概念图: 'concept_map',
+}
 
 // Main diagram types (8 Thinking Maps)
 const mainDiagramTypes = [
@@ -33,9 +48,13 @@ function handleSelectType(name: string) {
 }
 
 function handleNewCanvas(name: string) {
-  // Store diagram type in UI store, then navigate (keeps URL clean)
+  // Store diagram type in UI store and navigate with type in URL for refresh persistence
   uiStore.setSelectedChartType(name)
-  router.push('/canvas')
+  const diagramType = diagramTypeMap[name]
+  router.push({
+    path: '/canvas',
+    query: diagramType ? { type: diagramType } : undefined,
+  })
 }
 </script>
 

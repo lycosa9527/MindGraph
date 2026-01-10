@@ -3,15 +3,12 @@
  * CanvasToolbar - Floating toolbar for canvas editing
  * Migrated from prototype MindGraphCanvasPage toolbar
  */
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 
 import { ElButton, ElDropdown, ElDropdownItem, ElDropdownMenu, ElTooltip } from 'element-plus'
 
-import { useNotifications } from '@/composables'
-
-const notify = useNotifications()
-
 import {
+  ArrowDownUp,
   Brush,
   ChevronDown,
   Fish,
@@ -28,12 +25,14 @@ import {
   Wand2,
 } from 'lucide-vue-next'
 
+import { useNotifications } from '@/composables'
 import { useAutoComplete, useLanguage } from '@/composables'
+import { useDiagramStore } from '@/stores'
+
+const notify = useNotifications()
 
 const { isZh } = useLanguage()
 const { isGenerating: isAIGenerating, autoComplete, validateForAutoComplete } = useAutoComplete()
-
-import { useDiagramStore } from '@/stores'
 
 const diagramStore = useDiagramStore()
 
@@ -102,7 +101,7 @@ function handleRedo() {
 
 function handleAddNode() {
   const diagramType = diagramStore.type
-  
+
   if (!diagramStore.data?.nodes) {
     notify.warning('请先创建图示')
     return
@@ -115,7 +114,7 @@ function handleAddNode() {
       (n) => n.type === 'bubble' && n.id.startsWith('context-')
     )
     const newIndex = contextNodes.length
-    
+
     // Add new context node (layout will be recalculated automatically)
     diagramStore.addNode({
       id: `context-${newIndex}`,
@@ -123,7 +122,7 @@ function handleAddNode() {
       type: 'bubble',
       position: { x: 0, y: 0 }, // Will be recalculated
     })
-    
+
     diagramStore.pushHistory('添加节点')
     notify.success('已添加新节点')
     return
@@ -135,7 +134,7 @@ function handleAddNode() {
 
 function handleDeleteNode() {
   const diagramType = diagramStore.type
-  
+
   if (!diagramStore.data?.nodes) {
     notify.warning('请先创建图示')
     return
@@ -150,7 +149,7 @@ function handleDeleteNode() {
   // For circle maps, delete selected context nodes
   if (diagramType === 'circle_map') {
     let deletedCount = 0
-    
+
     // Delete each selected node (skip topic/boundary)
     for (const nodeId of diagramStore.selectedNodes) {
       if (nodeId.startsWith('context-')) {
@@ -159,7 +158,7 @@ function handleDeleteNode() {
         }
       }
     }
-    
+
     if (deletedCount > 0) {
       // Re-index remaining context nodes
       const contextNodes = diagramStore.data.nodes.filter(
@@ -168,7 +167,7 @@ function handleDeleteNode() {
       contextNodes.forEach((node, index) => {
         node.id = `context-${index}`
       })
-      
+
       diagramStore.clearSelection()
       diagramStore.pushHistory('删除节点')
       notify.success(`已删除 ${deletedCount} 个节点`)
@@ -209,6 +208,14 @@ async function handleAIGenerate() {
 function handleMoreApp(appName: string) {
   notify.info(`${appName}功能开发中`)
 }
+
+// Flow map orientation toggle (only visible for flow_map)
+const isFlowMap = computed(() => diagramStore.type === 'flow_map')
+
+function handleToggleOrientation() {
+  diagramStore.toggleFlowMapOrientation()
+  notify.success(isZh.value ? '已切换布局方向' : 'Layout direction toggled')
+}
 </script>
 
 <template>
@@ -216,15 +223,31 @@ function handleMoreApp(appName: string) {
     <div
       class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 border-t-0 rounded-b-xl shadow-lg p-1.5 flex items-center justify-center"
     >
-      <div class="toolbar-content flex items-center bg-gray-50 dark:bg-gray-700/50 rounded-lg p-1 gap-0.5">
+      <div
+        class="toolbar-content flex items-center bg-gray-50 dark:bg-gray-700/50 rounded-lg p-1 gap-0.5"
+      >
         <!-- Undo/Redo -->
-        <ElTooltip :content="isZh ? '撤销' : 'Undo'" placement="bottom">
-          <ElButton text size="small" @click="handleUndo">
+        <ElTooltip
+          :content="isZh ? '撤销' : 'Undo'"
+          placement="bottom"
+        >
+          <ElButton
+            text
+            size="small"
+            @click="handleUndo"
+          >
             <RotateCw class="w-4 h-4" />
           </ElButton>
         </ElTooltip>
-        <ElTooltip :content="isZh ? '重做' : 'Redo'" placement="bottom">
-          <ElButton text size="small" @click="handleRedo">
+        <ElTooltip
+          :content="isZh ? '重做' : 'Redo'"
+          placement="bottom"
+        >
+          <ElButton
+            text
+            size="small"
+            @click="handleRedo"
+          >
             <RotateCcw class="w-4 h-4" />
           </ElButton>
         </ElTooltip>
@@ -232,14 +255,28 @@ function handleMoreApp(appName: string) {
         <div class="divider" />
 
         <!-- Add/Delete node -->
-        <ElTooltip :content="isZh ? '增加节点' : 'Add Node'" placement="bottom">
-          <ElButton text size="small" @click="handleAddNode">
+        <ElTooltip
+          :content="isZh ? '增加节点' : 'Add Node'"
+          placement="bottom"
+        >
+          <ElButton
+            text
+            size="small"
+            @click="handleAddNode"
+          >
             <Plus class="w-4 h-4" />
             <span>{{ isZh ? '增加节点' : 'Add' }}</span>
           </ElButton>
         </ElTooltip>
-        <ElTooltip :content="isZh ? '删除节点' : 'Delete Node'" placement="bottom">
-          <ElButton text size="small" @click="handleDeleteNode">
+        <ElTooltip
+          :content="isZh ? '删除节点' : 'Delete Node'"
+          placement="bottom"
+        >
+          <ElButton
+            text
+            size="small"
+            @click="handleDeleteNode"
+          >
             <Trash2 class="w-4 h-4" />
             <span>{{ isZh ? '删除节点' : 'Delete' }}</span>
           </ElButton>
@@ -248,24 +285,55 @@ function handleMoreApp(appName: string) {
         <div class="divider" />
 
         <!-- Format brush -->
-        <ElTooltip :content="isZh ? '格式刷' : 'Format Painter'" placement="bottom">
-          <ElButton text size="small" @click="handleFormatBrush">
+        <ElTooltip
+          :content="isZh ? '格式刷' : 'Format Painter'"
+          placement="bottom"
+        >
+          <ElButton
+            text
+            size="small"
+            @click="handleFormatBrush"
+          >
             <PenLine class="w-4 h-4 text-purple-500" />
+          </ElButton>
+        </ElTooltip>
+
+        <!-- Flow Map Direction Toggle (only for flow_map) -->
+        <ElTooltip
+          v-if="isFlowMap"
+          :content="isZh ? '切换布局方向' : 'Toggle Direction'"
+          placement="bottom"
+        >
+          <ElButton
+            text
+            size="small"
+            @click="handleToggleOrientation"
+          >
+            <ArrowDownUp class="w-4 h-4 text-blue-500" />
+            <span>{{ isZh ? '方向' : 'Direction' }}</span>
           </ElButton>
         </ElTooltip>
 
         <div class="divider" />
 
         <!-- Style dropdown -->
-        <ElDropdown trigger="hover" placement="bottom">
-          <ElButton text size="small">
+        <ElDropdown
+          trigger="hover"
+          placement="bottom"
+        >
+          <ElButton
+            text
+            size="small"
+          >
             <Brush class="w-4 h-4" />
             <span>{{ isZh ? '风格' : 'Style' }}</span>
           </ElButton>
           <template #dropdown>
             <ElDropdownMenu>
               <div class="p-3 w-48">
-                <div class="text-xs font-medium text-gray-500 mb-2">{{ isZh ? '预设样式' : 'Presets' }}</div>
+                <div class="text-xs font-medium text-gray-500 mb-2">
+                  {{ isZh ? '预设样式' : 'Presets' }}
+                </div>
                 <div class="grid grid-cols-2 gap-2">
                   <ElDropdownItem
                     v-for="preset in stylePresets"
@@ -287,8 +355,14 @@ function handleMoreApp(appName: string) {
         </ElDropdown>
 
         <!-- Text style dropdown -->
-        <ElDropdown trigger="hover" placement="bottom">
-          <ElButton text size="small">
+        <ElDropdown
+          trigger="hover"
+          placement="bottom"
+        >
+          <ElButton
+            text
+            size="small"
+          >
             <Type class="w-4 h-4" />
             <span>{{ isZh ? '文本样式' : 'Text' }}</span>
           </ElButton>
@@ -296,7 +370,9 @@ function handleMoreApp(appName: string) {
             <ElDropdownMenu>
               <div class="p-3 w-56">
                 <div class="mb-2">
-                  <label class="text-xs text-gray-500 block mb-1">{{ isZh ? '字体' : 'Font' }}:</label>
+                  <label class="text-xs text-gray-500 block mb-1"
+                    >{{ isZh ? '字体' : 'Font' }}:</label
+                  >
                   <select
                     v-model="fontFamily"
                     class="w-full border border-gray-300 rounded-md py-1.5 px-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
@@ -308,7 +384,9 @@ function handleMoreApp(appName: string) {
                   </select>
                 </div>
                 <div class="mb-2">
-                  <label class="text-xs text-gray-500 block mb-1">{{ isZh ? '字号' : 'Size' }}:</label>
+                  <label class="text-xs text-gray-500 block mb-1"
+                    >{{ isZh ? '字号' : 'Size' }}:</label
+                  >
                   <input
                     v-model.number="fontSize"
                     type="number"
@@ -316,17 +394,35 @@ function handleMoreApp(appName: string) {
                   />
                 </div>
                 <div class="mb-2">
-                  <label class="text-xs text-gray-500 block mb-1">{{ isZh ? '颜色' : 'Color' }}:</label>
+                  <label class="text-xs text-gray-500 block mb-1"
+                    >{{ isZh ? '颜色' : 'Color' }}:</label
+                  >
                   <div
                     class="w-10 h-10 border border-gray-300 rounded-md cursor-pointer"
                     :style="{ backgroundColor: textColor }"
                   />
                 </div>
                 <div class="flex gap-2 mt-2">
-                  <button class="p-1.5 border border-gray-300 rounded text-gray-700 hover:bg-gray-100 font-bold">B</button>
-                  <button class="p-1.5 border border-gray-300 rounded text-gray-700 hover:bg-gray-100 italic">I</button>
-                  <button class="p-1.5 border border-gray-300 rounded text-gray-700 hover:bg-gray-100 underline">U</button>
-                  <button class="p-1.5 border border-gray-300 rounded text-gray-700 hover:bg-gray-100 line-through">S</button>
+                  <button
+                    class="p-1.5 border border-gray-300 rounded text-gray-700 hover:bg-gray-100 font-bold"
+                  >
+                    B
+                  </button>
+                  <button
+                    class="p-1.5 border border-gray-300 rounded text-gray-700 hover:bg-gray-100 italic"
+                  >
+                    I
+                  </button>
+                  <button
+                    class="p-1.5 border border-gray-300 rounded text-gray-700 hover:bg-gray-100 underline"
+                  >
+                    U
+                  </button>
+                  <button
+                    class="p-1.5 border border-gray-300 rounded text-gray-700 hover:bg-gray-100 line-through"
+                  >
+                    S
+                  </button>
                 </div>
               </div>
             </ElDropdownMenu>
@@ -334,8 +430,14 @@ function handleMoreApp(appName: string) {
         </ElDropdown>
 
         <!-- Background dropdown -->
-        <ElDropdown trigger="hover" placement="bottom">
-          <ElButton text size="small">
+        <ElDropdown
+          trigger="hover"
+          placement="bottom"
+        >
+          <ElButton
+            text
+            size="small"
+          >
             <ImageIcon class="w-4 h-4" />
             <span>{{ isZh ? '背景' : 'BG' }}</span>
           </ElButton>
@@ -343,7 +445,9 @@ function handleMoreApp(appName: string) {
             <ElDropdownMenu>
               <div class="p-3 w-56">
                 <div class="mb-3">
-                  <label class="text-xs text-gray-500 block mb-1">{{ isZh ? '背景颜色' : 'Background Color' }}:</label>
+                  <label class="text-xs text-gray-500 block mb-1"
+                    >{{ isZh ? '背景颜色' : 'Background Color' }}:</label
+                  >
                   <div class="grid grid-cols-5 gap-1">
                     <div
                       v-for="color in backgroundColors"
@@ -354,7 +458,9 @@ function handleMoreApp(appName: string) {
                   </div>
                 </div>
                 <div class="mb-2">
-                  <label class="text-xs text-gray-500 block mb-1">{{ isZh ? '透明度' : 'Opacity' }}:</label>
+                  <label class="text-xs text-gray-500 block mb-1"
+                    >{{ isZh ? '透明度' : 'Opacity' }}:</label
+                  >
                   <input
                     v-model.number="backgroundOpacity"
                     type="range"
@@ -373,8 +479,14 @@ function handleMoreApp(appName: string) {
         </ElDropdown>
 
         <!-- Border dropdown -->
-        <ElDropdown trigger="hover" placement="bottom">
-          <ElButton text size="small">
+        <ElDropdown
+          trigger="hover"
+          placement="bottom"
+        >
+          <ElButton
+            text
+            size="small"
+          >
             <Square class="w-4 h-4" />
             <span>{{ isZh ? '边框' : 'Border' }}</span>
           </ElButton>
@@ -382,14 +494,18 @@ function handleMoreApp(appName: string) {
             <ElDropdownMenu>
               <div class="p-3 w-56">
                 <div class="mb-2">
-                  <label class="text-xs text-gray-500 block mb-1">{{ isZh ? '颜色' : 'Color' }}:</label>
+                  <label class="text-xs text-gray-500 block mb-1"
+                    >{{ isZh ? '颜色' : 'Color' }}:</label
+                  >
                   <div
                     class="w-10 h-10 border border-gray-300 rounded-md cursor-pointer"
                     :style="{ backgroundColor: borderColor }"
                   />
                 </div>
                 <div class="mb-2">
-                  <label class="text-xs text-gray-500 block mb-1">{{ isZh ? '粗细' : 'Width' }}:</label>
+                  <label class="text-xs text-gray-500 block mb-1"
+                    >{{ isZh ? '粗细' : 'Width' }}:</label
+                  >
                   <input
                     v-model.number="borderWidth"
                     type="number"
@@ -397,7 +513,9 @@ function handleMoreApp(appName: string) {
                   />
                 </div>
                 <div class="mb-2">
-                  <label class="text-xs text-gray-500 block mb-1">{{ isZh ? '样式' : 'Style' }}:</label>
+                  <label class="text-xs text-gray-500 block mb-1"
+                    >{{ isZh ? '样式' : 'Style' }}:</label
+                  >
                   <select
                     v-model="borderStyle"
                     class="w-full border border-gray-300 rounded-md py-1.5 px-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
@@ -422,13 +540,30 @@ function handleMoreApp(appName: string) {
           :loading="isAIGenerating"
           @click="handleAIGenerate"
         >
-          <Wand2 v-if="!isAIGenerating" class="w-4 h-4" />
-          <span>{{ isAIGenerating ? (isZh ? '生成中...' : 'Generating...') : (isZh ? 'AI生成图示' : 'AI Generate') }}</span>
+          <Wand2
+            v-if="!isAIGenerating"
+            class="w-4 h-4"
+          />
+          <span>{{
+            isAIGenerating
+              ? isZh
+                ? '生成中...'
+                : 'Generating...'
+              : isZh
+                ? 'AI生成图示'
+                : 'AI Generate'
+          }}</span>
         </ElButton>
 
         <!-- More apps dropdown -->
-        <ElDropdown trigger="hover" placement="bottom-end">
-          <ElButton size="small" class="more-apps-btn">
+        <ElDropdown
+          trigger="hover"
+          placement="bottom-end"
+        >
+          <ElButton
+            size="small"
+            class="more-apps-btn"
+          >
             <span>{{ isZh ? '更多应用' : 'More Apps' }}</span>
             <ChevronDown class="w-3.5 h-3.5" />
           </ElButton>
@@ -440,8 +575,15 @@ function handleMoreApp(appName: string) {
                 @click="handleMoreApp(app.name)"
               >
                 <div class="flex items-start py-1">
-                  <div class="rounded-full p-2 mr-3 flex-shrink-0" :class="app.iconBg">
-                    <component :is="app.icon" class="w-4 h-4" :class="app.iconColor" />
+                  <div
+                    class="rounded-full p-2 mr-3 flex-shrink-0"
+                    :class="app.iconBg"
+                  >
+                    <component
+                      :is="app.icon"
+                      class="w-4 h-4"
+                      :class="app.iconColor"
+                    />
                   </div>
                   <div class="flex-1 min-w-0">
                     <div class="font-medium mb-0.5 flex items-center">
@@ -449,7 +591,8 @@ function handleMoreApp(appName: string) {
                       <span
                         v-if="app.tag"
                         class="ml-2 text-xs bg-orange-100 text-orange-600 px-2 py-0.5 rounded-full"
-                      >{{ app.tag }}</span>
+                        >{{ app.tag }}</span
+                      >
                     </div>
                     <div class="text-xs text-gray-500">{{ app.desc }}</div>
                   </div>

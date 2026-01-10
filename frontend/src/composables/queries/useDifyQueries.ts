@@ -1,6 +1,6 @@
 /**
  * Dify Query Composables
- * 
+ *
  * Vue Query composables for fetching Dify API data with automatic caching.
  */
 import { useQuery } from '@tanstack/vue-query'

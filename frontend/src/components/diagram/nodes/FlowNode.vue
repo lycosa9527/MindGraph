@@ -59,31 +59,55 @@ function handleEditCancel() {
       :text="data.label || ''"
       :node-id="id"
       :is-editing="isEditing"
-      max-width="180px"
+      max-width="120px"
       text-align="center"
+      truncate
       @save="handleTextSave"
       @cancel="handleEditCancel"
       @edit-start="isEditing = true"
     />
 
-    <!-- Connection handles -->
+    <!-- Connection handles for vertical flow (top-to-bottom between steps) -->
     <Handle
+      id="top"
+      type="target"
+      :position="Position.Top"
+      class="!bg-blue-500"
+    />
+    <Handle
+      id="bottom"
+      type="source"
+      :position="Position.Bottom"
+      class="!bg-blue-500"
+    />
+    <!-- Connection handles for horizontal flow (left-to-right between steps) -->
+    <Handle
+      id="left"
       type="target"
       :position="Position.Left"
       class="!bg-blue-500"
     />
     <Handle
+      id="right"
       type="source"
       :position="Position.Right"
       class="!bg-blue-500"
+    />
+    <!-- Secondary source handle on right side for substep connections (vertical mode) -->
+    <Handle
+      id="substep-source"
+      type="source"
+      :position="Position.Right"
+      class="!bg-blue-400"
     />
   </div>
 </template>
 
 <style scoped>
 .flow-node {
-  min-width: 120px;
-  min-height: 50px;
+  width: 140px;
+  height: 50px;
+  overflow: hidden;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   transition:
     box-shadow 0.2s ease,

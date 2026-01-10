@@ -19,6 +19,8 @@ import { useQueryClient } from '@tanstack/vue-query'
 import { AlertTriangle } from 'lucide-vue-next'
 
 import { difyKeys } from '@/composables/queries/difyKeys'
+import { translations } from '@/composables/useLanguage'
+import { useUIStore } from '@/stores/ui'
 import type {
   AuthMode,
   BackendUser,
@@ -34,6 +36,22 @@ const MODE_KEY = 'auth_mode'
 const API_BASE = '/api/auth'
 
 export const useAuthStore = defineStore('auth', () => {
+  // Get query client at setup time (has proper context)
+  // This may fail if Vue Query is not yet initialized, so we handle gracefully
+  let queryClient: ReturnType<typeof useQueryClient> | null = null
+  try {
+    queryClient = useQueryClient()
+  } catch {
+    // Vue Query not yet initialized, will be null
+  }
+
+  // Helper to get translated message
+  function getTranslatedMessage(key: string): string {
+    const uiStore = useUIStore()
+    const dict = translations[uiStore.language]
+    return dict[key] || key
+  }
+
   // State
   const user = ref<User | null>(null)
   // Token is no longer stored in JavaScript - it's in httpOnly cookies
@@ -128,11 +146,8 @@ export const useAuthStore = defineStore('auth', () => {
     sessionStorage.setItem(USER_KEY, JSON.stringify(normalizedUser))
 
     // Invalidate Dify queries to trigger refetch after login
-    try {
-      const queryClient = useQueryClient()
+    if (queryClient) {
       queryClient.invalidateQueries({ queryKey: difyKeys.all })
-    } catch (error) {
-      console.debug('Failed to invalidate queries on setUser:', error)
     }
   }
 
@@ -197,12 +212,8 @@ export const useAuthStore = defineStore('auth', () => {
     }
 
     // Clear Vue Query cache to prevent data leakage between users
-    try {
-      const queryClient = useQueryClient()
+    if (queryClient) {
       queryClient.clear()
-    } catch (error) {
-      // Query client might not be available in some contexts, ignore
-      console.debug('Failed to clear query cache on logout:', error)
     }
 
     clearAuth()
@@ -367,9 +378,7 @@ export const useAuthStore = defineStore('auth', () => {
         // Try to refresh the token first
         const refreshed = await refreshAccessToken()
         if (!refreshed) {
-          handleSessionInvalidation(
-            'Your session was invalidated because you logged in from another location'
-          )
+          handleSessionInvalidation(getTranslatedMessage('notification.sessionInvalidated'))
         }
         return
       }
@@ -385,9 +394,9 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  function handleSessionInvalidation(message: string): void {
+  function handleSessionInvalidation(message?: string): void {
     stopSessionMonitoring()
-    alert(message || 'Your account was logged in from another location.')
+    alert(message || getTranslatedMessage('notification.sessionInvalidated'))
     logout()
   }
 
@@ -412,16 +421,13 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.removeItem('auth_user')
 
     // Clear Vue Query cache
-    try {
-      const queryClient = useQueryClient()
+    if (queryClient) {
       queryClient.clear()
-    } catch {
-      // Query client might not be available
     }
 
     // Show notification at top of screen
     ElNotification({
-      message: message || '您的登录已过期，请重新登录',
+      message: message || getTranslatedMessage('auth.sessionExpired'),
       type: 'warning',
       duration: 5000,
       showClose: true,

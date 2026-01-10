@@ -13,10 +13,10 @@ import DOMPurify from 'dompurify'
 import { toPng } from 'html-to-image'
 import MarkdownIt from 'markdown-it'
 
+import mindmateAvatar from '@/assets/mindmate-avatar-md.png'
 import { useLanguage, useNotifications } from '@/composables'
 import type { MindMateMessage } from '@/composables/useMindMate'
 import { useAuthStore } from '@/stores'
-import mindmateAvatar from '@/assets/mindmate-avatar-md.png'
 
 const props = defineProps<{
   visible: boolean
@@ -230,7 +230,9 @@ async function exportAsPng() {
       <!-- Header with selection info -->
       <div class="modal-header">
         <div class="header-info">
-          <div class="header-title">{{ isZh ? '选择要导出的消息' : 'Select messages to export' }}</div>
+          <div class="header-title">
+            {{ isZh ? '选择要导出的消息' : 'Select messages to export' }}
+          </div>
           <div class="header-count">
             <span class="count-selected">{{ selectedMessages.length }}</span>
             <span class="count-divider">/</span>
@@ -278,8 +280,17 @@ async function exportAsPng() {
                 @update:model-value="toggleMessage(message.id)"
               />
               <div class="message-avatar">
-                <span v-if="message.role === 'user'" class="avatar-emoji">{{ userAvatar }}</span>
-                <img v-else :src="mindmateAvatar" alt="MindMate" class="avatar-img" />
+                <span
+                  v-if="message.role === 'user'"
+                  class="avatar-emoji"
+                  >{{ userAvatar }}</span
+                >
+                <img
+                  v-else
+                  :src="mindmateAvatar"
+                  alt="MindMate"
+                  class="avatar-img"
+                />
               </div>
               <div class="message-info">
                 <div class="message-role">
@@ -296,10 +307,16 @@ async function exportAsPng() {
 
       <!-- Selection tip -->
       <div class="selection-tip">
-        <span v-if="selectedMessages.length === 0" class="tip-warning">
+        <span
+          v-if="selectedMessages.length === 0"
+          class="tip-warning"
+        >
           {{ isZh ? '请至少选择一条消息' : 'Please select at least one message' }}
         </span>
-        <span v-else class="tip-info">
+        <span
+          v-else
+          class="tip-info"
+        >
           {{ isZh ? '点击消息可切换选中状态' : 'Click messages to toggle selection' }}
         </span>
       </div>
@@ -341,7 +358,7 @@ async function exportAsPng() {
                   </div>
                 </div>
               </template>
-              
+
               <!-- User message: Avatar on right -->
               <template v-else>
                 <div class="export-bubble export-bubble-user">
@@ -365,7 +382,6 @@ async function exportAsPng() {
           </div>
         </div>
       </div>
-
     </div>
 
     <template #footer>

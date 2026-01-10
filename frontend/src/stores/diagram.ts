@@ -162,7 +162,16 @@ function getEdgeTypeForDiagram(diagramType: DiagramType | null): MindGraphEdgeTy
 }
 
 // Default placeholder texts that should not be used as title
-const PLACEHOLDER_TEXTS = ['主题', '中心主题', '根主题', '事件', 'Topic', 'Central Topic', 'Root', 'Event']
+const PLACEHOLDER_TEXTS = [
+  '主题',
+  '中心主题',
+  '根主题',
+  '事件',
+  'Topic',
+  'Central Topic',
+  'Root',
+  'Event',
+]
 
 export const useDiagramStore = defineStore('diagram', () => {
   // State
@@ -172,7 +181,7 @@ export const useDiagramStore = defineStore('diagram', () => {
   const selectedNodes = ref<string[]>([])
   const history = ref<HistoryEntry[]>([])
   const historyIndex = ref(-1)
-  
+
   // Title management state
   const title = ref<string>('')
   const isUserEditedTitle = ref<boolean>(false)
@@ -627,6 +636,63 @@ export const useDiagramStore = defineStore('diagram', () => {
   }
 
   /**
+   * Toggle flow map orientation between vertical and horizontal
+   * Re-runs the spec loader to recalculate positions
+   */
+  function toggleFlowMapOrientation(): void {
+    if (!data.value || type.value !== 'flow_map') return
+
+    // Toggle orientation
+    const currentOrientation = (data.value as Record<string, unknown>).orientation as
+      | 'horizontal'
+      | 'vertical'
+      | undefined
+    const newOrientation = currentOrientation === 'horizontal' ? 'vertical' : 'horizontal'
+
+    // Build spec from current data to reload with new orientation
+    // Extract steps and substeps from current nodes
+    const stepNodes = data.value.nodes.filter((n) => n.type === 'flow')
+    const substepNodes = data.value.nodes.filter((n) => n.type === 'flowSubstep')
+
+    // Build steps array
+    const steps = stepNodes.map((node) => node.text)
+
+    // Build substeps mapping
+    const stepToSubsteps: Record<string, string[]> = {}
+    substepNodes.forEach((node) => {
+      // Parse stepIndex from substep id: flow-substep-{stepIndex}-{substepIndex}
+      const match = node.id.match(/flow-substep-(\d+)-/)
+      if (match) {
+        const stepIndex = parseInt(match[1], 10)
+        if (stepIndex < stepNodes.length) {
+          const stepText = stepNodes[stepIndex].text
+          if (!stepToSubsteps[stepText]) {
+            stepToSubsteps[stepText] = []
+          }
+          stepToSubsteps[stepText].push(node.text)
+        }
+      }
+    })
+
+    // Build substeps array
+    const substeps = Object.entries(stepToSubsteps).map(([step, subs]) => ({
+      step,
+      substeps: subs,
+    }))
+
+    // Reload with new orientation
+    const newSpec = {
+      steps,
+      substeps,
+      orientation: newOrientation,
+    }
+
+    loadFromSpec(newSpec, 'flow_map')
+    pushHistory(`Toggle orientation to ${newOrientation}`)
+    emitEvent('diagram:orientation_changed', { orientation: newOrientation })
+  }
+
+  /**
    * Load default template for a diagram type
    * Creates a blank canvas with placeholder text
    */
@@ -763,6 +829,9 @@ export const useDiagramStore = defineStore('diagram', () => {
     // Spec loading
     loadFromSpec,
     loadDefaultTemplate,
+
+    // Flow map orientation
+    toggleFlowMapOrientation,
 
     // Title management
     getTopicNodeText,

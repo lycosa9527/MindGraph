@@ -1,6 +1,10 @@
 /**
  * useBraceMap - Composable for Brace Map layout and data management
  * Brace maps show part-whole relationships with braces
+ *
+ * Uses Dagre for automatic layout (LR direction):
+ * - Whole on the left
+ * - Parts expand to the right with curly brace connectors
  */
 import { computed, ref } from 'vue'
 
@@ -8,12 +12,13 @@ import { useLanguage } from '@/composables/useLanguage'
 import type { Connection, DiagramNode, MindGraphEdge, MindGraphNode } from '@/types'
 
 import {
-  DEFAULT_CENTER_Y,
   DEFAULT_LEVEL_WIDTH,
   DEFAULT_NODE_HEIGHT,
+  DEFAULT_NODE_WIDTH,
   DEFAULT_PADDING,
   DEFAULT_VERTICAL_SPACING,
 } from './layoutConfig'
+import { calculateDagreLayout, type DagreEdgeInput, type DagreNodeInput } from './useDagreLayout'
 
 interface BraceNode {
   id: string
@@ -26,140 +31,124 @@ interface BraceMapData {
 }
 
 interface BraceMapOptions {
-  startX?: number
-  centerY?: number
-  levelWidth?: number
-  nodeSpacing?: number
+  levelWidth?: number // Horizontal spacing between levels (rankSeparation)
+  nodeSpacing?: number // Vertical spacing between siblings (nodeSeparation)
   nodeWidth?: number
   nodeHeight?: number
 }
 
-interface LayoutResult {
-  nodes: MindGraphNode[]
-  edges: MindGraphEdge[]
-  height: number
-  topY: number
-  bottomY: number
+// Helper to flatten brace tree for Dagre
+interface FlattenedBraceNode {
+  id: string
+  text: string
+  depth: number
 }
 
 export function useBraceMap(options: BraceMapOptions = {}) {
   const {
-    startX = DEFAULT_PADDING + 60, // 100px
-    centerY = DEFAULT_CENTER_Y,
     levelWidth = DEFAULT_LEVEL_WIDTH,
-    nodeSpacing = DEFAULT_VERTICAL_SPACING, // 60px
-    nodeWidth: _nodeWidth = 140,
+    nodeSpacing = DEFAULT_VERTICAL_SPACING,
+    nodeWidth = DEFAULT_NODE_WIDTH,
     nodeHeight = DEFAULT_NODE_HEIGHT,
   } = options
-  // nodeWidth reserved for future use
-  void _nodeWidth
 
   const { t } = useLanguage()
   const data = ref<BraceMapData | null>(null)
 
-  // Calculate total height for a node and its parts
-  function calculateHeight(node: BraceNode): number {
-    if (!node.parts || node.parts.length === 0) {
-      return nodeHeight
+  // Flatten brace tree into nodes and edges for Dagre
+  function flattenBraceTree(
+    node: BraceNode,
+    depth: number,
+    parentId: string | null,
+    dagreNodes: DagreNodeInput[],
+    dagreEdges: DagreEdgeInput[],
+    nodeInfos: Map<string, FlattenedBraceNode>,
+    counter: { value: number }
+  ): void {
+    const nodeId = node.id || `brace-${depth}-${counter.value++}`
+
+    dagreNodes.push({ id: nodeId, width: nodeWidth, height: nodeHeight })
+    nodeInfos.set(nodeId, { id: nodeId, text: node.text, depth })
+
+    if (parentId) {
+      dagreEdges.push({ source: parentId, target: nodeId })
     }
 
-    return node.parts.reduce((sum, part) => {
-      return sum + calculateHeight(part) + nodeSpacing
-    }, -nodeSpacing)
+    if (node.parts && node.parts.length > 0) {
+      node.parts.forEach((part) => {
+        flattenBraceTree(part, depth + 1, nodeId, dagreNodes, dagreEdges, nodeInfos, counter)
+      })
+    }
   }
 
-  // Layout nodes recursively from left to right with braces
-  function layoutNode(
-    node: BraceNode,
-    x: number,
-    centerYPos: number,
-    depth: number,
-    parentId?: string
-  ): LayoutResult {
-    const result: LayoutResult = {
-      nodes: [],
-      edges: [],
-      height: nodeHeight,
-      topY: centerYPos - nodeHeight / 2,
-      bottomY: centerYPos + nodeHeight / 2,
-    }
+  // Generate layout using Dagre
+  function generateLayout(): { nodes: MindGraphNode[]; edges: MindGraphEdge[] } {
+    if (!data.value) return { nodes: [], edges: [] }
 
-    const nodeId = node.id || `brace-${depth}-${Date.now()}`
+    const nodes: MindGraphNode[] = []
+    const edges: MindGraphEdge[] = []
 
-    // Create node
-    const vueFlowNode: MindGraphNode = {
-      id: nodeId,
-      type: depth === 0 ? 'topic' : 'brace',
-      position: { x, y: centerYPos - nodeHeight / 2 },
-      data: {
-        label: node.text,
-        nodeType: depth === 0 ? 'topic' : 'brace',
-        diagramType: 'brace_map',
-        isDraggable: depth > 0,
-        isSelectable: true,
-      },
-      draggable: depth > 0,
-    }
-    result.nodes.push(vueFlowNode)
+    const dagreNodes: DagreNodeInput[] = []
+    const dagreEdges: DagreEdgeInput[] = []
+    const nodeInfos = new Map<string, FlattenedBraceNode>()
 
-    // Create brace edge to parent
-    if (parentId) {
-      result.edges.push({
-        id: `edge-${parentId}-${nodeId}`,
-        source: parentId,
-        target: nodeId,
+    // Flatten the tree structure
+    flattenBraceTree(data.value.whole, 0, null, dagreNodes, dagreEdges, nodeInfos, { value: 0 })
+
+    // Calculate layout using Dagre (left-to-right direction for brace maps)
+    const layoutResult = calculateDagreLayout(dagreNodes, dagreEdges, {
+      direction: 'LR',
+      nodeSeparation: nodeSpacing,
+      rankSeparation: levelWidth,
+      align: 'UL',
+      marginX: DEFAULT_PADDING,
+      marginY: DEFAULT_PADDING,
+    })
+
+    // Create VueFlow nodes with Dagre positions
+    dagreNodes.forEach((dagreNode) => {
+      const info = nodeInfos.get(dagreNode.id)
+      const pos = layoutResult.positions.get(dagreNode.id)
+
+      if (info && pos) {
+        nodes.push({
+          id: dagreNode.id,
+          type: info.depth === 0 ? 'topic' : 'brace',
+          position: { x: pos.x, y: pos.y },
+          data: {
+            label: info.text,
+            nodeType: info.depth === 0 ? 'topic' : 'brace',
+            diagramType: 'brace_map',
+            isDraggable: info.depth > 0,
+            isSelectable: true,
+          },
+          draggable: info.depth > 0,
+        })
+      }
+    })
+
+    // Create edges
+    dagreEdges.forEach((edge) => {
+      edges.push({
+        id: `edge-${edge.source}-${edge.target}`,
+        source: edge.source,
+        target: edge.target,
         type: 'brace',
         data: { edgeType: 'brace' as const },
       })
-    }
+    })
 
-    // Layout parts (children)
-    if (node.parts && node.parts.length > 0) {
-      const partsHeights = node.parts.map((part) => calculateHeight(part))
-      const totalPartsHeight =
-        partsHeights.reduce((sum, h) => sum + h, 0) + (node.parts.length - 1) * nodeSpacing
-
-      let partY = centerYPos - totalPartsHeight / 2
-
-      const partResults: LayoutResult[] = []
-
-      node.parts.forEach((part, index) => {
-        const partHeight = partsHeights[index]
-        const partCenterY = partY + partHeight / 2
-
-        const partResult = layoutNode(part, x + levelWidth, partCenterY, depth + 1, nodeId)
-        partResults.push(partResult)
-        result.nodes.push(...partResult.nodes)
-        result.edges.push(...partResult.edges)
-
-        partY += partHeight + nodeSpacing
-      })
-
-      // Update bounds
-      if (partResults.length > 0) {
-        result.topY = Math.min(result.topY, ...partResults.map((r) => r.topY))
-        result.bottomY = Math.max(result.bottomY, ...partResults.map((r) => r.bottomY))
-      }
-      result.height = result.bottomY - result.topY
-    }
-
-    return result
+    return { nodes, edges }
   }
 
   // Convert brace map data to Vue Flow nodes
   const nodes = computed<MindGraphNode[]>(() => {
-    if (!data.value) return []
-
-    const result = layoutNode(data.value.whole, startX, centerY, 0)
-    return result.nodes
+    return generateLayout().nodes
   })
 
   // Generate edges
   const edges = computed<MindGraphEdge[]>(() => {
-    if (!data.value) return []
-
-    const result = layoutNode(data.value.whole, startX, centerY, 0)
-    return result.edges
+    return generateLayout().edges
   })
 
   // Set brace map data
