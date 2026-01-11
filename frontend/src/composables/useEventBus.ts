@@ -560,10 +560,13 @@ class EnhancedEventBus {
     if (!this.ownerRegistry.has(owner)) {
       this.ownerRegistry.set(owner, [])
     }
-    this.ownerRegistry.get(owner)!.push({
-      event,
-      handler: handler as EventHandler<EventKey>,
-    })
+    const ownerListeners = this.ownerRegistry.get(owner)
+    if (ownerListeners) {
+      ownerListeners.push({
+        event,
+        handler: handler as EventHandler<EventKey>,
+      })
+    }
 
     if (this.debugMode) {
       console.log(`[EventBus] Listener added with owner: ${event} (owner: ${owner})`)
