@@ -14,7 +14,7 @@
  *   const { restore, clear, isPersisted } = useDiagramPersistence('my-diagram-id')
  *   onMounted(() => restore())
  */
-import { computed, onUnmounted, watch } from 'vue'
+import { computed, onUnmounted, watch, type ComputedRef } from 'vue'
 
 import { useVueFlow, type Edge, type Node } from '@vue-flow/core'
 import { useStorage, useThrottleFn } from '@vueuse/core'
@@ -42,7 +42,7 @@ export interface DiagramPersistenceState {
   /** Clear persisted data */
   clear: () => void
   /** Check if persisted data exists */
-  isPersisted: ReturnType<typeof computed<boolean>>
+  isPersisted: ComputedRef<boolean>
   /** Enable/disable auto-save */
   setAutoSave: (enabled: boolean) => void
 }

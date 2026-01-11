@@ -27,6 +27,7 @@ import os
 import hashlib
 import json
 import logging
+import time
 from typing import Optional, Dict, Any
 from datetime import datetime, timedelta
 
@@ -189,14 +190,18 @@ class RedisSessionManager:
         Returns:
             True if stored successfully, False otherwise
         """
+        # DEBUG: Log entry point with all parameters
+        logger.info(f"[Session] store_session called: user={user_id}, device_hash={device_hash[:8] if device_hash else 'none'}..., allow_multiple={allow_multiple}")
+        
         if not self._use_redis():
-            logger.debug(f"[Session] Redis unavailable, skipping session storage for user {user_id}")
+            logger.info(f"[Session] Redis unavailable, skipping session storage for user {user_id}")
             return False
         
         try:
             token_hash = _hash_token(token)
             redis = get_redis()
             if not redis:
+                logger.info(f"[Session] Redis connection failed for user {user_id}")
                 return False
             
             if allow_multiple:
@@ -209,10 +214,18 @@ class RedisSessionManager:
                     redis.delete(old_session_key)
                     logger.info(f"[Session] Migrated user {user_id} from single-session to multi-session mode")
                 
+                # DEBUG: Log existing sessions before any operations
+                existing_sessions_before = redis.smembers(session_set_key) if redis.exists(session_set_key) else set()
+                logger.info(f"[Session] Before store: user={user_id}, existing_sessions={len(existing_sessions_before)}, max={MAX_CONCURRENT_SESSIONS}")
+                for idx, sess in enumerate(existing_sessions_before):
+                    ts, dh, th = self._parse_session_entry(sess)
+                    logger.debug(f"[Session]   Existing[{idx}]: device={dh[:8] if dh else 'none'}..., token={th[:8]}..., age={(time.time() - ts):.0f}s")
+                
                 # Revoke any existing sessions from the same device first
                 # This prevents session accumulation from repeated logins on the same device
                 if device_hash:
-                    self._revoke_existing_device_sessions(user_id, device_hash, redis, session_set_key)
+                    revoked = self._revoke_existing_device_sessions(user_id, device_hash, redis, session_set_key)
+                    logger.info(f"[Session] Revoked {revoked} existing session(s) for same device: user={user_id}, device={device_hash[:8]}...")
                 
                 # Store token with timestamp and device hash for ordering and identification
                 # Token format: timestamp:device_hash:token_hash
@@ -228,6 +241,9 @@ class RedisSessionManager:
                     entry_time, _, _ = self._parse_session_entry(session_entry)
                     if entry_time > 0 and current_time - entry_time > SESSION_TTL_SECONDS:
                         stale_sessions.append(session_entry)
+                
+                if stale_sessions:
+                    logger.info(f"[Session] Found {len(stale_sessions)} stale session(s) to cleanup for user {user_id}")
                 
                 # Use pipeline for atomic add + cleanup + TTL
                 pipe = redis.pipeline()
@@ -249,11 +265,12 @@ class RedisSessionManager:
                 results = pipe.execute()
                 session_count = results[-1]  # Last result is scard
                 
-                if stale_sessions:
-                    logger.debug(f"[Session] Cleaned up {len(stale_sessions)} stale session(s) for user {user_id}")
+                logger.info(f"[Session] After add: user={user_id}, session_count={session_count}, max={MAX_CONCURRENT_SESSIONS}, stale_removed={len(stale_sessions)}")
                 
                 # Check if we exceed max concurrent sessions
                 if session_count > MAX_CONCURRENT_SESSIONS:
+                    logger.info(f"[Session] LIMIT EXCEEDED: user={user_id}, count={session_count}, max={MAX_CONCURRENT_SESSIONS} - will remove oldest")
+                    
                     # Get all sessions and sort by timestamp (oldest first)
                     all_sessions = redis.smembers(session_set_key)
                     # Sort by timestamp (entries are timestamp:device_hash:token_hash)
@@ -271,8 +288,9 @@ class RedisSessionManager:
                         old_session = sorted_sessions[i]
                         remove_pipe.srem(session_set_key, old_session)
                         # Collect token hashes for notifications
-                        _, _, old_token_hash = self._parse_session_entry(old_session)
+                        old_ts, old_dh, old_token_hash = self._parse_session_entry(old_session)
                         old_sessions_to_notify.append(old_token_hash)
+                        logger.info(f"[Session] Removing session[{i}]: user={user_id}, device={old_dh[:8] if old_dh else 'none'}..., token={old_token_hash[:8]}..., age={(current_time - old_ts):.0f}s")
                     
                     # Execute removals atomically
                     remove_pipe.execute()
@@ -280,11 +298,11 @@ class RedisSessionManager:
                     # Create invalidation notifications (outside pipeline as they use different keys)
                     for old_token_hash in old_sessions_to_notify:
                         self.create_invalidation_notification(user_id, old_token_hash)
-                        logger.info(f"[Session] Removed oldest session for user {user_id} (max {MAX_CONCURRENT_SESSIONS} reached)")
+                        logger.info(f"[Session] Created invalidation notification: user={user_id}, token={old_token_hash[:8]}...")
                     
                     session_count = MAX_CONCURRENT_SESSIONS
                 
-                logger.debug(f"[Session] Added session for user {user_id} (sessions: {session_count}/{MAX_CONCURRENT_SESSIONS})")
+                logger.info(f"[Session] store_session complete: user={user_id}, final_count={session_count}/{MAX_CONCURRENT_SESSIONS}, device={device_hash[:8] if device_hash else 'none'}...")
                 return True
             else:
                 # Single session mode: Use single key-value (legacy mode)
@@ -333,18 +351,26 @@ class RedisSessionManager:
         Returns:
             True if deleted successfully, False otherwise
         """
+        # DEBUG: Log entry point
+        token_hint = _hash_token(token)[:8] if token else "all"
+        logger.info(f"[Session] delete_session called: user={user_id}, token={token_hint}...")
+        
         if not self._use_redis():
-            logger.debug(f"[Session] Redis unavailable, skipping session deletion for user {user_id}")
+            logger.info(f"[Session] Redis unavailable, skipping session deletion for user {user_id}")
             return False
         
         try:
             redis = get_redis()
             if not redis:
+                logger.info(f"[Session] Redis connection failed for delete_session: user={user_id}")
                 return False
             
             # Check multiple sessions mode first (default mode)
             session_set_key = _get_session_set_key(user_id)
             if redis.exists(session_set_key):
+                existing_count = redis.scard(session_set_key)
+                logger.info(f"[Session] delete_session: user={user_id}, existing_sessions={existing_count}")
+                
                 if token:
                     # Remove specific token from set
                     token_hash = _hash_token(token)
@@ -352,18 +378,22 @@ class RedisSessionManager:
                     all_sessions = redis.smembers(session_set_key)
                     removed = False
                     for session_entry in all_sessions:
-                        _, _, entry_token_hash = self._parse_session_entry(session_entry)
+                        _, entry_device_hash, entry_token_hash = self._parse_session_entry(session_entry)
                         if entry_token_hash == token_hash:
                             redis.srem(session_set_key, session_entry)
                             removed = True
+                            logger.info(f"[Session] Removed specific token: user={user_id}, token={token_hash[:8]}..., device={entry_device_hash[:8] if entry_device_hash else 'none'}...")
                             break
-                    logger.debug(f"[Session] Removed token from session set for user {user_id}")
+                    if not removed:
+                        logger.info(f"[Session] Token not found in session set: user={user_id}, token={token_hash[:8]}...")
                     return removed
                 else:
                     # Remove entire set
                     redis.delete(session_set_key)
-                    logger.debug(f"[Session] Deleted session set for user {user_id}")
+                    logger.info(f"[Session] Deleted entire session set: user={user_id}, count_was={existing_count}")
                     return True
+            else:
+                logger.info(f"[Session] No session set found for user {user_id} (may have expired)")
             
             # Single session mode (legacy)
             session_key = _get_session_key(user_id)
@@ -392,15 +422,18 @@ class RedisSessionManager:
         Returns:
             True if session is valid, False otherwise
         """
+        token_hash = _hash_token(token)
+        logger.info(f"[Session] is_session_valid called: user={user_id}, token={token_hash[:8]}...")
+        
         if not self._use_redis():
             # Graceful degradation: allow authentication if Redis unavailable
-            logger.debug(f"[Session] Redis unavailable, allowing authentication for user {user_id}")
+            logger.info(f"[Session] Redis unavailable, allowing authentication (fail-open): user={user_id}")
             return True
         
         try:
-            token_hash = _hash_token(token)
             redis = get_redis()
             if not redis:
+                logger.info(f"[Session] Redis connection failed, allowing authentication (fail-open): user={user_id}")
                 return True  # Fail-open
             
             # Check multiple sessions mode first (default mode)
@@ -409,12 +442,22 @@ class RedisSessionManager:
                 # Multiple sessions mode: Check if token hash is in any session entry
                 # Sessions are stored as timestamp:device_hash:token_hash
                 all_sessions = redis.smembers(session_set_key)
-                for session_entry in all_sessions:
-                    _, _, entry_token_hash = self._parse_session_entry(session_entry)
+                session_count = len(all_sessions)
+                logger.info(f"[Session] Validating token against {session_count} session(s): user={user_id}")
+                
+                for idx, session_entry in enumerate(all_sessions):
+                    entry_ts, entry_device_hash, entry_token_hash = self._parse_session_entry(session_entry)
+                    age_seconds = time.time() - entry_ts if entry_ts > 0 else -1
+                    logger.debug(f"[Session]   Session[{idx}]: device={entry_device_hash[:8] if entry_device_hash else 'none'}..., token={entry_token_hash[:8]}..., age={age_seconds:.0f}s")
                     if entry_token_hash == token_hash:
+                        logger.info(f"[Session] Session VALID: user={user_id}, matched session[{idx}], age={age_seconds:.0f}s")
                         return True
-                logger.debug(f"[Session] Token not found in session set for user {user_id}")
+                
+                # Token not found in any session
+                logger.info(f"[Session] Session INVALID: user={user_id}, token={token_hash[:8]}... not found in {session_count} session(s)")
                 return False
+            else:
+                logger.info(f"[Session] No session set exists for user {user_id}, checking legacy mode...")
             
             # Check single session mode (legacy)
             session_key = _get_session_key(user_id)
@@ -422,17 +465,20 @@ class RedisSessionManager:
             
             if stored_hash is None:
                 # Session doesn't exist (expired or invalidated)
-                logger.debug(f"[Session] No active session found for user {user_id}")
+                logger.info(f"[Session] Session INVALID: user={user_id}, no session found (expired or never created)")
                 return False
             
             is_valid = stored_hash == token_hash
-            if not is_valid:
-                logger.debug(f"[Session] Token mismatch for user {user_id} (session invalidated)")
+            if is_valid:
+                logger.info(f"[Session] Session VALID (legacy mode): user={user_id}")
+            else:
+                logger.info(f"[Session] Session INVALID (legacy mode): user={user_id}, token mismatch")
             
             return is_valid
         except Exception as e:
             logger.error(f"[Session] Error validating session for user {user_id}: {e}", exc_info=True)
             # Fail-open: allow authentication on error (backward compatibility)
+            logger.info(f"[Session] Error occurred, allowing authentication (fail-open): user={user_id}")
             return True
     
     def invalidate_user_sessions(self, user_id: int, old_token_hash: Optional[str] = None, 
@@ -766,8 +812,10 @@ class RefreshTokenManager:
         Returns:
             Tuple of (is_valid, token_data, error_message)
         """
+        logger.info(f"[RefreshToken] validate_refresh_token called: user={user_id}, token={token_hash[:8]}..., current_device={current_device_hash[:8] if current_device_hash else 'none'}..., strict={strict_device_check}")
+        
         if not self._use_redis():
-            logger.warning("[RefreshToken] Redis unavailable, cannot validate refresh token")
+            logger.info("[RefreshToken] Redis unavailable, cannot validate refresh token")
             return False, None, "Redis unavailable"
         
         try:
@@ -775,21 +823,28 @@ class RefreshTokenManager:
             token_json = redis_ops.get(token_key)
             
             if not token_json:
-                logger.warning(f"[TokenAudit] Refresh failed - invalid token: user={user_id}")
+                logger.info(f"[RefreshToken] INVALID - token not found in Redis: user={user_id}, token={token_hash[:8]}...")
                 return False, None, "Invalid or expired refresh token"
             
             token_data = json.loads(token_json)
+            stored_device_hash = token_data.get("device_hash", "")
+            created_at = token_data.get("created_at", "unknown")
+            ip_address = token_data.get("ip_address", "unknown")
+            
+            logger.info(f"[RefreshToken] Token found: user={user_id}, stored_device={stored_device_hash[:8] if stored_device_hash else 'none'}..., created={created_at}, ip={ip_address}")
             
             # Check device binding
             if current_device_hash and strict_device_check:
-                stored_device_hash = token_data.get("device_hash")
                 if stored_device_hash and stored_device_hash != current_device_hash:
-                    logger.warning(
-                        f"[TokenAudit] Device mismatch on refresh: user={user_id}, "
-                        f"stored={stored_device_hash}, current={current_device_hash}"
+                    logger.info(
+                        f"[RefreshToken] DEVICE MISMATCH: user={user_id}, "
+                        f"stored_device={stored_device_hash}, current_device={current_device_hash}"
                     )
                     return False, token_data, "Device mismatch"
+                elif not stored_device_hash:
+                    logger.info(f"[RefreshToken] No stored device hash, skipping device check: user={user_id}")
             
+            logger.info(f"[RefreshToken] VALID: user={user_id}, token={token_hash[:8]}...")
             return True, token_data, None
             
         except Exception as e:

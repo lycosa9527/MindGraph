@@ -618,12 +618,13 @@ class LLMService:
     
     async def chat_stream(
         self,
-        prompt: str,
+        prompt: str = '',
         model: str = 'qwen',
         temperature: Optional[float] = None,
         max_tokens: int = 2000,
         timeout: Optional[float] = None,
         system_message: Optional[str] = None,
+        messages: Optional[List[Dict[str, str]]] = None,  # Multi-turn messages array
         # Token tracking parameters
         user_id: Optional[int] = None,
         organization_id: Optional[int] = None,
@@ -633,22 +634,33 @@ class LLMService:
         session_id: Optional[str] = None,
         conversation_id: Optional[str] = None,
         skip_load_balancing: bool = False,  # Skip load balancing if already applied (e.g., from stream_progressive)
+        enable_thinking: bool = False,  # Enable thinking mode for reasoning models (DeepSeek R1, Qwen3, Kimi K2)
+        yield_structured: bool = False,  # If True, yield dicts with 'type' key; if False, yield plain strings
         **kwargs
     ):
         """
         Stream chat completion from a specific LLM.
         
         Args:
-            prompt: User prompt
+            prompt: User prompt (used if messages is not provided)
             model: Model identifier (qwen, deepseek, etc.)
             temperature: Sampling temperature
             max_tokens: Maximum tokens to generate
             timeout: Request timeout in seconds
-            system_message: Optional system message
+            system_message: Optional system message (used if messages is not provided)
+            messages: Optional list of message dicts for multi-turn conversations.
+                      If provided, overrides prompt and system_message.
+                      Format: [{"role": "system/user/assistant", "content": "..."}]
+            enable_thinking: Enable thinking mode for reasoning models (yields 'thinking' chunks)
+            yield_structured: If True, yield structured dicts; if False, yield plain content strings
             **kwargs: Additional model-specific parameters
             
         Yields:
-            Response chunks as they arrive
+            If yield_structured=False (default): Plain content strings
+            If yield_structured=True: Dicts with 'type' key:
+                - {'type': 'thinking', 'content': '...'} - Reasoning content
+                - {'type': 'token', 'content': '...'} - Response content
+                - {'type': 'usage', 'usage': {...}} - Token usage stats
         """
         start_time = time.time()
         
@@ -678,11 +690,17 @@ class LLMService:
             # Get client for actual model
             client = self.client_manager.get_client(actual_model)
             
-            # Build messages
-            messages = []
-            if system_message:
-                messages.append({"role": "system", "content": system_message})
-            messages.append({"role": "user", "content": prompt})
+            # Build messages - use provided messages array if available, otherwise build from prompt
+            if messages is not None:
+                # Use provided messages directly (for multi-turn conversations)
+                chat_messages = list(messages)  # Copy to avoid mutation
+            else:
+                # Build single-turn messages from prompt and system_message
+                chat_messages = []
+                if system_message:
+                    chat_messages.append({"role": "system", "content": system_message})
+                if prompt:
+                    chat_messages.append({"role": "user", "content": prompt})
             
             # Set timeout
             if timeout is None:
@@ -711,9 +729,10 @@ class LLMService:
             # Stream the response and capture usage
             usage_data = None
             async for chunk in stream_method(
-                messages=messages,
+                messages=chat_messages,
                 temperature=temperature,
                 max_tokens=max_tokens,
+                enable_thinking=enable_thinking,
                 **kwargs
             ):
                 # Handle new format: chunk can be dict with 'type' and content/usage
@@ -722,11 +741,22 @@ class LLMService:
                     if chunk_type == 'usage':
                         # Capture usage data from final chunk
                         usage_data = chunk.get('usage', {})
+                        if yield_structured:
+                            yield chunk  # Forward usage to caller if structured mode
+                    elif chunk_type == 'thinking':
+                        # Yield thinking/reasoning content
+                        if yield_structured:
+                            yield chunk
+                        # Note: In non-structured mode, thinking is discarded
+                        # (for backward compatibility with existing callers)
                     elif chunk_type == 'token':
                         # Yield content token
                         content = chunk.get('content', '')
                         if content:
-                            yield content
+                            if yield_structured:
+                                yield chunk
+                            else:
+                                yield content
                 else:
                     # Backward compatibility: plain string chunk
                     yield chunk

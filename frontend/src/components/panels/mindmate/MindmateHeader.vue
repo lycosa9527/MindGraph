@@ -59,12 +59,12 @@ const isFullpageMode = computed(() => props.mode === 'fullpage')
         :size="40"
         class="mindmate-avatar flex-shrink-0"
       />
-      <h3
-        class="font-semibold text-gray-800 dark:text-white text-sm truncate"
+      <h1
+        class="text-sm font-semibold text-gray-800 dark:text-white truncate"
         :class="{ 'typing-cursor': isTyping }"
       >
         {{ title }}
-      </h3>
+      </h1>
     </div>
     <div class="flex items-center gap-2 flex-shrink-0">
       <!-- New Conversation button -->

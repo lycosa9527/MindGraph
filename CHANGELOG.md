@@ -7,6 +7,73 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [5.1.7] - 2025-01-11 - HTTP/2 Migration, AskOnce Feature, and Session Debugging
+
+### Added
+
+- **AskOnce Feature (多应)** (`routers/askonce.py`, `frontend/src/pages/AskOncePage.vue`)
+  - New multi-LLM streaming chat interface
+  - Added `AskOnceHistory` sidebar component for conversation history
+  - Added `useAskOnceStore` for state management
+  - Added route `/askonce` with sidebar navigation
+  - Added translations: "AskOnce" (EN), "多应" (ZH)
+
+- **Thinking Mode for Reasoning Models** (`clients/llm.py`, `services/llm_service.py`)
+  - Added `enable_thinking` parameter for DeepSeek R1, Qwen3, and Kimi K2
+  - Streaming now yields `reasoning_content` as `{'type': 'thinking', ...}` chunks
+  - Added `yield_structured` parameter to `chat_stream()` for structured output
+
+- **New Diagram Types** (`frontend/src/pages/CanvasPage.vue`, `frontend/src/types/diagram.ts`)
+  - Added `flowSubstep` node type for flow map substeps
+  - Added Chinese names for additional diagram types: factor_analysis, three_position_analysis, perspective_analysis, goal_analysis, possibility_analysis, result_analysis, five_w_one_h, whwm_analysis, four_quadrant
+
+- **New Event Types** (`frontend/src/composables/useEventBus.ts`)
+  - Added keyboard events: `keyboard:delete_executed`, `keyboard:escape_pressed`, `keyboard:select_all_executed`
+  - Added diagram orientation event: `diagram:orientation_changed`
+
+### Changed
+
+- **LLM Clients Migrated to httpx with HTTP/2** (`clients/llm.py`, `clients/omni_client.py`)
+  - Migrated QwenClient, DeepSeekClient, and KimiClient from aiohttp to httpx
+  - Enabled HTTP/2 for improved connection reuse and performance
+  - Added `stream_timeout` (180s) for thinking models
+  - Updated streaming to use `response.aiter_lines()` for SSE parsing
+  - Added `close_httpx_clients()` for graceful shutdown
+
+- **Session Management Debugging** (`services/redis_session_manager.py`, `routers/auth/session.py`, `routers/auth/login.py`, `utils/auth.py`)
+  - Added extensive `[TokenAudit]` logging for all session operations
+  - Added device fingerprint logging at login and refresh
+  - Added detailed session validation logging with age tracking
+  - Improved visibility into session store, delete, and validation flows
+
+- **Auth Store Debugging** (`frontend/src/stores/auth.ts`)
+  - Added console logging for session monitoring, refresh attempts, and invalidation
+  - Improved error detail logging for refresh failures
+
+- **Optional Authentication Dependency** (`routers/auth/dependencies.py`)
+  - Added `get_current_user_optional()` for endpoints supporting both authenticated and anonymous users
+
+- **Flow Map Layout** (`frontend/src/composables/diagrams/useFlowMapLayout.ts`)
+  - Fixed re-export pattern for layout constants
+
+- **Diagram Persistence Type** (`frontend/src/composables/useDiagramPersistence.ts`)
+  - Changed `isPersisted` type to use `ComputedRef<boolean>` for better typing
+
+- **MindGraph Container** (`frontend/src/components/mindgraph/MindGraphContainer.vue`)
+  - Added header section with title
+
+- **Mindmate Header** (`frontend/src/components/panels/mindmate/MindmateHeader.vue`)
+  - Changed title from `<h3>` to `<h1>` for semantic correctness
+
+- **Requirements** (`requirements.txt`)
+  - Added comments clarifying aiohttp (Dify), httpx (LLM clients), and websockets (Omni voice) usage
+
+### Fixed
+
+- Fixed `response.status` to `response.status_code` for httpx compatibility in LLM clients
+
+---
+
 ## [5.1.6] - 2025-01-11 - Frontend Refactoring and Diagram Layout Improvements
 
 ### Changed

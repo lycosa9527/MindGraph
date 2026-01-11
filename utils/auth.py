@@ -666,6 +666,7 @@ def get_current_user(
     payload = decode_access_token(token)
     
     user_id = payload.get("sub")
+    token_exp = payload.get("exp", 0)
     if not user_id:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -673,13 +674,24 @@ def get_current_user(
         )
     
     # Session validation: Check if session exists in Redis
-    from services.redis_session_manager import get_session_manager
+    from services.redis_session_manager import get_session_manager, _hash_token
+    import time as auth_time
     session_manager = get_session_manager()
+    token_hash = _hash_token(token)
+    
+    # DEBUG: Log session validation attempt
+    now = int(auth_time.time())
+    exp_info = f"exp={token_exp}, expired_ago={(now - token_exp) if token_exp > 0 else 'unknown'}s"
+    logger.info(f"[Auth] get_current_user session check: user={user_id}, token={token_hash[:8]}..., {exp_info}")
+    
     if not session_manager.is_session_valid(int(user_id), token):
+        logger.info(f"[Auth] get_current_user FAILED: user={user_id}, token={token_hash[:8]}... - session invalid")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Session expired or invalidated. Please login again."
         )
+    
+    logger.debug(f"[Auth] get_current_user session VALID: user={user_id}")
     
     # Use cache for user lookup (with SQLite fallback)
     from services.redis_user_cache import user_cache

@@ -47,6 +47,7 @@ export type DiagramEventType =
   | 'diagram:style_changed'
   | 'diagram:operation_completed'
   | 'diagram:layout_reset'
+  | 'diagram:orientation_changed'
 
 export interface DiagramEvent {
   type: DiagramEventType

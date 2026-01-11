@@ -67,7 +67,18 @@ const diagramTypeToChineseMap: Record<DiagramType, string> = {
   multi_flow_map: '复流程图',
   bridge_map: '桥型图',
   mindmap: '思维导图',
+  mind_map: '思维导图',
   concept_map: '概念图',
+  factor_analysis: '因素分析',
+  three_position_analysis: '三位分析',
+  perspective_analysis: '视角分析',
+  goal_analysis: '目标分析',
+  possibility_analysis: '可能性分析',
+  result_analysis: '结果分析',
+  five_w_one_h: '5W1H分析',
+  whwm_analysis: 'WHWM分析',
+  four_quadrant: '四象限图',
+  diagram: '图表',
 }
 
 // Valid diagram types for URL validation

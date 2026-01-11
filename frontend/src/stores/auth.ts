@@ -272,13 +272,25 @@ export const useAuthStore = defineStore('auth', () => {
    * Attempt to refresh the access token using the refresh token cookie
    */
   async function refreshAccessToken(): Promise<boolean> {
+    console.log('[Auth] refreshAccessToken called')
     try {
       const response = await fetch(`${API_BASE}/refresh`, {
         method: 'POST',
         credentials: 'same-origin',
       })
+      console.log(`[Auth] /refresh response: status=${response.status}, ok=${response.ok}`)
+      if (!response.ok) {
+        // Try to get error details from response
+        try {
+          const errorData = await response.json()
+          console.log(`[Auth] /refresh error detail: ${JSON.stringify(errorData)}`)
+        } catch {
+          console.log('[Auth] /refresh failed with no JSON body')
+        }
+      }
       return response.ok
-    } catch {
+    } catch (error) {
+      console.error('[Auth] refreshAccessToken exception:', error)
       return false
     }
   }
@@ -345,10 +357,14 @@ export const useAuthStore = defineStore('auth', () => {
 
   function startSessionMonitoring(): void {
     stopSessionMonitoring()
+    console.log('[Auth] Starting session monitoring (interval: 120s)')
 
     sessionMonitorInterval.value = window.setInterval(async () => {
       if (document.visibilityState === 'visible') {
+        console.log('[Auth] Session monitor triggered (tab visible)')
         await checkSessionStatus()
+      } else {
+        console.debug('[Auth] Session monitor skipped (tab hidden)')
       }
     }, 120000) // 2 minutes - balance between responsiveness and server load
 
@@ -357,6 +373,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   function stopSessionMonitoring(): void {
     if (sessionMonitorInterval.value) {
+      console.log('[Auth] Stopping session monitoring')
       clearInterval(sessionMonitorInterval.value)
       sessionMonitorInterval.value = null
     }
@@ -365,8 +382,11 @@ export const useAuthStore = defineStore('auth', () => {
   async function checkSessionStatus(): Promise<void> {
     // Skip session check if no user in state
     if (!user.value) {
+      console.debug('[Auth] checkSessionStatus skipped (no user)')
       return
     }
+
+    console.log(`[Auth] checkSessionStatus: user=${user.value.id}`)
 
     try {
       const response = await fetch(`${API_BASE}/session-status`, {
@@ -374,10 +394,15 @@ export const useAuthStore = defineStore('auth', () => {
         credentials: 'same-origin',
       })
 
+      console.log(`[Auth] /session-status response: status=${response.status}`)
+
       if (response.status === 401) {
+        console.log('[Auth] Got 401 from /session-status, attempting token refresh...')
         // Try to refresh the token first
         const refreshed = await refreshAccessToken()
+        console.log(`[Auth] Token refresh result: ${refreshed ? 'SUCCESS' : 'FAILED'}`)
         if (!refreshed) {
+          console.log('[Auth] Refresh failed, calling handleSessionInvalidation')
           handleSessionInvalidation(getTranslatedMessage('notification.sessionInvalidated'))
         }
         return
@@ -385,16 +410,20 @@ export const useAuthStore = defineStore('auth', () => {
 
       if (response.ok) {
         const data = await response.json()
+        console.log(`[Auth] Session status: ${data.status}`, data.message ? `message: ${data.message}` : '')
         if (data.status === 'invalidated') {
+          console.log(`[Auth] Session invalidated by backend: ${data.message}`)
           handleSessionInvalidation(data.message)
         }
       }
-    } catch {
+    } catch (error) {
+      console.error('[Auth] checkSessionStatus error:', error)
       // Ignore errors, will retry
     }
   }
 
   function handleSessionInvalidation(message?: string): void {
+    console.log(`[Auth] handleSessionInvalidation called: message="${message}"`)
     stopSessionMonitoring()
     alert(message || getTranslatedMessage('notification.sessionInvalidated'))
     logout()

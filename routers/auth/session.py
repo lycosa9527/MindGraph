@@ -66,6 +66,9 @@ async def refresh_token(
     """
     client_ip = get_client_ip(request)
     
+    # DEBUG: Log refresh attempt entry point
+    logger.info(f"[TokenAudit] /refresh called: ip={client_ip}")
+    
     # Rate limiting: 10 refresh attempts per minute per IP
     is_allowed, count, error = _rate_limiter.check_and_record(
         category="token_refresh",
@@ -75,7 +78,7 @@ async def refresh_token(
     )
     
     if not is_allowed:
-        logger.warning(f"[TokenAudit] Refresh failed - rate limited: ip={client_ip}, attempts={count}")
+        logger.info(f"[TokenAudit] Refresh FAILED - rate limited: ip={client_ip}, attempts={count}")
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
             detail="Too many refresh attempts. Please wait a moment."
@@ -84,7 +87,7 @@ async def refresh_token(
     # Get refresh token from httpOnly cookie
     refresh_token_value = request.cookies.get("refresh_token")
     if not refresh_token_value:
-        logger.warning(f"[TokenAudit] Refresh failed - no refresh token: ip={client_ip}")
+        logger.info(f"[TokenAudit] Refresh FAILED - no refresh token cookie: ip={client_ip}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="No refresh token provided"
@@ -94,7 +97,7 @@ async def refresh_token(
     # The access token may be expired, but it still contains the user ID
     access_token = request.cookies.get("access_token")
     if not access_token:
-        logger.warning(f"[TokenAudit] Refresh failed - no access token: ip={client_ip}")
+        logger.info(f"[TokenAudit] Refresh FAILED - no access token cookie: ip={client_ip}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="No access token provided"
@@ -113,23 +116,42 @@ async def refresh_token(
             options={"verify_exp": False}
         )
         user_id = int(payload.get("sub", 0))
+        token_exp = payload.get("exp", 0)
         
         if not user_id:
+            logger.info(f"[TokenAudit] Refresh FAILED - no user_id in token payload: ip={client_ip}")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid access token"
             )
+        
+        # DEBUG: Log token expiry info
+        import time
+        now = int(time.time())
+        expired_ago = now - token_exp if token_exp > 0 else -1
+        logger.info(f"[TokenAudit] Decoded access token: user={user_id}, exp={token_exp}, expired_ago={expired_ago}s, ip={client_ip}")
+        
     except jwt.InvalidTokenError as e:
-        logger.warning(f"[TokenAudit] Refresh failed - invalid access token: ip={client_ip}, error={e}")
+        logger.info(f"[TokenAudit] Refresh FAILED - invalid access token: ip={client_ip}, error={e}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid access token"
         )
     
+    # DEBUG: Log device fingerprint headers used for hash
+    user_agent = request.headers.get("User-Agent", "")
+    accept_language = request.headers.get("Accept-Language", "")
+    accept_encoding = request.headers.get("Accept-Encoding", "")
+    sec_ch_platform = request.headers.get("Sec-CH-UA-Platform", "")
+    sec_ch_mobile = request.headers.get("Sec-CH-UA-Mobile", "")
+    logger.info(f"[TokenAudit] Device fingerprint headers: user={user_id}, UA={user_agent[:50]}..., lang={accept_language[:20]}, encoding={accept_encoding[:20]}, platform={sec_ch_platform}, mobile={sec_ch_mobile}")
+    
     # Validate refresh token
     refresh_manager = get_refresh_token_manager()
     old_token_hash = hash_refresh_token(refresh_token_value)
     current_device_hash = compute_device_hash(request)
+    
+    logger.info(f"[TokenAudit] Validating refresh token: user={user_id}, refresh_token={old_token_hash[:8]}..., current_device={current_device_hash}")
     
     is_valid, token_data, error_msg = refresh_manager.validate_refresh_token(
         user_id=user_id,
@@ -139,7 +161,8 @@ async def refresh_token(
     )
     
     if not is_valid:
-        logger.warning(f"[TokenAudit] Refresh failed: user={user_id}, ip={client_ip}, reason={error_msg}")
+        stored_device = token_data.get("device_hash", "unknown") if token_data else "no_data"
+        logger.info(f"[TokenAudit] Refresh FAILED: user={user_id}, ip={client_ip}, reason={error_msg}, stored_device={stored_device}, current_device={current_device_hash}")
         
         # Clear invalid cookies
         response.delete_cookie("access_token", path="/", samesite="lax", secure=is_https(request))
@@ -242,6 +265,9 @@ async def get_session_status(
     """
     accept_language = request.headers.get("Accept-Language", "")
     lang: Language = get_request_language(x_language, accept_language)
+    client_ip = get_client_ip(request)
+    
+    logger.info(f"[TokenAudit] /session-status called: user={current_user.id}, ip={client_ip}")
     
     try:
         # Get token from request
@@ -254,6 +280,7 @@ async def get_session_status(
                 token = auth_header[7:]
         
         if not token:
+            logger.info(f"[TokenAudit] Session status: INVALIDATED (no token): user={current_user.id}")
             return {
                 "status": "invalidated",
                 "message": "Session invalidated",
@@ -266,6 +293,7 @@ async def get_session_status(
         
         # Check if session is valid
         if session_manager.is_session_valid(current_user.id, token):
+            logger.info(f"[TokenAudit] Session status: ACTIVE: user={current_user.id}, token={token_hash[:8]}...")
             return {"status": "active"}
         
         # Check for invalidation notification
@@ -273,6 +301,7 @@ async def get_session_status(
         if notification:
             # Clear notification after checking
             session_manager.clear_invalidation_notification(current_user.id, token_hash)
+            logger.info(f"[TokenAudit] Session status: INVALIDATED (max devices): user={current_user.id}, notification_ip={notification.get('ip_address', 'unknown')}")
             return {
                 "status": "invalidated",
                 "message": "Session ended: maximum device limit exceeded",
@@ -281,6 +310,7 @@ async def get_session_status(
             }
         
         # Session invalid but no notification (expired or manually deleted)
+        logger.info(f"[TokenAudit] Session status: INVALIDATED (expired): user={current_user.id}, token={token_hash[:8]}...")
         return {
             "status": "invalidated",
             "message": "Session expired",
@@ -308,6 +338,7 @@ async def logout(
     - Clears both httpOnly cookies
     """
     client_ip = get_client_ip(request)
+    logger.info(f"[TokenAudit] /logout called: user={current_user.id}, ip={client_ip}")
     
     # Delete access token session from Redis
     try:
@@ -320,23 +351,28 @@ async def logout(
                 token = auth_header[7:]
         
         session_manager = get_session_manager()
+        token_hint = hashlib.sha256(token.encode('utf-8')).hexdigest()[:8] if token else "none"
+        logger.info(f"[TokenAudit] Logout deleting session: user={current_user.id}, token={token_hint}...")
         session_manager.delete_session(current_user.id, token=token)
     except Exception as e:
-        logger.debug(f"Failed to delete session on logout: {e}")
+        logger.info(f"[TokenAudit] Logout session delete failed: user={current_user.id}, error={e}")
     
     # Revoke refresh token
     try:
         refresh_token_value = request.cookies.get("refresh_token")
         if refresh_token_value:
             refresh_token_hash = hash_refresh_token(refresh_token_value)
+            logger.info(f"[TokenAudit] Logout revoking refresh token: user={current_user.id}, token={refresh_token_hash[:8]}...")
             refresh_manager = get_refresh_token_manager()
             refresh_manager.revoke_refresh_token(
                 user_id=current_user.id,
                 token_hash=refresh_token_hash,
                 reason="logout"
             )
+        else:
+            logger.info(f"[TokenAudit] Logout: no refresh token cookie to revoke: user={current_user.id}")
     except Exception as e:
-        logger.debug(f"Failed to revoke refresh token on logout: {e}")
+        logger.info(f"[TokenAudit] Logout refresh token revoke failed: user={current_user.id}, error={e}")
     
     # Clear access token cookie
     response.delete_cookie(

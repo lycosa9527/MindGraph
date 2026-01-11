@@ -63,6 +63,9 @@ export const translations: Record<Language, Record<string, string>> = {
     'panel.nodePalette': 'Node Palette',
     'panel.properties': 'Properties',
 
+    // AskOnce
+    'askonce.title': 'AskOnce',
+
     // Notifications
     'notification.saved': 'Changes saved successfully',
     'notification.deleted': 'Item deleted successfully',
@@ -125,6 +128,9 @@ export const translations: Record<Language, Record<string, string>> = {
     'panel.mindmate': 'MindMate AI 助手',
     'panel.nodePalette': '节点面板',
     'panel.properties': '属性',
+
+    // AskOnce
+    'askonce.title': '多应',
 
     // Notifications
     'notification.saved': '保存成功',

@@ -22,6 +22,11 @@ const username = computed(() => authStore.user?.username || '')
 
 <template>
   <div class="mindgraph-container flex flex-col h-full">
+    <!-- Header -->
+    <header class="h-14 px-4 flex items-center bg-white border-b border-gray-200">
+      <h1 class="text-sm font-semibold text-gray-800">MindGraph</h1>
+    </header>
+
     <!-- Spacer to push content down -->
     <div class="flex-1" />
 

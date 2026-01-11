@@ -269,11 +269,17 @@ async def login(
     # Compute device hash for session and token binding
     device_hash = compute_device_hash(http_request)
     
+    # DEBUG: Log device fingerprint at login time
+    user_agent = http_request.headers.get("User-Agent", "")
+    accept_language = http_request.headers.get("Accept-Language", "")
+    sec_ch_platform = http_request.headers.get("Sec-CH-UA-Platform", "")
+    sec_ch_mobile = http_request.headers.get("Sec-CH-UA-Mobile", "")
+    logger.info(f"[TokenAudit] Login device fingerprint: user={user.id}, device_hash={device_hash}, UA={user_agent[:50]}..., lang={accept_language[:20]}, platform={sec_ch_platform}, mobile={sec_ch_mobile}")
+    
     # Store access token session in Redis (automatically limits concurrent sessions)
     session_manager.store_session(user.id, token, device_hash=device_hash)
     
     # Store refresh token with device binding
-    user_agent = http_request.headers.get("User-Agent", "")
     refresh_manager = get_refresh_token_manager()
     refresh_manager.store_refresh_token(
         user_id=user.id,
@@ -287,7 +293,7 @@ async def login(
     set_auth_cookies(response, token, refresh_token_value, http_request)
     
     org_name = org.name if org else "None"
-    logger.info(f"[TokenAudit] Login success: user={user.id}, phone={user.phone}, org={org_name}, method=captcha, ip={client_ip}")
+    logger.info(f"[TokenAudit] Login success: user={user.id}, phone={user.phone}, org={org_name}, method=captcha, ip={client_ip}, device={device_hash}")
     
     # Track user activity
     track_user_activity(user, 'login', {'method': 'captcha', 'org': org_name}, http_request)
@@ -392,11 +398,17 @@ async def login_with_sms(
     # Compute device hash for session and token binding
     device_hash = compute_device_hash(http_request)
     
+    # DEBUG: Log device fingerprint at login time
+    user_agent = http_request.headers.get("User-Agent", "")
+    accept_language = http_request.headers.get("Accept-Language", "")
+    sec_ch_platform = http_request.headers.get("Sec-CH-UA-Platform", "")
+    sec_ch_mobile = http_request.headers.get("Sec-CH-UA-Mobile", "")
+    logger.info(f"[TokenAudit] Login device fingerprint: user={user.id}, device_hash={device_hash}, UA={user_agent[:50]}..., lang={accept_language[:20]}, platform={sec_ch_platform}, mobile={sec_ch_mobile}")
+    
     # Store access token session in Redis (automatically limits concurrent sessions)
     session_manager.store_session(user.id, token, device_hash=device_hash)
     
     # Store refresh token with device binding
-    user_agent = http_request.headers.get("User-Agent", "")
     refresh_manager = get_refresh_token_manager()
     refresh_manager.store_refresh_token(
         user_id=user.id,
@@ -418,7 +430,7 @@ async def login_with_sms(
             org_cache.cache_org(org)
     org_name = org.name if org else "None"
     
-    logger.info(f"[TokenAudit] Login success: user={user.id}, phone={user.phone}, org={org_name}, method=sms, ip={client_ip}")
+    logger.info(f"[TokenAudit] Login success: user={user.id}, phone={user.phone}, org={org_name}, method=sms, ip={client_ip}, device={device_hash}")
     
     # Track user activity
     track_user_activity(user, 'login', {'method': 'sms', 'org': org_name}, http_request)
@@ -565,11 +577,17 @@ async def verify_demo(
     # Compute device hash for session and token binding
     device_hash = compute_device_hash(request)
     
+    # DEBUG: Log device fingerprint at login time
+    user_agent = request.headers.get("User-Agent", "")
+    accept_language = request.headers.get("Accept-Language", "")
+    sec_ch_platform = request.headers.get("Sec-CH-UA-Platform", "")
+    sec_ch_mobile = request.headers.get("Sec-CH-UA-Mobile", "")
+    logger.info(f"[TokenAudit] Login device fingerprint: user={auth_user.id}, device_hash={device_hash}, UA={user_agent[:50]}..., lang={accept_language[:20]}, platform={sec_ch_platform}, mobile={sec_ch_mobile}")
+    
     # Store access token session in Redis (automatically limits concurrent sessions)
     session_manager.store_session(auth_user.id, token, device_hash=device_hash)
     
     # Store refresh token with device binding
-    user_agent = request.headers.get("User-Agent", "")
     refresh_manager = get_refresh_token_manager()
     refresh_manager.store_refresh_token(
         user_id=auth_user.id,
@@ -582,7 +600,7 @@ async def verify_demo(
     # Set cookies (both access and refresh tokens)
     set_auth_cookies(response, token, refresh_token_value, request)
     
-    log_msg = f"[TokenAudit] Login success: user={auth_user.id}, mode={AUTH_MODE}, admin={is_admin_access}, ip={client_ip}"
+    log_msg = f"[TokenAudit] Login success: user={auth_user.id}, mode={AUTH_MODE}, admin={is_admin_access}, ip={client_ip}, device={device_hash}"
     logger.info(log_msg)
     
     # Preload diagram list for instant library access (fire-and-forget)

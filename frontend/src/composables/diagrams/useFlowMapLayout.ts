@@ -14,8 +14,8 @@
  * - Text is truncated with ellipsis when it exceeds available width
  */
 
-// Re-export layout constants from layoutConfig for convenience
-export {
+// Import layout constants from layoutConfig
+import {
   DEFAULT_CENTER_X,
   DEFAULT_PADDING,
   FLOW_GROUP_GAP,
@@ -27,6 +27,20 @@ export {
   FLOW_SUBSTEP_OFFSET_X,
   FLOW_SUBSTEP_SPACING,
 } from './layoutConfig'
+
+// Re-export layout constants for convenience
+export {
+  DEFAULT_CENTER_X,
+  DEFAULT_PADDING,
+  FLOW_GROUP_GAP,
+  FLOW_MIN_STEP_SPACING,
+  FLOW_NODE_HEIGHT,
+  FLOW_NODE_WIDTH,
+  FLOW_SUBSTEP_NODE_HEIGHT,
+  FLOW_SUBSTEP_NODE_WIDTH,
+  FLOW_SUBSTEP_OFFSET_X,
+  FLOW_SUBSTEP_SPACING,
+}
 
 /**
  * Flow map layout composable

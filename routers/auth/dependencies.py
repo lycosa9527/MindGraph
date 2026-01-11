@@ -13,10 +13,79 @@ Proprietary License
 
 from typing import Optional
 from fastapi import Depends, Header, HTTPException, Request, status
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 from models.messages import Messages, get_request_language, Language
 from models.auth import User
 from utils.auth import get_current_user, is_admin, is_admin_or_manager, is_manager
+
+# Optional security scheme (auto_error=False means no 401 if missing)
+security_optional = HTTPBearer(auto_error=False)
+
+
+def get_current_user_optional(
+    request: Request,
+    credentials: HTTPAuthorizationCredentials = Depends(security_optional)
+) -> Optional[User]:
+    """
+    Get current user if authenticated, return None if not.
+    
+    This is for endpoints that work for both authenticated and anonymous users.
+    Unlike get_current_user, this does NOT raise HTTPException if no token.
+    
+    Args:
+        request: FastAPI Request object
+        credentials: Optional Bearer token credentials
+    
+    Returns:
+        User object if authenticated, None if not authenticated or token invalid
+    """
+    from jose import JWTError
+    from utils.auth import decode_access_token
+    from services.redis_user_cache import user_cache
+    from services.redis_session_manager import get_session_manager
+    import logging
+    
+    logger = logging.getLogger(__name__)
+    
+    # Try to get token from Authorization header or cookie
+    token = None
+    
+    if credentials:
+        token = credentials.credentials
+    elif request:
+        token = request.cookies.get("access_token")
+    
+    if not token:
+        return None  # No authentication provided - that's OK for optional auth
+    
+    try:
+        # Decode token
+        payload = decode_access_token(token)
+        user_id = payload.get("sub")
+        
+        if not user_id:
+            return None
+        
+        # Check session validity
+        session_manager = get_session_manager()
+        if not session_manager.is_session_valid(int(user_id), token):
+            logger.debug(f"[Auth] Session invalid for user {user_id} in optional auth")
+            return None
+        
+        # Get user from cache
+        user = user_cache.get_by_id(int(user_id))
+        return user
+        
+    except HTTPException:
+        # Token validation failed
+        return None
+    except JWTError:
+        # Token decode failed
+        return None
+    except Exception as e:
+        logger.debug(f"[Auth] Optional auth failed: {e}")
+        return None
 
 
 def get_language_dependency(

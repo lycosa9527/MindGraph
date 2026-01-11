@@ -13,14 +13,20 @@ import {
   OfficeBuilding,
   Share,
   VideoPlay,
+  MagicStick,
 } from '@element-plus/icons-vue'
 
 import { ChevronDown, KeyRound, LogIn, LogOut, Menu, Settings, UserRound } from 'lucide-vue-next'
 
 import { AccountInfoModal, ChangePasswordModal, LoginModal } from '@/components/auth'
+import { useLanguage } from '@/composables/useLanguage'
 import { useAuthStore, useMindMateStore, useUIStore } from '@/stores'
+import { useAskOnceStore } from '@/stores/askonce'
+
+const { t } = useLanguage()
 import { type SavedDiagram, useSavedDiagramsStore } from '@/stores/savedDiagrams'
 
+import AskOnceHistory from './AskOnceHistory.vue'
 import ChatHistory from './ChatHistory.vue'
 import DiagramHistory from './DiagramHistory.vue'
 
@@ -28,6 +34,7 @@ const router = useRouter()
 const uiStore = useUIStore()
 const authStore = useAuthStore()
 const mindMateStore = useMindMateStore()
+const askOnceStore = useAskOnceStore()
 const _savedDiagramsStore = useSavedDiagramsStore()
 
 const isCollapsed = computed(() => uiStore.sidebarCollapsed)
@@ -37,6 +44,7 @@ const currentMode = computed(() => {
   const path = router.currentRoute.value.path
   if (path.startsWith('/mindmate')) return 'mindmate'
   if (path.startsWith('/mindgraph') || path.startsWith('/canvas')) return 'mindgraph'
+  if (path.startsWith('/askonce')) return 'askonce'
   if (path.startsWith('/school-zone')) return 'school-zone'
   if (path.startsWith('/template')) return 'template'
   if (path.startsWith('/course')) return 'course'
@@ -78,6 +86,8 @@ function setMode(index: string) {
     router.push('/mindmate')
   } else if (index === 'mindgraph') {
     router.push('/mindgraph')
+  } else if (index === 'askonce') {
+    router.push('/askonce')
   } else if (index === 'school-zone') {
     router.push('/school-zone')
   } else if (index === 'template') {
@@ -118,6 +128,24 @@ function startNewChat() {
   }
 }
 
+// Start new AskOnce conversation
+function startNewAskOnce() {
+  askOnceStore.startNewConversation()
+  // Navigate to AskOnce if not already there
+  if (currentMode.value !== 'askonce') {
+    router.push('/askonce')
+  }
+}
+
+// Handle logo click based on current mode
+function handleLogoClick() {
+  if (currentMode.value === 'askonce') {
+    startNewAskOnce()
+  } else {
+    startNewChat()
+  }
+}
+
 // Handle diagram selection from history
 async function handleDiagramSelect(diagram: SavedDiagram) {
   // Navigate to canvas with the diagram
@@ -137,7 +165,7 @@ async function handleDiagramSelect(diagram: SavedDiagram) {
     <div class="p-4 flex items-center justify-between border-b border-stone-200">
       <div
         class="logo-link flex items-center space-x-2 cursor-pointer hover:opacity-80 transition-opacity"
-        @click="startNewChat"
+        @click="handleLogoClick"
       >
         <div
           class="w-7 h-7 bg-stone-900 rounded-lg flex items-center justify-center text-white font-semibold text-sm"
@@ -176,6 +204,10 @@ async function handleDiagramSelect(diagram: SavedDiagram) {
         <el-icon><Connection /></el-icon>
         <template #title>MindGraph</template>
       </el-menu-item>
+      <el-menu-item index="askonce">
+        <el-icon><MagicStick /></el-icon>
+        <template #title>{{ t('askonce.title') }}</template>
+      </el-menu-item>
       <el-menu-item
         v-if="hasOrganization"
         index="school-zone"
@@ -211,10 +243,16 @@ async function handleDiagramSelect(diagram: SavedDiagram) {
       class="flex-1 overflow-hidden"
       @select="handleDiagramSelect"
     />
+    <!-- AskOnce: Show conversation history -->
+    <AskOnceHistory
+      v-else-if="!isCollapsed && currentMode === 'askonce'"
+      :is-blurred="!isAuthenticated"
+      class="flex-1 overflow-hidden"
+    />
 
     <!-- Spacer to push user section to bottom (when no history shown) -->
     <div
-      v-if="isCollapsed || (currentMode !== 'mindmate' && currentMode !== 'mindgraph')"
+      v-if="isCollapsed || !['mindmate', 'mindgraph', 'askonce'].includes(currentMode)"
       class="flex-1"
     />
 
@@ -268,7 +306,7 @@ async function handleDiagramSelect(diagram: SavedDiagram) {
               <el-badge
                 :value="0"
                 :hidden="true"
-                class="flex-shrink-0"
+                class="shrink-0"
               >
                 <el-avatar
                   :size="40"
@@ -286,7 +324,7 @@ async function handleDiagramSelect(diagram: SavedDiagram) {
                 </div>
               </div>
             </div>
-            <ChevronDown class="w-4 h-4 text-stone-400 flex-shrink-0 ml-2" />
+            <ChevronDown class="w-4 h-4 text-stone-400 shrink-0 ml-2" />
           </div>
           <template #dropdown>
             <el-dropdown-menu class="user-menu">

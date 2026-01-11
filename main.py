@@ -1012,6 +1012,16 @@ async def lifespan(app: FastAPI):
             if worker_id == '0' or not worker_id:
                 logger.warning(f"Failed to shutdown SMS service: {e}")
         
+        # Close httpx clients (LLM HTTP/2 connection pools)
+        try:
+            from clients.llm import close_httpx_clients
+            await close_httpx_clients()
+            if worker_id == '0' or not worker_id:
+                logger.info("LLM httpx clients closed")
+        except Exception as e:
+            if worker_id == '0' or not worker_id:
+                logger.warning(f"Failed to close httpx clients: {e}")
+        
         # Cleanup Database
         try:
             from config.database import close_db
@@ -1951,7 +1961,7 @@ async def get_status():
 # ROUTER REGISTRATION
 # ============================================================================
 
-from routers import pages, cache, api, node_palette, auth, admin_env, admin_logs, admin_realtime, voice, update_notification, tab_mode, public_dashboard, school_zone
+from routers import pages, cache, api, node_palette, auth, admin_env, admin_logs, admin_realtime, voice, update_notification, tab_mode, public_dashboard, school_zone, askonce
 from routers import vue_spa
 
 # Register routers
@@ -1971,6 +1981,7 @@ app.include_router(update_notification.router)  # Update notification system
 app.include_router(tab_mode.router)  # Tab Mode (autocomplete and expansion)
 app.include_router(public_dashboard.router, prefix="/api/public", tags=["Public Dashboard"])  # Public dashboard endpoints
 app.include_router(school_zone.router)  # School Zone (organization-scoped sharing)
+app.include_router(askonce.router)  # AskOnce (多应) - Multi-LLM streaming chat
 
 # ============================================================================
 # APPLICATION ENTRY POINT

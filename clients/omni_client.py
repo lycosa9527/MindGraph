@@ -26,7 +26,7 @@ import logging
 from typing import Optional, Callable, Dict, Any, AsyncGenerator, List
 from enum import Enum
 
-import aiohttp
+import httpx
 import websockets
 from websockets.exceptions import ConnectionClosed
 
@@ -841,22 +841,27 @@ class OmniClient:
             "Content-Type": "application/json"
         }
         
-        timeout = aiohttp.ClientTimeout(total=10)  # Short timeout for health checks
-        
         try:
-            async with aiohttp.ClientSession(timeout=timeout) as session:
-                async with session.post(api_url, json=payload, headers=headers) as response:
-                    if response.status == 200:
-                        data = await response.json()
-                        content = data.get('choices', [{}])[0].get('message', {}).get('content', '')
-                        usage = data.get('usage', {})
-                        return {
-                            'content': content,
-                            'usage': usage
-                        }
-                    else:
-                        error_text = await response.text()
-                        raise Exception(f"API returned status {response.status}: {error_text}")
+            async with httpx.AsyncClient(
+                timeout=httpx.Timeout(10.0, connect=5.0),
+                http2=True
+            ) as client:
+                response = await client.post(api_url, json=payload, headers=headers)
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    content = data.get('choices', [{}])[0].get('message', {}).get('content', '')
+                    usage = data.get('usage', {})
+                    return {
+                        'content': content,
+                        'usage': usage
+                    }
+                else:
+                    error_text = response.text
+                    raise Exception(f"API returned status {response.status_code}: {error_text}")
+        except httpx.TimeoutException as e:
+            logger.error(f"Chat completion timeout for Omni: {e}")
+            raise
         except Exception as e:
             logger.error(f"Chat completion failed for Omni: {e}")
             raise

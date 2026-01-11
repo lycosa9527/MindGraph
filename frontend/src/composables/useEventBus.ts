@@ -400,6 +400,14 @@ export type EventTypes = {
   'tab_mode:toggled': { enabled: boolean }
   'tab_mode:node_expanded': { nodeId: string }
 
+  // Keyboard Events
+  'keyboard:delete_executed': { deletedNodeIds?: string[]; nodeCount?: number; edgeCount?: number }
+  'keyboard:escape_pressed': Record<string, never>
+  'keyboard:select_all_executed': { selectedNodeIds?: string[]; nodeCount?: number }
+
+  // Diagram Orientation
+  'diagram:orientation_changed': { orientation: string }
+
   // Wildcard for any event (for debugging)
   '*': { event: string; data: unknown }
 }

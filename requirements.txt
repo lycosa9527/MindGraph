@@ -31,11 +31,11 @@ orjson>=3.11.5  # Fast JSON serialization for API responses
 # ============================================================================
 # HTTP & NETWORKING
 # ============================================================================
-aiohttp>=3.13.3
+aiohttp>=3.13.3  # Used by Dify client (MindMate integration)
 openai>=2.14.0
 python-multipart>=0.0.21
-httpx[http2]>=0.28.0  # Modern async HTTP client with HTTP/2 support
-websockets>=14.2  # WebSocket support
+httpx[http2]>=0.28.0  # Primary async HTTP client with HTTP/2 (LLM clients, SMS)
+websockets>=14.2  # WebSocket support (Omni realtime voice)
 
 # ============================================================================
 # AI & LANGUAGE PROCESSING

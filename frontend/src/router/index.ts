@@ -78,6 +78,12 @@ const routes: RouteRecordRaw[] = [
     meta: { requiresAuth: true, requiresOrganization: true, layout: 'main' },
   },
   {
+    path: '/askonce',
+    name: 'AskOnce',
+    component: () => import('@/pages/AskOncePage.vue'),
+    meta: { layout: 'main' },
+  },
+  {
     path: '/dashboard',
     name: 'PublicDashboard',
     component: () => import('@/pages/PublicDashboardPage.vue'),
