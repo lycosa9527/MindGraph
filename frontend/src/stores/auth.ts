@@ -270,8 +270,9 @@ export const useAuthStore = defineStore('auth', () => {
 
   /**
    * Attempt to refresh the access token using the refresh token cookie
+   * Returns: { success: boolean, errorMessage?: string }
    */
-  async function refreshAccessToken(): Promise<boolean> {
+  async function refreshAccessToken(): Promise<{ success: boolean; errorMessage?: string }> {
     console.log('[Auth] refreshAccessToken called')
     try {
       const response = await fetch(`${API_BASE}/refresh`, {
@@ -281,17 +282,21 @@ export const useAuthStore = defineStore('auth', () => {
       console.log(`[Auth] /refresh response: status=${response.status}, ok=${response.ok}`)
       if (!response.ok) {
         // Try to get error details from response
+        let errorMessage: string | undefined
         try {
           const errorData = await response.json()
           console.log(`[Auth] /refresh error detail: ${JSON.stringify(errorData)}`)
+          // Extract error message from backend response
+          errorMessage = errorData.detail || errorData.message || undefined
         } catch {
           console.log('[Auth] /refresh failed with no JSON body')
         }
+        return { success: false, errorMessage }
       }
-      return response.ok
+      return { success: true }
     } catch (error) {
       console.error('[Auth] refreshAccessToken exception:', error)
-      return false
+      return { success: false, errorMessage: 'Network error during token refresh' }
     }
   }
 
@@ -309,8 +314,8 @@ export const useAuthStore = defineStore('auth', () => {
 
   async function refreshToken(): Promise<boolean> {
     // First try to refresh the access token using the refresh token
-    const refreshed = await refreshAccessToken()
-    if (!refreshed) {
+    const refreshResult = await refreshAccessToken()
+    if (!refreshResult.success) {
       return false
     }
 
@@ -399,11 +404,13 @@ export const useAuthStore = defineStore('auth', () => {
       if (response.status === 401) {
         console.log('[Auth] Got 401 from /session-status, attempting token refresh...')
         // Try to refresh the token first
-        const refreshed = await refreshAccessToken()
-        console.log(`[Auth] Token refresh result: ${refreshed ? 'SUCCESS' : 'FAILED'}`)
-        if (!refreshed) {
+        const refreshResult = await refreshAccessToken()
+        console.log(`[Auth] Token refresh result: ${refreshResult.success ? 'SUCCESS' : 'FAILED'}`)
+        if (!refreshResult.success) {
           console.log('[Auth] Refresh failed, calling handleSessionInvalidation')
-          handleSessionInvalidation(getTranslatedMessage('notification.sessionInvalidated'))
+          // Use backend error message if available, otherwise use generic message
+          const errorMessage = refreshResult.errorMessage || getTranslatedMessage('notification.sessionInvalidated')
+          handleSessionInvalidation(errorMessage)
         }
         return
       }

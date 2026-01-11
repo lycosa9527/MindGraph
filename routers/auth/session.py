@@ -93,50 +93,62 @@ async def refresh_token(
             detail="No refresh token provided"
         )
     
+    # Hash refresh token once (used for both reverse lookup and validation)
+    from services.redis_session_manager import get_refresh_token_manager
+    from utils.auth import hash_refresh_token
+    
+    refresh_manager = get_refresh_token_manager()
+    old_token_hash = hash_refresh_token(refresh_token_value)
+    
     # Get user_id from access token cookie (even if expired, we need to know who the user is)
     # The access token may be expired, but it still contains the user ID
+    # If access token cookie is missing, try to find user_id from refresh token hash (reverse lookup)
     access_token = request.cookies.get("access_token")
-    if not access_token:
-        logger.info(f"[TokenAudit] Refresh FAILED - no access token cookie: ip={client_ip}")
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="No access token provided"
-        )
+    user_id = None
+    token_exp = 0
     
-    # Decode access token without verifying expiration
-    try:
-        import jwt
-        from utils.auth import get_jwt_secret, JWT_ALGORITHM
-        
-        # Decode without verifying expiration
-        payload = jwt.decode(
-            access_token, 
-            get_jwt_secret(), 
-            algorithms=[JWT_ALGORITHM],
-            options={"verify_exp": False}
-        )
-        user_id = int(payload.get("sub", 0))
-        token_exp = payload.get("exp", 0)
+    if access_token:
+        # Try to decode access token without verifying expiration
+        try:
+            import jwt
+            from utils.auth import get_jwt_secret, JWT_ALGORITHM
+            
+            # Decode without verifying expiration
+            payload = jwt.decode(
+                access_token, 
+                get_jwt_secret(), 
+                algorithms=[JWT_ALGORITHM],
+                options={"verify_exp": False}
+            )
+            user_id = int(payload.get("sub", 0))
+            token_exp = payload.get("exp", 0)
+            
+            if not user_id:
+                logger.info(f"[TokenAudit] Refresh - no user_id in token payload, will try reverse lookup: ip={client_ip}")
+                user_id = None
+            else:
+                # DEBUG: Log token expiry info
+                import time
+                now = int(time.time())
+                expired_ago = now - token_exp if token_exp > 0 else -1
+                logger.info(f"[TokenAudit] Decoded access token: user={user_id}, exp={token_exp}, expired_ago={expired_ago}s, ip={client_ip}")
+            
+        except jwt.InvalidTokenError as e:
+            logger.info(f"[TokenAudit] Refresh - invalid access token, will try reverse lookup: ip={client_ip}, error={e}")
+            user_id = None
+    
+    # If we don't have user_id from access token, try reverse lookup from refresh token hash
+    if not user_id:
+        user_id = refresh_manager.find_user_id_from_token(old_token_hash)
         
         if not user_id:
-            logger.info(f"[TokenAudit] Refresh FAILED - no user_id in token payload: ip={client_ip}")
+            logger.info(f"[TokenAudit] Refresh FAILED - cannot determine user_id (no access token and refresh token not found): ip={client_ip}")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid access token"
+                detail="Cannot determine user identity. Please log in again."
             )
         
-        # DEBUG: Log token expiry info
-        import time
-        now = int(time.time())
-        expired_ago = now - token_exp if token_exp > 0 else -1
-        logger.info(f"[TokenAudit] Decoded access token: user={user_id}, exp={token_exp}, expired_ago={expired_ago}s, ip={client_ip}")
-        
-    except jwt.InvalidTokenError as e:
-        logger.info(f"[TokenAudit] Refresh FAILED - invalid access token: ip={client_ip}, error={e}")
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid access token"
-        )
+        logger.info(f"[TokenAudit] Found user_id from refresh token reverse lookup: user={user_id}, ip={client_ip}")
     
     # DEBUG: Log device fingerprint headers used for hash
     user_agent = request.headers.get("User-Agent", "")
@@ -146,9 +158,7 @@ async def refresh_token(
     sec_ch_mobile = request.headers.get("Sec-CH-UA-Mobile", "")
     logger.info(f"[TokenAudit] Device fingerprint headers: user={user_id}, UA={user_agent[:50]}..., lang={accept_language[:20]}, encoding={accept_encoding[:20]}, platform={sec_ch_platform}, mobile={sec_ch_mobile}")
     
-    # Validate refresh token
-    refresh_manager = get_refresh_token_manager()
-    old_token_hash = hash_refresh_token(refresh_token_value)
+    # Validate refresh token (refresh_manager and old_token_hash already computed above)
     current_device_hash = compute_device_hash(request)
     
     logger.info(f"[TokenAudit] Validating refresh token: user={user_id}, refresh_token={old_token_hash[:8]}..., current_device={current_device_hash}")

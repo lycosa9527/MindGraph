@@ -650,6 +650,7 @@ class RedisSessionManager:
 # Key prefixes for refresh tokens
 REFRESH_TOKEN_PREFIX = "refresh:"
 REFRESH_TOKEN_USER_SET_PREFIX = "refresh:user:"
+REFRESH_TOKEN_LOOKUP_PREFIX = "refresh:lookup:"  # Reverse lookup: token_hash -> user_id
 
 
 class RefreshTokenManager:
@@ -659,6 +660,7 @@ class RefreshTokenManager:
     Key Schema:
     - refresh:{user_id}:{token_hash} -> JSON{created_at, ip_address, user_agent, device_hash}
     - refresh:user:{user_id} -> SET of token_hashes (for revoke-all)
+    - refresh:lookup:{token_hash} -> user_id (reverse lookup for refresh without access token)
     
     All tokens auto-expire via Redis TTL.
     """
@@ -678,6 +680,35 @@ class RefreshTokenManager:
     def _get_user_tokens_key(self, user_id: int) -> str:
         """Get Redis key for user's token set."""
         return f"{REFRESH_TOKEN_USER_SET_PREFIX}{user_id}"
+    
+    def _get_lookup_key(self, token_hash: str) -> str:
+        """Get Redis key for reverse lookup (token_hash -> user_id)."""
+        return f"{REFRESH_TOKEN_LOOKUP_PREFIX}{token_hash}"
+    
+    def find_user_id_from_token(self, token_hash: str) -> Optional[int]:
+        """
+        Find user_id from refresh token hash (reverse lookup).
+        
+        This allows the refresh endpoint to work without the access token cookie.
+        
+        Args:
+            token_hash: SHA256 hash of the refresh token
+            
+        Returns:
+            User ID if found, None otherwise
+        """
+        if not self._use_redis():
+            return None
+        
+        try:
+            lookup_key = self._get_lookup_key(token_hash)
+            user_id_str = redis_ops.get(lookup_key)
+            if user_id_str:
+                return int(user_id_str)
+            return None
+        except Exception as e:
+            logger.error(f"[RefreshToken] Error finding user_id from token hash: {e}", exc_info=True)
+            return None
     
     def _revoke_existing_device_tokens(self, user_id: int, device_hash: str) -> int:
         """
@@ -783,6 +814,10 @@ class RefreshTokenManager:
             redis.sadd(user_tokens_key, token_hash)
             redis.expire(user_tokens_key, REFRESH_TOKEN_TTL_SECONDS)
             
+            # Store reverse lookup: token_hash -> user_id (for refresh without access token)
+            lookup_key = self._get_lookup_key(token_hash)
+            redis_ops.set_with_ttl(lookup_key, str(user_id), REFRESH_TOKEN_TTL_SECONDS)
+            
             # Enforce max concurrent sessions limit on refresh tokens
             self.enforce_max_tokens(user_id)
             
@@ -873,12 +908,16 @@ class RefreshTokenManager:
             
             token_key = self._get_token_key(user_id, token_hash)
             user_tokens_key = self._get_user_tokens_key(user_id)
+            lookup_key = self._get_lookup_key(token_hash)
             
             # Delete the token
             deleted = redis_ops.delete(token_key)
             
             # Remove from user's token set
             redis.srem(user_tokens_key, token_hash)
+            
+            # Delete reverse lookup
+            redis_ops.delete(lookup_key)
             
             if deleted:
                 logger.info(f"[TokenAudit] Token revoked: user={user_id}, reason={reason}")
@@ -917,12 +956,15 @@ class RefreshTokenManager:
                 logger.debug(f"[RefreshToken] No refresh tokens to revoke for user {user_id}")
                 return 0
             
-            # Delete each token
+            # Delete each token and its reverse lookup
             count = 0
             for token_hash in token_hashes:
                 token_key = self._get_token_key(user_id, token_hash)
+                lookup_key = self._get_lookup_key(token_hash)
                 if redis_ops.delete(token_key):
                     count += 1
+                # Also delete reverse lookup
+                redis_ops.delete(lookup_key)
             
             # Delete the user's token set
             redis.delete(user_tokens_key)

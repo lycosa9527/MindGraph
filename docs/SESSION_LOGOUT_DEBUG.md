@@ -6,7 +6,45 @@
 
 **Frequency**: Happens frequently after periods of inactivity (1-2 hours, e.g., after a nap).
 
-**Status**: Under investigation. Debug logging has been added to trace the root cause.
+**Status**: ✅ **ROOT CAUSE IDENTIFIED AND FIXED** (2026-01-11)
+
+---
+
+## Root Cause Analysis
+
+### Primary Root Cause: Refresh Endpoint Required Access Token Cookie
+
+**Problem**: The `/api/auth/refresh` endpoint required the `access_token` cookie to extract `user_id`, even though the refresh token itself contains sufficient information to identify the user. When the access token cookie was missing (due to browser cookie issues, SameSite restrictions, or expiration), the refresh endpoint would fail with "No access token provided", causing users to be logged out even though their refresh token was still valid.
+
+**Evidence from Logs**:
+```
+[20:54:45] [TokenAudit] Refresh FAILED - no access token cookie: ip=111.126.169.9
+```
+
+**Impact**: Users with valid refresh tokens (7-day expiry) were incorrectly logged out when their access token cookie (1-hour expiry) was missing.
+
+**Fix Applied** (2026-01-11):
+- Added reverse lookup mechanism: `refresh:lookup:{token_hash} -> user_id` in Redis
+- Modified refresh endpoint to use reverse lookup when access token cookie is missing
+- Refresh endpoint now works with only the refresh token cookie
+
+**Files Modified**:
+- `services/redis_session_manager.py`: Added `find_user_id_from_token()` method and reverse lookup storage
+- `routers/auth/session.py`: Updated refresh endpoint to use reverse lookup fallback
+
+### Secondary Issue: Misleading Frontend Error Message
+
+**Problem**: The frontend always displayed "您已被登出，因为登录设备数量超过上限" (max device limit exceeded) for ALL refresh failures, regardless of the actual backend error reason.
+
+**Fix Applied** (2026-01-11):
+- Updated `refreshAccessToken()` to extract and return backend error messages
+- Modified `checkSessionStatus()` to use actual backend error message instead of hardcoded text
+- Users now see accurate error messages based on the actual failure reason
+
+**Files Modified**:
+- `frontend/src/stores/auth.ts`: Updated error handling to use backend error messages
+
+---
 
 ---
 
@@ -254,11 +292,15 @@ The Redis session SET expires after 60 minutes. If no activity extends the TTL, 
 [Session] Session INVALID: user={id}, token not found in 0 session(s)
 ```
 
-### 4. Misleading Error Message
+### 4. Misleading Error Message ✅ FIXED
 
-The frontend shows "max device limit exceeded" for ALL refresh failures, not just the actual device limit scenario.
+**Status**: Fixed on 2026-01-11
+
+The frontend was showing "max device limit exceeded" for ALL refresh failures, not just the actual device limit scenario.
 
 **Location**: `frontend/src/composables/useLanguage.ts` line 138
+
+**Fix**: Updated frontend to extract and display actual backend error messages from refresh endpoint responses.
 
 ---
 
@@ -321,7 +363,51 @@ This won't fix the root cause but reduces the likelihood of hitting the limit.
 
 ## Status
 
-Comprehensive debug logging added. Waiting for issue to recur to capture logs and confirm root cause.
+✅ **RESOLVED** (2026-01-11)
+
+**Root Cause**: Refresh endpoint required access token cookie to extract user_id, causing failures when cookie was missing even though refresh token was valid.
+
+**Fix Applied**:
+1. Added reverse lookup mechanism (`refresh:lookup:{token_hash} -> user_id`) to find user_id from refresh token hash
+2. Updated refresh endpoint to work without access token cookie when refresh token is present
+3. Fixed frontend to display accurate error messages from backend instead of hardcoded "max device limit exceeded"
+
+**Testing**: Monitor logs for refresh failures to ensure fix is working correctly.
+
+---
+
+## Fix Details (2026-01-11)
+
+### Backend Changes
+
+**File**: `services/redis_session_manager.py`
+- Added `REFRESH_TOKEN_LOOKUP_PREFIX` constant for reverse lookup keys
+- Added `_get_lookup_key()` method to generate lookup keys
+- Added `find_user_id_from_token()` method to find user_id from refresh token hash
+- Updated `store_refresh_token()` to store reverse lookup mapping
+- Updated `revoke_refresh_token()` to delete reverse lookup on revocation
+- Updated `revoke_all_refresh_tokens()` to clean up all reverse lookups
+
+**File**: `routers/auth/session.py`
+- Modified `/refresh` endpoint to use reverse lookup when access token cookie is missing
+- Refresh endpoint now works with only refresh token cookie (no longer requires access token cookie)
+
+### Frontend Changes
+
+**File**: `frontend/src/stores/auth.ts`
+- Updated `refreshAccessToken()` to return `{ success: boolean, errorMessage?: string }` instead of just boolean
+- Modified function to extract error details from backend response (`errorData.detail` or `errorData.message`)
+- Updated `checkSessionStatus()` to use actual backend error message instead of hardcoded "max device limit exceeded"
+- Updated `refreshToken()` to handle new return type from `refreshAccessToken()`
+
+### Redis Key Schema Changes
+
+**New Key**: `refresh:lookup:{token_hash} -> user_id`
+- Purpose: Reverse lookup to find user_id from refresh token hash
+- TTL: Same as refresh token (7 days)
+- Used when: Access token cookie is missing but refresh token cookie is present
+
+---
 
 ## Quick Debug Checklist
 
