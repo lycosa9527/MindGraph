@@ -14,9 +14,9 @@
  *   const { restore, clear, isPersisted } = useDiagramPersistence('my-diagram-id')
  *   onMounted(() => restore())
  */
-import { computed, onUnmounted, watch, type ComputedRef } from 'vue'
+import { type ComputedRef, computed, onUnmounted, watch } from 'vue'
 
-import { useVueFlow, type Edge, type Node } from '@vue-flow/core'
+import { type Edge, type Node, useVueFlow } from '@vue-flow/core'
 import { useStorage, useThrottleFn } from '@vueuse/core'
 
 // ============================================================================

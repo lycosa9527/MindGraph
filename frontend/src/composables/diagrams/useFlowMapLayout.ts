@@ -13,7 +13,6 @@
  * - FlowSubstepNode: 100px x 50px (fixed)
  * - Text is truncated with ellipsis when it exceeds available width
  */
-
 // Import layout constants from layoutConfig
 import {
   DEFAULT_CENTER_X,
