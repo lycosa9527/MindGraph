@@ -32,10 +32,10 @@ logger = logging.getLogger(__name__)
 
 # Default voice mapping for different roles
 VOICE_MAPPING = {
-    'qwen': 'Cherry',      # 芊悦 - 阳光积极、亲切自然小姐姐
-    'doubao': 'Ethan',     # 晨煦 - 阳光、温暖、活力、朝气
-    'deepseek': 'Serena',  # 苏瑶 - 温柔小姐姐
-    'kimi': 'Chelsie',     # 千雪 - 二次元虚拟女友
+    'qwen': 'Kai',         # Qwen uses Kai voice
+    'doubao': 'Cherry',    # Doubao uses Cherry voice
+    'deepseek': 'Serena',  # DeepSeek uses Serena voice
+    'kimi': 'Mia',         # Kimi uses Mia voice
     'judge': 'Neil',       # 阿闻 - 专业新闻主持人
     'default': 'Cherry',
 }
@@ -81,7 +81,14 @@ class DashscopeTtsService:
         """Get voice name for a given model ID"""
         if not model_id:
             return VOICE_MAPPING['default']
-        return VOICE_MAPPING.get(model_id.lower(), VOICE_MAPPING['default'])
+        
+        # Normalize physical model names to logical names
+        # Handle cases like 'ark-kimi' -> 'kimi', 'ark-doubao' -> 'doubao', 'ark-deepseek' -> 'deepseek'
+        model_id = model_id.lower()
+        if model_id.startswith('ark-'):
+            model_id = model_id[4:]  # Remove 'ark-' prefix
+        
+        return VOICE_MAPPING.get(model_id, VOICE_MAPPING['default'])
     
     async def synthesize_text(
         self,

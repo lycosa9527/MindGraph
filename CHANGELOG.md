@@ -7,6 +7,59 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [5.1.9] - 2025-01-12 - DebateVerse TTS Improvements and Rate Limiting
+
+### Added
+
+- **Rate Limiting for Streaming LLM Calls** (`services/llm_service.py`)
+  - Added rate limiting support to `chat_stream()` method to prevent quota exhaustion
+  - Streaming requests now respect QPM and concurrent limits like non-streaming requests
+  - Added rate limiter timing logs for debugging
+
+- **TTS COMMIT Mode Support** (`routers/debateverse.py`, `clients/tts_realtime_client.py`)
+  - Switched from SERVER_COMMIT to COMMIT mode for better audio control
+  - Implemented explicit text buffering with sentence boundary detection
+  - Added commit tracking to batch text before synthesis
+
+### Fixed
+
+- **DebateVerse Message Alignment** (`frontend/src/components/debateverse/DebateMessage.vue`, `frontend/src/components/debateverse/DebateSection.vue`)
+  - Fixed affirmative messages not sticking to the left side
+  - Fixed negative messages not sticking to the right side
+  - Improved message container width and alignment classes
+
+- **TTS Audio Choppiness** (`routers/debateverse.py`, `frontend/src/stores/debateverse.ts`)
+  - Increased text buffer sizes (MIN: 15→50 chars, MAX: 100→200 chars)
+  - Improved sentence boundary detection for smoother audio generation
+  - Enhanced audio playback with preloading and better queue management
+  - Fixed gaps between audio chunks
+
+- **Language Instructions for Chinese Mode** (`prompts/debateverse.py`)
+  - Added explicit Chinese language requirements to all prompts
+  - Fixed DeepSeek and other models responding in English when Chinese mode is selected
+  - Added language instructions to debater, judge, and cross-examination prompts
+
+- **Kimi Thinking Mode** (`routers/debateverse.py`, `services/debateverse_service.py`)
+  - Disabled thinking output for Kimi model across all debate functions
+  - Prevents unnecessary thinking tokens in debate responses
+
+### Changed
+
+- **TTS Text Buffering** (`routers/debateverse.py`)
+  - Improved buffering algorithm to wait for complete sentences
+  - Extended sentence boundary search from 50 to 100 characters
+  - Better handling of punctuation (added commas to sentence endings)
+
+- **Audio Playback** (`frontend/src/stores/debateverse.ts`)
+  - Added audio preloading for smoother playback
+  - Improved queue handling to reduce gaps between chunks
+  - Better error handling and cleanup
+
+- **Code Formatting**
+  - Normalized line endings from CRLF to LF across multiple files
+
+---
+
 ## [5.1.8] - 2025-01-11 - Bug Fixes and Code Quality Improvements
 
 ### Fixed

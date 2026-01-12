@@ -30,14 +30,22 @@ const userRole = ref<'debater' | 'judge' | 'viewer'>('viewer')
 
 const isCreating = ref(false)
 
-// Default LLM assignments (can be customized later)
-const llmAssignments = ref<LLMAssignment>({
-  affirmative_1: 'qwen',
-  affirmative_2: 'deepseek',
-  negative_1: 'doubao',
-  negative_2: 'kimi',
-  judge: 'deepseek',
-})
+// Shuffle LLM models randomly
+function shuffleLLMAssignments(): LLMAssignment {
+  const models = ['qwen', 'doubao', 'deepseek', 'kimi']
+  const shuffled = [...models].sort(() => Math.random() - 0.5)
+  
+  return {
+    affirmative_1: shuffled[0],
+    affirmative_2: shuffled[1],
+    negative_1: shuffled[2],
+    negative_2: shuffled[3],
+    judge: models[Math.floor(Math.random() * models.length)],
+  }
+}
+
+// Default LLM assignments (randomized)
+const llmAssignments = ref<LLMAssignment>(shuffleLLMAssignments())
 
 // ============================================================================
 // Computed
@@ -93,6 +101,7 @@ async function startDebate() {
 
   isCreating.value = true
   try {
+    // createSession() already saves to recent debates internally
     await store.createSession(topic.value.trim(), llmAssignments.value)
 
     // If user selected a role, join as that role
@@ -105,9 +114,9 @@ async function startDebate() {
       )
     }
 
-    // Automatically trigger coin toss to start the debate
-    // This advances from 'setup' to 'opening' stage
-    await store.coinToss()
+    // Set stage to coin_toss (positions will auto-generate)
+    // Don't call coinToss() yet - wait for user to click next
+    await store.advanceStage('coin_toss')
   } catch (error) {
     console.error('Error starting debate:', error)
   } finally {

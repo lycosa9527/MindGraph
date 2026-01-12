@@ -93,7 +93,7 @@ class DebateVerseContextBuilder:
             stage=stage,
             topic=session.topic,
             language=language,
-            time_limit=3,  # Default 3 minutes
+            time_limit=1,  # 1 minute speech limit
             opponent_arguments=analysis.get('opponent_summary', ''),
             attack_strategy=analysis.get('attack_strategy', ''),
             unaddressed_points=analysis.get('unaddressed_points', '')

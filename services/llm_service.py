@@ -706,6 +706,9 @@ class LLMService:
             if timeout is None:
                 timeout = self._get_default_timeout(model)
             
+            # Get appropriate rate limiter
+            rate_limiter = self._get_rate_limiter(model, actual_model, provider)
+            
             # Check if client supports streaming
             if hasattr(client, 'async_stream_chat_completion'):
                 stream_method = client.async_stream_chat_completion
@@ -714,6 +717,7 @@ class LLMService:
             else:
                 # Fallback: get full response and yield it as one chunk
                 # Use actual_model to ensure load balancing is applied
+                # Note: This fallback path uses chat() which already has rate limiting
                 response = await self.chat(
                     prompt=prompt,
                     model=actual_model,
@@ -726,40 +730,89 @@ class LLMService:
                 yield response
                 return
             
-            # Stream the response and capture usage
+            # Stream the response with rate limiting and capture usage
             usage_data = None
-            async for chunk in stream_method(
-                messages=chat_messages,
-                temperature=temperature,
-                max_tokens=max_tokens,
-                enable_thinking=enable_thinking,
-                **kwargs
-            ):
-                # Handle new format: chunk can be dict with 'type' and content/usage
-                if isinstance(chunk, dict):
-                    chunk_type = chunk.get('type', 'token')
-                    if chunk_type == 'usage':
-                        # Capture usage data from final chunk
-                        usage_data = chunk.get('usage', {})
-                        if yield_structured:
-                            yield chunk  # Forward usage to caller if structured mode
-                    elif chunk_type == 'thinking':
-                        # Yield thinking/reasoning content
-                        if yield_structured:
+            
+            # Apply rate limiting if available
+            if rate_limiter:
+                # Time rate limiter operations to diagnose delays
+                rate_limit_start = time.time()
+                async with rate_limiter:
+                    rate_limit_duration = time.time() - rate_limit_start
+                    # Log rate limiter timing for debugging
+                    if model == 'kimi' or rate_limit_duration > 0.1:
+                        logger.info(
+                            f"[LLMService] Rate limiter acquire: {rate_limit_duration:.3f}s "
+                            f"for {model} ({actual_model}) [stream]"
+                        )
+                    
+                    # Stream with rate limiting applied
+                    async for chunk in stream_method(
+                        messages=chat_messages,
+                        temperature=temperature,
+                        max_tokens=max_tokens,
+                        enable_thinking=enable_thinking,
+                        **kwargs
+                    ):
+                        # Handle new format: chunk can be dict with 'type' and content/usage
+                        if isinstance(chunk, dict):
+                            chunk_type = chunk.get('type', 'token')
+                            if chunk_type == 'usage':
+                                # Capture usage data from final chunk
+                                usage_data = chunk.get('usage', {})
+                                if yield_structured:
+                                    yield chunk  # Forward usage to caller if structured mode
+                            elif chunk_type == 'thinking':
+                                # Yield thinking/reasoning content
+                                if yield_structured:
+                                    yield chunk
+                                # Note: In non-structured mode, thinking is discarded
+                                # (for backward compatibility with existing callers)
+                            elif chunk_type == 'token':
+                                # Yield content token
+                                content = chunk.get('content', '')
+                                if content:
+                                    if yield_structured:
+                                        yield chunk
+                                    else:
+                                        yield content
+                        else:
+                            # Backward compatibility: plain string chunk
                             yield chunk
-                        # Note: In non-structured mode, thinking is discarded
-                        # (for backward compatibility with existing callers)
-                    elif chunk_type == 'token':
-                        # Yield content token
-                        content = chunk.get('content', '')
-                        if content:
+            else:
+                # Stream without rate limiting (if rate limiter not available)
+                async for chunk in stream_method(
+                    messages=chat_messages,
+                    temperature=temperature,
+                    max_tokens=max_tokens,
+                    enable_thinking=enable_thinking,
+                    **kwargs
+                ):
+                    # Handle new format: chunk can be dict with 'type' and content/usage
+                    if isinstance(chunk, dict):
+                        chunk_type = chunk.get('type', 'token')
+                        if chunk_type == 'usage':
+                            # Capture usage data from final chunk
+                            usage_data = chunk.get('usage', {})
+                            if yield_structured:
+                                yield chunk  # Forward usage to caller if structured mode
+                        elif chunk_type == 'thinking':
+                            # Yield thinking/reasoning content
                             if yield_structured:
                                 yield chunk
-                            else:
-                                yield content
-                else:
-                    # Backward compatibility: plain string chunk
-                    yield chunk
+                            # Note: In non-structured mode, thinking is discarded
+                            # (for backward compatibility with existing callers)
+                        elif chunk_type == 'token':
+                            # Yield content token
+                            content = chunk.get('content', '')
+                            if content:
+                                if yield_structured:
+                                    yield chunk
+                                else:
+                                    yield content
+                    else:
+                        # Backward compatibility: plain string chunk
+                        yield chunk
             
             duration = time.time() - start_time
             logger.debug(f"[LLMService] {model} stream completed in {duration:.2f}s")

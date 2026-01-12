@@ -101,6 +101,7 @@ interface LocalStorageData {
 
 const AVAILABLE_MODELS = ['qwen', 'doubao', 'deepseek', 'kimi'] as const
 const STORAGE_KEY = 'debateverse_recent'
+const CURRENT_SESSION_KEY = 'debateverse_current_session'
 const TTL_MS = 7 * 24 * 60 * 60 * 1000 // 7 days
 const MAX_RECENT_DEBATES = 50
 
@@ -134,10 +135,13 @@ export const useDebateVerseStore = defineStore('debateverse', () => {
   // Streaming state
   const isStreaming = ref(false)
   const currentSpeaker = ref<number | null>(null)
+  const streamingMessage = ref<Partial<DebateMessage> | null>(null)
 
   // TTS state
   const ttsEnabled = ref(true)
   const audioQueue = ref<string[]>([])
+  const currentAudioElement = ref<HTMLAudioElement | null>(null)
+  const isPlayingAudio = ref(false)
 
   // Abort controllers for cancelling streams
   const abortControllers = ref<Record<number, AbortController | null>>({})
@@ -282,6 +286,84 @@ export const useDebateVerseStore = defineStore('debateverse', () => {
 
   // Load from storage on initialization
   loadFromStorage()
+
+  // =========================================================================
+  // Current Session Persistence
+  // =========================================================================
+
+  interface CurrentSessionStorage {
+    sessionId: string | null
+    userRole: UserRole | null
+    userSide: string | null
+    userPosition: number | null
+    savedAt: number
+  }
+
+  function saveCurrentSessionToStorage(): void {
+    try {
+      const data: CurrentSessionStorage = {
+        sessionId: currentSessionId.value,
+        userRole: userRole.value,
+        userSide: userSide.value,
+        userPosition: userPosition.value,
+        savedAt: Date.now(),
+      }
+      localStorage.setItem(CURRENT_SESSION_KEY, JSON.stringify(data))
+    } catch (error) {
+      console.warn('[DebateVerseStore] Failed to save current session to localStorage:', error)
+    }
+  }
+
+  function loadCurrentSessionFromStorage(): void {
+    try {
+      const raw = localStorage.getItem(CURRENT_SESSION_KEY)
+      if (!raw) return
+
+      const data: CurrentSessionStorage = JSON.parse(raw)
+      
+      // Check TTL - restore if less than 24 hours old
+      const age = Date.now() - data.savedAt
+      if (age > 24 * 60 * 60 * 1000) {
+        localStorage.removeItem(CURRENT_SESSION_KEY)
+        return
+      }
+
+      // Restore current session ID and user role
+      if (data.sessionId) {
+        currentSessionId.value = data.sessionId
+        userRole.value = data.userRole
+        userSide.value = data.userSide
+        userPosition.value = data.userPosition
+        
+        // Automatically reload the session
+        loadSession(data.sessionId).catch((error) => {
+          console.warn('[DebateVerseStore] Failed to reload session from storage:', error)
+          // Clear invalid session
+          currentSessionId.value = null
+          localStorage.removeItem(CURRENT_SESSION_KEY)
+        })
+      }
+    } catch (error) {
+      console.warn('[DebateVerseStore] Failed to load current session from localStorage:', error)
+      localStorage.removeItem(CURRENT_SESSION_KEY)
+    }
+  }
+
+  function clearCurrentSessionStorage(): void {
+    localStorage.removeItem(CURRENT_SESSION_KEY)
+  }
+
+  // Auto-save current session on changes
+  watch(
+    [currentSessionId, userRole, userSide, userPosition],
+    () => {
+      saveCurrentSessionToStorage()
+    },
+    { deep: true }
+  )
+
+  // Load current session on initialization
+  loadCurrentSessionFromStorage()
 
   // =========================================================================
   // Actions
@@ -447,6 +529,131 @@ export const useDebateVerseStore = defineStore('debateverse', () => {
     ttsEnabled.value = !ttsEnabled.value
   }
 
+  // =========================================================================
+  // Audio Playback
+  // =========================================================================
+
+  async function playAudioChunk(audioBase64: string) {
+    if (!ttsEnabled.value) return
+
+    // If there's already audio playing, queue this one
+    if (isPlayingAudio.value && currentAudioElement.value) {
+      audioQueue.value.push(audioBase64)
+      return
+    }
+
+    try {
+      // Decode base64 audio (MP3 format from Dashscope)
+      const audioData = Uint8Array.from(atob(audioBase64), (c) => c.charCodeAt(0))
+      
+      // Create blob URL for MP3 audio
+      const blob = new Blob([audioData], { type: 'audio/mpeg' })
+      const audioUrl = URL.createObjectURL(blob)
+      
+      // Use HTMLAudioElement for MP3 playback
+      const audio = new Audio(audioUrl)
+      
+      // Preload audio to reduce gaps
+      audio.preload = 'auto'
+      
+      // Set volume to ensure consistent playback
+      audio.volume = 1.0
+      
+      currentAudioElement.value = audio
+      isPlayingAudio.value = true
+
+      // Wait for audio to be ready before playing to reduce gaps
+      await new Promise<void>((resolve, reject) => {
+        const onCanPlay = () => {
+          audio.removeEventListener('canplay', onCanPlay)
+          audio.removeEventListener('error', onError)
+          resolve()
+        }
+        const onError = (e: Event) => {
+          audio.removeEventListener('canplay', onCanPlay)
+          audio.removeEventListener('error', onError)
+          reject(e)
+        }
+        audio.addEventListener('canplay', onCanPlay)
+        audio.addEventListener('error', onError)
+        
+        // Timeout after 2 seconds
+        setTimeout(() => {
+          audio.removeEventListener('canplay', onCanPlay)
+          audio.removeEventListener('error', onError)
+          resolve() // Continue anyway
+        }, 2000)
+      })
+
+      audio.onended = () => {
+        URL.revokeObjectURL(audioUrl)
+        currentAudioElement.value = null
+        isPlayingAudio.value = false
+        
+        // Play next queued audio immediately (no delay)
+        if (audioQueue.value.length > 0) {
+          const nextChunk = audioQueue.value.shift()
+          if (nextChunk) {
+            // Use setTimeout(0) to ensure cleanup completes first
+            setTimeout(() => {
+              playAudioChunk(nextChunk)
+            }, 0)
+          }
+        }
+      }
+
+      audio.onerror = (error) => {
+        console.error('[DebateVerse] Audio playback error:', error)
+        URL.revokeObjectURL(audioUrl)
+        currentAudioElement.value = null
+        isPlayingAudio.value = false
+        
+        // Try next chunk if available
+        if (audioQueue.value.length > 0) {
+          const nextChunk = audioQueue.value.shift()
+          if (nextChunk) {
+            setTimeout(() => {
+              playAudioChunk(nextChunk)
+            }, 0)
+          }
+        }
+      }
+
+      await audio.play()
+    } catch (error) {
+      console.error('[DebateVerse] Error playing audio chunk:', error)
+      currentAudioElement.value = null
+      isPlayingAudio.value = false
+      
+      // Try next chunk if available
+      if (audioQueue.value.length > 0) {
+        const nextChunk = audioQueue.value.shift()
+        if (nextChunk) {
+          setTimeout(() => {
+            playAudioChunk(nextChunk)
+          }, 0)
+        }
+      }
+    }
+  }
+
+  function stopAudioPlayback() {
+    if (currentAudioElement.value) {
+      try {
+        currentAudioElement.value.pause()
+        currentAudioElement.value.currentTime = 0
+        currentAudioElement.value.onended = null
+        currentAudioElement.value.onerror = null
+      } catch {
+        // Ignore if already stopped
+      }
+      currentAudioElement.value = null
+    }
+    
+    audioQueue.value = []
+    isPlayingAudio.value = false
+  }
+
   function setAbortController(participantId: number, controller: AbortController | null) {
     abortControllers.value[participantId] = controller
   }
@@ -459,6 +666,7 @@ export const useDebateVerseStore = defineStore('debateverse', () => {
     })
     abortControllers.value = {}
     isStreaming.value = false
+    stopAudioPlayback()
   }
 
   async function triggerNext() {
@@ -467,7 +675,7 @@ export const useDebateVerseStore = defineStore('debateverse', () => {
     try {
       // Get next action (speaker or stage advance)
       const response = await fetch(
-        `/api/debateverse/sessions/${currentSessionId.value}/next?language=zh`,
+        `/api/debateverse/next?session_id=${currentSessionId.value}&language=zh`,
         {
           method: 'POST',
         }
@@ -561,12 +769,46 @@ export const useDebateVerseStore = defineStore('debateverse', () => {
             try {
               const data = JSON.parse(jsonStr)
 
-              if (data.type === 'done') {
+              if (data.type === 'token' && data.content) {
+                // Update streaming message in real-time
+                if (!streamingMessage.value) {
+                  streamingMessage.value = {
+                    participant_id: participantId,
+                    content: '',
+                    thinking: null,
+                    stage: stage as DebateStage,
+                    round_number: 0,
+                    message_type: '',
+                    audio_url: null,
+                    created_at: new Date().toISOString(),
+                  }
+                }
+                streamingMessage.value.content += data.content
+              } else if (data.type === 'thinking' && data.content) {
+                if (!streamingMessage.value) {
+                  streamingMessage.value = {
+                    participant_id: participantId,
+                    content: '',
+                    thinking: '',
+                    stage: stage as DebateStage,
+                    round_number: 0,
+                    message_type: '',
+                    audio_url: null,
+                    created_at: new Date().toISOString(),
+                  }
+                }
+                streamingMessage.value.thinking = (streamingMessage.value.thinking || '') + data.content
+              } else if (data.type === 'audio_chunk' && data.data) {
+                // Handle audio chunk for TTS playback
+                playAudioChunk(data.data)
+              } else if (data.type === 'done') {
                 // Stream complete, reload session to get new messages
                 console.log(`[DebateVerse] Stream complete for participant ${participantId}`)
+                streamingMessage.value = null
                 await loadSession(currentSessionId.value!)
                 break
               } else if (data.type === 'error') {
+                streamingMessage.value = null
                 throw new Error(data.error || 'Stream error')
               }
             } catch (e) {
@@ -586,6 +828,8 @@ export const useDebateVerseStore = defineStore('debateverse', () => {
       abortControllers.value[participantId] = null
       currentSpeaker.value = null
       isStreaming.value = false
+      streamingMessage.value = null
+      // Don't stop audio here - let it finish playing naturally
     }
   }
 
@@ -617,6 +861,7 @@ export const useDebateVerseStore = defineStore('debateverse', () => {
     userParticipant,
     canUserSpeak,
     sortedRecentDebates,
+    streamingMessage,
 
     // Actions
     createSession,

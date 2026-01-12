@@ -4,13 +4,13 @@
  */
 import { computed, ref } from 'vue'
 
-import { ElButton, ElIcon } from 'element-plus'
-import { ArrowRight } from '@element-plus/icons-vue'
+import { ElButton } from 'element-plus'
+import { Coins, Mic, MessageSquare, MessageCircleQuestion, CheckCircle, Gavel } from 'lucide-vue-next'
 
 import { useLanguage } from '@/composables/useLanguage'
 import { useDebateVerseStore } from '@/stores/debateverse'
 import DebaterAvatar from './DebaterAvatar.vue'
-import DebateMessages from './DebateMessages.vue'
+import DebateSection from './DebateSection.vue'
 import JudgeArea from './JudgeArea.vue'
 import DebateInput from './DebateInput.vue'
 import CoinTossDisplay from './CoinTossDisplay.vue'
@@ -28,11 +28,14 @@ const isTriggeringNext = ref(false)
 // Computed
 // ============================================================================
 
-const showCoinToss = computed(() => store.currentStage === 'coin_toss')
+const currentStage = computed(() => store.currentStage || 'setup')
+const showCoinToss = computed(() => currentStage.value === 'coin_toss')
 
 const canTriggerNext = computed(() => {
   // Can trigger if not currently streaming, not already triggering, and debate not completed
-  return !store.isStreaming && !isTriggeringNext.value && store.currentStage !== 'completed' && store.currentStage !== 'setup'
+  // Include coin_toss stage so users can click next to advance
+  const stage = currentStage.value
+  return !store.isStreaming && !isTriggeringNext.value && stage !== 'completed' && stage !== 'setup'
 })
 
 const nextButtonText = computed(() => {
@@ -45,26 +48,49 @@ const nextButtonText = computed(() => {
   return isZh.value ? '下一步' : 'Next'
 })
 
+const debateStages = [
+  { key: 'coin_toss' as const, zh: '掷硬币', en: 'Coin Toss', icon: Coins },
+  { key: 'opening' as const, zh: '立论发言', en: 'Opening', icon: Mic },
+  { key: 'rebuttal' as const, zh: '驳论发言', en: 'Rebuttal', icon: MessageSquare },
+  { key: 'cross_exam' as const, zh: '交叉质询', en: 'Cross-Exam', icon: MessageCircleQuestion },
+  { key: 'closing' as const, zh: '总结陈词', en: 'Closing', icon: CheckCircle },
+  { key: 'judgment' as const, zh: '评判', en: 'Judgment', icon: Gavel },
+]
+
 function getStageName(stage: string): string {
+  const stageInfo = debateStages.find(s => s.key === stage)
+  if (stageInfo) {
+    return isZh.value ? stageInfo.zh : stageInfo.en
+  }
+  
   const names: Record<string, string> = {
     setup: '准备',
-    coin_toss: '掷硬币',
-    opening: '立论发言',
-    rebuttal: '驳论发言',
-    cross_exam: '交叉质询',
-    closing: '总结陈词',
-    judgment: '评判',
     completed: '已完成',
   }
-  return names[stage] || stage
+  return isZh.value ? (names[stage] || stage) : stage
 }
+
+const currentStageIndex = computed(() => {
+  const stage = currentStage.value
+  const index = debateStages.findIndex(s => s.key === stage)
+  // If stage not found in debateStages (e.g., 'setup'), return -1 to highlight nothing
+  // If found, return index to highlight up to and including current stage
+  return index >= 0 ? index : -1
+})
 
 async function handleNext() {
   if (!canTriggerNext.value) return
 
   isTriggeringNext.value = true
   try {
-    await store.triggerNext()
+    if (currentStage.value === 'coin_toss') {
+      // Execute coin toss and advance to opening
+      await store.coinToss()
+      await store.advanceStage('opening')
+    } else {
+      // Normal next action
+      await store.triggerNext()
+    }
   } catch (error) {
     console.error('Error triggering next:', error)
   } finally {
@@ -73,15 +99,15 @@ async function handleNext() {
 }
 
 function handleAdvanceStage() {
-  const stageOrder: Array<typeof store.currentStage> = [
+  const stageOrder = [
     'coin_toss',
     'opening',
     'rebuttal',
     'cross_exam',
     'closing',
     'judgment',
-  ]
-  const currentIndex = stageOrder.indexOf(store.currentStage)
+  ] as const
+  const currentIndex = stageOrder.indexOf(currentStage.value as any)
   if (currentIndex < stageOrder.length - 1) {
     store.advanceStage(stageOrder[currentIndex + 1])
   }
@@ -90,28 +116,77 @@ function handleAdvanceStage() {
 
 <template>
   <div class="h-full flex flex-col bg-gray-50">
-    <!-- Stage Header -->
-    <div class="px-6 py-3 bg-white border-b border-gray-200">
-      <div class="flex items-center justify-between">
-        <div>
-          <span class="text-sm font-medium text-gray-700">
-            {{ isZh ? '当前阶段' : 'Current Stage' }}:
-          </span>
-          <span class="ml-2 text-sm text-gray-900">
-            {{ isZh ? getStageName(store.currentStage) : store.currentStage }}
-          </span>
-        </div>
-        <div
-          v-if="store.userRole === 'judge'"
-          class="flex items-center gap-2"
-        >
-          <ElButton
-            size="small"
-            @click="handleAdvanceStage"
+    <!-- Status Bar Section: Progress bar with stage icons and current speaker info -->
+    <div class="flex-shrink-0 px-6 py-4 bg-white border-b border-gray-200">
+      <div
+        v-if="currentStage !== 'setup' && currentStage !== 'completed'"
+        class="w-full"
+      >
+        <!-- Progress Bar with Stage Sections (Word Ribbon Style) -->
+        <div class="flex items-stretch">
+          <div
+            v-for="(stage, index) in debateStages"
+            :key="stage.key"
+            class="stage-section flex flex-col items-center justify-center gap-2 px-4 py-3 flex-1 transition-all duration-200 border-r border-gray-200 last:border-r-0"
+            :class="{
+              'bg-blue-100 border-blue-300': index === currentStageIndex.value,
+              'bg-blue-50': index < currentStageIndex.value,
+              'bg-white': index > currentStageIndex.value,
+              'ring-2 ring-blue-500 ring-offset-2': index === currentStageIndex.value,
+            }"
           >
-            {{ isZh ? '进入下一阶段' : 'Advance Stage' }}
-          </ElButton>
+            <!-- Icon -->
+            <div
+              class="w-8 h-8 flex items-center justify-center transition-all duration-200 rounded-full"
+              :class="{
+                'text-blue-700 bg-blue-200': index === currentStageIndex.value,
+                'text-blue-600': index < currentStageIndex.value,
+                'text-gray-400': index > currentStageIndex.value,
+              }"
+            >
+              <component
+                :is="stage.icon"
+                :size="20"
+              />
+            </div>
+            
+            <!-- Label -->
+            <span
+              class="text-xs text-center font-medium"
+              :class="{
+                'text-blue-800 font-bold': index === currentStageIndex.value,
+                'text-blue-700': index < currentStageIndex.value,
+                'text-gray-500': index > currentStageIndex.value,
+              }"
+            >
+              {{ isZh ? stage.zh : stage.en }}
+            </span>
+          </div>
         </div>
+
+        <!-- Current Speaker Info -->
+        <div
+          v-if="store.currentSpeaker"
+          class="mt-3 text-center text-xs text-gray-500"
+        >
+          {{ isZh ? '发言中' : 'Speaking' }}:
+          <span class="font-medium text-gray-700 ml-1">
+            {{ store.participants.find(p => p.id === store.currentSpeaker)?.name || '' }}
+          </span>
+        </div>
+      </div>
+
+      <!-- Judge Advance Button -->
+      <div
+        v-if="store.userRole === 'judge' && !showCoinToss && currentStage !== 'setup' && currentStage !== 'completed'"
+        class="mt-3 flex justify-end"
+      >
+        <ElButton
+          size="small"
+          @click="handleAdvanceStage"
+        >
+          {{ isZh ? '进入下一阶段' : 'Advance Stage' }}
+        </ElButton>
       </div>
     </div>
 
@@ -121,13 +196,13 @@ function handleAdvanceStage() {
       class="flex-1"
     />
 
-    <!-- Three-Column Stage -->
+    <!-- Debate Section (Three-Column Layout: Avatars + Messages) -->
     <div
       v-else
-      class="flex-1 flex flex-col"
+      class="flex-1 flex flex-col min-h-0"
     >
-      <!-- Avatar Panels (Stops at avatar level) -->
-      <div class="grid grid-cols-3 gap-4 px-4 pt-4 pb-6">
+      <!-- Avatar Section (Top - Shows participant avatars) -->
+      <div class="flex-shrink-0 grid grid-cols-3 gap-4 px-4 pt-4 pb-6">
         <!-- Affirmative Side -->
         <div class="flex flex-col items-center gap-4">
           <h3 class="text-sm font-semibold text-green-700">
@@ -144,7 +219,7 @@ function handleAdvanceStage() {
         </div>
 
         <!-- Judge Area (Center) -->
-        <div class="flex flex-col items-center gap-4 bg-gray-100 rounded-lg p-4">
+        <div class="flex flex-col items-center gap-4 bg-gray-100 rounded-lg p-4 mt-16">
           <h3 class="text-sm font-semibold text-gray-700">
             {{ isZh ? '裁判' : 'Judge' }}
           </h3>
@@ -173,94 +248,18 @@ function handleAdvanceStage() {
         </div>
       </div>
 
-      <!-- Messages Area (Below avatars) -->
-      <div class="flex-1 grid grid-cols-3 gap-4 px-4 pb-4 min-h-0">
-        <!-- Affirmative Messages -->
-        <div class="overflow-y-auto">
-          <DebateMessages
-            :side="'affirmative'"
-            class="w-full"
-          />
-        </div>
-
-        <!-- Judge Messages -->
-        <div class="overflow-y-auto">
-          <DebateMessages
-            :side="'judge'"
-            class="w-full"
-          />
-        </div>
-
-        <!-- Negative Messages -->
-        <div class="overflow-y-auto">
-          <DebateMessages
-            :side="'negative'"
-            class="w-full"
-          />
-        </div>
-      </div>
-
-      <!-- Status Bar (Space below) -->
-      <div class="px-4 py-3 bg-white border-t border-gray-200 flex-shrink-0">
-        <div class="flex items-center justify-center gap-6 text-sm text-gray-600">
-          <span
-            v-if="store.currentSpeaker"
-            class="font-medium"
-          >
-            {{ isZh ? '当前发言' : 'Speaking' }}:
-            <span class="text-gray-900">
-              {{ store.participants.find(p => p.id === store.currentSpeaker)?.name || '' }}
-            </span>
-          </span>
-          <span
-            v-else
-            class="text-gray-400"
-          >
-            {{ isZh ? '等待开始...' : 'Waiting to start...' }}
-          </span>
-        </div>
-      </div>
+      <!-- Debate Section (Messages) -->
+      <DebateSection class="flex-1 min-h-0" />
     </div>
 
-    <!-- User Input (if debater) -->
+    <!-- Message Input Section (Always shown, includes input and Next button) -->
     <DebateInput
-      v-if="store.canUserSpeak"
-      class="border-t border-gray-200 bg-white"
+      v-if="!showCoinToss && currentStage !== 'setup' && currentStage !== 'completed'"
+      :is-triggering-next="isTriggeringNext"
+      :can-trigger-next="canTriggerNext"
+      :next-button-text="nextButtonText"
+      @next="handleNext"
     />
-
-    <!-- Next Button (Fixed bottom right) -->
-    <div class="fixed bottom-6 right-6 z-10">
-      <ElButton
-        type="primary"
-        size="large"
-        :disabled="!canTriggerNext"
-        :loading="isTriggeringNext || store.isStreaming"
-        class="next-button"
-        @click="handleNext"
-      >
-        <ElIcon class="mr-1"><ArrowRight /></ElIcon>
-        {{ nextButtonText }}
-      </ElButton>
-    </div>
   </div>
 </template>
 
-<style scoped>
-.next-button {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  border-radius: 12px;
-  padding: 12px 24px;
-  font-weight: 500;
-  transition: all 0.2s;
-}
-
-.next-button:hover:not(:disabled) {
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
-  transform: translateY(-1px);
-}
-
-.next-button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-</style>

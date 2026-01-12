@@ -130,6 +130,9 @@ class DebateVerseService:
         """
         Execute coin toss to determine speaking order.
         
+        Note: This only determines the result. Stage should be set to 'coin_toss' 
+        before calling this, and advanced to 'opening' after user clicks next.
+        
         Returns:
             'affirmative_first' or 'negative_first'
         """
@@ -138,9 +141,12 @@ class DebateVerseService:
         session = self.db.query(DebateSession).filter_by(id=self.session_id).first()
         if session:
             session.coin_toss_result = result
-            session.current_stage = 'opening'
-            session.status = 'active'
-            session.started_at = datetime.utcnow()
+            # Don't change stage here - stage should already be 'coin_toss'
+            # Stage will be advanced to 'opening' separately
+            if session.status != 'active':
+                session.status = 'active'
+            if not session.started_at:
+                session.started_at = datetime.utcnow()
             self.db.commit()
         
         logger.info(f"Coin toss result for session {self.session_id}: {result}")
@@ -255,6 +261,9 @@ class DebateVerseService:
         # Get assigned model
         model = participant.model_id or 'qwen'
         
+        # Disable thinking for Kimi model
+        enable_thinking = model.lower() != 'kimi'
+        
         # Generate response using LLM service
         logger.info(f"Generating response for {participant.name} ({model}) in stage {stage}")
         
@@ -265,7 +274,7 @@ class DebateVerseService:
             model=model,
             temperature=0.7,
             max_tokens=2000,
-            enable_thinking=True,
+            enable_thinking=enable_thinking,
             yield_structured=True,
             user_id=None,  # Will be set by caller
             request_type='debateverse',
@@ -322,6 +331,9 @@ class DebateVerseService:
         # Generate response
         model = judge.model_id or 'deepseek'
         
+        # Disable thinking for Kimi model
+        enable_thinking = model.lower() != 'kimi'
+        
         logger.info(f"Generating judge commentary for stage {stage}")
         
         response_content = ""
@@ -330,7 +342,7 @@ class DebateVerseService:
             model=model,
             temperature=0.6,
             max_tokens=1000,
-            enable_thinking=True,
+            enable_thinking=enable_thinking,
             yield_structured=True,
             request_type='debateverse',
             endpoint_path=f'/api/debateverse/sessions/{self.session_id}/judge'

@@ -125,13 +125,14 @@ class TTSRealtimeClient:
             url = f"{self.BASE_URL}?model={self.model}"
             
             # Connect with API key in headers
+            # Note: websockets library uses 'additional_headers' parameter
             headers = {
                 "Authorization": f"Bearer {self.api_key}"
             }
             
             self.ws = await websockets.connect(
                 url,
-                extra_headers=headers,
+                additional_headers=headers,
                 ping_interval=20,
                 ping_timeout=10,
             )

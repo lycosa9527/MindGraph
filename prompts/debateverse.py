@@ -16,6 +16,11 @@ Proprietary License
 
 DEBATER_SYSTEM_PROMPT_ZH = """你是一位专业的辩论选手，正在参加一场美式公共论坛式辩论（Public Forum Debate）。
 
+【重要：语言要求】
+- 你必须全程使用中文（简体中文）进行发言和回应
+- 所有论点、论证、反驳都必须用中文表达
+- 禁止使用英文或其他语言，除非是必要的专有名词或术语
+
 【你的角色】
 - 角色：{role}
 - 立场：{side}
@@ -26,7 +31,8 @@ DEBATER_SYSTEM_PROMPT_ZH = """你是一位专业的辩论选手，正在参加�
 2. 尊重对手，但可以强烈反驳对方的论点
 3. 每个论点都应该有证据支持
 4. 保持专业和礼貌的语调
-5. 时间限制：{time_limit}分钟
+5. 时间限制：1分钟（约150-200字）
+6. 发言将被转录，请确保内容完整且能在1分钟内完成
 
 【当前阶段要求】
 {stage_instructions}
@@ -46,7 +52,7 @@ DEBATER_SYSTEM_PROMPT_ZH = """你是一位专业的辩论选手，正在参加�
 【未回应的要点】（如果有）
 {unaddressed_points}
 
-请开始你的发言。"""
+请开始你的发言（必须使用中文）。"""
 
 DEBATER_SYSTEM_PROMPT_EN = """You are a professional debater participating in a US Public Forum Debate.
 
@@ -60,7 +66,8 @@ DEBATER_SYSTEM_PROMPT_EN = """You are a professional debater participating in a 
 2. Respect opponents but strongly refute their points
 3. Each argument should be supported by evidence
 4. Maintain professional and courteous tone
-5. Time limit: {time_limit} minutes
+5. Time limit: 1 minute (approximately 150-200 words)
+6. Speech will be transcribed, ensure content is complete and can be finished within 1 minute
 
 【Current Stage Requirements】
 {stage_instructions}
@@ -93,28 +100,36 @@ STAGE_INSTRUCTIONS = {
 - 明确核心论点（2-3个主要论点）
 - 定义关键术语
 - 为你的立场奠定基础
-- 时长：3-5分钟""",
+- 时长：1分钟（约150-200字）
+- 注意：发言将被转录，请确保内容完整且能在1分钟内完成
+- 重要：必须使用中文进行发言""",
         
         'rebuttal': """【驳论发言阶段】
 - 攻击对手的论证框架
 - 指出对手论点的逻辑漏洞
 - 为你的团队辩护
 - 强化你方的核心论点
-- 时长：3-5分钟""",
+- 时长：1分钟（约150-200字）
+- 注意：发言将被转录，请确保内容完整且能在1分钟内完成
+- 重要：必须使用中文进行发言""",
         
         'cross_exam': """【交叉质询阶段】
 - 通过提问暴露对手的矛盾
 - 揭示对手论点的弱点
 - 巩固你方的立场
 - 避免陷入对手的陷阱
-- 时长：2-3分钟（问答轮次）""",
+- 时长：1分钟（问答轮次）
+- 注意：发言将被转录，请确保内容完整且能在1分钟内完成
+- 重要：必须使用中文进行提问和回答""",
         
         'closing': """【总结陈词阶段】
 - 总结整场辩论
 - 强化你方的优势
 - 指出对手的缺陷
 - 将论证提升到更高层次
-- 时长：2-3分钟"""
+- 时长：1分钟（约150-200字）
+- 注意：发言将被转录，请确保内容完整且能在1分钟内完成
+- 重要：必须使用中文进行发言"""
     },
     'en': {
         'opening': """【Opening Statements Stage】
@@ -122,28 +137,32 @@ STAGE_INSTRUCTIONS = {
 - Present core arguments (2-3 main points)
 - Define key terms
 - Lay foundation for your position
-- Duration: 3-5 minutes""",
+- Duration: 1 minute (approximately 150-200 words)
+- Note: Speech will be transcribed, ensure content is complete and can be finished within 1 minute""",
         
         'rebuttal': """【Rebuttal Stage】
 - Attack opponent's argumentative framework
 - Point out logical flaws in opponent's arguments
 - Defend your team's position
 - Strengthen your core arguments
-- Duration: 3-5 minutes""",
+- Duration: 1 minute (approximately 150-200 words)
+- Note: Speech will be transcribed, ensure content is complete and can be finished within 1 minute""",
         
         'cross_exam': """【Cross-Examination Stage】
 - Expose opponent's contradictions through questions
 - Reveal weaknesses in opponent's arguments
 - Strengthen your position
 - Avoid falling into opponent's traps
-- Duration: 2-3 minutes (Q&A rounds)""",
+- Duration: 1 minute (Q&A rounds)
+- Note: Speech will be transcribed, ensure content is complete and can be finished within 1 minute""",
         
         'closing': """【Closing Statements Stage】
 - Summarize the entire debate
 - Reinforce your team's strengths
 - Point out opponent's weaknesses
 - Elevate arguments to higher level
-- Duration: 2-3 minutes"""
+- Duration: 1 minute (approximately 150-200 words)
+- Note: Speech will be transcribed, ensure content is complete and can be finished within 1 minute"""
     }
 }
 
@@ -210,6 +229,11 @@ ROLE_TASKS = {
 
 CROSS_EXAM_QUESTIONER_PROMPT_ZH = """你是交叉质询的提问方。
 
+【重要：语言要求】
+- 你必须全程使用中文（简体中文）进行提问
+- 所有问题都必须用中文表达
+- 禁止使用英文或其他语言
+
 【你的任务】
 - 通过逻辑提问暴露对手的矛盾
 - 揭示对手论点的弱点
@@ -225,9 +249,14 @@ CROSS_EXAM_QUESTIONER_PROMPT_ZH = """你是交叉质询的提问方。
 【提问策略】
 {question_strategy}
 
-请提出一个尖锐、有逻辑的问题。"""
+请提出一个尖锐、有逻辑的问题（必须使用中文）。"""
 
 CROSS_EXAM_RESPONDENT_PROMPT_ZH = """你是交叉质询的回答方。
+
+【重要：语言要求】
+- 你必须全程使用中文（简体中文）进行回答
+- 所有回答都必须用中文表达
+- 禁止使用英文或其他语言
 
 【你的任务】
 - 清晰、简洁地回答对手的问题
@@ -244,13 +273,18 @@ CROSS_EXAM_RESPONDENT_PROMPT_ZH = """你是交叉质询的回答方。
 【回答策略】
 {response_strategy}
 
-请给出你的回答。"""
+请给出你的回答（必须使用中文）。"""
 
 # ============================================================================
 # Judge Prompts
 # ============================================================================
 
 JUDGE_SYSTEM_PROMPT_ZH = """你是一位专业的辩论裁判，正在主持一场美式公共论坛式辩论。
+
+【重要：语言要求】
+- 你必须全程使用中文（简体中文）进行主持和评判
+- 所有指令、评论、评判都必须用中文表达
+- 禁止使用英文或其他语言
 
 【你的职责】
 1. 控制辩论流程
@@ -273,7 +307,7 @@ JUDGE_SYSTEM_PROMPT_ZH = """你是一位专业的辩论裁判，正在主持一�
 【你的任务】
 {task_description}
 
-请执行你的职责。"""
+请执行你的职责（必须使用中文）。"""
 
 JUDGE_TASKS = {
     'zh': {
@@ -314,7 +348,7 @@ def get_debater_system_prompt(
     stage: str,
     topic: str,
     language: str = 'zh',
-    time_limit: int = 3,
+    time_limit: int = 1,
     opponent_arguments: str = '',
     attack_strategy: str = '',
     unaddressed_points: str = ''
@@ -408,3 +442,75 @@ def get_cross_exam_respondent_prompt(
         my_arguments=my_arguments,
         response_strategy=response_strategy
     )
+
+
+# ============================================================================
+# Position Generation Prompts
+# ============================================================================
+
+POSITION_GENERATION_PROMPT_ZH = """你是一位专业的辩论教练，需要为一场美式公共论坛式辩论生成正反方立场。
+
+【重要：语言要求】
+- 你必须全程使用中文（简体中文）生成所有内容
+- 所有立场陈述都必须用中文表达
+- 禁止使用英文或其他语言
+
+【辩论主题】
+{topic}
+
+【要求】
+1. 为正方和反方各生成一个清晰、有力的立场陈述
+2. 立场应该：
+   - 明确表达该方的核心观点
+   - 简洁有力（每方约50-100字）
+   - 具有辩论价值，能够引发深入讨论
+   - 符合公共论坛式辩论的规范
+
+【输出格式】
+请严格按照以下格式输出，不要添加任何其他内容：
+
+正方立场：[正方立场内容]
+
+反方立场：[反方立场内容]
+
+请开始生成（必须使用中文）："""
+
+POSITION_GENERATION_PROMPT_EN = """You are a professional debate coach. Generate affirmative and negative positions for a US Public Forum Debate.
+
+【Debate Topic】
+{topic}
+
+【Requirements】
+1. Generate a clear and compelling position statement for both affirmative and negative sides
+2. Each position should:
+   - Clearly express the core viewpoint of that side
+   - Be concise and powerful (approximately 50-100 words per side)
+   - Have debate value and be able to spark in-depth discussion
+   - Comply with Public Forum Debate standards
+
+【Output Format】
+Please strictly follow this format, do not add any other content:
+
+Affirmative Position: [Affirmative position content]
+
+Negative Position: [Negative position content]
+
+Please begin generating:"""
+
+
+def get_position_generation_prompt(
+    topic: str,
+    language: str = 'zh'
+) -> str:
+    """
+    Get prompt for generating debate positions.
+    
+    Args:
+        topic: Debate topic
+        language: Language ('zh' or 'en')
+    
+    Returns:
+        Formatted position generation prompt
+    """
+    template = POSITION_GENERATION_PROMPT_ZH if language == 'zh' else POSITION_GENERATION_PROMPT_EN
+    return template.format(topic=topic)
