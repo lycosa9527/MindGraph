@@ -239,9 +239,10 @@ async def start_cleanup_scheduler(interval_hours: int = 1):
         # Lock acquisition already logged the skip message
         # Keep running but don't do anything - just monitor
         # If the lock holder dies, this worker can try to acquire on next check
+        # Check every 5 minutes (lock TTL is 10 minutes, so 5 min is safe)
         while True:
             try:
-                await asyncio.sleep(60)  # Check every minute
+                await asyncio.sleep(300)  # Check every 5 minutes (reduced from 1 minute)
                 if await acquire_cleanup_lock():
                     logger.info("[Cleanup] Lock acquired, this worker will now clean temp images")
                     break

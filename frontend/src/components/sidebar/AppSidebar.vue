@@ -14,6 +14,7 @@ import {
   Share,
   VideoPlay,
   MagicStick,
+  ChatDotRound,
 } from '@element-plus/icons-vue'
 
 import { ChevronDown, KeyRound, LogIn, LogOut, Menu, Settings, UserRound } from 'lucide-vue-next'
@@ -28,6 +29,7 @@ import { type SavedDiagram, useSavedDiagramsStore } from '@/stores/savedDiagrams
 
 import AskOnceHistory from './AskOnceHistory.vue'
 import ChatHistory from './ChatHistory.vue'
+import DebateHistory from './DebateHistory.vue'
 import DiagramHistory from './DiagramHistory.vue'
 
 const router = useRouter()
@@ -45,6 +47,7 @@ const currentMode = computed(() => {
   if (path.startsWith('/mindmate')) return 'mindmate'
   if (path.startsWith('/mindgraph') || path.startsWith('/canvas')) return 'mindgraph'
   if (path.startsWith('/askonce')) return 'askonce'
+  if (path.startsWith('/debateverse')) return 'debateverse'
   if (path.startsWith('/school-zone')) return 'school-zone'
   if (path.startsWith('/template')) return 'template'
   if (path.startsWith('/course')) return 'course'
@@ -88,6 +91,8 @@ function setMode(index: string) {
     router.push('/mindgraph')
   } else if (index === 'askonce') {
     router.push('/askonce')
+  } else if (index === 'debateverse') {
+    router.push('/debateverse')
   } else if (index === 'school-zone') {
     router.push('/school-zone')
   } else if (index === 'template') {
@@ -208,6 +213,10 @@ async function handleDiagramSelect(diagram: SavedDiagram) {
         <el-icon><MagicStick /></el-icon>
         <template #title>{{ t('askonce.title') }}</template>
       </el-menu-item>
+      <el-menu-item index="debateverse">
+        <el-icon><ChatDotRound /></el-icon>
+        <template #title>论境</template>
+      </el-menu-item>
       <el-menu-item
         v-if="hasOrganization"
         index="school-zone"
@@ -249,10 +258,16 @@ async function handleDiagramSelect(diagram: SavedDiagram) {
       :is-blurred="!isAuthenticated"
       class="flex-1 overflow-hidden"
     />
+    <!-- Debateverse: Show recent debates -->
+    <DebateHistory
+      v-else-if="!isCollapsed && currentMode === 'debateverse'"
+      :is-blurred="!isAuthenticated"
+      class="flex-1 overflow-hidden"
+    />
 
     <!-- Spacer to push user section to bottom (when no history shown) -->
     <div
-      v-if="isCollapsed || !['mindmate', 'mindgraph', 'askonce'].includes(currentMode)"
+      v-if="isCollapsed || !['mindmate', 'mindgraph', 'askonce', 'debateverse'].includes(currentMode)"
       class="flex-1"
     />
 

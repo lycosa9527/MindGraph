@@ -62,6 +62,13 @@ except ImportError:
     # Diagram model may not exist yet - that's okay
     Diagram = None
 
+# Import DebateVerse models so they're registered with Base
+try:
+    from models.debateverse import DebateSession, DebateParticipant, DebateMessage, DebateJudgment
+except ImportError:
+    # DebateVerse models may not exist yet - that's okay
+    pass
+
 logger = logging.getLogger(__name__)
 
 # ============================================================================
@@ -667,9 +674,10 @@ async def start_wal_checkpoint_scheduler(interval_minutes: int = 5):
         # Lock acquisition already logged the skip message
         # Keep running but don't do anything - just monitor
         # If the lock holder dies, this worker can try to acquire on next check
+        # Check every 5 minutes (lock TTL is 10 minutes, so 5 min is safe)
         while True:
             try:
-                await asyncio.sleep(60)  # Check every minute
+                await asyncio.sleep(300)  # Check every 5 minutes (reduced from 1 minute)
                 if acquire_wal_checkpoint_lock():
                     logger.info("[Database] WAL checkpoint lock acquired, this worker will now checkpoint WAL")
                     break

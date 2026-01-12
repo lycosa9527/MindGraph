@@ -269,6 +269,9 @@ async def get_session_status(
     """
     Check if current session is still valid or has been invalidated.
     
+    Note: Session validity is already checked by get_current_user dependency.
+    This endpoint only checks for invalidation notifications (e.g., max device limit).
+    
     Returns:
         - {"status": "active"} - Session is valid
         - {"status": "invalidated", "message": "...", "timestamp": "..."} - Session was invalidated
@@ -297,14 +300,10 @@ async def get_session_status(
                 "timestamp": datetime.utcnow().isoformat()
             }
         
-        # Check session validity
+        # Session is already validated by get_current_user dependency
+        # Only check for invalidation notifications (e.g., max device limit exceeded)
         session_manager = get_session_manager()
         token_hash = hashlib.sha256(token.encode('utf-8')).hexdigest()
-        
-        # Check if session is valid
-        if session_manager.is_session_valid(current_user.id, token):
-            logger.info(f"[TokenAudit] Session status: ACTIVE: user={current_user.id}, token={token_hash[:8]}...")
-            return {"status": "active"}
         
         # Check for invalidation notification
         notification = session_manager.check_invalidation_notification(current_user.id, token_hash)
@@ -319,13 +318,10 @@ async def get_session_status(
                 "ip_address": notification.get("ip_address", "unknown")
             }
         
-        # Session invalid but no notification (expired or manually deleted)
-        logger.info(f"[TokenAudit] Session status: INVALIDATED (expired): user={current_user.id}, token={token_hash[:8]}...")
-        return {
-            "status": "invalidated",
-            "message": "Session expired",
-            "timestamp": datetime.utcnow().isoformat()
-        }
+        # Session is valid (already validated by get_current_user)
+        # No need to call is_session_valid again - it's redundant
+        logger.debug(f"[TokenAudit] Session status: ACTIVE: user={current_user.id}, token={token_hash[:8]}...")
+        return {"status": "active"}
     except Exception as e:
         logger.error(f"Error checking session status: {e}", exc_info=True)
         # On error, assume session is active (fail-open)

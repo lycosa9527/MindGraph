@@ -84,6 +84,12 @@ const routes: RouteRecordRaw[] = [
     meta: { layout: 'main' },
   },
   {
+    path: '/debateverse',
+    name: 'DebateVerse',
+    component: () => import('@/pages/DebateVersePage.vue'),
+    meta: { layout: 'main' },
+  },
+  {
     path: '/dashboard',
     name: 'PublicDashboard',
     component: () => import('@/pages/PublicDashboardPage.vue'),
@@ -112,7 +118,8 @@ const router = createRouter({
 router.beforeEach(async (to, _from, next) => {
   const authStore = useAuthStore()
 
-  // Check authentication status
+  // Check authentication status - only for protected routes
+  // checkAuth() is smart: it uses cached user if available, only makes API call if needed
   if (to.meta.requiresAuth) {
     const isAuthenticated = await authStore.checkAuth()
     if (!isAuthenticated) {

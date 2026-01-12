@@ -49,9 +49,14 @@ function handleSessionExpiredLoginSuccess() {
   // Note: notification is already shown in LoginModal.vue, no need to duplicate here
 }
 
-// Check auth status on mount and show AI disclaimer
+// Check auth status on mount (non-blocking, uses cached state if available)
+// Router guard handles auth checks for protected routes
 onMounted(async () => {
-  await authStore.checkAuth()
+  // Silently check auth in background - uses cached user if available
+  // This ensures user data is loaded for display but doesn't block navigation
+  authStore.checkAuth().catch(() => {
+    // Ignore errors - router guard will handle auth failures for protected routes
+  })
 
   // Show AI content disclaimer
   setTimeout(() => {

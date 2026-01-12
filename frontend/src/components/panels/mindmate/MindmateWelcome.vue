@@ -61,7 +61,6 @@ const username = computed(() => authStore.user?.username || '')
         :size="64"
         class="mindmate-avatar mx-auto mb-3"
       />
-      <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-2">MindMate</h3>
       <p class="text-sm text-gray-600 dark:text-gray-300">
         {{
           isZh

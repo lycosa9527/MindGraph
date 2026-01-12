@@ -62,6 +62,9 @@ export const useAuthStore = defineStore('auth', () => {
   const sessionMonitorInterval = ref<number | null>(null)
   const showSessionExpiredModal = ref(false)
   const sessionExpiredMessage = ref('')
+  const isCheckingAuth = ref(false) // Prevent duplicate concurrent checkAuth calls
+  const lastSessionCheckTime = ref<number>(0) // Track last session status check to prevent rapid-fire calls
+  const hasVerifiedAuthThisSession = ref(false) // Track if we've verified auth with server in this session
 
   // Getters
   const isAuthenticated = computed(() => !!user.value)
@@ -160,6 +163,7 @@ export const useAuthStore = defineStore('auth', () => {
     user.value = null
     token.value = null
     mode.value = 'standard'
+    hasVerifiedAuthThisSession.value = false // Reset verification flag
     // Clear sessionStorage
     sessionStorage.removeItem(USER_KEY)
     sessionStorage.removeItem(MODE_KEY)
@@ -185,6 +189,7 @@ export const useAuthStore = defineStore('auth', () => {
       if (response.ok && data.user) {
         const normalizedUser = normalizeUser(data.user)
         setUser(normalizedUser)
+        hasVerifiedAuthThisSession.value = true // Login is verification
         if (data.access_token || data.token) setToken(data.access_token || data.token)
         startSessionMonitoring()
         return { success: true, user: normalizedUser, token: data.access_token || data.token }
@@ -226,10 +231,35 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  async function checkAuth(): Promise<boolean> {
-    // Token is in httpOnly cookie, so we just make the API call
-    // The cookie will be sent automatically
+  async function checkAuth(forceRefresh: boolean = false): Promise<boolean> {
+    // If user is already loaded AND we've verified auth this session, return cached state
+    // This prevents redundant API calls while ensuring we verify token validity at least once
+    if (!forceRefresh && user.value && hasVerifiedAuthThisSession.value) {
+      // User is already loaded and verified, just ensure monitoring is started
+      if (!sessionMonitorInterval.value) {
+        startSessionMonitoring()
+      }
+      return true
+    }
+
+    // If user exists but not verified yet, we need to verify (token might be expired)
+    // This handles the case where sessionStorage has stale user data but token is invalid
+
+    // Prevent duplicate concurrent calls
+    if (isCheckingAuth.value) {
+      console.debug('[Auth] checkAuth already in progress, waiting...')
+      // Wait for the current check to complete
+      while (isCheckingAuth.value) {
+        await new Promise(resolve => setTimeout(resolve, 50))
+      }
+      // Return cached result (user is set if auth succeeded)
+      return !!user.value
+    }
+
+    isCheckingAuth.value = true
     try {
+      // Token is in httpOnly cookie, so we just make the API call
+      // The cookie will be sent automatically
       const response = await fetch(`${API_BASE}/me`, {
         credentials: 'same-origin',
       })
@@ -238,7 +268,11 @@ export const useAuthStore = defineStore('auth', () => {
         const data = await response.json()
         if (data.user || data.id) {
           setUser(data.user || data)
-          startSessionMonitoring()
+          hasVerifiedAuthThisSession.value = true // Mark as verified
+          // Only start monitoring if not already started
+          if (!sessionMonitorInterval.value) {
+            startSessionMonitoring()
+          }
           return true
         }
       }
@@ -255,16 +289,26 @@ export const useAuthStore = defineStore('auth', () => {
             const data = await retryResponse.json()
             if (data.user || data.id) {
               setUser(data.user || data)
-              startSessionMonitoring()
+              hasVerifiedAuthThisSession.value = true // Mark as verified
+              // Only start monitoring if not already started
+              if (!sessionMonitorInterval.value) {
+                startSessionMonitoring()
+              }
               return true
             }
           }
         }
       }
 
+      // Auth failed - clear any stale user data
+      if (user.value) {
+        clearAuth()
+      }
       return false
     } catch {
       return false
+    } finally {
+      isCheckingAuth.value = false
     }
   }
 
@@ -361,7 +405,11 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   function startSessionMonitoring(): void {
-    stopSessionMonitoring()
+    // Prevent duplicate monitoring setup
+    if (sessionMonitorInterval.value) {
+      return
+    }
+
     console.log('[Auth] Starting session monitoring (interval: 120s)')
 
     sessionMonitorInterval.value = window.setInterval(async () => {
@@ -373,7 +421,12 @@ export const useAuthStore = defineStore('auth', () => {
       }
     }, 120000) // 2 minutes - balance between responsiveness and server load
 
-    checkSessionStatus()
+    // Only check immediately if not checked recently (within last 5 seconds)
+    const now = Date.now()
+    if (now - lastSessionCheckTime.value > 5000) {
+      checkSessionStatus()
+      lastSessionCheckTime.value = now
+    }
   }
 
   function stopSessionMonitoring(): void {
@@ -390,6 +443,9 @@ export const useAuthStore = defineStore('auth', () => {
       console.debug('[Auth] checkSessionStatus skipped (no user)')
       return
     }
+
+    // Update last check time
+    lastSessionCheckTime.value = Date.now()
 
     console.log(`[Auth] checkSessionStatus: user=${user.value.id}`)
 
