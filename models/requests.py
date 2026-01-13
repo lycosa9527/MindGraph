@@ -26,6 +26,8 @@ class GenerateRequest(BaseModel):
     models: Optional[List[str]] = Field(None, description="List of models for parallel generation (e.g., ['qwen', 'deepseek', 'kimi', 'doubao'])")
     dimension_preference: Optional[str] = Field(None, description="Optional dimension preference for certain diagrams")
     request_type: Optional[str] = Field('diagram_generation', description="Request type for token tracking: 'diagram_generation' or 'autocomplete'")
+    use_rag: Optional[bool] = Field(False, description="Whether to use RAG (Knowledge Space) context for enhanced diagram generation")
+    rag_top_k: Optional[int] = Field(5, ge=1, le=10, description="Number of RAG context chunks to retrieve (1-10)")
     # Bridge map specific: existing analogy pairs for auto-complete (preserve user's pairs, only identify relationship)
     existing_analogies: Optional[List[Dict[str, str]]] = Field(None, description="Existing bridge map analogy pairs [{left, right}, ...] for auto-complete mode")
     # Fixed dimension: user-specified dimension that should be preserved (used for tree_map, brace_map, and bridge_map)

@@ -154,6 +154,30 @@ async def vue_school_zone_sub(request: Request, path: str):
     return await _serve_index()
 
 
+@router.get("/knowledge-space", response_class=HTMLResponse)
+async def vue_knowledge_space(request: Request):
+    """Serve Vue SPA for knowledge-space route."""
+    return await _serve_index()
+
+
+@router.get("/knowledge-space/{path:path}", response_class=HTMLResponse)
+async def vue_knowledge_space_sub(request: Request, path: str):
+    """Serve Vue SPA for knowledge-space sub-routes."""
+    return await _serve_index()
+
+
+@router.get("/askonce", response_class=HTMLResponse)
+async def vue_askonce(request: Request):
+    """Serve Vue SPA for askonce route."""
+    return await _serve_index()
+
+
+@router.get("/debateverse", response_class=HTMLResponse)
+async def vue_debateverse(request: Request):
+    """Serve Vue SPA for debateverse route."""
+    return await _serve_index()
+
+
 async def _serve_index() -> FileResponse:
     """Serve Vue SPA index.html."""
     index_path = VUE_DIST_DIR / "index.html"

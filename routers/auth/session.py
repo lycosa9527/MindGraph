@@ -18,6 +18,8 @@ import logging
 from datetime import datetime
 from typing import Optional
 
+from jose import jwt, JWTError
+
 from fastapi import APIRouter, Depends, Request, Response, Header, HTTPException, status
 from sqlalchemy.orm import Session
 
@@ -110,7 +112,6 @@ async def refresh_token(
     if access_token:
         # Try to decode access token without verifying expiration
         try:
-            import jwt
             from utils.auth import get_jwt_secret, JWT_ALGORITHM
             
             # Decode without verifying expiration
@@ -133,7 +134,7 @@ async def refresh_token(
                 expired_ago = now - token_exp if token_exp > 0 else -1
                 logger.info(f"[TokenAudit] Decoded access token: user={user_id}, exp={token_exp}, expired_ago={expired_ago}s, ip={client_ip}")
             
-        except jwt.InvalidTokenError as e:
+        except JWTError as e:
             logger.info(f"[TokenAudit] Refresh - invalid access token, will try reverse lookup: ip={client_ip}, error={e}")
             user_id = None
     

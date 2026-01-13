@@ -7,6 +7,124 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [5.3.0] - 2026-01-13 - Smart Chunking with semchunk and DashScope API Fixes
+
+### Added
+
+- **semchunk Integration** (`services/chunking_service.py`)
+  - Replaced custom chunking with semchunk library for intelligent, token-aware text splitting
+  - 87% faster than alternatives with semantic boundary detection
+  - Full Chinese support with automatic punctuation handling (。！？)
+  - Uses tiktoken (cl100k_base) for accurate token counting
+  - Default: 500 tokens per chunk (matches Dify/MaxKB best practices)
+
+- **RAG Pipeline Logging** (`services/retrieval_test_service.py`, `services/knowledge_space_service.py`)
+  - Added comprehensive logging with ✓/✗ indicators for pipeline stages
+  - Logs: Embedding, Chunking, Vector Store, Search, Rerank operations
+  - Shows timing metrics for each stage (embed=Xms, search=Xms, rerank=Xms)
+  - Clear error messages on failure with stage identification
+
+- **DashScope Rerank Debug Logging** (`clients/dashscope_rerank.py`)
+  - Added full payload logging for debugging API issues
+  - Added response status and body logging
+
+### Changed
+
+- **DashScope Rerank API Endpoint** (`clients/dashscope_rerank.py`)
+  - qwen3-rerank: Now uses new compatible API `https://dashscope.aliyuncs.com/compatible-api/v1/reranks`
+  - gte-rerank-v2: Continues using old API `https://dashscope.aliyuncs.com/api/v1/services/rerank/text-rerank/text-rerank`
+  - Updated response parsing to handle both formats:
+    - New: `{"results": [...]}`
+    - Old: `{"output": {"results": [...]}}`
+
+- **DashScope Embedding Batch Limits** (`clients/dashscope_embedding.py`)
+  - text-embedding-v3/v4: Max 10 rows per batch
+  - text-embedding-v1/v2: Max 25 rows per batch
+  - Matches official DashScope API documentation
+
+- **ChunkingService Simplification** (`services/chunking_service.py`)
+  - Removed fallback strategies - now uses semchunk exclusively
+  - Removed deprecated JIEBA3_AVAILABLE and NLTK_AVAILABLE checks
+  - Reduced from ~700 lines to ~240 lines
+  - Simplified API: `chunk_text()` now directly uses semchunk
+
+### Fixed
+
+- **DashScope Rerank InvalidParameter Error**
+  - Fixed by using correct API endpoint for qwen3-rerank model
+  - qwen3-rerank requires flat payload structure at compatible-api endpoint
+
+- **DashScope Rerank Response Parsing**
+  - Fixed "Unexpected response format" error for qwen3-rerank
+  - New compatible API returns `{"results": [...]}` instead of `{"output": {"results": [...]}}`
+
+- **OpenAI-compatible Error Codes** (`utils/dashscope_error_handler.py`)
+  - Fixed handling of lowercase error codes from OpenAI-compatible API (e.g., `invalid_api_key`)
+  - Now correctly maps to user-friendly error messages
+
+### Dependencies
+
+- **Added semchunk** (`requirements.txt`)
+  - `semchunk>=2.2.0` - Semantic text chunking library
+  - `tiktoken>=0.7.0` - OpenAI tokenizer for accurate token counting
+
+---
+
+## [5.2.0] - 2025-01-13 - RAG Optimization with DashScope and Maximum Compression
+
+### Added
+
+- **RAG Compression Metrics API** (`routers/api/knowledge_space.py`, `services/qdrant_service.py`)
+  - Added `GET /api/knowledge-space/metrics/compression` endpoint to monitor storage efficiency
+  - Tracks compression status, storage sizes, compression ratio, and savings percentage
+  - Provides real-time metrics for vector database compression effectiveness
+
+- **Rerank Result Caching** (`clients/dashscope_rerank.py`)
+  - Implemented Redis-based caching for rerank results with 10-minute TTL
+  - Reduces API calls for common query-document pairs
+  - Configurable via `RERANK_CACHE_ENABLED` and `RERANK_CACHE_TTL` environment variables
+  - Cache keys include query, documents, and parameters for proper isolation
+
+- **Compression Validation** (`services/qdrant_service.py`)
+  - Added validation warnings when compression is disabled
+  - Logs recommendations to enable SQ8 compression for maximum efficiency
+  - Prevents accidental deployment without compression
+
+### Changed
+
+- **Embedding Dimensions Optimization** (`config/settings.py`, `clients/dashscope_embedding.py`, `services/qdrant_service.py`, `services/knowledge_space_service.py`)
+  - Changed default embedding dimensions from 1536 to 768 for optimal compression ratio
+  - Maintains retrieval quality while achieving ~50% storage reduction
+  - Configurable via `EMBEDDING_DIMENSIONS` environment variable (supports 64, 128, 256, 512, 768, 1024, 1536, 2048)
+  - All embedding operations now use optimized dimensions by default
+
+- **HNSW Index Parameters** (`services/qdrant_service.py`)
+  - Optimized HNSW parameters for compressed vectors:
+    - `m`: 16 → 14 (optimal for compressed vectors)
+    - `ef_construct`: 100 → 200 (better recall with quantization)
+    - `full_scan_threshold`: 10000 → 5000 (leverages compression speed benefits)
+  - Improves search performance with compressed vectors
+
+- **Embedding Cache Keys** (`services/embedding_cache.py`)
+  - Fixed cache keys to use current model (text-embedding-v4) instead of hardcoded v2
+  - Cache keys now include model name and dimensions for proper cache isolation
+  - Prevents cache collisions between different model versions and dimensions
+
+### Fixed
+
+- **Embedding Cache Model Version** (`services/embedding_cache.py`)
+  - Fixed hardcoded "text-embedding-v2" references in cache keys
+  - Now dynamically uses `config.DASHSCOPE_EMBEDDING_MODEL` (default: text-embedding-v4)
+  - Query and document embedding caches now properly isolated by model version
+
+### Dependencies
+
+- **Added numpy** (`requirements.txt`)
+  - Added `numpy>=1.24.0` for embedding normalization and validation operations
+  - Required for array operations in embedding cache and DashScope clients
+
+---
+
 ## [5.1.9] - 2025-01-12 - DebateVerse TTS Improvements and Rate Limiting
 
 ### Added

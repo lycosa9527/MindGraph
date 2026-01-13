@@ -129,19 +129,19 @@ function handleAdvanceStage() {
             :key="stage.key"
             class="stage-section flex flex-col items-center justify-center gap-2 px-4 py-3 flex-1 transition-all duration-200 border-r border-gray-200 last:border-r-0"
             :class="{
-              'bg-blue-100 border-blue-300': index === currentStageIndex.value,
-              'bg-blue-50': index < currentStageIndex.value,
-              'bg-white': index > currentStageIndex.value,
-              'ring-2 ring-blue-500 ring-offset-2': index === currentStageIndex.value,
+              'bg-blue-100 border-blue-300': index === currentStageIndex,
+              'bg-blue-50': index < currentStageIndex,
+              'bg-white': index > currentStageIndex,
+              'ring-2 ring-blue-500 ring-offset-2': index === currentStageIndex,
             }"
           >
             <!-- Icon -->
             <div
               class="w-8 h-8 flex items-center justify-center transition-all duration-200 rounded-full"
               :class="{
-                'text-blue-700 bg-blue-200': index === currentStageIndex.value,
-                'text-blue-600': index < currentStageIndex.value,
-                'text-gray-400': index > currentStageIndex.value,
+                'text-blue-700 bg-blue-200': index === currentStageIndex,
+                'text-blue-600': index < currentStageIndex,
+                'text-gray-400': index > currentStageIndex,
               }"
             >
               <component
@@ -154,9 +154,9 @@ function handleAdvanceStage() {
             <span
               class="text-xs text-center font-medium"
               :class="{
-                'text-blue-800 font-bold': index === currentStageIndex.value,
-                'text-blue-700': index < currentStageIndex.value,
-                'text-gray-500': index > currentStageIndex.value,
+                'text-blue-800 font-bold': index === currentStageIndex,
+                'text-blue-700': index < currentStageIndex,
+                'text-gray-500': index > currentStageIndex,
               }"
             >
               {{ isZh ? stage.zh : stage.en }}

@@ -7,6 +7,13 @@ import { readFileSync } from 'fs'
 // Read version from VERSION file (single source of truth)
 const version = readFileSync(resolve(__dirname, '../VERSION'), 'utf-8').trim()
 
+// Get backend host from environment variable (for WSL/remote scenarios)
+// Default to localhost for normal development
+// For WSL: Use Windows host IP (e.g., VITE_BACKEND_HOST=http://172.x.x.x:9527)
+// Or use host.docker.internal if available
+const backendHost = process.env.VITE_BACKEND_HOST || 'http://localhost:9527'
+const backendHostWs = backendHost.replace('http://', 'ws://').replace('https://', 'wss://')
+
 export default defineConfig({
   plugins: [vue(), tailwindcss()],
   define: {
@@ -22,19 +29,19 @@ export default defineConfig({
     port: 3000,
     proxy: {
       '/api': {
-        target: 'http://localhost:9527',
+        target: backendHost,
         changeOrigin: true,
       },
       '/ws': {
-        target: 'ws://localhost:9527',
+        target: backendHostWs,
         ws: true,
       },
       '/static': {
-        target: 'http://localhost:9527',
+        target: backendHost,
         changeOrigin: true,
       },
       '/health': {
-        target: 'http://localhost:9527',
+        target: backendHost,
         changeOrigin: true,
       },
     },

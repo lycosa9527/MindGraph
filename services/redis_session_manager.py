@@ -229,7 +229,6 @@ class RedisSessionManager:
                 
                 # Store token with timestamp and device hash for ordering and identification
                 # Token format: timestamp:device_hash:token_hash
-                import time
                 current_time = time.time()
                 token_entry = f"{current_time}:{device_hash}:{token_hash}"
                 

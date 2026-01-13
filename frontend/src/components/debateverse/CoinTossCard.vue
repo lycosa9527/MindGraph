@@ -164,11 +164,11 @@ async function generatePositions(sessionId: string, topic: string, language: str
 
 // Generate positions when session is created
 watch(
-  () => [store.currentSessionId, store.currentSession?.topic],
+  () => [store.currentSessionId, store.currentSession?.session.topic],
   ([sessionId, topic]) => {
     if (sessionId && topic && !isGenerating.value && 
         !affirmativePosition.value && !negativePosition.value) {
-      const language = store.currentSession?.language || 'zh'
+      const language = 'zh' // Default language, can be extended if stored in session
       generatePositions(sessionId, topic, language)
     }
   },
@@ -177,12 +177,12 @@ watch(
 
 // Check on mount
 onMounted(() => {
-  if (store.currentSessionId && store.currentSession?.topic &&
+  if (store.currentSessionId && store.currentSession?.session.topic &&
       !isGenerating.value &&
       !affirmativePosition.value &&
       !negativePosition.value) {
-    const language = store.currentSession?.language || 'zh'
-    generatePositions(store.currentSessionId, store.currentSession.topic, language)
+    const language = 'zh' // Default language, can be extended if stored in session
+    generatePositions(store.currentSessionId, store.currentSession.session.topic, language)
   }
 })
 
@@ -220,10 +220,10 @@ onUnmounted(() => {
           </p>
           
           <!-- Current Topic -->
-          <div v-if="store.currentSession?.topic" class="mt-2 pt-2 border-t border-blue-200">
+          <div v-if="store.currentSession?.session.topic" class="mt-2 pt-2 border-t border-blue-200">
             <p class="text-blue-800 font-medium">
               <span class="font-semibold">{{ isZh ? '辩论主题：' : 'Debate Topic: ' }}</span>
-              <span>{{ store.currentSession.topic }}</span>
+              <span>{{ store.currentSession.session.topic }}</span>
             </p>
           </div>
           

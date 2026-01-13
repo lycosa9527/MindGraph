@@ -90,6 +90,12 @@ const routes: RouteRecordRaw[] = [
     meta: { layout: 'main' },
   },
   {
+    path: '/knowledge-space',
+    name: 'KnowledgeSpace',
+    component: () => import('@/pages/KnowledgeSpacePage.vue'),
+    meta: { requiresAuth: true, layout: 'main' },
+  },
+  {
     path: '/dashboard',
     name: 'PublicDashboard',
     component: () => import('@/pages/PublicDashboardPage.vue'),

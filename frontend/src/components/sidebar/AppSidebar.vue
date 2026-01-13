@@ -31,6 +31,7 @@ import AskOnceHistory from './AskOnceHistory.vue'
 import ChatHistory from './ChatHistory.vue'
 import DebateHistory from './DebateHistory.vue'
 import DiagramHistory from './DiagramHistory.vue'
+import KnowledgeSpaceHistory from './KnowledgeSpaceHistory.vue'
 
 const router = useRouter()
 const uiStore = useUIStore()
@@ -46,6 +47,7 @@ const currentMode = computed(() => {
   const path = router.currentRoute.value.path
   if (path.startsWith('/mindmate')) return 'mindmate'
   if (path.startsWith('/mindgraph') || path.startsWith('/canvas')) return 'mindgraph'
+  if (path.startsWith('/knowledge-space')) return 'knowledge-space'
   if (path.startsWith('/askonce')) return 'askonce'
   if (path.startsWith('/debateverse')) return 'debateverse'
   if (path.startsWith('/school-zone')) return 'school-zone'
@@ -89,6 +91,8 @@ function setMode(index: string) {
     router.push('/mindmate')
   } else if (index === 'mindgraph') {
     router.push('/mindgraph')
+  } else if (index === 'knowledge-space') {
+    router.push('/knowledge-space')
   } else if (index === 'askonce') {
     router.push('/askonce')
   } else if (index === 'debateverse') {
@@ -209,6 +213,10 @@ async function handleDiagramSelect(diagram: SavedDiagram) {
         <el-icon><Connection /></el-icon>
         <template #title>MindGraph</template>
       </el-menu-item>
+      <el-menu-item index="knowledge-space" v-if="isAuthenticated">
+        <el-icon><Document /></el-icon>
+        <template #title>个人知识库</template>
+      </el-menu-item>
       <el-menu-item index="askonce">
         <el-icon><MagicStick /></el-icon>
         <template #title>{{ t('askonce.title') }}</template>
@@ -264,10 +272,15 @@ async function handleDiagramSelect(diagram: SavedDiagram) {
       :is-blurred="!isAuthenticated"
       class="flex-1 overflow-hidden"
     />
+    <!-- Knowledge Space: Show document history -->
+    <KnowledgeSpaceHistory
+      v-else-if="!isCollapsed && currentMode === 'knowledge-space'"
+      class="flex-1 overflow-hidden"
+    />
 
     <!-- Spacer to push user section to bottom (when no history shown) -->
     <div
-      v-if="isCollapsed || !['mindmate', 'mindgraph', 'askonce', 'debateverse'].includes(currentMode)"
+      v-if="isCollapsed || !['mindmate', 'mindgraph', 'knowledge-space', 'askonce', 'debateverse'].includes(currentMode)"
       class="flex-1"
     />
 

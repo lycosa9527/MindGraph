@@ -770,6 +770,69 @@ def get_migration_manager() -> DatabaseMigrationManager:
     return migration_manager
 
 
+def _run_column_renames() -> bool:
+    """
+    Run specific column rename migrations that can't be handled automatically.
+    
+    SQLite doesn't support ALTER COLUMN RENAME, so we handle specific renames here
+    by checking if old column exists and copying data to new column.
+    """
+    try:
+        db = SessionLocal()
+        try:
+            # Check if knowledge_documents table exists
+            from sqlalchemy import inspect, text
+            inspector = inspect(engine)
+            
+            if not inspector.has_table('knowledge_documents'):
+                return True  # Table doesn't exist yet, nothing to migrate
+            
+            existing_columns = {col['name'].lower() for col in inspector.get_columns('knowledge_documents')}
+            
+            # Migration: metadata -> doc_metadata (metadata is reserved in SQLAlchemy)
+            if 'metadata' in existing_columns and 'doc_metadata' not in existing_columns:
+                logger.info("[DBMigration] Renaming column: knowledge_documents.metadata -> doc_metadata")
+                
+                # SQLite doesn't support RENAME COLUMN in older versions, 
+                # but SQLite 3.25.0+ does. Try the simple approach first.
+                try:
+                    db.execute(text('ALTER TABLE knowledge_documents RENAME COLUMN metadata TO doc_metadata'))
+                    db.commit()
+                    logger.info("[DBMigration] Column renamed successfully using ALTER TABLE")
+                except Exception as rename_error:
+                    db.rollback()
+                    # Fallback: Add new column and copy data
+                    logger.info(f"[DBMigration] ALTER RENAME not supported, using fallback: {rename_error}")
+                    db.execute(text('ALTER TABLE knowledge_documents ADD COLUMN doc_metadata TEXT'))
+                    db.execute(text('UPDATE knowledge_documents SET doc_metadata = metadata'))
+                    db.commit()
+                    logger.info("[DBMigration] Column added and data copied successfully")
+            
+            elif 'metadata' in existing_columns and 'doc_metadata' in existing_columns:
+                # Both columns exist - copy any remaining data from old to new
+                result = db.execute(text(
+                    'SELECT COUNT(*) FROM knowledge_documents WHERE metadata IS NOT NULL AND doc_metadata IS NULL'
+                ))
+                count = result.scalar()
+                if count and count > 0:
+                    logger.info(f"[DBMigration] Copying {count} records from metadata to doc_metadata")
+                    db.execute(text('UPDATE knowledge_documents SET doc_metadata = metadata WHERE doc_metadata IS NULL'))
+                    db.commit()
+            
+            return True
+            
+        except Exception as e:
+            db.rollback()
+            logger.error(f"[DBMigration] Column rename migration failed: {e}")
+            return False
+        finally:
+            db.close()
+            
+    except Exception as e:
+        logger.error(f"[DBMigration] Column rename migration error: {e}")
+        return False
+
+
 def run_migrations() -> bool:
     """
     Run database migrations on startup.
@@ -780,6 +843,12 @@ def run_migrations() -> bool:
         True if migrations successful, False otherwise
     """
     try:
+        # Step 1: Run specific column renames first
+        rename_success = _run_column_renames()
+        if not rename_success:
+            logger.warning("[DBMigration] Column rename migration had issues - continuing anyway")
+        
+        # Step 2: Run automatic schema migrations (add missing columns)
         manager = get_migration_manager()
         return manager.validate_and_migrate()
     except Exception as e:

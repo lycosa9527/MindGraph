@@ -69,6 +69,18 @@ except ImportError:
     # DebateVerse models may not exist yet - that's okay
     pass
 
+# Import Knowledge Space models so they're registered with Base
+try:
+    from models.knowledge_space import (
+        KnowledgeSpace, KnowledgeDocument, DocumentChunk, Embedding, 
+        KnowledgeQuery, ChunkAttachment, ChildChunk,
+        DocumentBatch, DocumentVersion, QueryFeedback, QueryTemplate,
+        DocumentRelationship, EvaluationDataset, EvaluationResult
+    )
+except ImportError:
+    # Knowledge Space models may not exist yet - that's okay
+    pass
+
 logger = logging.getLogger(__name__)
 
 # ============================================================================

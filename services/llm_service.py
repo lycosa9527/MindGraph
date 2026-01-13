@@ -189,6 +189,7 @@ class LLMService:
         session_id: Optional[str] = None,
         conversation_id: Optional[str] = None,
         skip_load_balancing: bool = False,  # Skip load balancing if already applied
+        use_knowledge_base: bool = True,  # Enable RAG context injection
         **kwargs
     ) -> str:
         """
@@ -201,6 +202,7 @@ class LLMService:
             max_tokens: Maximum tokens in response
             system_message: Optional system message
             timeout: Request timeout in seconds (None uses default)
+            use_knowledge_base: Enable RAG context injection from user's knowledge space
             **kwargs: Additional model-specific parameters
             
         Returns:
@@ -214,6 +216,40 @@ class LLMService:
             )
         """
         start_time = time.time()
+        
+        # Inject RAG context if enabled and user_id provided
+        if use_knowledge_base and user_id:
+            try:
+                from services.rag_service import get_rag_service
+                from config.database import SessionLocal
+                
+                rag_service = get_rag_service()
+                db = SessionLocal()
+                try:
+                    # Check if user has knowledge base
+                    if rag_service.has_knowledge_base(db, user_id):
+                        # Retrieve context
+                        context_chunks = rag_service.retrieve_context(
+                            db=db,
+                            user_id=user_id,
+                            query=prompt,
+                            top_k=5,
+                            method='hybrid'
+                        )
+                        if context_chunks:
+                            # Enhance prompt with context
+                            prompt = rag_service.enhance_prompt(
+                                user_id=user_id,
+                                prompt=prompt,
+                                context_chunks=context_chunks,
+                                max_context_length=2000
+                            )
+                            logger.debug(f"[LLMService] Injected RAG context: {len(context_chunks)} chunks")
+                finally:
+                    db.close()
+            except Exception as e:
+                # If RAG fails, continue with original prompt
+                logger.warning(f"[LLMService] RAG failed, using original prompt: {e}")
         
         try:
             logger.debug(f"[LLMService] chat() - model={model}, prompt_len={len(prompt)}")
@@ -636,6 +672,7 @@ class LLMService:
         skip_load_balancing: bool = False,  # Skip load balancing if already applied (e.g., from stream_progressive)
         enable_thinking: bool = False,  # Enable thinking mode for reasoning models (DeepSeek R1, Qwen3, Kimi K2)
         yield_structured: bool = False,  # If True, yield dicts with 'type' key; if False, yield plain strings
+        use_knowledge_base: bool = True,  # Enable RAG context injection
         **kwargs
     ):
         """
@@ -653,6 +690,7 @@ class LLMService:
                       Format: [{"role": "system/user/assistant", "content": "..."}]
             enable_thinking: Enable thinking mode for reasoning models (yields 'thinking' chunks)
             yield_structured: If True, yield structured dicts; if False, yield plain content strings
+            use_knowledge_base: Enable RAG context injection from user's knowledge space
             **kwargs: Additional model-specific parameters
             
         Yields:
@@ -663,6 +701,40 @@ class LLMService:
                 - {'type': 'usage', 'usage': {...}} - Token usage stats
         """
         start_time = time.time()
+        
+        # Inject RAG context if enabled and user_id provided (before streaming starts)
+        if use_knowledge_base and user_id and messages is None:
+            try:
+                from services.rag_service import get_rag_service
+                from config.database import SessionLocal
+                
+                rag_service = get_rag_service()
+                db = SessionLocal()
+                try:
+                    # Check if user has knowledge base
+                    if rag_service.has_knowledge_base(db, user_id):
+                        # Retrieve context
+                        context_chunks = rag_service.retrieve_context(
+                            db=db,
+                            user_id=user_id,
+                            query=prompt,
+                            top_k=5,
+                            method='hybrid'
+                        )
+                        if context_chunks:
+                            # Enhance prompt with context
+                            prompt = rag_service.enhance_prompt(
+                                user_id=user_id,
+                                prompt=prompt,
+                                context_chunks=context_chunks,
+                                max_context_length=2000
+                            )
+                            logger.debug(f"[LLMService] Injected RAG context for streaming: {len(context_chunks)} chunks")
+                finally:
+                    db.close()
+            except Exception as e:
+                # If RAG fails, continue with original prompt
+                logger.warning(f"[LLMService] RAG failed for streaming, using original prompt: {e}")
         
         try:
             logger.debug(f"[LLMService] chat_stream() - model={model}, prompt_len={len(prompt)}")

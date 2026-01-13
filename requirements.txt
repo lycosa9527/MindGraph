@@ -45,6 +45,7 @@ langchain>=1.2.3
 langchain-community>=0.4.1
 langchain-core>=1.2.7
 langchain-openai>=0.1.0  # Explicitly pin compatible version
+langchain-text-splitters>=0.3.0  # Text chunking for RAG (Personal Knowledge Space)
 langgraph>=1.0.5
 langgraph-checkpoint>=3.0.1
 dashscope>=1.25.7
@@ -65,7 +66,7 @@ aiofiles>=24.1.0
 # BROWSER AUTOMATION & IMAGE PROCESSING
 # ============================================================================
 playwright>=1.57.0
-Pillow>=11.3.0
+Pillow>=11.3.0  # Image processing (also used for OCR in Personal Knowledge Space)
 
 # ============================================================================
 # SYSTEM MONITORING & UTILITIES
@@ -83,6 +84,30 @@ bcrypt>=5.0.0  # Password hashing (direct bcrypt, passlib removed in v4.12.0)
 captcha>=0.6
 pycryptodome>=3.20.0  # AES decryption for bayi mode
 # Note: Tencent SMS uses native async httpx calls (no SDK needed)
+
+# ============================================================================
+# PERSONAL KNOWLEDGE SPACE (RAG) DEPENDENCIES
+# ============================================================================
+numpy>=1.24.0  # Numerical operations for embedding normalization and validation
+qdrant-client>=1.9.0  # Vector database for document embeddings (query_points API, SQ8 compression)
+jieba3>=1.0.2  # Chinese text segmentation for FTS5 full-text search (modern Python 3 rewrite, no pkg_resources)
+langdetect>=1.0.9  # Language detection for documents
+semchunk>=2.2.0  # Semantic text chunking (fast, token-aware, Chinese support)
+tiktoken>=0.7.0  # OpenAI tokenizer for semchunk (accurate token counting)
+PyPDF2>=3.0.1  # PDF text extraction (alternative: pdfplumber>=0.11.0)
+python-docx>=1.1.2  # DOCX text extraction
+python-pptx>=0.6.23  # PPTX text extraction
+openpyxl>=3.1.2  # XLSX text extraction
+beautifulsoup4>=4.12.0  # HTML text extraction
+pdfplumber>=0.11.0  # PDF text extraction with page info (fallback for PyPDF2)
+pytesseract>=0.3.13  # OCR for image text extraction (requires Tesseract binary)
+celery>=5.4.0  # Background task processing for document uploads (optional but recommended)
+# Note: Tesseract OCR binary must be installed separately:
+#   - Windows: Download from https://github.com/UB-Mannheim/tesseract/wiki
+#   - macOS: brew install tesseract
+#   - Linux: apt-get install tesseract-ocr tesseract-ocr-chi-sim (for Chinese support)
+# Note: Celery requires Redis as broker (already included above). If Celery is not installed,
+#       document processing will run synchronously (slower but still functional).
 
 # ============================================================================
 # CACHING (Redis - REQUIRED)

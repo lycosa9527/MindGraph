@@ -41,6 +41,7 @@ from services.redis_client import (
     RedisStartupError,
 )
 from utils.env_utils import ensure_utf8_env_file
+from utils.dependency_checker import check_system_dependencies, DependencyError
 
 # Fix for Windows: Set event loop policy to support subprocesses (required for Playwright)
 # MUST be set before any event loop is created (before Uvicorn starts)
@@ -754,6 +755,23 @@ async def lifespan(app: FastAPI):
         # from catching and logging the full stack trace
         logger.error("Application startup failed. Exiting.")
         os._exit(1)
+    
+    # Check system dependencies for Knowledge Space feature (Tesseract OCR)
+    # Application will exit if required dependencies are missing
+    if worker_id == '0' or not worker_id:
+        try:
+            if not check_system_dependencies(exit_on_error=True):
+                # check_system_dependencies already exits, but this is a safety check
+                logger.error("System dependency check failed. Exiting.")
+                os._exit(1)
+            logger.info("System dependencies check passed")
+        except DependencyError as e:
+            logger.error(f"Dependency check failed: {e}")
+            os._exit(1)
+        except Exception as e:
+            # Log but don't exit on unexpected errors during dependency check
+            # This allows the app to start even if dependency check has issues
+            logger.warning(f"Error during dependency check (non-fatal): {e}")
     
     # Note: Legacy JavaScript cache removed in v5.0.0 (Vue migration)
     # Frontend assets are now served from frontend/dist/ via Vue SPA handler

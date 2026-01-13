@@ -1721,7 +1721,10 @@ async def agent_graph_workflow_with_styles(
     # Bridge map specific: fixed dimension/relationship that user has already specified
     fixed_dimension=None,
     # Tree map and brace map: dimension-only mode (user has dimension but no topic)
-    dimension_only_mode=None
+    dimension_only_mode=None,
+    # RAG integration: use knowledge space context
+    use_rag=False,
+    rag_top_k=5
 ):
     """
     Simplified agent workflow that directly calls specialized agents.
@@ -1736,6 +1739,8 @@ async def agent_graph_workflow_with_styles(
         existing_analogies (list, optional): For bridge map auto-complete - existing pairs to preserve [{left, right}, ...]
         fixed_dimension (str, optional): For bridge map auto-complete - user-specified relationship pattern that should NOT be changed
         dimension_only_mode (bool, optional): For tree_map/brace_map auto-complete - user has dimension but no topic (generate topic and children)
+        use_rag (bool): Whether to use RAG (Knowledge Space) context for enhanced diagram generation
+        rag_top_k (int): Number of RAG context chunks to retrieve (default: 5)
     
     Returns:
         dict: JSON specification with integrated styles for D3.js rendering
@@ -1798,9 +1803,55 @@ async def agent_graph_workflow_with_styles(
             # Prompt-based generation: just extract topic, let frontend use default template
             from services.llm_service import llm_service
             
+            # RAG Integration: Retrieve relevant context for topic extraction if enabled
+            rag_context_for_topic = None
+            if use_rag and user_id:
+                try:
+                    from services.rag_service import RAGService
+                    from config.database import SessionLocal
+                    
+                    rag_service = RAGService()
+                    db = SessionLocal()
+                    try:
+                        if rag_service.has_knowledge_base(db, user_id):
+                            rag_context_chunks = rag_service.retrieve_context(
+                                db=db,
+                                user_id=user_id,
+                                query=user_prompt,
+                                method='hybrid',
+                                top_k=rag_top_k,
+                                score_threshold=0.3,
+                                source='diagram_generation',
+                                source_context={'stage': 'topic_extraction', 'diagram_type': diagram_type if 'diagram_type' in locals() else None}
+                            )
+                            
+                            if rag_context_chunks:
+                                rag_context_for_topic = "\n\n".join([
+                                    f"[知识库参考 {i+1}]: {chunk}" 
+                                    for i, chunk in enumerate(rag_context_chunks)
+                                ]) if language == 'zh' else "\n\n".join([
+                                    f"[Knowledge Base Reference {i+1}]: {chunk}" 
+                                    for i, chunk in enumerate(rag_context_chunks)
+                                ])
+                                logger.debug(f"[RAG] Retrieved {len(rag_context_chunks)} context chunks for topic extraction")
+                    finally:
+                        db.close()
+                except Exception as e:
+                    logger.debug(f"[RAG] Failed to retrieve context for topic extraction: {e}")
+            
             # Use centralized topic extraction prompt
             topic_extraction_prompt = get_prompt("topic_extraction", language, "generation")
-            topic_extraction_prompt = topic_extraction_prompt.format(user_prompt=user_prompt)
+            
+            # Enhance prompt with RAG context if available
+            if rag_context_for_topic:
+                if language == 'zh':
+                    enhanced_user_prompt = f"{user_prompt}\n\n相关背景知识：\n{rag_context_for_topic}"
+                else:
+                    enhanced_user_prompt = f"{user_prompt}\n\nRelevant Context:\n{rag_context_for_topic}"
+            else:
+                enhanced_user_prompt = user_prompt
+            
+            topic_extraction_prompt = topic_extraction_prompt.format(user_prompt=enhanced_user_prompt)
             
             topic_start = time.time()
             main_topic = await llm_service.chat(
@@ -1838,6 +1889,73 @@ async def agent_graph_workflow_with_styles(
         generation_prompt = _clean_prompt_for_learning_sheet(user_prompt) if is_learning_sheet else user_prompt
         if is_learning_sheet:
             logger.debug(f"Using cleaned prompt for generation: '{generation_prompt}'")
+        
+        # RAG Integration: Retrieve relevant context from Knowledge Space if enabled
+        rag_context = None
+        if use_rag and user_id:
+            try:
+                from services.rag_service import RAGService
+                from config.database import SessionLocal
+                
+                rag_service = RAGService()
+                db = SessionLocal()
+                try:
+                    # Check if user has knowledge base
+                    if rag_service.has_knowledge_base(db, user_id):
+                        logger.info(f"[RAG] Retrieving context for user {user_id}, top_k={rag_top_k}")
+                        
+                        # Retrieve relevant context using hybrid search
+                        rag_context_chunks = rag_service.retrieve_context(
+                            db=db,
+                            user_id=user_id,
+                            query=generation_prompt,
+                            method='hybrid',  # Use hybrid search for best results
+                            top_k=rag_top_k,
+                            score_threshold=0.3,  # Minimum relevance threshold
+                            source='diagram_generation',
+                            source_context={'stage': 'generation', 'diagram_type': diagram_type}
+                        )
+                        
+                        if rag_context_chunks:
+                            # Format context for prompt enhancement
+                            rag_context = "\n\n".join([
+                                f"[知识库参考 {i+1}]: {chunk}" 
+                                for i, chunk in enumerate(rag_context_chunks)
+                            ]) if language == 'zh' else "\n\n".join([
+                                f"[Knowledge Base Reference {i+1}]: {chunk}" 
+                                for i, chunk in enumerate(rag_context_chunks)
+                            ])
+                            
+                            logger.info(f"[RAG] Retrieved {len(rag_context_chunks)} context chunks for diagram generation")
+                        else:
+                            logger.debug(f"[RAG] No relevant context found for query: {generation_prompt[:50]}...")
+                    else:
+                        logger.debug(f"[RAG] User {user_id} has no knowledge base, skipping RAG")
+                finally:
+                    db.close()
+            except Exception as e:
+                logger.warning(f"[RAG] Failed to retrieve context: {e}", exc_info=True)
+                # Continue without RAG context if retrieval fails
+        
+        # Enhance prompt with RAG context if available
+        if rag_context:
+            if language == 'zh':
+                enhanced_prompt = f"""用户请求：{generation_prompt}
+
+相关背景知识（来自用户的知识库）：
+{rag_context}
+
+请基于以上背景知识生成更准确、更详细的图表。"""
+            else:
+                enhanced_prompt = f"""User Request: {generation_prompt}
+
+Relevant Context (from user's knowledge base):
+{rag_context}
+
+Please generate a more accurate and detailed diagram based on the above context."""
+            
+            logger.debug(f"[RAG] Enhanced prompt with {len(rag_context)} characters of context")
+            generation_prompt = enhanced_prompt
         
         # Generate specification using the appropriate agent
         generation_start = time.time()

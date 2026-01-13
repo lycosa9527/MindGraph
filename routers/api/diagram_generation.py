@@ -124,7 +124,10 @@ async def generate_graph(
             existing_analogies=existing_analogies,
             fixed_dimension=fixed_dimension,
             # Tree map and brace map: dimension-only mode
-            dimension_only_mode=dimension_only_mode
+            dimension_only_mode=dimension_only_mode,
+            # RAG integration
+            use_rag=req.use_rag if req.use_rag else False,
+            rag_top_k=req.rag_top_k if req.rag_top_k else 5
         )
         
         diagram_type = result.get('diagram_type', 'unknown')

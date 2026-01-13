@@ -14,6 +14,8 @@ Proprietary License
 import os
 import sys
 import asyncio
+import subprocess
+import atexit
 
 # CRITICAL: Set Windows event loop policy BEFORE any other imports or event loop creation
 # Playwright requires WindowsProactorEventLoopPolicy for subprocess support
@@ -97,6 +99,107 @@ def check_package_installed(package_name):
     """Check if a package is installed"""
     spec = importlib.util.find_spec(package_name)
     return spec is not None
+
+
+# Global reference to Celery worker process
+_celery_worker_process = None
+
+
+def start_celery_worker():
+    """Start Celery worker as a subprocess"""
+    global _celery_worker_process
+    
+    if not check_package_installed('celery'):
+        print("[WARNING] Celery not installed. Document processing will not work.")
+        print("          Install with: pip install celery redis")
+        return None
+    
+    # Check if Redis is available
+    try:
+        import redis
+        redis_host = os.getenv('REDIS_HOST', 'localhost')
+        redis_port = int(os.getenv('REDIS_PORT', '6379'))
+        r = redis.Redis(host=redis_host, port=redis_port, socket_connect_timeout=2)
+        r.ping()
+    except Exception as e:
+        print(f"[WARNING] Redis not available ({e}). Celery worker will not start.")
+        print("          Make sure Redis is running on localhost:6379")
+        return None
+    
+    # Check if Qdrant is in server mode (required for multi-process)
+    qdrant_host = os.getenv('QDRANT_HOST', '')
+    qdrant_url = os.getenv('QDRANT_URL', '')
+    
+    if not qdrant_host and not qdrant_url:
+        print("[WARNING] Qdrant server not configured (QDRANT_HOST not set).")
+        print("          Celery worker requires Qdrant server for concurrent access.")
+        print("          Setup instructions: docs/QDRANT_SETUP.md")
+        print("          Quick start: docker run -d -p 6333:6333 qdrant/qdrant")
+        print("          Then add QDRANT_HOST=localhost:6333 to .env")
+        return None
+    
+    # Start Celery worker
+    print("[CELERY] Starting Celery worker for background task processing...")
+    
+    # Determine Python executable
+    python_exe = sys.executable
+    
+    # Build celery command
+    celery_cmd = [
+        python_exe, '-m', 'celery',
+        '-A', 'celery_app',
+        'worker',
+        '--loglevel=info',
+        '--concurrency=2',
+        '-Q', 'default,knowledge',  # Listen to both queues
+    ]
+    
+    # Add Windows-specific flags
+    if sys.platform == 'win32':
+        celery_cmd.extend(['--pool=solo'])  # Windows doesn't support prefork
+    
+    try:
+        # Start worker process
+        _celery_worker_process = subprocess.Popen(
+            celery_cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            cwd=os.path.dirname(os.path.abspath(__file__)),
+            creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if sys.platform == 'win32' else 0,
+        )
+        
+        # Register cleanup on exit
+        atexit.register(stop_celery_worker)
+        
+        print(f"[CELERY] Worker started (PID: {_celery_worker_process.pid})")
+        return _celery_worker_process
+        
+    except Exception as e:
+        print(f"[ERROR] Failed to start Celery worker: {e}")
+        return None
+
+
+def stop_celery_worker():
+    """Stop the Celery worker subprocess"""
+    global _celery_worker_process
+    
+    if _celery_worker_process is not None:
+        print("[CELERY] Stopping Celery worker...")
+        try:
+            if sys.platform == 'win32':
+                _celery_worker_process.terminate()
+            else:
+                import signal
+                os.killpg(os.getpgid(_celery_worker_process.pid), signal.SIGTERM)
+            _celery_worker_process.wait(timeout=5)
+        except Exception as e:
+            print(f"[CELERY] Error stopping worker: {e}")
+            try:
+                _celery_worker_process.kill()
+            except:
+                pass
+        _celery_worker_process = None
+        print("[CELERY] Worker stopped")
 
 def run_uvicorn():
     """Run MindGraph with Uvicorn (FastAPI async server)"""
@@ -195,6 +298,14 @@ def run_uvicorn():
         # Print configuration summary (same as main.py)
         config.print_config_summary()
         
+        # Start Celery worker for background task processing
+        celery_worker = start_celery_worker()
+        if celery_worker:
+            print("[CELERY] Background task processing enabled")
+        else:
+            print("[WARNING] Background task processing disabled - check Redis connection")
+        print()
+        
         # Install stderr filter to suppress multiprocessing shutdown tracebacks
         original_stderr = sys.stderr
         sys.stderr = ShutdownErrorFilter(original_stderr)
@@ -239,11 +350,14 @@ def run_uvicorn():
             # Graceful shutdown on Ctrl+C
             print("\n" + "=" * 80)
             print("Shutting down gracefully...")
+            stop_celery_worker()
             print("=" * 80)
         finally:
             # Restore original stderr and exception hook
             sys.stderr = original_stderr
             sys.excepthook = original_excepthook
+            # Ensure Celery worker is stopped
+            stop_celery_worker()
             
     except KeyboardInterrupt:
         # Handle Ctrl+C during startup
