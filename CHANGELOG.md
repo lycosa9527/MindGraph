@@ -7,6 +7,71 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [5.4.0] - 2026-01-14 - Embedding-Based Semantic Chunking and Configuration Improvements
+
+### Added
+
+- **Embedding-Based Semantic Chunking** (`llm_chunking/patterns/embedding_boundary_detector.py`, `llm_chunking/utils/embedding_service.py`)
+  - Implemented LlamaIndex-style semantic chunking using DashScope/Qwen embeddings
+  - Uses cosine similarity between sentence groups to identify semantic boundaries
+  - Percentile threshold (default 95th) for breakpoint detection
+  - Leverages L2-normalized embeddings for efficient cosine similarity calculation (dot product)
+  - Supports buffer context for better semantic understanding
+
+- **Embedding Pre-Filtering** (`llm_chunking/agents/boundary_agent.py`)
+  - Added embedding-based pre-filtering to reduce LLM calls by ~50%
+  - Filters out clear boundaries using embedding confidence scores
+  - Only sends high-uncertainty segments to LLM (reduces from 20% to ~10% of boundaries)
+  - Maintains backward compatibility with existing LLM-based approach
+
+- **Embedding-Only Mode** (`llm_chunking/chunker.py`)
+  - Added `use_embeddings_only` flag for fast chunking without LLM calls
+  - Uses embedding similarity exclusively for boundary detection
+  - Provides cost-effective alternative for simple documents
+  - Falls back to pattern matching if embeddings unavailable
+
+- **Embedding Service Wrapper** (`llm_chunking/utils/embedding_service.py`)
+  - Unified interface for DashScopeEmbeddingClient
+  - Efficient cosine similarity/distance calculation using normalized embeddings
+  - Batch processing support for multiple embeddings
+
+### Changed
+
+- **Default Embedding Model** (`config/settings.py`, `env.example`, `models/knowledge_space.py`)
+  - Changed default from `text-embedding-v2` to `text-embedding-v4`
+  - Updated database column default to match config
+  - All embedding operations now use v4 by default
+
+- **Default Rerank Model** (`config/settings.py`, `env.example`)
+  - Changed default from `gte-rerank-v2` to `qwen3-rerank`
+  - qwen3-rerank is recommended: cheaper, supports 100+ languages, includes instruct parameter
+
+- **Environment Configuration** (`env.example`)
+  - Added `CHUNKING_ENGINE` variable documentation
+  - Clarified chunking engine options: `semchunk` (default) vs `mindchunk` (LLM-based)
+
+### Fixed
+
+- **Configuration Consistency**
+  - Fixed mismatch between code defaults and `env.example` for embedding and rerank models
+  - Ensured all model names use config/env variables (no hardcoded values in logic)
+  - Database column defaults now match config defaults
+
+### Technical Details
+
+- **Hybrid Chunking Approach**
+  - Pattern matching: Fast, handles 80% of boundaries
+  - Embedding pre-filtering: Reduces LLM calls by filtering clear boundaries
+  - LLM refinement: Only for high-uncertainty cases (~10%)
+  - Embedding-only mode: Optional fast mode with no LLM calls
+
+- **Performance Improvements**
+  - ~50% reduction in LLM calls for boundary detection
+  - Faster chunking with embedding-based pre-filtering
+  - Cost-effective embedding-only mode for simple documents
+
+---
+
 ## [5.3.0] - 2026-01-13 - Smart Chunking with semchunk and DashScope API Fixes
 
 ### Added

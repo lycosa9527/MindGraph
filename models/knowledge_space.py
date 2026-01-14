@@ -170,7 +170,7 @@ class Embedding(Base):
     __tablename__ = "embeddings"
     
     id = Column(Integer, primary_key=True, index=True)
-    model_name = Column(String(255), nullable=False, default='text-embedding-v2', index=True)
+    model_name = Column(String(255), nullable=False, default='text-embedding-v4', index=True)
     provider_name = Column(String(255), nullable=False, default='dashscope', index=True)
     hash = Column(String(64), nullable=False, index=True)  # MD5 hash of text
     embedding = Column(LargeBinary, nullable=False)  # Pickled embedding vector

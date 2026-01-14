@@ -191,3 +191,6 @@ frontend/dist/
 # Runtime static files (announcement images, etc.)
 # These are user uploads, not part of the codebase
 static/
+
+# Documentation
+docs/

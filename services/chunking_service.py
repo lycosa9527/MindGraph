@@ -13,8 +13,9 @@ Proprietary License
 
 import os
 import logging
-from typing import List, Dict, Any, Optional, Callable
+from typing import List, Dict, Any, Optional, Callable, Union
 from dataclasses import dataclass, field
+from abc import ABC, abstractmethod
 
 import semchunk
 import tiktoken
@@ -32,7 +33,34 @@ class Chunk:
     metadata: Dict[str, Any] = field(default_factory=dict)
 
 
-class ChunkingService:
+class BaseChunkingService(ABC):
+    """Base interface for chunking services."""
+    
+    @abstractmethod
+    def chunk_text(
+        self,
+        text: str,
+        metadata: Dict[str, Any] = None,
+        separator: str = None,
+        extract_structure: bool = False,
+        page_info: Optional[List[Dict[str, Any]]] = None,
+        language: Optional[str] = None
+    ) -> List[Chunk]:
+        """Chunk text into chunks."""
+        pass
+    
+    @abstractmethod
+    def estimate_chunk_count(self, text_length: int) -> int:
+        """Estimate chunk count."""
+        pass
+    
+    @abstractmethod
+    def validate_chunk_count(self, chunk_count: int, user_id: int) -> bool:
+        """Validate chunk count."""
+        pass
+
+
+class ChunkingService(BaseChunkingService):
     """
     Text chunking service using semchunk for intelligent, token-aware chunking.
     
@@ -230,9 +258,177 @@ class ChunkingService:
 _chunking_service: Optional[ChunkingService] = None
 
 
-def get_chunking_service() -> ChunkingService:
-    """Get global chunking service instance."""
+def get_chunking_service() -> Union[ChunkingService, "MindChunkAdapter"]:
+    """
+    Get global chunking service instance.
+    
+    Supports switching between semchunk and MindChunk (LLM-based) via CHUNKING_ENGINE env var.
+    - CHUNKING_ENGINE=semchunk (default): Uses semchunk library
+    - CHUNKING_ENGINE=mindchunk: Uses custom LLM-based chunking
+    """
     global _chunking_service
     if _chunking_service is None:
-        _chunking_service = ChunkingService()
+        chunking_engine = os.getenv("CHUNKING_ENGINE", "semchunk").lower()
+        
+        if chunking_engine == "mindchunk":
+            logger.info("[ChunkingService] Using MindChunk (LLM-based chunking)")
+            # Import here to avoid circular dependencies
+            from services.llm_chunking_service import get_llm_chunking_service
+            llm_service = get_llm_chunking_service()
+            # Create adapter wrapper
+            _chunking_service = MindChunkAdapter(llm_service)
+        else:
+            logger.info(f"[ChunkingService] Using semchunk (chunking_engine={chunking_engine})")
+            _chunking_service = ChunkingService()
+    
     return _chunking_service
+
+
+class MindChunkAdapter(BaseChunkingService):
+    """
+    Adapter to make LLMChunkingService compatible with ChunkingService interface.
+    
+    Wraps async LLMChunkingService to provide synchronous interface.
+    """
+    
+    def __init__(self, llm_chunking_service):
+        """
+        Initialize adapter.
+        
+        Args:
+            llm_chunking_service: LLMChunkingService instance
+        """
+        self.llm_service = llm_chunking_service
+        self.chunk_size = int(os.getenv("CHUNK_SIZE", "500"))
+        self.overlap = int(os.getenv("CHUNK_OVERLAP", "50"))
+        self.mode = "automatic"
+        self.strategy = "mindchunk"
+        
+        logger.info(
+            f"[MindChunkAdapter] Initialized with LLM-based chunking "
+            f"(chunk_size={self.chunk_size}, overlap={self.overlap})"
+        )
+    
+    def chunk_text(
+        self,
+        text: str,
+        metadata: Dict[str, Any] = None,
+        separator: str = None,
+        extract_structure: bool = False,
+        page_info: Optional[List[Dict[str, Any]]] = None,
+        language: Optional[str] = None
+    ) -> List[Chunk]:
+        """
+        Chunk text using MindChunk (LLM-based chunking).
+        
+        Synchronous wrapper around async LLM chunking service.
+        
+        Args:
+            text: Text to chunk
+            metadata: Optional metadata to attach to chunks
+            separator: Ignored (MindChunk uses semantic boundaries)
+            extract_structure: If True, uses structure detection
+            page_info: Optional page boundaries for PDFs
+            language: Optional language hint
+            
+        Returns:
+            List of Chunk objects
+        """
+        import asyncio
+        
+        # Get or create event loop
+        try:
+            loop = asyncio.get_event_loop()
+        except RuntimeError:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+        
+        # Run async chunking
+        document_id = metadata.get("document_id", "unknown") if metadata else "unknown"
+        
+        # Determine structure type if extract_structure is True
+        structure_type = None
+        if extract_structure:
+            structure_type = "general"  # Can be enhanced to detect structure
+        
+        # Extract PDF outline from page_info if available
+        pdf_outline = None
+        if page_info:
+            pdf_outline = [
+                {"page": p["page"], "title": f"Page {p['page']}"}
+                for p in page_info
+            ]
+        
+        # Call async method
+        try:
+            llm_chunks = loop.run_until_complete(
+                self.llm_service.chunk_text(
+                    text=text,
+                    document_id=document_id,
+                    metadata=metadata,
+                    structure_type=structure_type,
+                    pdf_outline=pdf_outline,
+                    chunk_size=self.chunk_size,
+                    overlap=self.overlap
+                )
+            )
+        except Exception as e:
+            logger.error(f"[MindChunkAdapter] Error during chunking: {e}")
+            # Fallback to empty chunks or basic splitting
+            return []
+        
+        # Handle empty result
+        if not llm_chunks:
+            logger.warning("[MindChunkAdapter] No chunks returned from LLM chunking")
+            return []
+        
+        # Convert to Chunk format (already compatible)
+        chunks = []
+        for llm_chunk in llm_chunks:
+            chunk = Chunk(
+                text=llm_chunk.text,
+                start_char=llm_chunk.start_char,
+                end_char=llm_chunk.end_char,
+                chunk_index=llm_chunk.chunk_index,
+                metadata=llm_chunk.metadata
+            )
+            chunks.append(chunk)
+        
+        logger.debug(
+            f"[MindChunkAdapter] Created {len(chunks)} chunks from {len(text)} chars"
+        )
+        return chunks
+    
+    def estimate_chunk_count(self, text_length: int) -> int:
+        """
+        Estimate number of chunks for text length.
+        
+        Args:
+            text_length: Length of text in characters
+            
+        Returns:
+            Estimated chunk count
+        """
+        return self.llm_service.estimate_chunk_count(text_length, self.chunk_size)
+    
+    def validate_chunk_count(self, chunk_count: int, user_id: int) -> bool:
+        """
+        Validate chunk count doesn't exceed limits.
+        
+        Args:
+            chunk_count: Number of chunks
+            user_id: User ID (for logging)
+            
+        Returns:
+            True if valid
+        """
+        max_chunks = int(os.getenv("MAX_CHUNKS_PER_USER", "1000"))
+        
+        if chunk_count > max_chunks:
+            logger.warning(
+                f"[MindChunkAdapter] User {user_id} would exceed chunk limit: "
+                f"{chunk_count} > {max_chunks}"
+            )
+            return False
+        
+        return True
