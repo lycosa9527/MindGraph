@@ -247,7 +247,10 @@ class KnowledgeSpaceService:
         document.file_path = str(final_path)
         self.db.commit()
         
-        logger.info(f"[KnowledgeSpace] Uploaded document {document.id} for user {self.user_id}")
+        logger.info(
+            f"[RAG] ✓ Upload: doc_id={document.id}, file='{file_name}', "
+            f"type={file_type}, size={file_size} bytes, user={self.user_id}"
+        )
         return document
     
     def process_document(self, document_id: int) -> None:
@@ -269,6 +272,20 @@ class KnowledgeSpaceService:
             raise ValueError(f"Document {document_id} not found or access denied")
         
         try:
+            # Log processing start
+            chunking_engine = os.getenv("CHUNKING_ENGINE", "semchunk").lower()
+            chunking_method = "mindchunk" if chunking_engine == "mindchunk" else "semchunk"
+            logger.info(
+                f"[RAG] → Processing: doc_id={document_id}, file='{document.file_name}', "
+                f"type={document.file_type}, chunking_engine={chunking_engine}, "
+                f"chunking_method={chunking_method}"
+            )
+            if chunking_method == "mindchunk":
+                logger.info(
+                    f"[RAG] 🧠 MindChunk ACTIVE: LLM-based semantic chunking will be used "
+                    f"for doc_id={document_id}"
+                )
+            
             # Update status
             document.status = 'processing'
             document.processing_progress = 'extracting'
@@ -284,7 +301,12 @@ class KnowledgeSpaceService:
                     text = self.processor.extract_text(document.file_path, document.file_type)
                     page_info = None
                 
-                # Detect language
+                # Detect language (ensure text is string before detection)
+                if isinstance(text, list):
+                    logger.warning(f"[KnowledgeSpace] Text is list, converting to string for doc_id={document_id}")
+                    text = "\n".join(str(item) for item in text)
+                if not isinstance(text, str):
+                    text = str(text) if text else ""
                 detected_language = self.processor.detect_language(text)
                 if detected_language:
                     document.language = detected_language
@@ -348,45 +370,106 @@ class KnowledgeSpaceService:
                         chunk_overlap = seg.get("chunk_overlap", 50)
                         separator = seg.get("separator") or seg.get("delimiter")
             
+            # Log chunking configuration
+            chunking_engine = os.getenv("CHUNKING_ENGINE", "semchunk").lower()
+            chunking_method = "mindchunk" if chunking_engine == "mindchunk" else "semchunk"
+            logger.info(
+                f"[RAG] → Chunking: doc_id={document_id}, method={chunking_method} "
+                f"(CHUNKING_ENGINE={chunking_engine}), "
+                f"mode={mode}, strategy={chunking_strategy}, "
+                f"chunk_size={chunk_size or 500}, overlap={chunk_overlap or 50}"
+            )
+            if chunking_method == "mindchunk":
+                logger.info(
+                    f"[RAG] 🧠 MindChunk enabled: Using LLM-based semantic chunking "
+                    f"with qwen-plus-latest for doc_id={document_id}"
+                )
+            
             # Use appropriate chunking service based on mode
+            # Note: All modes now respect CHUNKING_ENGINE env var (semchunk vs mindchunk)
             try:
+                # Check if we need a custom chunking service instance (for hierarchical/custom modes)
+                # or if we can use the default service (respects CHUNKING_ENGINE)
                 if mode == "hierarchical":
-                    # Hierarchical mode - will be enhanced when hierarchical chunks are implemented
-                    from services.chunking_service import ChunkingService
-                    hierarchical_chunking = ChunkingService(
-                        chunk_size=chunk_size or 500,
-                        overlap=chunk_overlap or 50,
-                        mode="hierarchical",
-                        strategy=chunking_strategy
-                    )
-                    chunks = hierarchical_chunking.chunk_text(
-                        cleaned_text, 
-                        metadata={"document_id": document.id},
-                        separator=separator,
-                        extract_structure=True,
-                        page_info=page_info,
-                        language=document.language
-                    )
+                    # Hierarchical mode - use custom instance if semchunk, otherwise use default
+                    # NOTE: Direct ChunkingService() instantiation only for semchunk in hierarchical mode.
+                    # For mindchunk, falls back to self.chunking (which respects CHUNKING_ENGINE).
+                    if chunking_engine == "semchunk":
+                        from services.chunking_service import ChunkingService
+                        hierarchical_chunking = ChunkingService(
+                            chunk_size=chunk_size or 500,
+                            overlap=chunk_overlap or 50,
+                            mode="hierarchical",
+                            strategy=chunking_strategy
+                        )
+                        chunks = hierarchical_chunking.chunk_text(
+                            cleaned_text, 
+                            metadata={"document_id": document.id},
+                            separator=separator,
+                            extract_structure=True,
+                            page_info=page_info,
+                            language=document.language
+                        )
+                    else:
+                        # NOTE: mindchunk (LLM-based chunking) doesn't support hierarchical mode yet.
+                        # Hierarchical mode requires parent-child structure detection which is not
+                        # fully implemented in LLMSemanticChunker. Falls back to default automatic
+                        # chunking mode with mindchunk engine.
+                        logger.warning(
+                            f"[RAG] Hierarchical mode not supported with mindchunk, "
+                            f"falling back to default automatic chunking for doc_id={document_id}"
+                        )
+                        chunks = self.chunking.chunk_text(
+                            cleaned_text,
+                            metadata={"document_id": document.id},
+                            separator=separator,
+                            extract_structure=True,
+                            page_info=page_info,
+                            language=document.language
+                        )
                 elif mode == "custom" and (chunk_size or chunk_overlap or separator):
                     # Custom mode with user-defined rules
-                    from services.chunking_service import ChunkingService
-                    custom_chunking = ChunkingService(
-                        chunk_size=chunk_size or 500,
-                        overlap=chunk_overlap or 50,
-                        mode="custom",
-                        strategy=chunking_strategy
-                    )
-                    chunks = custom_chunking.chunk_text(
-                        cleaned_text,
-                        metadata={"document_id": document.id},
-                        separator=separator,
-                        extract_structure=True,
-                        page_info=page_info,
-                        language=document.language
-                    )
+                    # NOTE: Direct ChunkingService() instantiation only for semchunk in custom mode.
+                    # For mindchunk, falls back to self.chunking (which respects CHUNKING_ENGINE).
+                    if chunking_engine == "semchunk":
+                        from services.chunking_service import ChunkingService
+                        custom_chunking = ChunkingService(
+                            chunk_size=chunk_size or 500,
+                            overlap=chunk_overlap or 50,
+                            mode="custom",
+                            strategy=chunking_strategy
+                        )
+                        chunks = custom_chunking.chunk_text(
+                            cleaned_text,
+                            metadata={"document_id": document.id},
+                            separator=separator,
+                            extract_structure=True,
+                            page_info=page_info,
+                            language=document.language
+                        )
+                    else:
+                        # NOTE: mindchunk (LLM-based chunking) doesn't support custom mode yet.
+                        # Custom mode requires user-defined chunk_size/overlap/separator which
+                        # conflicts with LLM-based semantic boundary detection. Falls back to
+                        # default automatic chunking mode with mindchunk engine.
+                        logger.warning(
+                            f"[RAG] Custom mode not supported with mindchunk, "
+                            f"falling back to default automatic chunking for doc_id={document_id}"
+                        )
+                        chunks = self.chunking.chunk_text(
+                            cleaned_text,
+                            metadata={"document_id": document.id},
+                            separator=separator,
+                            extract_structure=True,
+                            page_info=page_info,
+                            language=document.language
+                        )
                 else:
-                    # Automatic mode (default) - update strategy
-                    if chunking_strategy != "recursive":
+                    # Automatic mode (default) - respects CHUNKING_ENGINE via self.chunking
+                    # NOTE: Direct ChunkingService() instantiation only for semchunk with non-recursive strategy.
+                    # For mindchunk or recursive strategy, uses self.chunking (which respects CHUNKING_ENGINE).
+                    if chunking_strategy != "recursive" and chunking_engine == "semchunk":
+                        # Only create custom instance for semchunk with non-recursive strategy
                         from services.chunking_service import ChunkingService
                         strategy_chunking = ChunkingService(
                             chunk_size=chunk_size or 500,
@@ -403,7 +486,13 @@ class KnowledgeSpaceService:
                             language=document.language
                         )
                     else:
-                        # Default recursive chunking
+                        # Default chunking (respects CHUNKING_ENGINE)
+                        logger.info(
+                            f"[RAG] Calling chunk_text: doc_id={document_id}, "
+                            f"text_length={len(cleaned_text)}, "
+                            f"chunking_engine={chunking_engine}, "
+                            f"chunking_type={type(self.chunking).__name__}"
+                        )
                         chunks = self.chunking.chunk_text(
                             cleaned_text,
                             metadata={"document_id": document.id},
@@ -412,14 +501,45 @@ class KnowledgeSpaceService:
                             page_info=page_info,
                             language=document.language
                         )
+                        logger.info(
+                            f"[RAG] chunk_text returned: doc_id={document_id}, "
+                            f"chunks_count={len(chunks) if chunks else 0}, "
+                            f"chunks_type={type(chunks).__name__ if chunks else 'None'}"
+                        )
             except Exception as chunk_error:
+                import traceback
                 error_msg = f"文本分块失败: {str(chunk_error)}"
-                logger.error(f"[KnowledgeSpace] Chunking failed for document {document_id}: {chunk_error}")
+                logger.error(f"[KnowledgeSpace] ✗ Chunking failed for document {document_id}: {chunk_error}")
+                logger.error(f"[KnowledgeSpace] Full traceback:")
+                logger.error(traceback.format_exc())
+                logger.error(f"[KnowledgeSpace] Exception type: {type(chunk_error).__name__}")
+                logger.error(f"[KnowledgeSpace] Exception args: {chunk_error.args}")
                 raise ValueError(error_msg) from chunk_error
             
             # Validate chunk count
+            if len(chunks) == 0:
+                raise ValueError(
+                    f"Chunking returned 0 chunks for document {document_id}. "
+                    "This may indicate an issue with MindChunk or document content. "
+                    "Check logs above for chunking errors."
+                )
             if not self.chunking.validate_chunk_count(len(chunks), self.user_id):
                 raise ValueError(f"Chunk count ({len(chunks)}) exceeds limit")
+            
+            # Log chunking results
+            logger.info(
+                f"[RAG] ✓ Chunking: doc_id={document_id}, created {len(chunks)} chunks, "
+                f"method={chunking_method}, mode={mode}"
+            )
+            # Debug log for mindchunk metadata compatibility
+            if chunking_method == "mindchunk" and chunks:
+                sample_chunk = chunks[0]
+                logger.debug(
+                    f"[RAG] MindChunk sample metadata for doc_id={document_id}: "
+                    f"keys={list(sample_chunk.metadata.keys())}, "
+                    f"structure_type={sample_chunk.metadata.get('structure_type')}, "
+                    f"has_token_count={'token_count' in sample_chunk.metadata}"
+                )
             
             # Update progress: chunking complete
             document.processing_progress = 'chunking'
@@ -437,7 +557,7 @@ class KnowledgeSpaceService:
             embedding_cache = get_embedding_cache()
             
             # Check cache for each text, generate only for uncached
-            # Also check embedding rate limit for uncached texts
+            # Collect all uncached texts first, then check rate limit for batch
             texts_to_embed = []
             indices_to_embed = []
             total_texts = len(texts)
@@ -446,20 +566,7 @@ class KnowledgeSpaceService:
                 if cached_embedding:
                     embeddings.append(cached_embedding)
                 else:
-                    # Check embedding rate limit for uncached texts
-                    allowed, count, error_msg = self.kb_rate_limiter.check_embedding_limit(self.user_id)
-                    if not allowed:
-                        logger.warning(
-                            f"[KnowledgeSpace] Embedding rate limit exceeded for user {self.user_id} "
-                            f"during document processing: {error_msg}"
-                        )
-                        # Continue with cached embeddings only, log warning
-                        logger.warning(
-                            f"[KnowledgeSpace] Skipping remaining {len(texts) - i} uncached texts due to rate limit. "
-                            f"Document will be processed with cached embeddings only."
-                        )
-                        break  # Stop adding more texts to embed
-                    
+                    # Add placeholder and collect for batch embedding
                     embeddings.append(None)  # Placeholder
                     texts_to_embed.append(text)
                     indices_to_embed.append(i)
@@ -471,16 +578,56 @@ class KnowledgeSpaceService:
                     if i % 10 == 0:  # Commit every 10 chunks to avoid too many DB writes
                         self.db.commit()
             
-            # Generate embeddings for uncached texts with optimized dimensions
+            # Generate embeddings for uncached texts
+            # Note: embed_texts() handles batching internally, but we need to respect rate limits
             if texts_to_embed:
                 from config.settings import config
                 from utils.dashscope_error_handler import DashScopeError
                 dimensions = config.EMBEDDING_DIMENSIONS  # Will use optimized default (768)
+                
+                # Check rate limit for the entire batch upfront
+                # embed_texts() batches internally, so we need to estimate how many API calls it will make
+                embedding_rpm = int(os.getenv("KB_EMBEDDING_RPM", "100"))
+                # Get batch size from embedding client (v4 uses 10, v1/v2 uses 25)
+                client_batch_size = getattr(self.embedding_client, 'batch_size', 10)
+                estimated_api_calls = (len(texts_to_embed) + client_batch_size - 1) // client_batch_size
+                
+                # Check if we have enough rate limit capacity
+                # Note: The rate limiter tracks per check_and_record() call, not per API call
+                # So we need to check for each batch that embed_texts() will make
+                # For now, we check upfront and let embed_texts() handle batching
+                # If rate limit is exceeded during processing, embed_texts() will raise an error
+                remaining, _ = self.kb_rate_limiter.get_embedding_remaining(self.user_id)
+                if remaining < estimated_api_calls:
+                    error_msg = (
+                        f"嵌入向量生成速率限制: 需要约 {estimated_api_calls} 次API调用（{len(texts_to_embed)} 个文本，"
+                        f"批次大小 {client_batch_size}），但当前仅剩 {remaining} 次可用。"
+                        f"请稍后重试或增加 KB_EMBEDDING_RPM 配置值（当前: {embedding_rpm}/分钟）。"
+                    )
+                    logger.error(
+                        f"[KnowledgeSpace] Cannot process {len(texts_to_embed)} uncached texts: "
+                        f"rate limit insufficient (need ~{estimated_api_calls} API calls, have {remaining} remaining)"
+                    )
+                    raise ValueError(error_msg)
+                
                 try:
+                    # embed_texts() handles batching internally and respects API limits
                     new_embeddings = self.embedding_client.embed_texts(
                         texts_to_embed,
                         dimensions=dimensions
                     )
+                    
+                    # Verify we got embeddings for all texts
+                    if len(new_embeddings) != len(texts_to_embed):
+                        error_msg = (
+                            f"嵌入向量生成不完整: 期望 {len(texts_to_embed)} 个向量，"
+                            f"实际生成 {len(new_embeddings)} 个。"
+                        )
+                        logger.error(
+                            f"[KnowledgeSpace] Embedding count mismatch: "
+                            f"expected {len(texts_to_embed)}, got {len(new_embeddings)}"
+                        )
+                        raise ValueError(error_msg)
                     
                     # Store in cache and fill in embeddings list
                     for text, embedding, idx in zip(texts_to_embed, new_embeddings, indices_to_embed):
@@ -488,6 +635,11 @@ class KnowledgeSpaceService:
                         embedding_cache.cache_document_embedding(self.db, text, embedding)
                         # Fill in the placeholder
                         embeddings[idx] = embedding
+                    
+                    logger.debug(
+                        f"[KnowledgeSpace] Successfully embedded {len(new_embeddings)} texts "
+                        f"for document {document_id}"
+                    )
                 except DashScopeError as e:
                     # Provide user-friendly error message
                     error_msg = f"生成向量失败: {e.message}"
@@ -604,7 +756,13 @@ class KnowledgeSpaceService:
                     logger.error(f"[KnowledgeSpace] Failed to cleanup Qdrant after SQLite failure: {cleanup_error}")
                 raise ValueError(error_msg) from qdrant_error
             
-            logger.info(f"[KnowledgeSpace] Processed document {document_id}: {len(chunks)} chunks")
+            # Log processing completion
+            chunking_engine = os.getenv("CHUNKING_ENGINE", "semchunk").lower()
+            chunking_method = "mindchunk" if chunking_engine == "mindchunk" else "semchunk"
+            logger.info(
+                f"[RAG] ✓ Processing complete: doc_id={document_id}, file='{document.file_name}', "
+                f"chunks={len(chunks)}, method={chunking_method}, user={self.user_id}"
+            )
             
             # Extract references and create relationships
             try:
@@ -876,6 +1034,12 @@ class KnowledgeSpaceService:
         if not document:
             raise ValueError(f"Document {document_id} not found or access denied")
         
+        # Log update start
+        logger.info(
+            f"[RAG] → Update: doc_id={document_id}, file='{document.file_name}', "
+            f"new_file='{file_name or document.file_name}', type={document.file_type}, user={self.user_id}"
+        )
+        
         # Check file size
         file_size = Path(file_path).stat().st_size
         if file_size > self.max_file_size:
@@ -969,7 +1133,11 @@ class KnowledgeSpaceService:
                 version.change_summary = change_summary
                 self.db.commit()
             
-            logger.info(f"[KnowledgeSpace] Updated document {document_id} (version {document.version})")
+            # Log update completion
+            logger.info(
+                f"[RAG] ✓ Update complete: doc_id={document_id}, version={document.version}, "
+                f"chunks={document.chunk_count}, user={self.user_id}"
+            )
             return document
             
         except Exception as e:
@@ -1012,9 +1180,19 @@ class KnowledgeSpaceService:
                 else:
                     text = self.processor.extract_text(document.file_path, document.file_type)
                     page_info = None
+                
+                # Ensure text is a string (defensive check)
+                if isinstance(text, list):
+                    logger.warning(f"[KnowledgeSpace] Text extraction returned list for doc_id={document.id}, converting")
+                    text = "\n".join(str(item) for item in text)
+                if not isinstance(text, str):
+                    text = str(text) if text else ""
             except Exception as extract_error:
                 error_msg = f"文本提取失败: {str(extract_error)}"
-                logger.error(f"[KnowledgeSpace] Text extraction failed for document {document.id}: {extract_error}")
+                logger.error(
+                    f"[KnowledgeSpace] Text extraction failed for document {document.id}: {extract_error}",
+                    exc_info=True
+                )
                 raise ValueError(error_msg) from extract_error
             
             # Get processing rules
@@ -1056,46 +1234,97 @@ class KnowledgeSpaceService:
                         chunk_overlap = seg.get("chunk_overlap", 50)
                         separator = seg.get("separator") or seg.get("delimiter")
             
+            # Log chunking configuration for update
+            chunking_engine = os.getenv("CHUNKING_ENGINE", "semchunk").lower()
+            chunking_method = "mindchunk" if chunking_engine == "mindchunk" else "semchunk"
+            logger.info(
+                f"[RAG] → Chunking (update): doc_id={document.id}, method={chunking_method}, "
+                f"mode={mode}, chunk_size={chunk_size or 500}, overlap={chunk_overlap or 50}"
+            )
+            
             # Chunk text
             document.processing_progress = 'chunking'
             document.processing_progress_percent = 30
             self.db.commit()
             
             try:
+                # Check chunking engine to determine which service to use
                 if mode == "hierarchical":
-                    from services.chunking_service import ChunkingService
-                    hierarchical_chunking = ChunkingService(
-                        chunk_size=chunk_size or 500,
-                        overlap=chunk_overlap or 50,
-                        mode="hierarchical"
-                    )
-                    new_chunks = hierarchical_chunking.chunk_text(
-                        cleaned_text,
-                        metadata={"document_id": document.id},
-                        separator=separator,
-                        extract_structure=True,
-                        page_info=page_info,
-                        language=document.language
-                    )
+                    # NOTE: Direct ChunkingService() instantiation only for semchunk in hierarchical mode.
+                    # For mindchunk, falls back to self.chunking (which respects CHUNKING_ENGINE).
+                    if chunking_engine == "semchunk":
+                        from services.chunking_service import ChunkingService
+                        hierarchical_chunking = ChunkingService(
+                            chunk_size=chunk_size or 500,
+                            overlap=chunk_overlap or 50,
+                            mode="hierarchical"
+                        )
+                        new_chunks = hierarchical_chunking.chunk_text(
+                            cleaned_text,
+                            metadata={"document_id": document.id},
+                            separator=separator,
+                            extract_structure=True,
+                            page_info=page_info,
+                            language=document.language
+                        )
+                    else:
+                        # NOTE: mindchunk (LLM-based chunking) doesn't support hierarchical mode yet.
+                        # Hierarchical mode requires parent-child structure detection which is not
+                        # fully implemented in LLMSemanticChunker. Falls back to default automatic
+                        # chunking mode with mindchunk engine.
+                        logger.warning(
+                            f"[RAG] Hierarchical mode not supported with mindchunk, "
+                            f"falling back to default automatic chunking for doc_id={document.id}"
+                        )
+                        new_chunks = self.chunking.chunk_text(
+                            cleaned_text,
+                            metadata={"document_id": document.id},
+                            separator=separator,
+                            extract_structure=True,
+                            page_info=page_info,
+                            language=document.language
+                        )
                 elif mode == "custom" and (chunk_size or chunk_overlap or separator):
-                    from services.chunking_service import ChunkingService
-                    custom_chunking = ChunkingService(
-                        chunk_size=chunk_size or 500,
-                        overlap=chunk_overlap or 50,
-                        mode="custom"
-                    )
-                    new_chunks = custom_chunking.chunk_text(
-                        cleaned_text,
-                        metadata={"document_id": document.id},
-                        separator=separator,
-                        extract_structure=True,
-                        page_info=page_info,
-                        language=document.language
-                    )
+                    # NOTE: Direct ChunkingService() instantiation only for semchunk in custom mode.
+                    # For mindchunk, falls back to self.chunking (which respects CHUNKING_ENGINE).
+                    if chunking_engine == "semchunk":
+                        from services.chunking_service import ChunkingService
+                        custom_chunking = ChunkingService(
+                            chunk_size=chunk_size or 500,
+                            overlap=chunk_overlap or 50,
+                            mode="custom"
+                        )
+                        new_chunks = custom_chunking.chunk_text(
+                            cleaned_text,
+                            metadata={"document_id": document.id},
+                            separator=separator,
+                            extract_structure=True,
+                            page_info=page_info,
+                            language=document.language
+                        )
+                    else:
+                        # NOTE: mindchunk (LLM-based chunking) doesn't support custom mode yet.
+                        # Custom mode requires user-defined chunk_size/overlap/separator which
+                        # conflicts with LLM-based semantic boundary detection. Falls back to
+                        # default automatic chunking mode with mindchunk engine.
+                        logger.warning(
+                            f"[RAG] Custom mode not supported with mindchunk, "
+                            f"falling back to default automatic chunking for doc_id={document.id}"
+                        )
+                        new_chunks = self.chunking.chunk_text(
+                            cleaned_text,
+                            metadata={"document_id": document.id},
+                            separator=separator,
+                            extract_structure=True,
+                            page_info=page_info,
+                            language=document.language
+                        )
                 else:
+                    # Default chunking (respects CHUNKING_ENGINE)
                     new_chunks = self.chunking.chunk_text(
                         cleaned_text,
                         metadata={"document_id": document.id},
+                        separator=separator,
                         extract_structure=True,
                         page_info=page_info,
                         language=document.language
@@ -1108,6 +1337,12 @@ class KnowledgeSpaceService:
             # Validate chunk count
             if not self.chunking.validate_chunk_count(len(new_chunks), self.user_id):
                 raise ValueError(f"Chunk count ({len(new_chunks)}) exceeds limit")
+            
+            # Log chunking results for update
+            logger.info(
+                f"[RAG] ✓ Chunking (update): doc_id={document.id}, created {len(new_chunks)} chunks, "
+                f"method={chunking_method}, mode={mode}"
+            )
             
             # Get existing chunks
             existing_chunks = self.db.query(DocumentChunk).filter(
@@ -1147,9 +1382,10 @@ class KnowledgeSpaceService:
                     # New chunk
                     chunks_to_add.append((i, new_chunk, new_chunk_hash))
             
+            # Log chunk comparison results
             logger.info(
-                f"[KnowledgeSpace] Document {document.id} reindexing: "
-                f"{len(chunks_to_add)} new, {len(chunks_to_update)} updated, {len(chunks_to_delete)} deleted"
+                f"[RAG] ✓ Chunk comparison: doc_id={document.id}, "
+                f"added={len(chunks_to_add)}, updated={len(chunks_to_update)}, deleted={len(chunks_to_delete)}"
             )
             
             # Delete removed chunks
@@ -1369,9 +1605,11 @@ class KnowledgeSpaceService:
                 "deleted": len(chunks_to_delete)
             }
             
+            # Log reindexing completion
             logger.info(
-                f"[KnowledgeSpace] Reindexed document {document.id}: "
-                f"{change_summary['added']} added, {change_summary['updated']} updated, {change_summary['deleted']} deleted"
+                f"[RAG] ✓ Reindexing complete: doc_id={document.id}, "
+                f"added={change_summary['added']}, updated={change_summary['updated']}, "
+                f"deleted={change_summary['deleted']}, total_chunks={document.chunk_count}"
             )
             
             return change_summary

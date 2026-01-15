@@ -1176,7 +1176,7 @@ def check_database_on_startup() -> bool:
         # Interactive mode - run recovery wizard
         return recovery.interactive_recovery()
     else:
-        # Non-interactive mode (systemd, docker, etc.)
+        # Non-interactive mode (systemd, etc.)
         # DO NOT auto-recover - require manual intervention
         logger.critical("[Recovery] " + "=" * 70)
         logger.critical("[Recovery] DATABASE CORRUPTION DETECTED - MANUAL INTERVENTION REQUIRED")

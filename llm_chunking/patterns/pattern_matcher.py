@@ -253,7 +253,7 @@ class PatternMatcher:
         target = offset + (chunk_size * average)
         
         while low < high:
-            i = bisect_left(cum_lens, target, low=low, high=high)
+            i = bisect_left(cum_lens, target, lo=low, hi=high)
             midpoint = min(i, high - 1)
             
             merged_text = splitter.join(splits[start:midpoint])

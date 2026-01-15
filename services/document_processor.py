@@ -294,6 +294,13 @@ class DocumentProcessor:
         Returns:
             Language code (e.g., 'zh', 'en', 'ja') or None if detection fails
         """
+        # Ensure text is a string
+        if isinstance(text, list):
+            logger.warning("[DocumentProcessor] detect_language received list, converting to string")
+            text = "\n".join(str(item) for item in text)
+        if not isinstance(text, str):
+            text = str(text) if text else ""
+        
         if not LANGDETECT_AVAILABLE or not text or len(text.strip()) < 10:
             return None
         
@@ -340,6 +347,13 @@ class DocumentProcessor:
         extractor = self.supported_types[file_type]
         try:
             text = extractor(file_path)
+            # Handle case where extractor might return a list (shouldn't happen, but defensive)
+            if isinstance(text, list):
+                logger.warning(f"[DocumentProcessor] Extractor returned list instead of string for {file_path}, joining")
+                text = "\n".join(str(item) for item in text)
+            # Ensure text is a string
+            if not isinstance(text, str):
+                text = str(text) if text else ""
             if not text or not text.strip():
                 raise ValueError(f"No text extracted from {file_path}")
             return text.strip()
@@ -520,8 +534,28 @@ class DocumentProcessor:
             if "output" in result and "choices" in result["output"]:
                 choices = result["output"]["choices"]
                 if choices and len(choices) > 0:
-                    text = choices[0].get("message", {}).get("content", "")
-                    return text
+                    content = choices[0].get("message", {}).get("content", "")
+                    # Handle case where content might be a list (multimodal response)
+                    if isinstance(content, list):
+                        # Extract text from list of content blocks
+                        text_parts = []
+                        for item in content:
+                            if isinstance(item, dict):
+                                # Content block with type and text
+                                if item.get("type") == "text":
+                                    text_parts.append(item.get("text", ""))
+                                elif "text" in item:
+                                    text_parts.append(str(item["text"]))
+                            elif isinstance(item, str):
+                                text_parts.append(item)
+                        text = "".join(text_parts)
+                    elif isinstance(content, str):
+                        text = content
+                    else:
+                        text = str(content) if content else ""
+                    
+                    if text and text.strip():
+                        return text.strip()
         
         raise ValueError("No text extracted from OCR response")
     

@@ -40,8 +40,8 @@ class BaseChunkingService(ABC):
     def chunk_text(
         self,
         text: str,
-        metadata: Dict[str, Any] = None,
-        separator: str = None,
+        metadata: Optional[Dict[str, Any]] = None,
+        separator: Optional[str] = None,
         extract_structure: bool = False,
         page_info: Optional[List[Dict[str, Any]]] = None,
         language: Optional[str] = None
@@ -82,7 +82,7 @@ class ChunkingService(BaseChunkingService):
         "separator": "\n\n"
     }
     
-    def __init__(self, chunk_size: int = None, overlap: int = None, mode: str = "automatic", strategy: str = "recursive"):
+    def __init__(self, chunk_size: Optional[int] = None, overlap: Optional[int] = None, mode: str = "automatic", strategy: str = "recursive"):
         """
         Initialize chunking service with semchunk.
         
@@ -130,7 +130,7 @@ class ChunkingService(BaseChunkingService):
     def _split(
         self,
         text: str,
-        metadata: Dict[str, Any] = None,
+        metadata: Optional[Dict[str, Any]] = None,
         page_info: Optional[List[Dict[str, Any]]] = None
     ) -> List[Chunk]:
         """
@@ -150,10 +150,19 @@ class ChunkingService(BaseChunkingService):
         # Use semchunk for splitting
         chunk_texts = self._chunker(text)
         
+        # Ensure chunk_texts is a list of strings
+        if not isinstance(chunk_texts, list):
+            chunk_texts = list(chunk_texts)
+        
         chunks = []
         current_pos = 0
         
         for i, chunk_text in enumerate(chunk_texts):
+            # Ensure chunk_text is a string
+            if not isinstance(chunk_text, str):
+                logger.warning(f"[ChunkingService] Unexpected chunk type: {type(chunk_text)}, skipping")
+                continue
+            
             # Find position in original text
             start_pos = text.find(chunk_text, current_pos)
             if start_pos == -1:
@@ -192,8 +201,8 @@ class ChunkingService(BaseChunkingService):
     def chunk_text(
         self, 
         text: str, 
-        metadata: Dict[str, Any] = None,
-        separator: str = None,
+        metadata: Optional[Dict[str, Any]] = None,
+        separator: Optional[str] = None,
         extract_structure: bool = False,
         page_info: Optional[List[Dict[str, Any]]] = None,
         language: Optional[str] = None
@@ -255,7 +264,7 @@ class ChunkingService(BaseChunkingService):
 
 
 # Global instance
-_chunking_service: Optional[ChunkingService] = None
+_chunking_service: Optional[Union[ChunkingService, "MindChunkAdapter"]] = None
 
 
 def get_chunking_service() -> Union[ChunkingService, "MindChunkAdapter"]:
@@ -269,9 +278,65 @@ def get_chunking_service() -> Union[ChunkingService, "MindChunkAdapter"]:
     global _chunking_service
     if _chunking_service is None:
         chunking_engine = os.getenv("CHUNKING_ENGINE", "semchunk").lower()
+        logger.info(
+            f"[ChunkingService] Initializing chunking service: CHUNKING_ENGINE={chunking_engine} "
+            f"(env value: {os.getenv('CHUNKING_ENGINE', 'not set, using default: semchunk')})"
+        )
         
         if chunking_engine == "mindchunk":
-            logger.info("[ChunkingService] Using MindChunk (LLM-based chunking)")
+            logger.info(
+                "[ChunkingService] ✓ Using MindChunk (LLM-based semantic chunking) - "
+                "requires LLM service initialization"
+            )
+            # Verify LLM service is initialized, try to initialize if not
+            try:
+                from services.llm_service import llm_service as llm_svc
+                from config.settings import config
+                
+                if not hasattr(llm_svc, 'client_manager'):
+                    raise RuntimeError(
+                        "[ChunkingService] LLM service missing client_manager attribute. "
+                        "MindChunk cannot work without LLM service."
+                    )
+                
+                if not llm_svc.client_manager.is_initialized():
+                    logger.warning(
+                        "[ChunkingService] LLM service not initialized. "
+                        "Attempting to initialize now..."
+                    )
+                    
+                    # Try to initialize if API key is available
+                    if not config.QWEN_API_KEY:
+                        raise RuntimeError(
+                            "[ChunkingService] QWEN_API_KEY not configured. "
+                            "MindChunk requires QWEN_API_KEY to be set in environment variables."
+                        )
+                    
+                    try:
+                        logger.info("[ChunkingService] Initializing LLM service...")
+                        llm_svc.initialize()
+                        if not llm_svc.client_manager.is_initialized():
+                            raise RuntimeError(
+                                "[ChunkingService] LLM service initialization failed - "
+                                "is_initialized() returned False after initialize() call. "
+                                "Check logs above for initialization errors."
+                            )
+                        logger.info("[ChunkingService] ✓ LLM service initialized successfully")
+                    except Exception as init_error:
+                        raise RuntimeError(
+                            f"[ChunkingService] Failed to initialize LLM service: {init_error}. "
+                            "MindChunk cannot work without LLM service. "
+                            "Check logs above for detailed error information."
+                        ) from init_error
+            except RuntimeError:
+                # Re-raise RuntimeError as-is
+                raise
+            except Exception as e:
+                raise RuntimeError(
+                    f"[ChunkingService] Failed to verify LLM service initialization: {e}. "
+                    "MindChunk cannot work without LLM service."
+                ) from e
+            
             # Import here to avoid circular dependencies
             from services.llm_chunking_service import get_llm_chunking_service
             llm_service = get_llm_chunking_service()
@@ -281,6 +346,8 @@ def get_chunking_service() -> Union[ChunkingService, "MindChunkAdapter"]:
             logger.info(f"[ChunkingService] Using semchunk (chunking_engine={chunking_engine})")
             _chunking_service = ChunkingService()
     
+    # Type narrowing: _chunking_service is always initialized above
+    assert _chunking_service is not None, "Chunking service should be initialized"
     return _chunking_service
 
 
@@ -312,8 +379,8 @@ class MindChunkAdapter(BaseChunkingService):
     def chunk_text(
         self,
         text: str,
-        metadata: Dict[str, Any] = None,
-        separator: str = None,
+        metadata: Optional[Dict[str, Any]] = None,
+        separator: Optional[str] = None,
         extract_structure: bool = False,
         page_info: Optional[List[Dict[str, Any]]] = None,
         language: Optional[str] = None
@@ -336,20 +403,42 @@ class MindChunkAdapter(BaseChunkingService):
         """
         import asyncio
         
-        # Get or create event loop
+        # Async/sync bridge: This adapter provides synchronous interface for async LLM chunking.
+        # In Flask/Quart sync context, we need to run the async coroutine in an event loop.
+        # Strategy: Get existing loop if available, otherwise create new one.
+        # Note: run_until_complete() works when called from sync context (Flask routes).
         try:
+            # Try to get existing event loop (works in sync Flask context)
             loop = asyncio.get_event_loop()
+            if loop.is_running():
+                # If loop is already running (async context), we can't use run_until_complete
+                # This shouldn't happen in Flask sync routes, but handle gracefully
+                logger.warning(
+                    "[MindChunkAdapter] Event loop already running, "
+                    "this may indicate async context issue"
+                )
+                # Create new loop for this operation
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
         except RuntimeError:
+            # No event loop exists, create new one
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
         
         # Run async chunking
         document_id = metadata.get("document_id", "unknown") if metadata else "unknown"
         
+        logger.debug(
+            f"[MindChunkAdapter] Starting chunking for doc_id={document_id}, "
+            f"text_length={len(text)}, extract_structure={extract_structure}, "
+            f"chunk_size={self.chunk_size}, overlap={self.overlap}"
+        )
+        
         # Determine structure type if extract_structure is True
         structure_type = None
         if extract_structure:
             structure_type = "general"  # Can be enhanced to detect structure
+            logger.debug(f"[MindChunkAdapter] Structure extraction enabled, type={structure_type}")
         
         # Extract PDF outline from page_info if available
         pdf_outline = None
@@ -360,6 +449,11 @@ class MindChunkAdapter(BaseChunkingService):
             ]
         
         # Call async method
+        logger.info(
+            f"[MindChunkAdapter] Calling LLM chunking service: doc_id={document_id}, "
+            f"text_length={len(text)}, structure_type={structure_type}, "
+            f"chunk_size={self.chunk_size}, overlap={self.overlap}"
+        )
         try:
             llm_chunks = loop.run_until_complete(
                 self.llm_service.chunk_text(
@@ -372,15 +466,33 @@ class MindChunkAdapter(BaseChunkingService):
                     overlap=self.overlap
                 )
             )
+            logger.info(
+                f"[MindChunkAdapter] LLM chunking service returned: doc_id={document_id}, "
+                f"chunks_count={len(llm_chunks) if llm_chunks else 0}, "
+                f"chunks_type={type(llm_chunks).__name__ if llm_chunks else 'None'}"
+            )
         except Exception as e:
-            logger.error(f"[MindChunkAdapter] Error during chunking: {e}")
-            # Fallback to empty chunks or basic splitting
-            return []
+            import traceback
+            logger.error(
+                f"[MindChunkAdapter] ✗ ERROR during LLM chunking for doc_id={document_id}: {e}"
+            )
+            logger.error(f"[MindChunkAdapter] Full traceback:")
+            logger.error(traceback.format_exc())
+            logger.error(f"[MindChunkAdapter] Exception type: {type(e).__name__}")
+            logger.error(f"[MindChunkAdapter] Exception args: {e.args}")
+            # Raise error instead of returning empty - we removed fallback
+            raise RuntimeError(
+                f"[MindChunkAdapter] LLM chunking failed for doc_id={document_id}: {e}. "
+                "Check logs above for detailed error information."
+            ) from e
         
         # Handle empty result
         if not llm_chunks:
-            logger.warning("[MindChunkAdapter] No chunks returned from LLM chunking")
-            return []
+            raise RuntimeError(
+                f"[MindChunkAdapter] No chunks returned from LLM chunking for doc_id={document_id}. "
+                "LLM chunking service returned empty result. This may indicate an issue with "
+                "the LLM service, API configuration, or document content."
+            )
         
         # Convert to Chunk format (already compatible)
         chunks = []
@@ -394,9 +506,35 @@ class MindChunkAdapter(BaseChunkingService):
             )
             chunks.append(chunk)
         
+        # Log detailed chunking results
+        total_chars = sum(len(c.text) for c in chunks)
+        avg_chunk_size = total_chars / len(chunks) if chunks else 0
         logger.debug(
-            f"[MindChunkAdapter] Created {len(chunks)} chunks from {len(text)} chars"
+            f"[MindChunkAdapter] Created {len(chunks)} chunks from {len(text)} chars "
+            f"for doc_id={document_id}, avg_chunk_size={avg_chunk_size:.1f} chars"
         )
+        
+        # Log metadata presence for debugging vector storage compatibility
+        if chunks:
+            sample_metadata = chunks[0].metadata
+            metadata_keys = list(sample_metadata.keys())
+            logger.debug(
+                f"[MindChunkAdapter] Chunk metadata keys for doc_id={document_id}: "
+                f"{metadata_keys}"
+            )
+            # Verify critical metadata fields for vector storage
+            required_fields = ['document_id', 'structure_type']
+            missing_fields = [f for f in required_fields if f not in sample_metadata]
+            if missing_fields:
+                logger.warning(
+                    f"[MindChunkAdapter] Missing metadata fields {missing_fields} "
+                    f"for doc_id={document_id}, may affect vector storage"
+                )
+            else:
+                logger.debug(
+                    f"[MindChunkAdapter] All required metadata fields present "
+                    f"for vector storage compatibility for doc_id={document_id}"
+                )
         return chunks
     
     def estimate_chunk_count(self, text_length: int) -> int:

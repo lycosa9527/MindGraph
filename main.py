@@ -62,7 +62,18 @@ if sys.platform == 'win32':
 # Ensure .env file is UTF-8 encoded before loading
 ensure_utf8_env_file()
 # Load environment variables
+env_file_path = os.path.join(os.path.dirname(__file__), '.env')
+env_file_exists = os.path.exists(env_file_path)
 load_dotenv()
+
+# Diagnostic: Log CHUNKING_ENGINE value at startup (before logger setup)
+chunking_engine_startup = os.getenv("CHUNKING_ENGINE", "not set (default: semchunk)")
+print(f"[Startup] .env file exists: {env_file_exists} at {env_file_path}")
+print(f"[Startup] CHUNKING_ENGINE environment variable: {chunking_engine_startup}")
+if chunking_engine_startup.lower() == "mindchunk":
+    print("[Startup] ✓ MindChunk is ENABLED - LLM-based chunking will be used")
+else:
+    print(f"[Startup] Using chunking engine: {chunking_engine_startup}")
 
 # Create logs directory
 os.makedirs("logs", exist_ok=True)
@@ -491,19 +502,35 @@ file_handler = TimestampedRotatingFileHandler(
 )
 file_handler.setFormatter(unified_formatter)
 
-# Determine log level (override with DEBUG if VERBOSE_LOGGING is enabled)
-if config.VERBOSE_LOGGING:
+# Determine log level - always use DEBUG for full verbose logging
+# Override with VERBOSE_LOGGING env var if set, otherwise default to DEBUG
+if hasattr(config, 'VERBOSE_LOGGING') and config.VERBOSE_LOGGING:
     log_level = logging.DEBUG
     print(f"[INIT] VERBOSE_LOGGING enabled - setting log level to DEBUG")
 else:
-    log_level_str = config.LOG_LEVEL
-    log_level = getattr(logging, log_level_str, logging.INFO)
+    # Default to DEBUG for full verbose logging
+    log_level_str = getattr(config, 'LOG_LEVEL', 'DEBUG')
+    log_level = getattr(logging, log_level_str.upper(), logging.DEBUG)
+    print(f"[INIT] Setting log level to {log_level_str.upper()} (DEBUG) for full verbose logging")
 
 logging.basicConfig(
-    level=log_level,
+    level=logging.DEBUG,  # Always DEBUG for full verbose logging
     handlers=[console_handler, file_handler],
     force=True
 )
+
+# Set all loggers to DEBUG level for full verbose logging
+root_logger = logging.getLogger()
+root_logger.setLevel(logging.DEBUG)
+
+# Set specific loggers to DEBUG
+for logger_name in [
+    'services', 'llm_chunking', 'tasks', 'clients', 'agents', 
+    'routers', 'utils', 'config', 'celery', 'uvicorn'
+]:
+    logger = logging.getLogger(logger_name)
+    logger.setLevel(logging.DEBUG)
+    logger.propagate = True
 
 # Filter to downgrade "Invalid HTTP request" warnings from uvicorn to DEBUG level
 # These are usually harmless client errors (bots, scanners, malformed requests)
@@ -544,36 +571,14 @@ if os.getenv('UVICORN_WORKER_ID') is None:
     logger.debug("Frontend logger configured to write to unified log file: logs/app.log")
 
 # Suppress asyncio CancelledError and Windows Proactor errors during shutdown
-# IMPORTANT: Never suppress WARNING or ERROR level logs - only suppress DEBUG/INFO for harmless errors
+# DISABLED for verbose logging - show everything
 class CancelledErrorFilter(logging.Filter):
     """Filter out CancelledError and Windows Proactor errors during graceful shutdown.
     
-    CRITICAL: This filter NEVER suppresses WARNING or ERROR level logs.
-    Only DEBUG and INFO level logs for known harmless errors are filtered.
+    DISABLED: For verbose logging, we show everything.
     """
     def filter(self, record):
-        # CRITICAL: NEVER suppress WARNING, ERROR, or CRITICAL level logs
-        # Always allow through any log at WARNING level or above
-        if record.levelno >= logging.WARNING:
-            return True
-        
-        # Only filter DEBUG and INFO level logs for known harmless errors
-        if record.exc_info:
-            exc_type = record.exc_info[0]
-            if exc_type and issubclass(exc_type, asyncio.CancelledError):
-                return False
-        message = record.getMessage()
-        # Filter out CancelledError messages (only at DEBUG/INFO level)
-        if 'asyncio.exceptions.CancelledError' in message:
-            return False
-        # Filter out Windows Proactor pipe transport errors (harmless cleanup errors, only at DEBUG/INFO)
-        if '_ProactorBasePipeTransport._call_connection_lost' in message:
-            return False
-        if 'Exception in callback _ProactorBasePipeTransport' in message:
-            return False
-        # Filter out multiprocess shutdown tracebacks (only at DEBUG/INFO level)
-        if 'Process SpawnProcess' in message and 'Traceback' in message:
-            return False
+        # For verbose logging, show everything - no filtering
         return True
 
 asyncio_logger = logging.getLogger('asyncio')
@@ -582,19 +587,15 @@ asyncio_logger.addFilter(CancelledErrorFilter())
 # Add filter to main logger
 logger.addFilter(CancelledErrorFilter())
 
-# Suppress verbose HTTP client logs (httpx/httpcore make many API calls)
-logging.getLogger('httpx').setLevel(logging.WARNING)
-logging.getLogger('httpcore').setLevel(logging.WARNING)
-
-# Suppress verbose COS SDK logs (qcloud_cos produces excessive DEBUG logs during backup)
-# The backup_scheduler service logs are tagged with SERV, these external libs should be quiet
-logging.getLogger('qcloud_cos').setLevel(logging.WARNING)
-logging.getLogger('qcloud_cos.cos_client').setLevel(logging.WARNING)
-logging.getLogger('qcloud_cos.cos_auth').setLevel(logging.WARNING)
-
-# Suppress verbose urllib3 connection pool logs (used by COS SDK and other HTTP clients)
-logging.getLogger('urllib3').setLevel(logging.WARNING)
-logging.getLogger('urllib3.connectionpool').setLevel(logging.WARNING)
+# For verbose logging, set external libraries to DEBUG as well
+# (You can change these back to WARNING if they're too noisy)
+logging.getLogger('httpx').setLevel(logging.DEBUG)
+logging.getLogger('httpcore').setLevel(logging.DEBUG)
+logging.getLogger('qcloud_cos').setLevel(logging.DEBUG)
+logging.getLogger('qcloud_cos.cos_client').setLevel(logging.DEBUG)
+logging.getLogger('qcloud_cos.cos_auth').setLevel(logging.DEBUG)
+logging.getLogger('urllib3').setLevel(logging.DEBUG)
+logging.getLogger('urllib3.connectionpool').setLevel(logging.DEBUG)
 
 class OpenAIHTTPLogFilter(logging.Filter):
     """Filter to reformat OpenAI SDK HTTP logs to match project log format.

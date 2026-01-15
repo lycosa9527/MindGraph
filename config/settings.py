@@ -98,7 +98,7 @@ class Config:
     @property
     def QWEN_MODEL_GENERATION(self):
         """Model for generation tasks (higher quality)"""
-        return self._get_cached_value('QWEN_MODEL_GENERATION', 'qwen-plus')
+        return self._get_cached_value('QWEN_MODEL_GENERATION', 'qwen-plus-latest')
     
     # ============================================================================
     # DASHSCOPE MULTI-LLM SUPPORT

@@ -1,0 +1,38 @@
+[tool.pyright]
+include = ["**/*.py"]
+exclude = [
+    "**/__pycache__",
+    "**/node_modules",
+    "**/venv",
+    "**/.venv",
+    "**/dist",
+    "**/build"
+]
+venvPath = "."
+venv = "venv"
+pythonVersion = "3.13"
+typeCheckingMode = "basic"
+reportMissingImports = true
+reportMissingTypeStubs = false
+pythonPlatform = "Linux"
+extraPaths = ["C:\\Users\\roywa\\AppData\\Roaming\\Python\\Python313\\site-packages"]
+
+[tool.pytest.ini_options]
+# Pytest configuration for MindGraph
+pythonpath = ["."]
+python_files = "test_*.py"
+python_classes = "Test*"
+python_functions = "test_*"
+testpaths = ["tests"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+addopts = [
+    "-v",
+    "--strict-markers",
+    "--tb=short",
+    "--disable-warnings"
+]
+markers = [
+    "asyncio: marks tests as async (deselect with '-m \"not asyncio\"')",
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')"
+]

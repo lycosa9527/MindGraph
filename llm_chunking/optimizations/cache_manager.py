@@ -36,8 +36,8 @@ class CacheManager:
         self.redis_client = redis_client
         if redis_client is None:
             try:
-                from services.redis_client import get_redis_client
-                self.redis_client = get_redis_client()
+                from services.redis_client import get_redis
+                self.redis_client = get_redis()
             except Exception as e:
                 logger.warning(f"Redis client not available, using memory cache only: {e}")
                 self.redis_client = None

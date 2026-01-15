@@ -12,7 +12,7 @@ Proprietary License
 """
 
 import logging
-from celery_app import celery_app
+from config.celery import celery_app
 from config.database import SessionLocal
 from services.knowledge_space_service import KnowledgeSpaceService
 from models.knowledge_space import DocumentBatch, KnowledgeDocument
@@ -29,14 +29,39 @@ def process_document_task(self, user_id: int, document_id: int):
         user_id: User ID
         document_id: Document ID
     """
+    import traceback
     db = SessionLocal()
     try:
-        logger.info(f"[KnowledgeSpaceTask] Starting document processing: document_id={document_id}, user_id={user_id}")
+        logger.info(f"[KnowledgeSpaceTask] ===== Starting document processing: document_id={document_id}, user_id={user_id} =====")
         service = KnowledgeSpaceService(db, user_id)
+        
+        # Check document exists
+        doc = db.query(KnowledgeDocument).filter(KnowledgeDocument.id == document_id).first()
+        if not doc:
+            raise ValueError(f"Document {document_id} not found")
+        
+        logger.info(f"[KnowledgeSpaceTask] Document found: file='{doc.file_name}', status={doc.status}")
+        
+        # Process document
         service.process_document(document_id)
-        logger.info(f"[KnowledgeSpaceTask] Successfully processed document {document_id} for user {user_id}")
+        
+        # Verify chunks were created
+        db.refresh(doc)
+        chunk_count = doc.chunk_count or 0
+        logger.info(f"[KnowledgeSpaceTask] ✓ Document processing complete: document_id={document_id}, chunk_count={chunk_count}, status={doc.status}")
+        
+        if chunk_count == 0:
+            logger.error(f"[KnowledgeSpaceTask] ⚠ WARNING: Document {document_id} processed but chunk_count is 0!")
+            logger.error(f"[KnowledgeSpaceTask] Document status: {doc.status}, progress: {doc.processing_progress}")
+        
     except Exception as e:
-        logger.error(f"[KnowledgeSpaceTask] Failed to process document {document_id} for user {user_id}: {e}")
+        import traceback
+        logger.error(f"[KnowledgeSpaceTask] ✗ Failed to process document {document_id} for user {user_id}: {e}")
+        logger.error(f"[KnowledgeSpaceTask] Full traceback:")
+        logger.error(traceback.format_exc())
+        logger.error(f"[KnowledgeSpaceTask] Exception type: {type(e).__name__}")
+        logger.error(f"[KnowledgeSpaceTask] Exception args: {e.args}")
+        
         # Update document status to failed
         try:
             doc = db.query(KnowledgeDocument).filter(KnowledgeDocument.id == document_id).first()
@@ -46,13 +71,15 @@ def process_document_task(self, user_id: int, document_id: int):
                 doc.processing_progress = None
                 doc.processing_progress_percent = 0
                 db.commit()
+                logger.info(f"[KnowledgeSpaceTask] Updated document {document_id} status to 'failed'")
         except Exception as update_error:
-            logger.error(f"[KnowledgeSpaceTask] Failed to update document status: {update_error}")
+            logger.error(f"[KnowledgeSpaceTask] Failed to update document status: {update_error}", exc_info=True)
         
         # Retry with exponential backoff
         raise self.retry(exc=e, countdown=60 * (2 ** self.request.retries))
     finally:
         db.close()
+        logger.info(f"[KnowledgeSpaceTask] ===== Finished processing document {document_id} =====")
 
 
 @celery_app.task(name='knowledge_space.update_document', bind=True, max_retries=3)

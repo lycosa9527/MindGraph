@@ -45,9 +45,21 @@ class BoundaryAgent:
         if llm_service is None:
             try:
                 from services.llm_service import llm_service
-                self.llm_service = llm_service
+                # Verify LLM service is initialized
+                if not hasattr(llm_service, 'client_manager') or not llm_service.client_manager.is_initialized():
+                    logger.warning(
+                        "[BoundaryAgent] LLM service not initialized. "
+                        "Boundary detection will use pattern matching fallback."
+                    )
+                    self.llm_service = None
+                else:
+                    self.llm_service = llm_service
             except Exception as e:
-                logger.warning(f"LLM service not available: {e}")
+                logger.warning(
+                    f"[BoundaryAgent] LLM service not available: {e}. "
+                    "Boundary detection will use pattern matching fallback."
+                )
+                self.llm_service = None
         
         self.pattern_matcher = PatternMatcher()
         self.use_embedding_filter = use_embedding_filter

@@ -143,15 +143,12 @@ Transform natural language into professional visual diagrams. **API-first platfo
 **Redis Setup | Redis设置:**
 
 ```bash
-# Option 1: Docker (Recommended for Redis 8.2+ | 推荐用于Redis 8.2+)
-docker run -d --name redis -p 6379:6379 redis:8.2-alpine
-
-# Option 2: Ubuntu/Debian (Redis 7.0.x)
+# Option 1: Ubuntu/Debian (Redis 7.0.x)
 sudo apt install redis-server
 sudo systemctl start redis-server
 sudo systemctl enable redis-server
 
-# Option 3: macOS
+# Option 2: macOS
 brew install redis
 brew services start redis
 
@@ -425,61 +422,6 @@ Transform any diagram into an interactive learning experience | 将任何图表�
 ✅ **Multi-Angle Learning | 多角度学习** - Tests understanding from 4 cognitive perspectives | 从4个认知角度测试理解  
 ✅ **Immediate Feedback | 即时反馈** - Real-time validation with explanations | 实时验证和解释  
 ✅ **Visual Learning | 视觉学习** - Node highlighting and animations | 节点高亮和动画  
-
----
-
-## 🐳 Docker Deployment | Docker部署
-
-### Quick Start with Docker | Docker快速开始
-
-**Note | 注意:** MindGraph requires Redis. Use Docker Compose (recommended) or ensure Redis is running separately.  
-**注意：** MindGraph需要Redis。推荐使用Docker Compose，或确保Redis单独运行。
-
-**Option 1: Docker Compose (Recommended | 推荐)**
-
-```bash
-# Copy environment template
-cp docker/docker.env.example .env
-
-# Edit .env with your configuration (QWEN_API_KEY, REDIS_URL, etc.)
-
-# Start application with Redis
-docker-compose -f docker/docker-compose.yml up -d
-
-# View logs
-docker logs -f mindgraph-app
-docker logs -f mindgraph-redis
-```
-
-**Option 2: Separate Containers | 独立容器**
-
-```bash
-# Start Redis first
-docker run -d --name redis -p 6379:6379 redis:8.4-alpine
-
-# Build frontend first | 先构建前端
-cd frontend && npm install && npm run build && cd ..
-
-# Build and run MindGraph
-docker build -f docker/Dockerfile -t mindgraph:latest .
-
-docker run -d -p 9527:9527 \
-  -e QWEN_API_KEY=your-api-key \
-  -e REDIS_URL=redis://host.docker.internal:6379/0 \
-  -e EXTERNAL_HOST=your-server-ip \
-  --name mindgraph \
-  --link redis:redis \
-  mindgraph:latest
-
-# View logs
-docker logs -f mindgraph
-```
-
-**Docker Compose includes | Docker Compose包含:**
-- ✅ MindGraph application | MindGraph应用
-- ✅ Redis 8.4 (required | 必需)
-- ✅ Network configuration | 网络配置
-- ✅ Volume persistence | 数据持久化
 
 ---
 

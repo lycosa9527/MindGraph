@@ -35,8 +35,9 @@ import warnings
 warnings.filterwarnings('ignore', category=RuntimeWarning, module='multiprocessing')
 
 # Configure logging early to catch uvicorn startup messages
+# Set to DEBUG for full verbose logging
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging.DEBUG,
     format='%(message)s',
     handlers=[logging.StreamHandler(sys.stdout)]
 )
@@ -134,7 +135,7 @@ def start_celery_worker():
         print("[WARNING] Qdrant server not configured (QDRANT_HOST not set).")
         print("          Celery worker requires Qdrant server for concurrent access.")
         print("          Setup instructions: docs/QDRANT_SETUP.md")
-        print("          Quick start: docker run -d -p 6333:6333 qdrant/qdrant")
+        print("          Quick start: See docs/QDRANT_SETUP.md for Qdrant installation")
         print("          Then add QDRANT_HOST=localhost:6333 to .env")
         return None
     
@@ -144,12 +145,12 @@ def start_celery_worker():
     # Determine Python executable
     python_exe = sys.executable
     
-    # Build celery command
+    # Build celery command with DEBUG logging
     celery_cmd = [
         python_exe, '-m', 'celery',
-        '-A', 'celery_app',
+        '-A', 'config.celery',
         'worker',
-        '--loglevel=info',
+        '--loglevel=debug',  # DEBUG for full verbose logging
         '--concurrency=2',
         '-Q', 'default,knowledge',  # Listen to both queues
     ]
@@ -159,13 +160,17 @@ def start_celery_worker():
         celery_cmd.extend(['--pool=solo'])  # Windows doesn't support prefork
     
     try:
-        # Start worker process
+        # Start worker process with console output for logging
+        # Use None for stdout/stderr to show logs in console
+        # Start Celery worker with logs going to console
+        # Use PIPE and redirect to stdout/stderr so we see all logs
         _celery_worker_process = subprocess.Popen(
             celery_cmd,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
+            stdout=sys.stdout,  # Direct output to console
+            stderr=sys.stderr,  # Direct errors to console
             cwd=os.path.dirname(os.path.abspath(__file__)),
             creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if sys.platform == 'win32' else 0,
+            bufsize=1,  # Line buffered for real-time output
         )
         
         # Register cleanup on exit
@@ -209,15 +214,29 @@ def run_uvicorn():
     
     # Setup signal handlers for graceful shutdown (Linux/macOS)
     # This ensures SIGTERM kills all worker processes, not just the main process
+    _shutdown_in_progress = False
+    
     if sys.platform != 'win32':
         def signal_handler(signum, _frame):
             """Handle SIGTERM/SIGINT by killing entire process group"""
+            global _shutdown_in_progress
+            
+            # Prevent infinite loop - only handle shutdown once
+            if _shutdown_in_progress:
+                return
+            
+            _shutdown_in_progress = True
             sig_name = 'SIGTERM' if signum == signal.SIGTERM else 'SIGINT'
             print(f"\n[SHUTDOWN] Received {sig_name}, stopping all workers...")
             
+            # Stop Celery worker first
+            stop_celery_worker()
+            
             # Kill entire process group (includes all uvicorn workers)
             try:
-                os.killpg(os.getpgid(os.getpid()), signal.SIGTERM)
+                pgid = os.getpgid(os.getpid())
+                # Use SIGKILL to avoid recursive signal handling
+                os.killpg(pgid, signal.SIGKILL)
             except ProcessLookupError:
                 pass  # Process group already dead
             except Exception as e:
@@ -346,6 +365,27 @@ def run_uvicorn():
                 access_log=False,  # Disable HTTP request logging (reduces noise)
                 limit_concurrency=1000 if not reload else None,
             )
+        except OSError as e:
+            # Handle port binding errors
+            if e.errno == 98 or "Address already in use" in str(e) or "address is already in use" in str(e).lower():
+                print(f"\n[ERROR] Port {port} is already in use!")
+                print(f"        Another process is using port {port}.")
+                print("\n        Solutions:")
+                print(f"        1. Stop the process using port {port}:")
+                if sys.platform == 'win32':
+                    print(f"           netstat -ano | findstr :{port}")
+                    print(f"           taskkill /PID <PID> /F")
+                else:
+                    print(f"           lsof -ti:{port} | xargs kill -9")
+                    print(f"           or: sudo fuser -k {port}/tcp")
+                print(f"        2. Use a different port:")
+                print(f"           Set PORT=<different_port> in .env")
+                print(f"           Example: PORT=9528")
+                print(f"        3. Check if another MindGraph instance is running")
+                sys.exit(1)
+            else:
+                # Re-raise other OSErrors
+                raise
         except KeyboardInterrupt:
             # Graceful shutdown on Ctrl+C
             print("\n" + "=" * 80)

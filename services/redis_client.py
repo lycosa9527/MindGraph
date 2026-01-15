@@ -205,7 +205,7 @@ def init_redis_sync() -> bool:
                 "  Ubuntu:  sudo apt install redis-server",
                 "           sudo systemctl start redis-server",
                 "",
-                "  Docker:  docker run -d --name redis -p 6379:6379 redis:alpine",
+                "  macOS:   brew install redis && brew services start redis",
                 "",
                 "Then set REDIS_URL in your .env file (default: redis://localhost:6379/0)",
             ]

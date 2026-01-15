@@ -7,6 +7,108 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [5.5.0] - 2026-01-15 - Enhanced Logging, Celery Refactoring, and Error Handling Improvements
+
+### Added
+
+- **Celery Configuration Refactoring** (`config/celery.py`)
+  - Moved Celery app configuration from `celery_app.py` to `config/celery.py` for better organization
+  - Added unified logging formatter matching main application format
+  - Implemented worker process initialization with automatic service setup
+  - Added Redis and LLM service initialization in Celery worker processes
+  - Enhanced logging with file handler writing to `logs/app.log` (same as main app)
+  - Added worker process lifecycle logging for better debugging
+
+- **Comprehensive Verbose Logging** (`main.py`, `run_server.py`, `llm_chunking/chunker.py`, `services/llm_chunking_service.py`, `services/knowledge_space_service.py`)
+  - Enabled DEBUG-level logging across all application modules
+  - Added detailed logging throughout chunking pipeline with step-by-step progress indicators
+  - Implemented structured logging with document IDs for traceability
+  - Added chunking method detection (semchunk vs mindchunk) in logs
+  - Enhanced error logging with full tracebacks and exception details
+  - Added validation logging for empty text, chunk counts, and processing results
+
+- **LLM Service Initialization Validation** (`llm_chunking/agents/boundary_agent.py`, `llm_chunking/agents/structure_agent.py`)
+  - Added checks to verify LLM service is initialized before use
+  - Graceful fallback to pattern matching/heuristics when LLM service unavailable
+  - Clear warning messages when LLM service initialization fails
+  - Prevents runtime errors from uninitialized services
+
+- **Project Configuration** (`pyproject.toml`)
+  - Added pyproject.toml for modern Python project configuration
+  - Configured Pyright type checking with Python 3.13
+  - Migrated pytest configuration from pytest.ini to pyproject.toml
+  - Centralized project metadata and tool configurations
+
+- **Enhanced Error Handling** (`llm_chunking/chunker.py`, `services/llm_chunking_service.py`, `tasks/knowledge_space_tasks.py`)
+  - Added input validation for empty text in chunking services
+  - Improved error messages with document IDs and context
+  - Added chunk validation with detailed error reporting
+  - Enhanced task error handling with full traceback logging
+  - Better error propagation without silent failures
+
+- **Rate Limiting Improvements** (`services/knowledge_space_service.py`)
+  - Added upfront rate limit checking for batch embedding operations
+  - Improved error messages for rate limit exceeded scenarios
+  - Added batch size estimation for accurate rate limit tracking
+  - Enhanced logging for embedding operations with success/failure indicators
+
+### Changed
+
+- **Default Generation Model** (`config/settings.py`)
+  - Changed `QWEN_MODEL_GENERATION` default from `qwen-plus` to `qwen-plus-latest`
+  - Ensures users get the latest model version by default
+
+- **Logging Configuration** (`main.py`, `run_server.py`)
+  - Changed default log level to DEBUG for full verbose logging
+  - Removed log filtering for CancelledError and Windows Proactor errors (now shown for debugging)
+  - Set external library loggers (httpx, httpcore, urllib3, qcloud_cos) to DEBUG level
+  - Added startup diagnostic logging for CHUNKING_ENGINE environment variable
+
+- **Chunking Service Error Handling** (`services/knowledge_space_service.py`)
+  - Added fallback warnings when hierarchical/custom modes not supported with mindchunk
+  - Improved chunking mode detection and logging
+  - Enhanced document update logging with chunk counts and processing status
+
+- **Redis Client Import** (`llm_chunking/optimizations/cache_manager.py`)
+  - Updated import from `get_redis_client()` to `get_redis()` to match refactored API
+
+### Fixed
+
+- **Pattern Matcher Bug** (`llm_chunking/patterns/pattern_matcher.py`)
+  - Fixed `bisect_left` parameter name from `low/high` to `lo/hi` (Python 3.13 compatibility)
+  - Resolves potential errors in binary search boundary detection
+
+- **Celery Task Import** (`tasks/knowledge_space_tasks.py`)
+  - Updated import from `celery_app` to `config.celery` to match refactored structure
+  - Ensures tasks can be discovered and executed correctly
+
+- **Chunking Mode Compatibility** (`services/knowledge_space_service.py`)
+  - Fixed hierarchical and custom chunking modes to properly respect CHUNKING_ENGINE setting
+  - Added proper fallback when mindchunk doesn't support specific modes
+  - Improved error messages when mode is not supported
+
+### Removed
+
+- **Legacy Configuration Files**
+  - Removed `celery_app.py` (moved to `config/celery.py`)
+  - Removed `pytest.ini` (migrated to `pyproject.toml`)
+
+### Technical Details
+
+- **Logging Architecture**
+  - Unified logging format: `[HH:MM:SS] LEVEL | MODULE | [PID] message`
+  - All logs written to `logs/app.log` with rotation (10MB max, 10 backups)
+  - Celery workers use same logging format as main application
+  - Debug-level logging enabled for all modules including external libraries
+
+- **Celery Worker Initialization**
+  - Services initialized in worker processes via `worker_process_init` signal
+  - Redis initialized before LLM service (dependency order)
+  - LLM service initialization verified before use
+  - Graceful degradation when services unavailable
+
+---
+
 ## [5.4.0] - 2026-01-14 - Embedding-Based Semantic Chunking and Configuration Improvements
 
 ### Added

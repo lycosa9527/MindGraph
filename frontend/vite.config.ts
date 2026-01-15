@@ -10,7 +10,6 @@ const version = readFileSync(resolve(__dirname, '../VERSION'), 'utf-8').trim()
 // Get backend host from environment variable (for WSL/remote scenarios)
 // Default to localhost for normal development
 // For WSL: Use Windows host IP (e.g., VITE_BACKEND_HOST=http://172.x.x.x:9527)
-// Or use host.docker.internal if available
 const backendHost = process.env.VITE_BACKEND_HOST || 'http://localhost:9527'
 const backendHostWs = backendHost.replace('http://', 'ws://').replace('https://', 'wss://')
 
