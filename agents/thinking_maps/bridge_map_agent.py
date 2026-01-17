@@ -1,4 +1,4 @@
-﻿"""
+"""
 bridge map agent module.
 """
 from typing import Any, Dict, List, Optional, Tuple
@@ -75,8 +75,7 @@ class BridgeMapAgent(BaseAgent):
                     logger.debug(f"BridgeMapAgent: Mode 2 - Pairs + Relationship provided, FIXED dimension '{fixed_dimension}' - preserving {len(existing_analogies)} pairs")
                 else:
                     logger.debug(f"BridgeMapAgent: Mode 1 - Only pairs provided, will identify relationship pattern from {len(existing_analogies)} pairs")
-                spec = await self._identify_relationship_pattern  # pylint: disable=protected-access(
-                    existing_analogies,
+                spec = await self._identify_relationship_pattern(                    existing_analogies,
                     language,
                     user_id=user_id,
                     organization_id=organization_id,
@@ -87,7 +86,7 @@ class BridgeMapAgent(BaseAgent):
             elif fixed_dimension:
                 # Case 3: Relationship-only mode - user provided ONLY the relationship, no pairs
                 logger.debug(f"BridgeMapAgent: Mode 3 - Relationship-only mode, generating pairs for '{fixed_dimension}'")
-                spec = await self._generate_from_relationship_only  # pylint: disable=protected-access(
+                spec = await self._generate_from_relationship_only(
                     fixed_dimension,
                     language,
                     user_id=user_id,
@@ -97,7 +96,7 @@ class BridgeMapAgent(BaseAgent):
                 )
             else:
                 # Case 4: Full generation mode - no pairs, no fixed dimension
-                spec = await self._generate_bridge_map_spec  # pylint: disable=protected-access(
+                spec = await self._generate_bridge_map_spec(
                     prompt,
                     language,
                     dimension_preference,
@@ -116,7 +115,7 @@ class BridgeMapAgent(BaseAgent):
             # Basic validation - skip minimum count check in auto-complete mode
             logger.debug("Basic validation started")
             is_autocomplete_mode = existing_analogies and len(existing_analogies) > 0
-            is_valid, validation_msg = self._basic_validation  # pylint: disable=protected-access(spec, skip_min_count=is_autocomplete_mode)
+            is_valid, validation_msg = self._basic_validation(spec, skip_min_count=is_autocomplete_mode)
             if not is_valid:
                 logger.warning(f"BridgeMapAgent: Basic validation failed: {validation_msg}")
                 return {
@@ -128,7 +127,7 @@ class BridgeMapAgent(BaseAgent):
 
             # Enhance the spec with layout and dimensions
             logger.debug("Enhancement phase started")
-            enhanced_spec = self._enhance_spec  # pylint: disable=protected-access(spec)
+            enhanced_spec = self._enhance_spec(spec)
 
             logger.info(f"BridgeMapAgent: Bridge map generation completed successfully")
             logger.debug(f"Final result keys: {list(enhanced_spec.keys())}")
@@ -140,7 +139,7 @@ class BridgeMapAgent(BaseAgent):
                 'diagram_type': self.diagram_type
             }
 
-        except Exception as  # pylint: disable=broad-except e:
+        except Exception as e:
             logger.error(f"BridgeMapAgent: Bridge map generation failed: {e}")
             return {
                 'success': False,
@@ -194,7 +193,7 @@ class BridgeMapAgent(BaseAgent):
 
             return True, "Basic validation passed"
 
-        except Exception as  # pylint: disable=broad-except e:
+        except Exception as e:
             return False, f"Basic validation error: {str(e)}"
 
     async def _generate_bridge_map_spec(
@@ -290,7 +289,7 @@ class BridgeMapAgent(BaseAgent):
 
             return spec
 
-        except Exception as  # pylint: disable=broad-except e:
+        except Exception as e:
             logger.error(f"BridgeMapAgent: Error in spec generation: {e}")
             return None
 
@@ -481,7 +480,7 @@ Return JSON: {"dimension": "pattern", "analogies": [{"left": "X", "right": "Y"}.
 
             return spec
 
-        except Exception as  # pylint: disable=broad-except e:
+        except Exception as e:
             logger.error(f"BridgeMapAgent: Error in auto-complete: {e}")
             # Return spec with just the existing pairs, preserving fixed_dimension if provided
             return {
@@ -591,7 +590,7 @@ Return JSON: {"dimension": "pattern", "analogies": [{"left": "X", "right": "Y"}.
 
             return spec
 
-        except Exception as  # pylint: disable=broad-except e:
+        except Exception as e:
             logger.error(f"BridgeMapAgent: Error in relationship-only mode: {e}")
             return None
 
@@ -658,7 +657,7 @@ Return JSON: {"dimension": "pattern", "analogies": [{"left": "X", "right": "Y"}.
 
             return enhanced_spec
 
-        except Exception as  # pylint: disable=broad-except e:
+        except Exception as e:
             logger.error(f"BridgeMapAgent: Error enhancing spec: {e}")
             return spec
 
@@ -681,14 +680,14 @@ Return JSON: {"dimension": "pattern", "analogies": [{"left": "X", "right": "Y"}.
                 return {'success': True, 'spec': spec}
 
             # Enhance the spec
-            enhanced_spec = self._enhance_spec  # pylint: disable=protected-access(spec)
+            enhanced_spec = self._enhance_spec(spec)
 
             return {
                 'success': True,
                 'spec': enhanced_spec
             }
 
-        except Exception as  # pylint: disable=broad-except e:
+        except Exception as e:
             logger.error(f"BridgeMapAgent: Error enhancing spec: {e}")
             return {
                 'success': False,

@@ -1,4 +1,4 @@
-﻿"""
+"""
 base agent module.
 """
 from abc import ABC, abstractmethod
@@ -47,7 +47,11 @@ class BaseAgent(ABC):
         self.logger = logger
 
     @abstractmethod
-    def generate_graph(self, user_prompt: str, language: str = 'zh') -> Dict[str, Any]:
+    async def generate_graph(
+        self,
+        user_prompt: str,
+        language: str = 'zh'
+    ) -> Dict[str, Any]:
         """
         Generate a graph specification from user prompt.
 

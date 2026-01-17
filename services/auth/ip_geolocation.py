@@ -1,4 +1,4 @@
-﻿"""
+"""
 ip geolocation module.
 """
 from datetime import datetime, timezone
@@ -604,7 +604,7 @@ class IPGeolocationService:
         if ip and (ip.startswith("127.") or ip.startswith("::1")):
             try:
                 from config.settings import config
-                if config.DEBUG:
+                if config.debug:
                     # Return Beijing location for localhost in DEBUG mode
                     localhost_location = {
                         "province": "北京",

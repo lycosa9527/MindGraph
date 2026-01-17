@@ -1,4 +1,4 @@
-﻿from typing import Dict, List, Tuple, Any, Optional
+from typing import Dict, List, Tuple, Any, Optional
 import logging
 
 
@@ -45,8 +45,7 @@ class FlowMapAgent(BaseAgent):
         """Generate a flow map from a prompt."""
         try:
             # Generate the initial flow map specification
-            spec = await self._generate_flow_map_spec  # pylint: disable=protected-access(
-                prompt,
+            spec = await self._generate_flow_map_spec(                prompt,
                 language,
                 user_id=user_id,
                 organization_id=organization_id,
@@ -84,7 +83,7 @@ class FlowMapAgent(BaseAgent):
                 'diagram_type': self.diagram_type
             }
 
-        except Exception as  # pylint: disable=broad-except e:
+        except Exception as e:
             logger.error(f"FlowMapAgent: Flow map generation failed: {e}")
             return {
                 'success': False,
@@ -202,7 +201,7 @@ class FlowMapAgent(BaseAgent):
 
             return spec
 
-        except Exception as  # pylint: disable=broad-except e:
+        except Exception as e:
             logger.error(f"FlowMapAgent: Error in spec generation: {e}")
             return None
 
@@ -222,7 +221,7 @@ class FlowMapAgent(BaseAgent):
                 return False, "Missing or invalid steps"
 
             return True, "Valid flow map specification"
-        except Exception as  # pylint: disable=broad-except e:
+        except Exception as e:
             return False, f"Validation error: {str(e)}"
 
     MAX_STEPS: int = 15
@@ -435,7 +434,7 @@ class FlowMapAgent(BaseAgent):
             }
 
             return {"success": True, "spec": enhanced_spec}
-        except Exception as  # pylint: disable=broad-except exc:
+        except Exception as exc:
             return {"success": False, "error": f"Unexpected error: {exc}"}
 
 

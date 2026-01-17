@@ -1,4 +1,4 @@
-﻿from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 import logging
 
 
@@ -52,8 +52,7 @@ class DoubleBubbleMapAgent(BaseAgent):
             logger.debug(f"DoubleBubbleMapAgent: Starting double bubble map generation for prompt")
 
             # Generate the double bubble map specification
-            spec = await self._generate_double_bubble_map_spec  # pylint: disable=protected-access(
-                prompt,
+            spec = await self._generate_double_bubble_map_spec(                prompt,
                 language,
                 user_id=user_id,
                 organization_id=organization_id,
@@ -86,7 +85,7 @@ class DoubleBubbleMapAgent(BaseAgent):
                 )
 
                 # Retry generation by calling the spec generation method again with enhanced prompt
-                retry_spec = await self._generate_double_bubble_map_spec  # pylint: disable=protected-access(
+                retry_spec = await self._generate_double_bubble_map_spec(
                     retry_user_prompt,
                     language,
                     user_id=user_id,
@@ -115,7 +114,7 @@ class DoubleBubbleMapAgent(BaseAgent):
                     }
 
             # Enhance the spec with layout and dimensions
-            enhanced_spec = self._enhance_spec  # pylint: disable=protected-access(spec)
+            enhanced_spec = self._enhance_spec(spec)
 
             logger.info(f"DoubleBubbleMapAgent: Double bubble map generation completed successfully")
             return {
@@ -124,7 +123,7 @@ class DoubleBubbleMapAgent(BaseAgent):
                 'diagram_type': self.diagram_type
             }
 
-        except Exception as  # pylint: disable=broad-except e:
+        except Exception as e:
             logger.error(f"DoubleBubbleMapAgent: Double bubble map generation failed: {e}")
             return {
                 'success': False,
@@ -247,7 +246,7 @@ class DoubleBubbleMapAgent(BaseAgent):
 
             return spec
 
-        except Exception as  # pylint: disable=broad-except e:
+        except Exception as e:
             logger.error(f"DoubleBubbleMapAgent: Error in spec generation: {e}")
             return None
 
@@ -288,7 +287,7 @@ class DoubleBubbleMapAgent(BaseAgent):
 
             return enhanced_spec
 
-        except Exception as  # pylint: disable=broad-except e:
+        except Exception as e:
             logger.error(f"DoubleBubbleMapAgent: Error enhancing spec: {e}")
             return spec
 
@@ -341,7 +340,7 @@ class DoubleBubbleMapAgent(BaseAgent):
 
             return True, "Specification is valid"
 
-        except Exception as  # pylint: disable=broad-except e:
+        except Exception as e:
             return False, f"Validation error: {str(e)}"
 
     async def enhance_spec(self, spec: Dict) -> Dict[str, Any]:
@@ -362,14 +361,14 @@ class DoubleBubbleMapAgent(BaseAgent):
                 return {'success': True, 'spec': spec}
 
             # Enhance the spec
-            enhanced_spec = self._enhance_spec  # pylint: disable=protected-access(spec)
+            enhanced_spec = self._enhance_spec(spec)
 
             return {
                 'success': True,
                 'spec': enhanced_spec
             }
 
-        except Exception as  # pylint: disable=broad-except e:
+        except Exception as e:
             logger.error(f"DoubleBubbleMapAgent: Error enhancing spec: {e}")
             return {
                 'success': False,

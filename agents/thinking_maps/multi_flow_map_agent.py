@@ -1,4 +1,4 @@
-﻿from typing import Dict, List, Any, Tuple, Optional
+from typing import Dict, List, Any, Tuple, Optional
 import logging
 
 
@@ -42,8 +42,7 @@ class MultiFlowMapAgent(BaseAgent):
         """Generate a multi-flow map from a prompt."""
         try:
             # Generate the initial multi-flow map specification
-            spec = await self._generate_multi_flow_map_spec  # pylint: disable=protected-access(
-                prompt,
+            spec = await self._generate_multi_flow_map_spec(                prompt,
                 language,
                 user_id=user_id,
                 organization_id=organization_id,
@@ -81,7 +80,7 @@ class MultiFlowMapAgent(BaseAgent):
                 'diagram_type': self.diagram_type
             }
 
-        except Exception as  # pylint: disable=broad-except e:
+        except Exception as e:
             logger.error(f"MultiFlowMapAgent: Multi-flow map generation failed: {e}")
             return {
                 'success': False,
@@ -150,7 +149,7 @@ class MultiFlowMapAgent(BaseAgent):
 
             return spec
 
-        except Exception as  # pylint: disable=broad-except e:
+        except Exception as e:
             logger.error(f"MultiFlowMapAgent: Error in spec generation: {e}")
             return None
 
@@ -183,7 +182,7 @@ class MultiFlowMapAgent(BaseAgent):
                 return False, "Missing or invalid effects"
 
             return True, "Valid multi-flow map specification"
-        except Exception as  # pylint: disable=broad-except e:
+        except Exception as e:
             return False, f"Validation error: {str(e)}"
 
     MAX_ITEMS_PER_SIDE: int = 10
@@ -324,7 +323,7 @@ class MultiFlowMapAgent(BaseAgent):
             }
 
             return {"success": True, "spec": enhanced_spec}
-        except Exception as  # pylint: disable=broad-except exc:  # Defensive guard
+        except Exception as exc:  # Defensive guard
             return {"success": False, "error": f"Unexpected error: {exc}"}
 
 

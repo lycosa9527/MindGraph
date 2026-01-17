@@ -1,10 +1,3 @@
-﻿import logging
-import logging.handlers
-import os
-
-from dotenv import load_dotenv
-
-
 """
 Celery Application Configuration
 Author: lycosa9527
@@ -16,6 +9,23 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
+import logging
+import logging.handlers
+import os
+
+from celery.app import Celery
+from celery.signals import worker_process_init, worker_ready
+from dotenv import load_dotenv
+
+from config.settings import config
+from services.infrastructure.error_handler import LLMServiceError
+from services.llm import llm_service
+from services.redis.redis_client import (
+    RedisStartupError,
+    init_redis_sync,
+    is_redis_available
+)
 
 
 # Load environment variables from .env file
@@ -182,7 +192,7 @@ BROKER_URL = os.getenv('CELERY_BROKER_URL', f'redis://{REDIS_HOST}:{REDIS_PORT}/
 BACKEND_URL = os.getenv('CELERY_RESULT_BACKEND', f'redis://{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}')
 
 # Create Celery app
-celery_app = Celery(  # type: ignore[misc]
+celery_app = Celery(
     'mindgraph',
     broker=BROKER_URL,
     backend=BACKEND_URL,
@@ -228,27 +238,24 @@ def _init_worker_services():
     - Redis is initialized (for caching, rate limiting)
     - LLM service is initialized (for MindChunk)
     """
-    import logging
     logger = logging.getLogger(__name__)
 
     # Initialize Redis first (LLM service may depend on it)
     try:
-        from services.redis.redis_client import init_redis_sync, is_redis_available
         if not is_redis_available():
             logger.info("[Celery] Initializing Redis in worker process...")
             init_redis_sync()
             logger.info("[Celery] ✓ Redis initialized in worker process")
         else:
             logger.debug("[Celery] Redis already initialized in worker process")
-    except Exception as  # pylint: disable=broad-except e:
-        logger.warning(f"[Celery] Failed to initialize Redis in worker process: {e}")
+    except RedisStartupError as e:
+        logger.warning("[Celery] Redis initialization failed: %s", e)
+    except (OSError, ConnectionError) as e:
+        logger.warning("[Celery] Redis connection error: %s", e)
 
 
     # Initialize LLM service for MindChunk
     try:
-        from services.llm import llm_service
-        from config.settings import config
-
         # Check if API key is configured
         if not config.QWEN_API_KEY:
             logger.error(
@@ -258,8 +265,8 @@ def _init_worker_services():
             return
 
         logger.info("[Celery] Checking LLM service initialization...")
-        logger.debug(f"[Celery] QWEN_API_KEY configured: {config.QWEN_API_KEY[:10]}...")
-        logger.debug(f"[Celery] DASHSCOPE_API_URL: {config.DASHSCOPE_API_URL}")
+        logger.debug("[Celery] QWEN_API_KEY configured: %s...", config.QWEN_API_KEY[:10])
+        logger.debug("[Celery] DASHSCOPE_API_URL: %s", config.DASHSCOPE_API_URL)
 
         if not llm_service.client_manager.is_initialized():
             logger.info("[Celery] Initializing LLM service in worker process...")
@@ -268,32 +275,40 @@ def _init_worker_services():
             # Verify initialization succeeded
             if llm_service.client_manager.is_initialized():
                 logger.info("[Celery] ✓ LLM service initialized successfully in worker process")
-                logger.debug(f"[Celery] Available models: {llm_service.client_manager.get_available_models()}")
+                logger.debug("[Celery] Available models: %s", llm_service.client_manager.get_available_models())
             else:
                 logger.error("[Celery] ✗ LLM service initialization failed - is_initialized() returned False")
         else:
             logger.info("[Celery] LLM service already initialized in worker process")
-    except Exception as  # pylint: disable=broad-except e:
-        import traceback
+    except ImportError as e:
         logger.error(
-            f"[Celery] Failed to initialize LLM service in worker process: {e}",
-            exc_info=True
+            "[Celery] Failed to import LLM service dependencies: %s. "
+            "MindChunk will not be available.",
+            e
         )
+    except LLMServiceError as e:
         logger.error(
-            "[Celery] MindChunk initialization failed. "
-            "Document processing will fail until LLM service is properly initialized. "
-            "Check logs above for initialization errors."
+            "[Celery] LLM service initialization error: %s. "
+            "MindChunk will not be available.",
+            e
         )
-        # Don't raise here - let the task fail when it tries to use MindChunk
-        # This way we can see the actual error in the task execution
+    except (OSError, ConnectionError) as e:
+        logger.error(
+            "[Celery] LLM service connection error: %s. "
+            "MindChunk will not be available.",
+            e
+        )
+    except RuntimeError as e:
+        logger.error(
+            "[Celery] LLM service runtime error: %s. "
+            "MindChunk will not be available.",
+            e
+        )
 
 # Register signal handlers for worker initialization
 @worker_process_init.connect
-def on_worker_process_init(sender=None, **kwargs):
+def on_worker_process_init(_sender=None, **_kwargs):
     """Called when worker process starts."""
-    import logging
-    import os
-
     # Reconfigure logging in worker process to use unified format
     setup_celery_logging()
 
@@ -302,22 +317,21 @@ def on_worker_process_init(sender=None, **kwargs):
     worker_name = os.environ.get('CELERY_WORKER_NAME', 'unknown')
     pid = os.getpid()
 
-    logger.info(f"[Celery] ===== ForkPoolWorker process started: PID={pid}, Worker={worker_name} =====")
+    logger.info("[Celery] ===== ForkPoolWorker process started: PID=%s, Worker=%s =====", pid, worker_name)
     logger.info("[Celery] Initializing services in worker process...")
 
     _init_worker_services()
 
-    logger.info(f"[Celery] ===== ForkPoolWorker process ready: PID={pid} =====")
+    logger.info("[Celery] ===== ForkPoolWorker process ready: PID=%s =====", pid)
 
 @worker_ready.connect
-def on_worker_ready(sender=None, **kwargs):
+def on_worker_ready(_sender=None, **_kwargs):
     """
     Called when worker is ready to accept tasks.
 
     Note: This runs in MainProcess, not in worker processes.
     Worker processes initialize services via worker_process_init signal.
     """
-    import logging
     logger = logging.getLogger(__name__)
     logger.info("[Celery] Worker ready - services initialized in worker processes")
 

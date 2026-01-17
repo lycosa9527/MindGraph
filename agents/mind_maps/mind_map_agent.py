@@ -1,4 +1,4 @@
-﻿"""
+"""
 mind map agent module.
 """
 from dataclasses import dataclass
@@ -82,15 +82,15 @@ class MindMapAgent(BaseAgent):
         self.config = Config()
         self.diagram_type = "mindmap"
         # Cache for expensive font calculations
-        self._text_width_cache  # pylint: disable=protected-access = {}
-        self._font_size_cache  # pylint: disable=protected-access = {}
-        self._node_height_cache  # pylint: disable=protected-access = {}
+        self._text_width_cache = {}
+        self._font_size_cache = {}
+        self._node_height_cache = {}
 
     def _clear_caches(self) -> None:
         """Clear font calculation caches to prevent memory bloat."""
-        self._text_width_cache  # pylint: disable=protected-access.clear()
-        self._font_size_cache  # pylint: disable=protected-access.clear()
-        self._node_height_cache  # pylint: disable=protected-access.clear()
+        self._text_width_cache.clear()
+        self._font_size_cache.clear()
+        self._node_height_cache.clear()
 
     def _get_node_text(self, node: Dict, default: str = '') -> str:
         """
@@ -125,10 +125,8 @@ class MindMapAgent(BaseAgent):
         """Generate a mind map from a prompt."""
         try:
             # Clear caches at the start of each generation
-            self._clear_caches  # pylint: disable=protected-access()
-            # Generate the initial mind map specification
-            spec, recovery_warnings = await self._generate_mind_map_spec  # pylint: disable=protected-access(
-                prompt,
+            self._clear_caches()            # Generate the initial mind map specification
+            spec, recovery_warnings = await self._generate_mind_map_spec(                prompt,
                 language,
                 user_id=user_id,
                 organization_id=organization_id,
@@ -172,7 +170,7 @@ class MindMapAgent(BaseAgent):
 
             return result
 
-        except Exception as  # pylint: disable=broad-except e:
+        except Exception as e:
             logger.error(f"MindMapAgent: Error generating mind map: {e}")
             return {
                 'success': False,
@@ -262,7 +260,7 @@ class MindMapAgent(BaseAgent):
 
             return spec, recovery_warnings
 
-        except Exception as  # pylint: disable=broad-except e:
+        except Exception as e:
             logger.error(f"MindMapAgent: Error in spec generation: {e}")
             return None, None
 
@@ -282,7 +280,7 @@ class MindMapAgent(BaseAgent):
                 return False, "At least one child branch is required"
 
             return True, "Valid mind map specification"
-        except Exception as  # pylint: disable=broad-except e:
+        except Exception as e:
             return False, f"Validation error: {str(e)}"
 
     def validate_layout_geometry(self, layout_data: Dict) -> Tuple[bool, str, List[str]]:
@@ -377,7 +375,7 @@ class MindMapAgent(BaseAgent):
             all_positions = [pos for pos in positions.values() if pos is not None]
             for i, pos1 in enumerate(all_positions):
                 for j, pos2 in enumerate(all_positions[i+1:], i+1):
-                    if self._nodes_overlap  # pylint: disable=protected-access(pos1, pos2):
+                    if self._nodes_overlap(pos1, pos2):
                         issues.append(
                             f"OVERLAP: {pos1.get('text', 'Node')} and {pos2.get('text', 'Node')} overlap"
                         )
@@ -401,7 +399,7 @@ class MindMapAgent(BaseAgent):
             all_feedback = issues + warnings
             return is_valid, summary, all_feedback
 
-        except Exception as  # pylint: disable=broad-except e:
+        except Exception as e:
             return False, f"Geometry validation error: {str(e)}", [f"Exception: {str(e)}"]
 
     def _nodes_overlap(self, pos1: Dict, pos2: Dict) -> bool:
@@ -441,7 +439,7 @@ class MindMapAgent(BaseAgent):
                 return {"success": False, "error": "At least one child branch is required"}
 
             # Generate clean layout using the existing spec (NO NEW LLM CALL)
-            layout = self._generate_mind_map_layout  # pylint: disable=protected-access(spec['topic'], spec['children'])
+            layout = self._generate_mind_map_layout(spec['topic'], spec['children'])
 
             # Re-enabled geometric validation to catch remaining issues
             is_valid, validation_summary, validation_details = self.validate_layout_geometry(layout)
@@ -469,7 +467,7 @@ class MindMapAgent(BaseAgent):
 
             return spec
 
-        except Exception as  # pylint: disable=broad-except e:
+        except Exception as e:
             import traceback
             logger.error(f"MindMapAgent error: {e}")
             logger.error(f"Traceback: {traceback.format_exc()}")
@@ -500,7 +498,7 @@ class MindMapAgent(BaseAgent):
         num_branches = len(children)
 
         if num_branches == 0:
-            return self._generate_empty_layout  # pylint: disable=protected-access(topic)
+            return self._generate_empty_layout(topic)
 
         # STEP 1: Calculate column positions (same as before for consistency)
         gap_topic_to_branch = 200  # Space between topic and branches
@@ -513,21 +511,21 @@ class MindMapAgent(BaseAgent):
         for branch in children:
             # Use capped width to prevent excessively wide nodes for long text
             # Use helper function to safely get text (handles both 'label' and 'text' fields)
-            branch_label = self._get_node_text  # pylint: disable=protected-access(branch)
+            branch_label = self._get_node_text(branch)
             if not branch_label:
                 logger.warning(f"Branch missing 'label' and 'text' keys: {branch}")
                 continue
-            branch_width = self._get_capped_node_width  # pylint: disable=protected-access(branch_label, 'branch')
+            branch_width = self._get_capped_node_width(branch_label, 'branch')
             max_branch_width = max(max_branch_width, branch_width)
 
             for child in branch.get('children', []):
                 # Use capped width to prevent excessively wide nodes for long text
                 # Use helper function to safely get text (handles both 'label' and 'text' fields)
-                child_label = self._get_node_text  # pylint: disable=protected-access(child)
+                child_label = self._get_node_text(child)
                 if not child_label:
                     logger.warning(f"Child node missing 'label' and 'text' keys: {child}")
                     continue
-                child_width = self._get_capped_node_width  # pylint: disable=protected-access(child_label, 'child')
+                child_width = self._get_capped_node_width(child_label, 'child')
                 max_child_width = max(max_child_width, child_width)
 
         # Column positions
@@ -539,14 +537,14 @@ class MindMapAgent(BaseAgent):
         logger.debug(f"Column positions: Left Children={left_children_x:.1f}, Left Branches={left_branches_x:.1f}, Right Branches={right_branches_x:.1f}, Right Children={right_children_x:.1f}")
 
         # STEP 2: Simple Balanced Layout System
-        layout_result = self._simple_balanced_layout  # pylint: disable=protected-access(children, left_children_x, right_children_x, left_branches_x, right_branches_x)
+        layout_result = self._simple_balanced_layout(children, left_children_x, right_children_x, left_branches_x, right_branches_x)
 
         # Use the result from simple balanced system
         positions = layout_result['positions'].copy()
 
         # Add central topic at Y=0 (two-stage system positions everything relative to Y=0)
-        topic_width = self._get_capped_node_width  # pylint: disable=protected-access(topic, 'topic')
-        topic_height = self._get_adaptive_node_height  # pylint: disable=protected-access(topic, 'topic')
+        topic_width = self._get_capped_node_width(topic, 'topic')
+        topic_height = self._get_adaptive_node_height(topic, 'topic')
 
         positions['topic'] = {
             'x': 0, 'y': 0,  # Central topic always at origin
@@ -597,7 +595,7 @@ class MindMapAgent(BaseAgent):
                     logger.debug(f"Centering skipped: no valid coordinates")
             else:
                 logger.warning(f"Positions dict is empty or None!")
-        except Exception as  # pylint: disable=broad-except e:
+        except Exception as e:
             logger.error(f"ERROR in centering step: {e}")
             import traceback
             logger.error(f"Traceback: {traceback.format_exc()}")
@@ -606,10 +604,10 @@ class MindMapAgent(BaseAgent):
         # Since all node positions are now finalized, we can directly read coordinates from positions
         # This ensures connections perfectly align with node positions
         # IMPORTANT: positions dictionary has been modified in place, so connections will read centered coordinates
-        connections = self._generate_connections  # pylint: disable=protected-access(topic, children, positions)
+        connections = self._generate_connections(topic, children, positions)
 
         # STEP 5: Compute recommended dimensions
-        recommended_dimensions = self._compute_recommended_dimensions  # pylint: disable=protected-access(positions, topic, children)
+        recommended_dimensions = self._compute_recommended_dimensions(positions, topic, children)
 
         logger.debug(f"🎉 SIMPLE BALANCED LAYOUT - Layout complete!")
 
@@ -667,8 +665,8 @@ class MindMapAgent(BaseAgent):
             logger.debug(f"  Note: Odd distribution - right side has {len(right_branches)}, left side has {len(left_branches)}")
 
         # STEP 2: Stack children vertically on each side (no auto-centering)
-        right_positions = self._stack_children_vertically  # pylint: disable=protected-access(right_branches, right_children_x, "right", num_branches)
-        left_positions = self._stack_children_vertically  # pylint: disable=protected-access(left_branches, left_children_x, "left", num_branches)
+        right_positions = self._stack_children_vertically(right_branches, right_children_x, "right", num_branches)
+        left_positions = self._stack_children_vertically(left_branches, left_children_x, "left", num_branches)
 
         # Combine child positions
         all_child_positions = {}
@@ -676,7 +674,7 @@ class MindMapAgent(BaseAgent):
         all_child_positions.update(right_positions)
 
         # STEP 3: Calculate branch positions at children height centers
-        branch_positions = self._position_branches_at_mathematical_centers  # pylint: disable=protected-access(
+        branch_positions = self._position_branches_at_mathematical_centers(
             children, all_child_positions, left_branches_x, right_branches_x, mid_point
         )
 
@@ -686,7 +684,7 @@ class MindMapAgent(BaseAgent):
         all_positions.update(branch_positions)
 
         # Translate left and right sides to center at origin
-        all_positions = self._translate_sides_to_origin  # pylint: disable=protected-access(
+        all_positions = self._translate_sides_to_origin(
             all_positions, children, left_branches_x, right_branches_x, mid_point
         )
 
@@ -754,8 +752,8 @@ class MindMapAgent(BaseAgent):
         if all_children:
             font_sizes = []
             for child_info in all_children:
-                child_text = self._get_node_text  # pylint: disable=protected-access(child_info['data'])
-                child_font_size = self._get_adaptive_font_size  # pylint: disable=protected-access(child_text, 'child')
+                child_text = self._get_node_text(child_info['data'])
+                child_font_size = self._get_adaptive_font_size(child_text, 'child')
                 font_sizes.append(child_font_size)
             avg_font_size = sum(font_sizes) / len(font_sizes)
 
@@ -768,10 +766,10 @@ class MindMapAgent(BaseAgent):
         # Calculate dimensions and positions for all children
         for i, child_info in enumerate(all_children):
             child_data = child_info['data']
-            child_text = self._get_node_text  # pylint: disable=protected-access(child_data)
+            child_text = self._get_node_text(child_data)
             # Use capped width to prevent excessively wide nodes for long text
-            child_width = self._get_capped_node_width  # pylint: disable=protected-access(child_text, 'child')
-            child_height = self._get_adaptive_node_height  # pylint: disable=protected-access(child_text, 'child')
+            child_width = self._get_capped_node_width(child_text, 'child')
+            child_height = self._get_adaptive_node_height(child_text, 'child')
 
             child_key = f"child_{child_info['branch_idx']}_{child_info['child_idx']}"
 
@@ -786,8 +784,8 @@ class MindMapAgent(BaseAgent):
             # Move to next position with dynamic spacing
             if i < len(all_children) - 1:
                 next_child_info = all_children[i + 1]
-                next_child_text = self._get_node_text  # pylint: disable=protected-access(next_child_info['data'])
-                next_child_height = self._get_adaptive_node_height  # pylint: disable=protected-access(next_child_text, 'child')
+                next_child_text = self._get_node_text(next_child_info['data'])
+                next_child_height = self._get_adaptive_node_height(next_child_text, 'child')
 
                 # Check if next child is from a different branch group
                 current_branch = child_info['branch_idx']
@@ -871,7 +869,7 @@ class MindMapAgent(BaseAgent):
             overlaps_detected = 0
             for i, pos1 in enumerate(positions_list):
                 for j, pos2 in enumerate(positions_list[i+1:], i+1):
-                    if self._nodes_overlap  # pylint: disable=protected-access(pos1, pos2):
+                    if self._nodes_overlap(pos1, pos2):
                         overlaps_detected += 1
 
             if overlaps_detected > 0:
@@ -894,14 +892,14 @@ class MindMapAgent(BaseAgent):
         num_branches = len(children)
 
         for branch_idx, branch in enumerate(children):
-            branch_text = self._get_node_text  # pylint: disable=protected-access(branch)
+            branch_text = self._get_node_text(branch)
             if not branch_text:
                 logger.warning(f"Branch {branch_idx} missing text, skipping")
                 continue
 
             # Calculate branch dimensions (use capped width for text wrapping)
-            branch_width = self._get_capped_node_width  # pylint: disable=protected-access(branch_text, 'branch')
-            branch_height = self._get_adaptive_node_height  # pylint: disable=protected-access(branch_text, 'branch')
+            branch_width = self._get_capped_node_width(branch_text, 'branch')
+            branch_height = self._get_adaptive_node_height(branch_text, 'branch')
 
             # Determine side and column
             is_left_side = branch_idx >= mid_point
@@ -1050,7 +1048,7 @@ class MindMapAgent(BaseAgent):
         logger.debug(f"Starting Two-Stage Smart Positioning System for {len(children)} branches")
 
         # STAGE 1: Natural perfect layout
-        stage1_result = self._stage1_natural_layout  # pylint: disable=protected-access(children, left_children_x, right_children_x, left_branches_x, right_branches_x)
+        stage1_result = self._stage1_natural_layout(children, left_children_x, right_children_x, left_branches_x, right_branches_x)
 
         if stage1_result['all_principles_satisfied']:
             logger.debug("Stage 1 SUCCESS: Natural layout satisfies all principles")
@@ -1065,7 +1063,7 @@ class MindMapAgent(BaseAgent):
             logger.debug(f"  Violation: {violation}")
 
         # STAGE 2: Strategic phantom compensation
-        stage2_result = self._stage2_phantom_compensation  # pylint: disable=protected-access(stage1_result['positions'], stage1_result['violations'], children)
+        stage2_result = self._stage2_phantom_compensation(stage1_result['positions'], stage1_result['violations'], children)
 
         if stage2_result['all_principles_satisfied']:
             logger.debug("Stage 2 SUCCESS: Phantom compensation solved all violations")
@@ -1092,11 +1090,11 @@ class MindMapAgent(BaseAgent):
         logger.debug(f"📍 Stage 1: Creating natural perfect layout")
 
         # Step 1: Assign children to sides with branch coherence
-        side_assignments = self._assign_children_to_sides_coherently  # pylint: disable=protected-access(children)
+        side_assignments = self._assign_children_to_sides_coherently(children)
 
         # Step 2: Calculate true even spacing for each side
-        left_positions = self._position_children_with_even_spacing  # pylint: disable=protected-access(side_assignments['left_children'], left_children_x)
-        right_positions = self._position_children_with_even_spacing  # pylint: disable=protected-access(side_assignments['right_children'], right_children_x)
+        left_positions = self._position_children_with_even_spacing(side_assignments['left_children'], left_children_x)
+        right_positions = self._position_children_with_even_spacing(side_assignments['right_children'], right_children_x)
 
         # Step 3: Combine child positions
         all_child_positions = {}
@@ -1104,7 +1102,7 @@ class MindMapAgent(BaseAgent):
         all_child_positions.update(right_positions)
 
         # Step 4: Position branches at mathematical centers of their children
-        branch_positions = self._position_branches_at_centers  # pylint: disable=protected-access(children, all_child_positions, left_branches_x, right_branches_x)
+        branch_positions = self._position_branches_at_centers(children, all_child_positions, left_branches_x, right_branches_x)
 
         # Step 5: Combine all positions
         all_positions = {}
@@ -1112,7 +1110,7 @@ class MindMapAgent(BaseAgent):
         all_positions.update(branch_positions)
 
         # Step 6: Comprehensive validation
-        validation_results = self._validate_all_principles  # pylint: disable=protected-access(all_positions, children)
+        validation_results = self._validate_all_principles(all_positions, children)
 
         logger.debug(f"Stage 1 validation: {validation_results['summary']}")
 
@@ -1168,10 +1166,10 @@ class MindMapAgent(BaseAgent):
         # Calculate heights for all children
         for child_info in side_children:
             child_data = child_info['data']
-            child_text = self._get_node_text  # pylint: disable=protected-access(child_data)
-            child_info['height'] = self._get_adaptive_node_height  # pylint: disable=protected-access(child_text, 'child')
+            child_text = self._get_node_text(child_data)
+            child_info['height'] = self._get_adaptive_node_height(child_text, 'child')
             # Use capped width for text wrapping
-            child_info['width'] = self._get_capped_node_width  # pylint: disable=protected-access(child_text, 'child')
+            child_info['width'] = self._get_capped_node_width(child_text, 'child')
 
         # Calculate dynamic center-to-center spacings
         spacings = []
@@ -1190,7 +1188,7 @@ class MindMapAgent(BaseAgent):
         for i, child_info in enumerate(side_children):
             child_key = f"child_{child_info['branch_idx']}_{child_info['child_idx']}"
 
-            child_text = self._get_node_text  # pylint: disable=protected-access(child_info['data'])
+            child_text = self._get_node_text(child_info['data'])
             positions[child_key] = {
                 'x': column_x, 'y': current_y,
                 'width': child_info['width'], 'height': child_info['height'],
@@ -1222,14 +1220,14 @@ class MindMapAgent(BaseAgent):
         positions = {}
 
         for branch_idx, branch in enumerate(children):
-            branch_text = self._get_node_text  # pylint: disable=protected-access(branch)
+            branch_text = self._get_node_text(branch)
             if not branch_text:
                 logger.warning(f"Branch {branch_idx} missing text, skipping")
                 continue
 
             # Calculate branch dimensions (use capped width for text wrapping)
-            branch_width = self._get_capped_node_width  # pylint: disable=protected-access(branch_text, 'branch')
-            branch_height = self._get_adaptive_node_height  # pylint: disable=protected-access(branch_text, 'branch')
+            branch_width = self._get_capped_node_width(branch_text, 'branch')
+            branch_height = self._get_adaptive_node_height(branch_text, 'branch')
 
             # Determine side and column
             is_left_side = branch_idx >= mid_point
@@ -1269,15 +1267,15 @@ class MindMapAgent(BaseAgent):
         violations = []
 
         # Principle 1: Branch center alignment (5px tolerance)
-        center_violations = self._validate_branch_center_alignment  # pylint: disable=protected-access(positions, children)
+        center_violations = self._validate_branch_center_alignment(positions, children)
         violations.extend(center_violations)
 
         # Principle 2: Middle branch horizontal alignment (5px tolerance)
-        horizontal_violations = self._validate_middle_branch_horizontal_alignment  # pylint: disable=protected-access(positions, children)
+        horizontal_violations = self._validate_middle_branch_horizontal_alignment(positions, children)
         violations.extend(horizontal_violations)
 
         # Principle 3: No overlaps
-        overlap_violations = self._validate_no_overlaps  # pylint: disable=protected-access(positions)
+        overlap_violations = self._validate_no_overlaps(positions)
         violations.extend(overlap_violations)
 
         # Generate summary
@@ -1340,7 +1338,7 @@ class MindMapAgent(BaseAgent):
         num_branches = len(children)
 
         # Identify middle branches
-        middle_branches = self._identify_middle_branches_systematically  # pylint: disable=protected-access(num_branches)
+        middle_branches = self._identify_middle_branches_systematically(num_branches)
 
         for branch_idx in middle_branches:
             branch_key = f'branch_{branch_idx}'
@@ -1365,7 +1363,7 @@ class MindMapAgent(BaseAgent):
 
         for i, (key1, pos1) in enumerate(real_positions):
             for j, (key2, pos2) in enumerate(real_positions[i+1:], i+1):
-                if self._nodes_overlap  # pylint: disable=protected-access(pos1, pos2):
+                if self._nodes_overlap(pos1, pos2):
                     violations.append(f"OVERLAP: {pos1.get('text', 'Node')} and {pos2.get('text', 'Node')} overlap")
 
         return violations
@@ -1418,10 +1416,10 @@ class MindMapAgent(BaseAgent):
             }
 
         # Add phantom compensation for middle branch violations
-        compensated_positions = self._add_phantom_compensation  # pylint: disable=protected-access(positions, middle_violations, children)
+        compensated_positions = self._add_phantom_compensation(positions, middle_violations, children)
 
         # Re-validate with phantom compensation
-        validation_results = self._validate_all_principles  # pylint: disable=protected-access(compensated_positions, children)
+        validation_results = self._validate_all_principles(compensated_positions, children)
 
         logger.debug(f"Stage 2 validation: {validation_results['summary']}")
 
@@ -1439,7 +1437,7 @@ class MindMapAgent(BaseAgent):
         logger.debug(f"🎭 Adding phantom compensation for violations")
 
         compensated_positions = positions.copy()
-        middle_branches = self._identify_middle_branches_systematically  # pylint: disable=protected-access(len(children))
+        middle_branches = self._identify_middle_branches_systematically(len(children))
 
         for branch_idx in middle_branches:
             branch_key = f'branch_{branch_idx}'
@@ -1467,7 +1465,7 @@ class MindMapAgent(BaseAgent):
             offset_needed = target_center - current_center
 
             if abs(offset_needed) > 5:  # Need phantom compensation
-                phantoms = self._calculate_phantom_compensation  # pylint: disable=protected-access(branch_children, target_center)
+                phantoms = self._calculate_phantom_compensation(branch_children, target_center)
 
                 # Add phantoms to positions
                 for i, phantom in enumerate(phantoms):
@@ -1607,10 +1605,10 @@ class MindMapAgent(BaseAgent):
                 if not child_info['is_phantom']:
                     # Real child - create position
                     child_data = child_info['data']
-                    child_text = self._get_node_text  # pylint: disable=protected-access(child_data)
+                    child_text = self._get_node_text(child_data)
                     # Use capped width for text wrapping
-                    child_width = self._get_capped_node_width  # pylint: disable=protected-access(child_text, 'child')
-                    child_height = self._get_adaptive_node_height  # pylint: disable=protected-access(child_text, 'child')
+                    child_width = self._get_capped_node_width(child_text, 'child')
+                    child_height = self._get_adaptive_node_height(child_text, 'child')
 
                     child_key = f"child_{child_info['branch_idx']}_{child_info['child_idx']}"
                     positions[child_key] = {
@@ -1638,10 +1636,10 @@ class MindMapAgent(BaseAgent):
                 if not child_info['is_phantom']:
                     # Real child - create position
                     child_data = child_info['data']
-                    child_text = self._get_node_text  # pylint: disable=protected-access(child_data)
+                    child_text = self._get_node_text(child_data)
                     # Use capped width for text wrapping
-                    child_width = self._get_capped_node_width  # pylint: disable=protected-access(child_text, 'child')
-                    child_height = self._get_adaptive_node_height  # pylint: disable=protected-access(child_text, 'child')
+                    child_width = self._get_capped_node_width(child_text, 'child')
+                    child_height = self._get_adaptive_node_height(child_text, 'child')
 
                     child_key = f"child_{child_info['branch_idx']}_{child_info['child_idx']}"
                     positions[child_key] = {
@@ -1673,20 +1671,20 @@ class MindMapAgent(BaseAgent):
         mid_point = num_branches // 2
 
         # CORE PRINCIPLE: Start with middle branches at Y=0
-        middle_branches = self._identify_middle_branches_smart  # pylint: disable=protected-access(num_branches)
+        middle_branches = self._identify_middle_branches_smart(num_branches)
 
         logger.debug(f"Middle branches identified: {middle_branches}")
 
         for branch_idx in range(num_branches):
             branch_data = children[branch_idx]
-            branch_text = self._get_node_text  # pylint: disable=protected-access(branch_data)
+            branch_text = self._get_node_text(branch_data)
             if not branch_text:
                 logger.warning(f"Branch {branch_idx} missing text, skipping")
                 continue
 
             # Calculate branch dimensions (use capped width for text wrapping)
-            branch_width = self._get_capped_node_width  # pylint: disable=protected-access(branch_text, 'branch')
-            branch_height = self._get_adaptive_node_height  # pylint: disable=protected-access(branch_text, 'branch')
+            branch_width = self._get_capped_node_width(branch_text, 'branch')
+            branch_height = self._get_adaptive_node_height(branch_text, 'branch')
 
             # Determine side and column
             is_left_side = branch_idx >= mid_point
@@ -1754,7 +1752,7 @@ class MindMapAgent(BaseAgent):
         logger.debug(f"Applying middle branch horizontal alignment")
 
         # Identify middle branches on each side
-        middle_branches = self._identify_middle_branches  # pylint: disable=protected-access(num_branches)
+        middle_branches = self._identify_middle_branches(num_branches)
 
         logger.debug(f"Middle branches identified: {middle_branches}")
 
@@ -1781,7 +1779,7 @@ class MindMapAgent(BaseAgent):
                 y_offset = topic_y - original_y
 
                 # Adjust children positions to maintain visual balance
-                self._adjust_children_positions  # pylint: disable=protected-access(positions, branch_index, y_offset)
+                self._adjust_children_positions(positions, branch_index, y_offset)
 
                 logger.debug(f"Middle branch {branch_index} ({side}): {original_y:.1f} → {topic_y:.1f} (offset: {y_offset:.1f})")
             else:
@@ -1839,7 +1837,7 @@ class MindMapAgent(BaseAgent):
 
         # After adjusting children, fix any overlaps within this branch
         if len(adjusted_children) > 1:
-            self._fix_intra_branch_overlaps  # pylint: disable=protected-access(adjusted_children)
+            self._fix_intra_branch_overlaps(adjusted_children)
 
     def _fix_intra_branch_overlaps(self, children: List[Dict]) -> None:
         """Fix overlaps within a single branch after position adjustments."""
@@ -2029,8 +2027,8 @@ class MindMapAgent(BaseAgent):
         """Get adaptive font size based on text length and node type."""
         # Use cache key to avoid recalculating
         cache_key = (text, node_type)
-        if cache_key in self._font_size_cache  # pylint: disable=protected-access:
-            return self._font_size_cache  # pylint: disable=protected-access[cache_key]
+        if cache_key in self._font_size_cache:
+            return self._font_size_cache[cache_key]
 
         text_length = len(text)
 
@@ -2057,15 +2055,15 @@ class MindMapAgent(BaseAgent):
                 font_size = 12
 
         # Cache the result
-        self._font_size_cache  # pylint: disable=protected-access[cache_key] = font_size
+        self._font_size_cache[cache_key] = font_size
         return font_size
 
     def _get_adaptive_node_height(self, text: str, node_type: str) -> int:
         """Get adaptive node height based on text length and node type."""
         # Use cache key to avoid recalculating
         cache_key = (text, node_type)
-        if cache_key in self._node_height_cache  # pylint: disable=protected-access:
-            return self._node_height_cache  # pylint: disable=protected-access[cache_key]
+        if cache_key in self._node_height_cache:
+            return self._node_height_cache[cache_key]
 
         text_length = len(text)
 
@@ -2098,7 +2096,7 @@ class MindMapAgent(BaseAgent):
                 height = 65  # Extremely long text (may need line wrapping)
 
         # Cache the result
-        self._node_height_cache  # pylint: disable=protected-access[cache_key] = height
+        self._node_height_cache[cache_key] = height
         return height
 
     def _calculate_text_width(self, text: str, font_size: int) -> float:
@@ -2108,8 +2106,8 @@ class MindMapAgent(BaseAgent):
 
         # Use cache key to avoid expensive character-by-character calculation
         cache_key = (text, font_size)
-        if cache_key in self._text_width_cache  # pylint: disable=protected-access:
-            return self._text_width_cache  # pylint: disable=protected-access[cache_key]
+        if cache_key in self._text_width_cache:
+            return self._text_width_cache[cache_key]
 
         # Enhanced text width calculation with better symbol and Unicode support
         total_width = 0
@@ -2171,7 +2169,7 @@ class MindMapAgent(BaseAgent):
         total_width += len(text) * 2
 
         # Cache the result
-        self._text_width_cache  # pylint: disable=protected-access[cache_key] = total_width
+        self._text_width_cache[cache_key] = total_width
         return total_width
 
     def _get_capped_node_width(self, text: str, node_type: str) -> float:
@@ -2189,7 +2187,7 @@ class MindMapAgent(BaseAgent):
         if not text:
             return 80 if node_type == 'child' else 100
 
-        font_size = self._get_adaptive_font_size  # pylint: disable=protected-access(text, node_type)
+        font_size = self._get_adaptive_font_size(text, node_type)
 
         if node_type == 'branch':
             max_text_width = self.MAX_BRANCH_TEXT_WIDTH
@@ -2201,16 +2199,16 @@ class MindMapAgent(BaseAgent):
             min_width = 80
         elif node_type == 'topic':
             # Topic uses circle, calculate based on raw width with extra padding
-            raw_text_width = self._calculate_text_width  # pylint: disable=protected-access(text, font_size)
+            raw_text_width = self._calculate_text_width(text, font_size)
             return raw_text_width + 40
         else:
             # Default: use raw width with adaptive padding
-            raw_text_width = self._calculate_text_width  # pylint: disable=protected-access(text, font_size)
-            return raw_text_width + self._get_adaptive_padding  # pylint: disable=protected-access(text)
+            raw_text_width = self._calculate_text_width(text, font_size)
+            return raw_text_width + self._get_adaptive_padding(text)
 
         # Split by newlines and find the longest line's width
         lines = text.split('\n')
-        line_widths = [self._calculate_text_width  # pylint: disable=protected-access(line, font_size) for line in lines]
+        line_widths = [self._calculate_text_width(line, font_size) for line in lines]
         longest_line_width = max(line_widths) if line_widths else 0
 
         # Cap at max_text_width (since JavaScript will wrap longer lines)
@@ -2251,7 +2249,7 @@ class MindMapAgent(BaseAgent):
     def _analyze_branch_content(self, children: List[Dict]) -> Dict[str, Any]:
         """Analyze branch characteristics for optimal spacing."""
         total_children = len(children)
-        avg_text_length = sum(len(self._get_node_text  # pylint: disable=protected-access(child)) for child in children) / total_children if children else 0
+        avg_text_length = sum(len(self._get_node_text(child)) for child in children) / total_children if children else 0
 
         # Classify branch density
         if total_children <= 2:
@@ -2280,7 +2278,7 @@ class MindMapAgent(BaseAgent):
         base_spacing = 55
 
         # Analyze branch content for density adjustment
-        content_analysis = self._analyze_branch_content  # pylint: disable=protected-access(children)
+        content_analysis = self._analyze_branch_content(children)
         density_factor = content_analysis['base_factor']
 
         # Normalize for height variations - aim for consistent visual gaps
@@ -2434,7 +2432,7 @@ class MindMapAgent(BaseAgent):
             # Detect overlaps
             for i, (key1, pos1) in enumerate(all_positions):
                 for j, (key2, pos2) in enumerate(all_positions[i+1:], i+1):
-                    if self._nodes_overlap  # pylint: disable=protected-access(pos1, pos2):
+                    if self._nodes_overlap(pos1, pos2):
                         overlaps_found.append((key1, pos1, key2, pos2))
 
             if not overlaps_found:

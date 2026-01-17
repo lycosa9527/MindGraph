@@ -23,7 +23,17 @@ class DocumentCleaner:
 
     Removes invalid characters, normalizes whitespace, and optionally
     removes URLs/emails while preserving markdown links/images.
+
+    Singleton pattern: only one instance is created.
     """
+
+    _instance: Optional['DocumentCleaner'] = None
+
+    def __new__(cls):
+        """Singleton pattern: return the same instance on every call."""
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
 
     @staticmethod
     def clean(
@@ -174,7 +184,5 @@ class DocumentCleaner:
 
 
 def get_document_cleaner() -> DocumentCleaner:
-    """Get global document cleaner instance."""
-    if not hasattr(get_document_cleaner, '_instance'):
-        get_document_cleaner._instance = DocumentCleaner()
-    return get_document_cleaner._instance
+    """Get document cleaner singleton instance."""
+    return DocumentCleaner()

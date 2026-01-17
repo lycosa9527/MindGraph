@@ -1,4 +1,4 @@
-﻿"""
+"""
 brace map agent module.
 """
 from dataclasses import dataclass
@@ -6,18 +6,12 @@ from datetime import datetime
 from enum import Enum
 from typing import List, Dict, Any, Optional, Tuple, Union
 import logging
-import math
 
-from config.settings import Config
-
-"""
-Brace Map Agent for MindGraph
-Generates hierarchical brace maps with flexible layout systems
-
-Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
-All Rights Reserved
-Proprietary License
-"""
+from ..core.base_agent import BaseAgent
+from ..core.agent_utils import extract_json_from_response
+from prompts import get_prompt
+from services.llm import llm_service
+from config.settings import config
 
 
 logger = logging.getLogger(__name__)
@@ -208,8 +202,7 @@ class ContextManager:
         return {
             'recent_prompts': recent_prompts,
             'preferences': preferences,
-            'session_id': self._get_current_session  # pylint: disable=protected-access(user_id)
-        }
+            'session_id': self._get_current_session(user_id)        }
 
     def update_preferences(self, user_id: str, preferences: Dict) -> None:
         """Update user preferences"""
@@ -224,7 +217,7 @@ class ContextManager:
         # Analyze recent prompts for common themes
         recent_prompts = context.get('recent_prompts', [])
         if recent_prompts:
-            common_themes = self._extract_common_themes  # pylint: disable=protected-access(recent_prompts)
+            common_themes = self._extract_common_themes(recent_prompts)
             if common_themes:
                 # Could enhance spec based on themes
                 pass
@@ -254,12 +247,15 @@ class CollisionDetector:
     """Detects and resolves node collisions"""
 
     @staticmethod
-    def detect_node_collisions(nodes: List[NodePosition], padding: float = 10.0) -> List[Tuple[NodePosition, NodePosition]]:
+    def detect_node_collisions(
+        nodes: List[NodePosition],
+        padding: float = 10.0
+    ) -> List[Tuple[NodePosition, NodePosition]]:
         """Detect overlapping nodes"""
         collisions = []
         for i, node1 in enumerate(nodes):
-            for j, node2 in enumerate(nodes[i+1:], i+1):
-                if CollisionDetector._nodes_overlap  # pylint: disable=protected-access(node1, node2, padding):
+            for node2 in nodes[i+1:]:
+                if CollisionDetector._nodes_overlap(node1, node2, padding):
                     collisions.append((node1, node2))
         return collisions
 
@@ -276,8 +272,7 @@ class CollisionDetector:
                 break
 
             for node1, node2 in collisions:
-                CollisionDetector._resolve_collision  # pylint: disable=protected-access(node1, node2, padding)
-
+                CollisionDetector._resolve_collision(node1, node2, padding)
             iteration += 1
 
         return resolved_nodes
@@ -335,7 +330,7 @@ class LLMHybridProcessor:
         else:
             return LayoutComplexity.COMPLEX
 
-    def determine_strategy(self, complexity: LayoutComplexity, user_preferences: Optional[Dict]) -> LLMStrategy:
+    def determine_strategy(self, complexity: LayoutComplexity, _user_preferences: Optional[Dict] = None) -> LLMStrategy:
         """Determine LLM processing strategy"""
         if complexity == LayoutComplexity.SIMPLE:
             return LLMStrategy.PYTHON_ONLY
@@ -351,7 +346,7 @@ class ContextAwareAlgorithmSelector:
     def __init__(self, context_manager: ContextManager):
         self.context_manager = context_manager
 
-    def select_algorithm(self, spec: Dict, user_id: str = None) -> LayoutAlgorithm:
+    def select_algorithm(self, _spec: Dict, _user_id: Optional[str] = None) -> LayoutAlgorithm:
         """Select the appropriate layout algorithm"""
         # With the new flexible algorithm, we always use FLEXIBLE_DYNAMIC
         return LayoutAlgorithm.FLEXIBLE_DYNAMIC
@@ -366,17 +361,13 @@ class BlockBasedPositioningSystem:
     def arrange_blocks(self, spec: Dict, dimensions: Dict, theme: Dict) -> List[BlockUnit]:
         """Arrange blocks using LEGO-like positioning"""
         # Step 1: Create blocks from specification
-        blocks = self._create_blocks_from_spec  # pylint: disable=protected-access(spec, theme)
-
+        blocks = self._create_blocks_from_spec(spec, theme)
         # Step 2: Group blocks into units
-        units = self._group_blocks_into_units  # pylint: disable=protected-access(blocks)
-
+        units = self._group_blocks_into_units(blocks)
         # Step 3: Calculate optimal spacing and padding
-        spacing_config = self._calculate_spacing_config  # pylint: disable=protected-access(spec, dimensions, theme)
-
+        spacing_config = self._calculate_spacing_config(spec, dimensions, theme)
         # Step 4: Position blocks using block-based algorithm
-        positioned_units = self._position_blocks  # pylint: disable=protected-access(units, spacing_config, dimensions)
-
+        positioned_units = self._position_blocks(units, spacing_config, dimensions)
         return positioned_units
 
     def _create_blocks_from_spec(self, spec: Dict, theme: Dict) -> List[Block]:
@@ -390,8 +381,7 @@ class BlockBasedPositioningSystem:
 
         # Create topic block
         whole = spec.get('whole', 'Main Topic')
-        topic_width = self._calculate_text_width  # pylint: disable=protected-access(whole, theme['fontTopic'])
-
+        topic_width = self._calculate_text_width(whole, theme['fontTopic'])
         topic_block = Block(
             id='topic',
             x=0, y=0,  # Will be positioned later
@@ -404,8 +394,7 @@ class BlockBasedPositioningSystem:
 
         # Create part and subpart blocks
         for i, part in enumerate(spec.get('parts', [])):
-            part_width = self._calculate_text_width  # pylint: disable=protected-access(part['name'], theme['fontPart'])
-
+            part_width = self._calculate_text_width(part['name'], theme['fontPart'])
             part_block = Block(
                 id=f'part_{i}',
                 x=0, y=0,  # Will be positioned later
@@ -419,8 +408,7 @@ class BlockBasedPositioningSystem:
 
             # Create subpart blocks
             for j, subpart in enumerate(part.get('subparts', [])):
-                subpart_width = self._calculate_text_width  # pylint: disable=protected-access(subpart['name'], theme['fontSubpart'])
-
+                subpart_width = self._calculate_text_width(subpart['name'], theme['fontSubpart'])
                 subpart_block = Block(
                     id=f'subpart_{i}_{j}',
                     x=0, y=0,  # Will be positioned later
@@ -459,7 +447,7 @@ class BlockBasedPositioningSystem:
 
         return units
 
-    def _calculate_spacing_config(self, spec: Dict, dimensions: Dict, theme: Dict) -> Dict:
+    def _calculate_spacing_config(self, spec: Dict, dimensions: Dict, _theme: Dict) -> Dict:
         """Calculate dynamic spacing configuration based on content"""
         parts = spec.get('parts', [])
         total_parts = len(parts)
@@ -502,25 +490,16 @@ class BlockBasedPositioningSystem:
 
         # Step 1: Calculate unit dimensions
         for unit in units:
-            self._calculate_unit_dimensions  # pylint: disable=protected-access(unit, spacing_config)
-
+            self._calculate_unit_dimensions(unit, spacing_config)
         # Step 2: Define column layout with fixed brace columns and flexible node columns
         canvas_width = dimensions['width']
         padding = dimensions['padding']
-
-        # Fixed brace visual width (column thickness perception)
-        const_main_brace_visual_width = 16.0
-        const_small_brace_visual_width = 12.0
 
         # Gaps around braces - increased to prevent overlap with nodes
         gap_topic_to_main_brace = 24.0  # Increased to prevent brace overlap with topic
         gap_main_brace_to_part = 28.0   # Increased to prevent brace overlap with parts
         gap_part_to_small_brace = 22.0  # Increased to prevent small brace overlap with parts
         gap_small_brace_to_subpart = 22.0  # Increased to prevent small brace overlap with subparts
-
-        # Increased vertical spacing for arc display
-        vertical_padding_top = 80.0  # Increased from 50.0
-        vertical_padding_bottom = 80.0  # Increased from 40.0
 
         # Compute max widths of topic, part and subpart blocks to avoid overlap
         max_part_block_width = max((unit.part_block.width for unit in units), default=100.0)
@@ -545,30 +524,29 @@ class BlockBasedPositioningSystem:
         estimated_main_depth = min(max(24.0, canvas_width * 0.08), 100.0)
         estimated_small_depth = min(max(18.0, canvas_width * 0.06), 80.0)
 
-        # Column 2: Main brace center X (use estimated depth/2 past topic-right + gap)
-        main_brace_x = (
-            topic_column_x + approx_topic_width / 2.0 + gap_topic_to_main_brace + estimated_main_depth / 2.0
-        )
-
         # Column 3: Parts center depends on estimated brace depth + gap + half of max part width (minimized)
         part_column_x = (
-            topic_column_x + approx_topic_width / 2.0 + gap_topic_to_main_brace + estimated_main_depth + gap_main_brace_to_part + 6.0 + max_part_block_width / 2.0  # Reduced from 12px to move parts closer to brace
+            topic_column_x + approx_topic_width / 2.0 + gap_topic_to_main_brace +
+            estimated_main_depth + gap_main_brace_to_part + 6.0 +
+            max_part_block_width / 2.0  # Reduced from 12px to move parts closer to brace
         )
 
         # Column 4: Small brace X (use estimated small depth/2 past part-right + gap)
-        small_brace_x = (
+        _small_brace_x = (
             part_column_x + max_part_block_width / 2.0 + gap_part_to_small_brace + estimated_small_depth / 2.0
         )
 
         # Column 5: Subparts center depends on estimated small brace depth + gap + half of max subpart width
         subpart_column_x = (
-            part_column_x + max_part_block_width / 2.0 + gap_part_to_small_brace + estimated_small_depth + gap_small_brace_to_subpart + max_subpart_block_width / 2.0
+            part_column_x + max_part_block_width / 2.0 + gap_part_to_small_brace +
+            estimated_small_depth + gap_small_brace_to_subpart +
+            max_subpart_block_width / 2.0
         )
 
         # Step 3: Position units vertically with proper column separation
         current_y = dimensions['padding']
 
-        for i, unit in enumerate(units):
+        for _i, unit in enumerate(units):
             # Position unit at current_y
             unit.y = current_y
 
@@ -578,8 +556,12 @@ class BlockBasedPositioningSystem:
             # Calculate subparts range center for part positioning
             if unit.subpart_blocks:
                 # Calculate the vertical range of subparts for this part
-                subparts_start_y = unit.y + unit.part_block.height + 12  # Reduced from 20 for tighter spacing
-                subparts_end_y = subparts_start_y + (len(unit.subpart_blocks) * unit.subpart_blocks[0].height) + ((len(unit.subpart_blocks) - 1) * 7) - 7  # Reduced from 10 for tighter spacing
+                subparts_start_y = unit.y + unit.part_block.height + 12  # Reduced from 20
+                subparts_end_y = (
+                    subparts_start_y +
+                    (len(unit.subpart_blocks) * unit.subpart_blocks[0].height) +
+                    ((len(unit.subpart_blocks) - 1) * 7) - 7
+                )  # Reduced from 10 for tighter spacing
                 subparts_range_center_y = (subparts_start_y + subparts_end_y) / 2
 
                 # Position part at subparts range center
@@ -647,7 +629,7 @@ class FlexibleLayoutCalculator:
     """Implements the flexible dynamic layout algorithm"""
 
     def __init__(self):
-        pass
+        self._text_width_cache = {}
 
     def calculate_text_dimensions(self, spec: Dict, theme: Dict) -> Dict[str, Any]:
         """Calculate text dimensions for all nodes"""
@@ -659,13 +641,13 @@ class FlexibleLayoutCalculator:
 
         # Calculate topic dimensions
         whole = spec.get('whole', 'Main Topic')
-        topic_width = self._calculate_text_width  # pylint: disable=protected-access(whole, theme['fontTopic'])
+        topic_width = self._calculate_text_width(whole, theme['fontTopic'])
         topic_height = theme['fontTopic'] + 20
         dimensions['topic'] = {'width': topic_width, 'height': topic_height}
 
         # Calculate part dimensions
         for part in spec.get('parts', []):
-            part_width = self._calculate_text_width  # pylint: disable=protected-access(part['name'], theme['fontPart'])
+            part_width = self._calculate_text_width(part['name'], theme['fontPart'])
             part_height = theme['fontPart'] + 20
             dimensions['parts'].append({'width': part_width, 'height': part_height})
 
@@ -673,7 +655,7 @@ class FlexibleLayoutCalculator:
         for part in spec.get('parts', []):
             part_subparts = []
             for subpart in part.get('subparts', []):
-                subpart_width = self._calculate_text_width  # pylint: disable=protected-access(subpart['name'], theme['fontSubpart'])
+                subpart_width = self._calculate_text_width(subpart['name'], theme['fontSubpart'])
                 subpart_height = theme['fontSubpart'] + 20
                 part_subparts.append({'width': subpart_width, 'height': subpart_height})
             dimensions['subparts'].append(part_subparts)
@@ -765,15 +747,19 @@ class FlexibleLayoutCalculator:
         # Find the leftmost part position to avoid overlap
         leftmost_part_x = min(unit.part_position.x for unit in units)
 
-        # Position topic to the left of all parts with proper spacing - further reduced for tighter horizontal layout
+        # Position topic to the left of all parts with proper spacing
+        # Further reduced for tighter horizontal layout
         # Ensure topic is positioned at least 170px to the left of the leftmost part
-        topic_x = max(dimensions['padding'] + 15, leftmost_part_x - 170)  # Further reduced from 220px for tighter horizontal spacing
+        topic_x = max(
+            dimensions['padding'] + 15,
+            leftmost_part_x - 170
+        )  # Further reduced from 220px for tighter horizontal spacing
         topic_y = center_y
 
         return (topic_x, topic_y)
 
     def calculate_unit_positions(self, spec: Dict, dimensions: Dict, theme: Dict) -> List[UnitPosition]:
-        """Calculate positions for all units (part + subparts) using global grid  # pylint: disable=global-statement alignment"""
+        """Calculate positions for all units (part + subparts) using global grid alignment"""
         units = []
         parts = spec.get('parts', [])
 
@@ -781,29 +767,27 @@ class FlexibleLayoutCalculator:
         current_y = dimensions['padding']
 
         # Calculate dynamic positioning based on content structure
-        total_parts = len(parts)
         total_subparts = sum(len(part.get('subparts', [])) for part in parts)
 
         # Analyze content for dynamic positioning
-        max_topic_width = self._calculate_text_width  # pylint: disable=protected-access(spec.get('whole', 'Main Topic'), theme['fontTopic'])
-        max_part_width = max([self._calculate_text_width  # pylint: disable=protected-access(part['name'], theme['fontPart']) for part in parts]) if parts else 100
+        _max_topic_width = self._calculate_text_width(
+            spec.get('whole', 'Main Topic'), theme['fontTopic'])
         max_subpart_width = 0
         if total_subparts > 0:
             for part in parts:
                 for subpart in part.get('subparts', []):
-                    width = self._calculate_text_width  # pylint: disable=protected-access(subpart['name'], theme['fontSubpart'])
+                    width = self._calculate_text_width(subpart['name'], theme['fontSubpart'])
                     max_subpart_width = max(max_subpart_width, width)
 
         # Dynamic horizontal positioning based on content analysis
-        canvas_width = dimensions['width']
-        available_width = canvas_width - 2 * dimensions['padding']
+        _canvas_width = dimensions['width']
+        available_width = _canvas_width - 2 * dimensions['padding']
 
         # Calculate optimal spacing based on content
-        topic_offset = max(20, min(60, available_width * 0.08))  # Reduced to 8% of available width, min 20, max 60 for tighter horizontal spacing
-        part_offset = max(80, min(160, available_width * 0.2))  # Reduced to 20% of available width, min 80, max 160 for tighter horizontal spacing
-        subpart_offset = max(60, min(120, available_width * 0.16))  # Reduced to 16% of available width, min 60, max 120 for tighter horizontal spacing
+        part_offset = max(80, min(160, available_width * 0.2))
+        subpart_offset = max(60, min(120, available_width * 0.16))
 
-        # Calculate global grid  # pylint: disable=global-statement positions for all subparts across all parts
+        # Calculate global grid positions for all subparts across all parts
         all_subparts = []
         for i, part in enumerate(parts):
             subparts = part.get('subparts', [])
@@ -815,14 +799,14 @@ class FlexibleLayoutCalculator:
                     'height': theme['fontSubpart'] + 20
                 })
 
-        # Calculate global grid  # pylint: disable=global-statement spacing
-        # Calculate single global X  # pylint: disable=global-statement position for ALL subparts (perfect vertical line)
+        # Calculate global grid spacing
+        # Calculate single global X position for ALL subparts (perfect vertical line)
         global_subpart_x = dimensions['padding'] + part_offset + subpart_offset
 
         if all_subparts:
             subpart_spacing = self.calculate_subpart_spacing([{'name': 'dummy'} for _ in range(len(all_subparts))])
 
-            # Calculate global grid  # pylint: disable=global-statement positions
+            # Calculate global grid positions
             grid_positions = {}
             grid_y = current_y
             for subpart_info in all_subparts:
@@ -833,7 +817,7 @@ class FlexibleLayoutCalculator:
             subpart_spacing = 20.0
             grid_positions = {}
 
-        # Now position each unit using the global grid  # pylint: disable=global-statement
+        # Now position each unit using the global grid
         for i, part in enumerate(parts):
             subparts = part.get('subparts', [])
 
@@ -877,17 +861,17 @@ class FlexibleLayoutCalculator:
 
                 # Position part at center-left of its subpart grid span
                 part_x = dimensions['padding'] + part_offset
-                part_y = part_center_y - (theme['fontPart'] + 20) / 2  # Y is now the top of the part box
+                part_y = part_center_y - (theme['fontPart'] + 20) / 2
 
                 # Create part node
                 part_node = NodePosition(
                     x=part_x, y=part_y,
-                    width=self._calculate_text_width  # pylint: disable=protected-access(part['name'], theme['fontPart']),
+                    width=self._calculate_text_width(part['name'], theme['fontPart']),
                     height=theme['fontPart'] + 20,
                     text=part['name'], node_type='part', part_index=i
                 )
 
-                # Calculate subpart positions using global grid  # pylint: disable=global-statement (all subparts in one vertical line)
+                # Calculate subpart positions using global grid (all subparts in one vertical line)
                 subpart_positions = []
                 for j, subpart in enumerate(subparts):
                     subpart_x = global_subpart_x  # All subparts use the same X position
@@ -895,7 +879,7 @@ class FlexibleLayoutCalculator:
 
                     subpart_node = NodePosition(
                         x=subpart_x, y=subpart_y,
-                        width=self._calculate_text_width  # pylint: disable=protected-access(subpart['name'], theme['fontSubpart']),
+                        width=self._calculate_text_width(subpart['name'], theme['fontSubpart']),
                         height=theme['fontSubpart'] + 20,
                         text=subpart['name'], node_type='subpart',
                         part_index=i, subpart_index=j
@@ -929,10 +913,12 @@ class FlexibleLayoutCalculator:
                 else:
                     next_y = current_y + unit_height + unit_spacing
 
+                # Define min_spacing for overlap prevention (used in multiple blocks)
+                min_spacing = 18.0  # Reduced from 30.0 for tighter spacing between units
+
                 # Ensure no overlap with previous units
                 if i > 0 and units:
                     # Check against all previous units, not just the last one
-                    min_spacing = 18.0  # Reduced from 30.0 for tighter spacing between units
                     max_prev_bottom = 0
                     for prev_unit in units:
                         prev_bottom = prev_unit.y + prev_unit.height
@@ -947,11 +933,15 @@ class FlexibleLayoutCalculator:
                             subpart_positions = []
                             for j, subpart in enumerate(subparts):
                                 subpart_x = global_subpart_x
-                                subpart_y = unit_y + j * (theme['fontSubpart'] + 20 + subpart_spacing)  # subpart_spacing already reduced
+                                subpart_y = (
+                                    unit_y + j * (theme['fontSubpart'] + 20 + subpart_spacing)
+                                )  # subpart_spacing already reduced
 
                                 subpart_node = NodePosition(
                                     x=subpart_x, y=subpart_y,
-                                    width=self._calculate_text_width  # pylint: disable=protected-access(subpart['name'], theme['fontSubpart']),
+                                    width=self._calculate_text_width(
+                                        subpart['name'], theme['fontSubpart']
+                                    ),
                                     height=theme['fontSubpart'] + 20,
                                     text=subpart['name'], node_type='subpart',
                                     part_index=i, subpart_index=j
@@ -966,7 +956,9 @@ class FlexibleLayoutCalculator:
                                 part_y = part_center_y - (theme['fontPart'] + 20) / 2
                                 part_node = NodePosition(
                                     x=part_x, y=part_y,
-                                    width=self._calculate_text_width  # pylint: disable=protected-access(part['name'], theme['fontPart']),
+                                    width=self._calculate_text_width(
+                                        part['name'], theme['fontPart']
+                                    ),
                                     height=theme['fontPart'] + 20,
                                     text=part['name'], node_type='part', part_index=i
                                 )
@@ -985,10 +977,7 @@ class FlexibleLayoutCalculator:
                 if i > 0 and units and subpart_positions:
                     # Calculate actual unit bounds based on subpart positions
                     subpart_ys = [s.y for s in subpart_positions]
-                    subpart_heights = [s.height for s in subpart_positions]
                     actual_unit_min_y = min(subpart_ys)
-                    actual_unit_max_y = max(y + h for y, h in zip(subpart_ys, subpart_heights))
-                    actual_unit_height = actual_unit_max_y - actual_unit_min_y
 
                     for prev_unit in units:
                         prev_bottom = prev_unit.y + prev_unit.height
@@ -1006,8 +995,6 @@ class FlexibleLayoutCalculator:
                                 last_center = subpart_positions[-1].y + (theme['fontSubpart'] + 20) / 2
                                 part_center_y = (first_center + last_center) / 2
                                 unit.part_position.y = part_center_y - (theme['fontPart'] + 20) / 2
-                        else:
-                            pass # No debug print for OK case
 
                 units.append(unit)
 
@@ -1020,7 +1007,7 @@ class FlexibleLayoutCalculator:
 
                 part_node = NodePosition(
                     x=part_x, y=part_y,
-                    width=self._calculate_text_width  # pylint: disable=protected-access(part['name'], theme['fontPart']),
+                    width=self._calculate_text_width(part['name'], theme['fontPart']),
                     height=theme['fontPart'] + 20,
                     text=part['name'], node_type='part', part_index=i
                 )
@@ -1066,7 +1053,9 @@ class FlexibleLayoutCalculator:
             # Use the first unit with subparts to calculate spacing
             for unit in units:
                 if unit.subpart_positions:
-                    subpart_spacing = self.calculate_subpart_spacing([{'name': 'dummy'} for _ in unit.subpart_positions])
+                    subpart_spacing = self.calculate_subpart_spacing(
+                        [{'name': 'dummy'} for _ in unit.subpart_positions]
+                    )
                     break
 
         brace_offset = 50.0  # Distance from nodes to brace
@@ -1086,20 +1075,16 @@ class FlexibleLayoutCalculator:
 
         # Simple caching - could be enhanced with proper cache decorator
         cache_key = f"{text}_{font_size}"
-        if hasattr(self, '_text_width_cache') and cache_key in self._text_width_cache  # pylint: disable=protected-access:
-            return self._text_width_cache  # pylint: disable=protected-access[cache_key]
+        if cache_key in self._text_width_cache:
+            return self._text_width_cache[cache_key]
 
         total_width = 0
         for char in text:
             char_width = CHAR_WIDTH_CONFIG.get(char, CHAR_WIDTH_CONFIG['default'])
             total_width += char_width * font_size
 
-        # Initialize cache if not exists
-        if not hasattr(self, '_text_width_cache'):
-            self._text_width_cache  # pylint: disable=protected-access = {}
-
         # Cache the result
-        self._text_width_cache  # pylint: disable=protected-access[cache_key] = total_width
+        self._text_width_cache[cache_key] = total_width
 
         return total_width
 
@@ -1134,9 +1119,9 @@ class BraceMapAgent(BaseAgent):
 
     async def generate_graph(
         self,
-        prompt: str,
+        user_prompt: str,
         language: str = "en",
-        dimension_preference: str = None,
+        dimension_preference: Optional[str] = None,
         # Token tracking parameters
         user_id: Optional[int] = None,
         organization_id: Optional[int] = None,
@@ -1155,8 +1140,11 @@ class BraceMapAgent(BaseAgent):
             # Scenario 3: Dimension only (no topic) → dimension_only_mode
             if dimension_only_mode and fixed_dimension:
                 # Scenario 3: Dimension-only mode - generate topic and children based on dimension
-                logger.debug(f"BraceMapAgent: Dimension-only mode - generating topic and children for dimension '{fixed_dimension}'")
-                spec = await self._generate_from_dimension_only  # pylint: disable=protected-access(
+                logger.debug(
+                    "BraceMapAgent: Dimension-only mode - generating topic and children "
+                    "for dimension '%s'", fixed_dimension
+                )
+                spec = await self._generate_from_dimension_only(
                     fixed_dimension,
                     language,
                     user_id=user_id,
@@ -1166,8 +1154,8 @@ class BraceMapAgent(BaseAgent):
                 )
             else:
                 # Scenario 1 or 2: Standard generation or fixed dimension with topic
-                spec = await self._generate_brace_map_spec  # pylint: disable=protected-access(
-                    prompt,
+                spec = await self._generate_brace_map_spec(
+                    user_prompt,
                     language,
                     dimension_preference,
                     user_id=user_id,
@@ -1185,7 +1173,7 @@ class BraceMapAgent(BaseAgent):
             # Validate the generated spec
             is_valid, validation_msg = self.validate_output(spec)
             if not is_valid:
-                logger.warning(f"BraceMapAgent: Validation failed: {validation_msg}")
+                logger.warning("BraceMapAgent: Validation failed: %s", validation_msg)
                 return {
                     'success': False,
                     'error': f'Generated invalid specification: {validation_msg}'
@@ -1198,25 +1186,25 @@ class BraceMapAgent(BaseAgent):
 
             enhanced_spec = enhanced_result['spec']
 
-            logger.info(f"BraceMapAgent: Brace map generation completed successfully")
+            logger.info("BraceMapAgent: Brace map generation completed successfully")
             return {
                 'success': True,
                 'spec': enhanced_spec,
                 'diagram_type': self.diagram_type
             }
 
-        except Exception as  # pylint: disable=broad-except e:
-            logger.error(f"BraceMapAgent: Brace map generation failed: {e}")
+        except Exception as e:
+            logger.error("BraceMapAgent: Brace map generation failed: %s", e)
             return {
                 'success': False,
-                'error': f'Generation failed: {str(e)}'
+                'error': f'Generation failed: {e}'
             }
 
     async def _generate_brace_map_spec(
         self,
         prompt: str,
         language: str,
-        dimension_preference: str = None,
+        dimension_preference: Optional[str] = None,
         # Token tracking parameters
         user_id: Optional[int] = None,
         organization_id: Optional[int] = None,
@@ -1227,12 +1215,9 @@ class BraceMapAgent(BaseAgent):
     ) -> Optional[Dict]:
         """Generate the brace map specification using LLM."""
         try:
-            # Import centralized prompt system
-            from prompts import get_prompt
-
             # Choose prompt based on whether user has specified a fixed dimension
             if fixed_dimension:
-                logger.debug(f"BraceMapAgent: Using FIXED dimension mode with '{fixed_dimension}'")
+                logger.debug("BraceMapAgent: Using FIXED dimension mode with '%s'", fixed_dimension)
                 system_prompt = get_prompt("brace_map_agent", language, "fixed_dimension")
 
                 if not system_prompt:
@@ -1247,13 +1232,19 @@ class BraceMapAgent(BaseAgent):
 
 重要：dimension字段必须完全保持为"{fixed_dimension}"，不要改变它！"""
                     else:
-                        system_prompt = f"""The user has ALREADY SPECIFIED the decomposition dimension: "{fixed_dimension}"
+                        system_prompt = (
+                            f"""The user has ALREADY SPECIFIED the decomposition dimension: """
+                            f""""{fixed_dimension}"
 You MUST use this exact dimension to generate the brace map. Do NOT change or reinterpret it.
 
-Generate a brace map decomposing the topic according to the specified dimension "{fixed_dimension}", with 3-5 parts, each with 2-4 subparts.
-Return JSON: {{"whole": "Topic", "dimension": "{fixed_dimension}", "parts": [...], "alternative_dimensions": [...]}}
+Generate a brace map decomposing the topic according to the specified dimension """
+                            f""""{fixed_dimension}", with 3-5 parts, each with 2-4 subparts.
+Return JSON: {{"whole": "Topic", "dimension": "{fixed_dimension}", """
+                            f"""parts": [...], "alternative_dimensions": [...]}}
 
-CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" - do NOT change it!"""
+CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" """
+                            f"""- do NOT change it!"""
+                        )
 
                 if language == "zh":
                     user_prompt = f"主题：{prompt}\n\n请使用指定的拆解维度「{fixed_dimension}」生成括号图。"
@@ -1264,23 +1255,33 @@ CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" - do NOT c
                 system_prompt = get_prompt("brace_map_agent", language, "generation")
 
                 if not system_prompt:
-                    logger.error(f"BraceMapAgent: No prompt found for language {language}")
+                    logger.error("BraceMapAgent: No prompt found for language %s", language)
                     return None
 
                 # Build user prompt with dimension preference if specified
                 if dimension_preference:
                     if language == "zh":
-                        user_prompt = f"请为以下描述创建一个括号图，使用指定的拆解维度'{dimension_preference}'：{prompt}"
+                        user_prompt = (
+                            f"请为以下描述创建一个括号图，使用指定的拆解维度"
+                            f"'{dimension_preference}'：{prompt}"
+                        )
                     else:
-                        user_prompt = f"Please create a brace map for the following description using the specified decomposition dimension '{dimension_preference}': {prompt}"
-                    logger.debug(f"BraceMapAgent: User specified dimension preference: {dimension_preference}")
+                        user_prompt = (
+                            f"Please create a brace map for the following description "
+                            f"using the specified decomposition dimension "
+                            f"'{dimension_preference}': {prompt}"
+                        )
+                    logger.debug("BraceMapAgent: User specified dimension preference: %s", dimension_preference)
                 else:
-                    user_prompt = f"请为以下描述创建一个括号图：{prompt}" if language == "zh" else f"Please create a brace map for the following description: {prompt}"
+                    if language == "zh":
+                        user_prompt = f"请为以下描述创建一个括号图：{prompt}"
+                    else:
+                        user_prompt = (
+                            f"Please create a brace map for the following "
+                            f"description: {prompt}"
+                        )
 
             # Call middleware directly - clean and efficient!
-            from services.llm import llm_service
-            from config.settings import config
-
             response = await llm_service.chat(
                 prompt=user_prompt,
                 model=self.model,
@@ -1300,15 +1301,13 @@ CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" - do NOT c
                 return None
 
             # Extract JSON from response
-            from ..core.agent_utils import extract_json_from_response
-
             # Check if response is already a dictionary (from mock client)
             if isinstance(response, dict):
                 spec = response
             else:
                 # Log raw response for debugging
                 response_str = str(response)
-                logger.debug(f"BraceMapAgent: Raw LLM response (first 500 chars): {response_str[:500]}")
+                logger.debug("BraceMapAgent: Raw LLM response (first 500 chars): %s", response_str[:500])
 
                 # Try to extract JSON from string response
                 spec = extract_json_from_response(response_str)
@@ -1317,8 +1316,8 @@ CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" - do NOT c
                 if isinstance(spec, dict) and spec.get('_error') == 'non_json_response':
                     # LLM returned non-JSON asking for more info - retry with more explicit prompt
                     logger.warning(
-                        f"BraceMapAgent: LLM returned non-JSON response asking for more info. "
-                        f"Retrying with explicit JSON-only prompt."
+                        "BraceMapAgent: LLM returned non-JSON response asking for more info. "
+                        "Retrying with explicit JSON-only prompt."
                     )
 
                     # Retry with more explicit prompt emphasizing JSON-only output
@@ -1354,33 +1353,32 @@ CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" - do NOT c
                         # If still non-JSON, return None
                         if isinstance(spec, dict) and spec.get('_error') == 'non_json_response':
                             logger.error(
-                                f"BraceMapAgent: Retry also returned non-JSON response. "
-                                f"Giving up after 1 retry attempt."
+                                "BraceMapAgent: Retry also returned non-JSON response. "
+                                "Giving up after 1 retry attempt."
                             )
                             return None
 
             if not spec or (isinstance(spec, dict) and spec.get('_error')):
-                logger.error(f"BraceMapAgent: Failed to extract JSON from LLM response. Response type: {type(response)}, Response length: {len(str(response))}")
-                logger.error(f"BraceMapAgent: Raw response content: {str(response)[:1000]}")
+                logger.error("BraceMapAgent: Failed to extract JSON from LLM response. Response type: %s, Response length: %s", type(response), len(str(response)))
+                logger.error("BraceMapAgent: Raw response content: %s", str(response)[:1000])
                 return None
 
             # Normalize field names (e.g., 'topic' -> 'whole') before validation
-            spec = self._normalize_field_names  # pylint: disable=protected-access(spec)
-
+            spec = self._normalize_field_names(spec)
             # Log extracted spec for debugging
-            logger.debug(f"BraceMapAgent: Extracted spec keys: {list(spec.keys()) if isinstance(spec, dict) else 'Not a dict'}")
+            logger.debug("BraceMapAgent: Extracted spec keys: %s", list(spec.keys()) if isinstance(spec, dict) else 'Not a dict')
             if isinstance(spec, dict) and 'whole' in spec:
-                logger.debug(f"BraceMapAgent: Extracted 'whole' field value: {spec.get('whole')}")
+                logger.debug("BraceMapAgent: Extracted 'whole' field value: %s", spec.get('whole'))
 
             # If fixed_dimension was provided, enforce it regardless of what LLM returned
             if fixed_dimension:
                 spec['dimension'] = fixed_dimension
-                logger.debug(f"BraceMapAgent: Enforced FIXED dimension: {fixed_dimension}")
+                logger.debug("BraceMapAgent: Enforced FIXED dimension: %s", fixed_dimension)
 
             return spec
 
-        except Exception as  # pylint: disable=broad-except e:
-            logger.error(f"BraceMapAgent: Error in spec generation: {e}")
+        except Exception as e:
+            logger.error("BraceMapAgent: Error in spec generation: %s", e)
             return None
 
     async def _generate_from_dimension_only(
@@ -1409,30 +1407,34 @@ CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" - do NOT c
             Spec with generated topic and parts following the specified dimension
         """
         try:
-            logger.debug(f"BraceMapAgent: Dimension-only mode - generating topic and parts for dimension '{dimension}'")
-
-            # Import centralized prompt system
-            from prompts import get_prompt
+            logger.debug("BraceMapAgent: Dimension-only mode - generating topic and parts for dimension '%s'", dimension)
 
             # Get the dimension-only prompt
             system_prompt = get_prompt("brace_map_agent", language, "dimension_only")
 
             if not system_prompt:
-                logger.warning("BraceMapAgent: No dimension_only prompt found, using fixed_dimension prompt as fallback")
+                logger.warning(
+                    "BraceMapAgent: No dimension_only prompt found, "
+                    "using fixed_dimension prompt as fallback"
+                )
                 system_prompt = get_prompt("brace_map_agent", language, "fixed_dimension")
 
             # Build user prompt with the dimension
             if language == "zh":
-                user_prompt = f"用户指定的拆解维度：{dimension}\n\n请根据这个拆解维度生成一个合适的主题和部分。"
+                user_prompt = (
+                    f"用户指定的拆解维度：{dimension}\n\n"
+                    f"请根据这个拆解维度生成一个合适的主题和部分。"
+                )
             else:
-                user_prompt = f"User's specified decomposition dimension: {dimension}\n\nGenerate a suitable topic and parts following this decomposition dimension."
+                user_prompt = (
+                    f"User's specified decomposition dimension: {dimension}\n\n"
+                    f"Generate a suitable topic and parts following this "
+                    f"decomposition dimension."
+                )
 
-            logger.debug(f"User prompt: {user_prompt}")
+            logger.debug("User prompt: %s", user_prompt)
 
             # Call LLM
-            from services.llm import llm_service
-            from config.settings import config
-
             response = await llm_service.chat(
                 prompt=user_prompt,
                 model=self.model,
@@ -1446,11 +1448,9 @@ CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" - do NOT c
                 diagram_type='brace_map'
             )
 
-            logger.debug(f"LLM response: {response[:500] if response else 'None'}...")
+            logger.debug("LLM response: %s...", response[:500] if response else 'None')
 
             # Extract JSON from response
-            from ..core.agent_utils import extract_json_from_response
-
             if isinstance(response, dict):
                 result = response
             else:
@@ -1460,8 +1460,8 @@ CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" - do NOT c
                 if isinstance(result, dict) and result.get('_error') == 'non_json_response':
                     # LLM returned non-JSON asking for more info - retry with more explicit prompt
                     logger.warning(
-                        f"BraceMapAgent: LLM returned non-JSON response in dimension-only mode. "
-                        f"Retrying with explicit JSON-only prompt."
+                        "BraceMapAgent: LLM returned non-JSON response in dimension-only mode. "
+                        "Retrying with explicit JSON-only prompt."
                     )
 
                     # Retry with more explicit prompt
@@ -1497,8 +1497,8 @@ CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" - do NOT c
                         # If still non-JSON, return None
                         if isinstance(result, dict) and result.get('_error') == 'non_json_response':
                             logger.error(
-                                f"BraceMapAgent: Retry also returned non-JSON response in dimension-only mode. "
-                                f"Giving up after 1 retry attempt."
+                                "BraceMapAgent: Retry also returned non-JSON response in dimension-only mode. "
+                                "Giving up after 1 retry attempt."
                             )
                             return None
 
@@ -1507,38 +1507,40 @@ CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" - do NOT c
                 return None
 
             # Normalize field names (e.g., 'topic' -> 'whole') before validation
-            result = self._normalize_field_names  # pylint: disable=protected-access(result)
-
+            result = self._normalize_field_names(result)
             # If fixed_dimension was provided, enforce it regardless of what LLM returned
             if dimension:
                 result['dimension'] = dimension
-                logger.debug(f"BraceMapAgent: Enforced FIXED dimension: {dimension}")
+                logger.debug("BraceMapAgent: Enforced FIXED dimension: %s", dimension)
 
-            logger.debug(f"BraceMapAgent: Dimension-only complete - dimension: '{dimension}', whole: '{result.get('whole', 'N/A')}'")
+            logger.debug(
+                "BraceMapAgent: Dimension-only complete - dimension: '%s', whole: '%s'",
+                dimension, result.get('whole', 'N/A')
+            )
 
             return result
 
-        except Exception as  # pylint: disable=broad-except e:
-            logger.error(f"BraceMapAgent: Error in dimension-only mode: {e}")
+        except Exception as e:
+            logger.error("BraceMapAgent: Error in dimension-only mode: %s", e)
             return None
 
-    def validate_output(self, spec: Dict) -> Tuple[bool, str]:
+    def validate_output(self, output: Dict) -> Tuple[bool, str]:
         """Validate a brace map specification."""
         try:
-            if not spec or not isinstance(spec, dict):
+            if not output or not isinstance(output, dict):
                 return False, "Invalid specification: must be a non-empty dictionary"
 
-            if 'whole' not in spec or not spec['whole']:
+            if 'whole' not in output or not output['whole']:
                 return False, "Missing or empty whole field"
 
-            if 'parts' not in spec or not isinstance(spec['parts'], list):
+            if 'parts' not in output or not isinstance(output['parts'], list):
                 return False, "Missing or invalid parts field"
 
-            if not spec['parts']:
+            if not output['parts']:
                 return False, "Must have at least one part"
 
             return True, "Valid brace map specification"
-        except Exception as  # pylint: disable=broad-except e:
+        except Exception as e:
             return False, f"Validation error: {str(e)}"
 
     async def enhance_spec(self, spec: Dict) -> Dict:
@@ -1557,17 +1559,16 @@ CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" - do NOT c
                 return {"success": False, "error": "At least one part is required"}
 
             # Normalize field names: convert 'label' to 'name' for compatibility
-            spec = self._normalize_field_names  # pylint: disable=protected-access(spec)
-
+            spec = self._normalize_field_names(spec)
             # Generate layout data
-            dimensions = self._calculate_dimensions  # pylint: disable=protected-access(spec)
+            dimensions = self._calculate_dimensions(spec)
             block_units = self.block_positioning.arrange_blocks(spec, dimensions, self.default_theme)
-            nodes, units = self._convert_blocks_to_nodes  # pylint: disable=protected-access(block_units, spec, dimensions)
+            nodes, units = self._convert_blocks_to_nodes(block_units, spec, dimensions)
 
             # Add layout to spec
             spec['_layout'] = {
-                'nodes': [self._serialize_nodes  # pylint: disable=protected-access(nodes)],
-                'units': self._serialize_units  # pylint: disable=protected-access(units),
+                'nodes': [self._serialize_nodes(nodes)],
+                'units': self._serialize_units(units),
                 'dimensions': dimensions
             }
             spec['_recommended_dimensions'] = dimensions
@@ -1575,7 +1576,7 @@ CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" - do NOT c
 
             return {"success": True, "spec": spec}
 
-        except Exception as  # pylint: disable=broad-except e:
+        except Exception as e:
             return {"success": False, "error": f"BraceMapAgent failed: {e}"}
 
     def _normalize_field_names(self, spec: Dict) -> Dict:
@@ -1606,11 +1607,11 @@ CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" - do NOT c
 
             return normalized_spec
 
-        except Exception as  # pylint: disable=broad-except e:
-            logger.error(f"Error normalizing field names: {e}")
+        except Exception as e:
+            logger.error("Error normalizing field names: %s", e)
             return spec
 
-    def generate_diagram(self, spec: Dict, user_id: str = None) -> Dict:
+    def generate_diagram(self, spec: Dict, user_id: Optional[str] = None) -> Dict:
         """Generate brace map diagram using block-based positioning with enhanced validation"""
         start_time = datetime.now()
         # Debug log removed
@@ -1709,14 +1710,14 @@ CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" - do NOT c
             algorithm = self.algorithm_selector.select_algorithm(spec, user_id)
 
             # Calculate dimensions
-            dimensions = self._calculate_dimensions  # pylint: disable=protected-access(spec)
+            dimensions = self._calculate_dimensions(spec)
 
             # Use block-based positioning system
             # Debug log removed
             block_units = self.block_positioning.arrange_blocks(spec, dimensions, self.default_theme)
 
             # Convert block units to NodePosition format for compatibility
-            nodes, units = self._convert_blocks_to_nodes  # pylint: disable=protected-access(block_units, spec, dimensions)
+            nodes, units = self._convert_blocks_to_nodes(block_units, spec, dimensions)
 
             # Validate that we have nodes
             if not nodes:
@@ -1727,15 +1728,15 @@ CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" - do NOT c
                 }
 
             # Calculate optimal canvas dimensions
-            optimal_dimensions = self._calculate_optimal_dimensions  # pylint: disable=protected-access(nodes, dimensions)
+            optimal_dimensions = self._calculate_optimal_dimensions(nodes, dimensions)
 
             # Adjust node positions to center them in the optimal canvas
-            nodes = self._adjust_node_positions_for_optimal_canvas  # pylint: disable=protected-access(nodes, dimensions, optimal_dimensions)
+            nodes = self._adjust_node_positions_for_optimal_canvas(nodes, dimensions, optimal_dimensions)
 
             # Create layout data
             layout_data = {
-                'units': self._serialize_units  # pylint: disable=protected-access(units),
-                'spacing_info': self._serialize_spacing_info  # pylint: disable=protected-access(SpacingInfo(
+                'units': self._serialize_units(units),
+                'spacing_info': self._serialize_spacing_info(SpacingInfo(
                     unit_spacing=50.0,
                     subpart_spacing=20.0,
                     brace_offset=50.0,
@@ -1743,11 +1744,11 @@ CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" - do NOT c
                 )),
                 'text_dimensions': self.layout_calculator.calculate_text_dimensions(spec, self.default_theme),
                 'canvas_dimensions': optimal_dimensions,
-                'nodes': self._serialize_nodes  # pylint: disable=protected-access(nodes)
+                'nodes': self._serialize_nodes(nodes)
             }
 
             # Generate SVG data
-            svg_data = self._generate_svg_data_from_layout  # pylint: disable=protected-access(layout_data, self.default_theme)
+            svg_data = self._generate_svg_data_from_layout(layout_data, self.default_theme)
 
             # Validate SVG data
             if not svg_data or 'elements' not in svg_data:
@@ -1774,7 +1775,7 @@ CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" - do NOT c
             # Debug log removed
             return result
 
-        except Exception as  # pylint: disable=broad-except e:
+        except Exception as e:
             # Debug log removed}")
             return {
                 'success': False,
@@ -1782,21 +1783,25 @@ CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" - do NOT c
                 'debug_logs': []
             }
 
-    def _convert_blocks_to_nodes(self, block_units: List[BlockUnit], spec: Dict, dimensions: Dict) -> Tuple[List[NodePosition], List[UnitPosition]]:
+    def _convert_blocks_to_nodes(
+        self,
+        block_units: List[BlockUnit],
+        spec: Dict,
+        dimensions: Dict
+    ) -> Tuple[List[NodePosition], List[UnitPosition]]:
         """Convert block units to NodePosition and UnitPosition format with fixed column layout"""
         nodes = []
         units = []
 
         # Create topic node with enhanced height to prevent squeezing
         whole = spec.get('whole', 'Main Topic')
-        topic_width = self._calculate_text_width  # pylint: disable=protected-access(whole, self.default_theme['fontTopic'])
+        topic_width = self._calculate_text_width(whole, self.default_theme['fontTopic'])
 
         # Set topic height to be larger than standard blocks but not full canvas
         # This prevents squeezing while maintaining proper positioning
         topic_height = self.default_theme['fontTopic'] + 60  # Enhanced height for topic blocks
 
         # Position topic in left column (Column 1) - like in the image
-        canvas_width = dimensions['width']
         padding = dimensions['padding']
 
         # Topic goes in left column (Column 1) - exactly at padding + 50
@@ -1877,16 +1882,16 @@ CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" - do NOT c
                 'y': text_y,
                 'text': node_data['text'],
                 'node_type': node_data['node_type'],
-                'font_size': self._get_font_size  # pylint: disable=protected-access(node_data['node_type'], theme),
-                'fill': self._get_node_color  # pylint: disable=protected-access(node_data['node_type'], theme),
+                'font_size': self._get_font_size(node_data['node_type'], theme),
+                'fill': self._get_node_color(node_data['node_type'], theme),
                 'text_anchor': 'middle',  # Center horizontally
                 'dominant_baseline': 'middle',  # Center vertically
-                'font_weight': self._get_font_weight  # pylint: disable=protected-access(node_data['node_type'])
+                'font_weight': self._get_font_weight(node_data['node_type'])
             }
             svg_elements.append(element)
 
         # Generate brace elements using minimalist design (adaptive to canvas size)
-        brace_elements = self._generate_brace_elements  # pylint: disable=protected-access(nodes_data, theme, layout_data.get('canvas_dimensions', {}))
+        brace_elements = self._generate_brace_elements(nodes_data, theme, layout_data.get('canvas_dimensions', {}))
         svg_elements.extend(brace_elements)
 
         # Use canvas dimensions from layout data
@@ -1929,8 +1934,6 @@ CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" - do NOT c
             return brace_elements
 
         topic_node = topic_nodes[0]
-        topic_center_x = topic_node['x'] + topic_node['width'] / 2
-        topic_center_y = topic_node['y'] + topic_node['height'] / 2
 
         # Generate main brace (connects topic to all parts)
         if part_nodes:
@@ -1973,10 +1976,12 @@ CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" - do NOT c
             # Position brace to the right of topic
             if min_brace_x >= max_brace_x:
                 # Not enough space - position as close to topic as possible
-                brace_x = topic_right + safety_gap + tip_depth + 3.0  # Reduced from 6px to move brace closer to topic
+                # Reduced from 6px to move brace closer to topic
+                brace_x = topic_right + safety_gap + tip_depth + 3.0
             else:
                 # Position brace closer to both topic and parts
-                brace_x = min_brace_x + (max_brace_x - min_brace_x) * 0.15  # Reduced from 30% to 15% to move brace closer to both nodes
+                # Reduced from 30% to 15% to move brace closer to both nodes
+                brace_x = min_brace_x + (max_brace_x - min_brace_x) * 0.15
 
             # CRITICAL: Brace boundaries include arc radius for complete display (arcs extend inward)
             brace_start_y = first_part_center_y + arc_radius  # Include top arc radius (inward)
@@ -1989,10 +1994,6 @@ CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" - do NOT c
             # Topic center line should align with brace_center_y
             # Update topic node position so its center line aligns with brace center line
             topic_node['y'] = brace_center_y - topic_node['height'] / 2
-
-            # Calculate safe depth
-            total_lane = max(0.0, (parts_left - topic_right - (safety_gap * 2) - tip_depth - arc_radius))
-            depth = min(max(10.0, total_lane * 0.3), 40.0)
 
             y_top = brace_start_y
             y_bot = brace_end_y
@@ -2013,8 +2014,11 @@ CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" - do NOT c
             # Main brace path with sharp mid-point tip
             brace_path = (
                 f"M {brace_x:.2f} {y_top:.2f} "
-                f"C {cp_top_x:.2f} {y_top + (y_mid - y_top - tip_width)/2:.2f} {cp_top_x:.2f} {cp_top_y:.2f} {tip_x:.2f} {y_mid:.2f} "
-                f"C {cp_bottom_x:.2f} {cp_bottom_y:.2f} {cp_bottom_x:.2f} {y_mid + (y_bot - y_mid - tip_width)/2:.2f} {brace_x:.2f} {y_bot:.2f}"
+                f"C {cp_top_x:.2f} {y_top + (y_mid - y_top - tip_width)/2:.2f} "
+                f"{cp_top_x:.2f} {cp_top_y:.2f} {tip_x:.2f} {y_mid:.2f} "
+                f"C {cp_bottom_x:.2f} {cp_bottom_y:.2f} "
+                f"{cp_bottom_x:.2f} {y_mid + (y_bot - y_mid - tip_width)/2:.2f} "
+                f"{brace_x:.2f} {y_bot:.2f}"
             )
 
             # Outline (draw first)
@@ -2093,8 +2097,6 @@ CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" - do NOT c
 
         # Generate small braces (connect each part to its subparts)
         for part_node in part_nodes:
-            part_center_x = part_node['x'] + part_node['width'] / 2
-            part_center_y = part_node['y'] + part_node['height'] / 2
             part_index = part_node.get('part_index', 0)
 
             # Find subparts for this part
@@ -2104,15 +2106,14 @@ CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" - do NOT c
                 # Find the full vertical extent of subparts for this part (top to bottom)
                 subparts_top_y = min(n['y'] for n in part_subparts)
                 subparts_bottom_y = max(n['y'] + n['height'] for n in part_subparts)
-                first_subpart_y = subparts_top_y
-                last_subpart_y = subparts_bottom_y
-                subpart_brace_height = last_subpart_y - first_subpart_y
+                _first_subpart_y = subparts_top_y
+                _last_subpart_y = subparts_bottom_y
+                subpart_brace_height = _last_subpart_y - _first_subpart_y
 
                 # Overlap-safe small brace placement between part and subparts
                 part_right = part_node['x'] + part_node['width']
                 subparts_left = min(n['x'] for n in part_subparts)
 
-                small_brace_width = 6
                 small_safety_gap = max(20.0, canvas_width * 0.025)  # Reduced from 28.0 to move small brace closer to nodes
 
                 # CRITICAL: Calculate safe positioning for LEFT-opening small brace
@@ -2140,10 +2141,6 @@ CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" - do NOT c
                     # Position small brace closer to both parts and subparts
                     small_brace_x = min_sx + (max_sx - min_sx) * 0.2  # Reduced from 0.5 (middle) to 0.2 to move closer to nodes
 
-                # Calculate safe depth
-                small_total_lane = max(0.0, (subparts_left - part_right - (small_safety_gap * 2) - s_tip_depth - s_arc_radius))
-                s_depth = min(max(8.0, small_total_lane * 0.3), 30.0)
-
                 # CRITICAL: Small brace boundaries include arc radius for complete display (arcs extend inward)
                 small_brace_start_y = first_subpart_center_y + s_arc_radius  # Include top arc radius (inward)
                 small_brace_end_y = last_subpart_center_y - s_arc_radius     # Include bottom arc radius (inward)
@@ -2169,8 +2166,11 @@ CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" - do NOT c
                 # Main small brace path with sharp mid-point tip
                 small_brace_path = (
                     f"M {small_brace_x:.2f} {yt:.2f} "
-                    f"C {s_cp_top_x:.2f} {yt + (ym - yt - s_tip_width)/2:.2f} {s_cp_top_x:.2f} {s_cp_top_y:.2f} {s_tip_x:.2f} {ym:.2f} "
-                    f"C {s_cp_bottom_x:.2f} {s_cp_bottom_y:.2f} {s_cp_bottom_x:.2f} {ym + (yb - ym - s_tip_width)/2:.2f} {small_brace_x:.2f} {yb:.2f}"
+                    f"C {s_cp_top_x:.2f} {yt + (ym - yt - s_tip_width)/2:.2f} "
+                    f"{s_cp_top_x:.2f} {s_cp_top_y:.2f} {s_tip_x:.2f} {ym:.2f} "
+                    f"C {s_cp_bottom_x:.2f} {s_cp_bottom_y:.2f} "
+                    f"{s_cp_bottom_x:.2f} {ym + (yb - ym - s_tip_width)/2:.2f} "
+                    f"{small_brace_x:.2f} {yb:.2f}"
                 )
 
                 # Outline (draw first)
@@ -2279,20 +2279,40 @@ CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" - do NOT c
         # Calculate required height based on content
         if total_subparts == 0:
             # Only topic and parts
-            required_height = topic_height + (total_parts * part_height) + (total_parts * 20)  # 20px spacing between parts
+            # 20px spacing between parts
+            required_height = (
+                topic_height + (total_parts * part_height) + (total_parts * 20)
+            )
         else:
             # Topic + parts + subparts
-            required_height = topic_height + (total_parts * part_height) + (total_subparts * subpart_height) + (total_parts * 30) + (total_subparts * 15)  # Spacing
+            # Spacing
+            required_height = (
+                topic_height + (total_parts * part_height) +
+                (total_subparts * subpart_height) + (total_parts * 30) +
+                (total_subparts * 15)
+            )
 
         # Calculate required width for 5-column layout
-        # Column 1: Topic, Column 2: Main brace, Column 3: Parts, Column 4: Small braces, Column 5: Subparts
+        # Column 1: Topic, Column 2: Main brace, Column 3: Parts,
+        # Column 4: Small braces, Column 5: Subparts
         estimated_topic_width = max_text_length * 12  # Approximate character width
-        estimated_part_width = max(len(part['name']) for part in parts) * 10 if parts else 100
-        estimated_subpart_width = max(len(subpart['name']) for part in parts for subpart in part.get('subparts', [])) * 8 if total_subparts > 0 else 100
+        estimated_part_width = (
+            max(len(part['name']) for part in parts) * 10 if parts else 100
+        )
+        estimated_subpart_width = (
+            max(
+                len(subpart['name'])
+                for part in parts
+                for subpart in part.get('subparts', [])
+            ) * 8 if total_subparts > 0 else 100
+        )
 
         # 5-column layout requires more width + extra space for brace tip
         brace_tip_space = 100  # Extra space for brace tip extension
-        required_width = estimated_topic_width + 150 + estimated_part_width + 150 + estimated_subpart_width + 120 + brace_tip_space
+        required_width = (
+            estimated_topic_width + 150 + estimated_part_width + 150 +
+            estimated_subpart_width + 120 + brace_tip_space
+        )
 
         # Add watermark space (bottom and right margins)
         watermark_margin = 24  # Tighter watermark margin
@@ -2383,7 +2403,12 @@ CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" - do NOT c
             }
         }
 
-    def _adjust_node_positions_for_optimal_canvas(self, nodes: List[NodePosition], initial_dimensions: Dict, optimal_dimensions: Dict) -> List[NodePosition]:
+    def _adjust_node_positions_for_optimal_canvas(
+        self,
+        nodes: List[NodePosition],
+        _initial_dimensions: Dict,
+        optimal_dimensions: Dict
+    ) -> List[NodePosition]:
         """Adjust node positions to center them in the optimal canvas while preserving topic alignment"""
         if not nodes:
             return nodes
@@ -2391,8 +2416,8 @@ CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" - do NOT c
         content_bounds = optimal_dimensions['content_bounds']
 
         # Calculate content dimensions
-        content_width = content_bounds['max_x'] - content_bounds['min_x']
-        content_height = content_bounds['max_y'] - content_bounds['min_y']
+        _content_width = content_bounds['max_x'] - content_bounds['min_x']
+        _content_height = content_bounds['max_y'] - content_bounds['min_y']
 
         # Calculate minimal padding for centering
         content_padding = 40  # Minimal padding around content
@@ -2465,9 +2490,6 @@ CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" - do NOT c
         # Calculate unit positions using initial dimensions
         units = self.layout_calculator.calculate_unit_positions(spec, dimensions, theme)
 
-        # Calculate spacing information
-        spacing_info = self.layout_calculator.calculate_spacing_info(units)
-
         # Create all nodes
         nodes = []
 
@@ -2490,13 +2512,13 @@ CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" - do NOT c
         nodes.append(topic_node)
 
         # Calculate optimal canvas dimensions based on actual node positions
-        optimal_dimensions = self._calculate_optimal_dimensions  # pylint: disable=protected-access(nodes, dimensions)
+        optimal_dimensions = self._calculate_optimal_dimensions(nodes, dimensions)
 
         # Adjust node positions to center them in the optimal canvas
-        nodes = self._adjust_node_positions_for_optimal_canvas  # pylint: disable=protected-access(nodes, dimensions, optimal_dimensions)
+        nodes = self._adjust_node_positions_for_optimal_canvas(nodes, dimensions, optimal_dimensions)
 
         # Validate and resolve collisions using optimal dimensions
-        nodes = self._validate_and_adjust_boundaries  # pylint: disable=protected-access(nodes, optimal_dimensions)
+        nodes = self._validate_and_adjust_boundaries(nodes, optimal_dimensions)
         nodes = CollisionDetector.resolve_collisions(nodes, padding=20.0)
 
         # Update unit positions to match adjusted nodes
@@ -2543,8 +2565,8 @@ CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" - do NOT c
 
         # Create layout data with updated optimal dimensions
         layout_data = {
-            'units': self._serialize_units  # pylint: disable=protected-access(adjusted_units),
-            'spacing_info': self._serialize_spacing_info  # pylint: disable=protected-access(SpacingInfo(
+            'units': self._serialize_units(adjusted_units),
+            'spacing_info': self._serialize_spacing_info(SpacingInfo(
                 unit_spacing=50.0,
                 subpart_spacing=20.0,
                 brace_offset=50.0,
@@ -2552,7 +2574,7 @@ CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" - do NOT c
             )),
             'text_dimensions': text_dimensions,
             'canvas_dimensions': optimal_dimensions,
-            'nodes': self._serialize_nodes  # pylint: disable=protected-access(nodes)
+            'nodes': self._serialize_nodes(nodes)
         }
 
         processing_time = (datetime.now() - start_time).total_seconds()
@@ -2661,8 +2683,8 @@ CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" - do NOT c
                 'y': node.y,
                 'text': node.text,
                 'node_type': node.node_type,  # Add node_type for identification
-                'font_size': self._get_font_size  # pylint: disable=protected-access(node.node_type, theme),
-                'fill': self._get_node_color  # pylint: disable=protected-access(node.node_type, theme),
+                'font_size': self._get_font_size(node.node_type, theme),
+                'fill': self._get_node_color(node.node_type, theme),
                 'text_anchor': 'middle',
                 'dominant_baseline': 'middle'
             }

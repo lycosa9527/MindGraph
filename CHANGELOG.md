@@ -7,6 +7,92 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [5.6.0] - 2026-01-18 - Major Code Refactoring and Configuration Modularization
+
+### Changed
+
+- **Configuration Modularization** (`config/settings.py`)
+  - Refactored monolithic `settings.py` (1,290 lines) into modular configuration files
+  - Split configuration into separate modules: `base_config.py`, `features_config.py`, `knowledge_config.py`, `llm_config.py`, `rate_limiting.py`, `visualization_config.py`
+  - Reduced `settings.py` to 26 lines with centralized configuration loading
+  - Improved maintainability and organization of configuration settings
+  - Better separation of concerns for different configuration domains
+
+- **Agent Code Refactoring** (`agents/`)
+  - Refactored 14 agent files for improved code quality and maintainability
+  - Updated `concept_map_agent.py`, `mind_map_agent.py`, and all thinking map agents
+  - Improved code structure in `main_agent.py` (324 lines refactored)
+  - Enhanced `brace_map_agent.py` with significant code cleanup (508 lines refactored)
+  - Updated `agent_utils.py` and `base_agent.py` for better consistency
+  - Improved `tab_agent.py` integration
+
+- **Client Improvements** (`clients/`)
+  - **DashScope Rerank Client** (`clients/dashscope_rerank.py`)
+    - Improved error handling with specific exception types
+    - Enhanced logging with structured format strings
+    - Better Redis connection error handling
+    - Improved code formatting and readability
+    - More robust cache error handling
+  - **Dify Client** (`clients/dify.py`)
+    - Code cleanup and refactoring (51 lines changed)
+  - **Omni Client** (`clients/omni_client.py`)
+    - Significant refactoring for better maintainability (295 lines changed)
+  - **TTS Realtime Client** (`clients/tts_realtime_client.py`)
+    - Code improvements and refactoring (59 lines changed)
+  - Removed trailing whitespace in `clients/__init__.py`
+
+- **Knowledge Service Refactoring** (`services/knowledge/`)
+  - **Knowledge Space Service** (`services/knowledge/knowledge_space_service.py`)
+    - Major refactoring reducing from 1,091 lines to 203 lines
+    - Improved code organization and maintainability
+    - Better separation of concerns
+  - **Chunking Service** (`services/knowledge/chunking_service.py`)
+    - Code improvements and refactoring (32 lines changed)
+  - **Document Cleaner** (`services/knowledge/document_cleaner.py`)
+    - Code cleanup (16 lines changed)
+  - **Retrieval Test Service** (`services/knowledge/retrieval_test_service.py`)
+    - Minor improvements (11 lines changed)
+
+- **Database Configuration** (`config/database.py`)
+  - Significant refactoring and improvements (353 lines changed)
+  - Better database connection management
+  - Improved configuration handling
+
+- **Celery Configuration** (`config/celery.py`)
+  - Continued improvements and refactoring (84 lines changed)
+  - Better worker initialization and configuration
+
+- **Infrastructure Services** (`services/infrastructure/`)
+  - Minor improvements to `exception_handlers.py`, `logging_config.py`, and `middleware.py`
+  - Better error handling and logging consistency
+
+- **Main Application** (`main.py`, `run_server.py`)
+  - Code improvements and refactoring (30 lines changed in `main.py`, 10 lines in `run_server.py`)
+  - Better application initialization
+
+- **Health Router** (`routers/health.py`)
+  - Minor improvements (6 lines changed)
+
+- **IP Geolocation** (`services/auth/ip_geolocation.py`)
+  - Minor code improvements (4 lines changed)
+
+### Technical Details
+
+- **Code Statistics**
+  - 34 files changed across the codebase
+  - 1,664 insertions, 3,370 deletions (net reduction of 1,706 lines)
+  - Significant code reduction while maintaining functionality
+  - Improved code quality and maintainability
+
+- **Refactoring Focus**
+  - Code organization and modularity
+  - Error handling improvements
+  - Logging consistency
+  - Configuration management
+  - Service layer improvements
+
+---
+
 ## [5.5.0] - 2026-01-15 - Enhanced Logging, Celery Refactoring, and Error Handling Improvements
 
 ### Added

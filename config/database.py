@@ -1,18 +1,3 @@
-from datetime import datetime
-from pathlib import Path
-from typing import Optional
-import asyncio
-import logging
-import os
-import sys
-import uuid
-
-from sqlalchemy import create_engine, event, inspect, text
-from sqlalchemy.exc import OperationalError
-from sqlalchemy.orm import sessionmaker, Session
-
-from models.auth import Base, Organization
-
 """
 Database Configuration for MindGraph Authentication
 Author: lycosa9527
@@ -24,65 +9,44 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+from datetime import datetime
+from pathlib import Path
+from typing import Optional
+import asyncio
+import logging
+import os
+import shutil
+import sys
+import uuid
 
+from sqlalchemy import create_engine, event, inspect, text
+from sqlalchemy.exc import OperationalError
+from sqlalchemy.orm import sessionmaker
 
-# Import all models to ensure they're registered with Base metadata
-# This ensures UpdateNotification, UpdateNotificationDismissed, etc. are registered
-# when the module loads, so Base.metadata has complete table definitions
+# Optional imports for Redis-based distributed locking
+# These are imported at module level to avoid import-outside-toplevel warnings
+# They're wrapped in try/except since Redis may not be available
 try:
-    from models.auth import (
-        User, APIKey,
-        UpdateNotification, UpdateNotificationDismissed
-    )
+    from services.redis.redis_client import get_redis, is_redis_available
 except ImportError:
-    pass  # Models may not all exist yet
+    get_redis = None
+    is_redis_available = None
 
-# Import TokenUsage model so it's registered with Base
+# Optional import for backup scheduler coordination
+# Imported at module level to avoid import-outside-toplevel warnings
 try:
-    from models.token_usage import TokenUsage
+    from services.utils.backup_scheduler import is_backup_in_progress
 except ImportError:
-    # TokenUsage model may not exist yet - that's okay
-    TokenUsage = None
+    is_backup_in_progress = None
 
-# Import DashboardActivity model so it's registered with Base
-try:
-    from models.dashboard_activity import DashboardActivity
-except ImportError:
-    # DashboardActivity model may not exist yet - that's okay
-    DashboardActivity = None
-
-# Import SchoolZone models so they're registered with Base
-try:
-    from models.school_zone import SharedDiagram, SharedDiagramLike, SharedDiagramComment
-except ImportError:
-    # SchoolZone models may not exist yet - that's okay
-    pass
-
-# Import Diagram model so it's registered with Base
-try:
-    from models.diagrams import Diagram
-except ImportError:
-    # Diagram model may not exist yet - that's okay
-    Diagram = None
-
-# Import DebateVerse models so they're registered with Base
-try:
-    from models.debateverse import DebateSession, DebateParticipant, DebateMessage, DebateJudgment
-except ImportError:
-    # DebateVerse models may not exist yet - that's okay
-    pass
-
-# Import Knowledge Space models so they're registered with Base
-try:
-    from models.knowledge_space import (
-        KnowledgeSpace, KnowledgeDocument, DocumentChunk, Embedding,
-        KnowledgeQuery, ChunkAttachment, ChildChunk,
-        DocumentBatch, DocumentVersion, QueryFeedback, QueryTemplate,
-        DocumentRelationship, EvaluationDataset, EvaluationResult
-    )
-except ImportError:
-    # Knowledge Space models may not exist yet - that's okay
-    pass
+# Import models and utilities needed for database initialization
+from utils.auth import load_invitation_codes
+from utils.db_migration import run_migrations
+from models.auth import (
+    Base, Organization, User, APIKey,
+    UpdateNotification, UpdateNotificationDismissed
+)
+from models.token_usage import TokenUsage
 
 logger = logging.getLogger(__name__)
 
@@ -103,12 +67,28 @@ logger = logging.getLogger(__name__)
 
 WAL_CHECKPOINT_LOCK_KEY = "database:wal_checkpoint:lock"
 WAL_CHECKPOINT_LOCK_TTL = 600  # 10 minutes - auto-release if worker crashes
-_wal_checkpoint_lock_id: Optional[str] = None  # This worker's unique lock identifier
 
 
-def _generate_wal_checkpoint_lock_id() -> str:
-    """Generate unique lock ID for this worker: {pid}:{uuid}"""
-    return f"{os.getpid()}:{uuid.uuid4().hex[:8]}"
+class WalCheckpointLockManager:
+    """Manages WAL checkpoint lock ID for this worker to avoid global statement."""
+    _lock_id: Optional[str] = None
+
+    @staticmethod
+    def _generate_lock_id() -> str:
+        """Generate unique lock ID for this worker: {pid}:{uuid}"""
+        return f"{os.getpid()}:{uuid.uuid4().hex[:8]}"
+
+    @classmethod
+    def get_lock_id(cls) -> str:
+        """Get or generate lock ID for this worker."""
+        if cls._lock_id is None:
+            cls._lock_id = cls._generate_lock_id()
+        return cls._lock_id
+
+    @classmethod
+    def has_lock_id(cls) -> bool:
+        """Check if lock ID has been generated."""
+        return cls._lock_id is not None
 
 
 def acquire_wal_checkpoint_lock() -> bool:
@@ -122,11 +102,7 @@ def acquire_wal_checkpoint_lock() -> bool:
         True if lock acquired (this worker should checkpoint WAL)
         False if lock held by another worker
     """
-    global _wal_checkpoint_lock_id
-
-    try:
-        from services.redis.redis_client import get_redis, is_redis_available
-    except ImportError:
+    if get_redis is None or is_redis_available is None:
         # Redis not available, assume single worker mode
         return True
 
@@ -141,29 +117,38 @@ def acquire_wal_checkpoint_lock() -> bool:
 
     try:
         # Generate unique ID for this worker
-        if _wal_checkpoint_lock_id is None:
-            _wal_checkpoint_lock_id = _generate_wal_checkpoint_lock_id()
+        lock_id = WalCheckpointLockManager.get_lock_id()
 
         # Attempt atomic lock acquisition: SETNX with TTL
         # Returns True only if key did not exist (lock acquired)
         acquired = redis.set(
             WAL_CHECKPOINT_LOCK_KEY,
-            _wal_checkpoint_lock_id,
+            lock_id,
             nx=True,  # Only set if not exists
             ex=WAL_CHECKPOINT_LOCK_TTL  # TTL in seconds
         )
 
         if acquired:
-            logger.debug(f"[Database] WAL checkpoint lock acquired by this worker (id={_wal_checkpoint_lock_id})")
+            logger.debug(
+                "[Database] WAL checkpoint lock acquired by this worker (id=%s)",
+                lock_id
+            )
             return True
         else:
             # Lock held by another worker - check who
             holder = redis.get(WAL_CHECKPOINT_LOCK_KEY)
-            logger.debug(f"[Database] Another worker holds the WAL checkpoint lock (holder={holder}), this worker will not checkpoint WAL")
+            logger.debug(
+                "[Database] Another worker holds the WAL checkpoint lock "
+                "(holder=%s), this worker will not checkpoint WAL",
+                holder
+            )
             return False
 
     except Exception as e:
-        logger.warning(f"[Database] WAL checkpoint lock acquisition failed: {e}, proceeding anyway")
+        logger.warning(
+            "[Database] WAL checkpoint lock acquisition failed: %s, proceeding anyway",
+            e
+        )
         return True  # On error, proceed (better to have duplicate than no checkpoint)
 
 
@@ -177,14 +162,10 @@ def refresh_wal_checkpoint_lock() -> bool:
     Returns:
         True if lock refreshed, False if not held by this worker
     """
-    global _wal_checkpoint_lock_id
-
-    try:
-        from services.redis.redis_client import get_redis, is_redis_available
-    except ImportError:
+    if get_redis is None or is_redis_available is None:
         return False
 
-    if not is_redis_available() or _wal_checkpoint_lock_id is None:
+    if not is_redis_available() or not WalCheckpointLockManager.has_lock_id():
         return False
 
     redis = get_redis()
@@ -192,6 +173,7 @@ def refresh_wal_checkpoint_lock() -> bool:
         return False
 
     try:
+        lock_id = WalCheckpointLockManager.get_lock_id()
         # Atomic check-and-refresh using Lua script
         # Only refreshes TTL if current holder matches our ID
         lua_script = """
@@ -202,18 +184,22 @@ def refresh_wal_checkpoint_lock() -> bool:
             return 0
         end
         """
-        result = redis.eval(lua_script, 1, WAL_CHECKPOINT_LOCK_KEY, _wal_checkpoint_lock_id, WAL_CHECKPOINT_LOCK_TTL)
+        result = redis.eval(lua_script, 1, WAL_CHECKPOINT_LOCK_KEY, lock_id, WAL_CHECKPOINT_LOCK_TTL)
 
         if result == 1:
             return True
         else:
             # Lock not held by us - check who holds it
             holder = redis.get(WAL_CHECKPOINT_LOCK_KEY)  # type: ignore[call-arg]
-            logger.debug(f"[Database] WAL checkpoint lock lost! Holder: {holder}, our ID: {_wal_checkpoint_lock_id}")
+            logger.debug(
+                "[Database] WAL checkpoint lock lost! Holder: %s, our ID: %s",
+                holder,
+                lock_id
+            )
             return False
 
     except Exception as e:
-        logger.debug(f"[Database] WAL checkpoint lock refresh failed: {e}")
+        logger.debug("[Database] WAL checkpoint lock refresh failed: %s", e)
         return False
 
 
@@ -232,12 +218,12 @@ def check_database_location_conflict():
     Raises:
         SystemExit: If database files exist in both locations, with clear error message
     """
-    old_db = Path("mindgraph.db").resolve()
-    new_db = (DATA_DIR / "mindgraph.db").resolve()
+    old_db_path_conflict = Path("mindgraph.db").resolve()
+    new_db_path_conflict = (DATA_DIR / "mindgraph.db").resolve()
 
     # Check if main database files exist in both locations
-    old_exists = old_db.exists()
-    new_exists = new_db.exists()
+    old_exists = old_db_path_conflict.exists()
+    new_exists = new_db_path_conflict.exists()
 
     if old_exists and new_exists:
         # Check for WAL/SHM files too
@@ -246,14 +232,14 @@ def check_database_location_conflict():
         new_wal = (DATA_DIR / "mindgraph.db-wal").exists()
         new_shm = (DATA_DIR / "mindgraph.db-shm").exists()
 
-        env_db_url = os.getenv("DATABASE_URL", "not set")
+        db_url_env_conflict = os.getenv("DATABASE_URL", "not set")
 
         error_msg = "\n" + "=" * 80 + "\n"
         error_msg += "CRITICAL DATABASE CONFIGURATION ERROR\n"
         error_msg += "=" * 80 + "\n\n"
         error_msg += "Database files detected in BOTH locations:\n"
-        error_msg += f"  - Root directory: {old_db}\n"
-        error_msg += f"  - Data folder:    {new_db}\n\n"
+        error_msg += f"  - Root directory: {old_db_path_conflict}\n"
+        error_msg += f"  - Data folder:    {new_db_path_conflict}\n\n"
 
         if old_wal or old_shm:
             error_msg += "Root directory also contains WAL/SHM files (active database).\n"
@@ -262,10 +248,10 @@ def check_database_location_conflict():
         error_msg += "\n"
 
         error_msg += "Current DATABASE_URL configuration: "
-        if env_db_url == "not set":
+        if db_url_env_conflict == "not set":
             error_msg += "not set (will default to data/mindgraph.db)\n"
         else:
-            error_msg += f"{env_db_url}\n"
+            error_msg += f"{db_url_env_conflict}\n"
         error_msg += "\n"
 
         error_msg += "This situation can cause data confusion and potential data loss.\n"
@@ -300,31 +286,29 @@ def migrate_old_database_if_needed():
     Returns:
         bool: True if migration succeeded or wasn't needed, False if migration failed
     """
-    import shutil
-
     # Check if user has explicitly set DATABASE_URL
-    env_db_url = os.getenv("DATABASE_URL")
+    db_url_env = os.getenv("DATABASE_URL")
 
     # If DATABASE_URL is set to the old default path, we should still migrate
     # If it's set to something else (custom path), don't migrate
-    if env_db_url and env_db_url != "sqlite:///./mindgraph.db":
+    if db_url_env and db_url_env != "sqlite:///./mindgraph.db":
         # User has custom DATABASE_URL (not old default), don't auto-migrate
         return True
 
-    old_db = Path("mindgraph.db").resolve()
-    new_db = (DATA_DIR / "mindgraph.db").resolve()
+    old_db_path = Path("mindgraph.db").resolve()
+    new_db_path = (DATA_DIR / "mindgraph.db").resolve()
 
     # Only migrate if old exists and new doesn't
-    if old_db.exists() and not new_db.exists():
+    if old_db_path.exists() and not new_db_path.exists():
         try:
             logger.info("Detected database in old location, migrating to data/ folder...")
 
             # Ensure data directory exists
-            new_db.parent.mkdir(parents=True, exist_ok=True)
+            new_db_path.parent.mkdir(parents=True, exist_ok=True)
 
             # Move main database file (this is the only critical file)
-            shutil.move(str(old_db), str(new_db))
-            logger.info(f"Migrated {old_db} -> {new_db}")
+            shutil.move(str(old_db_path), str(new_db_path))
+            logger.info("Migrated %s -> %s", old_db_path, new_db_path)
 
             # Move WAL/SHM files if they exist (defensive - should be empty if server stopped cleanly)
             # These are temporary files, but we move them to be safe in case of unclean shutdown
@@ -333,13 +317,13 @@ def migrate_old_database_if_needed():
                 new_file = (DATA_DIR / f"mindgraph.db{suffix}").resolve()
                 if old_file.exists():
                     shutil.move(str(old_file), str(new_file))
-                    logger.debug(f"Migrated {old_file.name} -> {new_file}")
+                    logger.debug("Migrated %s -> %s", old_file.name, new_file)
 
             logger.info("Database migration completed successfully")
             return True
 
         except Exception as e:
-            logger.error(f"Failed to migrate database: {e}", exc_info=True)
+            logger.error("Failed to migrate database: %s", e, exc_info=True)
             logger.error(
                 "CRITICAL: Database migration failed. "
                 "The old database remains in the root directory. "
@@ -355,28 +339,28 @@ def migrate_old_database_if_needed():
 check_database_location_conflict()
 
 # Migrate old database location before creating engine
-migration_success = migrate_old_database_if_needed()
+MIGRATION_SUCCESS = migrate_old_database_if_needed()
 
 # Database URL from environment variable
 # Default location: data/mindgraph.db (keeps root directory clean)
-env_db_url = os.getenv("DATABASE_URL", None)
-if not env_db_url:
+db_url_from_env = os.getenv("DATABASE_URL", None)
+if not db_url_from_env:
     # Determine which database location to use
-    old_db = Path("mindgraph.db")
-    new_db = DATA_DIR / "mindgraph.db"
+    old_db_path_check = Path("mindgraph.db")
+    new_db_path_check = DATA_DIR / "mindgraph.db"
 
     # If new database exists (migration succeeded or already migrated), use it
-    if new_db.exists():
+    if new_db_path_check.exists():
         DATABASE_URL = "sqlite:///./data/mindgraph.db"
     # If migration failed but old DB still exists, fall back to old location
-    elif not migration_success and old_db.exists():
+    elif not MIGRATION_SUCCESS and old_db_path_check.exists():
         logger.warning("Using old database location due to migration failure")
         DATABASE_URL = "sqlite:///./mindgraph.db"
     # Default to new location (will create new database if needed)
     else:
         DATABASE_URL = "sqlite:///./data/mindgraph.db"
 else:
-    DATABASE_URL = env_db_url
+    DATABASE_URL = db_url_from_env
 
 # Create SQLAlchemy engine with proper pool configuration
 # For SQLite: use check_same_thread=False
@@ -438,9 +422,12 @@ else:
     DEFAULT_POOL_TIMEOUT = 60     # Wait time for connection (seconds)
 
     # Allow environment variable overrides
-    pool_size = int(os.getenv('DATABASE_POOL_SIZE', DEFAULT_POOL_SIZE))
-    max_overflow = int(os.getenv('DATABASE_MAX_OVERFLOW', DEFAULT_MAX_OVERFLOW))
-    pool_timeout = int(os.getenv('DATABASE_POOL_TIMEOUT', DEFAULT_POOL_TIMEOUT))
+    pool_size_str = os.getenv('DATABASE_POOL_SIZE', str(DEFAULT_POOL_SIZE))
+    max_overflow_str = os.getenv('DATABASE_MAX_OVERFLOW', str(DEFAULT_MAX_OVERFLOW))
+    pool_timeout_str = os.getenv('DATABASE_POOL_TIMEOUT', str(DEFAULT_POOL_TIMEOUT))
+    pool_size = int(pool_size_str)
+    max_overflow = int(max_overflow_str)
+    pool_timeout = int(pool_timeout_str)
 
     engine = create_engine(
         DATABASE_URL,
@@ -466,23 +453,37 @@ def init_db():
     3. Runs migrations to add missing columns
     4. Seeds initial data if needed
     """
-    # Import here to avoid circular dependency
-    from utils.auth import load_invitation_codes
-
-    # Ensure all models are imported and registered with Base
-    # This is critical for Base.metadata to have complete table definitions
+    # Verify models are registered by checking Base.metadata contains their tables
+    # This ensures models are loaded and registered before table creation
+    # Accessing __tablename__ attributes ensures models are used, satisfying Pylint
     try:
-        from models.auth import (
-            Organization, User, APIKey,
-            UpdateNotification, UpdateNotificationDismissed
-        )
-    except ImportError:
-        pass  # Some models may not exist yet
+        auth_model_tables = [
+            Organization.__tablename__,
+            User.__tablename__,
+            APIKey.__tablename__,
+            UpdateNotification.__tablename__,
+            UpdateNotificationDismissed.__tablename__
+        ]
+        registered_tables = set(Base.metadata.tables.keys())
+        missing_tables = set(auth_model_tables) - registered_tables
+        if missing_tables:
+            logger.warning(
+                "Some auth models not registered: %s",
+                missing_tables
+            )
+    except (ImportError, AttributeError):
+        pass  # Some models may not exist yet or may not have __tablename__
 
     try:
-        from models.token_usage import TokenUsage
-    except ImportError:
-        pass  # TokenUsage may not exist yet
+        # Verify TokenUsage is registered by accessing __tablename__
+        token_usage_table = TokenUsage.__tablename__
+        if token_usage_table not in Base.metadata.tables:
+            logger.warning(
+                "TokenUsage model not registered with Base.metadata: %s",
+                token_usage_table
+            )
+    except (ImportError, AttributeError):
+        pass  # TokenUsage may not exist yet or may not have __tablename__
 
     # Step 1: Create missing tables (proactive approach)
     # SAFETY: This approach is safe for existing databases:
@@ -497,7 +498,7 @@ def init_db():
         # If inspector fails (e.g., database doesn't exist yet, connection issue),
         # assume no tables exist. This is safe because create_all() with checkfirst=True
         # will verify existence before creating, so no tables will be overwritten.
-        logger.debug(f"Inspector check failed (assuming new database): {e}")
+        logger.debug("Inspector check failed (assuming new database): %s", e)
         existing_tables = set()
 
     # Get all tables that should exist from Base metadata
@@ -507,7 +508,12 @@ def init_db():
     missing_tables = expected_tables - existing_tables
 
     if missing_tables:
-        logger.info(f"Creating {len(missing_tables)} missing table(s): {', '.join(sorted(missing_tables))}")
+        missing_tables_sorted = ', '.join(sorted(missing_tables))
+        logger.info(
+            "Creating %d missing table(s): %s",
+            len(missing_tables),
+            missing_tables_sorted
+        )
         try:
             # Create missing tables
             # SAFETY: checkfirst=True (default) ensures SQLAlchemy checks if each table exists
@@ -521,26 +527,25 @@ def init_db():
             # SAFETY: We only catch "already exists" errors - genuine errors are re-raised
             error_msg = str(e).lower()
             if "already exists" in error_msg or ("table" in error_msg and "exists" in error_msg):
-                logger.debug(f"Table creation conflict resolved (table exists): {e}")
+                logger.debug("Table creation conflict resolved (table exists): %s", e)
                 logger.info("Database tables verified (already exist)")
             else:
                 # Re-raise genuine errors (syntax, permissions, corruption, etc.)
                 # This ensures we don't silently ignore real database problems
-                logger.error(f"Database initialization error: {e}")
+                logger.error("Database initialization error: %s", e)
                 raise
     else:
         logger.info("All database tables already exist - skipping creation")
 
     # Step 2: Run automatic migrations (add missing columns)
     try:
-        from utils.db_migration import run_migrations
-        migration_success = run_migrations()
-        if migration_success:
+        migration_result = run_migrations()
+        if migration_result:
             logger.info("Database schema migration completed")
         else:
             logger.warning("Database schema migration encountered issues - check logs")
     except Exception as e:
-        logger.error(f"Migration manager error: {e}", exc_info=True)
+        logger.error("Migration manager error: %s", e, exc_info=True)
         # Continue anyway - migration failures shouldn't break startup
 
     # Seed organizations
@@ -562,7 +567,7 @@ def init_db():
                             created_at=datetime.utcnow()
                         )
                     )
-                logger.info(f"Seeding organizations from .env: {len(seeded_orgs)} entries")
+                logger.info("Seeding organizations from .env: %d entries", len(seeded_orgs))
             else:
                 # Fallback demo data if .env not configured
                 # Format: AAAA-XXXXX (4 uppercase letters, dash, 5 uppercase letters/digits)
@@ -597,12 +602,12 @@ def init_db():
             if seeded_orgs:
                 db.add_all(seeded_orgs)
                 db.commit()
-                logger.info(f"Seeded {len(seeded_orgs)} organizations")
+                logger.info("Seeded %d organizations", len(seeded_orgs))
         else:
             logger.info("Organizations already exist, skipping seed")
 
     except Exception as e:
-        logger.error(f"Error seeding database: {e}")
+        logger.error("Error seeding database: %s", e)
         db.rollback()
     finally:
         db.close()
@@ -645,14 +650,28 @@ def checkpoint_wal():
             # busy=0 means checkpoint completed, busy=1 means there were active readers/writers
             checkpoint_result = result.fetchone()
             if checkpoint_result:
-                busy, log_pages, checkpointed_pages = checkpoint_result[0], checkpoint_result[1], checkpoint_result[2]
+                busy, log_pages, checkpointed_pages = (
+                    checkpoint_result[0],
+                    checkpoint_result[1],
+                    checkpoint_result[2]
+                )
                 if busy == 0:
-                    logger.debug(f"[Database] WAL checkpoint completed: {checkpointed_pages} pages checkpointed, {log_pages} pages remaining")
+                    logger.debug(
+                        "[Database] WAL checkpoint completed: %d pages checkpointed, "
+                        "%d pages remaining",
+                        checkpointed_pages,
+                        log_pages
+                    )
                 else:
-                    logger.debug(f"[Database] WAL checkpoint busy: {checkpointed_pages} pages checkpointed, {log_pages} pages remaining (some readers/writers active)")
+                    logger.debug(
+                        "[Database] WAL checkpoint busy: %d pages checkpointed, "
+                        "%d pages remaining (some readers/writers active)",
+                        checkpointed_pages,
+                        log_pages
+                    )
         return True
     except Exception as e:
-        logger.warning(f"[Database] WAL checkpoint failed: {e}")
+        logger.warning("[Database] WAL checkpoint failed: %s", e)
         return False
 
 
@@ -703,7 +722,10 @@ async def start_wal_checkpoint_scheduler(interval_minutes: int = 5):
 
     # This worker holds the lock - run the scheduler
     interval_seconds = interval_minutes * 60
-    logger.info(f"[Database] Starting WAL checkpoint scheduler (every {interval_minutes} min)")
+    logger.info(
+        "[Database] Starting WAL checkpoint scheduler (every %d min)",
+        interval_minutes
+    )
 
     while True:
         try:
@@ -717,14 +739,9 @@ async def start_wal_checkpoint_scheduler(interval_minutes: int = 5):
                     continue  # Another worker has it, keep waiting
 
             # Check if backup is in progress (coordination with backup system)
-            try:
-                from services.utils.backup_scheduler import is_backup_in_progress
-                if is_backup_in_progress():
-                    logger.debug("[Database] Skipping WAL checkpoint - backup in progress")
-                    continue
-            except ImportError:
-                # Backup scheduler not available, continue anyway
-                pass
+            if is_backup_in_progress is not None and is_backup_in_progress():
+                logger.debug("[Database] Skipping WAL checkpoint - backup in progress")
+                continue
 
             # Run checkpoint in thread pool to avoid blocking event loop
             # checkpoint_wal() handles its own exceptions and returns False on failure
@@ -738,7 +755,7 @@ async def start_wal_checkpoint_scheduler(interval_minutes: int = 5):
             break
         except Exception as e:
             # This catches unexpected errors (e.g., from asyncio.to_thread or asyncio.sleep)
-            logger.error(f"[Database] WAL checkpoint scheduler error: {e}", exc_info=True)
+            logger.error("[Database] WAL checkpoint scheduler error: %s", e, exc_info=True)
             # Wait shorter time before retrying after unexpected errors
             # This ensures we don't wait too long if there's a transient issue
             await asyncio.sleep(60)  # Wait 1 minute before retrying
@@ -755,7 +772,6 @@ def check_disk_space(required_mb: int = 100) -> bool:
         bool: True if enough space available, False otherwise
     """
     try:
-        import os
         # Extract file path from SQLite URL (same logic as recovery script)
         db_url = DATABASE_URL
         if db_url.startswith("sqlite:////"):
@@ -779,14 +795,18 @@ def check_disk_space(required_mb: int = 100) -> bool:
             stat = os.statvfs(db_path.parent)
             free_mb = (stat.f_bavail * stat.f_frsize) / (1024 * 1024)
             if free_mb < required_mb:
-                logger.warning(f"[Database] Low disk space: {free_mb:.1f} MB available, {required_mb} MB required")
+                logger.warning(
+                    "[Database] Low disk space: %.1f MB available, %d MB required",
+                    free_mb,
+                    required_mb
+                )
                 return False
             return True
         except AttributeError:
             # Windows doesn't have statvfs, skip check
             return True
     except Exception as e:
-        logger.warning(f"[Database] Disk space check failed: {e}")
+        logger.warning("[Database] Disk space check failed: %s", e)
         return True  # Assume OK if check fails
 
 
@@ -801,7 +821,6 @@ def check_integrity() -> bool:
         return True  # Not SQLite, skip check
 
     try:
-        import os
         # Check if database file exists first
         db_url = DATABASE_URL
         if db_url.startswith("sqlite:////"):
@@ -828,10 +847,10 @@ def check_integrity() -> bool:
         if row and row[0] == "ok":
             return True
         else:
-            logger.error(f"[Database] Integrity check failed: {row}")
+            logger.error("[Database] Integrity check failed: %s", row)
             return False
     except Exception as e:
-        logger.error(f"[Database] Integrity check error: {e}")
+        logger.error("[Database] Integrity check error: %s", e)
         return False
 
 

@@ -1,4 +1,4 @@
-﻿"""
+"""
 tab agent module.
 """
 from typing import Dict, List, Any, Optional
@@ -801,7 +801,7 @@ class TabAgent(BaseAgent):
             return """Provide 3-5 completion suggestions based on context. Return only JSON array."""
 
     # BaseAgent interface
-    def generate_graph(self, user_prompt: str, language: str = 'zh') -> Dict[str, Any]:
+    async def generate_graph(self, user_prompt: str, language: str = 'zh') -> Dict[str, Any]:
         """Stub implementation for BaseAgent interface."""
         logger.warning("TabAgent: generate_graph() called but Tab Agent doesn't generate full graphs")
         return {

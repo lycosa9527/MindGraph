@@ -21,19 +21,14 @@ import traceback
 import tiktoken
 import semchunk
 
+from config.settings import config
+from services.llm import llm_service as llm_svc
+from services.llm.llm_chunking_service import get_llm_chunking_service
+
 if TYPE_CHECKING:
     from services.llm.llm_chunking_service import LLMChunkingService
 
-# Runtime imports for MindChunk initialization
-from services.llm import llm_service as llm_svc
-from config.settings import config
-from services.llm.llm_chunking_service import get_llm_chunking_service
-
 logger = logging.getLogger(__name__)
-
-# Module-level singleton instance for chunking service
-# Type will be set after class definitions
-_chunking_service_instance: Optional[Any] = None
 
 
 @dataclass
@@ -350,6 +345,12 @@ def _initialize_mindchunk_service():
     return MindChunkAdapter(llm_service)
 
 
+# Module-level singleton instance container (avoids global statement)
+_chunking_service_container: Dict[str, Optional[Union[ChunkingService, "MindChunkAdapter"]]] = {
+    "instance": None
+}
+
+
 def get_chunking_service() -> Union[ChunkingService, "MindChunkAdapter"]:
     """
     Get global chunking service instance.
@@ -358,9 +359,7 @@ def get_chunking_service() -> Union[ChunkingService, "MindChunkAdapter"]:
     - CHUNKING_ENGINE=semchunk (default): Uses semchunk library
     - CHUNKING_ENGINE=mindchunk: Uses custom LLM-based chunking
     """
-    global _chunking_service_instance
-
-    if _chunking_service_instance is None:
+    if _chunking_service_container["instance"] is None:
         chunking_engine = os.getenv("CHUNKING_ENGINE", "semchunk").lower()
         env_value = os.getenv("CHUNKING_ENGINE", "not set, using default: semchunk")
         logger.info(
@@ -370,17 +369,18 @@ def get_chunking_service() -> Union[ChunkingService, "MindChunkAdapter"]:
         )
 
         if chunking_engine == "mindchunk":
-            _chunking_service_instance = _initialize_mindchunk_service()
+            _chunking_service_container["instance"] = _initialize_mindchunk_service()
         else:
             logger.info(
                 "[ChunkingService] Using semchunk (chunking_engine=%s)",
                 chunking_engine
             )
-            _chunking_service_instance = ChunkingService()
+            _chunking_service_container["instance"] = ChunkingService()
 
     # Type narrowing: instance is always initialized above
-    assert _chunking_service_instance is not None, "Chunking service should be initialized"
-    return _chunking_service_instance
+    instance = _chunking_service_container["instance"]
+    assert instance is not None, "Chunking service should be initialized"
+    return instance
 
 
 class MindChunkAdapter(BaseChunkingService):

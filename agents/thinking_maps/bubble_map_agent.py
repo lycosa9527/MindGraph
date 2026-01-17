@@ -1,4 +1,4 @@
-﻿"""
+"""
 bubble map agent module.
 """
 from typing import Any, Dict, List, Optional, Tuple
@@ -51,8 +51,7 @@ class BubbleMapAgent(BaseAgent):
             logger.debug(f"BubbleMapAgent: Starting bubble map generation for prompt")
 
             # Generate the bubble map specification
-            spec = await self._generate_bubble_map_spec  # pylint: disable=protected-access(
-                prompt,
+            spec = await self._generate_bubble_map_spec(                prompt,
                 language,
                 user_id=user_id,
                 organization_id=organization_id,
@@ -76,7 +75,7 @@ class BubbleMapAgent(BaseAgent):
                 }
 
             # Enhance the spec with layout and dimensions
-            enhanced_spec = self._enhance_spec  # pylint: disable=protected-access(spec)
+            enhanced_spec = self._enhance_spec(spec)
 
             logger.info(f"BubbleMapAgent: Bubble map generation completed successfully")
             return {
@@ -85,7 +84,7 @@ class BubbleMapAgent(BaseAgent):
                 'diagram_type': self.diagram_type
             }
 
-        except Exception as  # pylint: disable=broad-except e:
+        except Exception as e:
             logger.error(f"BubbleMapAgent: Bubble map generation failed: {e}")
             return {
                 'success': False,
@@ -153,7 +152,7 @@ class BubbleMapAgent(BaseAgent):
 
             return spec
 
-        except Exception as  # pylint: disable=broad-except e:
+        except Exception as e:
             logger.error(f"BubbleMapAgent: Error in spec generation: {e}")
             return None
 
@@ -186,7 +185,7 @@ class BubbleMapAgent(BaseAgent):
 
             return spec
 
-        except Exception as  # pylint: disable=broad-except e:
+        except Exception as e:
             logger.error(f"BubbleMapAgent: Error enhancing spec: {e}")
             return spec
 
@@ -234,7 +233,7 @@ class BubbleMapAgent(BaseAgent):
 
             return True, "Specification is valid"
 
-        except Exception as  # pylint: disable=broad-except e:
+        except Exception as e:
             return False, f"Validation error: {str(e)}"
 
     def enhance_spec(self, spec: Dict) -> Dict[str, Any]:
@@ -256,14 +255,14 @@ class BubbleMapAgent(BaseAgent):
                 return {'success': True, 'spec': spec}
 
             # Enhance the spec
-            enhanced_spec = self._enhance_spec  # pylint: disable=protected-access(spec)
+            enhanced_spec = self._enhance_spec(spec)
 
             return {
                 'success': True,
                 'spec': enhanced_spec
             }
 
-        except Exception as  # pylint: disable=broad-except e:
+        except Exception as e:
             logger.error(f"BubbleMapAgent: Error enhancing spec: {e}")
             return {
                 'success': False,

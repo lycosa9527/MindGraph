@@ -55,10 +55,10 @@ logger = setup_logging()
 app = FastAPI(
     title="MindGraph API",
     description="AI-Powered Graph Generation with FastAPI + Uvicorn",
-    version=config.VERSION,
+    version=config.version,
     # Disable Swagger UI in production for security (only enable in DEBUG mode)
-    docs_url="/docs" if config.DEBUG else None,
-    redoc_url="/redoc" if config.DEBUG else None,
+    docs_url="/docs" if config.debug else None,
+    redoc_url="/redoc" if config.debug else None,
     lifespan=lifespan
 )
 
@@ -132,25 +132,25 @@ if __name__ == "__main__":
 
     logger.info("=" * 80)
     logger.info("Starting FastAPI application with Uvicorn")
-    logger.info("Server: http://%s:%s", config.HOST, config.PORT)
-    logger.info("API Docs: http://%s:%s/docs", config.HOST, config.PORT)
+    logger.info("Server: http://%s:%s", config.host, config.port)
+    logger.info("API Docs: http://%s:%s/docs", config.host, config.port)
 
     # Pre-flight port availability check
     logger.info("Checking port availability...")
-    is_available, pid_using_port = check_port_available(config.HOST, config.PORT)
+    is_available, pid_using_port = check_port_available(config.host, config.port)
 
     if not is_available:
-        logger.warning("⚠️  Port %s is already in use", config.PORT)
+        logger.warning("⚠️  Port %s is already in use", config.port)
 
         if pid_using_port:
             logger.warning("Process %s is using the port", pid_using_port)
 
             # Attempt automatic cleanup
-            if cleanup_stale_process(pid_using_port, config.PORT):
+            if cleanup_stale_process(pid_using_port, config.port):
                 logger.info("✅ Port cleanup successful, proceeding with startup...")
             else:
                 logger.error("=" * 80)
-                logger.error("❌ Cannot start server - port %s is still in use", config.PORT)
+                logger.error("❌ Cannot start server - port %s is still in use", config.port)
                 logger.error("💡 Manual cleanup required:")
                 if sys.platform == 'win32':
                     logger.error("   Windows: taskkill /F /PID %s", pid_using_port)
@@ -160,15 +160,15 @@ if __name__ == "__main__":
                 sys.exit(1)
         else:
             logger.error("=" * 80)
-            logger.error("❌ Cannot start server - port %s is in use", config.PORT)
+            logger.error("❌ Cannot start server - port %s is in use", config.port)
             logger.error("💡 Could not detect the process using the port")
             logger.error("   Please check manually and free the port")
             logger.error("=" * 80)
             sys.exit(1)
     else:
-        logger.info("✅ Port %s is available", config.PORT)
+        logger.info("✅ Port %s is available", config.port)
 
-    if config.DEBUG:
+    if config.debug:
         logger.warning("⚠️  Reload mode enabled - may cause slow shutdown (use Ctrl+C twice if needed)")
     logger.info("=" * 80)
 
@@ -196,9 +196,9 @@ if __name__ == "__main__":
         # Run Uvicorn server with optimized shutdown settings
         uvicorn.run(
             "main:app",
-            host=config.HOST,
-            port=config.PORT,
-            reload=config.DEBUG,  # Auto-reload in debug mode
+            host=config.host,
+            port=config.port,
+            reload=config.debug,  # Auto-reload in debug mode
             log_level="info",
             log_config=None,  # Use our custom logging configuration
             timeout_graceful_shutdown=5,  # Fast shutdown for cleaner exit

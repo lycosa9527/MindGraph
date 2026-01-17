@@ -1,4 +1,4 @@
-﻿from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 import logging
 
 
@@ -52,8 +52,7 @@ class CircleMapAgent(BaseAgent):
             logger.debug(f"CircleMapAgent: Starting circle map generation for prompt")
 
             # Generate the circle map specification
-            spec = await self._generate_circle_map_spec  # pylint: disable=protected-access(
-                prompt,
+            spec = await self._generate_circle_map_spec(                prompt,
                 language,
                 user_id=user_id,
                 organization_id=organization_id,
@@ -77,7 +76,7 @@ class CircleMapAgent(BaseAgent):
                 }
 
             # Enhance the spec with layout and dimensions
-            enhanced_spec = self._enhance_spec  # pylint: disable=protected-access(spec)
+            enhanced_spec = self._enhance_spec(spec)
 
             logger.info(f"CircleMapAgent: Circle map generation completed successfully")
             return {
@@ -86,7 +85,7 @@ class CircleMapAgent(BaseAgent):
                 'diagram_type': self.diagram_type
             }
 
-        except Exception as  # pylint: disable=broad-except e:
+        except Exception as e:
             logger.error(f"CircleMapAgent: Circle map generation failed: {e}")
             return {
                 'success': False,
@@ -152,7 +151,7 @@ class CircleMapAgent(BaseAgent):
 
             return spec
 
-        except Exception as  # pylint: disable=broad-except e:
+        except Exception as e:
             logger.error(f"CircleMapAgent: Error in spec generation: {e}")
             return None
 
@@ -187,7 +186,7 @@ class CircleMapAgent(BaseAgent):
 
             return spec
 
-        except Exception as  # pylint: disable=broad-except e:
+        except Exception as e:
             logger.error(f"CircleMapAgent: Error enhancing spec: {e}")
             return spec
 
@@ -222,7 +221,7 @@ class CircleMapAgent(BaseAgent):
 
             return True, "Specification is valid"
 
-        except Exception as  # pylint: disable=broad-except e:
+        except Exception as e:
             return False, f"Validation error: {str(e)}"
 
     async def enhance_spec(self, spec: Dict) -> Dict[str, Any]:
@@ -244,14 +243,14 @@ class CircleMapAgent(BaseAgent):
                 return {'success': True, 'spec': spec}
 
             # Enhance the spec
-            enhanced_spec = self._enhance_spec  # pylint: disable=protected-access(spec)
+            enhanced_spec = self._enhance_spec(spec)
 
             return {
                 'success': True,
                 'spec': enhanced_spec
             }
 
-        except Exception as  # pylint: disable=broad-except e:
+        except Exception as e:
             logger.error(f"CircleMapAgent: Error enhancing spec: {e}")
             return {
                 'success': False,

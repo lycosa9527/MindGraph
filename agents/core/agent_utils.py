@@ -1,4 +1,4 @@
-﻿"""
+"""
 agent utils module.
 """
 from typing import Dict, Optional
@@ -228,7 +228,7 @@ def extract_json_from_response(response_content, allow_partial=False) -> None:
             )
             return None
 
-    except Exception as  # pylint: disable=broad-except e:
+    except Exception as e:
         # Unexpected error - log with full context
         content_preview = str(response_content)[:500] + "..." if len(str(response_content)) > 500 else str(response_content)
         logger.error(f"Unexpected error extracting JSON: {e}. Content preview: {content_preview}", exc_info=True)
@@ -327,7 +327,7 @@ def _extract_partial_json(text: str) -> Optional[Dict]:
                             branch_obj["children"] = children_list
 
                         recovered_branches.append(branch_obj)
-                    except Exception as  # pylint: disable=broad-except e:
+                    except Exception as e:
                         logger.debug(f"Skipping invalid branch object: {e}")
                         continue
 
@@ -372,7 +372,7 @@ def _extract_partial_json(text: str) -> Optional[Dict]:
                             branch_obj["children"] = children_list
 
                         recovered_branches.append(branch_obj)
-                    except Exception as  # pylint: disable=broad-except e:
+                    except Exception as e:
                         logger.debug(f"Skipping invalid branch object: {e}")
                         continue
 
@@ -406,7 +406,7 @@ def _extract_partial_json(text: str) -> Optional[Dict]:
                             branch_obj["children"] = children_list
 
                         recovered_branches.append(branch_obj)
-                    except Exception as  # pylint: disable=broad-except e:
+                    except Exception as e:
                         logger.debug(f"Skipping invalid branch object: {e}")
                         continue
 
@@ -435,7 +435,7 @@ def _extract_partial_json(text: str) -> Optional[Dict]:
         logger.info(f"Partial JSON recovery: extracted {len(recovered_branches)} branches, {len(warnings)} warnings")
         return result
 
-    except Exception as  # pylint: disable=broad-except e:
+    except Exception as e:
         logger.debug(f"Partial JSON extraction failed: {e}")
         return None
 
@@ -1133,7 +1133,7 @@ def extract_topics_with_agent(user_prompt, language='zh') -> None:
         # Parse the result using utility function
         topics = parse_topic_extraction_result(result, language)
         return topics
-    except Exception as  # pylint: disable=broad-except e:
+    except Exception as e:
         logger.error(f"Agent: Topic extraction failed: {e}")
         # Fallback to utility function
         return extract_topics_from_prompt(user_prompt)
@@ -1175,7 +1175,7 @@ def generate_characteristics_with_agent(topic1, topic2, language='zh') -> None:
         # Parse the result using utility function
         spec = parse_characteristics_result(result, topic1, topic2)
         return spec
-    except Exception as  # pylint: disable=broad-except e:
+    except Exception as e:
         logger.error(f"Agent: Characteristics generation failed: {e}")
         # Fallback to utility function
         from agent_utils import generate_characteristics_fallback

@@ -195,7 +195,7 @@ async def add_security_headers(request: Request, call_next):
     # Content Security Policy (controls what resources can load)
     # Tailored specifically for MindGraph's architecture
     # In DEBUG mode, allow Swagger UI CDN for /docs and /redoc endpoints
-    if config.DEBUG:
+    if config.debug:
         # DEBUG mode: Allow Swagger UI resources from CDN (including source maps)
         response.headers["Content-Security-Policy"] = (
             "default-src 'self'; "
@@ -360,8 +360,8 @@ def setup_middleware(app: FastAPI):
     """
     # CORS Middleware
     # Extract server URL once to avoid linter warnings about constant access
-    base_server_url = config.SERVER_URL
-    if config.DEBUG:
+    base_server_url = config.server_url
+    if config.debug:
         # Development: Allow multiple origins
         allowed_origins = [
             base_server_url,

@@ -353,12 +353,12 @@ def setup_logging():
 
     # Determine log level - always use DEBUG for full verbose logging
     # Override with VERBOSE_LOGGING env var if set, otherwise default to DEBUG
-    if hasattr(config, 'VERBOSE_LOGGING') and config.VERBOSE_LOGGING:
+    if hasattr(config, 'verbose_logging') and config.verbose_logging:
         log_level = logging.DEBUG
         print("[INIT] VERBOSE_LOGGING enabled - setting log level to DEBUG")
     else:
         # Default to DEBUG for full verbose logging
-        log_level_str = getattr(config, 'LOG_LEVEL', 'DEBUG')
+        log_level_str = getattr(config, 'log_level', 'DEBUG')
         log_level = getattr(logging, log_level_str.upper(), logging.DEBUG)
         print(f"[INIT] Setting log level to {log_level_str.upper()} (DEBUG) for full verbose logging")
 

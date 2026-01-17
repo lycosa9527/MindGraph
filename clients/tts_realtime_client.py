@@ -1,12 +1,3 @@
-﻿from enum import Enum
-from typing import Optional, Callable, Dict, Any, AsyncGenerator
-import asyncio
-import base64
-import json
-import logging
-
-from config.settings import config
-
 """
 Dashscope TTS Realtime Client - Native WebSocket Implementation
 ================================================================
@@ -24,6 +15,17 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
+from enum import Enum
+from typing import Optional, Callable, Dict, Any, AsyncGenerator
+import asyncio
+import base64
+import json
+import logging
+
+import binascii
+import websockets
+from websockets.exceptions import ConnectionClosed, WebSocketException
 
 
 
@@ -112,7 +114,7 @@ class TTSRealtimeClient:
         self._response_done_event = asyncio.Event()
         self._session_created_event = asyncio.Event()
 
-        logger.debug(f"[TTS] Initialized: model={model}, voice={voice}, mode={mode}")
+        logger.debug("[TTS] Initialized: model=%s, voice=%s, mode=%s", model, voice, mode)
 
     async def connect(self):
         """Connect to TTS WebSocket server"""
@@ -146,9 +148,9 @@ class TTSRealtimeClient:
             # Send session.update to initialize session
             await self._update_session()
 
-        except Exception as  # pylint: disable=broad-except e:
+        except (OSError, ConnectionError, WebSocketException) as e:
             self._connected = False
-            logger.error(f"[TTS] Connection error: {e}", exc_info=True)
+            logger.error("[TTS] Connection error: %s", e, exc_info=True)
             raise
 
     async def _update_session(self):
@@ -161,7 +163,7 @@ class TTSRealtimeClient:
         # - mode: server_commit or commit (defaults to server_commit)
         # - sample_rate: 8000, 16000, 24000, or 48000 (required for pcm)
         # - language_type: Auto, Chinese, English, etc. (defaults to Auto)
-        session_config = {
+        session_config: Dict[str, Any] = {
             "voice": self.voice,
             "response_format": self.response_format.value,
         }
@@ -188,7 +190,7 @@ class TTSRealtimeClient:
         }
 
         await self._send_event(event)
-        logger.debug(f"[TTS] Sent session.update: {session_config}")
+        logger.debug("[TTS] Sent session.update: %s", session_config)
 
     async def append_text(self, text: str):
         """
@@ -209,7 +211,7 @@ class TTSRealtimeClient:
         }
 
         await self._send_event(event)
-        logger.debug(f"[TTS] Appended text: {text[:50]}...")
+        logger.debug("[TTS] Appended text: %s...", text[:50])
 
     async def commit_text(self):
         """Commit buffered text for synthesis (commit mode only)"""
@@ -252,26 +254,29 @@ class TTSRealtimeClient:
 
         try:
             await self.ws.send(json.dumps(event))
-        except Exception as  # pylint: disable=broad-except e:
-            logger.error(f"[TTS] Send error: {e}", exc_info=True)
+        except (OSError, ConnectionError, WebSocketException) as e:
+            logger.error("[TTS] Send error: %s", e, exc_info=True)
             raise
 
     async def _handle_messages(self):
         """Handle incoming WebSocket messages"""
+        if not self.ws:
+            logger.error("[TTS] WebSocket connection is None")
+            return
         try:
             async for message in self.ws:
                 try:
                     data = json.loads(message)
                     await self._process_event(data)
                 except json.JSONDecodeError as e:
-                    logger.error(f"[TTS] JSON decode error: {e}")
-                except Exception as  # pylint: disable=broad-except e:
-                    logger.error(f"[TTS] Message processing error: {e}", exc_info=True)
+                    logger.error("[TTS] JSON decode error: %s", e)
+                except (KeyError, ValueError, TypeError) as e:
+                    logger.error("[TTS] Message processing error: %s", e, exc_info=True)
         except ConnectionClosed:
             logger.info("[TTS] WebSocket connection closed")
             self._connected = False
-        except Exception as  # pylint: disable=broad-except e:
-            logger.error(f"[TTS] Message handler error: {e}", exc_info=True)
+        except (OSError, ConnectionError, WebSocketException) as e:
+            logger.error("[TTS] Message handler error: %s", e, exc_info=True)
             self._connected = False
             if self.on_error:
                 self.on_error(str(e))
@@ -282,7 +287,7 @@ class TTSRealtimeClient:
 
         if event_type == "session.created":
             self.session_id = event.get("session", {}).get("id")
-            logger.info(f"[TTS] Session created: {self.session_id}")
+            logger.info("[TTS] Session created: %s", self.session_id)
             self._session_created_event.set()
             if self.on_session_created:
                 self.on_session_created(self.session_id)
@@ -301,8 +306,8 @@ class TTSRealtimeClient:
                     audio_bytes = base64.b64decode(audio_b64)
                     if self.on_audio_chunk:
                         self.on_audio_chunk(audio_bytes)
-                except Exception as  # pylint: disable=broad-except e:
-                    logger.error(f"[TTS] Audio decode error: {e}")
+                except (binascii.Error, TypeError, ValueError) as e:
+                    logger.error("[TTS] Audio decode error: %s", e)
 
         elif event_type == "response.audio.done":
             logger.debug("[TTS] Audio generation done")
@@ -319,12 +324,12 @@ class TTSRealtimeClient:
 
         elif event_type == "error":
             error_msg = event.get("error", {}).get("message", "Unknown error")
-            logger.error(f"[TTS] Server error: {error_msg}")
+            logger.error("[TTS] Server error: %s", error_msg)
             if self.on_error:
                 self.on_error(error_msg)
 
         else:
-            logger.debug(f"[TTS] Unhandled event type: {event_type}")
+            logger.debug("[TTS] Unhandled event type: %s", event_type)
 
     async def close(self):
         """Close WebSocket connection"""

@@ -1,12 +1,5 @@
-﻿"""
-concept map agent module.
 """
-from typing import Any, Dict, List, Set, Tuple
-import logging
-
-
-"""
-Concept Map Agent
+Concept Map Agent module.
 
 Enhances concept map specifications by:
 - Normalizing and deduplicating concepts
@@ -20,28 +13,28 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+from typing import Any, Dict, List, Optional, Set, Tuple
+import logging
+
+from ..core.base_agent import BaseAgent
 
 
 
 logger = logging.getLogger(__name__)
 
-# Import configuration
-try:
-    from concept_map_config import *
-except ImportError:
-    # Default values if config file not found
-    NODE_SPACING = 1.2
-    CANVAS_PADDING = 80
-    MIN_NODE_DISTANCE = 120
-    INNER_RADIUS = 0.25
-    MIN_RADIUS = 0.45
-    MAX_RADIUS = 0.95
-    GAP_FACTOR = 0.9
-    TARGET_RADIUS = 0.75
-    REPULSION_FORCE = 0.025
-    SPRING_FORCE = 0.03
-    STEP_SIZE = 0.15
-    ITERATIONS = 200
+# Configuration constants
+NODE_SPACING = 1.2
+CANVAS_PADDING = 80
+MIN_NODE_DISTANCE = 120
+INNER_RADIUS = 0.25
+MIN_RADIUS = 0.45
+MAX_RADIUS = 0.95
+GAP_FACTOR = 0.9
+TARGET_RADIUS = 0.75
+REPULSION_FORCE = 0.025
+SPRING_FORCE = 0.03
+STEP_SIZE = 0.15
+ITERATIONS = 200
 
 
 class ConceptMapAgent(BaseAgent):
@@ -51,6 +44,17 @@ class ConceptMapAgent(BaseAgent):
     MAX_LABEL_LEN: int = 60
 
     async def enhance_spec(self, spec: Dict) -> Dict:
+        """Enhance and sanitize concept map specification.
+        
+        Normalizes concepts, validates relationships, generates layout,
+        and computes recommended dimensions.
+        
+        Args:
+            spec: Dictionary containing topic, concepts, and relationships
+            
+        Returns:
+            Dictionary with success status and enhanced spec or error message
+        """
         try:
             if not isinstance(spec, dict):
                 return {"success": False, "error": "Spec must be a dictionary"}
@@ -64,7 +68,7 @@ class ConceptMapAgent(BaseAgent):
             if not isinstance(concepts, list) or not isinstance(relationships, list):
                 return {"success": False, "error": "'concepts' and 'relationships' must be lists"}
 
-            normalized_topic = self._clean_text  # pylint: disable=protected-access(topic, self.MAX_LABEL_LEN)
+            normalized_topic = self._clean_text(topic, self.MAX_LABEL_LEN)
 
             def canonical(label: str) -> str:
                 # Canonical form for matching: lowercase + remove all whitespace
@@ -82,7 +86,7 @@ class ConceptMapAgent(BaseAgent):
             for c in concepts:
                 if not isinstance(c, str):
                     continue
-                cleaned = self._clean_text  # pylint: disable=protected-access(c, self.MAX_LABEL_LEN)
+                cleaned = self._clean_text(c, self.MAX_LABEL_LEN)
                 canon = canonical(cleaned)
                 if cleaned and canon not in seen and cleaned != normalized_topic:
                     normalized_concepts.append(cleaned)
@@ -91,8 +95,6 @@ class ConceptMapAgent(BaseAgent):
                 if len(normalized_concepts) >= self.MAX_CONCEPTS:
                     break
 
-            concept_set: Set[str] = set(normalized_concepts)
-
             # Sanitize relationships and enforce single edge between unordered pair
             sanitized_relationships: List[Dict[str, str]] = []
             missing_concepts: Set[str] = set()
@@ -100,9 +102,9 @@ class ConceptMapAgent(BaseAgent):
             for rel in relationships:
                 if not isinstance(rel, dict):
                     continue
-                frm_raw = self._clean_text  # pylint: disable=protected-access(rel.get("from", ""), self.MAX_LABEL_LEN)
-                to_raw = self._clean_text  # pylint: disable=protected-access(rel.get("to", ""), self.MAX_LABEL_LEN)
-                label = self._clean_text  # pylint: disable=protected-access(rel.get("label", ""), self.MAX_LABEL_LEN)
+                frm_raw = self._clean_text(rel.get("from", ""), self.MAX_LABEL_LEN)
+                to_raw = self._clean_text(rel.get("to", ""), self.MAX_LABEL_LEN)
+                label = self._clean_text(rel.get("label", ""), self.MAX_LABEL_LEN)
                 if not frm_raw or not to_raw or not label:
                     continue
                 # Canonical matching to align with concept set
@@ -114,7 +116,7 @@ class ConceptMapAgent(BaseAgent):
                 # Map canonical back to display
                 frm = canon_to_display.get(frm_c, frm_raw)
                 to = canon_to_display.get(to_c, to_raw)
-                key = tuple(sorted((frm_c, to_c)))
+                key: Tuple[str, str] = tuple(sorted((frm_c, to_c)))  # type: ignore
                 if key in pair_seen_unordered:
                     continue
                 pair_seen_unordered.add(key)
@@ -133,8 +135,8 @@ class ConceptMapAgent(BaseAgent):
                     mc_display = None
                     for rel in relationships:
                         if isinstance(rel, dict):
-                            frm_raw = self._clean_text  # pylint: disable=protected-access(rel.get("from", ""), self.MAX_LABEL_LEN)
-                            to_raw = self._clean_text  # pylint: disable=protected-access(rel.get("to", ""), self.MAX_LABEL_LEN)
+                            frm_raw = self._clean_text(rel.get("from", ""), self.MAX_LABEL_LEN)
+                            to_raw = self._clean_text(rel.get("to", ""), self.MAX_LABEL_LEN)
                             if canonical(frm_raw) == mc_canon:
                                 mc_display = frm_raw
                                 break
@@ -156,10 +158,12 @@ class ConceptMapAgent(BaseAgent):
             ]
 
             # ALWAYS use radial layout for all concept maps
-            layout = self._generate_layout_radial  # pylint: disable=protected-access(normalized_topic, normalized_concepts, sanitized_relationships)
+            layout = self._generate_layout_radial(
+                normalized_topic, normalized_concepts, sanitized_relationships
+            )
 
             # Compute recommended dimensions based on normalized positions extents
-            recommended = self._compute_recommended_dimensions_from_layout  # pylint: disable=protected-access(
+            recommended = self._compute_recommended_dimensions_from_layout(
                 layout=layout,
                 topic=normalized_topic,
                 concepts=normalized_concepts,
@@ -188,7 +192,7 @@ class ConceptMapAgent(BaseAgent):
                 enhanced_spec["_style"] = spec["_style"]
 
             return {"success": True, "spec": enhanced_spec}
-        except Exception as  # pylint: disable=broad-except exc:
+        except Exception as exc:
             return {"success": False, "error": f"ConceptMapAgent failed: {exc}"}
 
     async def generate_graph(self, user_prompt: str, language: str = "en") -> Dict[str, Any]:
@@ -206,31 +210,31 @@ class ConceptMapAgent(BaseAgent):
             dict: Graph specification with styling and metadata
         """
         try:
-            logger.info(f"ConceptMapAgent: Starting concept map generation for prompt")
+            logger.info("ConceptMapAgent: Starting concept map generation for prompt")
 
             # Import the robust concept map generation from main_agent
-            from ..main_agent import generate_concept_map_robust
+            from ..main_agent import generate_concept_map_robust  # type: ignore
 
             # Use the robust generation method with auto-detection
             spec = generate_concept_map_robust(user_prompt, language, method='auto')
 
             if not spec or isinstance(spec, dict) and spec.get('error'):
-                logger.error(f"ConceptMapAgent: Generation failed")
+                logger.error("ConceptMapAgent: Generation failed")
                 return {"error": "Failed to generate concept map specification"}
 
             # Enhance the specification using this agent's enhancement capabilities
             enhanced_result = await self.enhance_spec(spec)
 
             if not enhanced_result.get('success'):
-                logger.warning(f"ConceptMapAgent: Enhancement failed: {enhanced_result.get('error')}")
+                logger.warning("ConceptMapAgent: Enhancement failed: %s", enhanced_result.get('error'))
                 # Return original spec if enhancement fails
                 return spec
 
             # Return the enhanced specification
             return enhanced_result.get('spec', spec)
 
-        except Exception as  # pylint: disable=broad-except e:
-            logger.error(f"ConceptMapAgent: Generation error: {e}")
+        except Exception as e:
+            logger.error("ConceptMapAgent: Generation error: %s", e)
             return {"error": f"ConceptMapAgent generation failed: {str(e)}"}
 
     def generate_simplified_two_stage(self, user_prompt: str, llm_client, language: str = "en") -> Dict:
@@ -245,24 +249,24 @@ class ConceptMapAgent(BaseAgent):
         try:
             # Stage 1: Generate concepts using enhanced prompts
             stage1_prompt_key = f"concept_map_enhanced_stage1_{language}"
-            stage1_prompt = self._get_prompt  # pylint: disable=protected-access(stage1_prompt_key, user_prompt=user_prompt)
+            stage1_prompt = self._get_prompt(stage1_prompt_key, user_prompt=user_prompt)
 
             # Fallback to original prompts if enhanced not found
             if not stage1_prompt:
                 stage1_prompt_key = f"concept_map_stage1_concepts_{language}"
-                stage1_prompt = self._get_prompt  # pylint: disable=protected-access(stage1_prompt_key, user_prompt=user_prompt)
+                stage1_prompt = self._get_prompt(stage1_prompt_key, user_prompt=user_prompt)
 
             if not stage1_prompt:
                 return {"success": False, "error": f"Prompt not found: {stage1_prompt_key}"}
 
             # Get concepts from LLM
-            concepts_response = self._get_llm_response  # pylint: disable=protected-access(llm_client, stage1_prompt)
+            concepts_response = self._get_llm_response(llm_client, stage1_prompt)
             if not concepts_response:
                 return {"success": False, "error": "No response from LLM for concepts generation"}
 
             # Parse concepts response
             try:
-                concepts_data = self._parse_json_response  # pylint: disable=protected-access(concepts_response)
+                concepts_data = self._parse_json_response(concepts_response)
                 if not concepts_data:
                     return {"success": False, "error": "Failed to parse concepts response"}
 
@@ -272,29 +276,29 @@ class ConceptMapAgent(BaseAgent):
                 if not topic or not concepts:
                     return {"success": False, "error": "Missing topic or concepts in response"}
 
-            except Exception as  # pylint: disable=broad-except e:
+            except Exception as e:
                 return {"success": False, "error": f"Failed to parse concepts: {str(e)}"}
 
             # Stage 2: Generate relationships using enhanced prompts
             stage2_prompt_key = f"concept_map_enhanced_stage2_{language}"
-            stage2_prompt = self._get_prompt  # pylint: disable=protected-access(stage2_prompt_key, topic=topic, concepts=concepts)
+            stage2_prompt = self._get_prompt(stage2_prompt_key, topic=topic, concepts=concepts)
 
             # Fallback to original prompts if enhanced not found
             if not stage2_prompt:
                 stage2_prompt_key = f"concept_map_stage2_relationships_{language}"
-                stage2_prompt = self._get_prompt  # pylint: disable=protected-access(stage2_prompt_key, topic=topic, concepts=concepts)
+                stage2_prompt = self._get_prompt(stage2_prompt_key, topic=topic, concepts=concepts)
 
             if not stage2_prompt:
                 return {"success": False, "error": f"Prompt not found: {stage2_prompt_key}"}
 
             # Get relationships from LLM
-            relationships_response = self._get_llm_response  # pylint: disable=protected-access(llm_client, stage2_prompt)
+            relationships_response = self._get_llm_response(llm_client, stage2_prompt)
             if not relationships_response:
                 return {"success": False, "error": "No response from LLM for relationships generation"}
 
             # Parse relationships response
             try:
-                relationships_data = self._parse_json_response  # pylint: disable=protected-access(relationships_response)
+                relationships_data = self._parse_json_response(relationships_response)
                 if not relationships_data:
                     return {"success": False, "error": "Failed to parse relationships response"}
 
@@ -303,7 +307,7 @@ class ConceptMapAgent(BaseAgent):
                 if not relationships:
                     return {"success": False, "error": "No relationships generated"}
 
-            except Exception as  # pylint: disable=broad-except e:
+            except Exception as e:
                 return {"success": False, "error": f"Failed to parse relationships: {str(e)}"}
 
             # Combine and enhance
@@ -314,16 +318,17 @@ class ConceptMapAgent(BaseAgent):
             }
 
             # Enhance the specification
-            enhanced_spec = self.enhance_spec(combined_spec)
+            import asyncio
+            enhanced_spec = asyncio.run(self.enhance_spec(combined_spec))
             if not enhanced_spec.get("success", False):
                 return enhanced_spec
 
             return enhanced_spec
 
-        except Exception as  # pylint: disable=broad-except e:
+        except Exception as e:
             return {"success": False, "error": f"Two-stage generation failed: {str(e)}"}
 
-    def generate_three_stage(self, user_prompt: str, llm_client, language: str = "en") -> Dict:
+    def generate_three_stage(self, user_prompt: str, language: str = "en") -> Dict:
         """
         Generate concept map using streamlined 2-stage approach.
 
@@ -334,12 +339,12 @@ class ConceptMapAgent(BaseAgent):
         This approach integrates with existing workflow: [existing topic extraction] → 30 concepts → relationships.
         """
         try:
-            # Use the existing LLM calling pattern from agent.py
-            from agent import _invoke_llm_prompt
+            # Use the existing LLM calling pattern from main_agent
+            from ..main_agent import _invoke_llm_prompt
 
             # Stage 1: Generate exactly 30 concepts based on user prompt
             concepts_prompt_key = f"concept_map_30_concepts_{language}"
-            concepts_prompt = self._get_prompt  # pylint: disable=protected-access(concepts_prompt_key, central_topic=user_prompt)
+            concepts_prompt = self._get_prompt(concepts_prompt_key, central_topic=user_prompt)
 
             if not concepts_prompt:
                 return {"success": False, "error": f"30 concepts prompt not found: {concepts_prompt_key}"}
@@ -351,7 +356,7 @@ class ConceptMapAgent(BaseAgent):
 
             # Parse concepts response
             try:
-                concepts_data = self._parse_json_response  # pylint: disable=protected-access(concepts_response)
+                concepts_data = self._parse_json_response(concepts_response)
                 if not concepts_data:
                     return {"success": False, "error": "Failed to parse concepts response"}
 
@@ -369,21 +374,26 @@ class ConceptMapAgent(BaseAgent):
                         while len(concepts) < 30:
                             concepts.append(f"Related concept {len(concepts) + 1}")
 
-            except Exception as  # pylint: disable=broad-except e:
+            except Exception as e:  # pylint: disable=broad-except
                 return {"success": False, "error": f"Failed to parse concepts: {str(e)}"}
 
             # Extract topic from user prompt for relationships
             # Use a simple extraction method instead of full LLM call
-            central_topic = self._extract_simple_topic  # pylint: disable=protected-access(user_prompt)
+            central_topic = self._extract_simple_topic(user_prompt)
 
             # Stage 2: Generate relationships
             relationships_prompt_key = f"concept_map_3_stage_relationships_{language}"
-            relationships_prompt = self._get_prompt  # pylint: disable=protected-access(relationships_prompt_key,
-                                                   central_topic=central_topic,
-                                                   concepts=concepts)
+            relationships_prompt = self._get_prompt(
+                relationships_prompt_key,
+                central_topic=central_topic,
+                concepts=concepts
+            )
 
             if not relationships_prompt:
-                return {"success": False, "error": f"3-stage relationships prompt not found: {relationships_prompt_key}"}
+                return {
+                    "success": False,
+                    "error": f"3-stage relationships prompt not found: {relationships_prompt_key}"
+                }
 
             # Get relationships using the existing LLM pattern
             relationships_response = _invoke_llm_prompt(relationships_prompt, {})
@@ -392,7 +402,7 @@ class ConceptMapAgent(BaseAgent):
 
             # Parse relationships response
             try:
-                relationships_data = self._parse_json_response  # pylint: disable=protected-access(relationships_response)
+                relationships_data = self._parse_json_response(relationships_response)
                 if not relationships_data:
                     return {"success": False, "error": "Failed to parse relationships response"}
 
@@ -401,7 +411,7 @@ class ConceptMapAgent(BaseAgent):
                 if not relationships:
                     return {"success": False, "error": "No relationships generated"}
 
-            except Exception as  # pylint: disable=broad-except e:
+            except Exception as e:  # pylint: disable=broad-except
                 return {"success": False, "error": f"Failed to parse relationships: {str(e)}"}
 
             # Combine into concept map spec
@@ -419,10 +429,11 @@ class ConceptMapAgent(BaseAgent):
             }
 
             # Enhance the spec using existing method
-            enhanced_spec = self.enhance_spec(concept_map_spec)
+            import asyncio
+            enhanced_spec = asyncio.run(self.enhance_spec(concept_map_spec))
             return enhanced_spec
 
-        except Exception as  # pylint: disable=broad-except e:
+        except Exception as e:
             return {"success": False, "error": f"Three-stage concept map generation failed: {str(e)}"}
 
     def _extract_simple_topic(self, user_prompt: str) -> str:
@@ -450,7 +461,7 @@ class ConceptMapAgent(BaseAgent):
             # Fallback to first few words
             return ' '.join(user_prompt.split()[:3]).title()
 
-    def _get_prompt(self, prompt_key: str, **kwargs) -> str:
+    def _get_prompt(self, prompt_key: str, **kwargs) -> Optional[str]:
         """Get prompt from the prompts module."""
         try:
             from prompts.concept_maps import CONCEPT_MAP_PROMPTS
@@ -476,7 +487,7 @@ class ConceptMapAgent(BaseAgent):
         except ImportError as e:
             print(f"Error importing prompts module: {e}")
             return None
-        except Exception as  # pylint: disable=broad-except e:
+        except Exception as e:
             print(f"Unexpected error in _get_prompt: {e}")
             return None
 
@@ -510,8 +521,8 @@ class ConceptMapAgent(BaseAgent):
             else:
                 raise ValueError(f"Unsupported LLM client type: {type(llm_client)}")
 
-        except Exception as  # pylint: disable=broad-except e:
-            raise ValueError(f"Failed to get LLM response: {str(e)}")
+        except Exception as e:
+            raise ValueError(f"Failed to get LLM response: {str(e)}") from e
 
     def _parse_json_response(self, response: str) -> Dict:
         """Parse JSON response from LLM, handling common formatting issues.
@@ -542,15 +553,14 @@ class ConceptMapAgent(BaseAgent):
 
         except json.JSONDecodeError as e:
             # Log the original error for debugging
-            import logging
-            logging.warning(f"JSON parsing failed: {e}")
-            logging.debug(f"Original response: {response[:500]}...")  # Log first 500 chars
+            logger.warning("JSON parsing failed: %s", e)
+            logger.debug("Original response: %s...", response[:500])
 
             # Log the full response for debugging (truncated if too long)
             if len(response) > 1000:
-                logging.debug(f"Full response (truncated): {response[:1000]}...")
+                logger.debug("Full response (truncated): %s...", response[:1000])
             else:
-                logging.debug(f"Full response: {response}")
+                logger.debug("Full response: %s", response)
 
             # Try to fix unterminated strings and other common issues
             try:
@@ -589,15 +599,14 @@ class ConceptMapAgent(BaseAgent):
                     # Add back the right number
                     cleaned += '}' * open_braces
 
-                logging.info(f"Attempting to parse cleaned JSON after fixes")
+                logger.info("Attempting to parse cleaned JSON after fixes")
                 # Try to parse the cleaned JSON
                 result = json.loads(cleaned)
-                logging.info(f"Successfully parsed JSON after applying fixes")
+                logger.info("Successfully parsed JSON after applying fixes")
                 return result
 
             except json.JSONDecodeError as e2:
-                logging.warning(f"Cleaned JSON parsing also failed: {e2}")
-                pass
+                logger.warning("Cleaned JSON parsing also failed: %s", e2)
 
             # Try to find JSON-like content
             try:
@@ -633,7 +642,7 @@ class ConceptMapAgent(BaseAgent):
             if concepts_match:
                 concepts_str = concepts_match.group(1)
                 concepts = [c.strip().strip('"') for c in concepts_str.split(',') if c.strip()]
-                logging.info(f"Extracted concepts using Pattern 1 (concepts array): {concepts}")
+                logger.info("Extracted concepts using Pattern 1 (concepts array): %s", concepts)
 
             # Pattern 2: Look for keys array (for two-stage approach)
             if not concepts:
@@ -643,7 +652,7 @@ class ConceptMapAgent(BaseAgent):
                     # Extract names from key objects
                     key_names = re.findall(r'"name"\s*:\s*"([^"]+)"', keys_str)
                     concepts.extend(key_names)
-                    logging.info(f"Extracted concepts using Pattern 2 (keys array): {concepts}")
+                    logger.info("Extracted concepts using Pattern 2 (keys array): %s", concepts)
 
             # Pattern 3: Look for individual concept-like strings in the response
             if not concepts:
@@ -653,7 +662,7 @@ class ConceptMapAgent(BaseAgent):
                 json_keys = {'topic', 'concepts', 'keys', 'key_parts', 'relationships', 'from', 'to', 'label'}
                 concepts = [c for c in concept_candidates if c not in json_keys and len(c) > 1]
                 if concepts:
-                    logging.info(f"Extracted concepts using Pattern 3 (quoted strings): {concepts}")
+                    logger.info("Extracted concepts using Pattern 3 (quoted strings): %s", concepts)
 
             # Pattern 4: Look for unquoted concept names in the response
             if not concepts:
@@ -671,15 +680,15 @@ class ConceptMapAgent(BaseAgent):
                         unique_concepts.append(c)
                 concepts = unique_concepts[:6]  # Limit to 6 concepts
                 if concepts:
-                    logging.info(f"Extracted concepts using Pattern 4 (Chinese characters): {concepts}")
+                    logger.info("Extracted concepts using Pattern 4 (Chinese characters): %s", concepts)
 
             # Return whatever we found, even if incomplete
             if concepts:
-                logging.info(f"Extracted partial concepts from malformed JSON: {concepts}")
+                logger.info("Extracted partial concepts from malformed JSON: %s", concepts)
                 return {"topic": topic, "concepts": concepts}
             else:
                 # If we found absolutely nothing, just return the topic
-                logging.warning(f"Could not extract any concepts from response, returning topic only: {topic}")
+                logger.warning("Could not extract any concepts from response, returning topic only: %s", topic)
                 return {"topic": topic, "concepts": []}
 
     def _clean_text(self, text: str, max_len: int) -> str:
@@ -728,7 +737,6 @@ class ConceptMapAgent(BaseAgent):
                     queue.append((neighbor, layer + 1))
 
         # For better visual distribution, create multiple concentric circles
-        unassigned = [c for c in concepts if c not in concept_layers]
         total_concepts = len(concepts)
 
         if total_concepts <= 10:
@@ -926,5 +934,3 @@ class ConceptMapAgent(BaseAgent):
 
 
 __all__ = ["ConceptMapAgent"]
-
-

@@ -90,7 +90,7 @@ async def general_exception_handler(_request: Request, exc: Exception):
     error_response = {"error": "An unexpected error occurred. Please try again later."}
 
     # Add debug info in development mode
-    if config.DEBUG:
+    if config.debug:
         error_response["debug"] = str(exc)
 
     return JSONResponse(

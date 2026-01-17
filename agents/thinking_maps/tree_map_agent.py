@@ -1,4 +1,4 @@
-﻿from typing import Dict, List, Tuple, Set, Any, Optional
+from typing import Dict, List, Tuple, Set, Any, Optional
 import logging
 
 
@@ -57,8 +57,7 @@ class TreeMapAgent(BaseAgent):
             if dimension_only_mode and fixed_dimension:
                 # Scenario 3: Dimension-only mode - generate topic and children based on dimension
                 logger.debug(f"TreeMapAgent: Dimension-only mode - generating topic and children for dimension '{fixed_dimension}'")
-                spec = await self._generate_from_dimension_only  # pylint: disable=protected-access(
-                    fixed_dimension,
+                spec = await self._generate_from_dimension_only(                    fixed_dimension,
                     language,
                     user_id=user_id,
                     organization_id=organization_id,
@@ -67,7 +66,7 @@ class TreeMapAgent(BaseAgent):
                 )
             else:
                 # Scenario 1 or 2: Standard generation or fixed dimension with topic
-                spec = await self._generate_tree_map_spec  # pylint: disable=protected-access(
+                spec = await self._generate_tree_map_spec(
                     prompt,
                     language,
                     dimension_preference,
@@ -108,7 +107,7 @@ class TreeMapAgent(BaseAgent):
                 'diagram_type': self.diagram_type
             }
 
-        except Exception as  # pylint: disable=broad-except e:
+        except Exception as e:
             logger.error(f"TreeMapAgent: Tree map generation failed: {e}")
             return {
                 'success': False,
@@ -276,7 +275,7 @@ CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" - do NOT c
             logger.debug(f"TreeMapAgent: Extracted spec: {spec}")
             return spec
 
-        except Exception as  # pylint: disable=broad-except e:
+        except Exception as e:
             logger.error(f"TreeMapAgent: Error in spec generation: {e}")
             return None
 
@@ -366,7 +365,7 @@ CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" - do NOT c
 
             return result
 
-        except Exception as  # pylint: disable=broad-except e:
+        except Exception as e:
             logger.error(f"TreeMapAgent: Error in dimension-only mode: {e}")
             return None
 
@@ -401,7 +400,7 @@ CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" - do NOT c
                     return False, "All alternative dimensions must be strings"
 
             return True, "Valid tree map specification"
-        except Exception as  # pylint: disable=broad-except e:
+        except Exception as e:
             return False, f"Validation error: {str(e)}"
 
     MAX_BRANCHES: int = 10
@@ -577,7 +576,7 @@ CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" - do NOT c
                 enhanced_spec["alternative_dimensions"] = spec["alternative_dimensions"]
 
             return {"success": True, "spec": enhanced_spec}
-        except Exception as  # pylint: disable=broad-except exc:
+        except Exception as exc:
             return {"success": False, "error": f"Unexpected error: {exc}"}
 
 

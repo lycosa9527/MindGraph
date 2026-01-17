@@ -1,14 +1,4 @@
-﻿from dataclasses import dataclass
-from typing import AsyncGenerator, Dict, Any, Optional, List, Tuple
-import json
-import logging
-import os
-import time
-
-
-"""
-Async Dify API Client for FastAPI MindGraph Application
-========================================================
+"""Async Dify API Client for FastAPI MindGraph Application.
 
 Async version of DifyClient using aiohttp for non-blocking SSE streaming.
 This is the CRITICAL component enabling 4,000+ concurrent SSE connections.
@@ -28,6 +18,14 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+from dataclasses import dataclass
+from typing import AsyncGenerator, Dict, Any, Optional, List, Tuple
+from io import BytesIO
+import json
+import logging
+import os
+import time
+import aiohttp
 
 
 logger = logging.getLogger(__name__)
@@ -190,6 +188,7 @@ class DifyFile:
     upload_file_id: Optional[str] = None  # For local_file
 
     def to_dict(self) -> Dict[str, Any]:
+        """Convert DifyFile to dictionary format for API requests."""
         result = {"type": self.type, "transfer_method": self.transfer_method}
         if self.url:
             result["url"] = self.url
@@ -243,7 +242,7 @@ class AsyncDifyClient:
                         error_data = await response.json()
                         error_msg = error_data.get('message', error_msg)
                         error_code = error_data.get('code')
-                    except:
+                    except (json.JSONDecodeError, ValueError):
                         pass
 
                     # Map status codes and error codes to specific exceptions
@@ -316,7 +315,7 @@ class AsyncDifyClient:
                     tts_message, tts_message_end, error, ping
         """
 
-        logger.debug(f"[DIFY] Async streaming message: {message[:50]}... for user {user_id}")
+        logger.debug("[DIFY] Async streaming message: %s... for user %s", message[:50], user_id)
 
         payload = {
             "inputs": inputs or {},
@@ -343,7 +342,7 @@ class AsyncDifyClient:
 
         try:
             url = f"{self.api_url}/chat-messages"
-            logger.debug(f"[DIFY] Making async request to: {url}")
+            logger.debug("[DIFY] Making async request to: %s", url)
 
             timeout = aiohttp.ClientTimeout(
                 total=None,
@@ -359,9 +358,9 @@ class AsyncDifyClient:
                         try:
                             error_data = await response.json()
                             error_msg = error_data.get('message', error_msg)
-                        except:
+                        except (json.JSONDecodeError, ValueError):
                             pass
-                        logger.error(f"Dify API error: {error_msg}")
+                        logger.error("Dify API error: %s", error_msg)
                         yield {'event': 'error', 'error': error_msg, 'timestamp': int(time.time() * 1000)}
                         return
 
@@ -389,17 +388,17 @@ class AsyncDifyClient:
 
                         except json.JSONDecodeError:
                             continue
-                        except Exception as  # pylint: disable=broad-except e:
-                            logger.error(f"Error processing line: {e}")
+                        except Exception as e:
+                            logger.error("Error processing line: %s", e)
                             continue
 
-                    logger.debug(f"[DIFY] Async stream completed successfully")
+                    logger.debug("[DIFY] Async stream completed successfully")
 
         except aiohttp.ClientError as e:
-            logger.error(f"Dify API async request error: {e}")
+            logger.error("Dify API async request error: %s", e)
             yield {'event': 'error', 'error': str(e), 'timestamp': int(time.time() * 1000)}
-        except Exception as  # pylint: disable=broad-except e:
-            logger.error(f"Dify API async error: {e}")
+        except Exception as e:
+            logger.error("Dify API async error: %s", e)
             yield {'event': 'error', 'error': str(e), 'timestamp': int(time.time() * 1000)}
 
     async def chat_blocking(
@@ -579,6 +578,8 @@ class AsyncDifyClient:
         else:
             if not filename:
                 raise ValueError("filename is required when using file_bytes")
+            if file_bytes is None:
+                raise ValueError("file_bytes cannot be None")
             data.add_field('file', BytesIO(file_bytes), filename=filename, content_type=content_type)
 
         return await self._request("POST", "/files/upload", data=data)
@@ -629,7 +630,7 @@ class AsyncDifyClient:
                     try:
                         error_data = await response.json()
                         error_msg = error_data.get('message', error_msg)
-                    except:
+                    except (json.JSONDecodeError, ValueError):
                         pass
                     raise DifyAPIError(error_msg, status_code=response.status)
 
@@ -674,7 +675,7 @@ class AsyncDifyClient:
         async with aiohttp.ClientSession(timeout=timeout) as session:
             async with session.post(url, json=payload, headers=self._get_headers()) as response:
                 if response.status != 200:
-                    raise Exception(f"TTS failed: HTTP {response.status}")
+                    raise DifyAPIError(f"TTS failed: HTTP {response.status}", status_code=response.status)
                 return await response.read()
 
     # =========================================================================
@@ -750,7 +751,7 @@ class AsyncDifyClient:
         embedding_model_name: Optional[str] = None
     ) -> Dict[str, Any]:
         """Enable or disable annotation reply"""
-        payload = {"score_threshold": score_threshold}
+        payload: Dict[str, Any] = {"score_threshold": score_threshold}
         if embedding_provider_name:
             payload["embedding_provider_name"] = embedding_provider_name
         if embedding_model_name:

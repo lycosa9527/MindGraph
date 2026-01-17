@@ -1,17 +1,3 @@
-from enum import Enum
-from typing import Optional, Callable, Dict, Any, AsyncGenerator, List
-import asyncio
-import base64
-import json
-import logging
-import time
-
-import httpx
-import websockets
-from websockets.exceptions import ConnectionClosed
-
-from config.settings import config
-
 """
 Qwen Omni Client - WebSocket Implementation
 ===========================================
@@ -32,6 +18,20 @@ All Rights Reserved
 Proprietary License
 """
 
+from enum import Enum
+from typing import Optional, Callable, Dict, Any, AsyncGenerator, List, Coroutine, cast
+import asyncio
+import base64
+import json
+import logging
+import time
+
+import httpx
+import websockets
+from websockets.exceptions import ConnectionClosed
+
+from config.settings import config
+
 
 
 
@@ -39,6 +39,7 @@ logger = logging.getLogger('OMNI')
 
 
 class TurnDetectionMode(Enum):
+    """Turn detection mode for Omni Realtime API."""
     SERVER_VAD = "server_vad"
     MANUAL = "manual"
 
@@ -138,7 +139,7 @@ class OmniRealtimeClient:
         # Session tracking
         self.session_id = None
 
-        logger.debug(f"Initialized: model={model}, voice={voice}, vad_threshold={vad_threshold}")
+        logger.debug("Initialized: model=%s, voice=%s, vad_threshold=%s", model, voice, vad_threshold)
 
     async def connect(self) -> None:
         """Connect to Omni Realtime API via WebSocket."""
@@ -164,7 +165,7 @@ class OmniRealtimeClient:
 
         except Exception as e:  # pylint: disable=broad-except
             self._connected = False
-            logger.error(f"Failed to connect: {e}", exc_info=True)
+            logger.error("Failed to connect: %s", e, exc_info=True)
             raise
 
     async def _configure_session(self) -> None:
@@ -199,13 +200,13 @@ class OmniRealtimeClient:
 
         event['event_id'] = f"event_{int(time.time() * 1000)}"
         await self.ws.send(json.dumps(event))
-        logger.debug(f"Sent event: {event.get('type')}")
+        logger.debug("Sent event: %s", event.get('type'))
 
-    async def update_session(self, config: Dict[str, Any]) -> None:
+    async def update_session(self, session_config: Dict[str, Any]) -> None:
         """Update session configuration."""
         event = {
             "type": "session.update",
-            "session": config
+            "session": session_config
         }
         await self._send_event(event)
 
@@ -248,13 +249,13 @@ class OmniRealtimeClient:
         }
         await self._send_event(event)
 
-    async def append_image(self, image_bytes: bytes, format: str = "jpeg") -> None:
+    async def append_image(self, image_bytes: bytes, image_format: str = "jpeg") -> None:
         """Append image to input buffer."""
         image_b64 = base64.b64encode(image_bytes).decode('ascii')
         event = {
             "type": "input_image_buffer.append",
             "image": image_b64,
-            "format": format
+            "format": image_format
         }
         await self._send_event(event)
 
@@ -272,17 +273,20 @@ class OmniRealtimeClient:
 
     async def _handle_messages(self) -> None:
         """Handle incoming messages from Omni API."""
+        if not self.ws:
+            logger.error("WebSocket connection is None")
+            return
         try:
             async for message in self.ws:
                 try:
                     event = json.loads(message)
                     await self._process_event(event)
                 except json.JSONDecodeError as e:
-                    logger.error(f"Failed to parse message: {e}")
+                    logger.error("Failed to parse message: %s", e)
                     if self.on_error:
                         self.on_error({'type': 'parse_error', 'message': str(e)})
                 except Exception as e:  # pylint: disable=broad-except
-                    logger.error(f"Error processing event: {e}", exc_info=True)
+                    logger.error("Error processing event: %s", e, exc_info=True)
                     if self.on_error:
                         self.on_error({'type': 'processing_error', 'message': str(e)})
 
@@ -290,7 +294,7 @@ class OmniRealtimeClient:
             logger.debug("WebSocket connection closed")
             self._connected = False
         except Exception as e:  # pylint: disable=broad-except
-            logger.error(f"Error in message handler: {e}", exc_info=True)
+            logger.error("Error in message handler: %s", e, exc_info=True)
             self._connected = False
             if self.on_error:
                 self.on_error({'type': 'connection_error', 'message': str(e)})
@@ -303,39 +307,39 @@ class OmniRealtimeClient:
             # Session Events
             if event_type == 'session.created':
                 self.session_id = event.get('session', {}).get('id')
-                logger.debug(f"Session created: {self.session_id}")
+                logger.debug("Session created: %s", self.session_id)
                 if self.on_session_created:
                     # Callbacks may be sync or async - handle both
                     result = self.on_session_created(event.get('session', {}))
-                    if asyncio.iscoroutine(result):
-                        await result
+                    if result is not None and asyncio.iscoroutine(result):
+                        await cast(Coroutine[Any, Any, None], result)
 
             elif event_type == 'session.updated':
                 session = event.get('session', {})
-                logger.debug(f"Session updated: {session.get('id')}")
+                logger.debug("Session updated: %s", session.get('id'))
                 if self.on_session_updated:
                     result = self.on_session_updated(session)
-                    if asyncio.iscoroutine(result):
-                        await result
+                    if result is not None and asyncio.iscoroutine(result):
+                        await cast(Coroutine[Any, Any, None], result)
 
             # Error Events
             elif event_type == 'error':
                 error = event.get('error', {})
-                logger.error(f"Error: {error.get('type')} - {error.get('message')}")
+                logger.error("Error: %s - %s", error.get('type'), error.get('message'))
                 if self.on_error:
                     result = self.on_error(error)
-                    if asyncio.iscoroutine(result):
-                        await result
+                    if result is not None and asyncio.iscoroutine(result):
+                        await cast(Coroutine[Any, Any, None], result)
 
             # Input Audio Buffer Events (VAD)
             elif event_type == 'input_audio_buffer.speech_started':
                 audio_start_ms = event.get('audio_start_ms', 0)
                 item_id = event.get('item_id', '')
-                logger.debug(f"VAD: Speech started at {audio_start_ms}ms (item: {item_id})")
+                logger.debug("VAD: Speech started at %sms (item: %s)", audio_start_ms, item_id)
                 if self.on_speech_started:
                     result = self.on_speech_started(audio_start_ms, item_id)
-                    if asyncio.iscoroutine(result):
-                        await result
+                    if result is not None and asyncio.iscoroutine(result):
+                        await cast(Coroutine[Any, Any, None], result)
 
                 # Handle interruption
                 if self._is_responding:
@@ -344,49 +348,49 @@ class OmniRealtimeClient:
             elif event_type == 'input_audio_buffer.speech_stopped':
                 audio_end_ms = event.get('audio_end_ms', 0)
                 item_id = event.get('item_id', '')
-                logger.debug(f"VAD: Speech stopped at {audio_end_ms}ms (item: {item_id})")
+                logger.debug("VAD: Speech stopped at %sms (item: %s)", audio_end_ms, item_id)
                 if self.on_speech_stopped:
                     result = self.on_speech_stopped(audio_end_ms, item_id)
-                    if asyncio.iscoroutine(result):
-                        await result
+                    if result is not None and asyncio.iscoroutine(result):
+                        await cast(Coroutine[Any, Any, None], result)
 
             elif event_type == 'input_audio_buffer.committed':
                 item_id = event.get('item_id', '')
-                logger.debug(f"Audio buffer committed (item: {item_id})")
+                logger.debug("Audio buffer committed (item: %s)", item_id)
                 if self.on_audio_buffer_committed:
                     result = self.on_audio_buffer_committed(item_id)
-                    if asyncio.iscoroutine(result):
-                        await result
+                    if result is not None and asyncio.iscoroutine(result):
+                        await cast(Coroutine[Any, Any, None], result)
 
             elif event_type == 'input_audio_buffer.cleared':
                 logger.debug("Audio buffer cleared")
                 if self.on_audio_buffer_cleared:
                     result = self.on_audio_buffer_cleared()
-                    if asyncio.iscoroutine(result):
-                        await result
+                    if result is not None and asyncio.iscoroutine(result):
+                        await cast(Coroutine[Any, Any, None], result)
 
             # Conversation Item Events
             elif event_type == 'conversation.item.created':
                 item = event.get('item', {})
-                logger.debug(f"Item created: {item.get('id')} (role: {item.get('role')})")
+                logger.debug("Item created: %s (role: %s)", item.get('id'), item.get('role'))
                 if self.on_item_created:
                     result = self.on_item_created(item)
-                    if asyncio.iscoroutine(result):
-                        await result
+                    if result is not None and asyncio.iscoroutine(result):
+                        await cast(Coroutine[Any, Any, None], result)
 
             elif event_type == 'conversation.item.input_audio_transcription.completed':
                 transcript = event.get('transcript', '')
                 item_id = event.get('item_id', '')
-                logger.debug(f"Transcription: '{transcript}' (item: {item_id})")
+                logger.debug("Transcription: '%s' (item: %s)", transcript, item_id)
                 if self.on_transcription:
                     result = self.on_transcription(transcript)
-                    if asyncio.iscoroutine(result):
-                        await result
+                    if result is not None and asyncio.iscoroutine(result):
+                        await cast(Coroutine[Any, Any, None], result)
 
             elif event_type == 'conversation.item.input_audio_transcription.failed':
                 error = event.get('error', {})
                 item_id = event.get('item_id', '')
-                logger.error(f"Transcription failed for {item_id}: {error.get('message')}")
+                logger.error("Transcription failed for %s: %s", item_id, error.get('message'))
                 if self.on_error:
                     error_data = {
                         'type': 'transcription_failed',
@@ -394,125 +398,125 @@ class OmniRealtimeClient:
                         'item_id': item_id
                     }
                     result = self.on_error(error_data)
-                    if asyncio.iscoroutine(result):
-                        await result
+                    if result is not None and asyncio.iscoroutine(result):
+                        await cast(Coroutine[Any, Any, None], result)
 
             # Response Events
             elif event_type == 'response.created':
                 resp = event.get('response', {})
                 self._current_response_id = resp.get('id')
                 self._is_responding = True
-                logger.debug(f"Response created: {self._current_response_id}")
+                logger.debug("Response created: %s", self._current_response_id)
                 if self.on_response_created:
                     result = self.on_response_created(resp)
-                    if asyncio.iscoroutine(result):
-                        await result
+                    if result is not None and asyncio.iscoroutine(result):
+                        await cast(Coroutine[Any, Any, None], result)
 
             elif event_type == 'response.done':
                 resp = event.get('response', {})
                 usage = resp.get('usage', {})
-                logger.debug(f"Response done (tokens: {usage.get('total_tokens', 0)})")
+                logger.debug("Response done (tokens: %s)", usage.get('total_tokens', 0))
                 self._is_responding = False
                 self._current_response_id = None
                 self._current_item_id = None
                 if self.on_response_done:
                     result = self.on_response_done(resp)
-                    if asyncio.iscoroutine(result):
-                        await result
+                    if result is not None and asyncio.iscoroutine(result):
+                        await cast(Coroutine[Any, Any, None], result)
 
             # Response Text Events
             elif event_type == 'response.text.delta':
                 delta = event.get('delta', '')
-                logger.debug(f"Text delta: '{delta}'")
+                logger.debug("Text delta: '%s'", delta)
                 if self.on_text_chunk:
                     result = self.on_text_chunk(delta)
-                    if asyncio.iscoroutine(result):
-                        await result
+                    if result is not None and asyncio.iscoroutine(result):
+                        await cast(Coroutine[Any, Any, None], result)
 
             elif event_type == 'response.text.done':
                 text = event.get('text', '')
-                logger.debug(f"Text done: {text[:50]}...")
+                logger.debug("Text done: %s...", text[:50])
                 if self.on_response_text_done:
                     result = self.on_response_text_done(text)
-                    if asyncio.iscoroutine(result):
-                        await result
+                    if result is not None and asyncio.iscoroutine(result):
+                        await cast(Coroutine[Any, Any, None], result)
 
             # Response Audio Events
             elif event_type == 'response.audio.delta':
                 audio_base64 = event.get('delta', '')
                 try:
                     audio_bytes = base64.b64decode(audio_base64)
-                    logger.debug(f"Audio delta: {len(audio_bytes)} bytes")
+                    logger.debug("Audio delta: %s bytes", len(audio_bytes))
                     if self.on_audio_chunk:
                         result = self.on_audio_chunk(audio_bytes)
-                        if asyncio.iscoroutine(result):
-                            await result
+                        if result is not None and asyncio.iscoroutine(result):
+                            await cast(Coroutine[Any, Any, None], result)
                 except Exception as e:  # pylint: disable=broad-except
-                    logger.error(f"Failed to decode audio: {e}")
+                    logger.error("Failed to decode audio: %s", e)
 
             elif event_type == 'response.audio.done':
                 logger.debug("Audio done")
                 if self.on_response_audio_done:
                     result = self.on_response_audio_done()
-                    if asyncio.iscoroutine(result):
-                        await result
+                    if result is not None and asyncio.iscoroutine(result):
+                        await cast(Coroutine[Any, Any, None], result)
 
             # Response Audio Transcript Events
             elif event_type == 'response.audio_transcript.delta':
                 delta = event.get('delta', '')
                 if self.on_text_chunk:
                     result = self.on_text_chunk(delta)
-                    if asyncio.iscoroutine(result):
-                        await result
+                    if result is not None and asyncio.iscoroutine(result):
+                        await cast(Coroutine[Any, Any, None], result)
 
             elif event_type == 'response.audio_transcript.done':
                 transcript = event.get('transcript', '')
-                logger.debug(f"Audio transcript done: {transcript[:50]}...")
+                logger.debug("Audio transcript done: %s...", transcript[:50])
                 if self.on_response_audio_transcript_done:
                     result = self.on_response_audio_transcript_done(transcript)
-                    if asyncio.iscoroutine(result):
-                        await result
+                    if result is not None and asyncio.iscoroutine(result):
+                        await cast(Coroutine[Any, Any, None], result)
 
             # Response Output Item Events
             elif event_type == 'response.output_item.added':
                 item = event.get('item', {})
                 self._current_item_id = item.get('id')
-                logger.debug(f"Output item added: {item.get('id')}")
+                logger.debug("Output item added: %s", item.get('id'))
                 if self.on_output_item_added:
                     result = self.on_output_item_added(item)
-                    if asyncio.iscoroutine(result):
-                        await result
+                    if result is not None and asyncio.iscoroutine(result):
+                        await cast(Coroutine[Any, Any, None], result)
 
             elif event_type == 'response.output_item.done':
                 item = event.get('item', {})
-                logger.debug(f"Output item done: {item.get('id')}")
+                logger.debug("Output item done: %s", item.get('id'))
                 if self.on_output_item_done:
                     result = self.on_output_item_done(item)
-                    if asyncio.iscoroutine(result):
-                        await result
+                    if result is not None and asyncio.iscoroutine(result):
+                        await cast(Coroutine[Any, Any, None], result)
 
             # Response Content Part Events
             elif event_type == 'response.content_part.added':
                 part = event.get('part', {})
-                logger.debug(f"Content part added: {part.get('type')}")
+                logger.debug("Content part added: %s", part.get('type'))
                 if self.on_content_part_added:
                     result = self.on_content_part_added(part)
-                    if asyncio.iscoroutine(result):
-                        await result
+                    if result is not None and asyncio.iscoroutine(result):
+                        await cast(Coroutine[Any, Any, None], result)
 
             elif event_type == 'response.content_part.done':
                 part = event.get('part', {})
-                logger.debug(f"Content part done: {part.get('type')}")
+                logger.debug("Content part done: %s", part.get('type'))
                 if self.on_content_part_done:
                     result = self.on_content_part_done(part)
-                    if asyncio.iscoroutine(result):
-                        await result
+                    if result is not None and asyncio.iscoroutine(result):
+                        await cast(Coroutine[Any, Any, None], result)
 
             else:
-                logger.debug(f"Unhandled event type: {event_type}")
+                logger.debug("Unhandled event type: %s", event_type)
 
         except Exception as e:  # pylint: disable=broad-except
-            logger.error(f"Error processing event {event_type}: {e}", exc_info=True)
+            logger.error("Error processing event %s: %s", event_type, e, exc_info=True)
             if self.on_error:
                 self.on_error({'type': 'event_processing_error', 'message': str(e), 'event_type': event_type})
 
@@ -531,7 +535,7 @@ class OmniRealtimeClient:
             try:
                 await self.ws.close()
             except Exception as e:  # pylint: disable=broad-except
-                logger.debug(f"Error closing WebSocket: {e}")
+                logger.debug("Error closing WebSocket: %s", e)
             self.ws = None
 
         logger.debug("WebSocket connection closed")
@@ -573,7 +577,7 @@ class OmniClient:
         self._native_client: Optional[OmniRealtimeClient] = None
         self.event_queue: Optional[asyncio.Queue] = None
 
-        logger.debug(f"Initialized: model={self.model}, voice={self.voice}, vad_threshold={self.vad_threshold}")
+        logger.debug("Initialized: model=%s, voice=%s, vad_threshold=%s", self.model, self.voice, self.vad_threshold)
 
     async def start_conversation(
         self,
@@ -595,9 +599,29 @@ class OmniClient:
         # Helper to queue events asynchronously
         async def queue_event(event: Dict[str, Any]):
             """Queue event asynchronously"""
-            await self.event_queue.put(event)
+            if self.event_queue:
+                await self.event_queue.put(event)
+
+        # Create sync wrapper functions that schedule async tasks
+        # These wrap async queue_event calls for sync callback compatibility
+        def make_sync_wrapper(event_factory):
+            """Create a sync wrapper that schedules an async queue_event call as a task"""
+            def wrapper(*args, **kwargs):
+                event = event_factory(*args, **kwargs)
+                try:
+                    loop = asyncio.get_event_loop()
+                    if loop.is_running():
+                        loop.create_task(queue_event(event))
+                    else:
+                        loop.run_until_complete(queue_event(event))
+                except RuntimeError:
+                    # If no event loop, create a new one (shouldn't happen in async context)
+                    asyncio.run(queue_event(event))
+            return wrapper
 
         # Create native WebSocket client with async-safe event handlers
+        if not self.api_key:
+            raise ValueError("QWEN_API_KEY is not configured")
         self._native_client = OmniRealtimeClient(
             api_key=self.api_key,
             model=self.model,
@@ -611,39 +635,41 @@ class OmniClient:
             output_format=self.output_format,
             transcription_model=self.transcription_model,
             # Wire up all event handlers to queue events
-            # Callbacks are async coroutines that queue events
-            on_transcription=lambda text: queue_event({'type': 'transcription', 'text': text}),
-            on_text_chunk=lambda text: queue_event({'type': 'text_chunk', 'text': text}),
-            on_audio_chunk=lambda audio: queue_event({'type': 'audio_chunk', 'audio': audio}),
-            on_response_done=lambda resp: queue_event({'type': 'response_done', 'response': resp}),
-            on_speech_started=lambda ms, item_id: queue_event({
+            # Use sync wrappers that schedule async queue_event calls as tasks
+            on_transcription=make_sync_wrapper(lambda text: {'type': 'transcription', 'text': text}),
+            on_text_chunk=make_sync_wrapper(lambda text: {'type': 'text_chunk', 'text': text}),
+            on_audio_chunk=make_sync_wrapper(lambda audio: {'type': 'audio_chunk', 'audio': audio}),
+            on_response_done=make_sync_wrapper(lambda resp: {'type': 'response_done', 'response': resp}),
+            on_speech_started=make_sync_wrapper(lambda ms, item_id: {
                 'type': 'speech_started',
                 'audio_start_ms': ms,
                 'item_id': item_id
             }),
-            on_speech_stopped=lambda ms, item_id: queue_event({
+            on_speech_stopped=make_sync_wrapper(lambda ms, item_id: {
                 'type': 'speech_stopped',
                 'audio_end_ms': ms,
                 'item_id': item_id
             }),
-            on_error=lambda error: queue_event({'type': 'error', 'error': error}),
+            on_error=make_sync_wrapper(lambda error: {'type': 'error', 'error': error}),
             # Additional event handlers
-            on_session_created=lambda session: queue_event({'type': 'session_created', 'session': session}),
-            on_session_updated=lambda session: queue_event({'type': 'session_updated', 'session': session}),
-            on_response_created=lambda resp: queue_event({'type': 'response_created', 'response': resp}),
-            on_audio_buffer_committed=lambda item_id: queue_event({'type': 'audio_buffer_committed', 'item_id': item_id}),
-            on_audio_buffer_cleared=lambda: queue_event({'type': 'audio_buffer_cleared'}),
-            on_item_created=lambda item: queue_event({'type': 'item_created', 'item': item}),
-            on_response_text_done=lambda text: queue_event({'type': 'response_text_done', 'text': text}),
-            on_response_audio_done=lambda: queue_event({'type': 'response_audio_done'}),
-            on_response_audio_transcript_done=lambda transcript: queue_event({
+            on_session_created=make_sync_wrapper(lambda session: {'type': 'session_created', 'session': session}),
+            on_session_updated=make_sync_wrapper(lambda session: {'type': 'session_updated', 'session': session}),
+            on_response_created=make_sync_wrapper(lambda resp: {'type': 'response_created', 'response': resp}),
+            on_audio_buffer_committed=make_sync_wrapper(
+                lambda item_id: {'type': 'audio_buffer_committed', 'item_id': item_id}
+            ),
+            on_audio_buffer_cleared=make_sync_wrapper(lambda: {'type': 'audio_buffer_cleared'}),
+            on_item_created=make_sync_wrapper(lambda item: {'type': 'item_created', 'item': item}),
+            on_response_text_done=make_sync_wrapper(lambda text: {'type': 'response_text_done', 'text': text}),
+            on_response_audio_done=make_sync_wrapper(lambda: {'type': 'response_audio_done'}),
+            on_response_audio_transcript_done=make_sync_wrapper(lambda transcript: {
                 'type': 'response_audio_transcript_done',
                 'transcript': transcript
             }),
-            on_output_item_added=lambda item: queue_event({'type': 'output_item_added', 'item': item}),
-            on_output_item_done=lambda item: queue_event({'type': 'output_item_done', 'item': item}),
-            on_content_part_added=lambda part: queue_event({'type': 'content_part_added', 'part': part}),
-            on_content_part_done=lambda part: queue_event({'type': 'content_part_done', 'part': part})
+            on_output_item_added=make_sync_wrapper(lambda item: {'type': 'output_item_added', 'item': item}),
+            on_output_item_done=make_sync_wrapper(lambda item: {'type': 'output_item_done', 'item': item}),
+            on_content_part_added=make_sync_wrapper(lambda part: {'type': 'content_part_added', 'part': part}),
+            on_content_part_done=make_sync_wrapper(lambda part: {'type': 'content_part_done', 'part': part})
         )
 
         # Connect
@@ -652,7 +678,7 @@ class OmniClient:
             # Signal session ready
             await self.event_queue.put({'type': 'session_ready'})
         except Exception as e:  # pylint: disable=broad-except
-            logger.error(f"Failed to connect: {e}", exc_info=True)
+            logger.error("Failed to connect: %s", e, exc_info=True)
             await self.event_queue.put({'type': 'error', 'error': str(e)})
             return
 
@@ -669,7 +695,7 @@ class OmniClient:
                 if event['type'] in ('error', 'conversation_end'):
                     break
         except Exception as e:  # pylint: disable=broad-except
-            logger.error(f"Event yielding error: {e}", exc_info=True)
+            logger.error("Event yielding error: %s", e, exc_info=True)
             yield {'type': 'error', 'error': str(e)}
         finally:
             if self._native_client:
@@ -685,7 +711,7 @@ class OmniClient:
         try:
             await self._native_client.append_audio(audio_base64)
         except Exception as e:  # pylint: disable=broad-except
-            logger.error(f"Failed to send audio: {e}")
+            logger.error("Failed to send audio: %s", e)
 
     async def update_instructions(self, new_instructions: str):
         """
@@ -716,10 +742,10 @@ class OmniClient:
             }
 
             await self._native_client.update_session(session_config)
-            logger.debug(f"Instructions updated: {new_instructions[:50]}...")
+            logger.debug("Instructions updated: %s...", new_instructions[:50])
 
         except Exception as e:  # pylint: disable=broad-except
-            logger.error(f"Failed to update instructions: {e}", exc_info=True)
+            logger.error("Failed to update instructions: %s", e, exc_info=True)
 
     async def create_greeting(self, greeting_text: str = "Hello! How can I help you today?"):
         """Create an initial greeting response from Omni."""
@@ -729,9 +755,9 @@ class OmniClient:
 
         try:
             await self._native_client.create_response(instructions=greeting_text)
-            logger.debug(f"Greeting created: {greeting_text}")
+            logger.debug("Greeting created: %s", greeting_text)
         except Exception as e:  # pylint: disable=broad-except
-            logger.error(f"Failed to create greeting: {e}", exc_info=True)
+            logger.error("Failed to create greeting: %s", e, exc_info=True)
 
     async def send_text_message(self, text: str):
         """Send a text message to Omni and trigger a response."""
@@ -742,9 +768,9 @@ class OmniClient:
         try:
             instructions = f"The user typed this message: \"{text}\". Please respond helpfully and naturally."
             await self._native_client.create_response(instructions=instructions)
-            logger.debug(f"Text message sent: {text[:50]}...")
+            logger.debug("Text message sent: %s...", text[:50])
         except Exception as e:  # pylint: disable=broad-except
-            logger.error(f"Failed to send text message: {e}", exc_info=True)
+            logger.error("Failed to send text message: %s", e, exc_info=True)
 
     async def cancel_response(self):
         """Cancel an ongoing response from Omni."""
@@ -756,7 +782,7 @@ class OmniClient:
             await self._native_client.cancel_response()
             logger.debug("Response cancelled")
         except Exception as e:  # pylint: disable=broad-except
-            logger.error(f"Failed to cancel response: {e}", exc_info=True)
+            logger.error("Failed to cancel response: %s", e, exc_info=True)
 
     async def clear_audio_buffer(self):
         """Clear audio buffer."""
@@ -768,7 +794,7 @@ class OmniClient:
             await self._native_client.clear_audio_buffer()
             logger.debug("Audio buffer cleared")
         except Exception as e:  # pylint: disable=broad-except
-            logger.error(f"Failed to clear audio buffer: {e}", exc_info=True)
+            logger.error("Failed to clear audio buffer: %s", e, exc_info=True)
 
     async def commit_audio_buffer(self):
         """Commit audio buffer."""
@@ -780,7 +806,7 @@ class OmniClient:
             await self._native_client.commit_audio_buffer()
             logger.debug("Audio buffer committed")
         except Exception as e:  # pylint: disable=broad-except
-            logger.error(f"Failed to commit audio buffer: {e}", exc_info=True)
+            logger.error("Failed to commit audio buffer: %s", e, exc_info=True)
 
     async def append_image(self, image_bytes: bytes, image_format: str = "jpeg"):
         """Append image to input buffer."""
@@ -790,16 +816,16 @@ class OmniClient:
 
         try:
             await self._native_client.append_image(image_bytes, image_format)
-            logger.debug(f"Image appended: {len(image_bytes)} bytes ({image_format})")
+            logger.debug("Image appended: %s bytes (%s)", len(image_bytes), image_format)
         except Exception as e:  # pylint: disable=broad-except
-            logger.error(f"Failed to append image: {e}", exc_info=True)
+            logger.error("Failed to append image: %s", e, exc_info=True)
 
     async def chat_completion(
         self,
         messages: List[Dict],
-        temperature: float = None,
+        temperature: Optional[float] = None,
         max_tokens: int = 1000,
-        **kwargs
+        **_kwargs
     ) -> Dict[str, Any]:
         """
         Send chat completion request using standard DashScope HTTP API.
@@ -813,7 +839,7 @@ class OmniClient:
             messages: List of message dictionaries with 'role' and 'content'
             temperature: Sampling temperature (0.0 to 1.0), defaults to 0.7
             max_tokens: Maximum tokens in response
-            **kwargs: Additional parameters
+            **_kwargs: Additional parameters (unused, for compatibility)
 
         Returns:
             Dictionary with 'content' and 'usage' keys
@@ -861,16 +887,15 @@ class OmniClient:
                     }
                 else:
                     error_text = response.text
-                    raise Exception(f"API returned status {response.status_code}: {error_text}")
+                    raise RuntimeError(f"API returned status {response.status_code}: {error_text}")
         except httpx.TimeoutException as e:
-            logger.error(f"Chat completion timeout for Omni: {e}")
+            logger.error("Chat completion timeout for Omni: %s", e)
             raise
         except Exception as e:  # pylint: disable=broad-except
-            logger.error(f"Chat completion failed for Omni: {e}")
+            logger.error("Chat completion failed for Omni: %s", e)
             raise
 
     @property
     def conversation(self):
         """Compatibility property for existing code."""
         return self._native_client if self._native_client and self._native_client.is_connected() else None
-

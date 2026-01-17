@@ -301,10 +301,10 @@ def run_uvicorn() -> None:
         os.makedirs("logs", exist_ok=True)
 
         # Get configuration from centralized settings
-        host = config.HOST
-        port = config.PORT
-        debug = config.DEBUG
-        log_level = config.LOG_LEVEL.lower()
+        host = config.host
+        port = config.port
+        debug = config.debug
+        log_level = config.log_level.lower()
 
         # Derive environment and reload from DEBUG setting
         environment = 'development' if debug else 'production'
@@ -328,7 +328,7 @@ def run_uvicorn() -> None:
         print("    ╚═╝     ╚═╝╚═╝╚═╝  ╚═══╝╚═════╝  ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝     ╚═╝  ╚═╝")
         print("=" * 80)
         print("    AI-Powered Visual Thinking Tools for K12 Education")
-        print(f"    Version {config.VERSION} | 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)")
+        print(f"    Version {config.version} | 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)")
         print("=" * 80)
         print()
         print(f"Environment: {environment} (DEBUG={debug})")

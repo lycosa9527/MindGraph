@@ -64,7 +64,7 @@ async def _check_application_health() -> Dict[str, Any]:
         uptime = time.time() - app.state.start_time if hasattr(app.state, 'start_time') else 0
         return {
             "status": "healthy",
-            "version": config.VERSION,
+            "version": config.version,
             "uptime_seconds": round(uptime, 1)
         }
     except Exception as e:  # pylint: disable=broad-except
@@ -231,7 +231,7 @@ async def _check_llm_health() -> Dict[str, Any]:
 @router.get("/health")
 async def health_check():
     """Basic health check endpoint"""
-    return {"status": "ok", "version": config.VERSION}
+    return {"status": "ok", "version": config.version}
 
 
 @router.get("/health/redis")
@@ -487,7 +487,7 @@ async def get_status():
     return {
         "status": "running",
         "framework": "FastAPI",
-        "version": config.VERSION,
+        "version": config.version,
         "uptime_seconds": round(uptime, 1),
         "memory_percent": round(memory.percent, 1),
         "timestamp": time.time()

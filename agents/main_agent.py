@@ -1,4 +1,4 @@
-﻿"""
+"""
 main agent module.
 """
 import json
@@ -45,12 +45,12 @@ logger = logging.getLogger(__name__)
 
 
 # Late imports to avoid circular dependencies
-def _get_concept_map_agent() -> None:
+def _get_concept_map_agent():
     """Lazy import to avoid circular dependencies."""
     from agents.concept_maps.concept_map_agent import ConceptMapAgent
     return ConceptMapAgent
 
-def create_error_response(message: str, error_type: str = "generation", context: dict = None) -> dict:
+def create_error_response(message: str, error_type: str = "generation", context: dict | None = None) -> dict:
     """
     Create standardized error response format.
 
@@ -104,8 +104,10 @@ def extract_central_topic_llm(user_prompt: str, language: str = 'zh') -> str:
         else:
             prompt = f"Extract the central topic from this user input, return only the topic:\n{user_prompt}"
 
-        result = llm_classification._call  # pylint: disable=protected-access(prompt)
+        result = llm_classification._call(prompt)
         # Clean up the result - remove any extra whitespace or formatting
+        if not isinstance(result, str):
+            result = str(result)
         central_topic = result.strip()
 
         # Fallback to original prompt if extraction fails
@@ -115,7 +117,7 @@ def extract_central_topic_llm(user_prompt: str, language: str = 'zh') -> str:
 
         return central_topic
 
-    except Exception as  # pylint: disable=broad-except e:
+    except Exception as e:  # pylint: disable=broad-except
         logger.error(f"LLM topic extraction error: {e}, using original prompt")
         return user_prompt.strip()
 
@@ -169,7 +171,7 @@ Your output:"""
 
         return topics
 
-    except Exception as  # pylint: disable=broad-except e:
+    except Exception as e:  # pylint: disable=broad-except
         logger.error(f"LLM double bubble topic extraction error: {e}, using original prompt")
         return user_prompt.strip()
 
@@ -239,40 +241,40 @@ class LLMTimingStats:
     """Thread-safe LLM timing statistics tracker."""
 
     def __init__(self):
-        self._lock  # pylint: disable=protected-access = threading.Lock()
-        self._total_calls  # pylint: disable=protected-access = 0
-        self._total_time  # pylint: disable=protected-access = 0.0
-        self._call_times  # pylint: disable=protected-access = []
-        self._last_call_time  # pylint: disable=protected-access = 0.0
+        self._lock = threading.Lock()  # pylint: disable=protected-access
+        self._total_calls = 0  # pylint: disable=protected-access
+        self._total_time = 0.0  # pylint: disable=protected-access
+        self._call_times = []  # pylint: disable=protected-access
+        self._last_call_time = 0.0  # pylint: disable=protected-access
 
     def add_call_time(self, call_time: float) -> None:
         """Add a new call time to statistics."""
-        with self._lock  # pylint: disable=protected-access:
-            self._total_calls  # pylint: disable=protected-access += 1
-            self._total_time  # pylint: disable=protected-access += call_time
-            self._last_call_time  # pylint: disable=protected-access = call_time
-            self._call_times  # pylint: disable=protected-access.append(call_time)
+        with self._lock:
+            self._total_calls += 1
+            self._total_time += call_time
+            self._last_call_time = call_time
+            self._call_times.append(call_time)
 
             # Keep only last 100 call times to prevent memory bloat
-            if len(self._call_times  # pylint: disable=protected-access) > 100:
-                self._call_times  # pylint: disable=protected-access = self._call_times  # pylint: disable=protected-access[-100:]
+            if len(self._call_times) > 100:
+                self._call_times = self._call_times[-100:]
 
     def get_stats(self) -> dict:
         """Get current timing statistics."""
-        with self._lock  # pylint: disable=protected-access:
-            avg_time = self._total_time  # pylint: disable=protected-access / self._total_calls  # pylint: disable=protected-access if self._total_calls  # pylint: disable=protected-access > 0 else 0.0
+        with self._lock:
+            avg_time = (self._total_time / self._total_calls if self._total_calls > 0 else 0.0)
             return {
-                'total_calls': self._total_calls  # pylint: disable=protected-access,
-                'total_time': self._total_time  # pylint: disable=protected-access,
+                'total_calls': self._total_calls,
+                'total_time': self._total_time,
                 'average_time': avg_time,
-                'last_call_time': self._last_call_time  # pylint: disable=protected-access,
-                'call_times': self._call_times  # pylint: disable=protected-access[-10:]
+                'last_call_time': self._last_call_time,
+                'call_times': self._call_times[-10:]
             }
 
-# Thread-safe global timing  # pylint: disable=global-statement tracker
+# Thread-safe global timing tracker
 llm_timing_stats = LLMTimingStats()
 
-def get_llm_timing_stats() -> None:
+def get_llm_timing_stats() -> dict:
     """Get current LLM timing statistics."""
     return llm_timing_stats.get_stats()
 
@@ -288,7 +290,7 @@ def get_llm_timing_stats() -> None:
 # Updated to use LLM Service (Phase 5 migration)
 class _LegacyLLMStub:
     """Stub for old concept map functions - uses LLM Service"""
-    def _call(self, prompt) -> None:
+    def _call(self, prompt: str) -> str:
         import asyncio
         from services.llm import llm_service
 
@@ -329,7 +331,7 @@ class QwenLLM:
         """
         self.model_type = model_type
 
-    def _call(self, prompt: str, stop=None) -> None:
+    def _call(self, prompt: str, stop=None) -> str:
         """
         Synchronous wrapper for async LLM Service call.
 
@@ -521,7 +523,7 @@ right_differences:
 # LANGCHAIN CHAINS
 # ============================================================================
 
-def create_topic_extraction_chain(language='zh') -> None:
+def create_topic_extraction_chain(language='zh'):
     """
     Create a simple chain for topic extraction
     Args:
@@ -531,14 +533,18 @@ def create_topic_extraction_chain(language='zh') -> None:
     """
     prompt = topic_extraction_prompt_zh if language == 'zh' else topic_extraction_prompt_en
 
-    def extract_topics(user_prompt) -> None:
+    def extract_topics(user_prompt: str) -> str:
         """Extract topics using the classification model"""
-        return llm_classification._call  # pylint: disable=protected-access(prompt.format(user_prompt=user_prompt))
+        formatted_prompt = prompt.format(user_prompt=user_prompt)
+        result = llm_classification._call(formatted_prompt)
+        if not isinstance(result, str):
+            return str(result)
+        return result
 
     return extract_topics
 
 
-def create_characteristics_chain(language='zh') -> None:
+def create_characteristics_chain(language='zh'):
     """
     Create a simple chain for characteristics generation
     Args:
@@ -548,9 +554,13 @@ def create_characteristics_chain(language='zh') -> None:
     """
     prompt = characteristics_prompt_zh if language == 'zh' else characteristics_prompt_en
 
-    def generate_characteristics(topic1, topic2) -> None:
+    def generate_characteristics(topic1: str, topic2: str) -> str:
         """Generate characteristics using the generation model"""
-        return llm_generation._call  # pylint: disable=protected-access(prompt.format(topic1=topic1, topic2=topic2))
+        formatted_prompt = prompt.format(topic1=topic1, topic2=topic2)
+        result = llm_generation._call(formatted_prompt)
+        if not isinstance(result, str):
+            return str(result)
+        return result
 
     return generate_characteristics
 
@@ -559,7 +569,7 @@ def create_characteristics_chain(language='zh') -> None:
 # AGENT WORKFLOW FUNCTIONS
 # ============================================================================
 
-def extract_yaml_from_code_block(text) -> None:
+def extract_yaml_from_code_block(text: str | None) -> str:
     """Extract content from fenced code blocks, robust to minor formatting.
 
     - Handles ```json, ```yaml, ```yml, ```js, or bare ```
@@ -624,7 +634,8 @@ def generate_graph_spec(user_prompt: str, graph_type: str, language: str = 'zh')
             template=safe_template
         )
         # Use generation model for graph specification generation (high quality)
-        yaml_text = llm_generation._call  # pylint: disable=protected-access(prompt.format(user_prompt=user_prompt))
+        formatted_prompt = prompt.format(user_prompt=user_prompt)
+        yaml_text = llm_generation._call(formatted_prompt)
         # Some LLM clients return dict-like objects; ensure string
         try:
             raw_text = yaml_text if isinstance(yaml_text, str) else str(yaml_text)
@@ -638,6 +649,8 @@ def generate_graph_spec(user_prompt: str, graph_type: str, language: str = 'zh')
 
         try:
             # Try JSON first, then YAML; if that fails, attempt to salvage JSON by stripping trailing backticks
+            if not yaml_text_clean:
+                raise ValueError("Empty cleaned text")
             try:
                 spec = json.loads(yaml_text_clean)
             except json.JSONDecodeError:
@@ -662,16 +675,18 @@ def generate_graph_spec(user_prompt: str, graph_type: str, language: str = 'zh')
             # Note: Agent validation is now handled by specialized agents, not here
 
             logger.info(f"{graph_type} specification generated successfully")
+            if not isinstance(spec, dict):
+                return create_error_response(f"Invalid spec type: {type(spec)}", "generation", {"graph_type": graph_type})
             return spec
 
-        except Exception as  # pylint: disable=broad-except e:
+        except Exception as e:  # pylint: disable=broad-except
             logger.error(f"{graph_type} JSON generation failed: {e}")
             return create_error_response(f"Failed to generate valid {graph_type} JSON", "generation", {"graph_type": graph_type})
 
     except ImportError:
         logger.error("Failed to import centralized prompt registry")
         return create_error_response("Prompt registry not available", "import", {"graph_type": graph_type})
-    except Exception as  # pylint: disable=broad-except e:
+    except Exception as e:  # pylint: disable=broad-except
         logger.error(f"Unexpected error in generate_graph_spec: {e}")
         return create_error_response(f"Unexpected error generating {graph_type}", "unexpected", {"graph_type": graph_type})
 
@@ -683,7 +698,7 @@ def generate_graph_spec(user_prompt: str, graph_type: str, language: str = 'zh')
 # AGENT CONFIGURATION
 # ============================================================================
 
-def get_agent_config() -> None:
+def get_agent_config() -> dict:
     """
     Get current agent configuration
 
@@ -699,14 +714,14 @@ def get_agent_config() -> None:
     }
 
 
-def validate_agent_setup() -> None:
+def validate_agent_setup() -> bool:
     """
     Validate that the agent is properly configured with cross-platform timeout
 
     Returns:
         bool: True if agent is ready, False otherwise
     """
-    def timeout_handler() -> None:
+    def timeout_handler():
         raise TimeoutError("LLM validation timed out")
 
     timer = threading.Timer(config.QWEN_TIMEOUT, timeout_handler)
@@ -715,13 +730,13 @@ def validate_agent_setup() -> None:
     try:
         # Test LLM connection using classification model (fast/cheap)
         test_prompt = "Test"
-        llm_classification._call  # pylint: disable=protected-access(test_prompt)
+        llm_classification._call(test_prompt)
         logger.info("LLM connection validation completed successfully")
         return True
     except TimeoutError:
         logger.error("LLM validation timed out")
         return False
-    except Exception as  # pylint: disable=broad-except e:
+    except Exception as e:  # pylint: disable=broad-except
         logger.error(f"LLM connection failed: {e}")
         return False
     finally:
@@ -823,7 +838,7 @@ async def _detect_diagram_type_from_prompt(
     except ValueError as e:
         logger.error(f"Input validation failed: {e}")
         return {'diagram_type': 'mind_map', 'clarity': 'very_unclear', 'has_topic': False}
-    except Exception as  # pylint: disable=broad-except e:
+    except Exception as e:  # pylint: disable=broad-except
         logger.error(f"LLM classification failed: {e}")
         return {'diagram_type': 'mind_map', 'clarity': 'very_unclear', 'has_topic': False}
 
@@ -848,11 +863,11 @@ def _invoke_llm_prompt(prompt_template: str, variables: dict) -> str:
     for key, value in variables.items():
         formatted_prompt = formatted_prompt.replace(f"{{{key}}}", str(value))
 
-    raw = llm_generation._call  # pylint: disable=protected-access(formatted_prompt)
+    raw = llm_generation._call(formatted_prompt)
     return raw if isinstance(raw, str) else str(raw)
 
 
-def _salvage_truncated_json(text: str) -> str:
+def _salvage_truncated_json(text: str) -> str | None:
     """Aggressively salvage truncated JSON by completing incomplete strings and structures."""
     try:
         # Find the last complete relationship entry
@@ -912,7 +927,7 @@ def _salvage_truncated_json(text: str) -> str:
         json.loads(salvaged_text)
         return salvaged_text
 
-    except Exception as  # pylint: disable=broad-except e:
+    except Exception as e:  # pylint: disable=broad-except
         logger.error(f"JSON salvage failed: {e}")
         return None
 
@@ -920,6 +935,8 @@ def _salvage_truncated_json(text: str) -> str:
 def _parse_strict_json(text: str) -> dict:
     """Parse JSON with robust extraction and salvage; raise on failure."""
     cleaned = extract_yaml_from_code_block(text)
+    if not cleaned:
+        raise ValueError("Failed to extract content from text")
     # Normalize unicode quotes and remove non-JSON noise
     cleaned = cleaned.strip().strip('`')
     # Replace smart quotes with ASCII equivalents
@@ -954,9 +971,9 @@ def generate_concept_map_two_stage(user_prompt: str, language: str) -> dict:
     try:
         from .concept_maps import ConceptMapAgent
         agent = ConceptMapAgent()
-        keys_obj = agent._parse_json_response  # pylint: disable=protected-access(raw_keys)
+        keys_obj = agent._parse_json_response(raw_keys)
         logger.debug("Used ConceptMapAgent improved parsing for keys generation")
-    except Exception as  # pylint: disable=broad-except e:
+    except Exception as e:  # pylint: disable=broad-except
         logger.warning(f"ConceptMapAgent parsing failed for keys, falling back to strict parsing: {e}")
         # Fallback to strict parsing if ConceptMapAgent is not available
         keys_obj = _parse_strict_json(raw_keys)
@@ -997,9 +1014,9 @@ def generate_concept_map_two_stage(user_prompt: str, language: str) -> dict:
             try:
                 from .concept_maps import ConceptMapAgent
                 agent = ConceptMapAgent()
-                obj = agent._parse_json_response  # pylint: disable=protected-access(raw)
+                obj = agent._parse_json_response(raw)
                 logger.debug(f"Used ConceptMapAgent improved parsing for parts of key '{k}'")
-            except Exception as  # pylint: disable=broad-except e:
+            except Exception as e:  # pylint: disable=broad-except
                 logger.debug(f"ConceptMapAgent parsing failed for parts of key '{k}', using strict parsing fallback")
                 # Fallback to strict parsing if ConceptMapAgent is not available
                 obj = _parse_strict_json(raw)
@@ -1075,15 +1092,15 @@ def generate_concept_map_unified(user_prompt: str, language: str) -> dict:
     try:
         from .concept_maps import ConceptMapAgent
         agent = ConceptMapAgent()
-        obj = agent._parse_json_response  # pylint: disable=protected-access(raw)
+        obj = agent._parse_json_response(raw)
         logger.debug("Used ConceptMapAgent improved parsing for unified generation")
-    except Exception as  # pylint: disable=broad-except e:
+    except Exception as e:  # pylint: disable=broad-except
         logger.warning(f"ConceptMapAgent parsing failed, falling back to strict parsing: {e}")
         # Fallback to strict parsing if ConceptMapAgent is not available
         try:
             obj = _parse_strict_json(raw)
             logger.debug("Used strict parsing fallback for unified generation")
-        except Exception as  # pylint: disable=broad-except e2:
+        except Exception as e2:  # pylint: disable=broad-except
             logger.error(f"All parsing methods failed for unified generation: {e2}")
             return { 'error': f'Concept map parsing failed: {e2}' }
     # Extract - prioritize concepts from ConceptMapAgent parsing
@@ -1229,9 +1246,9 @@ def generate_concept_map_enhanced_30(user_prompt: str, language: str) -> dict:
             try:
                 from .concept_maps import ConceptMapAgent
                 agent = ConceptMapAgent()
-                concepts_data = agent._parse_json_response  # pylint: disable=protected-access(concepts_response)
+                concepts_data = agent._parse_json_response(concepts_response)
                 logger.debug("Used ConceptMapAgent improved parsing for concepts")
-            except Exception as  # pylint: disable=broad-except e:
+            except Exception as e:  # pylint: disable=broad-except
                 logger.warning(f"ConceptMapAgent parsing failed for concepts: {e}")
                 concepts_data = _parse_strict_json(concepts_response)
                 logger.debug("Used strict parsing for concepts")
@@ -1334,9 +1351,9 @@ Requirements:
             try:
                 from .concept_maps import ConceptMapAgent
                 agent = ConceptMapAgent()
-                rel_data = agent._parse_json_response  # pylint: disable=protected-access(relationships_response)
+                rel_data = agent._parse_json_response(relationships_response)
                 logger.debug("Used ConceptMapAgent improved parsing for relationships")
-            except Exception as  # pylint: disable=broad-except e:
+            except Exception as e:  # pylint: disable=broad-except
                 logger.warning(f"ConceptMapAgent parsing failed for relationships: {e}")
                 rel_data = _parse_strict_json(relationships_response)
                 logger.debug("Used strict parsing for relationships")
@@ -1364,7 +1381,7 @@ Requirements:
         logger.debug(f"Enhanced 30-concept generation completed successfully with {len(concepts)} concepts and {len(relationships)} relationships")
         return spec
 
-    except Exception as  # pylint: disable=broad-except e:
+    except Exception as e:  # pylint: disable=broad-except
         logger.error(f"Enhanced 30-concept generation failed: {e}")
         logger.error(f"Stack trace: {traceback.format_exc()}")
 
@@ -1388,7 +1405,7 @@ def generate_concept_map_robust(user_prompt: str, language: str, method: str = '
         try:
             # Use existing topic extraction + enhanced 30-concept generation
             return generate_concept_map_enhanced_30(user_prompt, language)
-        except Exception as  # pylint: disable=broad-except e:
+        except Exception as e:  # pylint: disable=broad-except
             logger.warning(f"Enhanced 30-concept generation failed: {e}")
             # Try with fewer concepts as fallback
             try:
@@ -1401,22 +1418,12 @@ def generate_concept_map_robust(user_prompt: str, language: str, method: str = '
                 else:
                     logger.warning(f"Simplified two-stage generation failed: {result.get('error')}")
                     raise ValueError("All concept map generation methods failed")
-            except Exception as  # pylint: disable=broad-except fallback_error:
+            except Exception as fallback_error:  # pylint: disable=broad-except
                 logger.warning(f"Simplified two-stage fallback also failed: {fallback_error}")
 
     # If method is specified, try that first
     if method == 'network_first':
-        try:
-            from .concept_maps import ConceptMapAgent
-            agent = ConceptMapAgent()
-            # Use the global LLM  # pylint: disable=global-statement client
-            result = agent.generate_network_first(user_prompt, llm, language)
-            if isinstance(result, dict) and result.get('success'):
-                return result.get('spec', {})
-            else:
-                logger.warning(f"Network-first generation failed: {result.get('error')}")
-        except Exception as  # pylint: disable=broad-except e:
-            logger.warning(f"Network-first generation failed: {e}")
+        logger.warning("Network-first method is not available, falling back to enhanced 30-concept generation")
 
     # With increased token limits, the enhanced method should work
     # If it fails, there's a deeper issue that needs investigation
@@ -1429,7 +1436,7 @@ async def _generate_spec_with_agent(
     user_prompt: str,
     diagram_type: str,
     language: str,
-    dimension_preference: str = None,
+    dimension_preference: str | None = None,
     model: str = 'qwen',
     # Token tracking parameters
     user_id=None,
@@ -1495,31 +1502,31 @@ async def _generate_spec_with_agent(
         # Thinking Tools
         elif diagram_type == 'factor_analysis':
             from .thinking_tools.factor_analysis_agent import FactorAnalysisAgent
-            agent = FactorAnalysisAgent(model=model)
+            agent = FactorAnalysisAgent()
         elif diagram_type == 'three_position_analysis':
             from .thinking_tools.three_position_analysis_agent import ThreePositionAnalysisAgent
-            agent = ThreePositionAnalysisAgent(model=model)
+            agent = ThreePositionAnalysisAgent()
         elif diagram_type == 'perspective_analysis':
             from .thinking_tools.perspective_analysis_agent import PerspectiveAnalysisAgent
-            agent = PerspectiveAnalysisAgent(model=model)
+            agent = PerspectiveAnalysisAgent()
         elif diagram_type == 'goal_analysis':
             from .thinking_tools.goal_analysis_agent import GoalAnalysisAgent
-            agent = GoalAnalysisAgent(model=model)
+            agent = GoalAnalysisAgent()
         elif diagram_type == 'possibility_analysis':
             from .thinking_tools.possibility_analysis_agent import PossibilityAnalysisAgent
-            agent = PossibilityAnalysisAgent(model=model)
+            agent = PossibilityAnalysisAgent()
         elif diagram_type == 'result_analysis':
             from .thinking_tools.result_analysis_agent import ResultAnalysisAgent
-            agent = ResultAnalysisAgent(model=model)
+            agent = ResultAnalysisAgent()
         elif diagram_type == 'five_w_one_h':
             from .thinking_tools.five_w_one_h_agent import FiveWOneHAgent
-            agent = FiveWOneHAgent(model=model)
+            agent = FiveWOneHAgent()
         elif diagram_type == 'whwm_analysis':
             from .thinking_tools.whwm_analysis_agent import WHWMAnalysisAgent
-            agent = WHWMAnalysisAgent(model=model)
+            agent = WHWMAnalysisAgent()
         elif diagram_type == 'four_quadrant':
             from .thinking_tools.four_quadrant_agent import FourQuadrantAgent
-            agent = FourQuadrantAgent(model=model)
+            agent = FourQuadrantAgent()
         else:
             # Fallback to bubble map
             from .thinking_maps.bubble_map_agent import BubbleMapAgent
@@ -1540,35 +1547,31 @@ async def _generate_spec_with_agent(
                 logger.debug(f"Bridge map Mode 2: Pairs + Relationship - preserving {len(existing_analogies)} pairs with FIXED dimension '{fixed_dimension}'")
             else:
                 logger.debug(f"Bridge map Mode 1: Only pairs - will identify relationship from {len(existing_analogies)} pairs")
-            result = await agent.generate_graph(
-                user_prompt,
-                language,
-                dimension_preference,
-                # Token tracking parameters
-                user_id=user_id,
-                organization_id=organization_id,
-                request_type=request_type,
-                endpoint_path=endpoint_path,
-                # Bridge map specific: existing pairs to preserve and fixed dimension
-                existing_analogies=existing_analogies,
-                fixed_dimension=fixed_dimension
-            )
+            bridge_kwargs = {
+                'user_id': user_id,
+                'organization_id': organization_id,
+                'request_type': request_type,
+                'endpoint_path': endpoint_path,
+                'existing_analogies': existing_analogies,
+                'fixed_dimension': fixed_dimension
+            }
+            if dimension_preference:
+                bridge_kwargs['dimension_preference'] = dimension_preference
+            result = await agent.generate_graph(user_prompt, language, **bridge_kwargs)
         # Bridge map Mode 3: Relationship-only mode (no pairs, but has fixed dimension)
         elif diagram_type == 'bridge_map' and fixed_dimension and not existing_analogies:
             logger.debug(f"Bridge map Mode 3: Relationship-only - generating pairs for '{fixed_dimension}'")
-            result = await agent.generate_graph(
-                user_prompt,
-                language,
-                dimension_preference,
-                # Token tracking parameters
-                user_id=user_id,
-                organization_id=organization_id,
-                request_type=request_type,
-                endpoint_path=endpoint_path,
-                # Bridge map specific: no existing pairs, but fixed dimension for relationship-only mode
-                existing_analogies=None,
-                fixed_dimension=fixed_dimension
-            )
+            bridge_kwargs = {
+                'user_id': user_id,
+                'organization_id': organization_id,
+                'request_type': request_type,
+                'endpoint_path': endpoint_path,
+                'existing_analogies': None,
+                'fixed_dimension': fixed_dimension
+            }
+            if dimension_preference:
+                bridge_kwargs['dimension_preference'] = dimension_preference
+            result = await agent.generate_graph(user_prompt, language, **bridge_kwargs)
         # Tree map and brace map: Three-scenario system (similar to bridge_map)
         # Scenario 1: Topic only → handled by standard generation below
         # Scenario 2: Topic + dimension → fixed_dimension mode (topic exists)
@@ -1577,34 +1580,28 @@ async def _generate_spec_with_agent(
             if dimension_only_mode:
                 # Scenario 3: Dimension-only mode - user has dimension but no topic
                 logger.debug(f"{diagram_type} dimension-only mode: generating topic and children for dimension '{fixed_dimension}'")
-                result = await agent.generate_graph(
-                    user_prompt,
-                    language,
-                    fixed_dimension,  # Use fixed_dimension as the dimension_preference
-                    # Token tracking parameters
-                    user_id=user_id,
-                    organization_id=organization_id,
-                    request_type=request_type,
-                    endpoint_path=endpoint_path,
-                    # Pass fixed_dimension flag and dimension_only_mode
-                    fixed_dimension=fixed_dimension,
-                    dimension_only_mode=True
-                )
+                tree_brace_kwargs = {
+                    'dimension_preference': fixed_dimension,
+                    'user_id': user_id,
+                    'organization_id': organization_id,
+                    'request_type': request_type,
+                    'endpoint_path': endpoint_path,
+                    'fixed_dimension': fixed_dimension,
+                    'dimension_only_mode': True
+                }
+                result = await agent.generate_graph(user_prompt, language, **tree_brace_kwargs)
             else:
                 # Scenario 2: Topic + dimension mode
                 logger.debug(f"{diagram_type} auto-complete mode with FIXED dimension '{fixed_dimension}' (topic exists)")
-                result = await agent.generate_graph(
-                    user_prompt,
-                    language,
-                    fixed_dimension,  # Use fixed_dimension as the dimension_preference
-                    # Token tracking parameters
-                    user_id=user_id,
-                    organization_id=organization_id,
-                    request_type=request_type,
-                    endpoint_path=endpoint_path,
-                    # Pass fixed_dimension flag
-                    fixed_dimension=fixed_dimension
-                )
+                tree_brace_kwargs = {
+                    'dimension_preference': fixed_dimension,
+                    'user_id': user_id,
+                    'organization_id': organization_id,
+                    'request_type': request_type,
+                    'endpoint_path': endpoint_path,
+                    'fixed_dimension': fixed_dimension
+                }
+                result = await agent.generate_graph(user_prompt, language, **tree_brace_kwargs)
         # For brace maps, tree maps, and bridge maps (without fixed dimension), pass dimension_preference if available
         elif (diagram_type == 'brace_map' or diagram_type == 'tree_map' or diagram_type == 'bridge_map') and dimension_preference:
             if diagram_type == 'brace_map':
@@ -1613,26 +1610,23 @@ async def _generate_spec_with_agent(
                 logger.debug(f"Passing classification dimension preference to tree map agent: {dimension_preference}")
             elif diagram_type == 'bridge_map':
                 logger.debug(f"Passing analogy relationship pattern preference to bridge map agent: {dimension_preference}")
-            result = await agent.generate_graph(
-                user_prompt,
-                language,
-                dimension_preference,
-                # Token tracking parameters
-                user_id=user_id,
-                organization_id=organization_id,
-                request_type=request_type,
-                endpoint_path=endpoint_path
-            )
+            tree_brace_kwargs = {
+                'dimension_preference': dimension_preference,
+                'user_id': user_id,
+                'organization_id': organization_id,
+                'request_type': request_type,
+                'endpoint_path': endpoint_path
+            }
+            result = await agent.generate_graph(user_prompt, language, **tree_brace_kwargs)
         else:
-            result = await agent.generate_graph(
-                user_prompt,
-                language,
-                # Token tracking parameters
-                user_id=user_id,
-                organization_id=organization_id,
-                request_type=request_type,
-                endpoint_path=endpoint_path
-            )
+            # For agents that don't support dimension_preference or other special parameters
+            basic_kwargs = {
+                'user_id': user_id,
+                'organization_id': organization_id,
+                'request_type': request_type,
+                'endpoint_path': endpoint_path
+            }
+            result = await agent.generate_graph(user_prompt, language, **basic_kwargs)
 
         logger.debug(f"Agent result type: {type(result)}")
         logger.debug(f"Agent result keys: {list(result.keys()) if isinstance(result, dict) else 'Not a dict'}")
@@ -1651,7 +1645,7 @@ async def _generate_spec_with_agent(
         logger.debug("Returning raw result")
         return result
 
-    except Exception as  # pylint: disable=broad-except e:
+    except Exception as e:  # pylint: disable=broad-except
         logger.error(f"Agent instantiation/generation failed for {diagram_type}: {e}")
         return {'error': f'Failed to generate {diagram_type}: {str(e)}'}
 
@@ -1842,7 +1836,7 @@ async def agent_graph_workflow_with_styles(
                                 logger.debug(f"[RAG] Retrieved {len(rag_context_chunks)} context chunks for topic extraction")
                     finally:
                         db.close()
-                except Exception as  # pylint: disable=broad-except e:
+                except Exception as e:  # pylint: disable=broad-except
                     logger.debug(f"[RAG] Failed to retrieve context for topic extraction: {e}")
 
             # Use centralized topic extraction prompt
@@ -1939,7 +1933,7 @@ async def agent_graph_workflow_with_styles(
                         logger.debug(f"[RAG] User {user_id} has no knowledge base, skipping RAG")
                 finally:
                     db.close()
-            except Exception as  # pylint: disable=broad-except e:
+            except Exception as e:  # pylint: disable=broad-except
                 logger.warning(f"[RAG] Failed to retrieve context: {e}", exc_info=True)
                 # Continue without RAG context if retrieval fails
 
@@ -1969,8 +1963,8 @@ Please generate a more accurate and detailed diagram based on the above context.
             generation_prompt,
             diagram_type,
             language,
-            dimension_preference,
-            model,
+            dimension_preference=dimension_preference if dimension_preference else None,
+            model=model,
             # Token tracking parameters
             user_id=user_id,
             organization_id=organization_id,
@@ -2034,7 +2028,7 @@ Please generate a more accurate and detailed diagram based on the above context.
             'style_preferences': {},
             'language': language
         }
-    except Exception as  # pylint: disable=broad-except e:
+    except Exception as e:  # pylint: disable=broad-except
         logger.error(f"Simplified workflow failed: {e}")
         return {
             'success': False,
@@ -2090,12 +2084,20 @@ class MainAgent:
             style_preferences = {}
 
             # Generate the graph specification using the simplified workflow
+            import asyncio
             ConceptMapAgent = _get_concept_map_agent()
             agent = ConceptMapAgent()
-            result = agent.generate_graph(user_prompt, language)
-            return result.get('spec', create_error_response("Failed to generate concept map", "generation"))
+            try:
+                loop = asyncio.get_event_loop()
+            except RuntimeError:
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+            result = loop.run_until_complete(agent.generate_graph(user_prompt, language))
+            if isinstance(result, dict) and 'spec' in result:
+                return result['spec']
+            return create_error_response("Failed to generate concept map", "generation")
 
-        except Exception as  # pylint: disable=broad-except e:
+        except Exception as e:  # pylint: disable=broad-except
             logger.error(f"MainAgent: Generation error: {e}")
             return create_error_response(f"MainAgent generation failed: {str(e)}", "main_agent")
 

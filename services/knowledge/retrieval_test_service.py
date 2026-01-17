@@ -510,13 +510,8 @@ class RetrievalTestService:
         }
 
 
-# Global instance
-_retrieval_test_service: Optional[RetrievalTestService] = None
-
-
 def get_retrieval_test_service() -> RetrievalTestService:
     """Get global retrieval test service instance."""
-    global _retrieval_test_service
-    if _retrieval_test_service is None:
-        _retrieval_test_service = RetrievalTestService()
-    return _retrieval_test_service
+    if not hasattr(get_retrieval_test_service, 'instance'):
+        get_retrieval_test_service.instance = RetrievalTestService()
+    return get_retrieval_test_service.instance

@@ -6,7 +6,9 @@ exclude = [
     "**/venv",
     "**/.venv",
     "**/dist",
-    "**/build"
+    "**/build",
+    "**/*.toml",
+    "pyproject.toml"
 ]
 venvPath = "."
 venv = "venv"
@@ -54,6 +56,8 @@ ignore-patterns = [
     "^node_modules/",
     "^dist/",
     "^build/",
+    "^.*\\.toml$",
+    "^pyproject\\.toml$",
 ]
 
 # Output format
@@ -102,6 +106,10 @@ good-names = [
     "y",
     "z",
 ]
+# Allow UPPER_CASE for class attributes (constants)
+class-attribute-rgx = "^[A-Z][A-Z0-9_]*$|^[a-z_][a-z0-9_]*$"
+# Allow UPPER_CASE for attributes (properties that represent constants)
+attr-rgx = "^[A-Z][A-Z0-9_]*$|^[a-z_][a-z0-9_]*$"
 
 [tool.pylint.messages_control]
 # Don't show these specific messages (will fix manually)
