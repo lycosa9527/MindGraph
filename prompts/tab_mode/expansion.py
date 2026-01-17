@@ -1,4 +1,4 @@
-"""
+﻿"""
 Tab Mode Expansion Prompts
 ==========================
 

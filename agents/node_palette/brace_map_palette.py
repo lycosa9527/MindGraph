@@ -1,3 +1,12 @@
+﻿"""
+brace map palette module.
+"""
+from typing import Optional, Dict, Any, AsyncGenerator
+import logging
+import re
+
+from agents.node_palette.base_palette_generator import BasePaletteGenerator
+
 """
 Brace Map Palette Generator
 ============================
@@ -11,11 +20,7 @@ All Rights Reserved
 Proprietary License
 """
 
-import re
-import logging
-from typing import Optional, Dict, Any, AsyncGenerator
 
-from agents.node_palette.base_palette_generator import BasePaletteGenerator
 
 logger = logging.getLogger(__name__)
 
@@ -23,19 +28,19 @@ logger = logging.getLogger(__name__)
 class BraceMapPaletteGenerator(BasePaletteGenerator):
     """
     Brace Map specific palette generator with multi-stage workflow.
-    
+
     Stages:
     - dimensions: Generate dimension options for decomposition (Stage 1)
     - parts: Generate main parts based on selected dimension (Stage 2)
     - subparts: Generate sub-parts for specific part (Stage 3)
     """
-    
+
     def __init__(self):
         """Initialize brace map palette generator"""
         super().__init__()
         # Track stage data per session
         self.session_stages = {}  # session_id -> {'stage': str, 'dimension': str, 'part_name': str, 'parts': []}
-    
+
     async def generate_batch(
         self,
         session_id: str,
@@ -52,7 +57,7 @@ class BraceMapPaletteGenerator(BasePaletteGenerator):
     ) -> AsyncGenerator[Dict, None]:
         """
         Generate batch with stage-specific logic.
-        
+
         Args:
             session_id: Session identifier
             center_topic: Main topic (whole)
@@ -67,21 +72,21 @@ class BraceMapPaletteGenerator(BasePaletteGenerator):
         self.session_stages[session_id]['stage'] = stage
         if stage_data:
             self.session_stages[session_id].update(stage_data)
-        
-        logger.debug("[BraceMapPalette] Stage: %s | Session: %s | Topic: '%s'", 
+
+        logger.debug("[BraceMapPalette] Stage: %s | Session: %s | Topic: '%s'",
                    stage, session_id[:8], center_topic)
         if stage_data:
             logger.debug("[BraceMapPalette] Stage data: %s", stage_data)
-        
+
         # Pass session_id and stage_data through educational_context so _build_prompt can access them directly
         # This is better than relying on session_stages lookup (avoids timing/state sync issues)
         if educational_context is None:
             educational_context = {}
-        educational_context = {**educational_context, 
+        educational_context = {**educational_context,
                               '_session_id': session_id,
                               '_stage': stage,
                               '_stage_data': stage_data or {}}
-        
+
         # Call base class generate_batch which will use our _build_prompt
         async for event in super().generate_batch(
             session_id=session_id,
@@ -96,7 +101,7 @@ class BraceMapPaletteGenerator(BasePaletteGenerator):
             # Add mode field to every node for explicit tracking (like Tree Map)
             if event.get('event') == 'node_generated':
                 node = event.get('node', {})
-                
+
                 # For subparts stage, use part_name as mode (for dynamic tab routing)
                 # For parts stage, use stage name
                 if stage == 'subparts' and stage_data and stage_data.get('part_name'):
@@ -105,11 +110,11 @@ class BraceMapPaletteGenerator(BasePaletteGenerator):
                 else:
                     node_mode = stage
                     logger.debug(f"[BraceMapPalette] Node tagged with stage mode='{node_mode}' | ID: {node.get('id', 'unknown')} | Text: {node.get('text', '')}")
-                
+
                 node['mode'] = node_mode
-            
+
             yield event
-    
+
     def _build_prompt(
         self,
         center_topic: str,
@@ -119,50 +124,50 @@ class BraceMapPaletteGenerator(BasePaletteGenerator):
     ) -> str:
         """
         Build stage-specific prompt for Brace Map node generation.
-        
+
         Checks session_stages to determine current stage and builds appropriate prompt.
-        
+
         Args:
             center_topic: The whole to be decomposed
             educational_context: Educational context dict
             count: Number of items to request
             batch_num: Current batch number
-            
+
         Returns:
             Stage-specific formatted prompt
         """
         # Detect language from content (Chinese topic = Chinese prompt)
-        language = self._detect_language(center_topic, educational_context)
+        language = self._detect_language  # pylint: disable=protected-access(center_topic, educational_context)
         context_desc = educational_context.get('raw_message', 'General K12 teaching') if educational_context else 'General K12 teaching'
-        
+
         # Get stage and stage_data directly from educational_context (passed through in generate_batch)
         # This is more reliable than session_stages lookup - avoids state sync issues
         stage = educational_context.get('_stage', 'dimensions') if educational_context else 'dimensions'
         stage_data = educational_context.get('_stage_data', {}) if educational_context else {}
-        
+
         # Fallback to session_stages for backward compatibility (if not in educational_context)
         if stage == 'dimensions' and not stage_data:
             session_id = educational_context.get('_session_id') if educational_context else None
             if session_id and session_id in self.session_stages:
                 stage = self.session_stages[session_id].get('stage', 'dimensions')
                 stage_data = self.session_stages[session_id]
-        
+
         logger.debug("[BraceMapPalette-Prompt] Building prompt for stage: %s | Stage data: %s", stage, stage_data)
-        
+
         # Build stage-specific prompt
         if stage == 'dimensions':
-            return self._build_dimensions_prompt(center_topic, context_desc, language, count, batch_num)
+            return self._build_dimensions_prompt  # pylint: disable=protected-access(center_topic, context_desc, language, count, batch_num)
         elif stage == 'parts':
             dimension = stage_data.get('dimension', '')
-            return self._build_parts_prompt(center_topic, dimension, context_desc, language, count, batch_num)
+            return self._build_parts_prompt  # pylint: disable=protected-access(center_topic, dimension, context_desc, language, count, batch_num)
         elif stage == 'subparts':
             part_name = stage_data.get('part_name', '')
             dimension = stage_data.get('dimension', '')  # Get dimension for subparts prompt
-            return self._build_subparts_prompt(center_topic, part_name, dimension, context_desc, language, count, batch_num)
+            return self._build_subparts_prompt  # pylint: disable=protected-access(center_topic, part_name, dimension, context_desc, language, count, batch_num)
         else:
             # Fallback to dimensions
-            return self._build_dimensions_prompt(center_topic, context_desc, language, count, batch_num)
-    
+            return self._build_dimensions_prompt  # pylint: disable=protected-access(center_topic, context_desc, language, count, batch_num)
+
     def _build_dimensions_prompt(
         self,
         center_topic: str,
@@ -173,7 +178,7 @@ class BraceMapPaletteGenerator(BasePaletteGenerator):
     ) -> str:
         """
         Build prompt for generating dimension options for decomposition.
-        
+
         This is Stage 1: User selects how they want to decompose the whole.
         """
         if language == 'zh':
@@ -222,15 +227,15 @@ Requirements:
 4. Output only dimension names, one per line, no numbering
 
 Generate {count} dimensions:"""
-        
+
         if batch_num > 1:
             if language == 'zh':
                 prompt += f"\n\n注意：这是第{batch_num}批。确保提供不同角度的维度，避免重复。"
             else:
                 prompt += f"\n\nNote: Batch {batch_num}. Provide different perspectives, avoid repetition."
-        
+
         return prompt
-    
+
     def _build_parts_prompt(
         self,
         center_topic: str,
@@ -242,7 +247,7 @@ Generate {count} dimensions:"""
     ) -> str:
         """
         Build prompt for generating main parts based on selected dimension.
-        
+
         This is Stage 2: Generate parts using the user's selected dimension.
         """
         # Build prompt based on language (derived from BRACE_MAP_GENERATION prompts)
@@ -310,16 +315,16 @@ Thinking approach: Decomposition, Breaking down
 Requirements: Each part should be concise and clear. More than 4 words is allowed, but avoid long sentences. Use short phrases, not full sentences. Output only the part text, one per line, no numbering.
 
 Generate {count} parts:"""
-        
+
         # Add diversity note for later batches
         if batch_num > 1:
             if language == 'zh':
                 prompt += f"\n\n注意：这是第{batch_num}批。确保最大程度的多样性，从新的拆解角度思考，避免与之前批次重复。"
             else:
                 prompt += f"\n\nNote: This is batch {batch_num}. Ensure MAXIMUM diversity from new decomposition angles, avoid any repetition from previous batches."
-        
+
         return prompt
-    
+
     def _build_subparts_prompt(
         self,
         center_topic: str,
@@ -332,7 +337,7 @@ Generate {count} parts:"""
     ) -> str:
         """
         Build prompt for generating sub-parts for a specific part.
-        
+
         This is for Stage 3: generating physical/structural/functional components of the selected part.
         """
         if language == 'zh':
@@ -397,34 +402,34 @@ Requirements:
 5. Output only sub-component names, one per line, no numbering
 
 Generate {count} sub-components for "{part_name}" (part of "{center_topic}"):"""
-        
+
         if batch_num > 1:
             if language == 'zh':
                 prompt += f"\n\n注意：这是第{batch_num}批。提供更多不同的子部件，避免重复。"
             else:
                 prompt += f"\n\nNote: Batch {batch_num}. Provide more diverse sub-components, avoid repetition."
-        
+
         return prompt
-    
-    def end_session(self, session_id: str, reason: str = "complete"):
+
+    def end_session(self, session_id: str, reason: str = "complete") -> None:
         """
         End session and cleanup stage data.
-        
+
         Overrides base class to also clean up session_stages.
         """
         # Clean up stage data
         self.session_stages.pop(session_id, None)
-        
+
         # Call parent cleanup
         super().end_session(session_id, reason)
 
 
-# Global singleton instance for Brace Map
+# Global singleton  # pylint: disable=global-statement instance for Brace Map
 _brace_map_palette_generator = None
 
 def get_brace_map_palette_generator() -> BraceMapPaletteGenerator:
     """Get singleton instance of Brace Map palette generator"""
-    global _brace_map_palette_generator
+    global _brace_map_palette_generator  # pylint: disable=global-statement
     if _brace_map_palette_generator is None:
         _brace_map_palette_generator = BraceMapPaletteGenerator()
     return _brace_map_palette_generator

@@ -1,3 +1,10 @@
+﻿import logging
+import logging.handlers
+import os
+
+from dotenv import load_dotenv
+
+
 """
 Celery Application Configuration
 Author: lycosa9527
@@ -10,12 +17,6 @@ All Rights Reserved
 Proprietary License
 """
 
-import os
-import logging
-import logging.handlers
-from dotenv import load_dotenv
-from celery import Celery
-from celery.signals import worker_process_init, worker_ready
 
 # Load environment variables from .env file
 # This ensures Celery workers have access to all environment variables
@@ -27,7 +28,7 @@ class UnifiedFormatter(logging.Formatter):
     Unified formatter matching main.py's format.
     Format: [HH:MM:SS] LEVEL | MODULE | [PID] message
     """
-    
+
     COLORS = {
         'DEBUG': '\033[37m',      # Gray
         'INFO': '\033[36m',       # Cyan
@@ -37,26 +38,26 @@ class UnifiedFormatter(logging.Formatter):
         'RESET': '\033[0m',
         'BOLD': '\033[1m'
     }
-    
+
     def format(self, record):
         # Timestamp: HH:MM:SS
         timestamp = self.formatTime(record, '%H:%M:%S')
-        
+
         # Level abbreviation
         level_name = record.levelname
         if level_name == 'CRITICAL':
             level_name = 'CRIT'
         elif level_name == 'WARNING':
             level_name = 'WARN'
-        
+
         color = self.COLORS.get(level_name, '')
         reset = self.COLORS['RESET']
-        
+
         if level_name == 'CRIT':
             colored_level = f"{self.COLORS['BOLD']}{color}{level_name.ljust(5)}{reset}"
         else:
             colored_level = f"{color}{level_name.ljust(5)}{reset}"
-        
+
         # Source abbreviation - handle Celery-specific loggers
         source = record.name
         if 'celery' in source.lower():
@@ -81,12 +82,12 @@ class UnifiedFormatter(logging.Formatter):
             source = 'MAIN'
         else:
             source = source[:4].upper()
-        
+
         source = source.ljust(4)
-        
+
         # Process ID
         pid = record.process if hasattr(record, 'process') else os.getpid()
-        
+
         return f"[{timestamp}] {colored_level} | {source} | [{pid}] {record.getMessage()}"
 
 # Configure Celery logging
@@ -94,21 +95,21 @@ def setup_celery_logging():
     """Configure Celery to use unified logging format."""
     # Get root logger
     root_logger = logging.getLogger()
-    
+
     # Remove existing handlers
     for handler in root_logger.handlers[:]:
         root_logger.removeHandler(handler)
-    
+
     # Create console handler with unified formatter
     console_handler = logging.StreamHandler()
     console_handler.setFormatter(UnifiedFormatter())
-    
+
     # Create file handler to write to logs/app.log (same as main application)
     # Ensure logs directory exists
     log_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "logs")
     os.makedirs(log_dir, exist_ok=True)
     log_file = os.path.join(log_dir, "app.log")
-    
+
     # Use RotatingFileHandler for log rotation (10MB max, keep 10 backups)
     file_handler = logging.handlers.RotatingFileHandler(
         log_file,
@@ -117,7 +118,7 @@ def setup_celery_logging():
         encoding='utf-8'
     )
     file_handler.setFormatter(UnifiedFormatter())
-    
+
     # Configure Celery loggers - including all variants
     celery_loggers = [
         'celery',
@@ -128,7 +129,7 @@ def setup_celery_logging():
         'celery.app',
         'celery.app.trace',
     ]
-    
+
     for logger_name in celery_loggers:
         logger = logging.getLogger(logger_name)
         logger.handlers = []
@@ -136,12 +137,12 @@ def setup_celery_logging():
         logger.addHandler(file_handler)  # Add file handler
         logger.setLevel(logging.DEBUG)  # Full verbose logging
         logger.propagate = False
-    
+
     # Configure root logger to catch all messages
     root_logger.addHandler(console_handler)
     root_logger.addHandler(file_handler)  # Add file handler
     root_logger.setLevel(logging.DEBUG)  # Full verbose logging
-    
+
     # Also configure any existing logger that starts with 'celery'
     # This catches MainProcess and ForkPoolWorker loggers
     for logger_name in list(logging.Logger.manager.loggerDict.keys()):
@@ -152,7 +153,7 @@ def setup_celery_logging():
             logger.addHandler(file_handler)  # Add file handler
             logger.setLevel(logging.DEBUG)  # Full verbose logging
             logger.propagate = False
-    
+
     # Set all application loggers to DEBUG for verbose logging
     app_loggers = [
         'services',
@@ -181,7 +182,7 @@ BROKER_URL = os.getenv('CELERY_BROKER_URL', f'redis://{REDIS_HOST}:{REDIS_PORT}/
 BACKEND_URL = os.getenv('CELERY_RESULT_BACKEND', f'redis://{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}')
 
 # Create Celery app
-celery_app = Celery(
+celery_app = Celery(  # type: ignore[misc]
     'mindgraph',
     broker=BROKER_URL,
     backend=BACKEND_URL,
@@ -196,23 +197,23 @@ celery_app.conf.update(
     result_serializer='json',
     timezone='Asia/Shanghai',
     enable_utc=True,
-    
+
     # Task execution settings
     task_acks_late=True,  # Acknowledge after task completes (reliability)
     task_reject_on_worker_lost=True,  # Requeue if worker crashes
-    
+
     # Worker settings
     worker_prefetch_multiplier=1,  # One task at a time per worker (for long-running tasks)
     worker_concurrency=2,  # 2 concurrent tasks per worker
-    
+
     # Result settings
     result_expires=3600,  # Results expire after 1 hour
-    
+
     # Task queues (like Dify's queue isolation)
     task_routes={
         'knowledge_space.*': {'queue': 'knowledge'},
     },
-    
+
     # Default queue
     task_default_queue='default',
 )
@@ -222,32 +223,32 @@ celery_app.conf.update(
 def _init_worker_services():
     """
     Initialize services when Celery worker process starts.
-    
+
     This ensures:
     - Redis is initialized (for caching, rate limiting)
     - LLM service is initialized (for MindChunk)
     """
     import logging
     logger = logging.getLogger(__name__)
-    
+
     # Initialize Redis first (LLM service may depend on it)
     try:
-        from services.redis_client import init_redis_sync, is_redis_available
+        from services.redis.redis_client import init_redis_sync, is_redis_available
         if not is_redis_available():
             logger.info("[Celery] Initializing Redis in worker process...")
             init_redis_sync()
             logger.info("[Celery] ✓ Redis initialized in worker process")
         else:
             logger.debug("[Celery] Redis already initialized in worker process")
-    except Exception as e:
+    except Exception as  # pylint: disable=broad-except e:
         logger.warning(f"[Celery] Failed to initialize Redis in worker process: {e}")
-    
-    
+
+
     # Initialize LLM service for MindChunk
     try:
-        from services.llm_service import llm_service
+        from services.llm import llm_service
         from config.settings import config
-        
+
         # Check if API key is configured
         if not config.QWEN_API_KEY:
             logger.error(
@@ -255,15 +256,15 @@ def _init_worker_services():
                 "LLM service cannot be initialized. MindChunk will fall back to semchunk."
             )
             return
-        
+
         logger.info("[Celery] Checking LLM service initialization...")
         logger.debug(f"[Celery] QWEN_API_KEY configured: {config.QWEN_API_KEY[:10]}...")
         logger.debug(f"[Celery] DASHSCOPE_API_URL: {config.DASHSCOPE_API_URL}")
-        
+
         if not llm_service.client_manager.is_initialized():
             logger.info("[Celery] Initializing LLM service in worker process...")
             llm_service.initialize()
-            
+
             # Verify initialization succeeded
             if llm_service.client_manager.is_initialized():
                 logger.info("[Celery] ✓ LLM service initialized successfully in worker process")
@@ -272,7 +273,7 @@ def _init_worker_services():
                 logger.error("[Celery] ✗ LLM service initialization failed - is_initialized() returned False")
         else:
             logger.info("[Celery] LLM service already initialized in worker process")
-    except Exception as e:
+    except Exception as  # pylint: disable=broad-except e:
         import traceback
         logger.error(
             f"[Celery] Failed to initialize LLM service in worker process: {e}",
@@ -292,34 +293,34 @@ def on_worker_process_init(sender=None, **kwargs):
     """Called when worker process starts."""
     import logging
     import os
-    
+
     # Reconfigure logging in worker process to use unified format
     setup_celery_logging()
-    
+
     # Get logger after setup
     logger = logging.getLogger(__name__)
     worker_name = os.environ.get('CELERY_WORKER_NAME', 'unknown')
     pid = os.getpid()
-    
+
     logger.info(f"[Celery] ===== ForkPoolWorker process started: PID={pid}, Worker={worker_name} =====")
     logger.info("[Celery] Initializing services in worker process...")
-    
+
     _init_worker_services()
-    
+
     logger.info(f"[Celery] ===== ForkPoolWorker process ready: PID={pid} =====")
 
 @worker_ready.connect
 def on_worker_ready(sender=None, **kwargs):
     """
     Called when worker is ready to accept tasks.
-    
+
     Note: This runs in MainProcess, not in worker processes.
     Worker processes initialize services via worker_process_init signal.
     """
     import logging
     logger = logging.getLogger(__name__)
     logger.info("[Celery] Worker ready - services initialized in worker processes")
-    
+
     # Note: LLM service initialization happens in worker_process_init signal
     # which runs in each ForkPoolWorker process, not in MainProcess.
     # MainProcess doesn't need LLM service - only worker processes do.

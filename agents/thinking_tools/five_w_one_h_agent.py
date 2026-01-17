@@ -1,3 +1,6 @@
+﻿from agents.mind_maps.mind_map_agent import MindMapAgent
+from prompts.thinking_tools import THINKING_TOOLS_PROMPTS
+
 """
 5W1H Analysis Agent
 
@@ -11,18 +14,16 @@ All Rights Reserved
 Proprietary License
 """
 
-from agents.mind_maps.mind_map_agent import MindMapAgent
-from prompts.thinking_tools import THINKING_TOOLS_PROMPTS
 
 
 class FiveWOneHAgent(MindMapAgent):
     """Agent for generating 5W1H analysis diagrams."""
-    
+
     def __init__(self):
         super().__init__()
         self.diagram_type = 'five_w_one_h'
-    
-    def get_prompt(self, language='en'):
+
+    def get_prompt(self, language='en') -> None:
         """Get the generation prompt for the specified language."""
         prompt_key = f"five_w_one_h_generation_{language}"
         return THINKING_TOOLS_PROMPTS.get(prompt_key, THINKING_TOOLS_PROMPTS['five_w_one_h_generation_en'])

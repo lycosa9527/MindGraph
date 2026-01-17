@@ -1,3 +1,11 @@
+﻿import logging
+import os
+
+from fastapi import APIRouter, Depends, HTTPException, Request, status
+
+from models.auth import User
+from models.messages import Messages
+
 """
 Admin Settings Management Endpoints
 ===================================
@@ -11,15 +19,9 @@ All Rights Reserved
 Proprietary License
 """
 
-import logging
-import os
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
 
-from models.messages import Messages
 
-from ..dependencies import get_language_dependency, require_admin
-from models.auth import User
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +37,7 @@ async def get_settings_admin(
     """Get system settings from .env (ADMIN ONLY)"""
     env_path = ".env"
     settings = {}
-    
+
     if os.path.exists(env_path):
         with open(env_path, 'r', encoding='utf-8') as f:
             for line in f:
@@ -44,16 +46,16 @@ async def get_settings_admin(
                     key, value = line.split('=', 1)
                     key = key.strip()
                     value = value.strip()
-                    
+
                     # Skip critical settings (JWT_SECRET_KEY is now auto-managed via Redis)
                     if key in ['DATABASE_URL']:
                         continue
-                    
+
                     if 'PASSWORD' in key or 'SECRET' in key or 'PASSKEY' in key:
                         settings[key] = "******"
                     else:
                         settings[key] = value
-    
+
     return settings
 
 
@@ -71,14 +73,14 @@ async def update_settings_admin(
         if key in forbidden_keys:
             error_msg = Messages.error("cannot_modify_field_via_api", lang, key)
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
-    
+
     env_path = ".env"
     lines = []
-    
+
     if os.path.exists(env_path):
         with open(env_path, 'r', encoding='utf-8') as f:
             lines = f.readlines()
-    
+
     updated_keys = set()
     for i, line in enumerate(lines):
         stripped = line.strip()
@@ -87,16 +89,16 @@ async def update_settings_admin(
             if key in request:
                 lines[i] = f"{key}={request[key]}\n"
                 updated_keys.add(key)
-    
+
     for key, value in request.items():
         if key not in updated_keys:
             lines.append(f"{key}={value}\n")
-    
+
     with open(env_path, 'w', encoding='utf-8') as f:
         f.writelines(lines)
-    
+
     logger.warning(f"Admin {current_user.phone} updated .env settings: {list(request.keys())}")
-    
+
     return {
         "message": Messages.success("settings_updated", lang),
         "warning": Messages.warning("server_restart_required", lang),

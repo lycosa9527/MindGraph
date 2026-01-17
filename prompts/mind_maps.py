@@ -1,4 +1,4 @@
-"""
+﻿"""
 Mind Maps Prompts
 
 This module contains prompts for mind maps and related diagrams.
@@ -147,4 +147,4 @@ MIND_MAP_PROMPTS = {
     # Format: diagram_type_prompt_type_language
     "mind_map_generation_en": MIND_MAP_AGENT_GENERATION_EN,
     "mind_map_generation_zh": MIND_MAP_AGENT_GENERATION_ZH,
-} 
+}

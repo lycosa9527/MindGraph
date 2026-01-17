@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 Embed China GeoJSON into public-dashboard.js
 ===========================================
@@ -21,24 +21,24 @@ def embed_china_geo():
         print(f"Error: {CHINA_GEO_PATH} not found")
         print("Please run: python scripts/download_dashboard_dependencies.py")
         return False
-    
+
     with open(CHINA_GEO_PATH, 'r', encoding='utf-8') as f:
         geo_data = json.load(f)
-    
+
     # Convert to JavaScript string (minified JSON)
     geo_json_str = json.dumps(geo_data, ensure_ascii=False, separators=(',', ':'))
-    
+
     # Read the current JavaScript file
     with open(PUBLIC_DASHBOARD_JS, 'r', encoding='utf-8') as f:
         js_content = f.read()
-    
+
     # Find and replace the chinaGeoJSON initialization
     # Replace: let chinaGeoJSON = null;
     # With: const chinaGeoJSON = <embedded_data>;
-    
+
     old_declaration = "let chinaGeoJSON = null;"
     new_declaration = f"const chinaGeoJSON = {geo_json_str};"
-    
+
     if old_declaration in js_content:
         js_content = js_content.replace(old_declaration, new_declaration)
     else:
@@ -56,7 +56,7 @@ def embed_china_geo():
                     lines[i] = new_declaration
                     js_content = '\n'.join(lines)
                     break
-    
+
     # Remove the loadChinaGeoJSON function and its call
     # Find the function definition
     if 'async function loadChinaGeoJSON()' in js_content:
@@ -75,19 +75,19 @@ def embed_china_geo():
                 if brace_count == 0 and i > 0:
                     func_end = func_start + len('\n'.join(func_lines[:i+1]))
                     break
-        
+
         if func_end > func_start:
             # Remove the function
             js_content = js_content[:func_start] + js_content[func_end+1:]
-    
+
     # Remove calls to loadChinaGeoJSON()
     js_content = js_content.replace('await loadChinaGeoJSON();', '')
     js_content = js_content.replace('loadChinaGeoJSON();', '')
-    
+
     # Write the updated file
     with open(PUBLIC_DASHBOARD_JS, 'w', encoding='utf-8') as f:
         f.write(js_content)
-    
+
     print(f"Successfully embedded china-geo.json into {PUBLIC_DASHBOARD_JS.name}")
     print(f"File size: {len(geo_json_str):,} characters")
     return True

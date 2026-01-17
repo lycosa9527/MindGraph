@@ -1,4 +1,4 @@
-"""
+﻿"""
 MindGraph Agents Package
 
 Central registry for all diagram generation agents.
@@ -25,10 +25,10 @@ from .thinking_maps import (
 AGENT_REGISTRY = {
     # Concept Maps
     'concept_map': ConceptMapAgent,
-    
+
     # Mind Maps
     'mindmap': MindMapAgent,
-    
+
     # Thinking Maps
     'flow_map': FlowMapAgent,
     'tree_map': TreeMapAgent,
@@ -43,10 +43,10 @@ AGENT_REGISTRY = {
 def get_agent(diagram_type: str):
     """
     Get an agent instance for the specified diagram type.
-    
+
     Args:
         diagram_type: Type of diagram to generate
-        
+
     Returns:
         Agent instance or None if not found
     """
@@ -58,7 +58,7 @@ def get_agent(diagram_type: str):
 def get_available_diagram_types():
     """
     Get list of all available diagram types.
-    
+
     Returns:
         List of diagram type strings
     """
@@ -67,10 +67,10 @@ def get_available_diagram_types():
 def is_agent_available(diagram_type: str) -> bool:
     """
     Check if an agent is available for the specified diagram type.
-    
+
     Args:
         diagram_type: Type of diagram to check
-        
+
     Returns:
         True if agent is available, False otherwise
     """

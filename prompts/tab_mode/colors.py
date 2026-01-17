@@ -1,4 +1,4 @@
-"""
+﻿"""
 Tab Mode Color Suggestion Prompts
 ==================================
 

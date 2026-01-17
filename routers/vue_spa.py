@@ -1,3 +1,10 @@
+﻿import logging
+
+from fastapi import APIRouter, Request
+from fastapi.responses import FileResponse, HTMLResponse
+
+from services.infrastructure.spa_handler import VUE_DIST_DIR, is_vue_spa_available
+
 """
 Vue SPA Router
 ==============
@@ -9,11 +16,7 @@ Copyright 2024-2025 Beijing Siyuan Zhijiao Technology Co., Ltd.
 All Rights Reserved
 """
 
-import logging
-from fastapi import APIRouter, Request
-from fastapi.responses import FileResponse, HTMLResponse
 
-from services.spa_handler import VUE_DIST_DIR, is_vue_spa_available
 
 logger = logging.getLogger(__name__)
 
@@ -181,7 +184,7 @@ async def vue_debateverse(request: Request):
 async def _serve_index() -> FileResponse:
     """Serve Vue SPA index.html."""
     index_path = VUE_DIST_DIR / "index.html"
-    
+
     if not index_path.exists():
         return HTMLResponse(
             content="""
@@ -202,7 +205,7 @@ npm run build
             """,
             status_code=503
         )
-    
+
     return FileResponse(
         path=str(index_path),
         media_type="text/html"

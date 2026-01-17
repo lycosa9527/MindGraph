@@ -1,3 +1,12 @@
+﻿"""
+flow map palette module.
+"""
+from typing import Optional, Dict, Any, AsyncGenerator
+import logging
+import re
+
+from agents.node_palette.base_palette_generator import BasePaletteGenerator
+
 """
 Flow Map Palette Generator
 ===========================
@@ -11,11 +20,7 @@ All Rights Reserved
 Proprietary License
 """
 
-import re
-import logging
-from typing import Optional, Dict, Any, AsyncGenerator
 
-from agents.node_palette.base_palette_generator import BasePaletteGenerator
 
 logger = logging.getLogger(__name__)
 
@@ -23,16 +28,16 @@ logger = logging.getLogger(__name__)
 class FlowMapPaletteGenerator(BasePaletteGenerator):
     """
     Flow Map specific palette generator with multi-stage workflow and step sequencing.
-    
+
     Stages:
     1. steps: Generate main steps (no dimensions needed)
     2. substeps: Generate substeps for a specific step
-    
+
     Key feature: Sequence numbers are assigned when user selects steps (based on selection order),
     not during generation. This allows users to see steps without numbers first, then numbers
     appear after selection.
     """
-    
+
     def __init__(self):
         """Initialize flow map palette generator"""
         super().__init__()
@@ -40,7 +45,7 @@ class FlowMapPaletteGenerator(BasePaletteGenerator):
         self.session_stages = {}  # session_id -> {'stage': str, 'dimension': str, 'step_name': str}
         # Track step sequence numbers per session
         self.step_sequences = {}  # session_id -> next_sequence_number
-    
+
     async def generate_batch(
         self,
         session_id: str,
@@ -57,7 +62,7 @@ class FlowMapPaletteGenerator(BasePaletteGenerator):
     ) -> AsyncGenerator[Dict, None]:
         """
         Generate batch with multi-stage workflow and step sequencing.
-        
+
         Args:
             session_id: Session identifier
             center_topic: Main process/event
@@ -74,17 +79,17 @@ class FlowMapPaletteGenerator(BasePaletteGenerator):
         self.session_stages[session_id]['stage'] = stage
         if stage_data:
             self.session_stages[session_id].update(stage_data)
-        
-        logger.info("[FlowMapPalette] Stage: %s | Session: %s | Topic: '%s'", 
+
+        logger.info("[FlowMapPalette] Stage: %s | Session: %s | Topic: '%s'",
                    stage, session_id[:8], center_topic)
         if stage_data:
             logger.info("[FlowMapPalette] Stage data: %s", stage_data)
-        
+
         # Pass session_id through educational_context so _build_prompt can access it
         if educational_context is None:
             educational_context = {}
         educational_context = {**educational_context, '_session_id': session_id}
-        
+
         # Call base class generate_batch which will use our _build_prompt
         async for event in super().generate_batch(
             session_id=session_id,
@@ -99,7 +104,7 @@ class FlowMapPaletteGenerator(BasePaletteGenerator):
             # Add mode and sequence fields to every node
             if event.get('event') == 'node_generated':
                 node = event.get('node', {})
-                
+
                 # For substeps stage, use step_name as mode (for dynamic tab routing)
                 # For other stages, use stage name as mode
                 if stage == 'substeps' and stage_data and stage_data.get('step_name'):
@@ -108,14 +113,14 @@ class FlowMapPaletteGenerator(BasePaletteGenerator):
                 else:
                     node_mode = stage
                     logger.debug(f"[FlowMapPalette] Node tagged with stage mode='{node_mode}' | ID: {node.get('id', 'unknown')} | Text: {node.get('text', '')}")
-                
+
                 node['mode'] = node_mode
-                
+
                 # NOTE: Sequence numbers are NOT assigned during generation
                 # They are assigned when user selects steps, based on selection order
-            
+
             yield event
-    
+
     def _build_prompt(
         self,
         center_topic: str,
@@ -125,41 +130,41 @@ class FlowMapPaletteGenerator(BasePaletteGenerator):
     ) -> str:
         """
         Build Flow Map prompt (routes to stage-specific prompts).
-        
+
         Args:
             center_topic: Main process/event title
             educational_context: Educational context dict
             count: Number of items to request
             batch_num: Current batch number
-            
+
         Returns:
             Formatted prompt for current stage
         """
         # Detect language from content (Chinese topic = Chinese prompt)
-        language = self._detect_language(center_topic, educational_context)
+        language = self._detect_language  # pylint: disable=protected-access(center_topic, educational_context)
         context_desc = educational_context.get('raw_message', 'General K12 teaching') if educational_context else 'General K12 teaching'
-        
+
         # Get session_id from educational_context (passed through from generate_batch)
         session_id = educational_context.get('_session_id', '') if educational_context else ''
-        
+
         # Get current stage and stage_data
         stage_info = self.session_stages.get(session_id, {})
         stage = stage_info.get('stage', 'steps')  # Default to 'steps' (dimensions stage removed)
-        
+
         logger.debug(f"[FlowMapPalette-Prompt] Building prompt for stage: {stage}")
-        
+
         # Build stage-specific prompt
         if stage == 'steps':
             # Steps stage - no dimension needed
-            return self._build_steps_prompt(center_topic, context_desc, language, count, batch_num)
+            return self._build_steps_prompt  # pylint: disable=protected-access(center_topic, context_desc, language, count, batch_num)
         elif stage == 'substeps':
             step_name = stage_info.get('step_name', '')
-            return self._build_substeps_prompt(center_topic, step_name, context_desc, language, count, batch_num)
+            return self._build_substeps_prompt  # pylint: disable=protected-access(center_topic, step_name, context_desc, language, count, batch_num)
         else:
             # Fallback to steps (default stage for flow maps)
             logger.warning(f"[FlowMapPalette] Unknown stage '{stage}', defaulting to 'steps'")
-            return self._build_steps_prompt(center_topic, context_desc, language, count, batch_num)
-    
+            return self._build_steps_prompt  # pylint: disable=protected-access(center_topic, context_desc, language, count, batch_num)
+
     def _build_dimensions_prompt(
         self,
         center_topic: str,
@@ -213,15 +218,15 @@ Requirements:
 4. Output only the dimension name, one per line, no numbering
 
 Generate {count} decomposition dimensions:"""
-        
+
         if batch_num > 1:
             if language == 'zh':
                 prompt += f"\n\n注意：这是第{batch_num}批。确保提供不同角度的维度，避免重复。"
             else:
                 prompt += f"\n\nNote: Batch {batch_num}. Ensure different perspectives, avoid duplication."
-        
+
         return prompt
-    
+
     def _build_steps_prompt(
         self,
         center_topic: str,
@@ -261,15 +266,15 @@ Thinking approach: Sequential, Procedural
 Requirements: Each step should be concise (1-6 words), no punctuation, no numbering prefixes. Output only the step text, one per line. **Please arrange steps in chronological order from earliest to latest**.
 
 Generate {count} ordered steps:"""
-        
+
         if batch_num > 1:
             if language == 'zh':
                 prompt += f"\n\n注意：这是第{batch_num}批。确保步骤仍然按照时间顺序排列，提供新的角度或细节。"
             else:
                 prompt += f"\n\nNote: Batch {batch_num}. Ensure steps remain in chronological order with new angles or details."
-        
+
         return prompt
-    
+
     def _build_substeps_prompt(
         self,
         center_topic: str,
@@ -316,35 +321,35 @@ Requirements:
 7. Output only substep text, one per line, no numbering prefixes, no punctuation
 
 Generate {count} substeps for "{step_name}" (step of "{center_topic}"):"""
-        
+
         if batch_num > 1:
             if language == 'zh':
                 prompt += f"\n\n注意：这是第{batch_num}批。确保子步骤仍然按照时间顺序排列，提供新的角度或细节。"
             else:
                 prompt += f"\n\nNote: Batch {batch_num}. Ensure substeps remain in chronological order with new angles or details."
-        
+
         return prompt
-    
-    def end_session(self, session_id: str, reason: str = "complete"):
+
+    def end_session(self, session_id: str, reason: str = "complete") -> None:
         """
         End session and cleanup stage data and sequence tracking.
-        
+
         Overrides base class to also clean up session_stages and step_sequences.
         """
         # Clean up stage data and sequence tracking
         self.session_stages.pop(session_id, None)
         self.step_sequences.pop(session_id, None)
-        
+
         # Call parent cleanup
         super().end_session(session_id, reason)
 
 
-# Global singleton instance for Flow Map
+# Global singleton  # pylint: disable=global-statement instance for Flow Map
 _flow_map_palette_generator = None
 
 def get_flow_map_palette_generator() -> FlowMapPaletteGenerator:
     """Get singleton instance of Flow Map palette generator"""
-    global _flow_map_palette_generator
+    global _flow_map_palette_generator  # pylint: disable=global-statement
     if _flow_map_palette_generator is None:
         _flow_map_palette_generator = FlowMapPaletteGenerator()
     return _flow_map_palette_generator

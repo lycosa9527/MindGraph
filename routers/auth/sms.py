@@ -1,3 +1,21 @@
+﻿"""
+sms module.
+"""
+from typing import Optional
+import logging
+
+from fastapi import APIRouter, Depends, HTTPException, Header, Request, status
+from sqlalchemy.orm import Session
+
+from config.database import get_db
+from models.messages import Messages, get_request_language, Language
+from models.requests import SendSMSCodeRequest, SendSMSCodeSimpleRequest, VerifySMSCodeRequest
+from services.auth.sms_middleware import (
+from services.redis.redis_rate_limiter import get_rate_limiter
+from services.redis.redis_sms_storage import get_sms_storage
+from services.redis.redis_user_cache import user_cache
+from utils.auth import AUTH_MODE
+
 """
 SMS Verification Endpoints
 ==========================
@@ -12,19 +30,8 @@ All Rights Reserved
 Proprietary License
 """
 
-import logging
-from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Header, Request, status
-from sqlalchemy.orm import Session
 
-from config.database import get_db
-from models.messages import Messages, get_request_language, Language
-from models.requests import SendSMSCodeRequest, SendSMSCodeSimpleRequest, VerifySMSCodeRequest
-from services.redis_sms_storage import get_sms_storage
-from services.redis_rate_limiter import get_rate_limiter
-from services.redis_user_cache import user_cache
-from services.sms_middleware import (
     get_sms_middleware,
     SMSServiceError,
     SMS_CODE_EXPIRY_MINUTES,
@@ -32,9 +39,6 @@ from services.sms_middleware import (
     SMS_MAX_ATTEMPTS_PER_PHONE,
     SMS_MAX_ATTEMPTS_WINDOW_HOURS
 )
-from utils.auth import AUTH_MODE
-from .captcha import verify_captcha_with_retry
-from .dependencies import get_language_dependency
 
 logger = logging.getLogger(__name__)
 
@@ -46,21 +50,21 @@ async def send_sms_code(
     request: SendSMSCodeRequest,
     http_request: Request,
     db: Session = Depends(get_db),
-    lang: str = Depends(get_language_dependency)
+    lang: Language = Depends(get_language_dependency)
 ):
     """
     Send SMS verification code
-    
+
     Sends a 6-digit verification code via Tencent SMS.
-    
+
     Security:
     - Captcha verification required (bot protection)
-    
+
     Purposes:
     - register: For new user registration
     - login: For SMS-based login
     - reset_password: For password recovery
-    
+
     Rate limiting:
     - 60 seconds cooldown between requests for same phone/purpose
     - Maximum 5 codes per hour per phone number
@@ -72,7 +76,7 @@ async def send_sms_code(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=error_msg
         )
-    
+
     # Verify captcha first (anti-bot protection)
     captcha_valid, captcha_error = await verify_captcha_with_retry(request.captcha_id, request.captcha)
     if not captcha_valid:
@@ -106,9 +110,9 @@ async def send_sms_code(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=error_msg
             )
-    
+
     sms_middleware = get_sms_middleware()
-    
+
     # Check if SMS service is available
     if not sms_middleware.is_available:
         error_msg = Messages.error("sms_service_not_configured", lang)
@@ -116,10 +120,10 @@ async def send_sms_code(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail=error_msg
         )
-    
+
     phone = request.phone
     purpose = request.purpose
-    
+
     # For registration, check if phone already exists (use cache)
     if purpose == "register":
         existing_user = user_cache.get_by_phone(phone)
@@ -129,7 +133,7 @@ async def send_sms_code(
                 status_code=status.HTTP_409_CONFLICT,
                 detail=error_msg
             )
-    
+
     # For login and reset_password, check if user exists (use cache)
     if purpose in ["login", "reset_password"]:
         existing_user = user_cache.get_by_phone(phone)
@@ -146,18 +150,18 @@ async def send_sms_code(
                     status_code=status.HTTP_404_NOT_FOUND,
                     detail=error_msg
                 )
-    
+
     # Get Redis SMS storage and rate limiter
     sms_storage = get_sms_storage()
     rate_limiter = get_rate_limiter()
-    
+
     # Check rate limiting: cooldown between requests (via Redis TTL)
     exists, remaining_ttl = sms_storage.check_exists_and_get_ttl(phone, purpose)
-    
+
     if exists and remaining_ttl > 0:
         total_ttl = SMS_CODE_EXPIRY_MINUTES * 60  # 300 seconds for 5 minutes
         code_age = total_ttl - remaining_ttl
-        
+
         # Only block if code was sent within the cooldown period
         if code_age < SMS_RESEND_INTERVAL_SECONDS:
             wait_seconds = SMS_RESEND_INTERVAL_SECONDS - code_age
@@ -170,32 +174,32 @@ async def send_sms_code(
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
                 detail=error_msg
             )
-    
+
     # Check rate limit within time window using Redis rate limiter
     allowed, window_count, error_message = rate_limiter.check_and_record(
         "sms", phone, SMS_MAX_ATTEMPTS_PER_PHONE, SMS_MAX_ATTEMPTS_WINDOW_HOURS * 3600
     )
-    
+
     if not allowed:
         error_msg = Messages.error("too_many_sms_requests", lang, window_count, SMS_MAX_ATTEMPTS_WINDOW_HOURS)
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
             detail=error_msg
         )
-    
+
     # Generate verification code first
     code = sms_middleware.generate_code()
-    
+
     # Store verification code in Redis BEFORE sending SMS
     ttl_seconds = SMS_CODE_EXPIRY_MINUTES * 60
-    
+
     if not sms_storage.store(phone, code, purpose, ttl_seconds):
         logger.error(f"Failed to store SMS code in Redis for {phone[:3]}****{phone[-4:]}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=Messages.error("sms_service_temporarily_unavailable", lang)
         )
-    
+
     # Now send the SMS with pre-generated code
     try:
         success, message, _ = await sms_middleware.send_verification_code(phone, purpose, code=code, lang=lang)
@@ -206,7 +210,7 @@ async def send_sms_code(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail=str(e)
         )
-    
+
     if not success:
         # SMS sending failed - remove the Redis record
         sms_storage.remove(phone, purpose)
@@ -218,9 +222,9 @@ async def send_sms_code(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=error_detail
         )
-    
+
     logger.info(f"SMS code sent to {phone[:3]}****{phone[-4:]} for {purpose}")
-    
+
     return {
         "message": Messages.success("verification_code_sent", lang),
         "expires_in": SMS_CODE_EXPIRY_MINUTES * 60,  # in seconds
@@ -233,14 +237,14 @@ async def verify_sms_code(
     request: VerifySMSCodeRequest,
     http_request: Request,
     db: Session = Depends(get_db),
-    lang: str = Depends(get_language_dependency)
+    lang: Language = Depends(get_language_dependency)
 ):
     """
     Verify SMS code (standalone verification)
-    
+
     Verifies the SMS code without performing any action.
     Useful for frontend validation before form submission.
-    
+
     Note: This does NOT consume the code - the actual action
     endpoints (register_sms, login_sms, reset_password) will
     consume it.
@@ -248,29 +252,29 @@ async def verify_sms_code(
     phone = request.phone
     code = request.code
     purpose = request.purpose
-    
+
     # Get SMS storage
     sms_storage = get_sms_storage()
-    
+
     # Peek at the stored code to verify (without consuming)
     stored_code = sms_storage.peek(phone, purpose)
-    
+
     if stored_code is None:
         error_msg = Messages.error("sms_code_invalid", lang)
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=error_msg
         )
-    
+
     if stored_code != code:
         error_msg = Messages.error("sms_code_invalid", lang)
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=error_msg
         )
-    
+
     logger.info(f"SMS code verified: {phone[:3]}****{phone[-4:]} (Purpose: {purpose})")
-    
+
     return {
         "valid": True,
         "message": Messages.success("verification_code_valid", lang)
@@ -278,20 +282,20 @@ async def verify_sms_code(
 
 
 def _verify_and_consume_sms_code(
-    phone: str, 
-    code: str, 
-    purpose: str, 
+    phone: str,
+    code: str,
+    purpose: str,
     db: Session,
     lang: Language = "en"
 ) -> bool:
     """
     Internal helper to verify and consume SMS code
-    
+
     Returns True if valid, raises HTTPException if invalid
-    
+
     Uses Redis Lua script for atomic compare-and-delete to prevent race conditions.
     Only one concurrent request can consume the code successfully.
-    
+
     Args:
         phone: Phone number
         code: SMS verification code
@@ -301,12 +305,12 @@ def _verify_and_consume_sms_code(
     """
     # Get SMS storage
     sms_storage = get_sms_storage()
-    
+
     # Atomic verify and remove - prevents race conditions
     if sms_storage.verify_and_remove(phone, code, purpose):
         logger.info(f"SMS code consumed: {phone[:3]}****{phone[-4:]} (Purpose: {purpose})")
         return True
-    
+
     # Code verification failed
     error_msg = Messages.error("sms_code_invalid", lang)
     raise HTTPException(
@@ -320,11 +324,11 @@ async def _send_sms_code_with_purpose(
     http_request: Request,
     purpose: str,
     db: Session,
-    lang: str
+    lang: Language
 ):
     """
     Internal helper to send SMS code with a fixed purpose.
-    
+
     Reuses the logic from send_sms_code but with purpose pre-set.
     """
     # Check authentication mode - registration SMS not allowed in demo/bayi modes
@@ -334,7 +338,7 @@ async def _send_sms_code_with_purpose(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=error_msg
         )
-    
+
     # Verify captcha first (anti-bot protection)
     captcha_valid, captcha_error = await verify_captcha_with_retry(request.captcha_id, request.captcha)
     if not captcha_valid:
@@ -368,9 +372,9 @@ async def _send_sms_code_with_purpose(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=error_msg
             )
-    
+
     sms_middleware = get_sms_middleware()
-    
+
     # Check if SMS service is available
     if not sms_middleware.is_available:
         error_msg = Messages.error("sms_service_not_configured", lang)
@@ -378,9 +382,9 @@ async def _send_sms_code_with_purpose(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail=error_msg
         )
-    
+
     phone = request.phone
-    
+
     # For registration, check if phone already exists (use cache)
     if purpose == "register":
         existing_user = user_cache.get_by_phone(phone)
@@ -390,7 +394,7 @@ async def _send_sms_code_with_purpose(
                 status_code=status.HTTP_409_CONFLICT,
                 detail=error_msg
             )
-    
+
     # For login and reset_password, check if user exists (use cache)
     if purpose in ["login", "reset_password"]:
         existing_user = user_cache.get_by_phone(phone)
@@ -407,18 +411,18 @@ async def _send_sms_code_with_purpose(
                     status_code=status.HTTP_404_NOT_FOUND,
                     detail=error_msg
                 )
-    
+
     # Get Redis SMS storage and rate limiter
     sms_storage = get_sms_storage()
     rate_limiter = get_rate_limiter()
-    
+
     # Check rate limiting: cooldown between requests (via Redis TTL)
     exists, remaining_ttl = sms_storage.check_exists_and_get_ttl(phone, purpose)
-    
+
     if exists and remaining_ttl > 0:
         total_ttl = SMS_CODE_EXPIRY_MINUTES * 60  # 300 seconds for 5 minutes
         code_age = total_ttl - remaining_ttl
-        
+
         # Only block if code was sent within the cooldown period
         if code_age < SMS_RESEND_INTERVAL_SECONDS:
             wait_seconds = SMS_RESEND_INTERVAL_SECONDS - code_age
@@ -431,32 +435,32 @@ async def _send_sms_code_with_purpose(
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
                 detail=error_msg
             )
-    
+
     # Check rate limit within time window using Redis rate limiter
     allowed, window_count, error_message = rate_limiter.check_and_record(
         "sms", phone, SMS_MAX_ATTEMPTS_PER_PHONE, SMS_MAX_ATTEMPTS_WINDOW_HOURS * 3600
     )
-    
+
     if not allowed:
         error_msg = Messages.error("too_many_sms_requests", lang, window_count, SMS_MAX_ATTEMPTS_WINDOW_HOURS)
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
             detail=error_msg
         )
-    
+
     # Generate verification code first
     code = sms_middleware.generate_code()
-    
+
     # Store verification code in Redis BEFORE sending SMS
     ttl_seconds = SMS_CODE_EXPIRY_MINUTES * 60
-    
+
     if not sms_storage.store(phone, code, purpose, ttl_seconds):
         logger.error(f"Failed to store SMS code in Redis for {phone[:3]}****{phone[-4:]}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=Messages.error("sms_service_temporarily_unavailable", lang)
         )
-    
+
     # Now send the SMS with pre-generated code
     try:
         success, message, _ = await sms_middleware.send_verification_code(phone, purpose, code=code, lang=lang)
@@ -467,7 +471,7 @@ async def _send_sms_code_with_purpose(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail=str(e)
         )
-    
+
     if not success:
         # SMS sending failed - remove the Redis record
         sms_storage.remove(phone, purpose)
@@ -479,9 +483,9 @@ async def _send_sms_code_with_purpose(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=error_detail
         )
-    
+
     logger.info(f"SMS code sent to {phone[:3]}****{phone[-4:]} for {purpose}")
-    
+
     return {
         "message": Messages.success("verification_code_sent", lang),
         "expires_in": SMS_CODE_EXPIRY_MINUTES * 60,  # in seconds
@@ -494,11 +498,11 @@ async def send_sms_code_for_login(
     request: SendSMSCodeSimpleRequest,
     http_request: Request,
     db: Session = Depends(get_db),
-    lang: str = Depends(get_language_dependency)
+    lang: Language = Depends(get_language_dependency)
 ):
     """
     Send SMS verification code for login
-    
+
     Convenience endpoint that sends SMS code with purpose='login'.
     Requires captcha verification.
     """
@@ -510,11 +514,11 @@ async def send_sms_code_for_reset(
     request: SendSMSCodeSimpleRequest,
     http_request: Request,
     db: Session = Depends(get_db),
-    lang: str = Depends(get_language_dependency)
+    lang: Language = Depends(get_language_dependency)
 ):
     """
     Send SMS verification code for password reset
-    
+
     Convenience endpoint that sends SMS code with purpose='reset_password'.
     Requires captcha verification.
     """
@@ -526,11 +530,11 @@ async def send_sms_code_for_register(
     request: SendSMSCodeSimpleRequest,
     http_request: Request,
     db: Session = Depends(get_db),
-    lang: str = Depends(get_language_dependency)
+    lang: Language = Depends(get_language_dependency)
 ):
     """
     Send SMS verification code for registration
-    
+
     Convenience endpoint that sends SMS code with purpose='register'.
     Requires captcha verification.
     Not available in demo/bayi modes.

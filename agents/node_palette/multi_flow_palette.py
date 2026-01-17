@@ -1,3 +1,12 @@
+﻿"""
+multi flow palette module.
+"""
+from typing import Optional, Dict, Any, AsyncGenerator
+import logging
+import re
+
+from agents.node_palette.base_palette_generator import BasePaletteGenerator
+
 """
 Multi Flow Map Palette Generator
 =================================
@@ -11,11 +20,7 @@ All Rights Reserved
 Proprietary License
 """
 
-import re
-import logging
-from typing import Optional, Dict, Any, AsyncGenerator
 
-from agents.node_palette.base_palette_generator import BasePaletteGenerator
 
 logger = logging.getLogger(__name__)
 
@@ -23,19 +28,19 @@ logger = logging.getLogger(__name__)
 class MultiFlowPaletteGenerator(BasePaletteGenerator):
     """
     Multi Flow Map specific palette generator.
-    
+
     Supports TWO generation modes:
     - 'causes': Generate individual cause nodes
     - 'effects': Generate individual effect nodes
     """
-    
+
     def __init__(self):
         super().__init__()
         # Mode-specific session storage
         self.current_mode = {}  # session_id -> 'causes' | 'effects'
         # Note: Mode is passed through educational_context to avoid race conditions
         # with parallel catapults (no shared instance state!)
-    
+
     async def generate_batch(
         self,
         session_id: str,
@@ -51,20 +56,20 @@ class MultiFlowPaletteGenerator(BasePaletteGenerator):
     ) -> AsyncGenerator[Dict, None]:
         """
         Generate batch with mode support.
-        
+
         Args:
             mode: 'causes' for cause nodes, 'effects' for effect nodes
         """
         # Store mode for this session
         self.current_mode[session_id] = mode
-        
+
         # Pass mode through educational_context to avoid race conditions
         # (Don't use instance variable - it's shared between parallel catapults!)
         if educational_context is None:
             educational_context = {}
         educational_context = dict(educational_context)  # Make a copy
         educational_context['_mode'] = mode  # Embed mode in context
-        
+
         # Call parent's generate_batch (handles LLM streaming)
         async for chunk in super().generate_batch(
             session_id=session_id,
@@ -81,9 +86,9 @@ class MultiFlowPaletteGenerator(BasePaletteGenerator):
                 node = chunk.get('node', {})
                 node['mode'] = mode  # Tag node with its generation mode
                 logger.debug(f"[MultiFlow] Node tagged with mode='{mode}' | ID: {node.get('id', 'unknown')} | Text: {node.get('text', '')}")
-            
+
             yield chunk
-    
+
     def _build_prompt(
         self,
         center_topic: str,
@@ -93,30 +98,30 @@ class MultiFlowPaletteGenerator(BasePaletteGenerator):
     ) -> str:
         """
         Build Multi Flow Map prompt based on current mode.
-        
+
         Args:
             center_topic: Central event/topic
         """
         # Detect language from content (Chinese topic = Chinese prompt)
-        language = self._detect_language(center_topic, educational_context)
-        
+        language = self._detect_language  # pylint: disable=protected-access(center_topic, educational_context)
+
         # Get educational context
         context_desc = educational_context.get('raw_message', 'General K12 teaching') if educational_context else 'General K12 teaching'
-        
+
         # Extract mode from educational_context (thread-safe, no race conditions!)
         mode = educational_context.get('_mode', 'causes') if educational_context else 'causes'
         logger.debug(f"[MultiFlow] Building prompt for mode: {mode}")
-        
+
         # Build prompt based on mode
         if mode == 'causes':
-            return self._build_causes_prompt(
+            return self._build_causes_prompt  # pylint: disable=protected-access(
                 center_topic, context_desc, count, batch_num, language
             )
         else:  # effects
-            return self._build_effects_prompt(
+            return self._build_effects_prompt  # pylint: disable=protected-access(
                 center_topic, context_desc, count, batch_num, language
             )
-    
+
     def _build_causes_prompt(
         self,
         event: str,
@@ -156,16 +161,16 @@ Thinking approach: Identify factors that CAUSED this event to happen.
 Requirements: Each cause should be concise and clear. More than 4 words is allowed, but avoid long sentences. Use short phrases, not full sentences. Output only the cause text, one per line, no numbering.
 
 Generate {count} causes:"""
-        
+
         # Add diversity note for later batches
         if batch_num > 1:
             if language == 'zh':
                 prompt += f"\n\n注意：这是第{batch_num}批。确保最大程度的多样性，从新的维度和角度思考，避免与之前批次重复。"
             else:
                 prompt += f"\n\nNote: This is batch {batch_num}. Ensure MAXIMUM diversity from new dimensions and angles, avoid any repetition from previous batches."
-        
+
         return prompt
-    
+
     def _build_effects_prompt(
         self,
         event: str,
@@ -205,28 +210,28 @@ Thinking approach: Identify outcomes and impacts RESULTING from this event.
 Requirements: Each effect should be concise and clear. More than 4 words is allowed, but avoid long sentences. Use short phrases, not full sentences. Output only the effect text, one per line, no numbering.
 
 Generate {count} effects:"""
-        
+
         # Add diversity note for later batches
         if batch_num > 1:
             if language == 'zh':
                 prompt += f"\n\n注意：这是第{batch_num}批。确保最大程度的多样性，从新的维度和角度思考，避免与之前批次重复。"
             else:
                 prompt += f"\n\nNote: This is batch {batch_num}. Ensure MAXIMUM diversity with new dimensions and angles of analysis, avoid any repetition from previous batches."
-        
+
         return prompt
-    
-    def end_session(self, session_id: str, reason: str = "complete"):
+
+    def end_session(self, session_id: str, reason: str = "complete") -> None:
         """Clean up session including mode tracking"""
         super().end_session(session_id, reason)
         self.current_mode.pop(session_id, None)
 
 
-# Global singleton instance for Multi Flow Map
+# Global singleton  # pylint: disable=global-statement instance for Multi Flow Map
 _multi_flow_palette_generator = None
 
 def get_multi_flow_palette_generator() -> MultiFlowPaletteGenerator:
     """Get singleton instance of Multi Flow Map palette generator"""
-    global _multi_flow_palette_generator
+    global _multi_flow_palette_generator  # pylint: disable=global-statement
     if _multi_flow_palette_generator is None:
         _multi_flow_palette_generator = MultiFlowPaletteGenerator()
     return _multi_flow_palette_generator

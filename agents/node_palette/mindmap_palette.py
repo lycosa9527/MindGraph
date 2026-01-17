@@ -1,3 +1,12 @@
+﻿"""
+mindmap palette module.
+"""
+from typing import Optional, Dict, Any, AsyncGenerator
+import logging
+import re
+
+from agents.node_palette.base_palette_generator import BasePaletteGenerator
+
 """
 Mind Map Palette Generator
 ==========================
@@ -13,11 +22,7 @@ All Rights Reserved
 Proprietary License
 """
 
-import re
-import logging
-from typing import Optional, Dict, Any, AsyncGenerator
 
-from agents.node_palette.base_palette_generator import BasePaletteGenerator
 
 logger = logging.getLogger(__name__)
 
@@ -25,18 +30,18 @@ logger = logging.getLogger(__name__)
 class MindMapPaletteGenerator(BasePaletteGenerator):
     """
     Mind Map specific palette generator with multi-stage workflow.
-    
+
     Stages:
     - branches: Generate main branches from central topic (default)
     - children: Generate sub-branches for specific branch
     """
-    
+
     def __init__(self):
         """Initialize mind map palette generator"""
         super().__init__()
         # Track stage data per session
         self.session_stages = {}  # session_id -> {'stage': str, 'branch_name': str}
-    
+
     async def generate_batch(
         self,
         session_id: str,
@@ -53,7 +58,7 @@ class MindMapPaletteGenerator(BasePaletteGenerator):
     ) -> AsyncGenerator[Dict, None]:
         """
         Generate batch with stage-specific logic.
-        
+
         Args:
             session_id: Session identifier
             center_topic: Main topic
@@ -68,21 +73,21 @@ class MindMapPaletteGenerator(BasePaletteGenerator):
         self.session_stages[session_id]['stage'] = stage
         if stage_data:
             self.session_stages[session_id].update(stage_data)
-        
-        logger.debug("[MindMapPalette] Stage: %s | Session: %s | Topic: '%s'", 
+
+        logger.debug("[MindMapPalette] Stage: %s | Session: %s | Topic: '%s'",
                    stage, session_id[:8], center_topic)
         if stage_data:
             logger.debug("[MindMapPalette] Stage data: %s", stage_data)
-        
+
         # Pass session_id and stage_data through educational_context so _build_prompt can access them directly
         # This is better than relying on session_stages lookup (avoids timing/state sync issues)
         if educational_context is None:
             educational_context = {}
-        educational_context = {**educational_context, 
+        educational_context = {**educational_context,
                               '_session_id': session_id,
                               '_stage': stage,
                               '_stage_data': stage_data or {}}
-        
+
         # Call base class generate_batch which will use our _build_prompt
         async for event in super().generate_batch(
             session_id=session_id,
@@ -97,7 +102,7 @@ class MindMapPaletteGenerator(BasePaletteGenerator):
             # Add mode field to every node for explicit tracking
             if event.get('event') == 'node_generated':
                 node = event.get('node', {})
-                
+
                 # For children stage, use branch_name as mode (for dynamic tab routing)
                 # For branches stage, use 'branches' as mode
                 if stage == 'children' and stage_data and stage_data.get('branch_name'):
@@ -106,11 +111,11 @@ class MindMapPaletteGenerator(BasePaletteGenerator):
                 else:
                     node_mode = stage
                     logger.debug(f"[MindMapPalette] Node tagged with stage mode='{node_mode}' | ID: {node.get('id', 'unknown')} | Text: {node.get('text', '')}")
-                
+
                 node['mode'] = node_mode
-            
+
             yield event
-    
+
     def _build_prompt(
         self,
         center_topic: str,
@@ -120,45 +125,45 @@ class MindMapPaletteGenerator(BasePaletteGenerator):
     ) -> str:
         """
         Build stage-specific prompt for Mind Map node generation.
-        
+
         Checks session_stages to determine current stage and builds appropriate prompt.
-        
+
         Args:
             center_topic: Central topic
             educational_context: Educational context dict
             count: Number of ideas/branches to request
             batch_num: Current batch number
-            
+
         Returns:
             Stage-specific formatted prompt for Mind Map idea generation
         """
         # Detect language from content (Chinese topic = Chinese prompt)
-        language = self._detect_language(center_topic, educational_context)
-        
+        language = self._detect_language  # pylint: disable=protected-access(center_topic, educational_context)
+
         # Use same context extraction as auto-complete
         context_desc = educational_context.get('raw_message', 'General K12 teaching') if educational_context else 'General K12 teaching'
-        
+
         # Determine current stage from session_stages
         session_id = educational_context.get('_session_id') if educational_context else None
         stage = 'branches'  # default
         stage_data = {}
-        
+
         if session_id and session_id in self.session_stages:
             stage = self.session_stages[session_id].get('stage', 'branches')
             stage_data = self.session_stages[session_id]
-        
+
         logger.debug("[MindMapPalette-Prompt] Building prompt for stage: %s", stage)
-        
+
         # Build stage-specific prompt
         if stage == 'children':
             branch_name = stage_data.get('branch_name', '')
-            return self._build_children_prompt(center_topic, branch_name, context_desc, language, count, batch_num)
+            return self._build_children_prompt  # pylint: disable=protected-access(center_topic, branch_name, context_desc, language, count, batch_num)
         else:  # branches
-            return self._build_branches_prompt(center_topic, context_desc, language, count, batch_num)
-    
+            return self._build_branches_prompt  # pylint: disable=protected-access(center_topic, context_desc, language, count, batch_num)
+
     def _build_branches_prompt(self, center_topic: str, context_desc: str, language: str, count: int, batch_num: int) -> str:
         """Build prompt for generating main branches from central topic"""
-        
+
         # Build prompt based on language (derived from MIND_MAP_GENERATION prompts)
         if language == 'zh':
             prompt = f"""为以下主题生成{count}个思维导图分支想法：{center_topic}
@@ -190,19 +195,19 @@ Thinking approach: Divergent, Associative, Creative
 Requirements: Each branch idea should be concise (1-5 words), avoid full sentences, no numbering. Output only the branch text, one per line.
 
 Generate {count} branch ideas:"""
-        
+
         # Add diversity note for later batches
         if batch_num > 1:
             if language == 'zh':
                 prompt += f"\n\n注意：这是第{batch_num}批。确保最大程度的多样性和创造性，从新的维度和角度思考，避免与之前批次重复。"
             else:
                 prompt += f"\n\nNote: This is batch {batch_num}. Ensure MAXIMUM diversity and creativity from new dimensions and angles, avoid any repetition from previous batches."
-        
+
         return prompt
-    
+
     def _build_children_prompt(self, center_topic: str, branch_name: str, context_desc: str, language: str, count: int, batch_num: int) -> str:
         """Build prompt for generating sub-branches/children for a specific branch"""
-        
+
         if language == 'zh':
             prompt = f"""为思维导图分支"{branch_name}"生成{count}个子分支想法：
 
@@ -237,22 +242,22 @@ Thinking approach: Deepen, Refine, Expand
 Requirements: Each sub-branch idea should be concise (1-5 words), avoid full sentences, no numbering. Output only the sub-branch text, one per line.
 
 Generate {count} sub-branch ideas:"""
-        
+
         # Add diversity note for later batches
         if batch_num > 1:
             if language == 'zh':
                 prompt += f"\n\n注意：这是第{batch_num}批。确保提供不同角度的子想法，避免重复。"
             else:
                 prompt += f"\n\nNote: This is batch {batch_num}. Provide different perspectives for sub-ideas, avoid repetition."
-        
+
         return prompt
-    
-# Global singleton instance for Mind Map
+
+# Global singleton  # pylint: disable=global-statement instance for Mind Map
 _mindmap_palette_generator = None
 
 def get_mindmap_palette_generator() -> MindMapPaletteGenerator:
     """Get singleton instance of Mind Map palette generator"""
-    global _mindmap_palette_generator
+    global _mindmap_palette_generator  # pylint: disable=global-statement
     if _mindmap_palette_generator is None:
         _mindmap_palette_generator = MindMapPaletteGenerator()
     return _mindmap_palette_generator

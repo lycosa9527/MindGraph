@@ -1,3 +1,16 @@
+﻿from typing import
+import asyncio
+import json
+import logging
+
+from fastapi import APIRouter, HTTPException, Request, Depends
+from fastapi.responses import StreamingResponse
+from pydantic import BaseModel
+
+from config.settings import config
+from routers.auth.dependencies import get_current_user_optional
+from services.llm import llm_service
+
 """
 AskOnce Router - Multi-LLM Streaming Chat Endpoints
 ====================================================
@@ -19,18 +32,8 @@ All Rights Reserved
 Proprietary License
 """
 
-import asyncio
-import json
-import logging
-from typing import List, Optional
 
-from fastapi import APIRouter, HTTPException, Request, Depends
-from fastapi.responses import StreamingResponse
-from pydantic import BaseModel
 
-from config.settings import config
-from routers.auth.dependencies import get_current_user_optional
-from services.llm_service import llm_service
 
 logger = logging.getLogger(__name__)
 
@@ -96,13 +99,13 @@ async def stream_from_llm(
 ):
     """
     Stream chat completion from specified LLM using MindGraph's LLMService.
-    
+
     Benefits:
     - Rate limiting (prevents quota exhaustion)
     - Load balancing (DeepSeek → Dashscope/Volcengine, Kimi → Volcengine)
     - Error handling (comprehensive error parsing)
     - Token tracking (automatic usage tracking)
-    
+
     Yields SSE-formatted chunks:
     - {"type": "thinking", "content": "..."} - Reasoning/thinking content
     - {"type": "token", "content": "..."} - Response content
@@ -114,19 +117,19 @@ async def stream_from_llm(
     if not model_config:
         yield f'data: {json.dumps({"type": "error", "error": f"Unknown model: {model_id}"})}\n\n'
         return
-    
+
     default_temp = model_config['default_temperature']
     enable_thinking = model_config['enable_thinking']
-    
+
     # Use provided temperature or default
     if temperature is None:
         temperature = default_temp
     if max_tokens is None:
         max_tokens = 2000
-    
+
     try:
         logger.debug(f"[ASKONCE:{model_id.upper()}] Starting stream via LLMService with {len(messages)} messages")
-        
+
         # Stream from LLMService with full messages array for proper multi-turn support
         async for chunk in llm_service.chat_stream(
             messages=messages,  # Pass full messages array for multi-turn context
@@ -142,7 +145,7 @@ async def stream_from_llm(
         ):
             if isinstance(chunk, dict):
                 chunk_type = chunk.get('type', 'token')
-                
+
                 if chunk_type == 'thinking':
                     # Forward thinking chunk as SSE
                     yield f'data: {json.dumps(chunk)}\n\n'
@@ -155,11 +158,11 @@ async def stream_from_llm(
             else:
                 # Plain string (backward compatibility)
                 yield f'data: {json.dumps({"type": "token", "content": chunk})}\n\n'
-        
+
         # Send done signal
         logger.info(f"[ASKONCE:{model_id.upper()}] Stream complete")
         yield f'data: {json.dumps({"type": "done"})}\n\n'
-    
+
     except asyncio.CancelledError:
         logger.info(f"[ASKONCE:{model_id.upper()}] Stream cancelled by client")
         raise
@@ -201,19 +204,19 @@ async def stream_chat(
 ):
     """
     Stream chat completion from specified LLM.
-    
+
     Uses MindGraph's centralized LLM infrastructure with:
     - Rate limiting (prevents quota exhaustion)
     - Load balancing (DeepSeek → Dashscope/Volcengine, Kimi → Volcengine)
     - Error handling (comprehensive error parsing)
     - Token tracking (automatic usage tracking)
-    
+
     Supports thinking process display for DeepSeek R1, Qwen3, and Kimi K2.
-    
+
     Args:
         model: LLM identifier (qwen, deepseek, kimi)
         chat_request: Chat messages and parameters
-        
+
     Returns:
         StreamingResponse with SSE-formatted chunks
     """
@@ -223,17 +226,17 @@ async def stream_chat(
             status_code=400,
             detail=f"Invalid model: {model}. Available: {', '.join(ASKONCE_MODELS.keys())}"
         )
-    
+
     # Convert messages to dict format
     messages = [{"role": m.role, "content": m.content} for m in chat_request.messages]
-    
+
     # Get user ID for token tracking
     user_id = current_user.id if current_user else None
-    
+
     # Log request (user ID if authenticated)
     user_info = f"user={user_id}" if user_id else "anonymous"
     logger.info(f"[ASKONCE:{model.upper()}] Starting stream ({len(messages)} messages, {user_info})")
-    
+
     return StreamingResponse(
         stream_from_llm(
             model_id=model,

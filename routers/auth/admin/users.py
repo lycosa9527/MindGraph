@@ -1,3 +1,17 @@
+﻿from typing import Optional
+import logging
+
+from fastapi import APIRouter, Depends, HTTPException, Request, Body, Query, status
+from sqlalchemy import func
+from sqlalchemy.orm import Session
+
+from config.database import get_db
+from models.auth import Organization, User
+from models.messages import Messages, Language
+from services.redis.redis_org_cache import org_cache
+from services.redis.redis_user_cache import user_cache
+from utils.auth import hash_password
+
 """
 Admin User Management Endpoints
 ================================
@@ -14,22 +28,9 @@ All Rights Reserved
 Proprietary License
 """
 
-import logging
-from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Request, Body, Query, status
-from sqlalchemy import func
-from sqlalchemy.orm import Session
 
-from config.database import get_db
-from models.auth import Organization, User
-from models.messages import Messages
-from services.redis_org_cache import org_cache
-from services.redis_user_cache import user_cache
-from utils.auth import hash_password
 
-from ..dependencies import get_language_dependency, require_admin
-from ..helpers import utc_to_beijing_iso
 
 logger = logging.getLogger(__name__)
 
@@ -45,11 +46,11 @@ async def list_users_admin(
     page_size: int = Query(50, ge=1, le=100),
     search: str = Query(""),
     organization_id: Optional[int] = Query(None),
-    lang: str = Depends(get_language_dependency)
+    lang: Language = Depends(get_language_dependency)
 ):
     """
     List users with pagination and filtering (ADMIN ONLY)
-    
+
     Query Parameters:
     - page: Page number (starting from 1)
     - page_size: Number of items per page (default: 50)
@@ -58,38 +59,38 @@ async def list_users_admin(
     """
     # Build base query
     query = db.query(User)
-    
+
     # Apply organization filter
     if organization_id:
         query = query.filter(User.organization_id == organization_id)
-    
+
     # Apply search filter (name or phone)
     if search:
         search_term = f"%{search}%"
         query = query.filter(
             (User.name.like(search_term)) | (User.phone.like(search_term))
         )
-    
+
     # Get total count for pagination
     total = query.count()
-    
+
     # Calculate pagination
     skip = (page - 1) * page_size
     total_pages = (total + page_size - 1) // page_size
-    
+
     # Get paginated users
     users = query.order_by(User.created_at.desc()).offset(skip).limit(page_size).all()
-    
+
     # Performance optimization: Fetch all organizations in one query
     org_ids = {user.organization_id for user in users if user.organization_id}
     organizations_by_id = {}
     if org_ids:
         orgs = db.query(Organization).filter(Organization.id.in_(org_ids)).all()
         organizations_by_id = {org.id: org for org in orgs}
-    
+
     # Get token stats for all users
     token_stats_by_user = {}
-    
+
     try:
         from models.token_usage import TokenUsage
         user_token_stats = db.query(
@@ -103,7 +104,7 @@ async def list_users_admin(
         ).group_by(
             TokenUsage.user_id
         ).all()
-        
+
         for stat in user_token_stats:
             token_stats_by_user[stat.user_id] = {
                 "input_tokens": int(stat.input_tokens or 0),
@@ -112,22 +113,22 @@ async def list_users_admin(
             }
     except (ImportError, Exception) as e:
         logger.debug(f"TokenUsage not available yet: {e}")
-    
+
     result = []
     for user in users:
         org = organizations_by_id.get(user.organization_id) if user.organization_id else None
-        
+
         # Mask phone number for privacy
         masked_phone = user.phone
         if len(user.phone) == 11:
             masked_phone = user.phone[:3] + "****" + user.phone[-4:]
-        
+
         user_token_stats = token_stats_by_user.get(user.id, {
             "input_tokens": 0,
             "output_tokens": 0,
             "total_tokens": 0
         })
-        
+
         result.append({
             "id": user.id,
             "phone": masked_phone,
@@ -141,7 +142,7 @@ async def list_users_admin(
             "created_at": utc_to_beijing_iso(user.created_at),
             "token_stats": user_token_stats
         })
-    
+
     return {
         "users": result,
         "pagination": {
@@ -160,7 +161,7 @@ async def update_user_admin(
     http_request: Request,
     current_user: User = Depends(require_admin),
     db: Session = Depends(get_db),
-    lang: str = Depends(get_language_dependency)
+    lang: Language = Depends(get_language_dependency)
 ):
     """Update user information (ADMIN ONLY)"""
     # Check if user exists (use cache for quick check)
@@ -171,17 +172,17 @@ async def update_user_admin(
         if not cached_user:
             error_msg = Messages.error("user_not_found", lang, user_id)
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
-    
+
     # Reload from database for modification (cached users are detached)
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         error_msg = Messages.error("user_not_found", lang, user_id)
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
-    
+
     # Save old values for cache invalidation
     old_phone = user.phone
     old_org_id = user.organization_id
-    
+
     # Update phone (with validation)
     if "phone" in request:
         new_phone = request["phone"].strip()
@@ -191,14 +192,14 @@ async def update_user_admin(
         if len(new_phone) != 11 or not new_phone.isdigit() or not new_phone.startswith('1'):
             error_msg = Messages.error("phone_format_invalid", lang)
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
-        
+
         if new_phone != user.phone:
             existing = user_cache.get_by_phone(new_phone)
             if existing and existing.id != user.id:
                 error_msg = Messages.error("phone_already_registered_other", lang, new_phone)
                 raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=error_msg)
         user.phone = new_phone
-    
+
     # Update name (with validation)
     if "name" in request:
         new_name = request["name"].strip()
@@ -209,7 +210,7 @@ async def update_user_admin(
             error_msg = Messages.error("name_cannot_contain_numbers", lang)
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
         user.name = new_name
-    
+
     # Update organization
     if "organization_id" in request:
         org_id = request["organization_id"]
@@ -221,7 +222,7 @@ async def update_user_admin(
                     error_msg = Messages.error("organization_not_found", lang, org_id)
                     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
             user.organization_id = org_id
-    
+
     # Write to SQLite FIRST
     try:
         db.commit()
@@ -233,21 +234,21 @@ async def update_user_admin(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to update user"
         )
-    
+
     # Invalidate old cache entries
     try:
         user_cache.invalidate(user_id, old_phone)
         logger.debug(f"[Auth] Invalidated old cache for user ID {user_id}")
     except Exception as e:
         logger.warning(f"[Auth] Failed to invalidate cache for user ID {user_id}: {e}")
-    
+
     # Re-cache updated user
     try:
         user_cache.cache_user(user)
         logger.info(f"[Auth] Updated and re-cached user ID {user_id}")
     except Exception as e:
         logger.warning(f"[Auth] Failed to re-cache user ID {user_id}: {e}")
-    
+
     # If organization changed, invalidate org cache
     if old_org_id != user.organization_id:
         try:
@@ -261,14 +262,14 @@ async def update_user_admin(
                     org_cache.invalidate(old_org_id, old_org.code, old_org.invitation_code)
         except Exception as e:
             logger.warning(f"[Auth] Failed to invalidate org cache: {e}")
-    
+
     # Get updated organization info
     org = org_cache.get_by_id(user.organization_id) if user.organization_id else None
     if not org and user.organization_id:
         org = db.query(Organization).filter(Organization.id == user.organization_id).first()
-    
+
     logger.info(f"Admin {current_user.phone} updated user: {user.phone}")
-    
+
     return {
         "message": Messages.success("user_updated", lang),
         "user": {
@@ -287,21 +288,21 @@ async def delete_user_admin(
     request: Request,
     current_user: User = Depends(require_admin),
     db: Session = Depends(get_db),
-    lang: str = Depends(get_language_dependency)
+    lang: Language = Depends(get_language_dependency)
 ):
     """Delete user (ADMIN ONLY)"""
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         error_msg = Messages.error("user_not_found", lang, user_id)
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
-    
+
     # Prevent deleting self
     if user.id == current_user.id:
         error_msg = Messages.error("cannot_delete_own_account", lang)
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
-    
+
     user_phone = user.phone
-    
+
     # Delete from SQLite FIRST
     db.delete(user)
     try:
@@ -313,14 +314,14 @@ async def delete_user_admin(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to delete user"
         )
-    
+
     # Invalidate cache (non-blocking)
     try:
         user_cache.invalidate(user_id, user_phone)
         logger.info(f"[Auth] Invalidated cache for deleted user ID {user_id}")
     except Exception as e:
         logger.warning(f"[Auth] Failed to invalidate cache for deleted user ID {user_id}: {e}")
-    
+
     logger.warning(f"Admin {current_user.phone} deleted user: {user_phone}")
     return {"message": Messages.success("user_deleted", lang, user_phone)}
 
@@ -331,17 +332,17 @@ async def unlock_user_admin(
     request: Request,
     current_user: User = Depends(require_admin),
     db: Session = Depends(get_db),
-    lang: str = Depends(get_language_dependency)
+    lang: Language = Depends(get_language_dependency)
 ):
     """Unlock user account (ADMIN ONLY)"""
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         error_msg = Messages.error("user_not_found", lang, user_id)
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
-    
+
     user.failed_login_attempts = 0
     user.locked_until = None
-    
+
     # Write to SQLite FIRST
     try:
         db.commit()
@@ -353,7 +354,7 @@ async def unlock_user_admin(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to unlock user"
         )
-    
+
     # Invalidate and re-cache user
     try:
         user_cache.invalidate(user.id, user.phone)
@@ -361,7 +362,7 @@ async def unlock_user_admin(
         logger.info(f"[Auth] Unlocked and re-cached user ID {user.id}")
     except Exception as e:
         logger.warning(f"[Auth] Failed to update cache after unlock: {e}")
-    
+
     logger.info(f"Admin {current_user.phone} unlocked user: {user.phone}")
     return {"message": Messages.success("user_unlocked", lang, user.phone)}
 
@@ -373,15 +374,15 @@ async def reset_user_password_admin(
     http_request: Request = None,
     current_user: User = Depends(require_admin),
     db: Session = Depends(get_db),
-    lang: str = Depends(get_language_dependency)
+    lang: Language = Depends(get_language_dependency)
 ):
     """Reset user password (ADMIN ONLY)
-    
+
     Request body (optional):
         {
             "password": "new_password"  # Optional, defaults to "12345678" if not provided
         }
-    
+
     Security:
         - Admin only
         - Cannot reset own password
@@ -391,16 +392,16 @@ async def reset_user_password_admin(
     if not user:
         error_msg = Messages.error("user_not_found", lang, user_id)
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
-    
+
     # Prevent admin from resetting their own password
     if user.id == current_user.id:
         error_msg = Messages.error("cannot_reset_own_password", lang)
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
-    
+
     # Get password from request body, default to '12345678' if not provided
     password = request.get("password") if request and isinstance(request, dict) else None
     new_password = password if password and password.strip() else "12345678"
-    
+
     # Validate password length
     if not new_password or len(new_password.strip()) == 0:
         error_msg = Messages.error("password_cannot_be_empty", lang)
@@ -408,12 +409,12 @@ async def reset_user_password_admin(
     if len(new_password.strip()) < 8:
         error_msg = Messages.error("password_too_short", lang)
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
-    
+
     # Reset password
     user.password_hash = hash_password(new_password)
     user.failed_login_attempts = 0
     user.locked_until = None
-    
+
     # Write to SQLite FIRST
     try:
         db.commit()
@@ -425,7 +426,7 @@ async def reset_user_password_admin(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to reset password"
         )
-    
+
     # Invalidate and re-cache user
     try:
         user_cache.invalidate(user.id, user.phone)
@@ -433,7 +434,7 @@ async def reset_user_password_admin(
         logger.info(f"[Auth] Admin password reset and cache updated for user ID {user.id}")
     except Exception as e:
         logger.warning(f"[Auth] Failed to update cache after admin password reset: {e}")
-    
+
     logger.info(f"Admin {current_user.phone} reset password for user: {user.phone}")
     return {"message": Messages.success("password_reset_for_user", lang, user.phone)}
 

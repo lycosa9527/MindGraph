@@ -1,3 +1,14 @@
+﻿from typing import
+import logging
+import time
+
+from fastapi import APIRouter, Depends, HTTPException, Request
+
+from agents import main_agent as agent
+from models import GenerateRequest, GenerateResponse, Messages, get_request_language
+from models.auth import User
+from utils.auth import get_current_user_or_api_key
+
 """
 Diagram Generation API Router
 ==============================
@@ -10,15 +21,9 @@ All Rights Reserved
 Proprietary License
 """
 
-import logging
-import time
-from typing import Optional
-from fastapi import APIRouter, HTTPException, Depends, Request
-from models.auth import User
-from utils.auth import get_current_user_or_api_key
-from models import GenerateRequest, GenerateResponse, Messages, get_request_language
-from agents import main_agent as agent
-from .helpers import get_rate_limit_identifier, check_endpoint_rate_limit
+
+
+
 
 logger = logging.getLogger(__name__)
 
@@ -29,86 +34,87 @@ router = APIRouter(tags=["api"])
 async def generate_graph(
     req: GenerateRequest,
     request: Request,
-    x_language: str = None,
+    x_language: Optional[str] = None,
     current_user: Optional[User] = Depends(get_current_user_or_api_key)
 ):
     """
     Generate graph specification from user prompt using selected LLM model (async).
-    
+
     This endpoint returns JSON with the diagram specification for the frontend editor to render.
     For PNG file downloads, use /api/export_png instead.
-    
+
     Rate limited: 100 requests per minute per user/IP.
     """
     # Rate limiting: 100 requests per minute per user/IP
     identifier = get_rate_limit_identifier(current_user, request)
     await check_endpoint_rate_limit('generate_graph', identifier, max_requests=100, window_seconds=60)
-    
+
     # Get language for error messages
-    lang = get_request_language(x_language)
-    
+    accept_language = request.headers.get("Accept-Language", "")
+    lang = get_request_language(x_language, accept_language)
+
     prompt = req.prompt.strip()
     if not prompt:
         raise HTTPException(
             status_code=400,
             detail=Messages.error("invalid_prompt", lang)
         )
-    
+
     request_id = f"gen_{int(time.time()*1000)}"
     llm_model = req.llm.value if hasattr(req.llm, 'value') else str(req.llm)
     language = req.language.value if hasattr(req.language, 'value') else str(req.language)
-    
+
     logger.debug(f"[{request_id}] Request: llm={llm_model!r}, language={language!r}, diagram_type={req.diagram_type}")
-    
+
     if req.dimension_preference:
         logger.debug(f"[{request_id}] Dimension preference: {req.dimension_preference!r}")
-    
+
     logger.debug(f"[{request_id}] Using LLM model: {llm_model!r}")
-    
+
     try:
         # Generate diagram specification - fully async
         # Pass model directly through call chain (no global state)
         # Pass user context for token tracking
         user_id = current_user.id if current_user and hasattr(current_user, 'id') else None
         organization_id = getattr(current_user, 'organization_id', None) if current_user and hasattr(current_user, 'id') else None
-        
+
         # Determine request type for token tracking (default to 'diagram_generation')
         request_type = req.request_type if req.request_type else 'diagram_generation'
-        
+
         # Set request state for middleware slow warning detection
         # This allows middleware to distinguish autocomplete from initial generation
         request.state.is_autocomplete = (request_type == 'autocomplete')
-        
+
         # Track user activity
         if current_user and hasattr(current_user, 'id'):
             try:
-                from services.redis_activity_tracker import get_activity_tracker
+                from services.redis.redis_activity_tracker import get_activity_tracker
                 tracker = get_activity_tracker()
                 activity_type = 'autocomplete' if request_type == 'autocomplete' else 'diagram_generation'
                 diagram_type_str = req.diagram_type.value if req.diagram_type else 'unknown'
                 tracker.record_activity(
                     user_id=current_user.id,
-                    user_phone=getattr(current_user, 'phone', None),
+                    user_phone=getattr(current_user, 'phone', None) or "",
                     activity_type=activity_type,
                     details={'diagram_type': diagram_type_str, 'llm_model': llm_model},
                     user_name=getattr(current_user, 'name', None)
                 )
             except Exception as e:
                 logger.debug(f"Failed to track user activity: {e}")
-        
+
         # Log auto-complete start at INFO level for user activity tracking
         # Note: AutoComplete fires 5 concurrent requests (one per LLM model)
         # Log once per request with model info to reduce noise
         if request_type == 'autocomplete':
             diagram_type_str = req.diagram_type.value if req.diagram_type else 'auto'
             logger.info(f"[AutoComplete] Started: User {user_id}, Diagram: {diagram_type_str}, Model: {llm_model}, Request: {request_id[:8]}")
-        
+
         # Bridge map specific: pass existing analogies and fixed dimension for auto-complete mode
         existing_analogies = req.existing_analogies if hasattr(req, 'existing_analogies') else None
         fixed_dimension = req.fixed_dimension if hasattr(req, 'fixed_dimension') else None
         # Tree map and brace map: dimension-only mode flag
         dimension_only_mode = req.dimension_only_mode if hasattr(req, 'dimension_only_mode') else None
-        
+
         result = await agent.agent_graph_workflow_with_styles(
             prompt,
             language=language,
@@ -129,22 +135,22 @@ async def generate_graph(
             use_rag=req.use_rag if req.use_rag else False,
             rag_top_k=req.rag_top_k if req.rag_top_k else 5
         )
-        
+
         diagram_type = result.get('diagram_type', 'unknown')
         logger.debug(f"[{request_id}] Generated {diagram_type} diagram with {llm_model}")
-        
+
         # Log auto-complete operations at INFO level for user activity tracking
         if request_type == 'autocomplete':
             node_count = len(result.get('nodes', [])) if isinstance(result.get('nodes'), list) else 0
             logger.info(f"[AutoComplete] Completed: User {user_id}, Diagram {diagram_type}, Nodes added: {node_count}, Model: {llm_model}, Request: {request_id[:8]}")
-        
+
         # Broadcast activity to dashboard stream (if user is authenticated)
         if user_id:
             try:
-                from services.activity_stream import get_activity_stream_service
+                from services.monitoring.activity_stream import get_activity_stream_service
                 activity_service = get_activity_stream_service()
                 user_name = getattr(current_user, 'name', None) if current_user else None
-                
+
                 # Format topic based on diagram type
                 topic_display = prompt[:50]  # Default: truncate prompt
                 if diagram_type == 'double_bubble_map':
@@ -158,7 +164,7 @@ async def generate_graph(
                             topic_display = f"{left} vs {right}" if language == 'en' else f"{left} vs {right}"
                         elif left or right:
                             topic_display = left or right
-                
+
                 await activity_service.broadcast_activity(
                     user_id=user_id,
                     action="generated",
@@ -168,13 +174,13 @@ async def generate_graph(
                 )
             except Exception as e:
                 logger.debug(f"Failed to broadcast activity: {e}")
-        
+
         # Add metadata
         result['llm_model'] = llm_model
         result['request_id'] = request_id
-        
+
         return result
-        
+
     except Exception as e:
         logger.error(f"[{request_id}] Error generating graph: {e}", exc_info=True)
         raise HTTPException(

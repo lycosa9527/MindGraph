@@ -17,6 +17,18 @@ export interface DragConstraints {
   preserveHierarchy?: boolean
 }
 
+/**
+ * Circle map donut boundary layout information
+ * Stores the calculated layout for constraining nodes to the donut ring
+ */
+export interface CircleMapBoundary {
+  centerX: number
+  centerY: number
+  innerRadius: number
+  outerRadius: number
+  nodeRadius: number
+}
+
 export interface UseDragConstraintsOptions {
   diagramType?: DiagramType
   canvasWidth?: number
@@ -31,6 +43,9 @@ export function useDragConstraints(options: UseDragConstraintsOptions = {}) {
   const currentDiagramType = ref<DiagramType | null>(options.diagramType || null)
   const snapToGrid = ref(false)
   const lockAxis = ref<'x' | 'y' | null>(null)
+
+  // Circle map boundary info (set when loading a circle map)
+  const circleMapBoundary = ref<CircleMapBoundary | null>(null)
 
   // Get constraints for a diagram type
   const constraints = computed<DragConstraints>(() => {
@@ -74,8 +89,12 @@ export function useDragConstraints(options: UseDragConstraintsOptions = {}) {
         }
 
       case 'bubble_map':
-      case 'circle_map':
         // Radial layouts allow free movement
+        return base
+
+      case 'circle_map':
+        // Circle maps use donut boundary constraint
+        // Actual constraining is done in constrainToDonut function
         return base
 
       case 'mindmap':
@@ -102,6 +121,108 @@ export function useDragConstraints(options: UseDragConstraintsOptions = {}) {
     lockAxis.value = axis
   }
 
+  /**
+   * Set circle map boundary info from diagram layout
+   * Called when a circle map is loaded or recalculated
+   */
+  function setCircleMapBoundary(boundary: CircleMapBoundary | null) {
+    circleMapBoundary.value = boundary
+  }
+
+  /**
+   * Update circle map boundary from spec layout metadata
+   */
+  function updateCircleMapBoundaryFromSpec(spec: Record<string, unknown>) {
+    const layout = spec._circleMapLayout as CircleMapBoundary | undefined
+    if (layout) {
+      circleMapBoundary.value = {
+        centerX: layout.centerX,
+        centerY: layout.centerY,
+        innerRadius: layout.innerRadius,
+        outerRadius: layout.outerRadius,
+        nodeRadius: (layout as { uniformContextR?: number }).uniformContextR || 35,
+      }
+    }
+  }
+
+  /**
+   * Constrain a position to be within the circle map donut boundary
+   * Returns constrained position if boundary is set, otherwise original position
+   */
+  function constrainToDonut(x: number, y: number): { x: number; y: number } {
+    if (currentDiagramType.value !== 'circle_map' || !circleMapBoundary.value) {
+      return { x, y }
+    }
+
+    const b = circleMapBoundary.value
+    const nodeR = b.nodeRadius
+
+    // Calculate center of the node
+    const nodeCenterX = x + nodeR
+    const nodeCenterY = y + nodeR
+
+    // Calculate distance from diagram center to node center
+    const dx = nodeCenterX - b.centerX
+    const dy = nodeCenterY - b.centerY
+    const distance = Math.sqrt(dx * dx + dy * dy)
+
+    // If node is at center (shouldn't happen), push to inner radius
+    if (distance === 0) {
+      return {
+        x: b.centerX + b.innerRadius - nodeR,
+        y: b.centerY - nodeR,
+      }
+    }
+
+    let constrainedDistance = distance
+
+    // Constrain to outer boundary
+    if (distance > b.outerRadius) {
+      constrainedDistance = b.outerRadius
+    }
+
+    // Constrain to inner boundary (push away from center)
+    if (distance < b.innerRadius) {
+      constrainedDistance = b.innerRadius
+    }
+
+    // If distance was modified, calculate new position
+    if (constrainedDistance !== distance) {
+      const scale = constrainedDistance / distance
+      const constrainedCenterX = b.centerX + dx * scale
+      const constrainedCenterY = b.centerY + dy * scale
+      return {
+        x: constrainedCenterX - nodeR,
+        y: constrainedCenterY - nodeR,
+      }
+    }
+
+    return { x, y }
+  }
+
+  /**
+   * Check if a position is within the circle map donut boundary
+   */
+  function isWithinDonutBoundary(x: number, y: number): boolean {
+    if (!circleMapBoundary.value) {
+      return true
+    }
+
+    const b = circleMapBoundary.value
+    const nodeR = b.nodeRadius
+
+    // Calculate center of the node
+    const nodeCenterX = x + nodeR
+    const nodeCenterY = y + nodeR
+
+    // Calculate distance from diagram center to node center
+    const dx = nodeCenterX - b.centerX
+    const dy = nodeCenterY - b.centerY
+    const distance = Math.sqrt(dx * dx + dy * dy)
+
+    return distance >= b.innerRadius && distance <= b.outerRadius
+  }
+
   // Apply constraints to a position
   function constrainPosition(
     x: number,
@@ -109,6 +230,11 @@ export function useDragConstraints(options: UseDragConstraintsOptions = {}) {
     nodeWidth = 120,
     nodeHeight = 40
   ): { x: number; y: number } {
+    // For circle maps, use donut constraint
+    if (currentDiagramType.value === 'circle_map') {
+      return constrainToDonut(x, y)
+    }
+
     let constrainedX = x
     let constrainedY = y
     const c = constraints.value
@@ -157,8 +283,8 @@ export function useDragConstraints(options: UseDragConstraintsOptions = {}) {
 
   // Check if node can be dragged (some nodes may be locked)
   function canDrag(node: MindGraphNode): boolean {
-    // Topic/center nodes are typically not draggable
-    if (node.data?.nodeType === 'topic') {
+    // Topic/center/boundary nodes are not draggable
+    if (node.data?.nodeType === 'topic' || node.data?.nodeType === 'boundary') {
       return false
     }
 
@@ -217,14 +343,19 @@ export function useDragConstraints(options: UseDragConstraintsOptions = {}) {
     snapToGrid,
     lockAxis,
     constraints,
+    circleMapBoundary,
 
     // Actions
     setDiagramType,
     toggleSnapToGrid,
     setAxisLock,
+    setCircleMapBoundary,
+    updateCircleMapBoundaryFromSpec,
 
     // Constraint functions
     constrainPosition,
+    constrainToDonut,
+    isWithinDonutBoundary,
     applyAxisLock,
     canDrag,
     getDragHandlePosition,

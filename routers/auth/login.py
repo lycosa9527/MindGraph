@@ -1,4 +1,4 @@
-"""
+﻿"""
 Login Endpoints
 ===============
 
@@ -20,19 +20,19 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from sqlalchemy.orm import Session
 
 from config.database import get_db
-from models.messages import Messages
-from models.auth import Organization, User
+from models.messages import
+from models.auth import
 from models.requests import DemoPasskeyRequest, LoginRequest, LoginWithSMSRequest
-from services.redis_org_cache import org_cache
-from services.redis_rate_limiter import (
+from services.redis.redis_org_cache import org_cache
+from services.redis.redis_rate_limiter import (
     check_login_rate_limit,
     clear_login_attempts,
     get_login_attempts_remaining,
     RedisRateLimiter
 )
-from services.dashboard_session import get_dashboard_session_manager
-from services.redis_session_manager import get_session_manager, get_refresh_token_manager
-from services.redis_user_cache import user_cache
+from services.monitoring.dashboard_session import get_dashboard_session_manager
+from services.redis.redis_session_manager import get_session_manager, get_refresh_token_manager
+from services.redis.redis_user_cache import user_cache
 from utils.auth import (
     AUTH_MODE,
     BAYI_DEFAULT_ORG_CODE,
@@ -67,15 +67,15 @@ def _preload_user_diagrams(user_id: int):
     Non-blocking - runs in background after login returns.
     """
     try:
-        from services.redis_diagram_cache import get_diagram_cache
-        
+        from services.redis.redis_diagram_cache import get_diagram_cache
+
         async def _do_preload():
             try:
                 cache = get_diagram_cache()
                 await cache.preload_user_diagrams(user_id)
             except Exception as e:
                 logging.getLogger(__name__).debug(f"[Login] Diagram preload failed for user {user_id}: {e}")
-        
+
         # Schedule as background task
         try:
             loop = asyncio.get_running_loop()
@@ -100,11 +100,11 @@ async def login(
     http_request: Request,
     response: Response,
     db: Session = Depends(get_db),
-    lang: str = Depends(get_language_dependency)
+    lang: Language = Depends(get_language_dependency)
 ):
     """
     User login with captcha verification
-    
+
     Security features:
     - Captcha verification (bot protection)
     - Rate limiting: 10 attempts per 15 minutes (per phone)
@@ -120,10 +120,10 @@ async def login(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
             detail=error_msg
         )
-    
+
     # Find user (use cache with SQLite fallback)
     cached_user = user_cache.get_by_phone(request.phone)
-    
+
     if not cached_user:
         attempts_left = get_login_attempts_remaining(request.phone)
         if attempts_left > 0:
@@ -138,7 +138,7 @@ async def login(
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
                 detail=error_msg
             )
-    
+
     # For read-only operations, use cached user (detached is fine)
     # For write operations, we need user attached to session - reload from DB if needed
     # Check account lockout (read-only, can use cached user)
@@ -150,7 +150,7 @@ async def login(
             status_code=status.HTTP_423_LOCKED,
             detail=error_msg
         )
-    
+
     # Verify captcha
     captcha_valid, captcha_error = await verify_captcha_with_retry(request.captcha_id, request.captcha)
     if not captcha_valid:
@@ -161,7 +161,7 @@ async def login(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                 detail=error_msg
             )
-        
+
         # For all other captcha errors, increment failed attempts in database
         # Need user attached to session for modification - reload from DB
         db_user = db.query(User).filter(User.id == cached_user.id).first()
@@ -172,7 +172,7 @@ async def login(
             cached_user.failed_login_attempts = db_user.failed_login_attempts
         else:
             attempts_left = MAX_LOGIN_ATTEMPTS - cached_user.failed_login_attempts
-        
+
         # Provide specific captcha error message
         if captcha_error == "expired":
             captcha_msg = Messages.error("captcha_expired", lang)
@@ -182,7 +182,7 @@ async def login(
             captcha_msg = Messages.error("captcha_incorrect", lang)
         else:
             captcha_msg = Messages.error("captcha_verify_failed", lang)
-        
+
         if attempts_left > 0:
             attempts_msg = Messages.error("captcha_retry_attempts", lang, attempts_left)
             raise HTTPException(
@@ -196,7 +196,7 @@ async def login(
                 status_code=status.HTTP_423_LOCKED,
                 detail=lockout_msg
             )
-    
+
     # Verify password
     if not verify_password(request.password, cached_user.password_hash):
         # Need user attached to session for modification - reload from DB
@@ -221,7 +221,7 @@ async def login(
                 status_code=status.HTTP_423_LOCKED,
                 detail=error_msg
             )
-    
+
     # Successful login - clear rate limit attempts in Redis
     clear_login_attempts(request.phone)
     # Need user attached to session for modification - reload from DB
@@ -231,10 +231,10 @@ async def login(
         user = db_user  # Use DB user for rest of function
     else:
         user = cached_user  # Fallback to cached user
-    
+
     # Get organization (use cache with SQLite fallback)
     org = org_cache.get_by_id(user.organization_id) if user.organization_id else None
-    
+
     # Check organization status (locked or expired)
     if org:
         is_active = org.is_active if hasattr(org, 'is_active') else True
@@ -245,7 +245,7 @@ async def login(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail=error_msg
             )
-        
+
         if hasattr(org, 'expires_at') and org.expires_at:
             if org.expires_at < datetime.now(timezone.utc):
                 logger.warning(f"Login blocked: Organization {org.code} expired on {org.expires_at}")
@@ -255,30 +255,30 @@ async def login(
                     status_code=status.HTTP_403_FORBIDDEN,
                     detail=error_msg
                 )
-    
+
     # Session management: Allow multiple concurrent sessions (up to MAX_CONCURRENT_SESSIONS)
     session_manager = get_session_manager()
     client_ip = get_client_ip(http_request) if http_request else "unknown"
-    
+
     # Generate JWT access token
     token = create_access_token(user)
-    
+
     # Generate refresh token
     refresh_token_value, refresh_token_hash = create_refresh_token(user.id)
-    
+
     # Compute device hash for session and token binding
     device_hash = compute_device_hash(http_request)
-    
+
     # DEBUG: Log device fingerprint at login time
     user_agent = http_request.headers.get("User-Agent", "")
     accept_language = http_request.headers.get("Accept-Language", "")
     sec_ch_platform = http_request.headers.get("Sec-CH-UA-Platform", "")
     sec_ch_mobile = http_request.headers.get("Sec-CH-UA-Mobile", "")
     logger.info(f"[TokenAudit] Login device fingerprint: user={user.id}, device_hash={device_hash}, UA={user_agent[:50]}..., lang={accept_language[:20]}, platform={sec_ch_platform}, mobile={sec_ch_mobile}")
-    
+
     # Store access token session in Redis (automatically limits concurrent sessions)
     session_manager.store_session(user.id, token, device_hash=device_hash)
-    
+
     # Store refresh token with device binding
     refresh_manager = get_refresh_token_manager()
     refresh_manager.store_refresh_token(
@@ -288,19 +288,19 @@ async def login(
         user_agent=user_agent,
         device_hash=device_hash
     )
-    
+
     # Set cookies (both access and refresh tokens)
     set_auth_cookies(response, token, refresh_token_value, http_request)
-    
+
     org_name = org.name if org else "None"
     logger.info(f"[TokenAudit] Login success: user={user.id}, phone={user.phone}, org={org_name}, method=captcha, ip={client_ip}, device={device_hash}")
-    
+
     # Track user activity
     track_user_activity(user, 'login', {'method': 'captcha', 'org': org_name}, http_request)
-    
+
     # Preload diagram list for instant library access (fire-and-forget)
     _preload_user_diagrams(user.id)
-    
+
     return {
         "access_token": token,
         "token_type": "bearer",
@@ -322,14 +322,14 @@ async def login_with_sms(
     http_request: Request,
     response: Response,
     db: Session = Depends(get_db),
-    lang: str = Depends(get_language_dependency)
+    lang: Language = Depends(get_language_dependency)
 ):
     """
     Login with SMS verification
-    
+
     Alternative to password-based login.
     Requires a valid SMS verification code.
-    
+
     Benefits:
     - No password required
     - Bypasses account lockout
@@ -337,17 +337,17 @@ async def login_with_sms(
     """
     # Find user first (use cache with SQLite fallback)
     user = user_cache.get_by_phone(request.phone)
-    
+
     if not user:
         error_msg = Messages.error("phone_not_registered_login", lang)
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=error_msg
         )
-    
+
     # Get organization and check status BEFORE consuming code (use cache)
     org = org_cache.get_by_id(user.organization_id) if user.organization_id else None
-    
+
     # Check organization status
     if org:
         is_active = org.is_active if hasattr(org, 'is_active') else True
@@ -358,7 +358,7 @@ async def login_with_sms(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail=error_msg
             )
-        
+
         if hasattr(org, 'expires_at') and org.expires_at:
             if org.expires_at < datetime.now(timezone.utc):
                 logger.warning(f"SMS login blocked: Organization {org.code} expired")
@@ -368,7 +368,7 @@ async def login_with_sms(
                     status_code=status.HTTP_403_FORBIDDEN,
                     detail=error_msg
                 )
-    
+
     # All validations passed - now consume the SMS code
     _verify_and_consume_sms_code(
         request.phone,
@@ -377,37 +377,37 @@ async def login_with_sms(
         db,
         lang
     )
-    
+
     # Reload user from database for modification (cached user is detached)
     db_user = db.query(User).filter(User.id == user.id).first()
     if db_user:
         # Reset any failed attempts (SMS login is verified)
         reset_failed_attempts(db_user, db)
         user = db_user  # Use attached user for rest of function
-    
+
     # Session management: Allow multiple concurrent sessions (up to MAX_CONCURRENT_SESSIONS)
     session_manager = get_session_manager()
     client_ip = get_client_ip(http_request) if http_request else "unknown"
-    
+
     # Generate JWT access token
     token = create_access_token(user)
-    
+
     # Generate refresh token
     refresh_token_value, refresh_token_hash = create_refresh_token(user.id)
-    
+
     # Compute device hash for session and token binding
     device_hash = compute_device_hash(http_request)
-    
+
     # DEBUG: Log device fingerprint at login time
     user_agent = http_request.headers.get("User-Agent", "")
     accept_language = http_request.headers.get("Accept-Language", "")
     sec_ch_platform = http_request.headers.get("Sec-CH-UA-Platform", "")
     sec_ch_mobile = http_request.headers.get("Sec-CH-UA-Mobile", "")
     logger.info(f"[TokenAudit] Login device fingerprint: user={user.id}, device_hash={device_hash}, UA={user_agent[:50]}..., lang={accept_language[:20]}, platform={sec_ch_platform}, mobile={sec_ch_mobile}")
-    
+
     # Store access token session in Redis (automatically limits concurrent sessions)
     session_manager.store_session(user.id, token, device_hash=device_hash)
-    
+
     # Store refresh token with device binding
     refresh_manager = get_refresh_token_manager()
     refresh_manager.store_refresh_token(
@@ -417,10 +417,10 @@ async def login_with_sms(
         user_agent=user_agent,
         device_hash=device_hash
     )
-    
+
     # Set cookies (both access and refresh tokens)
     set_auth_cookies(response, token, refresh_token_value, http_request)
-    
+
     # Use cache for org lookup (with SQLite fallback)
     org = org_cache.get_by_id(user.organization_id) if user.organization_id else None
     if not org and user.organization_id:
@@ -429,15 +429,15 @@ async def login_with_sms(
             db.expunge(org)
             org_cache.cache_org(org)
     org_name = org.name if org else "None"
-    
+
     logger.info(f"[TokenAudit] Login success: user={user.id}, phone={user.phone}, org={org_name}, method=sms, ip={client_ip}, device={device_hash}")
-    
+
     # Track user activity
     track_user_activity(user, 'login', {'method': 'sms', 'org': org_name}, http_request)
-    
+
     # Preload diagram list for instant library access (fire-and-forget)
     _preload_user_diagrams(user.id)
-    
+
     return {
         "access_token": token,
         "token_type": "bearer",
@@ -459,11 +459,11 @@ async def verify_demo(
     request: Request,
     response: Response,
     db: Session = Depends(get_db),
-    lang: str = Depends(get_language_dependency)
+    lang: Language = Depends(get_language_dependency)
 ):
     """
     Verify demo/bayi passkey and return JWT token
-    
+
     Demo mode and Bayi mode allow access with a 6-digit passkey.
     Supports both regular demo access and admin demo access.
     In bayi mode, creates bayi-specific users.
@@ -473,7 +473,7 @@ async def verify_demo(
     received_length = len(passkey_request.passkey) if passkey_request.passkey else 0
     expected_length = len(DEMO_PASSKEY)
     logger.info(f"Passkey verification attempt ({AUTH_MODE} mode) - Received: {received_length} chars, Expected: {expected_length} chars")
-    
+
     if not verify_demo_passkey(passkey_request.passkey):
         logger.warning(f"Passkey verification failed - Check .env file for whitespace in DEMO_PASSKEY or ADMIN_DEMO_PASSKEY")
         error_msg = Messages.error("invalid_passkey", lang)
@@ -481,10 +481,10 @@ async def verify_demo(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=error_msg
         )
-    
+
     # Check if this is admin demo access
     is_admin_access = is_admin_demo_passkey(passkey_request.passkey)
-    
+
     # Determine user phone and name based on mode
     if AUTH_MODE == "bayi":
         user_phone = "bayi-admin@system.com" if is_admin_access else "bayi@system.com"
@@ -492,10 +492,10 @@ async def verify_demo(
     else:
         user_phone = "demo-admin@system.com" if is_admin_access else "demo@system.com"
         user_name = "Demo Admin" if is_admin_access else "Demo User"
-    
+
     # Get or create user (use cache with SQLite fallback)
     auth_user = user_cache.get_by_phone(user_phone)
-    
+
     if not auth_user:
         # Get or create organization based on mode
         if AUTH_MODE == "bayi":
@@ -528,7 +528,7 @@ async def verify_demo(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                     detail=error_msg
                 )
-        
+
         try:
             # Use a short, simple password (bcrypt max is 72 bytes)
             auth_user = User(
@@ -542,7 +542,7 @@ async def verify_demo(
             db.commit()
             db.refresh(auth_user)
             logger.info(f"Created new {AUTH_MODE} user: {user_phone}")
-            
+
             # Cache the newly created user and org (non-blocking)
             try:
                 user_cache.cache_user(auth_user)
@@ -554,7 +554,7 @@ async def verify_demo(
             # If creation fails, try to rollback and check if user was somehow created
             db.rollback()
             logger.error(f"Failed to create {AUTH_MODE} user: {e}")
-            
+
             # Try to get the user again in case it was created by another request (use cache)
             auth_user = user_cache.get_by_phone(user_phone)
             if not auth_user:
@@ -563,30 +563,30 @@ async def verify_demo(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                     detail=error_msg
                 )
-    
+
     # Session management: Allow multiple concurrent sessions (up to MAX_CONCURRENT_SESSIONS)
     session_manager = get_session_manager()
     client_ip = get_client_ip(request)
-    
+
     # Generate JWT access token
     token = create_access_token(auth_user)
-    
+
     # Generate refresh token
     refresh_token_value, refresh_token_hash = create_refresh_token(auth_user.id)
-    
+
     # Compute device hash for session and token binding
     device_hash = compute_device_hash(request)
-    
+
     # DEBUG: Log device fingerprint at login time
     user_agent = request.headers.get("User-Agent", "")
     accept_language = request.headers.get("Accept-Language", "")
     sec_ch_platform = request.headers.get("Sec-CH-UA-Platform", "")
     sec_ch_mobile = request.headers.get("Sec-CH-UA-Mobile", "")
     logger.info(f"[TokenAudit] Login device fingerprint: user={auth_user.id}, device_hash={device_hash}, UA={user_agent[:50]}..., lang={accept_language[:20]}, platform={sec_ch_platform}, mobile={sec_ch_mobile}")
-    
+
     # Store access token session in Redis (automatically limits concurrent sessions)
     session_manager.store_session(auth_user.id, token, device_hash=device_hash)
-    
+
     # Store refresh token with device binding
     refresh_manager = get_refresh_token_manager()
     refresh_manager.store_refresh_token(
@@ -596,16 +596,16 @@ async def verify_demo(
         user_agent=user_agent,
         device_hash=device_hash
     )
-    
+
     # Set cookies (both access and refresh tokens)
     set_auth_cookies(response, token, refresh_token_value, request)
-    
+
     log_msg = f"[TokenAudit] Login success: user={auth_user.id}, mode={AUTH_MODE}, admin={is_admin_access}, ip={client_ip}, device={device_hash}"
     logger.info(log_msg)
-    
+
     # Preload diagram list for instant library access (fire-and-forget)
     _preload_user_diagrams(auth_user.id)
-    
+
     return {
         "access_token": token,
         "token_type": "bearer",
@@ -624,16 +624,16 @@ async def verify_public_dashboard(
     passkey_request: DemoPasskeyRequest,
     request: Request,
     response: Response,
-    lang: str = Depends(get_language_dependency)
+    lang: Language = Depends(get_language_dependency)
 ):
     """
     Verify public dashboard passkey and return dashboard session token
-    
+
     Public dashboard allows access with a 6-digit passkey.
     Creates a simple dashboard session (not a full user account).
     """
     client_ip = get_client_ip(request)
-    
+
     # Rate limiting: 5 attempts per IP per 15 minutes
     rate_limiter = RedisRateLimiter()
     is_allowed, attempt_count, error_msg = rate_limiter.check_and_record(
@@ -642,20 +642,20 @@ async def verify_public_dashboard(
         max_attempts=5,
         window_seconds=15 * 60  # 15 minutes
     )
-    
+
     if not is_allowed:
         logger.warning(f"Dashboard passkey rate limit exceeded for IP {client_ip} ({attempt_count} attempts)")
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
             detail=error_msg or Messages.error("too_many_login_attempts", lang, 15)
         )
-    
+
     # Enhanced logging for debugging (without revealing actual passkeys)
     from utils.auth import PUBLIC_DASHBOARD_PASSKEY
     received_length = len(passkey_request.passkey) if passkey_request.passkey else 0
     expected_length = len(PUBLIC_DASHBOARD_PASSKEY)
     logger.info(f"Dashboard passkey verification attempt - Received: {received_length} chars, Expected: {expected_length} chars")
-    
+
     if not verify_dashboard_passkey(passkey_request.passkey):
         logger.warning(f"Dashboard passkey verification failed for IP {client_ip}")
         error_msg = Messages.error("invalid_passkey", lang)
@@ -663,11 +663,11 @@ async def verify_public_dashboard(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=error_msg
         )
-    
+
     # Create dashboard session
     session_manager = get_dashboard_session_manager()
     dashboard_token = session_manager.create_session(client_ip)
-    
+
     # Set dashboard access cookie
     response.set_cookie(
         key="dashboard_access_token",
@@ -677,9 +677,9 @@ async def verify_public_dashboard(
         samesite="lax",
         max_age=24 * 60 * 60  # 24 hours
     )
-    
+
     logger.info(f"Dashboard access granted for IP {client_ip}")
-    
+
     return {
         "success": True,
         "message": "Access granted",

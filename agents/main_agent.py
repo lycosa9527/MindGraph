@@ -1,13 +1,31 @@
+﻿"""
+main agent module.
+"""
+import json
+import logging
+import os
+import re
+import threading
+import time
+import traceback
+
+from dotenv import load_dotenv
+from langchain_core.prompts import PromptTemplate
+import yaml
+
+from config.settings import config
+from prompts import get_prompt
+
 """
 Main Agent Module for MindGraph
 
-This module contains the core agent functionality for generating custom graph content 
+This module contains the core agent functionality for generating custom graph content
 using the Qwen LLM. It supports 10+ diagram types including bubble maps, flow maps,
 tree maps, concept maps, mind maps, and more through intelligent LLM-based classification.
 
 Features:
 - Semantic diagram type detection using LLM classification
-- Support for 10+ thinking map and concept map types  
+- Support for 10+ thinking map and concept map types
 - Thread-safe statistics tracking
 - Centralized error handling and validation
 - Modular agent architecture with specialized diagram generators
@@ -20,25 +38,14 @@ All Rights Reserved
 Proprietary License
 """
 
-import os
-import logging
-import re
-import time
-import traceback
-from dotenv import load_dotenv
 load_dotenv()
 
 # Use standard logging like other modules
 logger = logging.getLogger(__name__)
 
-from langchain_core.prompts import PromptTemplate
-import yaml
-from config.settings import config
-import json
-from prompts import get_prompt
 
 # Late imports to avoid circular dependencies
-def _get_concept_map_agent():
+def _get_concept_map_agent() -> None:
     """Lazy import to avoid circular dependencies."""
     from agents.concept_maps.concept_map_agent import ConceptMapAgent
     return ConceptMapAgent
@@ -46,12 +53,12 @@ def _get_concept_map_agent():
 def create_error_response(message: str, error_type: str = "generation", context: dict = None) -> dict:
     """
     Create standardized error response format.
-    
+
     Args:
         message: Error message
         error_type: Type of error (generation, validation, classification, etc.)
         context: Additional context information
-        
+
     Returns:
         dict: Standardized error response
     """
@@ -60,29 +67,29 @@ def create_error_response(message: str, error_type: str = "generation", context:
         "error_type": error_type,
         "timestamp": time.time()
     }
-    
+
     if context:
         error_response["context"] = context
-    
+
     return error_response
 
 def validate_inputs(user_prompt: str, language: str) -> None:
     """
     Validate input parameters for agent functions.
-    
+
     Args:
         user_prompt: User input prompt
         language: Language code
-        
+
     Raises:
         ValueError: If inputs are invalid
     """
     if not user_prompt or not isinstance(user_prompt, str) or not user_prompt.strip():
         raise ValueError("User prompt cannot be empty or None")
-    
+
     if len(user_prompt.strip()) > 10000:  # Reasonable limit
         raise ValueError("User prompt too long (max 10,000 characters)")
-    
+
     if not language or language not in ['zh', 'en']:
         raise ValueError("Language must be 'zh' or 'en'")
 
@@ -96,19 +103,19 @@ def extract_central_topic_llm(user_prompt: str, language: str = 'zh') -> str:
             prompt = f"从以下用户输入中提取核心主题，只返回主题内容，不要其他文字：\n{user_prompt}"
         else:
             prompt = f"Extract the central topic from this user input, return only the topic:\n{user_prompt}"
-        
-        result = llm_classification._call(prompt)
+
+        result = llm_classification._call  # pylint: disable=protected-access(prompt)
         # Clean up the result - remove any extra whitespace or formatting
         central_topic = result.strip()
-        
+
         # Fallback to original prompt if extraction fails
         if not central_topic or len(central_topic) < 2:
             logger.warning(f"LLM topic extraction failed, using original prompt: {user_prompt}")
             central_topic = user_prompt.strip()
-            
+
         return central_topic
-        
-    except Exception as e:
+
+    except Exception as  # pylint: disable=broad-except e:
         logger.error(f"LLM topic extraction error: {e}, using original prompt")
         return user_prompt.strip()
 
@@ -118,8 +125,8 @@ async def extract_double_bubble_topics_llm(user_prompt: str, language: str = 'zh
     This is specialized for double bubble maps that need two separate topics.
     Fully async - no event loop wrappers.
     """
-    from services.llm_service import llm_service
-    
+    from services.llm import llm_service
+
     try:
         if language == 'zh':
             prompt = f"""从以下用户输入中提取两个要比较的主题，只返回两个主题，用"和"连接，不要其他文字：
@@ -144,25 +151,25 @@ Input: "compare apples and oranges" → Output: "apples and oranges"
 Input: "create a comparison chart about cats and dogs" → Output: "cats and dogs"
 
 Your output:"""
-        
+
         result = await llm_service.chat(
             prompt=prompt,
             model=model,
             max_tokens=100,
             temperature=0.3
         )
-        
+
         # Clean up the result - remove any extra whitespace or formatting
         topics = result.strip()
-        
+
         # Fallback to original prompt if extraction fails
         if not topics or len(topics) < 3:
             logger.warning(f"LLM double bubble topic extraction failed, using original prompt: {user_prompt}")
             topics = user_prompt.strip()
-            
+
         return topics
-        
-    except Exception as e:
+
+    except Exception as  # pylint: disable=broad-except e:
         logger.error(f"LLM double bubble topic extraction error: {e}, using original prompt")
         return user_prompt.strip()
 
@@ -174,7 +181,7 @@ def extract_topics_and_styles_from_prompt_qwen(user_prompt: str, language: str =
     """
     # Use LLM-based topic extraction
     central_topic = extract_central_topic_llm(user_prompt, language)
-    
+
     return {
         "topics": [central_topic] if central_topic else [],
         "style_preferences": {},
@@ -227,46 +234,45 @@ def _salvage_json_string(raw: str) -> str:
     candidate = re.sub(r',\s*(\]|\})', r'\1', candidate)
     return candidate.strip()
 
-import threading
 
 class LLMTimingStats:
     """Thread-safe LLM timing statistics tracker."""
-    
+
     def __init__(self):
-        self._lock = threading.Lock()
-        self._total_calls = 0
-        self._total_time = 0.0
-        self._call_times = []
-        self._last_call_time = 0.0
-    
-    def add_call_time(self, call_time: float):
+        self._lock  # pylint: disable=protected-access = threading.Lock()
+        self._total_calls  # pylint: disable=protected-access = 0
+        self._total_time  # pylint: disable=protected-access = 0.0
+        self._call_times  # pylint: disable=protected-access = []
+        self._last_call_time  # pylint: disable=protected-access = 0.0
+
+    def add_call_time(self, call_time: float) -> None:
         """Add a new call time to statistics."""
-        with self._lock:
-            self._total_calls += 1
-            self._total_time += call_time
-            self._last_call_time = call_time
-            self._call_times.append(call_time)
-            
+        with self._lock  # pylint: disable=protected-access:
+            self._total_calls  # pylint: disable=protected-access += 1
+            self._total_time  # pylint: disable=protected-access += call_time
+            self._last_call_time  # pylint: disable=protected-access = call_time
+            self._call_times  # pylint: disable=protected-access.append(call_time)
+
             # Keep only last 100 call times to prevent memory bloat
-            if len(self._call_times) > 100:
-                self._call_times = self._call_times[-100:]
-    
+            if len(self._call_times  # pylint: disable=protected-access) > 100:
+                self._call_times  # pylint: disable=protected-access = self._call_times  # pylint: disable=protected-access[-100:]
+
     def get_stats(self) -> dict:
         """Get current timing statistics."""
-        with self._lock:
-            avg_time = self._total_time / self._total_calls if self._total_calls > 0 else 0.0
+        with self._lock  # pylint: disable=protected-access:
+            avg_time = self._total_time  # pylint: disable=protected-access / self._total_calls  # pylint: disable=protected-access if self._total_calls  # pylint: disable=protected-access > 0 else 0.0
             return {
-                'total_calls': self._total_calls,
-                'total_time': self._total_time,
+                'total_calls': self._total_calls  # pylint: disable=protected-access,
+                'total_time': self._total_time  # pylint: disable=protected-access,
                 'average_time': avg_time,
-                'last_call_time': self._last_call_time,
-                'call_times': self._call_times[-10:]
+                'last_call_time': self._last_call_time  # pylint: disable=protected-access,
+                'call_times': self._call_times  # pylint: disable=protected-access[-10:]
             }
 
-# Thread-safe global timing tracker
+# Thread-safe global timing  # pylint: disable=global-statement tracker
 llm_timing_stats = LLMTimingStats()
 
-def get_llm_timing_stats():
+def get_llm_timing_stats() -> None:
     """Get current LLM timing statistics."""
     return llm_timing_stats.get_stats()
 
@@ -282,23 +288,23 @@ def get_llm_timing_stats():
 # Updated to use LLM Service (Phase 5 migration)
 class _LegacyLLMStub:
     """Stub for old concept map functions - uses LLM Service"""
-    def _call(self, prompt):
+    def _call(self, prompt) -> None:
         import asyncio
-        from services.llm_service import llm_service
-        
+        from services.llm import llm_service
+
         async def _async_call():
             return await llm_service.chat(
                 prompt=prompt,
                 model='qwen',
                 timeout=30.0
             )
-        
+
         try:
             loop = asyncio.get_event_loop()
         except RuntimeError:
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
-        
+
         return loop.run_until_complete(_async_call())
 
 # Legacy stubs for old concept map code - now using LLM Service
@@ -310,46 +316,46 @@ llm = _LegacyLLMStub()
 class QwenLLM:
     """
     Backward-compatible sync wrapper for learning agents that haven't been migrated to async yet.
-    
+
     Now uses LLM Service instead of direct client (Phase 5 migration).
     Used by: LearningAgent, LearningAgentV3, and qwen_langchain.py
     """
     def __init__(self, model_type='generation'):
         """
         Initialize QwenLLM wrapper.
-        
+
         Args:
             model_type: 'generation' or 'classification' (uses qwen model from LLM Service)
         """
         self.model_type = model_type
-    
-    def _call(self, prompt: str, stop=None):
+
+    def _call(self, prompt: str, stop=None) -> None:
         """
         Synchronous wrapper for async LLM Service call.
-        
+
         Args:
             prompt: The prompt to send to the LLM
             stop: Stop sequences (not used, kept for compatibility)
-            
+
         Returns:
             str: The LLM response content
         """
         import asyncio
-        from services.llm_service import llm_service
-        
+        from services.llm import llm_service
+
         async def _async_call():
             return await llm_service.chat(
                 prompt=prompt,
                 model='qwen',
                 timeout=30.0
             )
-        
+
         try:
             loop = asyncio.get_event_loop()
         except RuntimeError:
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
-        
+
         return loop.run_until_complete(_async_call())
 
 
@@ -412,7 +418,7 @@ Goal: Cultivate students' comparative thinking skills, enabling multi-dimensiona
 
 Requirements:
 - 5 common characteristics (shared by both) - use 2-4 words maximum
-- 5 unique characteristics for {topic1} - use 2-4 words maximum  
+- 5 unique characteristics for {topic1} - use 2-4 words maximum
 - 5 unique characteristics for {topic2} - use 2-4 words maximum
 - CRITICAL: ensure comparability – each difference must represent the same type of attribute directly comparable between {topic1} and {topic2}
 - Use single words or very short phrases
@@ -468,7 +474,7 @@ characteristics_prompt_zh = PromptTemplate(
 
 要求：
 - 5个共同特征(两者共有)
-- 5个{topic1}的独有特征 
+- 5个{topic1}的独有特征
 - 5个{topic2}的独有特征
 - 关键：使差异具有可比性 - 每个差异应代表可以在{topic1}和{topic2}之间直接比较的相同类型的特征/属性
 - 使用关键词或极短短语，高度概括和抽象，保持简洁性
@@ -515,7 +521,7 @@ right_differences:
 # LANGCHAIN CHAINS
 # ============================================================================
 
-def create_topic_extraction_chain(language='zh'):
+def create_topic_extraction_chain(language='zh') -> None:
     """
     Create a simple chain for topic extraction
     Args:
@@ -524,15 +530,15 @@ def create_topic_extraction_chain(language='zh'):
         function: Function that can be called with user_prompt
     """
     prompt = topic_extraction_prompt_zh if language == 'zh' else topic_extraction_prompt_en
-    
-    def extract_topics(user_prompt):
+
+    def extract_topics(user_prompt) -> None:
         """Extract topics using the classification model"""
-        return llm_classification._call(prompt.format(user_prompt=user_prompt))
-    
+        return llm_classification._call  # pylint: disable=protected-access(prompt.format(user_prompt=user_prompt))
+
     return extract_topics
 
 
-def create_characteristics_chain(language='zh'):
+def create_characteristics_chain(language='zh') -> None:
     """
     Create a simple chain for characteristics generation
     Args:
@@ -541,11 +547,11 @@ def create_characteristics_chain(language='zh'):
         function: Function that can be called with topic1 and topic2
     """
     prompt = characteristics_prompt_zh if language == 'zh' else characteristics_prompt_en
-    
-    def generate_characteristics(topic1, topic2):
+
+    def generate_characteristics(topic1, topic2) -> None:
         """Generate characteristics using the generation model"""
-        return llm_generation._call(prompt.format(topic1=topic1, topic2=topic2))
-    
+        return llm_generation._call  # pylint: disable=protected-access(prompt.format(topic1=topic1, topic2=topic2))
+
     return generate_characteristics
 
 
@@ -553,7 +559,7 @@ def create_characteristics_chain(language='zh'):
 # AGENT WORKFLOW FUNCTIONS
 # ============================================================================
 
-def extract_yaml_from_code_block(text):
+def extract_yaml_from_code_block(text) -> None:
     """Extract content from fenced code blocks, robust to minor formatting.
 
     - Handles ```json, ```yaml, ```yml, ```js, or bare ```
@@ -585,26 +591,26 @@ def extract_yaml_from_code_block(text):
 def generate_graph_spec(user_prompt: str, graph_type: str, language: str = 'zh') -> dict:
     """
     Use the LLM to generate a JSON spec for the given graph type.
-    
+
     Args:
         user_prompt: The user's input prompt
         graph_type: Type of graph to generate ('double_bubble_map', 'bubble_map', etc.)
         language: Language for processing ('zh' or 'en')
-    
+
     Returns:
         dict: JSON serializable graph specification
     """
     # Use centralized prompt registry
     try:
         from prompts import get_prompt
-        
+
         # Get the appropriate prompt template
         prompt_text = get_prompt(graph_type, language, 'generation')
-        
+
         if not prompt_text:
             logger.error(f"No prompt found for graph type: {graph_type}")
             return create_error_response(f"No prompt template found for {graph_type}", "template", {"graph_type": graph_type})
-        
+
         # Sanitize template to ensure only {user_prompt} is a variable; all other braces become literal
         def _sanitize_prompt_template_for_langchain(template: str) -> str:
             placeholder = "<<USER_PROMPT_PLACEHOLDER>>"
@@ -618,18 +624,18 @@ def generate_graph_spec(user_prompt: str, graph_type: str, language: str = 'zh')
             template=safe_template
         )
         # Use generation model for graph specification generation (high quality)
-        yaml_text = llm_generation._call(prompt.format(user_prompt=user_prompt))
+        yaml_text = llm_generation._call  # pylint: disable=protected-access(prompt.format(user_prompt=user_prompt))
         # Some LLM clients return dict-like objects; ensure string
         try:
             raw_text = yaml_text if isinstance(yaml_text, str) else str(yaml_text)
-        except Exception:
+        except Exception:  # pylint: disable=broad-except
             raw_text = f"{yaml_text}"
         yaml_text_clean = extract_yaml_from_code_block(raw_text)
-        
+
         # Debug logging
         logger.debug(f"Raw LLM response for {graph_type}: {yaml_text}")
         logger.debug(f"Cleaned response: {yaml_text_clean}")
-        
+
         try:
             # Try JSON first, then YAML; if that fails, attempt to salvage JSON by stripping trailing backticks
             try:
@@ -639,33 +645,33 @@ def generate_graph_spec(user_prompt: str, graph_type: str, language: str = 'zh')
                 cleaned = yaml_text_clean.strip().rstrip('`').strip()
                 try:
                     spec = json.loads(cleaned)
-                except Exception:
+                except Exception:  # pylint: disable=broad-except
                     # Attempt to salvage a JSON object from messy output
                     salvaged = _salvage_json_string(raw_text)
                     if salvaged:
                         try:
                             spec = json.loads(salvaged)
-                        except Exception:
+                        except Exception:  # pylint: disable=broad-except
                             spec = yaml.safe_load(yaml_text_clean)
                     else:
                         spec = yaml.safe_load(yaml_text_clean)
-        
+
             if not spec:
                 raise Exception("JSON/YAML parse failed")
-            
+
             # Note: Agent validation is now handled by specialized agents, not here
-            
+
             logger.info(f"{graph_type} specification generated successfully")
             return spec
-            
-        except Exception as e:
+
+        except Exception as  # pylint: disable=broad-except e:
             logger.error(f"{graph_type} JSON generation failed: {e}")
             return create_error_response(f"Failed to generate valid {graph_type} JSON", "generation", {"graph_type": graph_type})
-            
+
     except ImportError:
         logger.error("Failed to import centralized prompt registry")
         return create_error_response("Prompt registry not available", "import", {"graph_type": graph_type})
-    except Exception as e:
+    except Exception as  # pylint: disable=broad-except e:
         logger.error(f"Unexpected error in generate_graph_spec: {e}")
         return create_error_response(f"Unexpected error generating {graph_type}", "unexpected", {"graph_type": graph_type})
 
@@ -677,10 +683,10 @@ def generate_graph_spec(user_prompt: str, graph_type: str, language: str = 'zh')
 # AGENT CONFIGURATION
 # ============================================================================
 
-def get_agent_config():
+def get_agent_config() -> None:
     """
     Get current agent configuration
-    
+
     Returns:
         dict: Agent configuration
     """
@@ -693,39 +699,39 @@ def get_agent_config():
     }
 
 
-def validate_agent_setup():
+def validate_agent_setup() -> None:
     """
     Validate that the agent is properly configured with cross-platform timeout
-    
+
     Returns:
         bool: True if agent is ready, False otherwise
     """
-    def timeout_handler():
+    def timeout_handler() -> None:
         raise TimeoutError("LLM validation timed out")
-    
+
     timer = threading.Timer(config.QWEN_TIMEOUT, timeout_handler)
     timer.start()
-    
+
     try:
         # Test LLM connection using classification model (fast/cheap)
         test_prompt = "Test"
-        llm_classification._call(test_prompt)
+        llm_classification._call  # pylint: disable=protected-access(test_prompt)
         logger.info("LLM connection validation completed successfully")
         return True
     except TimeoutError:
         logger.error("LLM validation timed out")
         return False
-    except Exception as e:
+    except Exception as  # pylint: disable=broad-except e:
         logger.error(f"LLM connection failed: {e}")
         return False
     finally:
-        timer.cancel() 
+        timer.cancel()
 
 
 
 async def _detect_diagram_type_from_prompt(
-    user_prompt: str, 
-    language: str, 
+    user_prompt: str,
+    language: str,
     model: str = 'qwen',
     # Token tracking parameters
     user_id=None,
@@ -735,12 +741,12 @@ async def _detect_diagram_type_from_prompt(
 ) -> dict:
     """
     LLM-based diagram type detection using semantic understanding.
-    
+
     Args:
         user_prompt: User's input prompt
         language: Language ('zh' or 'en')
         model: LLM model to use ('qwen', 'deepseek', 'kimi', 'doubao')
-    
+
     Returns:
         dict: {'diagram_type': str, 'clarity': str, 'has_topic': bool}
               clarity can be 'clear', 'unclear', or 'very_unclear'
@@ -748,18 +754,18 @@ async def _detect_diagram_type_from_prompt(
     try:
         # Validate inputs
         validate_inputs(user_prompt, language)
-        
+
         # Check if prompt is too vague or complex (basic heuristics before LLM)
         prompt_words = user_prompt.strip().split()
         is_too_short = len(prompt_words) < 2
         is_too_long = len(prompt_words) > 100
-        
+
         # Get classification prompt from centralized system
         classification_prompt = get_prompt("classification", language, "generation")
         classification_prompt = classification_prompt.format(user_prompt=user_prompt)
-        
+
         # Use middleware directly - clean and efficient!
-        from services.llm_service import llm_service
+        from services.llm import llm_service
         response = await llm_service.chat(
             prompt=classification_prompt,
             model=model,
@@ -771,23 +777,23 @@ async def _detect_diagram_type_from_prompt(
             request_type=request_type,
             endpoint_path=endpoint_path
         )
-        
+
         # Extract diagram type from response
         detected_type = response.strip().lower()
-        
+
         # Validate the detected type - only include working diagram types
         # 8 thinking maps + 1 mindmap (concept_map and thinking tools are work in progress)
         valid_types = {
-            'circle_map', 'bubble_map', 'double_bubble_map', 
-            'brace_map', 'bridge_map', 'tree_map', 
-            'flow_map', 'multi_flow_map', 
+            'circle_map', 'bubble_map', 'double_bubble_map',
+            'brace_map', 'bridge_map', 'tree_map',
+            'flow_map', 'multi_flow_map',
             'mind_map'
         }
-        
+
         # Determine clarity based on LLM response and heuristics
         clarity = 'clear'
         has_topic = True
-        
+
         # Check if LLM explicitly returned "unclear"
         if detected_type == 'unclear':
             clarity = 'very_unclear'
@@ -804,20 +810,20 @@ async def _detect_diagram_type_from_prompt(
             # Prompt length is suspicious
             clarity = 'unclear'
             logger.debug(f"Prompt length is suspicious (words: {len(prompt_words)})")
-        
+
         result = {
             'diagram_type': detected_type,
             'clarity': clarity,
             'has_topic': has_topic
         }
-        
+
         logger.debug(f"LLM classification: '{user_prompt}' → {detected_type} (clarity: {clarity})")
         return result
-            
+
     except ValueError as e:
         logger.error(f"Input validation failed: {e}")
         return {'diagram_type': 'mind_map', 'clarity': 'very_unclear', 'has_topic': False}
-    except Exception as e:
+    except Exception as  # pylint: disable=broad-except e:
         logger.error(f"LLM classification failed: {e}")
         return {'diagram_type': 'mind_map', 'clarity': 'very_unclear', 'has_topic': False}
 
@@ -841,8 +847,8 @@ def _invoke_llm_prompt(prompt_template: str, variables: dict) -> str:
     formatted_prompt = safe_template
     for key, value in variables.items():
         formatted_prompt = formatted_prompt.replace(f"{{{key}}}", str(value))
-    
-    raw = llm_generation._call(formatted_prompt)
+
+    raw = llm_generation._call  # pylint: disable=protected-access(formatted_prompt)
     return raw if isinstance(raw, str) else str(raw)
 
 
@@ -854,17 +860,17 @@ def _salvage_truncated_json(text: str) -> str:
         salvaged_lines = []
         in_relationships = False
         brace_count = 0
-        
+
         for line in lines:
             if '"relationships"' in line:
                 in_relationships = True
                 salvaged_lines.append(line)
                 continue
-                
+
             if in_relationships:
                 # Count braces to track structure
                 brace_count += line.count('{') - line.count('}')
-                
+
                 # Check if this line is complete (ends with } or ,)
                 if line.strip().endswith('},') or line.strip().endswith('}'):
                     salvaged_lines.append(line)
@@ -889,24 +895,24 @@ def _salvage_truncated_json(text: str) -> str:
                     salvaged_lines.append(line)
             else:
                 salvaged_lines.append(line)
-        
+
         # Close the relationships array and main object
         if in_relationships:
             # Remove trailing comma from last relationship
             if salvaged_lines and salvaged_lines[-1].strip().endswith(','):
                 salvaged_lines[-1] = salvaged_lines[-1].rstrip(',')
-            
+
             # Add closing brackets
             salvaged_lines.append('  ]')
             salvaged_lines.append('}')
-        
+
         salvaged_text = '\n'.join(salvaged_lines)
-        
+
         # Validate the salvaged JSON
         json.loads(salvaged_text)
         return salvaged_text
-        
-    except Exception as e:
+
+    except Exception as  # pylint: disable=broad-except e:
         logger.error(f"JSON salvage failed: {e}")
         return None
 
@@ -929,7 +935,7 @@ def _parse_strict_json(text: str) -> dict:
     cleaned = re.sub(r",\s*(\]|\})", r"\1", cleaned)
     try:
         return json.loads(cleaned)
-    except Exception:
+    except Exception:  # pylint: disable=broad-except
         # Try salvage
         candidate = _salvage_json_string(cleaned)
         if candidate:
@@ -943,14 +949,14 @@ def generate_concept_map_two_stage(user_prompt: str, language: str) -> dict:
     # Stage 1: keys
     key_prompt = get_prompt('concept_map_keys', language, 'generation')
     raw_keys = _invoke_llm_prompt(key_prompt, { 'user_prompt': user_prompt })
-    
+
     # Use improved parsing for better error handling
     try:
         from .concept_maps import ConceptMapAgent
         agent = ConceptMapAgent()
-        keys_obj = agent._parse_json_response(raw_keys)
+        keys_obj = agent._parse_json_response  # pylint: disable=protected-access(raw_keys)
         logger.debug("Used ConceptMapAgent improved parsing for keys generation")
-    except Exception as e:
+    except Exception as  # pylint: disable=broad-except e:
         logger.warning(f"ConceptMapAgent parsing failed for keys, falling back to strict parsing: {e}")
         # Fallback to strict parsing if ConceptMapAgent is not available
         keys_obj = _parse_strict_json(raw_keys)
@@ -986,14 +992,14 @@ def generate_concept_map_two_stage(user_prompt: str, language: str) -> dict:
     def fetch_parts(k: str) -> tuple:
         try:
             raw = _invoke_llm_prompt(parts_prompt, { 'topic': topic, 'key': k })
-            
+
             # Use improved parsing for better error handling
             try:
                 from .concept_maps import ConceptMapAgent
                 agent = ConceptMapAgent()
-                obj = agent._parse_json_response(raw)
+                obj = agent._parse_json_response  # pylint: disable=protected-access(raw)
                 logger.debug(f"Used ConceptMapAgent improved parsing for parts of key '{k}'")
-            except Exception as e:
+            except Exception as  # pylint: disable=broad-except e:
                 logger.debug(f"ConceptMapAgent parsing failed for parts of key '{k}', using strict parsing fallback")
                 # Fallback to strict parsing if ConceptMapAgent is not available
                 obj = _parse_strict_json(raw)
@@ -1011,7 +1017,7 @@ def generate_concept_map_two_stage(user_prompt: str, language: str) -> dict:
                 if len(parts_collected) >= per_key_cap:
                     break
             return (k, parts_collected)
-        except Exception:
+        except Exception:  # pylint: disable=broad-except
             return (k, [])
 
     parts_results = { k: [] for k in keys }
@@ -1064,20 +1070,20 @@ def generate_concept_map_unified(user_prompt: str, language: str) -> dict:
     prompt_key = 'concept_map_unified_generation_zh' if language == 'zh' else 'concept_map_unified_generation_en'
     unified_prompt = get_prompt('concept_map_unified', language, 'generation')
     raw = _invoke_llm_prompt(unified_prompt, { 'user_prompt': user_prompt })
-    
+
     # Use the improved ConceptMapAgent parsing for better error handling
     try:
         from .concept_maps import ConceptMapAgent
         agent = ConceptMapAgent()
-        obj = agent._parse_json_response(raw)
+        obj = agent._parse_json_response  # pylint: disable=protected-access(raw)
         logger.debug("Used ConceptMapAgent improved parsing for unified generation")
-    except Exception as e:
+    except Exception as  # pylint: disable=broad-except e:
         logger.warning(f"ConceptMapAgent parsing failed, falling back to strict parsing: {e}")
         # Fallback to strict parsing if ConceptMapAgent is not available
         try:
             obj = _parse_strict_json(raw)
             logger.debug("Used strict parsing fallback for unified generation")
-        except Exception as e2:
+        except Exception as  # pylint: disable=broad-except e2:
             logger.error(f"All parsing methods failed for unified generation: {e2}")
             return { 'error': f'Concept map parsing failed: {e2}' }
     # Extract - prioritize concepts from ConceptMapAgent parsing
@@ -1086,7 +1092,7 @@ def generate_concept_map_unified(user_prompt: str, language: str) -> dict:
     keys_raw = obj.get('keys') or []
     key_parts_raw = obj.get('key_parts') or {}
     rels_raw = obj.get('relationships') or []
-    
+
     # First, use concepts if they were successfully extracted
     if concepts_raw and isinstance(concepts_raw, list):
         concepts = []
@@ -1143,7 +1149,7 @@ def generate_concept_map_unified(user_prompt: str, language: str) -> dict:
     # Relationships
     relationships = []
     pair_seen = set()
-    def add_rel(frm, to, label):
+    def add_rel(frm, to, label) -> None:
         if not isinstance(frm, str) or not isinstance(to, str):
             return
         if frm == to:
@@ -1181,22 +1187,22 @@ def generate_concept_map_unified(user_prompt: str, language: str) -> dict:
 def generate_concept_map_enhanced_30(user_prompt: str, language: str) -> dict:
     """
     Enhanced concept map generation that produces exactly 30 concepts.
-    
+
     This integrates with existing topic extraction and uses optimized prompts
     to generate exactly 30 concepts + relationships, matching the desired workflow.
     """
     try:
         # Use LLM-based topic extraction instead of hardcoded string manipulation
         central_topic = extract_central_topic_llm(user_prompt, language)
-        
+
         if isinstance(central_topic, list):
             central_topic = ' '.join(central_topic)
-        
+
         logger.debug(f"Using central topic for 30-concept generation: {central_topic}")
-        
+
         # Generate exactly 30 concepts using centralized prompts
         from prompts import get_prompt
-        
+
         # Get appropriate prompt for language
         concept_prompt = get_prompt("concept_30", language, "generation")
         if concept_prompt:
@@ -1211,10 +1217,10 @@ def generate_concept_map_enhanced_30(user_prompt: str, language: str) -> dict:
 
         # Get concepts from LLM
         concepts_response = _invoke_llm_prompt(concept_prompt, {'central_topic': central_topic})
-        
+
         if not concepts_response:
             raise ValueError("No response from LLM for concept generation")
-        
+
         # Parse concepts response
         try:
             import json
@@ -1223,13 +1229,13 @@ def generate_concept_map_enhanced_30(user_prompt: str, language: str) -> dict:
             try:
                 from .concept_maps import ConceptMapAgent
                 agent = ConceptMapAgent()
-                concepts_data = agent._parse_json_response(concepts_response)
+                concepts_data = agent._parse_json_response  # pylint: disable=protected-access(concepts_response)
                 logger.debug("Used ConceptMapAgent improved parsing for concepts")
-            except Exception as e:
+            except Exception as  # pylint: disable=broad-except e:
                 logger.warning(f"ConceptMapAgent parsing failed for concepts: {e}")
                 concepts_data = _parse_strict_json(concepts_response)
                 logger.debug("Used strict parsing for concepts")
-        
+
         # Handle both dict and list formats
         if isinstance(concepts_data, dict):
             concepts = concepts_data.get('concepts', [])
@@ -1237,7 +1243,7 @@ def generate_concept_map_enhanced_30(user_prompt: str, language: str) -> dict:
             concepts = concepts_data
         else:
             concepts = []
-        
+
         # Ensure exactly 30 concepts
         if len(concepts) != 30:
             if len(concepts) > 30:
@@ -1248,10 +1254,10 @@ def generate_concept_map_enhanced_30(user_prompt: str, language: str) -> dict:
                 while len(concepts) < 30:
                     concepts.append(f"Related aspect {len(concepts) + 1}")
                 logger.debug(f"Padded concepts from {len(concepts)} to 30")
-        
+
         if not concepts:
             raise ValueError("No concepts generated")
-        
+
         # Generate relationships using systematic approach
         if language == 'zh':
             rel_prompt = f"""
@@ -1316,10 +1322,10 @@ Requirements:
 
         # Get relationships from LLM
         relationships_response = _invoke_llm_prompt(rel_prompt, {'central_topic': central_topic, 'concepts': concepts})
-        
+
         if not relationships_response:
             raise ValueError("No response from LLM for relationship generation")
-        
+
         # Parse relationships response
         try:
             import json
@@ -1328,18 +1334,18 @@ Requirements:
             try:
                 from .concept_maps import ConceptMapAgent
                 agent = ConceptMapAgent()
-                rel_data = agent._parse_json_response(relationships_response)
+                rel_data = agent._parse_json_response  # pylint: disable=protected-access(relationships_response)
                 logger.debug("Used ConceptMapAgent improved parsing for relationships")
-            except Exception as e:
+            except Exception as  # pylint: disable=broad-except e:
                 logger.warning(f"ConceptMapAgent parsing failed for relationships: {e}")
                 rel_data = _parse_strict_json(relationships_response)
                 logger.debug("Used strict parsing for relationships")
-        
+
         relationships = rel_data.get('relationships', [])
-        
+
         if not relationships:
             raise ValueError("No relationships generated")
-        
+
         # Build the final specification
         spec = {
             'topic': central_topic,
@@ -1354,26 +1360,26 @@ Requirements:
                 'relationship_count': len(relationships)
             }
         }
-        
+
         logger.debug(f"Enhanced 30-concept generation completed successfully with {len(concepts)} concepts and {len(relationships)} relationships")
         return spec
-        
-    except Exception as e:
+
+    except Exception as  # pylint: disable=broad-except e:
         logger.error(f"Enhanced 30-concept generation failed: {e}")
         logger.error(f"Stack trace: {traceback.format_exc()}")
-        
+
         # Fallback to original method
         return generate_concept_map_unified(user_prompt, language)
 
 
 def generate_concept_map_robust(user_prompt: str, language: str, method: str = 'auto') -> dict:
     """Robust concept map generation with multiple approaches.
-    
+
     Args:
         user_prompt: User's input prompt
         language: Language for processing
         method: Generation method ('auto', 'unified', 'two_stage', 'network_first', 'three_stage')
-    
+
     Returns:
         dict: Concept map specification
     """
@@ -1382,7 +1388,7 @@ def generate_concept_map_robust(user_prompt: str, language: str, method: str = '
         try:
             # Use existing topic extraction + enhanced 30-concept generation
             return generate_concept_map_enhanced_30(user_prompt, language)
-        except Exception as e:
+        except Exception as  # pylint: disable=broad-except e:
             logger.warning(f"Enhanced 30-concept generation failed: {e}")
             # Try with fewer concepts as fallback
             try:
@@ -1395,23 +1401,23 @@ def generate_concept_map_robust(user_prompt: str, language: str, method: str = '
                 else:
                     logger.warning(f"Simplified two-stage generation failed: {result.get('error')}")
                     raise ValueError("All concept map generation methods failed")
-            except Exception as fallback_error:
+            except Exception as  # pylint: disable=broad-except fallback_error:
                 logger.warning(f"Simplified two-stage fallback also failed: {fallback_error}")
-    
+
     # If method is specified, try that first
     if method == 'network_first':
         try:
             from .concept_maps import ConceptMapAgent
             agent = ConceptMapAgent()
-            # Use the global LLM client
+            # Use the global LLM  # pylint: disable=global-statement client
             result = agent.generate_network_first(user_prompt, llm, language)
             if isinstance(result, dict) and result.get('success'):
                 return result.get('spec', {})
             else:
                 logger.warning(f"Network-first generation failed: {result.get('error')}")
-        except Exception as e:
+        except Exception as  # pylint: disable=broad-except e:
             logger.warning(f"Network-first generation failed: {e}")
-    
+
     # With increased token limits, the enhanced method should work
     # If it fails, there's a deeper issue that needs investigation
     logger.error("Enhanced concept map generation failed despite increased token limits")
@@ -1420,10 +1426,10 @@ def generate_concept_map_robust(user_prompt: str, language: str, method: str = '
 
 
 async def _generate_spec_with_agent(
-    user_prompt: str, 
-    diagram_type: str, 
-    language: str, 
-    dimension_preference: str = None, 
+    user_prompt: str,
+    diagram_type: str,
+    language: str,
+    dimension_preference: str = None,
     model: str = 'qwen',
     # Token tracking parameters
     user_id=None,
@@ -1439,7 +1445,7 @@ async def _generate_spec_with_agent(
 ) -> dict:
     """
     Generate specification using the appropriate specialized agent.
-    
+
     Args:
         user_prompt: User's input prompt
         diagram_type: Type of diagram to generate
@@ -1448,7 +1454,7 @@ async def _generate_spec_with_agent(
         model: LLM model to use ('qwen', 'deepseek', 'kimi'). Passed to agent for LLM client selection.
         existing_analogies: For bridge map auto-complete - existing pairs to preserve [{left, right}, ...]
         fixed_dimension: For bridge map auto-complete - user-specified relationship pattern that should NOT be changed
-    
+
     Returns:
         dict: Generated specification
     """
@@ -1518,15 +1524,15 @@ async def _generate_spec_with_agent(
             # Fallback to bubble map
             from .thinking_maps.bubble_map_agent import BubbleMapAgent
             agent = BubbleMapAgent(model=model)
-        
+
         # Generate using the agent
         logger.debug(f"Calling {diagram_type} agent")
         logger.debug(f"User prompt: {user_prompt}")
         logger.debug(f"Language: {language}")
-        
+
         # Bridge map special handling - Three template system:
         # Mode 1: Only pairs provided → identify relationship
-        # Mode 2: Pairs + relationship provided → keep as-is  
+        # Mode 2: Pairs + relationship provided → keep as-is
         # Mode 3: Only relationship provided → generate pairs
         if diagram_type == 'bridge_map' and existing_analogies:
             # Mode 1 or 2: Has existing pairs
@@ -1535,8 +1541,8 @@ async def _generate_spec_with_agent(
             else:
                 logger.debug(f"Bridge map Mode 1: Only pairs - will identify relationship from {len(existing_analogies)} pairs")
             result = await agent.generate_graph(
-                user_prompt, 
-                language, 
+                user_prompt,
+                language,
                 dimension_preference,
                 # Token tracking parameters
                 user_id=user_id,
@@ -1551,8 +1557,8 @@ async def _generate_spec_with_agent(
         elif diagram_type == 'bridge_map' and fixed_dimension and not existing_analogies:
             logger.debug(f"Bridge map Mode 3: Relationship-only - generating pairs for '{fixed_dimension}'")
             result = await agent.generate_graph(
-                user_prompt, 
-                language, 
+                user_prompt,
+                language,
                 dimension_preference,
                 # Token tracking parameters
                 user_id=user_id,
@@ -1572,8 +1578,8 @@ async def _generate_spec_with_agent(
                 # Scenario 3: Dimension-only mode - user has dimension but no topic
                 logger.debug(f"{diagram_type} dimension-only mode: generating topic and children for dimension '{fixed_dimension}'")
                 result = await agent.generate_graph(
-                    user_prompt, 
-                    language, 
+                    user_prompt,
+                    language,
                     fixed_dimension,  # Use fixed_dimension as the dimension_preference
                     # Token tracking parameters
                     user_id=user_id,
@@ -1588,8 +1594,8 @@ async def _generate_spec_with_agent(
                 # Scenario 2: Topic + dimension mode
                 logger.debug(f"{diagram_type} auto-complete mode with FIXED dimension '{fixed_dimension}' (topic exists)")
                 result = await agent.generate_graph(
-                    user_prompt, 
-                    language, 
+                    user_prompt,
+                    language,
                     fixed_dimension,  # Use fixed_dimension as the dimension_preference
                     # Token tracking parameters
                     user_id=user_id,
@@ -1608,8 +1614,8 @@ async def _generate_spec_with_agent(
             elif diagram_type == 'bridge_map':
                 logger.debug(f"Passing analogy relationship pattern preference to bridge map agent: {dimension_preference}")
             result = await agent.generate_graph(
-                user_prompt, 
-                language, 
+                user_prompt,
+                language,
                 dimension_preference,
                 # Token tracking parameters
                 user_id=user_id,
@@ -1619,7 +1625,7 @@ async def _generate_spec_with_agent(
             )
         else:
             result = await agent.generate_graph(
-                user_prompt, 
+                user_prompt,
                 language,
                 # Token tracking parameters
                 user_id=user_id,
@@ -1627,10 +1633,10 @@ async def _generate_spec_with_agent(
                 request_type=request_type,
                 endpoint_path=endpoint_path
             )
-        
+
         logger.debug(f"Agent result type: {type(result)}")
         logger.debug(f"Agent result keys: {list(result.keys()) if isinstance(result, dict) else 'Not a dict'}")
-        
+
         # Extract spec from agent result if wrapped
         if isinstance(result, dict):
             if 'spec' in result:
@@ -1641,11 +1647,11 @@ async def _generate_spec_with_agent(
                 return result
             else:
                 logger.error(f"Result contains error: {result.get('error')}")
-        
+
         logger.debug("Returning raw result")
         return result
-        
-    except Exception as e:
+
+    except Exception as  # pylint: disable=broad-except e:
         logger.error(f"Agent instantiation/generation failed for {diagram_type}: {e}")
         return {'error': f'Failed to generate {diagram_type}: {str(e)}'}
 
@@ -1657,59 +1663,59 @@ async def _generate_spec_with_agent(
 def _detect_learning_sheet_from_prompt(user_prompt: str, language: str) -> bool:
     """
     Detect if the prompt is requesting a learning sheet.
-    
+
     Args:
         user_prompt: User's input prompt
         language: Language ('zh' or 'en')
-    
+
     Returns:
         bool: True if learning sheet keywords detected
     """
     learning_sheet_keywords = ['半成品', '学习单']
     is_learning_sheet = any(keyword in user_prompt for keyword in learning_sheet_keywords)
-    
+
     if is_learning_sheet:
         logger.debug(f"Learning sheet detected in prompt: '{user_prompt}'")
-    
+
     return is_learning_sheet
 
 
 def _clean_prompt_for_learning_sheet(user_prompt: str) -> str:
     """
     Remove learning sheet keywords from prompt so LLM generates actual content.
-    
-    When user asks for "生成鸦片战争的半成品流程图" or "生成鸦片战争的流程图半成品", 
-    we want the LLM to generate content about "生成鸦片战争的流程图" (the actual topic), 
+
+    When user asks for "生成鸦片战争的半成品流程图" or "生成鸦片战争的流程图半成品",
+    we want the LLM to generate content about "生成鸦片战争的流程图" (the actual topic),
     not meta-content about how to create learning sheets.
-    
+
     Args:
         user_prompt: Original user prompt
-        
+
     Returns:
         str: Cleaned prompt with learning sheet keywords removed
     """
     learning_sheet_keywords = ['半成品', '学习单']
-    
+
     cleaned_prompt = user_prompt
     for keyword in learning_sheet_keywords:
         cleaned_prompt = cleaned_prompt.replace(keyword, '').strip()
-    
+
     # Clean up any extra whitespace or punctuation left behind
     import re
     cleaned_prompt = re.sub(r'\s+', ' ', cleaned_prompt)  # Multiple spaces -> single space
     cleaned_prompt = re.sub(r'的图+$', '的', cleaned_prompt)  # "的图" at end -> "的" (for cases like "流程图的半成品图" -> "流程图的")
     cleaned_prompt = re.sub(r'的+$', '', cleaned_prompt)  # Remove trailing "的"
     cleaned_prompt = cleaned_prompt.strip()
-    
+
     logger.debug(f"Cleaned prompt: '{user_prompt}' -> '{cleaned_prompt}'")
     return cleaned_prompt
 
 
 async def agent_graph_workflow_with_styles(
-    user_prompt, 
-    language='zh', 
-    forced_diagram_type=None, 
-    dimension_preference=None, 
+    user_prompt,
+    language='zh',
+    forced_diagram_type=None,
+    dimension_preference=None,
     model='qwen',
     # Token tracking parameters
     user_id=None,
@@ -1728,7 +1734,7 @@ async def agent_graph_workflow_with_styles(
 ):
     """
     Simplified agent workflow that directly calls specialized agents.
-    
+
     Args:
         user_prompt (str): User's input prompt
         language (str): Language for processing ('zh' or 'en')
@@ -1741,22 +1747,22 @@ async def agent_graph_workflow_with_styles(
         dimension_only_mode (bool, optional): For tree_map/brace_map auto-complete - user has dimension but no topic (generate topic and children)
         use_rag (bool): Whether to use RAG (Knowledge Space) context for enhanced diagram generation
         rag_top_k (int): Number of RAG context chunks to retrieve (default: 5)
-    
+
     Returns:
         dict: JSON specification with integrated styles for D3.js rendering
     """
     logger.debug("Starting simplified graph workflow")
     workflow_start_time = time.time()
-    
+
     # Initialize timing variables
     detection_time = 0.0
     topic_time = 0.0
     generation_time = 0.0
-    
+
     try:
         # Validate inputs
         validate_inputs(user_prompt, language)
-        
+
         # Use forced diagram type if provided, otherwise detect from prompt
         if forced_diagram_type:
             diagram_type = forced_diagram_type
@@ -1766,8 +1772,8 @@ async def agent_graph_workflow_with_styles(
             # LLM-based diagram type detection for semantic understanding
             detection_start = time.time()
             detection_result = await _detect_diagram_type_from_prompt(
-                user_prompt, 
-                language, 
+                user_prompt,
+                language,
                 model,
                 # Token tracking parameters
                 user_id=user_id,
@@ -1778,7 +1784,7 @@ async def agent_graph_workflow_with_styles(
             detection_time = time.time() - detection_start
             diagram_type = detection_result['diagram_type']
             logger.info(f"Diagram type detection completed in {detection_time:.2f}s: {diagram_type} (clarity: {detection_result['clarity']})")
-            
+
             # Check if prompt is too complex/unclear and should show guidance modal
             if detection_result['clarity'] == 'very_unclear' and not detection_result['has_topic']:
                 logger.warning(f"Prompt is too complex or unclear: '{user_prompt}'")
@@ -1787,7 +1793,7 @@ async def agent_graph_workflow_with_styles(
                     'error_type': 'prompt_too_complex',
                     'error': 'Unable to understand the request',
                     'spec': create_error_response(
-                        'Prompt is too complex or unclear', 
+                        'Prompt is too complex or unclear',
                         'prompt_too_complex',
                         {'user_prompt': user_prompt}
                     ),
@@ -1797,19 +1803,19 @@ async def agent_graph_workflow_with_styles(
                     'language': language,
                     'show_guidance': True
                 }
-        
+
         # Extract main topic from prompt using LLM (only if not forced diagram type)
         if not forced_diagram_type:
             # Prompt-based generation: just extract topic, let frontend use default template
-            from services.llm_service import llm_service
-            
+            from services.llm import llm_service
+
             # RAG Integration: Retrieve relevant context for topic extraction if enabled
             rag_context_for_topic = None
             if use_rag and user_id:
                 try:
                     from services.rag_service import RAGService
                     from config.database import SessionLocal
-                    
+
                     rag_service = RAGService()
                     db = SessionLocal()
                     try:
@@ -1824,24 +1830,24 @@ async def agent_graph_workflow_with_styles(
                                 source='diagram_generation',
                                 source_context={'stage': 'topic_extraction', 'diagram_type': diagram_type if 'diagram_type' in locals() else None}
                             )
-                            
+
                             if rag_context_chunks:
                                 rag_context_for_topic = "\n\n".join([
-                                    f"[知识库参考 {i+1}]: {chunk}" 
+                                    f"[知识库参考 {i+1}]: {chunk}"
                                     for i, chunk in enumerate(rag_context_chunks)
                                 ]) if language == 'zh' else "\n\n".join([
-                                    f"[Knowledge Base Reference {i+1}]: {chunk}" 
+                                    f"[Knowledge Base Reference {i+1}]: {chunk}"
                                     for i, chunk in enumerate(rag_context_chunks)
                                 ])
                                 logger.debug(f"[RAG] Retrieved {len(rag_context_chunks)} context chunks for topic extraction")
                     finally:
                         db.close()
-                except Exception as e:
+                except Exception as  # pylint: disable=broad-except e:
                     logger.debug(f"[RAG] Failed to retrieve context for topic extraction: {e}")
-            
+
             # Use centralized topic extraction prompt
             topic_extraction_prompt = get_prompt("topic_extraction", language, "generation")
-            
+
             # Enhance prompt with RAG context if available
             if rag_context_for_topic:
                 if language == 'zh':
@@ -1850,9 +1856,9 @@ async def agent_graph_workflow_with_styles(
                     enhanced_user_prompt = f"{user_prompt}\n\nRelevant Context:\n{rag_context_for_topic}"
             else:
                 enhanced_user_prompt = user_prompt
-            
+
             topic_extraction_prompt = topic_extraction_prompt.format(user_prompt=enhanced_user_prompt)
-            
+
             topic_start = time.time()
             main_topic = await llm_service.chat(
                 prompt=topic_extraction_prompt,
@@ -1868,7 +1874,7 @@ async def agent_graph_workflow_with_styles(
             topic_time = time.time() - topic_start
             main_topic = main_topic.strip().strip('"\'')
             logger.info(f"Topic extraction completed in {topic_time:.2f}s: '{main_topic}'")
-            
+
             # Return just the topic and diagram type - frontend will load default template
             total_time = time.time() - workflow_start_time
             logger.info(f"Prompt-based workflow completed in {total_time:.2f}s (detection={detection_time:.2f}s, topic={topic_time:.2f}s)")
@@ -1879,31 +1885,31 @@ async def agent_graph_workflow_with_styles(
                 'language': language,
                 'use_default_template': True  # Signal to frontend to use default template + trigger auto-complete
             }
-        
+
         # For forced diagram type (manual generation), use full agent workflow
         # Add learning sheet detection
         is_learning_sheet = _detect_learning_sheet_from_prompt(user_prompt, language)
         logger.debug(f"Learning sheet detected: {is_learning_sheet}")
-        
+
         # Clean the prompt for learning sheets to generate actual content, not meta-content
         generation_prompt = _clean_prompt_for_learning_sheet(user_prompt) if is_learning_sheet else user_prompt
         if is_learning_sheet:
             logger.debug(f"Using cleaned prompt for generation: '{generation_prompt}'")
-        
+
         # RAG Integration: Retrieve relevant context from Knowledge Space if enabled
         rag_context = None
         if use_rag and user_id:
             try:
                 from services.rag_service import RAGService
                 from config.database import SessionLocal
-                
+
                 rag_service = RAGService()
                 db = SessionLocal()
                 try:
                     # Check if user has knowledge base
                     if rag_service.has_knowledge_base(db, user_id):
                         logger.info(f"[RAG] Retrieving context for user {user_id}, top_k={rag_top_k}")
-                        
+
                         # Retrieve relevant context using hybrid search
                         rag_context_chunks = rag_service.retrieve_context(
                             db=db,
@@ -1915,17 +1921,17 @@ async def agent_graph_workflow_with_styles(
                             source='diagram_generation',
                             source_context={'stage': 'generation', 'diagram_type': diagram_type}
                         )
-                        
+
                         if rag_context_chunks:
                             # Format context for prompt enhancement
                             rag_context = "\n\n".join([
-                                f"[知识库参考 {i+1}]: {chunk}" 
+                                f"[知识库参考 {i+1}]: {chunk}"
                                 for i, chunk in enumerate(rag_context_chunks)
                             ]) if language == 'zh' else "\n\n".join([
-                                f"[Knowledge Base Reference {i+1}]: {chunk}" 
+                                f"[Knowledge Base Reference {i+1}]: {chunk}"
                                 for i, chunk in enumerate(rag_context_chunks)
                             ])
-                            
+
                             logger.info(f"[RAG] Retrieved {len(rag_context_chunks)} context chunks for diagram generation")
                         else:
                             logger.debug(f"[RAG] No relevant context found for query: {generation_prompt[:50]}...")
@@ -1933,10 +1939,10 @@ async def agent_graph_workflow_with_styles(
                         logger.debug(f"[RAG] User {user_id} has no knowledge base, skipping RAG")
                 finally:
                     db.close()
-            except Exception as e:
+            except Exception as  # pylint: disable=broad-except e:
                 logger.warning(f"[RAG] Failed to retrieve context: {e}", exc_info=True)
                 # Continue without RAG context if retrieval fails
-        
+
         # Enhance prompt with RAG context if available
         if rag_context:
             if language == 'zh':
@@ -1953,17 +1959,17 @@ Relevant Context (from user's knowledge base):
 {rag_context}
 
 Please generate a more accurate and detailed diagram based on the above context."""
-            
+
             logger.debug(f"[RAG] Enhanced prompt with {len(rag_context)} characters of context")
             generation_prompt = enhanced_prompt
-        
+
         # Generate specification using the appropriate agent
         generation_start = time.time()
         spec = await _generate_spec_with_agent(
-            generation_prompt, 
-            diagram_type, 
-            language, 
-            dimension_preference, 
+            generation_prompt,
+            diagram_type,
+            language,
+            dimension_preference,
             model,
             # Token tracking parameters
             user_id=user_id,
@@ -1979,7 +1985,7 @@ Please generate a more accurate and detailed diagram based on the above context.
         )
         generation_time = time.time() - generation_start
         logger.info(f"Diagram generation completed in {generation_time:.2f}s for {diagram_type}")
-        
+
         if not spec or (isinstance(spec, dict) and spec.get('error')):
             logger.error(f"Failed to generate spec for {diagram_type}")
             return {
@@ -1992,16 +1998,16 @@ Please generate a more accurate and detailed diagram based on the above context.
                 'is_learning_sheet': is_learning_sheet,
                 'hidden_node_percentage': 0
             }
-        
+
         # Calculate hidden percentage for learning sheets (20%)
         hidden_percentage = 0.2 if is_learning_sheet else 0
-        
+
         # Add learning sheet metadata to spec object so renderers can access it
         if isinstance(spec, dict):
             spec['is_learning_sheet'] = is_learning_sheet
             spec['hidden_node_percentage'] = hidden_percentage
             logger.debug(f"Added learning sheet metadata to spec: is_learning_sheet={is_learning_sheet}, hidden_percentage={hidden_percentage}")
-        
+
         # Add metadata to the result
         result = {
             'success': True,
@@ -2013,11 +2019,11 @@ Please generate a more accurate and detailed diagram based on the above context.
             'is_learning_sheet': is_learning_sheet,  # NEW
             'hidden_node_percentage': hidden_percentage  # NEW
         }
-        
+
         total_time = time.time() - workflow_start_time
         logger.info(f"Simplified workflow completed successfully in {total_time:.2f}s (breakdown: detection={detection_time:.2f}s, topic={topic_time:.2f}s, generation={generation_time:.2f}s), learning sheet: {is_learning_sheet}")
         return result
-        
+
     except ValueError as e:
         logger.error(f"Input validation failed: {e}")
         return {
@@ -2028,7 +2034,7 @@ Please generate a more accurate and detailed diagram based on the above context.
             'style_preferences': {},
             'language': language
         }
-    except Exception as e:
+    except Exception as  # pylint: disable=broad-except e:
         logger.error(f"Simplified workflow failed: {e}")
         return {
             'success': False,
@@ -2047,56 +2053,56 @@ Please generate a more accurate and detailed diagram based on the above context.
 class MainAgent:
     """
     Main Agent class that provides the BaseAgent interface for the entry point module.
-    
+
     This class wraps the functional approach used in this module to provide
     architectural consistency with other agents while maintaining the existing
     API that the application depends on.
     """
-    
+
     def __init__(self):
         """Initialize the main agent."""
         self.language = 'zh'  # Default language
         self.logger = logger
-    
+
     def generate_graph(self, user_prompt: str, language: str = "zh") -> dict:
         """
         Generate a graph specification from user prompt.
-        
+
         This method implements the BaseAgent interface by delegating to the
         existing functional API in this module.
-        
+
         Args:
             user_prompt: User's input prompt
             language: Language for processing ('zh' or 'en')
-            
+
         Returns:
             dict: Graph specification with styling and metadata
         """
         try:
             # Use LLM-based topic extraction instead of hardcoded string manipulation
             central_topic = extract_central_topic_llm(user_prompt, language)
-            
+
             if not central_topic.strip():
                 return create_error_response("Failed to extract topic from prompt", "extraction")
-            
+
             # Use default diagram type and style preferences
             diagram_type = 'concept_map'
             style_preferences = {}
-            
+
             # Generate the graph specification using the simplified workflow
             ConceptMapAgent = _get_concept_map_agent()
             agent = ConceptMapAgent()
             result = agent.generate_graph(user_prompt, language)
             return result.get('spec', create_error_response("Failed to generate concept map", "generation"))
-            
-        except Exception as e:
+
+        except Exception as  # pylint: disable=broad-except e:
             logger.error(f"MainAgent: Generation error: {e}")
             return create_error_response(f"MainAgent generation failed: {str(e)}", "main_agent")
-    
-    def set_language(self, language: str):
+
+    def set_language(self, language: str) -> None:
         """Set the language for this agent."""
         self.language = language
-    
+
     def get_language(self) -> str:
         """Get the current language setting."""
         return self.language

@@ -1,13 +1,11 @@
+﻿from typing import Optional, Dict, Any, List
 import logging
-from typing import Optional, Dict, Any, List
 
 from fastapi import APIRouter, Depends, HTTPException, status, Request, Header
 
 from models.auth import User
-from models.messages import Messages
+from models.messages import Messages, Language
 from utils.auth import AUTH_MODE
-
-from ..dependencies import get_language_dependency, require_admin
 
 logger = logging.getLogger(__name__)
 
@@ -17,18 +15,18 @@ router = APIRouter(prefix="/admin/bayi/ip-whitelist", tags=["Admin - Bayi IP Whi
 async def list_bayi_ip_whitelist(
     request: Request,
     current_user: User = Depends(require_admin),
-    lang: str = Depends(get_language_dependency)
+    lang: Language = Depends(get_language_dependency)
 ) -> Dict[str, Any]:
     """List all whitelisted IPs for bayi mode (ADMIN ONLY)"""
     if AUTH_MODE != "bayi":
         error_msg = Messages.error("feature_not_available", lang)
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Bayi mode not enabled")
-    
+
     try:
-        from services.redis_bayi_whitelist import get_bayi_whitelist
+        from services.redis.redis_bayi_whitelist import get_bayi_whitelist
         whitelist = get_bayi_whitelist()
         ips = whitelist.list_ips()
-        
+
         return {
             "ips": ips,
             "count": len(ips)
@@ -45,24 +43,24 @@ async def add_bayi_ip_whitelist(
     request_body: dict,
     http_request: Request,
     current_user: User = Depends(require_admin),
-    lang: str = Depends(get_language_dependency)
+    lang: Language = Depends(get_language_dependency)
 ) -> Dict[str, str]:
     """Add IP to bayi IP whitelist (ADMIN ONLY)"""
     if AUTH_MODE != "bayi":
         error_msg = Messages.error("feature_not_available", lang)
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Bayi mode not enabled")
-    
+
     if "ip" not in request_body:
         error_msg = Messages.error("missing_required_fields", lang, "ip")
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
-    
+
     ip = request_body["ip"].strip()
-    
+
     try:
-        from services.redis_bayi_whitelist import get_bayi_whitelist
+        from services.redis.redis_bayi_whitelist import get_bayi_whitelist
         whitelist = get_bayi_whitelist()
         success = whitelist.add_ip(ip, added_by=current_user.phone)
-        
+
         if success:
             logger.info(f"Admin {current_user.phone} added IP {ip} to bayi whitelist")
             return {
@@ -89,18 +87,18 @@ async def remove_bayi_ip_whitelist(
     ip: str,
     request: Request,
     current_user: User = Depends(require_admin),
-    lang: str = Depends(get_language_dependency)
+    lang: Language = Depends(get_language_dependency)
 ) -> Dict[str, str]:
     """Remove IP from bayi IP whitelist (ADMIN ONLY)"""
     if AUTH_MODE != "bayi":
         error_msg = Messages.error("feature_not_available", lang)
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Bayi mode not enabled")
-    
+
     try:
-        from services.redis_bayi_whitelist import get_bayi_whitelist
+        from services.redis.redis_bayi_whitelist import get_bayi_whitelist
         whitelist = get_bayi_whitelist()
         success = whitelist.remove_ip(ip)
-        
+
         if success:
             logger.info(f"Admin {current_user.phone} removed IP {ip} from bayi whitelist")
             return {

@@ -1,3 +1,11 @@
+﻿from dataclasses import dataclass
+from typing import AsyncGenerator, Dict, Any, Optional, List, Tuple
+import json
+import logging
+import os
+import time
+
+
 """
 Async Dify API Client for FastAPI MindGraph Application
 ========================================================
@@ -21,14 +29,6 @@ All Rights Reserved
 Proprietary License
 """
 
-import aiohttp
-import json
-import time
-import logging
-import os
-from typing import AsyncGenerator, Dict, Any, Optional, List, Tuple
-from dataclasses import dataclass
-from io import BytesIO
 
 logger = logging.getLogger(__name__)
 
@@ -200,12 +200,12 @@ class DifyFile:
 
 class AsyncDifyClient:
     """Async client for interacting with Dify API using aiohttp"""
-    
+
     def __init__(self, api_key: str, api_url: str, timeout: int = 30):
         self.api_key = api_key
         self.api_url = api_url.rstrip('/')
         self.timeout = timeout
-        
+
     def _get_headers(self, content_type: str = "application/json") -> Dict[str, str]:
         """Get common request headers"""
         headers = {"Authorization": f"Bearer {self.api_key}"}
@@ -214,9 +214,9 @@ class AsyncDifyClient:
         return headers
 
     async def _request(
-        self, 
-        method: str, 
-        endpoint: str, 
+        self,
+        method: str,
+        endpoint: str,
         json_data: Optional[Dict] = None,
         params: Optional[Dict] = None,
         data: Optional[aiohttp.FormData] = None,
@@ -225,11 +225,11 @@ class AsyncDifyClient:
         """Make a non-streaming HTTP request to Dify API"""
         url = f"{self.api_url}/{endpoint.lstrip('/')}"
         timeout = aiohttp.ClientTimeout(total=self.timeout)
-        
+
         headers = self._get_headers() if not data else self._get_headers(content_type="")
         if custom_headers:
             headers.update(custom_headers)
-        
+
         async with aiohttp.ClientSession(timeout=timeout) as session:
             async with session.request(
                 method, url, json=json_data, params=params, data=data, headers=headers
@@ -245,7 +245,7 @@ class AsyncDifyClient:
                         error_code = error_data.get('code')
                     except:
                         pass
-                    
+
                     # Map status codes and error codes to specific exceptions
                     if response.status == 404:
                         if 'conversation' in endpoint.lower() or error_code == 'conversation_not_exists':
@@ -273,7 +273,7 @@ class AsyncDifyClient:
                             raise DifyWorkflowIdFormatError(error_msg)
                         elif error_code == 'completion_request_error':
                             raise DifyCompletionRequestError(error_msg)
-                    
+
                     # Generic error for unmapped cases
                     raise DifyAPIError(error_msg, status_code=response.status, error_code=error_code)
                 return await response.json()
@@ -281,11 +281,11 @@ class AsyncDifyClient:
     # =========================================================================
     # Chat Messages
     # =========================================================================
-    
+
     async def stream_chat(
-        self, 
-        message: str, 
-        user_id: str, 
+        self,
+        message: str,
+        user_id: str,
         conversation_id: Optional[str] = None,
         files: Optional[List[DifyFile]] = None,
         inputs: Optional[Dict[str, Any]] = None,
@@ -296,7 +296,7 @@ class AsyncDifyClient:
     ) -> AsyncGenerator[Dict[str, Any], None]:
         """
         Stream chat response from Dify API (async version).
-        
+
         Args:
             message: User's message (query)
             user_id: Unique user identifier
@@ -308,16 +308,16 @@ class AsyncDifyClient:
             trace_id: Optional trace ID for distributed tracing
             trace_id_header: If True, use X-Trace-Id header (highest priority per docs).
                            If False, use trace_id in request body.
-            
+
         Yields:
             Dict containing event data from Dify API
             Events: message, message_file, message_end, message_replace,
                     workflow_started, node_started, node_finished, workflow_finished,
                     tts_message, tts_message_end, error, ping
         """
-        
+
         logger.debug(f"[DIFY] Async streaming message: {message[:50]}... for user {user_id}")
-        
+
         payload = {
             "inputs": inputs or {},
             "query": message,
@@ -325,14 +325,14 @@ class AsyncDifyClient:
             "user": user_id,
             "auto_generate_name": auto_generate_name
         }
-        
+
         if conversation_id:
             payload["conversation_id"] = conversation_id
         if files:
             payload["files"] = [f.to_dict() for f in files]
         if workflow_id:
             payload["workflow_id"] = workflow_id
-        
+
         # Trace ID handling: header has highest priority per official docs
         headers = self._get_headers()
         if trace_id:
@@ -340,20 +340,20 @@ class AsyncDifyClient:
                 headers["X-Trace-Id"] = trace_id
             else:
                 payload["trace_id"] = trace_id
-        
+
         try:
             url = f"{self.api_url}/chat-messages"
             logger.debug(f"[DIFY] Making async request to: {url}")
-            
+
             timeout = aiohttp.ClientTimeout(
                 total=None,
                 connect=10,
                 sock_read=self.timeout
             )
-            
+
             async with aiohttp.ClientSession(timeout=timeout) as session:
                 async with session.post(url, json=payload, headers=headers) as response:
-                    
+
                     if response.status != 200:
                         error_msg = f"HTTP {response.status}: API request failed"
                         try:
@@ -364,41 +364,41 @@ class AsyncDifyClient:
                         logger.error(f"Dify API error: {error_msg}")
                         yield {'event': 'error', 'error': error_msg, 'timestamp': int(time.time() * 1000)}
                         return
-                    
+
                     async for line_bytes in response.content:
                         try:
                             line = line_bytes.decode('utf-8').strip()
                             if not line:
                                 continue
-                            
+
                             if line.startswith('data: '):
                                 data_content = line[6:]
                             elif line.startswith('data:'):
                                 data_content = line[5:]
                             else:
                                 continue
-                            
+
                             if data_content.strip():
                                 if data_content.strip() == '[DONE]':
                                     logger.debug("Received [DONE] signal from Dify")
                                     break
-                                
+
                                 chunk_data = json.loads(data_content.strip())
                                 chunk_data['timestamp'] = int(time.time() * 1000)
                                 yield chunk_data
-                                
+
                         except json.JSONDecodeError:
                             continue
-                        except Exception as e:
+                        except Exception as  # pylint: disable=broad-except e:
                             logger.error(f"Error processing line: {e}")
                             continue
-                    
+
                     logger.debug(f"[DIFY] Async stream completed successfully")
-                            
+
         except aiohttp.ClientError as e:
             logger.error(f"Dify API async request error: {e}")
             yield {'event': 'error', 'error': str(e), 'timestamp': int(time.time() * 1000)}
-        except Exception as e:
+        except Exception as  # pylint: disable=broad-except e:
             logger.error(f"Dify API async error: {e}")
             yield {'event': 'error', 'error': str(e), 'timestamp': int(time.time() * 1000)}
 
@@ -426,20 +426,20 @@ class AsyncDifyClient:
             payload["files"] = [f.to_dict() for f in files]
         if workflow_id:
             payload["workflow_id"] = workflow_id
-            
+
         return await self._request("POST", "/chat-messages", json_data=payload)
 
     async def stop_chat(self, task_id: str, user_id: str) -> Dict[str, Any]:
         """Stop a streaming response"""
         return await self._request(
-            "POST", f"/chat-messages/{task_id}/stop", 
+            "POST", f"/chat-messages/{task_id}/stop",
             json_data={"user": user_id}
         )
 
     # =========================================================================
     # Messages
     # =========================================================================
-    
+
     async def get_messages(
         self,
         conversation_id: str,
@@ -475,7 +475,7 @@ class AsyncDifyClient:
     # =========================================================================
     # Conversations
     # =========================================================================
-    
+
     async def get_conversations(
         self,
         user_id: str,
@@ -492,7 +492,7 @@ class AsyncDifyClient:
     async def delete_conversation(self, conversation_id: str, user_id: str) -> Dict[str, Any]:
         """Delete a conversation"""
         return await self._request(
-            "DELETE", f"/conversations/{conversation_id}", 
+            "DELETE", f"/conversations/{conversation_id}",
             json_data={"user": user_id}
         )
 
@@ -538,7 +538,7 @@ class AsyncDifyClient:
     # =========================================================================
     # Files
     # =========================================================================
-    
+
     async def upload_file(
         self,
         user_id: str,
@@ -549,14 +549,14 @@ class AsyncDifyClient:
     ) -> Dict[str, Any]:
         """
         Upload a file for use in chat messages.
-        
+
         Args:
             user_id: User identifier
             file_path: Path to file (mutually exclusive with file_bytes)
             file_bytes: File content as bytes (mutually exclusive with file_path)
             filename: Filename (required if using file_bytes, optional if using file_path)
             content_type: MIME type (optional, will be inferred if not provided)
-            
+
         Returns:
             Dict containing file upload response with id, name, size, etc.
         """
@@ -564,10 +564,10 @@ class AsyncDifyClient:
             raise ValueError("Either file_path or file_bytes must be provided")
         if file_path and file_bytes:
             raise ValueError("Cannot provide both file_path and file_bytes")
-        
+
         data = aiohttp.FormData()
         data.add_field('user', user_id)
-        
+
         if file_path:
             if not os.path.exists(file_path):
                 raise FileNotFoundError(f"File not found: {file_path}")
@@ -580,7 +580,7 @@ class AsyncDifyClient:
             if not filename:
                 raise ValueError("filename is required when using file_bytes")
             data.add_field('file', BytesIO(file_bytes), filename=filename, content_type=content_type)
-        
+
         return await self._request("POST", "/files/upload", data=data)
 
     async def get_file_preview_url(self, file_id: str, as_attachment: bool = False) -> str:
@@ -597,14 +597,14 @@ class AsyncDifyClient:
     ) -> Tuple[bytes, Dict[str, str]]:
         """
         Download/preview a file from Dify API.
-        
+
         Args:
             file_id: The unique identifier of the file
             as_attachment: Whether to force download as attachment (default False for preview)
-            
+
         Returns:
             Tuple of (file_content_bytes, response_headers_dict)
-            
+
         Raises:
             DifyFileNotFoundError: If file not found (404)
             DifyFileAccessDeniedError: If file access denied (403)
@@ -614,10 +614,10 @@ class AsyncDifyClient:
         params = {}
         if as_attachment:
             params["as_attachment"] = "true"
-        
+
         timeout = aiohttp.ClientTimeout(total=self.timeout)
         headers = self._get_headers()
-        
+
         async with aiohttp.ClientSession(timeout=timeout) as session:
             async with session.get(url, params=params, headers=headers) as response:
                 if response.status == 404:
@@ -632,7 +632,7 @@ class AsyncDifyClient:
                     except:
                         pass
                     raise DifyAPIError(error_msg, status_code=response.status)
-                
+
                 # Extract response headers
                 response_headers = {
                     'Content-Type': response.headers.get('Content-Type', ''),
@@ -641,14 +641,14 @@ class AsyncDifyClient:
                     'Cache-Control': response.headers.get('Cache-Control', ''),
                     'Accept-Ranges': response.headers.get('Accept-Ranges', '')
                 }
-                
+
                 content = await response.read()
                 return content, response_headers
 
     # =========================================================================
     # Audio
     # =========================================================================
-    
+
     async def audio_to_text(self, audio_file_path: str, user_id: str) -> Dict[str, Any]:
         """Convert speech to text"""
         data = aiohttp.FormData()
@@ -669,7 +669,7 @@ class AsyncDifyClient:
             payload["message_id"] = message_id
         if text:
             payload["text"] = text
-            
+
         timeout = aiohttp.ClientTimeout(total=self.timeout)
         async with aiohttp.ClientSession(timeout=timeout) as session:
             async with session.post(url, json=payload, headers=self._get_headers()) as response:
@@ -680,7 +680,7 @@ class AsyncDifyClient:
     # =========================================================================
     # App Information
     # =========================================================================
-    
+
     async def get_app_info(self) -> Dict[str, Any]:
         """Get app basic information (name, description, tags)"""
         return await self._request("GET", "/info")
@@ -689,7 +689,7 @@ class AsyncDifyClient:
         """
         Get app parameters including opening_statement, suggested_questions,
         user_input_form, file_upload settings, speech settings, etc.
-        
+
         Returns:
             Dict containing:
             - opening_statement: Opening greeting message
@@ -714,7 +714,7 @@ class AsyncDifyClient:
     # =========================================================================
     # Feedbacks
     # =========================================================================
-    
+
     async def get_app_feedbacks(self, page: int = 1, limit: int = 20) -> Dict[str, Any]:
         """Get all app feedbacks"""
         return await self._request("GET", "/app/feedbacks", params={"page": page, "limit": limit})
@@ -722,7 +722,7 @@ class AsyncDifyClient:
     # =========================================================================
     # Annotations
     # =========================================================================
-    
+
     async def get_annotations(self, page: int = 1, limit: int = 20) -> Dict[str, Any]:
         """Get annotation list"""
         return await self._request("GET", "/apps/annotations", params={"page": page, "limit": limit})

@@ -1,3 +1,7 @@
+﻿from typing import Dict, List, Tuple, Set, Any, Optional
+import logging
+
+
 """
 Tree Map Agent
 
@@ -17,26 +21,22 @@ All Rights Reserved
 Proprietary License
 """
 
-from __future__ import annotations
 
-import logging
-from typing import Dict, List, Tuple, Set, Any, Optional
-from ..core.base_agent import BaseAgent
 
 logger = logging.getLogger(__name__)
 
 
 class TreeMapAgent(BaseAgent):
     """Utility agent to improve tree map specs before rendering."""
-    
+
     def __init__(self, model='qwen'):
         super().__init__(model=model)
         self.diagram_type = "tree_map"
-    
+
     async def generate_graph(
-        self, 
-        prompt: str, 
-        language: str = "en", 
+        self,
+        prompt: str,
+        language: str = "en",
         dimension_preference: str = None,
         # Token tracking parameters
         user_id: Optional[int] = None,
@@ -57,7 +57,7 @@ class TreeMapAgent(BaseAgent):
             if dimension_only_mode and fixed_dimension:
                 # Scenario 3: Dimension-only mode - generate topic and children based on dimension
                 logger.debug(f"TreeMapAgent: Dimension-only mode - generating topic and children for dimension '{fixed_dimension}'")
-                spec = await self._generate_from_dimension_only(
+                spec = await self._generate_from_dimension_only  # pylint: disable=protected-access(
                     fixed_dimension,
                     language,
                     user_id=user_id,
@@ -67,9 +67,9 @@ class TreeMapAgent(BaseAgent):
                 )
             else:
                 # Scenario 1 or 2: Standard generation or fixed dimension with topic
-                spec = await self._generate_tree_map_spec(
-                    prompt, 
-                    language, 
+                spec = await self._generate_tree_map_spec  # pylint: disable=protected-access(
+                    prompt,
+                    language,
                     dimension_preference,
                     user_id=user_id,
                     organization_id=organization_id,
@@ -82,7 +82,7 @@ class TreeMapAgent(BaseAgent):
                     'success': False,
                     'error': 'Failed to generate tree map specification'
                 }
-            
+
             # Validate the generated spec
             is_valid, validation_msg = self.validate_output(spec)
             if not is_valid:
@@ -91,7 +91,7 @@ class TreeMapAgent(BaseAgent):
                     'success': False,
                     'error': f'Generated invalid specification: {validation_msg}'
                 }
-            
+
             # Enhance the spec with layout and dimensions
             enhanced_result = await self.enhance_spec(spec)
             if not enhanced_result.get('success'):
@@ -100,25 +100,25 @@ class TreeMapAgent(BaseAgent):
                     'error': enhanced_result.get('error', 'Enhancement failed')
                 }
             enhanced_spec = enhanced_result['spec']
-            
+
             logger.info(f"TreeMapAgent: Tree map generation completed successfully")
             return {
                 'success': True,
                 'spec': enhanced_spec,
                 'diagram_type': self.diagram_type
             }
-            
-        except Exception as e:
+
+        except Exception as  # pylint: disable=broad-except e:
             logger.error(f"TreeMapAgent: Tree map generation failed: {e}")
             return {
                 'success': False,
                 'error': f'Generation failed: {str(e)}'
             }
-    
+
     async def _generate_tree_map_spec(
-        self, 
-        prompt: str, 
-        language: str, 
+        self,
+        prompt: str,
+        language: str,
         dimension_preference: str = None,
         # Token tracking parameters
         user_id: Optional[int] = None,
@@ -132,12 +132,12 @@ class TreeMapAgent(BaseAgent):
         try:
             # Import centralized prompt system
             from prompts import get_prompt
-            
+
             # Choose prompt based on whether user has specified a fixed dimension
             if fixed_dimension:
                 logger.debug(f"TreeMapAgent: Using FIXED dimension mode with '{fixed_dimension}'")
                 system_prompt = get_prompt("tree_map_agent", language, "fixed_dimension")
-                
+
                 if not system_prompt:
                     logger.warning("TreeMapAgent: No fixed_dimension prompt found, using fallback")
                     # Fallback prompt for fixed dimension mode
@@ -157,7 +157,7 @@ Generate a tree map with 3-5 categories (based on the specified dimension "{fixe
 Return JSON: {{"topic": "Topic", "dimension": "{fixed_dimension}", "children": [...], "alternative_dimensions": [...]}}
 
 CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" - do NOT change it!"""
-                
+
                 if language == "zh":
                     user_prompt = f"主题：{prompt}\n\n请使用指定的分类维度「{fixed_dimension}」生成树形图。"
                 else:
@@ -165,11 +165,11 @@ CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" - do NOT c
             else:
                 # No fixed dimension - use standard generation prompt
                 system_prompt = get_prompt("tree_map_agent", language, "generation")
-                
+
                 if not system_prompt:
                     logger.error(f"TreeMapAgent: No prompt found for language {language}")
                     return None
-                
+
                 # Build user prompt with dimension preference if specified
                 if dimension_preference:
                     if language == "zh":
@@ -179,11 +179,11 @@ CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" - do NOT c
                     logger.debug(f"TreeMapAgent: User specified dimension preference: {dimension_preference}")
                 else:
                     user_prompt = f"请为以下描述创建一个树形图：{prompt}" if language == "zh" else f"Please create a tree map for the following description: {prompt}"
-            
+
             # Call middleware directly - clean and efficient!
-            from services.llm_service import llm_service
+            from services.llm import llm_service
             from config.settings import config
-            
+
             response = await llm_service.chat(
                 prompt=user_prompt,
                 model=self.model,
@@ -197,14 +197,14 @@ CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" - do NOT c
                 endpoint_path=endpoint_path,
                 diagram_type='tree_map'
             )
-            
+
             if not response:
                 logger.error("TreeMapAgent: No response from LLM")
                 return None
-            
+
             # Extract JSON from response
             from ..core.agent_utils import extract_json_from_response
-            
+
             # Check if response is already a dictionary (from mock client)
             if isinstance(response, dict):
                 spec = response
@@ -214,7 +214,7 @@ CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" - do NOT c
                 response_str = str(response)
                 logger.debug(f"TreeMapAgent: Raw LLM response: {response_str[:500]}...")
                 spec = extract_json_from_response(response_str, allow_partial=True)
-                
+
                 # Check if we got a non-JSON response error
                 if isinstance(spec, dict) and spec.get('_error') == 'non_json_response':
                     # LLM returned non-JSON asking for more info - retry with more explicit prompt
@@ -222,7 +222,7 @@ CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" - do NOT c
                         f"TreeMapAgent: LLM returned non-JSON response asking for more info. "
                         f"Retrying with explicit JSON-only prompt."
                     )
-                    
+
                     # Retry with more explicit prompt emphasizing JSON-only output
                     retry_user_prompt = (
                         f"{user_prompt}\n\n"
@@ -233,7 +233,7 @@ CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" - do NOT c
                         f"IMPORTANT: You MUST respond with valid JSON only. Do not ask for more information. "
                         f"If the prompt is unclear, make reasonable assumptions and generate the JSON specification directly."
                     )
-                    
+
                     retry_response = await llm_service.chat(
                         prompt=retry_user_prompt,
                         model=self.model,
@@ -246,13 +246,13 @@ CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" - do NOT c
                         endpoint_path=endpoint_path,
                         diagram_type='tree_map'
                     )
-                    
+
                     # Try extraction again
                     if isinstance(retry_response, dict):
                         spec = retry_response
                     else:
                         spec = extract_json_from_response(str(retry_response))
-                        
+
                         # If still non-JSON, return None
                         if isinstance(spec, dict) and spec.get('_error') == 'non_json_response':
                             logger.error(
@@ -260,26 +260,26 @@ CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" - do NOT c
                                 f"Giving up after 1 retry attempt."
                             )
                             return None
-            
+
             if not spec or (isinstance(spec, dict) and spec.get('_error')):
                 # Log the actual response for debugging
                 response_preview = str(response)[:500] + "..." if len(str(response)) > 500 else str(response)
                 logger.error(f"TreeMapAgent: Failed to extract JSON from LLM response. Response preview: {response_preview}")
                 return None
-            
+
             # If fixed_dimension was provided, enforce it regardless of what LLM returned
             if fixed_dimension:
                 spec['dimension'] = fixed_dimension
                 logger.debug(f"TreeMapAgent: Enforced FIXED dimension: {fixed_dimension}")
-            
+
             # Log the extracted spec for debugging
             logger.debug(f"TreeMapAgent: Extracted spec: {spec}")
             return spec
-            
-        except Exception as e:
+
+        except Exception as  # pylint: disable=broad-except e:
             logger.error(f"TreeMapAgent: Error in spec generation: {e}")
             return None
-    
+
     async def _generate_from_dimension_only(
         self,
         dimension: str,
@@ -292,44 +292,44 @@ CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" - do NOT c
     ) -> Optional[Dict]:
         """
         Generate tree map from a classification dimension only (no topic).
-        
+
         This is Scenario 3 of the three-scenario system:
         - Scenario 1: Topic only → standard generation
         - Scenario 2: Topic + dimension → fixed_dimension mode
         - Scenario 3: Dimension only (no topic) → generate topic and children (this method)
-        
+
         Args:
             dimension: The classification dimension specified by user (e.g., "Biological Taxonomy", "Habitat")
             language: Language for generation
-            
+
         Returns:
             Spec with generated topic and children following the specified dimension
         """
         try:
             logger.debug(f"TreeMapAgent: Dimension-only mode - generating topic and children for dimension '{dimension}'")
-            
+
             # Import centralized prompt system
             from prompts import get_prompt
-            
+
             # Get the dimension-only prompt
             system_prompt = get_prompt("tree_map_agent", language, "dimension_only")
-            
+
             if not system_prompt:
                 logger.warning("TreeMapAgent: No dimension_only prompt found, using fixed_dimension prompt as fallback")
                 system_prompt = get_prompt("tree_map_agent", language, "fixed_dimension")
-            
+
             # Build user prompt with the dimension
             if language == "zh":
                 user_prompt = f"用户指定的分类维度：{dimension}\n\n请根据这个分类维度生成一个合适的主题和类别。"
             else:
                 user_prompt = f"User's specified classification dimension: {dimension}\n\nGenerate a suitable topic and categories following this classification dimension."
-            
+
             logger.debug(f"User prompt: {user_prompt}")
-            
+
             # Call LLM
-            from services.llm_service import llm_service
+            from services.llm import llm_service
             from config.settings import config
-            
+
             response = await llm_service.chat(
                 prompt=user_prompt,
                 model=self.model,
@@ -342,56 +342,56 @@ CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" - do NOT c
                 endpoint_path=endpoint_path,
                 diagram_type='tree_map'
             )
-            
+
             logger.debug(f"LLM response: {response[:500] if response else 'None'}...")
-            
+
             # Extract JSON from response
             from ..core.agent_utils import extract_json_from_response
-            
+
             if isinstance(response, dict):
                 result = response
             else:
                 result = extract_json_from_response(str(response))
-            
+
             if not result:
                 logger.error("TreeMapAgent: Failed to extract JSON from dimension-only response")
                 return None
-            
+
             # If fixed_dimension was provided, enforce it regardless of what LLM returned
             if dimension:
                 result['dimension'] = dimension
                 logger.debug(f"TreeMapAgent: Enforced FIXED dimension: {dimension}")
-            
+
             logger.debug(f"TreeMapAgent: Dimension-only complete - dimension: '{dimension}', topic: '{result.get('topic', 'N/A')}'")
-            
+
             return result
-            
-        except Exception as e:
+
+        except Exception as  # pylint: disable=broad-except e:
             logger.error(f"TreeMapAgent: Error in dimension-only mode: {e}")
             return None
-    
 
-    
+
+
     def validate_output(self, spec: Dict) -> Tuple[bool, str]:
         """Validate a tree map specification."""
         try:
             if not isinstance(spec, dict):
                 return False, "Spec must be a dictionary"
-            
+
             topic = spec.get("topic")
             children = spec.get("children")
             dimension = spec.get("dimension")
             alternative_dimensions = spec.get("alternative_dimensions")
-            
+
             if not topic or not isinstance(topic, str):
                 return False, "Missing or invalid topic"
             if not children or not isinstance(children, list):
                 return False, "Missing or invalid children"
-            
+
             # dimension field is optional but should be a string if present
             if dimension is not None and not isinstance(dimension, str):
                 return False, "Invalid dimension field - must be a string"
-            
+
             # alternative_dimensions field is optional but should be a list if present
             if alternative_dimensions is not None:
                 if not isinstance(alternative_dimensions, list):
@@ -399,9 +399,9 @@ CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" - do NOT c
                 # Check that all items are strings
                 if not all(isinstance(d, str) for d in alternative_dimensions):
                     return False, "All alternative dimensions must be strings"
-            
+
             return True, "Valid tree map specification"
-        except Exception as e:
+        except Exception as  # pylint: disable=broad-except e:
             return False, f"Validation error: {str(e)}"
 
     MAX_BRANCHES: int = 10
@@ -569,7 +569,7 @@ CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" - do NOT c
                     "height": base_height,
                 },
             }
-            
+
             # Preserve dimension and alternative_dimensions fields from original spec
             if "dimension" in spec:
                 enhanced_spec["dimension"] = spec["dimension"]
@@ -577,7 +577,7 @@ CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" - do NOT c
                 enhanced_spec["alternative_dimensions"] = spec["alternative_dimensions"]
 
             return {"success": True, "spec": enhanced_spec}
-        except Exception as exc:
+        except Exception as  # pylint: disable=broad-except exc:
             return {"success": False, "error": f"Unexpected error: {exc}"}
 
 

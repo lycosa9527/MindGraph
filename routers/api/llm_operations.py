@@ -1,3 +1,18 @@
+﻿from typing import
+import asyncio
+import json
+import logging
+import time
+
+from fastapi import APIRouter, HTTPException, Depends
+from fastapi.responses import JSONResponse, StreamingResponse
+
+from agents import main_agent as agent
+from models import GenerateRequest, LLMHealthResponse, Messages, get_request_language
+from models.auth import User
+from services.llm import llm_service
+from utils.auth import get_current_user_or_api_key
+
 """
 LLM Operations API Router
 ==========================
@@ -13,18 +28,6 @@ All Rights Reserved
 Proprietary License
 """
 
-import json
-import logging
-import time
-import asyncio
-from typing import Optional
-from fastapi import APIRouter, HTTPException, Depends
-from fastapi.responses import JSONResponse, StreamingResponse
-from models.auth import User
-from utils.auth import get_current_user_or_api_key
-from models import GenerateRequest, LLMHealthResponse, Messages, get_request_language
-from agents import main_agent as agent
-from services.llm_service import llm_service
 
 logger = logging.getLogger(__name__)
 
@@ -35,10 +38,10 @@ router = APIRouter(tags=["api"])
 async def get_llm_metrics(model: Optional[str] = None):
     """
     Get performance metrics for LLM models.
-    
+
     Query Parameters:
         model (optional): Specific model name to get metrics for
-        
+
     Returns:
         JSON with performance metrics including:
         - Total requests
@@ -46,14 +49,14 @@ async def get_llm_metrics(model: Optional[str] = None):
         - Response times (avg, min, max)
         - Circuit breaker state
         - Recent errors
-        
+
     Examples:
         GET /api/llm/metrics - Get metrics for all models
         GET /api/llm/metrics?model=qwen - Get metrics for specific model
     """
     try:
         metrics = llm_service.get_performance_metrics(model)
-        
+
         return JSONResponse(
             content={
                 'status': 'success',
@@ -61,7 +64,7 @@ async def get_llm_metrics(model: Optional[str] = None):
                 'timestamp': int(time.time())
             }
         )
-        
+
     except Exception as e:
         logger.error(f"Error getting LLM metrics: {e}", exc_info=True)
         raise HTTPException(
@@ -74,47 +77,47 @@ async def get_llm_metrics(model: Optional[str] = None):
 async def llm_health_check():
     """
     Health check for LLM service.
-    
+
     Returns:
         JSON with service health status including:
         - Available models
         - Circuit breaker states
         - Rate limiter status
-        
+
     HTTP Status Codes:
         - 200 OK: All models healthy
         - 503 Service Unavailable: Some models unhealthy (degraded state)
         - 500 Internal Server Error: Health check itself failed
-        
+
     Example:
         GET /api/llm/health
     """
     try:
         health_data = await llm_service.health_check()
-        
+
         # Add circuit breaker states
         metrics = llm_service.get_performance_metrics()
         circuit_states = {
             model: data.get('circuit_state', 'closed')
             for model, data in metrics.items()
         }
-        
+
         health_data['circuit_states'] = circuit_states
-        
+
         # Check if any models are unhealthy
         available_models = health_data.get('available_models', [])
         unhealthy_count = sum(
             1 for model in available_models
-            if model in health_data 
+            if model in health_data
             and health_data[model].get('status') != 'healthy'
         )
-        
+
         response_data = {
             'status': 'success',
             'health': health_data,
             'timestamp': int(time.time())
         }
-        
+
         # Return appropriate HTTP status code based on health
         if unhealthy_count == 0:
             status_code = 200  # All healthy
@@ -124,12 +127,12 @@ async def llm_health_check():
             response_data['unhealthy_count'] = unhealthy_count
             response_data['total_models'] = len(available_models)
             response_data['healthy_count'] = len(available_models) - unhealthy_count
-        
+
         return JSONResponse(
             content=response_data,
             status_code=status_code
         )
-        
+
     except Exception as e:
         logger.error(f"LLM health check error: {e}", exc_info=True)
         raise HTTPException(
@@ -146,17 +149,17 @@ async def generate_multi_parallel(
 ):
     """
     Generate diagram using PARALLEL multi-LLM approach.
-    
+
     Calls all specified LLMs in parallel and returns results as each completes.
     This is much faster than sequential calls!
-    
+
     Benefits:
     - All LLMs called simultaneously (not one by one)
     - Results returned progressively as each LLM completes
     - Uses middleware for error handling, retries, and metrics
     - Circuit breaker protection
     - Performance tracking
-    
+
     Request Body:
         {
             "prompt": "User's diagram description",
@@ -165,7 +168,7 @@ async def generate_multi_parallel(
             "models": ["qwen", "deepseek", "kimi", "doubao"],  // optional
             "dimension_preference": "optional dimension"
         }
-    
+
     Returns:
         {
             "results": {
@@ -180,26 +183,26 @@ async def generate_multi_parallel(
         }
     """
     lang = get_request_language(x_language)
-    
+
     prompt = req.prompt.strip()
     if not prompt:
         raise HTTPException(
             status_code=400,
             detail=Messages.error("invalid_prompt", lang)
         )
-    
+
     # Get models to use (default to all 4, Hunyuan disabled due to 5 concurrent limit)
     models = req.models if hasattr(req, 'models') and req.models else ['qwen', 'deepseek', 'kimi', 'doubao']
-    
+
     language = req.language.value if hasattr(req.language, 'value') else str(req.language)
     diagram_type = req.diagram_type.value if req.diagram_type and hasattr(req.diagram_type, 'value') else None
-    
+
     logger.debug(f"[generate_multi_parallel] Starting parallel generation with {len(models)} models")
-    
+
     start_time = time.time()
     results = {}
     first_successful = None
-    
+
     try:
         # Create parallel tasks for each model using the AGENT
         # This ensures proper system prompts from prompts/thinking_maps.py are used
@@ -215,9 +218,9 @@ async def generate_multi_parallel(
                     dimension_preference=req.dimension_preference if hasattr(req, 'dimension_preference') else None,
                     model=model
                 )
-                
+
                 duration = time.time() - model_start
-                
+
                 # Check if agent actually succeeded (agent might return {"success": false, "error": "..."})
                 if spec_result.get('success') is False or 'error' in spec_result:
                     error_msg = spec_result.get('error', 'Agent returned no spec')
@@ -228,7 +231,7 @@ async def generate_multi_parallel(
                         'error': error_msg,
                         'duration': duration
                     }
-                
+
                 return {
                     'model': model,
                     'success': True,
@@ -239,7 +242,7 @@ async def generate_multi_parallel(
                     'duration': duration,
                     'llm_model': model
                 }
-                
+
             except Exception as e:
                 duration = time.time() - model_start
                 logger.error(f"[generate_multi_parallel] {model} failed: {e}")
@@ -249,27 +252,27 @@ async def generate_multi_parallel(
                     'error': str(e),
                     'duration': duration
                 }
-        
+
         # Run all models in PARALLEL using asyncio.gather
         tasks = [generate_for_model(model) for model in models]
         task_results = await asyncio.gather(*tasks)
-        
+
         # Process results
         for task_result in task_results:
             model = task_result.pop('model')
             results[model] = task_result
-            
+
             if task_result['success'] and first_successful is None:
                 first_successful = model
-                
+
             status = 'completed successfully' if task_result['success'] else 'failed'
             logger.debug(f"[generate_multi_parallel] {model} {status} in {task_result['duration']:.2f}s")
-        
+
         total_time = time.time() - start_time
         success_count = sum(1 for r in results.values() if r['success'])
-        
+
         logger.info(f"[generate_multi_parallel] Completed: {success_count}/{len(models)} successful in {total_time:.2f}s")
-        
+
         return {
             'results': results,
             'total_time': total_time,
@@ -277,7 +280,7 @@ async def generate_multi_parallel(
             'first_successful': first_successful,
             'models_requested': models
         }
-        
+
     except Exception as e:
         logger.error(f"[generate_multi_parallel] Error: {e}", exc_info=True)
         raise HTTPException(
@@ -294,10 +297,10 @@ async def generate_multi_progressive(
 ):
     """
     Progressive parallel generation - send results as each LLM completes.
-    
+
     Uses SSE (Server-Sent Events) to stream results progressively.
     Same pattern as /ai_assistant/stream and /thinking_mode/stream.
-    
+
     Returns:
         SSE stream with events:
         - data: {"model": "qwen", "success": true, "spec": {...}, "duration": 8.05, ...}
@@ -306,7 +309,7 @@ async def generate_multi_progressive(
     """
     # Get language for error messages
     lang = get_request_language(x_language)
-    
+
     # Validate prompt
     prompt = req.prompt.strip()
     if not prompt:
@@ -314,18 +317,18 @@ async def generate_multi_progressive(
             status_code=400,
             detail=Messages.error("invalid_prompt", lang)
         )
-    
+
     # Get models to use (Hunyuan disabled due to 5 concurrent limit)
     models = req.models if hasattr(req, 'models') and req.models else ['qwen', 'deepseek', 'kimi', 'doubao']
-    
+
     # Extract language and diagram_type
     language = req.language.value if hasattr(req.language, 'value') else str(req.language)
     diagram_type = req.diagram_type.value if req.diagram_type and hasattr(req.diagram_type, 'value') else None
-    
+
     logger.debug(f"[generate_multi_progressive] Starting progressive generation with {len(models)} models")
-    
+
     start_time = time.time()
-    
+
     async def generate():
         """Async generator for SSE streaming."""
         try:
@@ -342,9 +345,9 @@ async def generate_multi_progressive(
                         dimension_preference=req.dimension_preference if hasattr(req, 'dimension_preference') else None,
                         model=model
                     )
-                    
+
                     duration = time.time() - model_start
-                    
+
                     # Check if agent actually succeeded
                     if spec_result.get('success') is False or 'error' in spec_result:
                         error_msg = spec_result.get('error', 'Agent returned no spec')
@@ -355,7 +358,7 @@ async def generate_multi_progressive(
                             'error': error_msg,
                             'duration': duration
                         }
-                    
+
                     # Success case
                     return {
                         'model': model,
@@ -367,7 +370,7 @@ async def generate_multi_progressive(
                         'duration': duration,
                         'llm_model': model
                     }
-                    
+
                 except Exception as e:
                     duration = time.time() - model_start
                     logger.error(f"[generate_multi_progressive] {model} failed: {e}")
@@ -377,28 +380,28 @@ async def generate_multi_progressive(
                         'error': str(e),
                         'duration': duration
                     }
-            
+
             # Create parallel tasks
             tasks = [generate_for_model(model) for model in models]
-            
+
             # Use asyncio.as_completed instead of gather
             # This yields results as each completes, not waiting for all
             for coro in asyncio.as_completed(tasks):
                 result = await coro
-                
+
                 # Send SSE event for this model
                 logger.debug(f"[generate_multi_progressive] Sending {result['model']} result")
                 yield f"data: {json.dumps(result)}\n\n"
-            
+
             # Send completion event
             total_time = time.time() - start_time
             logger.info(f"[generate_multi_progressive] All models completed in {total_time:.2f}s")
             yield f"data: {json.dumps({'event': 'complete', 'total_time': total_time})}\n\n"
-            
+
         except Exception as e:
             logger.error(f"[generate_multi_progressive] Error: {e}", exc_info=True)
             yield f"data: {json.dumps({'event': 'error', 'message': str(e)})}\n\n"
-    
+
     # Return SSE stream
     return StreamingResponse(
         generate(),

@@ -1,3 +1,9 @@
+﻿from typing import Optional
+import random
+import re
+import string
+
+
 """
 Invitation code utilities
 
@@ -12,10 +18,6 @@ All Rights Reserved
 Proprietary License
 """
 
-import random
-import re
-import string
-from typing import Optional
 
 
 INVITE_PATTERN = re.compile(r"^[A-Z]{4}-[A-Z0-9]{5}$")

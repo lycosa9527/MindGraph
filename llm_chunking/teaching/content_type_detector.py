@@ -1,4 +1,4 @@
-"""
+﻿"""
 Content type detector for teaching materials.
 
 Re-exports ContentTypeAgent for convenience.

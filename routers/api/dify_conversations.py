@@ -1,3 +1,17 @@
+﻿from typing import
+import logging
+import os
+
+from fastapi import APIRouter, HTTPException, Depends, Query
+from pydantic import BaseModel
+from sqlalchemy.orm import Session
+
+from clients.dify import AsyncDifyClient
+from config.database import get_db
+from models.auth import User
+from models.pinned_conversations import PinnedConversation
+from utils.auth import get_current_user
+
 """
 Dify Conversation Management API Router
 ========================================
@@ -15,17 +29,6 @@ All Rights Reserved
 Proprietary License
 """
 
-import logging
-import os
-from typing import Optional, List
-from fastapi import APIRouter, HTTPException, Depends, Query
-from pydantic import BaseModel
-from sqlalchemy.orm import Session
-from models.auth import User
-from models.pinned_conversations import PinnedConversation
-from config.database import get_db
-from utils.auth import get_current_user
-from clients.dify import AsyncDifyClient
 
 logger = logging.getLogger(__name__)
 
@@ -42,10 +45,10 @@ def get_dify_client() -> AsyncDifyClient:
     api_key = os.getenv('DIFY_API_KEY')
     api_url = os.getenv('DIFY_API_URL', 'http://101.42.231.179/v1')
     timeout = int(os.getenv('DIFY_TIMEOUT', '30'))
-    
+
     if not api_key:
         raise HTTPException(status_code=500, detail="AI service not configured")
-    
+
     return AsyncDifyClient(api_key=api_key, api_url=api_url, timeout=timeout)
 
 
@@ -69,7 +72,7 @@ async def list_conversations(
 ):
     """
     List user's conversations from Dify.
-    
+
     Returns conversations sorted by updated_at (newest first).
     Each conversation includes:
     - id: Conversation ID
@@ -80,23 +83,23 @@ async def list_conversations(
     try:
         client = get_dify_client()
         dify_user_id = get_dify_user_id(current_user)
-        
+
         result = await client.get_conversations(
             user_id=dify_user_id,
             last_id=last_id,
             limit=limit,
             sort_by="-updated_at"
         )
-        
+
         logger.debug(f"Fetched {len(result.get('data', []))} conversations for user {current_user.id}")
-        
+
         return {
             "success": True,
             "data": result.get("data", []),
             "has_more": result.get("has_more", False),
             "limit": result.get("limit", limit)
         }
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -111,22 +114,22 @@ async def delete_conversation(
 ):
     """
     Delete a conversation from Dify.
-    
+
     This permanently removes the conversation and all its messages.
     """
     try:
         client = get_dify_client()
         dify_user_id = get_dify_user_id(current_user)
-        
+
         await client.delete_conversation(
             conversation_id=conversation_id,
             user_id=dify_user_id
         )
-        
+
         logger.info(f"Deleted conversation {conversation_id} for user {current_user.id}")
-        
+
         return {"success": True, "message": "Conversation deleted"}
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -142,28 +145,28 @@ async def rename_conversation(
 ):
     """
     Rename a conversation or auto-generate a title.
-    
+
     If auto_generate is True, Dify will generate a title based on conversation content.
     Otherwise, use the provided name.
     """
     try:
         client = get_dify_client()
         dify_user_id = get_dify_user_id(current_user)
-        
+
         result = await client.rename_conversation(
             conversation_id=conversation_id,
             user_id=dify_user_id,
             name=request.name,
             auto_generate=request.auto_generate
         )
-        
+
         logger.info(f"Renamed conversation {conversation_id} for user {current_user.id}")
-        
+
         return {
             "success": True,
             "data": result
         }
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -180,7 +183,7 @@ async def get_conversation_messages(
 ):
     """
     Get messages for a specific conversation.
-    
+
     Returns messages in chronological order.
     Each message includes:
     - id: Message ID
@@ -191,23 +194,23 @@ async def get_conversation_messages(
     try:
         client = get_dify_client()
         dify_user_id = get_dify_user_id(current_user)
-        
+
         result = await client.get_messages(
             conversation_id=conversation_id,
             user_id=dify_user_id,
             first_id=first_id,
             limit=limit
         )
-        
+
         logger.debug(f"Fetched {len(result.get('data', []))} messages for conversation {conversation_id}")
-        
+
         return {
             "success": True,
             "data": result.get("data", []),
             "has_more": result.get("has_more", False),
             "limit": result.get("limit", limit)
         }
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -221,7 +224,7 @@ async def get_user_dify_id(
 ):
     """
     Get the Dify user ID for the current MindGraph user.
-    
+
     This is useful for the frontend to know which user ID to use
     when communicating directly with Dify.
     """
@@ -240,32 +243,32 @@ async def submit_message_feedback(
 ):
     """
     Submit feedback (like/dislike) for a specific message.
-    
+
     Args:
         message_id: The Dify message ID to provide feedback for
         request: FeedbackRequest with rating ("like", "dislike", or null) and optional content
-    
+
     Returns:
         Success response with feedback result
     """
     try:
         client = get_dify_client()
         dify_user_id = get_dify_user_id(current_user)
-        
+
         result = await client.message_feedback(
             message_id=message_id,
             user_id=dify_user_id,
             rating=request.rating,
             content=request.content
         )
-        
+
         logger.info(f"User {current_user.id} submitted {request.rating} feedback for message {message_id}")
-        
+
         return {
             "success": True,
             "data": result
         }
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -280,19 +283,19 @@ async def list_pinned_conversations(
 ):
     """
     Get list of pinned conversation IDs for the current user.
-    
+
     Returns a list of conversation IDs that the user has pinned.
     """
     try:
         pinned = db.query(PinnedConversation).filter(
             PinnedConversation.user_id == current_user.id
         ).order_by(PinnedConversation.pinned_at.desc()).all()
-        
+
         return {
             "success": True,
             "data": [p.conversation_id for p in pinned]
         }
-        
+
     except Exception as e:
         logger.error(f"Failed to fetch pinned conversations: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -306,7 +309,7 @@ async def toggle_pin_conversation(
 ):
     """
     Toggle pin status for a conversation.
-    
+
     If the conversation is already pinned, it will be unpinned.
     If not pinned, it will be pinned to the top.
     """
@@ -316,7 +319,7 @@ async def toggle_pin_conversation(
             PinnedConversation.user_id == current_user.id,
             PinnedConversation.conversation_id == conversation_id
         ).first()
-        
+
         if existing:
             # Unpin
             db.delete(existing)
@@ -341,7 +344,7 @@ async def toggle_pin_conversation(
                 "is_pinned": True,
                 "message": "Conversation pinned"
             }
-        
+
     except Exception as e:
         logger.error(f"Failed to toggle pin for conversation: {e}")
         db.rollback()

@@ -1,3 +1,16 @@
+﻿from datetime import datetime, timedelta
+from typing import Optional, Dict, Any, List
+import logging
+
+from fastapi import APIRouter, Depends, HTTPException, Request, status, Body
+from sqlalchemy import func
+from sqlalchemy.orm import Session
+
+from config.database import get_db
+from models.auth import User, APIKey
+from models.messages import Messages
+from utils.auth import generate_api_key
+
 """
 Admin API Key Management Endpoints
 ===================================
@@ -14,21 +27,9 @@ All Rights Reserved
 Proprietary License
 """
 
-import logging
-from datetime import datetime, timedelta
-from typing import Optional, Dict, Any, List
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status, Body
-from sqlalchemy.orm import Session
-from sqlalchemy import func
 
-from config.database import get_db
-from models.auth import User, APIKey
-from models.messages import Messages
-from utils.auth import generate_api_key
 
-from ..dependencies import get_language_dependency, require_admin
-from ..helpers import utc_to_beijing_iso
 
 logger = logging.getLogger(__name__)
 
@@ -44,13 +45,13 @@ async def list_api_keys_admin(
 ) -> List[Dict[str, Any]]:
     """List all API keys with usage stats (ADMIN ONLY)"""
     keys = db.query(APIKey).order_by(APIKey.created_at.desc()).all()
-    
+
     # Get token usage for each API key using api_key_id
     token_stats_by_key = {}
-    
+
     try:
         from models.token_usage import TokenUsage
-        
+
         # For each API key, get token usage where api_key_id matches
         for key in keys:
             key_token_stats = db.query(
@@ -61,7 +62,7 @@ async def list_api_keys_admin(
                 TokenUsage.api_key_id == key.id,
                 TokenUsage.success == True
             ).first()
-            
+
             if key_token_stats:
                 token_stats_by_key[key.id] = {
                     "input_tokens": int(key_token_stats.input_tokens or 0),
@@ -83,7 +84,7 @@ async def list_api_keys_admin(
                 "output_tokens": 0,
                 "total_tokens": 0
             }
-    
+
     result = []
     for key in keys:
         token_stats = token_stats_by_key.get(key.id, {
@@ -91,7 +92,7 @@ async def list_api_keys_admin(
             "output_tokens": 0,
             "total_tokens": 0
         })
-        
+
         # Convert UTC timestamps to Beijing time for display (using shared helper function)
         result.append({
             "id": key.id,
@@ -107,7 +108,7 @@ async def list_api_keys_admin(
             "usage_percentage": round((key.usage_count / key.quota_limit * 100), 1) if key.quota_limit else 0,
             "token_stats": token_stats
         })
-    
+
     return result
 
 
@@ -124,21 +125,21 @@ async def create_api_key_admin(
     description = request_body.get("description", "")
     quota_limit = request_body.get("quota_limit")
     expires_days = request_body.get("expires_days")  # Optional: days until expiration
-    
+
     if not name:
         error_msg = Messages.error("name_required", lang)
         raise HTTPException(status_code=400, detail=error_msg)
-    
+
     # Generate the API key
     key = generate_api_key(name, description, quota_limit, db)
-    
+
     # Update expiration if specified
     if expires_days:
         key_record = db.query(APIKey).filter(APIKey.key == key).first()
         if key_record:
             key_record.expires_at = datetime.utcnow() + timedelta(days=expires_days)
             db.commit()
-    
+
     return {
         "message": Messages.success("api_key_created", lang),
         "key": key,
@@ -162,7 +163,7 @@ async def update_api_key_admin(
     if not key_record:
         error_msg = Messages.error("api_key_not_found", lang)
         raise HTTPException(status_code=404, detail=error_msg)
-    
+
     # Update fields if provided
     if "name" in request_body:
         key_record.name = request_body["name"]
@@ -174,9 +175,9 @@ async def update_api_key_admin(
         key_record.is_active = request_body["is_active"]
     if "usage_count" in request_body:  # Allow resetting usage
         key_record.usage_count = request_body["usage_count"]
-    
+
     db.commit()
-    
+
     return {
         "message": Messages.success("api_key_updated", lang),
         "key": {
@@ -202,11 +203,11 @@ async def delete_api_key_admin(
     if not key_record:
         error_msg = Messages.error("api_key_not_found", lang)
         raise HTTPException(status_code=404, detail=error_msg)
-    
+
     key_name = key_record.name
     db.delete(key_record)
     db.commit()
-    
+
     return {
         "message": f"API key '{key_name}' deleted successfully"
     }
@@ -225,15 +226,15 @@ async def toggle_api_key_admin(
     if not key_record:
         error_msg = Messages.error("api_key_not_found", lang)
         raise HTTPException(status_code=404, detail=error_msg)
-    
+
     key_record.is_active = not key_record.is_active
     db.commit()
-    
+
     if key_record.is_active:
         message = Messages.success("api_key_activated", lang, key_record.name)
     else:
         message = Messages.success("api_key_deactivated", lang, key_record.name)
-    
+
     return {
         "message": message,
         "is_active": key_record.is_active

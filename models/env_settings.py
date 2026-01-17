@@ -1,3 +1,9 @@
+﻿from enum import Enum
+from typing import Optional
+
+from pydantic import BaseModel, Field, field_validator
+
+
 """
 Environment Settings Validation Models
 ======================================
@@ -20,9 +26,6 @@ All Rights Reserved
 Proprietary License
 """
 
-from typing import Optional
-from pydantic import BaseModel, Field, field_validator
-from enum import Enum
 
 
 # ============================================================================
@@ -59,7 +62,7 @@ class GraphLanguage(str, Enum):
 class AppSettings(BaseModel):
     """Application server settings"""
     __category__ = "Application Server"
-    
+
     HOST: str = Field(
         default="0.0.0.0",
         description="Server host address"
@@ -78,7 +81,7 @@ class AppSettings(BaseModel):
         default=None,
         description="Public IP address for external access (optional)"
     )
-    
+
     @field_validator('PORT')
     @classmethod
     def validate_port(cls, v):
@@ -90,7 +93,7 @@ class AppSettings(BaseModel):
 class QwenAPISettings(BaseModel):
     """Qwen API configuration"""
     __category__ = "Qwen API"
-    
+
     QWEN_API_KEY: str = Field(
         ...,
         min_length=10,
@@ -131,7 +134,7 @@ class QwenAPISettings(BaseModel):
         le=2.0,
         description="Unified temperature for diagram generation"
     )
-    
+
     @field_validator('QWEN_API_URL')
     @classmethod
     def validate_url(cls, v):
@@ -143,7 +146,7 @@ class QwenAPISettings(BaseModel):
 class HunyuanAPISettings(BaseModel):
     """Tencent Hunyuan API configuration"""
     __category__ = "Tencent Hunyuan API"
-    
+
     HUNYUAN_API_KEY: Optional[str] = Field(
         default="",
         description="Hunyuan secret key (optional)"
@@ -171,7 +174,7 @@ class HunyuanAPISettings(BaseModel):
         gt=0,
         description="Maximum tokens per request"
     )
-    
+
     @field_validator('HUNYUAN_TEMPERATURE')
     @classmethod
     def validate_hunyuan_temperature(cls, v):
@@ -184,7 +187,7 @@ class HunyuanAPISettings(BaseModel):
 class DashscopeRateLimitSettings(BaseModel):
     """Dashscope platform rate limiting configuration"""
     __category__ = "Dashscope Rate Limiting"
-    
+
     DASHSCOPE_QPM_LIMIT: int = Field(
         default=200,
         gt=0,
@@ -204,7 +207,7 @@ class DashscopeRateLimitSettings(BaseModel):
 class GraphSettings(BaseModel):
     """Graph generation and styling settings"""
     __category__ = "Graph & UI Settings"
-    
+
     GRAPH_LANGUAGE: GraphLanguage = Field(
         default=GraphLanguage.ZH,
         description="Language for graph generation (zh/en)"
@@ -228,7 +231,7 @@ class GraphSettings(BaseModel):
 class LoggingSettings(BaseModel):
     """Logging configuration"""
     __category__ = "Logging Configuration"
-    
+
     LOG_LEVEL: LogLevel = Field(
         default=LogLevel.INFO,
         description="Logging level"
@@ -242,7 +245,7 @@ class LoggingSettings(BaseModel):
 class FeatureFlagSettings(BaseModel):
     """Feature flags for experimental features"""
     __category__ = "Feature Flags"
-    
+
     FEATURE_MINDMATE: bool = Field(
         default=False,
         description="Enable MindMate AI Assistant button"
@@ -264,7 +267,7 @@ class FeatureFlagSettings(BaseModel):
 class DifySettings(BaseModel):
     """Dify AI assistant configuration"""
     __category__ = "Dify AI Assistant"
-    
+
     DIFY_API_KEY: Optional[str] = Field(
         default="",
         description="Dify API key (optional)"
@@ -290,12 +293,12 @@ class DifySettings(BaseModel):
 class DatabaseSettings(BaseModel):
     """Database configuration"""
     __category__ = "Database Configuration"
-    
+
     DATABASE_URL: str = Field(
         default="sqlite:///./data/mindgraph.db",
         description="Database connection URL"
     )
-    
+
     @field_validator('DATABASE_URL')
     @classmethod
     def validate_database_url(cls, v):
@@ -309,11 +312,11 @@ class DatabaseSettings(BaseModel):
 class AuthSettings(BaseModel):
     """Authentication and security settings"""
     __category__ = "Authentication & Security"
-    
+
     # NOTE: JWT_SECRET_KEY is no longer configurable via .env
     # It is auto-generated and stored in Redis for security
     # See utils/auth.py get_jwt_secret() for implementation
-    
+
     JWT_EXPIRY_HOURS: int = Field(
         default=24,
         gt=0,
@@ -360,7 +363,7 @@ class AuthSettings(BaseModel):
         default="",
         description="Invitation codes (format: ORG:CODE:DATE,ORG2:CODE2:DATE2)"
     )
-    
+
     @field_validator('DEMO_PASSKEY', 'ADMIN_DEMO_PASSKEY')
     @classmethod
     def validate_passkey(cls, v):
@@ -377,7 +380,7 @@ class AuthSettings(BaseModel):
 class EnvSettingsSchema(BaseModel):
     """
     Complete environment settings schema.
-    
+
     This combines all category models into a single validation schema.
     Used by EnvManager to validate the entire configuration at once.
     """
@@ -391,7 +394,7 @@ class EnvSettingsSchema(BaseModel):
     dify: DifySettings
     database: DatabaseSettings
     auth: AuthSettings
-    
+
     class Config:
         """Pydantic configuration"""
         use_enum_values = True  # Convert enums to their values

@@ -1,4 +1,4 @@
-"""
+﻿"""
 Script to process avatars for web usage.
 Creates optimized versions at different sizes for all images.
 Source file locations:
@@ -19,7 +19,7 @@ from PIL import Image
 
 def process_image(source_path: Path, assets_dir: Path, output_configs: dict, name: str):
     """Process a source image and create optimized web versions.
-    
+
     Args:
         source_path: Path to the source image file
         assets_dir: Directory to save optimized images
@@ -29,7 +29,7 @@ def process_image(source_path: Path, assets_dir: Path, output_configs: dict, nam
     if not source_path.exists():
         print(f"Error: Source file not found: {source_path}")
         return False
-    
+
     # Open the source image
     with Image.open(source_path) as img:
         print(f"\n{name}:")
@@ -43,17 +43,17 @@ def process_image(source_path: Path, assets_dir: Path, output_configs: dict, nam
 
         for filename, size in output_configs.items():
             output_path = assets_dir / filename
-            
+
             # Resize with high-quality resampling
             resized = img.resize((size, size), Image.Resampling.LANCZOS)
-            
+
             # Save as optimized PNG
             resized.save(output_path, "PNG", optimize=True)
-            
+
             # Get file size
             file_size = output_path.stat().st_size
             print(f"  Created {filename}: {size}x{size}px, {file_size / 1024:.1f} KB")
-    
+
     return True
 
 
@@ -72,7 +72,7 @@ def process_avatars():
         "mindmate-avatar-md.png": 96,   # Medium size for chat messages (displays at 48px)
         "mindmate-avatar-sm.png": 64,   # Small size for header/inline (displays at 32px)
     }
-    
+
     # MindGraph logo sizes (2x for retina displays)
     mindgraph_sizes = {
         "mindgraph-logo-lg.png": 256,  # Large size (displays at 128px)
@@ -93,7 +93,7 @@ def process_avatars():
     # Process MindMate avatar
     mindmate_source = avatars_dir / "mindmate-source.png"
     process_image(mindmate_source, assets_dir, mindmate_sizes, "MindMate Avatar")
-    
+
     # Process MindGraph logo
     mindgraph_source = avatars_dir / "mindgraph-source.png"
     process_image(mindgraph_source, assets_dir, mindgraph_sizes, "MindGraph Logo")

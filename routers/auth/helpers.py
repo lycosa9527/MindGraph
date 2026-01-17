@@ -1,4 +1,4 @@
-"""
+﻿"""
 Authentication Helper Functions
 ================================
 
@@ -26,7 +26,7 @@ from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 
 from models.auth import User
-from services.redis_session_manager import get_session_manager
+from services.redis.redis_session_manager import get_session_manager
 from utils.auth import (
     create_access_token, is_https, get_client_ip, compute_device_hash,
     ACCESS_TOKEN_EXPIRY_MINUTES, REFRESH_TOKEN_EXPIRY_DAYS
@@ -63,10 +63,10 @@ def get_beijing_today_start_utc() -> datetime:
 def utc_to_beijing_iso(utc_dt: Optional[datetime]) -> Optional[str]:
     """
     Convert UTC datetime to Beijing time ISO string.
-    
+
     Args:
         utc_dt: UTC datetime object (naive or timezone-aware)
-    
+
     Returns:
         ISO format string in Beijing timezone, or None if input is None
     """
@@ -93,7 +93,7 @@ def track_user_activity(
 ):
     """
     Track user activity for real-time monitoring.
-    
+
     Args:
         user: User object
         activity_type: Type of activity (login, diagram_generation, etc.)
@@ -101,13 +101,13 @@ def track_user_activity(
         request: Optional request object for IP address
     """
     try:
-        from services.redis_activity_tracker import get_activity_tracker
-        
+        from services.redis.redis_activity_tracker import get_activity_tracker
+
         tracker = get_activity_tracker()
         ip_address = None
         if request:
             ip_address = get_client_ip(request)
-        
+
         # For login activities, start a new session (or reuse existing)
         # For other activities, just record (will find/create session automatically)
         if activity_type == 'login':
@@ -120,7 +120,7 @@ def track_user_activity(
             )
         else:
             session_id = None  # Let record_activity find/create session
-        
+
         # Record activity
         tracker.record_activity(
             user_id=user.id,
@@ -139,15 +139,15 @@ def track_user_activity(
 def _record_city_flag_async(ip_address: str):
     """
     Record city flag asynchronously (fire-and-forget).
-    
+
     This function schedules the city flag recording in a background task
     to avoid blocking the login request.
     """
     try:
         import asyncio
-        from services.city_flag_tracker import get_city_flag_tracker
-        from services.ip_geolocation import get_geolocation_service
-        
+        from services.monitoring.city_flag_tracker import get_city_flag_tracker
+        from services.auth.ip_geolocation import get_geolocation_service
+
         async def _record_flag():
             try:
                 geolocation = get_geolocation_service()
@@ -162,7 +162,7 @@ def _record_city_flag_async(ip_address: str):
                         flag_tracker.record_city_flag(city, province, lat, lng)
             except Exception as e:
                 logger.debug(f"Failed to record city flag: {e}")
-        
+
         # Schedule async task (fire-and-forget)
         try:
             # Try to get the current event loop
@@ -198,19 +198,19 @@ async def commit_user_with_retry(
 ) -> int:
     """
     Commit user to SQLite with retry logic for database lock errors.
-    
+
     Retries SQLite commits up to max_retries times with exponential backoff
     and jitter if database is locked. This handles transient lock errors during
     high concurrency scenarios (e.g., 500 concurrent registrations).
-    
+
     Args:
         db: SQLAlchemy database session
         new_user: User object to commit
         max_retries: Maximum number of retry attempts (default: 5, increased from 3)
-    
+
     Returns:
         Number of retries performed (0 = no retries, 1+ = retries)
-    
+
     Raises:
         HTTPException: If commit fails after all retries or on non-lock errors
     """
@@ -261,7 +261,7 @@ async def commit_user_with_retry(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Failed to create user account"
             )
-    
+
     # Should never reach here, but just in case
     db.rollback()
     raise HTTPException(
@@ -281,36 +281,36 @@ async def create_user_session(
 ) -> tuple[str, str]:
     """
     Create a new user session and generate a new token.
-    
+
     Supports multiple concurrent sessions (up to MAX_CONCURRENT_SESSIONS).
-    
+
     Args:
         user: User object
         http_request: FastAPI Request object
         cache_user_func: Optional async function to cache user (for registration)
-    
+
     Returns:
         Tuple of (token, client_ip)
     """
     session_manager = get_session_manager()
     client_ip = get_client_ip(http_request) if http_request else "unknown"
-    
+
     # Generate JWT token
     token = create_access_token(user)
-    
+
     # Compute device hash for session tracking
     device_hash = compute_device_hash(http_request) if http_request else ""
-    
+
     # Store new session in Redis (automatically limits concurrent sessions)
     session_manager.store_session(user.id, token, device_hash=device_hash)
-    
+
     # If cache_user_func is provided (for registration), execute it in parallel
     if cache_user_func:
         await asyncio.gather(
             cache_user_func(),
             return_exceptions=True  # Don't fail if cache fails
         )
-    
+
     return token, client_ip
 
 
@@ -319,20 +319,20 @@ async def create_user_session(
 # ============================================================================
 
 def set_auth_cookies(
-    response: Response, 
-    access_token: str, 
+    response: Response,
+    access_token: str,
     refresh_token: str,
     http_request: Request
 ):
     """
     Set authentication cookies for both access and refresh tokens.
-    
+
     Security:
     - Both tokens stored in httpOnly cookies (not accessible to JavaScript)
     - Secure flag set based on HTTPS detection
-    - Access token: max_age = 1 hour, path = / 
+    - Access token: max_age = 1 hour, path = /
     - Refresh token: max_age = 7 days, path = /api/auth (restricted)
-    
+
     Args:
         response: FastAPI Response object
         access_token: JWT access token
@@ -340,7 +340,7 @@ def set_auth_cookies(
         http_request: FastAPI Request object for HTTPS detection
     """
     is_secure = is_https(http_request)
-    
+
     # Set access token as httpOnly cookie
     response.set_cookie(
         key="access_token",
@@ -351,7 +351,7 @@ def set_auth_cookies(
         path="/",
         max_age=ACCESS_TOKEN_EXPIRY_MINUTES * 60  # 1 hour default
     )
-    
+
     # Set refresh token as httpOnly cookie with restricted path
     response.set_cookie(
         key="refresh_token",
@@ -362,7 +362,7 @@ def set_auth_cookies(
         path="/api/auth",  # Only sent to auth endpoints
         max_age=REFRESH_TOKEN_EXPIRY_DAYS * 24 * 60 * 60  # 7 days default
     )
-    
+
     # Set flag cookie to indicate new login session (for AI disclaimer notification)
     response.set_cookie(
         key="show_ai_disclaimer",

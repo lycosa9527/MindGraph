@@ -1,4 +1,4 @@
-"""
+﻿"""
 Result Analysis Agent
 
 Generates result analysis diagrams using mind map structure.
@@ -17,11 +17,11 @@ from prompts.thinking_tools import THINKING_TOOLS_PROMPTS
 
 class ResultAnalysisAgent(MindMapAgent):
     """Agent for generating result analysis diagrams."""
-    
+
     def __init__(self):
         super().__init__()
         self.diagram_type = 'result_analysis'
-    
+
     def get_prompt(self, language='en'):
         """Get the generation prompt for the specified language."""
         prompt_key = f"result_analysis_generation_{language}"

@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 Download Dashboard Dependencies
 ================================
@@ -41,7 +41,7 @@ def main():
     # Create directories if they don't exist
     STATIC_JS_DIR.mkdir(parents=True, exist_ok=True)
     STATIC_DATA_DIR.mkdir(parents=True, exist_ok=True)
-    
+
     # Download ECharts
     echarts_path = STATIC_JS_DIR / "echarts.min.js"
     if not echarts_path.exists():
@@ -51,7 +51,7 @@ def main():
             print(f"Save to: {echarts_path}")
     else:
         print(f"OK: {echarts_path.name} already exists")
-    
+
     # Download China geoJSON
     china_geo_path = STATIC_DATA_DIR / "china-geo.json"
     if not china_geo_path.exists():
@@ -61,7 +61,7 @@ def main():
             print(f"Save to: {china_geo_path}")
     else:
         print(f"OK: {china_geo_path.name} already exists")
-    
+
     print("\nDashboard dependencies download complete!")
 
 

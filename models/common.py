@@ -1,3 +1,9 @@
+﻿from enum import Enum
+from typing import List
+
+from pydantic import Field
+
+
 """
 Common Pydantic Models and Enums
 =================================
@@ -12,9 +18,6 @@ All Rights Reserved
 Proprietary License
 """
 
-from enum import Enum
-from typing import Optional
-from pydantic import BaseModel
 
 
 class DiagramType(str, Enum):

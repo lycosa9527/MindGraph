@@ -1,3 +1,17 @@
+﻿from datetime import datetime, timezone
+from typing import Optional
+import logging
+
+from fastapi import APIRouter, Depends, HTTPException, Request, status
+from sqlalchemy import func, and_
+from sqlalchemy.orm import Session
+
+from config.database import get_db
+from models.auth import Organization, User
+from models.messages import Messages, Language
+from services.redis.redis_org_cache import org_cache
+from utils.invitations import normalize_or_generate
+
 """
 Admin Organization Management Endpoints
 =======================================
@@ -13,22 +27,9 @@ All Rights Reserved
 Proprietary License
 """
 
-import logging
-from datetime import datetime, timezone
-from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
-from sqlalchemy import func, and_
-from sqlalchemy.orm import Session
 
-from config.database import get_db
-from models.auth import Organization, User
-from models.messages import Messages
-from services.redis_org_cache import org_cache
-from utils.invitations import normalize_or_generate
 
-from ..dependencies import get_language_dependency, require_admin
-from ..helpers import utc_to_beijing_iso
 
 logger = logging.getLogger(__name__)
 
@@ -40,12 +41,12 @@ async def list_organizations_admin(
     request: Request,
     current_user: User = Depends(require_admin),
     db: Session = Depends(get_db),
-    lang: str = Depends(get_language_dependency)
+    lang: Language = Depends(get_language_dependency)
 ):
     """List all organizations (ADMIN ONLY)"""
     orgs = db.query(Organization).all()
     result = []
-    
+
     # Performance optimization: Get user counts for all organizations in one GROUP BY query
     user_counts_by_org = {}
     user_counts_query = db.query(
@@ -56,10 +57,10 @@ async def list_organizations_admin(
     ).group_by(
         User.organization_id
     ).all()
-    
+
     for count_result in user_counts_query:
         user_counts_by_org[count_result.organization_id] = count_result.user_count
-    
+
     # Get manager counts for all organizations
     manager_counts_by_org = {}
     manager_counts_query = db.query(
@@ -71,13 +72,13 @@ async def list_organizations_admin(
     ).group_by(
         User.organization_id
     ).all()
-    
+
     for count_result in manager_counts_query:
         manager_counts_by_org[count_result.organization_id] = count_result.manager_count
-    
+
     # Get token stats for all organizations (all-time totals)
     token_stats_by_org = {}
-    
+
     try:
         from models.token_usage import TokenUsage
         org_token_stats = db.query(
@@ -96,7 +97,7 @@ async def list_organizations_admin(
             Organization.id,
             Organization.name
         ).all()
-        
+
         for org_stat in org_token_stats:
             token_stats_by_org[org_stat.id] = {
                 "input_tokens": int(org_stat.input_tokens or 0),
@@ -105,7 +106,7 @@ async def list_organizations_admin(
             }
     except (ImportError, Exception) as e:
         logger.debug(f"TokenUsage not available yet: {e}")
-    
+
     for org in orgs:
         user_count = user_counts_by_org.get(org.id, 0)
         manager_count = manager_counts_by_org.get(org.id, 0)
@@ -114,7 +115,7 @@ async def list_organizations_admin(
             "output_tokens": 0,
             "total_tokens": 0
         })
-        
+
         result.append({
             "id": org.id,
             "code": org.code,
@@ -136,13 +137,13 @@ async def create_organization_admin(
     http_request: Request,
     current_user: User = Depends(require_admin),
     db: Session = Depends(get_db),
-    lang: str = Depends(get_language_dependency)
+    lang: Language = Depends(get_language_dependency)
 ):
     """Create new organization (ADMIN ONLY)"""
     if not all(k in request for k in ["code", "name"]):
         error_msg = Messages.error("missing_required_fields", lang, "code, name")
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
-    
+
     # Check code uniqueness (use cache with SQLite fallback)
     existing = org_cache.get_by_code(request["code"])
     if not existing:
@@ -150,7 +151,7 @@ async def create_organization_admin(
     if existing:
         error_msg = Messages.error("organization_exists", lang, request["code"])
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=error_msg)
-    
+
     # Prepare invitation code: accept provided if valid, otherwise auto-generate
     provided_invite = request.get("invitation_code")
     invitation_code = normalize_or_generate(provided_invite, request.get("name"), request.get("code"))
@@ -179,7 +180,7 @@ async def create_organization_admin(
         invitation_code=invitation_code,
         created_at=datetime.now(timezone.utc)
     )
-    
+
     # Write to SQLite FIRST
     db.add(new_org)
     try:
@@ -192,14 +193,14 @@ async def create_organization_admin(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to create organization"
         )
-    
+
     # Write to Redis cache SECOND (non-blocking)
     try:
         org_cache.cache_org(new_org)
         logger.info(f"[Auth] New org cached: ID {new_org.id}, code {new_org.code}")
     except Exception as e:
         logger.warning(f"[Auth] Failed to cache new org ID {new_org.id}: {e}")
-    
+
     logger.info(f"Admin {current_user.phone} created organization: {new_org.code}")
     return {
         "id": new_org.id,
@@ -217,7 +218,7 @@ async def update_organization_admin(
     http_request: Request,
     current_user: User = Depends(require_admin),
     db: Session = Depends(get_db),
-    lang: str = Depends(get_language_dependency)
+    lang: Language = Depends(get_language_dependency)
 ):
     """Update organization (ADMIN ONLY)"""
     # Load org (use cache with SQLite fallback)
@@ -227,11 +228,11 @@ async def update_organization_admin(
         if not org:
             error_msg = Messages.error("organization_not_found", lang, org_id)
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
-    
+
     # Save old values for cache invalidation
     old_code = org.code
     old_invite = org.invitation_code
-    
+
     # Update code (if provided)
     if "code" in request:
         new_code = (request["code"] or "").strip()
@@ -285,7 +286,7 @@ async def update_organization_admin(
                 error_msg = Messages.error("failed_generate_invitation_code", lang)
                 raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=error_msg)
         org.invitation_code = normalized
-    
+
     # Update expiration date (if provided)
     if "expires_at" in request:
         expires_str = request.get("expires_at")
@@ -297,11 +298,11 @@ async def update_organization_admin(
                 raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
         else:
             org.expires_at = None
-    
+
     # Update active status (if provided)
     if "is_active" in request:
         org.is_active = bool(request.get("is_active"))
-    
+
     # Write to SQLite FIRST
     try:
         db.commit()
@@ -313,21 +314,21 @@ async def update_organization_admin(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to update organization"
         )
-    
+
     # Invalidate old cache entries
     try:
         org_cache.invalidate(org_id, old_code, old_invite)
         logger.debug(f"[Auth] Invalidated old cache for org ID {org_id}")
     except Exception as e:
         logger.warning(f"[Auth] Failed to invalidate org cache: {e}")
-    
+
     # Re-cache updated org
     try:
         org_cache.cache_org(org)
         logger.info(f"[Auth] Updated and re-cached org ID {org_id}")
     except Exception as e:
         logger.warning(f"[Auth] Failed to re-cache org ID {org_id}: {e}")
-    
+
     logger.info(f"Admin {current_user.phone} updated organization: {org.code}")
     return {
         "id": org.id,
@@ -346,7 +347,7 @@ async def delete_organization_admin(
     request: Request,
     current_user: User = Depends(require_admin),
     db: Session = Depends(get_db),
-    lang: str = Depends(get_language_dependency)
+    lang: Language = Depends(get_language_dependency)
 ):
     """Delete organization (ADMIN ONLY)"""
     # Load org (use cache with SQLite fallback)
@@ -356,16 +357,16 @@ async def delete_organization_admin(
         if not org:
             error_msg = Messages.error("organization_not_found", lang, org_id)
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
-    
+
     # Save values for cache invalidation
     org_code = org.code
     org_invite = org.invitation_code
-    
+
     user_count = db.query(User).filter(User.organization_id == org_id).count()
     if user_count > 0:
         error_msg = Messages.error("cannot_delete_organization_with_users", lang, user_count)
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
-    
+
     # Delete from SQLite FIRST
     db.delete(org)
     try:
@@ -377,14 +378,14 @@ async def delete_organization_admin(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to delete organization"
         )
-    
+
     # Invalidate cache (non-blocking)
     try:
         org_cache.invalidate(org_id, org_code, org_invite)
         logger.info(f"[Auth] Invalidated cache for deleted org ID {org_id}")
     except Exception as e:
         logger.warning(f"[Auth] Failed to invalidate cache for deleted org ID {org_id}: {e}")
-    
+
     logger.warning(f"Admin {current_user.phone} deleted organization: {org.code}")
     return {"message": Messages.success("organization_deleted", lang, org.code)}
 
@@ -399,11 +400,11 @@ async def list_organization_users(
     request: Request,
     current_user: User = Depends(require_admin),
     db: Session = Depends(get_db),
-    lang: str = Depends(get_language_dependency)
+    lang: Language = Depends(get_language_dependency)
 ):
     """
     List all users in an organization (ADMIN ONLY)
-    
+
     Used for manager selection dropdown in admin panel.
     """
     # Verify organization exists
@@ -413,10 +414,10 @@ async def list_organization_users(
         if not org:
             error_msg = Messages.error("organization_not_found", lang, org_id)
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
-    
+
     # Get all users in this organization
     users = db.query(User).filter(User.organization_id == org_id).order_by(User.name).all()
-    
+
     result = []
     for user in users:
         # Get role (default to 'user' if not set)
@@ -428,7 +429,7 @@ async def list_organization_users(
             "role": role,
             "is_manager": role == 'manager'
         })
-    
+
     return {
         "organization": {
             "id": org.id,
@@ -445,7 +446,7 @@ async def list_organization_managers(
     request: Request,
     current_user: User = Depends(require_admin),
     db: Session = Depends(get_db),
-    lang: str = Depends(get_language_dependency)
+    lang: Language = Depends(get_language_dependency)
 ):
     """
     List managers of an organization (ADMIN ONLY)
@@ -457,13 +458,13 @@ async def list_organization_managers(
         if not org:
             error_msg = Messages.error("organization_not_found", lang, org_id)
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
-    
+
     # Get managers in this organization
     managers = db.query(User).filter(
         User.organization_id == org_id,
         User.role == 'manager'
     ).order_by(User.name).all()
-    
+
     result = []
     for user in managers:
         result.append({
@@ -471,7 +472,7 @@ async def list_organization_managers(
             "phone": user.phone[:3] + "****" + user.phone[-4:] if len(user.phone) == 11 else user.phone,
             "name": user.name or user.phone
         })
-    
+
     return {
         "organization": {
             "id": org.id,
@@ -489,11 +490,11 @@ async def set_organization_manager(
     request: Request,
     current_user: User = Depends(require_admin),
     db: Session = Depends(get_db),
-    lang: str = Depends(get_language_dependency)
+    lang: Language = Depends(get_language_dependency)
 ):
     """
     Set a user as manager of their organization (ADMIN ONLY)
-    
+
     The user must belong to the specified organization.
     """
     # Verify organization exists
@@ -503,21 +504,21 @@ async def set_organization_manager(
         if not org:
             error_msg = Messages.error("organization_not_found", lang, org_id)
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
-    
+
     # Get user
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         error_msg = Messages.error("user_not_found", lang, user_id)
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
-    
+
     # Verify user belongs to this organization
     if user.organization_id != org_id:
         error_msg = Messages.error("user_not_in_organization", lang)
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
-    
+
     # Set role to manager
     user.role = 'manager'
-    
+
     try:
         db.commit()
         db.refresh(user)
@@ -528,17 +529,17 @@ async def set_organization_manager(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to set manager role"
         )
-    
+
     # Invalidate user cache
     try:
-        from services.redis_user_cache import user_cache
+        from services.redis.redis_user_cache import user_cache
         user_cache.invalidate(user.id, user.phone)
         user_cache.cache_user(user)
     except Exception as e:
         logger.warning(f"[Auth] Failed to update user cache: {e}")
-    
+
     logger.info(f"Admin {current_user.phone} set user {user.phone} as manager of org {org.code}")
-    
+
     return {
         "message": Messages.success("manager_role_set", lang, user.name or user.phone),
         "user": {
@@ -556,11 +557,11 @@ async def remove_organization_manager(
     request: Request,
     current_user: User = Depends(require_admin),
     db: Session = Depends(get_db),
-    lang: str = Depends(get_language_dependency)
+    lang: Language = Depends(get_language_dependency)
 ):
     """
     Remove manager role from a user (ADMIN ONLY)
-    
+
     Resets the user's role back to 'user'.
     """
     # Verify organization exists
@@ -570,21 +571,21 @@ async def remove_organization_manager(
         if not org:
             error_msg = Messages.error("organization_not_found", lang, org_id)
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
-    
+
     # Get user
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         error_msg = Messages.error("user_not_found", lang, user_id)
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
-    
+
     # Verify user belongs to this organization
     if user.organization_id != org_id:
         error_msg = Messages.error("user_not_in_organization", lang)
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
-    
+
     # Reset role to user
     user.role = 'user'
-    
+
     try:
         db.commit()
         db.refresh(user)
@@ -595,17 +596,17 @@ async def remove_organization_manager(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to remove manager role"
         )
-    
+
     # Invalidate user cache
     try:
-        from services.redis_user_cache import user_cache
+        from services.redis.redis_user_cache import user_cache
         user_cache.invalidate(user.id, user.phone)
         user_cache.cache_user(user)
     except Exception as e:
         logger.warning(f"[Auth] Failed to update user cache: {e}")
-    
+
     logger.info(f"Admin {current_user.phone} removed manager role from user {user.phone} in org {org.code}")
-    
+
     return {
         "message": Messages.success("manager_role_removed", lang, user.name or user.phone),
         "user": {

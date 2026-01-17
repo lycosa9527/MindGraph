@@ -1,4 +1,4 @@
-"""
+﻿"""
 Registration Endpoints
 ======================
 
@@ -20,20 +20,20 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from sqlalchemy.orm import Session
 
 from config.database import get_db
-from models.messages import Messages
-from models.auth import Organization, User
+from models.messages import
+from models.auth import
 from models.requests import RegisterRequest, RegisterWithSMSRequest
 from utils.auth import (
-    AUTH_MODE, hash_password, get_client_ip, 
+    AUTH_MODE, hash_password, get_client_ip,
     create_access_token, create_refresh_token, compute_device_hash,
     ACCESS_TOKEN_EXPIRY_MINUTES
 )
 from utils.invitations import INVITE_PATTERN
-from services.redis_user_cache import user_cache
-from services.redis_org_cache import org_cache
-from services.redis_distributed_lock import phone_registration_lock
-from services.redis_session_manager import get_session_manager, get_refresh_token_manager
-from services.registration_metrics import registration_metrics
+from services.redis.redis_user_cache import user_cache
+from services.redis.redis_org_cache import org_cache
+from services.redis.redis_distributed_lock import phone_registration_lock
+from services.redis.redis_session_manager import get_session_manager, get_refresh_token_manager
+from services.monitoring.registration_metrics import registration_metrics
 
 from .dependencies import get_language_dependency
 from .helpers import (
@@ -55,21 +55,21 @@ async def register(
     http_request: Request,
     response: Response,
     db: Session = Depends(get_db),
-    lang: str = Depends(get_language_dependency)
+    lang: Language = Depends(get_language_dependency)
 ):
     """
     Register new user (K12 teacher)
-    
+
     Validates:
     - Captcha verification (bot protection)
     - 11-digit Chinese mobile number
     - 8+ character password
     - Mandatory name (no numbers)
     - Valid invitation code (automatically binds user to school)
-    
+
     Note: Organization is automatically determined from invitation code.
     Each invitation code is unique and belongs to one school.
-    
+
     Registration is only available in standard and enterprise modes.
     Demo and bayi modes use passkey authentication instead.
     """
@@ -80,11 +80,11 @@ async def register(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=error_msg
         )
-    
+
     # Track registration attempt
     registration_metrics.record_attempt()
     start_time = time.time()
-    
+
     # Validate captcha first (anti-bot protection)
     captcha_valid, captcha_error = await verify_captcha_with_retry(request.captcha_id, request.captcha)
     if not captcha_valid:
@@ -120,12 +120,12 @@ async def register(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=error_msg
             )
-    
+
     logger.debug(f"Captcha verified for registration: {request.phone}")
-    
+
     retry_count = 0
     cache_write_success = False
-    
+
     # Find organization by invitation code (each invitation code is unique)
     provided_invite = (request.invitation_code or "").strip().upper()
     if not provided_invite:
@@ -136,7 +136,7 @@ async def register(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=error_msg
         )
-    
+
     # Validate invitation code format (AAAA-XXXXX pattern)
     if not INVITE_PATTERN.match(provided_invite):
         duration = time.time() - start_time
@@ -146,7 +146,7 @@ async def register(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=error_msg
         )
-    
+
     # Use cache for org lookup (with SQLite fallback)
     org = org_cache.get_by_invitation_code(provided_invite)
     if not org:
@@ -167,9 +167,9 @@ async def register(
                 org_cache.cache_org(org)
             except Exception as e:
                 logger.debug(f"[Auth] Failed to cache org after SQLite query: {e}")
-    
+
     logger.debug(f"User registering with invitation code for organization: {org.code} ({org.name})")
-    
+
     # Use distributed lock to prevent race condition on phone uniqueness check
     try:
         async with phone_registration_lock(request.phone):
@@ -183,7 +183,7 @@ async def register(
                     status_code=status.HTTP_409_CONFLICT,
                     detail=error_msg
                 )
-            
+
             # Create new user
             new_user = User(
                 phone=request.phone,
@@ -192,7 +192,7 @@ async def register(
                 organization_id=org.id,
                 created_at=datetime.now(timezone.utc)
             )
-            
+
             # Write to SQLite FIRST (source of truth) with retry logic for lock errors
             db.add(new_user)
             retry_count = await commit_user_with_retry(db, new_user, max_retries=5)
@@ -216,21 +216,21 @@ async def register(
         else:
             registration_metrics.record_failure('other', duration)
         raise
-    
+
     # Session management: Allow multiple concurrent sessions (up to MAX_CONCURRENT_SESSIONS)
     session_manager = get_session_manager()
     client_ip = get_client_ip(http_request) if http_request else "unknown"
-    
+
     # Generate JWT access token
     token = create_access_token(new_user)
-    
+
     # Generate refresh token
     refresh_token_value, refresh_token_hash = create_refresh_token(new_user.id)
-    
+
     # Compute device hash for session and token binding
     device_hash = compute_device_hash(http_request)
     user_agent = http_request.headers.get("User-Agent", "")
-    
+
     # Parallel cache write, session creation, and refresh token storage
     async def cache_user_async():
         """Cache user in Redis (non-blocking)."""
@@ -242,14 +242,14 @@ async def register(
         except Exception as e:
             cache_write_success = False
             logger.warning(f"[Auth] Failed to cache new user ID {new_user.id}: {e}")
-    
+
     async def store_session_async():
         """Store session in Redis (non-blocking)."""
         try:
             session_manager.store_session(new_user.id, token, device_hash=device_hash)
         except Exception as e:
             logger.warning(f"[Auth] Failed to store session for user ID {new_user.id}: {e}")
-    
+
     async def store_refresh_token_async():
         """Store refresh token in Redis with device binding."""
         try:
@@ -263,7 +263,7 @@ async def register(
             )
         except Exception as e:
             logger.warning(f"[Auth] Failed to store refresh token for user ID {new_user.id}: {e}")
-    
+
     # Execute cache write, session creation, and refresh token storage in parallel
     await asyncio.gather(
         cache_user_async(),
@@ -271,17 +271,17 @@ async def register(
         store_refresh_token_async(),
         return_exceptions=True
     )
-    
+
     # Track successful registration
     duration = time.time() - start_time
     registration_metrics.record_success(duration, retry_count, cache_write_success)
-    
+
     # Set cookies (both access and refresh tokens)
     set_auth_cookies(response, token, refresh_token_value, http_request)
-    
+
     org_name = org.name if org else "None"
     logger.info(f"[TokenAudit] Registration success: user={new_user.id}, phone={new_user.phone}, org={org_name}, method=captcha, ip={client_ip}")
-    
+
     return {
         "access_token": token,
         "token_type": "bearer",
@@ -301,21 +301,21 @@ async def register_with_sms(
     http_request: Request,
     response: Response,
     db: Session = Depends(get_db),
-    lang: str = Depends(get_language_dependency)
+    lang: Language = Depends(get_language_dependency)
 ):
     """
     Register new user with SMS verification
-    
+
     Alternative to captcha-based registration.
     Requires a valid SMS verification code.
-    
+
     Validates:
     - 11-digit Chinese mobile number
     - 8+ character password
     - Mandatory name (no numbers)
     - Valid invitation code
     - SMS verification code (consumed last to avoid wasting codes)
-    
+
     Registration is only available in standard and enterprise modes.
     Demo and bayi modes use passkey authentication instead.
     """
@@ -326,13 +326,13 @@ async def register_with_sms(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=error_msg
         )
-    
+
     # Track registration attempt
     registration_metrics.record_attempt()
     start_time = time.time()
     retry_count = 0
     cache_write_success = False
-    
+
     # Find organization by invitation code
     provided_invite = (request.invitation_code or "").strip().upper()
     if not provided_invite:
@@ -343,7 +343,7 @@ async def register_with_sms(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=error_msg
         )
-    
+
     # Validate invitation code format (AAAA-XXXXX pattern)
     if not INVITE_PATTERN.match(provided_invite):
         duration = time.time() - start_time
@@ -353,7 +353,7 @@ async def register_with_sms(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=error_msg
         )
-    
+
     # Use cache for org lookup (with SQLite fallback)
     org = org_cache.get_by_invitation_code(provided_invite)
     if not org:
@@ -374,7 +374,7 @@ async def register_with_sms(
                 org_cache.cache_org(org)
             except Exception as e:
                 logger.debug(f"[Auth] Failed to cache org after SQLite query: {e}")
-    
+
     # Use distributed lock to prevent race condition on phone uniqueness check
     try:
         async with phone_registration_lock(request.phone):
@@ -388,18 +388,18 @@ async def register_with_sms(
                     status_code=status.HTTP_409_CONFLICT,
                     detail=error_msg
                 )
-            
+
             # All validations passed - now consume the SMS code
             _verify_and_consume_sms_code(
-                request.phone, 
-                request.sms_code, 
-                "register", 
+                request.phone,
+                request.sms_code,
+                "register",
                 db,
                 lang
             )
-            
+
             logger.debug(f"User registering with SMS for organization: {org.code} ({org.name})")
-            
+
             # Create new user
             new_user = User(
                 phone=request.phone,
@@ -408,7 +408,7 @@ async def register_with_sms(
                 organization_id=org.id,
                 created_at=datetime.now(timezone.utc)
             )
-            
+
             # Write to SQLite FIRST (source of truth) with retry logic for lock errors
             db.add(new_user)
             retry_count = await commit_user_with_retry(db, new_user, max_retries=5)
@@ -429,23 +429,23 @@ async def register_with_sms(
         else:
             registration_metrics.record_failure('other', duration)
         raise
-    
+
     # Session management: Invalidate old sessions before creating new one
     session_manager = get_session_manager()
     client_ip = get_client_ip(http_request) if http_request else "unknown"
     old_token_hash = session_manager.get_session_token(new_user.id)
     session_manager.invalidate_user_sessions(new_user.id, old_token_hash=old_token_hash, ip_address=client_ip)
-    
+
     # Generate JWT access token
     token = create_access_token(new_user)
-    
+
     # Generate refresh token
     refresh_token_value, refresh_token_hash = create_refresh_token(new_user.id)
-    
+
     # Compute device hash for session and token binding
     device_hash = compute_device_hash(http_request)
     user_agent = http_request.headers.get("User-Agent", "")
-    
+
     # Parallel cache write, session creation, and refresh token storage
     async def cache_user_async():
         """Cache user in Redis (non-blocking)."""
@@ -457,14 +457,14 @@ async def register_with_sms(
         except Exception as e:
             cache_write_success = False
             logger.warning(f"[Auth] Failed to cache new user ID {new_user.id}: {e}")
-    
+
     async def store_session_async():
         """Store session in Redis (non-blocking)."""
         try:
             session_manager.store_session(new_user.id, token, device_hash=device_hash)
         except Exception as e:
             logger.warning(f"[Auth] Failed to store session for user ID {new_user.id}: {e}")
-    
+
     async def store_refresh_token_async():
         """Store refresh token in Redis with device binding."""
         try:
@@ -478,7 +478,7 @@ async def register_with_sms(
             )
         except Exception as e:
             logger.warning(f"[Auth] Failed to store refresh token for user ID {new_user.id}: {e}")
-    
+
     # Execute cache write, session creation, and refresh token storage in parallel
     await asyncio.gather(
         cache_user_async(),
@@ -486,20 +486,20 @@ async def register_with_sms(
         store_refresh_token_async(),
         return_exceptions=True
     )
-    
+
     # Track successful registration
     duration = time.time() - start_time
     registration_metrics.record_success(duration, retry_count, cache_write_success)
-    
+
     # Set cookies (both access and refresh tokens)
     set_auth_cookies(response, token, refresh_token_value, http_request)
-    
+
     org_name = org.name if org else "None"
     logger.info(f"[TokenAudit] Registration success: user={new_user.id}, phone={new_user.phone}, org={org_name}, method=sms, ip={client_ip}")
-    
+
     # Track user activity
     track_user_activity(new_user, 'login', {'method': 'sms', 'org': org_name, 'action': 'register'}, http_request)
-    
+
     return {
         "access_token": token,
         "token_type": "bearer",

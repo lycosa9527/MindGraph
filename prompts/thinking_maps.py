@@ -1,10 +1,10 @@
-#【************雅萱改了********** 1--490】
+﻿#【************雅萱改了********** 1--490】
 """
 Thinking Maps Prompts
 
 This module contains all prompts for the 8 Thinking Maps®:
 1. Circle Map - association, generating related information around the central topic
-2. Bubble Map - Describe attributes and characteristics  
+2. Bubble Map - Describe attributes and characteristics
 3. Double Bubble Map - Compare and contrast two topics
 4. Tree Map - Categorize and classify information
 5. Brace Map - Show whole/part relationships
@@ -1335,19 +1335,19 @@ THINKING_MAP_PROMPTS = {
     "brace_map_generation_zh": BRACE_MAP_GENERATION_ZH,
     "multi_flow_map_generation_en": MULTI_FLOW_MAP_GENERATION_EN,
     "multi_flow_map_generation_zh": MULTI_FLOW_MAP_GENERATION_ZH,
-    
+
     # Bridge map identify relationship prompts (for auto-complete with existing pairs)
     "bridge_map_identify_relationship_en": BRIDGE_MAP_IDENTIFY_RELATIONSHIP_EN,
     "bridge_map_identify_relationship_zh": BRIDGE_MAP_IDENTIFY_RELATIONSHIP_ZH,
-    
+
     # Bridge map fixed dimension prompts (for auto-complete when user has already specified the relationship)
     "bridge_map_fixed_dimension_en": BRIDGE_MAP_FIXED_DIMENSION_EN,
     "bridge_map_fixed_dimension_zh": BRIDGE_MAP_FIXED_DIMENSION_ZH,
-    
+
     # Bridge map relationship-only prompts (user provides ONLY the relationship, no pairs)
     "bridge_map_relationship_only_en": BRIDGE_MAP_RELATIONSHIP_ONLY_EN,
     "bridge_map_relationship_only_zh": BRIDGE_MAP_RELATIONSHIP_ONLY_ZH,
-    
+
     # Agent-specific prompt keys (what agents are actually calling for)
     "bridge_map_agent_generation_en": BRIDGE_MAP_GENERATION_EN,
     "bridge_map_agent_generation_zh": BRIDGE_MAP_GENERATION_ZH,
@@ -1377,4 +1377,4 @@ THINKING_MAP_PROMPTS = {
     "brace_map_agent_dimension_only_zh": BRACE_MAP_DIMENSION_ONLY_ZH,
     "multi_flow_map_agent_generation_en": MULTI_FLOW_MAP_GENERATION_EN,
     "multi_flow_map_agent_generation_zh": MULTI_FLOW_MAP_GENERATION_ZH,
-} 
+}

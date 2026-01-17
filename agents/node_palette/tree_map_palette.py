@@ -1,3 +1,12 @@
+﻿"""
+tree map palette module.
+"""
+from typing import Optional, Dict, Any, AsyncGenerator
+import logging
+import re
+
+from agents.node_palette.base_palette_generator import BasePaletteGenerator
+
 """
 Tree Map Palette Generator
 ===========================
@@ -14,11 +23,7 @@ All Rights Reserved
 Proprietary License
 """
 
-import re
-import logging
-from typing import Optional, Dict, Any, AsyncGenerator
 
-from agents.node_palette.base_palette_generator import BasePaletteGenerator
 
 logger = logging.getLogger(__name__)
 
@@ -26,19 +31,19 @@ logger = logging.getLogger(__name__)
 class TreeMapPaletteGenerator(BasePaletteGenerator):
     """
     Tree Map specific palette generator with multi-stage workflow.
-    
+
     Stages:
     - dimensions: Generate dimension options (if user hasn't selected one)
     - categories: Generate categories for selected dimension (no children)
     - children: Generate children for specific category
     """
-    
+
     def __init__(self):
         """Initialize tree map palette generator"""
         super().__init__()
         # Track stage data per session
         self.session_stages = {}  # session_id -> {'stage': str, 'dimension': str, 'categories': []}
-    
+
     async def generate_batch(
         self,
         session_id: str,
@@ -55,7 +60,7 @@ class TreeMapPaletteGenerator(BasePaletteGenerator):
     ) -> AsyncGenerator[Dict, None]:
         """
         Generate batch with stage-specific logic.
-        
+
         Args:
             session_id: Session identifier
             center_topic: Main topic
@@ -70,17 +75,17 @@ class TreeMapPaletteGenerator(BasePaletteGenerator):
         self.session_stages[session_id]['stage'] = stage
         if stage_data:
             self.session_stages[session_id].update(stage_data)
-        
-        logger.debug("[TreeMapPalette] Stage: %s | Session: %s | Topic: '%s'", 
+
+        logger.debug("[TreeMapPalette] Stage: %s | Session: %s | Topic: '%s'",
                    stage, session_id[:8], center_topic)
         if stage_data:
             logger.debug("[TreeMapPalette] Stage data: %s", stage_data)
-        
+
         # Pass session_id through educational_context so _build_prompt can access it
         if educational_context is None:
             educational_context = {}
         educational_context = {**educational_context, '_session_id': session_id}
-        
+
         # Call base class generate_batch which will use our _build_prompt
         async for event in super().generate_batch(
             session_id=session_id,
@@ -95,7 +100,7 @@ class TreeMapPaletteGenerator(BasePaletteGenerator):
             # Add mode field to every node for explicit tracking (like Double Bubble and Multi Flow)
             if event.get('event') == 'node_generated':
                 node = event.get('node', {})
-                
+
                 # For children stage, use category_name as mode (for dynamic tab routing)
                 # For other stages, use stage name
                 if stage == 'children' and stage_data and stage_data.get('category_name'):
@@ -104,11 +109,11 @@ class TreeMapPaletteGenerator(BasePaletteGenerator):
                 else:
                     node_mode = stage
                     logger.debug(f"[TreeMapPalette] Node tagged with stage mode='{node_mode}' | ID: {node.get('id', 'unknown')} | Text: {node.get('text', '')}")
-                
+
                 node['mode'] = node_mode
-            
+
             yield event
-    
+
     def _build_prompt(
         self,
         center_topic: str,
@@ -118,49 +123,49 @@ class TreeMapPaletteGenerator(BasePaletteGenerator):
     ) -> str:
         """
         Build stage-specific prompt for Tree Map node generation.
-        
+
         Checks session_stages to determine current stage and builds appropriate prompt.
-        
+
         Args:
             center_topic: Main topic to classify
             educational_context: Educational context dict
             count: Number of items to request
             batch_num: Current batch number
-            
+
         Returns:
             Stage-specific formatted prompt
         """
         # Detect language from content (Chinese topic = Chinese prompt)
-        language = self._detect_language(center_topic, educational_context)
+        language = self._detect_language  # pylint: disable=protected-access(center_topic, educational_context)
         context_desc = educational_context.get('raw_message', 'General K12 teaching') if educational_context else 'General K12 teaching'
-        
+
         # Determine current stage from session_stages
         # Since we're in instance method, we need session_id - but base class doesn't pass it
         # Workaround: Store in educational_context during generate_batch call
         session_id = educational_context.get('_session_id') if educational_context else None
         stage = 'categories'  # default
         stage_data = {}
-        
+
         if session_id and session_id in self.session_stages:
             stage = self.session_stages[session_id].get('stage', 'categories')
             stage_data = self.session_stages[session_id]
-        
+
         logger.debug("[TreeMapPalette-Prompt] Building prompt for stage: %s", stage)
-        
+
         # Build stage-specific prompt
         if stage == 'dimensions':
-            return self._build_dimension_prompt(center_topic, context_desc, language, count, batch_num)
+            return self._build_dimension_prompt  # pylint: disable=protected-access(center_topic, context_desc, language, count, batch_num)
         elif stage == 'categories':
             dimension = stage_data.get('dimension', '')
-            return self._build_category_prompt(center_topic, dimension, context_desc, language, count, batch_num)
+            return self._build_category_prompt  # pylint: disable=protected-access(center_topic, dimension, context_desc, language, count, batch_num)
         elif stage == 'children':
             dimension = stage_data.get('dimension', '')
             category_name = stage_data.get('category_name', '')
-            return self._build_children_prompt(center_topic, dimension, category_name, context_desc, language, count, batch_num)
+            return self._build_children_prompt  # pylint: disable=protected-access(center_topic, dimension, category_name, context_desc, language, count, batch_num)
         else:
             # Fallback to categories
-            return self._build_category_prompt(center_topic, '', context_desc, language, count, batch_num)
-    
+            return self._build_category_prompt  # pylint: disable=protected-access(center_topic, '', context_desc, language, count, batch_num)
+
     def _build_dimension_prompt(self, center_topic: str, context_desc: str, language: str, count: int, batch_num: int) -> str:
         """Build prompt for generating dimension options"""
         if language == 'zh':
@@ -209,15 +214,15 @@ Requirements:
 4. Output only dimension names, one per line, no numbering
 
 Generate {count} dimensions:"""
-        
+
         if batch_num > 1:
             if language == 'zh':
                 prompt += f"\n\n注意：这是第{batch_num}批。确保提供不同角度的维度，避免重复。"
             else:
                 prompt += f"\n\nNote: Batch {batch_num}. Provide different perspectives, avoid repetition."
-        
+
         return prompt
-    
+
     def _build_category_prompt(self, center_topic: str, dimension: str, context_desc: str, language: str, count: int, batch_num: int) -> str:
         """Build prompt for generating categories (no children)"""
         if language == 'zh':
@@ -274,15 +279,15 @@ Requirements:
 5. Do NOT generate specific items, only category names
 
 Generate {count} categories:"""
-        
+
         if batch_num > 1:
             if language == 'zh':
                 prompt += f"\n\n注意：这是第{batch_num}批。提供不同的类别，避免重复。"
             else:
                 prompt += f"\n\nNote: Batch {batch_num}. Provide different categories, avoid repetition."
-        
+
         return prompt
-    
+
     def _build_children_prompt(self, center_topic: str, dimension: str, category_name: str, context_desc: str, language: str, count: int, batch_num: int) -> str:
         """Build prompt for generating children for a specific category"""
         if language == 'zh':
@@ -323,34 +328,34 @@ Requirements:
 5. **IMPORTANT: Only generate items that belong to the "{category_name}" category, do NOT generate items from other categories**
 
 Generate {count} items for "{category_name}" category under "{center_topic}":"""
-        
+
         if batch_num > 1:
             if language == 'zh':
                 prompt += f"\n\n注意：这是第{batch_num}批。提供更多不同的项目，避免重复。"
             else:
                 prompt += f"\n\nNote: Batch {batch_num}. Provide more diverse items, avoid repetition."
-        
+
         return prompt
-    
-    def end_session(self, session_id: str, reason: str = "complete"):
+
+    def end_session(self, session_id: str, reason: str = "complete") -> None:
         """
         End session and cleanup stage data.
-        
+
         Overrides base class to also clean up session_stages.
         """
         # Clean up stage data
         self.session_stages.pop(session_id, None)
-        
+
         # Call parent cleanup
         super().end_session(session_id, reason)
 
 
-# Global singleton instance for Tree Map
+# Global singleton  # pylint: disable=global-statement instance for Tree Map
 _tree_map_palette_generator = None
 
 def get_tree_map_palette_generator() -> TreeMapPaletteGenerator:
     """Get singleton instance of Tree Map palette generator"""
-    global _tree_map_palette_generator
+    global _tree_map_palette_generator  # pylint: disable=global-statement
     if _tree_map_palette_generator is None:
         _tree_map_palette_generator = TreeMapPaletteGenerator()
     return _tree_map_palette_generator

@@ -1,3 +1,14 @@
+﻿"""
+image proxy module.
+"""
+from urllib.parse import urlparse
+import logging
+
+from fastapi import APIRouter, HTTPException, Query
+from fastapi.responses import Response
+import httpx
+
+
 """
 Image Proxy API Router
 ======================
@@ -10,12 +21,7 @@ All Rights Reserved
 Proprietary License
 """
 
-import logging
-from urllib.parse import urlparse
 
-import httpx
-from fastapi import APIRouter, HTTPException, Query
-from fastapi.responses import Response
 
 logger = logging.getLogger(__name__)
 
@@ -33,10 +39,10 @@ ALLOWED_DOMAINS = [
 async def proxy_image(url: str = Query(..., description="The image URL to proxy")):
     """
     Proxy an external image to avoid CORS issues.
-    
+
     This endpoint fetches an image from an external URL and returns it,
     allowing the frontend to use it in html-to-image without CORS errors.
-    
+
     Security:
     - Only allows images from whitelisted domains
     - Only allows image content types
@@ -49,23 +55,23 @@ async def proxy_image(url: str = Query(..., description="The image URL to proxy"
             raise HTTPException(status_code=400, detail="Invalid URL")
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid URL")
-    
+
     # Security: Check domain whitelist
     domain = parsed.netloc.split(':')[0]  # Remove port if present
     if domain not in ALLOWED_DOMAINS:
         logger.warning(f"Image proxy blocked for non-whitelisted domain: {domain}")
         raise HTTPException(status_code=403, detail="Domain not allowed")
-    
+
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:
             response = await client.get(url, follow_redirects=True)
-            
+
             if response.status_code != 200:
                 raise HTTPException(
                     status_code=response.status_code,
                     detail="Failed to fetch image"
                 )
-            
+
             # Validate content type
             content_type = response.headers.get('content-type', '')
             if not content_type.startswith('image/'):
@@ -73,7 +79,7 @@ async def proxy_image(url: str = Query(..., description="The image URL to proxy"
                     status_code=400,
                     detail="URL does not point to an image"
                 )
-            
+
             # Limit size to 10MB
             content_length = len(response.content)
             if content_length > 10 * 1024 * 1024:
@@ -81,7 +87,7 @@ async def proxy_image(url: str = Query(..., description="The image URL to proxy"
                     status_code=413,
                     detail="Image too large (max 10MB)"
                 )
-            
+
             return Response(
                 content=response.content,
                 media_type=content_type,
@@ -90,7 +96,7 @@ async def proxy_image(url: str = Query(..., description="The image URL to proxy"
                     'X-Content-Type-Options': 'nosniff'
                 }
             )
-            
+
     except httpx.TimeoutException:
         raise HTTPException(status_code=504, detail="Timeout fetching image")
     except httpx.RequestError as e:

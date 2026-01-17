@@ -1,3 +1,9 @@
+﻿from enum import Enum
+from typing import Dict, Any, Optional, Tuple
+import logging
+import time
+
+
 """
 DashScope Error Handler
 =======================
@@ -10,10 +16,6 @@ All Rights Reserved
 Proprietary License
 """
 
-import logging
-import time
-from typing import Dict, Any, Optional, Tuple
-from enum import Enum
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +36,7 @@ class DashScopeErrorType(Enum):
 
 class DashScopeError(Exception):
     """Custom exception for DashScope API errors."""
-    
+
     def __init__(
         self,
         message: str,
@@ -56,11 +58,11 @@ class DashScopeError(Exception):
 def parse_dashscope_error(response_data: Dict[str, Any], status_code: int) -> DashScopeError:
     """
     Parse DashScope API error response and create appropriate exception.
-    
+
     Args:
         response_data: JSON response from DashScope API
         status_code: HTTP status code
-        
+
     Returns:
         DashScopeError with appropriate error details
     """
@@ -68,7 +70,7 @@ def parse_dashscope_error(response_data: Dict[str, Any], status_code: int) -> Da
     error_code = response_data.get("code") or response_data.get("error", {}).get("code")
     error_message = response_data.get("message") or response_data.get("error", {}).get("message")
     error_type_str = response_data.get("type") or response_data.get("error", {}).get("type")
-    
+
     # Determine error type
     error_type = DashScopeErrorType.UNKNOWN
     if error_type_str:
@@ -76,17 +78,17 @@ def parse_dashscope_error(response_data: Dict[str, Any], status_code: int) -> Da
             if etype.value in error_type_str:
                 error_type = etype
                 break
-    
+
     # Determine if retryable
     retryable = status_code in (429, 500, 502, 503, 504)
     retry_after = None
     if status_code == 429:
         # Extract retry-after from headers if available
         retry_after = 60  # Default 60 seconds for rate limiting
-    
+
     # Map error codes to user-friendly messages
     user_message = _get_user_friendly_message(error_code, error_message, error_type, status_code)
-    
+
     return DashScopeError(
         message=user_message,
         error_code=error_code,
@@ -105,12 +107,12 @@ def _get_user_friendly_message(
 ) -> str:
     """
     Get user-friendly error message based on error code and type.
-    
+
     Maps DashScope error codes to Chinese/English user-friendly messages.
     """
     # Default message
     default_msg = error_message or f"DashScope API error (status: {status_code})"
-    
+
     # Map specific error codes to messages
     # Includes both DashScope native format (PascalCase) and OpenAI-compatible format (snake_case)
     error_messages: Dict[str, Dict[str, str]] = {
@@ -187,24 +189,24 @@ def _get_user_friendly_message(
             "en": "Bad request format, please check request parameters"
         },
     }
-    
+
     # Try to find specific error code mapping
     if error_code:
         # Try exact match first
         if error_code in error_messages:
             return error_messages[error_code]["zh"]
-        
+
         # Try partial match (e.g., "Throttling.RateQuota" -> "Throttling")
         for code_key, messages in error_messages.items():
             if code_key in error_code or error_code.startswith(code_key):
                 return messages["zh"]
-    
+
     # Try error type mapping
     if error_type != DashScopeErrorType.UNKNOWN:
         type_key = error_type.value
         if type_key in error_messages:
             return error_messages[type_key]["zh"]
-    
+
     # Status code based messages
     if status_code == 401:
         return "API密钥无效或已过期，请检查配置"
@@ -218,21 +220,21 @@ def _get_user_friendly_message(
         return "服务内部错误，请稍后重试"
     elif status_code == 503:
         return "服务暂时不可用，请稍后重试"
-    
+
     return default_msg
 
 
 def handle_dashscope_response(response, raise_on_error: bool = True) -> Tuple[bool, Optional[DashScopeError]]:
     """
     Handle DashScope API response and check for errors.
-    
+
     Args:
         response: httpx.Response object
         raise_on_error: If True, raise exception on error; otherwise return error
-        
+
     Returns:
         Tuple of (success: bool, error: Optional[DashScopeError])
-        
+
     Raises:
         DashScopeError if raise_on_error=True and error detected
     """
@@ -252,58 +254,58 @@ def handle_dashscope_response(response, raise_on_error: bool = True) -> Tuple[bo
                 status_code=response.status_code,
                 retryable=response.status_code in (429, 500, 502, 503, 504)
             )
-        
+
         if raise_on_error:
             raise error
-        
+
         return False, error
 
 
 def should_retry(error: DashScopeError, attempt: int, max_retries: int = 3) -> bool:
     """
     Determine if error should be retried.
-    
+
     Args:
         error: DashScopeError instance
         attempt: Current attempt number (1-based)
         max_retries: Maximum number of retries
-        
+
     Returns:
         True if should retry, False otherwise
     """
     if attempt > max_retries:
         return False
-    
+
     # Don't retry non-retryable errors
     if not error.retryable:
         return False
-    
+
     # Don't retry authentication/authorization errors
     if error.status_code in (401, 403):
         return False
-    
+
     # Don't retry invalid parameter errors
     if error.error_type == DashScopeErrorType.INVALID_PARAMETER:
         return False
-    
+
     return True
 
 
 def get_retry_delay(attempt: int, error: Optional[DashScopeError] = None) -> float:
     """
     Calculate retry delay with exponential backoff.
-    
+
     Args:
         attempt: Current attempt number (1-based)
         error: Optional DashScopeError (may contain retry_after)
-        
+
     Returns:
         Delay in seconds
     """
     # Use retry_after from error if available
     if error and error.retry_after:
         return float(error.retry_after)
-    
+
     # Exponential backoff: 1s, 2s, 4s, 8s...
     base_delay = 1.0
     return min(base_delay * (2 ** (attempt - 1)), 60.0)  # Cap at 60 seconds

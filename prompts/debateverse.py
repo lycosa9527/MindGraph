@@ -1,4 +1,4 @@
-"""
+﻿"""
 DebateVerse Prompts
 ===================
 
@@ -103,7 +103,7 @@ STAGE_INSTRUCTIONS = {
 - 时长：1分钟（约150-200字）
 - 注意：发言将被转录，请确保内容完整且能在1分钟内完成
 - 重要：必须使用中文进行发言""",
-        
+
         'rebuttal': """【驳论发言阶段】
 - 攻击对手的论证框架
 - 指出对手论点的逻辑漏洞
@@ -112,7 +112,7 @@ STAGE_INSTRUCTIONS = {
 - 时长：1分钟（约150-200字）
 - 注意：发言将被转录，请确保内容完整且能在1分钟内完成
 - 重要：必须使用中文进行发言""",
-        
+
         'cross_exam': """【交叉质询阶段】
 - 通过提问暴露对手的矛盾
 - 揭示对手论点的弱点
@@ -121,7 +121,7 @@ STAGE_INSTRUCTIONS = {
 - 时长：1分钟（问答轮次）
 - 注意：发言将被转录，请确保内容完整且能在1分钟内完成
 - 重要：必须使用中文进行提问和回答""",
-        
+
         'closing': """【总结陈词阶段】
 - 总结整场辩论
 - 强化你方的优势
@@ -139,7 +139,7 @@ STAGE_INSTRUCTIONS = {
 - Lay foundation for your position
 - Duration: 1 minute (approximately 150-200 words)
 - Note: Speech will be transcribed, ensure content is complete and can be finished within 1 minute""",
-        
+
         'rebuttal': """【Rebuttal Stage】
 - Attack opponent's argumentative framework
 - Point out logical flaws in opponent's arguments
@@ -147,7 +147,7 @@ STAGE_INSTRUCTIONS = {
 - Strengthen your core arguments
 - Duration: 1 minute (approximately 150-200 words)
 - Note: Speech will be transcribed, ensure content is complete and can be finished within 1 minute""",
-        
+
         'cross_exam': """【Cross-Examination Stage】
 - Expose opponent's contradictions through questions
 - Reveal weaknesses in opponent's arguments
@@ -155,7 +155,7 @@ STAGE_INSTRUCTIONS = {
 - Avoid falling into opponent's traps
 - Duration: 1 minute (Q&A rounds)
 - Note: Speech will be transcribed, ensure content is complete and can be finished within 1 minute""",
-        
+
         'closing': """【Closing Statements Stage】
 - Summarize the entire debate
 - Reinforce your team's strengths
@@ -177,19 +177,19 @@ ROLE_TASKS = {
 2. 提出2-3个核心论点
 3. 定义关键术语
 4. 为正方立场奠定坚实基础""",
-        
+
         'affirmative_2': """作为正方二辩，你需要：
 1. 攻击反方的论证框架
 2. 指出反方论点的逻辑漏洞
 3. 为正方一辩的论点进行辩护
 4. 强化正方的核心立场""",
-        
+
         'negative_1': """作为反方一辩，你需要：
 1. 建立反方的论证框架
 2. 提出2-3个核心论点
 3. 定义关键术语
 4. 为反方立场奠定坚实基础""",
-        
+
         'negative_2': """作为反方二辩，你需要：
 1. 攻击正方的论证框架
 2. 指出正方论点的逻辑漏洞
@@ -202,19 +202,19 @@ ROLE_TASKS = {
 2. Present 2-3 core arguments
 3. Define key terms
 4. Lay a solid foundation for the affirmative position""",
-        
+
         'affirmative_2': """As Affirmative 2nd debater, you need to:
 1. Attack the negative's argumentative framework
 2. Point out logical flaws in negative's arguments
 3. Defend Affirmative 1st debater's points
 4. Strengthen the affirmative core position""",
-        
+
         'negative_1': """As Negative 1st debater, you need to:
 1. Establish the negative argumentative framework
 2. Present 2-3 core arguments
 3. Define key terms
 4. Lay a solid foundation for the negative position""",
-        
+
         'negative_2': """As Negative 2nd debater, you need to:
 1. Attack the affirmative's argumentative framework
 2. Point out logical flaws in affirmative's arguments
@@ -355,7 +355,7 @@ def get_debater_system_prompt(
 ) -> str:
     """
     Get system prompt for a debater.
-    
+
     Args:
         role: Role (affirmative_1, affirmative_2, negative_1, negative_2)
         side: Side (affirmative or negative)
@@ -366,14 +366,14 @@ def get_debater_system_prompt(
         opponent_arguments: Opponent's arguments summary
         attack_strategy: Attack strategy based on flaw analysis
         unaddressed_points: Points that haven't been addressed
-    
+
     Returns:
         Formatted system prompt
     """
     template = DEBATER_SYSTEM_PROMPT_ZH if language == 'zh' else DEBATER_SYSTEM_PROMPT_EN
     stage_instructions = STAGE_INSTRUCTIONS[language].get(stage, '')
     task_description = ROLE_TASKS[language].get(role, '')
-    
+
     return template.format(
         role=role,
         side=side,
@@ -395,18 +395,18 @@ def get_judge_system_prompt(
 ) -> str:
     """
     Get system prompt for judge.
-    
+
     Args:
         current_stage: Current stage
         topic: Debate topic
         language: Language ('zh' or 'en')
-    
+
     Returns:
         Formatted judge system prompt
     """
     template = JUDGE_SYSTEM_PROMPT_ZH if language == 'zh' else JUDGE_SYSTEM_PROMPT_ZH.replace('中文', 'English')
     task_description = JUDGE_TASKS[language].get(current_stage, '')
-    
+
     return template.format(
         current_stage=current_stage,
         topic=topic,
@@ -504,11 +504,11 @@ def get_position_generation_prompt(
 ) -> str:
     """
     Get prompt for generating debate positions.
-    
+
     Args:
         topic: Debate topic
         language: Language ('zh' or 'en')
-    
+
     Returns:
         Formatted position generation prompt
     """

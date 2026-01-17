@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 Extract teacher prompts, diagram agent prompts, and unclear intention cases from log files.
 """
@@ -31,7 +31,7 @@ def extract_teacher_prompts(log_file):
     teacher_prompts = []
     unclear_prompts = []
     original_prompts = []  # From GenerateDingTalk logs
-    
+
     with open(log_file, 'r', encoding='utf-8', errors='ignore') as f:
         lines = f.readlines()
         for line_num, line in enumerate(lines, 1):
@@ -49,7 +49,7 @@ def extract_teacher_prompts(log_file):
                         'file': log_file.name,
                         'source': 'GenerateDingTalk'
                     })
-            
+
             # Extract prompts marked as unclear
             if "LLM explicitly returned 'unclear' for prompt:" in line:
                 match = re.search(r"for prompt: '([^']+)'", line)
@@ -63,7 +63,7 @@ def extract_teacher_prompts(log_file):
                         'line': line_num,
                         'file': log_file.name
                     })
-            
+
             # Extract "Prompt is too complex or unclear"
             if "Prompt is too complex or unclear:" in line:
                 match = re.search(r"unclear: '([^']+)'", line)
@@ -78,7 +78,7 @@ def extract_teacher_prompts(log_file):
                         'file': log_file.name,
                         'type': 'too_complex'
                     })
-            
+
             # Extract successful topic extraction (these are teacher prompts that worked)
             if "Topic extraction completed" in line:
                 match = re.search(r"completed in [\d.]+s: '([^']+)'", line)
@@ -93,7 +93,7 @@ def extract_teacher_prompts(log_file):
                             if prompt_match:
                                 original_prompt = prompt_match.group(1)
                                 break
-                    
+
                     teacher_prompts.append({
                         'topic': topic,
                         'original_prompt': original_prompt,
@@ -102,16 +102,16 @@ def extract_teacher_prompts(log_file):
                         'line': line_num,
                         'file': log_file.name
                     })
-    
+
     # Combine original prompts with teacher prompts
     all_teacher_prompts = teacher_prompts + original_prompts
-    
+
     return all_teacher_prompts, unclear_prompts
 
 def extract_diagram_agent_prompts(log_file):
     """Extract prompts sent to diagram agents."""
     diagram_prompts = []
-    
+
     with open(log_file, 'r', encoding='utf-8', errors='ignore') as f:
         lines = f.readlines()
         for i, line in enumerate(lines):
@@ -129,7 +129,7 @@ def extract_diagram_agent_prompts(log_file):
                             if prompt_match:
                                 prompt = prompt_match.group(1)
                                 break
-                    
+
                     diagram_prompts.append({
                         'user_id': user_id,
                         'diagram_type': diagram_type,
@@ -140,13 +140,13 @@ def extract_diagram_agent_prompts(log_file):
                         'line': i + 1,
                         'file': log_file.name
                     })
-    
+
     return diagram_prompts
 
 def extract_unclear_intentions(log_file):
     """Extract cases where agent cannot understand teacher's intention."""
     unclear_cases = []
-    
+
     with open(log_file, 'r', encoding='utf-8', errors='ignore') as f:
         for line_num, line in enumerate(f, 1):
             # Look for "Unable to understand the request"
@@ -163,7 +163,7 @@ def extract_unclear_intentions(log_file):
                             if match:
                                 prompt = match.group(1)
                                 break
-                
+
                 unclear_cases.append({
                     'prompt': prompt,
                     'timestamp': parsed['time'] if parsed else None,
@@ -172,7 +172,7 @@ def extract_unclear_intentions(log_file):
                     'file': log_file.name,
                     'error': 'Unable to understand the request'
                 })
-            
+
             # Look for clarity: very_unclear
             if "clarity: very_unclear" in line:
                 parsed = parse_log_line(line)
@@ -186,7 +186,7 @@ def extract_unclear_intentions(log_file):
                             if match:
                                 prompt = match.group(1)
                                 break
-                
+
                 unclear_cases.append({
                     'prompt': prompt,
                     'timestamp': parsed['time'] if parsed else None,
@@ -195,34 +195,34 @@ def extract_unclear_intentions(log_file):
                     'file': log_file.name,
                     'error': 'very_unclear'
                 })
-    
+
     return unclear_cases
 
 def main():
     log_dir = Path(r"C:\Users\roywa\Desktop\logs")
     output_dir = Path(r"C:\Users\roywa\Desktop\MG\extracted_prompts")
     output_dir.mkdir(exist_ok=True)
-    
+
     all_teacher_prompts = []
     all_unclear_prompts = []
     all_diagram_prompts = []
     all_unclear_intentions = []
-    
+
     log_files = sorted(log_dir.glob("app.*.log"))
-    
+
     print(f"Processing {len(log_files)} log files...")
-    
+
     for log_file in log_files:
         print(f"Processing {log_file.name}...")
         teacher_prompts, unclear_prompts = extract_teacher_prompts(log_file)
         diagram_prompts = extract_diagram_agent_prompts(log_file)
         unclear_intentions = extract_unclear_intentions(log_file)
-        
+
         all_teacher_prompts.extend(teacher_prompts)
         all_unclear_prompts.extend(unclear_prompts)
         all_diagram_prompts.extend(diagram_prompts)
         all_unclear_intentions.extend(unclear_intentions)
-    
+
     # Remove duplicates from unclear prompts (same prompt, same file)
     seen_unclear = set()
     unique_unclear = []
@@ -231,7 +231,7 @@ def main():
         if key not in seen_unclear:
             seen_unclear.add(key)
             unique_unclear.append(item)
-    
+
     # Remove duplicates from unclear intentions
     seen_intentions = set()
     unique_intentions = []
@@ -241,7 +241,7 @@ def main():
             if key not in seen_intentions:
                 seen_intentions.add(key)
                 unique_intentions.append(item)
-    
+
     # Save results
     results = {
         'summary': {
@@ -256,12 +256,12 @@ def main():
         'diagram_agent_prompts': all_diagram_prompts,
         'unclear_intentions': unique_intentions
     }
-    
+
     # Save as JSON
     json_file = output_dir / "extracted_prompts.json"
     with open(json_file, 'w', encoding='utf-8') as f:
         json.dump(results, f, ensure_ascii=False, indent=2)
-    
+
     # Save as plain text files
     with open(output_dir / "teacher_prompts.txt", 'w', encoding='utf-8') as f:
         f.write("=== TEACHER PROMPTS ===\n\n")
@@ -278,7 +278,7 @@ def main():
                 f.write(f"Source: {item['source']}\n")
             f.write(f"File: {item['file']}, Line: {item['line']}\n")
             f.write("-" * 80 + "\n\n")
-    
+
     with open(output_dir / "unclear_prompts.txt", 'w', encoding='utf-8') as f:
         f.write("=== UNCLEAR PROMPTS (Agent Could Not Understand) ===\n\n")
         for item in unique_unclear:
@@ -289,7 +289,7 @@ def main():
             if 'type' in item:
                 f.write(f"Type: {item['type']}\n")
             f.write("-" * 80 + "\n\n")
-    
+
     with open(output_dir / "diagram_agent_prompts.txt", 'w', encoding='utf-8') as f:
         f.write("=== DIAGRAM AGENT PROMPTS ===\n\n")
         for item in all_diagram_prompts:
@@ -302,7 +302,7 @@ def main():
             f.write(f"Request ID: {item['request_id']}\n")
             f.write(f"File: {item['file']}, Line: {item['line']}\n")
             f.write("-" * 80 + "\n\n")
-    
+
     with open(output_dir / "unclear_intentions.txt", 'w', encoding='utf-8') as f:
         f.write("=== UNCLEAR INTENTIONS (Agent Cannot Get Teacher's Intention) ===\n\n")
         for item in unique_intentions:
@@ -313,7 +313,7 @@ def main():
             f.write(f"Request ID: {item['request_id']}\n")
             f.write(f"File: {item['file']}, Line: {item['line']}\n")
             f.write("-" * 80 + "\n\n")
-    
+
     # Print summary
     print("\n" + "=" * 80)
     print("EXTRACTION SUMMARY")

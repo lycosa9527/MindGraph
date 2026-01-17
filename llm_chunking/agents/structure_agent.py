@@ -1,3 +1,10 @@
+﻿from typing import Dict, Any, Optional, List
+import json
+import logging
+
+from llm_chunking.models import DocumentStructure
+from llm_chunking.patterns.toc_detector import TOCDetector
+
 """
 Structure detection agent using 30-page sampling.
 
@@ -5,11 +12,6 @@ Analyzes first 30 pages to detect document structure and determine
 optimal chunking strategy (General, Parent-Child, or Q&A).
 """
 
-import json
-import logging
-from typing import Dict, Any, Optional, List
-from llm_chunking.models import DocumentStructure
-from llm_chunking.patterns.toc_detector import TOCDetector
 
 logger = logging.getLogger(__name__)
 
@@ -17,24 +19,24 @@ logger = logging.getLogger(__name__)
 class StructureAgent:
     """
     Agent for detecting document structure via sampling.
-    
+
     Uses 30-page sampling + LLM analysis to determine:
     - Document type (book, article, FAQ, exercise book, etc.)
     - Optimal chunk structure (General, Parent-Child, Q&A)
     - Chunking strategy and rules
     """
-    
+
     def __init__(self, llm_service=None):
         """
         Initialize structure agent.
-        
+
         Args:
             llm_service: LLM service instance (uses services.llm_service if None)
         """
         self.llm_service = llm_service
         if llm_service is None:
             try:
-                from services.llm_service import llm_service
+                from services.llm import llm_service
                 # Verify LLM service is initialized
                 if not hasattr(llm_service, 'client_manager') or not llm_service.client_manager.is_initialized():
                     logger.warning(
@@ -50,9 +52,9 @@ class StructureAgent:
                     "Structure detection will use heuristics fallback."
                 )
                 self.llm_service = None
-        
+
         self.toc_detector = TOCDetector()
-    
+
     async def analyze_structure(
         self,
         sample_text: str,
@@ -61,24 +63,24 @@ class StructureAgent:
     ) -> DocumentStructure:
         """
         Analyze document structure from sample.
-        
+
         Args:
             sample_text: Sampled text (first 30 pages)
             document_id: Document identifier
             pdf_outline: Optional PDF outline
-            
+
         Returns:
             DocumentStructure with detected structure
         """
         # Step 1: Try TOC detection first (fast, pattern-based)
         toc = self.toc_detector.detect_hybrid(sample_text, pdf_outline, max_pages=30)
-        
+
         # Step 2: LLM analysis for structure type and chunking strategy
         structure_type, document_type, chunking_rules = await self._llm_analyze(
             sample_text,
             toc
         )
-        
+
         # Step 3: Create structure
         try:
             logger.info(
@@ -110,9 +112,9 @@ class StructureAgent:
             except Exception as import_error:
                 logger.error(f"[StructureAgent] Failed to import DocumentStructure: {import_error}")
             raise
-        
+
         return structure
-    
+
     async def _llm_analyze(
         self,
         sample_text: str,
@@ -120,18 +122,18 @@ class StructureAgent:
     ) -> tuple[str, Optional[str], Dict[str, Any]]:
         """
         Use LLM to analyze structure.
-        
+
         Args:
             sample_text: Sample text
             toc: Detected TOC entries
-            
+
         Returns:
             Tuple of (structure_type, document_type, chunking_rules)
         """
         if not self.llm_service:
             # Fallback: Use heuristics
             return self._heuristic_analyze(sample_text, toc)
-        
+
         # Build prompt
         toc_info = ""
         if toc:
@@ -139,7 +141,7 @@ class StructureAgent:
                 f"  {entry.get('title', '')} (level {entry.get('level', 1)})"
                 for entry in toc[:10]  # Limit to first 10 entries
             ])
-        
+
         prompt = f"""Analyze this document sample and determine the optimal chunking structure.
 
 Document Sample (first 30 pages):
@@ -164,7 +166,7 @@ Return JSON:
     }}
 }}
 """
-        
+
         try:
             response = await self.llm_service.chat(
                 prompt=prompt,
@@ -172,7 +174,7 @@ Return JSON:
                 temperature=0.3,
                 max_tokens=500
             )
-            
+
             # Parse JSON response
             # Try to extract JSON from response
             json_start = response.find('{')
@@ -180,20 +182,20 @@ Return JSON:
             if json_start >= 0 and json_end > json_start:
                 json_str = response[json_start:json_end]
                 result = json.loads(json_str)
-                
+
                 structure_type = result.get("structure_type", "general")
                 document_type = result.get("document_type")
                 chunking_rules = result.get("chunking_rules", {})
-                
+
                 return structure_type, document_type, chunking_rules
             else:
                 logger.warning("Failed to parse LLM response as JSON, using heuristics")
                 return self._heuristic_analyze(sample_text, toc)
-        
+
         except Exception as e:
             logger.warning(f"LLM analysis failed: {e}, using heuristics")
             return self._heuristic_analyze(sample_text, toc)
-    
+
     def _heuristic_analyze(
         self,
         sample_text: str,
@@ -201,11 +203,11 @@ Return JSON:
     ) -> tuple[str, Optional[str], Dict[str, Any]]:
         """
         Heuristic analysis fallback.
-        
+
         Args:
             sample_text: Sample text
             toc: TOC entries
-            
+
         Returns:
             Tuple of (structure_type, document_type, chunking_rules)
         """
@@ -222,7 +224,7 @@ Return JSON:
                         "parent_mode": "paragraph"
                     }
                 )
-        
+
         # Check for Q&A patterns
         qa_patterns = ["Q:", "A:", "Question", "Answer", "FAQ"]
         if any(pattern in sample_text for pattern in qa_patterns):
@@ -233,7 +235,7 @@ Return JSON:
                     "generate_questions": True
                 }
             )
-        
+
         # Default: general structure
         return (
             "general",

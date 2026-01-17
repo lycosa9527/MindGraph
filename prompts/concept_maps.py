@@ -1,4 +1,4 @@
-"""
+﻿"""
 Concept Maps Prompts
 
 This module contains prompts for concept maps and related diagrams.
@@ -479,7 +479,7 @@ CONCEPT_MAP_STAGE1_CONCEPTS_ZH = """
   "topic": "中心主题",
   "concepts": [
     "概念1",
-    "概念2", 
+    "概念2",
     "概念3"
   ]
 }}
@@ -571,7 +571,7 @@ Sub-concepts: {sub_concepts}
 
 Create relationships:
 1. Topic → each category
-2. Each category → its sub-concepts  
+2. Each category → its sub-concepts
 3. Cross-connections between related concepts
 
 Output format:
@@ -1734,7 +1734,7 @@ CONCEPT_MAP_PROMPTS = {
     "concept_map_parts_generation_en": CONCEPT_MAP_PARTS_GENERATION_EN,
     "concept_map_parts_generation_zh": CONCEPT_MAP_PARTS_GENERATION_ZH,
 
-    
+
     # NEW: True 3-stage workflow prompts (RECOMMENDED)
     "concept_map_topic_extraction_en": CONCEPT_MAP_TOPIC_EXTRACTION_EN,
     "concept_map_topic_extraction_zh": CONCEPT_MAP_TOPIC_EXTRACTION_ZH,
@@ -1742,44 +1742,44 @@ CONCEPT_MAP_PROMPTS = {
     "concept_map_30_concepts_zh": CONCEPT_MAP_30_CONCEPTS_ZH,
     "concept_map_3_stage_relationships_en": CONCEPT_MAP_3_STAGE_RELATIONSHIPS_EN,
     "concept_map_3_stage_relationships_zh": CONCEPT_MAP_3_STAGE_RELATIONSHIPS_ZH,
-    
+
     # NEW: Enhanced prompts (RECOMMENDED)
     "concept_map_enhanced_stage1_en": CONCEPT_MAP_ENHANCED_STAGE1_EN,
     "concept_map_enhanced_stage1_zh": CONCEPT_MAP_ENHANCED_STAGE1_ZH,
     "concept_map_enhanced_stage2_en": CONCEPT_MAP_ENHANCED_STAGE2_EN,
     "concept_map_enhanced_stage2_zh": CONCEPT_MAP_ENHANCED_STAGE2_ZH,
-    
+
     # NEW: Template-based extraction
     "concept_map_template_extraction_en": CONCEPT_MAP_TEMPLATE_EXTRACTION_EN,
     "concept_map_template_extraction_zh": CONCEPT_MAP_TEMPLATE_EXTRACTION_ZH,
-    
+
     # NEW: Quality-focused generation
     "concept_map_quality_focused_en": CONCEPT_MAP_QUALITY_FOCUSED_EN,
     "concept_map_quality_focused_zh": CONCEPT_MAP_QUALITY_FOCUSED_ZH,
-    
+
 
     # NEW: Relationship quality enhancement
     "concept_map_relationship_quality_en": CONCEPT_MAP_RELATIONSHIP_QUALITY_EN,
     "concept_map_relationship_quality_zh": CONCEPT_MAP_RELATIONSHIP_QUALITY_ZH,
-    
+
     # Simplified two-stage approach (kept for compatibility)
     "concept_map_stage1_concepts_en": CONCEPT_MAP_STAGE1_CONCEPTS_EN,
     "concept_map_stage1_concepts_zh": CONCEPT_MAP_STAGE1_CONCEPTS_ZH,
     "concept_map_stage2_relationships_en": CONCEPT_MAP_STAGE2_RELATIONSHIPS_EN,
     "concept_map_stage2_relationships_zh": CONCEPT_MAP_STAGE2_RELATIONSHIPS_ZH,
-    
+
     # Hierarchical three-stage approach
     "concept_map_hierarchical_stage1_en": CONCEPT_MAP_HIERARCHICAL_STAGE1_EN,
     "concept_map_hierarchical_stage2_en": CONCEPT_MAP_HIERARCHICAL_STAGE2_EN,
     "concept_map_hierarchical_stage3_en": CONCEPT_MAP_HIERARCHICAL_STAGE3_EN,
-    
+
     # Network-first approach
     "concept_map_network_stage1_en": CONCEPT_MAP_NETWORK_STAGE1_EN,
     "concept_map_network_stage2_en": CONCEPT_MAP_NETWORK_STAGE2_EN,
     "concept_map_network_stage1_zh": CONCEPT_MAP_NETWORK_STAGE1_ZH,
     "concept_map_network_stage2_zh": CONCEPT_MAP_NETWORK_STAGE2_ZH,
-    
+
     # Template-based approach
     "concept_map_template_stage1_en": CONCEPT_MAP_TEMPLATE_STAGE1_EN,
     "concept_map_template_stage2_en": CONCEPT_MAP_TEMPLATE_STAGE2_EN,
-} 
+}

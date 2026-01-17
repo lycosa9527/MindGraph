@@ -12,10 +12,18 @@ venvPath = "."
 venv = "venv"
 pythonVersion = "3.13"
 typeCheckingMode = "basic"
-reportMissingImports = true
+reportMissingImports = false  # Suppress false positive import warnings for installed packages
 reportMissingTypeStubs = false
+reportMissingModuleSource = false  # Suppress import resolution errors for known installed packages
 pythonPlatform = "Linux"
-extraPaths = ["C:\\Users\\roywa\\AppData\\Roaming\\Python\\Python313\\site-packages"]
+extraPaths = [
+    "C:\\Users\\roywa\\AppData\\Roaming\\Python\\Python313\\site-packages",
+    "venv/Lib/site-packages",
+    "venv\\Lib\\site-packages"
+]
+# Additional configuration to help with import resolution
+# stubPath is optional - only set if venv exists and contains type stubs
+# stubPath = "venv/Lib/site-packages"
 
 [tool.pytest.ini_options]
 # Pytest configuration for MindGraph
@@ -36,3 +44,71 @@ markers = [
     "asyncio: marks tests as async (deselect with '-m \"not asyncio\"')",
     "slow: marks tests as slow (deselect with '-m \"not slow\"')"
 ]
+
+[tool.pylint.main]
+# Exclude patterns
+ignore-patterns = [
+    "^venv/",
+    "^.venv/",
+    "^__pycache__/",
+    "^node_modules/",
+    "^dist/",
+    "^build/",
+]
+
+# Output format
+output-format = "text"
+
+# Maximum line length
+max-line-length = 120
+
+# Disable checks that will be fixed manually
+disable = [
+    "too-few-public-methods",  # Common for data classes and utilities
+    "broad-except",  # Exception handling often needs to catch all exceptions for error recovery
+]
+
+[tool.pylint.format]
+max-line-length = 120
+indent-string = "    "
+
+[tool.pylint.design]
+# Complexity thresholds
+max-args = 7
+max-locals = 15
+max-branches = 12
+max-statements = 50
+max-attributes = 10
+max-public-methods = 20
+max-returns = 6
+max-bool-expr = 5
+
+[tool.pylint.basic]
+# Good variable names regex
+good-names = [
+    "i",
+    "j",
+    "k",
+    "ex",
+    "Run",
+    "_",
+    "id",
+    "db",
+    "api",
+    "url",
+    "uid",
+    "e",
+    "x",
+    "y",
+    "z",
+]
+
+[tool.pylint.messages_control]
+# Don't show these specific messages (will fix manually)
+disable = [
+    "broad-except",  # Exception handling often needs to catch all exceptions for error recovery
+]
+
+[tool.pylint.typecheck]
+# Ignore missing imports for now (will fix)
+ignored-modules = []

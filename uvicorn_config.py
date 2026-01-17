@@ -1,4 +1,4 @@
-"""
+﻿"""
 Uvicorn Configuration for MindGraph FastAPI Application
 =======================================================
 
@@ -56,7 +56,7 @@ class UnifiedFormatter(logging.Formatter):
     Unified formatter that matches main.py's format.
     Clean, professional logging for both app and Uvicorn.
     """
-    
+
     COLORS = {
         'DEBUG': '\033[37m',      # Gray
         'INFO': '\033[36m',       # Cyan
@@ -66,7 +66,7 @@ class UnifiedFormatter(logging.Formatter):
         'RESET': '\033[0m',
         'BOLD': '\033[1m'
     }
-    
+
     def __init__(self, fmt=None, datefmt=None, style='%', validate=True, use_colors=None):
         """
         Initialize formatter, accepting Uvicorn's use_colors parameter.
@@ -75,26 +75,26 @@ class UnifiedFormatter(logging.Formatter):
         # Call parent init without use_colors (not a standard logging.Formatter parameter)
         super().__init__(fmt=fmt, datefmt=datefmt, style=style, validate=validate)
         # We manage our own colors in the format() method
-    
-    def format(self, record):
+
+    def format(self, record) -> None:
         # Timestamp: HH:MM:SS
         timestamp = self.formatTime(record, '%H:%M:%S')
-        
+
         # Level abbreviation
         level_name = record.levelname
         if level_name == 'CRITICAL':
             level_name = 'CRIT'
         elif level_name == 'WARNING':
             level_name = 'WARN'
-        
+
         color = self.COLORS.get(level_name, '')
         reset = self.COLORS['RESET']
-        
+
         if level_name == 'CRIT':
             colored_level = f"{self.COLORS['BOLD']}{color}{level_name.ljust(5)}{reset}"
         else:
             colored_level = f"{color}{level_name.ljust(5)}{reset}"
-        
+
         # Source abbreviation
         source = record.name
         if source.startswith('uvicorn.error'):
@@ -107,13 +107,13 @@ class UnifiedFormatter(logging.Formatter):
             source = 'SRVR'
         else:
             source = source[:4].upper()
-        
+
         source = source.ljust(4)
-        
+
         # Add process ID to identify worker
         import os
         pid = os.getpid()
-        
+
         return f"[{timestamp}] {colored_level} | {source} | [{pid}] {record.getMessage()}"
 
 
@@ -189,7 +189,7 @@ reload = os.getenv('ENVIRONMENT', 'production') == 'development'
 if os.getenv('ENVIRONMENT') == 'production':
     # Disable auto-reload in production
     reload = False
-    
+
     # Use production log level
     log_level = 'warning'
 

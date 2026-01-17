@@ -1,3 +1,8 @@
+﻿from typing import Optional, Dict, Any, List
+
+from pydantic import BaseModel, Field, field_validator
+
+
 """
 Request Models
 ==============
@@ -12,9 +17,6 @@ All Rights Reserved
 Proprietary License
 """
 
-from typing import Optional, Dict, Any, List
-from pydantic import BaseModel, Field, field_validator
-from .common import DiagramType, LLMModel, Language
 
 
 class GenerateRequest(BaseModel):
@@ -34,24 +36,24 @@ class GenerateRequest(BaseModel):
     fixed_dimension: Optional[str] = Field(None, description="User-specified dimension/relationship pattern that should be preserved (classification dimension for tree_map, decomposition dimension for brace_map, relationship pattern for bridge_map)")
     # Dimension-only mode: user has specified dimension but no topic (used for tree_map and brace_map)
     dimension_only_mode: Optional[bool] = Field(None, description="Flag indicating dimension-only mode where user has specified dimension but no topic (generate topic and children based on dimension)")
-    
+
     @field_validator('diagram_type', mode='before')
     @classmethod
     def normalize_diagram_type(cls, v):
         """Normalize diagram type aliases (e.g., 'mindmap' -> 'mind_map')"""
         if v is None:
             return v
-        
+
         # Convert to string if it's already an enum
         v_str = v.value if hasattr(v, 'value') else str(v)
-        
+
         # Normalize known aliases
         aliases = {
             'mindmap': 'mind_map',
         }
-        
+
         return aliases.get(v_str, v_str)
-    
+
     class Config:
         json_schema_extra = {
             "example": {
@@ -70,7 +72,7 @@ class EnhanceRequest(BaseModel):
     enhancement_type: str = Field(..., description="Type of enhancement to apply")
     language: Language = Field(Language.ZH, description="Language for enhancement")
     llm: LLMModel = Field(LLMModel.QWEN, description="LLM model to use")
-    
+
     class Config:
         json_schema_extra = {
             "example": {
@@ -90,7 +92,7 @@ class ExportPNGRequest(BaseModel):
     width: Optional[int] = Field(1200, ge=400, le=4000, description="PNG width in pixels")
     height: Optional[int] = Field(800, ge=300, le=3000, description="PNG height in pixels")
     scale: Optional[int] = Field(2, ge=1, le=4, description="Scale factor for high-DPI displays")
-    
+
     class Config:
         json_schema_extra = {
             "example": {
@@ -113,7 +115,7 @@ class GeneratePNGRequest(BaseModel):
     width: Optional[int] = Field(1200, ge=400, le=4000, description="PNG width in pixels")
     height: Optional[int] = Field(800, ge=300, le=3000, description="PNG height in pixels")
     scale: Optional[int] = Field(2, ge=1, le=4, description="Scale factor for high-DPI")
-    
+
     class Config:
         json_schema_extra = {
             "example": {
@@ -133,7 +135,7 @@ class GenerateDingTalkRequest(BaseModel):
     llm: Optional[LLMModel] = Field(LLMModel.QWEN, description="LLM model to use")
     diagram_type: Optional[DiagramType] = Field(None, description="Force specific diagram type")
     dimension_preference: Optional[str] = Field(None, description="Dimension preference hint")
-    
+
     class Config:
         json_schema_extra = {
             "example": {
@@ -149,7 +151,7 @@ class AIAssistantFile(BaseModel):
     transfer_method: str = Field(..., description="Transfer method: remote_url or local_file")
     url: Optional[str] = Field(None, description="File URL (for remote_url transfer method)")
     upload_file_id: Optional[str] = Field(None, description="Uploaded file ID (for local_file transfer method)")
-    
+
     class Config:
         json_schema_extra = {
             "example": {
@@ -162,13 +164,13 @@ class AIAssistantFile(BaseModel):
 
 class AIAssistantRequest(BaseModel):
     """Request model for /api/ai_assistant/stream endpoint (SSE)
-    
+
     Supports Dify Chatflow API with file uploads for Vision/document processing.
     """
     message: str = Field(
-        ..., 
-        min_length=1, 
-        max_length=5000, 
+        ...,
+        min_length=1,
+        max_length=5000,
         description="User message to AI assistant (use 'start' to trigger Dify conversation opener)"
     )
     user_id: str = Field(..., min_length=1, max_length=100, description="Unique user identifier")
@@ -178,7 +180,7 @@ class AIAssistantRequest(BaseModel):
     auto_generate_name: bool = Field(True, description="Auto-generate conversation title")
     workflow_id: Optional[str] = Field(None, description="Specific workflow version ID")
     trace_id: Optional[str] = Field(None, description="Trace ID for distributed tracing")
-    
+
     class Config:
         json_schema_extra = {
             "example": {
@@ -202,7 +204,7 @@ class FrontendLogRequest(BaseModel):
     message: str = Field(..., max_length=5000, description="Log message")
     source: Optional[str] = Field(None, description="Source component")
     timestamp: Optional[str] = Field(None, description="Client timestamp (ISO format)")
-    
+
     @field_validator('level')
     @classmethod
     def validate_level(cls, v):
@@ -216,7 +218,7 @@ class FrontendLogBatchRequest(BaseModel):
     """Request model for /api/frontend_log_batch endpoint (batched logs)"""
     logs: List[FrontendLogRequest] = Field(..., min_items=1, max_items=50, description="Batch of log entries")
     batch_size: int = Field(..., description="Number of logs in this batch")
-    
+
     class Config:
         json_schema_extra = {
             "example": {
@@ -255,7 +257,7 @@ class NodePaletteStartRequest(BaseModel):
     # NEW: Stage-based generation for tree maps
     stage: Optional[str] = Field('categories', description="Generation stage for tree maps: 'dimensions', 'categories', or 'children'")
     stage_data: Optional[Dict[str, Any]] = Field(None, description="Stage-specific data (e.g., {'dimension': 'Habitat', 'category_name': 'Water Animals'})")
-    
+
     class Config:
         json_schema_extra = {
             "example": {
@@ -289,7 +291,7 @@ class NodePaletteNextRequest(BaseModel):
     # NEW: Stage-based generation for tree maps
     stage: Optional[str] = Field('categories', description="Generation stage for tree maps: 'dimensions', 'categories', or 'children'")
     stage_data: Optional[Dict[str, Any]] = Field(None, description="Stage-specific data (e.g., {'dimension': 'Habitat', 'category_name': 'Water Animals'})")
-    
+
     class Config:
         json_schema_extra = {
             "example": {
@@ -309,7 +311,7 @@ class NodeSelectionRequest(BaseModel):
     node_id: str = Field(..., description="ID of the node being selected/deselected")
     selected: bool = Field(..., description="True if selected, False if deselected")
     node_text: str = Field(..., max_length=200, description="Text content of the node")
-    
+
     class Config:
         json_schema_extra = {
             "example": {
@@ -328,7 +330,7 @@ class NodePaletteFinishRequest(BaseModel):
     total_nodes_generated: int = Field(..., ge=0, description="Total number of nodes generated")
     batches_loaded: int = Field(..., ge=1, description="Number of batches loaded")
     diagram_type: Optional[str] = Field(None, description="Diagram type for cleanup in generator")
-    
+
     class Config:
         json_schema_extra = {
             "example": {
@@ -346,13 +348,13 @@ class NodePaletteFinishRequest(BaseModel):
 
 class NodePaletteCleanupRequest(BaseModel):
     """Request model for /thinking_mode/node_palette/cleanup endpoint
-    
+
     Simplified model for session cleanup - only requires session_id.
     Used when user leaves canvas or navigates away.
     """
     session_id: str = Field(..., min_length=1, max_length=100, description="Node Palette session ID")
     diagram_type: Optional[str] = Field(None, description="Diagram type for cleanup in generator")
-    
+
     class Config:
         json_schema_extra = {
             "example": {
@@ -378,27 +380,27 @@ class TabSuggestionRequest(BaseModel):
     llm: LLMModel = Field(LLMModel.QWEN, description="LLM model to use")
     cursor_position: Optional[int] = Field(None, description="Cursor position in input")
     page_offset: int = Field(0, ge=0, description="Page offset for pagination (0 = first page)")
-    
+
     @field_validator('diagram_type', mode='before')
     @classmethod
     def normalize_diagram_type(cls, v):
         """Normalize diagram type aliases (e.g., 'mindmap' -> 'mind_map')"""
         if v is None:
             return v
-        
+
         # Convert to string if it's already an enum
         v_str = v.value if hasattr(v, 'value') else str(v)
-        
+
         # Normalize known aliases
         aliases = {
             'mindmap': 'mind_map',
         }
-        
+
         normalized = aliases.get(v_str, v_str)
-        
+
         # Return normalized string (Pydantic will convert to enum)
         return normalized
-    
+
     class Config:
         json_schema_extra = {
             "example": {
@@ -427,27 +429,27 @@ class TabExpandRequest(BaseModel):
     language: Language = Field(Language.EN, description="Language code")
     llm: LLMModel = Field(LLMModel.QWEN, description="LLM model to use")
     session_id: Optional[str] = Field(None, description="Session ID for tracking")
-    
+
     @field_validator('diagram_type', mode='before')
     @classmethod
     def normalize_diagram_type(cls, v):
         """Normalize diagram type aliases (e.g., 'mindmap' -> 'mind_map')"""
         if v is None:
             return v
-        
+
         # Convert to string if it's already an enum
         v_str = v.value if hasattr(v, 'value') else str(v)
-        
+
         # Normalize known aliases
         aliases = {
             'mindmap': 'mind_map',
         }
-        
+
         normalized = aliases.get(v_str, v_str)
-        
+
         # Return normalized string (Pydantic will convert to enum)
         return normalized
-    
+
     class Config:
         json_schema_extra = {
             "example": {
@@ -477,7 +479,7 @@ class RegisterRequest(BaseModel):
     invitation_code: str = Field(..., description="Invitation code for registration (automatically binds to school)")
     captcha: str = Field(..., min_length=4, max_length=4, description="4-character captcha code")
     captcha_id: str = Field(..., description="Captcha session ID")
-    
+
     @field_validator('phone')
     @classmethod
     def validate_phone(cls, v):
@@ -491,7 +493,7 @@ class RegisterRequest(BaseModel):
         if not v.startswith('1'):
             raise ValueError("Chinese mobile numbers must start with 1. Please enter a valid 11-digit number starting with 1.")
         return v
-    
+
     @field_validator('name')
     @classmethod
     def validate_name(cls, v):
@@ -501,7 +503,7 @@ class RegisterRequest(BaseModel):
         if any(char.isdigit() for char in v):
             raise ValueError("Name cannot contain numbers. Please enter your name using letters only.")
         return v
-    
+
     class Config:
         json_schema_extra = {
             "example": {
@@ -521,7 +523,7 @@ class LoginRequest(BaseModel):
     password: str = Field(..., description="User password")
     captcha: str = Field(..., min_length=4, max_length=4, description="4-character captcha code")
     captcha_id: str = Field(..., description="Captcha session ID")
-    
+
     class Config:
         json_schema_extra = {
             "example": {
@@ -536,7 +538,7 @@ class LoginRequest(BaseModel):
 class DemoPasskeyRequest(BaseModel):
     """Request model for demo mode passkey verification"""
     passkey: str = Field(..., min_length=6, max_length=6, description="6-digit demo passkey")
-    
+
     @field_validator('passkey')
     @classmethod
     def validate_passkey(cls, v):
@@ -546,7 +548,7 @@ class DemoPasskeyRequest(BaseModel):
         if len(v) != 6:
             raise ValueError("Passkey must be exactly 6 digits")
         return v
-    
+
     class Config:
         json_schema_extra = {
             "example": {
@@ -565,7 +567,7 @@ class SendSMSCodeRequest(BaseModel):
     purpose: str = Field(..., description="Purpose: 'register', 'login', or 'reset_password'")
     captcha: str = Field(..., min_length=4, max_length=4, description="4-character captcha code")
     captcha_id: str = Field(..., description="Captcha session ID")
-    
+
     @field_validator('phone')
     @classmethod
     def validate_phone(cls, v):
@@ -579,7 +581,7 @@ class SendSMSCodeRequest(BaseModel):
         if not v.startswith('1'):
             raise ValueError("Chinese mobile numbers must start with 1. Please enter a valid 11-digit number starting with 1.")
         return v
-    
+
     @field_validator('purpose')
     @classmethod
     def validate_purpose(cls, v):
@@ -588,7 +590,7 @@ class SendSMSCodeRequest(BaseModel):
         if v not in valid_purposes:
             raise ValueError(f"Purpose must be one of: {', '.join(valid_purposes)}")
         return v
-    
+
     class Config:
         json_schema_extra = {
             "example": {
@@ -605,7 +607,7 @@ class SendSMSCodeSimpleRequest(BaseModel):
     phone: str = Field(..., min_length=11, max_length=11, description="11-digit Chinese mobile number")
     captcha: str = Field(..., min_length=4, max_length=4, description="4-character captcha code")
     captcha_id: str = Field(..., description="Captcha session ID")
-    
+
     @field_validator('phone')
     @classmethod
     def validate_phone(cls, v):
@@ -619,7 +621,7 @@ class SendSMSCodeSimpleRequest(BaseModel):
         if not v.startswith('1'):
             raise ValueError("Chinese mobile numbers must start with 1. Please enter a valid 11-digit number starting with 1.")
         return v
-    
+
     class Config:
         json_schema_extra = {
             "example": {
@@ -635,7 +637,7 @@ class VerifySMSCodeRequest(BaseModel):
     phone: str = Field(..., min_length=11, max_length=11, description="11-digit Chinese mobile number")
     code: str = Field(..., min_length=6, max_length=6, description="6-digit SMS verification code")
     purpose: str = Field(..., description="Purpose: 'register', 'login', or 'reset_password'")
-    
+
     @field_validator('phone')
     @classmethod
     def validate_phone(cls, v):
@@ -649,7 +651,7 @@ class VerifySMSCodeRequest(BaseModel):
         if not v.startswith('1'):
             raise ValueError("Chinese mobile numbers must start with 1. Please enter a valid 11-digit number starting with 1.")
         return v
-    
+
     @field_validator('code')
     @classmethod
     def validate_code(cls, v):
@@ -659,7 +661,7 @@ class VerifySMSCodeRequest(BaseModel):
         if len(v) != 6:
             raise ValueError(f"SMS verification code must be exactly 6 digits. You entered {len(v)} digit(s).")
         return v
-    
+
     class Config:
         json_schema_extra = {
             "example": {
@@ -677,7 +679,7 @@ class RegisterWithSMSRequest(BaseModel):
     name: str = Field(..., min_length=2, description="Teacher's name (required, min 2 chars, no numbers)")
     invitation_code: str = Field(..., description="Invitation code for registration")
     sms_code: str = Field(..., min_length=6, max_length=6, description="6-digit SMS verification code")
-    
+
     @field_validator('phone')
     @classmethod
     def validate_phone(cls, v):
@@ -691,7 +693,7 @@ class RegisterWithSMSRequest(BaseModel):
         if not v.startswith('1'):
             raise ValueError("Chinese mobile numbers must start with 1. Please enter a valid 11-digit number starting with 1.")
         return v
-    
+
     @field_validator('name')
     @classmethod
     def validate_name(cls, v):
@@ -701,7 +703,7 @@ class RegisterWithSMSRequest(BaseModel):
         if any(char.isdigit() for char in v):
             raise ValueError("Name cannot contain numbers. Please enter your name using letters only.")
         return v
-    
+
     @field_validator('sms_code')
     @classmethod
     def validate_sms_code(cls, v):
@@ -711,7 +713,7 @@ class RegisterWithSMSRequest(BaseModel):
         if len(v) != 6:
             raise ValueError(f"SMS verification code must be exactly 6 digits. You entered {len(v)} digit(s).")
         return v
-    
+
     class Config:
         json_schema_extra = {
             "example": {
@@ -728,7 +730,7 @@ class LoginWithSMSRequest(BaseModel):
     """Request model for login with SMS verification"""
     phone: str = Field(..., min_length=11, max_length=11, description="11-digit Chinese mobile number")
     sms_code: str = Field(..., min_length=6, max_length=6, description="6-digit SMS verification code")
-    
+
     @field_validator('phone')
     @classmethod
     def validate_phone(cls, v):
@@ -742,7 +744,7 @@ class LoginWithSMSRequest(BaseModel):
         if not v.startswith('1'):
             raise ValueError("Chinese mobile numbers must start with 1. Please enter a valid 11-digit number starting with 1.")
         return v
-    
+
     @field_validator('sms_code')
     @classmethod
     def validate_sms_code(cls, v):
@@ -752,7 +754,7 @@ class LoginWithSMSRequest(BaseModel):
         if len(v) != 6:
             raise ValueError(f"SMS verification code must be exactly 6 digits. You entered {len(v)} digit(s).")
         return v
-    
+
     class Config:
         json_schema_extra = {
             "example": {
@@ -773,7 +775,7 @@ class ResetPasswordWithSMSRequest(BaseModel):
     phone: str = Field(..., min_length=11, max_length=11, description="11-digit Chinese mobile number")
     sms_code: str = Field(..., min_length=6, max_length=6, description="6-digit SMS verification code")
     new_password: str = Field(..., min_length=8, description="New password (min 8 characters)")
-    
+
     @field_validator('phone')
     @classmethod
     def validate_phone(cls, v):
@@ -787,7 +789,7 @@ class ResetPasswordWithSMSRequest(BaseModel):
         if not v.startswith('1'):
             raise ValueError("Chinese mobile numbers must start with 1. Please enter a valid 11-digit number starting with 1.")
         return v
-    
+
     @field_validator('sms_code')
     @classmethod
     def validate_sms_code(cls, v):
@@ -797,7 +799,7 @@ class ResetPasswordWithSMSRequest(BaseModel):
         if len(v) != 6:
             raise ValueError(f"SMS verification code must be exactly 6 digits. You entered {len(v)} digit(s).")
         return v
-    
+
     class Config:
         json_schema_extra = {
             "example": {
@@ -813,7 +815,7 @@ class SendChangePhoneSMSRequest(BaseModel):
     new_phone: str = Field(..., min_length=11, max_length=11, description="New 11-digit Chinese mobile number")
     captcha: str = Field(..., min_length=4, max_length=4, description="4-character captcha code")
     captcha_id: str = Field(..., description="Captcha session ID")
-    
+
     @field_validator('new_phone')
     @classmethod
     def validate_new_phone(cls, v):
@@ -827,7 +829,7 @@ class SendChangePhoneSMSRequest(BaseModel):
         if not v.startswith('1'):
             raise ValueError("Chinese mobile numbers must start with 1. Please enter a valid 11-digit number starting with 1.")
         return v
-    
+
     class Config:
         json_schema_extra = {
             "example": {
@@ -842,7 +844,7 @@ class ChangePhoneRequest(BaseModel):
     """Request model for completing phone number change with SMS verification"""
     new_phone: str = Field(..., min_length=11, max_length=11, description="New 11-digit Chinese mobile number")
     sms_code: str = Field(..., min_length=6, max_length=6, description="6-digit SMS verification code")
-    
+
     @field_validator('new_phone')
     @classmethod
     def validate_new_phone(cls, v):
@@ -856,7 +858,7 @@ class ChangePhoneRequest(BaseModel):
         if not v.startswith('1'):
             raise ValueError("Chinese mobile numbers must start with 1. Please enter a valid 11-digit number starting with 1.")
         return v
-    
+
     @field_validator('sms_code')
     @classmethod
     def validate_sms_code(cls, v):
@@ -866,7 +868,7 @@ class ChangePhoneRequest(BaseModel):
         if len(v) != 6:
             raise ValueError(f"SMS verification code must be exactly 6 digits. You entered {len(v)} digit(s).")
         return v
-    
+
     class Config:
         json_schema_extra = {
             "example": {
@@ -883,7 +885,7 @@ class FeedbackRequest(BaseModel):
     captcha: str = Field(..., min_length=4, max_length=4, description="User-entered captcha code")
     user_id: Optional[str] = Field(None, description="User ID if available")
     user_name: Optional[str] = Field(None, description="User name if available")
-    
+
     class Config:
         json_schema_extra = {
             "example": {
@@ -899,7 +901,7 @@ class FeedbackRequest(BaseModel):
 class RecalculateLayoutRequest(BaseModel):
     """Request model for /api/recalculate_mindmap_layout endpoint"""
     spec: Dict[str, Any] = Field(..., description="Current diagram specification to recalculate layout for")
-    
+
     class Config:
         json_schema_extra = {
             "example": {
@@ -926,7 +928,7 @@ class DiagramCreateRequest(BaseModel):
     language: str = Field('zh', description="Language code (zh or en)")
     # Max ~100KB base64 thumbnail (150000 chars = ~112KB decoded)
     thumbnail: Optional[str] = Field(None, max_length=150000, description="Base64 encoded thumbnail image (max ~100KB)")
-    
+
     @field_validator('language')
     @classmethod
     def validate_language(cls, v):
@@ -934,7 +936,7 @@ class DiagramCreateRequest(BaseModel):
         if v not in ['zh', 'en']:
             raise ValueError("Language must be 'zh' or 'en'")
         return v
-    
+
     class Config:
         json_schema_extra = {
             "example": {
@@ -952,7 +954,7 @@ class DiagramUpdateRequest(BaseModel):
     spec: Optional[Dict[str, Any]] = Field(None, description="Updated diagram specification")
     # Max ~100KB base64 thumbnail (150000 chars = ~112KB decoded)
     thumbnail: Optional[str] = Field(None, max_length=150000, description="Base64 encoded thumbnail image (max ~100KB)")
-    
+
     class Config:
         json_schema_extra = {
             "example": {

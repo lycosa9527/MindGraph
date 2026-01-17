@@ -33,7 +33,11 @@ export { useInlineEdit } from './useInlineEdit'
 export type { InlineEditOptions } from './useInlineEdit'
 export { useAutoComplete, isPlaceholderText } from './useAutoComplete'
 export { useIMEAutocomplete } from './useIMEAutocomplete'
-export type { IMESuggestion, IMEAutocompleteOptions, IMEAutocompleteState } from './useIMEAutocomplete'
+export type {
+  IMESuggestion,
+  IMEAutocompleteOptions,
+  IMEAutocompleteState,
+} from './useIMEAutocomplete'
 
 // VueFlow + VueUse integration
 export { useCanvasState } from './useCanvasState'

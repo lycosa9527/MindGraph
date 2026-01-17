@@ -1,3 +1,16 @@
+﻿from typing import
+import logging
+
+from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import BaseModel
+from sqlalchemy.orm import Session
+
+from config.database import get_db
+from models.auth import User
+from models.messages import Messages, Language
+from services.redis.redis_user_cache import user_cache
+from utils.auth import get_current_user
+
 """
 Avatar Management Endpoints
 ===========================
@@ -11,19 +24,8 @@ All Rights Reserved
 Proprietary License
 """
 
-import logging
-from typing import List
 
-from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel
-from sqlalchemy.orm import Session
 
-from config.database import get_db
-from models.auth import User
-from models.messages import Messages
-from services.redis_user_cache import user_cache
-from utils.auth import get_current_user
-from .dependencies import get_language_dependency
 
 logger = logging.getLogger(__name__)
 
@@ -124,7 +126,7 @@ async def update_avatar(
     request: UpdateAvatarRequest,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
-    lang: str = Depends(get_language_dependency)
+    lang: Language = Depends(get_language_dependency)
 ):
     """
     Update user's avatar

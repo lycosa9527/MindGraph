@@ -1,4 +1,4 @@
-"""
+﻿"""
 Response Models
 ===============
 
@@ -23,7 +23,7 @@ class ErrorResponse(BaseModel):
     error_type: Optional[str] = Field(None, description="Type of error")
     context: Optional[Dict[str, Any]] = Field(None, description="Additional error context")
     timestamp: Optional[float] = Field(None, description="Error timestamp")
-    
+
     class Config:
         json_schema_extra = {
             "example": {
@@ -47,7 +47,7 @@ class GenerateResponse(BaseModel):
     recovery_warnings: Optional[List[str]] = Field(None, description="Detailed recovery warnings")
     use_default_template: Optional[bool] = Field(False, description="Whether to use default template (prompt-based generation)")
     extracted_topic: Optional[str] = Field(None, description="Extracted topic from prompt")
-    
+
     class Config:
         json_schema_extra = {
             "example": {
@@ -63,7 +63,7 @@ class HealthResponse(BaseModel):
     """Response model for /health endpoint"""
     status: str = Field(..., description="Health status")
     version: str = Field(..., description="Application version")
-    
+
     class Config:
         json_schema_extra = {
             "example": {
@@ -102,7 +102,7 @@ class LLMHealthResponse(BaseModel):
     unhealthy_count: Optional[int] = Field(None, description="Number of unhealthy models")
     healthy_count: Optional[int] = Field(None, description="Number of healthy models")
     total_models: Optional[int] = Field(None, description="Total number of models checked")
-    
+
     class Config:
         json_schema_extra = {
             "example": {
@@ -132,7 +132,7 @@ class DatabaseHealthResponse(BaseModel):
     database_message: str = Field(..., description="Health check message")
     database_stats: Dict[str, Any] = Field(default_factory=dict, description="Database statistics")
     timestamp: int = Field(..., description="Unix timestamp of health check")
-    
+
     class Config:
         json_schema_extra = {
             "example": {
@@ -166,7 +166,7 @@ class TabSuggestionResponse(BaseModel):
     suggestions: List[TabSuggestionItem] = Field(default_factory=list, description="List of suggestions")
     request_id: Optional[str] = Field(None, description="Request ID for tracking")
     error: Optional[str] = Field(None, description="Error message if failed")
-    
+
     class Config:
         json_schema_extra = {
             "example": {
@@ -194,7 +194,7 @@ class TabExpandResponse(BaseModel):
     children: List[TabExpandChild] = Field(default_factory=list, description="Generated child nodes")
     request_id: Optional[str] = Field(None, description="Request ID for tracking")
     error: Optional[str] = Field(None, description="Error message if failed")
-    
+
     class Config:
         json_schema_extra = {
             "example": {
@@ -224,7 +224,7 @@ class DiagramResponse(BaseModel):
     thumbnail: Optional[str] = Field(None, description="Base64 encoded thumbnail")
     created_at: datetime = Field(..., description="Creation timestamp")
     updated_at: datetime = Field(..., description="Last update timestamp")
-    
+
     class Config:
         json_schema_extra = {
             "example": {
@@ -248,7 +248,7 @@ class DiagramListItem(BaseModel):
     thumbnail: Optional[str] = Field(None, description="Base64 encoded thumbnail")
     updated_at: datetime = Field(..., description="Last update timestamp")
     is_pinned: bool = Field(False, description="Whether diagram is pinned to top")
-    
+
     class Config:
         json_schema_extra = {
             "example": {
@@ -270,7 +270,7 @@ class DiagramListResponse(BaseModel):
     page_size: int = Field(..., description="Number of items per page")
     has_more: bool = Field(..., description="Whether there are more pages")
     max_diagrams: int = Field(20, description="Maximum diagrams allowed per user")
-    
+
     class Config:
         json_schema_extra = {
             "example": {

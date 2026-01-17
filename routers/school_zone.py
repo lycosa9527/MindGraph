@@ -1,3 +1,18 @@
+﻿from datetime import datetime
+from typing import Optional
+import logging
+
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from pydantic import BaseModel, Field
+from sqlalchemy.orm import Session
+
+from config.database import get_db
+from models.auth import User
+from models.messages import Messages, Language
+from models.school_zone import SharedDiagram, SharedDiagramLike, SharedDiagramComment
+from routers.auth.dependencies import get_language_dependency
+from utils.auth import get_current_user
+
 """
 School Zone Router
 ==================
@@ -13,20 +28,8 @@ All Rights Reserved
 Proprietary License
 """
 
-import logging
-from typing import Optional
-from datetime import datetime
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy.orm import Session
-from pydantic import BaseModel, Field
 
-from config.database import get_db
-from models.auth import User
-from models.school_zone import SharedDiagram, SharedDiagramLike, SharedDiagramComment
-from utils.auth import get_current_user
-from routers.auth.dependencies import get_language_dependency
-from models.messages import Messages, Language
 
 logger = logging.getLogger(__name__)
 
@@ -142,25 +145,25 @@ async def list_shared_diagrams(
 ):
     """
     List shared diagrams within the user's organization.
-    
+
     Only returns diagrams shared by users in the same organization.
     """
     require_organization(current_user, lang)
-    
+
     # Build query - filter by organization
     query = db.query(SharedDiagram).filter(
         SharedDiagram.organization_id == current_user.organization_id,
         SharedDiagram.is_active == True
     )
-    
+
     # Apply content type filter
     if content_type:
         query = query.filter(SharedDiagram.content_type == content_type)
-    
+
     # Apply category filter
     if category:
         query = query.filter(SharedDiagram.category == category)
-    
+
     # Apply sorting
     if sort == "likes":
         query = query.order_by(SharedDiagram.likes_count.desc())
@@ -168,16 +171,16 @@ async def list_shared_diagrams(
         query = query.order_by(SharedDiagram.comments_count.desc())
     else:  # newest (default)
         query = query.order_by(SharedDiagram.created_at.desc())
-    
+
     # Get total count
     total = query.count()
-    
+
     # Paginate
     diagrams = query.offset((page - 1) * page_size).limit(page_size).all()
-    
+
     # Format response
     posts = [format_diagram_response(d, current_user.id, db) for d in diagrams]
-    
+
     return {
         "posts": posts,
         "total": total,
@@ -196,11 +199,11 @@ async def create_shared_diagram(
 ):
     """
     Share a diagram with the organization.
-    
+
     Creates a new shared diagram visible to all users in the same organization.
     """
     require_organization(current_user, lang)
-    
+
     # Create the shared diagram
     diagram = SharedDiagram(
         title=data.title,
@@ -213,13 +216,13 @@ async def create_shared_diagram(
         author_id=current_user.id,
         created_at=datetime.utcnow()
     )
-    
+
     db.add(diagram)
     db.commit()
     db.refresh(diagram)
-    
+
     logger.info(f"User {current_user.id} shared diagram '{data.title}' in org {current_user.organization_id}")
-    
+
     return {
         "message": "Diagram shared successfully",
         "post": format_diagram_response(diagram, current_user.id, db)
@@ -235,30 +238,30 @@ async def get_shared_diagram(
 ):
     """
     Get a specific shared diagram.
-    
+
     Returns the diagram data including the full diagram_data for rendering.
     """
     require_organization(current_user, lang)
-    
+
     diagram = db.query(SharedDiagram).filter(
         SharedDiagram.id == post_id,
         SharedDiagram.organization_id == current_user.organization_id,
         SharedDiagram.is_active == True
     ).first()
-    
+
     if not diagram:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Diagram not found"
         )
-    
+
     # Increment view count
     diagram.views_count += 1
     db.commit()
-    
+
     response = format_diagram_response(diagram, current_user.id, db)
     response["diagram_data"] = diagram.diagram_data
-    
+
     return response
 
 
@@ -271,38 +274,38 @@ async def delete_shared_diagram(
 ):
     """
     Delete a shared diagram.
-    
+
     Only the author or organization managers can delete diagrams.
     """
     require_organization(current_user, lang)
-    
+
     diagram = db.query(SharedDiagram).filter(
         SharedDiagram.id == post_id,
         SharedDiagram.organization_id == current_user.organization_id
     ).first()
-    
+
     if not diagram:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Diagram not found"
         )
-    
+
     # Check permission: author or manager/admin
     is_author = diagram.author_id == current_user.id
     is_privileged = current_user.role in ('admin', 'manager')
-    
+
     if not is_author and not is_privileged:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You can only delete your own diagrams"
         )
-    
+
     # Soft delete
     diagram.is_active = False
     db.commit()
-    
+
     logger.info(f"User {current_user.id} deleted shared diagram {post_id}")
-    
+
     return {"message": "Diagram deleted successfully"}
 
 
@@ -315,30 +318,30 @@ async def toggle_like(
 ):
     """
     Toggle like on a shared diagram.
-    
+
     If already liked, removes the like. Otherwise, adds a like.
     """
     require_organization(current_user, lang)
-    
+
     # Check diagram exists and is in user's org
     diagram = db.query(SharedDiagram).filter(
         SharedDiagram.id == post_id,
         SharedDiagram.organization_id == current_user.organization_id,
         SharedDiagram.is_active == True
     ).first()
-    
+
     if not diagram:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Diagram not found"
         )
-    
+
     # Check if already liked
     existing_like = db.query(SharedDiagramLike).filter(
         SharedDiagramLike.diagram_id == post_id,
         SharedDiagramLike.user_id == current_user.id
     ).first()
-    
+
     if existing_like:
         # Remove like
         db.delete(existing_like)
@@ -354,9 +357,9 @@ async def toggle_like(
         db.add(like)
         diagram.likes_count += 1
         is_liked = True
-    
+
     db.commit()
-    
+
     return {
         "is_liked": is_liked,
         "likes_count": diagram.likes_count
@@ -376,29 +379,29 @@ async def list_comments(
     List comments on a shared diagram.
     """
     require_organization(current_user, lang)
-    
+
     # Check diagram exists and is in user's org
     diagram = db.query(SharedDiagram).filter(
         SharedDiagram.id == post_id,
         SharedDiagram.organization_id == current_user.organization_id,
         SharedDiagram.is_active == True
     ).first()
-    
+
     if not diagram:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Diagram not found"
         )
-    
+
     # Get comments
     query = db.query(SharedDiagramComment).filter(
         SharedDiagramComment.diagram_id == post_id,
         SharedDiagramComment.is_active == True
     ).order_by(SharedDiagramComment.created_at.desc())
-    
+
     total = query.count()
     comments = query.offset((page - 1) * page_size).limit(page_size).all()
-    
+
     return {
         "comments": [
             {
@@ -431,20 +434,20 @@ async def create_comment(
     Add a comment to a shared diagram.
     """
     require_organization(current_user, lang)
-    
+
     # Check diagram exists and is in user's org
     diagram = db.query(SharedDiagram).filter(
         SharedDiagram.id == post_id,
         SharedDiagram.organization_id == current_user.organization_id,
         SharedDiagram.is_active == True
     ).first()
-    
+
     if not diagram:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Diagram not found"
         )
-    
+
     # Create comment
     comment = SharedDiagramComment(
         diagram_id=post_id,
@@ -452,12 +455,12 @@ async def create_comment(
         content=data.content,
         created_at=datetime.utcnow()
     )
-    
+
     db.add(comment)
     diagram.comments_count += 1
     db.commit()
     db.refresh(comment)
-    
+
     return {
         "message": "Comment added successfully",
         "comment": {
@@ -483,54 +486,54 @@ async def delete_comment(
 ):
     """
     Delete a comment.
-    
+
     Only the comment author or organization managers can delete comments.
     """
     require_organization(current_user, lang)
-    
+
     # SECURITY: First verify the diagram belongs to user's organization
     diagram = db.query(SharedDiagram).filter(
         SharedDiagram.id == post_id,
         SharedDiagram.organization_id == current_user.organization_id
     ).first()
-    
+
     if not diagram:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Diagram not found"
         )
-    
+
     # Now get the comment
     comment = db.query(SharedDiagramComment).filter(
         SharedDiagramComment.id == comment_id,
         SharedDiagramComment.diagram_id == post_id
     ).first()
-    
+
     if not comment:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Comment not found"
         )
-    
+
     # Check permission: comment author, diagram author, or manager/admin
     is_comment_author = comment.user_id == current_user.id
     is_diagram_author = diagram.author_id == current_user.id
     is_privileged = current_user.role in ('admin', 'manager')
-    
+
     if not is_comment_author and not is_diagram_author and not is_privileged:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You can only delete your own comments"
         )
-    
+
     # Soft delete
     comment.is_active = False
     diagram.comments_count = max(0, diagram.comments_count - 1)
-    
+
     db.commit()
-    
+
     logger.info(f"User {current_user.id} deleted comment {comment_id} on diagram {post_id}")
-    
+
     return {"message": "Comment deleted successfully"}
 
 
@@ -544,15 +547,15 @@ async def list_categories(
     Get list of available categories for school zone content.
     """
     require_organization(current_user, lang)
-    
+
     # Return predefined categories
     categories = [
         "教学设计",
-        "学科资源", 
+        "学科资源",
         "班级管理",
         "教研活动",
         "学生作品",
         "校本课程"
     ]
-    
+
     return {"categories": categories}

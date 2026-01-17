@@ -1,3 +1,9 @@
+﻿from abc import ABC, abstractmethod
+from typing import List
+import logging
+
+from llm_chunking.models import Chunk, ParentChunk, ChildChunk, QAChunk
+
 """
 Embedding adapters for different chunk structures.
 
@@ -7,21 +13,17 @@ Adapts embedding generation to different chunk types:
 - Q&A: Embed questions (or Q&A pairs)
 """
 
-import logging
-from abc import ABC, abstractmethod
-from typing import List, Dict, Any, Union, Optional
-from llm_chunking.models import Chunk, ParentChunk, ChildChunk, QAChunk
 
 logger = logging.getLogger(__name__)
 
 
 class EmbeddingAdapter(ABC):
     """Base interface for embedding adapters."""
-    
+
     def __init__(self, embedding_client=None):
         """
         Initialize adapter.
-        
+
         Args:
             embedding_client: Embedding client instance
         """
@@ -32,7 +34,7 @@ class EmbeddingAdapter(ABC):
                 self.embedding_client = get_embedding_client()
             except Exception as e:
                 logger.warning(f"Embedding client not available: {e}")
-    
+
     @abstractmethod
     def embed_chunks(
         self,
@@ -41,11 +43,11 @@ class EmbeddingAdapter(ABC):
     ) -> List[Dict[str, Any]]:
         """
         Embed chunks based on structure type.
-        
+
         Args:
             chunks: List of chunks
             structure_type: Structure type identifier
-            
+
         Returns:
             List of dicts with 'id', 'vector', 'payload'
         """
@@ -54,7 +56,7 @@ class EmbeddingAdapter(ABC):
 
 class GeneralEmbeddingAdapter(EmbeddingAdapter):
     """Adapter for General (flat) chunks."""
-    
+
     def embed_chunks(
         self,
         chunks: List[Chunk],
@@ -62,26 +64,26 @@ class GeneralEmbeddingAdapter(EmbeddingAdapter):
     ) -> List[Dict[str, Any]]:
         """
         Embed each chunk independently.
-        
+
         Args:
             chunks: List of Chunk objects
             structure_type: Structure type (ignored)
-            
+
         Returns:
             List of embedding data dicts
         """
         if not self.embedding_client:
             raise ValueError("Embedding client not available")
-        
+
         # Extract texts
         texts = [chunk.text for chunk in chunks]
-        
+
         # Generate embeddings
         embeddings = self.embedding_client.embed_texts(
             texts=texts,
             text_type="document"
         )
-        
+
         # Build result list
         results = []
         for chunk, embedding in zip(chunks, embeddings):
@@ -98,13 +100,13 @@ class GeneralEmbeddingAdapter(EmbeddingAdapter):
                     "token_count": chunk.token_count,
                 }
             })
-        
+
         return results
 
 
 class ParentChildEmbeddingAdapter(EmbeddingAdapter):
     """Adapter for Parent-Child chunks."""
-    
+
     def embed_chunks(
         self,
         chunks: List[ParentChunk],
@@ -112,17 +114,17 @@ class ParentChildEmbeddingAdapter(EmbeddingAdapter):
     ) -> List[Dict[str, Any]]:
         """
         Embed only child chunks, store parent in payload.
-        
+
         Args:
             chunks: List of ParentChunk objects
             structure_type: Structure type (ignored)
-            
+
         Returns:
             List of embedding data dicts (one per child chunk)
         """
         if not self.embedding_client:
             raise ValueError("Embedding client not available")
-        
+
         # Extract all child chunks
         all_child_chunks = []
         for parent in chunks:
@@ -137,17 +139,17 @@ class ParentChildEmbeddingAdapter(EmbeddingAdapter):
                     "metadata": child.metadata or {},
                     "parent_metadata": parent.metadata or {},
                 })
-        
+
         if not all_child_chunks:
             return []
-        
+
         # Embed child chunks only
         child_texts = [child["text"] for child in all_child_chunks]
         embeddings = self.embedding_client.embed_texts(
             texts=child_texts,
             text_type="document"
         )
-        
+
         # Build result list
         results = []
         for child_data, embedding in zip(all_child_chunks, embeddings):
@@ -165,13 +167,13 @@ class ParentChildEmbeddingAdapter(EmbeddingAdapter):
                     "chunk_type": "child",
                 }
             })
-        
+
         return results
 
 
 class QAEmbeddingAdapter(EmbeddingAdapter):
     """Adapter for Q&A chunks."""
-    
+
     def embed_chunks(
         self,
         chunks: List[QAChunk],
@@ -180,18 +182,18 @@ class QAEmbeddingAdapter(EmbeddingAdapter):
     ) -> List[Dict[str, Any]]:
         """
         Embed Q&A chunks.
-        
+
         Args:
             chunks: List of QAChunk objects
             structure_type: Structure type (ignored)
             embed_mode: "questions_only" or "qa_pairs"
-            
+
         Returns:
             List of embedding data dicts
         """
         if not self.embedding_client:
             raise ValueError("Embedding client not available")
-        
+
         if embed_mode == "questions_only":
             # Embed questions only (recommended for FAQ-style retrieval)
             texts = [qa.question for qa in chunks]
@@ -203,13 +205,13 @@ class QAEmbeddingAdapter(EmbeddingAdapter):
                 for qa in chunks
             ]
             text_type = "document"
-        
+
         # Generate embeddings
         embeddings = self.embedding_client.embed_texts(
             texts=texts,
             text_type=text_type
         )
-        
+
         # Build result list
         results = []
         for qa, embedding in zip(chunks, embeddings):
@@ -226,18 +228,18 @@ class QAEmbeddingAdapter(EmbeddingAdapter):
                     "chunk_type": "qa",
                 }
             })
-        
+
         return results
 
 
 def get_embedding_adapter(structure_type: str, **kwargs) -> EmbeddingAdapter:
     """
     Factory function to get appropriate embedding adapter.
-    
+
     Args:
         structure_type: "general", "parent_child", or "qa"
         **kwargs: Additional adapter parameters
-        
+
     Returns:
         EmbeddingAdapter instance
     """
@@ -246,12 +248,12 @@ def get_embedding_adapter(structure_type: str, **kwargs) -> EmbeddingAdapter:
         "parent_child": ParentChildEmbeddingAdapter,
         "qa": QAEmbeddingAdapter,
     }
-    
+
     if structure_type not in adapters:
         raise ValueError(
             f"Unknown structure type: {structure_type}. "
             f"Must be one of: {list(adapters.keys())}"
         )
-    
+
     adapter_class = adapters[structure_type]
     return adapter_class(**kwargs)

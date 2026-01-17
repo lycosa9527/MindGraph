@@ -13,8 +13,7 @@ Proprietary License
 """
 
 import pytest
-from pathlib import Path
-from services.ip_geolocation import (
+from services.auth.ip_geolocation import (
     get_geolocation_service,
     IPGeolocationService,
     IP2REGION_AVAILABLE,

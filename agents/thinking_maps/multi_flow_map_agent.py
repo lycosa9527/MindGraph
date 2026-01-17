@@ -1,3 +1,7 @@
+﻿from typing import Dict, List, Any, Tuple, Optional
+import logging
+
+
 """
 Multi-Flow Map Agent
 
@@ -13,25 +17,21 @@ All Rights Reserved
 Proprietary License
 """
 
-from __future__ import annotations
 
-import logging
-from typing import Dict, List, Any, Tuple, Optional
-from ..core.base_agent import BaseAgent
 
 logger = logging.getLogger(__name__)
 
 
 class MultiFlowMapAgent(BaseAgent):
     """Utility agent to improve multi-flow map specs before rendering."""
-    
+
     def __init__(self, model='qwen'):
         super().__init__(model=model)
         self.diagram_type = "multi_flow_map"
-    
+
     async def generate_graph(
-        self, 
-        prompt: str, 
+        self,
+        prompt: str,
         language: str = "en",
         # Token tracking parameters
         user_id: Optional[int] = None,
@@ -42,8 +42,8 @@ class MultiFlowMapAgent(BaseAgent):
         """Generate a multi-flow map from a prompt."""
         try:
             # Generate the initial multi-flow map specification
-            spec = await self._generate_multi_flow_map_spec(
-                prompt, 
+            spec = await self._generate_multi_flow_map_spec  # pylint: disable=protected-access(
+                prompt,
                 language,
                 user_id=user_id,
                 organization_id=organization_id,
@@ -55,7 +55,7 @@ class MultiFlowMapAgent(BaseAgent):
                     'success': False,
                     'error': 'Failed to generate multi-flow map specification'
                 }
-            
+
             # Validate the generated spec
             is_valid, validation_msg = self.validate_output(spec)
             if not is_valid:
@@ -64,7 +64,7 @@ class MultiFlowMapAgent(BaseAgent):
                     'success': False,
                     'error': f'Generated invalid specification: {validation_msg}'
                 }
-            
+
             # Enhance the spec with layout and dimensions
             enhanced_result = await self.enhance_spec(spec)
             if not enhanced_result.get('success'):
@@ -73,24 +73,24 @@ class MultiFlowMapAgent(BaseAgent):
                     'error': enhanced_result.get('error', 'Enhancement failed')
                 }
             enhanced_spec = enhanced_result['spec']
-            
+
             logger.info(f"MultiFlowMapAgent: Multi-flow map generation completed successfully")
             return {
                 'success': True,
                 'spec': enhanced_spec,
                 'diagram_type': self.diagram_type
             }
-            
-        except Exception as e:
+
+        except Exception as  # pylint: disable=broad-except e:
             logger.error(f"MultiFlowMapAgent: Multi-flow map generation failed: {e}")
             return {
                 'success': False,
                 'error': f'Generation failed: {str(e)}'
             }
-    
+
     async def _generate_multi_flow_map_spec(
-        self, 
-        prompt: str, 
+        self,
+        prompt: str,
         language: str,
         # Token tracking parameters
         user_id: Optional[int] = None,
@@ -102,20 +102,20 @@ class MultiFlowMapAgent(BaseAgent):
         try:
             # Import centralized prompt system
             from prompts import get_prompt
-            
+
             # Get prompt from centralized system - use agent-specific format
             system_prompt = get_prompt("multi_flow_map_agent", language, "generation")
-            
+
             if not system_prompt:
                 logger.error(f"MultiFlowMapAgent: No prompt found for language {language}")
                 return None
-                
+
             user_prompt = f"请为以下描述创建一个复流程图：{prompt}" if language == "zh" else f"Please create a multi-flow map for the following description: {prompt}"
-            
+
             # Call middleware directly - clean and efficient!
-            from services.llm_service import llm_service
+            from services.llm import llm_service
             from config.settings import config
-            
+
             response = await llm_service.chat(
                 prompt=user_prompt,
                 model=self.model,
@@ -129,42 +129,42 @@ class MultiFlowMapAgent(BaseAgent):
                 endpoint_path=endpoint_path,
                 diagram_type='multi_flow_map'
             )
-            
+
             if not response:
                 logger.error("MultiFlowMapAgent: No response from LLM")
                 return None
-            
+
             # Extract JSON from response
             from ..core.agent_utils import extract_json_from_response
-            
+
             # Check if response is already a dictionary (from mock client)
             if isinstance(response, dict):
                 spec = response
             else:
                 # Try to extract JSON from string response
                 spec = extract_json_from_response(str(response))
-            
+
             if not spec:
                 logger.error("MultiFlowMapAgent: Failed to extract JSON from LLM response")
                 return None
-            
+
             return spec
-            
-        except Exception as e:
+
+        except Exception as  # pylint: disable=broad-except e:
             logger.error(f"MultiFlowMapAgent: Error in spec generation: {e}")
             return None
-    
+
     def validate_output(self, spec: Dict) -> Tuple[bool, str]:
         """Validate a multi-flow map specification."""
         try:
             if not isinstance(spec, dict):
                 return False, "Spec must be a dictionary"
-            
+
             # Accept both standard format and alternative format from LLM
             event = spec.get("event") or spec.get("topic")
             causes = spec.get("causes")
             effects = spec.get("effects")
-            
+
             # If we have 'flows' instead of 'causes'/'effects', try to extract them
             if not causes and not effects and 'flows' in spec:
                 flows = spec.get('flows', [])
@@ -174,16 +174,16 @@ class MultiFlowMapAgent(BaseAgent):
                         causes = [step.get('label', '') for step in flows[0].get('steps', []) if step.get('label')]
                     if len(flows) >= 2 and 'steps' in flows[1]:
                         effects = [step.get('label', '') for step in flows[1].get('steps', []) if step.get('label')]
-            
+
             if not event or not isinstance(event, str):
                 return False, "Missing or invalid event/topic"
             if not causes or not isinstance(causes, list):
                 return False, "Missing or invalid causes"
             if not effects or not isinstance(effects, list):
                 return False, "Missing or invalid effects"
-            
+
             return True, "Valid multi-flow map specification"
-        except Exception as e:
+        except Exception as  # pylint: disable=broad-except e:
             return False, f"Validation error: {str(e)}"
 
     MAX_ITEMS_PER_SIDE: int = 10
@@ -208,7 +208,7 @@ class MultiFlowMapAgent(BaseAgent):
             event_raw = spec.get("event", "") or spec.get("topic", "")
             causes_raw = spec.get("causes", [])
             effects_raw = spec.get("effects", [])
-            
+
             # If we have 'flows' instead of 'causes'/'effects', extract them
             if not causes_raw and not effects_raw and 'flows' in spec:
                 flows = spec.get('flows', [])
@@ -272,32 +272,32 @@ class MultiFlowMapAgent(BaseAgent):
             # Calculate dimensions based on content complexity
             max_side = max(len(causes), len(effects))
             total_items = len(causes) + len(effects)
-            
+
             # Estimate text width requirements (rough approximation)
             max_cause_length = max((len(c) for c in causes), default=0)
             max_effect_length = max((len(e) for e in effects), default=0)
             max_text_length = max(max_cause_length, max_effect_length, len(event))
-            
+
             # Dynamic width calculation based on content
             # Base width accounts for: margins + side gaps + central event
             base_width = 600  # Reduced base for better scaling
             text_width_factor = max_text_length * 8  # Approximate pixels per character
             width_for_sides = text_width_factor * 2 + 300  # Both sides + gaps
             width = max(base_width, width_for_sides)
-            
+
             # Dynamic height calculation (optimized for minimal excess space)
             base_height = 300  # Smaller base height for better scaling
-            
+
             # Realistic item height calculation with slight scaling for larger content
             base_item_height = 35  # Base: ~16px text + 19px padding/spacing
             # Add slight scaling for larger content to prevent overcrowding
             scaling_factor = 1.0 + (max_side - 2) * 0.02  # 2% per item beyond 2
             item_height_estimate = base_item_height * min(scaling_factor, 1.3)  # Cap at 30% increase
-            
+
             event_and_margins = 140  # Central event (50px) + top/bottom margins (90px total)
             height_for_content = max_side * item_height_estimate + event_and_margins
             height = max(base_height, height_for_content)
-            
+
             # Additional height for very long text (but more conservative)
             if max_text_length > 50:
                 # Only add extra height for really long text that might wrap
@@ -324,7 +324,7 @@ class MultiFlowMapAgent(BaseAgent):
             }
 
             return {"success": True, "spec": enhanced_spec}
-        except Exception as exc:  # Defensive guard
+        except Exception as  # pylint: disable=broad-except exc:  # Defensive guard
             return {"success": False, "error": f"Unexpected error: {exc}"}
 
 

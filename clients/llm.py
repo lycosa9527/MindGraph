@@ -1,3 +1,13 @@
+from typing import Dict, List, Optional, Any, AsyncGenerator, Union
+import asyncio
+import json
+import logging
+import os
+import re
+
+from openai import AsyncOpenAI, RateLimitError, APIStatusError
+import httpx
+
 """
 LLM Clients for Hybrid Agent Processing
 
@@ -9,19 +19,10 @@ All Rights Reserved
 Proprietary License
 """
 
-import asyncio
-import httpx
-import json
-import logging
-import os
-import re
-from typing import Dict, List, Optional, Any, AsyncGenerator
-from dotenv import load_dotenv
-from openai import AsyncOpenAI, RateLimitError, APIStatusError
 from config.settings import config
-from services.error_handler import (
-    LLMRateLimitError, 
-    LLMContentFilterError, 
+from services.infrastructure.error_handler import (
+    LLMRateLimitError,
+    LLMContentFilterError,
     LLMProviderError,
     LLMInvalidParameterError,
     LLMQuotaExhaustedError,
@@ -29,13 +30,11 @@ from services.error_handler import (
     LLMAccessDeniedError,
     LLMTimeoutError
 )
-from services.dashscope_error_parser import parse_and_raise_dashscope_error
-from services.hunyuan_error_parser import parse_and_raise_hunyuan_error
-from services.doubao_error_parser import parse_and_raise_doubao_error
+from services.llm.dashscope_error_parser import parse_and_raise_dashscope_error
+from services.llm.doubao_error_parser import parse_and_raise_doubao_error
+from services.llm.hunyuan_error_parser import parse_and_raise_hunyuan_error
 
-# Load environment variables for logging configuration
-load_dotenv()
-
+# Note: Environment variables are loaded by config.settings module
 logger = logging.getLogger(__name__)
 
 
@@ -46,27 +45,27 @@ logger = logging.getLogger(__name__)
 class HTTPXClientManager:
     """
     Manages shared httpx AsyncClient instances for LLM providers.
-    
+
     Benefits:
     - HTTP/2 multiplexing for concurrent requests
     - Connection pooling across requests
     - Lazy initialization (clients created on first use)
     - Proper cleanup on shutdown
     """
-    
+
     _instance: Optional['HTTPXClientManager'] = None
-    
+
     def __init__(self):
         self._clients: Dict[str, httpx.AsyncClient] = {}
         self._lock = asyncio.Lock()
-    
+
     @classmethod
     def get_instance(cls) -> 'HTTPXClientManager':
         """Get singleton instance."""
         if cls._instance is None:
             cls._instance = cls()
         return cls._instance
-    
+
     async def get_client(
         self,
         provider: str,
@@ -76,13 +75,13 @@ class HTTPXClientManager:
     ) -> httpx.AsyncClient:
         """
         Get or create an httpx AsyncClient for a provider.
-        
+
         Args:
             provider: Provider identifier (e.g., 'dashscope', 'volcengine')
             base_url: Base URL for the provider API
             timeout: Default timeout for non-streaming requests
             stream_timeout: Timeout for streaming requests (longer for thinking models)
-            
+
         Returns:
             Shared httpx.AsyncClient instance
         """
@@ -104,7 +103,7 @@ class HTTPXClientManager:
                 )
                 logger.debug(f"[HTTPXClientManager] Created client for {provider}")
             return self._clients[provider]
-    
+
     async def close_all(self):
         """Close all client connections. Call on app shutdown."""
         async with self._lock:
@@ -136,11 +135,11 @@ async def close_httpx_clients():
 
 class QwenClient:
     """Async client for Qwen LLM API using httpx with HTTP/2 support."""
-    
+
     def __init__(self, model_type='classification'):
         """
         Initialize QwenClient with specific model type
-        
+
         Args:
             model_type (str): 'classification' for qwen-plus-latest, 'generation' for qwen-plus
         """
@@ -151,68 +150,192 @@ class QwenClient:
         self.model_type = model_type
         # DIVERSITY FIX: Use higher temperature for generation to increase variety
         self.default_temperature = 0.9 if model_type == 'generation' else 0.7
-        
-    async def chat_completion(self, messages: List[Dict], temperature: float = None,
-                            max_tokens: int = 1000) -> Dict[str, Any]:
+
+    async def chat_completion(
+        self,
+        messages: List[Dict],
+        temperature: Optional[float] = None,
+        max_tokens: int = 1000,
+        top_p: Optional[float] = None,
+        top_k: Optional[int] = None,
+        presence_penalty: Optional[float] = None,
+        stop: Optional[Union[str, List[str]]] = None,
+        seed: Optional[int] = None,
+        n: Optional[int] = None,
+        logprobs: Optional[bool] = None,
+        top_logprobs: Optional[int] = None,
+        **kwargs
+    ) -> Dict[str, Any]:  # type: ignore[return-value]
         """
         Send chat completion request to Qwen (async version).
-        
+
         Args:
-            messages: List of message dictionaries with 'role' and 'content'
-            temperature: Sampling temperature (0.0 to 1.0), None uses default
+            messages: List of message dictionaries with 'role' and 'content'.
+                     Supports multimodal content:
+                     - Text: {"role": "user", "content": "text"}
+                     - Image: {"role": "user", "content": [{"type": "image_url", "image_url": {"url": "..."}}]}
+                     - Video: {"role": "user", "content": [{"type": "video", "video": ["url1", "url2"]}]}
+                     - Mixed: {"role": "user", "content": [{"type": "text", "text": "..."}, {"type": "image_url", ...}]}
+            temperature: Sampling temperature (0.0 to 2.0), None uses default
             max_tokens: Maximum tokens in response
-            
+            top_p: Nucleus sampling threshold (0.0 to 1.0)
+            top_k: Top-k sampling (via extra_body, DashScope-specific)
+            presence_penalty: Repetition control (-2.0 to 2.0)
+            stop: Stop sequences (string or list of strings)
+            seed: Random seed for reproducibility (0 to 2^31-1)
+            n: Number of completions to generate (1-4, only for qwen-plus, Qwen3 non-thinking)
+            logprobs: Whether to return token log probabilities
+            top_logprobs: Number of top logprobs to return (0-5, requires logprobs=True)
+            **kwargs: Additional parameters:
+                - tools: Function calling tools array
+                - tool_choice: Tool selection strategy
+                - parallel_tool_calls: Enable parallel tool calls
+                - response_format: JSON mode ({"type": "json_object"} or {"type": "json_schema"})
+                - enable_search: Web search (DashScope-specific, via extra_body)
+                - search_options: Search configuration (DashScope-specific, via extra_body)
+                - vl_high_resolution_images: High-res image processing (DashScope-specific, via extra_body)
+                - modalities: Output modalities for Qwen-Omni ["text", "audio"] (DashScope-specific, via extra_body)
+                - audio: Audio output config for Qwen-Omni (DashScope-specific, via extra_body)
+                - enable_code_interpreter: Code interpreter (DashScope-specific, via extra_body)
+                - thinking_budget: Limit thinking length (DashScope-specific, via extra_body)
+
         Returns:
-            Dict with 'content' and 'usage' keys
+            Dict with 'content' and 'usage' keys (or list of dicts if n > 1).
+            If tool_calls are present, includes 'tool_calls' key.
         """
         try:
             # Use instance default if not specified
             if temperature is None:
                 temperature = self.default_temperature
-            
+
             # Select appropriate model based on task type
             if self.model_type == 'classification':
                 model_name = config.QWEN_MODEL_CLASSIFICATION
             else:  # generation
                 model_name = config.QWEN_MODEL_GENERATION
-                
+
+            # Build extra_body for DashScope-specific parameters
+            extra_body: Dict[str, Any] = {"enable_thinking": False}
+
+            # Add DashScope-specific parameters to extra_body
+            if top_k is not None:
+                extra_body["top_k"] = top_k
+            if "enable_search" in kwargs:
+                extra_body["enable_search"] = kwargs.pop("enable_search")
+            if "search_options" in kwargs:
+                extra_body["search_options"] = kwargs.pop("search_options")
+            if "vl_high_resolution_images" in kwargs:
+                extra_body["vl_high_resolution_images"] = kwargs.pop("vl_high_resolution_images")
+            if "modalities" in kwargs:
+                extra_body["modalities"] = kwargs.pop("modalities")
+            if "audio" in kwargs:
+                extra_body["audio"] = kwargs.pop("audio")
+            if "enable_code_interpreter" in kwargs:
+                extra_body["enable_code_interpreter"] = kwargs.pop("enable_code_interpreter")
+            if "thinking_budget" in kwargs:
+                extra_body["thinking_budget"] = kwargs.pop("thinking_budget")
+
             payload = {
                 "model": model_name,
                 "messages": messages,
                 "temperature": temperature,
                 "max_tokens": max_tokens,
                 "stream": False,
-                # Qwen3 models require enable_thinking: False when not using streaming
-                # to avoid API errors. This is automatically included in all Qwen API calls.
-                "extra_body": {"enable_thinking": False}
+                "extra_body": extra_body
             }
-            
+
+            # Add optional standard parameters
+            if top_p is not None:
+                payload["top_p"] = top_p
+            if presence_penalty is not None:
+                payload["presence_penalty"] = presence_penalty
+            if stop is not None:
+                payload["stop"] = stop
+            if seed is not None:
+                payload["seed"] = seed
+            if n is not None:
+                payload["n"] = n
+            if logprobs is not None:
+                payload["logprobs"] = logprobs
+            if top_logprobs is not None:
+                payload["top_logprobs"] = top_logprobs
+
+            # Add function calling parameters if provided
+            if "tools" in kwargs:
+                payload["tools"] = kwargs.pop("tools")
+            if "tool_choice" in kwargs:
+                payload["tool_choice"] = kwargs.pop("tool_choice")
+            if "parallel_tool_calls" in kwargs:
+                payload["parallel_tool_calls"] = kwargs.pop("parallel_tool_calls")
+
+            # Add response format if provided
+            if "response_format" in kwargs:
+                payload["response_format"] = kwargs.pop("response_format")
+
+            # Pass through any remaining kwargs (for future extensibility)
+            if kwargs:
+                logger.debug(f"[QwenClient] Additional kwargs passed through: {list(kwargs.keys())}")
+                payload.update(kwargs)
+
             headers = {
                 "Authorization": f"Bearer {self.api_key}",
                 "Content-Type": "application/json"
             }
-            
+
             # Use httpx with HTTP/2 support
             async with httpx.AsyncClient(
                 timeout=httpx.Timeout(self.timeout, connect=10.0),
                 http2=True
             ) as client:
                 response = await client.post(self.api_url, json=payload, headers=headers)
-                
+
                 if response.status_code == 200:
                     data = response.json()
-                    content = data.get('choices', [{}])[0].get('message', {}).get('content', '')
-                    # Extract usage data (Dashscope uses 'prompt_tokens'/'completion_tokens')
+                    choices = data.get('choices', [])
                     usage = data.get('usage', {})
-                    # Return both content and usage for token tracking
-                    return {
-                        'content': content,
-                        'usage': usage  # Contains prompt_tokens, completion_tokens, total_tokens
-                    }
+
+                    # Handle multiple completions (n > 1)
+                    if n and n > 1 and len(choices) > 1:
+                        # Return list of completions
+                        completions = []
+                        for choice in choices:
+                            message = choice.get('message', {})
+                            content = message.get('content', '')
+                            tool_calls = message.get('tool_calls')
+                            completion_item = {
+                                'content': content,
+                                'index': choice.get('index', 0),
+                                'finish_reason': choice.get('finish_reason'),
+                                'logprobs': choice.get('logprobs')
+                            }
+                            # Include tool_calls if present
+                            if tool_calls:
+                                completion_item['tool_calls'] = tool_calls
+                            completions.append(completion_item)
+                        return {
+                            'content': completions,  # List of completions
+                            'usage': usage
+                        }
+                    else:
+                        # Single completion (default behavior)
+                        message = choices[0].get('message', {}) if choices else {}
+                        content = message.get('content', '')
+                        tool_calls = message.get('tool_calls')
+                        result = {
+                            'content': content,
+                            'usage': usage
+                        }
+                        # Include tool_calls if present (function calling response)
+                        if tool_calls:
+                            result['tool_calls'] = tool_calls
+                        # Include logprobs if requested
+                        if choices and logprobs and 'logprobs' in choices[0]:
+                            result['logprobs'] = choices[0].get('logprobs')
+                        return result
                 else:
                     error_text = response.text
                     logger.error(f"Qwen API error {response.status_code}: {error_text}")
-                    
+
                     # Parse error using comprehensive DashScope error parser
                     try:
                         error_data = json.loads(error_text)
@@ -226,50 +349,104 @@ class QwenClient:
                             raise LLMAccessDeniedError(f"Unauthorized: {error_text}", provider='qwen', error_code='Unauthorized')
                         else:
                             raise LLMProviderError(f"Qwen API error ({response.status_code}): {error_text}", provider='qwen', error_code=f'HTTP{response.status_code}')
-                        
+
         except httpx.TimeoutException as e:
             logger.error("Qwen API timeout")
             raise LLMTimeoutError("Qwen API timeout") from e
         except httpx.HTTPError as e:
             logger.error(f"Qwen HTTP error: {e}")
             raise LLMProviderError(f"Qwen HTTP error: {e}", provider='qwen', error_code='HTTPError')
-        except Exception as e:
+        except Exception as e:  # pylint: disable=broad-except
             logger.error(f"Qwen API error: {e}")
             raise
-    
+
     async def async_stream_chat_completion(
-        self, 
-        messages: List[Dict], 
-        temperature: float = None,
+        self,
+        messages: List[Dict],
+        temperature: Optional[float] = None,
         max_tokens: int = 1000,
-        enable_thinking: bool = False
+        enable_thinking: bool = False,
+        top_p: Optional[float] = None,
+        top_k: Optional[int] = None,
+        presence_penalty: Optional[float] = None,
+        stop: Optional[Union[str, List[str]]] = None,
+        seed: Optional[int] = None,
+        logprobs: Optional[bool] = None,
+        top_logprobs: Optional[int] = None,
+        **kwargs
     ) -> AsyncGenerator[Dict[str, Any], None]:
         """
         Stream chat completion from Qwen API (async generator).
-        
+
         Args:
-            messages: List of message dictionaries with 'role' and 'content'
-            temperature: Sampling temperature (0.0 to 1.0), None uses default
+            messages: List of message dictionaries with 'role' and 'content'.
+                     Supports multimodal content:
+                     - Text: {"role": "user", "content": "text"}
+                     - Image: {"role": "user", "content": [{"type": "image_url", "image_url": {"url": "..."}}]}
+                     - Video: {"role": "user", "content": [{"type": "video", "video": ["url1", "url2"]}]}
+                     - Mixed: {"role": "user", "content": [{"type": "text", "text": "..."}, {"type": "image_url", ...}]}
+            temperature: Sampling temperature (0.0 to 2.0), None uses default
             max_tokens: Maximum tokens in response
             enable_thinking: Whether to enable thinking mode (for Qwen3 models)
-            
+            top_p: Nucleus sampling threshold (0.0 to 1.0)
+            top_k: Top-k sampling (via extra_body, DashScope-specific)
+            presence_penalty: Repetition control (-2.0 to 2.0)
+            stop: Stop sequences (string or list of strings)
+            seed: Random seed for reproducibility (0 to 2^31-1)
+            logprobs: Whether to return token log probabilities
+            top_logprobs: Number of top logprobs to return (0-5, requires logprobs=True)
+            **kwargs: Additional parameters:
+                - tools: Function calling tools array
+                - tool_choice: Tool selection strategy
+                - parallel_tool_calls: Enable parallel tool calls
+                - response_format: JSON mode ({"type": "json_object"} or {"type": "json_schema"})
+                - enable_search: Web search (DashScope-specific, via extra_body)
+                - search_options: Search configuration (DashScope-specific, via extra_body)
+                - vl_high_resolution_images: High-res image processing (DashScope-specific, via extra_body)
+                - modalities: Output modalities for Qwen-Omni ["text", "audio"] (DashScope-specific, via extra_body)
+                - audio: Audio output config for Qwen-Omni (DashScope-specific, via extra_body)
+                - enable_code_interpreter: Code interpreter (DashScope-specific, via extra_body)
+                - thinking_budget: Limit thinking length (DashScope-specific, via extra_body)
+
         Yields:
             Dict with 'type' and 'content' keys:
             - {'type': 'thinking', 'content': '...'} - Reasoning content
             - {'type': 'token', 'content': '...'} - Response content
+            - {'type': 'tool_calls', 'tool_calls': [...]} - Tool calls (function calling)
             - {'type': 'usage', 'usage': {...}} - Token usage stats
         """
         try:
             # Use instance default if not specified
             if temperature is None:
                 temperature = self.default_temperature
-            
+
             # Select appropriate model
             if self.model_type == 'classification':
                 model_name = config.QWEN_MODEL_CLASSIFICATION
             else:
                 model_name = config.QWEN_MODEL_GENERATION
-            
+
+            # Build extra_body for DashScope-specific parameters
+            extra_body: Dict[str, Any] = {"enable_thinking": enable_thinking}
+
+            # Add DashScope-specific parameters to extra_body
+            if top_k is not None:
+                extra_body["top_k"] = top_k
+            if "enable_search" in kwargs:
+                extra_body["enable_search"] = kwargs.pop("enable_search")
+            if "search_options" in kwargs:
+                extra_body["search_options"] = kwargs.pop("search_options")
+            if "vl_high_resolution_images" in kwargs:
+                extra_body["vl_high_resolution_images"] = kwargs.pop("vl_high_resolution_images")
+            if "modalities" in kwargs:
+                extra_body["modalities"] = kwargs.pop("modalities")
+            if "audio" in kwargs:
+                extra_body["audio"] = kwargs.pop("audio")
+            if "enable_code_interpreter" in kwargs:
+                extra_body["enable_code_interpreter"] = kwargs.pop("enable_code_interpreter")
+            if "thinking_budget" in kwargs:
+                extra_body["thinking_budget"] = kwargs.pop("thinking_budget")
+
             payload = {
                 "model": model_name,
                 "messages": messages,
@@ -277,14 +454,45 @@ class QwenClient:
                 "max_tokens": max_tokens,
                 "stream": True,
                 "stream_options": {"include_usage": True},
-                "extra_body": {"enable_thinking": enable_thinking}
+                "extra_body": extra_body
             }
-            
+
+            # Add optional standard parameters
+            if top_p is not None:
+                payload["top_p"] = top_p
+            if presence_penalty is not None:
+                payload["presence_penalty"] = presence_penalty
+            if stop is not None:
+                payload["stop"] = stop
+            if seed is not None:
+                payload["seed"] = seed
+            if logprobs is not None:
+                payload["logprobs"] = logprobs
+            if top_logprobs is not None:
+                payload["top_logprobs"] = top_logprobs
+
+            # Add function calling parameters if provided
+            if "tools" in kwargs:
+                payload["tools"] = kwargs.pop("tools")
+            if "tool_choice" in kwargs:
+                payload["tool_choice"] = kwargs.pop("tool_choice")
+            if "parallel_tool_calls" in kwargs:
+                payload["parallel_tool_calls"] = kwargs.pop("parallel_tool_calls")
+
+            # Add response format if provided
+            if "response_format" in kwargs:
+                payload["response_format"] = kwargs.pop("response_format")
+
+            # Pass through any remaining kwargs
+            if kwargs:
+                logger.debug(f"[QwenClient] Additional kwargs in stream: {list(kwargs.keys())}")
+                payload.update(kwargs)
+
             headers = {
                 "Authorization": f"Bearer {self.api_key}",
                 "Content-Type": "application/json"
             }
-            
+
             # Use httpx with streaming and HTTP/2 support
             async with httpx.AsyncClient(
                 timeout=httpx.Timeout(None, connect=10.0, read=self.stream_timeout),
@@ -295,7 +503,7 @@ class QwenClient:
                         error_text = await response.aread()
                         error_text = error_text.decode('utf-8')
                         logger.error(f"Qwen stream error {response.status_code}: {error_text}")
-                        
+
                         # Parse error using comprehensive DashScope error parser
                         try:
                             error_data = json.loads(error_text)
@@ -307,57 +515,62 @@ class QwenClient:
                                 raise LLMAccessDeniedError(f"Unauthorized: {error_text}", provider='qwen', error_code='Unauthorized')
                             else:
                                 raise LLMProviderError(f"Qwen stream error ({response.status_code}): {error_text}", provider='qwen', error_code=f'HTTP{response.status_code}')
-                    
+
                     # Read SSE stream line by line using httpx's aiter_lines()
                     last_usage = None
                     async for line in response.aiter_lines():
                         if not line or not line.startswith('data: '):
                             continue
-                        
+
                         data_content = line[6:]  # Remove 'data: ' prefix
-                        
+
                         # Handle [DONE] signal
                         if data_content.strip() == '[DONE]':
                             if last_usage:
                                 yield {'type': 'usage', 'usage': last_usage}
                             break
-                        
+
                         try:
                             data = json.loads(data_content)
-                            
+
                             # Check for usage data (in final chunk)
                             if 'usage' in data and data['usage']:
                                 last_usage = data.get('usage', {})
-                            
+
                             # Extract delta from streaming response
                             choices = data.get('choices', [])
                             if choices:
                                 delta = choices[0].get('delta', {})
-                                
+
                                 # Check for thinking/reasoning content (Qwen3 thinking mode)
                                 reasoning_content = delta.get('reasoning_content', '')
                                 if reasoning_content:
                                     yield {'type': 'thinking', 'content': reasoning_content}
-                                
+
+                                # Check for tool calls (function calling)
+                                tool_calls = delta.get('tool_calls')
+                                if tool_calls:
+                                    yield {'type': 'tool_calls', 'tool_calls': tool_calls}
+
                                 # Check for regular content
                                 content = delta.get('content', '')
                                 if content:
                                     yield {'type': 'token', 'content': content}
-                        
+
                         except json.JSONDecodeError:
                             continue
-                    
+
                     # If stream ended without [DONE], yield usage if we have it
                     if last_usage:
                         yield {'type': 'usage', 'usage': last_usage}
-        
+
         except httpx.TimeoutException as e:
             logger.error("Qwen streaming timeout")
             raise LLMTimeoutError("Qwen streaming timeout") from e
         except httpx.HTTPError as e:
             logger.error(f"Qwen streaming HTTP error: {e}")
             raise LLMProviderError(f"Qwen streaming HTTP error: {e}", provider='qwen', error_code='HTTPError')
-        except Exception as e:
+        except Exception as e:  # pylint: disable=broad-except
             logger.error(f"Qwen streaming error: {e}")
             raise
 
@@ -368,7 +581,7 @@ class QwenClient:
 
 class DeepSeekClient:
     """Client for DeepSeek R1 via Dashscope API using httpx with HTTP/2 support."""
-    
+
     def __init__(self):
         """Initialize DeepSeek client"""
         self.api_url = config.QWEN_API_URL  # Dashscope uses same endpoint
@@ -380,17 +593,17 @@ class DeepSeekClient:
         # DIVERSITY FIX: Lower temperature for DeepSeek (reasoning model, more deterministic)
         self.default_temperature = 0.6
         logger.debug(f"DeepSeekClient initialized with model: {self.model_name}")
-    
-    async def async_chat_completion(self, messages: List[Dict], temperature: float = None,
-                                   max_tokens: int = 2000) -> Dict[str, Any]:
+
+    async def async_chat_completion(self, messages: List[Dict], temperature: Optional[float] = None,
+                                   max_tokens: int = 2000) -> Dict[str, Any]:  # type: ignore[return-value]
         """
         Send async chat completion request to DeepSeek R1
-        
+
         Args:
             messages: List of message dictionaries with 'role' and 'content'
             temperature: Sampling temperature (0.0 to 1.0), None uses default
             max_tokens: Maximum tokens in response
-            
+
         Returns:
             Dict with 'content' and 'usage' keys
         """
@@ -398,7 +611,7 @@ class DeepSeekClient:
             # Use instance default if not specified
             if temperature is None:
                 temperature = self.default_temperature
-            
+
             payload = config.get_llm_data(
                 messages[-1]['content'] if messages else '',
                 self.model_id
@@ -406,21 +619,21 @@ class DeepSeekClient:
             payload['messages'] = messages
             payload['temperature'] = temperature
             payload['max_tokens'] = max_tokens
-            
+
             headers = {
                 "Authorization": f"Bearer {self.api_key}",
                 "Content-Type": "application/json"
             }
-            
+
             logger.debug(f"DeepSeek async API request: {self.model_name}")
-            
+
             # Use httpx with HTTP/2 support
             async with httpx.AsyncClient(
                 timeout=httpx.Timeout(self.timeout, connect=10.0),
                 http2=True
             ) as client:
                 response = await client.post(self.api_url, json=payload, headers=headers)
-                
+
                 if response.status_code == 200:
                     data = response.json()
                     content = data.get('choices', [{}])[0].get('message', {}).get('content', '')
@@ -434,7 +647,7 @@ class DeepSeekClient:
                 else:
                     error_text = response.text
                     logger.error(f"DeepSeek API error {response.status_code}: {error_text}")
-                    
+
                     # Parse error using comprehensive DashScope error parser
                     try:
                         error_data = json.loads(error_text)
@@ -446,39 +659,39 @@ class DeepSeekClient:
                             raise LLMAccessDeniedError(f"Unauthorized: {error_text}", provider='deepseek', error_code='Unauthorized')
                         else:
                             raise LLMProviderError(f"DeepSeek API error ({response.status_code}): {error_text}", provider='deepseek', error_code=f'HTTP{response.status_code}')
-                        
+
         except httpx.TimeoutException as e:
             logger.error("DeepSeek API timeout")
             raise LLMTimeoutError("DeepSeek API timeout") from e
         except httpx.HTTPError as e:
             logger.error(f"DeepSeek HTTP error: {e}")
             raise LLMProviderError(f"DeepSeek HTTP error: {e}", provider='deepseek', error_code='HTTPError')
-        except Exception as e:
+        except Exception as e:  # pylint: disable=broad-except
             logger.error(f"DeepSeek API error: {e}")
             raise
-    
+
     # Alias for compatibility with agents that call chat_completion
-    async def chat_completion(self, messages: List[Dict], temperature: float = None,
+    async def chat_completion(self, messages: List[Dict], temperature: Optional[float] = None,
                              max_tokens: int = 2000) -> Dict[str, Any]:
         """Alias for async_chat_completion for API consistency"""
         return await self.async_chat_completion(messages, temperature, max_tokens)
-    
+
     async def async_stream_chat_completion(
-        self, 
-        messages: List[Dict], 
-        temperature: float = None,
+        self,
+        messages: List[Dict],
+        temperature: Optional[float] = None,
         max_tokens: int = 2000,
         enable_thinking: bool = False
     ) -> AsyncGenerator[Dict[str, Any], None]:
         """
         Stream chat completion from DeepSeek R1 (async generator).
-        
+
         Args:
             messages: List of message dictionaries with 'role' and 'content'
             temperature: Sampling temperature (0.0 to 1.0), None uses default
             max_tokens: Maximum tokens in response
             enable_thinking: Whether to enable thinking mode (for DeepSeek R1)
-            
+
         Yields:
             Dict with 'type' and 'content' keys:
             - {'type': 'thinking', 'content': '...'} - Reasoning content
@@ -488,7 +701,7 @@ class DeepSeekClient:
         try:
             if temperature is None:
                 temperature = self.default_temperature
-            
+
             payload = config.get_llm_data(
                 messages[-1]['content'] if messages else '',
                 self.model_id
@@ -498,17 +711,17 @@ class DeepSeekClient:
             payload['max_tokens'] = max_tokens
             payload['stream'] = True
             payload['stream_options'] = {"include_usage": True}
-            
+
             # Enable thinking mode if requested
             if 'extra_body' not in payload:
                 payload['extra_body'] = {}
             payload['extra_body']['enable_thinking'] = enable_thinking
-            
+
             headers = {
                 "Authorization": f"Bearer {self.api_key}",
                 "Content-Type": "application/json"
             }
-            
+
             # Use httpx with streaming and HTTP/2 support
             async with httpx.AsyncClient(
                 timeout=httpx.Timeout(None, connect=10.0, read=self.stream_timeout),
@@ -519,7 +732,7 @@ class DeepSeekClient:
                         error_text = await response.aread()
                         error_text = error_text.decode('utf-8')
                         logger.error(f"DeepSeek stream error {response.status_code}: {error_text}")
-                        
+
                         try:
                             error_data = json.loads(error_text)
                             parse_and_raise_dashscope_error(response.status_code, error_text, error_data)
@@ -530,62 +743,62 @@ class DeepSeekClient:
                                 raise LLMAccessDeniedError(f"Unauthorized: {error_text}", provider='deepseek', error_code='Unauthorized')
                             else:
                                 raise LLMProviderError(f"DeepSeek stream error ({response.status_code}): {error_text}", provider='deepseek', error_code=f'HTTP{response.status_code}')
-                    
+
                     # Read SSE stream using httpx's aiter_lines()
                     last_usage = None
                     async for line in response.aiter_lines():
                         if not line or not line.startswith('data: '):
                             continue
-                        
+
                         data_content = line[6:]
-                        
+
                         if data_content.strip() == '[DONE]':
                             if last_usage:
                                 yield {'type': 'usage', 'usage': last_usage}
                             break
-                        
+
                         try:
                             data = json.loads(data_content)
-                            
+
                             # Check for usage data (in final chunk)
                             if 'usage' in data and data['usage']:
                                 last_usage = data.get('usage', {})
-                            
+
                             choices = data.get('choices', [])
                             if choices:
                                 delta = choices[0].get('delta', {})
-                                
+
                                 # Check for thinking/reasoning content (DeepSeek R1)
                                 reasoning_content = delta.get('reasoning_content', '')
                                 if reasoning_content:
                                     yield {'type': 'thinking', 'content': reasoning_content}
-                                
+
                                 # Check for regular content
                                 content = delta.get('content', '')
                                 if content:
                                     yield {'type': 'token', 'content': content}
-                        
+
                         except json.JSONDecodeError:
                             continue
-                    
+
                     # If stream ended without [DONE], yield usage if we have it
                     if last_usage:
                         yield {'type': 'usage', 'usage': last_usage}
-        
+
         except httpx.TimeoutException as e:
             logger.error("DeepSeek streaming timeout")
             raise LLMTimeoutError("DeepSeek streaming timeout") from e
         except httpx.HTTPError as e:
             logger.error(f"DeepSeek streaming HTTP error: {e}")
             raise LLMProviderError(f"DeepSeek streaming HTTP error: {e}", provider='deepseek', error_code='HTTPError')
-        except Exception as e:
+        except Exception as e:  # pylint: disable=broad-except
             logger.error(f"DeepSeek streaming error: {e}")
             raise
 
 
 class KimiClient:
     """Client for Kimi (Moonshot AI) via Dashscope API using httpx with HTTP/2 support."""
-    
+
     def __init__(self):
         """Initialize Kimi client"""
         self.api_url = config.QWEN_API_URL  # Dashscope uses same endpoint
@@ -597,15 +810,15 @@ class KimiClient:
         # DIVERSITY FIX: Higher temperature for Kimi to increase creative variation
         self.default_temperature = 1.0
         logger.debug(f"KimiClient initialized with model: {self.model_name}")
-    
-    async def async_chat_completion(self, messages: List[Dict], temperature: float = None,
-                                   max_tokens: int = 2000) -> Dict[str, Any]:
+
+    async def async_chat_completion(self, messages: List[Dict], temperature: Optional[float] = None,
+                                   max_tokens: int = 2000) -> Dict[str, Any]:  # type: ignore[return-value]
         """Async chat completion for Kimi"""
         try:
             # Use instance default if not specified
             if temperature is None:
                 temperature = self.default_temperature
-            
+
             payload = config.get_llm_data(
                 messages[-1]['content'] if messages else '',
                 self.model_id
@@ -613,21 +826,21 @@ class KimiClient:
             payload['messages'] = messages
             payload['temperature'] = temperature
             payload['max_tokens'] = max_tokens
-            
+
             headers = {
                 "Authorization": f"Bearer {self.api_key}",
                 "Content-Type": "application/json"
             }
-            
+
             logger.debug(f"Kimi async API request: {self.model_name}")
-            
+
             # Use httpx with HTTP/2 support
             async with httpx.AsyncClient(
                 timeout=httpx.Timeout(self.timeout, connect=10.0),
                 http2=True
             ) as client:
                 response = await client.post(self.api_url, json=payload, headers=headers)
-                
+
                 if response.status_code == 200:
                     data = response.json()
                     content = data.get('choices', [{}])[0].get('message', {}).get('content', '')
@@ -641,7 +854,7 @@ class KimiClient:
                 else:
                     error_text = response.text
                     logger.error(f"Kimi API error {response.status_code}: {error_text}")
-                    
+
                     try:
                         error_data = json.loads(error_text)
                         parse_and_raise_dashscope_error(response.status_code, error_text, error_data)
@@ -652,39 +865,39 @@ class KimiClient:
                             raise LLMAccessDeniedError(f"Unauthorized: {error_text}", provider='kimi', error_code='Unauthorized')
                         else:
                             raise LLMProviderError(f"Kimi API error ({response.status_code}): {error_text}", provider='kimi', error_code=f'HTTP{response.status_code}')
-                        
+
         except httpx.TimeoutException as e:
             logger.error("Kimi API timeout")
             raise LLMTimeoutError("Kimi API timeout") from e
         except httpx.HTTPError as e:
             logger.error(f"Kimi HTTP error: {e}")
             raise LLMProviderError(f"Kimi HTTP error: {e}", provider='kimi', error_code='HTTPError')
-        except Exception as e:
+        except Exception as e:  # pylint: disable=broad-except
             logger.error(f"Kimi API error: {e}")
             raise
-    
+
     # Alias for compatibility with agents that call chat_completion
-    async def chat_completion(self, messages: List[Dict], temperature: float = None,
+    async def chat_completion(self, messages: List[Dict], temperature: Optional[float] = None,
                              max_tokens: int = 2000) -> Dict[str, Any]:
         """Alias for async_chat_completion for API consistency"""
         return await self.async_chat_completion(messages, temperature, max_tokens)
-    
+
     async def async_stream_chat_completion(
-        self, 
-        messages: List[Dict], 
-        temperature: float = None,
+        self,
+        messages: List[Dict],
+        temperature: Optional[float] = None,
         max_tokens: int = 2000,
         enable_thinking: bool = False
     ) -> AsyncGenerator[Dict[str, Any], None]:
         """
         Stream chat completion from Kimi (async generator).
-        
+
         Args:
             messages: List of message dictionaries with 'role' and 'content'
             temperature: Sampling temperature (0.0 to 1.0), None uses default
             max_tokens: Maximum tokens in response
             enable_thinking: Whether to enable thinking mode (for Kimi K2)
-            
+
         Yields:
             Dict with 'type' and 'content' keys:
             - {'type': 'thinking', 'content': '...'} - Reasoning content
@@ -694,7 +907,7 @@ class KimiClient:
         try:
             if temperature is None:
                 temperature = self.default_temperature
-            
+
             payload = config.get_llm_data(
                 messages[-1]['content'] if messages else '',
                 self.model_id
@@ -704,17 +917,17 @@ class KimiClient:
             payload['max_tokens'] = max_tokens
             payload['stream'] = True
             payload['stream_options'] = {"include_usage": True}
-            
+
             # Enable thinking mode if requested
             if 'extra_body' not in payload:
                 payload['extra_body'] = {}
             payload['extra_body']['enable_thinking'] = enable_thinking
-            
+
             headers = {
                 "Authorization": f"Bearer {self.api_key}",
                 "Content-Type": "application/json"
             }
-            
+
             # Use httpx with streaming and HTTP/2 support
             async with httpx.AsyncClient(
                 timeout=httpx.Timeout(None, connect=10.0, read=self.stream_timeout),
@@ -725,7 +938,7 @@ class KimiClient:
                         error_text = await response.aread()
                         error_text = error_text.decode('utf-8')
                         logger.error(f"Kimi stream error {response.status_code}: {error_text}")
-                        
+
                         try:
                             error_data = json.loads(error_text)
                             parse_and_raise_dashscope_error(response.status_code, error_text, error_data)
@@ -736,91 +949,91 @@ class KimiClient:
                                 raise LLMAccessDeniedError(f"Unauthorized: {error_text}", provider='kimi', error_code='Unauthorized')
                             else:
                                 raise LLMProviderError(f"Kimi stream error ({response.status_code}): {error_text}", provider='kimi', error_code=f'HTTP{response.status_code}')
-                    
+
                     # Read SSE stream using httpx's aiter_lines()
                     last_usage = None
                     async for line in response.aiter_lines():
                         if not line or not line.startswith('data: '):
                             continue
-                        
+
                         data_content = line[6:]
-                        
+
                         if data_content.strip() == '[DONE]':
                             if last_usage:
                                 yield {'type': 'usage', 'usage': last_usage}
                             break
-                        
+
                         try:
                             data = json.loads(data_content)
-                            
+
                             # Check for usage data (in final chunk)
                             if 'usage' in data and data['usage']:
                                 last_usage = data.get('usage', {})
-                            
+
                             choices = data.get('choices', [])
                             if choices:
                                 delta = choices[0].get('delta', {})
-                                
+
                                 # Check for thinking/reasoning content (Kimi K2)
                                 reasoning_content = delta.get('reasoning_content', '')
                                 if reasoning_content:
                                     yield {'type': 'thinking', 'content': reasoning_content}
-                                
+
                                 # Check for regular content
                                 content = delta.get('content', '')
                                 if content:
                                     yield {'type': 'token', 'content': content}
-                        
+
                         except json.JSONDecodeError:
                             continue
-                    
+
                     # If stream ended without [DONE], yield usage if we have it
                     if last_usage:
                         yield {'type': 'usage', 'usage': last_usage}
-        
+
         except httpx.TimeoutException as e:
             logger.error("Kimi streaming timeout")
             raise LLMTimeoutError("Kimi streaming timeout") from e
         except httpx.HTTPError as e:
             logger.error(f"Kimi streaming HTTP error: {e}")
             raise LLMProviderError(f"Kimi streaming HTTP error: {e}", provider='kimi', error_code='HTTPError')
-        except Exception as e:
+        except Exception as e:  # pylint: disable=broad-except
             logger.error(f"Kimi streaming error: {e}")
             raise
 
 
 class HunyuanClient:
     """Client for Tencent Hunyuan (混元) using OpenAI-compatible API"""
-    
+
     def __init__(self):
         """Initialize Hunyuan client with OpenAI SDK"""
         self.api_key = config.HUNYUAN_API_KEY
         self.base_url = "https://api.hunyuan.cloud.tencent.com/v1"
         self.model_name = "hunyuan-turbo"  # Using standard model name
         self.timeout = 60  # seconds
-        
+
         # DIVERSITY FIX: Highest temperature for HunYuan for maximum variation
         self.default_temperature = 1.2
-        
+
         # Initialize AsyncOpenAI client with custom base URL
         self.client = AsyncOpenAI(
             api_key=self.api_key,
             base_url=self.base_url,
             timeout=self.timeout
         )
-        
+
         logger.debug(f"HunyuanClient initialized with OpenAI-compatible API: {self.model_name}")
-    
-    async def async_chat_completion(self, messages: List[Dict], temperature: float = None,
-                                   max_tokens: int = 2000) -> str:
+
+    async def async_chat_completion(self, messages: List[Dict], temperature: Optional[float] = None,
+                                   max_tokens: int = 2000) -> Dict[str, Any]:  # type: ignore[return-value]
         """
         Send async chat completion request to Tencent Hunyuan (OpenAI-compatible)
-        
+
         Args:
             messages: List of message dictionaries with 'role' and 'content'
             temperature: Sampling temperature (0.0 to 2.0), None uses default
             max_tokens: Maximum tokens in response
-            
+
         Returns:
             Response content as string
         """
@@ -828,9 +1041,9 @@ class HunyuanClient:
             # Use instance default if not specified
             if temperature is None:
                 temperature = self.default_temperature
-            
+
             logger.debug(f"Hunyuan async API request: {self.model_name} (temp: {temperature})")
-            
+
             # Call OpenAI-compatible API
             completion = await self.client.chat.completions.create(
                 model=self.model_name,
@@ -838,10 +1051,10 @@ class HunyuanClient:
                 temperature=temperature,
                 max_tokens=max_tokens
             )
-            
+
             # Extract content from response
             content = completion.choices[0].message.content
-            
+
             if content:
                 logger.debug(f"Hunyuan response length: {len(content)} chars")
                 # Extract usage data (OpenAI SDK uses 'usage' attribute)
@@ -859,15 +1072,15 @@ class HunyuanClient:
             else:
                 logger.error("Hunyuan API returned empty content")
                 raise Exception("Hunyuan API returned empty content")
-        
+
         except RateLimitError as e:
             logger.error(f"Hunyuan rate limit error: {e}")
             raise LLMRateLimitError(f"Hunyuan rate limit: {e}")
-        
+
         except APIStatusError as e:
             error_msg = str(e)
             logger.error(f"Hunyuan API status error: {error_msg}")
-            
+
             # Try to extract error code from OpenAI SDK error
             error_code = None
             if hasattr(e, 'code'):
@@ -880,8 +1093,7 @@ class HunyuanClient:
                         error_msg = error_data['error'].get('message', error_msg)
                 except Exception as parse_error:
                     logger.debug(f"Failed to parse error response JSON: {parse_error}")
-                    pass
-            
+
             # Try to extract from error message if code not found
             if not error_code:
                 # Look for error code patterns in message:
@@ -896,44 +1108,44 @@ class HunyuanClient:
                         error_code = string_match.group(1)
                     else:
                         error_code = 'Unknown'
-            
+
             # Parse error using comprehensive Hunyuan error parser
             try:
                 parse_and_raise_hunyuan_error(error_code, error_msg, status_code=getattr(e, 'status_code', None))
-            except (LLMInvalidParameterError, LLMQuotaExhaustedError, LLMModelNotFoundError, 
+            except (LLMInvalidParameterError, LLMQuotaExhaustedError, LLMModelNotFoundError,
                     LLMAccessDeniedError, LLMContentFilterError, LLMRateLimitError, LLMTimeoutError):
                 # Re-raise parsed exceptions
                 raise
             except Exception:
                 # Fallback to generic error if parsing fails
                 raise LLMProviderError(f"Hunyuan API error ({error_code}): {error_msg}", provider='hunyuan', error_code=error_code)
-                
-        except Exception as e:
+
+        except Exception as e:  # pylint: disable=broad-except
             logger.error(f"Hunyuan API error: {e}")
             raise
-    
+
     # Alias for compatibility with agents that call chat_completion
-    async def chat_completion(self, messages: List[Dict], temperature: float = None,
-                             max_tokens: int = 2000) -> str:
+    async def chat_completion(self, messages: List[Dict], temperature: Optional[float] = None,
+                             max_tokens: int = 2000) -> Dict[str, Any]:
         """Alias for async_chat_completion for API consistency"""
         return await self.async_chat_completion(messages, temperature, max_tokens)
-    
+
     async def async_stream_chat_completion(
-        self, 
-        messages: List[Dict], 
-        temperature: float = None,
+        self,
+        messages: List[Dict],
+        temperature: Optional[float] = None,
         max_tokens: int = 2000,
         enable_thinking: bool = False  # Not supported by Hunyuan, for API consistency
     ) -> AsyncGenerator[Dict[str, Any], None]:
         """
         Stream chat completion from Hunyuan using OpenAI-compatible API.
-        
+
         Args:
             messages: List of message dictionaries with 'role' and 'content'
             temperature: Sampling temperature (0.0 to 2.0), None uses default
             max_tokens: Maximum tokens in response
             enable_thinking: Not supported by Hunyuan, included for API consistency
-            
+
         Yields:
             Dict with 'type' and 'content' keys:
             - {'type': 'token', 'content': '...'} - Response content
@@ -942,9 +1154,9 @@ class HunyuanClient:
         try:
             if temperature is None:
                 temperature = self.default_temperature
-            
+
             logger.debug(f"Hunyuan stream API request: {self.model_name} (temp: {temperature})")
-            
+
             # Use OpenAI SDK's streaming with usage tracking
             # Note: enable_thinking is ignored as Hunyuan doesn't support it
             stream = await self.client.chat.completions.create(
@@ -955,7 +1167,7 @@ class HunyuanClient:
                 stream=True,  # Enable streaming
                 stream_options={"include_usage": True}  # Request usage in stream
             )
-            
+
             last_usage = None
             async for chunk in stream:
                 # Check for usage data (usually in last chunk)
@@ -965,24 +1177,24 @@ class HunyuanClient:
                         'completion_tokens': chunk.usage.completion_tokens if hasattr(chunk.usage, 'completion_tokens') else 0,
                         'total_tokens': chunk.usage.total_tokens if hasattr(chunk.usage, 'total_tokens') else 0
                     }
-                
+
                 if chunk.choices:
                     delta = chunk.choices[0].delta
                     if delta.content:
                         yield {'type': 'token', 'content': delta.content}
-            
+
             # Yield usage data as final chunk
             if last_usage:
                 yield {'type': 'usage', 'usage': last_usage}
-        
+
         except RateLimitError as e:
             logger.error(f"Hunyuan streaming rate limit: {e}")
             raise LLMRateLimitError(f"Hunyuan rate limit: {e}")
-        
+
         except APIStatusError as e:
             error_msg = str(e)
             logger.error(f"Hunyuan streaming API error: {error_msg}")
-            
+
             # Try to extract error code from OpenAI SDK error
             error_code = None
             if hasattr(e, 'code'):
@@ -995,7 +1207,7 @@ class HunyuanClient:
                         error_msg = error_data['error'].get('message', error_msg)
                 except:
                     pass
-            
+
             # Try to extract from error message if code not found
             if not error_code:
                 code_match = re.search(r'([A-Z][a-zA-Z0-9]+(?:\.[A-Z][a-zA-Z0-9]+)*)', error_msg)
@@ -1003,19 +1215,19 @@ class HunyuanClient:
                     error_code = code_match.group(1)
                 else:
                     error_code = 'Unknown'
-            
+
             # Parse error using comprehensive Hunyuan error parser
             try:
                 parse_and_raise_hunyuan_error(error_code, error_msg, status_code=getattr(e, 'status_code', None))
-            except (LLMInvalidParameterError, LLMQuotaExhaustedError, LLMModelNotFoundError, 
+            except (LLMInvalidParameterError, LLMQuotaExhaustedError, LLMModelNotFoundError,
                     LLMAccessDeniedError, LLMContentFilterError, LLMRateLimitError, LLMTimeoutError):
                 # Re-raise parsed exceptions
                 raise
             except Exception:
                 # Fallback to generic error if parsing fails
                 raise LLMProviderError(f"Hunyuan stream error ({error_code}): {error_msg}", provider='hunyuan', error_code=error_code)
-        
-        except Exception as e:
+
+        except Exception as e:  # pylint: disable=broad-except
             logger.error(f"Hunyuan streaming error: {e}")
             raise
 
@@ -1023,13 +1235,13 @@ class HunyuanClient:
 class DoubaoClient:
     """
     Client for Volcengine Doubao (豆包) using OpenAI-compatible API.
-    
+
     DEPRECATED: This class uses direct model names. For higher RPM limits,
     use VolcengineClient('ark-doubao') instead, which uses endpoint IDs.
-    
+
     This class is kept for backward compatibility only.
     """
-    
+
     def __init__(self):
         """Initialize Doubao client with OpenAI SDK"""
         logger.warning(
@@ -1040,29 +1252,29 @@ class DoubaoClient:
         self.base_url = config.ARK_BASE_URL
         self.model_name = config.DOUBAO_MODEL
         self.timeout = 60  # seconds
-        
+
         # DIVERSITY FIX: Moderate temperature for Doubao
         self.default_temperature = 0.8
-        
+
         # Initialize AsyncOpenAI client with custom base URL
         self.client = AsyncOpenAI(
             api_key=self.api_key,
             base_url=self.base_url,
             timeout=self.timeout
         )
-        
+
         logger.debug(f"DoubaoClient initialized with OpenAI-compatible API: {self.model_name}")
-    
-    async def async_chat_completion(self, messages: List[Dict], temperature: float = None,
-                                   max_tokens: int = 2000) -> str:
+
+    async def async_chat_completion(self, messages: List[Dict], temperature: Optional[float] = None,
+                                   max_tokens: int = 2000) -> Dict[str, Any]:  # type: ignore[return-value]
         """
         Send async chat completion request to Volcengine Doubao (OpenAI-compatible)
-        
+
         Args:
             messages: List of message dictionaries with 'role' and 'content'
             temperature: Sampling temperature (0.0 to 2.0), None uses default
             max_tokens: Maximum tokens in response
-            
+
         Returns:
             Response content as string
         """
@@ -1070,9 +1282,9 @@ class DoubaoClient:
             # Use instance default if not specified
             if temperature is None:
                 temperature = self.default_temperature
-            
+
             logger.debug(f"Doubao async API request: {self.model_name} (temp: {temperature})")
-            
+
             # Call OpenAI-compatible API
             completion = await self.client.chat.completions.create(
                 model=self.model_name,
@@ -1080,10 +1292,10 @@ class DoubaoClient:
                 temperature=temperature,
                 max_tokens=max_tokens
             )
-            
+
             # Extract content from response
             content = completion.choices[0].message.content
-            
+
             if content:
                 logger.debug(f"Doubao response length: {len(content)} chars")
                 # Extract usage data (OpenAI SDK uses 'usage' attribute)
@@ -1101,19 +1313,19 @@ class DoubaoClient:
             else:
                 logger.error("Doubao API returned empty content")
                 raise Exception("Doubao API returned empty content")
-        
+
         except RateLimitError as e:
             logger.error(f"Doubao rate limit error: {e}")
             raise LLMRateLimitError(f"Doubao rate limit: {e}")
-        
+
         except APIStatusError as e:
             error_msg = str(e)
             logger.error(f"Doubao API status error: {error_msg}")
-            
+
             # Try to extract error code from OpenAI SDK error
             error_code = None
             status_code = getattr(e, 'status_code', None)
-            
+
             if hasattr(e, 'code'):
                 error_code = e.code
             elif hasattr(e, 'response') and hasattr(e.response, 'json'):
@@ -1127,7 +1339,7 @@ class DoubaoClient:
                         status_code = error_data.get('status_code')
                 except:
                     pass
-            
+
             # Try to extract from error message if code not found
             if not error_code:
                 # Look for common error code patterns in message
@@ -1136,51 +1348,53 @@ class DoubaoClient:
                     error_code = code_match.group(1)
                 else:
                     error_code = 'Unknown'
-            
+
             # Parse error using comprehensive Doubao error parser
             try:
                 parse_and_raise_doubao_error(error_code, error_msg, status_code=status_code)
-            except (LLMInvalidParameterError, LLMQuotaExhaustedError, LLMModelNotFoundError, 
+            except (LLMInvalidParameterError, LLMQuotaExhaustedError, LLMModelNotFoundError,
                     LLMAccessDeniedError, LLMContentFilterError, LLMRateLimitError, LLMTimeoutError):
                 # Re-raise parsed exceptions
                 raise
             except Exception:
                 # Fallback to generic error if parsing fails
                 raise LLMProviderError(f"Doubao API error ({error_code}): {error_msg}", provider='doubao', error_code=error_code)
-                
-        except Exception as e:
+
+        except Exception as e:  # pylint: disable=broad-except
             logger.error(f"Doubao API error: {e}")
             raise
-    
+
     # Alias for compatibility with agents that call chat_completion
-    async def chat_completion(self, messages: List[Dict], temperature: float = None,
-                             max_tokens: int = 2000) -> str:
+    async def chat_completion(self, messages: List[Dict], temperature: Optional[float] = None,
+                             max_tokens: int = 2000) -> Dict[str, Any]:
         """Alias for async_chat_completion for API consistency"""
         return await self.async_chat_completion(messages, temperature, max_tokens)
-    
+
     async def async_stream_chat_completion(
-        self, 
-        messages: List[Dict], 
-        temperature: float = None,
+        self,
+        messages: List[Dict],
+        temperature: Optional[float] = None,
         max_tokens: int = 2000
-    ) -> AsyncGenerator[str, None]:
+    ) -> AsyncGenerator[Dict[str, Any], None]:
         """
         Stream chat completion from Doubao using OpenAI-compatible API.
-        
+
         Args:
             messages: List of message dictionaries with 'role' and 'content'
             temperature: Sampling temperature (0.0 to 2.0), None uses default
             max_tokens: Maximum tokens in response
-            
+
         Yields:
-            str: Content chunks as they arrive
+            Dict with 'type' and 'content' keys:
+            - {'type': 'token', 'content': '...'} - Response content
+            - {'type': 'usage', 'usage': {...}} - Token usage stats
         """
         try:
             if temperature is None:
                 temperature = self.default_temperature
-            
+
             logger.debug(f"Doubao stream API request: {self.model_name} (temp: {temperature})")
-            
+
             # Use OpenAI SDK's streaming with usage tracking
             stream = await self.client.chat.completions.create(
                 model=self.model_name,
@@ -1190,7 +1404,7 @@ class DoubaoClient:
                 stream=True,  # Enable streaming
                 stream_options={"include_usage": True}  # Request usage in stream
             )
-            
+
             last_usage = None
             async for chunk in stream:
                 # Check for usage data (usually in last chunk)
@@ -1200,28 +1414,28 @@ class DoubaoClient:
                         'completion_tokens': chunk.usage.completion_tokens if hasattr(chunk.usage, 'completion_tokens') else 0,
                         'total_tokens': chunk.usage.total_tokens if hasattr(chunk.usage, 'total_tokens') else 0
                     }
-                
+
                 if chunk.choices:
                     delta = chunk.choices[0].delta
                     if delta.content:
                         yield {'type': 'token', 'content': delta.content}
-            
+
             # Yield usage data as final chunk
             if last_usage:
                 yield {'type': 'usage', 'usage': last_usage}
-        
+
         except RateLimitError as e:
             logger.error(f"Doubao streaming rate limit: {e}")
             raise LLMRateLimitError(f"Doubao rate limit: {e}")
-        
+
         except APIStatusError as e:
             error_msg = str(e)
             logger.error(f"Doubao streaming API error: {error_msg}")
-            
+
             # Try to extract error code from OpenAI SDK error
             error_code = None
             status_code = getattr(e, 'status_code', None)
-            
+
             if hasattr(e, 'code'):
                 error_code = e.code
             elif hasattr(e, 'response') and hasattr(e.response, 'json'):
@@ -1235,7 +1449,7 @@ class DoubaoClient:
                         status_code = error_data.get('status_code')
                 except:
                     pass
-            
+
             # Try to extract from error message if code not found
             if not error_code:
                 code_match = re.search(r'([A-Z][a-zA-Z0-9]+(?:\.[A-Z][a-zA-Z0-9]+)*)', error_msg)
@@ -1243,19 +1457,19 @@ class DoubaoClient:
                     error_code = code_match.group(1)
                 else:
                     error_code = 'Unknown'
-            
+
             # Parse error using comprehensive Doubao error parser
             try:
                 parse_and_raise_doubao_error(error_code, error_msg, status_code=status_code)
-            except (LLMInvalidParameterError, LLMQuotaExhaustedError, LLMModelNotFoundError, 
+            except (LLMInvalidParameterError, LLMQuotaExhaustedError, LLMModelNotFoundError,
                     LLMAccessDeniedError, LLMContentFilterError, LLMRateLimitError, LLMTimeoutError):
                 # Re-raise parsed exceptions
                 raise
             except Exception:
                 # Fallback to generic error if parsing fails
                 raise LLMProviderError(f"Doubao stream error ({error_code}): {error_msg}", provider='doubao', error_code=error_code)
-        
-        except Exception as e:
+
+        except Exception as e:  # pylint: disable=broad-except
             logger.error(f"Doubao streaming error: {e}")
             raise
 
@@ -1263,13 +1477,13 @@ class DoubaoClient:
 class VolcengineClient:
     """
     Volcengine ARK client using endpoint IDs for higher RPM.
-    
+
     Uses OpenAI-compatible API with endpoint IDs instead of model names
     to achieve higher request limits.
-    
+
     Supports: ark-deepseek, ark-kimi, ark-doubao
     """
-    
+
     # Endpoint mapping for higher RPM
     # Maps model aliases to environment variable names for error messages
     ENDPOINT_MAP = {
@@ -1278,14 +1492,14 @@ class VolcengineClient:
         'ark-kimi': 'ARK_KIMI_ENDPOINT',
         'ark-doubao': 'ARK_DOUBAO_ENDPOINT',
     }
-    
+
     def __init__(self, model_alias: str):
         """
         Initialize Volcengine client.
-        
+
         Args:
             model_alias: Model alias ('ark-deepseek', 'ark-kimi', 'ark-doubao')
-            
+
         Raises:
             ValueError: If ARK_API_KEY is not configured
         """
@@ -1293,37 +1507,37 @@ class VolcengineClient:
         self.base_url = config.ARK_BASE_URL
         self.model_alias = model_alias
         self.timeout = 60
-        
+
         # Validate API key is configured
         if not self.api_key:
             raise ValueError(
                 f"ARK_API_KEY not configured for {model_alias}. "
                 "Please set ARK_API_KEY in your environment variables."
             )
-        
+
         # Map alias to endpoint ID (higher RPM!)
         self.endpoint_id = self._get_endpoint_id(model_alias)
-        
+
         # DIVERSITY FIX: Moderate temperature
         self.default_temperature = 0.8
-        
+
         # Initialize AsyncOpenAI client
         self.client = AsyncOpenAI(
             api_key=self.api_key,
             base_url=self.base_url,
             timeout=self.timeout
         )
-        
+
         logger.debug(
             f"VolcengineClient initialized: {model_alias} → endpoint={self.endpoint_id}"
         )
-    
+
     def _get_endpoint_id(self, alias: str) -> str:
         """
         Map model alias to Volcengine endpoint ID.
-        
+
         Endpoint IDs provide higher RPM than direct model names!
-        
+
         Uses config properties for consistency with other configuration values.
         Endpoint IDs must be configured in environment variables (see env.example).
         """
@@ -1332,11 +1546,11 @@ class VolcengineClient:
             'ark-kimi': config.ARK_KIMI_ENDPOINT,
             'ark-doubao': config.ARK_DOUBAO_ENDPOINT,
         }
-        
+
         # Get endpoint from config (reads from env var)
         endpoint = endpoint_map.get(alias)
-        
-        
+
+
         # Validate endpoint is configured (not empty and not dummy value)
         if not endpoint or endpoint == 'ep-20250101000000-dummy':
             raise ValueError(
@@ -1344,41 +1558,41 @@ class VolcengineClient:
                 f"Please set {self.ENDPOINT_MAP.get(alias, 'ENDPOINT')} in your environment variables. "
                 "See env.example for configuration details."
             )
-        
+
         return endpoint
-    
+
     async def async_chat_completion(
         self,
         messages: List[Dict],
-        temperature: float = None,
+        temperature: Optional[float] = None,
         max_tokens: int = 2000
-    ) -> Dict[str, Any]:
+    ) -> Dict[str, Any]:  # type: ignore[return-value]
         """
         Non-streaming chat completion using endpoint ID.
-        
+
         Args:
             messages: List of message dictionaries
             temperature: Sampling temperature
             max_tokens: Maximum tokens
-            
+
         Returns:
             Dict with 'content' and 'usage' keys
         """
         try:
             if temperature is None:
                 temperature = self.default_temperature
-            
+
             logger.debug(f"Volcengine {self.model_alias} request: endpoint={self.endpoint_id}")
-            
+
             completion = await self.client.chat.completions.create(
                 model=self.endpoint_id,  # Use endpoint ID for higher RPM!
                 messages=messages,
                 temperature=temperature,
                 max_tokens=max_tokens,
             )
-            
+
             content = completion.choices[0].message.content
-            
+
             # Extract usage
             usage = {}
             if hasattr(completion, 'usage') and completion.usage:
@@ -1387,23 +1601,23 @@ class VolcengineClient:
                     'completion_tokens': getattr(completion.usage, 'completion_tokens', 0),
                     'total_tokens': getattr(completion.usage, 'total_tokens', 0),
                 }
-            
+
             return {
                 'content': content,
                 'usage': usage
             }
-            
+
         except RateLimitError as e:
             logger.error(f"Volcengine {self.model_alias} rate limit: {e}")
             raise LLMRateLimitError(f"Volcengine rate limit: {e}")
-            
+
         except APIStatusError as e:
             logger.error(f"Volcengine {self.model_alias} API error: {e}")
             # Use doubao error parser for Volcengine errors
             error_msg = str(e)
             status_code = getattr(e, 'status_code', None)
             error_code = None
-            
+
             if hasattr(e, 'code'):
                 error_code = e.code
             elif hasattr(e, 'response') and hasattr(e.response, 'json'):
@@ -1416,42 +1630,42 @@ class VolcengineClient:
                         status_code = error_data.get('status_code')
                 except:
                     pass
-            
+
             if not error_code:
                 code_match = re.search(r'([A-Z][a-zA-Z0-9]+(?:\.[A-Z][a-zA-Z0-9]+)*)', error_msg)
                 if code_match:
                     error_code = code_match.group(1)
                 else:
                     error_code = 'Unknown'
-            
+
             try:
                 parse_and_raise_doubao_error(error_code, error_msg, status_code=status_code)
-            except (LLMInvalidParameterError, LLMQuotaExhaustedError, LLMModelNotFoundError, 
+            except (LLMInvalidParameterError, LLMQuotaExhaustedError, LLMModelNotFoundError,
                     LLMAccessDeniedError, LLMContentFilterError, LLMRateLimitError, LLMTimeoutError):
                 raise
             except Exception:
                 raise LLMProviderError(f"Volcengine API error ({error_code}): {error_msg}", provider='volcengine', error_code=error_code)
-            
-        except Exception as e:
+
+        except Exception as e:  # pylint: disable=broad-except
             logger.error(f"Volcengine {self.model_alias} error: {e}")
             raise
-    
+
     async def async_stream_chat_completion(
         self,
         messages: List[Dict],
-        temperature: float = None,
+        temperature: Optional[float] = None,
         max_tokens: int = 2000,
         enable_thinking: bool = False
     ) -> AsyncGenerator[Dict[str, Any], None]:
         """
         Streaming chat completion using endpoint ID.
-        
+
         Args:
             messages: List of message dictionaries
             temperature: Sampling temperature
             max_tokens: Maximum tokens
             enable_thinking: Whether to enable thinking mode (for DeepSeek/Kimi via Volcengine)
-            
+
         Yields:
             Dict with 'type' and 'content' keys:
             - {'type': 'thinking', 'content': '...'} - Reasoning content
@@ -1461,12 +1675,12 @@ class VolcengineClient:
         try:
             if temperature is None:
                 temperature = self.default_temperature
-            
+
             logger.debug(f"Volcengine {self.model_alias} stream: endpoint={self.endpoint_id}")
-            
+
             # Build extra params for thinking mode if enabled
             extra_body = {"enable_thinking": enable_thinking} if enable_thinking else {}
-            
+
             stream = await self.client.chat.completions.create(
                 model=self.endpoint_id,  # Use endpoint ID for higher RPM!
                 messages=messages,
@@ -1476,7 +1690,7 @@ class VolcengineClient:
                 stream_options={"include_usage": True},  # Request usage in stream
                 extra_body=extra_body if extra_body else None
             )
-            
+
             last_usage = None
             async for chunk in stream:
                 # Check for usage data (usually in last chunk)
@@ -1486,33 +1700,33 @@ class VolcengineClient:
                         'completion_tokens': chunk.usage.completion_tokens if hasattr(chunk.usage, 'completion_tokens') else 0,
                         'total_tokens': chunk.usage.total_tokens if hasattr(chunk.usage, 'total_tokens') else 0
                     }
-                
+
                 if chunk.choices:
                     delta = chunk.choices[0].delta
-                    
+
                     # Check for thinking/reasoning content (DeepSeek R1, Kimi K2 via Volcengine)
                     if hasattr(delta, 'reasoning_content') and delta.reasoning_content:
                         yield {'type': 'thinking', 'content': delta.reasoning_content}
-                    
+
                     # Check for regular content
                     if delta.content:
                         yield {'type': 'token', 'content': delta.content}
-            
+
             # Yield usage data as final chunk
             if last_usage:
                 yield {'type': 'usage', 'usage': last_usage}
-                    
+
         except RateLimitError as e:
             logger.error(f"Volcengine {self.model_alias} stream rate limit: {e}")
             raise LLMRateLimitError(f"Volcengine rate limit: {e}")
-        
+
         except APIStatusError as e:
             error_msg = str(e)
             logger.error(f"Volcengine {self.model_alias} streaming API error: {error_msg}")
-            
+
             status_code = getattr(e, 'status_code', None)
             error_code = None
-            
+
             if hasattr(e, 'code'):
                 error_code = e.code
             elif hasattr(e, 'response') and hasattr(e.response, 'json'):
@@ -1525,28 +1739,28 @@ class VolcengineClient:
                         status_code = error_data.get('status_code')
                 except:
                     pass
-            
+
             if not error_code:
                 code_match = re.search(r'([A-Z][a-zA-Z0-9]+(?:\.[A-Z][a-zA-Z0-9]+)*)', error_msg)
                 if code_match:
                     error_code = code_match.group(1)
                 else:
                     error_code = 'Unknown'
-            
+
             try:
                 parse_and_raise_doubao_error(error_code, error_msg, status_code=status_code)
-            except (LLMInvalidParameterError, LLMQuotaExhaustedError, LLMModelNotFoundError, 
+            except (LLMInvalidParameterError, LLMQuotaExhaustedError, LLMModelNotFoundError,
                     LLMAccessDeniedError, LLMContentFilterError, LLMRateLimitError, LLMTimeoutError):
                 raise
             except Exception:
                 raise LLMProviderError(f"Volcengine stream error ({error_code}): {error_msg}", provider='volcengine', error_code=error_code)
-        
-        except Exception as e:
+
+        except Exception as e:  # pylint: disable=broad-except
             logger.error(f"Volcengine {self.model_alias} stream error: {e}")
             raise
-    
+
     # Alias for compatibility with agents that call chat_completion
-    async def chat_completion(self, messages: List[Dict], temperature: float = None,
+    async def chat_completion(self, messages: List[Dict], temperature: Optional[float] = None,
                              max_tokens: int = 2000) -> str:
         """Alias for async_chat_completion for API consistency"""
         result = await self.async_chat_completion(messages, temperature, max_tokens)
@@ -1561,7 +1775,7 @@ try:
     qwen_client_classification = QwenClient(model_type='classification')  # qwen-plus-latest
     qwen_client_generation = QwenClient(model_type='generation')         # qwen-plus
     qwen_client = qwen_client_classification  # Legacy compatibility
-    
+
     # Multi-LLM clients - Dedicated classes for each provider
     deepseek_client = DeepSeekClient()
     kimi_client = KimiClient()
@@ -1574,12 +1788,12 @@ try:
         # Endpoint not configured, fallback to legacy DoubaoClient
         logger.warning("[clients.llm] ARK_DOUBAO_ENDPOINT not configured, using legacy DoubaoClient")
         doubao_client = DoubaoClient()
-    
+
     # Only log from main worker to avoid duplicate messages
     import os
     if os.getenv('UVICORN_WORKER_ID') is None or os.getenv('UVICORN_WORKER_ID') == '0':
         logger.info("LLM clients initialized successfully (Qwen, DeepSeek, Kimi, Hunyuan, Doubao)")
-except Exception as e:
+except Exception as e:  # pylint: disable=broad-except
     logger.warning(f"Failed to initialize LLM clients: {e}")
     qwen_client = None
     qwen_client_classification = None
@@ -1592,10 +1806,10 @@ except Exception as e:
 def get_llm_client(model_id='qwen'):
     """
     Get an LLM client by model ID.
-    
+
     Args:
         model_id (str): 'qwen', 'deepseek', 'kimi', 'hunyuan', or 'doubao'
-        
+
     Returns:
         LLM client instance
     """
@@ -1606,9 +1820,9 @@ def get_llm_client(model_id='qwen'):
         'hunyuan': hunyuan_client,
         'doubao': doubao_client
     }
-    
+
     client = client_map.get(model_id)
-    
+
     if client is not None:
         logger.debug(f"Using {model_id} LLM client")
         return client
@@ -1627,7 +1841,7 @@ def get_llm_client(model_id='qwen'):
                             content += msg.get('content', '')
                         elif msg.get('role') == 'system':
                             content += msg.get('content', '')
-                    
+
                     # Generate appropriate mock responses based on the prompt content
                     if 'double bubble' in content.lower():
                         return {
@@ -1758,4 +1972,4 @@ def get_llm_client(model_id='qwen'):
                 else:
                     # Fallback for other formats
                     return {"result": "mock response", "type": "fallback"}
-        return MockLLMClient() 
+        return MockLLMClient()

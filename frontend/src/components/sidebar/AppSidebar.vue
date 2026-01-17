@@ -7,14 +7,15 @@ import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 import {
+  ChatDotRound,
   ChatLineSquare,
   Connection,
+  Document,
   Files,
+  MagicStick,
   OfficeBuilding,
   Share,
   VideoPlay,
-  MagicStick,
-  ChatDotRound,
 } from '@element-plus/icons-vue'
 
 import { ChevronDown, KeyRound, LogIn, LogOut, Menu, Settings, UserRound } from 'lucide-vue-next'
@@ -23,8 +24,6 @@ import { AccountInfoModal, ChangePasswordModal, LoginModal } from '@/components/
 import { useLanguage } from '@/composables/useLanguage'
 import { useAuthStore, useMindMateStore, useUIStore } from '@/stores'
 import { useAskOnceStore } from '@/stores/askonce'
-
-const { t } = useLanguage()
 import { type SavedDiagram, useSavedDiagramsStore } from '@/stores/savedDiagrams'
 
 import AskOnceHistory from './AskOnceHistory.vue'
@@ -32,6 +31,8 @@ import ChatHistory from './ChatHistory.vue'
 import DebateHistory from './DebateHistory.vue'
 import DiagramHistory from './DiagramHistory.vue'
 import KnowledgeSpaceHistory from './KnowledgeSpaceHistory.vue'
+
+const { t } = useLanguage()
 
 const router = useRouter()
 const uiStore = useUIStore()
@@ -213,7 +214,10 @@ async function handleDiagramSelect(diagram: SavedDiagram) {
         <el-icon><Connection /></el-icon>
         <template #title>MindGraph</template>
       </el-menu-item>
-      <el-menu-item index="knowledge-space" v-if="isAuthenticated">
+      <el-menu-item
+        v-if="isAuthenticated"
+        index="knowledge-space"
+      >
         <el-icon><Document /></el-icon>
         <template #title>个人知识库</template>
       </el-menu-item>
@@ -280,7 +284,12 @@ async function handleDiagramSelect(diagram: SavedDiagram) {
 
     <!-- Spacer to push user section to bottom (when no history shown) -->
     <div
-      v-if="isCollapsed || !['mindmate', 'mindgraph', 'knowledge-space', 'askonce', 'debateverse'].includes(currentMode)"
+      v-if="
+        isCollapsed ||
+        !['mindmate', 'mindgraph', 'knowledge-space', 'askonce', 'debateverse'].includes(
+          currentMode
+        )
+      "
       class="flex-1"
     />
 

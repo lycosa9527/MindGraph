@@ -1,3 +1,6 @@
+﻿from agents.mind_maps.mind_map_agent import MindMapAgent
+from prompts.thinking_tools import THINKING_TOOLS_PROMPTS
+
 """
 Goal Analysis Agent
 
@@ -11,17 +14,15 @@ All Rights Reserved
 Proprietary License
 """
 
-from agents.mind_maps.mind_map_agent import MindMapAgent
-from prompts.thinking_tools import THINKING_TOOLS_PROMPTS
 
 
 class GoalAnalysisAgent(MindMapAgent):
     """Agent for generating goal analysis diagrams."""
-    
+
     def __init__(self):
         super().__init__()
         self.diagram_type = 'goal_analysis'
-    
+
     def get_prompt(self, language='en'):
         """Get the generation prompt for the specified language."""
         prompt_key = f"goal_analysis_generation_{language}"

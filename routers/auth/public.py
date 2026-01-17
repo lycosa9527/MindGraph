@@ -1,4 +1,4 @@
-"""
+﻿"""
 Public Authentication Endpoints
 ================================
 
@@ -25,7 +25,7 @@ router = APIRouter()
 async def get_auth_mode():
     """
     Get current authentication mode
-    
+
     Allows frontend to detect and adapt to different auth modes.
     """
     return {"mode": AUTH_MODE}
@@ -35,7 +35,7 @@ async def get_auth_mode():
 async def list_organizations(db: Session = Depends(get_db)):
     """
     Get list of all organizations (public endpoint for registration)
-    
+
     Returns basic organization info for registration form dropdown.
     """
     orgs = db.query(Organization).all()

@@ -1,3 +1,16 @@
+﻿import asyncio
+import json
+import logging
+
+from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi.responses import StreamingResponse
+from sqlalchemy.orm import Session
+
+from config.database import get_db
+from models.auth import User
+from services.redis.redis_activity_tracker import get_activity_tracker
+from utils.auth import get_current_user, is_admin
+
 """
 Admin Realtime Monitoring Router
 ==================================
@@ -18,18 +31,7 @@ All Rights Reserved
 Proprietary License
 """
 
-import logging
-import json
-import asyncio
-from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, status, Query
-from fastapi.responses import StreamingResponse
-from sqlalchemy.orm import Session
 
-from config.database import get_db
-from models.auth import User
-from utils.auth import get_current_user, is_admin
-from services.redis_activity_tracker import get_activity_tracker
 
 logger = logging.getLogger(__name__)
 
@@ -53,7 +55,7 @@ async def get_realtime_stats(
 ):
     """
     Get current real-time statistics (ADMIN ONLY)
-    
+
     Returns:
         Dict with stats: active_users_count, unique_users_count, etc.
     """
@@ -62,13 +64,13 @@ async def get_realtime_stats(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Admin access required"
         )
-    
+
     try:
         tracker = get_activity_tracker()
         stats = tracker.get_stats()
-        
+
         return stats
-        
+
     except Exception as e:
         logger.error(f"Failed to get realtime stats: {e}")
         raise HTTPException(
@@ -84,7 +86,7 @@ async def get_active_users(
 ):
     """
     Get list of currently active users (ADMIN ONLY)
-    
+
     Returns:
         List of active user sessions
     """
@@ -93,17 +95,17 @@ async def get_active_users(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Admin access required"
         )
-    
+
     try:
         tracker = get_activity_tracker()
         active_users = tracker.get_active_users()
-        
+
         return {
             'users': active_users,
             'count': len(active_users),
             'timestamp': tracker.get_stats()['timestamp']
         }
-        
+
     except Exception as e:
         logger.error(f"Failed to get active users: {e}")
         raise HTTPException(
@@ -120,10 +122,10 @@ async def get_recent_activities(
 ):
     """
     Get recent activity history (ADMIN ONLY)
-    
+
     Args:
         limit: Maximum number of activities to return (max 500)
-    
+
     Returns:
         List of recent activities
     """
@@ -132,16 +134,16 @@ async def get_recent_activities(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Admin access required"
         )
-    
+
     try:
         tracker = get_activity_tracker()
         activities = tracker.get_recent_activities(limit=limit)
-        
+
         return {
             'activities': activities,
             'count': len(activities)
         }
-        
+
     except Exception as e:
         logger.error(f"Failed to get activities: {e}")
         raise HTTPException(
@@ -157,20 +159,20 @@ async def stream_realtime_updates(
 ):
     """
     Stream real-time user activity updates using Server-Sent Events (ADMIN ONLY)
-    
+
     This endpoint uses SSE for efficient one-way streaming from server to client.
     Client should connect with EventSource API.
-    
+
     Returns:
         StreamingResponse with text/event-stream content type
-    
+
     Event Types:
     - 'stats': Overall statistics update
     - 'user_joined': New user became active
     - 'user_left': User session ended
     - 'activity': User activity update
     - 'heartbeat': Keep-alive ping
-    
+
     Example client code:
         const eventSource = new EventSource('/api/auth/admin/realtime/stream');
         eventSource.onmessage = (event) => {
@@ -183,7 +185,7 @@ async def stream_realtime_updates(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Admin access required"
         )
-    
+
     # Rate limiting: Check concurrent connections
     user_id = current_user.id
     current_connections = _active_sse_connections.get(user_id, 0)
@@ -193,16 +195,16 @@ async def stream_realtime_updates(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
             detail=f"Maximum {MAX_CONCURRENT_SSE_CONNECTIONS} concurrent connections allowed"
         )
-    
+
     # Increment connection count
     _active_sse_connections[user_id] = current_connections + 1
     logger.info(f"Admin {current_user.phone} started realtime stream (connections: {_active_sse_connections[user_id]})")
-    
+
     async def event_generator():
         """Generate SSE events from activity tracker."""
         tracker = get_activity_tracker()
         last_stats = None
-        
+
         try:
             # Send initial state (wrap in try-except to ensure cleanup on error)
             try:
@@ -216,23 +218,23 @@ async def stream_realtime_updates(
                 })
                 yield f"data: {error_data}\n\n"
                 return  # Exit generator, finally block will cleanup
-            
+
             initial_data = json.dumps({
                 'type': 'initial',
                 'stats': stats,
                 'users': active_users
             })
             yield f"data: {initial_data}\n\n"
-            
+
             last_stats = stats
-            
+
             # Poll for updates
             heartbeat_counter = 0
             last_session_ids = {u['session_id'] for u in active_users}
-            
+
             while True:
                 await asyncio.sleep(SSE_POLL_INTERVAL_SECONDS)
-                
+
                 # Check if client disconnected (FastAPI will raise CancelledError on disconnect)
                 # This check happens before expensive operations
                 try:
@@ -248,9 +250,9 @@ async def stream_realtime_updates(
                     })
                     yield f"data: {error_data}\n\n"
                     break
-                
+
                 current_session_ids = {u['session_id'] for u in current_users}
-                
+
                 # Check for stats changes (compare all key metrics)
                 stats_changed = (
                     current_stats['active_users_count'] != last_stats['active_users_count'] or
@@ -264,7 +266,7 @@ async def stream_realtime_updates(
                     })
                     yield f"data: {stats_data}\n\n"
                     last_stats = current_stats
-                
+
                 # Check for new sessions (more accurate than user_ids since users can have multiple sessions)
                 new_session_ids = current_session_ids - last_session_ids
                 if new_session_ids:
@@ -277,7 +279,7 @@ async def stream_realtime_updates(
                                 'stats': current_stats  # Include stats update
                             })
                             yield f"data: {user_joined_data}\n\n"
-                
+
                 # Check for sessions that ended
                 left_session_ids = last_session_ids - current_session_ids
                 if left_session_ids:
@@ -287,7 +289,7 @@ async def stream_realtime_updates(
                             'session_id': session_id
                         })
                         yield f"data: {session_left_data}\n\n"
-                
+
                 # Send full user list update periodically
                 if heartbeat_counter % USERS_UPDATE_INTERVAL == 0:
                     users_update = json.dumps({
@@ -295,7 +297,7 @@ async def stream_realtime_updates(
                         'users': current_users
                     })
                     yield f"data: {users_update}\n\n"
-                
+
                 # Send heartbeat periodically
                 if heartbeat_counter % HEARTBEAT_INTERVAL == 0:
                     heartbeat_data = json.dumps({
@@ -303,10 +305,10 @@ async def stream_realtime_updates(
                         'timestamp': current_stats['timestamp']
                     })
                     yield f"data: {heartbeat_data}\n\n"
-                
+
                 last_session_ids = current_session_ids
                 heartbeat_counter += 1
-                
+
         except asyncio.CancelledError:
             logger.info(f"Realtime stream cancelled for admin {current_user.phone}")
             # Don't yield after cancellation - client disconnected
@@ -329,7 +331,7 @@ async def stream_realtime_updates(
                 if _active_sse_connections[user_id] == 0:
                     del _active_sse_connections[user_id]
                 logger.debug(f"Admin {current_user.phone} SSE connection closed (remaining: {_active_sse_connections.get(user_id, 0)})")
-    
+
     return StreamingResponse(
         event_generator(),
         media_type="text/event-stream",

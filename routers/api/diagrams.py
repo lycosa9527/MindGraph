@@ -1,3 +1,15 @@
+﻿from datetime import datetime
+from typing import Optional
+import logging
+
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
+
+from models.auth import User
+from models.requests import DiagramCreateRequest, DiagramUpdateRequest
+from models.responses import DiagramListItem, DiagramListResponse, DiagramResponse
+from services.redis.redis_diagram_cache import get_diagram_cache
+from utils.auth import get_current_user
+
 """
 Diagram Storage API Router
 ===========================
@@ -19,16 +31,9 @@ All Rights Reserved
 Proprietary License
 """
 
-import logging
-from typing import Optional
-from datetime import datetime
-from fastapi import APIRouter, HTTPException, Depends, Request, Query
-from models.auth import User
-from models.requests import DiagramCreateRequest, DiagramUpdateRequest
-from models.responses import DiagramResponse, DiagramListResponse, DiagramListItem
-from utils.auth import get_current_user
-from services.redis_diagram_cache import get_diagram_cache
-from .helpers import get_rate_limit_identifier, check_endpoint_rate_limit
+
+
+
 
 logger = logging.getLogger(__name__)
 
@@ -43,16 +48,16 @@ async def create_diagram(
 ):
     """
     Create a new diagram.
-    
+
     Rate limited: 100 requests per minute per user.
     Max diagrams per user: 20.
     """
     # Rate limiting
     identifier = get_rate_limit_identifier(current_user, request)
     await check_endpoint_rate_limit('diagrams', identifier, max_requests=100, window_seconds=60)
-    
+
     cache = get_diagram_cache()
-    
+
     success, diagram_id, error = await cache.save_diagram(
         user_id=current_user.id,
         diagram_id=None,  # New diagram
@@ -62,19 +67,21 @@ async def create_diagram(
         language=req.language,
         thumbnail=req.thumbnail
     )
-    
+
     if not success:
         if "limit reached" in (error or "").lower():
             raise HTTPException(status_code=403, detail=error)
         raise HTTPException(status_code=400, detail=error or "Failed to create diagram")
-    
+
     # Get the created diagram
+    if not diagram_id:
+        raise HTTPException(status_code=500, detail="Diagram created but ID is missing")
     diagram = await cache.get_diagram(current_user.id, diagram_id)
     if not diagram:
         raise HTTPException(status_code=500, detail="Diagram created but failed to retrieve")
-    
+
     logger.info(f"[Diagrams] Created diagram {diagram_id} for user {current_user.id}")
-    
+
     return DiagramResponse(
         id=diagram['id'],
         title=diagram['title'],
@@ -96,16 +103,16 @@ async def list_diagrams(
 ):
     """
     List user's diagrams with pagination.
-    
+
     Rate limited: 100 requests per minute per user.
     """
     # Rate limiting
     identifier = get_rate_limit_identifier(current_user, request)
     await check_endpoint_rate_limit('diagrams', identifier, max_requests=100, window_seconds=60)
-    
+
     cache = get_diagram_cache()
     result = await cache.list_diagrams(current_user.id, page, page_size)
-    
+
     # Convert to response models
     items = []
     for d in result['diagrams']:
@@ -117,7 +124,7 @@ async def list_diagrams(
             updated_at=datetime.fromisoformat(d['updated_at']) if d.get('updated_at') else datetime.utcnow(),
             is_pinned=d.get('is_pinned', False)
         ))
-    
+
     return DiagramListResponse(
         diagrams=items,
         total=result['total'],
@@ -136,19 +143,19 @@ async def get_diagram(
 ):
     """
     Get a specific diagram by ID.
-    
+
     Rate limited: 100 requests per minute per user.
     """
     # Rate limiting
     identifier = get_rate_limit_identifier(current_user, request)
     await check_endpoint_rate_limit('diagrams', identifier, max_requests=100, window_seconds=60)
-    
+
     cache = get_diagram_cache()
     diagram = await cache.get_diagram(current_user.id, diagram_id)
-    
+
     if not diagram:
         raise HTTPException(status_code=404, detail="Diagram not found")
-    
+
     return DiagramResponse(
         id=diagram['id'],
         title=diagram['title'],
@@ -170,25 +177,25 @@ async def update_diagram(
 ):
     """
     Update an existing diagram.
-    
+
     Rate limited: 100 requests per minute per user.
     """
     # Rate limiting
     identifier = get_rate_limit_identifier(current_user, request)
     await check_endpoint_rate_limit('diagrams', identifier, max_requests=100, window_seconds=60)
-    
+
     cache = get_diagram_cache()
-    
+
     # Get existing diagram
     existing = await cache.get_diagram(current_user.id, diagram_id)
     if not existing:
         raise HTTPException(status_code=404, detail="Diagram not found")
-    
+
     # Merge updates
     title = req.title if req.title is not None else existing['title']
     spec = req.spec if req.spec is not None else existing['spec']
     thumbnail = req.thumbnail if req.thumbnail is not None else existing.get('thumbnail')
-    
+
     success, _, error = await cache.save_diagram(
         user_id=current_user.id,
         diagram_id=diagram_id,
@@ -198,17 +205,17 @@ async def update_diagram(
         language=existing.get('language', 'zh'),
         thumbnail=thumbnail
     )
-    
+
     if not success:
         raise HTTPException(status_code=400, detail=error or "Failed to update diagram")
-    
+
     # Get updated diagram
     diagram = await cache.get_diagram(current_user.id, diagram_id)
     if not diagram:
         raise HTTPException(status_code=500, detail="Diagram updated but failed to retrieve")
-    
+
     logger.info(f"[Diagrams] Updated diagram {diagram_id} for user {current_user.id}")
-    
+
     return DiagramResponse(
         id=diagram['id'],
         title=diagram['title'],
@@ -229,23 +236,23 @@ async def delete_diagram(
 ):
     """
     Soft delete a diagram.
-    
+
     Rate limited: 100 requests per minute per user.
     """
     # Rate limiting
     identifier = get_rate_limit_identifier(current_user, request)
     await check_endpoint_rate_limit('diagrams', identifier, max_requests=100, window_seconds=60)
-    
+
     cache = get_diagram_cache()
     success, error = await cache.delete_diagram(current_user.id, diagram_id)
-    
+
     if not success:
         if "not found" in (error or "").lower():
             raise HTTPException(status_code=404, detail=error)
         raise HTTPException(status_code=400, detail=error or "Failed to delete diagram")
-    
+
     logger.info(f"[Diagrams] Deleted diagram {diagram_id} for user {current_user.id}")
-    
+
     return {"success": True, "message": "Diagram deleted"}
 
 
@@ -257,31 +264,33 @@ async def duplicate_diagram(
 ):
     """
     Duplicate an existing diagram.
-    
+
     Rate limited: 100 requests per minute per user.
     Max diagrams per user: 20.
     """
     # Rate limiting
     identifier = get_rate_limit_identifier(current_user, request)
     await check_endpoint_rate_limit('diagrams', identifier, max_requests=100, window_seconds=60)
-    
+
     cache = get_diagram_cache()
     success, new_id, error = await cache.duplicate_diagram(current_user.id, diagram_id)
-    
+
     if not success:
         if "limit reached" in (error or "").lower():
             raise HTTPException(status_code=403, detail=error)
         if "not found" in (error or "").lower():
             raise HTTPException(status_code=404, detail=error)
         raise HTTPException(status_code=400, detail=error or "Failed to duplicate diagram")
-    
+
     # Get the new diagram
+    if not new_id:
+        raise HTTPException(status_code=500, detail="Diagram duplicated but ID is missing")
     diagram = await cache.get_diagram(current_user.id, new_id)
     if not diagram:
         raise HTTPException(status_code=500, detail="Diagram duplicated but failed to retrieve")
-    
+
     logger.info(f"[Diagrams] Duplicated diagram {diagram_id} to {new_id} for user {current_user.id}")
-    
+
     return DiagramResponse(
         id=diagram['id'],
         title=diagram['title'],
@@ -303,22 +312,22 @@ async def pin_diagram(
 ):
     """
     Pin or unpin a diagram to appear at the top of the list.
-    
+
     Rate limited: 100 requests per minute per user.
     """
     # Rate limiting
     identifier = get_rate_limit_identifier(current_user, request)
     await check_endpoint_rate_limit('diagrams', identifier, max_requests=100, window_seconds=60)
-    
+
     cache = get_diagram_cache()
     success, error = await cache.pin_diagram(current_user.id, diagram_id, pinned)
-    
+
     if not success:
         if "not found" in (error or "").lower():
             raise HTTPException(status_code=404, detail=error)
         raise HTTPException(status_code=400, detail=error or "Failed to pin diagram")
-    
+
     action = "Pinned" if pinned else "Unpinned"
     logger.info(f"[Diagrams] {action} diagram {diagram_id} for user {current_user.id}")
-    
+
     return {"success": True, "message": f"Diagram {action.lower()}", "is_pinned": pinned}

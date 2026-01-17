@@ -1,4 +1,4 @@
-"""
+﻿"""
 Prompt to Diagram Agent Prompts
 
 This module contains prompts for direct prompt-to-diagram generation using a single LLM call.
@@ -43,7 +43,7 @@ CLASSIFICATION_EXAMPLES_ZH = """重要：区分用户想要创建的图表类型
 # Diagram type definitions
 DIAGRAM_TYPES_EN = """Available diagram types:
 1. bubble_map (Bubble Map) - describing attributes, characteristics, features
-2. bridge_map (Bridge Map) - analogies, comparing similarities between concepts  
+2. bridge_map (Bridge Map) - analogies, comparing similarities between concepts
 3. tree_map (Tree Map) - classification, hierarchy, organizational structure
 4. circle_map (Circle Map) - association, generating related information around the central topic
 5. double_bubble_map (Double Bubble Map) - comparing and contrasting two things
@@ -674,7 +674,7 @@ Your task:
         edge_cases = EDGE_CASES_EN
         json_format_instruction = """Analyze the prompt and generate the appropriate diagram specification. Return ONLY valid JSON in this format:"""
         critical_requirements = CRITICAL_REQUIREMENTS_EN
-    
+
     # Build the complete prompt
     prompt_parts = [
         task_header,
@@ -697,7 +697,7 @@ Your task:
         "",
         critical_requirements,
     ]
-    
+
     return "\n".join(prompt_parts)
 
 

@@ -1,3 +1,18 @@
+﻿from pathlib import Path
+from typing import
+import logging
+import os
+import uuid
+
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
+from pydantic import BaseModel
+from sqlalchemy.orm import Session
+
+from config.database import get_db
+from models.auth import User
+from services.utils.update_notifier import update_notifier
+from utils.auth import get_current_user, is_admin
+
 """
 Update Notification Router
 ===========================
@@ -20,20 +35,8 @@ All Rights Reserved
 Proprietary License
 """
 
-import os
-import uuid
-import logging
-from typing import Optional, List
-from pathlib import Path
 
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
-from pydantic import BaseModel
-from sqlalchemy.orm import Session
 
-from config.database import get_db
-from models.auth import User
-from utils.auth import get_current_user, is_admin
-from services.update_notifier import update_notifier
 
 logger = logging.getLogger(__name__)
 
@@ -98,18 +101,18 @@ async def get_update_notification(
 ):
     """
     Get update notification for current user.
-    
+
     Returns notification content if user should see it,
     or null if notification is disabled or already dismissed.
     """
     try:
         notification = update_notifier.get_notification_for_user(current_user.id)
-        
+
         if notification is None:
             return {"notification": None}
-        
+
         return {"notification": notification}
-        
+
     except Exception as e:
         logger.error(f"Failed to get notification: {e}")
         raise HTTPException(
@@ -124,12 +127,12 @@ async def dismiss_update_notification(
 ):
     """
     Dismiss the update notification for current user.
-    
+
     User won't see the notification again for the current version.
     """
     try:
         success = update_notifier.dismiss_notification(current_user.id)
-        
+
         if success:
             return {"message": "Notification dismissed"}
         else:
@@ -137,7 +140,7 @@ async def dismiss_update_notification(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Failed to dismiss notification"
             )
-            
+
     except HTTPException:
         raise
     except Exception as e:
@@ -158,7 +161,7 @@ async def get_notification_config(
 ):
     """
     Get full notification configuration (ADMIN ONLY).
-    
+
     Returns current notification settings including dismissed count.
     """
     if not is_admin(current_user):
@@ -166,11 +169,11 @@ async def get_notification_config(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Admin access required"
         )
-    
+
     try:
         notification = update_notifier.get_notification()
         dismissed_count = update_notifier.get_dismissed_count()
-        
+
         return {
             "enabled": notification.get("enabled", False),
             "version": notification.get("version", ""),
@@ -184,7 +187,7 @@ async def get_notification_config(
             "updated_at": notification.get("updated_at"),
             "dismissed_count": dismissed_count
         }
-        
+
     except Exception as e:
         logger.error(f"Failed to get notification config: {e}")
         raise HTTPException(
@@ -200,7 +203,7 @@ async def set_notification_config(
 ):
     """
     Set or update notification configuration (ADMIN ONLY).
-    
+
     When version changes, all users will see the notification again.
     """
     if not is_admin(current_user):
@@ -208,7 +211,7 @@ async def set_notification_config(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Admin access required"
         )
-    
+
     try:
         notification = update_notifier.set_notification(
             enabled=request.enabled,
@@ -221,14 +224,14 @@ async def set_notification_config(
             changelog_items=request.changelog_items,
             changelog_items_en=request.changelog_items_en
         )
-        
+
         logger.info(f"Admin {current_user.phone} updated notification: enabled={request.enabled}")
-        
+
         return {
             "message": "Notification updated successfully",
             "notification": notification
         }
-        
+
     except Exception as e:
         logger.error(f"Failed to set notification config: {e}")
         raise HTTPException(
@@ -243,7 +246,7 @@ async def disable_notification(
 ):
     """
     Disable the update notification (ADMIN ONLY).
-    
+
     Quick way to turn off notification without changing content.
     """
     if not is_admin(current_user):
@@ -251,17 +254,17 @@ async def disable_notification(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Admin access required"
         )
-    
+
     try:
         notification = update_notifier.disable_notification()
-        
+
         logger.info(f"Admin {current_user.phone} disabled update notification")
-        
+
         return {
             "message": "Notification disabled",
             "notification": notification
         }
-        
+
     except Exception as e:
         logger.error(f"Failed to disable notification: {e}")
         raise HTTPException(
@@ -276,7 +279,7 @@ async def reset_dismissed(
 ):
     """
     Reset all dismissed states (ADMIN ONLY).
-    
+
     All users will see the notification again, even if they dismissed it.
     """
     if not is_admin(current_user):
@@ -284,10 +287,10 @@ async def reset_dismissed(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Admin access required"
         )
-    
+
     try:
         success = update_notifier.clear_dismissed()
-        
+
         if success:
             logger.info(f"Admin {current_user.phone} reset all dismissed states")
             return {"message": "All dismissed states cleared"}
@@ -296,7 +299,7 @@ async def reset_dismissed(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Failed to reset dismissed states"
             )
-            
+
     except HTTPException:
         raise
     except Exception as e:
@@ -314,7 +317,7 @@ async def upload_announcement_image(
 ):
     """
     Upload an image for the announcement (ADMIN ONLY).
-    
+
     Supports PNG, JPG, GIF images up to 5MB.
     Returns the URL to embed in the announcement.
     """
@@ -323,7 +326,7 @@ async def upload_announcement_image(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Admin access required"
         )
-    
+
     # Validate file type
     allowed_types = ["image/png", "image/jpeg", "image/jpg", "image/gif", "image/webp"]
     if file.content_type not in allowed_types:
@@ -331,7 +334,7 @@ async def upload_announcement_image(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="只支持 PNG, JPG, GIF, WebP 图片格式"
         )
-    
+
     # Validate file size (5MB max)
     contents = await file.read()
     if len(contents) > 5 * 1024 * 1024:
@@ -339,27 +342,27 @@ async def upload_announcement_image(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="图片大小不能超过 5MB"
         )
-    
+
     try:
         # Generate unique filename
         ext = file.filename.split(".")[-1] if "." in file.filename else "png"
         filename = f"announcement_{uuid.uuid4().hex[:8]}.{ext}"
         filepath = ANNOUNCEMENT_IMAGES_DIR / filename
-        
+
         # Save file
         with open(filepath, "wb") as f:
             f.write(contents)
-        
+
         # Return URL path
         image_url = f"/static/announcement_images/{filename}"
-        
+
         logger.info(f"Admin {current_user.phone} uploaded announcement image: {filename}")
-        
+
         return {
             "url": image_url,
             "filename": filename
         }
-        
+
     except Exception as e:
         logger.error(f"Failed to upload image: {e}")
         raise HTTPException(

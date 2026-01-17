@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 Drop knowledge space tables to allow recreation with new schema.
 
@@ -44,7 +44,7 @@ logger = logging.getLogger(__name__)
 def get_db_path():
     """Extract database file path from DATABASE_URL."""
     db_url = os.getenv('DATABASE_URL', 'sqlite:///./data/mindgraph.db')
-    
+
     if db_url.startswith('sqlite:///'):
         # Remove sqlite:/// prefix
         path_str = db_url.replace('sqlite:///', '')
@@ -61,33 +61,33 @@ def get_db_path():
 def drop_knowledge_tables():
     """Drop document_chunks and child_chunks tables."""
     db_path = get_db_path()
-    
+
     if not db_path or not db_path.exists():
         logger.warning(f"Database file not found at {db_path}")
         logger.info("No tables to drop - database will be created on first run")
         return True
-    
+
     logger.info(f"Connecting to database: {db_path}")
-    
+
     # Use direct SQLite connection (simpler and doesn't require SQLAlchemy imports)
     try:
         conn = sqlite3.connect(str(db_path))
         cursor = conn.cursor()
-        
+
         # Check which tables exist
         cursor.execute("""
-            SELECT name FROM sqlite_master 
+            SELECT name FROM sqlite_master
             WHERE type='table' AND name IN ('document_chunks', 'child_chunks')
         """)
         existing_tables = [row[0] for row in cursor.fetchall()]
-        
+
         if not existing_tables:
             logger.info("No knowledge space tables found to drop")
             conn.close()
             return True
-        
+
         logger.info(f"Found {len(existing_tables)} table(s) to drop: {', '.join(existing_tables)}")
-        
+
         # Drop tables (in reverse dependency order)
         # child_chunks depends on document_chunks, so drop child_chunks first
         for table in ['child_chunks', 'document_chunks']:
@@ -95,14 +95,14 @@ def drop_knowledge_tables():
                 logger.info(f"Dropping table: {table}")
                 cursor.execute(f"DROP TABLE IF EXISTS {table}")
                 logger.info(f"Successfully dropped table: {table}")
-        
+
         conn.commit()
         conn.close()
-        
+
         logger.info("Knowledge space tables dropped successfully")
         logger.info("Tables will be recreated automatically on next server start with new schema")
         return True
-        
+
     except Exception as e:
         logger.error(f"Error dropping tables: {e}", exc_info=True)
         return False

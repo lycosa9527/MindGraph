@@ -1,3 +1,6 @@
+﻿from typing import List
+
+
 """
 Centralized Bilingual Message System for MindGraph
 ===================================================
@@ -13,14 +16,13 @@ All Rights Reserved
 Proprietary License
 """
 
-from typing import Dict, Literal
 
 Language = Literal["zh", "en", "az"]
 
 
 class Messages:
     """Centralized bilingual message system"""
-    
+
     # API Error Messages
     ERRORS = {
         "message_required": {
@@ -612,7 +614,7 @@ class Messages:
             "az": "Avatar tapılmadı"
         }
     }
-    
+
     # Success Messages
     SUCCESS = {
         "diagram_generated": {
@@ -726,7 +728,7 @@ class Messages:
             "az": "API açarı '{}' deaktivləşdirildi"
         }
     }
-    
+
     # Warning Messages
     WARNINGS = {
         "slow_request": {
@@ -750,18 +752,18 @@ class Messages:
             "az": "Bu açarı təhlükəsiz saxlayın - yenidən göstərilməyəcək!"
         }
     }
-    
+
     @classmethod
     def get(cls, category: str, key: str, lang: Language = "en", *args) -> str:
         """
         Get a message in the specified language.
-        
+
         Args:
             category: Message category ('ERRORS', 'SUCCESS', 'WARNINGS')
             key: Message key
             lang: Language ('zh' or 'en')
             *args: Format arguments for messages with placeholders
-            
+
         Returns:
             Localized message string
         """
@@ -769,26 +771,26 @@ class Messages:
         message_dict = messages.get(key, {})
         # Fallback order: requested lang -> en -> key
         message = message_dict.get(lang) or message_dict.get("en") or key
-        
+
         # Format message if arguments provided
         if args:
             try:
                 return message.format(*args)
             except (IndexError, KeyError):
                 return message
-        
+
         return message
-    
+
     @classmethod
     def error(cls, key: str, lang: Language = "en", *args) -> str:
         """Get an error message"""
         return cls.get("ERRORS", key, lang, *args)
-    
+
     @classmethod
     def success(cls, key: str, lang: Language = "en", *args) -> str:
         """Get a success message"""
         return cls.get("SUCCESS", key, lang, *args)
-    
+
     @classmethod
     def warning(cls, key: str, lang: Language = "en", *args) -> str:
         """Get a warning message"""
@@ -796,14 +798,14 @@ class Messages:
 
 
 # Convenience function for getting language from request
-def get_request_language(language_header: str = None, accept_language: str = None) -> Language:
+def get_request_language(language_header: Optional[str] = None, accept_language: Optional[str] = None) -> Language:
     """
     Determine language from request headers.
-    
+
     Args:
         language_header: Custom X-Language header
         accept_language: Accept-Language header
-        
+
     Returns:
         'zh', 'en', or 'az'
     """
@@ -815,7 +817,7 @@ def get_request_language(language_header: str = None, accept_language: str = Non
         if lang in ["az", "azeri", "azerbaijani", "azərbaycan"]:
             return "az"
         return "en"
-    
+
     # Priority 2: Accept-Language header
     if accept_language:
         lang = accept_language.lower()
@@ -823,7 +825,7 @@ def get_request_language(language_header: str = None, accept_language: str = Non
             return "zh"
         if any(x in lang for x in ["az", "azeri", "azerbaijani", "azərbaycan"]):
             return "az"
-    
+
     # Default: English
     return "en"
 

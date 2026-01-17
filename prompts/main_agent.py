@@ -1,4 +1,4 @@
-"""
+﻿"""
 Main Agent Prompts
 
 This module contains prompts used by the main agent for:
@@ -75,7 +75,7 @@ Edge Cases and Decision Logic:
 - If user wants to show causes and effects, use multi_flow_map
 - If user wants to show steps or processes, use flow_map
 
-IMPORTANT: Only return one of the valid diagram types listed above. If the prompt is too vague, 
+IMPORTANT: Only return one of the valid diagram types listed above. If the prompt is too vague,
 too complex, or you cannot determine the user's intent, return "unclear" instead.
 
 Return only the diagram type name (e.g., bubble_map) or "unclear", no other content."""
@@ -149,12 +149,12 @@ TOPIC_EXTRACTION_ZH = """从用户输入中提取核心主题词。
 **核心原则：主题是图表的内容，不是图表本身的类型！**
 
 正确示例：
-输入："生成一个关于树形图的气泡图" 
+输入："生成一个关于树形图的气泡图"
 分析：用户要创建气泡图（图表类型），内容是关于"树形图"（主题）
 输出："树形图"
 
 输入："生成一个关于思维导图的气泡图"
-分析：用户要创建气泡图（图表类型），内容是关于"思维导图"（主题）  
+分析：用户要创建气泡图（图表类型），内容是关于"思维导图"（主题）
 输出："思维导图"
 
 输入："生成关于华为的气泡图"
@@ -177,7 +177,7 @@ TOPIC_EXTRACTION_ZH = """从用户输入中提取核心主题词。
 
 # Main agent prompt registry
 MAIN_AGENT_PROMPTS = {
-    # Concept generation  
+    # Concept generation
     "concept_30_generation_en": CONCEPT_30_EN,
     "concept_30_generation_zh": CONCEPT_30_ZH,
     # Classification

@@ -1,3 +1,9 @@
+﻿from typing import List, Any, Optional, Dict
+import logging
+import re
+import sqlite3
+
+
 """
 Database Type Migration Handler
 ===============================
@@ -16,10 +22,6 @@ All Rights Reserved
 Proprietary License
 """
 
-import logging
-import re
-import sqlite3
-from typing import List, Any, Optional, Dict
 
 logger = logging.getLogger(__name__)
 
@@ -38,37 +40,37 @@ def validate_identifier(name: str) -> bool:
 def normalize_sqlite_type(type_str: str) -> str:
     """
     Normalize SQLite type for comparison.
-    
+
     SQLite has type affinity rules, so we normalize types to their affinity:
     - INTEGER: INT, INTEGER, TINYINT, SMALLINT, MEDIUMINT, BIGINT, etc.
     - TEXT: TEXT, VARCHAR, CHAR, CLOB, etc.
     - REAL: REAL, DOUBLE, FLOAT, etc.
     - NUMERIC: BOOLEAN, DATE, DATETIME, etc.
-    
+
     Returns:
         Normalized type category for comparison
     """
     if not type_str:
         return 'TEXT'
-    
+
     type_upper = type_str.upper().strip()
-    
+
     # Extract base type (remove length specifiers)
     # VARCHAR(36) -> VARCHAR, INTEGER -> INTEGER
     base_type = type_upper.split('(')[0].strip()
-    
+
     # Map to SQLite type affinities
     integer_types = {
-        'INT', 'INTEGER', 'TINYINT', 'SMALLINT', 'MEDIUMINT', 
+        'INT', 'INTEGER', 'TINYINT', 'SMALLINT', 'MEDIUMINT',
         'BIGINT', 'UNSIGNED BIG INT', 'INT2', 'INT8'
     }
     text_types = {
-        'TEXT', 'VARCHAR', 'CHAR', 'CHARACTER', 'VARYING CHARACTER', 
+        'TEXT', 'VARCHAR', 'CHAR', 'CHARACTER', 'VARYING CHARACTER',
         'NCHAR', 'NATIVE CHARACTER', 'NVARCHAR', 'CLOB', 'STRING'
     }
     real_types = {'REAL', 'DOUBLE', 'DOUBLE PRECISION', 'FLOAT'}
     blob_types = {'BLOB'}
-    
+
     if base_type in integer_types:
         return 'INTEGER'
     elif base_type in text_types:
@@ -91,21 +93,21 @@ def normalize_sqlite_type(type_str: str) -> str:
 def types_are_compatible(expected_type: str, actual_type: str) -> bool:
     """
     Check if expected and actual column types are compatible.
-    
+
     Args:
         expected_type: Type from SQLAlchemy model
         actual_type: Type from database
-        
+
     Returns:
         True if types are compatible, False if migration needed
     """
     expected_norm = normalize_sqlite_type(expected_type)
     actual_norm = normalize_sqlite_type(actual_type)
-    
+
     # Direct match
     if expected_norm == actual_norm:
         return True
-    
+
     # Special cases: BOOLEAN and DATETIME are stored as different types in SQLite
     # BOOLEAN can be stored as INTEGER (0/1)
     if expected_norm == 'BOOLEAN' and actual_norm == 'INTEGER':
@@ -113,14 +115,14 @@ def types_are_compatible(expected_type: str, actual_type: str) -> bool:
     # DATETIME can be stored as TEXT or INTEGER (unix timestamp)
     if expected_norm == 'DATETIME' and actual_norm in ('TEXT', 'INTEGER'):
         return True
-    
+
     return False
 
 
 def get_sqlite_type(column_def: Any) -> str:
     """Convert SQLAlchemy column type to SQLite type string"""
     type_str = str(column_def.type)
-    
+
     # SQLite type mapping
     if 'INTEGER' in type_str.upper():
         return 'INTEGER'
@@ -145,17 +147,17 @@ def get_sql_default_value(default: Any) -> Optional[str]:
     """Convert SQLAlchemy default to SQL value string"""
     if default is None:
         return None
-    
+
     # Handle callable defaults (e.g., datetime.utcnow)
     if callable(default):
         return None
-    
+
     # Handle ColumnDefault
     if hasattr(default, 'arg'):
         default = default.arg
         if callable(default):
             return None
-    
+
     # Convert Python values to SQL
     if isinstance(default, bool):
         return '1' if default else '0'
@@ -169,35 +171,35 @@ def get_sql_default_value(default: Any) -> Optional[str]:
 
 def detect_type_mismatches(
     engine: Any,
-    table_name: str, 
+    table_name: str,
     table_class: Any
 ) -> List[Dict]:
     """
     Detect columns with type mismatches (column exists but wrong type).
-    
+
     Args:
         engine: SQLAlchemy engine
         table_name: Name of the table
         table_class: SQLAlchemy model class
-        
+
     Returns:
         List of type mismatch details
     """
     mismatches = []
-    
+
     try:
         from sqlalchemy import inspect
         fresh_inspector = inspect(engine)
-        
+
         if not fresh_inspector.has_table(table_name):
             return []
-        
+
         # Get existing columns with their types
         existing_columns = {
             col['name'].lower(): col
             for col in fresh_inspector.get_columns(table_name)
         }
-        
+
         # Get expected columns from model
         if table_class is None:
             from models.auth import Base
@@ -208,7 +210,7 @@ def detect_type_mismatches(
         else:
             try:
                 expected_columns = {
-                    col.name: col 
+                    col.name: col
                     for col in table_class.__table__.columns
                 }
             except AttributeError:
@@ -217,7 +219,7 @@ def detect_type_mismatches(
                 if table_metadata is None:
                     return []
                 expected_columns = {col.name: col for col in table_metadata.columns}
-        
+
         # Check each column for type mismatch
         for col_name, col_def in expected_columns.items():
             col_name_lower = col_name.lower()
@@ -225,7 +227,7 @@ def detect_type_mismatches(
                 existing_col = existing_columns[col_name_lower]
                 expected_type = get_sqlite_type(col_def)
                 actual_type = str(existing_col.get('type', ''))
-                
+
                 if not types_are_compatible(expected_type, actual_type):
                     mismatches.append({
                         'table': table_name,
@@ -234,9 +236,9 @@ def detect_type_mismatches(
                         'actual_type': actual_type,
                         'is_primary_key': col_def.primary_key
                     })
-        
+
         return mismatches
-        
+
     except Exception as e:
         logger.error(f"[DBTypeMigration] Detection failed for {table_name}: {e}")
         return []
@@ -250,42 +252,42 @@ def recreate_table_with_correct_schema(
 ) -> bool:
     """
     Recreate a table with the correct schema (SQLite table recreation pattern).
-    
+
     SQLite doesn't support ALTER COLUMN, so we must:
     1. Create a new table with correct schema (_new suffix)
     2. Copy data from old table (with type casting where needed)
     3. Drop old table
     4. Rename new table to original name
     5. Recreate indexes
-    
+
     Args:
         db_path: Path to SQLite database file
         table_name: Name of the table to recreate
         table_class: SQLAlchemy model class
         mismatches: List of type mismatches detected
-        
+
     Returns:
         True if recreation successful, False otherwise
     """
     if not validate_identifier(table_name):
         logger.error(f"[DBTypeMigration] Invalid table name: '{table_name}'")
         return False
-    
+
     temp_table_name = f"{table_name}_migration_new"
-    
+
     try:
         from models.auth import Base
-        
+
         # Get table metadata
         if table_class is not None and hasattr(table_class, '__table__'):
             table_metadata = table_class.__table__
         else:
             table_metadata = Base.metadata.tables.get(table_name)
-        
+
         if table_metadata is None:
             logger.error(f"[DBTypeMigration] No table metadata for '{table_name}'")
             return False
-        
+
         # Build column definitions for new table
         column_defs = []
         column_names = []
@@ -294,13 +296,13 @@ def recreate_table_with_correct_schema(
             if not validate_identifier(col_name):
                 logger.error(f"[DBTypeMigration] Invalid column name: '{col_name}'")
                 return False
-            
+
             column_names.append(col_name)
             col_type = get_sqlite_type(col)
-            
+
             # Build column definition
             parts = [f'"{col_name}"', col_type]
-            
+
             if col.primary_key:
                 parts.append('PRIMARY KEY')
             if not col.nullable and not col.primary_key:
@@ -309,9 +311,9 @@ def recreate_table_with_correct_schema(
                 default_val = get_sql_default_value(col.default)
                 if default_val:
                     parts.append(f'DEFAULT {default_val}')
-            
+
             column_defs.append(' '.join(parts))
-        
+
         # Foreign key constraints (if any)
         fk_constraints = []
         for fk in table_metadata.foreign_keys:
@@ -322,34 +324,34 @@ def recreate_table_with_correct_schema(
                 fk_constraints.append(
                     f'FOREIGN KEY ("{child_col}") REFERENCES "{parent_table}" ("{parent_col}")'
                 )
-        
+
         # Combine all constraints
         all_defs = column_defs + fk_constraints
-        
+
         conn = sqlite3.connect(db_path, timeout=60.0)
         cursor = conn.cursor()
-        
+
         try:
             # Disable foreign key checks during migration
             cursor.execute("PRAGMA foreign_keys=OFF")
-            
+
             # Step 1: Create new table with correct schema
             create_sql = f'CREATE TABLE "{temp_table_name}" ({", ".join(all_defs)})'
             logger.debug(f"[DBTypeMigration] Creating temp table: {temp_table_name}")
             cursor.execute(create_sql)
-            
+
             # Step 2: Copy data with type casting for mismatched columns
             select_cols = []
             for col_name in column_names:
                 # Check if this column has a type mismatch
                 mismatch = next(
-                    (m for m in mismatches if m['column'].lower() == col_name.lower()), 
+                    (m for m in mismatches if m['column'].lower() == col_name.lower()),
                     None
                 )
                 if mismatch:
                     expected_norm = normalize_sqlite_type(mismatch['expected_type'])
                     actual_norm = normalize_sqlite_type(mismatch['actual_type'])
-                    
+
                     # Cast value if converting between types
                     if actual_norm == 'INTEGER' and expected_norm == 'TEXT':
                         select_cols.append(f'CAST("{col_name}" AS TEXT)')
@@ -359,11 +361,11 @@ def recreate_table_with_correct_schema(
                         select_cols.append(f'"{col_name}"')
                 else:
                     select_cols.append(f'"{col_name}"')
-            
+
             # Check which columns exist in old table
             cursor.execute(f'PRAGMA table_info("{table_name}")')
             old_columns = {row[1].lower() for row in cursor.fetchall()}
-            
+
             # Only copy columns that exist in both old and new table
             copy_select = []
             copy_insert = []
@@ -371,7 +373,7 @@ def recreate_table_with_correct_schema(
                 if col_name.lower() in old_columns:
                     copy_select.append(select_cols[i])
                     copy_insert.append(f'"{col_name}"')
-            
+
             if copy_insert:
                 copy_sql = (
                     f'INSERT INTO "{temp_table_name}" ({", ".join(copy_insert)}) '
@@ -381,15 +383,15 @@ def recreate_table_with_correct_schema(
                 cursor.execute(copy_sql)
                 copied_rows = cursor.rowcount
                 logger.info(f"[DBTypeMigration] Copied {copied_rows} row(s) from '{table_name}'")
-            
+
             # Step 3: Drop old table
             cursor.execute(f'DROP TABLE "{table_name}"')
             logger.debug(f"[DBTypeMigration] Dropped old table: {table_name}")
-            
+
             # Step 4: Rename new table to original name
             cursor.execute(f'ALTER TABLE "{temp_table_name}" RENAME TO "{table_name}"')
             logger.debug(f"[DBTypeMigration] Renamed temp table to: {table_name}")
-            
+
             # Step 5: Recreate indexes
             for idx in table_metadata.indexes:
                 idx_name = idx.name
@@ -404,17 +406,17 @@ def recreate_table_with_correct_schema(
                         logger.debug(f"[DBTypeMigration] Recreated index: {idx_name}")
                     except Exception as idx_err:
                         logger.warning(f"[DBTypeMigration] Index {idx_name} failed: {idx_err}")
-            
+
             # Re-enable foreign key checks
             cursor.execute("PRAGMA foreign_keys=ON")
-            
+
             conn.commit()
             logger.info(
                 f"[DBTypeMigration] Successfully recreated table '{table_name}' "
                 f"with correct schema"
             )
             return True
-            
+
         except Exception as e:
             conn.rollback()
             # Cleanup temp table if it exists
@@ -427,7 +429,7 @@ def recreate_table_with_correct_schema(
             return False
         finally:
             conn.close()
-            
+
     except Exception as e:
         logger.error(f"[DBTypeMigration] Table recreation error: {e}", exc_info=True)
         return False
