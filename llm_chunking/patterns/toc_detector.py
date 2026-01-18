@@ -1,4 +1,4 @@
-﻿"""
+"""
 TOC (Table of Contents) detection using hybrid approach.
 
 Combines:
@@ -138,13 +138,15 @@ class TOCDetector:
         if pdf_outline:
             toc = self.detect_from_pdf_outline(pdf_outline)
             if toc:
-                logger.info(f"Detected {len(toc)} TOC entries from PDF outline")
+                toc_count = len(toc)
+                logger.info("Detected %s TOC entries from PDF outline", toc_count)
                 return toc
 
         # Fallback to heading patterns
         toc = self.detect_from_headings(text, max_pages=max_pages)
         if toc:
-            logger.info(f"Detected {len(toc)} TOC entries from heading patterns")
+            toc_count = len(toc)
+            logger.info("Detected %s TOC entries from heading patterns", toc_count)
             return toc
 
         logger.warning("No TOC detected using pattern matching")

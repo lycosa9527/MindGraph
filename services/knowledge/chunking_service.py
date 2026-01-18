@@ -23,10 +23,10 @@ import semchunk
 
 from config.settings import config
 from services.llm import llm_service as llm_svc
-# Lazy import to avoid circular dependency - only imported when CHUNKING_ENGINE=mindchunk
 
 if TYPE_CHECKING:
-    pass
+    from llm_chunking.chunker import LLMSemanticChunker
+    from llm_chunking.models import ParentChunk, QAChunk
 
 logger = logging.getLogger(__name__)
 
@@ -341,10 +341,13 @@ def _initialize_mindchunk_service():
         ) from e
 
     # Lazy import to avoid circular dependency
-    from services.llm import llm_chunking_service
-    llm_service = llm_chunking_service.get_llm_chunking_service()
-    # Create adapter wrapper
-    return MindChunkAdapter(llm_service)
+    from llm_chunking.chunker import LLMSemanticChunker
+    chunker = LLMSemanticChunker(
+        llm_service=llm_svc.get_llm_service(),
+        sample_pages=int(os.getenv("CHUNK_SAMPLE_PAGES", "30")),
+        batch_size=int(os.getenv("CHUNK_BATCH_SIZE", "10"))
+    )
+    return MindChunkAdapter(chunker)
 
 
 # Module-level singleton instance container (avoids global statement)
@@ -387,19 +390,19 @@ def get_chunking_service() -> Union[ChunkingService, "MindChunkAdapter"]:
 
 class MindChunkAdapter(BaseChunkingService):
     """
-    Adapter to make LLMChunkingService compatible with ChunkingService interface.
+    Adapter to make LLMSemanticChunker compatible with ChunkingService interface.
 
-    Wraps async LLMChunkingService to provide synchronous interface.
+    Wraps async LLMSemanticChunker to provide synchronous interface.
     """
 
-    def __init__(self, llm_chunking_service):
+    def __init__(self, chunker):
         """
         Initialize adapter.
 
         Args:
-            llm_chunking_service: LLMChunkingService instance
+            chunker: LLMSemanticChunker instance
         """
-        self.llm_service = llm_chunking_service
+        self.chunker = chunker
         self.chunk_size = int(os.getenv("CHUNK_SIZE", "500"))
         self.overlap = int(os.getenv("CHUNK_OVERLAP", "50"))
         self.mode = "automatic"
@@ -490,7 +493,7 @@ class MindChunkAdapter(BaseChunkingService):
 
         # Call async method
         logger.info(
-            "[MindChunkAdapter] Calling LLM chunking service: doc_id=%s, text_length=%s, "
+            "[MindChunkAdapter] Calling LLM chunker: doc_id=%s, text_length=%s, "
             "structure_type=%s, chunk_size=%s, overlap=%s",
             document_id,
             len(text),
@@ -500,10 +503,9 @@ class MindChunkAdapter(BaseChunkingService):
         )
         try:
             llm_chunks = loop.run_until_complete(
-                self.llm_service.chunk_text(
+                self.chunker.chunk(
                     text=text,
                     document_id=document_id,
-                    metadata=metadata,
                     structure_type=structure_type,
                     pdf_outline=pdf_outline,
                     chunk_size=self.chunk_size,
@@ -511,7 +513,7 @@ class MindChunkAdapter(BaseChunkingService):
                 )
             )
             logger.info(
-                "[MindChunkAdapter] LLM chunking service returned: doc_id=%s, chunks_count=%s, "
+                "[MindChunkAdapter] LLM chunker returned: doc_id=%s, chunks_count=%s, "
                 "chunks_type=%s",
                 document_id,
                 len(llm_chunks) if llm_chunks else 0,
@@ -543,21 +545,94 @@ class MindChunkAdapter(BaseChunkingService):
         if not llm_chunks:
             raise RuntimeError(
                 f"[MindChunkAdapter] No chunks returned from LLM chunking for doc_id={document_id}. "
-                "LLM chunking service returned empty result. This may indicate an issue with "
+                "LLM chunker returned empty result. This may indicate an issue with "
                 "the LLM service, API configuration, or document content."
             )
 
-        # Convert to Chunk format (already compatible)
+        # Convert to legacy Chunk format
+        from llm_chunking.models import ParentChunk, QAChunk
         chunks = []
-        for llm_chunk in llm_chunks:
-            chunk = Chunk(
-                text=llm_chunk.text,
-                start_char=llm_chunk.start_char,
-                end_char=llm_chunk.end_char,
-                chunk_index=llm_chunk.chunk_index,
-                metadata=llm_chunk.metadata
+        try:
+            if isinstance(llm_chunks[0], ParentChunk):
+                # Parent-child structure: extract child chunks
+                logger.debug(
+                    "[MindChunkAdapter] Converting %s parent chunks to legacy format for doc_id=%s",
+                    len(llm_chunks), document_id
+                )
+                for parent in llm_chunks:
+                    for child in parent.children:  # type: ignore[attr-defined]
+                        chunk = Chunk(
+                            text=child.text,
+                            start_char=child.start_char,
+                            end_char=child.end_char,
+                            chunk_index=len(chunks),
+                            metadata={
+                                **(metadata or {}),
+                                **(child.metadata or {}),
+                                "parent_text": parent.text,
+                                "parent_index": parent.chunk_index,
+                                "structure_type": "parent_child",
+                            }
+                        )
+                        chunks.append(chunk)
+            elif isinstance(llm_chunks[0], QAChunk):
+                # Q&A structure: convert to chunks
+                logger.debug(
+                    "[MindChunkAdapter] Converting %s QA chunks to legacy format for doc_id=%s",
+                    len(llm_chunks), document_id
+                )
+                for qa in llm_chunks:
+                    chunk = Chunk(
+                        text=qa.text,
+                        start_char=qa.start_char,
+                        end_char=qa.end_char,
+                        chunk_index=len(chunks),
+                        metadata={
+                            **(metadata or {}),
+                            **(qa.metadata or {}),
+                            "question": qa.question,  # type: ignore[attr-defined]
+                            "answer": qa.answer,  # type: ignore[attr-defined]
+                            "structure_type": "qa",
+                        }
+                    )
+                    chunks.append(chunk)
+            else:
+                # General structure: direct conversion
+                logger.debug(
+                    "[MindChunkAdapter] Converting %s general chunks to legacy format for doc_id=%s",
+                    len(llm_chunks), document_id
+                )
+                for llm_chunk in llm_chunks:
+                    chunk = Chunk(
+                        text=llm_chunk.text,
+                        start_char=llm_chunk.start_char,
+                        end_char=llm_chunk.end_char,
+                        chunk_index=llm_chunk.chunk_index,
+                        metadata={
+                            **(metadata or {}),
+                            **(llm_chunk.metadata or {}),
+                            "token_count": llm_chunk.token_count,
+                            "structure_type": "general",
+                        }
+                    )
+                    chunks.append(chunk)
+        except (IndexError, AttributeError, KeyError) as e:
+            logger.error(
+                "[MindChunkAdapter] Error converting chunks to legacy format for doc_id=%s: %s",
+                document_id, e,
+                exc_info=True
             )
-            chunks.append(chunk)
+            raise RuntimeError(
+                f"[MindChunkAdapter] Chunk conversion failed for doc_id={document_id}: {e}. "
+                "Check logs above for details."
+            ) from e
+
+        if not chunks:
+            raise RuntimeError(
+                f"[MindChunkAdapter] No legacy chunks created from {len(llm_chunks)} LLM chunks "
+                f"for doc_id={document_id}. "
+                "Chunk conversion failed. This may indicate an issue with chunk structure."
+            )
 
         # Log detailed chunking results
         total_chars = sum(len(c.text) for c in chunks)

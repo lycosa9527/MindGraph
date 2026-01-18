@@ -1,19 +1,3 @@
-from typing import Dict, Optional
-import asyncio
-import base64
-import queue
-import json
-import logging
-
-from fastapi import APIRouter, HTTPException, Request, Depends, Query
-from fastapi.responses import StreamingResponse
-from pydantic import BaseModel
-from sqlalchemy.orm import Session
-
-from config.database import get_db
-from routers.auth.dependencies import get_current_user_optional
-from services.features.debateverse_service import DebateVerseService
-
 """
 DebateVerse Router - Debate Session Management and Streaming Endpoints
 ======================================================================
@@ -34,19 +18,46 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+import asyncio
+import base64
+import json
+import logging
+import queue
+import uuid
+from pathlib import Path
+from typing import Dict, Optional
 
+from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.responses import StreamingResponse
+from pydantic import BaseModel
+from sqlalchemy.orm import Session
 
+from clients.tts_realtime_client import AudioFormat, SessionMode, TTSRealtimeClient
+from config.database import get_db
+from models.debateverse import DebateMessage, DebateParticipant, DebateSession
+from prompts.debateverse import get_position_generation_prompt
+from routers.auth.dependencies import get_current_user_optional
+from services.features.dashscope_tts import get_tts_service
+from services.features.debateverse_service import DebateVerseService
+from services.llm import llm_service
 
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/debateverse", tags=["DebateVerse"])
 
+# Constants for TTS buffering
+SENTENCE_ENDINGS = {'.', '。', '!', '！', '?', '？', '\n'}
+MIN_BUFFER_SIZE = 50  # Minimum buffer size before sending
+MAX_BUFFER_SIZE = 200  # Maximum buffer size (force send even without sentence ending)
+
 # ============================================================================
 # Request/Response Models
 # ============================================================================
 
 class CreateSessionRequest(BaseModel):
+    """Request model for creating a debate session."""
+
     topic: str
     llm_assignments: Dict[str, str]  # {role: model_id}
     format: Optional[str] = 'us_parliamentary'
@@ -54,16 +65,22 @@ class CreateSessionRequest(BaseModel):
 
 
 class JoinSessionRequest(BaseModel):
+    """Request model for joining a debate session."""
+
     role: Optional[str] = None  # 'debater', 'judge', 'viewer'
     side: Optional[str] = None  # 'affirmative' or 'negative' (if debater)
     position: Optional[int] = None  # 1 or 2 (if debater)
 
 
 class SendMessageRequest(BaseModel):
+    """Request model for sending a message in a debate session."""
+
     content: str
 
 
 class AdvanceStageRequest(BaseModel):
+    """Request model for advancing debate stage."""
+
     new_stage: str
 
 
@@ -102,7 +119,6 @@ async def stream_debater_response(
         )
 
         # Get participant and model
-        from models.debateverse import DebateParticipant, DebateMessage, DebateSession
         participant = db.query(DebateParticipant).filter_by(id=participant_id).first()
 
         if not participant:
@@ -115,11 +131,6 @@ async def stream_debater_response(
         enable_thinking = model.lower() != 'kimi'
 
         # Stream from LLM service and collect content
-        from services.llm import llm_service
-        from services.features.dashscope_tts import get_tts_service
-        from clients.tts_realtime_client import TTSRealtimeClient, SessionMode, AudioFormat
-        from pathlib import Path
-        import uuid
 
         full_content = ""
         full_thinking = ""
@@ -162,9 +173,12 @@ async def stream_debater_response(
                     language_type=None,
                     on_audio_chunk=on_audio_chunk,
                 )
-                logger.info(f"[DEBATEVERSE] TTS client initialized: participant_id={participant_id}, role={participant.role}, model_id={model}, voice={voice}")
+                logger.info(
+                    "[DEBATEVERSE] TTS client initialized: participant_id=%s, role=%s, model_id=%s, voice=%s",
+                    participant_id, participant.role, model, voice
+                )
             except Exception as tts_init_error:
-                logger.error(f"[DEBATEVERSE] TTS initialization error: {tts_init_error}", exc_info=True)
+                logger.error("[DEBATEVERSE] TTS initialization error: %s", tts_init_error, exc_info=True)
                 tts_client = None
                 tts_available = False
 
@@ -173,12 +187,7 @@ async def stream_debater_response(
         tts_text_buffer = ""  # Buffer text for fluent TTS
         tts_pending_commit = False  # Track if we have uncommitted text
 
-        # Sentence-ending punctuation (Chinese and English)
-        SENTENCE_ENDINGS = {'.', '。', '!', '！', '?', '？', '\n'}
-        # Minimum buffer size before sending (increased for smoother audio)
-        MIN_BUFFER_SIZE = 50  # Increased to wait for better chunks
-        # Maximum buffer size (force send even without sentence ending)
-        MAX_BUFFER_SIZE = 200  # Increased for smoother audio
+        # Use module-level constants for sentence endings and buffer sizes
 
         async def flush_tts_buffer(force: bool = False, should_commit: bool = True):
             """Flush TTS buffer when we have a complete sentence or buffer is full"""
@@ -219,7 +228,11 @@ async def stream_debater_response(
                 try:
                     await tts_client.append_text(text_to_send)
                     tts_pending_commit = True
-                    logger.debug(f"[DEBATEVERSE] TTS appended {len(text_to_send)} chars: {text_to_send[:50]}...")
+                    logger.debug(
+                        "[DEBATEVERSE] TTS appended %s chars: %s...",
+                        len(text_to_send),
+                        text_to_send[:50]
+                    )
 
                     # In COMMIT mode, commit after appending to trigger synthesis
                     # Only commit if should_commit is True (for sentence boundaries)
@@ -228,7 +241,7 @@ async def stream_debater_response(
                         tts_pending_commit = False
                         logger.debug("[DEBATEVERSE] TTS committed text buffer")
                 except Exception as tts_error:
-                    logger.warning(f"[DEBATEVERSE] TTS append error: {tts_error}")
+                    logger.warning("[DEBATEVERSE] TTS append error: %s", tts_error)
 
         # Stream LLM tokens and feed to TTS concurrently
         async for chunk in llm_service.chat_stream(
@@ -256,7 +269,7 @@ async def stream_debater_response(
                             tts_started = True
                             logger.info("[DEBATEVERSE] TTS streaming started")
                         except Exception as tts_start_error:
-                            logger.error(f"[DEBATEVERSE] TTS start error: {tts_start_error}", exc_info=True)
+                            logger.error("[DEBATEVERSE] TTS start error: %s", tts_start_error, exc_info=True)
                             tts_client = None
 
                     # Buffer text for fluent TTS (send on sentence boundaries)
@@ -309,7 +322,7 @@ async def stream_debater_response(
 
                 await tts_client.close()
             except Exception as tts_finish_error:
-                logger.error(f"[DEBATEVERSE] TTS finish error: {tts_finish_error}", exc_info=True)
+                logger.error("[DEBATEVERSE] TTS finish error: %s", tts_finish_error, exc_info=True)
 
         # Save message to database
         session = db.query(DebateSession).filter_by(id=session_id).first()
@@ -317,8 +330,8 @@ async def stream_debater_response(
             yield f'data: {json.dumps({"type": "error", "error": "Session not found"})}\n\n'
             return
 
-        round_number = service._get_next_round_number(stage)
-        message_type = service._get_message_type_for_stage(stage)
+        round_number = service.get_next_round_number(stage)
+        message_type = service.get_message_type_for_stage(stage)
 
         message = DebateMessage(
             session_id=session_id,
@@ -354,13 +367,17 @@ async def stream_debater_response(
 
                     # Yield audio URL to client
                     yield f'data: {json.dumps({"type": "audio_url", "url": message.audio_url})}\n\n'
-                    logger.info(f"[DEBATEVERSE] Generated TTS audio for message {message.id}: {message.audio_url}")
+                    logger.info(
+                        "[DEBATEVERSE] Generated TTS audio for message %s: %s",
+                        message.id,
+                        message.audio_url
+                    )
                 else:
                     db.commit()
-                    logger.warning(f"[DEBATEVERSE] TTS generation failed for message {message.id}")
+                    logger.warning("[DEBATEVERSE] TTS generation failed for message %s", message.id)
             except Exception as tts_error:
                 # Don't fail the whole request if TTS fails
-                logger.error(f"[DEBATEVERSE] TTS error: {tts_error}", exc_info=True)
+                logger.error("[DEBATEVERSE] TTS error: %s", tts_error, exc_info=True)
                 db.commit()
         else:
             db.commit()
@@ -368,10 +385,10 @@ async def stream_debater_response(
         yield f'data: {json.dumps({"type": "done"})}\n\n'
 
     except asyncio.CancelledError:
-        logger.info(f"[DEBATEVERSE] Stream cancelled for participant {participant_id}")
+        logger.info("[DEBATEVERSE] Stream cancelled for participant %s", participant_id)
         raise
     except Exception as e:
-        logger.error(f"[DEBATEVERSE] Streaming error: {e}", exc_info=True)
+        logger.error("[DEBATEVERSE] Streaming error: %s", e, exc_info=True)
         yield f'data: {json.dumps({"type": "error", "error": str(e)})}\n\n'
     finally:
         db.close()
@@ -408,19 +425,17 @@ async def create_session(
             "created_at": session.created_at.isoformat()
         }
     except Exception as e:
-        logger.error(f"Error creating debate session: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error("Error creating debate session: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.get("/sessions/{session_id}")
 async def get_session(
     session_id: str,
     db: Session = Depends(get_db),
-    current_user = Depends(get_current_user_optional)
+    _current_user = Depends(get_current_user_optional)
 ):
     """Get debate session with messages and participants."""
-    from models.debateverse import DebateSession, DebateParticipant, DebateMessage
-
     session = db.query(DebateSession).filter_by(id=session_id).first()
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
@@ -475,7 +490,7 @@ async def get_session(
 async def coin_toss(
     session_id: str,
     db: Session = Depends(get_db),
-    current_user = Depends(get_current_user_optional)
+    _current_user = Depends(get_current_user_optional)
 ):
     """Execute coin toss to determine speaking order."""
     service = DebateVerseService(session_id, db)
@@ -505,11 +520,6 @@ async def generate_positions(
     - {"type": "done"} - Stream complete
     - {"type": "error", "error": "..."} - Error occurred
     """
-    from fastapi.responses import StreamingResponse
-    from services.llm import llm_service
-    from prompts.debateverse import get_position_generation_prompt
-    from models.debateverse import DebateSession
-
     async def generate():
         try:
             # Get session - session_id already contains the topic
@@ -521,7 +531,11 @@ async def generate_positions(
             # Get topic from session (this is the user's statement/topic)
             debate_topic = session.topic or "辩论主题"
 
-            logger.info(f"[DEBATEVERSE] Generating positions for session {session_id}, topic: {debate_topic}")
+            logger.info(
+                "[DEBATEVERSE] Generating positions for session %s, topic: %s",
+                session_id,
+                debate_topic
+            )
 
             # Build prompt with user's topic/statement from the session
             prompt = get_position_generation_prompt(topic=debate_topic, language=language)
@@ -549,10 +563,10 @@ async def generate_positions(
             yield f'data: {json.dumps({"type": "done"})}\n\n'
 
         except asyncio.CancelledError:
-            logger.info(f"[DEBATEVERSE] Position generation cancelled for session {session_id}")
+            logger.info("[DEBATEVERSE] Position generation cancelled for session %s", session_id)
             raise
         except Exception as e:
-            logger.error(f"[DEBATEVERSE] Position generation error: {e}", exc_info=True)
+            logger.error("[DEBATEVERSE] Position generation error: %s", e, exc_info=True)
             yield f'data: {json.dumps({"type": "error", "error": str(e)})}\n\n'
         finally:
             db.close()
@@ -573,7 +587,7 @@ async def advance_stage(
     session_id: str,
     request: AdvanceStageRequest,
     db: Session = Depends(get_db),
-    current_user = Depends(get_current_user_optional)
+    _current_user = Depends(get_current_user_optional)
 ):
     """Advance debate to next stage (judge only)."""
     service = DebateVerseService(session_id, db)
@@ -596,7 +610,6 @@ async def send_user_message(
     if not current_user:
         raise HTTPException(status_code=401, detail="Authentication required")
 
-    from models.debateverse import DebateSession, DebateParticipant, DebateMessage
 
     # Get session
     session = db.query(DebateSession).filter_by(id=session_id).first()
@@ -616,8 +629,8 @@ async def send_user_message(
     # Get current stage and determine message type
     current_stage = session.current_stage
     service = DebateVerseService(session_id, db)
-    round_number = service._get_next_round_number(current_stage)
-    message_type = service._get_message_type_for_stage(current_stage)
+    round_number = service.get_next_round_number(current_stage)
+    message_type = service.get_message_type_for_stage(current_stage)
 
     # Create message
     message = DebateMessage(
@@ -631,7 +644,7 @@ async def send_user_message(
     db.add(message)
     db.commit()
 
-    logger.info(f"User {current_user.id} sent message in session {session_id}")
+    logger.info("User %s sent message in session %s", current_user.id, session_id)
 
     return {
         "success": True,
@@ -653,22 +666,20 @@ async def trigger_next(
     session_id: str = Query(...),
     language: str = Query('zh'),
     db: Session = Depends(get_db),
-    current_user = Depends(get_current_user_optional)
+    _current_user = Depends(get_current_user_optional)
 ):
     """
     Trigger next conversation in debate.
     Returns next speaker info for immediate streaming, or indicates stage completion.
     """
-    from models.debateverse import DebateSession
-
-    logger.info(f"Trigger next called for session {session_id}")
+    logger.info("Trigger next called for session %s", session_id)
 
     session = db.query(DebateSession).filter_by(id=session_id).first()
     if not session:
-        logger.error(f"Session {session_id} not found in database")
+        logger.error("Session %s not found in database", session_id)
         raise HTTPException(status_code=404, detail="Session not found")
 
-    logger.info(f"Session found: {session.id}, current_stage: {session.current_stage}")
+    logger.info("Session found: %s, current_stage: %s", session.id, session.current_stage)
 
     service = DebateVerseService(session_id, db)
 
@@ -717,8 +728,7 @@ async def stream_debater(
     participant_id: int,
     stage: str,
     language: str = 'zh',
-    request: Request = None,
-    db: Session = Depends(get_db),
+    _db: Session = Depends(get_db),
     current_user = Depends(get_current_user_optional)
 ):
     """Stream debater response for a specific participant."""
@@ -751,8 +761,6 @@ async def list_sessions(
     """List user's debate sessions."""
     if not current_user:
         raise HTTPException(status_code=401, detail="Authentication required")
-
-    from models.debateverse import DebateSession
 
     sessions = db.query(DebateSession).filter_by(
         user_id=current_user.id

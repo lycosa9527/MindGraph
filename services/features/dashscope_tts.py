@@ -123,7 +123,7 @@ class DashscopeTtsService:
         if output_format is None:
             output_format = AudioFormat.MP3_24000HZ_MONO
 
-        logger.debug(f"[TTS] Synthesizing text (length={len(text)}, voice={voice})")
+        logger.debug("[TTS] Synthesizing text (length=%s, voice=%s)", len(text), voice)
 
         try:
             # Collect audio chunks
@@ -163,14 +163,14 @@ class DashscopeTtsService:
             # Combine audio chunks
             if audio_chunks:
                 audio_bytes = b''.join(audio_chunks)
-                logger.info(f"[TTS] Successfully synthesized {len(audio_bytes)} bytes")
+                logger.info("[TTS] Successfully synthesized %s bytes", len(audio_bytes))
                 return audio_bytes
             else:
                 logger.warning("[TTS] Synthesis returned no audio")
                 return None
 
         except Exception as e:
-            logger.error(f"[TTS] Synthesis error: {e}", exc_info=True)
+            logger.error("[TTS] Synthesis error: %s", e, exc_info=True)
             return None
 
     async def synthesize_stream(
@@ -221,7 +221,7 @@ class DashscopeTtsService:
                 yield audio_chunk
 
         except Exception as e:
-            logger.error(f"[TTS] Streaming synthesis error: {e}", exc_info=True)
+            logger.error("[TTS] Streaming synthesis error: %s", e, exc_info=True)
 
     async def synthesize_to_file(
         self,
@@ -255,11 +255,11 @@ class DashscopeTtsService:
             with open(output_path, 'wb') as f:
                 f.write(audio_bytes)
 
-            logger.info(f"[TTS] Saved audio to {output_path}")
+            logger.info("[TTS] Saved audio to %s", output_path)
             return str(output_path)
 
         except Exception as e:
-            logger.error(f"[TTS] Failed to save audio file: {e}", exc_info=True)
+            logger.error("[TTS] Failed to save audio file: %s", e, exc_info=True)
             return None
 
 

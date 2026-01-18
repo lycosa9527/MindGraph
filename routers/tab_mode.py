@@ -8,7 +8,7 @@ from agents.tab_mode import TabAgent
 from config.settings import config
 from models import Messages, get_request_language
 from models.auth import User
-from models.requests import TabExpandRequest, TabSuggestionRequest
+from models.requests_thinking import TabExpandRequest, TabSuggestionRequest
 from models.responses import TabExpandChild, TabExpandResponse, TabSuggestionItem, TabSuggestionResponse
 from utils.auth import get_current_user_or_api_key
 from services.infrastructure.error_handler import (
@@ -71,7 +71,10 @@ async def tab_suggestions(
 
         # Get user context
         user_id = current_user.id if current_user and hasattr(current_user, 'id') else None
-        organization_id = getattr(current_user, 'organization_id', None) if current_user and hasattr(current_user, 'id') else None
+        organization_id = (
+            getattr(current_user, 'organization_id', None)
+            if current_user and hasattr(current_user, 'id') else None
+        )
 
         # Determine model (default to doubao for generation)
         model = 'doubao'
@@ -105,7 +108,7 @@ async def tab_suggestions(
             for idx, text in enumerate(suggestions_text)
         ]
 
-        logger.debug(f"[{request_id}] Generated {len(suggestions)} suggestions")
+        logger.debug("[%s] Generated %s suggestions", request_id, len(suggestions))
 
         return TabSuggestionResponse(
             success=True,
@@ -115,68 +118,68 @@ async def tab_suggestions(
         )
 
     except LLMContentFilterError as e:
-        logger.warning(f"[{request_id}] Content filter: {e}")
+        logger.warning("[%s] Content filter: %s", request_id, e)
         user_message = getattr(e, 'user_message', None)
         if not user_message:
             user_message = Messages.error("llm_service_error", lang)
         raise HTTPException(status_code=400, detail=user_message)
 
     except LLMRateLimitError as e:
-        logger.warning(f"[{request_id}] Rate limit: {e}")
+        logger.warning("[%s] Rate limit: %s", request_id, e)
         user_message = getattr(e, 'user_message', None)
         if not user_message:
             user_message = "AI服务繁忙，请稍后重试。" if lang == 'zh' else "AI service is busy. Please try again later."
         raise HTTPException(status_code=429, detail=user_message)
 
     except LLMTimeoutError as e:
-        logger.warning(f"[{request_id}] Timeout: {e}")
+        logger.warning("[%s] Timeout: %s", request_id, e)
         user_message = getattr(e, 'user_message', None)
         if not user_message:
             user_message = "请求超时，请重试。" if lang == 'zh' else "Request timed out. Please try again."
         raise HTTPException(status_code=504, detail=user_message)
 
     except LLMInvalidParameterError as e:
-        logger.warning(f"[{request_id}] Invalid parameter: {e}")
+        logger.warning("[%s] Invalid parameter: %s", request_id, e)
         user_message = getattr(e, 'user_message', None)
         if not user_message:
             user_message = "参数错误，请检查输入。" if lang == 'zh' else "Invalid parameter. Please check input."
         raise HTTPException(status_code=400, detail=user_message)
 
     except LLMQuotaExhaustedError as e:
-        logger.warning(f"[{request_id}] Quota exhausted: {e}")
+        logger.warning("[%s] Quota exhausted: %s", request_id, e)
         user_message = getattr(e, 'user_message', None)
         if not user_message:
             user_message = "配额已用完，请检查账户。" if lang == 'zh' else "Quota exhausted. Please check account."
         raise HTTPException(status_code=402, detail=user_message)
 
     except LLMModelNotFoundError as e:
-        logger.warning(f"[{request_id}] Model not found: {e}")
+        logger.warning("[%s] Model not found: %s", request_id, e)
         user_message = getattr(e, 'user_message', None)
         if not user_message:
             user_message = "模型不存在，请检查配置。" if lang == 'zh' else "Model not found. Please check configuration."
         raise HTTPException(status_code=404, detail=user_message)
 
     except LLMAccessDeniedError as e:
-        logger.warning(f"[{request_id}] Access denied: {e}")
+        logger.warning("[%s] Access denied: %s", request_id, e)
         user_message = getattr(e, 'user_message', None)
         if not user_message:
             user_message = "访问被拒绝，请检查权限。" if lang == 'zh' else "Access denied. Please check permissions."
         raise HTTPException(status_code=403, detail=user_message)
 
     except LLMServiceError as e:
-        logger.error(f"[{request_id}] LLM service error: {e}")
+        logger.error("[%s] LLM service error: %s", request_id, e)
         user_message = getattr(e, 'user_message', None)
         if not user_message:
             user_message = Messages.error("llm_service_error", lang)
         raise HTTPException(status_code=503, detail=user_message)
     except ValueError as e:
-        logger.error(f"[{request_id}] Validation error: {e}")
+        logger.error("[%s] Validation error: %s", request_id, e)
         raise HTTPException(
             status_code=400,
             detail=Messages.error("validation_error", lang)
         )
     except Exception as e:
-        logger.error(f"[{request_id}] Unexpected error: {e}", exc_info=True)
+        logger.error("[%s] Unexpected error: %s", request_id, e, exc_info=True)
         raise HTTPException(
             status_code=500,
             detail=Messages.error("internal_error", lang)
@@ -208,7 +211,10 @@ async def tab_expand(
     try:
         # Get user context
         user_id = current_user.id if current_user and hasattr(current_user, 'id') else None
-        organization_id = getattr(current_user, 'organization_id', None) if current_user and hasattr(current_user, 'id') else None
+        organization_id = (
+            getattr(current_user, 'organization_id', None)
+            if current_user and hasattr(current_user, 'id') else None
+        )
 
         # Determine model (default to doubao for generation)
         model = 'doubao'
@@ -236,7 +242,7 @@ async def tab_expand(
             organization_id=organization_id
         )
 
-        logger.debug(f"[{request_id}] Generated {len(children)} children for node {req.node_id}")
+        logger.debug("[%s] Generated %s children for node %s", request_id, len(children), req.node_id)
 
         return TabExpandResponse(
             success=True,
@@ -246,68 +252,68 @@ async def tab_expand(
         )
 
     except LLMContentFilterError as e:
-        logger.warning(f"[{request_id}] Content filter: {e}")
+        logger.warning("[%s] Content filter: %s", request_id, e)
         user_message = getattr(e, 'user_message', None)
         if not user_message:
             user_message = Messages.error("llm_service_error", lang)
         raise HTTPException(status_code=400, detail=user_message)
 
     except LLMRateLimitError as e:
-        logger.warning(f"[{request_id}] Rate limit: {e}")
+        logger.warning("[%s] Rate limit: %s", request_id, e)
         user_message = getattr(e, 'user_message', None)
         if not user_message:
             user_message = "AI服务繁忙，请稍后重试。" if lang == 'zh' else "AI service is busy. Please try again later."
         raise HTTPException(status_code=429, detail=user_message)
 
     except LLMTimeoutError as e:
-        logger.warning(f"[{request_id}] Timeout: {e}")
+        logger.warning("[%s] Timeout: %s", request_id, e)
         user_message = getattr(e, 'user_message', None)
         if not user_message:
             user_message = "请求超时，请重试。" if lang == 'zh' else "Request timed out. Please try again."
         raise HTTPException(status_code=504, detail=user_message)
 
     except LLMInvalidParameterError as e:
-        logger.warning(f"[{request_id}] Invalid parameter: {e}")
+        logger.warning("[%s] Invalid parameter: %s", request_id, e)
         user_message = getattr(e, 'user_message', None)
         if not user_message:
             user_message = "参数错误，请检查输入。" if lang == 'zh' else "Invalid parameter. Please check input."
         raise HTTPException(status_code=400, detail=user_message)
 
     except LLMQuotaExhaustedError as e:
-        logger.warning(f"[{request_id}] Quota exhausted: {e}")
+        logger.warning("[%s] Quota exhausted: %s", request_id, e)
         user_message = getattr(e, 'user_message', None)
         if not user_message:
             user_message = "配额已用完，请检查账户。" if lang == 'zh' else "Quota exhausted. Please check account."
         raise HTTPException(status_code=402, detail=user_message)
 
     except LLMModelNotFoundError as e:
-        logger.warning(f"[{request_id}] Model not found: {e}")
+        logger.warning("[%s] Model not found: %s", request_id, e)
         user_message = getattr(e, 'user_message', None)
         if not user_message:
             user_message = "模型不存在，请检查配置。" if lang == 'zh' else "Model not found. Please check configuration."
         raise HTTPException(status_code=404, detail=user_message)
 
     except LLMAccessDeniedError as e:
-        logger.warning(f"[{request_id}] Access denied: {e}")
+        logger.warning("[%s] Access denied: %s", request_id, e)
         user_message = getattr(e, 'user_message', None)
         if not user_message:
             user_message = "访问被拒绝，请检查权限。" if lang == 'zh' else "Access denied. Please check permissions."
         raise HTTPException(status_code=403, detail=user_message)
 
     except LLMServiceError as e:
-        logger.error(f"[{request_id}] LLM service error: {e}")
+        logger.error("[%s] LLM service error: %s", request_id, e)
         user_message = getattr(e, 'user_message', None)
         if not user_message:
             user_message = Messages.error("llm_service_error", lang)
         raise HTTPException(status_code=503, detail=user_message)
     except ValueError as e:
-        logger.error(f"[{request_id}] Validation error: {e}")
+        logger.error("[%s] Validation error: %s", request_id, e)
         raise HTTPException(
             status_code=400,
             detail=Messages.error("validation_error", lang)
         )
     except Exception as e:
-        logger.error(f"[{request_id}] Unexpected error: {e}", exc_info=True)
+        logger.error("[%s] Unexpected error: %s", request_id, e, exc_info=True)
         raise HTTPException(
             status_code=500,
             detail=Messages.error("internal_error", lang)

@@ -104,10 +104,14 @@ class TreeMapPaletteGenerator(BasePaletteGenerator):
                 # For other stages, use stage name
                 if stage == 'children' and stage_data and stage_data.get('category_name'):
                     node_mode = stage_data['category_name']
-                    logger.debug(f"[TreeMapPalette] Node tagged with category mode='{node_mode}' | ID: {node.get('id', 'unknown')} | Text: {node.get('text', '')}")
+                    node_id = node.get('id', 'unknown')
+                    node_text = node.get('text', '')
+                    logger.debug("[TreeMapPalette] Node tagged with category mode='%s' | ID: %s | Text: %s", node_mode, node_id, node_text)
                 else:
                     node_mode = stage
-                    logger.debug(f"[TreeMapPalette] Node tagged with stage mode='{node_mode}' | ID: {node.get('id', 'unknown')} | Text: {node.get('text', '')}")
+                    node_id = node.get('id', 'unknown')
+                    node_text = node.get('text', '')
+                    logger.debug("[TreeMapPalette] Node tagged with stage mode='%s' | ID: %s | Text: %s", node_mode, node_id, node_text)
 
                 node['mode'] = node_mode
 

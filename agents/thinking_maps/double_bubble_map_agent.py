@@ -5,6 +5,11 @@ from typing import Any, Dict, Optional, Tuple
 import logging
 
 from agents.core.base_agent import BaseAgent
+from agents.core.agent_utils import extract_json_from_response
+from agents.core.topic_extraction import extract_double_bubble_topics_llm
+from config.settings import config
+from prompts import get_prompt
+from services.llm import llm_service
 
 """
 Double Bubble Map Agent
@@ -73,7 +78,7 @@ class DoubleBubbleMapAgent(BaseAgent):
             # Validate the generated spec
             is_valid, validation_msg = self.validate_output(spec)
             if not is_valid:
-                logger.warning(f"DoubleBubbleMapAgent: Validation failed: {validation_msg}. Attempting retry with improved prompt.")
+                logger.warning("DoubleBubbleMapAgent: Validation failed: %s. Attempting retry with improved prompt.", validation_msg)
 
                 # Retry generation with validation error included in original prompt
                 # Reuse original prompt instead of regenerating topics for consistency
@@ -105,7 +110,7 @@ class DoubleBubbleMapAgent(BaseAgent):
                         logger.info("DoubleBubbleMapAgent: Retry generation succeeded after validation failure")
                         spec = retry_spec
                     else:
-                        logger.error(f"DoubleBubbleMapAgent: Retry generation also failed validation: {retry_validation_msg}")
+                        logger.error("DoubleBubbleMapAgent: Retry generation also failed validation: %s", retry_validation_msg)
                         return {
                             'success': False,
                             'error': f'Generated invalid specification after retry: {retry_validation_msg}'
@@ -128,7 +133,7 @@ class DoubleBubbleMapAgent(BaseAgent):
             }
 
         except Exception as e:
-            logger.error(f"DoubleBubbleMapAgent: Double bubble map generation failed: {e}")
+            logger.error("DoubleBubbleMapAgent: Double bubble map generation failed: %s", e)
             return {
                 'success': False,
                 'error': f'Generation failed: {str(e)}'
@@ -146,28 +151,21 @@ class DoubleBubbleMapAgent(BaseAgent):
     ) -> Optional[Dict]:
         """Generate the double bubble map specification using LLM."""
         try:
-            # Import centralized prompt system
-            from prompts import get_prompt
-            from ..core.topic_extraction import extract_double_bubble_topics_llm
-
             # Extract two topics for comparison using specialized LLM extraction (async)
             topics = await extract_double_bubble_topics_llm(prompt, language, self.model)
-            logger.debug(f"DoubleBubbleMapAgent: Extracted topics: {topics}")
+            logger.debug("DoubleBubbleMapAgent: Extracted topics: %s", topics)
 
             # Get prompt from centralized system - use agent-specific format
             system_prompt = get_prompt("double_bubble_map_agent", language, "generation")
 
             if not system_prompt:
-                logger.error(f"DoubleBubbleMapAgent: No prompt found for language {language}")
+                logger.error("DoubleBubbleMapAgent: No prompt found for language %s", language)
                 return None
 
             # Use the extracted topics instead of raw prompt
             user_prompt = f"请为以下描述创建一个双气泡图：{topics}" if language == "zh" else f"Please create a double bubble map for the following description: {topics}"
 
             # Call middleware directly - clean and efficient!
-            from services.llm import llm_service
-            from config.settings import config
-
             response = await llm_service.chat(
                 prompt=user_prompt,
                 model=self.model,
@@ -183,8 +181,6 @@ class DoubleBubbleMapAgent(BaseAgent):
             )
 
             # Extract JSON from response
-            from ..core.agent_utils import extract_json_from_response
-
             # Check if response is already a dictionary (from mock client)
             if isinstance(response, dict):
                 spec = response
@@ -243,7 +239,7 @@ class DoubleBubbleMapAgent(BaseAgent):
                     # Log the actual response for debugging with more context
                     response_preview = response_str[:500] + "..." if len(response_str) > 500 else response_str
                     logger.error("DoubleBubbleMapAgent: Failed to extract JSON from LLM response")
-                    logger.error(f"DoubleBubbleMapAgent: Response length: {len(response_str)}, Preview: {response_preview}")
+                    logger.error("DoubleBubbleMapAgent: Response length: %s, Preview: %s", len(response_str), response_preview)
                     logger.error("DoubleBubbleMapAgent: This may indicate LLM returned invalid JSON or non-JSON response")
                     # Return None to trigger error handling upstream
                     return None
@@ -251,14 +247,17 @@ class DoubleBubbleMapAgent(BaseAgent):
             return spec
 
         except Exception as e:
-            logger.error(f"DoubleBubbleMapAgent: Error in spec generation: {e}")
+            logger.error("DoubleBubbleMapAgent: Error in spec generation: %s", e)
             return None
 
     def _enhance_spec(self, spec: Dict) -> Dict:
         """Enhance the specification with layout and dimension recommendations."""
         try:
-            logger.debug(f"DoubleBubbleMapAgent: Enhancing spec - Left: {spec.get('left')}, Right: {spec.get('right')}")
-            logger.debug(f"DoubleBubbleMapAgent: Left attributes: {len(spec.get('left_only', []))}, Right attributes: {len(spec.get('right_only', []))}, Shared: {len(spec.get('shared', []))}")
+            logger.debug("DoubleBubbleMapAgent: Enhancing spec - Left: %s, Right: %s", spec.get('left'), spec.get('right'))
+            left_attrs_count = len(spec.get('left_only', []))
+            right_attrs_count = len(spec.get('right_only', []))
+            shared_attrs_count = len(spec.get('shared', []))
+            logger.debug("DoubleBubbleMapAgent: Left attributes: %s, Right attributes: %s, Shared: %s", left_attrs_count, right_attrs_count, shared_attrs_count)
 
             # Agent already generates correct renderer format, just enhance it
             enhanced_spec = spec.copy()
@@ -292,7 +291,7 @@ class DoubleBubbleMapAgent(BaseAgent):
             return enhanced_spec
 
         except Exception as e:
-            logger.error(f"DoubleBubbleMapAgent: Error enhancing spec: {e}")
+            logger.error("DoubleBubbleMapAgent: Error enhancing spec: %s", e)
             return spec
 
     def validate_output(self, spec: Dict) -> Tuple[bool, str]:
@@ -373,7 +372,7 @@ class DoubleBubbleMapAgent(BaseAgent):
             }
 
         except Exception as e:
-            logger.error(f"DoubleBubbleMapAgent: Error enhancing spec: {e}")
+            logger.error("DoubleBubbleMapAgent: Error enhancing spec: %s", e)
             return {
                 'success': False,
                 'error': f'Enhancement failed: {str(e)}'

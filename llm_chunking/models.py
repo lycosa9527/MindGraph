@@ -1,7 +1,3 @@
-﻿from dataclasses import dataclass, field
-from typing import Dict, List, Any, Optional
-
-
 """
 Data models for LLM-based semantic chunking.
 
@@ -11,6 +7,8 @@ Defines chunk structures for different chunking strategies:
 - Q&A: Question-answer pairs
 - Teaching: Enhanced chunks for educational content
 """
+from dataclasses import dataclass, field
+from typing import Dict, List, Any, Optional
 
 
 

@@ -149,11 +149,11 @@ class UserCache:
                 try:
                     self.cache_user(user)
                 except Exception as e:
-                    logger.debug(f"[UserCache] Failed to cache user loaded from SQLite: {e}")
+                    logger.debug("[UserCache] Failed to cache user loaded from SQLite: %s", e)
 
             return user
         except Exception as e:
-            logger.error(f"[UserCache] Database query failed: {e}", exc_info=True)
+            logger.error("[UserCache] Database query failed: %s", e, exc_info=True)
             raise
         finally:
             db.close()
@@ -170,7 +170,7 @@ class UserCache:
         """
         # Check Redis availability
         if not is_redis_available():
-            logger.debug(f"[UserCache] Redis unavailable, loading user ID {user_id} from SQLite")
+            logger.debug("[UserCache] Redis unavailable, loading user ID %s from SQLite", user_id)
             return self._load_from_sqlite(user_id=user_id)
 
         try:
@@ -181,11 +181,11 @@ class UserCache:
             if cached:
                 try:
                     user = self._deserialize_user(cached)
-                    logger.debug(f"[UserCache] Cache hit for user ID {user_id}")
+                    logger.debug("[UserCache] Cache hit for user ID %s", user_id)
                     return user
                 except (KeyError, ValueError, TypeError) as e:
                     # Corrupted cache entry
-                    logger.error(f"[UserCache] Corrupted cache for user ID {user_id}: {e}", exc_info=True)
+                    logger.error("[UserCache] Corrupted cache for user ID %s: %s", user_id, e, exc_info=True)
                     # Invalidate corrupted entry
                     try:
                         RedisOps.delete(key)
@@ -195,11 +195,11 @@ class UserCache:
                     return self._load_from_sqlite(user_id=user_id)
         except Exception as e:
             # Transient Redis errors - fallback to SQLite
-            logger.warning(f"[UserCache] Redis error for user ID {user_id}, falling back to SQLite: {e}")
+            logger.warning("[UserCache] Redis error for user ID %s, falling back to SQLite: %s", user_id, e)
             return self._load_from_sqlite(user_id=user_id)
 
         # Cache miss - load from SQLite
-        logger.debug(f"[UserCache] Cache miss for user ID {user_id}, loading from SQLite")
+        logger.debug("[UserCache] Cache miss for user ID %s, loading from SQLite", user_id)
         return self._load_from_sqlite(user_id=user_id)
 
     def get_by_phone(self, phone: str) -> Optional[User]:
@@ -214,7 +214,8 @@ class UserCache:
         """
         # Check Redis availability
         if not is_redis_available():
-            logger.debug(f"[UserCache] Redis unavailable, loading user by phone {phone[:3]}***{phone[-4:]} from SQLite")
+            phone_masked = phone[:3] + "***" + phone[-4:]
+            logger.debug("[UserCache] Redis unavailable, loading user by phone %s from SQLite", phone_masked)
             return self._load_from_sqlite(phone=phone)
 
         try:
@@ -228,7 +229,8 @@ class UserCache:
                     # Load user by ID (will use cache)
                     return self.get_by_id(user_id)
                 except (ValueError, TypeError) as e:
-                    logger.error(f"[UserCache] Invalid user ID in phone index for {phone[:3]}***{phone[-4:]}: {e}")
+                    phone_masked = phone[:3] + "***" + phone[-4:]
+                    logger.error("[UserCache] Invalid user ID in phone index for %s: %s", phone_masked, e)
                     # Invalidate corrupted index
                     try:
                         RedisOps.delete(index_key)
@@ -238,11 +240,13 @@ class UserCache:
                     return self._load_from_sqlite(phone=phone)
         except Exception as e:
             # Transient Redis errors - fallback to SQLite
-            logger.warning(f"[UserCache] Redis error for phone {phone[:3]}***{phone[-4:]}, falling back to SQLite: {e}")
+            phone_masked = phone[:3] + "***" + phone[-4:]
+            logger.warning("[UserCache] Redis error for phone %s, falling back to SQLite: %s", phone_masked, e)
             return self._load_from_sqlite(phone=phone)
 
         # Cache miss - load from SQLite
-        logger.debug(f"[UserCache] Cache miss for phone {phone[:3]}***{phone[-4:]}, loading from SQLite")
+        phone_masked = phone[:3] + "***" + phone[-4:]
+        logger.debug("[UserCache] Cache miss for phone %s, loading from SQLite", phone_masked)
         return self._load_from_sqlite(phone=phone)
 
     def cache_user(self, user: User) -> bool:
@@ -268,7 +272,7 @@ class UserCache:
             success = RedisOps.hash_set(user_key, user_dict)
 
             if not success:
-                logger.warning(f"[UserCache] Failed to cache user ID {user.id}")
+                logger.warning("[UserCache] Failed to cache user ID %s", user.id)
                 return False
 
             # Store phone index (permanent, no TTL)
@@ -278,13 +282,16 @@ class UserCache:
                 if redis:
                     redis.set(phone_index_key, str(user.id))  # Permanent storage, no TTL
 
-            logger.debug(f"[UserCache] Cached user ID {user.id} (phone: {user.phone[:3] if user.phone and len(user.phone) >= 3 else '***'}***{user.phone[-4:] if user.phone and len(user.phone) >= 4 else ''})")
-            logger.debug(f"[UserCache] Cached user index: phone {user.phone[:3] if user.phone and len(user.phone) >= 3 else '***'}***{user.phone[-4:] if user.phone and len(user.phone) >= 4 else ''} -> ID {user.id}")
+            phone_prefix = user.phone[:3] if user.phone and len(user.phone) >= 3 else "***"
+            phone_suffix = user.phone[-4:] if user.phone and len(user.phone) >= 4 else ""
+            phone_masked = phone_prefix + "***" + phone_suffix
+            logger.debug("[UserCache] Cached user ID %s (phone: %s)", user.id, phone_masked)
+            logger.debug("[UserCache] Cached user index: phone %s -> ID %s", phone_masked, user.id)
 
             return True
         except Exception as e:
             # Log but don't raise - cache failures are non-critical
-            logger.warning(f"[UserCache] Failed to cache user ID {user.id}: {e}")
+            logger.warning("[UserCache] Failed to cache user ID %s: %s", user.id, e)
             return False
 
     def invalidate(self, user_id: int, phone: Optional[str] = None) -> bool:
@@ -312,13 +319,13 @@ class UserCache:
                 phone_index_key = f"{USER_PHONE_INDEX_PREFIX}{phone}"
                 RedisOps.delete(phone_index_key)
 
-            logger.info(f"[UserCache] Invalidated cache for user ID {user_id}")
-            logger.debug(f"[UserCache] Deleted cache keys: user:{user_id}, user:phone:{phone}")
+            logger.info("[UserCache] Invalidated cache for user ID %s", user_id)
+            logger.debug("[UserCache] Deleted cache keys: user:%s, user:phone:%s", user_id, phone)
 
             return True
         except Exception as e:
             # Log but don't raise - invalidation failures are non-critical
-            logger.warning(f"[UserCache] Failed to invalidate cache for user ID {user_id}: {e}")
+            logger.warning("[UserCache] Failed to invalidate cache for user ID %s: %s", user_id, e)
             return False
 
 

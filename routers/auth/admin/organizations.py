@@ -1,21 +1,4 @@
-from datetime import datetime, timezone
-import logging
-
-from fastapi import APIRouter, Depends, HTTPException, Request, status
-from sqlalchemy import func, and_
-from sqlalchemy.orm import Session
-
-from config.database import get_db
-from models.auth import Organization, User
-from models.messages import Messages, Language
-from services.redis.redis_org_cache import org_cache
-from utils.invitations import normalize_or_generate
-from ..dependencies import get_language_dependency, require_admin
-from ..helpers import utc_to_beijing_iso
-
-"""
-Admin Organization Management Endpoints
-=======================================
+"""Admin Organization Management Endpoints.
 
 Admin-only organization CRUD endpoints:
 - GET /admin/organizations - List all organizations
@@ -27,10 +10,27 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+from datetime import datetime, timezone
+import logging
 
+from fastapi import APIRouter, Depends, HTTPException, Request, status
+from sqlalchemy import and_
+from sqlalchemy.orm import Session
+from sqlalchemy.sql import func
 
-
-
+from config.database import get_db
+from models.auth import Organization, User
+from models.messages import Messages, Language
+try:
+    from models.token_usage import TokenUsage
+except ImportError:
+    TokenUsage = None
+from services.redis.redis_org_cache import org_cache
+from services.redis.redis_user_cache import user_cache
+from utils.invitations import normalize_or_generate
+from ..dependencies import get_language_dependency, require_admin
+from ..helpers import utc_to_beijing_iso
+from .stats import _sql_count
 
 logger = logging.getLogger(__name__)
 
@@ -39,10 +39,10 @@ router = APIRouter()
 
 @router.get("/admin/organizations", dependencies=[Depends(require_admin)])
 async def list_organizations_admin(
-    request: Request,
-    current_user: User = Depends(require_admin),
+    _request: Request,
+    _current_user: User = Depends(require_admin),
     db: Session = Depends(get_db),
-    lang: Language = Depends(get_language_dependency)
+    _lang: Language = Depends(get_language_dependency)
 ):
     """List all organizations (ADMIN ONLY)"""
     orgs = db.query(Organization).all()
@@ -52,7 +52,7 @@ async def list_organizations_admin(
     user_counts_by_org = {}
     user_counts_query = db.query(
         User.organization_id,
-        func.count(User.id).label('user_count')
+        _sql_count(User.id).label('user_count')
     ).filter(
         User.organization_id.isnot(None)
     ).group_by(
@@ -66,7 +66,7 @@ async def list_organizations_admin(
     manager_counts_by_org = {}
     manager_counts_query = db.query(
         User.organization_id,
-        func.count(User.id).label('manager_count')
+        _sql_count(User.id).label('manager_count')
     ).filter(
         User.organization_id.isnot(None),
         User.role == 'manager'
@@ -80,33 +80,33 @@ async def list_organizations_admin(
     # Get token stats for all organizations (all-time totals)
     token_stats_by_org = {}
 
-    try:
-        from models.token_usage import TokenUsage
-        org_token_stats = db.query(
-            Organization.id,
-            Organization.name,
-            func.coalesce(func.sum(TokenUsage.input_tokens), 0).label('input_tokens'),
-            func.coalesce(func.sum(TokenUsage.output_tokens), 0).label('output_tokens'),
-            func.coalesce(func.sum(TokenUsage.total_tokens), 0).label('total_tokens')
-        ).outerjoin(
-            TokenUsage,
-            and_(
-                Organization.id == TokenUsage.organization_id,
-                TokenUsage.success
-            )
-        ).group_by(
-            Organization.id,
-            Organization.name
-        ).all()
+    if TokenUsage is not None:
+        try:
+            org_token_stats = db.query(
+                Organization.id,
+                Organization.name,
+                func.coalesce(func.sum(TokenUsage.input_tokens), 0).label('input_tokens'),
+                func.coalesce(func.sum(TokenUsage.output_tokens), 0).label('output_tokens'),
+                func.coalesce(func.sum(TokenUsage.total_tokens), 0).label('total_tokens')
+            ).outerjoin(
+                TokenUsage,
+                and_(
+                    Organization.id == TokenUsage.organization_id,
+                    TokenUsage.success
+                )
+            ).group_by(
+                Organization.id,
+                Organization.name
+            ).all()
 
-        for org_stat in org_token_stats:
-            token_stats_by_org[org_stat.id] = {
-                "input_tokens": int(org_stat.input_tokens or 0),
-                "output_tokens": int(org_stat.output_tokens or 0),
-                "total_tokens": int(org_stat.total_tokens or 0)
-            }
-    except (ImportError, Exception) as e:
-        logger.debug(f"TokenUsage not available yet: {e}")
+            for org_stat in org_token_stats:
+                token_stats_by_org[org_stat.id] = {
+                    "input_tokens": int(org_stat.input_tokens or 0),
+                    "output_tokens": int(org_stat.output_tokens or 0),
+                    "total_tokens": int(org_stat.total_tokens or 0)
+                }
+        except Exception as e:
+            logger.debug("TokenUsage query failed: %s", e)
 
     for org in orgs:
         user_count = user_counts_by_org.get(org.id, 0)
@@ -135,7 +135,7 @@ async def list_organizations_admin(
 @router.post("/admin/organizations", dependencies=[Depends(require_admin)])
 async def create_organization_admin(
     request: dict,
-    http_request: Request,
+    _http_request: Request,
     current_user: User = Depends(require_admin),
     db: Session = Depends(get_db),
     lang: Language = Depends(get_language_dependency)
@@ -189,20 +189,20 @@ async def create_organization_admin(
         db.refresh(new_org)
     except Exception as e:
         db.rollback()
-        logger.error(f"[Auth] Failed to create org in SQLite: {e}")
+        logger.error("[Auth] Failed to create org in SQLite: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to create organization"
-        )
+        ) from e
 
     # Write to Redis cache SECOND (non-blocking)
     try:
         org_cache.cache_org(new_org)
-        logger.info(f"[Auth] New org cached: ID {new_org.id}, code {new_org.code}")
+        logger.info("[Auth] New org cached: ID %s, code %s", new_org.id, new_org.code)
     except Exception as e:
-        logger.warning(f"[Auth] Failed to cache new org ID {new_org.id}: {e}")
+        logger.warning("[Auth] Failed to cache new org ID %s: %s", new_org.id, e)
 
-    logger.info(f"Admin {current_user.phone} created organization: {new_org.code}")
+    logger.info("Admin %s created organization: %s", current_user.phone, new_org.code)
     return {
         "id": new_org.id,
         "code": new_org.code,
@@ -216,7 +216,7 @@ async def create_organization_admin(
 async def update_organization_admin(
     org_id: int,
     request: dict,
-    http_request: Request,
+    _http_request: Request,
     current_user: User = Depends(require_admin),
     db: Session = Depends(get_db),
     lang: Language = Depends(get_language_dependency)
@@ -279,7 +279,10 @@ async def update_organization_admin(
                 if conflict and conflict.id == org.id:
                     conflict = None
                 if not conflict:
-                    conflict = db.query(Organization).filter(Organization.invitation_code == normalized, Organization.id != org.id).first()
+                    conflict = db.query(Organization).filter(
+                        Organization.invitation_code == normalized,
+                        Organization.id != org.id
+                    ).first()
                 if not conflict:
                     break
                 attempts += 1
@@ -294,9 +297,9 @@ async def update_organization_admin(
         if expires_str:
             try:
                 org.expires_at = datetime.fromisoformat(expires_str.replace('Z', '+00:00'))
-            except ValueError:
+            except ValueError as exc:
                 error_msg = Messages.error("invalid_date_format", lang)
-                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg) from exc
         else:
             org.expires_at = None
 
@@ -310,27 +313,27 @@ async def update_organization_admin(
         db.refresh(org)
     except Exception as e:
         db.rollback()
-        logger.error(f"[Auth] Failed to update org ID {org_id} in SQLite: {e}")
+        logger.error("[Auth] Failed to update org ID %s in SQLite: %s", org_id, e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to update organization"
-        )
+        ) from e
 
     # Invalidate old cache entries
     try:
         org_cache.invalidate(org_id, old_code, old_invite)
-        logger.debug(f"[Auth] Invalidated old cache for org ID {org_id}")
+        logger.debug("[Auth] Invalidated old cache for org ID %s", org_id)
     except Exception as e:
-        logger.warning(f"[Auth] Failed to invalidate org cache: {e}")
+        logger.warning("[Auth] Failed to invalidate org cache: %s", e)
 
     # Re-cache updated org
     try:
         org_cache.cache_org(org)
-        logger.info(f"[Auth] Updated and re-cached org ID {org_id}")
+        logger.info("[Auth] Updated and re-cached org ID %s", org_id)
     except Exception as e:
-        logger.warning(f"[Auth] Failed to re-cache org ID {org_id}: {e}")
+        logger.warning("[Auth] Failed to re-cache org ID %s: %s", org_id, e)
 
-    logger.info(f"Admin {current_user.phone} updated organization: {org.code}")
+    logger.info("Admin %s updated organization: %s", current_user.phone, org.code)
     return {
         "id": org.id,
         "code": org.code,
@@ -345,7 +348,7 @@ async def update_organization_admin(
 @router.delete("/admin/organizations/{org_id}", dependencies=[Depends(require_admin)])
 async def delete_organization_admin(
     org_id: int,
-    request: Request,
+    _request: Request,
     current_user: User = Depends(require_admin),
     db: Session = Depends(get_db),
     lang: Language = Depends(get_language_dependency)
@@ -374,20 +377,20 @@ async def delete_organization_admin(
         db.commit()
     except Exception as e:
         db.rollback()
-        logger.error(f"[Auth] Failed to delete org ID {org_id} in SQLite: {e}")
+        logger.error("[Auth] Failed to delete org ID %s in SQLite: %s", org_id, e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to delete organization"
-        )
+        ) from e
 
     # Invalidate cache (non-blocking)
     try:
         org_cache.invalidate(org_id, org_code, org_invite)
-        logger.info(f"[Auth] Invalidated cache for deleted org ID {org_id}")
+        logger.info("[Auth] Invalidated cache for deleted org ID %s", org_id)
     except Exception as e:
-        logger.warning(f"[Auth] Failed to invalidate cache for deleted org ID {org_id}: {e}")
+        logger.warning("[Auth] Failed to invalidate cache for deleted org ID %s: %s", org_id, e)
 
-    logger.warning(f"Admin {current_user.phone} deleted organization: {org.code}")
+    logger.warning("Admin %s deleted organization: %s", current_user.phone, org.code)
     return {"message": Messages.success("organization_deleted", lang, org.code)}
 
 
@@ -398,8 +401,8 @@ async def delete_organization_admin(
 @router.get("/admin/organizations/{org_id}/users", dependencies=[Depends(require_admin)])
 async def list_organization_users(
     org_id: int,
-    request: Request,
-    current_user: User = Depends(require_admin),
+    _request: Request,
+    _current_user: User = Depends(require_admin),
     db: Session = Depends(get_db),
     lang: Language = Depends(get_language_dependency)
 ):
@@ -444,8 +447,8 @@ async def list_organization_users(
 @router.get("/admin/organizations/{org_id}/managers", dependencies=[Depends(require_admin)])
 async def list_organization_managers(
     org_id: int,
-    request: Request,
-    current_user: User = Depends(require_admin),
+    _request: Request,
+    _current_user: User = Depends(require_admin),
     db: Session = Depends(get_db),
     lang: Language = Depends(get_language_dependency)
 ):
@@ -488,7 +491,7 @@ async def list_organization_managers(
 async def set_organization_manager(
     org_id: int,
     user_id: int,
-    request: Request,
+    _request: Request,
     current_user: User = Depends(require_admin),
     db: Session = Depends(get_db),
     lang: Language = Depends(get_language_dependency)
@@ -525,21 +528,20 @@ async def set_organization_manager(
         db.refresh(user)
     except Exception as e:
         db.rollback()
-        logger.error(f"[Auth] Failed to set manager role for user ID {user_id}: {e}")
+        logger.error("[Auth] Failed to set manager role for user ID %s: %s", user_id, e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to set manager role"
-        )
+        ) from e
 
     # Invalidate user cache
     try:
-        from services.redis.redis_user_cache import user_cache
         user_cache.invalidate(user.id, user.phone)
         user_cache.cache_user(user)
     except Exception as e:
-        logger.warning(f"[Auth] Failed to update user cache: {e}")
+        logger.warning("[Auth] Failed to update user cache: %s", e)
 
-    logger.info(f"Admin {current_user.phone} set user {user.phone} as manager of org {org.code}")
+    logger.info("Admin %s set user %s as manager of org %s", current_user.phone, user.phone, org.code)
 
     return {
         "message": Messages.success("manager_role_set", lang, user.name or user.phone),
@@ -555,7 +557,7 @@ async def set_organization_manager(
 async def remove_organization_manager(
     org_id: int,
     user_id: int,
-    request: Request,
+    _request: Request,
     current_user: User = Depends(require_admin),
     db: Session = Depends(get_db),
     lang: Language = Depends(get_language_dependency)
@@ -592,21 +594,20 @@ async def remove_organization_manager(
         db.refresh(user)
     except Exception as e:
         db.rollback()
-        logger.error(f"[Auth] Failed to remove manager role from user ID {user_id}: {e}")
+        logger.error("[Auth] Failed to remove manager role from user ID %s: %s", user_id, e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to remove manager role"
-        )
+        ) from e
 
     # Invalidate user cache
     try:
-        from services.redis.redis_user_cache import user_cache
         user_cache.invalidate(user.id, user.phone)
         user_cache.cache_user(user)
     except Exception as e:
-        logger.warning(f"[Auth] Failed to update user cache: {e}")
+        logger.warning("[Auth] Failed to update user cache: %s", e)
 
-    logger.info(f"Admin {current_user.phone} removed manager role from user {user.phone} in org {org.code}")
+    logger.info("Admin %s removed manager role from user %s in org %s", current_user.phone, user.phone, org.code)
 
     return {
         "message": Messages.success("manager_role_removed", lang, user.name or user.phone),
@@ -616,6 +617,3 @@ async def remove_organization_manager(
             "role": user.role
         }
     }
-
-
-

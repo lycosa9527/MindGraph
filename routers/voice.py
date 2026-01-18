@@ -424,7 +424,10 @@ async def process_paragraph_with_qwen_plus(
             # Wait for teacher's confirmation or let them switch diagram type first
             # For now, we'll still extract but use current diagram type (with warning)
             # In future, we could add a confirmation step
-            logger.info("Proceeding with current diagram type %s despite recommendation for %s", current_diagram_type, recommended_type)
+            logger.info(
+                "Proceeding with current diagram type %s despite recommendation for %s",
+                current_diagram_type, recommended_type
+            )
             diagram_type = current_diagram_type  # Use current type to avoid breaking existing diagram
 
             # Send additional message explaining what will happen
@@ -440,7 +443,10 @@ async def process_paragraph_with_qwen_plus(
             diagram_type = current_diagram_type
 
         intent = extracted_data.get('intent', 'extract_content')
-        logger.info("Detected intent: %s, using diagram type: %s (recommended: %s)", intent, diagram_type, recommended_type)
+        logger.info(
+            "Detected intent: %s, using diagram type: %s (recommended: %s)",
+            intent, diagram_type, recommended_type
+        )
 
         # Send progress update
         if nodes:
@@ -931,15 +937,20 @@ def end_voice_session(session_id: str, reason: str = 'completed') -> None:
         if omni_client:
             try:
                 # Native WebSocket client uses async close()
-                if hasattr(omni_client, '_native_client') and omni_client._native_client:  # pylint: disable=protected-access
+                if (hasattr(omni_client, '_native_client') and
+                    omni_client._native_client):  # pylint: disable=protected-access
                     # Schedule async close (can't await in sync function)
                     try:
                         loop = asyncio.get_event_loop()
                         if loop.is_running():
                             # If loop is running, schedule close
-                            asyncio.create_task(omni_client._native_client.close())  # pylint: disable=protected-access
+                            asyncio.create_task(
+                                omni_client._native_client.close()
+                            )  # pylint: disable=protected-access
                         else:
-                            loop.run_until_complete(omni_client._native_client.close())  # pylint: disable=protected-access
+                            loop.run_until_complete(
+                                omni_client._native_client.close()
+                            )  # pylint: disable=protected-access
                     except RuntimeError:
                         # No event loop, create new one
                         asyncio.run(omni_client._native_client.close())  # pylint: disable=protected-access
@@ -958,7 +969,11 @@ def end_voice_session(session_id: str, reason: str = 'completed') -> None:
                             asyncio.run(close_result)
                     logger.debug("VOIC | Closed Omni client for session %s", session_id)
             except (RuntimeError, AttributeError, asyncio.CancelledError) as e:
-                logger.debug("VOIC | Error closing Omni client for session %s (may already be closed): %s", session_id, e)
+                logger.debug(
+                    "VOIC | Error closing Omni client for session %s "
+                    "(may already be closed): %s",
+                    session_id, e
+                )
 
         # Delete session from memory
         del voice_sessions[session_id]
@@ -1026,9 +1041,15 @@ async def cleanup_voice_by_diagram_session(diagram_session_id: str) -> bool:
             voice_session_ids_to_cleanup.append(sid)
 
     if voice_session_ids_to_cleanup:
-        logger.debug("Found %d voice session(s) for diagram %s, cleaning up all", len(voice_session_ids_to_cleanup), diagram_session_id)
+        logger.debug(
+            "Found %d voice session(s) for diagram %s, cleaning up all",
+            len(voice_session_ids_to_cleanup), diagram_session_id
+        )
         for voice_session_id in voice_session_ids_to_cleanup:
-            logger.debug("Cleaning up voice session %s (diagram session %s ended)", voice_session_id, diagram_session_id)
+            logger.debug(
+                "Cleaning up voice session %s (diagram session %s ended)",
+                voice_session_id, diagram_session_id
+            )
             end_voice_session(voice_session_id, reason='diagram_session_ended')
             cleaned_count += 1
         return True
@@ -1127,10 +1148,14 @@ You can help with:
 2. Explaining concepts (e.g., "explain node 1" or "explain ABC")
 3. Suggesting new nodes to add
 4. Understanding relationships between nodes
-5. **EXECUTING CHANGES**: When users ask you to make changes (e.g., "change the first node to X", "update the center to Y", "add a node called Z", "delete node ABC"), you should acknowledge and confirm the change. The system will automatically execute these changes based on your conversation.
+5. **EXECUTING CHANGES**: When users ask you to make changes (e.g., "change the first node to X",
+   "update the center to Y", "add a node called Z", "delete node ABC"), you should acknowledge
+   and confirm the change. The system will automatically execute these changes based on your
+   conversation.
 
 【Important: Executing Changes】
-When users request changes conversationally (e.g., "can you change...", "please update...", "I want to change..."), acknowledge the request clearly. Examples:
+When users request changes conversationally (e.g., "can you change...", "please update...",
+"I want to change..."), acknowledge the request clearly. Examples:
 - "Change the first node to apples" → Acknowledge: "好的，我会把第一个节点改成'苹果'。" (The system will execute this automatically)
 - "Update center to cars" → Acknowledge: "好的，我会把中心主题改成'汽车'。" (The system will execute this automatically)
 - "Add a node called fruits" → Acknowledge: "好的，我会添加一个叫'水果'的节点。" (The system will execute this automatically)
@@ -1231,17 +1256,46 @@ def build_greeting_message(diagram_type: str = 'unknown', language: str = 'zh') 
 
     # English greetings
     greetings_en = {
-        'circle_map': 'Hi! I\'m your thinking assistant. I can help you enhance your Circle Map with more observations and ideas. How can I help?',
-        'bubble_map': 'Hello! I\'m here to help you describe things. Tell me what adjectives or characteristics you want to add!',
-        'tree_map': 'Hi! I can help you organize by categories. Let\'s classify your ideas together!',
-        'flow_map': 'Hello! I\'m here to help you map processes. Tell me the sequence, and I\'ll help you clarify!',
-        'brace_map': 'Hi! I can help you analyze whole-part relationships. Let\'s explore together!',
-        'bridge_map': 'Hello! I\'m here to help you find analogies. Ready to compare?',
-        'double_bubble_map': 'Hi! I can help you compare two things. Tell me their similarities and differences!',
-        'multi_flow_map': 'Hello! I\'m here to help you analyze cause and effect. Let\'s find the reasons and results!',
-        'mind_map': 'Hi! I\'m your mind map assistant. Tell me your topic, and I\'ll help you brainstorm ideas!',
-        'concept_map': 'Hello! I\'m here to help you connect concepts. Let\'s build a knowledge network together!',
-        'default': 'Hello! I\'m your AI assistant, happy to help. Ask me anything about your diagram, or let me help you update it.'
+        'circle_map': (
+            'Hi! I\'m your thinking assistant. I can help you enhance your Circle Map '
+            'with more observations and ideas. How can I help?'
+        ),
+        'bubble_map': (
+            'Hello! I\'m here to help you describe things. Tell me what adjectives '
+            'or characteristics you want to add!'
+        ),
+        'tree_map': (
+            'Hi! I can help you organize by categories. Let\'s classify your ideas together!'
+        ),
+        'flow_map': (
+            'Hello! I\'m here to help you map processes. Tell me the sequence, '
+            'and I\'ll help you clarify!'
+        ),
+        'brace_map': (
+            'Hi! I can help you analyze whole-part relationships. Let\'s explore together!'
+        ),
+        'bridge_map': (
+            'Hello! I\'m here to help you find analogies. Ready to compare?'
+        ),
+        'double_bubble_map': (
+            'Hi! I can help you compare two things. Tell me their similarities and differences!'
+        ),
+        'multi_flow_map': (
+            'Hello! I\'m here to help you analyze cause and effect. '
+            'Let\'s find the reasons and results!'
+        ),
+        'mind_map': (
+            'Hi! I\'m your mind map assistant. Tell me your topic, '
+            'and I\'ll help you brainstorm ideas!'
+        ),
+        'concept_map': (
+            'Hello! I\'m here to help you connect concepts. '
+            'Let\'s build a knowledge network together!'
+        ),
+        'default': (
+            'Hello! I\'m your AI assistant, happy to help. Ask me anything about your diagram, '
+            'or let me help you update it.'
+        )
     }
 
     greetings = greetings_zh if language == 'zh' else greetings_en
@@ -1292,10 +1346,17 @@ async def _handle_update_center_action(
             parsed = parse_double_bubble_target(target)
             if parsed and parsed.get('left') and parsed.get('right'):
                 updates = {'left': parsed['left'], 'right': parsed['right']}
-                logger.info("Parsed double bubble map target '%s' -> left=%s, right=%s", target, parsed['left'], parsed['right'])
+                logger.info(
+                    "Parsed double bubble map target '%s' -> left=%s, right=%s",
+                    target, parsed['left'], parsed['right']
+                )
             else:
                 # If parsing fails, log warning and return False (don't use invalid update)
-                logger.warning("Double bubble map update_center: could not parse target '%s' into left/right fields. Expected format: 'A和B' or 'A vs B'", target)
+                logger.warning(
+                    "Double bubble map update_center: could not parse target '%s' "
+                    "into left/right fields. Expected format: 'A和B' or 'A vs B'",
+                    target
+                )
                 await safe_websocket_send(websocket, {
                     'type': 'error',
                     'error': f"Double bubble map requires two topics separated by '和', 'vs', or 'and'. Got: {target}"
@@ -1531,7 +1592,10 @@ async def _handle_update_node_action(
         logger.debug("Node updated: %d -> %s", resolved_node_index, target)
         return True
     else:
-        logger.warning("Could not resolve node for update: node_identifier=%s, node_index=%s", node_identifier, node_index)
+        logger.warning(
+            "Could not resolve node for update: node_identifier=%s, node_index=%s",
+            node_identifier, node_index
+        )
         return False
 
 
@@ -1555,7 +1619,10 @@ async def execute_diagram_update(
             return await _handle_update_center_action(websocket, voice_session_id, command, session_context, target)
 
         elif action == 'update_node' and target:
-            return await _handle_update_node_action(websocket, voice_session_id, command, session_context, target, node_index, node_identifier)
+            return await _handle_update_node_action(
+                websocket, voice_session_id, command, session_context,
+                target, node_index, node_identifier
+            )
 
         elif action == 'add_node':
             if target:
@@ -1833,7 +1900,10 @@ async def execute_diagram_update(
                     substeps = diagram_data.get('substeps', [])
 
                     if 0 <= step_index < len(steps):
-                        step_name = steps[step_index] if isinstance(steps[step_index], str) else steps[step_index].get('text', '')
+                        if isinstance(steps[step_index], str):
+                            step_name = steps[step_index]
+                        else:
+                            step_name = steps[step_index].get('text', '')
 
                         # Find or create substeps entry for this step
                         substeps_entry = None
@@ -1901,9 +1971,15 @@ async def execute_diagram_update(
                     # Check if node already exists at this position
                     if 0 <= add_node_index < len(nodes):
                         # Node exists - use update_node instead
-                        logger.info("Node exists at index %d, updating instead of adding: %s", add_node_index, target)
+                        logger.info(
+                            "Node exists at index %d, updating instead of adding: %s",
+                            add_node_index, target
+                        )
                         existing_node = nodes[add_node_index]
-                        existing_node_id = existing_node.get('id') if isinstance(existing_node, dict) else f"{prefix}_{add_node_index}"
+                        if isinstance(existing_node, dict):
+                            existing_node_id = existing_node.get('id')
+                        else:
+                            existing_node_id = f"{prefix}_{add_node_index}"
 
                         await safe_websocket_send(websocket, {
                             'type': 'diagram_update',
@@ -2255,7 +2331,10 @@ async def execute_diagram_update(
                 substeps = diagram_data.get('substeps', [])
 
                 if 0 <= step_index < len(steps):
-                    step_name = steps[step_index] if isinstance(steps[step_index], str) else steps[step_index].get('text', '')
+                    if isinstance(steps[step_index], str):
+                        step_name = steps[step_index]
+                    else:
+                        step_name = steps[step_index].get('text', '')
 
                     # Find substeps entry for this step
                     for entry in substeps:
@@ -2477,7 +2556,11 @@ async def process_voice_command(
         node_index = command.get('node_index')
         confidence = command.get('confidence', 0.0)
 
-        logger.debug("Command processed: action=%s, target=%s, node_index=%s, confidence=%s, is_text=%s", action, target, node_index, confidence, is_text_message)
+        logger.debug(
+            "Command processed: action=%s, target=%s, node_index=%s, "
+            "confidence=%s, is_text=%s",
+            action, target, node_index, confidence, is_text_message
+        )
 
         # Only proceed if confidence is high enough (except for UI actions)
         ui_actions = [
@@ -2497,9 +2580,14 @@ async def process_voice_command(
         if action in diagram_update_actions:
             # For diagram updates, execute if confidence meets threshold
             if confidence >= confidence_threshold:
-                return await execute_diagram_update(websocket, voice_session_id, action, command, session_context)
+                return await execute_diagram_update(
+                    websocket, voice_session_id, action, command, session_context
+                )
             else:
-                logger.debug("Low confidence (%s) for diagram update '%s', threshold=%s", confidence, action, confidence_threshold)
+                logger.debug(
+                    "Low confidence (%s) for diagram update '%s', threshold=%s",
+                    confidence, action, confidence_threshold
+                )
                 return False
 
         # For non-diagram-update actions, check confidence
@@ -2768,7 +2856,10 @@ async def voice_conversation(
         # This ensures fresh state when switching diagrams
         if diagram_session_id in active_websockets:
             existing_ws_list = active_websockets[diagram_session_id]
-            logger.debug("Closing %d existing WebSocket connection(s) for diagram %s", len(existing_ws_list), diagram_session_id)
+            logger.debug(
+                "Closing %d existing WebSocket connection(s) for diagram %s",
+                len(existing_ws_list), diagram_session_id
+            )
             for existing_ws in existing_ws_list:
                 try:
                     await existing_ws.close(code=1001, reason="Diagram session ended")
@@ -2814,7 +2905,10 @@ async def voice_conversation(
         if diagram_session_id not in active_websockets:
             active_websockets[diagram_session_id] = []
         active_websockets[diagram_session_id].append(websocket)
-        logger.debug("Registered WebSocket for diagram %s (total: %d)", diagram_session_id, len(active_websockets[diagram_session_id]))
+        logger.debug(
+            "Registered WebSocket for diagram %s (total: %d)",
+            diagram_session_id, len(active_websockets[diagram_session_id])
+        )
 
         # Create new voice session (with fresh conversation_history: [])
         voice_session_id = create_voice_session(
@@ -2824,7 +2918,11 @@ async def voice_conversation(
             active_panel=start_msg.get('active_panel', 'mindmate')
         )
 
-        logger.debug("Session created: %s, diagram_type=%s, panel=%s", voice_session_id, start_msg.get('diagram_type'), start_msg.get('active_panel'))
+        logger.debug(
+            "Session created: %s, diagram_type=%s, panel=%s",
+            voice_session_id, start_msg.get('diagram_type'),
+            start_msg.get('active_panel')
+        )
         logger.debug("Agent session ID: %s (scoped to diagram_session_id)", agent_session_id)
 
         # Store initial context
@@ -2862,7 +2960,8 @@ async def voice_conversation(
         }
         instructions = build_voice_instructions(context)
 
-        logger.debug("Initial instructions built with %d nodes", len(context.get('diagram_data', {}).get('children', [])))
+        children_count = len(context.get('diagram_data', {}).get('children', []))
+        logger.debug("Initial instructions built with %d nodes", children_count)
 
         logger.debug("Built instructions for context: %d chars", len(instructions))
 
@@ -2886,7 +2985,10 @@ async def voice_conversation(
             omni_client=omni_client,
             instructions=instructions,
             user_id=int(user_id) if user_id else None,
-            organization_id=getattr(current_user, 'organization_id', None) if current_user and hasattr(current_user, 'id') else None,
+            organization_id=(
+                getattr(current_user, 'organization_id', None)
+                if current_user and hasattr(current_user, 'id') else None
+            ),
             session_id=voice_session_id,
             request_type='voice_omni',
             endpoint_path='/ws/voice'
@@ -2926,7 +3028,10 @@ async def voice_conversation(
                             if omni_client:
                                 await omni_client.send_audio(audio_data)
                             else:
-                                logger.warning("Cannot send audio: OmniClient not found for session %s", voice_session_id)
+                                logger.warning(
+                                    "Cannot send audio: OmniClient not found for session %s",
+                                    voice_session_id
+                                )
 
                     elif msg_type == 'text':
                         # Handle text message from user
@@ -2963,7 +3068,10 @@ async def voice_conversation(
                                 if omni_client:
                                     await omni_client.send_text_message(text)
                                 else:
-                                    logger.warning("Cannot send text: OmniClient not found for session %s", voice_session_id)
+                                    logger.warning(
+                                        "Cannot send text: OmniClient not found for session %s",
+                                        voice_session_id
+                                    )
                                     await safe_websocket_send(websocket, {
                                         'type': 'error',
                                         'error': 'Voice session not initialized'
@@ -2987,8 +3095,12 @@ async def voice_conversation(
                             old_diagram_type = voice_sessions[voice_session_id].get('diagram_type')
                             voice_sessions[voice_session_id]['diagram_type'] = new_diagram_type
                             if old_diagram_type != new_diagram_type:
-                                logger.info("VOIC | Diagram type updated: %s -> %s for session %s", old_diagram_type, new_diagram_type, voice_session_id)
-                                # CRITICAL: When diagram type changes, clear old diagram data to prevent cross-contamination
+                                logger.info(
+                                    "VOIC | Diagram type updated: %s -> %s for session %s",
+                                    old_diagram_type, new_diagram_type, voice_session_id
+                                )
+                                # CRITICAL: When diagram type changes, clear old diagram data
+                                # to prevent cross-contamination
                                 if 'diagram_data' in voice_sessions[voice_session_id].get('context', {}):
                                     voice_sessions[voice_session_id]['context']['diagram_data'] = {}
 
@@ -3006,7 +3118,8 @@ async def voice_conversation(
                         agent = voice_agent_manager.get_or_create(agent_session_id)
                         diagram_data = new_context.get('diagram_data', {})
                         # Use updated diagram_type from session (or fallback to context)
-                        diagram_data['diagram_type'] = voice_sessions[voice_session_id].get('diagram_type') or new_diagram_type
+                        session_diagram_type = voice_sessions[voice_session_id].get('diagram_type')
+                        diagram_data['diagram_type'] = session_diagram_type or new_diagram_type
                         agent.update_diagram_state(diagram_data)
                         agent.update_panel_state(active_panel, new_context.get('panels', {}))
 
@@ -3024,11 +3137,19 @@ async def voice_conversation(
                             if omni_client:
                                 await omni_client.update_instructions(new_instructions)
                             else:
-                                logger.debug("Cannot update instructions: OmniClient not found for session %s", voice_session_id)
+                                logger.debug(
+                                    "Cannot update instructions: OmniClient not found "
+                                    "for session %s",
+                                    voice_session_id
+                                )
                         except (RuntimeError, ConnectionError, AttributeError) as e:
                             logger.debug("Error updating Omni instructions: %s", e)
 
-                        logger.debug("Context updated for %s with %d nodes", voice_session_id, len(diagram_data.get('children', [])))
+                        children_count = len(diagram_data.get('children', []))
+                        logger.debug(
+                            "Context updated for %s with %d nodes",
+                            voice_session_id, children_count
+                        )
 
                     elif msg_type == 'stop':
                         # User wants to stop the conversation
@@ -3044,7 +3165,10 @@ async def voice_conversation(
                                 'type': 'response_cancelled'
                             })
                         else:
-                            logger.warning("Cannot cancel response: OmniClient not found for session %s", voice_session_id)
+                            logger.warning(
+                                "Cannot cancel response: OmniClient not found for session %s",
+                                voice_session_id
+                            )
 
                     elif msg_type == 'clear_audio_buffer':
                         # Clear audio buffer (cancel pending audio input)
@@ -3056,7 +3180,10 @@ async def voice_conversation(
                                 'type': 'audio_buffer_cleared'
                             })
                         else:
-                            logger.warning("Cannot clear audio buffer: OmniClient not found for session %s", voice_session_id)
+                            logger.warning(
+                                "Cannot clear audio buffer: OmniClient not found for session %s",
+                                voice_session_id
+                            )
 
                     elif msg_type == 'commit_audio_buffer':
                         # Explicitly commit audio buffer
@@ -3068,7 +3195,10 @@ async def voice_conversation(
                                 'type': 'audio_buffer_committed'
                             })
                         else:
-                            logger.warning("Cannot commit audio buffer: OmniClient not found for session %s", voice_session_id)
+                            logger.warning(
+                                "Cannot commit audio buffer: OmniClient not found for session %s",
+                                voice_session_id
+                            )
 
                     elif msg_type == 'append_image':
                         # Append image data (for multimodal support)
@@ -3086,7 +3216,10 @@ async def voice_conversation(
                                     'format': image_format
                                 })
                             else:
-                                logger.warning("Cannot append image: OmniClient not found for session %s", voice_session_id)
+                                logger.warning(
+                                    "Cannot append image: OmniClient not found for session %s",
+                                    voice_session_id
+                                )
                         else:
                             await safe_websocket_send(websocket, {
                                 'type': 'error',
@@ -3115,7 +3248,10 @@ async def voice_conversation(
                         if omni_client:
                             await omni_client.create_greeting(greeting_text=greeting)
                         else:
-                            logger.debug("Cannot create greeting: OmniClient not found for session %s", voice_session_id)
+                            logger.debug(
+                                "Cannot create greeting: OmniClient not found for session %s",
+                                voice_session_id
+                            )
                         greeting_sent = True
                         logger.debug("Greeting sent: %s...", greeting[:50])
 
@@ -3333,7 +3469,8 @@ async def voice_conversation(
                 omni_client = session['omni_client']
                 try:
                     # Native WebSocket client uses async close()
-                    if hasattr(omni_client, '_native_client') and omni_client._native_client:  # pylint: disable=protected-access
+                    if (hasattr(omni_client, '_native_client') and
+                        omni_client._native_client):  # pylint: disable=protected-access
                         await omni_client._native_client.close()  # pylint: disable=protected-access
                         logger.debug("Closed Omni client for session %s", voice_session_id)
                     elif hasattr(omni_client, 'close'):
@@ -3343,7 +3480,10 @@ async def voice_conversation(
                             await close_result
                         logger.debug("Closed Omni client for session %s", voice_session_id)
                 except (RuntimeError, ConnectionError, AttributeError) as e:  # pylint: disable=protected-access
-                    logger.debug("Error closing Omni client for session %s (may already be closed): %s", voice_session_id, e)
+                    logger.debug(
+                        "Error closing Omni client for session %s (may already be closed): %s",
+                        voice_session_id, e
+                    )
 
 
 @router.post("/api/voice/cleanup/{diagram_session_id}")
@@ -3370,8 +3510,15 @@ async def cleanup_voice_session(
         cleaned = await cleanup_voice_by_diagram_session(diagram_session_id)
 
         if cleaned:
-            logger.info("Voice session and WebSocket connections cleaned up for diagram %s by user %d", diagram_session_id, current_user.id)
-            return {"success": True, "message": f"Voice session and WebSocket connections cleaned up for diagram {diagram_session_id}"}
+            logger.info(
+                "Voice session and WebSocket connections cleaned up for diagram %s by user %d",
+                diagram_session_id, current_user.id
+            )
+            message = (
+                f"Voice session and WebSocket connections cleaned up "
+                f"for diagram {diagram_session_id}"
+            )
+            return {"success": True, "message": message}
         else:
             logger.debug("No active voice session found for diagram %s", diagram_session_id)
             return {"success": True, "message": "No active voice session found"}

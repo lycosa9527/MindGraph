@@ -12,12 +12,16 @@ Provides endpoints to check the health status of various system components:
 import time
 import asyncio
 import logging
-import psutil
 from typing import Dict, Any
+
+import psutil
 from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import JSONResponse
 from config.settings import config
 from models.responses import DatabaseHealthResponse
+from services.infrastructure.database_recovery import DatabaseRecovery
+from services.llm import llm_service
+from services.redis.redis_client import is_redis_available, RedisOps
 
 logger = logging.getLogger(__name__)
 
@@ -37,9 +41,9 @@ def _update_overall_status(current_status: str, current_code: int, check_status:
     Returns:
         Tuple of (updated_status, updated_code)
     """
-    if check_status == "healthy" or check_status == "skipped":
+    if check_status in ("healthy", "skipped"):
         return current_status, current_code
-    elif check_status == "error" and current_code == 200:
+    if check_status == "error" and current_code == 200:
         # First error when system was healthy -> mark as unhealthy with 500
         return "unhealthy", 500
     elif check_status == "unknown":
@@ -78,8 +82,6 @@ async def _check_application_health() -> Dict[str, Any]:
 async def _check_redis_health() -> Dict[str, Any]:
     """Check Redis health status with timeout."""
     try:
-        from services.redis.redis_client import is_redis_available, RedisOps
-
         if not is_redis_available():
             return {
                 "status": "unavailable",
@@ -108,11 +110,10 @@ async def _check_redis_health() -> Dict[str, Any]:
                 "version": info.get("redis_version", "unknown"),
                 "uptime_seconds": info.get("uptime_in_seconds", 0)
             }
-        else:
-            return {
-                "status": "unhealthy",
-                "message": "Ping failed"
-            }
+        return {
+            "status": "unhealthy",
+            "message": "Ping failed"
+        }
     except asyncio.TimeoutError:
         logger.warning("Redis health check timed out")
         return {
@@ -130,8 +131,6 @@ async def _check_redis_health() -> Dict[str, Any]:
 async def _check_database_health() -> Dict[str, Any]:
     """Check database health status with timeout."""
     try:
-        from services.infrastructure.database_recovery import DatabaseRecovery
-
         # Add timeout protection for database check
         async def _do_check():
             recovery = DatabaseRecovery()
@@ -181,8 +180,6 @@ async def _check_database_health() -> Dict[str, Any]:
 async def _check_llm_health() -> Dict[str, Any]:
     """Check LLM services health status with timeout."""
     try:
-        from services.llm import llm_service
-
         # Add timeout protection (LLM checks can take 5+ seconds per model)
         health_data = await asyncio.wait_for(
             llm_service.health_check(),
@@ -241,8 +238,6 @@ async def redis_health_check():
 
     Returns Redis connection status.
     """
-    from services.redis.redis_client import is_redis_available, RedisOps
-
     if not is_redis_available():
         return {
             "status": "unavailable",
@@ -258,11 +253,10 @@ async def redis_health_check():
                 "version": info.get("redis_version", "unknown"),
                 "uptime_seconds": info.get("uptime_in_seconds", 0)
             }
-        else:
-            return {
-                "status": "unhealthy",
-                "message": "Ping failed"
-            }
+        return {
+            "status": "unhealthy",
+            "message": "Ping failed"
+        }
     except Exception as e:  # pylint: disable=broad-except
         return {
             "status": "error",
@@ -286,8 +280,6 @@ async def database_health_check():
         - 500 Internal Server Error: Health check failed
     """
     try:
-        from services.infrastructure.database_recovery import DatabaseRecovery
-
         # Fast check - only integrity and basic stats, no backup listing
         # Backup listing can be slow (10-30+ seconds) and is not needed for health checks
         recovery = DatabaseRecovery()
@@ -438,7 +430,10 @@ async def comprehensive_health_check(
     if not include_llm:
         checks["llm_services"] = {
             "status": "skipped",
-            "message": "LLM health check disabled by default. Use ?include_llm=true to enable (makes actual API calls)."
+            "message": (
+                "LLM health check disabled by default. "
+                "Use ?include_llm=true to enable (makes actual API calls)."
+            )
         }
 
     # Build response

@@ -1,12 +1,4 @@
-﻿import logging
-
-from fastapi import APIRouter, HTTPException, Request
-
-from models import FrontendLogRequest, FrontendLogBatchRequest
-
-"""
-Frontend Logging API Router
-============================
+"""Frontend Logging API Router.
 
 API endpoints for frontend log collection:
 - /api/frontend_log: Single log entry
@@ -16,6 +8,12 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+import logging
+
+from fastapi import APIRouter, HTTPException, Request
+
+from models import FrontendLogRequest, FrontendLogBatchRequest
+from services.redis.redis_rate_limiter import RedisRateLimiter
 
 
 logger = logging.getLogger(__name__)
@@ -32,7 +30,6 @@ async def frontend_log(req: FrontendLogRequest, request: Request):
     Rate limited to prevent log injection and DoS attacks.
     """
     # Rate limiting: 100 requests per minute per IP
-    from services.redis.redis_rate_limiter import RedisRateLimiter
     rate_limiter = RedisRateLimiter()
 
     client_ip = request.client.host if request.client else 'unknown'
@@ -44,7 +41,7 @@ async def frontend_log(req: FrontendLogRequest, request: Request):
     )
 
     if not is_allowed:
-        logger.warning(f"Frontend log rate limit exceeded for IP {client_ip}: {count} attempts")
+        logger.warning("Frontend log rate limit exceeded for IP %s: %s attempts", client_ip, count)
         raise HTTPException(
             status_code=429,
             detail=f"Too many log requests. {error_msg}"
@@ -87,7 +84,6 @@ async def frontend_log_batch(req: FrontendLogBatchRequest, request: Request):
     Rate limited to prevent log injection and DoS attacks.
     """
     # Rate limiting: 10 batches per minute per IP, max 50 logs per batch
-    from services.redis.redis_rate_limiter import RedisRateLimiter
     rate_limiter = RedisRateLimiter()
 
     client_ip = request.client.host if request.client else 'unknown'
@@ -99,7 +95,7 @@ async def frontend_log_batch(req: FrontendLogBatchRequest, request: Request):
     )
 
     if not is_allowed:
-        logger.warning(f"Frontend log batch rate limit exceeded for IP {client_ip}: {count} attempts")
+        logger.warning("Frontend log batch rate limit exceeded for IP %s: %s attempts", client_ip, count)
         raise HTTPException(
             status_code=429,
             detail=f"Too many log batch requests. {error_msg}"
@@ -124,7 +120,7 @@ async def frontend_log_batch(req: FrontendLogBatchRequest, request: Request):
     frontend_logger.setLevel(logging.DEBUG)  # Accept all levels
 
     # Log batch header
-    frontend_logger.info(f"=== FRONTEND LOG BATCH ({req.batch_size} logs) ===")
+    frontend_logger.info("=== FRONTEND LOG BATCH (%s logs) ===", req.batch_size)
 
     # Log each message in the batch
     for log_entry in req.logs:
@@ -144,4 +140,3 @@ async def frontend_log_batch(req: FrontendLogBatchRequest, request: Request):
         frontend_logger.log(level, message)
 
     return {'status': 'logged', 'count': req.batch_size}
-

@@ -963,7 +963,10 @@ def upload_backup_to_cos(backup_path: Path, max_retries: int = 3) -> bool:
                 error_msg = e.get_error_msg() if hasattr(e, 'get_error_msg') else str(e)  # type: ignore
                 request_id = e.get_request_id() if hasattr(e, 'get_request_id') else 'N/A'  # type: ignore
                 trace_id = e.get_trace_id() if hasattr(e, 'get_trace_id') else 'N/A'  # type: ignore
-                resource_location = e.get_resource_location() if hasattr(e, 'get_resource_location') else 'N/A'  # type: ignore
+                resource_location = (
+                    e.get_resource_location()
+                    if hasattr(e, 'get_resource_location') else 'N/A'
+                )  # type: ignore
             except Exception:
                 # Fallback if methods don't exist or fail
                 status_code = 'Unknown'
@@ -1219,7 +1222,11 @@ def cleanup_old_cos_backups(retention_days: int = 2) -> int:
                     except Exception as delete_error:
                         if CosServiceError is not None and isinstance(delete_error, CosServiceError):
                             # Type checker doesn't know CosServiceError methods, use hasattr checks
-                            error_code = delete_error.get_error_code() if hasattr(delete_error, 'get_error_code') else 'Unknown'  # type: ignore
+                            error_code = (
+                                delete_error.get_error_code()
+                                if hasattr(delete_error, 'get_error_code')
+                                else 'Unknown'
+                            )  # type: ignore
                             logger.warning("[Backup] Failed to delete COS backup %s: %s", backup['key'], error_code)
                         else:
                             logger.warning("[Backup] Failed to delete COS backup %s: %s", backup['key'], delete_error)

@@ -5,23 +5,14 @@ from typing import Optional
 import base64
 import hashlib
 import hmac
+import logging
 import time
 
 from fastapi import HTTPException, Request
 
 from models.auth import User
-
-"""
-Shared Helper Functions for API Routes
-======================================
-
-Rate limiting and URL signing utilities used across multiple API endpoints.
-
-Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
-All Rights Reserved
-Proprietary License
-"""
-
+from services.redis.redis_rate_limiter import RedisRateLimiter
+from utils.auth import get_jwt_secret
 
 
 def get_rate_limit_identifier(current_user: Optional[User], request: Request) -> str:
@@ -60,9 +51,6 @@ async def check_endpoint_rate_limit(
     Raises:
         HTTPException: If rate limit exceeded
     """
-    import logging
-    from services.redis.redis_rate_limiter import RedisRateLimiter
-
     logger = logging.getLogger(__name__)
     rate_limiter = RedisRateLimiter()
 
@@ -74,7 +62,10 @@ async def check_endpoint_rate_limit(
     )
 
     if not is_allowed:
-        logger.warning(f"Rate limit exceeded for {endpoint_name}: {identifier} ({count}/{max_requests} requests)")
+        logger.warning(
+            "Rate limit exceeded for %s: %s (%s/%s requests)",
+            endpoint_name, identifier, count, max_requests
+        )
         raise HTTPException(
             status_code=429,
             detail=f"Too many requests. {error_msg}"
@@ -92,8 +83,6 @@ def generate_signed_url(filename: str, expiration_seconds: int = 86400) -> str:
     Returns:
         Signed URL with signature and expiration timestamp
     """
-    from utils.auth import get_jwt_secret
-
     expiration = int(time.time()) + expiration_seconds
     message = f"{filename}:{expiration}"
 
@@ -122,8 +111,6 @@ def verify_signed_url(filename: str, signature: str, expiration: int) -> bool:
     Returns:
         True if signature is valid and not expired, False otherwise
     """
-    from utils.auth import get_jwt_secret
-
     # Check expiration
     if int(time.time()) > expiration:
         return False
@@ -143,5 +130,3 @@ def verify_signed_url(filename: str, signature: str, expiration: int) -> bool:
 
     # Use constant-time comparison to prevent timing attacks
     return hmac.compare_digest(signature, expected_b64)
-
-

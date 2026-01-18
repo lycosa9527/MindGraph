@@ -16,31 +16,31 @@ class VisualizationConfigMixin:
     other mixins (port from BaseConfig, QWEN_TIMEOUT/QWEN_MAX_TOKENS
     from LLMConfigMixin, WATERMARK_TEXT from FeaturesConfigMixin).
     """
-    
+
     if TYPE_CHECKING:
-        def _get_cached_value(self, key: str, default: Any = None) -> Any:
+        def _get_cached_value(self, _key: str, _default: Any = None) -> Any:
             """Type stub: method provided by BaseConfig."""
-            ...
-        
+            return _default
+
         @property
         def port(self) -> int:
             """Type stub: property provided by BaseConfig."""
-            ...
-        
+            return 0
+
         @property
         def QWEN_TIMEOUT(self) -> int:
             """Type stub: property provided by LLMConfigMixin."""
-            ...
-        
+            return 0
+
         @property
         def QWEN_MAX_TOKENS(self) -> int:
             """Type stub: property provided by LLMConfigMixin."""
-            ...
-        
+            return 0
+
         @property
         def WATERMARK_TEXT(self) -> str:
             """Type stub: property provided by FeaturesConfigMixin."""
-            ...
+            return ""
 
     @property
     def TOPIC_FONT_SIZE(self):

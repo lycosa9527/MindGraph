@@ -1,12 +1,9 @@
-﻿import asyncio
+import asyncio
 import json
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from fastapi.responses import StreamingResponse
-from sqlalchemy.orm import Session
-
-from config.database import get_db
 from models.auth import User
 from services.redis.redis_activity_tracker import get_activity_tracker
 from utils.auth import get_current_user, is_admin
@@ -31,8 +28,6 @@ All Rights Reserved
 Proprietary License
 """
 
-
-
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/auth/admin/realtime", tags=["Admin - Realtime"])
@@ -50,8 +45,7 @@ _active_sse_connections: dict[int, int] = {}
 
 @router.get("/stats", dependencies=[Depends(get_current_user)])
 async def get_realtime_stats(
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    current_user: User = Depends(get_current_user)
 ):
     """
     Get current real-time statistics (ADMIN ONLY)
@@ -72,17 +66,16 @@ async def get_realtime_stats(
         return stats
 
     except Exception as e:
-        logger.error(f"Failed to get realtime stats: {e}")
+        logger.error("Failed to get realtime stats: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get stats: {str(e)}"
-        )
+        ) from e
 
 
 @router.get("/active-users", dependencies=[Depends(get_current_user)])
 async def get_active_users(
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    current_user: User = Depends(get_current_user)
 ):
     """
     Get list of currently active users (ADMIN ONLY)
@@ -107,18 +100,17 @@ async def get_active_users(
         }
 
     except Exception as e:
-        logger.error(f"Failed to get active users: {e}")
+        logger.error("Failed to get active users: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get active users: {str(e)}"
-        )
+        ) from e
 
 
 @router.get("/activities", dependencies=[Depends(get_current_user)])
 async def get_recent_activities(
     limit: int = Query(100, ge=1, le=500, description="Number of activities to return"),
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    current_user: User = Depends(get_current_user)
 ):
     """
     Get recent activity history (ADMIN ONLY)
@@ -145,17 +137,16 @@ async def get_recent_activities(
         }
 
     except Exception as e:
-        logger.error(f"Failed to get activities: {e}")
+        logger.error("Failed to get activities: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get activities: {str(e)}"
-        )
+        ) from e
 
 
 @router.get("/stream", dependencies=[Depends(get_current_user)])
 async def stream_realtime_updates(
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    current_user: User = Depends(get_current_user)
 ):
     """
     Stream real-time user activity updates using Server-Sent Events (ADMIN ONLY)
@@ -190,7 +181,11 @@ async def stream_realtime_updates(
     user_id = current_user.id
     current_connections = _active_sse_connections.get(user_id, 0)
     if current_connections >= MAX_CONCURRENT_SSE_CONNECTIONS:
-        logger.warning(f"Admin {current_user.phone} exceeded max concurrent SSE connections ({MAX_CONCURRENT_SSE_CONNECTIONS})")
+        logger.warning(
+            "Admin %s exceeded max concurrent SSE connections (%s)",
+            current_user.phone,
+            MAX_CONCURRENT_SSE_CONNECTIONS
+        )
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
             detail=f"Maximum {MAX_CONCURRENT_SSE_CONNECTIONS} concurrent connections allowed"
@@ -198,7 +193,113 @@ async def stream_realtime_updates(
 
     # Increment connection count
     _active_sse_connections[user_id] = current_connections + 1
-    logger.info(f"Admin {current_user.phone} started realtime stream (connections: {_active_sse_connections[user_id]})")
+    logger.info(
+        "Admin %s started realtime stream (connections: %s)",
+        current_user.phone,
+        _active_sse_connections[user_id]
+    )
+
+    def _check_stats_changed(current_stats, last_stats):
+        """Check if stats have changed."""
+        return (
+            current_stats['active_users_count'] != last_stats['active_users_count'] or
+            current_stats['unique_users_count'] != last_stats['unique_users_count'] or
+            current_stats['recent_activities_count'] != last_stats['recent_activities_count']
+        )
+
+    def _yield_stats_update(current_stats):
+        """Yield stats update event."""
+        stats_data = json.dumps({
+            'type': 'stats',
+            'stats': current_stats
+        })
+        return f"data: {stats_data}\n\n"
+
+    def _yield_user_events(new_session_ids, left_session_ids, current_users, current_stats):
+        """Yield user join/leave events."""
+        events = []
+        for session_id in new_session_ids:
+            user_data = next((u for u in current_users if u['session_id'] == session_id), None)
+            if user_data:
+                user_joined_data = json.dumps({
+                    'type': 'user_joined',
+                    'user': user_data,
+                    'stats': current_stats
+                })
+                events.append(f"data: {user_joined_data}\n\n")
+
+        for session_id in left_session_ids:
+            session_left_data = json.dumps({
+                'type': 'user_left',
+                'session_id': session_id
+            })
+            events.append(f"data: {session_left_data}\n\n")
+        return events
+
+    def _yield_periodic_updates(heartbeat_counter, current_users, current_stats):
+        """Yield periodic update events."""
+        events = []
+        if heartbeat_counter % USERS_UPDATE_INTERVAL == 0:
+            users_update = json.dumps({
+                'type': 'users_update',
+                'users': current_users
+            })
+            events.append(f"data: {users_update}\n\n")
+
+        if heartbeat_counter % HEARTBEAT_INTERVAL == 0:
+            heartbeat_data = json.dumps({
+                'type': 'heartbeat',
+                'timestamp': current_stats['timestamp']
+            })
+            events.append(f"data: {heartbeat_data}\n\n")
+        return events
+
+    def _get_initial_state(tracker):
+        """Get initial state from tracker."""
+        try:
+            stats = tracker.get_stats()
+            active_users = tracker.get_active_users()
+            return stats, active_users, None
+        except Exception as e:
+            logger.error("Error getting initial state: %s", e)
+            error_data = json.dumps({
+                'type': 'error',
+                'error': 'Failed to fetch initial state'
+            })
+            return None, None, f"data: {error_data}\n\n"
+
+    def _process_poll_update(tracker, last_stats, last_session_ids, heartbeat_counter):
+        """Process a single poll update."""
+        try:
+            current_stats = tracker.get_stats()
+            current_users = tracker.get_active_users()
+        except Exception as e:
+            logger.error("Error getting tracker data: %s", e)
+            error_data = json.dumps({
+                'type': 'error',
+                'error': 'Failed to fetch activity data'
+            })
+            return None, None, None, None, f"data: {error_data}\n\n", True
+
+        current_session_ids = {u['session_id'] for u in current_users}
+        events = []
+
+        if _check_stats_changed(current_stats, last_stats):
+            events.append(_yield_stats_update(current_stats))
+            last_stats = current_stats
+
+        new_session_ids = current_session_ids - last_session_ids
+        left_session_ids = last_session_ids - current_session_ids
+        if new_session_ids or left_session_ids:
+            events.extend(_yield_user_events(
+                new_session_ids, left_session_ids, current_users, current_stats
+            ))
+
+        events.extend(_yield_periodic_updates(
+            heartbeat_counter, current_users, current_stats
+        ))
+
+        return current_stats, current_session_ids, last_stats, events, None, False
 
     async def event_generator():
         """Generate SSE events from activity tracker."""
@@ -206,18 +307,10 @@ async def stream_realtime_updates(
         last_stats = None
 
         try:
-            # Send initial state (wrap in try-except to ensure cleanup on error)
-            try:
-                stats = tracker.get_stats()
-                active_users = tracker.get_active_users()
-            except Exception as e:
-                logger.error(f"Error getting initial state: {e}")
-                error_data = json.dumps({
-                    'type': 'error',
-                    'error': 'Failed to fetch initial state'
-                })
-                yield f"data: {error_data}\n\n"
-                return  # Exit generator, finally block will cleanup
+            stats, active_users, error_msg = _get_initial_state(tracker)
+            if error_msg:
+                yield error_msg
+                return
 
             initial_data = json.dumps({
                 'type': 'initial',
@@ -227,94 +320,33 @@ async def stream_realtime_updates(
             yield f"data: {initial_data}\n\n"
 
             last_stats = stats
-
-            # Poll for updates
             heartbeat_counter = 0
             last_session_ids = {u['session_id'] for u in active_users}
 
             while True:
                 await asyncio.sleep(SSE_POLL_INTERVAL_SECONDS)
 
-                # Check if client disconnected (FastAPI will raise CancelledError on disconnect)
-                # This check happens before expensive operations
-                try:
-                    # Get current state
-                    current_stats = tracker.get_stats()
-                    current_users = tracker.get_active_users()
-                except Exception as e:
-                    # If Redis fails, log and break to avoid infinite error loop
-                    logger.error(f"Error getting tracker data: {e}")
-                    error_data = json.dumps({
-                        'type': 'error',
-                        'error': 'Failed to fetch activity data'
-                    })
-                    yield f"data: {error_data}\n\n"
+                poll_result = _process_poll_update(tracker, last_stats, last_session_ids, heartbeat_counter)
+                current_stats, current_session_ids, last_stats, events, error_msg, should_break = poll_result
+
+                if error_msg:
+                    yield error_msg
                     break
 
-                current_session_ids = {u['session_id'] for u in current_users}
+                if should_break:
+                    break
 
-                # Check for stats changes (compare all key metrics)
-                stats_changed = (
-                    current_stats['active_users_count'] != last_stats['active_users_count'] or
-                    current_stats['unique_users_count'] != last_stats['unique_users_count'] or
-                    current_stats['recent_activities_count'] != last_stats['recent_activities_count']
-                )
-                if stats_changed:
-                    stats_data = json.dumps({
-                        'type': 'stats',
-                        'stats': current_stats
-                    })
-                    yield f"data: {stats_data}\n\n"
-                    last_stats = current_stats
-
-                # Check for new sessions (more accurate than user_ids since users can have multiple sessions)
-                new_session_ids = current_session_ids - last_session_ids
-                if new_session_ids:
-                    for session_id in new_session_ids:
-                        user_data = next((u for u in current_users if u['session_id'] == session_id), None)
-                        if user_data:
-                            user_joined_data = json.dumps({
-                                'type': 'user_joined',
-                                'user': user_data,
-                                'stats': current_stats  # Include stats update
-                            })
-                            yield f"data: {user_joined_data}\n\n"
-
-                # Check for sessions that ended
-                left_session_ids = last_session_ids - current_session_ids
-                if left_session_ids:
-                    for session_id in left_session_ids:
-                        session_left_data = json.dumps({
-                            'type': 'user_left',
-                            'session_id': session_id
-                        })
-                        yield f"data: {session_left_data}\n\n"
-
-                # Send full user list update periodically
-                if heartbeat_counter % USERS_UPDATE_INTERVAL == 0:
-                    users_update = json.dumps({
-                        'type': 'users_update',
-                        'users': current_users
-                    })
-                    yield f"data: {users_update}\n\n"
-
-                # Send heartbeat periodically
-                if heartbeat_counter % HEARTBEAT_INTERVAL == 0:
-                    heartbeat_data = json.dumps({
-                        'type': 'heartbeat',
-                        'timestamp': current_stats['timestamp']
-                    })
-                    yield f"data: {heartbeat_data}\n\n"
+                for event in events:
+                    yield event
 
                 last_session_ids = current_session_ids
                 heartbeat_counter += 1
 
         except asyncio.CancelledError:
-            logger.info(f"Realtime stream cancelled for admin {current_user.phone}")
-            # Don't yield after cancellation - client disconnected
+            logger.info("Realtime stream cancelled for admin %s", current_user.phone)
             return
         except Exception as e:
-            logger.error(f"Error in realtime stream: {e}", exc_info=True)
+            logger.error("Error in realtime stream: %s", e, exc_info=True)
             try:
                 error_data = json.dumps({
                     'type': 'error',
@@ -322,15 +354,17 @@ async def stream_realtime_updates(
                 })
                 yield f"data: {error_data}\n\n"
             except Exception:
-                # If we can't yield, client likely disconnected
                 return
         finally:
-            # Decrement connection count on cleanup (always runs, even on initial error)
             if user_id in _active_sse_connections:
                 _active_sse_connections[user_id] = max(0, _active_sse_connections[user_id] - 1)
                 if _active_sse_connections[user_id] == 0:
                     del _active_sse_connections[user_id]
-                logger.debug(f"Admin {current_user.phone} SSE connection closed (remaining: {_active_sse_connections.get(user_id, 0)})")
+                logger.debug(
+                    "Admin %s SSE connection closed (remaining: %s)",
+                    current_user.phone,
+                    _active_sse_connections.get(user_id, 0)
+                )
 
     return StreamingResponse(
         event_generator(),
@@ -341,4 +375,3 @@ async def stream_realtime_updates(
             "X-Accel-Buffering": "no",  # Disable nginx buffering
         }
     )
-

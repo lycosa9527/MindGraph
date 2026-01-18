@@ -17,7 +17,7 @@ from langchain_core.prompts import PromptTemplate
 from config.settings import config
 from prompts import get_prompt
 
-from agents.core.llm_clients import llm_generation
+from agents.core.llm_clients import llm_generation, llm_classification
 from agents.core.utils import create_error_response, extract_yaml_from_code_block, _salvage_json_string
 
 logger = logging.getLogger(__name__)
@@ -163,7 +163,6 @@ def validate_agent_setup() -> bool:
 
     try:
         # Test LLM connection using classification model (fast/cheap)
-        from agents.core.llm_clients import llm_classification
         test_prompt = "Test"
         llm_classification.invoke(test_prompt)
         logger.info("LLM connection validation completed successfully")

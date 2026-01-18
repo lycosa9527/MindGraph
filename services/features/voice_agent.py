@@ -1,4 +1,4 @@
-﻿from datetime import datetime
+from datetime import datetime
 from typing import Dict, Any, Optional, List, Annotated, TypedDict
 import json
 import logging
@@ -24,7 +24,8 @@ Features:
 @author lycosa9527
 @made_by MindSpring Team
 
-Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+Copyright 2024-2025 北京思源智教科技有限公司
+(Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved
 Proprietary License
 """
@@ -273,7 +274,7 @@ class VoiceAgent:
         # Initialize state
         self._state = self._create_initial_state()
 
-        logger.info(f"VoiceAgent initialized for session {session_id}")
+        logger.info("VoiceAgent initialized for session %s", session_id)
 
     def _create_initial_state(self) -> AgentState:
         """Create initial agent state"""
@@ -342,13 +343,24 @@ class VoiceAgent:
 - Node arrays: similarities, left_differences, right_differences
 - Node terminology: "similarity", "left difference", "right difference", "共同点", "左边不同点", "右边不同点"
 - For update_center: Extract TWO topics from comparison commands
-- For add_node: Can specify "category" field: "similarities", "left_differences", "right_differences"
-- Return structured data: {"action": "update_center", "left": "Topic1", "right": "Topic2", "target": "Topic1和Topic2", "confidence": 0.95}
+- For add_node: Can specify "category" field: "similarities",
+  "left_differences", "right_differences"
+- Return structured data:
+  {"action": "update_center", "left": "Topic1", "right": "Topic2",
+   "target": "Topic1和Topic2", "confidence": 0.95}
 - Examples:
-  * "比较苹果和梨子" → {"action": "update_center", "left": "苹果", "right": "梨子", "target": "苹果和梨子", "confidence": 0.95}
-  * "change center to apples vs pears" → {"action": "update_center", "left": "apples", "right": "pears", "target": "apples vs pears", "confidence": 0.95}
-  * "similarity 1 is color" → {"action": "add_node", "target": "color", "category": "similarities", "node_index": 0, "confidence": 0.95}
-  * "left difference 1 is shape" → {"action": "add_node", "target": "shape", "category": "left_differences", "node_index": 0, "confidence": 0.95}
+  * "比较苹果和梨子" →
+    {"action": "update_center", "left": "苹果", "right": "梨子",
+     "target": "苹果和梨子", "confidence": 0.95}
+  * "change center to apples vs pears" →
+    {"action": "update_center", "left": "apples", "right": "pears",
+     "target": "apples vs pears", "confidence": 0.95}
+  * "similarity 1 is color" →
+    {"action": "add_node", "target": "color", "category": "similarities",
+     "node_index": 0, "confidence": 0.95}
+  * "left difference 1 is shape" →
+    {"action": "add_node", "target": "shape",
+     "category": "left_differences", "node_index": 0, "confidence": 0.95}
 """
         elif diagram_type == 'flow_map':
             diagram_specific_notes = """
@@ -363,14 +375,27 @@ class VoiceAgent:
   * Steps: "step 1" = node_index 0, "step 2" = node_index 1, etc.
   * Sub-steps: "substep 1.1" = step_index 0, substep_index 0; "substep 1.2" = step_index 0, substep_index 1
 - For update_node/delete_node: Include step_index and substep_index for substeps
-- Return: {"action": "update_center", "title": "Process Name", "target": "Process Name", "confidence": 0.95}
+- Return: {"action": "update_center", "title": "Process Name",
+  "target": "Process Name", "confidence": 0.95}
 - Examples:
-  * "step 1 is prepare" → {"action": "add_node", "target": "prepare", "node_index": 0, "confidence": 0.95}
-  * "步骤1是准备" → {"action": "add_node", "target": "准备", "node_index": 0, "confidence": 0.95}
-  * "substep 1.1 is gather materials" → {"action": "add_node", "target": "gather materials", "step_index": 0, "substep_index": 0, "confidence": 0.95}
-  * "步骤1的子步骤1是收集材料" → {"action": "add_node", "target": "收集材料", "step_index": 0, "substep_index": 0, "confidence": 0.95}
-  * "update substep 1.2 to check inventory" → {"action": "update_node", "target": "check inventory", "step_index": 0, "substep_index": 1, "confidence": 0.95}
-  * "delete substep 2.1" → {"action": "delete_node", "step_index": 1, "substep_index": 0, "confidence": 0.95}
+  * "step 1 is prepare" →
+    {"action": "add_node", "target": "prepare", "node_index": 0,
+     "confidence": 0.95}
+  * "步骤1是准备" →
+    {"action": "add_node", "target": "准备", "node_index": 0,
+     "confidence": 0.95}
+  * "substep 1.1 is gather materials" →
+    {"action": "add_node", "target": "gather materials", "step_index": 0,
+     "substep_index": 0, "confidence": 0.95}
+  * "步骤1的子步骤1是收集材料" →
+    {"action": "add_node", "target": "收集材料", "step_index": 0,
+     "substep_index": 0, "confidence": 0.95}
+  * "update substep 1.2 to check inventory" →
+    {"action": "update_node", "target": "check inventory", "step_index": 0,
+     "substep_index": 1, "confidence": 0.95}
+  * "delete substep 2.1" →
+    {"action": "delete_node", "step_index": 1, "substep_index": 0,
+     "confidence": 0.95}
 """
         elif diagram_type == 'multi_flow_map':
             diagram_specific_notes = """
@@ -380,10 +405,15 @@ class VoiceAgent:
 - Node terminology: "cause 1", "effect 1", "原因1", "结果1", "first cause", "first effect"
 - For update_center: Use "event" field
 - For add_node: Can specify "category" field: "causes" or "effects"
-- Return: {"action": "update_center", "event": "Event Name", "target": "Event Name", "confidence": 0.95}
+- Return: {"action": "update_center", "event": "Event Name",
+  "target": "Event Name", "confidence": 0.95}
 - Examples:
-  * "cause 1 is rain" → {"action": "add_node", "target": "rain", "category": "causes", "node_index": 0, "confidence": 0.95}
-  * "effect 1 is flood" → {"action": "add_node", "target": "flood", "category": "effects", "node_index": 0, "confidence": 0.95}
+  * "cause 1 is rain" →
+    {"action": "add_node", "target": "rain", "category": "causes",
+     "node_index": 0, "confidence": 0.95}
+  * "effect 1 is flood" →
+    {"action": "add_node", "target": "flood", "category": "effects",
+     "node_index": 0, "confidence": 0.95}
 """
         elif diagram_type == 'brace_map':
             diagram_specific_notes = """
@@ -393,10 +423,15 @@ class VoiceAgent:
 - Node terminology: "part 1", "part 2", "部分1", "部分2", "first part", "second part"
 - For update_center: Use "whole" field
 - For add_node: "part 1" = node_index 0, "part 2" = node_index 1, etc.
-- Return: {"action": "update_center", "whole": "Whole Name", "target": "Whole Name", "confidence": 0.95}
+- Return: {"action": "update_center", "whole": "Whole Name",
+  "target": "Whole Name", "confidence": 0.95}
 - Examples:
-  * "part 1 is engine" → {"action": "add_node", "target": "engine", "node_index": 0, "confidence": 0.95}
-  * "部分1是引擎" → {"action": "add_node", "target": "引擎", "node_index": 0, "confidence": 0.95}
+  * "part 1 is engine" →
+    {"action": "add_node", "target": "engine", "node_index": 0,
+     "confidence": 0.95}
+  * "部分1是引擎" →
+    {"action": "add_node", "target": "引擎", "node_index": 0,
+     "confidence": 0.95}
 """
         elif diagram_type == 'bridge_map':
             diagram_specific_notes = """
@@ -406,9 +441,12 @@ class VoiceAgent:
 - Node terminology: "analogy 1", "pair 1", "类比1", "第一对", "first analogy", "first pair"
 - For update_center: Use "dimension" field
 - For add_node: Analogies are pairs, so specify both "left" and "right" fields
-- Return: {"action": "update_center", "dimension": "Dimension Name", "target": "Dimension Name", "confidence": 0.95}
+- Return: {"action": "update_center", "dimension": "Dimension Name",
+  "target": "Dimension Name", "confidence": 0.95}
 - Examples:
-  * "analogy 1: wheel is to car as key is to keyboard" → {"action": "add_node", "target": "wheel : car", "left": "wheel", "right": "car", "node_index": 0, "confidence": 0.95}
+  * "analogy 1: wheel is to car as key is to keyboard" →
+    {"action": "add_node", "target": "wheel : car", "left": "wheel",
+     "right": "car", "node_index": 0, "confidence": 0.95}
 """
         elif diagram_type in ['mindmap', 'mind_map']:
             diagram_specific_notes = """
@@ -423,15 +461,30 @@ class VoiceAgent:
   * Branches: "branch 1" = node_index 0, "branch 2" = node_index 1, etc.
   * Children: "child 1.1" = branch_index 0, child_index 0; "child 1.2" = branch_index 0, child_index 1
 - For update_node/delete_node: Include branch_index and child_index for children
-- Return: {"action": "update_center", "target": "Topic Name", "confidence": 0.95}
+- Return: {"action": "update_center", "target": "Topic Name",
+  "confidence": 0.95}
 - Examples:
-  * "branch 1 is fruits" → {"action": "add_node", "target": "fruits", "node_index": 0, "confidence": 0.95}
-  * "分支1是水果" → {"action": "add_node", "target": "水果", "node_index": 0, "confidence": 0.95}
-  * "topic is cars, branch 1 is sedans, branch 2 is SUVs" → Parse as: update_center first, then add_node with node_index 0, then add_node with node_index 1
-  * "child 1.1 is apples" → {"action": "add_node", "target": "apples", "branch_index": 0, "child_index": 0, "confidence": 0.95}
-  * "分支1的子项1是苹果" → {"action": "add_node", "target": "苹果", "branch_index": 0, "child_index": 0, "confidence": 0.95}
-  * "update child 1.2 to oranges" → {"action": "update_node", "target": "oranges", "branch_index": 0, "child_index": 1, "confidence": 0.95}
-  * "delete child 2.1" → {"action": "delete_node", "branch_index": 1, "child_index": 0, "confidence": 0.95}
+  * "branch 1 is fruits" →
+    {"action": "add_node", "target": "fruits", "node_index": 0,
+     "confidence": 0.95}
+  * "分支1是水果" →
+    {"action": "add_node", "target": "水果", "node_index": 0,
+     "confidence": 0.95}
+  * "topic is cars, branch 1 is sedans, branch 2 is SUVs" →
+    Parse as: update_center first, then add_node with node_index 0,
+    then add_node with node_index 1
+  * "child 1.1 is apples" →
+    {"action": "add_node", "target": "apples", "branch_index": 0,
+     "child_index": 0, "confidence": 0.95}
+  * "分支1的子项1是苹果" →
+    {"action": "add_node", "target": "苹果", "branch_index": 0,
+     "child_index": 0, "confidence": 0.95}
+  * "update child 1.2 to oranges" →
+    {"action": "update_node", "target": "oranges", "branch_index": 0,
+     "child_index": 1, "confidence": 0.95}
+  * "delete child 2.1" →
+    {"action": "delete_node", "branch_index": 1, "child_index": 0,
+     "confidence": 0.95}
 """
         elif diagram_type == 'tree_map':
             diagram_specific_notes = """
@@ -446,14 +499,27 @@ class VoiceAgent:
   * Categories: "category 1" = node_index 0, "category 2" = node_index 1, etc.
   * Items: "item 1.1" = category_index 0, item_index 0; "item 1.2" = category_index 0, item_index 1
 - For update_node/delete_node: Include category_index and item_index for items
-- Return: {"action": "update_center", "target": "Topic Name", "confidence": 0.95}
+- Return: {"action": "update_center", "target": "Topic Name",
+  "confidence": 0.95}
 - Examples:
-  * "category 1 is mammals" → {"action": "add_node", "target": "mammals", "node_index": 0, "confidence": 0.95}
-  * "类别1是哺乳动物" → {"action": "add_node", "target": "哺乳动物", "node_index": 0, "confidence": 0.95}
-  * "item 1.1 is dogs" → {"action": "add_node", "target": "dogs", "category_index": 0, "item_index": 0, "confidence": 0.95}
-  * "类别1的项目1是狗" → {"action": "add_node", "target": "狗", "category_index": 0, "item_index": 0, "confidence": 0.95}
-  * "update item 1.2 to cats" → {"action": "update_node", "target": "cats", "category_index": 0, "item_index": 1, "confidence": 0.95}
-  * "delete item 2.1" → {"action": "delete_node", "category_index": 1, "item_index": 0, "confidence": 0.95}
+  * "category 1 is mammals" →
+    {"action": "add_node", "target": "mammals", "node_index": 0,
+     "confidence": 0.95}
+  * "类别1是哺乳动物" →
+    {"action": "add_node", "target": "哺乳动物", "node_index": 0,
+     "confidence": 0.95}
+  * "item 1.1 is dogs" →
+    {"action": "add_node", "target": "dogs", "category_index": 0,
+     "item_index": 0, "confidence": 0.95}
+  * "类别1的项目1是狗" →
+    {"action": "add_node", "target": "狗", "category_index": 0,
+     "item_index": 0, "confidence": 0.95}
+  * "update item 1.2 to cats" →
+    {"action": "update_node", "target": "cats", "category_index": 0,
+     "item_index": 1, "confidence": 0.95}
+  * "delete item 2.1" →
+    {"action": "delete_node", "category_index": 1, "item_index": 0,
+     "confidence": 0.95}
 """
         elif diagram_type == 'circle_map':
             diagram_specific_notes = """
@@ -495,13 +561,24 @@ class VoiceAgent:
   * Relationships: Use "from", "to", "label" fields (e.g., "Concept1 causes Concept2")
 - For update_node: Include relationship_index for relationships, or node_index for concepts
 - For delete_node: Include relationship_index for relationships, or node_index for concepts
-- Return: {"action": "update_center", "target": "Topic Name", "confidence": 0.95}
+- Return: {"action": "update_center", "target": "Topic Name",
+  "confidence": 0.95}
 - Examples:
-  * "concept 1 is photosynthesis" → {"action": "add_node", "target": "photosynthesis", "node_index": 0, "confidence": 0.95}
-  * "概念1是光合作用" → {"action": "add_node", "target": "光合作用", "node_index": 0, "confidence": 0.95}
-  * "add relationship: Concept1 causes Concept2" → {"action": "add_node", "from": "Concept1", "to": "Concept2", "label": "causes", "confidence": 0.95}
-  * "添加关系：概念1导致概念2" → {"action": "add_node", "from": "概念1", "to": "概念2", "label": "导致", "confidence": 0.95}
-  * "update relationship 0 label to leads to" → {"action": "update_node", "target": "leads to", "relationship_index": 0, "confidence": 0.95}
+  * "concept 1 is photosynthesis" →
+    {"action": "add_node", "target": "photosynthesis", "node_index": 0,
+     "confidence": 0.95}
+  * "概念1是光合作用" →
+    {"action": "add_node", "target": "光合作用", "node_index": 0,
+     "confidence": 0.95}
+  * "add relationship: Concept1 causes Concept2" →
+    {"action": "add_node", "from": "Concept1", "to": "Concept2",
+     "label": "causes", "confidence": 0.95}
+  * "添加关系：概念1导致概念2" →
+    {"action": "add_node", "from": "概念1", "to": "概念2", "label": "导致",
+     "confidence": 0.95}
+  * "update relationship 0 label to leads to" →
+    {"action": "update_node", "target": "leads to", "relationship_index": 0,
+     "confidence": 0.95}
   * "delete relationship 1" → {"action": "delete_node", "relationship_index": 1, "confidence": 0.95}
 """
 
@@ -551,7 +628,8 @@ CRITICAL: Always use the correct terminology for the current diagram type!
 - "自动" means "automatically" or "auto"
 - Commands asking to complete/fill the diagram should trigger auto_complete
 - For double bubble maps, ALWAYS extract and return both "left" and "right" topics separately
-- Node types vary by diagram: context (circle_map), attribute (bubble_map), step (flow_map), part (brace_map), branch (mindmap), etc.
+- Node types vary by diagram: context (circle_map), attribute (bubble_map),
+  step (flow_map), part (brace_map), branch (mindmap), etc.
 
 【Return JSON】
 {{"action": "action_name", "target": "value", "node_index": 0, "confidence": 0.9}}
@@ -573,42 +651,82 @@ Examples:
 - "I want to change the center to apples" → {{"action": "update_center", "target": "apples", "confidence": 0.9}}
 
 【Update Node】
-- "把第一个节点改成苹果" → {{"action": "update_node", "target": "苹果", "node_index": 0, "confidence": 0.95}}
-- "change the first node to apples" → {{"action": "update_node", "target": "apples", "node_index": 0, "confidence": 0.95}}
-- "can you change node 1 to fruits" → {{"action": "update_node", "target": "fruits", "node_index": 0, "confidence": 0.9}}
-- "please update ABC to XYZ" → {{"action": "update_node", "target": "XYZ", "node_identifier": "ABC", "confidence": 0.9}}
-- "I want to change the second node to cars" → {{"action": "update_node", "target": "cars", "node_index": 1, "confidence": 0.9}}
+- "把第一个节点改成苹果" →
+  {{"action": "update_node", "target": "苹果", "node_index": 0,
+   "confidence": 0.95}}
+- "change the first node to apples" →
+  {{"action": "update_node", "target": "apples", "node_index": 0,
+   "confidence": 0.95}}
+- "can you change node 1 to fruits" →
+  {{"action": "update_node", "target": "fruits", "node_index": 0,
+   "confidence": 0.9}}
+- "please update ABC to XYZ" →
+  {{"action": "update_node", "target": "XYZ", "node_identifier": "ABC",
+   "confidence": 0.9}}
+- "I want to change the second node to cars" →
+  {{"action": "update_node", "target": "cars", "node_index": 1,
+   "confidence": 0.9}}
 
 For Double Bubble Map:
-- "把第一个相似点改成颜色" → {{"action": "update_node", "target": "颜色", "node_index": 0, "category": "similarities", "confidence": 0.95}}
-- "change the first left difference to shape" → {{"action": "update_node", "target": "shape", "node_index": 0, "category": "left_differences", "confidence": 0.95}}
+- "把第一个相似点改成颜色" →
+  {{"action": "update_node", "target": "颜色", "node_index": 0,
+   "category": "similarities", "confidence": 0.95}}
+- "change the first left difference to shape" →
+  {{"action": "update_node", "target": "shape", "node_index": 0,
+   "category": "left_differences", "confidence": 0.95}}
 
 For Multi-Flow Map:
-- "把第一个原因改成下雨" → {{"action": "update_node", "target": "下雨", "node_index": 0, "category": "causes", "confidence": 0.95}}
-- "change the first effect to flood" → {{"action": "update_node", "target": "flood", "node_index": 0, "category": "effects", "confidence": 0.95}}
+- "把第一个原因改成下雨" →
+  {{"action": "update_node", "target": "下雨", "node_index": 0,
+   "category": "causes", "confidence": 0.95}}
+- "change the first effect to flood" →
+  {{"action": "update_node", "target": "flood", "node_index": 0,
+   "category": "effects", "confidence": 0.95}}
 
 For Bridge Map:
-- "把第一个类比改成轮子对应汽车" → {{"action": "update_node", "target": "轮子 : 汽车", "left": "轮子", "right": "汽车", "node_index": 0, "confidence": 0.95}}
+- "把第一个类比改成轮子对应汽车" →
+  {{"action": "update_node", "target": "轮子 : 汽车", "left": "轮子",
+   "right": "汽车", "node_index": 0, "confidence": 0.95}}
 
 For Flow Map Sub-steps:
-- "update substep 1.2 to check inventory" → {{"action": "update_node", "target": "check inventory", "step_index": 0, "substep_index": 1, "confidence": 0.95}}
-- "把步骤1的子步骤2改成检查库存" → {{"action": "update_node", "target": "检查库存", "step_index": 0, "substep_index": 1, "confidence": 0.95}}
+- "update substep 1.2 to check inventory" →
+  {{"action": "update_node", "target": "check inventory", "step_index": 0,
+   "substep_index": 1, "confidence": 0.95}}
+- "把步骤1的子步骤2改成检查库存" →
+  {{"action": "update_node", "target": "检查库存", "step_index": 0,
+   "substep_index": 1, "confidence": 0.95}}
 
 For Tree Map Items:
-- "update item 1.2 to cats" → {{"action": "update_node", "target": "cats", "category_index": 0, "item_index": 1, "confidence": 0.95}}
-- "把类别1的项目2改成猫" → {{"action": "update_node", "target": "猫", "category_index": 0, "item_index": 1, "confidence": 0.95}}
+- "update item 1.2 to cats" →
+  {{"action": "update_node", "target": "cats", "category_index": 0,
+   "item_index": 1, "confidence": 0.95}}
+- "把类别1的项目2改成猫" →
+  {{"action": "update_node", "target": "猫", "category_index": 0,
+   "item_index": 1, "confidence": 0.95}}
 
 For Brace Map Subparts:
-- "update subpart 1.2 to pistons" → {{"action": "update_node", "target": "pistons", "part_index": 0, "subpart_index": 1, "confidence": 0.95}}
-- "把部分1的子部分2改成活塞" → {{"action": "update_node", "target": "活塞", "part_index": 0, "subpart_index": 1, "confidence": 0.95}}
+- "update subpart 1.2 to pistons" →
+  {{"action": "update_node", "target": "pistons", "part_index": 0,
+   "subpart_index": 1, "confidence": 0.95}}
+- "把部分1的子部分2改成活塞" →
+  {{"action": "update_node", "target": "活塞", "part_index": 0,
+   "subpart_index": 1, "confidence": 0.95}}
 
 For Mindmap Children:
-- "update child 1.2 to oranges" → {{"action": "update_node", "target": "oranges", "branch_index": 0, "child_index": 1, "confidence": 0.95}}
-- "把分支1的子项2改成橙子" → {{"action": "update_node", "target": "橙子", "branch_index": 0, "child_index": 1, "confidence": 0.95}}
+- "update child 1.2 to oranges" →
+  {{"action": "update_node", "target": "oranges", "branch_index": 0,
+   "child_index": 1, "confidence": 0.95}}
+- "把分支1的子项2改成橙子" →
+  {{"action": "update_node", "target": "橙子", "branch_index": 0,
+   "child_index": 1, "confidence": 0.95}}
 
 For Concept Map Relationships:
-- "update relationship 0 label to leads to" → {{"action": "update_node", "target": "leads to", "relationship_index": 0, "confidence": 0.95}}
-- "把关系0的标签改成导致" → {{"action": "update_node", "target": "导致", "relationship_index": 0, "confidence": 0.95}}
+- "update relationship 0 label to leads to" →
+  {{"action": "update_node", "target": "leads to", "relationship_index": 0,
+   "confidence": 0.95}}
+- "把关系0的标签改成导致" →
+  {{"action": "update_node", "target": "导致", "relationship_index": 0,
+   "confidence": 0.95}}
 
 【Add Node】
 - "添加一个节点叫做水果" → {{"action": "add_node", "target": "水果", "confidence": 0.95}}
@@ -621,23 +739,49 @@ For Concept Map Relationships:
 
 【Add Node at Specific Position (Diagram-Specific Terminology)】
 For Mindmap:
-- "branch 1 should be sedans" → {{"action": "add_node", "target": "sedans", "node_index": 0, "confidence": 0.95}}
-- "第一个分支是苹果" → {{"action": "add_node", "target": "苹果", "node_index": 0, "confidence": 0.95}}
-- "child 1.1 is apples" → {{"action": "add_node", "target": "apples", "branch_index": 0, "child_index": 0, "confidence": 0.95}}
-- "分支1的子项1是苹果" → {{"action": "add_node", "target": "苹果", "branch_index": 0, "child_index": 0, "confidence": 0.95}}
+- "branch 1 should be sedans" →
+  {{"action": "add_node", "target": "sedans", "node_index": 0,
+   "confidence": 0.95}}
+- "第一个分支是苹果" →
+  {{"action": "add_node", "target": "苹果", "node_index": 0,
+   "confidence": 0.95}}
+- "child 1.1 is apples" →
+  {{"action": "add_node", "target": "apples", "branch_index": 0,
+   "child_index": 0, "confidence": 0.95}}
+- "分支1的子项1是苹果" →
+  {{"action": "add_node", "target": "苹果", "branch_index": 0,
+   "child_index": 0, "confidence": 0.95}}
 
 For Flow Map:
-- "step 1 is prepare" → {{"action": "add_node", "target": "prepare", "node_index": 0, "confidence": 0.95}}
-- "步骤1是准备" → {{"action": "add_node", "target": "准备", "node_index": 0, "confidence": 0.95}}
-- "substep 1.1 is gather materials" → {{"action": "add_node", "target": "gather materials", "step_index": 0, "substep_index": 0, "confidence": 0.95}}
-- "步骤1的子步骤1是收集材料" → {{"action": "add_node", "target": "收集材料", "step_index": 0, "substep_index": 0, "confidence": 0.95}}
-- "step 1 substep 2 is check inventory" → {{"action": "add_node", "target": "check inventory", "step_index": 0, "substep_index": 1, "confidence": 0.95}}
+- "step 1 is prepare" →
+  {{"action": "add_node", "target": "prepare", "node_index": 0,
+   "confidence": 0.95}}
+- "步骤1是准备" →
+  {{"action": "add_node", "target": "准备", "node_index": 0,
+   "confidence": 0.95}}
+- "substep 1.1 is gather materials" →
+  {{"action": "add_node", "target": "gather materials", "step_index": 0,
+   "substep_index": 0, "confidence": 0.95}}
+- "步骤1的子步骤1是收集材料" →
+  {{"action": "add_node", "target": "收集材料", "step_index": 0,
+   "substep_index": 0, "confidence": 0.95}}
+- "step 1 substep 2 is check inventory" →
+  {{"action": "add_node", "target": "check inventory", "step_index": 0,
+   "substep_index": 1, "confidence": 0.95}}
 
 For Tree Map:
-- "category 1 is mammals" → {{"action": "add_node", "target": "mammals", "node_index": 0, "confidence": 0.95}}
-- "类别1是哺乳动物" → {{"action": "add_node", "target": "哺乳动物", "node_index": 0, "confidence": 0.95}}
-- "item 1.1 is dogs" → {{"action": "add_node", "target": "dogs", "category_index": 0, "item_index": 0, "confidence": 0.95}}
-- "类别1的项目1是狗" → {{"action": "add_node", "target": "狗", "category_index": 0, "item_index": 0, "confidence": 0.95}}
+- "category 1 is mammals" →
+  {{"action": "add_node", "target": "mammals", "node_index": 0,
+   "confidence": 0.95}}
+- "类别1是哺乳动物" →
+  {{"action": "add_node", "target": "哺乳动物", "node_index": 0,
+   "confidence": 0.95}}
+- "item 1.1 is dogs" →
+  {{"action": "add_node", "target": "dogs", "category_index": 0,
+   "item_index": 0, "confidence": 0.95}}
+- "类别1的项目1是狗" →
+  {{"action": "add_node", "target": "狗", "category_index": 0,
+   "item_index": 0, "confidence": 0.95}}
 
 For Circle Map:
 - "context 1 is classroom" → {{"action": "add_node", "target": "classroom", "node_index": 0, "confidence": 0.95}}
@@ -648,31 +792,61 @@ For Bubble Map:
 - "属性1是红色" → {{"action": "add_node", "target": "红色", "node_index": 0, "confidence": 0.95}}
 
 For Brace Map:
-- "part 1 is engine" → {{"action": "add_node", "target": "engine", "node_index": 0, "confidence": 0.95}}
-- "部分1是引擎" → {{"action": "add_node", "target": "引擎", "node_index": 0, "confidence": 0.95}}
-- "subpart 1.1 is cylinders" → {{"action": "add_node", "target": "cylinders", "part_index": 0, "subpart_index": 0, "confidence": 0.95}}
-- "部分1的子部分1是气缸" → {{"action": "add_node", "target": "气缸", "part_index": 0, "subpart_index": 0, "confidence": 0.95}}
+- "part 1 is engine" →
+  {{"action": "add_node", "target": "engine", "node_index": 0,
+   "confidence": 0.95}}
+- "部分1是引擎" →
+  {{"action": "add_node", "target": "引擎", "node_index": 0,
+   "confidence": 0.95}}
+- "subpart 1.1 is cylinders" →
+  {{"action": "add_node", "target": "cylinders", "part_index": 0,
+   "subpart_index": 0, "confidence": 0.95}}
+- "部分1的子部分1是气缸" →
+  {{"action": "add_node", "target": "气缸", "part_index": 0,
+   "subpart_index": 0, "confidence": 0.95}}
 
 For Double Bubble Map:
-- "similarity 1 is color" → {{"action": "add_node", "target": "color", "category": "similarities", "node_index": 0, "confidence": 0.95}}
-- "left difference 1 is shape" → {{"action": "add_node", "target": "shape", "category": "left_differences", "node_index": 0, "confidence": 0.95}}
+- "similarity 1 is color" →
+  {{"action": "add_node", "target": "color", "category": "similarities",
+   "node_index": 0, "confidence": 0.95}}
+- "left difference 1 is shape" →
+  {{"action": "add_node", "target": "shape",
+   "category": "left_differences", "node_index": 0, "confidence": 0.95}}
 
 For Multi-Flow Map:
-- "cause 1 is rain" → {{"action": "add_node", "target": "rain", "category": "causes", "node_index": 0, "confidence": 0.95}}
-- "effect 1 is flood" → {{"action": "add_node", "target": "flood", "category": "effects", "node_index": 0, "confidence": 0.95}}
+- "cause 1 is rain" →
+  {{"action": "add_node", "target": "rain", "category": "causes",
+   "node_index": 0, "confidence": 0.95}}
+- "effect 1 is flood" →
+  {{"action": "add_node", "target": "flood", "category": "effects",
+   "node_index": 0, "confidence": 0.95}}
 
 For Bridge Map:
-- "analogy 1: wheel is to car" → {{"action": "add_node", "target": "wheel : car", "left": "wheel", "right": "car", "node_index": 0, "confidence": 0.95}}
+- "analogy 1: wheel is to car" →
+  {{"action": "add_node", "target": "wheel : car", "left": "wheel",
+   "right": "car", "node_index": 0, "confidence": 0.95}}
 
 For Concept Map:
-- "concept 1 is photosynthesis" → {{"action": "add_node", "target": "photosynthesis", "node_index": 0, "confidence": 0.95}}
-- "概念1是光合作用" → {{"action": "add_node", "target": "光合作用", "node_index": 0, "confidence": 0.95}}
-- "add relationship: Concept1 causes Concept2" → {{"action": "add_node", "from": "Concept1", "to": "Concept2", "label": "causes", "confidence": 0.95}}
-- "添加关系：概念1导致概念2" → {{"action": "add_node", "from": "概念1", "to": "概念2", "label": "导致", "confidence": 0.95}}
+- "concept 1 is photosynthesis" →
+  {{"action": "add_node", "target": "photosynthesis", "node_index": 0,
+   "confidence": 0.95}}
+- "概念1是光合作用" →
+  {{"action": "add_node", "target": "光合作用", "node_index": 0,
+   "confidence": 0.95}}
+- "add relationship: Concept1 causes Concept2" →
+  {{"action": "add_node", "from": "Concept1", "to": "Concept2",
+   "label": "causes", "confidence": 0.95}}
+- "添加关系：概念1导致概念2" →
+  {{"action": "add_node", "from": "概念1", "to": "概念2", "label": "导致",
+   "confidence": 0.95}}
 
 【Multi-Node Structured Input】
-- "topic is cars, branch 1 is sedans, branch 2 is SUVs" → Parse as: update_center first, then add_node with node_index 0, then add_node with node_index 1
-- "主题是汽车，分支1是轿车，分支2是SUV" → Parse as: update_center first, then add_node with node_index 0, then add_node with node_index 1
+- "topic is cars, branch 1 is sedans, branch 2 is SUVs" →
+  Parse as: update_center first, then add_node with node_index 0,
+  then add_node with node_index 1
+- "主题是汽车，分支1是轿车，分支2是SUV" →
+  Parse as: update_center first, then add_node with node_index 0,
+  then add_node with node_index 1
 
 【Delete Node】
 - "删除第一个" → {{"action": "delete_node", "node_index": 0, "confidence": 0.9}}
@@ -705,7 +879,9 @@ For Concept Map Relationships:
 
 For Double Bubble Map:
 - "删除第一个相似点" → {{"action": "delete_node", "node_index": 0, "category": "similarities", "confidence": 0.95}}
-- "delete the first left difference" → {{"action": "delete_node", "node_index": 0, "category": "left_differences", "confidence": 0.95}}
+- "delete the first left difference" →
+  {{"action": "delete_node", "node_index": 0,
+   "category": "left_differences", "confidence": 0.95}}
 
 For Multi-Flow Map:
 - "删除第一个原因" → {{"action": "delete_node", "node_index": 0, "category": "causes", "confidence": 0.95}}
@@ -757,12 +933,12 @@ Return only JSON:"""
             # Parse JSON response
             action = self._parse_json_response(response)
 
-            logger.info(f"Voice agent parsed command: user_text='{user_text}', action={action}")
+            logger.info("Voice agent parsed command: user_text='%s', action=%s", user_text, action)
 
             return {"action": action}
 
         except Exception as e:
-            logger.error(f"Parse error: {e}")
+            logger.error("Parse error: %s", e)
             return {"action": {"action": "none", "confidence": 0.0}}
 
     async def _resolve_references_node(self, state: AgentState) -> Dict[str, Any]:
@@ -818,11 +994,11 @@ Return only JSON:"""
                     cleaned = cleaned[start:end]
 
             parsed = json.loads(cleaned)
-            logger.debug(f"Successfully parsed JSON response: {parsed}")
+            logger.debug("Successfully parsed JSON response: %s", parsed)
             return parsed
 
         except Exception as e:
-            logger.error(f"JSON parse error: {e}, raw response: {response}")
+            logger.error("JSON parse error: %s, raw response: %s", e, response)
             return {"action": "none", "confidence": 0.0}
 
     def update_diagram_state(self, diagram_data: Dict[str, Any]):
@@ -855,7 +1031,7 @@ Return only JSON:"""
         }
         self._state["last_updated"] = datetime.now().isoformat()
 
-        logger.debug(f"Diagram state updated: {len(nodes)} nodes")
+        logger.debug("Diagram state updated: %s nodes", len(nodes))
 
     def update_panel_state(self, active_panel: str, panels: Dict[str, bool] = None):
         """Update panel states"""
@@ -914,7 +1090,7 @@ Return only JSON:"""
             return action
 
         except Exception as e:
-            logger.error(f"Process command error: {e}", exc_info=True)
+            logger.error("Process command error: %s", e, exc_info=True)
             # Clean up tracking info even on error
             if "_tracking_info" in self._state:
                 del self._state["_tracking_info"]
@@ -947,14 +1123,14 @@ class VoiceAgentManager:
         """Get existing agent or create new one for session"""
         if session_id not in self._agents:
             self._agents[session_id] = VoiceAgent(session_id)
-            logger.info(f"Created new VoiceAgent for session {session_id}")
+            logger.info("Created new VoiceAgent for session %s", session_id)
         return self._agents[session_id]
 
     def remove(self, session_id: str):
         """Remove agent when session ends"""
         if session_id in self._agents:
             del self._agents[session_id]
-            logger.info(f"Removed VoiceAgent for session {session_id}")
+            logger.info("Removed VoiceAgent for session %s", session_id)
 
     def update_diagram(self, session_id: str, diagram_data: Dict[str, Any]):
         """Update diagram state for a session's agent"""

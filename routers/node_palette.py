@@ -1,3 +1,17 @@
+"""
+Node Palette API Router
+========================
+
+Provides API endpoints for Node Palette feature.
+Fires multiple LLMs concurrently to generate node suggestions.
+
+@author lycosa9527
+@made_by MindSpring Team
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
+"""
 import json
 import logging
 
@@ -14,7 +28,7 @@ from agents.node_palette.mindmap_palette import get_mindmap_palette_generator
 from agents.node_palette.multi_flow_palette import get_multi_flow_palette_generator
 from agents.node_palette.tree_map_palette import get_tree_map_palette_generator
 from models.auth import User
-from models.requests import (
+from models.requests_thinking import (
     NodePaletteStartRequest,
     NodePaletteNextRequest,
     NodeSelectionRequest,
@@ -31,22 +45,8 @@ from services.infrastructure.error_handler import (
     LLMAccessDeniedError,
     LLMServiceError
 )
+from services.redis.redis_activity_tracker import get_activity_tracker
 from utils.auth import get_current_user
-
-"""
-Node Palette API Router
-========================
-
-Provides API endpoints for Node Palette feature.
-Fires multiple LLMs concurrently to generate node suggestions.
-
-@author lycosa9527
-@made_by MindSpring Team
-
-Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
-All Rights Reserved
-Proprietary License
-"""
 
 router = APIRouter(tags=["thinking"])
 logger = logging.getLogger(__name__)
@@ -74,7 +74,6 @@ async def start_node_palette(
     # Track user activity
     if current_user:
         try:
-            from services.redis.redis_activity_tracker import get_activity_tracker
             tracker = get_activity_tracker()
             tracker.record_activity(
                 user_id=current_user.id,
@@ -84,7 +83,7 @@ async def start_node_palette(
                 user_name=getattr(current_user, 'name', None)
             )
         except Exception as e:
-            logger.debug(f"Failed to track user activity: {e}")
+            logger.debug("Failed to track user activity: %s", e)
 
     # Log at INFO level for user activity tracking
     logger.info("[NodePalette] Started: Session %s (User: %s, Diagram: %s)",
@@ -150,12 +149,22 @@ async def start_node_palette(
         # Keep debug logs for LLM firing details
         if req.diagram_type == 'bridge_map':
             if center_topic and center_topic.strip():
-                logger.debug("[NodePalette-API] Type: bridge_map | Dimension: '%s' (SPECIFIC) | Firing 3 LLMs concurrently (qwen, deepseek, doubao)", center_topic)
+                logger.debug(
+                    "[NodePalette-API] Type: bridge_map | Dimension: '%s' (SPECIFIC) | "
+                    "Firing 3 LLMs concurrently (qwen, deepseek, doubao)",
+                    center_topic
+                )
             else:
-                logger.debug("[NodePalette-API] Type: bridge_map | Dimension: (EMPTY - DIVERSE mode) | Firing 3 LLMs concurrently (qwen, deepseek, doubao)")
+                logger.debug(
+                    "[NodePalette-API] Type: bridge_map | Dimension: (EMPTY - DIVERSE mode) | "
+                    "Firing 3 LLMs concurrently (qwen, deepseek, doubao)"
+                )
         else:
-            logger.debug("[NodePalette-API] Type: %s | Topic: '%s' | Firing 3 LLMs concurrently (qwen, deepseek, doubao)",
-                       req.diagram_type, center_topic)
+            logger.debug(
+                "[NodePalette-API] Type: %s | Topic: '%s' | "
+                "Firing 3 LLMs concurrently (qwen, deepseek, doubao)",
+                req.diagram_type, center_topic
+            )
 
         # Get appropriate generator based on diagram type (with fallback)
         if req.diagram_type == 'circle_map':
@@ -178,7 +187,10 @@ async def start_node_palette(
             generator = get_mindmap_palette_generator()
         else:
             # Fallback to circle map generator for unsupported types
-            logger.warning(f"[NodePalette-API] No specialized generator for {req.diagram_type}, using circle_map fallback")
+            logger.warning(
+                "[NodePalette-API] No specialized generator for %s, using circle_map fallback",
+                req.diagram_type
+            )
             generator = get_circle_map_palette_generator()
 
         # Stream with concurrent execution
@@ -233,7 +245,8 @@ async def start_node_palette(
                         educational_context=req.educational_context,
                         nodes_per_llm=15,
                         stage=stage,  # type: ignore[call-arg]  # Current stage (dimensions, categories, parts, etc.)
-                        stage_data=stage_data,  # type: ignore[call-arg]  # Stage-specific data (dimension, category_name, part_name, etc.)
+                        # Stage-specific data (dimension, category_name, part_name, etc.)
+                        stage_data=stage_data,  # type: ignore[call-arg]
                         user_id=current_user.id if current_user else None,
                         organization_id=current_user.organization_id if current_user else None,
                         diagram_type=req.diagram_type,
@@ -264,7 +277,10 @@ async def start_node_palette(
 
                 # Ensure at least one event is yielded to prevent RuntimeError
                 if chunk_count == 0:
-                    logger.warning("[NodePalette-API] No chunks yielded, sending completion event | Session: %s", session_id[:8])
+                    logger.warning(
+                        "[NodePalette-API] No chunks yielded, sending completion event | Session: %s",
+                        session_id[:8]
+                    )
                     yield f"data: {json.dumps({'event': 'batch_complete', 'nodes': node_count})}\n\n"
 
                 logger.debug("[NodePalette-API] Batch complete | Session: %s | Nodes: %d",
@@ -276,8 +292,16 @@ async def start_node_palette(
                 user_message = getattr(e, 'user_message', None)
                 if not user_message:
                     language = getattr(req, 'language', 'en')
-                    user_message = "无法处理您的请求，请尝试修改主题描述。" if language == 'zh' else "Content could not be processed. Please try a different topic."
-                yield f"data: {json.dumps({'event': 'error', 'error_type': 'content_filter', 'message': user_message})}\n\n"
+                    user_message = (
+                        "无法处理您的请求，请尝试修改主题描述。" if language == 'zh'
+                        else "Content could not be processed. Please try a different topic."
+                    )
+                error_data = {
+                    'event': 'error',
+                    'error_type': 'content_filter',
+                    'message': user_message
+                }
+                yield f"data: {json.dumps(error_data)}\n\n"
 
             except LLMRateLimitError as e:
                 logger.warning("[NodePalette-API] Rate limit | Session: %s | Error: %s",
@@ -285,8 +309,12 @@ async def start_node_palette(
                 user_message = getattr(e, 'user_message', None)
                 if not user_message:
                     language = getattr(req, 'language', 'en')
-                    user_message = "AI服务繁忙，请稍后重试。" if language == 'zh' else "AI service is busy. Please try again in a few seconds."
-                yield f"data: {json.dumps({'event': 'error', 'error_type': 'rate_limit', 'message': user_message})}\n\n"
+                    user_message = (
+                        "AI服务繁忙，请稍后重试。" if language == 'zh'
+                        else "AI service is busy. Please try again in a few seconds."
+                    )
+                error_data = {'event': 'error', 'error_type': 'rate_limit', 'message': user_message}
+                yield f"data: {json.dumps(error_data)}\n\n"
 
             except LLMTimeoutError as e:
                 logger.warning("[NodePalette-API] Timeout | Session: %s | Error: %s",
@@ -303,8 +331,16 @@ async def start_node_palette(
                 user_message = getattr(e, 'user_message', None)
                 if not user_message:
                     language = getattr(req, 'language', 'en')
-                    user_message = "参数错误，请检查输入。" if language == 'zh' else "Invalid parameter. Please check input."
-                yield f"data: {json.dumps({'event': 'error', 'error_type': 'invalid_parameter', 'message': user_message})}\n\n"
+                    user_message = (
+                        "参数错误，请检查输入。" if language == 'zh'
+                        else "Invalid parameter. Please check input."
+                    )
+                error_data = {
+                    'event': 'error',
+                    'error_type': 'invalid_parameter',
+                    'message': user_message
+                }
+                yield f"data: {json.dumps(error_data)}\n\n"
 
             except LLMQuotaExhaustedError as e:
                 logger.warning("[NodePalette-API] Quota exhausted | Session: %s | Error: %s",
@@ -312,8 +348,16 @@ async def start_node_palette(
                 user_message = getattr(e, 'user_message', None)
                 if not user_message:
                     language = getattr(req, 'language', 'en')
-                    user_message = "配额已用完，请检查账户。" if language == 'zh' else "Quota exhausted. Please check account."
-                yield f"data: {json.dumps({'event': 'error', 'error_type': 'quota_exhausted', 'message': user_message})}\n\n"
+                    user_message = (
+                        "配额已用完，请检查账户。" if language == 'zh'
+                        else "Quota exhausted. Please check account."
+                    )
+                error_data = {
+                    'event': 'error',
+                    'error_type': 'quota_exhausted',
+                    'message': user_message
+                }
+                yield f"data: {json.dumps(error_data)}\n\n"
 
             except LLMModelNotFoundError as e:
                 logger.warning("[NodePalette-API] Model not found | Session: %s | Error: %s",
@@ -321,8 +365,16 @@ async def start_node_palette(
                 user_message = getattr(e, 'user_message', None)
                 if not user_message:
                     language = getattr(req, 'language', 'en')
-                    user_message = "模型不存在，请检查配置。" if language == 'zh' else "Model not found. Please check configuration."
-                yield f"data: {json.dumps({'event': 'error', 'error_type': 'model_not_found', 'message': user_message})}\n\n"
+                    user_message = (
+                        "模型不存在，请检查配置。" if language == 'zh'
+                        else "Model not found. Please check configuration."
+                    )
+                error_data = {
+                    'event': 'error',
+                    'error_type': 'model_not_found',
+                    'message': user_message
+                }
+                yield f"data: {json.dumps(error_data)}\n\n"
 
             except LLMAccessDeniedError as e:
                 logger.warning("[NodePalette-API] Access denied | Session: %s | Error: %s",
@@ -330,8 +382,16 @@ async def start_node_palette(
                 user_message = getattr(e, 'user_message', None)
                 if not user_message:
                     language = getattr(req, 'language', 'en')
-                    user_message = "访问被拒绝，请检查权限。" if language == 'zh' else "Access denied. Please check permissions."
-                yield f"data: {json.dumps({'event': 'error', 'error_type': 'access_denied', 'message': user_message})}\n\n"
+                    user_message = (
+                        "访问被拒绝，请检查权限。" if language == 'zh'
+                        else "Access denied. Please check permissions."
+                    )
+                error_data = {
+                    'event': 'error',
+                    'error_type': 'access_denied',
+                    'message': user_message
+                }
+                yield f"data: {json.dumps(error_data)}\n\n"
 
             except LLMServiceError as e:
                 logger.error("[NodePalette-API] LLM service error | Session: %s | Error: %s",
@@ -339,8 +399,16 @@ async def start_node_palette(
                 user_message = getattr(e, 'user_message', None)
                 if not user_message:
                     language = getattr(req, 'language', 'en')
-                    user_message = "AI服务错误，请稍后重试。" if language == 'zh' else "AI service error. Please try again later."
-                yield f"data: {json.dumps({'event': 'error', 'error_type': 'service_error', 'message': user_message})}\n\n"
+                    user_message = (
+                        "AI服务错误，请稍后重试。" if language == 'zh'
+                        else "AI service error. Please try again later."
+                    )
+                error_data = {
+                    'event': 'error',
+                    'error_type': 'service_error',
+                    'message': user_message
+                }
+                yield f"data: {json.dumps(error_data)}\n\n"
 
             except Exception as e:
                 logger.error("[NodePalette-API] Stream error | Session: %s | Error: %s",
@@ -352,10 +420,22 @@ async def start_node_palette(
             finally:
                 # Always ensure at least one event is yielded to prevent RuntimeError
                 if chunk_count == 0:
-                    logger.warning("[NodePalette-API] Generator completed without yielding, sending error event | Session: %s", session_id[:8])
+                    logger.warning(
+                        "[NodePalette-API] Generator completed without yielding, "
+                        "sending error event | Session: %s",
+                        session_id[:8]
+                    )
                     language = getattr(req, 'language', 'en')
-                    user_message = "请求处理失败，请重试。" if language == 'zh' else "Request processing failed. Please try again."
-                    yield f"data: {json.dumps({'event': 'error', 'error_type': 'no_response', 'message': user_message})}\n\n"
+                    user_message = (
+                        "请求处理失败，请重试。" if language == 'zh'
+                        else "Request processing failed. Please try again."
+                    )
+                    error_data = {
+                        'event': 'error',
+                        'error_type': 'no_response',
+                        'message': user_message
+                    }
+                    yield f"data: {json.dumps(error_data)}\n\n"
 
         return StreamingResponse(
             generate(),
@@ -371,7 +451,7 @@ async def start_node_palette(
         raise
     except Exception as e:
         logger.error("[NodePalette-API] Start error: %s", str(e), exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.post('/thinking_mode/node_palette/next_batch')
@@ -411,10 +491,17 @@ async def get_next_batch(
             generator = get_mindmap_palette_generator()
         else:
             # Fallback to circle map generator for unsupported types
-            logger.warning(f"[NodePalette-API] No specialized generator for {req.diagram_type}, using circle_map fallback")
+            logger.warning(
+                "[NodePalette-API] No specialized generator for %s, using circle_map fallback",
+                req.diagram_type
+            )
             generator = get_circle_map_palette_generator()
 
-        logger.debug("[NodePalette-API] Type: %s | Firing 3 LLMs concurrently for next batch (qwen, deepseek, doubao)...", req.diagram_type)
+        logger.debug(
+            "[NodePalette-API] Type: %s | Firing 3 LLMs concurrently for next batch "
+            "(qwen, deepseek, doubao)...",
+            req.diagram_type
+        )
 
         # Stream next batch with concurrent execution
         async def generate():
@@ -458,14 +545,18 @@ async def get_next_batch(
                         yield f"data: {json.dumps(chunk)}\n\n"
                 elif req.diagram_type in ['tree_map', 'brace_map', 'flow_map', 'mindmap']:
                     # Multi-stage diagrams: pass stage and stage_data for progressive workflow
-                    logger.debug("[NodePalette-API] %s next batch | Stage: %s | Stage data: %s", req.diagram_type, stage, stage_data)
+                    logger.debug(
+                        "[NodePalette-API] %s next batch | Stage: %s | Stage data: %s",
+                        req.diagram_type, stage, stage_data
+                    )
                     async for chunk in generator.generate_batch(  # type: ignore[call-arg]
                         session_id=session_id,
                         center_topic=req.center_topic,
                         educational_context=req.educational_context,
                         nodes_per_llm=15,
                         stage=stage,  # type: ignore[call-arg]  # Current stage (dimensions, categories, parts, etc.)
-                        stage_data=stage_data,  # type: ignore[call-arg]  # Stage-specific data (dimension, category_name, part_name, etc.)
+                        # Stage-specific data (dimension, category_name, part_name, etc.)
+                        stage_data=stage_data,  # type: ignore[call-arg]
                         user_id=current_user.id if current_user else None,
                         organization_id=current_user.organization_id if current_user else None,
                         diagram_type=req.diagram_type,
@@ -503,8 +594,16 @@ async def get_next_batch(
                 user_message = getattr(e, 'user_message', None)
                 if not user_message:
                     language = getattr(req, 'language', 'en')
-                    user_message = "无法处理您的请求，请尝试修改主题描述。" if language == 'zh' else "Content could not be processed."
-                yield f"data: {json.dumps({'event': 'error', 'error_type': 'content_filter', 'message': user_message})}\n\n"
+                    user_message = (
+                        "无法处理您的请求，请尝试修改主题描述。" if language == 'zh'
+                        else "Content could not be processed."
+                    )
+                error_data = {
+                    'event': 'error',
+                    'error_type': 'content_filter',
+                    'message': user_message
+                }
+                yield f"data: {json.dumps(error_data)}\n\n"
 
             except LLMRateLimitError as e:
                 logger.warning("[NodePalette-API] Next batch rate limit | Session: %s | Error: %s",
@@ -530,8 +629,16 @@ async def get_next_batch(
                 user_message = getattr(e, 'user_message', None)
                 if not user_message:
                     language = getattr(req, 'language', 'en')
-                    user_message = "参数错误，请检查输入。" if language == 'zh' else "Invalid parameter. Please check input."
-                yield f"data: {json.dumps({'event': 'error', 'error_type': 'invalid_parameter', 'message': user_message})}\n\n"
+                    user_message = (
+                        "参数错误，请检查输入。" if language == 'zh'
+                        else "Invalid parameter. Please check input."
+                    )
+                error_data = {
+                    'event': 'error',
+                    'error_type': 'invalid_parameter',
+                    'message': user_message
+                }
+                yield f"data: {json.dumps(error_data)}\n\n"
 
             except LLMQuotaExhaustedError as e:
                 logger.warning("[NodePalette-API] Next batch quota exhausted | Session: %s | Error: %s",
@@ -539,8 +646,16 @@ async def get_next_batch(
                 user_message = getattr(e, 'user_message', None)
                 if not user_message:
                     language = getattr(req, 'language', 'en')
-                    user_message = "配额已用完，请检查账户。" if language == 'zh' else "Quota exhausted. Please check account."
-                yield f"data: {json.dumps({'event': 'error', 'error_type': 'quota_exhausted', 'message': user_message})}\n\n"
+                    user_message = (
+                        "配额已用完，请检查账户。" if language == 'zh'
+                        else "Quota exhausted. Please check account."
+                    )
+                error_data = {
+                    'event': 'error',
+                    'error_type': 'quota_exhausted',
+                    'message': user_message
+                }
+                yield f"data: {json.dumps(error_data)}\n\n"
 
             except LLMModelNotFoundError as e:
                 logger.warning("[NodePalette-API] Next batch model not found | Session: %s | Error: %s",
@@ -548,8 +663,16 @@ async def get_next_batch(
                 user_message = getattr(e, 'user_message', None)
                 if not user_message:
                     language = getattr(req, 'language', 'en')
-                    user_message = "模型不存在，请检查配置。" if language == 'zh' else "Model not found. Please check configuration."
-                yield f"data: {json.dumps({'event': 'error', 'error_type': 'model_not_found', 'message': user_message})}\n\n"
+                    user_message = (
+                        "模型不存在，请检查配置。" if language == 'zh'
+                        else "Model not found. Please check configuration."
+                    )
+                error_data = {
+                    'event': 'error',
+                    'error_type': 'model_not_found',
+                    'message': user_message
+                }
+                yield f"data: {json.dumps(error_data)}\n\n"
 
             except LLMAccessDeniedError as e:
                 logger.warning("[NodePalette-API] Next batch access denied | Session: %s | Error: %s",
@@ -557,8 +680,16 @@ async def get_next_batch(
                 user_message = getattr(e, 'user_message', None)
                 if not user_message:
                     language = getattr(req, 'language', 'en')
-                    user_message = "访问被拒绝，请检查权限。" if language == 'zh' else "Access denied. Please check permissions."
-                yield f"data: {json.dumps({'event': 'error', 'error_type': 'access_denied', 'message': user_message})}\n\n"
+                    user_message = (
+                        "访问被拒绝，请检查权限。" if language == 'zh'
+                        else "Access denied. Please check permissions."
+                    )
+                error_data = {
+                    'event': 'error',
+                    'error_type': 'access_denied',
+                    'message': user_message
+                }
+                yield f"data: {json.dumps(error_data)}\n\n"
 
             except LLMServiceError as e:
                 logger.error("[NodePalette-API] Next batch LLM service error | Session: %s | Error: %s",
@@ -566,8 +697,16 @@ async def get_next_batch(
                 user_message = getattr(e, 'user_message', None)
                 if not user_message:
                     language = getattr(req, 'language', 'en')
-                    user_message = "AI服务错误，请稍后重试。" if language == 'zh' else "AI service error. Please try again later."
-                yield f"data: {json.dumps({'event': 'error', 'error_type': 'service_error', 'message': user_message})}\n\n"
+                    user_message = (
+                        "AI服务错误，请稍后重试。" if language == 'zh'
+                        else "AI service error. Please try again later."
+                    )
+                error_data = {
+                    'event': 'error',
+                    'error_type': 'service_error',
+                    'message': user_message
+                }
+                yield f"data: {json.dumps(error_data)}\n\n"
 
             except Exception as e:
                 logger.error("[NodePalette-API] Next batch error | Session: %s | Error: %s",
@@ -589,13 +728,13 @@ async def get_next_batch(
 
     except Exception as e:
         logger.error("[NodePalette-API] Next batch error: %s", str(e), exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.post('/thinking_mode/node_palette/select_node')
 async def log_node_selection(
     req: NodeSelectionRequest,
-    current_user: User = Depends(get_current_user)
+    _current_user: User = Depends(get_current_user)
 ):
     """
     Log node selection/deselection event for analytics.
@@ -634,8 +773,12 @@ async def log_finish_selection(
     selection_rate = (selected_count/max(total_generated,1))*100
 
     # Log at INFO level for user activity tracking
-    logger.info("[NodePalette] Completed: Session %s (User: %s, Generated: %d nodes, Selected: %d nodes, Selection rate: %.1f%%, Batches: %d)",
-               session_id[:8], user_id, total_generated, selected_count, selection_rate, batches_loaded)
+    logger.info(
+        "[NodePalette] Completed: Session %s (User: %s, Generated: %d nodes, "
+        "Selected: %d nodes, Selection rate: %.1f%%, Batches: %d)",
+        session_id[:8], user_id, total_generated, selected_count,
+        selection_rate, batches_loaded
+    )
 
     # NOTE: Do NOT end the session here!
     # Session should persist throughout the entire canvas session.
@@ -662,8 +805,11 @@ async def node_palette_cancel(
     user_id = current_user.id if current_user else None
 
     # Log at INFO level for user activity tracking
-    logger.info("[NodePalette] Cancelled: Session %s (User: %s, Generated: %d nodes, Selected: %d nodes, NOT added, Batches: %d)",
-               session_id[:8], user_id, total_generated, selected_count, batches_loaded)
+    logger.info(
+        "[NodePalette] Cancelled: Session %s (User: %s, Generated: %d nodes, "
+        "Selected: %d nodes, NOT added, Batches: %d)",
+        session_id[:8], user_id, total_generated, selected_count, batches_loaded
+    )
 
     # NOTE: Do NOT end the session here!
     # User may have clicked Cancel by mistake and want to reopen.
@@ -675,7 +821,7 @@ async def node_palette_cancel(
 @router.post("/thinking_mode/node_palette/cleanup")
 async def node_palette_cleanup(
     request: NodePaletteCleanupRequest,
-    current_user: User = Depends(get_current_user)
+    _current_user: User = Depends(get_current_user)
 ):
     """
     Clean up Node Palette session when user leaves canvas.

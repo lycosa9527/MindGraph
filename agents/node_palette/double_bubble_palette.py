@@ -84,7 +84,7 @@ class DoubleBubblePaletteGenerator(BasePaletteGenerator):
             if chunk.get('event') == 'node_generated':
                 node = chunk.get('node', {})
                 node['mode'] = mode  # Tag node with its generation mode
-                logger.debug(f"[DoubleBubble] Node tagged with mode='{mode}' | ID: {node.get('id', 'unknown')}")
+                logger.debug("[DoubleBubble] Node tagged with mode='%s' | ID: %s", mode, node.get('id', 'unknown'))
 
             # For similarities mode, filter out any pipe-separated format (wrong format)
             if mode == 'similarities' and chunk.get('event') == 'node_generated':
@@ -93,7 +93,7 @@ class DoubleBubblePaletteGenerator(BasePaletteGenerator):
 
                 # Similarities should be simple text - skip if it has pipe separator
                 if '|' in text:
-                    logger.warning(f"[DoubleBubble] SIMILARITIES mode - skipping node with pipe separator: '{text}'")
+                    logger.warning("[DoubleBubble] SIMILARITIES mode - skipping node with pipe separator: '%s'", text)
                     continue  # Skip this node
 
             # For differences mode, parse pipe-separated pairs and add left/right fields
@@ -101,11 +101,11 @@ class DoubleBubblePaletteGenerator(BasePaletteGenerator):
                 node = chunk.get('node', {})
                 text = node.get('text', '')
 
-                logger.debug(f"[DoubleBubble] DIFFERENCES mode - processing node with text: '{text}'")
+                logger.debug("[DoubleBubble] DIFFERENCES mode - processing node with text: '%s'", text)
 
                 # Differences MUST have pipe separator - skip if it doesn't
                 if '|' not in text:
-                    logger.warning(f"[DoubleBubble] DIFFERENCES mode - skipping node without pipe separator: '{text}'")
+                    logger.warning("[DoubleBubble] DIFFERENCES mode - skipping node without pipe separator: '%s'", text)
                     continue  # Skip this node
 
                 # Parse topics from center_topic for filtering
@@ -123,22 +123,22 @@ class DoubleBubblePaletteGenerator(BasePaletteGenerator):
                     # Filter out invalid/unwanted nodes:
                     # 1. Main topic names only (e.g., "福特 | 大众")
                     if (left_text.lower() == left_topic_lower and right_text.lower() == right_topic_lower):
-                        logger.debug(f"[DoubleBubble] Skipping main topic node: '{left_text} | {right_text}'")
+                        logger.debug("[DoubleBubble] Skipping main topic node: '%s | %s'", left_text, right_text)
                         continue
 
                     # 2. Empty or very short values (likely formatting artifacts)
                     if len(left_text) < 2 or len(right_text) < 2:
-                        logger.debug(f"[DoubleBubble] Skipping too short: '{left_text} | {right_text}'")
+                        logger.debug("[DoubleBubble] Skipping too short: '%s | %s'", left_text, right_text)
                         continue
 
                     # 3. Markdown table separators (e.g., "| ---" or "---")
                     if left_text.startswith('-') or right_text.startswith('-'):
-                        logger.debug(f"[DoubleBubble] Skipping markdown separator: '{left_text} | {right_text}'")
+                        logger.debug("[DoubleBubble] Skipping markdown separator: '%s | %s'", left_text, right_text)
                         continue
 
                     # 4. Header-like patterns containing "vs" or similar
                     if ('vs' in left_text.lower() and 'vs' in right_text.lower()):
-                        logger.debug(f"[DoubleBubble] Skipping header pattern: '{left_text} | {right_text}'")
+                        logger.debug("[DoubleBubble] Skipping header pattern: '%s | %s'", left_text, right_text)
                         continue
 
                     # Valid difference pair - add left, right, and optional dimension fields
@@ -149,12 +149,12 @@ class DoubleBubblePaletteGenerator(BasePaletteGenerator):
                     # Keep text as-is for backwards compatibility
                     node['text'] = text
 
-                    dim_info = f" | dimension='{dimension}'" if dimension else ""
-                    logger.debug(f"[DoubleBubble] Parsed pair successfully: left='{left_text}' | right='{right_text}'{dim_info}")
-                    logger.debug(f"[DoubleBubble] Node now has: {node.keys()}")
+                    dim_info = " | dimension='%s'" % dimension if dimension else ""
+                    logger.debug("[DoubleBubble] Parsed pair successfully: left='%s' | right='%s'%s", left_text, right_text, dim_info)
+                    logger.debug("[DoubleBubble] Node now has: %s", list(node.keys()))
                 else:
                     # Malformed pipe-separated format (has | but couldn't parse properly)
-                    logger.warning(f"[DoubleBubble] DIFFERENCES mode - skipping malformed node: '{text}'")
+                    logger.warning("[DoubleBubble] DIFFERENCES mode - skipping malformed node: '%s'", text)
                     continue
 
             yield chunk
@@ -184,7 +184,7 @@ class DoubleBubblePaletteGenerator(BasePaletteGenerator):
 
         # Extract mode from educational_context (thread-safe, no race conditions!)
         mode = educational_context.get('_mode', 'similarities') if educational_context else 'similarities'
-        logger.debug(f"[DoubleBubble] Building prompt for mode: {mode}")
+        logger.debug("[DoubleBubble] Building prompt for mode: %s", mode)
 
         # Build prompt based on mode
         if mode == 'similarities':

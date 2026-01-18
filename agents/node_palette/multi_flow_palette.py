@@ -84,7 +84,9 @@ class MultiFlowPaletteGenerator(BasePaletteGenerator):
             if chunk.get('event') == 'node_generated':
                 node = chunk.get('node', {})
                 node['mode'] = mode  # Tag node with its generation mode
-                logger.debug(f"[MultiFlow] Node tagged with mode='{mode}' | ID: {node.get('id', 'unknown')} | Text: {node.get('text', '')}")
+                node_id = node.get('id', 'unknown')
+                node_text = node.get('text', '')
+                logger.debug("[MultiFlow] Node tagged with mode='%s' | ID: %s | Text: %s", mode, node_id, node_text)
 
             yield chunk
 
@@ -109,7 +111,7 @@ class MultiFlowPaletteGenerator(BasePaletteGenerator):
 
         # Extract mode from educational_context (thread-safe, no race conditions!)
         mode = educational_context.get('_mode', 'causes') if educational_context else 'causes'
-        logger.debug(f"[MultiFlow] Building prompt for mode: {mode}")
+        logger.debug("[MultiFlow] Building prompt for mode: %s", mode)
 
         # Build prompt based on mode
         if mode == 'causes':

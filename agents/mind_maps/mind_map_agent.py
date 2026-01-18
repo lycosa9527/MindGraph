@@ -1286,7 +1286,7 @@ class MindMapAgent(BaseAgent):
                 )
             else:
                 branch_y = 0.0  # Default to center if no children
-                logger.debug(f"Branch {branch_idx}: no children, positioned at Y=0")
+                logger.debug("Branch %s: no children, positioned at Y=0", branch_idx)
 
             # Store branch position
             branch_key = f'branch_{branch_idx}'

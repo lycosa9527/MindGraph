@@ -18,7 +18,7 @@ from sqlalchemy.orm import Session
 
 from config.database import get_db
 from models.messages import Messages, Language
-from models.requests import SendSMSCodeRequest, SendSMSCodeSimpleRequest, VerifySMSCodeRequest
+from models.requests_auth import SendSMSCodeRequest, SendSMSCodeSimpleRequest, VerifySMSCodeRequest
 from services.auth.sms_middleware import (
     get_sms_middleware,
     SMSServiceError,
@@ -189,7 +189,8 @@ async def send_sms_code(
     ttl_seconds = SMS_CODE_EXPIRY_MINUTES * 60
 
     if not sms_storage.store(phone, code, purpose, ttl_seconds):
-        logger.error(f"Failed to store SMS code in Redis for {phone[:3]}****{phone[-4:]}")
+        phone_masked = phone[:3] + "****" + phone[-4:]
+        logger.error("Failed to store SMS code in Redis for %s", phone_masked)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=Messages.error("sms_service_temporarily_unavailable", lang)
@@ -218,7 +219,8 @@ async def send_sms_code(
             detail=error_detail
         )
 
-    logger.info(f"SMS code sent to {phone[:3]}****{phone[-4:]} for {purpose}")
+    phone_masked = phone[:3] + "****" + phone[-4:]
+    logger.info("SMS code sent to %s for %s", phone_masked, purpose)
 
     return {
         "message": Messages.success("verification_code_sent", lang),
@@ -268,7 +270,8 @@ async def verify_sms_code(
             detail=error_msg
         )
 
-    logger.info(f"SMS code verified: {phone[:3]}****{phone[-4:]} (Purpose: {purpose})")
+    phone_masked = phone[:3] + "****" + phone[-4:]
+    logger.info("SMS code verified: %s (Purpose: %s)", phone_masked, purpose)
 
     return {
         "valid": True,
@@ -303,7 +306,8 @@ def _verify_and_consume_sms_code(
 
     # Atomic verify and remove - prevents race conditions
     if sms_storage.verify_and_remove(phone, code, purpose):
-        logger.info(f"SMS code consumed: {phone[:3]}****{phone[-4:]} (Purpose: {purpose})")
+        phone_masked = phone[:3] + "****" + phone[-4:]
+        logger.info("SMS code consumed: %s (Purpose: %s)", phone_masked, purpose)
         return True
 
     # Code verification failed
@@ -450,7 +454,8 @@ async def _send_sms_code_with_purpose(
     ttl_seconds = SMS_CODE_EXPIRY_MINUTES * 60
 
     if not sms_storage.store(phone, code, purpose, ttl_seconds):
-        logger.error(f"Failed to store SMS code in Redis for {phone[:3]}****{phone[-4:]}")
+        phone_masked = phone[:3] + "****" + phone[-4:]
+        logger.error("Failed to store SMS code in Redis for %s", phone_masked)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=Messages.error("sms_service_temporarily_unavailable", lang)
@@ -479,7 +484,8 @@ async def _send_sms_code_with_purpose(
             detail=error_detail
         )
 
-    logger.info(f"SMS code sent to {phone[:3]}****{phone[-4:]} for {purpose}")
+    phone_masked = phone[:3] + "****" + phone[-4:]
+    logger.info("SMS code sent to %s for %s", phone_masked, purpose)
 
     return {
         "message": Messages.success("verification_code_sent", lang),

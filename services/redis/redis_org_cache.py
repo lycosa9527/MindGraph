@@ -147,11 +147,11 @@ class OrganizationCache:
                 try:
                     self.cache_org(org)
                 except Exception as e:
-                    logger.debug(f"[OrgCache] Failed to cache org loaded from SQLite: {e}")
+                    logger.debug("[OrgCache] Failed to cache org loaded from SQLite: %s", e)
 
             return org
         except Exception as e:
-            logger.error(f"[OrgCache] Database query failed: {e}", exc_info=True)
+            logger.error("[OrgCache] Database query failed: %s", e, exc_info=True)
             raise
         finally:
             db.close()
@@ -168,7 +168,7 @@ class OrganizationCache:
         """
         # Check Redis availability
         if not is_redis_available():
-            logger.debug(f"[OrgCache] Redis unavailable, loading org ID {org_id} from SQLite")
+            logger.debug("[OrgCache] Redis unavailable, loading org ID %s from SQLite", org_id)
             return self._load_from_sqlite(org_id=org_id)
 
         try:
@@ -179,11 +179,11 @@ class OrganizationCache:
             if cached:
                 try:
                     org = self._deserialize_org(cached)
-                    logger.debug(f"[OrgCache] Cache hit for org ID {org_id}")
+                    logger.debug("[OrgCache] Cache hit for org ID %s", org_id)
                     return org
                 except (KeyError, ValueError, TypeError) as e:
                     # Corrupted cache entry
-                    logger.error(f"[OrgCache] Corrupted cache for org ID {org_id}: {e}", exc_info=True)
+                    logger.error("[OrgCache] Corrupted cache for org ID %s: %s", org_id, e, exc_info=True)
                     # Invalidate corrupted entry
                     try:
                         RedisOps.delete(key)
@@ -193,11 +193,11 @@ class OrganizationCache:
                     return self._load_from_sqlite(org_id=org_id)
         except Exception as e:
             # Transient Redis errors - fallback to SQLite
-            logger.warning(f"[OrgCache] Redis error for org ID {org_id}, falling back to SQLite: {e}")
+            logger.warning("[OrgCache] Redis error for org ID %s, falling back to SQLite: %s", org_id, e)
             return self._load_from_sqlite(org_id=org_id)
 
         # Cache miss - load from SQLite
-        logger.debug(f"[OrgCache] Cache miss for org ID {org_id}, loading from SQLite")
+        logger.debug("[OrgCache] Cache miss for org ID %s, loading from SQLite", org_id)
         return self._load_from_sqlite(org_id=org_id)
 
     def get_by_code(self, code: str) -> Optional[Organization]:
@@ -212,7 +212,7 @@ class OrganizationCache:
         """
         # Check Redis availability
         if not is_redis_available():
-            logger.debug(f"[OrgCache] Redis unavailable, loading org by code {code} from SQLite")
+            logger.debug("[OrgCache] Redis unavailable, loading org by code %s from SQLite", code)
             return self._load_from_sqlite(code=code)
 
         try:
@@ -226,7 +226,7 @@ class OrganizationCache:
                     # Load org by ID (will use cache)
                     return self.get_by_id(org_id)
                 except (ValueError, TypeError) as e:
-                    logger.error(f"[OrgCache] Invalid org ID in code index for {code}: {e}")
+                    logger.error("[OrgCache] Invalid org ID in code index for %s: %s", code, e)
                     # Invalidate corrupted index
                     try:
                         RedisOps.delete(index_key)
@@ -236,11 +236,11 @@ class OrganizationCache:
                     return self._load_from_sqlite(code=code)
         except Exception as e:
             # Transient Redis errors - fallback to SQLite
-            logger.warning(f"[OrgCache] Redis error for code {code}, falling back to SQLite: {e}")
+            logger.warning("[OrgCache] Redis error for code %s, falling back to SQLite: %s", code, e)
             return self._load_from_sqlite(code=code)
 
         # Cache miss - load from SQLite
-        logger.debug(f"[OrgCache] Cache miss for org code {code}, loading from SQLite")
+        logger.debug("[OrgCache] Cache miss for org code %s, loading from SQLite", code)
         return self._load_from_sqlite(code=code)
 
     def get_by_invitation_code(self, invite_code: str) -> Optional[Organization]:
@@ -256,7 +256,7 @@ class OrganizationCache:
         # Check Redis availability
         if not is_redis_available():
             masked_invite = f"{invite_code[:8]}***" if len(invite_code) >= 8 else "***"
-            logger.debug(f"[OrgCache] Redis unavailable, loading org by invitation code {masked_invite} from SQLite")
+            logger.debug("[OrgCache] Redis unavailable, loading org by invitation code %s from SQLite", masked_invite)
             return self._load_from_sqlite(invite_code=invite_code)
 
         try:
@@ -271,7 +271,7 @@ class OrganizationCache:
                     return self.get_by_id(org_id)
                 except (ValueError, TypeError) as e:
                     masked_invite = f"{invite_code[:8]}***" if len(invite_code) >= 8 else "***"
-                    logger.error(f"[OrgCache] Invalid org ID in invite index for {masked_invite}: {e}")
+                    logger.error("[OrgCache] Invalid org ID in invite index for %s: %s", masked_invite, e)
                     # Invalidate corrupted index
                     try:
                         RedisOps.delete(index_key)
@@ -282,12 +282,17 @@ class OrganizationCache:
         except Exception as e:
             # Transient Redis errors - fallback to SQLite
             masked_invite = f"{invite_code[:8]}***" if len(invite_code) >= 8 else "***"
-            logger.warning(f"[OrgCache] Redis error for invitation code {masked_invite}, falling back to SQLite: {e}")
+            logger.warning(
+                "[OrgCache] Redis error for invitation code %s, "
+                "falling back to SQLite: %s",
+                masked_invite,
+                e
+            )
             return self._load_from_sqlite(invite_code=invite_code)
 
         # Cache miss - load from SQLite
         masked_invite = f"{invite_code[:8]}***" if len(invite_code) >= 8 else "***"
-        logger.debug(f"[OrgCache] Cache miss for invitation code {masked_invite}, loading from SQLite")
+        logger.debug("[OrgCache] Cache miss for invitation code %s, loading from SQLite", masked_invite)
         return self._load_from_sqlite(invite_code=invite_code)
 
     def cache_org(self, org: Organization) -> bool:
@@ -313,7 +318,7 @@ class OrganizationCache:
             success = RedisOps.hash_set(org_key, org_dict)
 
             if not success:
-                logger.warning(f"[OrgCache] Failed to cache org ID {org.id}")
+                logger.warning("[OrgCache] Failed to cache org ID %s", org.id)
                 return False
 
             # Store code and invitation code indexes (permanent, no TTL)
@@ -327,13 +332,16 @@ class OrganizationCache:
                     invite_index_key = f"{ORG_INVITE_INDEX_PREFIX}{org.invitation_code}"
                     redis.set(invite_index_key, str(org.id))  # Permanent storage, no TTL
 
-            masked_invite = f"{org.invitation_code[:8]}***" if org.invitation_code and len(org.invitation_code) >= 8 else "***"
-            logger.debug(f"[OrgCache] Cached org indexes: code {org.code}, invite {masked_invite} -> ID {org.id}")
+            if org.invitation_code and len(org.invitation_code) >= 8:
+                masked_invite = f"{org.invitation_code[:8]}***"
+            else:
+                masked_invite = "***"
+            logger.debug("[OrgCache] Cached org indexes: code %s, invite %s -> ID %s", org.code, masked_invite, org.id)
 
             return True
         except Exception as e:
             # Log but don't raise - cache failures are non-critical
-            logger.warning(f"[OrgCache] Failed to cache org ID {org.id}: {e}")
+            logger.warning("[OrgCache] Failed to cache org ID %s: %s", org.id, e)
             return False
 
     def invalidate(self, org_id: int, code: Optional[str] = None, invite_code: Optional[str] = None) -> bool:
@@ -367,13 +375,13 @@ class OrganizationCache:
                 invite_index_key = f"{ORG_INVITE_INDEX_PREFIX}{invite_code}"
                 RedisOps.delete(invite_index_key)
 
-            logger.info(f"[OrgCache] Invalidated cache for org ID {org_id}")
-            logger.debug(f"[OrgCache] Deleted cache keys: org:{org_id}, org:code:{code}, org:invite:{invite_code}")
+            logger.info("[OrgCache] Invalidated cache for org ID %s", org_id)
+            logger.debug("[OrgCache] Deleted cache keys: org:%s, org:code:%s, org:invite:%s", org_id, code, invite_code)
 
             return True
         except Exception as e:
             # Log but don't raise - invalidation failures are non-critical
-            logger.warning(f"[OrgCache] Failed to invalidate cache for org ID {org_id}: {e}")
+            logger.warning("[OrgCache] Failed to invalidate cache for org ID %s: %s", org_id, e)
             return False
 
 

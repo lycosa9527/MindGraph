@@ -96,7 +96,10 @@ class LLMLoadBalancer:
         self._use_redis = is_redis_available()
         self.dashscope_rate_limiter = dashscope_rate_limiter  # Shared Dashscope limiter
         self.load_balancer_rate_limiter = load_balancer_rate_limiter  # Volcengine limiter only
-        self.rate_limit_aware = rate_limit_aware and (dashscope_rate_limiter is not None or load_balancer_rate_limiter is not None)
+        self.rate_limit_aware = rate_limit_aware and (
+            dashscope_rate_limiter is not None or
+            load_balancer_rate_limiter is not None
+        )
 
         # Validate strategy
         valid_strategies = ['weighted', 'random', 'round_robin']

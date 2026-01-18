@@ -1,4 +1,4 @@
-﻿from datetime import datetime, timezone
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 import json
 import logging
@@ -92,10 +92,10 @@ class CityFlagTracker:
                         FLAG_DURATION_SECONDS,
                         json.dumps(flag_data, ensure_ascii=False)
                     )
-                    logger.debug(f"[CityFlag] Recorded flag for city: {city_name} (lat: {lat}, lng: {lng})")
+                    logger.debug("[CityFlag] Recorded flag for city: %s (lat: %s, lng: %s)", city_name, lat, lng)
                     return
             except Exception as e:
-                logger.error(f"[CityFlag] Error recording flag in Redis: {e}")
+                logger.error("[CityFlag] Error recording flag in Redis: %s", e)
 
         # Fallback: in-memory storage
         self._memory_flags[city_name] = flag_data
@@ -172,7 +172,7 @@ class CityFlagTracker:
                                                 'lng': None
                                             })
                             except Exception as e:
-                                logger.debug(f"[CityFlag] Error processing flag key {key}: {e}")
+                                logger.debug("[CityFlag] Error processing flag key %s: %s", key, e)
                                 continue
 
                         if cursor == 0:
@@ -180,7 +180,7 @@ class CityFlagTracker:
 
                     return flags
             except Exception as e:
-                logger.error(f"[CityFlag] Error getting flags from Redis: {e}")
+                logger.error("[CityFlag] Error getting flags from Redis: %s", e)
 
         # Fallback: in-memory
         self._cleanup_expired_flags()

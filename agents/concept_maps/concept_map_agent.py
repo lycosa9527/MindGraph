@@ -14,9 +14,19 @@ All Rights Reserved
 Proprietary License
 """
 from typing import Any, Dict, List, Optional, Set, Tuple
+import asyncio
+import json
 import logging
+import math
+import random
+import re
+from collections import defaultdict, deque
+
+from langchain_core.prompts import PromptTemplate
 
 from ..core.base_agent import BaseAgent
+from .concept_map_generation import generate_concept_map_robust, _invoke_llm_prompt
+from prompts.concept_maps import CONCEPT_MAP_PROMPTS
 
 
 
@@ -74,7 +84,6 @@ class ConceptMapAgent(BaseAgent):
                 # Canonical form for matching: lowercase + remove all whitespace
                 if not isinstance(label, str):
                     return ""
-                import re
                 s = label.lower()
                 s = re.sub(r"\s+", "", s)
                 return s
@@ -212,9 +221,6 @@ class ConceptMapAgent(BaseAgent):
         try:
             logger.info("ConceptMapAgent: Starting concept map generation for prompt")
 
-            # Import the robust concept map generation from concept_map_generation
-            from .concept_map_generation import generate_concept_map_robust
-
             # Use the robust generation method with auto-detection
             spec = generate_concept_map_robust(user_prompt, language, method='auto')
 
@@ -318,7 +324,6 @@ class ConceptMapAgent(BaseAgent):
             }
 
             # Enhance the specification
-            import asyncio
             enhanced_spec = asyncio.run(self.enhance_spec(combined_spec))
             if not enhanced_spec.get("success", False):
                 return enhanced_spec
@@ -340,7 +345,6 @@ class ConceptMapAgent(BaseAgent):
         """
         try:
             # Use the existing LLM calling pattern from concept_map_generation
-            from .concept_map_generation import _invoke_llm_prompt
 
             # Stage 1: Generate exactly 30 concepts based on user prompt
             concepts_prompt_key = f"concept_map_30_concepts_{language}"
@@ -429,7 +433,6 @@ class ConceptMapAgent(BaseAgent):
             }
 
             # Enhance the spec using existing method
-            import asyncio
             enhanced_spec = asyncio.run(self.enhance_spec(concept_map_spec))
             return enhanced_spec
 
@@ -438,8 +441,6 @@ class ConceptMapAgent(BaseAgent):
 
     def _extract_simple_topic(self, user_prompt: str) -> str:
         """Extract a simple topic from user prompt using basic text processing."""
-        import re
-
         # Clean and extract key phrases
         prompt = user_prompt.lower().strip()
 
@@ -464,8 +465,6 @@ class ConceptMapAgent(BaseAgent):
     def _get_prompt(self, prompt_key: str, **kwargs) -> Optional[str]:
         """Get prompt from the prompts module."""
         try:
-            from prompts.concept_maps import CONCEPT_MAP_PROMPTS
-
             # Try to get the language-specific prompt first
             language = kwargs.get('language', 'en')
             if language == 'zh':
@@ -501,7 +500,6 @@ class ConceptMapAgent(BaseAgent):
             # Check if it's a LangChain LLM client with invoke method
             elif hasattr(llm_client, 'invoke'):
                 # Use LangChain's invoke method
-                from langchain_core.prompts import PromptTemplate
                 pt = PromptTemplate(input_variables=[], template=prompt)
                 result = llm_client.invoke(pt)
                 return str(result) if result else ""
@@ -548,7 +546,6 @@ class ConceptMapAgent(BaseAgent):
             cleaned = cleaned.strip()
 
             # Try to parse as JSON
-            import json
             return json.loads(cleaned)
 
         except json.JSONDecodeError as e:
@@ -564,8 +561,6 @@ class ConceptMapAgent(BaseAgent):
 
             # Try to fix unterminated strings and other common issues
             try:
-                import re
-
                 # Fix unterminated strings by finding the last complete quote
                 # Look for patterns like "text" where the quote might be missing
                 cleaned = re.sub(r'"([^"]*?)(?=\s*[,}\]]|$)', r'"\1"', cleaned)
@@ -610,7 +605,6 @@ class ConceptMapAgent(BaseAgent):
 
             # Try to find JSON-like content
             try:
-                import re
                 json_match = re.search(r'\{.*\}', cleaned, re.DOTALL)
                 if json_match:
                     return json.loads(json_match.group())
@@ -701,10 +695,6 @@ class ConceptMapAgent(BaseAgent):
 
     def _generate_layout_radial(self, topic: str, concepts: List[str], relationships: List[Dict[str, str]]) -> Dict:
         """Generate radial/circular layout with concentric circles around central topic."""
-        import math
-        import random
-        from collections import defaultdict, deque
-
         if not concepts:
             return {"algorithm": "radial", "positions": {topic: {"x": 0.0, "y": 0.0}}}
 

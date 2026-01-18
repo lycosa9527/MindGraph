@@ -1,20 +1,17 @@
-from typing import Literal, Optional
+"""Centralized Bilingual Message System for MindGraph.
 
-
-"""
-Centralized Bilingual Message System for MindGraph
-===================================================
-
-Provides all user-facing messages (errors, success, warnings) in both Chinese and English.
-Used by API endpoints to return localized error messages.
+Provides all user-facing messages (errors, success, warnings) in both Chinese
+and English. Used by API endpoints to return localized error messages.
 
 @author lycosa9527
 @made_by MindSpring Team
 
-Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+Copyright 2024-2025 北京思源智教科技有限公司
+(Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved
 Proprietary License
 """
+from typing import Literal, Optional
 
 
 Language = Literal["zh", "en", "az"]
@@ -66,34 +63,98 @@ class Messages:
             "az": "Etibarsız sorğu"
         },
         "captcha_generate_failed": {
-            "zh": "验证码生成失败，系统暂时繁忙。请等待几秒后刷新页面重试。如果问题持续，系统可能正在处理高负载请求。",
-            "en": "Failed to generate captcha due to a temporary system issue. Please wait a few seconds and refresh the page to try again. If the problem persists, the system may be experiencing high load.",
-            "az": "Captcha yaratmaq mümkün olmadı, sistem müvəqqəti məşğuldur. Bir neçə saniyə gözləyin və səhifəni yeniləyin. Problem davam edərsə, sistem yüksək yüklə işləyir."
+            "zh": (
+                "验证码生成失败，系统暂时繁忙。请等待几秒后刷新页面重试。"
+                "如果问题持续，系统可能正在处理高负载请求。"
+            ),
+            "en": (
+                "Failed to generate captcha due to a temporary system issue. "
+                "Please wait a few seconds and refresh the page to try again. "
+                "If the problem persists, the system may be experiencing high load."
+            ),
+            "az": (
+                "Captcha yaratmaq mümkün olmadı, sistem müvəqqəti məşğuldur. "
+                "Bir neçə saniyə gözləyin və səhifəni yeniləyin. "
+                "Problem davam edərsə, sistem yüksək yüklə işləyir."
+            )
         },
         "captcha_expired": {
-            "zh": "验证码已过期（有效期为5分钟）。请点击刷新按钮获取新的验证码图片后重试。",
-            "en": "Captcha code has expired (valid for 5 minutes). Please click the refresh button to get a new captcha image and try again.",
-            "az": "Captcha kodu müddəti bitib (5 dəqiqə etibarlıdır). Yeniləmə düyməsini klikləyin və yeni captcha şəkli alın."
+            "zh": (
+                "验证码已过期（有效期为5分钟）。"
+                "请点击刷新按钮获取新的验证码图片后重试。"
+            ),
+            "en": (
+                "Captcha code has expired (valid for 5 minutes). "
+                "Please click the refresh button to get a new captcha image "
+                "and try again."
+            ),
+            "az": (
+                "Captcha kodu müddəti bitib (5 dəqiqə etibarlıdır). "
+                "Yeniləmə düyməsini klikləyin və yeni captcha şəkli alın."
+            )
         },
         "captcha_not_found": {
-            "zh": "验证码会话未找到。这通常发生在页面打开时间过长时。请刷新验证码图片后重试。",
-            "en": "Captcha session not found. This usually happens if the page was open for too long. Please refresh the captcha image and try again.",
-            "az": "Captcha sessiyası tapılmadı. Bu adətən səhifə çox uzun müddət açıq qaldıqda baş verir. Captcha şəklini yeniləyin."
+            "zh": (
+                "验证码会话未找到。这通常发生在页面打开时间过长时。"
+                "请刷新验证码图片后重试。"
+            ),
+            "en": (
+                "Captcha session not found. This usually happens if the page "
+                "was open for too long. Please refresh the captcha image and "
+                "try again."
+            ),
+            "az": (
+                "Captcha sessiyası tapılmadı. Bu adətən səhifə çox uzun "
+                "müddət açıq qaldıqda baş verir. Captcha şəklini yeniləyin."
+            )
         },
         "captcha_incorrect": {
-            "zh": "验证码不正确。请仔细检查验证码（不区分大小写）或点击刷新获取新的验证码图片后重试。",
-            "en": "Captcha code is incorrect. Please double-check the code (case-insensitive) or click refresh to get a new captcha image and try again.",
-            "az": "Captcha kodu yanlışdır. Kodu yenidən yoxlayın (böyük/kiçik hərf fərqi yoxdur) və ya yeniləyin."
+            "zh": (
+                "验证码不正确。请仔细检查验证码（不区分大小写）"
+                "或点击刷新获取新的验证码图片后重试。"
+            ),
+            "en": (
+                "Captcha code is incorrect. Please double-check the code "
+                "(case-insensitive) or click refresh to get a new captcha "
+                "image and try again."
+            ),
+            "az": (
+                "Captcha kodu yanlışdır. Kodu yenidən yoxlayın "
+                "(böyük/kiçik hərf fərqi yoxdur) və ya yeniləyin."
+            )
         },
         "captcha_verify_failed": {
-            "zh": "验证码验证失败，系统暂时繁忙。请稍等片刻，刷新验证码图片后重试。如果问题持续，请尝试刷新整个页面。",
-            "en": "Captcha verification failed due to a temporary system issue. Please wait a moment, refresh the captcha image, and try again. If the problem persists, try refreshing the entire page.",
-            "az": "Captcha yoxlanışı müvəqqəti sistem problemi səbəbindən uğursuz oldu. Bir az gözləyin, captcha şəklini yeniləyin və yenidən cəhd edin."
+            "zh": (
+                "验证码验证失败，系统暂时繁忙。请稍等片刻，刷新验证码图片后重试。"
+                "如果问题持续，请尝试刷新整个页面。"
+            ),
+            "en": (
+                "Captcha verification failed due to a temporary system issue. "
+                "Please wait a moment, refresh the captcha image, and try again. "
+                "If the problem persists, try refreshing the entire page."
+            ),
+            "az": (
+                "Captcha yoxlanışı müvəqqəti sistem problemi səbəbindən "
+                "uğursuz oldu. Bir az gözləyin, captcha şəklini yeniləyin "
+                "və yenidən cəhd edin."
+            )
         },
         "captcha_database_unavailable": {
-            "zh": "数据库暂时繁忙，验证码验证失败。系统正在自动重试，请稍等片刻后重试。如果问题持续，请刷新页面获取新的验证码。",
-            "en": "Database is temporarily busy, captcha verification failed. The system is automatically retrying. Please wait a moment and try again. If the problem persists, please refresh the page to get a new captcha.",
-            "az": "Verilənlər bazası müvəqqəti olaraq məşğuldur, captcha yoxlanışı uğursuz oldu. Sistem avtomatik olaraq yenidən cəhd edir. Bir az gözləyin və yenidən cəhd edin."
+            "zh": (
+                "数据库暂时繁忙，验证码验证失败。系统正在自动重试，"
+                "请稍等片刻后重试。如果问题持续，请刷新页面获取新的验证码。"
+            ),
+            "en": (
+                "Database is temporarily busy, captcha verification failed. "
+                "The system is automatically retrying. Please wait a moment and "
+                "try again. If the problem persists, please refresh the page "
+                "to get a new captcha."
+            ),
+            "az": (
+                "Verilənlər bazası müvəqqəti olaraq məşğuldur, "
+                "captcha yoxlanışı uğursuz oldu. Sistem avtomatik olaraq "
+                "yenidən cəhd edir. Bir az gözləyin və yenidən cəhd edin."
+            )
         },
         "database_temporarily_unavailable": {
             "zh": "数据库暂时繁忙，请稍后重试。",
@@ -117,18 +178,45 @@ class Messages:
         },
         "invitation_code_required": {
             "zh": "需要邀请码。请输入学校管理员提供的邀请码。",
-            "en": "Invitation code is required. Please enter the invitation code provided by your school administrator.",
-            "az": "Dəvət kodu tələb olunur. Məktəb administratoru tərəfindən təmin edilən dəvət kodunu daxil edin."
+            "en": (
+                "Invitation code is required. Please enter the invitation code "
+                "provided by your school administrator."
+            ),
+            "az": (
+                "Dəvət kodu tələb olunur. Məktəb administratoru tərəfindən "
+                "təmin edilən dəvət kodunu daxil edin."
+            )
         },
         "invitation_code_invalid_format": {
-            "zh": "邀请码格式无效。期望格式：AAAA-XXXXX（4个字母，短横线，5个字母数字字符）。您输入的是：{}",
-            "en": "Invalid invitation code format. Expected format: AAAA-XXXXX (4 letters, dash, 5 alphanumeric characters). You entered: {}",
-            "az": "Etibarsız dəvət kodu formatı. Gözlənilən format: AAAA-XXXXX (4 hərf, tire, 5 hərf-rəqəm simvolu). Siz daxil etdiniz: {}"
+            "zh": (
+                "邀请码格式无效。期望格式：AAAA-XXXXX"
+                "（4个字母，短横线，5个字母数字字符）。您输入的是：{}"
+            ),
+            "en": (
+                "Invalid invitation code format. Expected format: AAAA-XXXXX "
+                "(4 letters, dash, 5 alphanumeric characters). "
+                "You entered: {}"
+            ),
+            "az": (
+                "Etibarsız dəvət kodu formatı. Gözlənilən format: AAAA-XXXXX "
+                "(4 hərf, tire, 5 hərf-rəqəm simvolu). Siz daxil etdiniz: {}"
+            )
         },
         "invitation_code_not_found": {
-            "zh": "邀请码 '{}' 无效或不存在。请检查学校管理员提供的邀请码，或如果您认为这是错误，请联系支持。",
-            "en": "Invitation code '{}' is not valid or does not exist. Please check the code provided by your school administrator, or contact support if you believe this is an error.",
-            "az": "Dəvət kodu '{}' etibarsızdır və ya mövcud deyil. Məktəb administratoru tərəfindən təmin edilən kodu yoxlayın və ya səhv olduğunu düşünürsünüzsə, dəstəklə əlaqə saxlayın."
+            "zh": (
+                "邀请码 '{}' 无效或不存在。请检查学校管理员提供的邀请码，"
+                "或如果您认为这是错误，请联系支持。"
+            ),
+            "en": (
+                "Invitation code '{}' is not valid or does not exist. "
+                "Please check the code provided by your school administrator, "
+                "or contact support if you believe this is an error."
+            ),
+            "az": (
+                "Dəvət kodu '{}' etibarsızdır və ya mövcud deyil. "
+                "Məktəb administratoru tərəfindən təmin edilən kodu yoxlayın "
+                "və ya səhv olduğunu düşünürsünüzsə, dəstəklə əlaqə saxlayın."
+            )
         },
         "registration_not_available": {
             "zh": "{} 模式下注册不可用。请改用密钥认证。",
@@ -136,9 +224,17 @@ class Messages:
             "az": "{} rejimində qeydiyyat mövcud deyil. Bunun əvəzinə passkey autentifikasiyasından istifadə edin."
         },
         "login_failed_phone_not_found": {
-            "zh": "登录失败。手机号未找到或密码不正确。还有 {} 次尝试机会。",
-            "en": "Login failed. Phone number not found or password incorrect. {} attempt(s) remaining.",
-            "az": "Giriş uğursuz oldu. Telefon nömrəsi tapılmadı və ya parol yanlışdır. {} cəhd qalıb."
+            "zh": (
+                "登录失败。手机号未找到或密码不正确。还有 {} 次尝试机会。"
+            ),
+            "en": (
+                "Login failed. Phone number not found or password incorrect. "
+                "{} attempt(s) remaining."
+            ),
+            "az": (
+                "Giriş uğursuz oldu. Telefon nömrəsi tapılmadı "
+                "və ya parol yanlışdır. {} cəhd qalıb."
+            )
         },
         "too_many_login_attempts": {
             "zh": "登录失败次数过多。请在 {} 分钟后重试。",
@@ -146,74 +242,185 @@ class Messages:
             "az": "Çox sayda uğursuz giriş cəhdi. {} dəqiqədən sonra yenidən cəhd edin."
         },
         "invalid_password": {
-            "zh": "密码无效。请检查您的密码后重试。账户锁定前还有 {} 次尝试机会。",
-            "en": "Invalid password. Please check your password and try again. {} attempt(s) remaining before account lockout.",
-            "az": "Etibarsız parol. Parolunuzu yoxlayın və yenidən cəhd edin. Hesab kilidlənməsindən əvvəl {} cəhd qalıb."
+            "zh": (
+                "密码无效。请检查您的密码后重试。"
+                "账户锁定前还有 {} 次尝试机会。"
+            ),
+            "en": (
+                "Invalid password. Please check your password and try again. "
+                "{} attempt(s) remaining before account lockout."
+            ),
+            "az": (
+                "Etibarsız parol. Parolunuzu yoxlayın və yenidən cəhd edin. "
+                "Hesab kilidlənməsindən əvvəl {} cəhd qalıb."
+            )
         },
         "account_locked": {
-            "zh": "账户因 {} 次失败登录尝试而暂时锁定。请在 {} 分钟后重试。",
-            "en": "Account temporarily locked due to {} failed login attempts. Please try again in {} minutes.",
-            "az": "Hesab {} uğursuz giriş cəhdi səbəbindən müvəqqəti olaraq kilidlənib. {} dəqiqədən sonra yenidən cəhd edin."
+            "zh": (
+                "账户因 {} 次失败登录尝试而暂时锁定。请在 {} 分钟后重试。"
+            ),
+            "en": (
+                "Account temporarily locked due to {} failed login attempts. "
+                "Please try again in {} minutes."
+            ),
+            "az": (
+                "Hesab {} uğursuz giriş cəhdi səbəbindən müvəqqəti olaraq "
+                "kilidlənib. {} dəqiqədən sonra yenidən cəhd edin."
+            )
         },
         "organization_locked": {
-            "zh": "您的学校账户（{}）已被管理员锁定。请联系学校管理员或支持获取帮助。",
-            "en": "Your school account ({}) has been locked by the administrator. Please contact your school administrator or support for assistance.",
-            "az": "Məktəb hesabınız ({}) administrator tərəfindən kilidlənib. Yardım üçün məktəb administratoru və ya dəstəklə əlaqə saxlayın."
+            "zh": (
+                "您的学校账户（{}）已被管理员锁定。"
+                "请联系学校管理员或支持获取帮助。"
+            ),
+            "en": (
+                "Your school account ({}) has been locked by the administrator. "
+                "Please contact your school administrator or support for "
+                "assistance."
+            ),
+            "az": (
+                "Məktəb hesabınız ({}) administrator tərəfindən kilidlənib. "
+                "Yardım üçün məktəb administratoru və ya dəstəklə əlaqə saxlayın."
+            )
         },
         "organization_expired": {
-            "zh": "您的学校订阅（{}）已于 {} 过期。请联系学校管理员续订订阅。",
-            "en": "Your school subscription ({}) expired on {}. Please contact your school administrator to renew the subscription.",
-            "az": "Məktəb abunəliyiniz ({}) {} tarixində bitib. Abunəliyi yeniləmək üçün məktəb administratoru ilə əlaqə saxlayın."
+            "zh": (
+                "您的学校订阅（{}）已于 {} 过期。"
+                "请联系学校管理员续订订阅。"
+            ),
+            "en": (
+                "Your school subscription ({}) expired on {}. "
+                "Please contact your school administrator to renew the "
+                "subscription."
+            ),
+            "az": (
+                "Məktəb abunəliyiniz ({}) {} tarixində bitib. "
+                "Abunəliyi yeniləmək üçün məktəb administratoru ilə "
+                "əlaqə saxlayın."
+            )
         },
         "sms_service_not_configured": {
             "zh": "短信服务未配置。请联系支持或使用基于密码的认证。",
-            "en": "SMS service is not configured. Please contact support or use password-based authentication instead.",
-            "az": "SMS xidməti konfiqurasiya edilməyib. Dəstəklə əlaqə saxlayın və ya bunun əvəzinə parol əsaslı autentifikasiyadan istifadə edin."
+            "en": (
+                "SMS service is not configured. Please contact support or "
+                "use password-based authentication instead."
+            ),
+            "az": (
+                "SMS xidməti konfiqurasiya edilməyib. Dəstəklə əlaqə saxlayın "
+                "və ya bunun əvəzinə parol əsaslı autentifikasiyadan istifadə edin."
+            )
         },
         "phone_not_registered_login": {
             "zh": "该手机号未注册。请检查您的手机号或注册新账户。",
-            "en": "This phone number is not registered. Please check your phone number or register a new account.",
-            "az": "Bu telefon nömrəsi qeydiyyatdan keçməyib. Telefon nömrənizi yoxlayın və ya yeni hesab qeydiyyatdan keçirin."
+            "en": (
+                "This phone number is not registered. Please check your "
+                "phone number or register a new account."
+            ),
+            "az": (
+                "Bu telefon nömrəsi qeydiyyatdan keçməyib. "
+                "Telefon nömrənizi yoxlayın və ya yeni hesab qeydiyyatdan keçirin."
+            )
         },
         "phone_not_registered_reset": {
             "zh": "该手机号未注册。请检查您的手机号或联系支持。",
-            "en": "This phone number is not registered. Please check your phone number or contact support.",
-            "az": "Bu telefon nömrəsi qeydiyyatdan keçməyib. Telefon nömrənizi yoxlayın və ya dəstəklə əlaqə saxlayın."
+            "en": (
+                "This phone number is not registered. Please check your "
+                "phone number or contact support."
+            ),
+            "az": (
+                "Bu telefon nömrəsi qeydiyyatdan keçməyib. "
+                "Telefon nömrənizi yoxlayın və ya dəstəklə əlaqə saxlayın."
+            )
         },
         "sms_cooldown_minutes": {
-            "zh": "请等待 {} 分钟后再请求新的短信验证码。该号码最近已收到验证码。",
-            "en": "Please wait {} minute(s) before requesting a new SMS code. A code was recently sent to this number.",
-            "az": "Yeni SMS kodu tələb etməzdən əvvəl {} dəqiqə gözləyin. Bu nömrəyə yaxınlarda kod göndərilib."
+            "zh": (
+                "请等待 {} 分钟后再请求新的短信验证码。该号码最近已收到验证码。"
+            ),
+            "en": (
+                "Please wait {} minute(s) before requesting a new SMS code. "
+                "A code was recently sent to this number."
+            ),
+            "az": (
+                "Yeni SMS kodu tələb etməzdən əvvəl {} dəqiqə gözləyin. "
+                "Bu nömrəyə yaxınlarda kod göndərilib."
+            )
         },
         "sms_cooldown_seconds": {
-            "zh": "请等待 {} 秒后再请求新的短信验证码。该号码最近已收到验证码。",
-            "en": "Please wait {} second(s) before requesting a new SMS code. A code was recently sent to this number.",
-            "az": "Yeni SMS kodu tələb etməzdən əvvəl {} saniyə gözləyin. Bu nömrəyə yaxınlarda kod göndərilib."
+            "zh": (
+                "请等待 {} 秒后再请求新的短信验证码。该号码最近已收到验证码。"
+            ),
+            "en": (
+                "Please wait {} second(s) before requesting a new SMS code. "
+                "A code was recently sent to this number."
+            ),
+            "az": (
+                "Yeni SMS kodu tələb etməzdən əvvəl {} saniyə gözləyin. "
+                "Bu nömrəyə yaxınlarda kod göndərilib."
+            )
         },
         "too_many_sms_requests": {
-            "zh": "短信验证码请求过多（{} 次请求在 {} 小时内）。请稍后再试。",
-            "en": "Too many SMS verification code requests ({} requests in {} hour(s)). Please try again later.",
-            "az": "Çox sayda SMS təsdiq kodu sorğusu ({} sorğu {} saat ərzində). Daha sonra yenidən cəhd edin."
+            "zh": (
+                "短信验证码请求过多（{} 次请求在 {} 小时内）。请稍后再试。"
+            ),
+            "en": (
+                "Too many SMS verification code requests "
+                "({} requests in {} hour(s)). Please try again later."
+            ),
+            "az": (
+                "Çox sayda SMS təsdiq kodu sorğusu ({} sorğu {} saat ərzində). "
+                "Daha sonra yenidən cəhd edin."
+            )
         },
         "sms_code_expired": {
-            "zh": "短信验证码已过期。验证码有效期为 {} 分钟。请申请新的验证码。",
-            "en": "SMS verification code has expired. Codes are valid for {} minutes. Please request a new code.",
-            "az": "SMS təsdiq kodu müddəti bitib. Kodlar {} dəqiqə etibarlıdır. Yeni kod tələb edin."
+            "zh": (
+                "短信验证码已过期。验证码有效期为 {} 分钟。请申请新的验证码。"
+            ),
+            "en": (
+                "SMS verification code has expired. Codes are valid for {} "
+                "minutes. Please request a new code."
+            ),
+            "az": (
+                "SMS təsdiq kodu müddəti bitib. Kodlar {} dəqiqə etibarlıdır. "
+                "Yeni kod tələb edin."
+            )
         },
         "sms_code_invalid": {
             "zh": "短信验证码无效。请检查验证码后重试，或申请新的验证码。",
-            "en": "Invalid SMS verification code. Please check the code and try again, or request a new code.",
-            "az": "Etibarsız SMS təsdiq kodu. Kodu yoxlayın və yenidən cəhd edin və ya yeni kod tələb edin."
+            "en": (
+                "Invalid SMS verification code. Please check the code and "
+                "try again, or request a new code."
+            ),
+            "az": (
+                "Etibarsız SMS təsdiq kodu. Kodu yoxlayın və yenidən cəhd edin "
+                "və ya yeni kod tələb edin."
+            )
         },
         "sms_code_already_used": {
-            "zh": "该短信验证码已被使用。每个验证码只能使用一次。请申请新的验证码。",
-            "en": "This SMS verification code has already been used. Each code can only be used once. Please request a new code.",
-            "az": "Bu SMS təsdiq kodu artıq istifadə olunub. Hər kod yalnız bir dəfə istifadə edilə bilər. Yeni kod tələb edin."
+            "zh": (
+                "该短信验证码已被使用。每个验证码只能使用一次。请申请新的验证码。"
+            ),
+            "en": (
+                "This SMS verification code has already been used. "
+                "Each code can only be used once. Please request a new code."
+            ),
+            "az": (
+                "Bu SMS təsdiq kodu artıq istifadə olunub. "
+                "Hər kod yalnız bir dəfə istifadə edilə bilər. Yeni kod tələb edin."
+            )
         },
         "sms_service_temporarily_unavailable": {
-            "zh": "短信服务暂时不可用。请稍后重试，如果问题持续存在，请联系支持。",
-            "en": "SMS service is temporarily unavailable. Please try again later or contact support if the problem persists.",
-            "az": "SMS xidməti müvəqqəti olaraq mövcud deyil. Daha sonra yenidən cəhd edin və ya problem davam edərsə dəstəklə əlaqə saxlayın."
+            "zh": (
+                "短信服务暂时不可用。请稍后重试，如果问题持续存在，请联系支持。"
+            ),
+            "en": (
+                "SMS service is temporarily unavailable. Please try again later "
+                "or contact support if the problem persists."
+            ),
+            "az": (
+                "SMS xidməti müvəqqəti olaraq mövcud deyil. "
+                "Daha sonra yenidən cəhd edin və ya problem davam edərsə "
+                "dəstəklə əlaqə saxlayın."
+            )
         },
         # SMS Error Codes - FailedOperation
         "sms_error_contain_sensitive_word": {
@@ -360,9 +567,17 @@ class Messages:
             "az": "Bir sorğuda çox sayda telefon nömrəsi (maksimum 200). Dəstəklə əlaqə saxlayın."
         },
         "sms_error_phone_daily_limit": {
-            "zh": "该手机号今日短信发送次数已达上限。请明天再试或联系技术支持。",
-            "en": "Daily SMS limit reached for this phone number. Please try again tomorrow or contact support.",
-            "az": "Bu telefon nömrəsi üçün günlük SMS limiti çatdı. Sabah yenidən cəhd edin və ya dəstəklə əlaqə saxlayın."
+            "zh": (
+                "该手机号今日短信发送次数已达上限。请明天再试或联系技术支持。"
+            ),
+            "en": (
+                "Daily SMS limit reached for this phone number. "
+                "Please try again tomorrow or contact support."
+            ),
+            "az": (
+                "Bu telefon nömrəsi üçün günlük SMS limiti çatdı. "
+                "Sabah yenidən cəhd edin və ya dəstəklə əlaqə saxlayın."
+            )
         },
         "sms_error_phone_hourly_limit": {
             "zh": "该手机号每小时短信发送次数已达上限。请稍后再试。",
@@ -444,9 +659,17 @@ class Messages:
         },
         # SMS Error Codes - Generic fallback
         "sms_error_generic": {
-            "zh": "短信发送失败：{}。请稍后重试，如果问题持续存在，请联系技术支持。",
-            "en": "SMS sending failed due to: {}. Please try again later or contact support if the problem persists.",
-            "az": "SMS göndərmə uğursuz oldu: {}. Daha sonra yenidən cəhd edin və ya problem davam edərsə dəstəklə əlaqə saxlayın."
+            "zh": (
+                "短信发送失败：{}。请稍后重试，如果问题持续存在，请联系技术支持。"
+            ),
+            "en": (
+                "SMS sending failed due to: {}. Please try again later or "
+                "contact support if the problem persists."
+            ),
+            "az": (
+                "SMS göndərmə uğursuz oldu: {}. Daha sonra yenidən cəhd edin "
+                "və ya problem davam edərsə dəstəklə əlaqə saxlayın."
+            )
         },
         "invalid_passkey": {
             "zh": "无效的密钥",
@@ -754,51 +977,70 @@ class Messages:
     }
 
     @classmethod
-    def get(cls, category: str, key: str, lang: Language = "en", *args) -> str:
+    def get(cls, category: str, key: str, *args, lang: Language = "en") -> str:
         """
         Get a message in the specified language.
 
         Args:
             category: Message category ('ERRORS', 'SUCCESS', 'WARNINGS')
             key: Message key
-            lang: Language ('zh' or 'en')
-            *args: Format arguments for messages with placeholders
+            *args: Format arguments for messages with placeholders.
+                   If first arg is a language code ('zh', 'en', 'az'),
+                   it will be used as lang and removed from args.
+            lang: Language ('zh', 'en', or 'az'). Keyword-only parameter.
 
         Returns:
             Localized message string
         """
+        # Backward compatibility: check if first arg is a language code
+        format_args = list(args)
+        if format_args and isinstance(format_args[0], str):
+            potential_lang = format_args[0].lower()
+            if potential_lang == "zh":
+                lang = "zh"
+                format_args = format_args[1:]
+            elif potential_lang == "en":
+                lang = "en"
+                format_args = format_args[1:]
+            elif potential_lang == "az":
+                lang = "az"
+                format_args = format_args[1:]
+
         messages = getattr(cls, category, {})
         message_dict = messages.get(key, {})
         # Fallback order: requested lang -> en -> key
         message = message_dict.get(lang) or message_dict.get("en") or key
 
         # Format message if arguments provided
-        if args:
+        if format_args:
             try:
-                return message.format(*args)
+                return message.format(*format_args)
             except (IndexError, KeyError):
                 return message
 
         return message
 
     @classmethod
-    def error(cls, key: str, lang: Language = "en", *args) -> str:
+    def error(cls, key: str, *args, lang: Language = "en") -> str:
         """Get an error message"""
-        return cls.get("ERRORS", key, lang, *args)
+        return cls.get("ERRORS", key, *args, lang=lang)
 
     @classmethod
-    def success(cls, key: str, lang: Language = "en", *args) -> str:
+    def success(cls, key: str, *args, lang: Language = "en") -> str:
         """Get a success message"""
-        return cls.get("SUCCESS", key, lang, *args)
+        return cls.get("SUCCESS", key, *args, lang=lang)
 
     @classmethod
-    def warning(cls, key: str, lang: Language = "en", *args) -> str:
+    def warning(cls, key: str, *args, lang: Language = "en") -> str:
         """Get a warning message"""
-        return cls.get("WARNINGS", key, lang, *args)
+        return cls.get("WARNINGS", key, *args, lang=lang)
 
 
 # Convenience function for getting language from request
-def get_request_language(language_header: Optional[str] = None, accept_language: Optional[str] = None) -> Language:
+def get_request_language(
+    language_header: Optional[str] = None,
+    accept_language: Optional[str] = None
+) -> Language:
     """
     Determine language from request headers.
 
@@ -828,4 +1070,3 @@ def get_request_language(language_header: Optional[str] = None, accept_language:
 
     # Default: English
     return "en"
-

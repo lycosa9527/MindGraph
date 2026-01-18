@@ -15,9 +15,30 @@ from typing import TYPE_CHECKING, cast
 from prompts import get_prompt
 from services.llm import llm_service
 
+from agents.concept_maps.concept_map_agent import ConceptMapAgent
+from agents.mind_maps.mind_map_agent import MindMapAgent
+from agents.thinking_maps.brace_map_agent import BraceMapAgent
+from agents.thinking_maps.bridge_map_agent import BridgeMapAgent
+from agents.thinking_maps.bubble_map_agent import BubbleMapAgent
+from agents.thinking_maps.circle_map_agent import CircleMapAgent
+from agents.thinking_maps.double_bubble_map_agent import DoubleBubbleMapAgent
+from agents.thinking_maps.flow_map_agent import FlowMapAgent
+from agents.thinking_maps.multi_flow_map_agent import MultiFlowMapAgent
+from agents.thinking_maps.tree_map_agent import TreeMapAgent
+from agents.thinking_tools.factor_analysis_agent import FactorAnalysisAgent
+from agents.thinking_tools.three_position_analysis_agent import ThreePositionAnalysisAgent
+from agents.thinking_tools.perspective_analysis_agent import PerspectiveAnalysisAgent
+from agents.thinking_tools.goal_analysis_agent import GoalAnalysisAgent
+from agents.thinking_tools.possibility_analysis_agent import PossibilityAnalysisAgent
+from agents.thinking_tools.result_analysis_agent import ResultAnalysisAgent
+from agents.thinking_tools.five_w_one_h_agent import FiveWOneHAgent
+from agents.thinking_tools.whwm_analysis_agent import WHWMAnalysisAgent
+from agents.thinking_tools.four_quadrant_agent import FourQuadrantAgent
 from agents.core.diagram_detection import _detect_diagram_type_from_prompt
 from agents.core.learning_sheet import _clean_prompt_for_learning_sheet, _detect_learning_sheet_from_prompt
 from agents.core.utils import create_error_response, validate_inputs
+from services.llm.rag_service import RAGService
+from config.database import SessionLocal
 
 if TYPE_CHECKING:
     pass
@@ -62,68 +83,48 @@ async def _generate_spec_with_agent(
     try:
         # Import and instantiate the appropriate agent with model
         if diagram_type == 'bubble_map':
-            from agents.thinking_maps.bubble_map_agent import BubbleMapAgent
             agent = BubbleMapAgent(model=model)
         elif diagram_type == 'bridge_map':
             logger.debug("Bridge map agent selection started")
-            from agents.thinking_maps.bridge_map_agent import BridgeMapAgent
             agent = BridgeMapAgent(model=model)
             logger.debug("BridgeMapAgent imported and instantiated successfully")
         elif diagram_type == 'tree_map':
-            from agents.thinking_maps.tree_map_agent import TreeMapAgent
             agent = TreeMapAgent(model=model)
         elif diagram_type == 'circle_map':
-            from agents.thinking_maps.circle_map_agent import CircleMapAgent
             agent = CircleMapAgent(model=model)
         elif diagram_type == 'double_bubble_map':
-            from agents.thinking_maps.double_bubble_map_agent import DoubleBubbleMapAgent
             agent = DoubleBubbleMapAgent(model=model)
         elif diagram_type == 'flow_map':
-            from agents.thinking_maps.flow_map_agent import FlowMapAgent
             agent = FlowMapAgent(model=model)
         elif diagram_type == 'brace_map':
-            from agents.thinking_maps.brace_map_agent import BraceMapAgent
             agent = BraceMapAgent(model=model)
         elif diagram_type == 'multi_flow_map':
-            from agents.thinking_maps.multi_flow_map_agent import MultiFlowMapAgent
             agent = MultiFlowMapAgent(model=model)
         elif diagram_type == 'mind_map' or diagram_type == 'mindmap':
-            from agents.mind_maps.mind_map_agent import MindMapAgent
             agent = MindMapAgent(model=model)
         elif diagram_type == 'concept_map':
-            from agents.concept_maps.concept_map_agent import ConceptMapAgent
             agent = ConceptMapAgent(model=model)
         # Thinking Tools
         elif diagram_type == 'factor_analysis':
-            from agents.thinking_tools.factor_analysis_agent import FactorAnalysisAgent
             agent = FactorAnalysisAgent()
         elif diagram_type == 'three_position_analysis':
-            from agents.thinking_tools.three_position_analysis_agent import ThreePositionAnalysisAgent
             agent = ThreePositionAnalysisAgent()
         elif diagram_type == 'perspective_analysis':
-            from agents.thinking_tools.perspective_analysis_agent import PerspectiveAnalysisAgent
             agent = PerspectiveAnalysisAgent()
         elif diagram_type == 'goal_analysis':
-            from agents.thinking_tools.goal_analysis_agent import GoalAnalysisAgent
             agent = GoalAnalysisAgent()
         elif diagram_type == 'possibility_analysis':
-            from agents.thinking_tools.possibility_analysis_agent import PossibilityAnalysisAgent
             agent = PossibilityAnalysisAgent()
         elif diagram_type == 'result_analysis':
-            from agents.thinking_tools.result_analysis_agent import ResultAnalysisAgent
             agent = ResultAnalysisAgent()
         elif diagram_type == 'five_w_one_h':
-            from agents.thinking_tools.five_w_one_h_agent import FiveWOneHAgent
             agent = FiveWOneHAgent()
         elif diagram_type == 'whwm_analysis':
-            from agents.thinking_tools.whwm_analysis_agent import WHWMAnalysisAgent
             agent = WHWMAnalysisAgent()
         elif diagram_type == 'four_quadrant':
-            from agents.thinking_tools.four_quadrant_agent import FourQuadrantAgent
             agent = FourQuadrantAgent()
         else:
             # Fallback to bubble map
-            from agents.thinking_maps.bubble_map_agent import BubbleMapAgent
             agent = BubbleMapAgent(model=model)
 
         # Generate using the agent
@@ -190,10 +191,8 @@ async def _generate_spec_with_agent(
                     "dimension '%s'", diagram_type, fixed_dimension
                 )
                 if diagram_type == 'tree_map':
-                    from agents.thinking_maps.tree_map_agent import TreeMapAgent
                     typed_agent = cast(TreeMapAgent, agent)
                 else:
-                    from agents.thinking_maps.brace_map_agent import BraceMapAgent
                     typed_agent = cast(BraceMapAgent, agent)
                 tree_brace_kwargs = {
                     'dimension_preference': fixed_dimension,
@@ -214,10 +213,8 @@ async def _generate_spec_with_agent(
                     diagram_type, fixed_dimension
                 )
                 if diagram_type == 'tree_map':
-                    from agents.thinking_maps.tree_map_agent import TreeMapAgent
                     typed_agent = cast(TreeMapAgent, agent)
                 else:
-                    from agents.thinking_maps.brace_map_agent import BraceMapAgent
                     typed_agent = cast(BraceMapAgent, agent)
                 tree_brace_kwargs = {
                     'dimension_preference': fixed_dimension,
@@ -237,21 +234,18 @@ async def _generate_spec_with_agent(
             # All accept dimension_preference parameter
             # Use explicit type annotation to help Pylint
             if diagram_type == 'brace_map':
-                from agents.thinking_maps.brace_map_agent import BraceMapAgent
                 typed_agent = cast(BraceMapAgent, agent)
                 logger.debug(
                     "Passing decomposition dimension preference to brace map agent: %s",
                     dimension_preference
                 )
             elif diagram_type == 'tree_map':
-                from agents.thinking_maps.tree_map_agent import TreeMapAgent
                 typed_agent = cast(TreeMapAgent, agent)
                 logger.debug(
                     "Passing classification dimension preference to tree map agent: %s",
                     dimension_preference
                 )
             else:  # bridge_map
-                from agents.thinking_maps.bridge_map_agent import BridgeMapAgent
                 typed_agent = cast(BridgeMapAgent, agent)
                 logger.debug(
                     "Passing analogy relationship pattern preference to bridge map agent: %s",
@@ -406,9 +400,6 @@ auto-complete - user has dimension but no topic (generate topic and children)
             rag_context_for_topic = None
             if use_rag and user_id:
                 try:
-                    from services.llm.rag_service import RAGService
-                    from config.database import SessionLocal
-
                     rag_service = RAGService()
                     db = SessionLocal()
                     try:
@@ -506,9 +497,6 @@ auto-complete - user has dimension but no topic (generate topic and children)
         rag_context = None
         if use_rag and user_id:
             try:
-                from services.llm.rag_service import RAGService
-                from config.database import SessionLocal
-
                 rag_service = RAGService()
                 db = SessionLocal()
                 try:

@@ -39,6 +39,13 @@ try:
 except ImportError:
     is_backup_in_progress = None
 
+# Optional import for invitation codes (lazy import to avoid circular dependency)
+# Imported at module level to avoid import-outside-toplevel warnings
+try:
+    from utils.auth.invitations import load_invitation_codes
+except ImportError:
+    load_invitation_codes = None
+
 # Import migration utility (auth import is lazy to avoid circular dependency)
 from utils.db_migration import run_migrations
 from models.auth import (
@@ -553,9 +560,9 @@ def init_db():
         # Check if organizations already exist
         if db.query(Organization).count() == 0:
             # Prefer seeding from .env INVITATION_CODES if provided
-            # Import lazily to avoid circular import with utils.auth
-            from utils.auth.invitations import load_invitation_codes
-            env_codes = load_invitation_codes()
+            env_codes = None
+            if load_invitation_codes is not None:
+                env_codes = load_invitation_codes()
             seeded_orgs = []
             if env_codes:
                 for org_code, (invite, _expiry) in env_codes.items():

@@ -58,7 +58,10 @@ async def limit_request_body_size(request: Request, call_next):
                 client_ip = request.client.host if request.client else 'unknown'
                 security_log.input_validation_failed(
                     field="request_body",
-                    reason=f"size {size / 1024 / 1024:.1f}MB exceeds {MAX_REQUEST_BODY_SIZE / 1024 / 1024:.0f}MB limit",
+                    reason=(
+                        f"size {size / 1024 / 1024:.1f}MB exceeds "
+                        f"{MAX_REQUEST_BODY_SIZE / 1024 / 1024:.0f}MB limit"
+                    ),
                     ip=client_ip,
                     value_size=size
                 )

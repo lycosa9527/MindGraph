@@ -161,7 +161,10 @@ class RegistrationMetrics:
 
             # Calculate average retries
             if metrics['total_successes'] > 0:
-                metrics['avg_sqlite_retries'] = metrics['sqlite_commit_retries']['total_retries'] / metrics['total_successes']
+                metrics['avg_sqlite_retries'] = (
+                    metrics['sqlite_commit_retries']['total_retries'] /
+                    metrics['total_successes']
+                )
             else:
                 metrics['avg_sqlite_retries'] = 0.0
 
@@ -180,7 +183,11 @@ class RegistrationMetrics:
                     'total_failures': metrics['total_failures'],
                     'success_rate': f"{metrics['success_rate']:.2%}",
                     'avg_registration_time_ms': f"{metrics['avg_registration_time'] * 1000:.2f}",
-                    'min_registration_time_ms': f"{metrics['min_registration_time'] * 1000:.2f}" if metrics['min_registration_time'] != float('inf') else "N/A",
+                    'min_registration_time_ms': (
+                        f"{metrics['min_registration_time'] * 1000:.2f}"
+                        if metrics['min_registration_time'] != float('inf')
+                        else "N/A"
+                    ),
                     'max_registration_time_ms': f"{metrics['max_registration_time'] * 1000:.2f}",
                     'failures_by_reason': metrics['failures_by_reason'],
                     'avg_sqlite_retries': f"{metrics['avg_sqlite_retries']:.2f}",

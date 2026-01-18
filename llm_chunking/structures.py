@@ -24,7 +24,6 @@ class ChunkStructure(ABC):
     @abstractmethod
     def structure_type(self) -> str:
         """Return structure type identifier."""
-        pass
 
     @abstractmethod
     def chunk(
@@ -44,7 +43,6 @@ class ChunkStructure(ABC):
         Returns:
             List of chunks (type depends on structure)
         """
-        pass
 
 
 class GeneralStructure(ChunkStructure):

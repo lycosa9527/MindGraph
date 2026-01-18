@@ -1,4 +1,4 @@
-﻿"""
+"""
 Response Models
 ===============
 
@@ -25,6 +25,7 @@ class ErrorResponse(BaseModel):
     timestamp: Optional[float] = Field(None, description="Error timestamp")
 
     class Config:
+        """Configuration for ErrorResponse JSON schema"""
         json_schema_extra = {
             "example": {
                 "error": "Invalid diagram type",
@@ -45,10 +46,14 @@ class GenerateResponse(BaseModel):
     error: Optional[str] = Field(None, description="Error message if failed")
     warning: Optional[str] = Field(None, description="Warning message if partial recovery occurred")
     recovery_warnings: Optional[List[str]] = Field(None, description="Detailed recovery warnings")
-    use_default_template: Optional[bool] = Field(False, description="Whether to use default template (prompt-based generation)")
+    use_default_template: Optional[bool] = Field(
+        False,
+        description="Whether to use default template (prompt-based generation)"
+    )
     extracted_topic: Optional[str] = Field(None, description="Extracted topic from prompt")
 
     class Config:
+        """Configuration for GenerateResponse JSON schema"""
         json_schema_extra = {
             "example": {
                 "success": True,
@@ -65,6 +70,7 @@ class HealthResponse(BaseModel):
     version: str = Field(..., description="Application version")
 
     class Config:
+        """Configuration for HealthResponse JSON schema"""
         json_schema_extra = {
             "example": {
                 "status": "ok",
@@ -104,6 +110,7 @@ class LLMHealthResponse(BaseModel):
     total_models: Optional[int] = Field(None, description="Total number of models checked")
 
     class Config:
+        """Configuration for LLMHealthResponse JSON schema"""
         json_schema_extra = {
             "example": {
                 "status": "success",
@@ -134,6 +141,7 @@ class DatabaseHealthResponse(BaseModel):
     timestamp: int = Field(..., description="Unix timestamp of health check")
 
     class Config:
+        """Configuration for DatabaseHealthResponse JSON schema"""
         json_schema_extra = {
             "example": {
                 "status": "healthy",
@@ -168,6 +176,7 @@ class TabSuggestionResponse(BaseModel):
     error: Optional[str] = Field(None, description="Error message if failed")
 
     class Config:
+        """Configuration for TabSuggestionResponse JSON schema"""
         json_schema_extra = {
             "example": {
                 "success": True,
@@ -196,6 +205,7 @@ class TabExpandResponse(BaseModel):
     error: Optional[str] = Field(None, description="Error message if failed")
 
     class Config:
+        """Configuration for TabExpandResponse JSON schema"""
         json_schema_extra = {
             "example": {
                 "success": True,
@@ -226,6 +236,7 @@ class DiagramResponse(BaseModel):
     updated_at: datetime = Field(..., description="Last update timestamp")
 
     class Config:
+        """Configuration for DiagramResponse JSON schema"""
         json_schema_extra = {
             "example": {
                 "id": "550e8400-e29b-41d4-a716-446655440000",
@@ -250,6 +261,7 @@ class DiagramListItem(BaseModel):
     is_pinned: bool = Field(False, description="Whether diagram is pinned to top")
 
     class Config:
+        """Configuration for DiagramListItem JSON schema"""
         json_schema_extra = {
             "example": {
                 "id": "550e8400-e29b-41d4-a716-446655440000",
@@ -272,6 +284,7 @@ class DiagramListResponse(BaseModel):
     max_diagrams: int = Field(20, description="Maximum diagrams allowed per user")
 
     class Config:
+        """Configuration for DiagramListResponse JSON schema"""
         json_schema_extra = {
             "example": {
                 "diagrams": [
@@ -291,3 +304,169 @@ class DiagramListResponse(BaseModel):
             }
         }
 
+
+# ============================================================================
+# KNOWLEDGE SPACE RESPONSE MODELS
+# ============================================================================
+
+class DocumentResponse(BaseModel):
+    """Response model for a single document."""
+
+    id: int
+    file_name: str
+    file_type: str
+    file_size: int
+    status: str
+    chunk_count: int
+    error_message: Optional[str] = None
+    processing_progress: Optional[str] = None
+    processing_progress_percent: int = 0
+    created_at: str
+    updated_at: str
+
+
+class DocumentListResponse(BaseModel):
+    """Response model for a list of documents."""
+
+    documents: List[DocumentResponse]
+    total: int
+
+
+class RetrievalTestResult(BaseModel):
+    """Response model for a single retrieval test result."""
+
+    chunk_id: int
+    text: str
+    score: float
+    document_id: int
+    document_name: str
+    chunk_index: int
+
+
+class RetrievalTestResponse(BaseModel):
+    """Response model for retrieval test results."""
+
+    query: str
+    method: str
+    results: List[RetrievalTestResult]
+    timing: dict
+    stats: dict
+
+
+class RetrievalTestHistoryItem(BaseModel):
+    """Response model for a single retrieval test history item."""
+
+    id: int
+    query: str
+    method: str
+    top_k: int
+    score_threshold: float
+    result_count: int
+    timing: dict
+    created_at: str
+
+
+class RetrievalTestHistoryResponse(BaseModel):
+    """Response model for retrieval test history."""
+
+    queries: List[RetrievalTestHistoryItem]
+    total: int
+
+
+class CompressionMetricsResponse(BaseModel):
+    """Response model for compression metrics."""
+
+    compression_enabled: bool
+    compression_type: Optional[str]
+    points_count: int
+    vector_size: int
+    estimated_uncompressed_size: float
+    estimated_compressed_size: float
+    compression_ratio: float
+    storage_savings_percent: float
+    error: Optional[str] = None
+
+
+class BatchResponse(BaseModel):
+    """Response model for batch upload operations."""
+
+    batch_id: int
+    status: str
+    total_count: int
+    completed_count: int
+    failed_count: int
+    created_at: str
+    updated_at: str
+
+
+class VersionResponse(BaseModel):
+    """Response model for a document version."""
+
+    id: int
+    document_id: int
+    version_number: int
+    chunk_count: int
+    change_summary: Optional[Dict[str, Any]] = None
+    created_at: str
+
+
+class VersionListResponse(BaseModel):
+    """Response model for a list of document versions."""
+
+    versions: List[VersionResponse]
+    total: int
+
+
+class QueryTemplateResponse(BaseModel):
+    """Response model for a query template."""
+
+    id: int
+    name: str
+    template_text: str
+    parameters: Optional[Dict[str, Any]] = None
+    usage_count: int
+    success_rate: float
+    created_at: str
+    updated_at: str
+
+
+class QueryAnalyticsResponse(BaseModel):
+    """Response model for query analytics."""
+
+    common_queries: List[Dict[str, Any]]
+    low_performing_queries: List[Dict[str, Any]]
+    average_scores: Dict[str, float]
+    suggestions: List[str]
+
+
+class RelationshipResponse(BaseModel):
+    """Response model for a document relationship."""
+
+    id: int
+    source_document_id: int
+    target_document_id: int
+    relationship_type: str
+    context: Optional[str] = None
+    created_at: str
+
+
+class EvaluationDatasetResponse(BaseModel):
+    """Response model for an evaluation dataset."""
+
+    id: int
+    name: str
+    description: Optional[str] = None
+    queries: List[Dict[str, Any]]
+    created_at: str
+    updated_at: str
+
+
+class EvaluationRunResponse(BaseModel):
+    """Response model for evaluation run results."""
+
+    dataset_id: int
+    method: str
+    total_queries: int
+    evaluated_queries: int
+    average_metrics: Dict[str, float]
+    query_results: List[Dict[str, Any]]

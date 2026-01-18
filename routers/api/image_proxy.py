@@ -1,14 +1,3 @@
-﻿"""
-image proxy module.
-"""
-from urllib.parse import urlparse
-import logging
-
-from fastapi import APIRouter, HTTPException, Query
-from fastapi.responses import Response
-import httpx
-
-
 """
 Image Proxy API Router
 ======================
@@ -20,6 +9,12 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+from urllib.parse import urlparse
+import logging
+
+from fastapi import APIRouter, HTTPException, Query
+from fastapi.responses import Response
+import httpx
 
 
 
@@ -53,13 +48,13 @@ async def proxy_image(url: str = Query(..., description="The image URL to proxy"
         parsed = urlparse(url)
         if not parsed.scheme or not parsed.netloc:
             raise HTTPException(status_code=400, detail="Invalid URL")
-    except Exception:
-        raise HTTPException(status_code=400, detail="Invalid URL")
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail="Invalid URL") from exc
 
     # Security: Check domain whitelist
     domain = parsed.netloc.split(':')[0]  # Remove port if present
     if domain not in ALLOWED_DOMAINS:
-        logger.warning(f"Image proxy blocked for non-whitelisted domain: {domain}")
+        logger.warning("Image proxy blocked for non-whitelisted domain: %s", domain)
         raise HTTPException(status_code=403, detail="Domain not allowed")
 
     try:
@@ -97,8 +92,8 @@ async def proxy_image(url: str = Query(..., description="The image URL to proxy"
                 }
             )
 
-    except httpx.TimeoutException:
-        raise HTTPException(status_code=504, detail="Timeout fetching image")
-    except httpx.RequestError as e:
-        logger.error(f"Error proxying image: {e}")
-        raise HTTPException(status_code=502, detail="Failed to fetch image")
+    except httpx.TimeoutException as exc:
+        raise HTTPException(status_code=504, detail="Timeout fetching image") from exc
+    except httpx.RequestError as exc:
+        logger.error("Error proxying image: %s", exc)
+        raise HTTPException(status_code=502, detail="Failed to fetch image") from exc

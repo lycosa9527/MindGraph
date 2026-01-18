@@ -1,12 +1,5 @@
-﻿from datetime import datetime
+"""Authentication Models for MindGraph.
 
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Boolean, UniqueConstraint
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relationship
-
-
-"""
-Authentication Models for MindGraph
 Author: lycosa9527
 Made by: MindSpring Team
 
@@ -16,6 +9,11 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+from datetime import datetime
+
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Boolean, UniqueConstraint
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import relationship
 
 
 Base = declarative_base()
@@ -168,4 +166,3 @@ class UpdateNotificationDismissed(Base):
 # NOTE: SMSVerification model removed - SMS codes are now stored in Redis
 # See: services/redis_sms_storage.py
 # The sms_verifications table may still exist in the database but is no longer used.
-

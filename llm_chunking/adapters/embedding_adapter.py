@@ -1,18 +1,20 @@
-from abc import ABC, abstractmethod
-from typing import List, Dict, Any, Union
-import logging
-
-from llm_chunking.models import Chunk, ParentChunk, QAChunk
-
-"""
-Embedding adapters for different chunk structures.
+"""Embedding adapters for different chunk structures.
 
 Adapts embedding generation to different chunk types:
 - General: Embed each chunk independently
 - Parent-Child: Embed only child chunks, store parent in payload
 - Q&A: Embed questions (or Q&A pairs)
 """
+from abc import ABC, abstractmethod
+from typing import List, Dict, Any, Union
+import logging
 
+from llm_chunking.models import Chunk, ParentChunk, QAChunk
+
+try:
+    from clients.dashscope_embedding import get_embedding_client
+except ImportError:
+    get_embedding_client = None
 
 logger = logging.getLogger(__name__)
 
@@ -29,11 +31,13 @@ class EmbeddingAdapter(ABC):
         """
         self.embedding_client = embedding_client
         if embedding_client is None:
-            try:
-                from clients.dashscope_embedding import get_embedding_client
-                self.embedding_client = get_embedding_client()
-            except Exception as e:
-                logger.warning(f"Embedding client not available: {e}")
+            if get_embedding_client is None:
+                logger.warning("Embedding client not available: import failed")
+            else:
+                try:
+                    self.embedding_client = get_embedding_client()
+                except Exception as e:
+                    logger.warning("Embedding client not available: %s", e)
 
     @abstractmethod
     def embed_chunks(
@@ -51,7 +55,6 @@ class EmbeddingAdapter(ABC):
         Returns:
             List of dicts with 'id', 'vector', 'payload'
         """
-        pass
 
 
 class GeneralEmbeddingAdapter(EmbeddingAdapter):

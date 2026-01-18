@@ -37,15 +37,21 @@ def _get_captcha_storage():
     """Get captcha storage instance (lazy initialization)."""
     return get_captcha_storage()
 
-# For backwards compatibility, but use lazy initialization
-captcha_storage = None
+# Use closure pattern to avoid global statement and protected-access warnings
+def _create_captcha_storage_ensurer():
+    """Create a function that ensures captcha storage is initialized."""
+    cache = None
 
-def _ensure_captcha_storage():
-    """Ensure captcha storage is initialized."""
-    global captcha_storage
-    if captcha_storage is None:
-        captcha_storage = get_captcha_storage()
-    return captcha_storage
+    def _ensure_captcha_storage():
+        """Ensure captcha storage is initialized."""
+        nonlocal cache
+        if cache is None:
+            cache = get_captcha_storage()
+        return cache
+
+    return _ensure_captcha_storage
+
+_ensure_captcha_storage = _create_captcha_storage_ensurer()
 
 
 def _generate_captcha_svg(code: str) -> str:
@@ -143,18 +149,18 @@ async def generate_captcha(
 
         if not session_token:
             session_token = str(uuid.uuid4())
-            logger.debug(f"New captcha session created: {session_token[:8]}...")
+            logger.debug("New captcha session created: %s...", session_token[:8])
 
         # Rate limit by session token (Redis-backed, shared across workers)
         try:
-            is_allowed, rate_limit_error = check_captcha_rate_limit(session_token)
+            is_allowed, _ = check_captcha_rate_limit(session_token)
         except Exception as e:
-            logger.error(f"Error checking captcha rate limit: {e}", exc_info=True)
+            logger.error("Error checking captcha rate limit: %s", e, exc_info=True)
             # Fail open - allow captcha generation if rate limit check fails
             is_allowed = True
 
         if not is_allowed:
-            logger.warning(f"Captcha rate limit exceeded for session: {session_token[:8]}...")
+            logger.warning("Captcha rate limit exceeded for session: %s...", session_token[:8])
             accept_language = request.headers.get("Accept-Language", "")
             error_lang: Language = get_request_language(x_language, accept_language)
             error_msg = Messages.error("too_many_login_attempts", error_lang, RATE_LIMIT_WINDOW_MINUTES)
@@ -166,14 +172,14 @@ async def generate_captcha(
         # Re-raise HTTP exceptions (rate limit, etc.)
         raise
     except Exception as e:
-        logger.error(f"Error in captcha generation (before generation): {e}", exc_info=True)
+        logger.error("Error in captcha generation (before generation): %s", e, exc_info=True)
         accept_language_err = request.headers.get("Accept-Language", "")
         error_lang_err: Language = get_request_language(x_language, accept_language_err)
         error_msg = Messages.error("captcha_generate_failed", error_lang_err)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=error_msg
-        )
+        ) from e
 
     try:
         # Set session cookie (matches rate limit window duration)
@@ -206,18 +212,18 @@ async def generate_captcha(
             storage = _ensure_captcha_storage()
             success = storage.store(session_id, code, expires_in_seconds=300)
         except Exception as e:
-            logger.error(f"Exception storing captcha {session_id}: {e}", exc_info=True)
+            logger.error("Exception storing captcha %s: %s", session_id, e, exc_info=True)
             success = False
 
         if not success:
-            logger.error(f"Failed to store captcha {session_id}: Redis unavailable or storage failed")
+            logger.error("Failed to store captcha %s: Redis unavailable or storage failed", session_id)
             error_msg = Messages.error("captcha_generate_failed", user_lang)
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                 detail=error_msg
             )
 
-        logger.debug(f"Generated captcha: {session_id} for session: {session_token[:8]}... (code: {code})")
+        logger.debug("Generated captcha: %s for session: %s... (code: %s)", session_id, session_token[:8], code)
 
         return {
             "captcha_id": session_id,
@@ -227,14 +233,14 @@ async def generate_captcha(
         # Re-raise HTTP exceptions
         raise
     except Exception as e:
-        logger.error(f"Error generating captcha: {e}", exc_info=True)
+        logger.error("Error generating captcha: %s", e, exc_info=True)
         accept_language_exc = request.headers.get("Accept-Language", "")
         error_lang_exc: Language = get_request_language(x_language, accept_language_exc)
         error_msg = Messages.error("captcha_generate_failed", error_lang_exc)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=error_msg
-        )
+        ) from e
 
 
 def verify_captcha(captcha_id: str, user_code: str) -> Tuple[bool, Optional[str]]:
@@ -285,19 +291,23 @@ async def verify_captcha_with_retry(
         if attempt < max_endpoint_retries - 1:
             delay = 0.1 * (2 ** attempt)  # 0.1s, 0.2s
             logger.warning(
-                f"[Auth] Database lock in verify_captcha, "
-                f"endpoint retry {attempt + 1}/{max_endpoint_retries} after {delay}s delay. "
-                f"Captcha ID: {captcha_id[:8]}..."
+                "[Auth] Database lock in verify_captcha, "
+                "endpoint retry %d/%d after %ss delay. "
+                "Captcha ID: %s...",
+                attempt + 1,
+                max_endpoint_retries,
+                delay,
+                captcha_id[:8]
             )
             await asyncio.sleep(delay)
         else:
             logger.error(
-                f"[Auth] Database lock persists after {max_endpoint_retries} endpoint retries. "
-                f"Captcha ID: {captcha_id[:8]}..."
+                "[Auth] Database lock persists after %d endpoint retries. "
+                "Captcha ID: %s...",
+                max_endpoint_retries,
+                captcha_id[:8]
             )
             return False, "database_locked"
 
     return False, "database_locked"
-
-
 

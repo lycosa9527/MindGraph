@@ -1,11 +1,3 @@
-﻿from datetime import datetime
-import uuid
-
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Boolean, Index
-from sqlalchemy.orm import relationship
-
-from models.auth import Base
-
 """
 Diagram Storage Models for MindGraph
 =====================================
@@ -20,6 +12,13 @@ All Rights Reserved
 Proprietary License
 """
 
+from datetime import datetime
+import uuid
+
+from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Boolean, Index
+from sqlalchemy.orm import relationship
+
+from models.auth import Base
 
 
 def generate_uuid():

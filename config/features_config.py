@@ -18,71 +18,71 @@ class FeaturesConfigMixin:
     LLMConfigMixin, D3_TOPIC_FILL, D3_SIM_FILL, D3_DIFF_FILL,
     D3_BASE_WIDTH, D3_BASE_HEIGHT from VisualizationConfigMixin).
     """
-    
+
     if TYPE_CHECKING:
-        def _get_cached_value(self, key: str, default: Any = None) -> Any:
+        def _get_cached_value(self, _key: str, _default: Any = None) -> Any:
             """Type stub: method provided by BaseConfig."""
-            ...
-        
+            pass
+
         @property
         def version(self) -> str:
             """Type stub: property provided by BaseConfig."""
-            ...
-        
+            return ""
+
         @property
         def host(self) -> str:
             """Type stub: property provided by BaseConfig."""
-            ...
-        
+            return ""
+
         @property
         def port(self) -> int:
             """Type stub: property provided by BaseConfig."""
-            ...
-        
+            return 0
+
         @property
         def debug(self) -> bool:
             """Type stub: property provided by BaseConfig."""
-            ...
-        
+            return False
+
         @property
         def QWEN_API_URL(self) -> str:
             """Type stub: property provided by LLMConfigMixin."""
-            ...
-        
+            return ""
+
         @property
         def QWEN_MODEL_CLASSIFICATION(self) -> str:
             """Type stub: property provided by LLMConfigMixin."""
-            ...
-        
+            return ""
+
         @property
         def QWEN_MODEL_GENERATION(self) -> str:
             """Type stub: property provided by LLMConfigMixin."""
-            ...
-        
+            return ""
+
         @property
         def D3_TOPIC_FILL(self) -> str:
             """Type stub: property provided by VisualizationConfigMixin."""
-            ...
-        
+            return ""
+
         @property
         def D3_SIM_FILL(self) -> str:
             """Type stub: property provided by VisualizationConfigMixin."""
-            ...
-        
+            return ""
+
         @property
         def D3_DIFF_FILL(self) -> str:
             """Type stub: property provided by VisualizationConfigMixin."""
-            ...
-        
+            return ""
+
         @property
         def D3_BASE_WIDTH(self) -> int:
             """Type stub: property provided by VisualizationConfigMixin."""
-            ...
-        
+            return 0
+
         @property
         def D3_BASE_HEIGHT(self) -> int:
             """Type stub: property provided by VisualizationConfigMixin."""
-            ...
+            return 0
 
     @property
     def FEATURE_MINDMATE(self):

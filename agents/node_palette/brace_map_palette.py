@@ -105,10 +105,14 @@ class BraceMapPaletteGenerator(BasePaletteGenerator):
                 # For parts stage, use stage name
                 if stage == 'subparts' and stage_data and stage_data.get('part_name'):
                     node_mode = stage_data['part_name']
-                    logger.debug(f"[BraceMapPalette] Node tagged with part mode='{node_mode}' | ID: {node.get('id', 'unknown')} | Text: {node.get('text', '')}")
+                    node_id = node.get('id', 'unknown')
+                    node_text = node.get('text', '')
+                    logger.debug("[BraceMapPalette] Node tagged with part mode='%s' | ID: %s | Text: %s", node_mode, node_id, node_text)
                 else:
                     node_mode = stage
-                    logger.debug(f"[BraceMapPalette] Node tagged with stage mode='{node_mode}' | ID: {node.get('id', 'unknown')} | Text: {node.get('text', '')}")
+                    node_id = node.get('id', 'unknown')
+                    node_text = node.get('text', '')
+                    logger.debug("[BraceMapPalette] Node tagged with stage mode='%s' | ID: %s | Text: %s", node_mode, node_id, node_text)
 
                 node['mode'] = node_mode
 

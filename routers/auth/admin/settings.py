@@ -1,12 +1,3 @@
-import logging
-import os
-
-from fastapi import APIRouter, Depends, HTTPException, Request, status
-
-from models.auth import User
-from models.messages import Messages
-from ..dependencies import get_language_dependency, require_admin
-
 """
 Admin Settings Management Endpoints
 ===================================
@@ -19,6 +10,14 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+import logging
+import os
+
+from fastapi import APIRouter, Depends, HTTPException, status
+
+from models.auth import User
+from models.messages import Messages
+from ..dependencies import get_language_dependency, require_admin
 
 
 
@@ -30,11 +29,7 @@ router = APIRouter()
 
 
 @router.get("/admin/settings", dependencies=[Depends(require_admin)])
-async def get_settings_admin(
-    request: Request,
-    current_user: User = Depends(require_admin),
-    lang: str = Depends(get_language_dependency)
-):
+async def get_settings_admin():
     """Get system settings from .env (ADMIN ONLY)"""
     env_path = ".env"
     settings = {}
@@ -63,7 +58,6 @@ async def get_settings_admin(
 @router.put("/admin/settings", dependencies=[Depends(require_admin)])
 async def update_settings_admin(
     request: dict,
-    http_request: Request,
     current_user: User = Depends(require_admin),
     lang: str = Depends(get_language_dependency)
 ):
@@ -98,13 +92,11 @@ async def update_settings_admin(
     with open(env_path, 'w', encoding='utf-8') as f:
         f.writelines(lines)
 
-    logger.warning(f"Admin {current_user.phone} updated .env settings: {list(request.keys())}")
+    updated_keys_list = list(request.keys())
+    logger.warning("Admin %s updated .env settings: %s", current_user.phone, updated_keys_list)
 
     return {
         "message": Messages.success("settings_updated", lang),
         "warning": Messages.warning("server_restart_required", lang),
         "updated_keys": list(request.keys())
     }
-
-
-

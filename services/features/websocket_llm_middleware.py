@@ -1,4 +1,4 @@
-﻿from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager
 from typing import Dict, Any, Optional, AsyncGenerator, Callable
 import asyncio
 import logging
@@ -80,14 +80,12 @@ class WebSocketLLMMiddleware:
             try:
                 self.rate_limiter = get_rate_limiter()
             except Exception as e:
-                logger.warning(f"Could not get rate limiter: {e}")
+                logger.warning("Could not get rate limiter: %s", e)
                 self.rate_limiter = None
 
         logger.debug(
-            f"[WebSocketLLMMiddleware] Initialized for {model_alias}: "
-            f"max_connections={self.max_concurrent_connections}, "
-            f"rate_limiting={self.enable_rate_limiting}, "
-            f"error_handling={self.enable_error_handling}"
+            "[WebSocketLLMMiddleware] Initialized for %s: max_connections=%s, rate_limiting=%s, error_handling=%s",
+            model_alias, self.max_concurrent_connections, self.enable_rate_limiting, self.enable_error_handling
         )
 
     @asynccontextmanager
@@ -134,8 +132,8 @@ class WebSocketLLMMiddleware:
                 )
             self._active_connections += 1
             logger.debug(
-                f"[WebSocketLLMMiddleware] Connection {connection_id} started "
-                f"({self._active_connections}/{self.max_concurrent_connections} active)"
+                "[WebSocketLLMMiddleware] Connection %s started (%s/%s active)",
+                connection_id, self._active_connections, self.max_concurrent_connections
             )
 
         # Apply rate limiting if enabled
@@ -168,8 +166,8 @@ class WebSocketLLMMiddleware:
                 )
 
             logger.debug(
-                f"[WebSocketLLMMiddleware] Connection {connection_id} completed "
-                f"successfully in {duration:.2f}s"
+                "[WebSocketLLMMiddleware] Connection %s completed successfully in %.2fs",
+                connection_id, duration
             )
 
         except Exception as e:
@@ -183,8 +181,8 @@ class WebSocketLLMMiddleware:
                 )
 
             logger.error(
-                f"[WebSocketLLMMiddleware] Connection {connection_id} failed "
-                f"after {duration:.2f}s: {e}",
+                "[WebSocketLLMMiddleware] Connection %s failed after %.2fs: %s",
+                connection_id, duration, e,
                 exc_info=True
             )
 
@@ -201,14 +199,14 @@ class WebSocketLLMMiddleware:
                 try:
                     await rate_limit_context.__aexit__(None, None, None)  # type: ignore[attr-defined]
                 except Exception as e:
-                    logger.debug(f"Error releasing rate limiter: {e}")
+                    logger.debug("Error releasing rate limiter: %s", e)
 
             # Decrement active connections
             async with self._connection_lock:
                 self._active_connections -= 1
                 logger.debug(
-                    f"[WebSocketLLMMiddleware] Connection {connection_id} closed "
-                    f"({self._active_connections}/{self.max_concurrent_connections} active)"
+                    "[WebSocketLLMMiddleware] Connection %s closed (%s/%s active)",
+                    connection_id, self._active_connections, self.max_concurrent_connections
                 )
 
     async def wrap_start_conversation(
@@ -283,7 +281,7 @@ class WebSocketLLMMiddleware:
                         try:
                             on_event(event)
                         except Exception as e:
-                            logger.debug(f"Error in on_event callback: {e}")
+                            logger.debug("Error in on_event callback: %s", e)
 
                     yield event
 
@@ -291,7 +289,7 @@ class WebSocketLLMMiddleware:
                 # Apply error handling with retry for connection failures
                 if self.enable_error_handling:
                     # For connection failures, we can retry
-                    logger.warning(f"[WebSocketLLMMiddleware] Connection failed, retrying: {e}")
+                    logger.warning("[WebSocketLLMMiddleware] Connection failed, retrying: %s", e)
                     # Retry logic would go here, but for WebSocket connections,
                     # retrying means creating a new connection
                     raise LLMServiceError(f"WebSocket connection failed: {e}") from e
@@ -329,13 +327,15 @@ class WebSocketLLMMiddleware:
                 success=True
             )
 
+            connection_id = ctx.get('connection_id')
+            total = total_tokens or input_tokens + output_tokens
             logger.debug(
-                f"[WebSocketLLMMiddleware] Tracked tokens for {ctx.get('connection_id')}: "
-                f"{input_tokens}+{output_tokens}={total_tokens or input_tokens + output_tokens}"
+                "[WebSocketLLMMiddleware] Tracked tokens for %s: %s+%s=%s",
+                connection_id, input_tokens, output_tokens, total
             )
 
         except Exception as e:
-            logger.debug(f"[WebSocketLLMMiddleware] Token tracking failed (non-critical): {e}")
+            logger.debug("[WebSocketLLMMiddleware] Token tracking failed (non-critical): %s", e)
 
     def _track_performance(
         self,
@@ -352,7 +352,7 @@ class WebSocketLLMMiddleware:
                 error=error
             )
         except Exception as e:
-            logger.debug(f"[WebSocketLLMMiddleware] Performance tracking failed (non-critical): {e}")
+            logger.debug("[WebSocketLLMMiddleware] Performance tracking failed (non-critical): %s", e)
 
     def get_active_connections(self) -> int:
         """Get number of active connections."""

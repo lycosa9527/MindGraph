@@ -86,7 +86,10 @@ class DashboardSessionManager:
             Session token string (will be unusable if Redis unavailable)
         """
         if not self._use_redis():
-            logger.warning("[DashboardSession] Redis unavailable, creating in-memory session (WARNING: token will not be verifiable)")
+            logger.warning(
+                "[DashboardSession] Redis unavailable, creating in-memory "
+                "session (WARNING: token will not be verifiable)"
+            )
             # Generate token anyway for graceful degradation, but it won't be usable
             token = f"dashboard_{int(datetime.now(timezone.utc).timestamp())}_{secrets.token_hex(8)}"
             return token
@@ -116,12 +119,13 @@ class DashboardSessionManager:
                     SESSION_TTL_SECONDS,
                     json.dumps(session_data)
                 )
-                logger.debug(f"[DashboardSession] Created session: {token[:20]}...")
+                token_preview = token[:20] + "..."
+                logger.debug("[DashboardSession] Created session: %s", token_preview)
 
             return token
 
         except Exception as e:
-            logger.error(f"[DashboardSession] Error creating session: {e}")
+            logger.error("[DashboardSession] Error creating session: %s", e)
             # Generate token anyway for graceful degradation
             token = f"dashboard_{int(datetime.now(timezone.utc).timestamp())}_{secrets.token_hex(8)}"
             return token
@@ -156,7 +160,8 @@ class DashboardSessionManager:
 
             session_data_str = redis.get(session_key)
             if not session_data_str:
-                logger.debug(f"[DashboardSession] Session not found: {token[:20]}...")
+                token_preview = token[:20] + "..."
+                logger.debug("[DashboardSession] Session not found: %s", token_preview)
                 return False
 
             # Parse session data
@@ -168,7 +173,8 @@ class DashboardSessionManager:
                 if expires_at_str:
                     expires_at = datetime.fromisoformat(expires_at_str.replace('Z', '+00:00'))
                     if datetime.now(timezone.utc) > expires_at:
-                        logger.debug(f"[DashboardSession] Session expired: {token[:20]}...")
+                        token_preview = token[:20] + "..."
+                        logger.debug("[DashboardSession] Session expired: %s", token_preview)
                         redis.delete(session_key)  # Clean up expired session
                         return False
 
@@ -178,18 +184,23 @@ class DashboardSessionManager:
                     # Only reject if both IPs are present and don't match
                     # This allows sessions created without IP to work, and handles proxy scenarios
                     if session_ip and client_ip and session_ip != client_ip:
-                        logger.warning(f"[DashboardSession] IP mismatch: session IP {session_ip} != client IP {client_ip}")
+                        logger.warning(
+                            "[DashboardSession] IP mismatch: session IP %s != "
+                            "client IP %s",
+                            session_ip,
+                            client_ip
+                        )
                         return False
 
                 return True
 
             except (json.JSONDecodeError, ValueError) as e:
-                logger.warning(f"[DashboardSession] Invalid session data format: {e}")
+                logger.warning("[DashboardSession] Invalid session data format: %s", e)
                 redis.delete(session_key)  # Clean up invalid session
                 return False
 
         except Exception as e:
-            logger.error(f"[DashboardSession] Error verifying session: {e}")
+            logger.error("[DashboardSession] Error verifying session: %s", e)
             return False  # Fail-closed on errors
 
     def delete_session(self, token: str) -> bool:
@@ -213,12 +224,13 @@ class DashboardSessionManager:
             redis = get_redis()
             if redis:
                 deleted = redis.delete(session_key)
-                logger.debug(f"[DashboardSession] Deleted session: {token[:20]}...")
+                token_preview = token[:20] + "..."
+                logger.debug("[DashboardSession] Deleted session: %s", token_preview)
                 return deleted > 0
             return False
 
         except Exception as e:
-            logger.error(f"[DashboardSession] Error deleting session: {e}")
+            logger.error("[DashboardSession] Error deleting session: %s", e)
             return False
 
     def get_session_info(self, token: str) -> Optional[Dict]:
@@ -247,7 +259,7 @@ class DashboardSessionManager:
             return json.loads(session_data_str)
 
         except Exception as e:
-            logger.error(f"[DashboardSession] Error getting session info: {e}")
+            logger.error("[DashboardSession] Error getting session info: %s", e)
             return None
 
 

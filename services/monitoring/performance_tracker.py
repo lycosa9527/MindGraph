@@ -148,9 +148,8 @@ class PerformanceTracker:
             metrics['response_times'].append(duration)
 
             logger.debug(
-                f"[PerformanceTracker] {model}: "
-                f"success={success}, duration={duration:.2f}s, "
-                f"circuit={self._circuit_states[model]}"
+                "[PerformanceTracker] %s: success=%s, duration=%.2fs, circuit=%s",
+                model, success, duration, self._circuit_states[model]
             )
 
     def _should_open_circuit(self, model: str) -> bool:
@@ -173,14 +172,14 @@ class PerformanceTracker:
         """Open circuit for a model."""
         self._circuit_states[model] = CircuitState.OPEN
         self._circuit_open_times[model] = datetime.now()
-        logger.warning(f"[PerformanceTracker] Circuit OPEN for {model}")
+        logger.warning("[PerformanceTracker] Circuit OPEN for %s", model)
 
     def _close_circuit(self, model: str):
         """Close circuit for a model."""
         self._circuit_states[model] = CircuitState.CLOSED
         self._recent_failures[model].clear()
         self._recent_successes[model].clear()
-        logger.info(f"[PerformanceTracker] Circuit CLOSED for {model}")
+        logger.info("[PerformanceTracker] Circuit CLOSED for %s", model)
 
     def can_call_model(self, model: str) -> bool:
         """
@@ -210,7 +209,7 @@ class PerformanceTracker:
                     elapsed = (datetime.now() - open_time).total_seconds()
                     if elapsed >= self.circuit_open_duration:
                         self._circuit_states[model] = CircuitState.HALF_OPEN
-                        logger.info(f"[PerformanceTracker] Circuit HALF-OPEN for {model}")
+                        logger.info("[PerformanceTracker] Circuit HALF-OPEN for %s", model)
                         return True
                 return False
 
@@ -327,7 +326,7 @@ class PerformanceTracker:
                     del self._recent_successes[model]
                     if model in self._circuit_open_times:
                         del self._circuit_open_times[model]
-                    logger.info(f"[PerformanceTracker] Reset metrics for {model}")
+                    logger.info("[PerformanceTracker] Reset metrics for %s", model)
             else:
                 self._metrics.clear()
                 self._circuit_states.clear()

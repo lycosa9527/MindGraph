@@ -1,12 +1,4 @@
-﻿from enum import Enum
-from typing import Optional
-
-from pydantic import BaseModel, Field, field_validator
-
-
-"""
-Environment Settings Validation Models
-======================================
+"""Environment Settings Validation Models.
 
 Pydantic models for validating .env configuration settings.
 
@@ -25,6 +17,10 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+from enum import Enum
+from typing import Optional
+
+from pydantic import BaseModel, Field, field_validator
 
 
 
@@ -85,7 +81,8 @@ class AppSettings(BaseModel):
     @field_validator('PORT')
     @classmethod
     def validate_port(cls, v):
-        if not (1 <= v <= 65535):
+        """Validate port number is within valid range."""
+        if not 1 <= v <= 65535:
             raise ValueError(f"Port must be between 1 and 65535, got {v}")
         return v
 
@@ -138,6 +135,7 @@ class QwenAPISettings(BaseModel):
     @field_validator('QWEN_API_URL')
     @classmethod
     def validate_url(cls, v):
+        """Validate API URL has correct protocol prefix."""
         if not v.startswith(('http://', 'https://')):
             raise ValueError("API URL must start with http:// or https://")
         return v
@@ -412,4 +410,3 @@ class EnvSettingsSchema(BaseModel):
                 # ... more examples
             }
         }
-

@@ -1,9 +1,3 @@
-﻿from datetime import datetime
-
-from sqlalchemy import Column, Integer, String, DateTime, Index
-
-from models.auth import Base
-
 """
 Dashboard Activity Model
 ========================
@@ -19,6 +13,11 @@ All Rights Reserved
 Proprietary License
 """
 
+from datetime import datetime
+
+from sqlalchemy import Column, Integer, String, DateTime, Index
+
+from models.auth import Base
 
 
 class DashboardActivity(Base):
@@ -46,9 +45,4 @@ class DashboardActivity(Base):
     __table_args__ = (
         Index('idx_dashboard_activities_created_at', 'created_at'),
     )
-
-
-
-
-
 

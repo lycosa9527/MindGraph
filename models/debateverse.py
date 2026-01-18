@@ -1,11 +1,3 @@
-﻿from datetime import datetime
-import uuid
-
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Boolean, Index, JSON
-from sqlalchemy.orm import relationship
-
-from models.auth import Base
-
 """
 DebateVerse Models for MindGraph
 =================================
@@ -19,6 +11,14 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
+from datetime import datetime
+import uuid
+
+from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Boolean, Index, JSON
+from sqlalchemy.orm import relationship
+
+from models.auth import Base
 
 
 

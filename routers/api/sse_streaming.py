@@ -7,9 +7,12 @@ import time
 from fastapi import APIRouter, HTTPException, Depends, Request
 from fastapi.responses import StreamingResponse
 
+import traceback
+
 from clients.dify import AsyncDifyClient, DifyFile
 from models import AIAssistantRequest, Messages, get_request_language
 from models.auth import User
+from services.redis.redis_activity_tracker import get_activity_tracker
 from services.redis.redis_token_buffer import get_token_tracker
 from utils.auth import get_current_user_or_api_key
 
@@ -55,7 +58,6 @@ async def ai_assistant_stream(
     # Track user activity
     if current_user and hasattr(current_user, 'id'):
         try:
-            from services.redis.redis_activity_tracker import get_activity_tracker
             tracker = get_activity_tracker()
             tracker.record_activity(
                 user_id=current_user.id,
@@ -65,12 +67,12 @@ async def ai_assistant_stream(
                 user_name=getattr(current_user, 'name', None)
             )
         except Exception as e:
-            logger.debug(f"Failed to track user activity: {e}")
+            logger.debug("Failed to track user activity: %s", e)
 
     # Handle Dify conversation opener trigger
     # When message is "start" with no conversation_id, this triggers Dify's opener
     if message.lower() == 'start' and not req.conversation_id:
-        logger.debug(f"[MindMate] Conversation opener triggered for user {req.user_id}")
+        logger.debug("[MindMate] Conversation opener triggered for user %s", req.user_id)
         logger.debug("[MindMate] Dify will respond with configured opening message")
 
     # Get Dify configuration from environment
@@ -78,7 +80,8 @@ async def ai_assistant_stream(
     api_url = os.getenv('DIFY_API_URL', 'http://101.42.231.179/v1')
     timeout = int(os.getenv('DIFY_TIMEOUT', '30'))
 
-    logger.debug(f"Dify Configuration - API URL: {api_url}, Has API Key: {bool(api_key)}, Timeout: {timeout}")
+    has_api_key = bool(api_key)
+    logger.debug("Dify Configuration - API URL: %s, Has API Key: %s, Timeout: %s", api_url, has_api_key, timeout)
 
     if not api_key:
         logger.error("DIFY_API_KEY not configured in environment")
@@ -87,7 +90,8 @@ async def ai_assistant_stream(
             detail=Messages.error("ai_not_configured", lang)
         )
 
-    logger.debug(f"AI assistant request from user {req.user_id}: {message[:50]}...")
+    message_preview = message[:50] + "..."
+    logger.debug("AI assistant request from user %s: %s", req.user_id, message_preview)
 
     # Get user info for token tracking
     user_id_for_tracking = None
@@ -105,7 +109,7 @@ async def ai_assistant_stream(
         captured_conversation_id: Optional[str] = None
 
         try:
-            logger.debug(f"[STREAM] Creating AsyncDifyClient with URL: {api_url}")
+            logger.debug("[STREAM] Creating AsyncDifyClient with URL: %s", api_url)
             client = AsyncDifyClient(api_key=api_key, api_url=api_url, timeout=timeout)
             logger.debug("[STREAM] AsyncDifyClient created successfully")
 
@@ -121,9 +125,11 @@ async def ai_assistant_stream(
                     )
                     for f in req.files
                 ]
-                logger.debug(f"[STREAM] Attached {len(dify_files)} files to request")
+                files_count = len(dify_files)
+                logger.debug("[STREAM] Attached %s files to request", files_count)
 
-            logger.debug(f"[STREAM] Starting async stream_chat for message: {message[:50]}...")
+            message_preview = message[:50] + "..."
+            logger.debug("[STREAM] Starting async stream_chat for message: %s", message_preview)
             async for chunk in client.stream_chat(
                 message=message,
                 user_id=req.user_id,
@@ -136,7 +142,7 @@ async def ai_assistant_stream(
             ):
                 chunk_count += 1
                 event_type = chunk.get('event', 'unknown')
-                logger.debug(f"[STREAM] Received chunk {chunk_count}: {event_type}")
+                logger.debug("[STREAM] Received chunk %s: %s", chunk_count, event_type)
 
                 # Capture conversation_id from any event
                 if chunk.get('conversation_id'):
@@ -148,12 +154,12 @@ async def ai_assistant_stream(
                     usage = metadata.get('usage', {})
                     if usage:
                         captured_usage = usage
-                        logger.debug(f"[STREAM] Captured Dify usage: {usage}")
+                        logger.debug("[STREAM] Captured Dify usage: %s", usage)
 
                 # Format as SSE
                 yield f"data: {json.dumps(chunk)}\n\n"
 
-            logger.debug(f"[STREAM] Streaming completed. Total chunks: {chunk_count}")
+            logger.debug("[STREAM] Streaming completed. Total chunks: %s", chunk_count)
 
             # Track token usage after streaming completes
             if captured_usage:
@@ -178,11 +184,11 @@ async def ai_assistant_stream(
                         success=True
                     )
                     logger.debug(
-                        f"[STREAM] Tracked Dify token usage: input={input_tokens}, "
-                        f"output={output_tokens}, total={total_tokens}"
+                        "[STREAM] Tracked Dify token usage: input=%s, output=%s, total=%s",
+                        input_tokens, output_tokens, total_tokens
                     )
                 except Exception as track_error:
-                    logger.warning(f"[STREAM] Failed to track token usage: {track_error}")
+                    logger.warning("[STREAM] Failed to track token usage: %s", track_error)
 
             # Ensure at least one event is yielded to prevent RuntimeError
             if chunk_count == 0:
@@ -190,9 +196,8 @@ async def ai_assistant_stream(
                 yield f"data: {json.dumps({'event': 'message_complete', 'timestamp': int(time.time() * 1000)})}\n\n"
 
         except Exception as e:
-            logger.error(f"[STREAM] AI assistant streaming error: {e}", exc_info=True)
-            import traceback
-            logger.error(f"[STREAM] Full traceback: {traceback.format_exc()}")
+            logger.error("[STREAM] AI assistant streaming error: %s", e, exc_info=True)
+            logger.error("[STREAM] Full traceback: %s", traceback.format_exc())
             error_data = {
                 'event': 'error',
                 'error': str(e),

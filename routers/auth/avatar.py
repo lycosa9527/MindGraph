@@ -156,10 +156,10 @@ async def update_avatar(
         db.commit()
         user_cache.invalidate(user.id, user.phone)
         user_cache.cache_user(user)
-        logger.info(f"User {user.id} updated avatar to {user.avatar}")
+        logger.info("User %s updated avatar to %s", user.id, user.avatar)
     except Exception as e:
         db.rollback()
-        logger.error(f"Failed to update avatar for user {user.id}: {e}")
+        logger.error("Failed to update avatar for user %s: %s", user.id, e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to update avatar"

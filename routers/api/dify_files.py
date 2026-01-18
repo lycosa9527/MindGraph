@@ -1,14 +1,3 @@
-from typing import Optional
-import aiohttp
-import logging
-import os
-
-from fastapi import APIRouter, HTTPException, Depends, UploadFile, File, Form
-
-from models import Messages, get_request_language
-from models.auth import User
-from utils.auth import get_current_user_or_api_key
-
 """
 Dify File Upload API Router
 ============================
@@ -20,6 +9,16 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+from typing import Optional
+import logging
+import os
+
+import aiohttp
+from fastapi import APIRouter, HTTPException, Depends, UploadFile, File, Form
+
+from models import Messages, get_request_language
+from models.auth import User
+from utils.auth import get_current_user_or_api_key
 
 
 logger = logging.getLogger(__name__)
@@ -31,8 +30,8 @@ router = APIRouter(tags=["api"])
 async def upload_file_to_dify(
     file: UploadFile = File(...),
     user_id: str = Form(...),
-    x_language: str = None,
-    current_user: Optional[User] = Depends(get_current_user_or_api_key)
+    x_language: Optional[str] = None,
+    _current_user: Optional[User] = Depends(get_current_user_or_api_key)
 ):
     """
     Upload a file to Dify for use in chat messages.
@@ -79,7 +78,7 @@ async def upload_file_to_dify(
             detail=f"File too large. Maximum size is 15MB, got {file_size / 1024 / 1024:.1f}MB"
         )
 
-    logger.info(f"Uploading file to Dify: {file.filename} ({file_size} bytes) for user {user_id}")
+    logger.info("Uploading file to Dify: %s (%s bytes) for user %s", file.filename, file_size, user_id)
 
     try:
         # Create form data for Dify upload
@@ -100,7 +99,7 @@ async def upload_file_to_dify(
             async with session.post(url, data=form_data, headers=headers) as response:
                 if response.status != 200:
                     error_text = await response.text()
-                    logger.error(f"Dify upload failed: {response.status} - {error_text}")
+                    logger.error("Dify upload failed: %s - %s", response.status, error_text)
 
                     # Map Dify errors
                     if response.status == 413:
@@ -114,7 +113,7 @@ async def upload_file_to_dify(
                         )
 
                 result = await response.json()
-                logger.info(f"File uploaded successfully: {result.get('id')}")
+                logger.info("File uploaded successfully: %s", result.get('id'))
 
                 return {
                     "success": True,
@@ -129,19 +128,19 @@ async def upload_file_to_dify(
                 }
 
     except aiohttp.ClientError as e:
-        logger.error(f"Dify upload connection error: {e}")
-        raise HTTPException(status_code=503, detail="Failed to connect to AI service")
+        logger.error("Dify upload connection error: %s", e)
+        raise HTTPException(status_code=503, detail="Failed to connect to AI service") from e
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Dify upload error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error("Dify upload error: %s", e)
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.get('/dify/app/parameters')
 async def get_dify_parameters(
-    x_language: str = None,
-    current_user: Optional[User] = Depends(get_current_user_or_api_key)
+    x_language: Optional[str] = None,
+    _current_user: Optional[User] = Depends(get_current_user_or_api_key)
 ):
     """
     Get Dify app parameters including opening_statement, suggested_questions,
@@ -167,5 +166,5 @@ async def get_dify_parameters(
                 return await response.json()
 
     except aiohttp.ClientError as e:
-        logger.error(f"Dify parameters error: {e}")
-        raise HTTPException(status_code=503, detail="Failed to connect to AI service")
+        logger.error("Dify parameters error: %s", e)
+        raise HTTPException(status_code=503, detail="Failed to connect to AI service") from e

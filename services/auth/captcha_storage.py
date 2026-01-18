@@ -52,10 +52,11 @@ class CaptchaStorage:
         key = f"{self.PREFIX}{captcha_id}"
         code_upper = code.upper()
         success = RedisOps.set_with_ttl(key, code_upper, expires_in_seconds)
+        captcha_preview = captcha_id[:8] + "..."
         if success:
-            logger.debug(f"[Captcha] Stored: {captcha_id[:8]}... (code: {code_upper}, TTL: {expires_in_seconds}s)")
+            logger.debug("[Captcha] Stored: %s (code: %s, TTL: %ss)", captcha_preview, code_upper, expires_in_seconds)
         else:
-            logger.error(f"[Captcha] Failed to store: {captcha_id[:8]}... (Redis may be unavailable)")
+            logger.error("[Captcha] Failed to store: %s (Redis may be unavailable)", captcha_preview)
         return success
 
     def get(self, captcha_id: str) -> Optional[Dict]:
@@ -93,13 +94,14 @@ class CaptchaStorage:
         # Atomic get and delete using pipeline
         stored_code = RedisOps.get_and_delete(key)
 
+        captcha_preview = captcha_id[:8] + "..."
         if stored_code is None:
-            logger.warning(f"[Captcha] Not found: {captcha_id[:8]}... (key: {key})")
+            logger.warning("[Captcha] Not found: %s (key: %s)", captcha_preview, key)
             return False, "not_found"
 
         # Ensure stored_code is a string (should be with decode_responses=True)
         if not isinstance(stored_code, str):
-            logger.error(f"[Captcha] Invalid stored code type: {type(stored_code)} for {captcha_id[:8]}...")
+            logger.error("[Captcha] Invalid stored code type: %s for %s", type(stored_code), captcha_preview)
             return False, "error"
 
         # Verify code (case-insensitive)
@@ -107,13 +109,14 @@ class CaptchaStorage:
         user_upper = user_code.upper()
         is_valid = stored_upper == user_upper
 
+        captcha_preview = captcha_id[:8] + "..."
         if is_valid:
-            logger.debug(f"[Captcha] Verified: {captcha_id[:8]}... (code: {stored_upper})")
+            logger.debug("[Captcha] Verified: %s (code: %s)", captcha_preview, stored_upper)
             return True, None
         else:
             logger.warning(
-                f"[Captcha] Incorrect: {captcha_id[:8]}... "
-                f"(expected: {stored_upper}, got: {user_upper})"
+                "[Captcha] Incorrect: %s (expected: %s, got: %s)",
+                captcha_preview, stored_upper, user_upper
             )
             return False, "incorrect"
 
@@ -121,7 +124,8 @@ class CaptchaStorage:
         """Remove a captcha code."""
         key = f"{self.PREFIX}{captcha_id}"
         RedisOps.delete(key)
-        logger.debug(f"[Captcha] Removed: {captcha_id[:8]}...")
+        captcha_preview = captcha_id[:8] + "..."
+        logger.debug("[Captcha] Removed: %s", captcha_preview)
 
 
 # Global singleton instance

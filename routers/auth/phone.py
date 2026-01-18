@@ -19,7 +19,7 @@ from sqlalchemy.orm import Session
 from config.database import get_db
 from models.auth import User
 from models.messages import Messages, Language
-from models.requests import SendChangePhoneSMSRequest, ChangePhoneRequest
+from models.requests_auth import SendChangePhoneSMSRequest, ChangePhoneRequest
 from services.redis.redis_sms_storage import get_sms_storage
 from services.redis.redis_rate_limiter import get_rate_limiter
 from services.redis.redis_user_cache import user_cache
@@ -169,7 +169,8 @@ async def send_change_phone_code(
     ttl_seconds = SMS_CODE_EXPIRY_MINUTES * 60
 
     if not sms_storage.store(new_phone, code, purpose, ttl_seconds):
-        logger.error(f"Failed to store SMS code in Redis for {new_phone[:3]}****{new_phone[-4:]}")
+        phone_masked = new_phone[:3] + "****" + new_phone[-4:]
+        logger.error("Failed to store SMS code in Redis for %s", phone_masked)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=Messages.error("sms_service_temporarily_unavailable", lang)
@@ -198,7 +199,8 @@ async def send_change_phone_code(
             detail=error_detail
         )
 
-    logger.info(f"SMS code sent to {new_phone[:3]}****{new_phone[-4:]} for phone change (user: {current_user.id})")
+    phone_masked = new_phone[:3] + "****" + new_phone[-4:]
+    logger.info("SMS code sent to %s for phone change (user: %s)", phone_masked, current_user.id)
 
     return {
         "message": Messages.success("verification_code_sent", lang),
@@ -271,7 +273,9 @@ async def change_phone(
     # Re-cache user with new phone
     user_cache.cache_user(current_user)
 
-    logger.info(f"Phone changed for user {current_user.id}: {old_phone[:3]}****{old_phone[-4:]} -> {new_phone[:3]}****{new_phone[-4:]}")
+    old_phone_masked = old_phone[:3] + "****" + old_phone[-4:]
+    new_phone_masked = new_phone[:3] + "****" + new_phone[-4:]
+    logger.info("Phone changed for user %s: %s -> %s", current_user.id, old_phone_masked, new_phone_masked)
 
     return {
         "message": Messages.success("phone_changed_success", lang),

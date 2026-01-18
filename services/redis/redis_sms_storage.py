@@ -86,9 +86,10 @@ class RedisSMSStorage:
         success = RedisOps.set_with_ttl(key, code, ttl_seconds)
 
         if success:
-            logger.info(f"[SMS] Code stored for {phone[:3]}***{phone[-4:]} (purpose: {purpose}, TTL: {ttl_seconds}s)")
+            phone_masked = phone[:3] + "***" + phone[-4:]
+            logger.info("[SMS] Code stored for %s (purpose: %s, TTL: %ss)", phone_masked, purpose, ttl_seconds)
         else:
-            logger.error(f"[SMS] Failed to store code for {phone}")
+            logger.error("[SMS] Failed to store code for %s", phone)
 
         return success
 
@@ -138,22 +139,29 @@ class RedisSMSStorage:
             result = redis.eval(lua_script, 1, key, code)
 
             if result == 1:
-                logger.info(f"[SMS] Code verified and consumed for {phone[:3]}***{phone[-4:]} (purpose: {purpose})")
+                phone_masked = phone[:3] + "***" + phone[-4:]
+                logger.info("[SMS] Code verified and consumed for %s (purpose: %s)", phone_masked, purpose)
                 return True
             elif result == 0:
                 # Code doesn't match or doesn't exist - check which case
                 stored_code = RedisOps.get(key)
+                phone_masked = phone[:3] + "***" + phone[-4:]
                 if stored_code is None:
-                    logger.debug(f"[SMS] No code found for {phone[:3]}***{phone[-4:]} (purpose: {purpose})")
+                    logger.debug("[SMS] No code found for %s (purpose: %s)", phone_masked, purpose)
                 else:
-                    logger.warning(f"[SMS] Invalid code for {phone[:3]}***{phone[-4:]} (purpose: {purpose}) - code preserved for retry")
+                    logger.warning(
+                        "[SMS] Invalid code for %s (purpose: %s) - "
+                        "code preserved for retry",
+                        phone_masked,
+                        purpose
+                    )
                 return False
             else:
-                logger.warning(f"[SMS] Unexpected Lua script result: {result}")
+                logger.warning("[SMS] Unexpected Lua script result: %s", result)
                 return False
 
         except Exception as e:
-            logger.error(f"[SMS] Lua script execution failed: {e}")
+            logger.error("[SMS] Lua script execution failed: %s", e)
             return False
 
     def check_exists(self, phone: str, purpose: str = "verification") -> bool:
@@ -232,7 +240,7 @@ class RedisSMSStorage:
 
             return exists, ttl
         except Exception as e:
-            logger.error(f"[SMS] Pipeline execution failed: {e}")
+            logger.error("[SMS] Pipeline execution failed: %s", e)
             return False, -2
 
     def get_remaining_ttl(self, phone: str, purpose: str = "verification") -> int:

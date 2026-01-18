@@ -5,6 +5,10 @@ from typing import Any, Dict, Optional, Tuple
 import logging
 
 from agents.core.base_agent import BaseAgent
+from agents.core.agent_utils import extract_json_from_response
+from config.settings import config
+from prompts import get_prompt
+from services.llm import llm_service
 
 """
 Bubble Map Agent
@@ -69,7 +73,7 @@ class BubbleMapAgent(BaseAgent):
             # Validate the generated spec
             is_valid, validation_msg = self.validate_output(spec)
             if not is_valid:
-                logger.warning(f"BubbleMapAgent: Validation failed: {validation_msg}")
+                logger.warning("BubbleMapAgent: Validation failed: %s", validation_msg)
                 return {
                     'success': False,
                     'error': f'Generated invalid specification: {validation_msg}'
@@ -86,7 +90,7 @@ class BubbleMapAgent(BaseAgent):
             }
 
         except Exception as e:
-            logger.error(f"BubbleMapAgent: Bubble map generation failed: {e}")
+            logger.error("BubbleMapAgent: Bubble map generation failed: %s", e)
             return {
                 'success': False,
                 'error': f'Generation failed: {str(e)}'
@@ -104,22 +108,16 @@ class BubbleMapAgent(BaseAgent):
     ) -> Optional[Dict]:
         """Generate the bubble map specification using LLM."""
         try:
-            # Import centralized prompt system
-            from prompts import get_prompt
-
             # Get prompt from centralized system - use agent-specific format
             system_prompt = get_prompt("bubble_map_agent", language, "generation")
 
             if not system_prompt:
-                logger.error(f"BubbleMapAgent: No prompt found for language {language}")
+                logger.error("BubbleMapAgent: No prompt found for language %s", language)
                 return None
 
             user_prompt = f"请为以下描述创建一个气泡图：{prompt}" if language == "zh" else f"Please create a bubble map for the following description: {prompt}"
 
             # Call middleware directly - clean and efficient!
-            from services.llm import llm_service
-            from config.settings import config
-
             response = await llm_service.chat(
                 prompt=user_prompt,
                 model=self.model,
@@ -135,8 +133,6 @@ class BubbleMapAgent(BaseAgent):
             )
 
             # Extract JSON from response
-            from ..core.agent_utils import extract_json_from_response
-
             # Check if response is already a dictionary (from mock client)
             if isinstance(response, dict):
                 spec = response
@@ -148,13 +144,13 @@ class BubbleMapAgent(BaseAgent):
                 if not spec:
                     # Log the actual response for debugging
                     response_preview = response_str[:500] + "..." if len(response_str) > 500 else response_str
-                    logger.error(f"BubbleMapAgent: Failed to extract JSON from LLM response. Response preview: {response_preview}")
+                    logger.error("BubbleMapAgent: Failed to extract JSON from LLM response. Response preview: %s", response_preview)
                     return None
 
             return spec
 
         except Exception as e:
-            logger.error(f"BubbleMapAgent: Error in spec generation: {e}")
+            logger.error("BubbleMapAgent: Error in spec generation: %s", e)
             return None
 
     def _enhance_spec(self, spec: Dict) -> Dict:
@@ -187,7 +183,7 @@ class BubbleMapAgent(BaseAgent):
             return spec
 
         except Exception as e:
-            logger.error(f"BubbleMapAgent: Error enhancing spec: {e}")
+            logger.error("BubbleMapAgent: Error enhancing spec: %s", e)
             return spec
 
     def validate_output(self, spec: Dict) -> Tuple[bool, str]:
@@ -248,7 +244,8 @@ class BubbleMapAgent(BaseAgent):
             Dict containing success status and enhanced spec
         """
         try:
-            logger.debug(f"BubbleMapAgent: Enhancing spec - Topic: {spec.get('topic')}, Attributes: {len(spec.get('attributes', []))}")
+            attributes_count = len(spec.get('attributes', []))
+            logger.debug("BubbleMapAgent: Enhancing spec - Topic: %s, Attributes: %s", spec.get('topic'), attributes_count)
 
             # If already enhanced, return as-is
             if spec.get('_metadata', {}).get('enhanced'):
@@ -264,7 +261,7 @@ class BubbleMapAgent(BaseAgent):
             }
 
         except Exception as e:
-            logger.error(f"BubbleMapAgent: Error enhancing spec: {e}")
+            logger.error("BubbleMapAgent: Error enhancing spec: %s", e)
             return {
                 'success': False,
                 'error': f'Enhancement failed: {str(e)}'

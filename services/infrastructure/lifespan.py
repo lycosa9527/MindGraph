@@ -9,17 +9,25 @@ Handles FastAPI application startup and shutdown lifecycle:
 - Resource cleanup on shutdown
 """
 
-import os
 import asyncio
 import logging
+import os
+import signal
 import time
 from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
-from services.redis.redis_client import init_redis_sync, close_redis_sync, RedisStartupError
-from services.utils.temp_image_cleaner import start_cleanup_scheduler
-from services.utils.backup_scheduler import start_backup_scheduler
-from utils.dependency_checker import check_system_dependencies, DependencyError
+
+from clients.llm import close_httpx_clients
+from config.database import close_db, init_db
+from services.auth.sms_middleware import shutdown_sms_service
+from services.infrastructure.recovery_startup import check_database_on_startup
 from services.infrastructure.startup import _handle_shutdown_signal
+from services.redis.redis_client import close_redis_sync, init_redis_sync, RedisStartupError
+from services.utils.backup_scheduler import start_backup_scheduler
+from services.utils.temp_image_cleaner import start_cleanup_scheduler
+from utils.auth import display_demo_info
+from utils.dependency_checker import check_system_dependencies, DependencyError
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +44,6 @@ async def lifespan(fastapi_app: FastAPI):
     fastapi_app.state.is_shutting_down = False
 
     # Register signal handlers for graceful shutdown
-    import signal
     signal.signal(signal.SIGINT, _handle_shutdown_signal)
     signal.signal(signal.SIGTERM, _handle_shutdown_signal)
     logger.info("[LIFESPAN] Signal handlers registered")
@@ -86,11 +93,6 @@ async def lifespan(fastapi_app: FastAPI):
     # Initialize Database with corruption detection and recovery
     logger.info("[LIFESPAN] Initializing database...")
     try:
-        # pylint: disable=import-outside-toplevel
-        from config.database import init_db
-        from utils.auth import display_demo_info
-        from services.infrastructure.recovery_startup import check_database_on_startup
-
         # Check database integrity on startup (uses Redis lock to ensure only one worker checks)
         # Note: Removed worker_id check - Redis lock handles multi-worker coordination
         # If corruption is detected, interactive recovery wizard is triggered
@@ -357,7 +359,6 @@ async def lifespan(fastapi_app: FastAPI):
 
         # Shutdown SMS service (close httpx async client)
         try:
-            from services.auth.sms_middleware import shutdown_sms_service
             await shutdown_sms_service()
             if worker_id == '0' or not worker_id:
                 logger.info("SMS service shut down")
@@ -367,7 +368,6 @@ async def lifespan(fastapi_app: FastAPI):
 
         # Close httpx clients (LLM HTTP/2 connection pools)
         try:
-            from clients.llm import close_httpx_clients
             await close_httpx_clients()
             if worker_id == '0' or not worker_id:
                 logger.info("LLM httpx clients closed")
@@ -377,7 +377,6 @@ async def lifespan(fastapi_app: FastAPI):
 
         # Cleanup Database
         try:
-            from config.database import close_db
             close_db()
             if worker_id == '0' or not worker_id:
                 logger.info("Database connections closed")

@@ -1,4 +1,4 @@
-﻿"""
+"""
 Teaching materials specific chunker.
 
 Enhances chunking with educational metadata:
@@ -114,7 +114,8 @@ class TeachingChunker:
                     if c.name.lower() in chunk.text.lower()
                 ][:5]  # Limit to 5 concepts per chunk
 
-        logger.info(f"Created {len(teaching_chunks)} teaching chunks")
+        chunks_count = len(teaching_chunks)
+        logger.info("Created %s teaching chunks", chunks_count)
         return teaching_chunks
 
     def _extract_code_block(self, text: str) -> Optional[CodeBlock]:

@@ -13,6 +13,8 @@ import logging
 import threading
 from typing import Any
 
+from services.llm import llm_service
+
 logger = logging.getLogger(__name__)
 
 
@@ -65,8 +67,6 @@ class _LegacyLLMStub:
 
     def invoke(self, prompt: str) -> str:
         """Public interface for LLM invocation."""
-        from services.llm import llm_service
-
         async def _async_call():
             return await llm_service.chat(
                 prompt=prompt,
@@ -118,8 +118,6 @@ class QwenLLM:
         """
         # stop parameter is kept for API compatibility but not used
         del stop
-
-        from services.llm import llm_service
 
         async def _async_call():
             return await llm_service.chat(

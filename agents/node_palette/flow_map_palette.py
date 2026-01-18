@@ -108,10 +108,14 @@ class FlowMapPaletteGenerator(BasePaletteGenerator):
                 # For other stages, use stage name as mode
                 if stage == 'substeps' and stage_data and stage_data.get('step_name'):
                     node_mode = stage_data['step_name']
-                    logger.debug(f"[FlowMapPalette] Node tagged with step mode='{node_mode}' | ID: {node.get('id', 'unknown')} | Text: {node.get('text', '')}")
+                    node_id = node.get('id', 'unknown')
+                    node_text = node.get('text', '')
+                    logger.debug("[FlowMapPalette] Node tagged with step mode='%s' | ID: %s | Text: %s", node_mode, node_id, node_text)
                 else:
                     node_mode = stage
-                    logger.debug(f"[FlowMapPalette] Node tagged with stage mode='{node_mode}' | ID: {node.get('id', 'unknown')} | Text: {node.get('text', '')}")
+                    node_id = node.get('id', 'unknown')
+                    node_text = node.get('text', '')
+                    logger.debug("[FlowMapPalette] Node tagged with stage mode='%s' | ID: %s | Text: %s", node_mode, node_id, node_text)
 
                 node['mode'] = node_mode
 
@@ -149,7 +153,7 @@ class FlowMapPaletteGenerator(BasePaletteGenerator):
         stage_info = self.session_stages.get(session_id, {})
         stage = stage_info.get('stage', 'steps')  # Default to 'steps' (dimensions stage removed)
 
-        logger.debug(f"[FlowMapPalette-Prompt] Building prompt for stage: {stage}")
+        logger.debug("[FlowMapPalette-Prompt] Building prompt for stage: %s", stage)
 
         # Build stage-specific prompt
         if stage == 'steps':
@@ -160,7 +164,7 @@ class FlowMapPaletteGenerator(BasePaletteGenerator):
             return self._build_substeps_prompt  # pylint: disable=protected-access(center_topic, step_name, context_desc, language, count, batch_num)
         else:
             # Fallback to steps (default stage for flow maps)
-            logger.warning(f"[FlowMapPalette] Unknown stage '{stage}', defaulting to 'steps'")
+            logger.warning("[FlowMapPalette] Unknown stage '%s', defaulting to 'steps'", stage)
             return self._build_steps_prompt  # pylint: disable=protected-access(center_topic, context_desc, language, count, batch_num)
 
     def _build_dimensions_prompt(

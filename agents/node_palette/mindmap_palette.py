@@ -106,10 +106,14 @@ class MindMapPaletteGenerator(BasePaletteGenerator):
                 # For branches stage, use 'branches' as mode
                 if stage == 'children' and stage_data and stage_data.get('branch_name'):
                     node_mode = stage_data['branch_name']
-                    logger.debug(f"[MindMapPalette] Node tagged with branch mode='{node_mode}' | ID: {node.get('id', 'unknown')} | Text: {node.get('text', '')}")
+                    node_id = node.get('id', 'unknown')
+                    node_text = node.get('text', '')
+                    logger.debug("[MindMapPalette] Node tagged with branch mode='%s' | ID: %s | Text: %s", node_mode, node_id, node_text)
                 else:
                     node_mode = stage
-                    logger.debug(f"[MindMapPalette] Node tagged with stage mode='{node_mode}' | ID: {node.get('id', 'unknown')} | Text: {node.get('text', '')}")
+                    node_id = node.get('id', 'unknown')
+                    node_text = node.get('text', '')
+                    logger.debug("[MindMapPalette] Node tagged with stage mode='%s' | ID: %s | Text: %s", node_mode, node_id, node_text)
 
                 node['mode'] = node_mode
 

@@ -7,6 +7,183 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [5.8.0] - 2026-01-19 - Major Code Refactoring and Modularization
+
+### Changed
+
+- **LLM Client Refactoring** (`clients/llm.py`)
+  - Removed monolithic `clients/llm.py` (1,975 lines deleted)
+  - Split into modular structure in `clients/llm/` directory:
+    - `base.py` - Base LLM client abstractions
+    - `dashscope.py` - DashScope client implementation
+    - `hunyuan.py` - Hunyuan client implementation
+    - `volcengine.py` - VolcEngine client implementation
+    - `mock.py` - Mock client for testing
+    - `http_client_manager.py` - HTTP client management utilities
+    - `__init__.py` - Module exports
+  - Improved code organization and maintainability
+  - Better separation of concerns for different LLM providers
+
+- **Request Models Refactoring** (`models/requests.py`)
+  - Removed monolithic `models/requests.py` (966 lines deleted)
+  - Split into domain-specific request modules:
+    - `models/requests_auth.py` - Authentication-related requests
+    - `models/requests_diagram.py` - Diagram-related requests
+    - `models/requests_knowledge_space.py` - Knowledge space requests
+    - `models/requests_thinking.py` - Thinking-related requests
+    - `models/requests_assistant.py` - Assistant-related requests
+  - Improved type safety and code organization
+  - Better separation of concerns by domain
+
+- **Knowledge Space API Refactoring** (`routers/api/knowledge_space.py`)
+  - Removed monolithic `routers/api/knowledge_space.py` (1,436 lines deleted)
+  - Split into modular structure in `routers/api/knowledge_space/` directory:
+    - `documents.py` - Document management endpoints
+    - `queries.py` - Query and retrieval endpoints
+    - `metadata.py` - Metadata management endpoints
+    - `relationships.py` - Relationship management endpoints
+    - `evaluation.py` - Evaluation endpoints
+    - `debug.py` - Debug endpoints
+    - `__init__.py` - Router registration
+  - Improved API organization and maintainability
+  - Better separation of concerns for different knowledge space operations
+
+- **PNG Export Refactoring** (`routers/api/png_export.py`)
+  - Refactored `routers/api/png_export.py` (1,043 lines removed)
+  - Extracted core export logic to `routers/api/png_export_core.py`
+  - Improved code reusability and maintainability
+  - Better separation of core logic from API endpoints
+
+- **Admin Stats Refactoring** (`routers/auth/admin/stats.py`)
+  - Refactored `routers/auth/admin/stats.py` (694 lines removed)
+  - Extracted trends functionality to `routers/auth/admin/stats_trends.py`
+  - Improved code organization and maintainability
+  - Better separation of statistics and trends functionality
+
+- **LLM Chunking Service Removal** (`services/llm/llm_chunking_service.py`)
+  - Removed deprecated `services/llm/llm_chunking_service.py` (301 lines deleted)
+  - Functionality consolidated into `llm_chunking/` module
+  - Improved code organization and reduced duplication
+
+- **Agent Updates** (`agents/`)
+  - Updated all agent files to use new modular structure:
+    - `concept_map_agent.py` - Updated imports and structure
+    - `mind_map_agent.py` - Refactored for better maintainability
+    - All thinking map agents updated (bridge, bubble, circle, double_bubble, flow, multi_flow, tree)
+    - All node palette generators updated (brace, bridge, double_bubble, flow, mindmap, multi_flow, tree)
+    - `tab_agent.py` - Updated to use new utilities
+  - Improved consistency across agent implementations
+  - Better use of specialized utility modules
+
+- **LLM Chunking Improvements** (`llm_chunking/`)
+  - Enhanced chunking modules for better maintainability:
+    - `chunker.py` - Core chunking improvements (163 lines changed)
+    - `adapters/embedding_adapter.py` - Better adapter pattern implementation
+    - `agents/` - Updated boundary, content_type, and structure agents
+    - `optimizations/` - Improved batch processing, caching, and sampling
+    - `patterns/` - Enhanced pattern detection and TOC detection
+    - `teaching/` - Improved concept extraction and teaching chunker
+    - `utils/` - Enhanced embedding service and validators
+  - Improved error handling and code quality
+  - Better separation of concerns
+
+- **Error Handling Enhancements** (`services/llm/dashscope_errors/`)
+  - Major improvements to DashScope error handling:
+    - `_400_errors.py` - Enhanced 400 error handling (1,348 lines changed)
+    - `_401_403_errors.py` - Improved authentication error handling
+    - `_404_errors.py` - Better not found error handling
+    - `_429_errors.py` - Enhanced rate limit error handling
+    - `_500_503_errors.py` - Improved server error handling
+    - `_content_filter_errors.py` - Better content filter error handling
+    - `_specialized_errors.py` - Enhanced specialized error handling
+  - Improved error messages and recovery strategies
+  - Better error categorization and handling
+
+- **Error Parser Improvements** (`services/llm/`)
+  - Enhanced error parsers for better error handling:
+    - `doubao_error_parser.py` - Improved Doubao error parsing (346 lines changed)
+    - `hunyuan_error_parser.py` - Enhanced Hunyuan error parsing (244 lines changed)
+  - Better error detection and recovery
+  - Improved user-facing error messages
+
+- **Service Improvements** (`services/`)
+  - Enhanced various services:
+    - `llm/llm_service.py` - Improved LLM service (182 lines changed)
+    - `llm/qdrant_service.py` - Enhanced Qdrant integration (92 lines changed)
+    - `llm/rag_service.py` - Improved RAG service (111 lines changed)
+    - `llm/embedding_cache.py` - Better caching implementation
+    - `redis/redis_session_manager.py` - Enhanced session management (256 lines changed)
+    - `redis/redis_org_cache.py` - Improved organization caching (52 lines changed)
+    - `redis/redis_user_cache.py` - Enhanced user caching (43 lines changed)
+    - `redis/redis_sms_storage.py` - Better SMS storage (24 lines changed)
+    - `redis/redis_token_buffer.py` - Improved token buffering (27 lines changed)
+    - `infrastructure/rate_limiter.py` - Enhanced rate limiting (117 lines changed)
+    - `features/voice_agent.py` - Improved voice agent (382 lines changed)
+    - `knowledge/chunking_service.py` - Enhanced chunking service (125 lines changed)
+  - Improved error handling and code quality
+  - Better performance and maintainability
+
+- **Router Updates** (`routers/`)
+  - Updated various routers for better organization:
+    - `api/` - Multiple API routers updated for consistency
+    - `auth/` - Enhanced authentication routers
+    - `admin_realtime.py` - Improved admin realtime functionality (253 lines changed)
+    - `debateverse.py` - Enhanced debateverse router (148 lines changed)
+    - `voice.py` - Improved voice router (253 lines changed)
+    - `node_palette.py` - Enhanced node palette router (278 lines changed)
+    - `pages.py` - Improved pages router (112 lines changed)
+    - `tab_mode.py` - Enhanced tab mode router (56 lines changed)
+  - Improved code organization and maintainability
+  - Better error handling and consistency
+
+- **Model Updates** (`models/`)
+  - Enhanced model definitions:
+    - `messages.py` - Improved message models (433 lines changed)
+    - `responses.py` - Enhanced response models (183 lines changed)
+    - `auth.py` - Updated authentication models
+    - `diagrams.py` - Improved diagram models
+    - `common.py` - Enhanced common models
+    - `dashboard_activity.py` - Improved activity models
+    - `debateverse.py` - Enhanced debateverse models
+    - `env_settings.py` - Updated environment settings models
+  - Improved type safety and validation
+  - Better code organization
+
+- **Configuration Updates** (`config/`)
+  - Enhanced configuration modules:
+    - `database.py` - Improved database configuration (13 lines changed)
+    - `features_config.py` - Enhanced features configuration (54 lines changed)
+    - `llm_config.py` - Updated LLM configuration (8 lines changed)
+    - `rate_limiting.py` - Improved rate limiting configuration (7 lines changed)
+    - `visualization_config.py` - Enhanced visualization configuration (22 lines changed)
+  - Better configuration management
+  - Improved maintainability
+
+- **Core Agent Utilities** (`agents/core/`)
+  - Updated core utilities:
+    - `graph_spec.py` - Enhanced graph specification utilities
+    - `llm_clients.py` - Improved LLM client utilities (6 lines changed)
+    - `workflow.py` - Enhanced workflow utilities (54 lines changed)
+  - Better code organization and reusability
+
+- **Task Updates** (`tasks/`)
+  - Enhanced knowledge space tasks:
+    - `knowledge_space_tasks.py` - Improved task definitions (154 lines changed)
+  - Better task organization and error handling
+
+### Removed
+
+- `clients/llm.py` - Replaced by modular `clients/llm/` directory
+- `models/requests.py` - Replaced by domain-specific request modules
+- `services/llm/llm_chunking_service.py` - Functionality consolidated into `llm_chunking/` module
+
+### Statistics
+
+- **134 files changed**
+- **6,520 insertions(+), 9,137 deletions(-)**
+- **Net reduction: ~2,617 lines of code**
+- Improved code organization and maintainability across the codebase
+
 ## [5.7.1] - 2026-01-18 - Code Quality Improvements
 
 ### Fixed

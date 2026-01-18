@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Request
 
 from models.auth import User
 from models.messages import Messages, Language
+from services.redis.redis_bayi_whitelist import get_bayi_whitelist
 from utils.auth import AUTH_MODE
 from ..dependencies import get_language_dependency, require_admin
 
@@ -24,7 +25,6 @@ async def list_bayi_ip_whitelist(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Bayi mode not enabled")
 
     try:
-        from services.redis.redis_bayi_whitelist import get_bayi_whitelist
         whitelist = get_bayi_whitelist()
         ips = whitelist.list_ips()
 
@@ -33,7 +33,7 @@ async def list_bayi_ip_whitelist(
             "count": len(ips)
         }
     except Exception as e:
-        logger.error(f"Failed to list IP whitelist: {e}")
+        logger.error("Failed to list IP whitelist: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to list IP whitelist"
@@ -58,12 +58,11 @@ async def add_bayi_ip_whitelist(
     ip = request_body["ip"].strip()
 
     try:
-        from services.redis.redis_bayi_whitelist import get_bayi_whitelist
         whitelist = get_bayi_whitelist()
         success = whitelist.add_ip(ip, added_by=current_user.phone)
 
         if success:
-            logger.info(f"Admin {current_user.phone} added IP {ip} to bayi whitelist")
+            logger.info("Admin %s added IP %s to bayi whitelist", current_user.phone, ip)
             return {
                 "message": f"IP {ip} added to whitelist successfully",
                 "ip": ip
@@ -77,7 +76,7 @@ async def add_bayi_ip_whitelist(
         error_msg = Messages.error("invalid_ip_address", lang, ip)
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
     except Exception as e:
-        logger.error(f"Failed to add IP to whitelist: {e}")
+        logger.error("Failed to add IP to whitelist: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to add IP to whitelist"
@@ -96,12 +95,11 @@ async def remove_bayi_ip_whitelist(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Bayi mode not enabled")
 
     try:
-        from services.redis.redis_bayi_whitelist import get_bayi_whitelist
         whitelist = get_bayi_whitelist()
         success = whitelist.remove_ip(ip)
 
         if success:
-            logger.info(f"Admin {current_user.phone} removed IP {ip} from bayi whitelist")
+            logger.info("Admin %s removed IP %s from bayi whitelist", current_user.phone, ip)
             return {
                 "message": f"IP {ip} removed from whitelist successfully",
                 "ip": ip
@@ -115,7 +113,7 @@ async def remove_bayi_ip_whitelist(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Failed to remove IP from whitelist: {e}")
+        logger.error("Failed to remove IP from whitelist: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to remove IP from whitelist"

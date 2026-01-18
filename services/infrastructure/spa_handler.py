@@ -1,4 +1,4 @@
-﻿from pathlib import Path
+from pathlib import Path
 import logging
 import os
 
@@ -110,7 +110,7 @@ def setup_vue_spa(app: FastAPI) -> bool:
             logger.info("Using legacy Jinja2 templates for frontend")
         return False
 
-    logger.info(f"Configuring Vue SPA from: {VUE_DIST_DIR}")
+    logger.info("Configuring Vue SPA from: %s", VUE_DIST_DIR)
 
     # Mount Vue static assets
     assets_dir = VUE_DIST_DIR / "assets"
@@ -142,7 +142,7 @@ async def serve_vue_spa(request: Request) -> FileResponse:
     index_path = VUE_DIST_DIR / "index.html"
 
     if not index_path.exists():
-        logger.error(f"Vue SPA index.html not found at {index_path}")
+        logger.error("Vue SPA index.html not found at %s", index_path)
         return HTMLResponse(
             content="<h1>Frontend not built</h1><p>Run 'npm run build' in the frontend directory.</p>",
             status_code=503

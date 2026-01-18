@@ -1,22 +1,4 @@
-from datetime import datetime, timedelta
-from typing import Dict, Any, List
-import logging
-
-from fastapi import APIRouter, Depends, HTTPException, Request
-from sqlalchemy import func
-from sqlalchemy.orm import Session
-
-from config.database import get_db
-from models.auth import User, APIKey
-from models.messages import Messages
-from utils.auth import generate_api_key
-
-from ..dependencies import get_language_dependency, require_admin
-from ..helpers import utc_to_beijing_iso
-
-"""
-Admin API Key Management Endpoints
-===================================
+"""Admin API Key Management Endpoints.
 
 Admin-only API key management endpoints:
 - GET /admin/api_keys - List all API keys with usage stats
@@ -29,9 +11,22 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+from datetime import datetime, timedelta
+from typing import Dict, Any, List
+import logging
 
+from fastapi import APIRouter, Depends, HTTPException, Request
+from sqlalchemy import func
+from sqlalchemy.orm import Session
 
+from config.database import get_db
+from models.auth import User, APIKey
+from models.messages import Messages
+from models.token_usage import TokenUsage
+from utils.auth import generate_api_key
 
+from ..dependencies import get_language_dependency, require_admin
+from ..helpers import utc_to_beijing_iso
 
 
 logger = logging.getLogger(__name__)
@@ -41,10 +36,10 @@ router = APIRouter()
 
 @router.get("/admin/api_keys", dependencies=[Depends(require_admin)])
 async def list_api_keys_admin(
-    request: Request,
-    current_user: User = Depends(require_admin),
+    _request: Request,
+    _current_user: User = Depends(require_admin),
     db: Session = Depends(get_db),
-    lang: str = Depends(get_language_dependency)
+    _lang: str = Depends(get_language_dependency)
 ) -> List[Dict[str, Any]]:
     """List all API keys with usage stats (ADMIN ONLY)"""
     keys = db.query(APIKey).order_by(APIKey.created_at.desc()).all()
@@ -53,8 +48,6 @@ async def list_api_keys_admin(
     token_stats_by_key = {}
 
     try:
-        from models.token_usage import TokenUsage
-
         # For each API key, get token usage where api_key_id matches
         for key in keys:
             key_token_stats = db.query(
@@ -79,7 +72,7 @@ async def list_api_keys_admin(
                     "total_tokens": 0
                 }
     except (ImportError, Exception) as e:
-        logger.debug(f"TokenUsage not available: {e}")
+        logger.debug("TokenUsage not available: %s", e)
         # Set default empty stats for all keys
         for key in keys:
             token_stats_by_key[key.id] = {
@@ -118,8 +111,8 @@ async def list_api_keys_admin(
 @router.post("/admin/api_keys", dependencies=[Depends(require_admin)])
 async def create_api_key_admin(
     request_body: dict,
-    http_request: Request,
-    current_user: User = Depends(require_admin),
+    _http_request: Request,
+    _current_user: User = Depends(require_admin),
     db: Session = Depends(get_db),
     lang: str = Depends(get_language_dependency)
 ) -> Dict[str, Any]:
@@ -156,8 +149,8 @@ async def create_api_key_admin(
 async def update_api_key_admin(
     key_id: int,
     request_body: dict,
-    http_request: Request,
-    current_user: User = Depends(require_admin),
+    _http_request: Request,
+    _current_user: User = Depends(require_admin),
     db: Session = Depends(get_db),
     lang: str = Depends(get_language_dependency)
 ) -> Dict[str, Any]:
@@ -196,8 +189,8 @@ async def update_api_key_admin(
 @router.delete("/admin/api_keys/{key_id}", dependencies=[Depends(require_admin)])
 async def delete_api_key_admin(
     key_id: int,
-    request: Request,
-    current_user: User = Depends(require_admin),
+    _request: Request,
+    _current_user: User = Depends(require_admin),
     db: Session = Depends(get_db),
     lang: str = Depends(get_language_dependency)
 ) -> Dict[str, str]:
@@ -219,8 +212,8 @@ async def delete_api_key_admin(
 @router.put("/admin/api_keys/{key_id}/toggle", dependencies=[Depends(require_admin)])
 async def toggle_api_key_admin(
     key_id: int,
-    request: Request,
-    current_user: User = Depends(require_admin),
+    _request: Request,
+    _current_user: User = Depends(require_admin),
     db: Session = Depends(get_db),
     lang: str = Depends(get_language_dependency)
 ) -> Dict[str, Any]:
@@ -242,6 +235,3 @@ async def toggle_api_key_admin(
         "message": message,
         "is_active": key_record.is_active
     }
-
-
-

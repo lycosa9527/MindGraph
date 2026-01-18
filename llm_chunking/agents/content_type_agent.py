@@ -1,13 +1,15 @@
-from typing import List, Optional
-import json
-import logging
-
-
-"""
-Content type detection agent for teaching materials.
+"""Content type detection agent for teaching materials.
 
 Detects content types: theory, example, exercise, summary, code, formula.
 """
+from typing import List, Optional, Any
+import json
+import logging
+
+try:
+    from services.llm import llm_service as default_llm_service
+except ImportError:
+    default_llm_service = None
 
 
 logger = logging.getLogger(__name__)
@@ -45,7 +47,7 @@ class ContentTypeAgent:
         ]
     }
 
-    def __init__(self, llm_service=None):
+    def __init__(self, llm_service: Any = None):
         """
         Initialize content type agent.
 
@@ -54,11 +56,11 @@ class ContentTypeAgent:
         """
         self.llm_service = llm_service
         if llm_service is None:
-            try:
-                from services.llm import llm_service
-                self.llm_service = llm_service
-            except Exception as e:
-                logger.warning(f"LLM service not available: {e}")
+            if default_llm_service is None:
+                logger.warning("LLM service not available. Content type detection will use pattern matching fallback.")
+                self.llm_service = None
+            else:
+                self.llm_service = default_llm_service
 
     async def detect_content_type(
         self,
@@ -129,6 +131,9 @@ Return JSON:
 {{"content_type": "theory"}}
 """
 
+        if self.llm_service is None:
+            return "theory"
+
         try:
             response = await self.llm_service.chat(
                 prompt=prompt,
@@ -145,7 +150,7 @@ Return JSON:
                 result = json.loads(json_str)
                 return result.get("content_type", "theory")
         except Exception as e:
-            logger.warning(f"LLM content type detection failed: {e}")
+            logger.warning("LLM content type detection failed: %s", e)
 
         return "theory"  # Default
 
@@ -202,6 +207,9 @@ Return JSON array:
 ]
 """
 
+        if self.llm_service is None:
+            return ["theory"] * len(texts)
+
         try:
             response = await self.llm_service.chat(
                 prompt=prompt,
@@ -219,12 +227,11 @@ Return JSON array:
 
                 types = []
                 for result in results:
-                    result.get("text", 1) - 1
                     content_type = result.get("content_type", "theory")
                     types.append(content_type)
 
                 return types[:len(texts)]  # Ensure correct length
         except Exception as e:
-            logger.warning(f"LLM batch detection failed: {e}")
+            logger.warning("LLM batch detection failed: %s", e)
 
         return ["theory"] * len(texts)  # Default

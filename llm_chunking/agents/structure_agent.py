@@ -1,16 +1,20 @@
-﻿from typing import Dict, Any, Optional, List
-import json
-import logging
-
-from llm_chunking.models import DocumentStructure
-from llm_chunking.patterns.toc_detector import TOCDetector
-
-"""
-Structure detection agent using 30-page sampling.
+"""Structure detection agent using 30-page sampling.
 
 Analyzes first 30 pages to detect document structure and determine
 optimal chunking strategy (General, Parent-Child, or Q&A).
 """
+from typing import Dict, Any, Optional, List
+import json
+import logging
+import traceback
+
+from llm_chunking.models import DocumentStructure
+from llm_chunking.patterns.toc_detector import TOCDetector
+
+try:
+    from services.llm import llm_service as default_llm_service
+except ImportError:
+    default_llm_service = None
 
 
 logger = logging.getLogger(__name__)
@@ -36,20 +40,22 @@ class StructureAgent:
         self.llm_service = llm_service
         if llm_service is None:
             try:
-                from services.llm import llm_service
                 # Verify LLM service is initialized
-                if not hasattr(llm_service, 'client_manager') or not llm_service.client_manager.is_initialized():
+                if (default_llm_service is None or
+                        not hasattr(default_llm_service, 'client_manager') or
+                        not default_llm_service.client_manager.is_initialized()):
                     logger.warning(
                         "[StructureAgent] LLM service not initialized. "
                         "Structure detection will use heuristics fallback."
                     )
                     self.llm_service = None
                 else:
-                    self.llm_service = llm_service
+                    self.llm_service = default_llm_service
             except Exception as e:
                 logger.warning(
-                    f"[StructureAgent] LLM service not available: {e}. "
-                    "Structure detection will use heuristics fallback."
+                    "[StructureAgent] LLM service not available: %s. "
+                    "Structure detection will use heuristics fallback.",
+                    e
                 )
                 self.llm_service = None
 
@@ -84,8 +90,11 @@ class StructureAgent:
         # Step 3: Create structure
         try:
             logger.info(
-                f"[StructureAgent] Creating DocumentStructure: doc_id={document_id}, "
-                f"structure_type={structure_type}, doc_type={document_type}"
+                "[StructureAgent] Creating DocumentStructure: doc_id=%s, "
+                "structure_type=%s, doc_type=%s",
+                document_id,
+                structure_type,
+                document_type
             )
             structure = DocumentStructure(
                 document_id=document_id,
@@ -95,22 +104,20 @@ class StructureAgent:
                 document_type=document_type,
             )
             logger.info(
-                f"[StructureAgent] ✓ DocumentStructure created: type={structure.structure_type}, "
-                f"doc_type={structure.document_type}, toc_entries={len(toc)}"
+                "[StructureAgent] ✓ DocumentStructure created: type=%s, "
+                "doc_type=%s, toc_entries=%d",
+                structure.structure_type,
+                structure.document_type,
+                len(toc)
             )
         except Exception as e:
-            import traceback
-            logger.error(f"[StructureAgent] ✗ Failed to create DocumentStructure: {e}")
+            logger.error("[StructureAgent] ✗ Failed to create DocumentStructure: %s", e)
             logger.error("[StructureAgent] Full traceback:")
             logger.error(traceback.format_exc())
-            logger.error(f"[StructureAgent] Exception type: {type(e).__name__}")
-            logger.error(f"[StructureAgent] Exception args: {e.args}")
+            logger.error("[StructureAgent] Exception type: %s", type(e).__name__)
+            logger.error("[StructureAgent] Exception args: %s", e.args)
             logger.error("[StructureAgent] DocumentStructure import check:")
-            try:
-                from llm_chunking.models import DocumentStructure as DS
-                logger.error(f"[StructureAgent] DocumentStructure imported successfully: {DS}")
-            except Exception as import_error:
-                logger.error(f"[StructureAgent] Failed to import DocumentStructure: {import_error}")
+            logger.error("[StructureAgent] DocumentStructure imported successfully: %s", DocumentStructure)
             raise
 
         return structure
@@ -193,7 +200,7 @@ Return JSON:
                 return self._heuristic_analyze(sample_text, toc)
 
         except Exception as e:
-            logger.warning(f"LLM analysis failed: {e}, using heuristics")
+            logger.warning("LLM analysis failed: %s, using heuristics", e)
             return self._heuristic_analyze(sample_text, toc)
 
     def _heuristic_analyze(

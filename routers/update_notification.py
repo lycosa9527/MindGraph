@@ -111,7 +111,7 @@ async def get_update_notification(
         return {"notification": notification}
 
     except Exception as e:
-        logger.error(f"Failed to get notification: {e}")
+        logger.error("Failed to get notification: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to get notification"
@@ -141,7 +141,7 @@ async def dismiss_update_notification(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Failed to dismiss notification: {e}")
+        logger.error("Failed to dismiss notification: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to dismiss notification"
@@ -186,7 +186,7 @@ async def get_notification_config(
         }
 
     except Exception as e:
-        logger.error(f"Failed to get notification config: {e}")
+        logger.error("Failed to get notification config: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to get notification config"
@@ -222,7 +222,7 @@ async def set_notification_config(
             changelog_items_en=request.changelog_items_en
         )
 
-        logger.info(f"Admin {current_user.phone} updated notification: enabled={request.enabled}")
+        logger.info("Admin %s updated notification: enabled=%s", current_user.phone, request.enabled)
 
         return {
             "message": "Notification updated successfully",
@@ -230,7 +230,7 @@ async def set_notification_config(
         }
 
     except Exception as e:
-        logger.error(f"Failed to set notification config: {e}")
+        logger.error("Failed to set notification config: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to set notification config"
@@ -255,7 +255,7 @@ async def disable_notification(
     try:
         notification = update_notifier.disable_notification()
 
-        logger.info(f"Admin {current_user.phone} disabled update notification")
+        logger.info("Admin %s disabled update notification", current_user.phone)
 
         return {
             "message": "Notification disabled",
@@ -263,7 +263,7 @@ async def disable_notification(
         }
 
     except Exception as e:
-        logger.error(f"Failed to disable notification: {e}")
+        logger.error("Failed to disable notification: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to disable notification"
@@ -289,7 +289,7 @@ async def reset_dismissed(
         success = update_notifier.clear_dismissed()
 
         if success:
-            logger.info(f"Admin {current_user.phone} reset all dismissed states")
+            logger.info("Admin %s reset all dismissed states", current_user.phone)
             return {"message": "All dismissed states cleared"}
         else:
             raise HTTPException(
@@ -300,7 +300,7 @@ async def reset_dismissed(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Failed to reset dismissed: {e}")
+        logger.error("Failed to reset dismissed: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to reset dismissed states"
@@ -353,7 +353,7 @@ async def upload_announcement_image(
         # Return URL path
         image_url = f"/static/announcement_images/{filename}"
 
-        logger.info(f"Admin {current_user.phone} uploaded announcement image: {filename}")
+        logger.info("Admin %s uploaded announcement image: %s", current_user.phone, filename)
 
         return {
             "url": image_url,
@@ -361,7 +361,7 @@ async def upload_announcement_image(
         }
 
     except Exception as e:
-        logger.error(f"Failed to upload image: {e}")
+        logger.error("Failed to upload image: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="图片上传失败"

@@ -5,6 +5,10 @@ from typing import Dict, List, Any, Tuple, Optional
 import logging
 
 from agents.core.base_agent import BaseAgent
+from agents.core.agent_utils import extract_json_from_response
+from config.settings import config
+from prompts import get_prompt
+from services.llm import llm_service
 
 """
 Multi-Flow Map Agent
@@ -62,7 +66,7 @@ class MultiFlowMapAgent(BaseAgent):
             # Validate the generated spec
             is_valid, validation_msg = self.validate_output(spec)
             if not is_valid:
-                logger.warning(f"MultiFlowMapAgent: Validation failed: {validation_msg}")
+                logger.warning("MultiFlowMapAgent: Validation failed: %s", validation_msg)
                 return {
                     'success': False,
                     'error': f'Generated invalid specification: {validation_msg}'
@@ -85,7 +89,7 @@ class MultiFlowMapAgent(BaseAgent):
             }
 
         except Exception as e:
-            logger.error(f"MultiFlowMapAgent: Multi-flow map generation failed: {e}")
+            logger.error("MultiFlowMapAgent: Multi-flow map generation failed: %s", e)
             return {
                 'success': False,
                 'error': f'Generation failed: {str(e)}'
@@ -103,22 +107,16 @@ class MultiFlowMapAgent(BaseAgent):
     ) -> Optional[Dict]:
         """Generate the multi-flow map specification using LLM."""
         try:
-            # Import centralized prompt system
-            from prompts import get_prompt
-
             # Get prompt from centralized system - use agent-specific format
             system_prompt = get_prompt("multi_flow_map_agent", language, "generation")
 
             if not system_prompt:
-                logger.error(f"MultiFlowMapAgent: No prompt found for language {language}")
+                logger.error("MultiFlowMapAgent: No prompt found for language %s", language)
                 return None
 
             user_prompt = f"请为以下描述创建一个复流程图：{prompt}" if language == "zh" else f"Please create a multi-flow map for the following description: {prompt}"
 
             # Call middleware directly - clean and efficient!
-            from services.llm import llm_service
-            from config.settings import config
-
             response = await llm_service.chat(
                 prompt=user_prompt,
                 model=self.model,
@@ -138,8 +136,6 @@ class MultiFlowMapAgent(BaseAgent):
                 return None
 
             # Extract JSON from response
-            from ..core.agent_utils import extract_json_from_response
-
             # Check if response is already a dictionary (from mock client)
             if isinstance(response, dict):
                 spec = response
@@ -154,7 +150,7 @@ class MultiFlowMapAgent(BaseAgent):
             return spec
 
         except Exception as e:
-            logger.error(f"MultiFlowMapAgent: Error in spec generation: {e}")
+            logger.error("MultiFlowMapAgent: Error in spec generation: %s", e)
             return None
 
     def validate_output(self, spec: Dict) -> Tuple[bool, str]:
@@ -230,28 +226,28 @@ class MultiFlowMapAgent(BaseAgent):
                 return (value or "").strip()
 
             event: str = clean_text(event_raw)
-            logger.debug(f"MultiFlowMapAgent: Raw causes: {len(causes_raw)}, Raw effects: {len(effects_raw)}")
+            logger.debug("MultiFlowMapAgent: Raw causes: %s, Raw effects: %s", len(causes_raw), len(effects_raw))
 
             def normalize_list(items: List[str]) -> List[str]:
                 seen = set()
                 normalized: List[str] = []
                 for item in items:
                     if not isinstance(item, str):
-                        logger.warning(f"MultiFlowMapAgent: Skipping non-string item: {item}")
+                        logger.warning("MultiFlowMapAgent: Skipping non-string item: %s", item)
                         continue
                     cleaned = clean_text(item)
                     if not cleaned or cleaned in seen:
-                        logger.warning(f"MultiFlowMapAgent: Skipping empty or duplicate item: '{item}'")
+                        logger.warning("MultiFlowMapAgent: Skipping empty or duplicate item: '%s'", item)
                         continue
                     seen.add(cleaned)
                     normalized.append(cleaned)
-                    logger.debug(f"MultiFlowMapAgent: Added normalized item: '{cleaned}'")
+                    logger.debug("MultiFlowMapAgent: Added normalized item: '%s'", cleaned)
                 # Clamp to maximum supported items
                 return normalized[: self.MAX_ITEMS_PER_SIDE]
 
             causes: List[str] = normalize_list(causes_raw)
             effects: List[str] = normalize_list(effects_raw)
-            logger.debug(f"MultiFlowMapAgent: Final normalized - causes: {len(causes)}, effects: {len(effects)}")
+            logger.debug("MultiFlowMapAgent: Final normalized - causes: %s, effects: %s", len(causes), len(effects))
 
             if not event:
                 return {"success": False, "error": "Missing or empty event"}

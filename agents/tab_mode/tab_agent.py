@@ -5,11 +5,12 @@ from typing import Dict, List, Any, Optional
 import json
 import logging
 import re
+import time
 
 from pydantic import BaseModel, Field
 
 from agents.core.base_agent import BaseAgent
-from prompts import get_prompt
+from prompts import get_prompt, PROMPT_REGISTRY
 from services.infrastructure.error_handler import LLMServiceError
 from services.llm import llm_service
 
@@ -415,7 +416,6 @@ class TabAgent(BaseAgent):
                 'endpoint_path': '/api/tab_suggestions'
             })
 
-            import time
             start_time = time.time()
 
             response = await llm_service.chat(
@@ -506,9 +506,6 @@ class TabAgent(BaseAgent):
             })
 
             # Get prompt template
-            # Import registry first
-            from prompts import PROMPT_REGISTRY
-
             # Normalize diagram type: enum might be "mind_map" but registry uses "mindmap"
             normalized_diagram_type = diagram_type
             if diagram_type == 'mind_map':
@@ -565,7 +562,6 @@ class TabAgent(BaseAgent):
                 'endpoint_path': '/api/tab_expand'
             })
 
-            import time
             start_time = time.time()
 
             response = await llm_service.chat(

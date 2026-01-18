@@ -1,4 +1,4 @@
-﻿"""
+"""
 Public Authentication Endpoints
 ================================
 
@@ -46,6 +46,4 @@ async def list_organizations(db: Session = Depends(get_db)):
         }
         for org in orgs
     ]
-
-
 

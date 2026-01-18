@@ -1,13 +1,11 @@
-﻿from typing import Optional
-import logging
-
-
 """
 30-page sampling strategy for structure detection.
 
 Samples first 30 pages of document for LLM analysis,
 reducing cost by 94% compared to full document analysis.
 """
+from typing import Optional
+import logging
 
 
 logger = logging.getLogger(__name__)
@@ -54,8 +52,11 @@ class DocumentSampler:
         sampled = text[:sample_size]
 
         logger.info(
-            f"Sampled {len(sampled)} chars ({self.sample_pages} pages) "
-            f"from {len(text)} chars document ({len(text) / self.CHARS_PER_PAGE:.1f} pages)"
+            "Sampled %s chars (%s pages) from %s chars document (%.1f pages)",
+            len(sampled),
+            self.sample_pages,
+            len(text),
+            len(text) / self.CHARS_PER_PAGE,
         )
 
         return sampled

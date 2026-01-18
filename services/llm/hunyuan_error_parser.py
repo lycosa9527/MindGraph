@@ -10,12 +10,14 @@ Reference: https://cloud.tencent.cn/document/product/1729/101847
 @author lycosa9527
 @made_by MindSpring Team
 
-Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+Copyright 2024-2025 北京思源智教科技有限公司
+(Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved
 Proprietary License
 """
-from typing import Optional, Tuple
+from typing import Optional, Tuple, NoReturn
 import logging
+import re
 
 from services.infrastructure.error_handler import (
     LLMServiceError,
@@ -43,7 +45,6 @@ def _has_chinese_characters(text: str) -> bool:
     Returns:
         True if text contains Chinese characters
     """
-    import re
     return bool(re.search(r'[\u4e00-\u9fff]', text))
 
 
@@ -72,7 +73,13 @@ def parse_hunyuan_error(
     # ===== Authentication Errors (AuthFailure.*) =====
     if error_code.startswith('AuthFailure'):
         if 'InvalidAuthorization' in error_code:
-            user_msg = "请求头Authorization格式错误，请检查认证配置" if has_chinese else "Invalid Authorization header format. Please check authentication configuration."
+            if has_chinese:
+                user_msg = "请求头Authorization格式错误，请检查认证配置"
+            else:
+                user_msg = (
+                    "Invalid Authorization header format. "
+                    "Please check authentication configuration."
+                )
             return LLMAccessDeniedError(
                 f"Invalid authorization: {error_message}",
                 provider='hunyuan',
@@ -88,7 +95,13 @@ def parse_hunyuan_error(
             ), user_msg
 
         if 'SecretIdNotFound' in error_code:
-            user_msg = "密钥不存在或已被删除，请检查密钥配置" if has_chinese else "Secret ID not found or deleted. Please check key configuration."
+            if has_chinese:
+                user_msg = "密钥不存在或已被删除，请检查密钥配置"
+            else:
+                user_msg = (
+                    "Secret ID not found or deleted. "
+                    "Please check key configuration."
+                )
             return LLMAccessDeniedError(
                 f"Secret ID not found: {error_message}",
                 provider='hunyuan',
@@ -96,7 +109,13 @@ def parse_hunyuan_error(
             ), user_msg
 
         if 'SignatureExpire' in error_code:
-            user_msg = "签名已过期，请检查本地时间是否与标准时间同步" if has_chinese else "Signature expired. Please check if local time is synchronized with standard time."
+            if has_chinese:
+                user_msg = "签名已过期，请检查本地时间是否与标准时间同步"
+            else:
+                user_msg = (
+                    "Signature expired. Please check if local time is "
+                    "synchronized with standard time."
+                )
             return LLMAccessDeniedError(
                 f"Signature expired: {error_message}",
                 provider='hunyuan',
@@ -128,7 +147,13 @@ def parse_hunyuan_error(
             ), user_msg
 
         # Generic AuthFailure
-        user_msg = "认证失败，请检查API密钥和签名配置" if has_chinese else "Authentication failed. Please check API key and signature configuration."
+        if has_chinese:
+            user_msg = "认证失败，请检查API密钥和签名配置"
+        else:
+            user_msg = (
+                "Authentication failed. Please check API key and "
+                "signature configuration."
+            )
         return LLMAccessDeniedError(
             f"Authentication failure: {error_message}",
             provider='hunyuan',
@@ -137,8 +162,18 @@ def parse_hunyuan_error(
 
     # ===== Parameter Errors =====
     if error_code == 'InvalidParameter' or error_code == 'InvalidParameter.InvalidParameter':
-        user_msg = "参数错误，请检查参数格式和类型" if has_chinese else "Invalid parameter. Please check parameter format and type."
-        return LLMInvalidParameterError(f"Invalid parameter: {error_message}", parameter=None, error_code=error_code, provider='hunyuan'), user_msg
+        if has_chinese:
+            user_msg = "参数错误，请检查参数格式和类型"
+        else:
+            user_msg = (
+                "Invalid parameter. Please check parameter format and type."
+            )
+        return LLMInvalidParameterError(
+            f"Invalid parameter: {error_message}",
+            parameter=None,
+            error_code=error_code,
+            provider='hunyuan'
+        ), user_msg
 
     if error_code == 'InvalidParameterValue' or error_code.startswith('InvalidParameterValue'):
         if 'Model' in error_code:
@@ -150,33 +185,95 @@ def parse_hunyuan_error(
             ), user_msg
 
         if 'ParameterValueError' in error_code:
-            user_msg = "参数字段或值有误，请检查参数配置" if has_chinese else "Parameter field or value error. Please check parameter configuration."
-            return LLMInvalidParameterError(f"Invalid parameter value: {error_message}", parameter=None, error_code=error_code, provider='hunyuan'), user_msg
+            if has_chinese:
+                user_msg = "参数字段或值有误，请检查参数配置"
+            else:
+                user_msg = (
+                    "Parameter field or value error. "
+                    "Please check parameter configuration."
+                )
+            return LLMInvalidParameterError(
+                f"Invalid parameter value: {error_message}",
+                parameter=None,
+                error_code=error_code,
+                provider='hunyuan'
+            ), user_msg
 
-        user_msg = "参数取值错误，请检查参数值" if has_chinese else "Invalid parameter value. Please check parameter values."
-        return LLMInvalidParameterError(f"Invalid parameter value: {error_message}", parameter=None, error_code=error_code, provider='hunyuan'), user_msg
+        if has_chinese:
+            user_msg = "参数取值错误，请检查参数值"
+        else:
+            user_msg = (
+                "Invalid parameter value. Please check parameter values."
+            )
+        return LLMInvalidParameterError(
+            f"Invalid parameter value: {error_message}",
+            parameter=None,
+            error_code=error_code,
+            provider='hunyuan'
+        ), user_msg
 
     if error_code == 'InvalidRequest':
-        user_msg = "请求格式错误，请检查请求body格式" if has_chinese else "Invalid request format. Please check request body format."
-        return LLMInvalidParameterError(f"Invalid request: {error_message}", parameter='body', error_code=error_code, provider='hunyuan'), user_msg
+        if has_chinese:
+            user_msg = "请求格式错误，请检查请求body格式"
+        else:
+            user_msg = (
+                "Invalid request format. Please check request body format."
+            )
+        return LLMInvalidParameterError(
+            f"Invalid request: {error_message}",
+            parameter='body',
+            error_code=error_code,
+            provider='hunyuan'
+        ), user_msg
 
     if error_code == 'MissingParameter':
-        user_msg = "缺少必需参数，请检查参数配置" if has_chinese else "Missing required parameter. Please check parameter configuration."
-        return LLMInvalidParameterError(f"Missing parameter: {error_message}", parameter=None, error_code=error_code, provider='hunyuan'), user_msg
+        if has_chinese:
+            user_msg = "缺少必需参数，请检查参数配置"
+        else:
+            user_msg = (
+                "Missing required parameter. Please check parameter "
+                "configuration."
+            )
+        return LLMInvalidParameterError(
+            f"Missing parameter: {error_message}",
+            parameter=None,
+            error_code=error_code,
+            provider='hunyuan'
+        ), user_msg
 
     if error_code == 'UnknownParameter':
-        user_msg = "未知参数错误，请移除未定义的参数" if has_chinese else "Unknown parameter. Please remove undefined parameters."
-        return LLMInvalidParameterError(f"Unknown parameter: {error_message}", parameter=None, error_code=error_code, provider='hunyuan'), user_msg
+        if has_chinese:
+            user_msg = "未知参数错误，请移除未定义的参数"
+        else:
+            user_msg = "Unknown parameter. Please remove undefined parameters."
+        return LLMInvalidParameterError(
+            f"Unknown parameter: {error_message}",
+            parameter=None,
+            error_code=error_code,
+            provider='hunyuan'
+        ), user_msg
 
     # ===== Rate Limit Errors =====
-    if error_code == 'LimitExceeded' or error_code == 'RequestLimitExceeded' or error_code.startswith('RequestLimitExceeded'):
-        user_msg = "请求频率超过限制，请稍后重试" if has_chinese else "Request rate limit exceeded. Please try again later."
+    if (error_code == 'LimitExceeded' or
+            error_code == 'RequestLimitExceeded' or
+            error_code.startswith('RequestLimitExceeded')):
+        user_msg = (
+            "请求频率超过限制，请稍后重试" if has_chinese else
+            "Request rate limit exceeded. Please try again later."
+        )
         return LLMRateLimitError(f"Rate limit: {error_message}"), user_msg
 
     # ===== Quota/Resource Errors =====
     if error_code.startswith('FailedOperation'):
-        if 'FreeResourcePackExhausted' in error_code or 'ResourcePackExhausted' in error_code:
-            user_msg = "资源包余量已用尽，请购买资源包或开通后付费" if has_chinese else "Resource pack exhausted. Please purchase resource pack or enable postpaid."
+        if ('FreeResourcePackExhausted' in error_code or
+                'ResourcePackExhausted' in error_code):
+            if has_chinese:
+                user_msg = "资源包余量已用尽，请购买资源包或开通后付费"
+            else:
+                user_msg = (
+                    "Resource pack exhausted. Please purchase resource pack "
+                    "or enable postpaid."
+                )
             return LLMQuotaExhaustedError(
                 f"Resource pack exhausted: {error_message}",
                 provider='hunyuan',
@@ -196,7 +293,12 @@ def parse_hunyuan_error(
             return LLMServiceError(f"Engine error: {error_message}"), user_msg
 
         if 'ServiceNotActivated' in error_code:
-            user_msg = "服务未开通，请前往控制台申请试用" if has_chinese else "Service not activated. Please apply for trial in console."
+            if has_chinese:
+                user_msg = "服务未开通，请前往控制台申请试用"
+            else:
+                user_msg = (
+                    "Service not activated. Please apply for trial in console."
+                )
             return LLMAccessDeniedError(
                 f"Service not activated: {error_message}",
                 provider='hunyuan',
@@ -212,7 +314,13 @@ def parse_hunyuan_error(
             ), user_msg
 
         if 'UserUnAuthError' in error_code:
-            user_msg = "用户未实名认证，请先进行实名认证" if has_chinese else "User not authenticated. Please complete real-name authentication."
+            if has_chinese:
+                user_msg = "用户未实名认证，请先进行实名认证"
+            else:
+                user_msg = (
+                    "User not authenticated. Please complete real-name "
+                    "authentication."
+                )
             return LLMAccessDeniedError(
                 f"User authentication required: {error_message}",
                 provider='hunyuan',
@@ -245,7 +353,13 @@ def parse_hunyuan_error(
             ), user_msg
 
         if 'NotExist' in error_code:
-            user_msg = "计费状态未知，请确认是否已在控制台开通服务" if has_chinese else "Billing status unknown. Please confirm if service is activated in console."
+            if has_chinese:
+                user_msg = "计费状态未知，请确认是否已在控制台开通服务"
+            else:
+                user_msg = (
+                    "Billing status unknown. Please confirm if service is "
+                    "activated in console."
+                )
             return LLMAccessDeniedError(
                 f"Service status unknown: {error_message}",
                 provider='hunyuan',
@@ -253,7 +367,13 @@ def parse_hunyuan_error(
             ), user_msg
 
     if error_code == 'ResourceInsufficient.ChargeResourceExhaust':
-        user_msg = "计费资源已耗尽，请购买资源包或充值" if has_chinese else "Billing resources exhausted. Please purchase resource pack or recharge."
+        if has_chinese:
+            user_msg = "计费资源已耗尽，请购买资源包或充值"
+        else:
+            user_msg = (
+                "Billing resources exhausted. Please purchase resource pack "
+                "or recharge."
+            )
         return LLMQuotaExhaustedError(
             f"Billing resources exhausted: {error_message}",
             provider='hunyuan',
@@ -293,12 +413,32 @@ def parse_hunyuan_error(
 
     # ===== Request Size Errors =====
     if error_code == 'RequestSizeLimitExceeded':
-        user_msg = "请求包超过限制大小，请减小请求内容" if has_chinese else "Request size exceeds limit. Please reduce request content."
-        return LLMInvalidParameterError(f"Request too large: {error_message}", parameter='messages', error_code=error_code, provider='hunyuan'), user_msg
+        if has_chinese:
+            user_msg = "请求包超过限制大小，请减小请求内容"
+        else:
+            user_msg = (
+                "Request size exceeds limit. Please reduce request content."
+            )
+        return LLMInvalidParameterError(
+            f"Request too large: {error_message}",
+            parameter='messages',
+            error_code=error_code,
+            provider='hunyuan'
+        ), user_msg
 
     if error_code == 'ResponseSizeLimitExceeded':
-        user_msg = "返回包超过限制大小，请调整请求参数" if has_chinese else "Response size exceeds limit. Please adjust request parameters."
-        return LLMInvalidParameterError(f"Response too large: {error_message}", parameter='max_tokens', error_code=error_code, provider='hunyuan'), user_msg
+        if has_chinese:
+            user_msg = "返回包超过限制大小，请调整请求参数"
+        else:
+            user_msg = (
+                "Response size exceeds limit. Please adjust request parameters."
+            )
+        return LLMInvalidParameterError(
+            f"Response too large: {error_message}",
+            parameter='max_tokens',
+            error_code=error_code,
+            provider='hunyuan'
+        ), user_msg
 
     # ===== Service Errors =====
     if error_code == 'InternalError':
@@ -330,16 +470,44 @@ def parse_hunyuan_error(
         ), user_msg
 
     if error_code == 'UnsupportedOperation':
-        user_msg = "操作不支持，请检查操作类型" if has_chinese else "Operation not supported. Please check operation type."
-        return LLMInvalidParameterError(f"Unsupported operation: {error_message}", parameter=None, error_code=error_code, provider='hunyuan'), user_msg
+        if has_chinese:
+            user_msg = "操作不支持，请检查操作类型"
+        else:
+            user_msg = (
+                "Operation not supported. Please check operation type."
+            )
+        return LLMInvalidParameterError(
+            f"Unsupported operation: {error_message}",
+            parameter=None,
+            error_code=error_code,
+            provider='hunyuan'
+        ), user_msg
 
     if error_code == 'UnsupportedProtocol':
-        user_msg = "请求协议错误，仅支持GET和POST请求" if has_chinese else "Unsupported protocol. Only GET and POST are supported."
-        return LLMInvalidParameterError(f"Unsupported protocol: {error_message}", parameter='method', error_code=error_code, provider='hunyuan'), user_msg
+        if has_chinese:
+            user_msg = "请求协议错误，仅支持GET和POST请求"
+        else:
+            user_msg = "Unsupported protocol. Only GET and POST are supported."
+        return LLMInvalidParameterError(
+            f"Unsupported protocol: {error_message}",
+            parameter='method',
+            error_code=error_code,
+            provider='hunyuan'
+        ), user_msg
 
     if error_code == 'UnsupportedRegion':
-        user_msg = "接口不支持所传地域，请检查地域配置" if has_chinese else "Region not supported. Please check region configuration."
-        return LLMInvalidParameterError(f"Unsupported region: {error_message}", parameter='region', error_code=error_code, provider='hunyuan'), user_msg
+        if has_chinese:
+            user_msg = "接口不支持所传地域，请检查地域配置"
+        else:
+            user_msg = (
+                "Region not supported. Please check region configuration."
+            )
+        return LLMInvalidParameterError(
+            f"Unsupported region: {error_message}",
+            parameter='region',
+            error_code=error_code,
+            provider='hunyuan'
+        ), user_msg
 
     # ===== Default: Generic Provider Error =====
     # Handles unknown error codes including numeric codes (e.g., "2003", "400")
@@ -352,7 +520,7 @@ def parse_hunyuan_error(
     ), user_msg
 
 
-def parse_and_raise_hunyuan_error(error_code: str, error_message: str, status_code: Optional[int] = None):
+def parse_and_raise_hunyuan_error(error_code: str, error_message: str, status_code: Optional[int] = None) -> NoReturn:
     """
     Parse Hunyuan error and raise appropriate exception.
 

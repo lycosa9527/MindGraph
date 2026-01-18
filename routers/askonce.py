@@ -3,7 +3,7 @@ import asyncio
 import json
 import logging
 
-from fastapi import APIRouter, HTTPException, Request, Depends
+from fastapi import APIRouter, HTTPException, Depends
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
@@ -127,7 +127,7 @@ async def stream_from_llm(
         max_tokens = 2000
 
     try:
-        logger.debug(f"[ASKONCE:{model_id.upper()}] Starting stream via LLMService with {len(messages)} messages")
+        logger.debug("[ASKONCE:%s] Starting stream via LLMService with %s messages", model_id.upper(), len(messages))
 
         # Stream from LLMService with full messages array for proper multi-turn support
         async for chunk in llm_service.chat_stream(
@@ -159,14 +159,14 @@ async def stream_from_llm(
                 yield f'data: {json.dumps({"type": "token", "content": chunk})}\n\n'
 
         # Send done signal
-        logger.info(f"[ASKONCE:{model_id.upper()}] Stream complete")
+        logger.info("[ASKONCE:%s] Stream complete", model_id.upper())
         yield f'data: {json.dumps({"type": "done"})}\n\n'
 
     except asyncio.CancelledError:
-        logger.info(f"[ASKONCE:{model_id.upper()}] Stream cancelled by client")
+        logger.info("[ASKONCE:%s] Stream cancelled by client", model_id.upper())
         raise
     except Exception as e:
-        logger.error(f"[ASKONCE:{model_id.upper()}] Streaming error: {e}")
+        logger.error("[ASKONCE:%s] Streaming error: %s", model_id.upper(), e)
         yield f'data: {json.dumps({"type": "error", "error": str(e)})}\n\n'
 
 
@@ -198,7 +198,6 @@ async def get_models():
 async def stream_chat(
     model: str,
     chat_request: ChatRequest,
-    request: Request,
     current_user = Depends(get_current_user_optional)
 ):
     """
@@ -234,7 +233,12 @@ async def stream_chat(
 
     # Log request (user ID if authenticated)
     user_info = f"user={user_id}" if user_id else "anonymous"
-    logger.info(f"[ASKONCE:{model.upper()}] Starting stream ({len(messages)} messages, {user_info})")
+    logger.info(
+        "[ASKONCE:%s] Starting stream (%s messages, %s)",
+        model.upper(),
+        len(messages),
+        user_info
+    )
 
     return StreamingResponse(
         stream_from_llm(

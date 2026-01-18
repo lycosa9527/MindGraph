@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from config.database import get_db
 from models.auth import Organization, User
 from models.messages import Messages, Language
+from models.token_usage import TokenUsage
 from services.redis.redis_org_cache import org_cache
 from services.redis.redis_user_cache import user_cache
 from utils.auth import hash_password
@@ -95,7 +96,6 @@ async def list_users_admin(
     token_stats_by_user = {}
 
     try:
-        from models.token_usage import TokenUsage
         user_token_stats = db.query(
             TokenUsage.user_id,
             func.coalesce(func.sum(TokenUsage.input_tokens), 0).label('input_tokens'),
@@ -115,7 +115,7 @@ async def list_users_admin(
                 "total_tokens": int(stat.total_tokens or 0)
             }
     except (ImportError, Exception) as e:
-        logger.debug(f"TokenUsage not available yet: {e}")
+        logger.debug("TokenUsage not available yet: %s", e)
 
     result = []
     for user in users:
@@ -232,7 +232,7 @@ async def update_user_admin(
         db.refresh(user)
     except Exception as e:
         db.rollback()
-        logger.error(f"[Auth] Failed to update user ID {user_id} in SQLite: {e}")
+        logger.error("[Auth] Failed to update user ID %s in SQLite: %s", user_id, e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to update user"
@@ -241,16 +241,16 @@ async def update_user_admin(
     # Invalidate old cache entries
     try:
         user_cache.invalidate(user_id, old_phone)
-        logger.debug(f"[Auth] Invalidated old cache for user ID {user_id}")
+        logger.debug("[Auth] Invalidated old cache for user ID %s", user_id)
     except Exception as e:
-        logger.warning(f"[Auth] Failed to invalidate cache for user ID {user_id}: {e}")
+        logger.warning("[Auth] Failed to invalidate cache for user ID %s: %s", user_id, e)
 
     # Re-cache updated user
     try:
         user_cache.cache_user(user)
-        logger.info(f"[Auth] Updated and re-cached user ID {user_id}")
+        logger.info("[Auth] Updated and re-cached user ID %s", user_id)
     except Exception as e:
-        logger.warning(f"[Auth] Failed to re-cache user ID {user_id}: {e}")
+        logger.warning("[Auth] Failed to re-cache user ID %s: %s", user_id, e)
 
     # If organization changed, invalidate org cache
     if old_org_id != user.organization_id:
@@ -264,14 +264,14 @@ async def update_user_admin(
                 if old_org:
                     org_cache.invalidate(old_org_id, old_org.code, old_org.invitation_code)
         except Exception as e:
-            logger.warning(f"[Auth] Failed to invalidate org cache: {e}")
+            logger.warning("[Auth] Failed to invalidate org cache: %s", e)
 
     # Get updated organization info
     org = org_cache.get_by_id(user.organization_id) if user.organization_id else None
     if not org and user.organization_id:
         org = db.query(Organization).filter(Organization.id == user.organization_id).first()
 
-    logger.info(f"Admin {current_user.phone} updated user: {user.phone}")
+    logger.info("Admin %s updated user: %s", current_user.phone, user.phone)
 
     return {
         "message": Messages.success("user_updated", lang),
@@ -312,7 +312,7 @@ async def delete_user_admin(
         db.commit()
     except Exception as e:
         db.rollback()
-        logger.error(f"[Auth] Failed to delete user ID {user_id} in SQLite: {e}")
+        logger.error("[Auth] Failed to delete user ID %s in SQLite: %s", user_id, e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to delete user"
@@ -321,11 +321,11 @@ async def delete_user_admin(
     # Invalidate cache (non-blocking)
     try:
         user_cache.invalidate(user_id, user_phone)
-        logger.info(f"[Auth] Invalidated cache for deleted user ID {user_id}")
+        logger.info("[Auth] Invalidated cache for deleted user ID %s", user_id)
     except Exception as e:
-        logger.warning(f"[Auth] Failed to invalidate cache for deleted user ID {user_id}: {e}")
+        logger.warning("[Auth] Failed to invalidate cache for deleted user ID %s: %s", user_id, e)
 
-    logger.warning(f"Admin {current_user.phone} deleted user: {user_phone}")
+    logger.warning("Admin %s deleted user: %s", current_user.phone, user_phone)
     return {"message": Messages.success("user_deleted", lang, user_phone)}
 
 
@@ -352,7 +352,7 @@ async def unlock_user_admin(
         db.refresh(user)
     except Exception as e:
         db.rollback()
-        logger.error(f"[Auth] Failed to unlock user ID {user_id} in SQLite: {e}")
+        logger.error("[Auth] Failed to unlock user ID %s in SQLite: %s", user_id, e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to unlock user"
@@ -362,11 +362,11 @@ async def unlock_user_admin(
     try:
         user_cache.invalidate(user.id, user.phone)
         user_cache.cache_user(user)
-        logger.info(f"[Auth] Unlocked and re-cached user ID {user.id}")
+        logger.info("[Auth] Unlocked and re-cached user ID %s", user.id)
     except Exception as e:
-        logger.warning(f"[Auth] Failed to update cache after unlock: {e}")
+        logger.warning("[Auth] Failed to update cache after unlock: %s", e)
 
-    logger.info(f"Admin {current_user.phone} unlocked user: {user.phone}")
+    logger.info("Admin %s unlocked user: %s", current_user.phone, user.phone)
     return {"message": Messages.success("user_unlocked", lang, user.phone)}
 
 
@@ -424,7 +424,7 @@ async def reset_user_password_admin(
         db.refresh(user)
     except Exception as e:
         db.rollback()
-        logger.error(f"[Auth] Failed to reset password in SQLite: {e}")
+        logger.error("[Auth] Failed to reset password in SQLite: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to reset password"
@@ -434,11 +434,11 @@ async def reset_user_password_admin(
     try:
         user_cache.invalidate(user.id, user.phone)
         user_cache.cache_user(user)
-        logger.info(f"[Auth] Admin password reset and cache updated for user ID {user.id}")
+        logger.info("[Auth] Admin password reset and cache updated for user ID %s", user.id)
     except Exception as e:
-        logger.warning(f"[Auth] Failed to update cache after admin password reset: {e}")
+        logger.warning("[Auth] Failed to update cache after admin password reset: %s", e)
 
-    logger.info(f"Admin {current_user.phone} reset password for user: {user.phone}")
+    logger.info("Admin %s reset password for user: %s", current_user.phone, user.phone)
     return {"message": Messages.success("password_reset_for_user", lang, user.phone)}
 
 

@@ -5,6 +5,10 @@ from typing import Dict, List, Tuple, Any, Optional
 import logging
 
 from agents.core.base_agent import BaseAgent
+from agents.core.agent_utils import extract_json_from_response
+from config.settings import config
+from prompts import get_prompt
+from services.llm import llm_service
 
 """
 Flow Map Agent
@@ -65,10 +69,10 @@ class FlowMapAgent(BaseAgent):
             # Validate the generated spec
             is_valid, validation_msg = self.validate_output(spec)
             if not is_valid:
-                logger.warning(f"FlowMapAgent: Validation failed: {validation_msg}")
+                logger.warning("FlowMapAgent: Validation failed: %s", validation_msg)
                 return {
                     'success': False,
-                    'error': f'Generated invalid specification: {validation_msg}'
+                    'error': 'Generated invalid specification: %s' % validation_msg
                 }
 
             # Enhance the spec with layout and dimensions
@@ -88,10 +92,10 @@ class FlowMapAgent(BaseAgent):
             }
 
         except Exception as e:
-            logger.error(f"FlowMapAgent: Flow map generation failed: {e}")
+            logger.error("FlowMapAgent: Flow map generation failed: %s", e)
             return {
                 'success': False,
-                'error': f'Generation failed: {str(e)}'
+                'error': 'Generation failed: %s' % str(e)
             }
 
     async def _generate_flow_map_spec(
@@ -106,22 +110,16 @@ class FlowMapAgent(BaseAgent):
     ) -> Optional[Dict]:
         """Generate the flow map specification using LLM."""
         try:
-            # Import centralized prompt system
-            from prompts import get_prompt
-
             # Get prompt from centralized system - use agent-specific format
             system_prompt = get_prompt("flow_map_agent", language, "generation")
 
             if not system_prompt:
-                logger.error(f"FlowMapAgent: No prompt found for language {language}")
+                logger.error("FlowMapAgent: No prompt found for language %s", language)
                 return None
 
             user_prompt = f"请为以下描述创建一个流程图：{prompt}" if language == "zh" else f"Please create a flow map for the following description: {prompt}"
 
             # Call middleware directly - clean and efficient!
-            from services.llm import llm_service
-            from config.settings import config
-
             response = await llm_service.chat(
                 prompt=user_prompt,
                 model=self.model,
@@ -141,8 +139,6 @@ class FlowMapAgent(BaseAgent):
                 return None
 
             # Extract JSON from response
-            from ..core.agent_utils import extract_json_from_response
-
             # Check if response is already a dictionary (from mock client)
             if isinstance(response, dict):
                 spec = response
@@ -200,13 +196,13 @@ class FlowMapAgent(BaseAgent):
                 if not spec or (isinstance(spec, dict) and spec.get('_error')):
                     # Log the actual response for debugging
                     response_preview = response_str[:500] + "..." if len(response_str) > 500 else response_str
-                    logger.error(f"FlowMapAgent: Failed to extract JSON from LLM response. Response preview: {response_preview}")
+                    logger.error("FlowMapAgent: Failed to extract JSON from LLM response. Response preview: %s", response_preview)
                     return None
 
             return spec
 
         except Exception as e:
-            logger.error(f"FlowMapAgent: Error in spec generation: {e}")
+            logger.error("FlowMapAgent: Error in spec generation: %s", e)
             return None
 
     def validate_output(self, spec: Dict) -> Tuple[bool, str]:
@@ -268,7 +264,7 @@ class FlowMapAgent(BaseAgent):
             # Normalize steps: de-duplicate, preserve order, clamp
             seen = set()
             normalized_steps: List[str] = []
-            logger.debug(f"FlowMapAgent: Raw steps from LLM: {steps_raw}")
+            logger.debug("FlowMapAgent: Raw steps from LLM: %s", steps_raw)
             for item in steps_raw:
                 # Handle both string and object formats
                 if isinstance(item, str):
@@ -276,20 +272,20 @@ class FlowMapAgent(BaseAgent):
                 elif isinstance(item, dict) and 'label' in item:
                     step_text = item['label']
                 else:
-                    logger.warning(f"FlowMapAgent: Skipping invalid step item: {item}")
+                    logger.warning("FlowMapAgent: Skipping invalid step item: %s", item)
                     continue
 
                 cleaned = clean_text(step_text)
                 if not cleaned or cleaned in seen:
-                    logger.warning(f"FlowMapAgent: Skipping empty or duplicate step: '{step_text}'")
+                    logger.warning("FlowMapAgent: Skipping empty or duplicate step: '%s'", step_text)
                     continue
                 seen.add(cleaned)
                 normalized_steps.append(cleaned)
-                logger.debug(f"FlowMapAgent: Added normalized step: '{cleaned}'")
+                logger.debug("FlowMapAgent: Added normalized step: '%s'", cleaned)
                 if len(normalized_steps) >= self.MAX_STEPS:
                     break
 
-            logger.debug(f"FlowMapAgent: Final normalized steps: {normalized_steps}")
+            logger.debug("FlowMapAgent: Final normalized steps: %s", normalized_steps)
 
             if not title:
                 return {"success": False, "error": "Missing or empty title"}
@@ -314,7 +310,7 @@ class FlowMapAgent(BaseAgent):
                         break
 
             if isinstance(substeps_raw, list):
-                logger.debug(f"FlowMapAgent: Processing {len(substeps_raw)} substeps entries")
+                logger.debug("FlowMapAgent: Processing %s substeps entries", len(substeps_raw))
                 for entry in substeps_raw:
                     if not isinstance(entry, dict):
                         continue
@@ -322,9 +318,10 @@ class FlowMapAgent(BaseAgent):
                     sub_list = entry.get("substeps") or entry.get("sub_steps") or entry.get("subSteps") or []
                     if not isinstance(sub_list, list):
                         continue
-                    logger.debug(f"FlowMapAgent: Matching substeps for step '{step_name}': {sub_list}")
+                    logger.debug("FlowMapAgent: Matching substeps for step '%s': %s", step_name, sub_list)
                     if step_name not in step_to_substeps:
-                        logger.warning(f"FlowMapAgent: Step '{step_name}' not found in normalized steps {list(step_to_substeps.keys())}")
+                        step_keys = list(step_to_substeps.keys())
+                        logger.warning("FlowMapAgent: Step '%s' not found in normalized steps %s", step_name, step_keys)
                     add_substeps_for(step_name, sub_list)
 
             # Heuristics for recommended dimensions

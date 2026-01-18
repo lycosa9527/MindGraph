@@ -1,4 +1,4 @@
-﻿"""
+"""
 Authentication Helper Functions
 ================================
 
@@ -25,7 +25,10 @@ from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 
 from models.auth import User
+from services.redis.redis_activity_tracker import get_activity_tracker
 from services.redis.redis_session_manager import get_session_manager
+from services.monitoring.city_flag_tracker import get_city_flag_tracker
+from services.auth.ip_geolocation import get_geolocation_service
 from utils.auth import (
     create_access_token, is_https, get_client_ip, compute_device_hash,
     ACCESS_TOKEN_EXPIRY_MINUTES, REFRESH_TOKEN_EXPIRY_DAYS
@@ -100,8 +103,6 @@ def track_user_activity(
         request: Optional request object for IP address
     """
     try:
-        from services.redis.redis_activity_tracker import get_activity_tracker
-
         tracker = get_activity_tracker()
         ip_address = None
         if request:
@@ -132,7 +133,7 @@ def track_user_activity(
         )
     except Exception as e:
         # Don't fail the request if tracking fails
-        logger.debug(f"Failed to track user activity: {e}")
+        logger.debug("Failed to track user activity: %s", e)
 
 
 def _record_city_flag_async(ip_address: str):
@@ -143,10 +144,6 @@ def _record_city_flag_async(ip_address: str):
     to avoid blocking the login request.
     """
     try:
-        import asyncio
-        from services.monitoring.city_flag_tracker import get_city_flag_tracker
-        from services.auth.ip_geolocation import get_geolocation_service
-
         async def _record_flag():
             try:
                 geolocation = get_geolocation_service()
@@ -160,7 +157,7 @@ def _record_city_flag_async(ip_address: str):
                         flag_tracker = get_city_flag_tracker()
                         flag_tracker.record_city_flag(city, province, lat, lng)
             except Exception as e:
-                logger.debug(f"Failed to record city flag: {e}")
+                logger.debug("Failed to record city flag: %s", e)
 
         # Schedule async task (fire-and-forget)
         try:
@@ -181,9 +178,9 @@ def _record_city_flag_async(ip_address: str):
                     # No event loop available, create new one
                     asyncio.run(_record_flag())
         except Exception as e:
-            logger.debug(f"Failed to schedule city flag recording: {e}")
+            logger.debug("Failed to schedule city flag recording: %s", e)
     except Exception as e:
-        logger.debug(f"Failed to schedule city flag recording: {e}")
+        logger.debug("Failed to schedule city flag recording: %s", e)
 
 
 # ============================================================================
@@ -226,40 +223,44 @@ async def commit_user_with_retry(
                     base_delay = 0.1 * (2 ** attempt)  # 0.1s, 0.2s, 0.4s, 0.8s, 1.6s
                     jitter = random.uniform(0, 0.05)  # Random jitter up to 50ms
                     delay = base_delay + jitter
+                    phone_prefix = new_user.phone[:3] if new_user.phone and len(new_user.phone) >= 3 else '***'
                     logger.warning(
-                        f"[Auth] SQLite lock on user registration attempt {attempt + 1}/{max_retries}, "
-                        f"retrying after {delay:.3f}s delay (base: {base_delay:.3f}s + jitter: {jitter:.3f}s). "
-                        f"Phone: {new_user.phone[:3] if new_user.phone and len(new_user.phone) >= 3 else '***'}***"
+                        "[Auth] SQLite lock on user registration attempt %d/%d, "
+                        "retrying after %.3fs delay (base: %.3fs + jitter: %.3fs). "
+                        "Phone: %s***",
+                        attempt + 1, max_retries, delay, base_delay, jitter, phone_prefix
                     )
                     await asyncio.sleep(delay)  # Non-blocking async sleep
                     continue
                 else:
                     # All retries exhausted
                     db.rollback()
+                    phone_prefix = new_user.phone[:3] if new_user.phone and len(new_user.phone) >= 3 else '***'
                     logger.error(
-                        f"[Auth] SQLite lock persists after {max_retries} retries. "
-                        f"Phone: {new_user.phone[:3] if new_user.phone and len(new_user.phone) >= 3 else '***'}***"
+                        "[Auth] SQLite lock persists after %d retries. "
+                        "Phone: %s***",
+                        max_retries, phone_prefix
                     )
                     raise HTTPException(
                         status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                         detail="Database temporarily unavailable due to high load. Please try again in a moment."
-                    )
+                    ) from e
             else:
                 # Other OperationalError (not a lock) - don't retry
                 db.rollback()
-                logger.error(f"[Auth] SQLite operational error during registration: {e}")
+                logger.error("[Auth] SQLite operational error during registration: %s", e)
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                     detail="Failed to create user account"
-                )
+                ) from e
         except Exception as e:
             # Non-OperationalError - don't retry
             db.rollback()
-            logger.error(f"[Auth] Failed to create user in SQLite: {e}", exc_info=True)
+            logger.error("[Auth] Failed to create user in SQLite: %s", e, exc_info=True)
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Failed to create user account"
-            )
+            ) from e
 
     # Should never reach here, but just in case
     db.rollback()

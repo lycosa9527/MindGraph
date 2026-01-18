@@ -1,4 +1,4 @@
-﻿from datetime import datetime
+from datetime import datetime
 from pathlib import Path
 from typing import AsyncGenerator, Dict, Optional, List
 import asyncio
@@ -61,7 +61,7 @@ class LogStreamer:
             'error': 'error.log'
         }
 
-        logger.info(f"LogStreamer initialized for directory: {self.log_dir}")
+        logger.info("LogStreamer initialized for directory: %s", self.log_dir)
 
     def _find_latest_log_file(self, base_name: str) -> Optional[Path]:
         """
@@ -127,7 +127,7 @@ class LogStreamer:
             log_file = self._find_latest_log_file(base_name)
 
             if log_file is None:
-                logger.warning(f"Log file not found for source '{source}' (base: {base_name})")
+                logger.warning("Log file not found for source '%s' (base: %s)", source, base_name)
                 yield {
                     'timestamp': datetime.now().isoformat(),
                     'level': 'WARNING',
@@ -233,7 +233,7 @@ class LogStreamer:
 
                                 if current_pos > file_size:
                                     # File was rotated, reopen
-                                    logger.info(f"Log rotation detected for {log_file}, reopening...")
+                                    logger.info("Log rotation detected for %s, reopening...", log_file)
                                     break  # Exit and let caller handle reconnection
 
                                 # Check if a newer timestamped file exists (for timestamped rotation)
@@ -241,18 +241,18 @@ class LogStreamer:
                                 latest_file = self._find_latest_log_file(base_name)
                                 if latest_file and latest_file != log_file:
                                     # New timestamped file created, switch to it
-                                    logger.info(f"New log file detected: {latest_file}, switching from {log_file}")
+                                    logger.info("New log file detected: %s, switching from %s", latest_file, log_file)
                                     break  # Exit and let caller handle reconnection
                             except Exception as e:
-                                logger.error(f"Error checking file rotation: {e}")
+                                logger.error("Error checking file rotation: %s", e)
 
         except Exception as e:
-            logger.error(f"Error tailing log file {log_file}: {e}")
+            logger.error("Error tailing log file %s: %s", log_file, e)
             yield {
                 'timestamp': datetime.now().isoformat(),
                 'level': 'ERROR',
                 'module': 'LogStreamer',
-                'message': f'Error reading log file: {str(e)}',
+                'message': 'Error reading log file: %s' % str(e),
                 'source': source
             }
 
@@ -288,12 +288,12 @@ class LogStreamer:
                         await asyncio.sleep(0.1)
 
         except Exception as e:
-            logger.error(f"Error tailing log file {log_file}: {e}")
+            logger.error("Error tailing log file %s: %s", log_file, e)
             yield {
                 'timestamp': datetime.now().isoformat(),
                 'level': 'ERROR',
                 'module': 'LogStreamer',
-                'message': f'Error reading log file: {str(e)}',
+                'message': 'Error reading log file: %s' % str(e),
                 'source': source
             }
 
@@ -392,7 +392,7 @@ class LogStreamer:
                             'modified': datetime.fromtimestamp(stat.st_mtime).isoformat()
                         })
         except Exception as e:
-            logger.error(f"Error listing log files: {e}")
+            logger.error("Error listing log files: %s", e)
 
         return log_files
 
@@ -436,7 +436,7 @@ class LogStreamer:
                     entries.append(entry)
 
         except Exception as e:
-            logger.error(f"Error reading log file {log_file}: {e}")
+            logger.error("Error reading log file %s: %s", log_file, e)
 
         return entries
 

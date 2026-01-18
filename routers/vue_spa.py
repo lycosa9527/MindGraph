@@ -1,6 +1,6 @@
-﻿import logging
+import logging
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Request, HTTPException
 from fastapi.responses import FileResponse, HTMLResponse
 
 from services.infrastructure.spa_handler import VUE_DIST_DIR
@@ -39,7 +39,6 @@ async def vue_favicon():
             path=str(fallback_path),
             media_type="image/svg+xml"
         )
-    from fastapi import HTTPException
     raise HTTPException(status_code=404, detail="Favicon not found")
 
 

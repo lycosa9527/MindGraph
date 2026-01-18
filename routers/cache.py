@@ -1,4 +1,4 @@
-﻿import logging
+import logging
 import os
 import time
 
@@ -6,6 +6,25 @@ from fastapi import APIRouter, Depends
 
 from models.auth import User
 from utils.auth import get_current_user
+
+# Lazy imports - moved to top level to fix C0415
+try:
+    from static.js.lazy_cache_manager import (
+        get_cache_stats,
+        get_performance_summary,
+        is_cache_initialized
+    )
+    from static.js.modular_cache_python import (
+        get_modular_cache_stats,
+        get_modular_performance_summary
+    )
+except ImportError:
+    # Graceful fallback if modules are not available
+    get_cache_stats = None
+    get_performance_summary = None
+    is_cache_initialized = None
+    get_modular_cache_stats = None
+    get_modular_performance_summary = None
 
 """
 MindGraph Cache Status Routes
@@ -23,9 +42,6 @@ All Rights Reserved
 Proprietary License
 """
 
-
-# Import authentication
-
 logger = logging.getLogger(__name__)
 
 # Initialize router
@@ -36,14 +52,15 @@ router = APIRouter(prefix="/cache", tags=["Cache"])
 # ============================================================================
 
 @router.get("/status")
-async def get_cache_status(current_user: User = Depends(get_current_user)):
+async def get_cache_status(_current_user: User = Depends(get_current_user)):
     """
     Lazy loading JavaScript cache status endpoint.
 
     Returns cache status, performance metrics, and optimization details.
     """
     try:
-        from static.js.lazy_cache_manager import get_cache_stats, is_cache_initialized
+        if get_cache_stats is None or is_cache_initialized is None:
+            raise ImportError("Lazy cache manager not available")
 
         if is_cache_initialized():
             stats = get_cache_stats()
@@ -65,17 +82,21 @@ async def get_cache_status(current_user: User = Depends(get_current_user)):
                 'cache_ttl_seconds': 3600,
                 'timestamp': time.time()
             }
-            logger.info(f"Lazy cache status check: OK - {stats['files_loaded']} files loaded, hit rate: {stats['cache_hit_rate']:.1f}%")
+            logger.info(
+                "Lazy cache status check: OK - %s files loaded, hit rate: %.1f%%",
+                stats['files_loaded'],
+                stats['cache_hit_rate']
+            )
             return cache_data
-        else:
-            cache_data = {
-                'status': 'not_initialized',
-                'error': 'Lazy loading JavaScript cache not properly initialized',
-                'performance_impact': 'File I/O overhead per request (2-5 seconds)',
-                'timestamp': time.time()
-            }
-            logger.warning("Lazy cache status check: FAILED - cache not initialized")
-            return cache_data
+
+        cache_data = {
+            'status': 'not_initialized',
+            'error': 'Lazy loading JavaScript cache not properly initialized',
+            'performance_impact': 'File I/O overhead per request (2-5 seconds)',
+            'timestamp': time.time()
+        }
+        logger.warning("Lazy cache status check: FAILED - cache not initialized")
+        return cache_data
 
     except Exception as e:
         cache_data = {
@@ -84,19 +105,17 @@ async def get_cache_status(current_user: User = Depends(get_current_user)):
             'performance_impact': 'File I/O overhead per request (2-5 seconds)',
             'timestamp': time.time()
         }
-        logger.error(f"Lazy cache status check: ERROR - {e}")
+        logger.error("Lazy cache status check: ERROR - %s", e)
         return cache_data
 
 @router.get("/performance")
-async def get_cache_performance(current_user: User = Depends(get_current_user)):
+async def get_cache_performance(_current_user: User = Depends(get_current_user)):
     """
     Detailed lazy cache performance endpoint.
 
     Returns comprehensive performance metrics and cache analysis.
     """
     try:
-        from static.js.lazy_cache_manager import get_performance_summary, get_cache_stats
-
         stats = get_cache_stats()
         performance_data = {
             'status': 'success',
@@ -129,7 +148,11 @@ async def get_cache_performance(current_user: User = Depends(get_current_user)):
             'timestamp': time.time()
         }
 
-        logger.info(f"Cache performance check: OK - Hit rate: {stats['cache_hit_rate']:.1f}%, Memory: {stats['memory_usage_mb']:.1f}MB")
+        logger.info(
+            "Cache performance check: OK - Hit rate: %.1f%%, Memory: %.1fMB",
+            stats['cache_hit_rate'],
+            stats['memory_usage_mb']
+        )
         return performance_data
 
     except Exception as e:
@@ -138,18 +161,19 @@ async def get_cache_performance(current_user: User = Depends(get_current_user)):
             'error': str(e),
             'timestamp': time.time()
         }
-        logger.error(f"Cache performance check: ERROR - {e}")
+        logger.error("Cache performance check: ERROR - %s", e)
         return performance_data
 
 @router.get("/modular")
-async def get_modular_cache_status(current_user: User = Depends(get_current_user)):
+async def get_modular_cache_status(_current_user: User = Depends(get_current_user)):
     """
     Modular cache status endpoint for Option 3: Code Splitting.
 
     Returns modular cache status, performance metrics, and optimization details.
     """
     try:
-        from static.js.modular_cache_python import get_modular_cache_stats, get_modular_performance_summary
+        if get_modular_cache_stats is None or get_modular_performance_summary is None:
+            raise ImportError("Modular cache not available")
 
         stats = get_modular_cache_stats()
         performance_summary = get_modular_performance_summary()
@@ -177,7 +201,7 @@ async def get_modular_cache_status(current_user: User = Depends(get_current_user
         }
 
         status_msg = performance_summary.get('status', 'Unknown')
-        logger.info(f"Modular cache status check: OK - {status_msg}")
+        logger.info("Modular cache status check: OK - %s", status_msg)
         return cache_data
 
     except Exception as e:
@@ -189,10 +213,9 @@ async def get_modular_cache_status(current_user: User = Depends(get_current_user
             'timestamp': time.time()
         }
 
-        logger.error(f"Modular cache status check: ERROR - {e}")
+        logger.error("Modular cache status check: ERROR - %s", e)
         return cache_data
 
 # Only log from main worker to avoid duplicate messages
 if os.getenv('UVICORN_WORKER_ID') is None or os.getenv('UVICORN_WORKER_ID') == '0':
     logger.debug("Cache routes initialized: 3 routes registered")
-

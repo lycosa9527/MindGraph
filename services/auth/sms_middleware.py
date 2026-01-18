@@ -350,18 +350,20 @@ class SMSService:
 
             # Check HTTP status code
             if response.status_code != 200:
-                logger.error(f"SMS API returned non-200 status: {response.status_code} - {response.text[:200]}")
+                response_preview = response.text[:200]
+                logger.error("SMS API returned non-200 status: %s - %s", response.status_code, response_preview)
                 return False, "SMS service error. Please try again later or contact support.", None
 
             # Parse response
             try:
                 result = response.json()
             except (ValueError, json.JSONDecodeError) as e:
-                logger.error(f"Failed to parse SMS response as JSON: {e} - Response: {response.text[:200]}")
+                response_preview = response.text[:200]
+                logger.error("Failed to parse SMS response as JSON: %s - Response: %s", e, response_preview)
                 return False, "SMS service error. Please try again later or contact support.", None
 
             if "Response" not in result:
-                logger.error(f"Invalid SMS response structure: {result}")
+                logger.error("Invalid SMS response structure: %s", result)
                 return False, "Invalid SMS response. Please try again later or contact support.", None
 
             resp_data = result["Response"]
@@ -370,7 +372,7 @@ class SMSService:
             if "Error" in resp_data:
                 error_code = resp_data["Error"].get("Code", "Unknown")
                 error_msg = resp_data["Error"].get("Message", "Unknown error")
-                logger.error(f"SMS API error: {error_code} - {error_msg}")
+                logger.error("SMS API error: %s - %s", error_code, error_msg)
                 return False, self._translate_error_code(error_code, lang), None
 
             # Check send status in SendStatusSet
@@ -378,28 +380,29 @@ class SMSService:
             if send_status and len(send_status) > 0:
                 status = send_status[0]
                 if status.get("Code") == "Ok":
-                    logger.info(f"SMS sent successfully to {phone[:3]}****{phone[-4:]} for {purpose}")
+                    phone_masked = phone[:3] + "****" + phone[-4:]
+                    logger.info("SMS sent successfully to %s for %s", phone_masked, purpose)
                     return True, "Verification code sent successfully", code
                 else:
                     error_code = status.get("Code", "Unknown")
                     error_msg = status.get("Message", "Unknown error")
-                    logger.error(f"SMS send failed: {error_code} - {error_msg}")
+                    logger.error("SMS send failed: %s - %s", error_code, error_msg)
                     return False, self._translate_error_code(error_code, lang), None
 
-            logger.error(f"Unexpected SMS response structure: {resp_data}")
+            logger.error("Unexpected SMS response structure: %s", resp_data)
             return False, "Unknown SMS response. Please try again later or contact support.", None
 
         except httpx.TimeoutException:
             logger.error("SMS request timeout")
             return False, "SMS service timeout. Please try again.", None
         except httpx.HTTPError as e:
-            logger.error(f"SMS HTTP error: {e}")
+            logger.error("SMS HTTP error: %s", e)
             return False, "SMS service error. Please try again later.", None
         except SMSServiceError as e:
-            logger.error(f"SMS service error: {e}")
+            logger.error("SMS service error: %s", e)
             return False, str(e), None
         except Exception as e:
-            logger.error(f"Unexpected SMS error: {e}")
+            logger.error("Unexpected SMS error: %s", e)
             return False, "SMS service error. Please try again later.", None
 
     def _translate_error_code(self, code: str, lang: Language = "en") -> str:
@@ -621,7 +624,7 @@ class SMSMiddleware:
             try:
                 rate_limit_context = await self.rate_limiter.__aenter__()
             except Exception as e:
-                logger.warning(f"[SMSMiddleware] Rate limiter acquisition failed: {e}")
+                logger.warning("[SMSMiddleware] Rate limiter acquisition failed: %s", e)
                 if self.enable_error_handling:
                     raise SMSServiceError(
                         "SMS service temporarily unavailable due to rate limiting. "
@@ -697,7 +700,7 @@ class SMSMiddleware:
                 try:
                     await self.rate_limiter.__aexit__(None, None, None)
                 except Exception as e:
-                    logger.debug(f"[SMSMiddleware] Error releasing rate limiter: {e}")
+                    logger.debug("[SMSMiddleware] Error releasing rate limiter: %s", e)
 
             # Decrement active requests
             async with self._request_lock:
@@ -753,7 +756,7 @@ class SMSMiddleware:
                 error=error
             )
         except Exception as e:
-            logger.debug(f"[SMSMiddleware] Performance tracking failed (non-critical): {e}")
+            logger.debug("[SMSMiddleware] Performance tracking failed (non-critical): %s", e)
 
     def get_active_requests(self) -> int:
         """Get number of active SMS requests."""

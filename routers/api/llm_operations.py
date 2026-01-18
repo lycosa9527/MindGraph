@@ -1,18 +1,3 @@
-from typing import Optional
-import asyncio
-import json
-import logging
-import time
-
-from fastapi import APIRouter, HTTPException, Depends
-from fastapi.responses import JSONResponse, StreamingResponse
-
-from agents.core.workflow import agent_graph_workflow_with_styles
-from models import GenerateRequest, LLMHealthResponse, Messages, get_request_language
-from models.auth import User
-from services.llm import llm_service
-from utils.auth import get_current_user_or_api_key
-
 """
 LLM Operations API Router
 ==========================
@@ -27,6 +12,20 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+from typing import Optional
+import asyncio
+import json
+import logging
+import time
+
+from fastapi import APIRouter, HTTPException, Depends
+from fastapi.responses import JSONResponse, StreamingResponse
+
+from agents.core.workflow import agent_graph_workflow_with_styles
+from models import GenerateRequest, LLMHealthResponse, Messages, get_request_language
+from models.auth import User
+from services.llm import llm_service
+from utils.auth import get_current_user_or_api_key
 
 
 logger = logging.getLogger(__name__)
@@ -66,11 +65,11 @@ async def get_llm_metrics(model: Optional[str] = None):
         )
 
     except Exception as e:
-        logger.error(f"Error getting LLM metrics: {e}", exc_info=True)
+        logger.error("Error getting LLM metrics: %s", e, exc_info=True)
         raise HTTPException(
             status_code=500,
             detail=f"Failed to retrieve metrics: {str(e)}"
-        )
+        ) from e
 
 
 @router.get('/llm/health', response_model=LLMHealthResponse)
@@ -134,18 +133,18 @@ async def llm_health_check():
         )
 
     except Exception as e:
-        logger.error(f"LLM health check error: {e}", exc_info=True)
+        logger.error("LLM health check error: %s", e, exc_info=True)
         raise HTTPException(
             status_code=500,
             detail=f"Health check failed: {str(e)}"
-        )
+        ) from e
 
 
 @router.post('/generate_multi_parallel')
 async def generate_multi_parallel(
     req: GenerateRequest,
-    x_language: str = None,
-    current_user: Optional[User] = Depends(get_current_user_or_api_key)
+    x_language: Optional[str] = None,
+    _current_user: Optional[User] = Depends(get_current_user_or_api_key)
 ):
     """
     Generate diagram using PARALLEL multi-LLM approach.
@@ -197,7 +196,7 @@ async def generate_multi_parallel(
     language = req.language.value if hasattr(req.language, 'value') else str(req.language)
     diagram_type = req.diagram_type.value if req.diagram_type and hasattr(req.diagram_type, 'value') else None
 
-    logger.debug(f"[generate_multi_parallel] Starting parallel generation with {len(models)} models")
+    logger.debug("[generate_multi_parallel] Starting parallel generation with %d models", len(models))
 
     start_time = time.time()
     results = {}
@@ -224,7 +223,7 @@ async def generate_multi_parallel(
                 # Check if agent actually succeeded (agent might return {"success": false, "error": "..."})
                 if spec_result.get('success') is False or 'error' in spec_result:
                     error_msg = spec_result.get('error', 'Agent returned no spec')
-                    logger.error(f"[generate_multi_parallel] {model} agent failed: {error_msg}")
+                    logger.error("[generate_multi_parallel] %s agent failed: %s", model, error_msg)
                     return {
                         'model': model,
                         'success': False,
@@ -245,7 +244,7 @@ async def generate_multi_parallel(
 
             except Exception as e:
                 duration = time.time() - model_start
-                logger.error(f"[generate_multi_parallel] {model} failed: {e}")
+                logger.error("[generate_multi_parallel] %s failed: %s", model, e)
                 return {
                     'model': model,
                     'success': False,
@@ -266,12 +265,18 @@ async def generate_multi_parallel(
                 first_successful = model
 
             status = 'completed successfully' if task_result['success'] else 'failed'
-            logger.debug(f"[generate_multi_parallel] {model} {status} in {task_result['duration']:.2f}s")
+            logger.debug(
+                "[generate_multi_parallel] %s %s in %.2fs",
+                model, status, task_result['duration']
+            )
 
         total_time = time.time() - start_time
         success_count = sum(1 for r in results.values() if r['success'])
 
-        logger.info(f"[generate_multi_parallel] Completed: {success_count}/{len(models)} successful in {total_time:.2f}s")
+        logger.info(
+            "[generate_multi_parallel] Completed: %d/%d successful in %.2fs",
+            success_count, len(models), total_time
+        )
 
         return {
             'results': results,
@@ -282,18 +287,18 @@ async def generate_multi_parallel(
         }
 
     except Exception as e:
-        logger.error(f"[generate_multi_parallel] Error: {e}", exc_info=True)
+        logger.error("[generate_multi_parallel] Error: %s", e, exc_info=True)
         raise HTTPException(
             status_code=500,
             detail=Messages.error("generation_failed", lang, str(e))
-        )
+        ) from e
 
 
 @router.post('/generate_multi_progressive')
 async def generate_multi_progressive(
     req: GenerateRequest,
-    x_language: str = None,
-    current_user: Optional[User] = Depends(get_current_user_or_api_key)
+    x_language: Optional[str] = None,
+    _current_user: Optional[User] = Depends(get_current_user_or_api_key)
 ):
     """
     Progressive parallel generation - send results as each LLM completes.
@@ -325,7 +330,10 @@ async def generate_multi_progressive(
     language = req.language.value if hasattr(req.language, 'value') else str(req.language)
     diagram_type = req.diagram_type.value if req.diagram_type and hasattr(req.diagram_type, 'value') else None
 
-    logger.debug(f"[generate_multi_progressive] Starting progressive generation with {len(models)} models")
+    logger.debug(
+        "[generate_multi_progressive] Starting progressive generation with %d models",
+        len(models)
+    )
 
     start_time = time.time()
 
@@ -351,7 +359,10 @@ async def generate_multi_progressive(
                     # Check if agent actually succeeded
                     if spec_result.get('success') is False or 'error' in spec_result:
                         error_msg = spec_result.get('error', 'Agent returned no spec')
-                        logger.error(f"[generate_multi_progressive] {model} agent failed: {error_msg}")
+                        logger.error(
+                            "[generate_multi_progressive] %s agent failed: %s",
+                            model, error_msg
+                        )
                         return {
                             'model': model,
                             'success': False,
@@ -373,7 +384,7 @@ async def generate_multi_progressive(
 
                 except Exception as e:
                     duration = time.time() - model_start
-                    logger.error(f"[generate_multi_progressive] {model} failed: {e}")
+                    logger.error("[generate_multi_progressive] %s failed: %s", model, e)
                     return {
                         'model': model,
                         'success': False,
@@ -390,16 +401,18 @@ async def generate_multi_progressive(
                 result = await coro
 
                 # Send SSE event for this model
-                logger.debug(f"[generate_multi_progressive] Sending {result['model']} result")
+                logger.debug("[generate_multi_progressive] Sending %s result", result['model'])
                 yield f"data: {json.dumps(result)}\n\n"
 
             # Send completion event
             total_time = time.time() - start_time
-            logger.info(f"[generate_multi_progressive] All models completed in {total_time:.2f}s")
+            logger.info(
+                "[generate_multi_progressive] All models completed in %.2fs", total_time
+            )
             yield f"data: {json.dumps({'event': 'complete', 'total_time': total_time})}\n\n"
 
         except Exception as e:
-            logger.error(f"[generate_multi_progressive] Error: {e}", exc_info=True)
+            logger.error("[generate_multi_progressive] Error: %s", e, exc_info=True)
             yield f"data: {json.dumps({'event': 'error', 'message': str(e)})}\n\n"
 
     # Return SSE stream
@@ -412,4 +425,3 @@ async def generate_multi_progressive(
             'Connection': 'keep-alive'
         }
     )
-

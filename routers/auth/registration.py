@@ -22,7 +22,7 @@ from sqlalchemy.orm import Session
 from config.database import get_db
 from models.messages import Messages, Language
 from models.auth import User, Organization
-from models.requests import RegisterRequest, RegisterWithSMSRequest
+from models.requests_auth import RegisterRequest, RegisterWithSMSRequest
 from utils.auth import (
     AUTH_MODE, hash_password, get_client_ip,
     create_access_token, create_refresh_token, compute_device_hash,
@@ -121,7 +121,7 @@ async def register(
                 detail=error_msg
             )
 
-    logger.debug(f"Captcha verified for registration: {request.phone}")
+    logger.debug("Captcha verified for registration: %s", request.phone)
 
     retry_count = 0
     cache_write_success = False
@@ -166,9 +166,12 @@ async def register(
             try:
                 org_cache.cache_org(org)
             except Exception as e:
-                logger.debug(f"[Auth] Failed to cache org after SQLite query: {e}")
+                logger.debug("[Auth] Failed to cache org after SQLite query: %s", e)
 
-    logger.debug(f"User registering with invitation code for organization: {org.code} ({org.name})")
+    logger.debug(
+        "User registering with invitation code for organization: %s (%s)",
+        org.code, org.name
+    )
 
     # Use distributed lock to prevent race condition on phone uniqueness check
     try:
@@ -200,7 +203,11 @@ async def register(
         # Lock acquisition failed - fall back to current behavior
         duration = time.time() - start_time
         registration_metrics.record_failure('lock_timeout', duration)
-        logger.warning(f"[Auth] Failed to acquire distributed lock for phone {request.phone[:3]}***: {e}, proceeding without lock")
+        logger.warning(
+            "[Auth] Failed to acquire distributed lock for phone %s***: %s, "
+            "proceeding without lock",
+            request.phone[:3], e
+        )
         raise
     except HTTPException as e:
         # Track specific HTTP exceptions before re-raising
@@ -238,17 +245,29 @@ async def register(
         try:
             user_cache.cache_user(new_user)
             cache_write_success = True
-            logger.info(f"[Auth] New user registered and cached: ID {new_user.id}, phone {new_user.phone[:3] if len(new_user.phone) >= 3 else '***'}***{new_user.phone[-4:] if len(new_user.phone) >= 4 else ''}")
+            phone_prefix = (
+                new_user.phone[:3] if len(new_user.phone) >= 3 else '***'
+            )
+            phone_suffix = (
+                new_user.phone[-4:] if len(new_user.phone) >= 4 else ''
+            )
+            logger.info(
+                "[Auth] New user registered and cached: ID %s, phone %s***%s",
+                new_user.id, phone_prefix, phone_suffix
+            )
         except Exception as e:
             cache_write_success = False
-            logger.warning(f"[Auth] Failed to cache new user ID {new_user.id}: {e}")
+            logger.warning("[Auth] Failed to cache new user ID %s: %s", new_user.id, e)
 
     async def store_session_async():
         """Store session in Redis (non-blocking)."""
         try:
             session_manager.store_session(new_user.id, token, device_hash=device_hash)
         except Exception as e:
-            logger.warning(f"[Auth] Failed to store session for user ID {new_user.id}: {e}")
+            logger.warning(
+                "[Auth] Failed to store session for user ID %s: %s",
+                new_user.id, e
+            )
 
     async def store_refresh_token_async():
         """Store refresh token in Redis with device binding."""
@@ -262,7 +281,10 @@ async def register(
                 device_hash=device_hash
             )
         except Exception as e:
-            logger.warning(f"[Auth] Failed to store refresh token for user ID {new_user.id}: {e}")
+            logger.warning(
+                "[Auth] Failed to store refresh token for user ID %s: %s",
+                new_user.id, e
+            )
 
     # Execute cache write, session creation, and refresh token storage in parallel
     await asyncio.gather(
@@ -280,7 +302,11 @@ async def register(
     set_auth_cookies(response, token, refresh_token_value, http_request)
 
     org_name = org.name if org else "None"
-    logger.info(f"[TokenAudit] Registration success: user={new_user.id}, phone={new_user.phone}, org={org_name}, method=captcha, ip={client_ip}")
+    logger.info(
+        "[TokenAudit] Registration success: user=%s, phone=%s, org=%s, "
+        "method=captcha, ip=%s",
+        new_user.id, new_user.phone, org_name, client_ip
+    )
 
     return {
         "access_token": token,
@@ -373,7 +399,7 @@ async def register_with_sms(
             try:
                 org_cache.cache_org(org)
             except Exception as e:
-                logger.debug(f"[Auth] Failed to cache org after SQLite query: {e}")
+                logger.debug("[Auth] Failed to cache org after SQLite query: %s", e)
 
     # Use distributed lock to prevent race condition on phone uniqueness check
     try:
@@ -398,7 +424,10 @@ async def register_with_sms(
                 lang
             )
 
-            logger.debug(f"User registering with SMS for organization: {org.code} ({org.name})")
+            logger.debug(
+                "User registering with SMS for organization: %s (%s)",
+                org.code, org.name
+            )
 
             # Create new user
             new_user = User(
@@ -415,7 +444,11 @@ async def register_with_sms(
     except RuntimeError as e:
         duration = time.time() - start_time
         registration_metrics.record_failure('lock_timeout', duration)
-        logger.warning(f"[Auth] Failed to acquire distributed lock for phone {request.phone[:3]}***: {e}, proceeding without lock")
+        logger.warning(
+            "[Auth] Failed to acquire distributed lock for phone %s***: %s, "
+            "proceeding without lock",
+            request.phone[:3], e
+        )
         raise
     except HTTPException as e:
         duration = time.time() - start_time
@@ -453,17 +486,29 @@ async def register_with_sms(
         try:
             user_cache.cache_user(new_user)
             cache_write_success = True
-            logger.info(f"[Auth] New user registered and cached: ID {new_user.id}, phone {new_user.phone[:3] if len(new_user.phone) >= 3 else '***'}***{new_user.phone[-4:] if len(new_user.phone) >= 4 else ''}")
+            phone_prefix = (
+                new_user.phone[:3] if len(new_user.phone) >= 3 else '***'
+            )
+            phone_suffix = (
+                new_user.phone[-4:] if len(new_user.phone) >= 4 else ''
+            )
+            logger.info(
+                "[Auth] New user registered and cached: ID %s, phone %s***%s",
+                new_user.id, phone_prefix, phone_suffix
+            )
         except Exception as e:
             cache_write_success = False
-            logger.warning(f"[Auth] Failed to cache new user ID {new_user.id}: {e}")
+            logger.warning("[Auth] Failed to cache new user ID %s: %s", new_user.id, e)
 
     async def store_session_async():
         """Store session in Redis (non-blocking)."""
         try:
             session_manager.store_session(new_user.id, token, device_hash=device_hash)
         except Exception as e:
-            logger.warning(f"[Auth] Failed to store session for user ID {new_user.id}: {e}")
+            logger.warning(
+                "[Auth] Failed to store session for user ID %s: %s",
+                new_user.id, e
+            )
 
     async def store_refresh_token_async():
         """Store refresh token in Redis with device binding."""
@@ -477,7 +522,10 @@ async def register_with_sms(
                 device_hash=device_hash
             )
         except Exception as e:
-            logger.warning(f"[Auth] Failed to store refresh token for user ID {new_user.id}: {e}")
+            logger.warning(
+                "[Auth] Failed to store refresh token for user ID %s: %s",
+                new_user.id, e
+            )
 
     # Execute cache write, session creation, and refresh token storage in parallel
     await asyncio.gather(
@@ -495,10 +543,18 @@ async def register_with_sms(
     set_auth_cookies(response, token, refresh_token_value, http_request)
 
     org_name = org.name if org else "None"
-    logger.info(f"[TokenAudit] Registration success: user={new_user.id}, phone={new_user.phone}, org={org_name}, method=sms, ip={client_ip}")
+    logger.info(
+        "[TokenAudit] Registration success: user=%s, phone=%s, org=%s, "
+        "method=sms, ip=%s",
+        new_user.id, new_user.phone, org_name, client_ip
+    )
 
     # Track user activity
-    track_user_activity(new_user, 'login', {'method': 'sms', 'org': org_name, 'action': 'register'}, http_request)
+    track_user_activity(
+        new_user, 'login',
+        {'method': 'sms', 'org': org_name, 'action': 'register'},
+        http_request
+    )
 
     return {
         "access_token": token,
@@ -511,4 +567,3 @@ async def register_with_sms(
             "organization": org.name
         }
     }
-

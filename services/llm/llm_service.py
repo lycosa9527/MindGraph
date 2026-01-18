@@ -15,9 +15,12 @@ Proprietary License
 from typing import Dict, List, Optional, Any, AsyncGenerator, Tuple
 import asyncio
 import logging
+import socket
 import time
 
+from config.database import SessionLocal
 from config.settings import config
+from clients.omni_client import OmniRealtimeClient, TurnDetectionMode
 from services.infrastructure.client_manager import client_manager
 from services.infrastructure.error_handler import (
     error_handler,
@@ -30,6 +33,7 @@ from services.infrastructure.load_balancer import (
 )
 from services.infrastructure.rate_limiter import initialize_rate_limiter, DashscopeRateLimiter
 from services.infrastructure.rate_limiter import LoadBalancerRateLimiter
+from services.llm.rag_service import get_rag_service
 from services.monitoring.performance_tracker import performance_tracker
 from services.redis.redis_token_buffer import get_token_tracker
 from services.utils.prompt_manager import prompt_manager
@@ -55,6 +59,8 @@ class LLMService:
         self.rate_limiter = None
         self.load_balancer = None  # Initialized in initialize()
         self.load_balancer_rate_limiter = None  # Initialized in initialize() if load balancing enabled
+        self.kimi_rate_limiter = None  # Initialized in initialize() if rate limiting enabled
+        self.doubao_rate_limiter = None  # Initialized in initialize() if rate limiting enabled
         logger.info("[LLMService] Initialized")
 
     def initialize(self) -> None:
@@ -71,8 +77,8 @@ class LLMService:
         if config.DASHSCOPE_RATE_LIMITING_ENABLED:
             logger.debug("[LLMService] Configuring Dashscope rate limiting")
             logger.debug(
-                f"[LLMService] QPM={config.DASHSCOPE_QPM_LIMIT}, "
-                f"Concurrent={config.DASHSCOPE_CONCURRENT_LIMIT}"
+                "[LLMService] QPM=%s, Concurrent=%s",
+                config.DASHSCOPE_QPM_LIMIT, config.DASHSCOPE_CONCURRENT_LIMIT
             )
 
             self.rate_limiter = initialize_rate_limiter(
@@ -95,10 +101,10 @@ class LLMService:
                     enabled=True
                 )
                 logger.info(
-                    f"[LLMService] Load balancer rate limiting enabled: "
-                    f"Volcengine(QPM={config.DEEPSEEK_VOLCENGINE_QPM_LIMIT}, "
-                    f"Concurrent={config.DEEPSEEK_VOLCENGINE_CONCURRENT_LIMIT}). "
-                    f"Note: Dashscope route uses shared Dashscope rate limiter."
+                    "[LLMService] Load balancer rate limiting enabled: "
+                    "Volcengine(QPM=%s, Concurrent=%s). "
+                    "Note: Dashscope route uses shared Dashscope rate limiter.",
+                    config.DEEPSEEK_VOLCENGINE_QPM_LIMIT, config.DEEPSEEK_VOLCENGINE_CONCURRENT_LIMIT
                 )
             else:
                 self.load_balancer_rate_limiter = None
@@ -113,10 +119,10 @@ class LLMService:
                 rate_limit_aware=config.LOAD_BALANCING_RATE_LIMITING_ENABLED
             )
             logger.info(
-                f"[LLMService] Load balancer enabled: "
-                f"strategy={config.LOAD_BALANCING_STRATEGY}, "
-                f"weights={config.LOAD_BALANCING_WEIGHTS}, "
-                f"rate_limit_aware={config.LOAD_BALANCING_RATE_LIMITING_ENABLED}"
+                "[LLMService] Load balancer enabled: "
+                "strategy=%s, weights=%s, rate_limit_aware=%s",
+                config.LOAD_BALANCING_STRATEGY, config.LOAD_BALANCING_WEIGHTS,
+                config.LOAD_BALANCING_RATE_LIMITING_ENABLED
             )
         else:
             logger.info("[LLMService] Load balancing disabled")
@@ -135,9 +141,9 @@ class LLMService:
                 endpoint='ark-kimi'
             )
             logger.info(
-                f"[LLMService] Kimi Volcengine rate limiting enabled: "
-                f"QPM={config.KIMI_VOLCENGINE_QPM_LIMIT}, "
-                f"Concurrent={config.KIMI_VOLCENGINE_CONCURRENT_LIMIT}"
+                "[LLMService] Kimi Volcengine rate limiting enabled: "
+                "QPM=%s, Concurrent=%s",
+                config.KIMI_VOLCENGINE_QPM_LIMIT, config.KIMI_VOLCENGINE_CONCURRENT_LIMIT
             )
 
             # Doubao Volcengine endpoint rate limiter
@@ -149,9 +155,9 @@ class LLMService:
                 endpoint='ark-doubao'
             )
             logger.info(
-                f"[LLMService] Doubao Volcengine rate limiting enabled: "
-                f"QPM={config.DOUBAO_VOLCENGINE_QPM_LIMIT}, "
-                f"Concurrent={config.DOUBAO_VOLCENGINE_CONCURRENT_LIMIT}"
+                "[LLMService] Doubao Volcengine rate limiting enabled: "
+                "QPM=%s, Concurrent=%s",
+                config.DOUBAO_VOLCENGINE_QPM_LIMIT, config.DOUBAO_VOLCENGINE_CONCURRENT_LIMIT
             )
         else:
             self.kimi_rate_limiter = None
@@ -300,9 +306,6 @@ class LLMService:
         # Inject RAG context if enabled and user_id provided
         if use_knowledge_base and user_id and query_for_rag:
             try:
-                from services.llm.rag_service import get_rag_service
-                from config.database import SessionLocal
-
                 rag_service = get_rag_service()
                 db = SessionLocal()
                 try:
@@ -341,15 +344,15 @@ class LLMService:
                             else:
                                 # Single-turn: update prompt in messages
                                 chat_messages[-1]['content'] = enhanced_prompt
-                            logger.debug(f"[LLMService] Injected RAG context: {len(context_chunks)} chunks")
+                            logger.debug("[LLMService] Injected RAG context: %s chunks", len(context_chunks))
                 finally:
                     db.close()
             except Exception as e:
                 # If RAG fails, continue with original prompt
-                logger.warning(f"[LLMService] RAG failed, using original prompt: {e}")
+                logger.warning("[LLMService] RAG failed, using original prompt: %s", e)
 
         try:
-            logger.debug(f"[LLMService] chat() - model={model}, messages_count={len(chat_messages)}")
+            logger.debug("[LLMService] chat() - model=%s, messages_count=%s", model, len(chat_messages))
 
             # Apply load balancing (skip if already applied)
             actual_model = model
@@ -357,9 +360,7 @@ class LLMService:
 
             if not skip_load_balancing and self.load_balancer and self.load_balancer.enabled:
                 actual_model = self.load_balancer.map_model(model)
-                logger.debug(
-                    f"[LLMService] Load balanced: {model} → {actual_model}"
-                )
+                logger.debug("[LLMService] Load balanced: %s → %s", model, actual_model)
                 # Track provider for DeepSeek load balancing metrics
                 if model == 'deepseek':
                     provider = 'dashscope' if actual_model == 'deepseek' else 'volcengine'
@@ -367,7 +368,7 @@ class LLMService:
             elif skip_load_balancing:
                 # Model is already a physical model
                 actual_model = model
-                logger.debug(f"[LLMService] Skipping load balancing (already applied): {model}")
+                logger.debug("[LLMService] Skipping load balancing (already applied): %s", model)
                 # Determine provider from physical model name for rate limiting
                 if actual_model == 'ark-deepseek':
                     provider = 'volcengine'
@@ -392,8 +393,8 @@ class LLMService:
                     # Always log rate limiter timing for Kimi to diagnose delays
                     if model == 'kimi' or rate_limit_duration > 0.1:
                         logger.info(
-                            f"[LLMService] Rate limiter acquire: {rate_limit_duration:.3f}s "
-                            f"for {model} ({actual_model})"
+                            "[LLMService] Rate limiter acquire: %.3fs for %s (%s)",
+                            rate_limit_duration, model, actual_model
                         )
 
                     # Execute with retry and timeout
@@ -425,8 +426,8 @@ class LLMService:
                     # Always log API timing for Kimi to diagnose delays
                     if model == 'kimi' or api_duration > 2.0:
                         logger.info(
-                            f"[LLMService] API call duration: {api_duration:.2f}s "
-                            f"for {model} ({actual_model})"
+                            "[LLMService] API call duration: %.2fs for %s (%s)",
+                            api_duration, model, actual_model
                         )
             else:
                 # No rate limiting
@@ -469,12 +470,14 @@ class LLMService:
                 content = str(response)
                 usage_data = {}
 
-            logger.info(f"[LLMService] {model} responded in {duration:.2f}s")
+            logger.info("[LLMService] %s responded in %.2fs", model, duration)
 
             # Track token usage (async, non-blocking)
             if usage_data:
                 try:
-                    # Normalize token field names (API uses prompt_tokens/completion_tokens, we use input_tokens/output_tokens)
+                    # Normalize token field names
+                    # (API uses prompt_tokens/completion_tokens,
+                    # we use input_tokens/output_tokens)
                     input_tokens = usage_data.get('prompt_tokens') or usage_data.get('input_tokens') or 0
                     output_tokens = usage_data.get('completion_tokens') or usage_data.get('output_tokens') or 0
                     # Use API's total_tokens (authoritative billing value) - may include overhead tokens
@@ -498,7 +501,7 @@ class LLMService:
                         success=True
                     )
                 except Exception as e:
-                    logger.debug(f"[LLMService] Token tracking failed (non-critical): {e}")
+                    logger.debug("[LLMService] Token tracking failed (non-critical): %s", e)
 
             # Record performance metrics
             self.performance_tracker.record_request(
@@ -542,7 +545,7 @@ class LLMService:
                 )
             except Exception:
                 pass  # Non-critical
-            logger.error(f"[LLMService] {model} failed after {duration:.2f}s: {e}")
+            logger.error("[LLMService] %s failed after %.2fs: %s", model, duration, e)
 
             # Record failure metrics
             self.performance_tracker.record_request(
@@ -561,7 +564,7 @@ class LLMService:
                     error=str(e)
                 )
 
-            raise LLMServiceError(f"Chat failed for model {model}: {e}") from e
+            raise LLMServiceError("Chat failed for model %s: %s" % (model, e)) from e
 
     async def chat_with_usage(
         self,
@@ -572,15 +575,6 @@ class LLMService:
         system_message: Optional[str] = None,
         messages: Optional[List[Dict[str, Any]]] = None,  # Multi-turn conversation history
         timeout: Optional[float] = None,
-        # Token tracking parameters
-        user_id: Optional[int] = None,
-        organization_id: Optional[int] = None,
-        api_key_id: Optional[int] = None,
-        request_type: str = 'diagram_generation',
-        diagram_type: Optional[str] = None,
-        endpoint_path: Optional[str] = None,
-        session_id: Optional[str] = None,
-        conversation_id: Optional[str] = None,
         **kwargs
     ) -> Tuple[str, dict]:
         """
@@ -622,7 +616,7 @@ class LLMService:
                 chat_messages.append({"role": "user", "content": prompt})
 
         try:
-            logger.debug(f"[LLMService] chat_with_usage() - model={model}, messages_count={len(chat_messages)}")
+            logger.debug("[LLMService] chat_with_usage() - model=%s, messages_count=%s", model, len(chat_messages))
 
             # Apply load balancing
             actual_model = model
@@ -630,9 +624,7 @@ class LLMService:
 
             if self.load_balancer and self.load_balancer.enabled:
                 actual_model = self.load_balancer.map_model(model)
-                logger.debug(
-                    f"[LLMService] Load balanced: {model} → {actual_model}"
-                )
+                logger.debug("[LLMService] Load balanced: %s → %s", model, actual_model)
                 # Track provider for DeepSeek load balancing metrics
                 if model == 'deepseek':
                     provider = 'dashscope' if actual_model == 'deepseek' else 'volcengine'
@@ -707,7 +699,7 @@ class LLMService:
                 content = str(response)
                 usage_data = {}
 
-            logger.info(f"[LLMService] {model} responded in {duration:.2f}s")
+            logger.info("[LLMService] %s responded in %.2fs", model, duration)
 
             # Don't track tokens here - caller will track with correct diagram_type
             # Record performance metrics
@@ -731,7 +723,7 @@ class LLMService:
             raise
         except Exception as e:
             duration = time.time() - start_time
-            logger.error(f"[LLMService] {model} failed after {duration:.2f}s: {e}")
+            logger.error("[LLMService] %s failed after %.2fs: %s", model, duration, e)
 
             self.performance_tracker.record_request(
                 model=model,
@@ -822,9 +814,6 @@ class LLMService:
         # Inject RAG context if enabled and user_id provided (before streaming starts)
         if use_knowledge_base and user_id and messages is None:
             try:
-                from services.llm.rag_service import get_rag_service
-                from config.database import SessionLocal
-
                 rag_service = get_rag_service()
                 db = SessionLocal()
                 try:
@@ -846,15 +835,19 @@ class LLMService:
                                 context_chunks=context_chunks,
                                 max_context_length=2000
                             )
-                            logger.debug(f"[LLMService] Injected RAG context for streaming: {len(context_chunks)} chunks")
+                            logger.debug(
+                                "[LLMService] Injected RAG context for "
+                                "streaming: %s chunks",
+                                len(context_chunks)
+                            )
                 finally:
                     db.close()
             except Exception as e:
                 # If RAG fails, continue with original prompt
-                logger.warning(f"[LLMService] RAG failed for streaming, using original prompt: {e}")
+                logger.warning("[LLMService] RAG failed for streaming, using original prompt: %s", e)
 
         try:
-            logger.debug(f"[LLMService] chat_stream() - model={model}, prompt_len={len(prompt)}")
+            logger.debug("[LLMService] chat_stream() - model=%s, prompt_len=%s", model, len(prompt))
 
             # Apply load balancing (skip if already applied, e.g., from stream_progressive)
             actual_model = model
@@ -862,16 +855,14 @@ class LLMService:
 
             if not skip_load_balancing and self.load_balancer and self.load_balancer.enabled:
                 actual_model = self.load_balancer.map_model(model)
-                logger.debug(
-                    f"[LLMService] Load balanced: {model} → {actual_model}"
-                )
+                logger.debug("[LLMService] Load balanced: %s → %s", model, actual_model)
                 # Track provider for DeepSeek load balancing metrics
                 if model == 'deepseek':
                     provider = 'dashscope' if actual_model == 'deepseek' else 'volcengine'
             elif skip_load_balancing:
                 # Model is already a physical model from stream_progressive
                 actual_model = model
-                logger.debug(f"[LLMService] Skipping load balancing (already applied): {model}")
+                logger.debug("[LLMService] Skipping load balancing (already applied): %s", model)
                 # Track provider from physical model name
                 if self.load_balancer:
                     provider = self.load_balancer.get_provider_from_model(actual_model)
@@ -931,8 +922,8 @@ class LLMService:
                     # Log rate limiter timing for debugging
                     if model == 'kimi' or rate_limit_duration > 0.1:
                         logger.info(
-                            f"[LLMService] Rate limiter acquire: {rate_limit_duration:.3f}s "
-                            f"for {model} ({actual_model}) [stream]"
+                            "[LLMService] Rate limiter acquire: %.3fs for %s (%s) [stream]",
+                            rate_limit_duration, model, actual_model
                         )
 
                     # Stream with rate limiting applied
@@ -1004,7 +995,7 @@ class LLMService:
                         yield chunk
 
             duration = time.time() - start_time
-            logger.debug(f"[LLMService] {model} stream completed in {duration:.2f}s")
+            logger.debug("[LLMService] %s stream completed in %.2fs", model, duration)
 
             # Track token usage (async, non-blocking)
             if usage_data:
@@ -1032,7 +1023,7 @@ class LLMService:
                         success=True
                     )
                 except Exception as e:
-                    logger.debug(f"[LLMService] Token tracking failed (non-critical): {e}")
+                    logger.debug("[LLMService] Token tracking failed (non-critical): %s", e)
 
             # Record performance metrics
             self.performance_tracker.record_request(
@@ -1054,7 +1045,7 @@ class LLMService:
             raise
         except Exception as e:
             duration = time.time() - start_time
-            logger.error(f"[LLMService] {model} stream failed after {duration:.2f}s: {e}")
+            logger.error("[LLMService] %s stream failed after %.2fs: %s", model, duration, e)
 
             # Record failure metrics
             self.performance_tracker.record_request(
@@ -1127,10 +1118,6 @@ class LLMService:
         Returns:
             Dict with status, error message, and error type
         """
-        import socket
-
-        type(e).__name__
-
         # Don't expose sensitive details - use generic messages
         # Check for DNS resolution errors (gaierror)
         if isinstance(e, socket.gaierror):
@@ -1187,7 +1174,6 @@ class LLMService:
 
             # Test WebSocket connection by attempting to create and close a session
             async def test_omni_connection():
-                from clients.omni_client import OmniRealtimeClient, TurnDetectionMode
                 native_client = None
                 try:
                     native_client = OmniRealtimeClient(
@@ -1200,7 +1186,7 @@ class LLMService:
                     await native_client.close()
                     return True
                 except Exception as e:
-                    logger.debug(f"Omni WebSocket health check failed: {e}")
+                    logger.debug("Omni WebSocket health check failed: %s", e)
                     if native_client:
                         try:
                             await native_client.close()
@@ -1216,7 +1202,7 @@ class LLMService:
                 'note': 'WebSocket-based real-time voice service'
             }
         except Exception as e:
-            logger.warning(f"Health check failed for {model}: {e}")
+            logger.warning("Health check failed for %s: %s", model, e)
             result = self._categorize_error(e)
             result['note'] = 'WebSocket-based real-time voice service'
             return result
@@ -1237,7 +1223,7 @@ class LLMService:
                 'latency': round(latency, 2)
             }
         except Exception as e:
-            logger.warning(f"Health check failed for {model}: {e}")
+            logger.warning("Health check failed for %s: %s", model, e)
             return self._categorize_error(e)
 
     async def health_check(self) -> Dict[str, Any]:
@@ -1266,7 +1252,7 @@ class LLMService:
         # Process results
         for model, result in zip(available_models, health_results):
             if isinstance(result, Exception):
-                logger.error(f"Health check exception for {model}: {result}", exc_info=True)
+                logger.error("Health check exception for %s: %s", model, result, exc_info=True)
                 results[model] = self._categorize_error(result)
             else:
                 results[model] = result
@@ -1373,7 +1359,7 @@ class LLMService:
             models = ['qwen', 'deepseek', 'kimi']
 
         start_time = time.time()
-        logger.debug(f"[LLMService] generate_multi() - {len(models)} models in parallel")
+        logger.debug("[LLMService] generate_multi() - %s models in parallel", len(models))
 
         # Create tasks for all models
         tasks = {}
@@ -1404,13 +1390,13 @@ class LLMService:
                     'error': str(e),
                     'duration': 0.0
                 }
-                logger.error(f"[LLMService] {model} failed: {e}")
+                logger.error("[LLMService] %s failed: %s", model, e)
 
         duration = time.time() - start_time
         successful = sum(1 for r in results.values() if r['success'])
         logger.info(
-            f"[LLMService] generate_multi() complete: "
-            f"{successful}/{len(models)} succeeded in {duration:.2f}s"
+            "[LLMService] generate_multi() complete: %s/%s succeeded in %.2fs",
+            successful, len(models), duration
         )
 
         return results
@@ -1460,7 +1446,7 @@ class LLMService:
         if models is None:
             models = ['qwen', 'deepseek', 'kimi']
 
-        logger.debug(f"[LLMService] generate_progressive() - {len(models)} models")
+        logger.debug("[LLMService] generate_progressive() - %s models", len(models))
 
         # Create tasks with model info
         task_model_pairs = []
@@ -1480,7 +1466,7 @@ class LLMService:
 
         # Yield results as they complete
         tasks = [task for task, _ in task_model_pairs]
-        {task: model for task, model in task_model_pairs}
+        yielded_tasks = set()
 
         for coro in asyncio.as_completed(tasks):
             # Get the task that completed from the awaited coro
@@ -1489,8 +1475,8 @@ class LLMService:
                 # Find which model this result belongs to by checking completed tasks
                 completed_model = None
                 for task, model in task_model_pairs:
-                    if task.done() and not hasattr(task, '_yielded'):
-                        task._yielded = True
+                    if task.done() and task not in yielded_tasks:
+                        yielded_tasks.add(task)
                         completed_model = model
                         break
 
@@ -1503,7 +1489,7 @@ class LLMService:
                         'error': None,
                         'timestamp': time.time()
                     }
-                    logger.debug(f"[LLMService] {completed_model} completed in {result['duration']:.2f}s")
+                    logger.debug("[LLMService] %s completed in %.2fs", completed_model, result['duration'])
 
             except Exception as e:
                 # Find which model failed
@@ -1515,7 +1501,7 @@ class LLMService:
                         break
 
                 if failed_model:
-                    logger.error(f"[LLMService] {failed_model} failed: {e}")
+                    logger.error("[LLMService] %s failed: %s", failed_model, e)
                     yield {
                         'llm': failed_model,
                         'response': None,
@@ -1602,11 +1588,9 @@ class LLMService:
                 physical: logical
                 for logical, physical in zip(models, physical_models)
             }
-            logger.info(
-                f"[LLMService] stream_progressive: models={models} → {physical_models}"
-            )
+            logger.info("[LLMService] stream_progressive: models=%s → %s", models, physical_models)
 
-        logger.debug(f"[LLMService] stream_progressive() - streaming from {len(physical_models)} models concurrently")
+        logger.debug("[LLMService] stream_progressive() - streaming from %s models concurrently", len(physical_models))
 
         queue = asyncio.Queue()
 
@@ -1659,16 +1643,16 @@ class LLMService:
                 })
 
                 # Smart logging: summary only, no token spam
+                tokens_per_sec = token_count / duration if duration > 0 else 0
                 logger.info(
-                    f"[LLMService] {logical_model} stream complete - "
-                    f"{token_count} tokens in {duration:.2f}s "
-                    f"({token_count/duration:.1f} tok/s)"
+                    "[LLMService] %s stream complete - %s tokens in %.2fs (%.1f tok/s)",
+                    logical_model, token_count, duration, tokens_per_sec
                 )
 
             except Exception as e:
                 duration = time.time() - start_time
                 logical_model = physical_to_logical.get(physical_model, physical_model)
-                logger.error(f"[LLMService] {logical_model} stream error: {str(e)}")
+                logger.error("[LLMService] %s stream error: %s", logical_model, str(e))
                 await queue.put({
                     'event': 'error',
                     'llm': logical_model,
@@ -1703,8 +1687,8 @@ class LLMService:
 
         total_duration = time.time() - total_start
         logger.info(
-            f"[LLMService] stream_progressive() complete: "
-            f"{success_count}/{len(physical_models)} succeeded in {total_duration:.2f}s"
+            "[LLMService] stream_progressive() complete: %s/%s succeeded in %.2fs",
+            success_count, len(physical_models), total_duration
         )
 
     async def generate_race(
@@ -1751,7 +1735,7 @@ class LLMService:
         if models is None:
             models = ['qwen-turbo', 'qwen', 'deepseek']
 
-        logger.debug(f"[LLMService] generate_race() - first of {len(models)} models")
+        logger.debug("[LLMService] generate_race() - first of %s models", len(models))
 
         # Create tasks with model info
         task_model_pairs = []
@@ -1789,7 +1773,7 @@ class LLMService:
                         if not task.done():
                             task.cancel()
 
-                    logger.debug(f"[LLMService] {completed_model} won the race in {result['duration']:.2f}s")
+                    logger.debug("[LLMService] %s won the race in %.2fs", completed_model, result['duration'])
 
                     return {
                         'llm': completed_model,
@@ -1803,7 +1787,7 @@ class LLMService:
                 # Find which model failed
                 for task, model in task_model_pairs:
                     if task.done() and task.exception():
-                        logger.debug(f"[LLMService] {model} failed in race: {e}")
+                        logger.debug("[LLMService] %s failed in race: %s", model, e)
                         break
                 continue
 
@@ -1959,7 +1943,7 @@ class LLMService:
         # Check circuit breaker using PHYSICAL model name
         # This ensures failures from one route don't block the other route
         if not self.performance_tracker.can_call_model(actual_model):
-            logger.warning(f"[LLMService] Circuit breaker OPEN for {actual_model}, skipping call")
+            logger.warning("[LLMService] Circuit breaker OPEN for %s, skipping call", actual_model)
             return {
                 'response': None,
                 'duration': 0.0,
@@ -2079,5 +2063,3 @@ class LLMService:
 
 # Singleton instance
 llm_service = LLMService()
-
-

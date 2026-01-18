@@ -5,6 +5,10 @@ from typing import Any, Dict, Optional, Tuple
 import logging
 
 from agents.core.base_agent import BaseAgent
+from agents.core.agent_utils import extract_json_from_response
+from config.settings import config
+from prompts import get_prompt
+from services.llm import llm_service
 
 """
 Circle Map Agent
@@ -73,7 +77,7 @@ class CircleMapAgent(BaseAgent):
             # Validate the generated spec
             is_valid, validation_msg = self.validate_output(spec)
             if not is_valid:
-                logger.warning(f"CircleMapAgent: Validation failed: {validation_msg}")
+                logger.warning("CircleMapAgent: Validation failed: %s", validation_msg)
                 return {
                     'success': False,
                     'error': f'Generated invalid specification: {validation_msg}'
@@ -90,7 +94,7 @@ class CircleMapAgent(BaseAgent):
             }
 
         except Exception as e:
-            logger.error(f"CircleMapAgent: Circle map generation failed: {e}")
+            logger.error("CircleMapAgent: Circle map generation failed: %s", e)
             return {
                 'success': False,
                 'error': f'Generation failed: {str(e)}'
@@ -108,22 +112,16 @@ class CircleMapAgent(BaseAgent):
     ) -> Optional[Dict]:
         """Generate the circle map specification using LLM."""
         try:
-            # Import centralized prompt system
-            from prompts import get_prompt
-
             # Get prompt from centralized system - use agent-specific format
             system_prompt = get_prompt("circle_map_agent", language, "generation")
 
             if not system_prompt:
-                logger.error(f"CircleMapAgent: No prompt found for language {language}")
+                logger.error("CircleMapAgent: No prompt found for language %s", language)
                 return None
 
             user_prompt = f"请为以下描述创建一个圆圈图：{prompt}" if language == "zh" else f"Please create a circle map for the following description: {prompt}"
 
             # Call middleware directly - clean and efficient!
-            from services.llm import llm_service
-            from config.settings import config
-
             response = await llm_service.chat(
                 prompt=user_prompt,
                 model=self.model,
@@ -139,8 +137,6 @@ class CircleMapAgent(BaseAgent):
             )
 
             # Extract JSON from response
-            from ..core.agent_utils import extract_json_from_response
-
             # Check if response is already a dictionary (from mock client)
             if isinstance(response, dict):
                 spec = response
@@ -150,13 +146,14 @@ class CircleMapAgent(BaseAgent):
 
             if not spec:
                 logger.error("CircleMapAgent: Failed to extract JSON from LLM response")
-                logger.error(f"CircleMapAgent: Raw response from {self.model}: {str(response)[:500]}")
+                response_preview = str(response)[:500]
+                logger.error("CircleMapAgent: Raw response from %s: %s", self.model, response_preview)
                 return None
 
             return spec
 
         except Exception as e:
-            logger.error(f"CircleMapAgent: Error in spec generation: {e}")
+            logger.error("CircleMapAgent: Error in spec generation: %s", e)
             return None
 
     def _enhance_spec(self, spec: Dict) -> Dict:
@@ -191,7 +188,7 @@ class CircleMapAgent(BaseAgent):
             return spec
 
         except Exception as e:
-            logger.error(f"CircleMapAgent: Error enhancing spec: {e}")
+            logger.error("CircleMapAgent: Error enhancing spec: %s", e)
             return spec
 
     def validate_output(self, spec: Dict) -> Tuple[bool, str]:
@@ -239,7 +236,8 @@ class CircleMapAgent(BaseAgent):
             Dict containing success status and enhanced spec
         """
         try:
-            logger.debug(f"CircleMapAgent: Enhancing spec - Topic: {spec.get('topic')}, Context elements: {len(spec.get('context', []))}")
+            context_count = len(spec.get('context', []))
+            logger.debug("CircleMapAgent: Enhancing spec - Topic: %s, Context elements: %s", spec.get('topic'), context_count)
 
             # If already enhanced, return as-is
             if spec.get('_metadata', {}).get('enhanced'):
@@ -255,7 +253,7 @@ class CircleMapAgent(BaseAgent):
             }
 
         except Exception as e:
-            logger.error(f"CircleMapAgent: Error enhancing spec: {e}")
+            logger.error("CircleMapAgent: Error enhancing spec: %s", e)
             return {
                 'success': False,
                 'error': f'Enhancement failed: {str(e)}'

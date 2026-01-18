@@ -10,6 +10,7 @@ import logging
 import threading
 
 from services.redis.redis_client import is_redis_available, get_redis
+from config.settings import config
 
 """
 IP Geolocation Service
@@ -30,7 +31,8 @@ Key Schema:
 Author: lycosa9527
 Made by: MindSpring Team
 
-Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+Copyright 2024-2025 北京思源智教科技有限公司
+(Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved
 Proprietary License
 """
@@ -122,11 +124,16 @@ class IPGeolocationService:
                     self.searcher_v4 = new_with_file_only(IPv4, str(DB_FILE_PATH_V4))
 
                     file_size_mb = DB_FILE_PATH_V4.stat().st_size / 1024 / 1024
-                    logger.info(f"[IPGeo] IPv4 database initialized from {DB_FILE_PATH_V4} ({file_size_mb:.2f} MB, file mode)")
+                    logger.info(
+                        "[IPGeo] IPv4 database initialized from %s "
+                        "(%.2f MB, file mode)",
+                        DB_FILE_PATH_V4,
+                        file_size_mb
+                    )
                 except Exception as e:
-                    logger.error(f"[IPGeo] Failed to initialize IPv4 database: {e}", exc_info=True)
+                    logger.error("[IPGeo] Failed to initialize IPv4 database: %s", e, exc_info=True)
             else:
-                logger.warning(f"[IPGeo] IPv4 database file not found at {DB_FILE_PATH_V4}")
+                logger.warning("[IPGeo] IPv4 database file not found at %s", DB_FILE_PATH_V4)
 
             # Initialize IPv6 database (optional)
             if DB_FILE_PATH_V6.exists():
@@ -138,18 +145,23 @@ class IPGeolocationService:
                     self.searcher_v6 = new_with_file_only(IPv6, str(DB_FILE_PATH_V6))
 
                     file_size_mb = DB_FILE_PATH_V6.stat().st_size / 1024 / 1024
-                    logger.info(f"[IPGeo] IPv6 database initialized from {DB_FILE_PATH_V6} ({file_size_mb:.2f} MB, file mode)")
+                    logger.info(
+                        "[IPGeo] IPv6 database initialized from %s "
+                        "(%.2f MB, file mode)",
+                        DB_FILE_PATH_V6,
+                        file_size_mb
+                    )
                 except Exception as e:
-                    logger.warning(f"[IPGeo] Failed to initialize IPv6 database: {e}")
+                    logger.warning("[IPGeo] Failed to initialize IPv6 database: %s", e)
             else:
-                logger.info(f"[IPGeo] IPv6 database not found at {DB_FILE_PATH_V6} (optional)")
+                logger.info("[IPGeo] IPv6 database not found at %s (optional)", DB_FILE_PATH_V6)
 
             # Check database age and warn if old
             if DB_FILE_PATH_V4.exists():
                 self._check_database_age(DB_FILE_PATH_V4)
 
         except Exception as e:
-            logger.error(f"[IPGeo] Failed to initialize databases: {e}", exc_info=True)
+            logger.error("[IPGeo] Failed to initialize databases: %s", e, exc_info=True)
 
     def _load_patch_cache(self):
         """Load patch cache for override lookups."""
@@ -179,9 +191,9 @@ class IPGeolocationService:
 
             patch_count = self.patch_cache.get('total_patches', 0)
             if patch_count > 0:
-                logger.info(f"[IPGeo] Loaded {patch_count} patches from cache")
+                logger.info("[IPGeo] Loaded %s patches from cache", patch_count)
         except Exception as e:
-            logger.warning(f"[IPGeo] Failed to load patch cache: {e}", exc_info=True)
+            logger.warning("[IPGeo] Failed to load patch cache: %s", e, exc_info=True)
             self.patch_cache = {}
 
     def _ip_to_int(self, ip: str) -> int:
@@ -346,7 +358,7 @@ class IPGeolocationService:
             return None
 
         except Exception as e:
-            logger.debug(f"[IPGeo] Error checking patch for IP {ip}: {e}")
+            logger.debug("[IPGeo] Error checking patch for IP %s: %s", ip, e)
             return None
 
     def _check_database_age(self, db_path: Path):
@@ -372,12 +384,22 @@ class IPGeolocationService:
 
             # Warn if database is older than 60 days
             if age_days > 60:
-                logger.warning(f"[IPGeo] Database {db_path.name} is {age_days} days old. Consider updating for better accuracy.")
+                logger.warning(
+                    "[IPGeo] Database %s is %s days old. "
+                    "Consider updating for better accuracy.",
+                    db_path.name,
+                    age_days
+                )
             elif age_days > 30:
-                logger.info(f"[IPGeo] Database {db_path.name} is {age_days} days old. Consider updating monthly for best accuracy.")
+                logger.info(
+                    "[IPGeo] Database %s is %s days old. "
+                    "Consider updating monthly for best accuracy.",
+                    db_path.name,
+                    age_days
+                )
 
         except Exception as e:
-            logger.debug(f"[IPGeo] Could not check database age: {e}")
+            logger.debug("[IPGeo] Could not check database age: %s", e)
 
     def _use_redis(self) -> bool:
         """Check if Redis should be used."""
@@ -400,14 +422,14 @@ class IPGeolocationService:
                 try:
                     return json.loads(cached_data)
                 except json.JSONDecodeError:
-                    logger.warning(f"[IPGeo] Invalid cached data for IP {ip}")
+                    logger.warning("[IPGeo] Invalid cached data for IP %s", ip)
                     redis.delete(cache_key)  # Clean up invalid cache
                     return None
 
             return None
 
         except Exception as e:
-            logger.error(f"[IPGeo] Error reading cache: {e}")
+            logger.error("[IPGeo] Error reading cache: %s", e)
             return None
 
     def _store_in_cache(self, ip: str, location: Dict):
@@ -426,10 +448,10 @@ class IPGeolocationService:
                 CACHE_TTL_SECONDS,
                 json.dumps(location, ensure_ascii=False)  # Preserve UTF-8 characters
             )
-            logger.debug(f"[IPGeo] Cached location for IP {ip}")
+            logger.debug("[IPGeo] Cached location for IP %s", ip)
 
         except Exception as e:
-            logger.error(f"[IPGeo] Error storing cache: {e}")
+            logger.error("[IPGeo] Error storing cache: %s", e)
 
     def _lookup_local(self, ip: str) -> Optional[Dict]:
         """
@@ -444,9 +466,9 @@ class IPGeolocationService:
 
         if not searcher:
             if is_ipv6:
-                logger.debug(f"[IPGeo] IPv6 database not available for {ip}")
+                logger.debug("[IPGeo] IPv6 database not available for %s", ip)
             else:
-                logger.debug(f"[IPGeo] IPv4 database not available for {ip}")
+                logger.debug("[IPGeo] IPv4 database not available for %s", ip)
             return None
 
         try:
@@ -468,7 +490,7 @@ class IPGeolocationService:
                 # Old API: searcher.btreeSearch(ip)
                 result = searcher.btreeSearch(ip)  # type: ignore[attr-defined]
             else:
-                logger.warning(f"[IPGeo] Unknown ip2region API for IP {ip}")
+                logger.warning("[IPGeo] Unknown ip2region API for IP %s", ip)
                 return None
 
             if not result:
@@ -518,7 +540,7 @@ class IPGeolocationService:
             }
 
         except Exception as e:
-            logger.warning(f"[IPGeo] Local lookup error for IP {ip}: {e}")
+            logger.warning("[IPGeo] Local lookup error for IP %s: %s", ip, e)
             return None
 
     def _get_coordinates(self, province: str, city: str) -> Dict[str, float]:
@@ -603,7 +625,6 @@ class IPGeolocationService:
         # Handle localhost IPs - return default location in DEBUG mode for testing
         if ip and (ip.startswith("127.") or ip.startswith("::1")):
             try:
-                from config.settings import config
                 if config.debug:
                     # Return Beijing location for localhost in DEBUG mode
                     localhost_location = {
@@ -613,7 +634,7 @@ class IPGeolocationService:
                         "lng": 116.4074,
                         "country": "中国"
                     }
-                    logger.debug(f"[IPGeo] Localhost IP {ip} mapped to Beijing (DEBUG mode)")
+                    logger.debug("[IPGeo] Localhost IP %s mapped to Beijing (DEBUG mode)", ip)
                     return localhost_location
             except Exception:
                 pass
@@ -626,28 +647,38 @@ class IPGeolocationService:
         # Check cache first
         cached = self._get_from_cache(ip)
         if cached:
-            logger.debug(f"[IPGeo] Cache hit for IP {ip}")
+            logger.debug("[IPGeo] Cache hit for IP %s", ip)
             return cached
 
         # Check patches first (patches take priority over main database)
         patch_location = self._find_patch_for_ip(ip)
         if patch_location:
             self._store_in_cache(ip, patch_location)
-            logger.debug(f"[IPGeo] Patch match for IP {ip}: {patch_location.get('province')}, {patch_location.get('city')} (from patch)")
+            logger.debug(
+                "[IPGeo] Patch match for IP %s: %s, %s (from patch)",
+                ip,
+                patch_location.get('province'),
+                patch_location.get('city')
+            )
             return patch_location
 
         # Lookup in local database
         location = self._lookup_local(ip)
         if location:
             self._store_in_cache(ip, location)
-            logger.debug(f"[IPGeo] Local lookup successful for IP {ip}: {location.get('province')}, {location.get('city')}")
+            logger.debug(
+                "[IPGeo] Local lookup successful for IP %s: %s, %s",
+                ip,
+                location.get('province'),
+                location.get('city')
+            )
             return location
 
         # Lookup failed - return default Beijing location for display purposes
         # Do NOT cache this default to avoid corrupting location data:
         # - Foreign IPs/VPNs won't be permanently marked as Beijing
         # - Transient failures won't persist incorrect data after recovery
-        logger.warning(f"[IPGeo] Lookup failed for IP {ip}, returning Beijing as fallback (not cached)")
+        logger.warning("[IPGeo] Lookup failed for IP %s, returning Beijing as fallback (not cached)", ip)
         default_location = {
             "province": "北京",
             "city": "北京",

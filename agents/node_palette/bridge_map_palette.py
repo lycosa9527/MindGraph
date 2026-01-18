@@ -71,11 +71,11 @@ class BridgeMapPaletteGenerator(BasePaletteGenerator):
                 node = chunk.get('node', {})
                 text = node.get('text', '')
 
-                logger.debug(f"[BridgeMap] Processing node with text: '{text}'")
+                logger.debug("[BridgeMap] Processing node with text: '%s'", text)
 
                 # Analogies MUST have pipe separator - skip if it doesn't
                 if '|' not in text:
-                    logger.warning(f"[BridgeMap] Skipping node without pipe separator: '{text}'")
+                    logger.warning("[BridgeMap] Skipping node without pipe separator: '%s'", text)
                     continue  # Skip this node
 
                 # Parse pipe-separated format: "left | right | dimension" (dimension is optional)
@@ -88,17 +88,17 @@ class BridgeMapPaletteGenerator(BasePaletteGenerator):
                     # Filter out invalid/unwanted nodes:
                     # 1. Empty or very short values (likely formatting artifacts)
                     if len(left_text) < 2 or len(right_text) < 2:
-                        logger.debug(f"[BridgeMap] Skipping too short: '{left_text} | {right_text}'")
+                        logger.debug("[BridgeMap] Skipping too short: '%s | %s'", left_text, right_text)
                         continue
 
                     # 2. Markdown table separators (e.g., "| ---" or "---")
                     if left_text.startswith('-') or right_text.startswith('-'):
-                        logger.debug(f"[BridgeMap] Skipping markdown separator: '{left_text} | {right_text}'")
+                        logger.debug("[BridgeMap] Skipping markdown separator: '%s | %s'", left_text, right_text)
                         continue
 
                     # 3. Header-like patterns containing "as" repeated
                     if ('as' in left_text.lower() and 'as' in right_text.lower()):
-                        logger.debug(f"[BridgeMap] Skipping header pattern: '{left_text} | {right_text}'")
+                        logger.debug("[BridgeMap] Skipping header pattern: '%s | %s'", left_text, right_text)
                         continue
 
                     # Valid analogy pair - add left, right, and optional dimension fields
@@ -109,12 +109,12 @@ class BridgeMapPaletteGenerator(BasePaletteGenerator):
                     # Keep text as-is for backwards compatibility
                     node['text'] = text
 
-                    dim_info = f" | dimension='{dimension}'" if dimension else ""
-                    logger.debug(f"[BridgeMap] Parsed pair successfully: left='{left_text}' | right='{right_text}'{dim_info}")
-                    logger.debug(f"[BridgeMap] Node now has: {node.keys()}")
+                    dim_info = " | dimension='%s'" % dimension if dimension else ""
+                    logger.debug("[BridgeMap] Parsed pair successfully: left='%s' | right='%s'%s", left_text, right_text, dim_info)
+                    logger.debug("[BridgeMap] Node now has: %s", list(node.keys()))
                 else:
                     # Malformed pipe-separated format (has | but couldn't parse properly)
-                    logger.warning(f"[BridgeMap] Skipping malformed node: '{text}'")
+                    logger.warning("[BridgeMap] Skipping malformed node: '%s'", text)
                     continue
 
             yield chunk
@@ -151,7 +151,7 @@ class BridgeMapPaletteGenerator(BasePaletteGenerator):
         # Check if user specified a dimension (simple empty check)
         is_specific_relationship = bool(center_topic and center_topic.strip())
 
-        logger.debug(f"[BridgeMap-Prompt] Dimension field: '{center_topic}' | User specified: {is_specific_relationship}")
+        logger.debug("[BridgeMap-Prompt] Dimension field: '%s' | User specified: %s", center_topic, is_specific_relationship)
 
         # Build prompt based on language (derived from BRIDGE_MAP_GENERATION prompts)
         if language == 'zh':

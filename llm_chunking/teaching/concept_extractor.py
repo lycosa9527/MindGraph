@@ -1,4 +1,4 @@
-﻿"""
+"""
 Concept extraction for teaching materials.
 
 Extracts key concepts and their relationships from educational content.
@@ -8,6 +8,11 @@ import json
 import logging
 from typing import List, Dict, Optional
 from dataclasses import dataclass
+
+try:
+    from services.llm import llm_service as default_llm_service
+except ImportError:
+    default_llm_service = None
 
 logger = logging.getLogger(__name__)
 
@@ -38,10 +43,11 @@ class ConceptExtractor:
         self.llm_service = llm_service
         if llm_service is None:
             try:
-                from services.llm import llm_service
-                self.llm_service = llm_service
+                if default_llm_service is None:
+                    raise ImportError("llm_service not available")
+                self.llm_service = default_llm_service
             except Exception as e:
-                logger.warning(f"LLM service not available: {e}")
+                logger.warning("LLM service not available: %s", e)
 
     async def extract_concepts(
         self,
@@ -113,7 +119,7 @@ Extract up to {max_concepts} concepts.
 
                 return concepts[:max_concepts]
         except Exception as e:
-            logger.warning(f"Concept extraction failed: {e}")
+            logger.warning("Concept extraction failed: %s", e)
 
         return []
 

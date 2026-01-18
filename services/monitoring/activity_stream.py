@@ -1,4 +1,4 @@
-﻿from datetime import datetime, timezone
+from datetime import datetime, timezone
 from typing import Dict, Optional
 import asyncio
 import json
@@ -146,7 +146,7 @@ class ActivityStreamService:
                     redis.set(anon_key, username)  # No expiration (persistent mapping)
                     return username
             except Exception as e:
-                logger.error(f"[ActivityStream] Error getting anonymized username: {e}")
+                logger.error("[ActivityStream] Error getting anonymized username: %s", e)
 
         # Fallback: in-memory mapping
         if not hasattr(self, '_anon_map'):
@@ -170,7 +170,7 @@ class ActivityStreamService:
         """
         queue = asyncio.Queue()
         self._connections[connection_id] = queue
-        logger.debug(f"[ActivityStream] Added connection: {connection_id} (total: {len(self._connections)})")
+        logger.debug("[ActivityStream] Added connection: %s (total: %s)", connection_id, len(self._connections))
         return queue
 
     def remove_connection(self, connection_id: str):
@@ -182,7 +182,11 @@ class ActivityStreamService:
         """
         if connection_id in self._connections:
             del self._connections[connection_id]
-            logger.debug(f"[ActivityStream] Removed connection: {connection_id} (remaining: {len(self._connections)})")
+            logger.debug(
+                "[ActivityStream] Removed connection: %s (remaining: %s)",
+                connection_id,
+                len(self._connections)
+            )
 
     def _check_and_set_dedup(self, user_id: int, action: str, diagram_type: str) -> bool:
         """
@@ -219,7 +223,7 @@ class ActivityStreamService:
             # If was_set is False, key already exists (duplicate)
             return not was_set  # Return True if duplicate
         except Exception as e:
-            logger.error(f"[ActivityStream] Error checking dedup in Redis: {e}")
+            logger.error("[ActivityStream] Error checking dedup in Redis: %s", e)
             # On error, allow broadcast (fail open)
             return False
 
@@ -243,7 +247,7 @@ class ActivityStreamService:
                     # Set TTL
                     redis.expire(ACTIVITIES_KEY, ACTIVITIES_TTL_SECONDS)
             except Exception as e:
-                logger.error(f"[ActivityStream] Error storing activity in Redis: {e}")
+                logger.error("[ActivityStream] Error storing activity in Redis: %s", e)
 
         # Fallback: in-memory storage (when Redis unavailable)
         self._memory_activities.insert(0, activity)
@@ -277,7 +281,7 @@ class ActivityStreamService:
         # This prevents multiple broadcasts when auto-complete makes concurrent requests
         is_duplicate = self._check_and_set_dedup(user_id, action, diagram_type)
         if is_duplicate:
-            logger.debug(f"[ActivityStream] Skipping duplicate activity: user {user_id}, {action} {diagram_type}")
+            logger.debug("[ActivityStream] Skipping duplicate activity: user %s, %s %s", user_id, action, diagram_type)
             return
 
         # Mask user name for privacy
@@ -306,14 +310,14 @@ class ActivityStreamService:
             try:
                 await queue.put(activity_json)
             except Exception as e:
-                logger.warning(f"[ActivityStream] Error broadcasting to {connection_id}: {e}")
+                logger.warning("[ActivityStream] Error broadcasting to %s: %s", connection_id, e)
                 disconnected.append(connection_id)
 
         # Remove disconnected connections
         for conn_id in disconnected:
             self.remove_connection(conn_id)
 
-        logger.debug(f"[ActivityStream] Broadcasted activity: {masked_username} {action} {diagram_type}")
+        logger.debug("[ActivityStream] Broadcasted activity: %s %s %s", masked_username, action, diagram_type)
 
     def get_recent_activities(self, limit: int = 50) -> list:
         """
@@ -338,7 +342,7 @@ class ActivityStreamService:
                             continue
                     return activities
             except Exception as e:
-                logger.error(f"[ActivityStream] Error getting activities from Redis: {e}")
+                logger.error("[ActivityStream] Error getting activities from Redis: %s", e)
 
         # Fallback: in-memory
         return self._memory_activities[:limit]

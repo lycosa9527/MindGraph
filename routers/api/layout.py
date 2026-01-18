@@ -1,4 +1,4 @@
-﻿"""
+"""
 layout module.
 """
 from typing import Optional
@@ -9,6 +9,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from models import RecalculateLayoutRequest
 from models.auth import User
 from utils.auth import get_current_user_or_api_key
+from agents.mind_maps.mind_map_agent import MindMapAgent
 
 """
 Layout Recalculation API Router
@@ -50,9 +51,6 @@ async def recalculate_mindmap_layout(
                 detail="Invalid spec: 'topic' field is required for mindmaps"
             )
 
-        # Import MindMapAgent
-        from agents.mind_maps.mind_map_agent import MindMapAgent
-
         # Create agent instance
         mind_map_agent = MindMapAgent(model='qwen')
 
@@ -65,7 +63,8 @@ async def recalculate_mindmap_layout(
                 detail="Failed to calculate layout"
             )
 
-        logger.debug(f"[RecalculateLayout] Layout recalculated for {len(spec.get('children', []))} branches")
+        branches_count = len(spec.get('children', []))
+        logger.debug("[RecalculateLayout] Layout recalculated for %s branches", branches_count)
 
         return {
             'success': True,
@@ -73,7 +72,7 @@ async def recalculate_mindmap_layout(
         }
 
     except Exception as e:
-        logger.error(f"[RecalculateLayout] Error: {str(e)}")
+        logger.error("[RecalculateLayout] Error: %s", str(e))
         raise HTTPException(
             status_code=500,
             detail=f"Layout recalculation failed: {str(e)}"

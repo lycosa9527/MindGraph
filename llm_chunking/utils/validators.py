@@ -1,4 +1,4 @@
-﻿"""
+"""
 Chunk validation utilities.
 """
 
@@ -47,7 +47,7 @@ class ChunkValidator:
             return False
 
         if not chunk.text or not chunk.text.strip():
-            logger.warning(f"Chunk {chunk.chunk_index} is empty")
+            logger.warning("Chunk %s is empty", chunk.chunk_index)
             return False
 
         return True
@@ -83,7 +83,7 @@ class ChunkValidator:
             True if valid
         """
         if not parent.children:
-            logger.warning(f"Parent chunk {parent.chunk_index} has no children")
+            logger.warning("Parent chunk %s has no children", parent.chunk_index)
             return False
 
         # Validate all children

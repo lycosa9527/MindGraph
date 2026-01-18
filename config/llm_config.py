@@ -11,15 +11,15 @@ logger = logging.getLogger(__name__)
 
 class LLMConfigMixin:
     """Mixin class for LLM configuration properties.
-    
+
     This mixin expects the class to inherit from BaseConfig or provide
     a _get_cached_value method.
     """
-    
+
     if TYPE_CHECKING:
-        def _get_cached_value(self, key: str, default: Any = None) -> Any:
+        def _get_cached_value(self, _key: str, _default: Any = None) -> Any:
             """Type stub: method provided by BaseConfig."""
-            ...
+            return _default
 
     @property
     def QWEN_API_KEY(self):

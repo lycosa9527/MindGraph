@@ -8,6 +8,8 @@ import threading
 import time
 
 from services.redis.redis_client import is_redis_available, get_redis
+from config.database import SessionLocal, check_disk_space
+from models.token_usage import TokenUsage
 
 """
 Redis Token Buffer
@@ -156,19 +158,20 @@ class RedisTokenBuffer:
                     flush_reason = f"interval ({time_since_flush:.0f}s >= {BATCH_INTERVAL}s)"
 
                 if should_flush:
-                    logger.debug(f"[TokenBuffer] Flush triggered: {flush_reason}")
+                    logger.debug("[TokenBuffer] Flush triggered: %s", flush_reason)
                     await self._flush_buffer()
 
             except asyncio.CancelledError:
                 logger.debug("[TokenBuffer] Flush worker cancelled")
                 break
             except Exception as e:
-                logger.error(f"[TokenBuffer] Flush worker error: {e}", exc_info=True)
+                logger.error("[TokenBuffer] Flush worker error: %s", e, exc_info=True)
                 await asyncio.sleep(5)
 
         # Final flush on shutdown
         if self._get_buffer_size() > 0:
-            logger.info(f"[TokenBuffer] Final flush: {self._get_buffer_size()} records")
+            buffer_size = self._get_buffer_size()
+            logger.info("[TokenBuffer] Final flush: %s records", buffer_size)
             await self._flush_buffer()
 
         logger.debug("[TokenBuffer] Flush worker stopped")
@@ -200,9 +203,6 @@ class RedisTokenBuffer:
         start_time = time.time()
 
         try:
-            from config.database import SessionLocal, check_disk_space
-            from models.token_usage import TokenUsage
-
             # Check disk space
             try:
                 if not check_disk_space(required_mb=50):
@@ -227,21 +227,22 @@ class RedisTokenBuffer:
                 self._update_stats(record_count)
 
                 total_tokens = sum(r.get('total_tokens', 0) for r in records)
+                write_time_ms = write_time * 1000
                 logger.info(
-                    f"[TokenBuffer] Wrote {record_count} records ({total_tokens} tokens) "
-                    f"in {write_time*1000:.1f}ms | Total: {self._total_written}"
+                    "[TokenBuffer] Wrote %s records (%s tokens) in %.1fms | Total: %s",
+                    record_count, total_tokens, write_time_ms, self._total_written
                 )
 
             except Exception as e:
                 db.rollback()
                 self._total_dropped += record_count
-                logger.error(f"[TokenBuffer] Database write failed: {e}")
+                logger.error("[TokenBuffer] Database write failed: %s", e)
             finally:
                 db.close()
 
         except Exception as e:
             self._total_dropped += record_count
-            logger.error(f"[TokenBuffer] Flush failed: {e}")
+            logger.error("[TokenBuffer] Flush failed: %s", e)
 
     def _pop_records(self, count: int) -> List[Dict]:
         """Pop up to count records from buffer."""
@@ -267,7 +268,7 @@ class RedisTokenBuffer:
                             pass
                     return records
                 except Exception as e:
-                    logger.error(f"[TokenBuffer] Redis pop failed: {e}")
+                    logger.error("[TokenBuffer] Redis pop failed: %s", e)
 
         # Fallback to memory
         with self._memory_lock:
@@ -367,7 +368,7 @@ class RedisTokenBuffer:
             return self._push_record(record)
 
         except Exception as e:
-            logger.error(f"[TokenBuffer] Failed to buffer record: {e}")
+            logger.error("[TokenBuffer] Failed to buffer record: %s", e)
             return False
 
     def _push_record(self, record: Dict) -> bool:
@@ -386,7 +387,7 @@ class RedisTokenBuffer:
                     redis.rpush(BUFFER_KEY, json.dumps(record))
                     return True
                 except Exception as e:
-                    logger.error(f"[TokenBuffer] Redis push failed: {e}")
+                    logger.error("[TokenBuffer] Redis push failed: %s", e)
 
         # Fallback to memory
         with self._memory_lock:

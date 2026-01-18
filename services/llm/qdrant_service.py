@@ -13,8 +13,10 @@ Proprietary License
 from typing import List, Optional, Dict, Any
 import logging
 import os
+import random
 
 import qdrant_client
+from config.settings import config
 from qdrant_client.http import models as rest
 from qdrant_client.http.models import Distance
 
@@ -53,7 +55,7 @@ class QdrantService:
 
         if qdrant_url:
             # Full URL specified (e.g., http://localhost:6333)
-            logger.info(f"[Qdrant] Connecting to server: {qdrant_url}")
+            logger.info("[Qdrant] Connecting to server: %s", qdrant_url)
             self.client = qdrant_client.QdrantClient(url=qdrant_url)
         elif qdrant_host:
             # Host:port specified (e.g., localhost:6333)
@@ -63,7 +65,7 @@ class QdrantService:
             else:
                 host = qdrant_host
                 port = 6333
-            logger.info(f"[Qdrant] Connecting to server: {host}:{port}")
+            logger.info("[Qdrant] Connecting to server: %s:%s", host, port)
             self.client = qdrant_client.QdrantClient(host=host, port=port)
         else:
             raise ValueError(
@@ -81,14 +83,15 @@ class QdrantService:
         # Validate compression is enabled (critical for storage efficiency)
         if not self.use_compression:
             logger.warning(
-                f"[Qdrant] Compression is DISABLED (QDRANT_COMPRESSION={self.compression_type}). "
-                f"This will result in ~4x larger storage usage. "
-                f"Recommendation: Set QDRANT_COMPRESSION=SQ8 for maximum efficiency."
+                "[Qdrant] Compression is DISABLED (QDRANT_COMPRESSION=%s). "
+                "This will result in ~4x larger storage usage. "
+                "Recommendation: Set QDRANT_COMPRESSION=SQ8 for maximum efficiency.",
+                self.compression_type
             )
         else:
             logger.info(
-                f"[Qdrant] Initialized with compression={self.compression_type} "
-                f"(~4x storage savings enabled)"
+                "[Qdrant] Initialized with compression=%s (~4x storage savings enabled)",
+                self.compression_type
             )
 
     def _get_collection_name(self, user_id: int) -> str:
@@ -103,8 +106,6 @@ class QdrantService:
             user_id: User ID
             vector_size: Embedding vector size (default: from config.EMBEDDING_DIMENSIONS or 768)
         """
-        from config.settings import config
-
         if vector_size is None:
             # Use optimized dimensions from config (default: 768 for compression efficiency)
             vector_size = config.EMBEDDING_DIMENSIONS or 768
@@ -116,7 +117,7 @@ class QdrantService:
             existing_names = [col.name for col in collections.collections]
 
             if collection_name in existing_names:
-                logger.debug(f"[Qdrant] Collection already exists for user {user_id}")
+                logger.debug("[Qdrant] Collection already exists for user %s", user_id)
                 return
 
             # Create collection with compression
@@ -209,12 +210,12 @@ class QdrantService:
                 )
             except Exception as e:
                 # Indexes might already exist, ignore
-                logger.debug(f"[Qdrant] Payload index creation (may already exist): {e}")
+                logger.debug("[Qdrant] Payload index creation (may already exist): %s", e)
 
-            logger.info(f"[Qdrant] Created collection for user {user_id} with compression={self.compression_type}")
+            logger.info("[Qdrant] Created collection for user %s with compression=%s", user_id, self.compression_type)
 
         except Exception as e:
-            logger.error(f"[Qdrant] Failed to create collection for user {user_id}: {e}")
+            logger.error("[Qdrant] Failed to create collection for user %s: %s", user_id, e)
             raise
 
     def get_user_collection(self, user_id: int) -> Optional[str]:
@@ -257,14 +258,13 @@ class QdrantService:
             metadata: Optional list of metadata dicts
         """
         if not chunk_ids or not embeddings:
-            logger.warning(f"[Qdrant] Empty chunk_ids or embeddings for user {user_id}")
+            logger.warning("[Qdrant] Empty chunk_ids or embeddings for user %s", user_id)
             return
 
         if len(chunk_ids) != len(embeddings):
             raise ValueError(f"chunk_ids length ({len(chunk_ids)}) != embeddings length ({len(embeddings)})")
 
         # Get vector size from first embedding or use optimized default
-        from config.settings import config
         vector_size = len(embeddings[0]) if embeddings else (config.EMBEDDING_DIMENSIONS or 768)
 
         # Create collection if needed
@@ -298,9 +298,9 @@ class QdrantService:
                 collection_name=collection_name,
                 points=points,
             )
-            logger.info(f"[Qdrant] Added {len(chunk_ids)} embeddings for user {user_id}")
+            logger.info("[Qdrant] Added %s embeddings for user %s", len(chunk_ids), user_id)
         except Exception as e:
-            logger.error(f"[Qdrant] Failed to add embeddings for user {user_id}: {e}")
+            logger.error("[Qdrant] Failed to add embeddings for user %s: %s", user_id, e)
             raise
 
     def search(
@@ -328,7 +328,7 @@ class QdrantService:
         """
         collection_name = self.get_user_collection(user_id)
         if not collection_name:
-            logger.warning(f"[Qdrant] No collection found for user {user_id}")
+            logger.warning("[Qdrant] No collection found for user %s", user_id)
             return []
 
         # Build filter for user_id (always required)
@@ -408,8 +408,8 @@ class QdrantService:
         query_filter = rest.Filter(must=filter_conditions) if filter_conditions else None
 
         logger.debug(
-            f"[Qdrant] search: collection={collection_name}, top_k={top_k}, "
-            f"score_threshold={score_threshold}, filter_conditions={len(filter_conditions)}"
+            "[Qdrant] search: collection=%s, top_k=%s, score_threshold=%s, filter_conditions=%s",
+            collection_name, top_k, score_threshold, len(filter_conditions)
         )
 
         try:
@@ -423,7 +423,7 @@ class QdrantService:
                 with_payload=True,
             ).points
 
-            logger.debug(f"[Qdrant] Raw search returned {len(results)} results")
+            logger.debug("[Qdrant] Raw search returned %s results", len(results))
 
             # Process results
             chunk_results = []
@@ -433,7 +433,13 @@ class QdrantService:
                     try:
                         chunk_id = int(chunk_id_str)
                     except (ValueError, TypeError):
-                        logger.debug(f"[Qdrant] Skipping result with invalid chunk_id: {chunk_id_str}, payload keys: {result.payload.keys()}")
+                        payload_keys = list(result.payload.keys()) if result.payload else []
+                        logger.debug(
+                            "[Qdrant] Skipping result with invalid chunk_id: "
+                            "%s, payload keys: %s",
+                            chunk_id_str,
+                            payload_keys
+                        )
                         continue
 
                     chunk_results.append({
@@ -442,11 +448,11 @@ class QdrantService:
                         "metadata": result.payload,
                     })
 
-            logger.debug(f"[Qdrant] Found {len(chunk_results)} valid results for user {user_id}")
+            logger.debug("[Qdrant] Found %s valid results for user %s", len(chunk_results), user_id)
             return chunk_results
 
         except Exception as e:
-            logger.error(f"[Qdrant] Search failed for user {user_id}: {e}")
+            logger.error("[Qdrant] Search failed for user %s: %s", user_id, e)
             raise
 
     def delete_chunks(self, user_id: int, chunk_ids: List[int]) -> None:
@@ -462,7 +468,7 @@ class QdrantService:
 
         collection_name = self.get_user_collection(user_id)
         if not collection_name:
-            logger.warning(f"[Qdrant] No collection found for user {user_id}")
+            logger.warning("[Qdrant] No collection found for user %s", user_id)
             return
 
         try:
@@ -473,9 +479,9 @@ class QdrantService:
                     points=chunk_ids
                 ),
             )
-            logger.info(f"[Qdrant] Deleted {len(chunk_ids)} chunks for user {user_id}")
+            logger.info("[Qdrant] Deleted %s chunks for user %s", len(chunk_ids), user_id)
         except Exception as e:
-            logger.error(f"[Qdrant] Failed to delete chunks for user {user_id}: {e}")
+            logger.error("[Qdrant] Failed to delete chunks for user %s: %s", user_id, e)
             raise
 
     def update_documents(
@@ -539,9 +545,9 @@ class QdrantService:
                 collection_name=collection_name,
                 points=points,
             )
-            logger.info(f"[Qdrant] Updated {len(chunk_ids)} embeddings for user {user_id}")
+            logger.info("[Qdrant] Updated %s embeddings for user %s", len(chunk_ids), user_id)
         except Exception as e:
-            logger.error(f"[Qdrant] Failed to update embeddings for user {user_id}: {e}")
+            logger.error("[Qdrant] Failed to update embeddings for user %s: %s", user_id, e)
             raise
 
     def delete_document(self, user_id: int, document_id: int) -> None:
@@ -554,7 +560,7 @@ class QdrantService:
         """
         collection_name = self.get_user_collection(user_id)
         if not collection_name:
-            logger.warning(f"[Qdrant] No collection found for user {user_id}")
+            logger.warning("[Qdrant] No collection found for user %s", user_id)
             return
 
         try:
@@ -576,9 +582,9 @@ class QdrantService:
                 collection_name=collection_name,
                 points_selector=rest.FilterSelector(filter=query_filter),
             )
-            logger.info(f"[Qdrant] Deleted document {document_id} for user {user_id}")
+            logger.info("[Qdrant] Deleted document %s for user %s", document_id, user_id)
         except Exception as e:
-            logger.error(f"[Qdrant] Failed to delete document {document_id} for user {user_id}: {e}")
+            logger.error("[Qdrant] Failed to delete document %s for user %s: %s", document_id, user_id, e)
             raise
 
     def delete_user_collection(self, user_id: int) -> None:
@@ -592,9 +598,9 @@ class QdrantService:
 
         try:
             self.client.delete_collection(collection_name=collection_name)
-            logger.info(f"[Qdrant] Deleted collection for user {user_id}")
+            logger.info("[Qdrant] Deleted collection for user %s", user_id)
         except Exception as e:
-            logger.warning(f"[Qdrant] Failed to delete collection for user {user_id}: {e}")
+            logger.warning("[Qdrant] Failed to delete collection for user %s: %s", user_id, e)
             # Don't raise - collection might not exist
 
     def get_collection_size(self, user_id: int) -> int:
@@ -615,7 +621,7 @@ class QdrantService:
             info = self.client.get_collection(collection_name)
             return info.points_count
         except Exception as e:
-            logger.error(f"[Qdrant] Failed to get collection size for user {user_id}: {e}")
+            logger.error("[Qdrant] Failed to get collection size for user %s: %s", user_id, e)
             return 0
 
     def get_compression_metrics(self, user_id: int) -> Dict[str, Any]:
@@ -668,8 +674,15 @@ class QdrantService:
                 # Compressed: 1 byte per dimension (SQ8) + metadata overhead
                 bytes_per_vector_compressed = vector_size * 1
                 estimated_compressed_size = points_count * (bytes_per_vector_compressed + metadata_overhead)
-                compression_ratio = estimated_uncompressed_size / estimated_compressed_size if estimated_compressed_size > 0 else 1.0
-                storage_savings_percent = (1.0 - (estimated_compressed_size / estimated_uncompressed_size)) * 100 if estimated_uncompressed_size > 0 else 0.0
+                compression_ratio = (
+                    estimated_uncompressed_size / estimated_compressed_size
+                    if estimated_compressed_size > 0 else 1.0
+                )
+                storage_savings_percent = (
+                    (1.0 - (estimated_compressed_size /
+                            estimated_uncompressed_size)) * 100
+                    if estimated_uncompressed_size > 0 else 0.0
+                )
             else:
                 estimated_compressed_size = estimated_uncompressed_size
                 compression_ratio = 1.0
@@ -686,7 +699,7 @@ class QdrantService:
                 "storage_savings_percent": round(storage_savings_percent, 1)
             }
         except Exception as e:
-            logger.error(f"[Qdrant] Failed to get compression metrics for user {user_id}: {e}")
+            logger.error("[Qdrant] Failed to get compression metrics for user %s: %s", user_id, e)
             return {
                 "compression_enabled": False,
                 "compression_type": None,
@@ -726,7 +739,7 @@ class QdrantService:
             # Check if collection exists
             collection_name = self.get_user_collection(user_id)
             if not collection_name:
-                result["errors"].append(f"Collection does not exist for user {user_id}")
+                result["errors"].append("Collection does not exist for user %s" % user_id)
                 return result
 
             result["collection_exists"] = True
@@ -774,7 +787,6 @@ class QdrantService:
             # Test search with a random vector (to check if search works)
             if result["vector_dimensions"]:
                 try:
-                    import random
                     test_vector = [random.random() for _ in range(result["vector_dimensions"])]
                     test_results = self.client.query_points(
                         collection_name=collection_name,

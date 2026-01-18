@@ -1,19 +1,4 @@
-from datetime import datetime
-import logging
-
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
-
-from models.auth import User
-from models.requests import DiagramCreateRequest, DiagramUpdateRequest
-from models.responses import DiagramListItem, DiagramListResponse, DiagramResponse
-from services.redis.redis_diagram_cache import get_diagram_cache
-from utils.auth import get_current_user
-
-from .helpers import check_endpoint_rate_limit, get_rate_limit_identifier
-
-"""
-Diagram Storage API Router
-===========================
+"""Diagram Storage API Router.
 
 API endpoints for user diagram storage:
 - POST /api/diagrams - Create new diagram
@@ -31,10 +16,18 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+from datetime import datetime
+import logging
 
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 
+from models.auth import User
+from models.requests_diagram import DiagramCreateRequest, DiagramUpdateRequest
+from models.responses import DiagramListItem, DiagramListResponse, DiagramResponse
+from services.redis.redis_diagram_cache import get_diagram_cache
+from utils.auth import get_current_user
 
-
+from .helpers import check_endpoint_rate_limit, get_rate_limit_identifier
 
 logger = logging.getLogger(__name__)
 
@@ -81,7 +74,10 @@ async def create_diagram(
     if not diagram:
         raise HTTPException(status_code=500, detail="Diagram created but failed to retrieve")
 
-    logger.info(f"[Diagrams] Created diagram {diagram_id} for user {current_user.id}")
+    logger.info(
+        "[Diagrams] Created diagram %s for user %s",
+        diagram_id, current_user.id
+    )
 
     return DiagramResponse(
         id=diagram['id'],
@@ -215,7 +211,10 @@ async def update_diagram(
     if not diagram:
         raise HTTPException(status_code=500, detail="Diagram updated but failed to retrieve")
 
-    logger.info(f"[Diagrams] Updated diagram {diagram_id} for user {current_user.id}")
+    logger.info(
+        "[Diagrams] Updated diagram %s for user %s",
+        diagram_id, current_user.id
+    )
 
     return DiagramResponse(
         id=diagram['id'],
@@ -252,7 +251,10 @@ async def delete_diagram(
             raise HTTPException(status_code=404, detail=error)
         raise HTTPException(status_code=400, detail=error or "Failed to delete diagram")
 
-    logger.info(f"[Diagrams] Deleted diagram {diagram_id} for user {current_user.id}")
+    logger.info(
+        "[Diagrams] Deleted diagram %s for user %s",
+        diagram_id, current_user.id
+    )
 
     return {"success": True, "message": "Diagram deleted"}
 
@@ -290,7 +292,10 @@ async def duplicate_diagram(
     if not diagram:
         raise HTTPException(status_code=500, detail="Diagram duplicated but failed to retrieve")
 
-    logger.info(f"[Diagrams] Duplicated diagram {diagram_id} to {new_id} for user {current_user.id}")
+    logger.info(
+        "[Diagrams] Duplicated diagram %s to %s for user %s",
+        diagram_id, new_id, current_user.id
+    )
 
     return DiagramResponse(
         id=diagram['id'],
@@ -329,6 +334,9 @@ async def pin_diagram(
         raise HTTPException(status_code=400, detail=error or "Failed to pin diagram")
 
     action = "Pinned" if pinned else "Unpinned"
-    logger.info(f"[Diagrams] {action} diagram {diagram_id} for user {current_user.id}")
+    logger.info(
+        "[Diagrams] %s diagram %s for user %s",
+        action, diagram_id, current_user.id
+    )
 
     return {"success": True, "message": f"Diagram {action.lower()}", "is_pinned": pinned}

@@ -123,7 +123,7 @@ class DebateVerseService:
         self.db.add_all(participants)
         self.db.commit()
 
-        logger.info(f"Created debate session {session.id} with topic: {topic}")
+        logger.info("Created debate session %s with topic: %s", session.id, topic)
         return session
 
     def coin_toss(self) -> str:
@@ -149,7 +149,7 @@ class DebateVerseService:
                 session.started_at = datetime.utcnow()
             self.db.commit()
 
-        logger.info(f"Coin toss result for session {self.session_id}: {result}")
+        logger.info("Coin toss result for session %s: %s", self.session_id, result)
         return result
 
     def get_next_speaker(self, stage: str) -> Optional[DebateParticipant]:
@@ -266,7 +266,7 @@ class DebateVerseService:
         enable_thinking = model.lower() != 'kimi'
 
         # Generate response using LLM service
-        logger.info(f"Generating response for {participant.name} ({model}) in stage {stage}")
+        logger.info("Generating response for %s (%s) in stage %s", participant.name, model, stage)
 
         # Use chat_stream to get response (non-streaming for now, can be enhanced)
         response_content = ""
@@ -300,7 +300,7 @@ class DebateVerseService:
         self.db.add(message)
         self.db.commit()
 
-        logger.info(f"Generated response for {participant.name}: {len(response_content)} chars")
+        logger.info("Generated response for %s: %s chars", participant.name, len(response_content))
         return response_content
 
     async def generate_judge_commentary(
@@ -335,7 +335,7 @@ class DebateVerseService:
         # Disable thinking for Kimi model
         enable_thinking = model.lower() != 'kimi'
 
-        logger.info(f"Generating judge commentary for stage {stage}")
+        logger.info("Generating judge commentary for stage %s", stage)
 
         response_content = ""
         async for chunk in llm_service.chat_stream(
@@ -353,7 +353,7 @@ class DebateVerseService:
                     response_content += chunk.get('content', '')
 
         # Save judge message
-        round_number = self._get_next_round_number(stage)
+        round_number = self.get_next_round_number(stage)
         message = DebateMessage(
             session_id=self.session_id,
             participant_id=judge.id,
@@ -393,7 +393,7 @@ class DebateVerseService:
         }
 
         if new_stage not in valid_transitions.get(session.current_stage, []):
-            logger.warning(f"Invalid stage transition: {session.current_stage} → {new_stage}")
+            logger.warning("Invalid stage transition: %s → %s", session.current_stage, new_stage)
             return False
 
         session.current_stage = new_stage
@@ -402,7 +402,7 @@ class DebateVerseService:
             session.completed_at = datetime.utcnow()
 
         self.db.commit()
-        logger.info(f"Advanced session {self.session_id} to stage {new_stage}")
+        logger.info("Advanced session %s to stage %s", self.session_id, new_stage)
         return True
 
     def _get_participant_by_role(self, role: str) -> Optional[DebateParticipant]:
@@ -416,7 +416,7 @@ class DebateVerseService:
         """Get participant by ID."""
         return self.db.query(DebateParticipant).filter_by(id=participant_id).first()
 
-    def _get_next_round_number(self, stage: str) -> int:
+    def get_next_round_number(self, stage: str) -> int:
         """Get next round number for stage."""
         max_round = self.db.query(DebateMessage).filter_by(
             session_id=self.session_id,
@@ -427,7 +427,7 @@ class DebateVerseService:
 
         return (max_round[0] if max_round else 0) + 1
 
-    def _get_message_type_for_stage(self, stage: str) -> str:
+    def get_message_type_for_stage(self, stage: str) -> str:
         """Get message type for stage."""
         mapping = {
             'coin_toss': 'coin_toss',

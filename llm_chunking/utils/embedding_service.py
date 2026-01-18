@@ -1,4 +1,4 @@
-﻿"""
+"""
 Embedding service wrapper for LLM chunking module.
 
 Provides a simple interface to DashScopeEmbeddingClient for semantic chunking.
@@ -14,6 +14,11 @@ Proprietary License
 import logging
 from typing import List, Optional
 import numpy as np
+
+try:
+    from clients.dashscope_embedding import get_embedding_client
+except ImportError:
+    get_embedding_client = None
 
 logger = logging.getLogger(__name__)
 
@@ -37,11 +42,12 @@ class EmbeddingService:
         self.embedding_client = embedding_client
         if embedding_client is None:
             try:
-                from clients.dashscope_embedding import get_embedding_client
+                if get_embedding_client is None:
+                    raise ImportError("get_embedding_client not available")
                 self.embedding_client = get_embedding_client()
                 logger.info("[EmbeddingService] Initialized with DashScope embedding client")
             except Exception as e:
-                logger.warning(f"[EmbeddingService] Embedding client not available: {e}")
+                logger.warning("[EmbeddingService] Embedding client not available: %s", e)
                 self.embedding_client = None
 
     def embed_texts(self, texts: List[str]) -> List[List[float]]:
@@ -68,7 +74,7 @@ class EmbeddingService:
             )
             return embeddings
         except Exception as e:
-            logger.error(f"[EmbeddingService] Failed to embed texts: {e}")
+            logger.error("[EmbeddingService] Failed to embed texts: %s", e)
             raise
 
     def cosine_similarity(self, embedding1: List[float], embedding2: List[float]) -> float:

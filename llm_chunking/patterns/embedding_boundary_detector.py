@@ -1,4 +1,4 @@
-﻿"""
+"""
 Embedding-based boundary detection using semantic similarity.
 
 Implements LlamaIndex-style semantic chunking using DashScope/Qwen embeddings:
@@ -236,7 +236,7 @@ class EmbeddingBoundaryDetector:
             for i, embedding in enumerate(embeddings):
                 combined_sentences[i]["combined_sentence_embedding"] = embedding
         except Exception as e:
-            logger.error(f"[EmbeddingBoundaryDetector] Failed to generate embeddings: {e}")
+            logger.error("[EmbeddingBoundaryDetector] Failed to generate embeddings: %s", e)
             return []
 
         # Step 4: Calculate cosine distances
@@ -394,5 +394,5 @@ class EmbeddingBoundaryDetector:
 
             return float(np.clip(confidence, 0.0, 1.0))
         except Exception as e:
-            logger.warning(f"[EmbeddingBoundaryDetector] Failed to calculate confidence: {e}")
+            logger.warning("[EmbeddingBoundaryDetector] Failed to calculate confidence: %s", e)
             return 0.5

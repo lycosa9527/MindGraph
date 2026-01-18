@@ -22,7 +22,7 @@ from sqlalchemy.orm import Session
 from config.database import get_db
 from models.messages import Messages, Language
 from models.auth import User, Organization
-from models.requests import DemoPasskeyRequest, LoginRequest, LoginWithSMSRequest
+from models.requests_auth import DemoPasskeyRequest, LoginRequest, LoginWithSMSRequest
 from services.redis.redis_org_cache import org_cache
 from services.redis.redis_rate_limiter import (
     check_login_rate_limit,
@@ -31,13 +31,16 @@ from services.redis.redis_rate_limiter import (
     RedisRateLimiter
 )
 from services.monitoring.dashboard_session import get_dashboard_session_manager
+from services.redis.redis_diagram_cache import get_diagram_cache
 from services.redis.redis_session_manager import get_session_manager, get_refresh_token_manager
 from services.redis.redis_user_cache import user_cache
 from utils.auth import (
     AUTH_MODE,
     BAYI_DEFAULT_ORG_CODE,
+    DEMO_PASSKEY,
     LOCKOUT_DURATION_MINUTES,
     MAX_LOGIN_ATTEMPTS,
+    PUBLIC_DASHBOARD_PASSKEY,
     RATE_LIMIT_WINDOW_MINUTES,
     check_account_lockout,
     create_access_token,
@@ -68,14 +71,14 @@ def _preload_user_diagrams(user_id: int):
     Non-blocking - runs in background after login returns.
     """
     try:
-        from services.redis.redis_diagram_cache import get_diagram_cache
-
         async def _do_preload():
             try:
                 cache = get_diagram_cache()
                 await cache.preload_user_diagrams(user_id)
             except Exception as e:
-                logging.getLogger(__name__).debug(f"[Login] Diagram preload failed for user {user_id}: {e}")
+                logging.getLogger(__name__).debug(
+                    "[Login] Diagram preload failed for user %s: %s", user_id, e
+                )
 
         # Schedule as background task
         try:
@@ -111,9 +114,9 @@ async def login(
     - Failed attempt tracking in database
     """
     # Check rate limit by phone (Redis-backed, shared across workers)
-    is_allowed, rate_limit_error = check_login_rate_limit(request.phone)
+    is_allowed, _ = check_login_rate_limit(request.phone)
     if not is_allowed:
-        logger.warning(f"Rate limit exceeded for {request.phone}")
+        logger.warning("Rate limit exceeded for %s", request.phone)
         error_msg = Messages.error("too_many_login_attempts", lang, RATE_LIMIT_WINDOW_MINUTES)
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
@@ -238,7 +241,7 @@ async def login(
     if org:
         is_active = org.is_active if hasattr(org, 'is_active') else True
         if not is_active:
-            logger.warning(f"Login blocked: Organization {org.code} is locked")
+            logger.warning("Login blocked: Organization %s is locked", org.code)
             error_msg = Messages.error("organization_locked", lang, org.name)
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
@@ -247,7 +250,10 @@ async def login(
 
         if hasattr(org, 'expires_at') and org.expires_at:
             if org.expires_at < datetime.now(timezone.utc):
-                logger.warning(f"Login blocked: Organization {org.code} expired on {org.expires_at}")
+                logger.warning(
+                    "Login blocked: Organization %s expired on %s",
+                    org.code, org.expires_at
+                )
                 expired_date = org.expires_at.strftime("%Y-%m-%d")
                 error_msg = Messages.error("organization_expired", lang, org.name, expired_date)
                 raise HTTPException(
@@ -273,7 +279,12 @@ async def login(
     accept_language = http_request.headers.get("Accept-Language", "")
     sec_ch_platform = http_request.headers.get("Sec-CH-UA-Platform", "")
     sec_ch_mobile = http_request.headers.get("Sec-CH-UA-Mobile", "")
-    logger.info(f"[TokenAudit] Login device fingerprint: user={user.id}, device_hash={device_hash}, UA={user_agent[:50]}..., lang={accept_language[:20]}, platform={sec_ch_platform}, mobile={sec_ch_mobile}")
+    logger.info(
+        "[TokenAudit] Login device fingerprint: user=%s, device_hash=%s, "
+        "UA=%s..., lang=%s, platform=%s, mobile=%s",
+        user.id, device_hash, user_agent[:50], accept_language[:20],
+        sec_ch_platform, sec_ch_mobile
+    )
 
     # Store access token session in Redis (automatically limits concurrent sessions)
     session_manager.store_session(user.id, token, device_hash=device_hash)
@@ -292,10 +303,16 @@ async def login(
     set_auth_cookies(response, token, refresh_token_value, http_request)
 
     org_name = org.name if org else "None"
-    logger.info(f"[TokenAudit] Login success: user={user.id}, phone={user.phone}, org={org_name}, method=captcha, ip={client_ip}, device={device_hash}")
+    logger.info(
+        "[TokenAudit] Login success: user=%s, phone=%s, org=%s, "
+        "method=captcha, ip=%s, device=%s",
+        user.id, user.phone, org_name, client_ip, device_hash
+    )
 
     # Track user activity
-    track_user_activity(user, 'login', {'method': 'captcha', 'org': org_name}, http_request)
+    track_user_activity(
+        user, 'login', {'method': 'captcha', 'org': org_name}, http_request
+    )
 
     # Preload diagram list for instant library access (fire-and-forget)
     _preload_user_diagrams(user.id)
@@ -351,7 +368,7 @@ async def login_with_sms(
     if org:
         is_active = org.is_active if hasattr(org, 'is_active') else True
         if not is_active:
-            logger.warning(f"SMS login blocked: Organization {org.code} is locked")
+            logger.warning("SMS login blocked: Organization %s is locked", org.code)
             error_msg = Messages.error("organization_locked", lang, org.name)
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
@@ -360,7 +377,7 @@ async def login_with_sms(
 
         if hasattr(org, 'expires_at') and org.expires_at:
             if org.expires_at < datetime.now(timezone.utc):
-                logger.warning(f"SMS login blocked: Organization {org.code} expired")
+                logger.warning("SMS login blocked: Organization %s expired", org.code)
                 expired_date = org.expires_at.strftime("%Y-%m-%d")
                 error_msg = Messages.error("organization_expired", lang, org.name, expired_date)
                 raise HTTPException(
@@ -402,7 +419,12 @@ async def login_with_sms(
     accept_language = http_request.headers.get("Accept-Language", "")
     sec_ch_platform = http_request.headers.get("Sec-CH-UA-Platform", "")
     sec_ch_mobile = http_request.headers.get("Sec-CH-UA-Mobile", "")
-    logger.info(f"[TokenAudit] Login device fingerprint: user={user.id}, device_hash={device_hash}, UA={user_agent[:50]}..., lang={accept_language[:20]}, platform={sec_ch_platform}, mobile={sec_ch_mobile}")
+    logger.info(
+        "[TokenAudit] Login device fingerprint: user=%s, device_hash=%s, "
+        "UA=%s..., lang=%s, platform=%s, mobile=%s",
+        user.id, device_hash, user_agent[:50], accept_language[:20],
+        sec_ch_platform, sec_ch_mobile
+    )
 
     # Store access token session in Redis (automatically limits concurrent sessions)
     session_manager.store_session(user.id, token, device_hash=device_hash)
@@ -429,10 +451,16 @@ async def login_with_sms(
             org_cache.cache_org(org)
     org_name = org.name if org else "None"
 
-    logger.info(f"[TokenAudit] Login success: user={user.id}, phone={user.phone}, org={org_name}, method=sms, ip={client_ip}, device={device_hash}")
+    logger.info(
+        "[TokenAudit] Login success: user=%s, phone=%s, org=%s, "
+        "method=sms, ip=%s, device=%s",
+        user.id, user.phone, org_name, client_ip, device_hash
+    )
 
     # Track user activity
-    track_user_activity(user, 'login', {'method': 'sms', 'org': org_name}, http_request)
+    track_user_activity(
+        user, 'login', {'method': 'sms', 'org': org_name}, http_request
+    )
 
     # Preload diagram list for instant library access (fire-and-forget)
     _preload_user_diagrams(user.id)
@@ -468,13 +496,19 @@ async def verify_demo(
     In bayi mode, creates bayi-specific users.
     """
     # Enhanced logging for debugging (without revealing actual passkeys)
-    from utils.auth import DEMO_PASSKEY
     received_length = len(passkey_request.passkey) if passkey_request.passkey else 0
     expected_length = len(DEMO_PASSKEY)
-    logger.info(f"Passkey verification attempt ({AUTH_MODE} mode) - Received: {received_length} chars, Expected: {expected_length} chars")
+    logger.info(
+        "Passkey verification attempt (%s mode) - Received: %s chars, "
+        "Expected: %s chars",
+        AUTH_MODE, received_length, expected_length
+    )
 
     if not verify_demo_passkey(passkey_request.passkey):
-        logger.warning("Passkey verification failed - Check .env file for whitespace in DEMO_PASSKEY or ADMIN_DEMO_PASSKEY")
+        logger.warning(
+            "Passkey verification failed - Check .env file for whitespace "
+            "in DEMO_PASSKEY or ADMIN_DEMO_PASSKEY"
+        )
         error_msg = Messages.error("invalid_passkey", lang)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -512,12 +546,12 @@ async def verify_demo(
                 db.add(org)
                 db.commit()
                 db.refresh(org)
-                logger.info(f"Created bayi organization: {BAYI_DEFAULT_ORG_CODE}")
+                logger.info("Created bayi organization: %s", BAYI_DEFAULT_ORG_CODE)
                 # Cache the newly created org (non-blocking)
                 try:
                     org_cache.cache_org(org)
                 except Exception as e:
-                    logger.warning(f"Failed to cache bayi org: {e}")
+                    logger.warning("Failed to cache bayi org: %s", e)
         else:
             # Demo mode: use first available organization
             org = db.query(Organization).first()
@@ -540,7 +574,7 @@ async def verify_demo(
             db.add(auth_user)
             db.commit()
             db.refresh(auth_user)
-            logger.info(f"Created new {AUTH_MODE} user: {user_phone}")
+            logger.info("Created new %s user: %s", AUTH_MODE, user_phone)
 
             # Cache the newly created user and org (non-blocking)
             try:
@@ -548,11 +582,11 @@ async def verify_demo(
                 if org:
                     org_cache.cache_org(org)
             except Exception as e:
-                logger.warning(f"Failed to cache demo user/org: {e}")
+                logger.warning("Failed to cache demo user/org: %s", e)
         except Exception as e:
             # If creation fails, try to rollback and check if user was somehow created
             db.rollback()
-            logger.error(f"Failed to create {AUTH_MODE} user: {e}")
+            logger.error("Failed to create %s user: %s", AUTH_MODE, e)
 
             # Try to get the user again in case it was created by another request (use cache)
             auth_user = user_cache.get_by_phone(user_phone)
@@ -561,7 +595,7 @@ async def verify_demo(
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                     detail=error_msg
-                )
+                ) from e
 
     # Session management: Allow multiple concurrent sessions (up to MAX_CONCURRENT_SESSIONS)
     session_manager = get_session_manager()
@@ -581,7 +615,12 @@ async def verify_demo(
     accept_language = request.headers.get("Accept-Language", "")
     sec_ch_platform = request.headers.get("Sec-CH-UA-Platform", "")
     sec_ch_mobile = request.headers.get("Sec-CH-UA-Mobile", "")
-    logger.info(f"[TokenAudit] Login device fingerprint: user={auth_user.id}, device_hash={device_hash}, UA={user_agent[:50]}..., lang={accept_language[:20]}, platform={sec_ch_platform}, mobile={sec_ch_mobile}")
+    logger.info(
+        "[TokenAudit] Login device fingerprint: user=%s, device_hash=%s, "
+        "UA=%s..., lang=%s, platform=%s, mobile=%s",
+        auth_user.id, device_hash, user_agent[:50], accept_language[:20],
+        sec_ch_platform, sec_ch_mobile
+    )
 
     # Store access token session in Redis (automatically limits concurrent sessions)
     session_manager.store_session(auth_user.id, token, device_hash=device_hash)
@@ -599,8 +638,11 @@ async def verify_demo(
     # Set cookies (both access and refresh tokens)
     set_auth_cookies(response, token, refresh_token_value, request)
 
-    log_msg = f"[TokenAudit] Login success: user={auth_user.id}, mode={AUTH_MODE}, admin={is_admin_access}, ip={client_ip}, device={device_hash}"
-    logger.info(log_msg)
+    logger.info(
+        "[TokenAudit] Login success: user=%s, mode=%s, admin=%s, "
+        "ip=%s, device=%s",
+        auth_user.id, AUTH_MODE, is_admin_access, client_ip, device_hash
+    )
 
     # Preload diagram list for instant library access (fire-and-forget)
     _preload_user_diagrams(auth_user.id)
@@ -643,20 +685,26 @@ async def verify_public_dashboard(
     )
 
     if not is_allowed:
-        logger.warning(f"Dashboard passkey rate limit exceeded for IP {client_ip} ({attempt_count} attempts)")
+        logger.warning(
+            "Dashboard passkey rate limit exceeded for IP %s (%s attempts)",
+            client_ip, attempt_count
+        )
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
             detail=error_msg or Messages.error("too_many_login_attempts", lang, 15)
         )
 
     # Enhanced logging for debugging (without revealing actual passkeys)
-    from utils.auth import PUBLIC_DASHBOARD_PASSKEY
     received_length = len(passkey_request.passkey) if passkey_request.passkey else 0
     expected_length = len(PUBLIC_DASHBOARD_PASSKEY)
-    logger.info(f"Dashboard passkey verification attempt - Received: {received_length} chars, Expected: {expected_length} chars")
+    logger.info(
+        "Dashboard passkey verification attempt - Received: %s chars, "
+        "Expected: %s chars",
+        received_length, expected_length
+    )
 
     if not verify_dashboard_passkey(passkey_request.passkey):
-        logger.warning(f"Dashboard passkey verification failed for IP {client_ip}")
+        logger.warning("Dashboard passkey verification failed for IP %s", client_ip)
         error_msg = Messages.error("invalid_passkey", lang)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -677,11 +725,10 @@ async def verify_public_dashboard(
         max_age=24 * 60 * 60  # 24 hours
     )
 
-    logger.info(f"Dashboard access granted for IP {client_ip}")
+    logger.info("Dashboard access granted for IP %s", client_ip)
 
     return {
         "success": True,
         "message": "Access granted",
         "dashboard_token": dashboard_token
     }
-

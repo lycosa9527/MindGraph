@@ -1,4 +1,4 @@
-﻿from typing import List, Optional
+from typing import List, Optional
 import base64
 import hashlib
 import logging
@@ -7,7 +7,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 import numpy as np
 
-from clients.dashscope_embedding import DashScopeEmbeddingClient
+from clients.dashscope_embedding import DashScopeEmbeddingClient, get_embedding_client
 from config.settings import config
 from models.knowledge_space import Embedding
 from services.redis.redis_client import get_redis, is_redis_available
@@ -76,10 +76,11 @@ class EmbeddingCache:
             ).first()
 
             if embedding_record:
-                logger.debug(f"[EmbeddingCache] Document embedding cache hit for hash {text_hash[:8]}...")
+                hash_preview = text_hash[:8] + "..."
+                logger.debug("[EmbeddingCache] Document embedding cache hit for hash %s", hash_preview)
                 return embedding_record.get_embedding()
         except Exception as e:
-            logger.warning(f"[EmbeddingCache] Failed to get document embedding from cache: {e}")
+            logger.warning("[EmbeddingCache] Failed to get document embedding from cache: %s", e)
 
         return None
 
@@ -105,7 +106,8 @@ class EmbeddingCache:
             ).first()
 
             if existing:
-                logger.debug(f"[EmbeddingCache] Embedding already cached for hash {text_hash[:8]}...")
+                hash_preview = text_hash[:8] + "..."
+                logger.debug("[EmbeddingCache] Embedding already cached for hash %s", hash_preview)
                 return
 
             # Create new embedding cache record
@@ -118,15 +120,17 @@ class EmbeddingCache:
 
             db.add(embedding_record)
             db.commit()
-            logger.debug(f"[EmbeddingCache] Cached document embedding for hash {text_hash[:8]}...")
+            hash_preview = text_hash[:8] + "..."
+            logger.debug("[EmbeddingCache] Cached document embedding for hash %s", hash_preview)
 
         except IntegrityError:
             # Race condition: another process cached it first
             db.rollback()
-            logger.debug(f"[EmbeddingCache] Embedding already cached (race condition) for hash {text_hash[:8]}...")
+            hash_preview = text_hash[:8] + "..."
+            logger.debug("[EmbeddingCache] Embedding already cached (race condition) for hash %s", hash_preview)
         except Exception as e:
             db.rollback()
-            logger.warning(f"[EmbeddingCache] Failed to cache document embedding: {e}")
+            logger.warning("[EmbeddingCache] Failed to cache document embedding: %s", e)
 
     def get_query_embedding(self, query: str) -> Optional[List[float]]:
         """
@@ -162,7 +166,7 @@ class EmbeddingCache:
                 decoded = np.frombuffer(decoded_bytes, dtype=np.float32)
                 return [float(x) for x in decoded]
         except Exception as e:
-            logger.warning(f"[EmbeddingCache] Failed to get query embedding from cache: {e}")
+            logger.warning("[EmbeddingCache] Failed to get query embedding from cache: %s", e)
 
         return None
 
@@ -195,7 +199,7 @@ class EmbeddingCache:
             # Store with TTL
             redis.setex(cache_key, self.query_cache_ttl, encoded)
         except Exception as e:
-            logger.warning(f"[EmbeddingCache] Failed to cache query embedding: {e}")
+            logger.warning("[EmbeddingCache] Failed to cache query embedding: %s", e)
 
     def embed_query_cached(self, query: str) -> List[float]:
         """
@@ -253,7 +257,7 @@ class EmbeddingCache:
 
             return True
         except Exception as e:
-            logger.warning(f"[EmbeddingCache] Failed to validate embedding: {e}")
+            logger.warning("[EmbeddingCache] Failed to validate embedding: %s", e)
             return False
 
 
@@ -265,6 +269,5 @@ def get_embedding_cache() -> EmbeddingCache:
     """Get global embedding cache instance."""
     global _embedding_cache
     if _embedding_cache is None:
-        from clients.dashscope_embedding import get_embedding_client
         _embedding_cache = EmbeddingCache(get_embedding_client())
     return _embedding_cache

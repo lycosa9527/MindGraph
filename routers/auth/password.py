@@ -18,7 +18,7 @@ from sqlalchemy.orm import Session
 from config.database import get_db
 from models.auth import User
 from models.messages import Messages, Language
-from models.requests import ChangePasswordRequest, ResetPasswordWithSMSRequest
+from models.requests_auth import ChangePasswordRequest, ResetPasswordWithSMSRequest
 from services.redis.redis_session_manager import get_refresh_token_manager, get_session_manager
 from services.redis.redis_user_cache import user_cache
 from utils.auth import hash_password, get_client_ip, get_current_user, verify_password
@@ -84,19 +84,19 @@ async def reset_password_with_sms(
         db.commit()
     except Exception as e:
         db.rollback()
-        logger.error(f"[Auth] Failed to update password in SQLite: {e}")
+        logger.error("[Auth] Failed to update password in SQLite: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to reset password"
-        )
+        ) from e
 
     # Invalidate and re-cache user (password changed)
     try:
         user_cache.invalidate(user.id, user.phone)
         user_cache.cache_user(user)
-        logger.info(f"[Auth] Password reset and cache updated for user ID {user.id}")
+        logger.info("[Auth] Password reset and cache updated for user ID %s", user.id)
     except Exception as e:
-        logger.warning(f"[Auth] Failed to update cache after password reset: {e}")
+        logger.warning("[Auth] Failed to update cache after password reset: %s", e)
 
     # Revoke all refresh tokens (security: password changed)
     try:
@@ -106,21 +106,21 @@ async def reset_password_with_sms(
             reason="password_reset"
         )
         if revoked_count > 0:
-            logger.info(f"[TokenAudit] Password reset: revoked {revoked_count} refresh tokens for user {user.id}")
+            logger.info("[TokenAudit] Password reset: revoked %s refresh tokens for user %s", revoked_count, user.id)
     except Exception as e:
-        logger.warning(f"[Auth] Failed to revoke refresh tokens after password reset: {e}")
+        logger.warning("[Auth] Failed to revoke refresh tokens after password reset: %s", e)
 
     # Invalidate all access token sessions
     try:
         session_manager = get_session_manager()
         session_manager.invalidate_user_sessions(user.id)
     except Exception as e:
-        logger.warning(f"[Auth] Failed to invalidate sessions after password reset: {e}")
+        logger.warning("[Auth] Failed to invalidate sessions after password reset: %s", e)
 
     # Get client IP address
     client_ip = get_client_ip(http_request) if http_request else "unknown"
 
-    logger.info(f"[TokenAudit] Password reset: user={user.id}, phone={user.phone}, method=sms, ip={client_ip}")
+    logger.info("[TokenAudit] Password reset: user=%s, phone=%s, method=sms, ip=%s", user.id, user.phone, client_ip)
 
     return {
         "message": Messages.success("password_reset_success", lang),
@@ -174,19 +174,19 @@ async def change_password(
         db.commit()
     except Exception as e:
         db.rollback()
-        logger.error(f"Failed to change password for user {user.id}: {e}")
+        logger.error("Failed to change password for user %s: %s", user.id, e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to change password"
-        )
+        ) from e
 
     # Invalidate and re-cache user
     try:
         user_cache.invalidate(user.id, user.phone)
         user_cache.cache_user(user)
-        logger.info(f"Password changed for user ID {user.id}")
+        logger.info("Password changed for user ID %s", user.id)
     except Exception as e:
-        logger.warning(f"Failed to update cache after password change: {e}")
+        logger.warning("Failed to update cache after password change: %s", e)
 
     # Revoke all refresh tokens (security: password changed)
     try:
@@ -196,18 +196,18 @@ async def change_password(
             reason="password_change"
         )
         if revoked_count > 0:
-            logger.info(f"[TokenAudit] Password change: revoked {revoked_count} refresh tokens for user {user.id}")
+            logger.info("[TokenAudit] Password change: revoked %s refresh tokens for user %s", revoked_count, user.id)
     except Exception as e:
-        logger.warning(f"Failed to revoke refresh tokens after password change: {e}")
+        logger.warning("Failed to revoke refresh tokens after password change: %s", e)
 
     # Invalidate all access token sessions (except current one will need re-auth)
     try:
         session_manager = get_session_manager()
         session_manager.invalidate_user_sessions(user.id)
     except Exception as e:
-        logger.warning(f"Failed to invalidate sessions after password change: {e}")
+        logger.warning("Failed to invalidate sessions after password change: %s", e)
 
-    logger.info(f"[TokenAudit] Password changed: user={user.id}, phone={user.phone}")
+    logger.info("[TokenAudit] Password changed: user=%s, phone=%s", user.id, user.phone)
 
     return {
         "message": Messages.success("password_change_success", lang)

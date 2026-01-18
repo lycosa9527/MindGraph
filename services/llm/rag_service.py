@@ -1,17 +1,30 @@
 from collections import Counter
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import List, Dict, Any, Optional
 import logging
 import os
 import time
+
+try:
+    import numpy as np
+except ImportError:
+    np = None
 
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
 from clients.dashscope_embedding import get_embedding_client
 from clients.dashscope_rerank import get_rerank_client
-from models.knowledge_space import DocumentChunk, KnowledgeDocument, KnowledgeSpace, KnowledgeQuery, QueryFeedback, DocumentRelationship, ChunkAttachment
+from models.knowledge_space import (
+    DocumentChunk,
+    KnowledgeDocument,
+    KnowledgeSpace,
+    KnowledgeQuery,
+    QueryFeedback,
+    DocumentRelationship,
+    ChunkAttachment
+)
 from services.infrastructure.kb_rate_limiter import get_kb_rate_limiter
 from services.knowledge.keyword_search_service import get_keyword_search_service
 from services.llm.embedding_cache import get_embedding_cache
@@ -72,7 +85,13 @@ class RAGService:
             else:
                 self.reranking_mode = RerankMode.WEIGHTED_SCORE
 
-        logger.info(f"[RAGService] Initialized with method={self.default_method}, reranking_mode={self.reranking_mode}, parallel_workers={self.parallel_workers}")
+        logger.info(
+            "[RAGService] Initialized with method=%s, reranking_mode=%s, "
+            "parallel_workers=%s",
+            self.default_method,
+            self.reranking_mode,
+            self.parallel_workers
+        )
 
     def has_knowledge_base(self, db: Session, user_id: int) -> bool:
         """
@@ -92,7 +111,7 @@ class RAGService:
             ).count()
             return count > 0
         except Exception as e:
-            logger.error(f"[RAGService] Failed to check knowledge base for user {user_id}: {e}")
+            logger.error("[RAGService] Failed to check knowledge base for user %s: %s", user_id, e)
             return False
 
     def _apply_metadata_post_filter(
@@ -355,7 +374,7 @@ class RAGService:
         # Check KB rate limit for retrieval
         allowed, count, error_msg = self.kb_rate_limiter.check_retrieval_limit(user_id)
         if not allowed:
-            logger.warning(f"[RAGService] Rate limit exceeded for user {user_id}: {error_msg}")
+            logger.warning("[RAGService] Rate limit exceeded for user %s: %s", user_id, error_msg)
             raise HTTPException(
                 status_code=429,
                 detail=f"Knowledge base rate limit exceeded: {error_msg}"
@@ -378,7 +397,11 @@ class RAGService:
             # Note: embedding time is included in vector_search/hybrid_search
             search_start = time.time()
             if method == 'semantic':
-                chunk_ids = self.vector_search(db, user_id, query, top_k * 2, metadata_filter=metadata_filter)  # Get more for reranking
+                # Get more for reranking
+                chunk_ids = self.vector_search(
+                    db, user_id, query, top_k * 2,
+                    metadata_filter=metadata_filter
+                )
             elif method == 'keyword':
                 chunk_ids = self.keyword_search_func(db, user_id, query, top_k * 2, metadata_filter=metadata_filter)
             else:  # hybrid
@@ -440,7 +463,7 @@ class RAGService:
                         results = [item["document"] for item in reranked]
                     except Exception as rerank_error:
                         # If reranking fails, fall back to original results without reranking
-                        logger.warning(f"[RAGService] Reranking failed, using original results: {rerank_error}")
+                        logger.warning("[RAGService] Reranking failed, using original results: %s", rerank_error)
                         results = [text for text, _ in deduplicated_texts[:top_k]]
                 elif self.reranking_mode == RerankMode.WEIGHTED_SCORE:
                     # Use weighted score (already done in hybrid_search)
@@ -461,7 +484,7 @@ class RAGService:
                     results = [item["document"] for item in reranked]
                 except Exception as rerank_error:
                     # If reranking fails, fall back to original results without reranking
-                    logger.warning(f"[RAGService] Reranking failed, using original results: {rerank_error}")
+                    logger.warning("[RAGService] Reranking failed, using original results: %s", rerank_error)
                     results = [text for text, _ in chunk_texts[:top_k]]
             else:
                 # Return top K without reranking
@@ -489,7 +512,7 @@ class RAGService:
             return results
 
         except Exception as e:
-            logger.error(f"[RAGService] Failed to retrieve context: {e}")
+            logger.error("[RAGService] Failed to retrieve context: %s", e)
             # Record failed query
             try:
                 space = db.query(KnowledgeSpace).filter(KnowledgeSpace.user_id == user_id).first()
@@ -509,7 +532,7 @@ class RAGService:
                         source_context=source_context
                     )
             except Exception as record_error:
-                logger.error(f"[RAGService] Failed to record query: {record_error}")
+                logger.error("[RAGService] Failed to record query: %s", record_error)
             return []
 
     def vector_search(
@@ -536,7 +559,13 @@ class RAGService:
             # Generate query embedding (with cache)
             query_embedding = self.embedding_cache.embed_query_cached(query)
 
-            logger.debug(f"[RAGService] vector_search: user={user_id}, query_len={len(query)}, embedding_dim={len(query_embedding)}")
+            logger.debug(
+                "[RAGService] vector_search: user=%s, query_len=%s, "
+                "embedding_dim=%s",
+                user_id,
+                len(query),
+                len(query_embedding)
+            )
 
             # Search Qdrant with metadata filter
             results = self.qdrant.search(
@@ -546,13 +575,18 @@ class RAGService:
                 metadata_filter=metadata_filter
             )
 
-            logger.debug(f"[RAGService] vector_search: Qdrant returned {len(results)} results")
+            logger.debug("[RAGService] vector_search: Qdrant returned %s results", len(results))
             if results:
-                logger.debug(f"[RAGService] vector_search: First result: id={results[0]['id']}, score={results[0]['score']:.4f}")
+                logger.debug(
+                    "[RAGService] vector_search: First result: id=%s, "
+                    "score=%.4f",
+                    results[0]['id'],
+                    results[0]['score']
+                )
 
             return [r["id"] for r in results]
         except Exception as e:
-            logger.error(f"[RAGService] Vector search failed: {e}")
+            logger.error("[RAGService] Vector search failed: %s", e)
             return []
 
     def keyword_search_func(
@@ -585,7 +619,7 @@ class RAGService:
             )
             return [r["chunk_id"] for r in results]
         except Exception as e:
-            logger.error(f"[RAGService] Keyword search failed: {e}")
+            logger.error("[RAGService] Keyword search failed: %s", e)
             return []
 
     def hybrid_search(
@@ -664,7 +698,7 @@ class RAGService:
                             except Exception:
                                 pass
                 except Exception as e:
-                    logger.error(f"[RAGService] Parallel search failed: {e}")
+                    logger.error("[RAGService] Parallel search failed: %s", e)
                     # Cancel remaining futures on error
                     for f in futures:
                         if not f.done():
@@ -699,7 +733,7 @@ class RAGService:
             return [chunk_id for chunk_id, _ in sorted_chunks[:top_k]]
 
         except Exception as e:
-            logger.error(f"[RAGService] Hybrid search failed: {e}")
+            logger.error("[RAGService] Hybrid search failed: %s", e)
             # Fallback to vector search
             return self.vector_search(db, user_id, query, top_k, metadata_filter)
 
@@ -722,7 +756,7 @@ class RAGService:
             )
             return [{"id": r["id"], "score": r["score"]} for r in results]
         except Exception as e:
-            logger.error(f"[RAGService] Vector search with scores failed: {e}")
+            logger.error("[RAGService] Vector search with scores failed: %s", e)
             return []
 
     def _keyword_search_with_scores(
@@ -744,7 +778,7 @@ class RAGService:
             )
             return [{"chunk_id": r["chunk_id"], "score": r["score"]} for r in results]
         except Exception as e:
-            logger.error(f"[RAGService] Keyword search with scores failed: {e}")
+            logger.error("[RAGService] Keyword search with scores failed: %s", e)
             return []
 
     def _deduplicate_chunk_texts(
@@ -804,17 +838,17 @@ class RAGService:
             ).all()
 
             if not attachments:
-                logger.warning(f"[RAGService] No valid image attachments found for IDs: {attachment_ids}")
+                logger.warning("[RAGService] No valid image attachments found for IDs: %s", attachment_ids)
                 return []
 
             # Generate embeddings for images
-            from clients.dashscope_embedding import get_embedding_client
             embedding_client = get_embedding_client()
 
             if not embedding_client.is_multimodal:
                 logger.warning(
-                    f"[RAGService] Current embedding model {embedding_client.model} does not support multimodal. "
-                    f"Cannot perform image search."
+                    "[RAGService] Current embedding model %s does not support multimodal. "
+                    "Cannot perform image search.",
+                    embedding_client.model
                 )
                 return []
 
@@ -835,13 +869,14 @@ class RAGService:
 
             # Use average of image embeddings for search
             if len(image_embeddings) > 1:
-                import numpy as np
+                if np is None:
+                    logger.error("[RAGService] numpy is required for multi-image search but not installed")
+                    return []
                 avg_embedding = np.mean(image_embeddings, axis=0).tolist()
             else:
                 avg_embedding = image_embeddings[0]
 
             # Search using image embedding
-            from services.llm.qdrant_service import get_qdrant_service
             qdrant_service = get_qdrant_service()
 
             results = qdrant_service.search(
@@ -866,7 +901,7 @@ class RAGService:
             return [chunk.text for chunk in sorted_chunks]
 
         except Exception as e:
-            logger.error(f"[RAGService] Error retrieving by images: {e}")
+            logger.error("[RAGService] Error retrieving by images: %s", e)
             return []
 
     @staticmethod
@@ -888,7 +923,6 @@ class RAGService:
             return query
 
         # Get successful queries (with positive feedback) from last 30 days
-        from datetime import timedelta
         cutoff_date = datetime.utcnow() - timedelta(days=30)
 
         successful_queries = db.query(KnowledgeQuery).join(QueryFeedback).filter(
@@ -914,7 +948,7 @@ class RAGService:
             # Use top 3 related terms
             expanded_terms = list(related_terms)[:3]
             expanded_query = f"{query} {' '.join(expanded_terms)}"
-            logger.debug(f"[RAGService] Expanded query: {query} -> {expanded_query}")
+            logger.debug("[RAGService] Expanded query: %s -> %s", query, expanded_query)
             return expanded_query
 
         return query
@@ -944,7 +978,6 @@ class RAGService:
                 "suggestions": []
             }
 
-        from datetime import timedelta
         cutoff_date = datetime.utcnow() - timedelta(days=days)
 
         # Get queries with feedback
@@ -996,9 +1029,13 @@ class RAGService:
             best_method = max(method_scores.items(), key=lambda x: x[1])[0]
             worst_method = min(method_scores.items(), key=lambda x: x[1])[0]
             if method_scores[best_method] - method_scores[worst_method] > 0.5:
+                score_diff = (
+                    method_scores[best_method] - method_scores[worst_method]
+                )
                 suggestions.append(
-                    f"Consider using {best_method} method instead of {worst_method} "
-                    f"for better results (score difference: {method_scores[best_method] - method_scores[worst_method]:.2f})"
+                    f"Consider using {best_method} method instead of "
+                    f"{worst_method} for better results "
+                    f"(score difference: {score_diff:.2f})"
                 )
 
         if low_performing:
@@ -1087,10 +1124,18 @@ class RAGService:
             )
             db.add(query_record)
             db.commit()
-            logger.debug(f"[RAGService] Recorded query for user {user_id}: method={method}, results={result_count}, time={timing.get('total_ms'):.2f}ms")
+            total_ms = timing.get('total_ms')
+            logger.debug(
+                "[RAGService] Recorded query for user %s: method=%s, "
+                "results=%s, time=%.2fms",
+                user_id,
+                method,
+                result_count,
+                total_ms if total_ms else 0.0
+            )
         except Exception as e:
             db.rollback()
-            logger.warning(f"[RAGService] Failed to record query: {e}")
+            logger.warning("[RAGService] Failed to record query: %s", e)
 
     def enhance_prompt(
         self,

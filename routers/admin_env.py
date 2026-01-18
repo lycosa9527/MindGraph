@@ -161,16 +161,21 @@ async def update_env_settings(
         existing_settings = env_manager.read_env()
 
         # Filter out masked values - preserve existing secrets
+        def _is_masked_value(value):
+            """Check if value is a masked placeholder."""
+            if not value:
+                return False
+            masked_patterns = ("***...", "***HIDDEN***", "***", "******")
+            return value.startswith("***...") or value in masked_patterns
+
         filtered_request = {}
         skipped_masked = []
         for key, value in request.items():
-            # Detect masked values
-            if value and (value.startswith("***...") or value == "***HIDDEN***" or value == "***" or value == "******"):
+            if _is_masked_value(value):
                 # This is a masked value - keep the existing value from .env
                 if key in existing_settings:
                     filtered_request[key] = existing_settings[key]
                     skipped_masked.append(key)
-                # If key not in existing settings, skip it entirely (don't add to filtered_request)
             else:
                 # This is a real value - use it
                 filtered_request[key] = value
@@ -381,8 +386,10 @@ async def restore_env_from_backup(
                 "restored_from": backup_filename,
                 "warning": "⚠️ Server restart required for changes to take effect!"
             }
-        else:
-            raise ValueError("Restore operation failed")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Restore operation failed"
+        )
 
     except FileNotFoundError as exc:
         raise HTTPException(

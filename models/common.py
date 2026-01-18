@@ -1,7 +1,3 @@
-﻿from enum import Enum
-
-
-
 """
 Common Pydantic Models and Enums
 =================================
@@ -15,6 +11,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+from enum import Enum
 
 
 
@@ -55,4 +52,3 @@ class Language(str, Enum):
     """Supported languages"""
     ZH = "zh"
     EN = "en"
-

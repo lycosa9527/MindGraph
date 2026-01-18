@@ -12,19 +12,21 @@ All Rights Reserved
 Proprietary License
 """
 
-from .requests import (
+from .requests_diagram import (
     GenerateRequest,
     EnhanceRequest,
     ExportPNGRequest,
     GeneratePNGRequest,
     GenerateDingTalkRequest,
+    RecalculateLayoutRequest,
+    DiagramCreateRequest,
+    DiagramUpdateRequest,
+)
+from .requests_assistant import (
     AIAssistantRequest,
     FrontendLogRequest,
     FrontendLogBatchRequest,
-    RecalculateLayoutRequest,
     FeedbackRequest,
-    DiagramCreateRequest,
-    DiagramUpdateRequest,
 )
 
 from .responses import (
@@ -76,4 +78,3 @@ __all__ = [
     "Messages",
     "get_request_language",
 ]
-

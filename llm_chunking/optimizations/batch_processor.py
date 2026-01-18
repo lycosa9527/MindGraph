@@ -1,13 +1,10 @@
-﻿from typing import List, TypeVar, Callable, Awaitable, Optional
-import logging
-
-
-"""
-Batch processing for LLM calls.
+"""Batch processing for LLM calls.
 
 Groups multiple items into batches for efficient LLM API calls.
 Reduces API calls by 10x (10 items per batch).
 """
+from typing import List, TypeVar, Callable, Awaitable, Optional
+import logging
 
 
 logger = logging.getLogger(__name__)
@@ -64,8 +61,8 @@ class BatchProcessor:
             batch_num = i // self.batch_size + 1
 
             logger.info(
-                f"Processing batch {batch_num}/{total_batches} "
-                f"({len(batch)} items)"
+                "Processing batch %d/%d (%d items)",
+                batch_num, total_batches, len(batch)
             )
 
             if progress_callback:
@@ -75,7 +72,7 @@ class BatchProcessor:
             batch_results = await processor(batch)
             all_results.extend(batch_results)
 
-        logger.info(f"Processed {len(items)} items in {total_batches} batches")
+        logger.info("Processed %d items in %d batches", len(items), total_batches)
         return all_results
 
     def create_batches(self, items: List[T]) -> List[List[T]]:

@@ -1,3 +1,9 @@
+"""Boundary detection agent for semantic chunking.
+
+Uses LLM to identify semantic boundaries when pattern matching
+is insufficient. Now includes embedding-based pre-filtering to
+reduce LLM calls by ~50% (from 20% to ~10% of boundaries).
+"""
 from typing import List, Optional, Tuple
 import json
 import logging
@@ -5,13 +11,10 @@ import logging
 from llm_chunking.patterns.embedding_boundary_detector import EmbeddingBoundaryDetector
 from llm_chunking.patterns.pattern_matcher import PatternMatcher
 
-"""
-Boundary detection agent for semantic chunking.
-
-Uses LLM to identify semantic boundaries when pattern matching
-is insufficient. Now includes embedding-based pre-filtering to
-reduce LLM calls by ~50% (from 20% to ~10% of boundaries).
-"""
+try:
+    from services.llm import llm_service as default_llm_service
+except ImportError:
+    default_llm_service = None
 
 
 logger = logging.getLogger(__name__)
@@ -45,23 +48,27 @@ class BoundaryAgent:
         """
         self.llm_service = llm_service
         if llm_service is None:
-            try:
-                from services.llm import llm_service
+            if default_llm_service is None:
+                logger.warning(
+                    "[BoundaryAgent] LLM service not available. "
+                    "Boundary detection will use pattern matching fallback."
+                )
+                self.llm_service = None
+            else:
                 # Verify LLM service is initialized
-                if not hasattr(llm_service, 'client_manager') or not llm_service.client_manager.is_initialized():
+                has_client_manager = hasattr(default_llm_service, 'client_manager')
+                is_initialized = (
+                    has_client_manager and
+                    default_llm_service.client_manager.is_initialized()
+                )
+                if not is_initialized:
                     logger.warning(
                         "[BoundaryAgent] LLM service not initialized. "
                         "Boundary detection will use pattern matching fallback."
                     )
                     self.llm_service = None
                 else:
-                    self.llm_service = llm_service
-            except Exception as e:
-                logger.warning(
-                    f"[BoundaryAgent] LLM service not available: {e}. "
-                    "Boundary detection will use pattern matching fallback."
-                )
-                self.llm_service = None
+                    self.llm_service = default_llm_service
 
         self.pattern_matcher = PatternMatcher()
         self.use_embedding_filter = use_embedding_filter
@@ -79,7 +86,10 @@ class BoundaryAgent:
                     )
                     self.use_embedding_filter = False
             except Exception as e:
-                logger.warning(f"[BoundaryAgent] Failed to initialize embedding detector: {e}")
+                logger.warning(
+                    "[BoundaryAgent] Failed to initialize embedding detector: %s",
+                    e
+                )
                 self.use_embedding_filter = False
 
     async def detect_boundaries_batch(
@@ -121,14 +131,17 @@ class BoundaryAgent:
             # If all segments filtered out, return pattern boundaries
             if not filtered_segments:
                 logger.debug(
-                    f"[BoundaryAgent] All {len(segments)} segments filtered by embeddings, "
-                    "using pattern boundaries"
+                    "[BoundaryAgent] All %d segments filtered by embeddings, "
+                    "using pattern boundaries",
+                    len(segments)
                 )
                 return pattern_boundaries
 
             logger.debug(
-                f"[BoundaryAgent] Filtered {len(filtered_segments)}/{len(segments)} segments "
-                "for LLM processing"
+                "[BoundaryAgent] Filtered %d/%d segments "
+                "for LLM processing",
+                len(filtered_segments),
+                len(segments)
             )
         else:
             # No filtering, use all segments
@@ -164,7 +177,10 @@ class BoundaryAgent:
             return final_boundaries
 
         except Exception as e:
-            logger.warning(f"LLM boundary detection failed: {e}, using patterns")
+            logger.warning(
+                "LLM boundary detection failed: %s, using patterns",
+                e
+            )
             return pattern_boundaries
 
     def _filter_with_embeddings(
@@ -209,7 +225,10 @@ class BoundaryAgent:
                     )
                     confidences.append(confidence)
                 except Exception as e:
-                    logger.debug(f"[BoundaryAgent] Failed to calculate confidence: {e}")
+                    logger.debug(
+                        "[BoundaryAgent] Failed to calculate confidence: %s",
+                        e
+                    )
                     # If confidence calculation fails, assume low confidence (send to LLM)
                     confidences.append(0.0)
 
@@ -226,19 +245,22 @@ class BoundaryAgent:
     def _build_batch_prompt(
         self,
         segments: List[str],
-        context: Optional[str]
+        context: Optional[str] = None
     ) -> str:
         """Build prompt for batch boundary detection."""
         segments_text = ""
         for i, segment in enumerate(segments):
             segments_text += f"\n\nSegment {i + 1}:\n{segment[:1000]}\n"
 
+        context_text = ""
+        if context:
+            context_text = f"\n\nContext:\n{context[:500]}\n"
+
         prompt = f"""Identify semantic boundaries in these text segments.
 Each segment should be split at natural semantic breaks (end of ideas, concepts, or topics).
 
 Segments to analyze:
-{segments_text}
-
+{segments_text}{context_text}
 For each segment, return the character positions where boundaries should be placed.
 Return JSON array:
 [
@@ -287,7 +309,7 @@ Return JSON array:
 
                 return boundaries_list
         except Exception as e:
-            logger.warning(f"Failed to parse boundaries: {e}")
+            logger.warning("Failed to parse boundaries: %s", e)
 
         # Fallback: use pattern matching
         return [
@@ -355,6 +377,6 @@ Return JSON with refined start and end positions:
 
                 return (refined_start, refined_end)
         except Exception as e:
-            logger.warning(f"Boundary refinement failed: {e}")
+            logger.warning("Boundary refinement failed: %s", e)
 
         return (start_pos, end_pos)

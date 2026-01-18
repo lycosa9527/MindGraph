@@ -1,12 +1,3 @@
-from typing import Optional
-
-from fastapi import Depends, Header, HTTPException, Request, status
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-
-from models.auth import User
-from models.messages import Messages, get_request_language, Language
-from utils.auth import get_current_user, is_admin, is_admin_or_manager, is_manager
-
 """
 Authentication Dependencies
 ===========================
@@ -19,6 +10,18 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+import logging
+from typing import Optional
+
+from fastapi import Depends, Header, HTTPException, Request, status
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from jose import JWTError
+
+from models.auth import User
+from models.messages import Messages, get_request_language, Language
+from services.redis.redis_session_manager import get_session_manager
+from services.redis.redis_user_cache import user_cache
+from utils.auth import decode_access_token, get_current_user, is_admin, is_admin_or_manager, is_manager
 
 
 
@@ -43,12 +46,6 @@ def get_current_user_optional(
     Returns:
         User object if authenticated, None if not authenticated or token invalid
     """
-    from jose import JWTError
-    from utils.auth import decode_access_token
-    from services.redis.redis_user_cache import user_cache
-    from services.redis.redis_session_manager import get_session_manager
-    import logging
-
     logger = logging.getLogger(__name__)
 
     # Try to get token from Authorization header or cookie
@@ -73,7 +70,7 @@ def get_current_user_optional(
         # Check session validity
         session_manager = get_session_manager()
         if not session_manager.is_session_valid(int(user_id), token):
-            logger.debug(f"[Auth] Session invalid for user {user_id} in optional auth")
+            logger.debug("[Auth] Session invalid for user %s in optional auth", user_id)
             return None
 
         # Get user from cache
@@ -87,7 +84,7 @@ def get_current_user_optional(
         # Token decode failed
         return None
     except Exception as e:
-        logger.debug(f"[Auth] Optional auth failed: {e}")
+        logger.debug("[Auth] Optional auth failed: %s", e)
         return None
 
 
@@ -193,6 +190,3 @@ def require_admin_or_manager(
             detail=error_msg
         )
     return current_user
-
-
-
