@@ -1,20 +1,4 @@
-﻿from typing import
-import logging
-import os
-
-from fastapi import APIRouter, HTTPException, Depends, Query
-from pydantic import BaseModel
-from sqlalchemy.orm import Session
-
-from clients.dify import AsyncDifyClient
-from config.database import get_db
-from models.auth import User
-from models.pinned_conversations import PinnedConversation
-from utils.auth import get_current_user
-
-"""
-Dify Conversation Management API Router
-========================================
+"""Dify Conversation Management API Router.
 
 API endpoints for managing Dify conversations:
 - GET /api/dify/conversations - List user's conversations
@@ -28,6 +12,19 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+from typing import Optional
+import logging
+import os
+
+from fastapi import APIRouter, HTTPException, Depends, Query
+from pydantic import BaseModel
+from sqlalchemy.orm import Session
+
+from clients.dify import AsyncDifyClient
+from config.database import get_db
+from models.auth import User
+from models.pinned_conversations import PinnedConversation
+from utils.auth import get_current_user
 
 
 logger = logging.getLogger(__name__)
@@ -91,7 +88,10 @@ async def list_conversations(
             sort_by="-updated_at"
         )
 
-        logger.debug(f"Fetched {len(result.get('data', []))} conversations for user {current_user.id}")
+        logger.debug(
+            "Fetched %d conversations for user %s",
+            len(result.get('data', [])), current_user.id
+        )
 
         return {
             "success": True,
@@ -103,8 +103,8 @@ async def list_conversations(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Failed to fetch conversations: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error("Failed to fetch conversations: %s", e)
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.delete('/dify/conversations/{conversation_id}')
@@ -126,15 +126,18 @@ async def delete_conversation(
             user_id=dify_user_id
         )
 
-        logger.info(f"Deleted conversation {conversation_id} for user {current_user.id}")
+        logger.info(
+            "Deleted conversation %s for user %s",
+            conversation_id, current_user.id
+        )
 
         return {"success": True, "message": "Conversation deleted"}
 
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Failed to delete conversation: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error("Failed to delete conversation: %s", e)
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.post('/dify/conversations/{conversation_id}/name')
@@ -160,7 +163,10 @@ async def rename_conversation(
             auto_generate=request.auto_generate
         )
 
-        logger.info(f"Renamed conversation {conversation_id} for user {current_user.id}")
+        logger.info(
+            "Renamed conversation %s for user %s",
+            conversation_id, current_user.id
+        )
 
         return {
             "success": True,
@@ -170,8 +176,8 @@ async def rename_conversation(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Failed to rename conversation: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error("Failed to rename conversation: %s", e)
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.get('/dify/conversations/{conversation_id}/messages')
@@ -202,7 +208,10 @@ async def get_conversation_messages(
             limit=limit
         )
 
-        logger.debug(f"Fetched {len(result.get('data', []))} messages for conversation {conversation_id}")
+        logger.debug(
+            "Fetched %d messages for conversation %s",
+            len(result.get('data', [])), conversation_id
+        )
 
         return {
             "success": True,
@@ -214,8 +223,8 @@ async def get_conversation_messages(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Failed to fetch messages: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error("Failed to fetch messages: %s", e)
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.get('/dify/user-id')
@@ -262,7 +271,10 @@ async def submit_message_feedback(
             content=request.content
         )
 
-        logger.info(f"User {current_user.id} submitted {request.rating} feedback for message {message_id}")
+        logger.info(
+            "User %s submitted %s feedback for message %s",
+            current_user.id, request.rating, message_id
+        )
 
         return {
             "success": True,
@@ -272,8 +284,8 @@ async def submit_message_feedback(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Failed to submit message feedback: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error("Failed to submit message feedback: %s", e)
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.get('/dify/pinned')
@@ -297,8 +309,8 @@ async def list_pinned_conversations(
         }
 
     except Exception as e:
-        logger.error(f"Failed to fetch pinned conversations: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error("Failed to fetch pinned conversations: %s", e)
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.post('/dify/conversations/{conversation_id}/pin')
@@ -324,7 +336,10 @@ async def toggle_pin_conversation(
             # Unpin
             db.delete(existing)
             db.commit()
-            logger.info(f"User {current_user.id} unpinned conversation {conversation_id}")
+            logger.info(
+                "User %s unpinned conversation %s",
+                current_user.id, conversation_id
+            )
             return {
                 "success": True,
                 "is_pinned": False,
@@ -338,7 +353,10 @@ async def toggle_pin_conversation(
             )
             db.add(pinned)
             db.commit()
-            logger.info(f"User {current_user.id} pinned conversation {conversation_id}")
+            logger.info(
+                "User %s pinned conversation %s",
+                current_user.id, conversation_id
+            )
             return {
                 "success": True,
                 "is_pinned": True,
@@ -346,6 +364,6 @@ async def toggle_pin_conversation(
             }
 
     except Exception as e:
-        logger.error(f"Failed to toggle pin for conversation: {e}")
+        logger.error("Failed to toggle pin for conversation: %s", e)
         db.rollback()
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e

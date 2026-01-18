@@ -1,18 +1,3 @@
-﻿from typing import Dict, List, Optional, Any, AsyncGenerator, Tuple
-import asyncio
-import logging
-import time
-
-from config.settings import config
-from services.infrastructure.client_manager import client_manager
-from services.infrastructure.error_handler import (
-from services.infrastructure.load_balancer import (
-from services.infrastructure.rate_limiter import initialize_rate_limiter, get_rate_limiter, DashscopeRateLimiter
-from services.infrastructure.rate_limiter import LoadBalancerRateLimiter
-from services.monitoring.performance_tracker import performance_tracker
-from services.redis.redis_token_buffer import get_token_tracker
-from services.utils.prompt_manager import prompt_manager
-
 """
 LLM Service Layer
 =================
@@ -27,16 +12,27 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+from typing import Dict, List, Optional, Any, AsyncGenerator, Tuple
+import asyncio
+import logging
+import time
 
-
+from config.settings import config
+from services.infrastructure.client_manager import client_manager
+from services.infrastructure.error_handler import (
     error_handler,
     LLMServiceError,
     LLMRateLimitError,
     LLMQuotaExhaustedError
 )
-    LLMLoadBalancer,
+from services.infrastructure.load_balancer import (
     initialize_load_balancer
 )
+from services.infrastructure.rate_limiter import initialize_rate_limiter, DashscopeRateLimiter
+from services.infrastructure.rate_limiter import LoadBalancerRateLimiter
+from services.monitoring.performance_tracker import performance_tracker
+from services.redis.redis_token_buffer import get_token_tracker
+from services.utils.prompt_manager import prompt_manager
 
 logger = logging.getLogger(__name__)
 
@@ -358,7 +354,6 @@ class LLMService:
             # Apply load balancing (skip if already applied)
             actual_model = model
             provider = None  # Track provider for metrics
-            use_load_balancer_rate_limiter = False
 
             if not skip_load_balancing and self.load_balancer and self.load_balancer.enabled:
                 actual_model = self.load_balancer.map_model(model)
@@ -369,10 +364,6 @@ class LLMService:
                 if model == 'deepseek':
                     provider = 'dashscope' if actual_model == 'deepseek' else 'volcengine'
                     # Use load balancer rate limiter for DeepSeek when load balancing
-                    use_load_balancer_rate_limiter = (
-                        self.load_balancer_rate_limiter is not None and
-                        self.load_balancer_rate_limiter.enabled
-                    )
             elif skip_load_balancing:
                 # Model is already a physical model
                 actual_model = model
@@ -380,16 +371,8 @@ class LLMService:
                 # Determine provider from physical model name for rate limiting
                 if actual_model == 'ark-deepseek':
                     provider = 'volcengine'
-                    use_load_balancer_rate_limiter = (
-                        self.load_balancer_rate_limiter is not None and
-                        self.load_balancer_rate_limiter.enabled
-                    )
                 elif actual_model == 'deepseek':
                     provider = 'dashscope'
-                    use_load_balancer_rate_limiter = (
-                        self.load_balancer_rate_limiter is not None and
-                        self.load_balancer_rate_limiter.enabled
-                    )
 
             # Get client for actual model
             client = self.client_manager.get_client(actual_model)
@@ -534,7 +517,7 @@ class LLMService:
 
             return content
 
-        except ValueError as e:
+        except ValueError:
             # Let ValueError pass through (e.g., invalid model)
             raise
         except Exception as e:
@@ -744,7 +727,7 @@ class LLMService:
 
             return content, usage_data
 
-        except ValueError as e:
+        except ValueError:
             raise
         except Exception as e:
             duration = time.time() - start_time
@@ -1066,7 +1049,7 @@ class LLMService:
                     duration=duration
                 )
 
-        except ValueError as e:
+        except ValueError:
             # Let ValueError pass through (e.g., invalid model)
             raise
         except Exception as e:
@@ -1146,7 +1129,7 @@ class LLMService:
         """
         import socket
 
-        error_type = type(e).__name__
+        type(e).__name__
 
         # Don't expose sensitive details - use generic messages
         # Check for DNS resolution errors (gaierror)
@@ -1221,7 +1204,7 @@ class LLMService:
                     if native_client:
                         try:
                             await native_client.close()
-                        except:
+                        except Exception:
                             pass
                     raise
 
@@ -1497,7 +1480,7 @@ class LLMService:
 
         # Yield results as they complete
         tasks = [task for task, _ in task_model_pairs]
-        model_map = {task: model for task, model in task_model_pairs}
+        {task: model for task, model in task_model_pairs}
 
         for coro in asyncio.as_completed(tasks):
             # Get the task that completed from the awaited coro

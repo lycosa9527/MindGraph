@@ -1,4 +1,4 @@
-﻿from typing import
+from typing import List
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -10,6 +10,8 @@ from models.auth import User
 from models.messages import Messages, Language
 from services.redis.redis_user_cache import user_cache
 from utils.auth import get_current_user
+
+from .dependencies import get_language_dependency
 
 """
 Avatar Management Endpoints

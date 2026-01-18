@@ -6,7 +6,7 @@ Extracts key concepts and their relationships from educational content.
 
 import json
 import logging
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Optional
 from dataclasses import dataclass
 
 logger = logging.getLogger(__name__)

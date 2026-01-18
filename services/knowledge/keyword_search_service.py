@@ -284,7 +284,7 @@ class KeywordSearchService:
     ) -> List[Dict[str, Any]]:
         """Search using PostgreSQL full-text search."""
         # Extract keywords for PostgreSQL tsquery
-        keywords = self.extract_keywords(query)
+        self.extract_keywords(query)
 
         sql = """
             SELECT

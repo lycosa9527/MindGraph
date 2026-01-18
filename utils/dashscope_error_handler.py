@@ -1,9 +1,3 @@
-﻿from enum import Enum
-from typing import Dict, Any, Optional, Tuple
-import logging
-import time
-
-
 """
 DashScope Error Handler
 =======================
@@ -15,6 +9,9 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+from enum import Enum
+from typing import Dict, Any, Optional, Tuple
+import logging
 
 
 logger = logging.getLogger(__name__)
@@ -241,7 +238,7 @@ def handle_dashscope_response(response, raise_on_error: bool = True) -> Tuple[bo
     try:
         response.raise_for_status()
         return True, None
-    except Exception as e:
+    except Exception as original_error:
         # Try to parse error response
         error = None
         try:
@@ -256,7 +253,7 @@ def handle_dashscope_response(response, raise_on_error: bool = True) -> Tuple[bo
             )
 
         if raise_on_error:
-            raise error
+            raise error from original_error
 
         return False, error
 

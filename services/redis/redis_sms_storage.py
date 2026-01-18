@@ -1,9 +1,7 @@
-﻿from datetime import datetime, timedelta
-from typing import Optional, Dict, Any, Tuple
+from typing import Optional, Tuple
 import logging
-import time
 
-from services.redis.redis_client import is_redis_available, get_redis, redis_ops
+from services.redis.redis_client import is_redis_available, get_redis, RedisOps
 
 """
 Redis SMS Verification Storage
@@ -85,7 +83,7 @@ class RedisSMSStorage:
         key = self._get_key(phone, purpose)
 
         # Store with TTL
-        success = redis_ops.set_with_ttl(key, code, ttl_seconds)
+        success = RedisOps.set_with_ttl(key, code, ttl_seconds)
 
         if success:
             logger.info(f"[SMS] Code stored for {phone[:3]}***{phone[-4:]} (purpose: {purpose}, TTL: {ttl_seconds}s)")
@@ -144,7 +142,7 @@ class RedisSMSStorage:
                 return True
             elif result == 0:
                 # Code doesn't match or doesn't exist - check which case
-                stored_code = redis_ops.get(key)
+                stored_code = RedisOps.get(key)
                 if stored_code is None:
                     logger.debug(f"[SMS] No code found for {phone[:3]}***{phone[-4:]} (purpose: {purpose})")
                 else:
@@ -175,7 +173,7 @@ class RedisSMSStorage:
             return False
 
         key = self._get_key(phone, purpose)
-        return redis_ops.exists(key)
+        return RedisOps.exists(key)
 
     def peek(self, phone: str, purpose: str = "verification") -> Optional[str]:
         """
@@ -195,7 +193,7 @@ class RedisSMSStorage:
             return None
 
         key = self._get_key(phone, purpose)
-        return redis_ops.get(key)
+        return RedisOps.get(key)
 
     def check_exists_and_get_ttl(self, phone: str, purpose: str = "verification") -> Tuple[bool, int]:
         """
@@ -252,7 +250,7 @@ class RedisSMSStorage:
             return -2
 
         key = self._get_key(phone, purpose)
-        return redis_ops.get_ttl(key)
+        return RedisOps.get_ttl(key)
 
     def remove(self, phone: str, purpose: str = "verification") -> bool:
         """
@@ -269,7 +267,7 @@ class RedisSMSStorage:
             return False
 
         key = self._get_key(phone, purpose)
-        return redis_ops.delete(key)
+        return RedisOps.delete(key)
 
 
 # Global singleton

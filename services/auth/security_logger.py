@@ -1,7 +1,6 @@
 ﻿"""
 security logger module.
 """
-from datetime import datetime
 from typing import Optional
 import logging
 
@@ -80,7 +79,7 @@ class SecurityLogger:
         self._log(
             logging.INFO,
             self.AUTH_SUCCESS,
-            f"User authenticated successfully",
+            "User authenticated successfully",
             user_id=user_id,
             method=method,
             phone=masked_phone,

@@ -381,12 +381,30 @@ def run_uvicorn() -> None:
         sys.excepthook = custom_excepthook
 
         try:
+            # Debug: Test app import before starting uvicorn
+            print("[DEBUG] Testing FastAPI app import...")
+            try:
+                import main as main_module
+                print(f"[DEBUG] App imported successfully: {main_module.app}")
+            except Exception as e:
+                print(f"[ERROR] Failed to import app: {e}")
+                traceback.print_exc()
+                sys.exit(1)
+
+            print("[DEBUG] Starting Uvicorn server...")
+            sys.stdout.flush()  # Ensure output is written immediately
+
+            # Determine worker count
+            worker_count = 1 if reload else workers
+            print(f"[DEBUG] Uvicorn configuration: host={host}, port={port}, workers={worker_count}, reload={reload}")
+            sys.stdout.flush()
+            
             # Run uvicorn with proper shutdown configuration
             uvicorn.run(
                 "main:app",
                 host=host,
                 port=port,
-                workers=1 if reload else workers,  # Use 1 worker in dev mode for reload
+                workers=worker_count,  # Use 1 worker in dev mode for reload
                 reload=reload,
                 log_level=log_level,
                 log_config=LOGGING_CONFIG,  # Use our unified formatter

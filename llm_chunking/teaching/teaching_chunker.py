@@ -10,7 +10,7 @@ Enhances chunking with educational metadata:
 
 import re
 import logging
-from typing import List, Dict, Any, Optional
+from typing import List, Optional
 from llm_chunking.models import TeachingChunk, CodeBlock, Formula, ParentChunk
 from llm_chunking.chunker import LLMSemanticChunker
 from llm_chunking.agents.content_type_agent import ContentTypeAgent

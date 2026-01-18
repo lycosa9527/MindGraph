@@ -1,8 +1,3 @@
-﻿from typing import Dict, Optional, Tuple
-import logging
-
-from services.infrastructure.error_handler import (
-
 """
 Tencent Cloud Hunyuan Error Parser
 ===================================
@@ -19,7 +14,10 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+from typing import Optional, Tuple
+import logging
 
+from services.infrastructure.error_handler import (
     LLMServiceError,
     LLMTimeoutError,
     LLMRateLimitError,
@@ -67,8 +65,8 @@ def parse_hunyuan_error(
         - exception: Appropriate exception to raise
         - user_friendly_message: User-facing error message
     """
-    error_code_lower = error_code.lower()
-    error_msg_lower = error_message.lower()
+    error_code.lower()
+    error_message.lower()
     has_chinese = _has_chinese_characters(error_message)
 
     # ===== Authentication Errors (AuthFailure.*) =====

@@ -1,4 +1,4 @@
-﻿from typing import
+from typing import Optional
 import asyncio
 import json
 import logging
@@ -7,7 +7,7 @@ import time
 from fastapi import APIRouter, HTTPException, Depends
 from fastapi.responses import JSONResponse, StreamingResponse
 
-from agents import main_agent as agent
+from agents.core.workflow import agent_graph_workflow_with_styles
 from models import GenerateRequest, LLMHealthResponse, Messages, get_request_language
 from models.auth import User
 from services.llm import llm_service
@@ -211,7 +211,7 @@ async def generate_multi_parallel(
             model_start = time.time()
             try:
                 # Call agent - this uses proper system prompts!
-                spec_result = await agent.agent_graph_workflow_with_styles(
+                spec_result = await agent_graph_workflow_with_styles(
                     prompt,
                     language=language,
                     forced_diagram_type=diagram_type,
@@ -338,7 +338,7 @@ async def generate_multi_progressive(
                 model_start = time.time()
                 try:
                     # Call agent
-                    spec_result = await agent.agent_graph_workflow_with_styles(
+                    spec_result = await agent_graph_workflow_with_styles(
                         prompt,
                         language=language,
                         forced_diagram_type=diagram_type,

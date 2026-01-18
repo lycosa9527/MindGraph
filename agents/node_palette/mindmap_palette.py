@@ -1,9 +1,8 @@
-﻿"""
+"""
 mindmap palette module.
 """
 from typing import Optional, Dict, Any, AsyncGenerator
 import logging
-import re
 
 from agents.node_palette.base_palette_generator import BasePaletteGenerator
 
@@ -138,10 +137,9 @@ class MindMapPaletteGenerator(BasePaletteGenerator):
             Stage-specific formatted prompt for Mind Map idea generation
         """
         # Detect language from content (Chinese topic = Chinese prompt)
-        language = self._detect_language  # pylint: disable=protected-access(center_topic, educational_context)
 
         # Use same context extraction as auto-complete
-        context_desc = educational_context.get('raw_message', 'General K12 teaching') if educational_context else 'General K12 teaching'
+        educational_context.get('raw_message', 'General K12 teaching') if educational_context else 'General K12 teaching'
 
         # Determine current stage from session_stages
         session_id = educational_context.get('_session_id') if educational_context else None
@@ -156,7 +154,7 @@ class MindMapPaletteGenerator(BasePaletteGenerator):
 
         # Build stage-specific prompt
         if stage == 'children':
-            branch_name = stage_data.get('branch_name', '')
+            stage_data.get('branch_name', '')
             return self._build_children_prompt  # pylint: disable=protected-access(center_topic, branch_name, context_desc, language, count, batch_num)
         else:  # branches
             return self._build_branches_prompt  # pylint: disable=protected-access(center_topic, context_desc, language, count, batch_num)

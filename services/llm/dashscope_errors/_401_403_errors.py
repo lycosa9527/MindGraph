@@ -1,14 +1,12 @@
-﻿from typing import Optional, Tuple
-
-from services.infrastructure.error_handler import (
-
 """
 401 Unauthorized and 403 Access Denied Error Parsers
 ====================================================
 
 Handles authentication and authorization errors.
 """
+from typing import Optional, Tuple
 
+from services.infrastructure.error_handler import (
     LLMAccessDeniedError,
     LLMInvalidParameterError,
     LLMQuotaExhaustedError,

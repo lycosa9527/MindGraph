@@ -1,6 +1,10 @@
+"""
+flow map agent module.
+"""
 from typing import Dict, List, Tuple, Any, Optional
 import logging
 
+from agents.core.base_agent import BaseAgent
 
 """
 Flow Map Agent
@@ -76,7 +80,7 @@ class FlowMapAgent(BaseAgent):
                 }
             enhanced_spec = enhanced_result['spec']
 
-            logger.info(f"FlowMapAgent: Flow map generation completed successfully")
+            logger.info("FlowMapAgent: Flow map generation completed successfully")
             return {
                 'success': True,
                 'spec': enhanced_spec,
@@ -151,8 +155,8 @@ class FlowMapAgent(BaseAgent):
                 if isinstance(spec, dict) and spec.get('_error') == 'non_json_response':
                     # LLM returned non-JSON asking for more info - retry with more explicit prompt
                     logger.warning(
-                        f"FlowMapAgent: LLM returned non-JSON response asking for more info. "
-                        f"Retrying with explicit JSON-only prompt."
+                        "FlowMapAgent: LLM returned non-JSON response asking for more info. "
+                        "Retrying with explicit JSON-only prompt."
                     )
 
                     # Retry with more explicit prompt emphasizing JSON-only output
@@ -188,8 +192,8 @@ class FlowMapAgent(BaseAgent):
                         # If still non-JSON, return None
                         if isinstance(spec, dict) and spec.get('_error') == 'non_json_response':
                             logger.error(
-                                f"FlowMapAgent: Retry also returned non-JSON response. "
-                                f"Giving up after 1 retry attempt."
+                                "FlowMapAgent: Retry also returned non-JSON response. "
+                                "Giving up after 1 retry attempt."
                             )
                             return None
 
@@ -333,7 +337,6 @@ class FlowMapAgent(BaseAgent):
             vpad_step = 10
             hpad_title = 12
             vpad_title = 8
-            step_spacing = 80  # Vertical spacing between steps
             padding = 40
 
             def estimate_text_size(text: str, font_px: int) -> Tuple[int, int]:

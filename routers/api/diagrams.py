@@ -1,5 +1,4 @@
-﻿from datetime import datetime
-from typing import Optional
+from datetime import datetime
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
@@ -9,6 +8,8 @@ from models.requests import DiagramCreateRequest, DiagramUpdateRequest
 from models.responses import DiagramListItem, DiagramListResponse, DiagramResponse
 from services.redis.redis_diagram_cache import get_diagram_cache
 from utils.auth import get_current_user
+
+from .helpers import check_endpoint_rate_limit, get_rate_limit_identifier
 
 """
 Diagram Storage API Router

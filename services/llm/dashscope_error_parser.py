@@ -1,11 +1,3 @@
-﻿from typing import Dict, NoReturn, Optional, Tuple
-import json
-import logging
-import re
-
-from services.infrastructure.error_handler import LLMProviderError
-from services.llm.dashscope_errors import (
-
 """
 DashScope Error Parser
 ======================
@@ -20,7 +12,13 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+from typing import Dict, NoReturn, Optional, Tuple
+import json
+import logging
+import re
 
+from services.infrastructure.error_handler import LLMProviderError
+from services.llm.dashscope_errors import (
     has_chinese_characters,
     parse_400_errors,
     parse_401_errors,

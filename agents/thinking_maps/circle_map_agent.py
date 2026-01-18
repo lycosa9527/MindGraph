@@ -1,6 +1,10 @@
-from typing import Any, Dict, List, Optional, Tuple
+"""
+circle map agent module.
+"""
+from typing import Any, Dict, Optional, Tuple
 import logging
 
+from agents.core.base_agent import BaseAgent
 
 """
 Circle Map Agent
@@ -49,7 +53,7 @@ class CircleMapAgent(BaseAgent):
             Dict containing success status and generated spec
         """
         try:
-            logger.debug(f"CircleMapAgent: Starting circle map generation for prompt")
+            logger.debug("CircleMapAgent: Starting circle map generation for prompt")
 
             # Generate the circle map specification
             spec = await self._generate_circle_map_spec(                prompt,
@@ -78,7 +82,7 @@ class CircleMapAgent(BaseAgent):
             # Enhance the spec with layout and dimensions
             enhanced_spec = self._enhance_spec(spec)
 
-            logger.info(f"CircleMapAgent: Circle map generation completed successfully")
+            logger.info("CircleMapAgent: Circle map generation completed successfully")
             return {
                 'success': True,
                 'spec': enhanced_spec,

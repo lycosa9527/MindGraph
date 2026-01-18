@@ -195,3 +195,5 @@ static/
 
 # Documentation
 docs/
+# ruff
+.ruff_cache/

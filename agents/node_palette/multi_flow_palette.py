@@ -1,9 +1,8 @@
-﻿"""
+"""
 multi flow palette module.
 """
 from typing import Optional, Dict, Any, AsyncGenerator
 import logging
-import re
 
 from agents.node_palette.base_palette_generator import BasePaletteGenerator
 
@@ -114,11 +113,11 @@ class MultiFlowPaletteGenerator(BasePaletteGenerator):
 
         # Build prompt based on mode
         if mode == 'causes':
-            return self._build_causes_prompt  # pylint: disable=protected-access(
+            return self._build_causes_prompt(
                 center_topic, context_desc, count, batch_num, language
             )
         else:  # effects
-            return self._build_effects_prompt  # pylint: disable=protected-access(
+            return self._build_effects_prompt(
                 center_topic, context_desc, count, batch_num, language
             )
 

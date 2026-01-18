@@ -39,8 +39,7 @@ try:
 except ImportError:
     is_backup_in_progress = None
 
-# Import models and utilities needed for database initialization
-from utils.auth import load_invitation_codes
+# Import migration utility (auth import is lazy to avoid circular dependency)
 from utils.db_migration import run_migrations
 from models.auth import (
     Base, Organization, User, APIKey,
@@ -554,6 +553,8 @@ def init_db():
         # Check if organizations already exist
         if db.query(Organization).count() == 0:
             # Prefer seeding from .env INVITATION_CODES if provided
+            # Import lazily to avoid circular import with utils.auth
+            from utils.auth.invitations import load_invitation_codes
             env_codes = load_invitation_codes()
             seeded_orgs = []
             if env_codes:

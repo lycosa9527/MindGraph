@@ -1,4 +1,4 @@
-﻿"""
+"""
 Login Endpoints
 ===============
 
@@ -20,8 +20,8 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from sqlalchemy.orm import Session
 
 from config.database import get_db
-from models.messages import
-from models.auth import
+from models.messages import Messages, Language
+from models.auth import User, Organization
 from models.requests import DemoPasskeyRequest, LoginRequest, LoginWithSMSRequest
 from services.redis.redis_org_cache import org_cache
 from services.redis.redis_rate_limiter import (
@@ -59,6 +59,7 @@ from utils.auth import (
 from .captcha import verify_captcha_with_retry
 from .dependencies import get_language_dependency
 from .helpers import set_auth_cookies, track_user_activity
+from .sms import _verify_and_consume_sms_code
 
 
 def _preload_user_diagrams(user_id: int):
@@ -86,8 +87,6 @@ def _preload_user_diagrams(user_id: int):
     except Exception:
         pass  # Silently fail - preload is optional optimization
 
-
-from .sms import _verify_and_consume_sms_code
 
 logger = logging.getLogger(__name__)
 
@@ -475,7 +474,7 @@ async def verify_demo(
     logger.info(f"Passkey verification attempt ({AUTH_MODE} mode) - Received: {received_length} chars, Expected: {expected_length} chars")
 
     if not verify_demo_passkey(passkey_request.passkey):
-        logger.warning(f"Passkey verification failed - Check .env file for whitespace in DEMO_PASSKEY or ADMIN_DEMO_PASSKEY")
+        logger.warning("Passkey verification failed - Check .env file for whitespace in DEMO_PASSKEY or ADMIN_DEMO_PASSKEY")
         error_msg = Messages.error("invalid_passkey", lang)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

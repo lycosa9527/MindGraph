@@ -1,16 +1,20 @@
-﻿from typing import
+from typing import Dict, List, Optional, Any
 import logging
-import os
 import tempfile
 
-from fastapi import APIRouter, HTTPException, Depends, UploadFile, File, Form
+from fastapi import APIRouter, HTTPException, Depends, UploadFile, File
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from config.database import get_db
 from models.auth import User
-from models.knowledge_space import DocumentBatch, DocumentVersion, QueryFeedback, QueryTemplate, DocumentRelationship, EvaluationDataset, EvaluationResult, KnowledgeQuery, KnowledgeSpace, KnowledgeDocument
+from models.knowledge_space import DocumentBatch, QueryFeedback, QueryTemplate, DocumentRelationship, EvaluationDataset, EvaluationResult, KnowledgeQuery, KnowledgeSpace, KnowledgeDocument
 from services.knowledge.knowledge_space_service import KnowledgeSpaceService
+from tasks.knowledge_space_tasks import (
+    process_document_task,
+    batch_process_documents_task,
+    update_document_task
+)
 from utils.auth import get_current_user
 
 """

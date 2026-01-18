@@ -1,9 +1,10 @@
-﻿"""
+"""
 helpers module.
 """
 from typing import Optional
 import base64
 import hashlib
+import hmac
 import time
 
 from fastapi import HTTPException, Request

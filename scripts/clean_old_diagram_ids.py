@@ -1,4 +1,4 @@
-﻿"""
+"""
 Clean Old Diagram IDs Script
 ==============================
 
@@ -19,11 +19,8 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 # Fix Windows console encoding
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
 
-from sqlalchemy import create_engine, text
-from pathlib import Path
-
-
 def find_database():
+    from pathlib import Path
     """Find the SQLite database file."""
     # Check data folder first (recommended location)
     data_db = Path("data/mindgraph.db")
@@ -47,11 +44,12 @@ def find_database():
 
 
 def clean_old_diagram_ids():
+    from sqlalchemy import create_engine, text
     """Delete diagram records with non-UUID IDs."""
     db_path = find_database()
 
     if not db_path or not db_path.exists():
-        print(f"Database not found. Checked: data/mindgraph.db, mindgraph.db")
+        print("Database not found. Checked: data/mindgraph.db, mindgraph.db")
         return False
 
     print(f"Found database: {db_path}")

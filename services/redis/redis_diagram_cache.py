@@ -1,4 +1,4 @@
-﻿"""
+"""
 Redis Diagram Cache
 ====================
 
@@ -34,8 +34,11 @@ import threading
 import uuid
 from typing import Optional, Dict, Any, List, Tuple
 from datetime import datetime
+from sqlalchemy import desc
 
 from services.redis.redis_client import is_redis_available, get_redis
+from config.database import SessionLocal
+from models.diagrams import Diagram
 
 logger = logging.getLogger(__name__)
 
@@ -77,8 +80,9 @@ class RedisDiagramCache:
         self._total_errors = 0
 
         logger.info(
-            f"[DiagramCache] Initialized: cache_ttl={CACHE_TTL}s, "
-            f"sync_interval={SYNC_INTERVAL}s, max_per_user={MAX_PER_USER}"
+            "[DiagramCache] Initialized: cache_ttl=%ss, "
+            "sync_interval=%ss, max_per_user=%s",
+            CACHE_TTL, SYNC_INTERVAL, MAX_PER_USER
         )
 
     def _use_redis(self) -> bool:
@@ -131,7 +135,7 @@ class RedisDiagramCache:
                 logger.debug("[DiagramCache] Sync worker cancelled")
                 break
             except Exception as e:
-                logger.error(f"[DiagramCache] Sync worker error: {e}", exc_info=True)
+                logger.error("[DiagramCache] Sync worker error: %s", e, exc_info=True)
                 await asyncio.sleep(5)
 
         # Final sync on shutdown
@@ -153,7 +157,7 @@ class RedisDiagramCache:
                     if count is not None:
                         return count
                 except Exception as e:
-                    logger.warning(f"[DiagramCache] Redis count failed: {e}")
+                    logger.warning("[DiagramCache] Redis count failed: %s", e)
 
         # Fallback to SQLite
         return await self._count_from_sqlite(user_id)
@@ -161,20 +165,17 @@ class RedisDiagramCache:
     async def _count_from_sqlite(self, user_id: int) -> int:
         """Count diagrams from SQLite."""
         try:
-            from config.database import SessionLocal
-            from models.diagrams import Diagram
-
             db = SessionLocal()
             try:
                 count = db.query(Diagram).filter(
                     Diagram.user_id == user_id,
-                    Diagram.is_deleted == False
+                    Diagram.is_deleted.is_(False)
                 ).count()
                 return count
             finally:
                 db.close()
         except Exception as e:
-            logger.error(f"[DiagramCache] SQLite count failed: {e}")
+            logger.error("[DiagramCache] SQLite count failed: %s", e)
             return 0
 
     async def save_diagram(
@@ -271,11 +272,15 @@ class RedisDiagramCache:
                         pipe.sadd(DIRTY_SET_KEY, f"{user_id}:{diagram_id}")
                     pipe.execute()
 
-                    logger.debug(f"[DiagramCache] {'Created' if is_new else 'Updated'} diagram {diagram_id} for user {user_id}")
+                    action = 'Created' if is_new else 'Updated'
+                    logger.debug(
+                        "[DiagramCache] %s diagram %s for user %s",
+                        action, diagram_id, user_id
+                    )
                     return True, diagram_id, None
 
                 except Exception as e:
-                    logger.error(f"[DiagramCache] Redis save failed: {e}")
+                    logger.error("[DiagramCache] Redis save failed: %s", e)
 
         # Fallback: Write directly to SQLite if Redis unavailable
         if is_new:
@@ -301,9 +306,6 @@ class RedisDiagramCache:
     ) -> bool:
         """Create new diagram in SQLite with the given UUID."""
         try:
-            from config.database import SessionLocal
-            from models.diagrams import Diagram
-
             db = SessionLocal()
             try:
                 diagram = Diagram(
@@ -323,12 +325,12 @@ class RedisDiagramCache:
                 return True
             except Exception as e:
                 db.rollback()
-                logger.error(f"[DiagramCache] SQLite create failed: {e}")
+                logger.error("[DiagramCache] SQLite create failed: %s", e)
                 return False
             finally:
                 db.close()
         except Exception as e:
-            logger.error(f"[DiagramCache] SQLite connection failed: {e}")
+            logger.error("[DiagramCache] SQLite connection failed: %s", e)
             return False
 
     async def _update_in_sqlite(
@@ -342,9 +344,6 @@ class RedisDiagramCache:
     ) -> bool:
         """Update diagram in SQLite."""
         try:
-            from config.database import SessionLocal
-            from models.diagrams import Diagram
-
             db = SessionLocal()
             try:
                 diagram = db.query(Diagram).filter(
@@ -363,12 +362,12 @@ class RedisDiagramCache:
                 return True
             except Exception as e:
                 db.rollback()
-                logger.error(f"[DiagramCache] SQLite update failed: {e}")
+                logger.error("[DiagramCache] SQLite update failed: %s", e)
                 return False
             finally:
                 db.close()
         except Exception as e:
-            logger.error(f"[DiagramCache] SQLite connection failed: {e}")
+            logger.error("[DiagramCache] SQLite connection failed: %s", e)
             return False
 
     async def get_diagram(self, user_id: int, diagram_id: str) -> Optional[Dict[str, Any]]:
@@ -396,7 +395,7 @@ class RedisDiagramCache:
                         return None
 
                 except Exception as e:
-                    logger.warning(f"[DiagramCache] Redis get failed: {e}")
+                    logger.warning("[DiagramCache] Redis get failed: %s", e)
 
         # Fallback to SQLite
         return await self._load_from_sqlite(user_id, diagram_id)
@@ -404,15 +403,12 @@ class RedisDiagramCache:
     async def _load_from_sqlite(self, user_id: int, diagram_id: str) -> Optional[Dict[str, Any]]:
         """Load diagram from SQLite and cache in Redis."""
         try:
-            from config.database import SessionLocal
-            from models.diagrams import Diagram
-
             db = SessionLocal()
             try:
                 diagram = db.query(Diagram).filter(
                     Diagram.id == diagram_id,
                     Diagram.user_id == user_id,
-                    Diagram.is_deleted == False
+                    Diagram.is_deleted.is_(False)
                 ).first()
 
                 if not diagram:
@@ -459,7 +455,7 @@ class RedisDiagramCache:
             finally:
                 db.close()
         except Exception as e:
-            logger.error(f"[DiagramCache] SQLite load failed: {e}")
+            logger.error("[DiagramCache] SQLite load failed: %s", e)
             return None
 
     async def list_diagrams(
@@ -506,7 +502,7 @@ class RedisDiagramCache:
                             'max_diagrams': MAX_PER_USER
                         }
                 except Exception as e:
-                    logger.warning(f"[DiagramCache] Redis list cache read failed: {e}")
+                    logger.warning("[DiagramCache] Redis list cache read failed: %s", e)
 
         # Cache miss: Load from SQLite and merge with pending creates
         items = await self._load_list_from_sqlite(user_id)
@@ -534,7 +530,7 @@ class RedisDiagramCache:
                     cache_data = {'items': items, 'total': total}
                     redis.setex(list_key, CACHE_TTL, json.dumps(cache_data))
                 except Exception as e:
-                    logger.warning(f"[DiagramCache] Redis list cache write failed: {e}")
+                    logger.warning("[DiagramCache] Redis list cache write failed: %s", e)
 
         # Paginate
         offset = (page - 1) * page_size
@@ -552,15 +548,11 @@ class RedisDiagramCache:
     async def _load_list_from_sqlite(self, user_id: int) -> List[Dict[str, Any]]:
         """Load diagram list metadata from SQLite."""
         try:
-            from config.database import SessionLocal
-            from models.diagrams import Diagram
-            from sqlalchemy import desc
-
             db = SessionLocal()
             try:
                 diagrams = db.query(Diagram).filter(
                     Diagram.user_id == user_id,
-                    Diagram.is_deleted == False
+                    Diagram.is_deleted.is_(False)
                 ).order_by(
                     desc(Diagram.is_pinned),
                     desc(Diagram.updated_at)
@@ -580,7 +572,7 @@ class RedisDiagramCache:
             finally:
                 db.close()
         except Exception as e:
-            logger.error(f"[DiagramCache] SQLite list load failed: {e}")
+            logger.error("[DiagramCache] SQLite list load failed: %s", e)
             return []
 
     async def _get_pending_creates_for_user(self, user_id: int) -> List[Dict[str, Any]]:
@@ -617,11 +609,11 @@ class RedisDiagramCache:
                                 'is_pinned': diagram_data.get('is_pinned', False)
                             })
                 except Exception as e:
-                    logger.warning(f"[DiagramCache] Failed to get pending diagram: {e}")
+                    logger.warning("[DiagramCache] Failed to get pending diagram: %s", e)
 
             return items
         except Exception as e:
-            logger.warning(f"[DiagramCache] Failed to get pending creates: {e}")
+            logger.warning("[DiagramCache] Failed to get pending creates: %s", e)
             return []
 
     async def delete_diagram(self, user_id: int, diagram_id: str) -> Tuple[bool, Optional[str]]:
@@ -668,17 +660,17 @@ class RedisDiagramCache:
                     pipe.srem(PENDING_CREATE_KEY, f"{user_id}:{diagram_id}")
                     pipe.execute()
 
-                    logger.debug(f"[DiagramCache] Deleted diagram {diagram_id} for user {user_id}")
+                    logger.debug(
+                        "[DiagramCache] Deleted diagram %s for user %s",
+                        diagram_id, user_id
+                    )
                     return True, None
 
                 except Exception as e:
-                    logger.error(f"[DiagramCache] Redis delete failed: {e}")
+                    logger.error("[DiagramCache] Redis delete failed: %s", e)
 
         # Fallback: Write directly to SQLite if Redis unavailable
         try:
-            from config.database import SessionLocal
-            from models.diagrams import Diagram
-
             db = SessionLocal()
             try:
                 diagram = db.query(Diagram).filter(
@@ -694,12 +686,12 @@ class RedisDiagramCache:
                 return False, "Diagram not found"
             except Exception as e:
                 db.rollback()
-                logger.error(f"[DiagramCache] SQLite delete failed: {e}")
+                logger.error("[DiagramCache] SQLite delete failed: %s", e)
                 return False, "Failed to delete diagram"
             finally:
                 db.close()
         except Exception as e:
-            logger.error(f"[DiagramCache] Delete connection failed: {e}")
+            logger.error("[DiagramCache] Delete connection failed: %s", e)
             return False, "Database error"
 
     async def duplicate_diagram(self, user_id: int, diagram_id: str) -> Tuple[bool, Optional[str], Optional[str]]:
@@ -784,23 +776,24 @@ class RedisDiagramCache:
                     pipe.sadd(DIRTY_SET_KEY, f"{user_id}:{diagram_id}")
                     pipe.execute()
 
-                    logger.debug(f"[DiagramCache] {'Pinned' if pinned else 'Unpinned'} diagram {diagram_id} for user {user_id}")
+                    action = 'Pinned' if pinned else 'Unpinned'
+                    logger.debug(
+                        "[DiagramCache] %s diagram %s for user %s",
+                        action, diagram_id, user_id
+                    )
                     return True, None
 
                 except Exception as e:
-                    logger.error(f"[DiagramCache] Redis pin failed: {e}")
+                    logger.error("[DiagramCache] Redis pin failed: %s", e)
 
         # Fallback: Write directly to SQLite if Redis unavailable
         try:
-            from config.database import SessionLocal
-            from models.diagrams import Diagram
-
             db = SessionLocal()
             try:
                 diagram = db.query(Diagram).filter(
                     Diagram.id == diagram_id,
                     Diagram.user_id == user_id,
-                    Diagram.is_deleted == False
+                    Diagram.is_deleted.is_(False)
                 ).first()
 
                 if diagram:
@@ -811,12 +804,12 @@ class RedisDiagramCache:
                 return False, "Diagram not found"
             except Exception as e:
                 db.rollback()
-                logger.error(f"[DiagramCache] SQLite pin failed: {e}")
+                logger.error("[DiagramCache] SQLite pin failed: %s", e)
                 return False, "Failed to update diagram"
             finally:
                 db.close()
         except Exception as e:
-            logger.error(f"[DiagramCache] Pin connection failed: {e}")
+            logger.error("[DiagramCache] Pin connection failed: %s", e)
             return False, "Database error"
 
     async def _sync_to_sqlite(self):
@@ -832,7 +825,10 @@ class RedisDiagramCache:
         self._last_sync_time = time.time()
 
         if created > 0 or updated > 0:
-            logger.info(f"[DiagramCache] Synced to SQLite: {created} created, {updated} updated")
+            logger.info(
+                "[DiagramCache] Synced to SQLite: %s created, %s updated",
+                created, updated
+            )
 
     async def _sync_pending_creates_to_sqlite(self) -> int:
         """INSERT new diagrams from Redis into SQLite."""
@@ -848,9 +844,6 @@ class RedisDiagramCache:
 
                 entries_list = list(pending)[:SYNC_BATCH_SIZE]
                 created = 0
-
-                from config.database import SessionLocal
-                from models.diagrams import Diagram
 
                 db = SessionLocal()
                 try:
@@ -886,8 +879,12 @@ class RedisDiagramCache:
                                 thumbnail=diagram_data.get('thumbnail'),
                                 is_pinned=diagram_data.get('is_pinned', False),
                                 is_deleted=diagram_data.get('is_deleted', False),
-                                created_at=datetime.fromisoformat(diagram_data['created_at']) if diagram_data.get('created_at') else datetime.utcnow(),
-                                updated_at=datetime.fromisoformat(diagram_data['updated_at']) if diagram_data.get('updated_at') else datetime.utcnow()
+                                created_at=datetime.fromisoformat(
+                                    diagram_data['created_at']
+                                ) if diagram_data.get('created_at') else datetime.utcnow(),
+                                updated_at=datetime.fromisoformat(
+                                    diagram_data['updated_at']
+                                ) if diagram_data.get('updated_at') else datetime.utcnow()
                             )
                             db.add(diagram)
                             created += 1
@@ -895,7 +892,10 @@ class RedisDiagramCache:
                             redis.srem(PENDING_CREATE_KEY, entry)
 
                         except Exception as e:
-                            logger.warning(f"[DiagramCache] Create sync failed: {entry} - {e}")
+                            logger.warning(
+                                "[DiagramCache] Create sync failed: %s - %s",
+                                entry, e
+                            )
                             self._total_errors += 1
 
                     db.commit()
@@ -904,13 +904,13 @@ class RedisDiagramCache:
 
                 except Exception as e:
                     db.rollback()
-                    logger.error(f"[DiagramCache] Batch create sync failed: {e}")
+                    logger.error("[DiagramCache] Batch create sync failed: %s", e)
                     return 0
                 finally:
                     db.close()
 
             except Exception as e:
-                logger.error(f"[DiagramCache] Create sync failed: {e}")
+                logger.error("[DiagramCache] Create sync failed: %s", e)
                 return 0
 
     async def _sync_dirty_updates_to_sqlite(self) -> int:
@@ -927,9 +927,6 @@ class RedisDiagramCache:
 
                 entries_list = list(dirty_entries)[:SYNC_BATCH_SIZE]
                 synced = 0
-
-                from config.database import SessionLocal
-                from models.diagrams import Diagram
 
                 db = SessionLocal()
                 try:
@@ -976,8 +973,12 @@ class RedisDiagramCache:
                                     thumbnail=diagram_data.get('thumbnail'),
                                     is_pinned=diagram_data.get('is_pinned', False),
                                     is_deleted=diagram_data.get('is_deleted', False),
-                                    created_at=datetime.fromisoformat(diagram_data['created_at']) if diagram_data.get('created_at') else datetime.utcnow(),
-                                    updated_at=datetime.fromisoformat(diagram_data['updated_at']) if diagram_data.get('updated_at') else datetime.utcnow()
+                                    created_at=datetime.fromisoformat(
+                                        diagram_data['created_at']
+                                    ) if diagram_data.get('created_at') else datetime.utcnow(),
+                                    updated_at=datetime.fromisoformat(
+                                        diagram_data['updated_at']
+                                    ) if diagram_data.get('updated_at') else datetime.utcnow()
                                 )
                                 db.add(new_diagram)
                                 synced += 1
@@ -985,7 +986,10 @@ class RedisDiagramCache:
                             redis.srem(DIRTY_SET_KEY, entry)
 
                         except Exception as e:
-                            logger.warning(f"[DiagramCache] Update sync failed: {entry} - {e}")
+                            logger.warning(
+                                "[DiagramCache] Update sync failed: %s - %s",
+                                entry, e
+                            )
                             self._total_errors += 1
 
                     db.commit()
@@ -994,13 +998,13 @@ class RedisDiagramCache:
 
                 except Exception as e:
                     db.rollback()
-                    logger.error(f"[DiagramCache] Batch update sync failed: {e}")
+                    logger.error("[DiagramCache] Batch update sync failed: %s", e)
                     return 0
                 finally:
                     db.close()
 
             except Exception as e:
-                logger.error(f"[DiagramCache] Update sync failed: {e}")
+                logger.error("[DiagramCache] Update sync failed: %s", e)
                 return 0
 
     async def flush(self):
@@ -1018,8 +1022,9 @@ class RedisDiagramCache:
         await self._sync_to_sqlite()
 
         logger.info(
-            f"[DiagramCache] Shutdown complete. "
-            f"Total synced: {self._total_synced}, errors: {self._total_errors}"
+            "[DiagramCache] Shutdown complete. "
+            "Total synced: %s, errors: %s",
+            self._total_synced, self._total_errors
         )
 
     async def preload_user_diagrams(self, user_id: int) -> bool:
@@ -1041,7 +1046,10 @@ class RedisDiagramCache:
         if self._use_redis():
             redis = get_redis()
             if redis and redis.exists(list_key):
-                logger.debug(f"[DiagramCache] Preload skipped for user {user_id} - already cached")
+                logger.debug(
+                    "[DiagramCache] Preload skipped for user %s - already cached",
+                    user_id
+                )
                 return True
 
         # Load from SQLite and cache
@@ -1054,11 +1062,14 @@ class RedisDiagramCache:
                 if redis:
                     cache_data = {'items': items, 'total': len(items)}
                     redis.setex(list_key, CACHE_TTL, json.dumps(cache_data))
-                    logger.debug(f"[DiagramCache] Preloaded {len(items)} diagrams for user {user_id}")
+                    logger.debug(
+                        "[DiagramCache] Preloaded %s diagrams for user %s",
+                        len(items), user_id
+                    )
 
             return True
         except Exception as e:
-            logger.warning(f"[DiagramCache] Preload failed for user {user_id}: {e}")
+            logger.warning("[DiagramCache] Preload failed for user %s: %s", user_id, e)
             return False
 
     def get_stats(self) -> Dict[str, Any]:
@@ -1089,13 +1100,9 @@ class RedisDiagramCache:
         return stats
 
 
-# Global singleton
-_diagram_cache: Optional[RedisDiagramCache] = None
-
-
 def get_diagram_cache() -> RedisDiagramCache:
     """Get or create global diagram cache instance."""
-    global _diagram_cache
-    if _diagram_cache is None:
-        _diagram_cache = RedisDiagramCache()
-    return _diagram_cache
+    # Use function attribute to avoid global statement warning
+    if not hasattr(get_diagram_cache, '_instance'):
+        get_diagram_cache._instance = RedisDiagramCache()
+    return get_diagram_cache._instance

@@ -261,9 +261,9 @@ def main():
     print(f"  - Teacher prompts (successful): {len(teacher_prompts)}")
     print(f"  - Unclear prompts (failed): {len(unclear_prompts)}")
     print(f"\nResults saved to: {output_dir}")
-    print(f"  - all_prompts_with_responses.txt (combined file)")
-    print(f"  - all_prompts_with_responses.json (JSON format)")
-    print(f"  - agent_responses_summary.txt (agent response analysis)")
+    print("  - all_prompts_with_responses.txt (combined file)")
+    print("  - all_prompts_with_responses.json (JSON format)")
+    print("  - agent_responses_summary.txt (agent response analysis)")
 
 if __name__ == "__main__":
     main()

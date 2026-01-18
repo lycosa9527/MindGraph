@@ -1,8 +1,3 @@
-﻿from pathlib import Path
-from typing import Optional
-import logging
-
-
 """
 Environment File Utilities
 ==========================
@@ -13,23 +8,26 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+from pathlib import Path
+import logging
+import shutil
 
 
 # Try to get logger, but handle case where logging isn't configured yet
 try:
-    logger = logging.getLogger(__name__)
+    LOGGER = logging.getLogger(__name__)
 except Exception:
-    logger = None
+    LOGGER = None
 
 def _log(message: str, level: str = 'info'):
     """Log message, fallback to print if logging not configured"""
-    if logger:
+    if LOGGER:
         if level == 'warning':
-            logger.warning(message)
+            LOGGER.warning(message)
         elif level == 'error':
-            logger.error(message)
+            LOGGER.error(message)
         else:
-            logger.info(message)
+            LOGGER.info(message)
     else:
         print(f"[ENV_UTILS] {message}")
 
@@ -88,14 +86,13 @@ def ensure_utf8_env_file(env_path: str = ".env") -> None:
                 detected_encoding = 'utf-8 (with replacements)'
             except Exception as e:
                 _log(f"Failed to read .env file: {e}", 'error')
-                raise ValueError(f"Cannot read .env file: invalid encoding. Please save the file as UTF-8.")
+                raise ValueError("Cannot read .env file: invalid encoding. Please save the file as UTF-8.") from e
 
         # Write back as UTF-8
         try:
             # Create backup before converting
             backup_path = env_file.with_suffix('.env.backup.before_utf8_conversion')
             if not backup_path.exists():
-                import shutil
                 shutil.copy2(env_file, backup_path)
                 _log(f"Created backup: {backup_path}")
 
@@ -107,5 +104,4 @@ def ensure_utf8_env_file(env_path: str = ".env") -> None:
 
         except Exception as e:
             _log(f"Failed to write UTF-8 .env file: {e}", 'error')
-            raise ValueError(f"Cannot convert .env file to UTF-8: {e}")
-
+            raise ValueError(f"Cannot convert .env file to UTF-8: {e}") from e

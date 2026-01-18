@@ -1,8 +1,3 @@
-﻿from typing import Optional, Tuple
-import re
-
-from services.infrastructure.error_handler import (
-
 """
 400 Bad Request Error Parsers
 ==============================
@@ -10,7 +5,10 @@ from services.infrastructure.error_handler import (
 Handles all 400 status code errors including parameter validation,
 file errors, audio/video errors, and other bad request scenarios.
 """
+from typing import Optional, Tuple
+import re
 
+from services.infrastructure.error_handler import (
     LLMInvalidParameterError,
     LLMProviderError,
     LLMModelNotFoundError

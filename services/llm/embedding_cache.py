@@ -9,7 +9,7 @@ import numpy as np
 
 from clients.dashscope_embedding import DashScopeEmbeddingClient
 from config.settings import config
-from models.knowledge_space import DocumentChunk, Embedding
+from models.knowledge_space import Embedding
 from services.redis.redis_client import get_redis, is_redis_available
 
 """
@@ -210,12 +210,12 @@ class EmbeddingCache:
         # Check cache first
         cached = self.get_query_embedding(query)
         if cached:
-            logger.debug(f"[EmbeddingCache] Query embedding cache hit")
+            logger.debug("[EmbeddingCache] Query embedding cache hit")
             # Validate cached embedding
             if self._validate_embedding(cached):
                 return cached
             else:
-                logger.warning(f"[EmbeddingCache] Cached embedding invalid, regenerating")
+                logger.warning("[EmbeddingCache] Cached embedding invalid, regenerating")
 
         # Generate embedding (already normalized by embedding_client)
         embedding = self.embedding_client.embed_query(query)

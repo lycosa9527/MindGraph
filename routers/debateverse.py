@@ -1,12 +1,13 @@
-﻿from typing import List
+from typing import Dict, Optional
 import asyncio
 import base64
+import queue
 import json
 import logging
 
 from fastapi import APIRouter, HTTPException, Request, Depends, Query
 from fastapi.responses import StreamingResponse
-from pydantic import Field
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from config.database import get_db
@@ -146,7 +147,7 @@ async def stream_debater_response(
                     # Also queue for streaming
                     try:
                         tts_audio_queue.put_nowait(audio_bytes)
-                    except:
+                    except queue.Full:
                         pass
 
                 if not tts_service.api_key:
@@ -225,7 +226,7 @@ async def stream_debater_response(
                     if should_commit and tts_client.mode == SessionMode.COMMIT and tts_pending_commit:
                         await tts_client.commit_text()
                         tts_pending_commit = False
-                        logger.debug(f"[DEBATEVERSE] TTS committed text buffer")
+                        logger.debug("[DEBATEVERSE] TTS committed text buffer")
                 except Exception as tts_error:
                     logger.warning(f"[DEBATEVERSE] TTS append error: {tts_error}")
 
@@ -253,7 +254,7 @@ async def stream_debater_response(
                             await tts_client.connect()
                             await tts_client.wait_for_session_created()
                             tts_started = True
-                            logger.info(f"[DEBATEVERSE] TTS streaming started")
+                            logger.info("[DEBATEVERSE] TTS streaming started")
                         except Exception as tts_start_error:
                             logger.error(f"[DEBATEVERSE] TTS start error: {tts_start_error}", exc_info=True)
                             tts_client = None
@@ -270,7 +271,7 @@ async def stream_debater_response(
                             audio_chunk = tts_audio_queue.get_nowait()
                             audio_b64 = base64.b64encode(audio_chunk).decode('utf-8')
                             yield f'data: {json.dumps({"type": "audio_chunk", "data": audio_b64})}\n\n'
-                        except:
+                        except queue.Empty:
                             break
 
                 elif chunk_type == 'thinking':
@@ -303,7 +304,7 @@ async def stream_debater_response(
                         audio_chunk = tts_audio_queue.get_nowait()
                         audio_b64 = base64.b64encode(audio_chunk).decode('utf-8')
                         yield f'data: {json.dumps({"type": "audio_chunk", "data": audio_b64})}\n\n'
-                    except:
+                    except queue.Empty:
                         break
 
                 await tts_client.close()

@@ -1,10 +1,3 @@
-﻿from typing import Optional, Tuple
-import logging
-import os
-import shutil
-import sys
-
-
 """
 Dependency Checker for Knowledge Space
 Author: lycosa9527
@@ -16,6 +9,17 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+from typing import Optional, Tuple
+import logging
+import platform
+import shutil
+import subprocess
+import sys
+
+try:
+    import pytesseract
+except ImportError:
+    pytesseract = None
 
 
 logger = logging.getLogger(__name__)
@@ -23,7 +27,6 @@ logger = logging.getLogger(__name__)
 
 class DependencyError(Exception):
     """Raised when a required dependency is missing."""
-    pass
 
 
 def install_tesseract_ocr() -> Tuple[bool, Optional[str]]:
@@ -62,7 +65,8 @@ def install_tesseract_ocr() -> Tuple[bool, Optional[str]]:
             cmd,
             capture_output=True,
             text=True,
-            timeout=300  # 5 minute timeout
+            timeout=300,  # 5 minute timeout
+            check=False
         )
 
         if result.returncode == 0:
@@ -70,7 +74,9 @@ def install_tesseract_ocr() -> Tuple[bool, Optional[str]]:
             return True, None
         else:
             error_msg = result.stderr or result.stdout or "Unknown error"
-            logger.warning(f"[DependencyCheck] Failed to auto-install Tesseract OCR: {error_msg}")
+            logger.warning(
+                "[DependencyCheck] Failed to auto-install Tesseract OCR: %s", error_msg
+            )
             return False, f"Auto-installation failed: {error_msg}"
 
     except subprocess.TimeoutExpired:
@@ -80,7 +86,7 @@ def install_tesseract_ocr() -> Tuple[bool, Optional[str]]:
         logger.warning("[DependencyCheck] apt-get command not found, cannot auto-install")
         return True, None  # Not an error, just can't auto-install
     except Exception as e:
-        logger.warning(f"[DependencyCheck] Error during auto-installation: {e}")
+        logger.warning("[DependencyCheck] Error during auto-installation: %s", e)
         return False, f"Auto-installation error: {str(e)}"
 
 
@@ -93,10 +99,7 @@ def check_tesseract_ocr() -> Tuple[bool, Optional[str]]:
         - is_available: True if Tesseract is available
         - error_message: Error message if not available, None if available
     """
-    # Import pytesseract at function scope so it's available throughout
-    try:
-        import pytesseract
-    except ImportError:
+    if pytesseract is None:
         return False, "pytesseract Python package is not installed. Install with: pip install pytesseract"
 
     try:
@@ -104,7 +107,7 @@ def check_tesseract_ocr() -> Tuple[bool, Optional[str]]:
         # pytesseract.get_tesseract_version() will raise if binary not found
         try:
             version = pytesseract.get_tesseract_version()
-            logger.info(f"[DependencyCheck] Tesseract OCR found: version {version}")
+            logger.info("[DependencyCheck] Tesseract OCR found: version %s", version)
 
             # Verify Chinese language pack is available
             try:
@@ -119,7 +122,7 @@ def check_tesseract_ocr() -> Tuple[bool, Optional[str]]:
                 else:
                     logger.info("[DependencyCheck] Tesseract OCR Chinese language pack (chi_sim) is available")
             except Exception as e:
-                logger.warning(f"[DependencyCheck] Could not verify Tesseract language packs: {e}")
+                logger.warning("[DependencyCheck] Could not verify Tesseract language packs: %s", e)
 
             return True, None
         except Exception as e:
@@ -132,13 +135,18 @@ def check_tesseract_ocr() -> Tuple[bool, Optional[str]]:
                     # Retry checking after installation
                     try:
                         version = pytesseract.get_tesseract_version()
-                        logger.info(f"[DependencyCheck] Tesseract OCR installed successfully: version {version}")
+                        logger.info(
+                            "[DependencyCheck] Tesseract OCR installed successfully: version %s", version
+                        )
 
                         # Verify Chinese language pack
                         try:
                             langs = pytesseract.get_languages()
                             if 'chi_sim' in langs:
-                                logger.info("[DependencyCheck] Tesseract OCR Chinese language pack (chi_sim) is available")
+                                logger.info(
+                                    "[DependencyCheck] Tesseract OCR Chinese language pack "
+                                    "(chi_sim) is available"
+                                )
                             else:
                                 logger.warning("[DependencyCheck] Chinese language pack not found after installation")
                         except Exception:

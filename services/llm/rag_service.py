@@ -1,4 +1,5 @@
-﻿from collections import Counter
+from collections import Counter
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 from typing import List, Dict, Any, Optional
 import logging
@@ -10,7 +11,7 @@ from sqlalchemy.orm import Session
 
 from clients.dashscope_embedding import get_embedding_client
 from clients.dashscope_rerank import get_rerank_client
-from models.knowledge_space import DocumentChunk, KnowledgeDocument, KnowledgeSpace, KnowledgeQuery, QueryFeedback, QueryTemplate, DocumentRelationship, ChunkAttachment
+from models.knowledge_space import DocumentChunk, KnowledgeDocument, KnowledgeSpace, KnowledgeQuery, QueryFeedback, DocumentRelationship, ChunkAttachment
 from services.infrastructure.kb_rate_limiter import get_kb_rate_limiter
 from services.knowledge.keyword_search_service import get_keyword_search_service
 from services.llm.embedding_cache import get_embedding_cache
@@ -671,7 +672,7 @@ class RAGService:
                     exceptions.append(str(e))
 
             if exceptions:
-                logger.warning(f"[RAGService] Some searches failed, falling back to vector search")
+                logger.warning("[RAGService] Some searches failed, falling back to vector search")
                 return self.vector_search(db, user_id, query, top_k, metadata_filter)
 
             # Combine results with weighted scores

@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 """
 MindGraph Complete Setup Script
 
@@ -387,24 +387,8 @@ def check_dependencies_already_installed() -> bool:
     for module_name, package_name in core_dependencies.items():
         try:
             # Handle special cases for packages with different import names
-            if module_name == 'PIL':
-                import PIL
-            elif module_name == 'multipart':
-                import multipart
-            elif module_name == 'yaml':
-                import yaml
-            elif module_name == 'dotenv':
-                import dotenv
-            elif module_name == 'nest_asyncio':
-                import nest_asyncio
-            elif module_name == 'Crypto':
-                from Crypto import Cipher
-            elif module_name == 'jose':
-                from jose import jwt
-            elif module_name == 'pydantic_settings':
-                import pydantic_settings
-            elif module_name == 'email_validator':
-                import email_validator
+            if module_name in ['PIL', 'multipart', 'yaml', 'dotenv', 'nest_asyncio', 'Crypto', 'jose', 'pydantic_settings', 'email_validator']:
+                pass  # Module availability checked via importlib
             elif module_name == 'langchain_openai':
                 importlib.import_module('langchain_openai')
             elif module_name == 'langgraph_checkpoint':
@@ -702,7 +686,7 @@ def extract_chromium_zip() -> bool:
                 print(f"[ERROR] {platform_name} platform not found in zip file")
                 print(f"[INFO] Available platforms in zip: {', '.join(sorted(available_platforms))}")
                 print(f"[INFO] Your platform ({platform.system()}) requires: {platform_name}")
-                print(f"[INFO] Falling back to Playwright download...")
+                print("[INFO] Falling back to Playwright download...")
                 return False
 
         # Extract zip file (only platform-specific folder)
@@ -736,7 +720,7 @@ def extract_chromium_zip() -> bool:
 
         # Clear progress line and print completion
         print(f"    Progress: {extracted}/{total_files} files...")
-        print(f"\n[SUCCESS] Chromium extracted successfully!")
+        print("\n[SUCCESS] Chromium extracted successfully!")
 
         # Verify installation
         if check_offline_chromium_installed():
@@ -847,31 +831,31 @@ def verify_dependencies() -> bool:
         try:
             # Handle special cases for packages with different import names
             if module_name == 'PIL':
-                import PIL
+                importlib.import_module('PIL')
                 version = get_package_version('Pillow')
             elif module_name == 'multipart':
-                import multipart
+                importlib.import_module('multipart')
                 version = get_package_version('python-multipart')
             elif module_name == 'yaml':
-                import yaml
+                importlib.import_module('yaml')
                 version = get_package_version('PyYAML')
             elif module_name == 'dotenv':
-                import dotenv
+                importlib.import_module('dotenv')
                 version = get_package_version('python-dotenv')
             elif module_name == 'nest_asyncio':
-                import nest_asyncio
+                importlib.import_module('nest_asyncio')
                 version = get_package_version('nest-asyncio')
             elif module_name == 'Crypto':
-                from Crypto import Cipher
+                importlib.import_module('Crypto.Cipher')
                 version = get_package_version('pycryptodome')
             elif module_name == 'jose':
-                from jose import jwt
+                importlib.import_module('jose.jwt')
                 version = get_package_version('python-jose')
             elif module_name == 'pydantic_settings':
-                import pydantic_settings
+                importlib.import_module('pydantic_settings')
                 version = get_package_version('pydantic-settings')
             elif module_name == 'email_validator':
-                import email_validator
+                importlib.import_module('email_validator')
                 version = get_package_version('email-validator')
             elif module_name == 'langchain_openai':
                 importlib.import_module('langchain_openai')
@@ -880,7 +864,7 @@ def verify_dependencies() -> bool:
                 importlib.import_module('langgraph_checkpoint')
                 version = get_package_version('langgraph-checkpoint')
             else:
-                module = importlib.import_module(module_name)
+                importlib.import_module(module_name)
                 version = get_package_version(package_name)
 
             print(f"    [SUCCESS] {package_name:<20} - {version}")
@@ -894,7 +878,7 @@ def verify_dependencies() -> bool:
             successful_imports.append(package_name)
 
     # Summary
-    print(f"\n[INFO] Dependency Check Summary:")
+    print("\n[INFO] Dependency Check Summary:")
     print(f"    [SUCCESS] Successful: {len(successful_imports)}/{len(core_dependencies)}")
     print(f"    [ERROR] Failed: {len(failed_imports)}/{len(core_dependencies)}")
 
@@ -937,9 +921,9 @@ def verify_playwright_browsers() -> bool:
                         version = browser.version
                         print(f"    [SUCCESS] Chromium browser - {version}")
                     else:
-                        print(f"    [SUCCESS] Chromium browser - Working")
+                        print("    [SUCCESS] Chromium browser - Working")
                 except Exception:
-                    print(f"    [SUCCESS] Chromium browser - Working")
+                    print("    [SUCCESS] Chromium browser - Working")
 
                 browser.close()
 
@@ -1117,7 +1101,7 @@ def setup_logs_directory() -> bool:
             log_path = os.path.join(logs_dir, log_file)
             if not os.path.exists(log_path):
                 # Create empty log file
-                with open(log_path, 'w') as f:
+                with open(log_path, 'w'):
                     pass
                 print(f"    [SUCCESS] Created log file: {log_file}")
             else:
@@ -1337,7 +1321,7 @@ def main() -> None:
         zip_path = Path(BROWSERS_DIR) / "chromium.zip"
 
         if zip_path.exists():
-            print(f"[INFO] Found chromium.zip - attempting extraction...")
+            print("[INFO] Found chromium.zip - attempting extraction...")
             try:
                 if extract_chromium_zip():
                     chromium_from_zip = True

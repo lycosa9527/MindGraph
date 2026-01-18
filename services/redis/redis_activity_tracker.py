@@ -1,12 +1,3 @@
-﻿from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, List, Optional, Set
-import json
-import logging
-import time
-import uuid
-
-from services.redis.redis_client import is_redis_available, get_redis, redis_ops
-
 """
 Redis User Activity Tracker
 ============================
@@ -32,6 +23,17 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+from datetime import datetime, timedelta, timezone
+from typing import Dict, List, Optional, Set
+import json
+import logging
+import uuid
+
+import asyncio
+
+from services.auth.ip_geolocation import get_geolocation_service
+from services.monitoring.city_flag_tracker import get_city_flag_tracker
+from services.redis.redis_client import is_redis_available, get_redis
 
 
 
@@ -155,7 +157,7 @@ class RedisActivityTracker:
                             if ip_address:
                                 redis.hset(session_key, "ip_address", ip_address)
                             redis.hset(session_key, "last_activity", get_beijing_now().isoformat())
-                            logger.debug(f"Reusing session {sid[:8]} for user {user_id}")
+                            logger.debug("Reusing session %s for user %s", sid[:8], user_id)
 
                             # Record city flag for reused session (async, fire-and-forget)
                             # This ensures flags are shown for all active sessions, including returning users
@@ -200,11 +202,11 @@ class RedisActivityTracker:
             if ip_address and ip_address != 'unknown':
                 self._record_city_flag_async(ip_address)
 
-            logger.debug(f"Started session {session_id[:8]} for user {user_id}")
+            logger.debug("Started session %s for user %s", session_id[:8], user_id)
             return session_id
 
         except Exception as e:
-            logger.error(f"[ActivityTracker] Redis error: {e}")
+            logger.error("[ActivityTracker] Redis error: %s", e)
             return self._memory_start_session(
                 user_id, user_phone, user_name, session_id, ip_address, reuse_existing
             )
@@ -217,10 +219,6 @@ class RedisActivityTracker:
         to avoid blocking the session creation.
         """
         try:
-            import asyncio
-            from services.monitoring.city_flag_tracker import get_city_flag_tracker
-            from services.auth.ip_geolocation import get_geolocation_service
-
             async def _record_flag():
                 try:
                     geolocation = get_geolocation_service()
@@ -234,7 +232,7 @@ class RedisActivityTracker:
                             flag_tracker = get_city_flag_tracker()
                             flag_tracker.record_city_flag(city, province, lat, lng)
                 except Exception as e:
-                    logger.debug(f"Failed to record city flag: {e}")
+                    logger.debug("Failed to record city flag: %s", e)
 
             # Schedule async task (fire-and-forget)
             try:
@@ -255,9 +253,9 @@ class RedisActivityTracker:
                         # No event loop available, create new one
                         asyncio.run(_record_flag())
             except Exception as e:
-                logger.debug(f"Failed to schedule city flag recording: {e}")
+                logger.debug("Failed to schedule city flag recording: %s", e)
         except Exception as e:
-            logger.debug(f"Failed to record city flag: {e}")
+            logger.debug("Failed to record city flag: %s", e)
 
     def _memory_start_session(
         self,
@@ -348,7 +346,7 @@ class RedisActivityTracker:
                     user_sessions_key = f"{USER_SESSIONS_PREFIX}{uid}"
                     redis.srem(user_sessions_key, session_id)
 
-                    logger.debug(f"Ended session {session_id[:8]}")
+                    logger.debug("Ended session %s", session_id[:8])
 
             elif user_id:
                 user_sessions_key = f"{USER_SESSIONS_PREFIX}{user_id}"
@@ -363,10 +361,10 @@ class RedisActivityTracker:
                     redis.delete(session_key)
 
                 redis.delete(user_sessions_key)
-                logger.debug(f"Ended all sessions for user {user_id}")
+                logger.debug("Ended all sessions for user %s", user_id)
 
         except Exception as e:
-            logger.error(f"[ActivityTracker] Redis error ending session: {e}")
+            logger.error("[ActivityTracker] Redis error ending session: %s", e)
 
     def _memory_end_session(self, session_id: Optional[str], user_id: Optional[int]):
         """End session using in-memory storage."""
@@ -415,7 +413,9 @@ class RedisActivityTracker:
         """Record activity using Redis."""
         redis = get_redis()
         if not redis:
-            return self._memory_record_activity(user_id, user_phone, activity_type, details, session_id, user_name, ip_address)
+            return self._memory_record_activity(
+                user_id, user_phone, activity_type, details, session_id, user_name, ip_address
+            )
 
         try:
             now = get_beijing_now()
@@ -461,7 +461,7 @@ class RedisActivityTracker:
             self._log_activity(user_id, user_phone, activity_type, details, session_id)
 
         except Exception as e:
-            logger.error(f"[ActivityTracker] Redis error recording activity: {e}")
+            logger.error("[ActivityTracker] Redis error recording activity: %s", e)
 
     def _memory_record_activity(
         self,
@@ -487,8 +487,10 @@ class RedisActivityTracker:
         if session_id in self._memory_sessions:
             # Update IP address if provided
             if session_ip and session_ip != 'unknown':
-                if not self._memory_sessions[session_id].get('ip_address') or self._memory_sessions[session_id].get('ip_address') == 'unknown':
-                    self._memory_sessions[session_id]['ip_address'] = session_ip
+                session_data = self._memory_sessions[session_id]
+                existing_ip = session_data.get('ip_address')
+                if not existing_ip or existing_ip == 'unknown':
+                    session_data['ip_address'] = session_ip
             session = self._memory_sessions[session_id]
             session['last_activity'] = now
             session['current_activity'] = activity_type
@@ -535,7 +537,7 @@ class RedisActivityTracker:
                     redis.ltrim(HISTORY_KEY, 0, MAX_HISTORY - 1)
                     return
                 except Exception as e:
-                    logger.error(f"[ActivityTracker] Redis error logging activity: {e}")
+                    logger.error("[ActivityTracker] Redis error logging activity: %s", e)
 
         # Fallback to memory
         self._memory_history.append(entry)
@@ -586,13 +588,21 @@ class RedisActivityTracker:
                                 created_at = datetime.fromisoformat(session_data.get('created_at', ''))
                             except (ValueError, TypeError):
                                 created_at = get_beijing_now()
-                                logger.debug(f"Invalid created_at for session {session_data.get('session_id', 'unknown')}, using current time")
+                                session_id_val = session_data.get('session_id', 'unknown')
+                                logger.debug(
+                                    "Invalid created_at for session %s, using current time",
+                                    session_id_val
+                                )
 
                             try:
                                 last_activity = datetime.fromisoformat(session_data.get('last_activity', ''))
                             except (ValueError, TypeError):
                                 last_activity = get_beijing_now()
-                                logger.debug(f"Invalid last_activity for session {session_data.get('session_id', 'unknown')}, using current time")
+                                session_id_val = session_data.get('session_id', 'unknown')
+                                logger.debug(
+                                    "Invalid last_activity for session %s, using current time",
+                                    session_id_val
+                                )
 
                             # Filter: Only include users active within the time window
                             if last_activity < cutoff_time:
@@ -600,7 +610,7 @@ class RedisActivityTracker:
 
                             # Calculate duration with error handling
                             try:
-                                duration = str(now - created_at).split('.')[0]
+                                duration = str(now - created_at).split('.', maxsplit=1)[0]
                             except Exception:
                                 duration = '0:00:00'
 
@@ -621,7 +631,7 @@ class RedisActivityTracker:
                             }
                             active_users.append(user_data)
                         except Exception as e:
-                            logger.debug(f"Error parsing session data: {e}")
+                            logger.debug("Error parsing session data: %s", e)
 
                 if cursor == 0:
                     break
@@ -631,7 +641,7 @@ class RedisActivityTracker:
             return active_users
 
         except Exception as e:
-            logger.error(f"[ActivityTracker] Redis error getting active users: {e}")
+            logger.error("[ActivityTracker] Redis error getting active users: %s", e)
             return self._memory_get_active_users()
 
     def _memory_get_active_users(self, hours: int = 1) -> List[Dict]:
@@ -672,7 +682,7 @@ class RedisActivityTracker:
                 ),
                 'last_activity': session['last_activity'].isoformat(),
                 'activity_count': session.get('activity_count', 0),
-                'session_duration': str(now - session['created_at']).split('.')[0]
+                'session_duration': str(now - session['created_at']).split('.', maxsplit=1)[0]
             }
             active_users.append(user_data)
 
@@ -696,7 +706,7 @@ class RedisActivityTracker:
             entries = redis.lrange(HISTORY_KEY, 0, limit - 1)
             return [json.loads(entry) for entry in entries]
         except Exception as e:
-            logger.error(f"[ActivityTracker] Redis error getting activities: {e}")
+            logger.error("[ActivityTracker] Redis error getting activities: %s", e)
             return self._memory_get_recent_activities(limit)
 
     def _memory_get_recent_activities(self, limit: int) -> List[Dict]:
@@ -759,7 +769,7 @@ class RedisActivityTracker:
             }
 
         except Exception as e:
-            logger.error(f"[ActivityTracker] Redis error getting stats: {e}")
+            logger.error("[ActivityTracker] Redis error getting stats: %s", e)
             return self._memory_get_stats()
 
     def _memory_get_stats(self) -> Dict:
@@ -774,13 +784,18 @@ class RedisActivityTracker:
         }
 
 
-# Global singleton
-_tracker: Optional[RedisActivityTracker] = None
+class ActivityTrackerSingleton:
+    """Singleton wrapper for RedisActivityTracker."""
+    _instance: Optional[RedisActivityTracker] = None
+
+    @classmethod
+    def get_instance(cls) -> RedisActivityTracker:
+        """Get or create the singleton instance."""
+        if cls._instance is None:
+            cls._instance = RedisActivityTracker()
+        return cls._instance
 
 
 def get_activity_tracker() -> RedisActivityTracker:
     """Get or create global activity tracker instance."""
-    global _tracker
-    if _tracker is None:
-        _tracker = RedisActivityTracker()
-    return _tracker
+    return ActivityTrackerSingleton.get_instance()

@@ -1,5 +1,4 @@
-﻿from datetime import datetime, timezone
-from typing import Optional
+from datetime import datetime, timezone
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
@@ -11,6 +10,8 @@ from models.auth import Organization, User
 from models.messages import Messages, Language
 from services.redis.redis_org_cache import org_cache
 from utils.invitations import normalize_or_generate
+from ..dependencies import get_language_dependency, require_admin
+from ..helpers import utc_to_beijing_iso
 
 """
 Admin Organization Management Endpoints
@@ -91,7 +92,7 @@ async def list_organizations_admin(
             TokenUsage,
             and_(
                 Organization.id == TokenUsage.organization_id,
-                TokenUsage.success == True
+                TokenUsage.success
             )
         ).group_by(
             Organization.id,

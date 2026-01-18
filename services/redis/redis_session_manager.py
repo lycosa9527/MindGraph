@@ -1,4 +1,4 @@
-﻿"""
+"""
 Redis Session Manager Service
 =============================
 
@@ -29,9 +29,9 @@ import json
 import logging
 import time
 from typing import Optional, Dict, Any
-from datetime import datetime, timedelta
+from datetime import datetime
 
-from services.redis.redis_client import is_redis_available, redis_ops, get_redis
+from services.redis.redis_client import is_redis_available, RedisOps, get_redis
 
 logger = logging.getLogger(__name__)
 
@@ -306,7 +306,7 @@ class RedisSessionManager:
             else:
                 # Single session mode: Use single key-value (legacy mode)
                 session_key = _get_session_key(user_id)
-                success = redis_ops.set_with_ttl(session_key, token_hash, SESSION_TTL_SECONDS)
+                success = RedisOps.set_with_ttl(session_key, token_hash, SESSION_TTL_SECONDS)
 
                 if success:
                     logger.debug(f"[Session] Stored session for user {user_id} (TTL: {SESSION_TTL_SECONDS}s)")
@@ -333,7 +333,7 @@ class RedisSessionManager:
 
         try:
             session_key = _get_session_key(user_id)
-            token_hash = redis_ops.get(session_key)
+            token_hash = RedisOps.get(session_key)
             return token_hash
         except Exception as e:
             logger.error(f"[Session] Error getting session token for user {user_id}: {e}", exc_info=True)
@@ -396,7 +396,7 @@ class RedisSessionManager:
 
             # Single session mode (legacy)
             session_key = _get_session_key(user_id)
-            success = redis_ops.delete(session_key)
+            success = RedisOps.delete(session_key)
 
             if success:
                 logger.debug(f"[Session] Deleted session for user {user_id}")
@@ -460,7 +460,7 @@ class RedisSessionManager:
 
             # Check single session mode (legacy)
             session_key = _get_session_key(user_id)
-            stored_hash = redis_ops.get(session_key)
+            stored_hash = RedisOps.get(session_key)
 
             if stored_hash is None:
                 # Session doesn't exist (expired or invalidated)
@@ -528,7 +528,7 @@ class RedisSessionManager:
 
             # Single session mode
             session_key = _get_session_key(user_id)
-            old_hash = redis_ops.get(session_key)
+            old_hash = RedisOps.get(session_key)
 
             if old_hash:
                 # Create invalidation notification for old session
@@ -543,7 +543,7 @@ class RedisSessionManager:
                     )
 
                 # Delete old session
-                redis_ops.delete(session_key)
+                RedisOps.delete(session_key)
                 logger.info(f"[Session] Invalidated session for user {user_id} (old token hash: {old_hash[:16]}...)")
             else:
                 logger.debug(f"[Session] No existing session to invalidate for user {user_id}")
@@ -576,7 +576,7 @@ class RedisSessionManager:
                 "ip_address": ip_address or "unknown"
             }
 
-            success = redis_ops.set_with_ttl(
+            success = RedisOps.set_with_ttl(
                 notification_key,
                 json.dumps(notification_data),
                 SESSION_TTL_SECONDS
@@ -606,7 +606,7 @@ class RedisSessionManager:
 
         try:
             notification_key = _get_invalidation_notification_key(user_id, token_hash)
-            notification_json = redis_ops.get(notification_key)
+            notification_json = RedisOps.get(notification_key)
 
             if notification_json:
                 return json.loads(notification_json)
@@ -632,7 +632,7 @@ class RedisSessionManager:
 
         try:
             notification_key = _get_invalidation_notification_key(user_id, token_hash)
-            success = redis_ops.delete(notification_key)
+            success = RedisOps.delete(notification_key)
 
             if success:
                 logger.debug(f"[Session] Cleared invalidation notification for user {user_id}")
@@ -702,7 +702,7 @@ class RefreshTokenManager:
 
         try:
             lookup_key = self._get_lookup_key(token_hash)
-            user_id_str = redis_ops.get(lookup_key)
+            user_id_str = RedisOps.get(lookup_key)
             if user_id_str:
                 return int(user_id_str)
             return None
@@ -738,7 +738,7 @@ class RefreshTokenManager:
             revoked = 0
             for existing_token_hash in token_hashes:
                 token_key = self._get_token_key(user_id, existing_token_hash)
-                token_json = redis_ops.get(token_key)
+                token_json = RedisOps.get(token_key)
                 if token_json:
                     try:
                         token_data = json.loads(token_json)
@@ -804,7 +804,7 @@ class RefreshTokenManager:
             }
 
             # Store token with TTL
-            redis_ops.set_with_ttl(
+            RedisOps.set_with_ttl(
                 token_key,
                 json.dumps(token_data),
                 REFRESH_TOKEN_TTL_SECONDS
@@ -816,7 +816,7 @@ class RefreshTokenManager:
 
             # Store reverse lookup: token_hash -> user_id (for refresh without access token)
             lookup_key = self._get_lookup_key(token_hash)
-            redis_ops.set_with_ttl(lookup_key, str(user_id), REFRESH_TOKEN_TTL_SECONDS)
+            RedisOps.set_with_ttl(lookup_key, str(user_id), REFRESH_TOKEN_TTL_SECONDS)
 
             # Enforce max concurrent sessions limit on refresh tokens
             self.enforce_max_tokens(user_id)
@@ -855,7 +855,7 @@ class RefreshTokenManager:
 
         try:
             token_key = self._get_token_key(user_id, token_hash)
-            token_json = redis_ops.get(token_key)
+            token_json = RedisOps.get(token_key)
 
             if not token_json:
                 logger.info(f"[RefreshToken] INVALID - token not found in Redis: user={user_id}, token={token_hash[:8]}...")
@@ -911,13 +911,13 @@ class RefreshTokenManager:
             lookup_key = self._get_lookup_key(token_hash)
 
             # Delete the token
-            deleted = redis_ops.delete(token_key)
+            deleted = RedisOps.delete(token_key)
 
             # Remove from user's token set
             redis.srem(user_tokens_key, token_hash)
 
             # Delete reverse lookup
-            redis_ops.delete(lookup_key)
+            RedisOps.delete(lookup_key)
 
             if deleted:
                 logger.info(f"[TokenAudit] Token revoked: user={user_id}, reason={reason}")
@@ -961,10 +961,10 @@ class RefreshTokenManager:
             for token_hash in token_hashes:
                 token_key = self._get_token_key(user_id, token_hash)
                 lookup_key = self._get_lookup_key(token_hash)
-                if redis_ops.delete(token_key):
+                if RedisOps.delete(token_key):
                     count += 1
                 # Also delete reverse lookup
-                redis_ops.delete(lookup_key)
+                RedisOps.delete(lookup_key)
 
             # Delete the user's token set
             redis.delete(user_tokens_key)
@@ -1025,7 +1025,7 @@ class RefreshTokenManager:
 
             for token_hash in token_hashes:
                 token_key = self._get_token_key(user_id, token_hash)
-                token_json = redis_ops.get(token_key)
+                token_json = RedisOps.get(token_key)
                 if token_json:
                     try:
                         token_data = json.loads(token_json)

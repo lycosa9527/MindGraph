@@ -1,4 +1,4 @@
-﻿"""
+"""
 Uvicorn Configuration for MindGraph FastAPI Application
 =======================================================
 
@@ -14,18 +14,18 @@ Proprietary License
 """
 
 import os
-import sys
 import logging
 import multiprocessing
+from typing import Literal, cast, Any
 
 # ============================================================================
 # SERVER CONFIGURATION
 # ============================================================================
 
 # Host and Port
-bind = f"0.0.0.0:{os.getenv('PORT', '5000')}"
-host = "0.0.0.0"
-port = int(os.getenv('PORT', '5000'))
+BIND = f"0.0.0.0:{os.getenv('PORT', '5000')}"
+HOST = "0.0.0.0"
+PORT = int(os.getenv('PORT', '5000'))
 
 # Workers (async, so we need FAR fewer than sync servers)
 # Formula: 1-2 workers per CPU core (async handles 1000s per worker)
@@ -40,11 +40,11 @@ workers = int(os.getenv('UVICORN_WORKERS', multiprocessing.cpu_count()))
 # No thread pool needed - async/await handles concurrency
 
 # Timeout for long-running requests (SSE can run indefinitely)
-timeout_keep_alive = 300  # 5 minutes for SSE connections
-timeout_graceful_shutdown = 10  # Reduced to 10s for faster shutdown (was 30s)
+TIMEOUT_KEEP_ALIVE = 300
+TIMEOUT_GRACEFUL_SHUTDOWN = 10
 
 # Connection limits to prevent shutdown hangs
-limit_concurrency = 1000  # Max concurrent connections per worker
+LIMIT_CONCURRENCY = 1000
 
 # ============================================================================
 # LOGGING CONFIGURATION
@@ -67,16 +67,18 @@ class UnifiedFormatter(logging.Formatter):
         'BOLD': '\033[1m'
     }
 
-    def __init__(self, fmt=None, datefmt=None, style='%', validate=True, use_colors=None):
+    def __init__(self, fmt=None, datefmt=None, style: Literal['%', '{', '"'] = '%', validate=True, use_colors=None, _use_colors=None):
         """
         Initialize formatter, accepting Uvicorn's use_colors parameter.
         We ignore use_colors since we handle our own color logic.
         """
         # Call parent init without use_colors (not a standard logging.Formatter parameter)
-        super().__init__(fmt=fmt, datefmt=datefmt, style=style, validate=validate)
+        # Cast style to satisfy type checker (logging uses private _FormatStyle type)
+        style_cast = cast(Any, style)
+        super().__init__(fmt=fmt, datefmt=datefmt, style=style_cast, validate=validate)
         # We manage our own colors in the format() method
 
-    def format(self, record) -> None:
+    def format(self, record) -> str:
         # Timestamp: HH:MM:SS
         timestamp = self.formatTime(record, '%H:%M:%S')
 
@@ -111,7 +113,6 @@ class UnifiedFormatter(logging.Formatter):
         source = source.ljust(4)
 
         # Add process ID to identify worker
-        import os
         pid = os.getpid()
 
         return f"[{timestamp}] {colored_level} | {source} | [{pid}] {record.getMessage()}"
@@ -177,21 +178,21 @@ LOGGING_CONFIG = {
 # ============================================================================
 
 # Log level
-log_level = os.getenv('LOG_LEVEL', 'info').lower()
+LOG_LEVEL = os.getenv('LOG_LEVEL', 'info').lower()
 
 # Access log
-access_log = True
+ACCESS_LOG = True
 
 # Reload on code changes (development only)
-reload = os.getenv('ENVIRONMENT', 'production') == 'development'
+RELOAD = os.getenv('ENVIRONMENT', 'production') == 'development'
 
 # Production settings
 if os.getenv('ENVIRONMENT') == 'production':
     # Disable auto-reload in production
-    reload = False
+    RELOAD = False
 
     # Use production log level
-    log_level = 'warning'
+    LOG_LEVEL = 'warning'
 
 # ============================================================================
 # CONFIGURATION SUMMARY
@@ -200,13 +201,13 @@ if os.getenv('ENVIRONMENT') == 'production':
 config_summary = f"""
 Uvicorn Configuration Summary:
 ------------------------------
-Host: {host}
-Port: {port}
+Host: {HOST}
+Port: {PORT}
 Workers: {workers} (async - each handles 1000s of connections)
-Timeout Keep-Alive: {timeout_keep_alive}s
-Graceful Shutdown: {timeout_graceful_shutdown}s
-Log Level: {log_level}
-Reload: {reload}
+Timeout Keep-Alive: {TIMEOUT_KEEP_ALIVE}s
+Graceful Shutdown: {TIMEOUT_GRACEFUL_SHUTDOWN}s
+Log Level: {LOG_LEVEL}
+Reload: {RELOAD}
 Environment: {os.getenv('ENVIRONMENT', 'production')}
 
 Expected Capacity: 4,000+ concurrent SSE connections per worker
@@ -215,4 +216,3 @@ Total Capacity: ~{workers * 4000} concurrent connections
 
 if __name__ == "__main__":
     print(config_summary)
-

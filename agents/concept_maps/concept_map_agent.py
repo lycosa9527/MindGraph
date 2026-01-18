@@ -212,8 +212,8 @@ class ConceptMapAgent(BaseAgent):
         try:
             logger.info("ConceptMapAgent: Starting concept map generation for prompt")
 
-            # Import the robust concept map generation from main_agent
-            from ..main_agent import generate_concept_map_robust  # type: ignore
+            # Import the robust concept map generation from concept_map_generation
+            from .concept_map_generation import generate_concept_map_robust
 
             # Use the robust generation method with auto-detection
             spec = generate_concept_map_robust(user_prompt, language, method='auto')
@@ -266,7 +266,7 @@ class ConceptMapAgent(BaseAgent):
 
             # Parse concepts response
             try:
-                concepts_data = self._parse_json_response(concepts_response)
+                concepts_data = self.parse_json_response(concepts_response)
                 if not concepts_data:
                     return {"success": False, "error": "Failed to parse concepts response"}
 
@@ -298,7 +298,7 @@ class ConceptMapAgent(BaseAgent):
 
             # Parse relationships response
             try:
-                relationships_data = self._parse_json_response(relationships_response)
+                relationships_data = self.parse_json_response(relationships_response)
                 if not relationships_data:
                     return {"success": False, "error": "Failed to parse relationships response"}
 
@@ -339,8 +339,8 @@ class ConceptMapAgent(BaseAgent):
         This approach integrates with existing workflow: [existing topic extraction] → 30 concepts → relationships.
         """
         try:
-            # Use the existing LLM calling pattern from main_agent
-            from ..main_agent import _invoke_llm_prompt
+            # Use the existing LLM calling pattern from concept_map_generation
+            from .concept_map_generation import _invoke_llm_prompt
 
             # Stage 1: Generate exactly 30 concepts based on user prompt
             concepts_prompt_key = f"concept_map_30_concepts_{language}"
@@ -356,7 +356,7 @@ class ConceptMapAgent(BaseAgent):
 
             # Parse concepts response
             try:
-                concepts_data = self._parse_json_response(concepts_response)
+                concepts_data = self.parse_json_response(concepts_response)
                 if not concepts_data:
                     return {"success": False, "error": "Failed to parse concepts response"}
 
@@ -402,7 +402,7 @@ class ConceptMapAgent(BaseAgent):
 
             # Parse relationships response
             try:
-                relationships_data = self._parse_json_response(relationships_response)
+                relationships_data = self.parse_json_response(relationships_response)
                 if not relationships_data:
                     return {"success": False, "error": "Failed to parse relationships response"}
 
@@ -524,7 +524,7 @@ class ConceptMapAgent(BaseAgent):
         except Exception as e:
             raise ValueError(f"Failed to get LLM response: {str(e)}") from e
 
-    def _parse_json_response(self, response: str) -> Dict:
+    def parse_json_response(self, response: str) -> Dict:
         """Parse JSON response from LLM, handling common formatting issues.
 
         This method includes multiple fallback strategies:

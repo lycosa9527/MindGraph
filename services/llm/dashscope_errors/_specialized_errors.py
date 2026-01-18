@@ -1,14 +1,12 @@
-﻿from typing import Optional, Tuple
-
-from services.infrastructure.error_handler import (
-
 """
 Specialized Error Parser
 ========================
 
 Handles specialized errors including WebSocket, Audio/Video, Flow, Schema, etc.
 """
+from typing import Optional, Tuple
 
+from services.infrastructure.error_handler import (
     LLMInvalidParameterError,
     LLMProviderError,
     LLMServiceError,

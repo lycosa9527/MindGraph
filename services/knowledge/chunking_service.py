@@ -23,10 +23,10 @@ import semchunk
 
 from config.settings import config
 from services.llm import llm_service as llm_svc
-from services.llm.llm_chunking_service import get_llm_chunking_service
+# Lazy import to avoid circular dependency - only imported when CHUNKING_ENGINE=mindchunk
 
 if TYPE_CHECKING:
-    from services.llm.llm_chunking_service import LLMChunkingService
+    pass
 
 logger = logging.getLogger(__name__)
 
@@ -340,7 +340,9 @@ def _initialize_mindchunk_service():
             "MindChunk cannot work without LLM service."
         ) from e
 
-    llm_service = get_llm_chunking_service()
+    # Lazy import to avoid circular dependency
+    from services.llm import llm_chunking_service
+    llm_service = llm_chunking_service.get_llm_chunking_service()
     # Create adapter wrapper
     return MindChunkAdapter(llm_service)
 

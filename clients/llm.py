@@ -1,3 +1,13 @@
+"""
+LLM Clients for Hybrid Agent Processing
+
+This module provides async interfaces for Qwen LLM clients
+used by diagram agents for layout optimization and style enhancement.
+
+Copyright 2024-2025 �k���v���q���ȋZ�L�����i (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
+"""
 from typing import Dict, List, Optional, Any, AsyncGenerator, Union
 import asyncio
 import json
@@ -7,17 +17,6 @@ import re
 
 from openai import AsyncOpenAI, RateLimitError, APIStatusError
 import httpx
-
-"""
-LLM Clients for Hybrid Agent Processing
-
-This module provides async interfaces for Qwen LLM clients
-used by diagram agents for layout optimization and style enhancement.
-
-Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
-All Rights Reserved
-Proprietary License
-"""
 
 from config.settings import config
 from services.infrastructure.error_handler import (
@@ -33,6 +32,7 @@ from services.infrastructure.error_handler import (
 from services.llm.dashscope_error_parser import parse_and_raise_dashscope_error
 from services.llm.doubao_error_parser import parse_and_raise_doubao_error
 from services.llm.hunyuan_error_parser import parse_and_raise_hunyuan_error
+
 
 # Note: Environment variables are loaded by config.settings module
 logger = logging.getLogger(__name__)
@@ -1205,7 +1205,7 @@ class HunyuanClient:
                     if 'error' in error_data:
                         error_code = error_data['error'].get('code', 'Unknown')
                         error_msg = error_data['error'].get('message', error_msg)
-                except:
+                except (KeyError, TypeError, ValueError):
                     pass
 
             # Try to extract from error message if code not found
@@ -1337,7 +1337,7 @@ class DoubaoClient:
                     # Also check for status_code in response
                     if status_code is None:
                         status_code = error_data.get('status_code')
-                except:
+                except (KeyError, TypeError, ValueError):
                     pass
 
             # Try to extract from error message if code not found
@@ -1447,7 +1447,7 @@ class DoubaoClient:
                     # Also check for status_code in response
                     if status_code is None:
                         status_code = error_data.get('status_code')
-                except:
+                except (KeyError, TypeError, ValueError):
                     pass
 
             # Try to extract from error message if code not found
@@ -1628,7 +1628,7 @@ class VolcengineClient:
                         error_msg = error_data['error'].get('message', error_msg)
                     if status_code is None:
                         status_code = error_data.get('status_code')
-                except:
+                except (KeyError, TypeError, ValueError):
                     pass
 
             if not error_code:
@@ -1737,7 +1737,7 @@ class VolcengineClient:
                         error_msg = error_data['error'].get('message', error_msg)
                     if status_code is None:
                         status_code = error_data.get('status_code')
-                except:
+                except (KeyError, TypeError, ValueError):
                     pass
 
             if not error_code:

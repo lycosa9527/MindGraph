@@ -1,9 +1,8 @@
-﻿"""
+"""
 flow map palette module.
 """
 from typing import Optional, Dict, Any, AsyncGenerator
 import logging
-import re
 
 from agents.node_palette.base_palette_generator import BasePaletteGenerator
 
@@ -141,8 +140,7 @@ class FlowMapPaletteGenerator(BasePaletteGenerator):
             Formatted prompt for current stage
         """
         # Detect language from content (Chinese topic = Chinese prompt)
-        language = self._detect_language  # pylint: disable=protected-access(center_topic, educational_context)
-        context_desc = educational_context.get('raw_message', 'General K12 teaching') if educational_context else 'General K12 teaching'
+        educational_context.get('raw_message', 'General K12 teaching') if educational_context else 'General K12 teaching'
 
         # Get session_id from educational_context (passed through from generate_batch)
         session_id = educational_context.get('_session_id', '') if educational_context else ''
@@ -158,7 +156,7 @@ class FlowMapPaletteGenerator(BasePaletteGenerator):
             # Steps stage - no dimension needed
             return self._build_steps_prompt  # pylint: disable=protected-access(center_topic, context_desc, language, count, batch_num)
         elif stage == 'substeps':
-            step_name = stage_info.get('step_name', '')
+            stage_info.get('step_name', '')
             return self._build_substeps_prompt  # pylint: disable=protected-access(center_topic, step_name, context_desc, language, count, batch_num)
         else:
             # Fallback to steps (default stage for flow maps)

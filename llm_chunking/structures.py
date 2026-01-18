@@ -1,8 +1,3 @@
-﻿from abc import ABC, abstractmethod
-from typing import List, Dict, Any, Optional
-
-from llm_chunking.models import (
-
 """
 Chunk structure interfaces for different chunking strategies.
 
@@ -11,10 +6,12 @@ Defines three main structure types:
 - ParentChildStructure: Hierarchical chunks (parent-child)
 - QAStructure: Question-answer pairs
 """
+from abc import ABC, abstractmethod
+from typing import List, Any, Optional
 
+from llm_chunking.models import (
     Chunk,
     ParentChunk,
-    ChildChunk,
     QAChunk,
     DocumentStructure,
 )

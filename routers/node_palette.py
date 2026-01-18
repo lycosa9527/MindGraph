@@ -1,4 +1,4 @@
-﻿import json
+import json
 import logging
 
 from fastapi import APIRouter, HTTPException, Depends
@@ -15,7 +15,22 @@ from agents.node_palette.multi_flow_palette import get_multi_flow_palette_genera
 from agents.node_palette.tree_map_palette import get_tree_map_palette_generator
 from models.auth import User
 from models.requests import (
+    NodePaletteStartRequest,
+    NodePaletteNextRequest,
+    NodeSelectionRequest,
+    NodePaletteFinishRequest,
+    NodePaletteCleanupRequest
+)
 from services.infrastructure.error_handler import (
+    LLMContentFilterError,
+    LLMRateLimitError,
+    LLMTimeoutError,
+    LLMInvalidParameterError,
+    LLMQuotaExhaustedError,
+    LLMModelNotFoundError,
+    LLMAccessDeniedError,
+    LLMServiceError
+)
 from utils.auth import get_current_user
 
 """
@@ -32,25 +47,6 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
-
-
-# Import authentication
-
-    LLMContentFilterError,
-    LLMRateLimitError,
-    LLMTimeoutError,
-    LLMInvalidParameterError,
-    LLMQuotaExhaustedError,
-    LLMModelNotFoundError,
-    LLMAccessDeniedError,
-    LLMServiceError
-)
-    NodePaletteStartRequest,
-    NodePaletteNextRequest,
-    NodeSelectionRequest,
-    NodePaletteFinishRequest,
-    NodePaletteCleanupRequest
-)
 
 router = APIRouter(tags=["thinking"])
 logger = logging.getLogger(__name__)

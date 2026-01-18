@@ -43,7 +43,7 @@ async def get_cache_status(current_user: User = Depends(get_current_user)):
     Returns cache status, performance metrics, and optimization details.
     """
     try:
-        from static.js.lazy_cache_manager import get_cache_stats, is_cache_initialized, get_performance_summary
+        from static.js.lazy_cache_manager import get_cache_stats, is_cache_initialized
 
         if is_cache_initialized():
             stats = get_cache_stats()
@@ -74,7 +74,7 @@ async def get_cache_status(current_user: User = Depends(get_current_user)):
                 'performance_impact': 'File I/O overhead per request (2-5 seconds)',
                 'timestamp': time.time()
             }
-            logger.warning(f"Lazy cache status check: FAILED - cache not initialized")
+            logger.warning("Lazy cache status check: FAILED - cache not initialized")
             return cache_data
 
     except Exception as e:

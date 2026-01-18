@@ -1,21 +1,4 @@
-﻿"""
-Admin Log Streaming Router
-"""
-from typing import List
-import asyncio
-import json
-import logging
-
-from fastapi import APIRouter, Depends, HTTPException, Query, status
-from fastapi.responses import StreamingResponse
-
-from models.auth import User
-from services.monitoring.log_streamer import LogStreamer
-from utils.auth import get_current_user, is_admin
-
-"""
-Admin Log Streaming Router
-===========================
+"""Admin Log Streaming Router.
 
 Real-time log streaming endpoints for admin debug viewer.
 
@@ -33,9 +16,16 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+import asyncio
+import json
+import logging
 
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi.responses import StreamingResponse
 
-
+from models.auth import User
+from services.monitoring.log_streamer import LogStreamer
+from utils.auth import get_current_user, is_admin
 
 logger = logging.getLogger(__name__)
 

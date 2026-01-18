@@ -1,6 +1,22 @@
-﻿from collections import defaultdict
+"""
+Public Dashboard Router
+=======================
+
+Public dashboard endpoints for real-time analytics visualization.
+Requires dashboard session authentication (passkey-protected).
+
+Endpoints:
+- GET /api/public/stats - Get dashboard statistics
+- GET /api/public/map-data - Get active users by city for map visualization
+- GET /api/public/activity-stream - SSE stream for real-time activity updates
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
+"""
+from collections import defaultdict
 from datetime import datetime, timezone
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List
 import asyncio
 import json
 import logging
@@ -21,26 +37,9 @@ from services.monitoring.activity_stream import get_activity_stream_service
 from services.monitoring.city_flag_tracker import get_city_flag_tracker
 from services.monitoring.dashboard_session import get_dashboard_session_manager
 from services.redis.redis_activity_tracker import get_activity_tracker
-
-"""
-Public Dashboard Router
-=======================
-
-Public dashboard endpoints for real-time analytics visualization.
-Requires dashboard session authentication (passkey-protected).
-
-Endpoints:
-- GET /api/public/stats - Get dashboard statistics
-- GET /api/public/map-data - Get active users by city for map visualization
-- GET /api/public/activity-stream - SSE stream for real-time activity updates
-
-Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
-All Rights Reserved
-Proprietary License
-"""
-
-
-
+from services.redis.redis_client import is_redis_available, get_redis
+from services.redis.redis_rate_limiter import RedisRateLimiter
+from utils.auth import get_client_ip
 
 logger = logging.getLogger(__name__)
 
@@ -149,7 +148,6 @@ def verify_dashboard_session(request: Request) -> bool:
         )
 
     # Get client IP for validation (handles reverse proxies)
-    from utils.auth import get_client_ip
     client_ip = get_client_ip(request) if request else None
 
     session_manager = get_dashboard_session_manager()
@@ -162,7 +160,12 @@ def verify_dashboard_session(request: Request) -> bool:
     return True
 
 
-async def check_dashboard_rate_limit(request: Request, endpoint_name: str, max_requests: int = 60, window_seconds: int = 60):
+async def check_dashboard_rate_limit(
+    request: Request,
+    endpoint_name: str,
+    max_requests: int = 60,
+    window_seconds: int = 60
+):
     """
     Check rate limit for dashboard endpoints.
 
@@ -175,9 +178,6 @@ async def check_dashboard_rate_limit(request: Request, endpoint_name: str, max_r
     Raises:
         HTTPException: If rate limit exceeded
     """
-    from services.redis.redis_rate_limiter import RedisRateLimiter
-    from utils.auth import get_client_ip
-
     client_ip = get_client_ip(request) if request else "unknown"
     rate_limiter = RedisRateLimiter()
 
@@ -189,7 +189,10 @@ async def check_dashboard_rate_limit(request: Request, endpoint_name: str, max_r
     )
 
     if not is_allowed:
-        logger.warning(f"Dashboard rate limit exceeded for {endpoint_name}: {client_ip} ({count}/{max_requests} requests)")
+        logger.warning(
+            "Dashboard rate limit exceeded for %s: %s (%s/%s requests)",
+            endpoint_name, client_ip, count, max_requests
+        )
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
             detail=f"Too many requests. {error_msg}"
@@ -209,8 +212,6 @@ def get_cached_stats(tracker) -> Dict:
     Returns:
         Dict with stats (same format as tracker.get_stats())
     """
-    from services.redis.redis_client import is_redis_available, get_redis
-
     # Fallback to direct query if Redis unavailable
     if not is_redis_available():
         return tracker.get_stats()
@@ -242,14 +243,14 @@ def get_cached_stats(tracker) -> Dict:
                 json.dumps(stats, ensure_ascii=False)  # Preserve UTF-8 characters
             )
         except Exception as e:
-            logger.debug(f"Failed to cache stats: {e}")
+            logger.debug("Failed to cache stats: %s", e)
             # Continue - cache failure shouldn't break stats query
 
         return stats
 
     except Exception as e:
         # Any Redis error - fallback to direct query
-        logger.debug(f"Stats cache error: {e}, falling back to direct query")
+        logger.debug("Stats cache error: %s, falling back to direct query", e)
         return tracker.get_stats()
 
 
@@ -278,8 +279,6 @@ async def get_dashboard_stats(
         connected_users = count_non_localhost_users(active_users)
 
         # Get registered users count (cached)
-        from services.redis.redis_client import is_redis_available, get_redis
-
         beijing_now = get_beijing_now()
         today_start = get_beijing_today_start_utc()
 
@@ -295,16 +294,20 @@ async def get_dashboard_stats(
                 if cached_count:
                     registered_users = int(cached_count)
             except Exception as e:
-                logger.debug(f"Error reading registered users cache: {e}")
+                logger.debug("Error reading registered users cache: %s", e)
 
         if registered_users is None:
             registered_users = db.query(User).count()
             # Cache the result
             if redis:
                 try:
-                    redis.setex(REGISTERED_USERS_CACHE_KEY, REGISTERED_USERS_CACHE_TTL, str(registered_users))
+                    redis.setex(
+                        REGISTERED_USERS_CACHE_KEY,
+                        REGISTERED_USERS_CACHE_TTL,
+                        str(registered_users)
+                    )
                 except Exception as e:
-                    logger.debug(f"Failed to cache registered users count: {e}")
+                    logger.debug("Failed to cache registered users count: %s", e)
 
         # Get token usage stats (cached)
         tokens_used_today = None
@@ -318,7 +321,7 @@ async def get_dashboard_stats(
                     tokens_used_today = token_data.get('today', None)
                     total_tokens_used = token_data.get('total', None)
             except Exception as e:
-                logger.debug(f"Error reading token usage cache: {e}")
+                logger.debug("Error reading token usage cache: %s", e)
 
         if tokens_used_today is None or total_tokens_used is None:
             # Optimize: Use a single query with conditional aggregation to get both values
@@ -334,7 +337,7 @@ async def get_dashboard_stats(
                 ).label('today_tokens'),
                 func.sum(TokenUsage.total_tokens).label('total_tokens')
             ).filter(
-                TokenUsage.success == True
+                TokenUsage.success.is_(True)
             ).first()
 
             if token_stats_query:
@@ -359,7 +362,7 @@ async def get_dashboard_stats(
                             json.dumps(token_data)
                         )
                     except Exception as e:
-                        logger.debug(f"Failed to cache token usage: {e}")
+                        logger.debug("Failed to cache token usage: %s", e)
 
         return {
             "timestamp": beijing_now.isoformat(),
@@ -372,7 +375,7 @@ async def get_dashboard_stats(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error getting dashboard stats: {e}", exc_info=True)
+        logger.error("Error getting dashboard stats: %s", e, exc_info=True)
         # Return empty stats on error (don't break dashboard)
         beijing_now = get_beijing_now()
         return {
@@ -403,7 +406,6 @@ async def get_map_data(
     await check_dashboard_rate_limit(request, 'map_data', max_requests=30, window_seconds=60)
 
     # Try to get from cache first
-    from services.redis.redis_client import is_redis_available, get_redis
     if is_redis_available():
         redis = get_redis()
         if redis:
@@ -419,7 +421,7 @@ async def get_map_data(
                         except Exception:
                             pass
             except Exception as e:
-                logger.debug(f"Error reading map data cache: {e}")
+                logger.debug("Error reading map data cache: %s", e)
 
     try:
         # Check if IP geolocation database is ready
@@ -573,14 +575,14 @@ async def get_map_data(
                         json.dumps(result, ensure_ascii=False)
                     )
                 except Exception as e:
-                    logger.debug(f"Failed to cache map data: {e}")
+                    logger.debug("Failed to cache map data: %s", e)
 
         return result
 
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error getting map data: {e}", exc_info=True)
+        logger.error("Error getting map data: %s", e, exc_info=True)
         # Return empty data on error (don't break dashboard)
         return {
             "map_data": [],
@@ -641,7 +643,7 @@ async def get_activity_history(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error getting activity history: {e}", exc_info=True)
+        logger.error("Error getting activity history: %s", e, exc_info=True)
         # Return empty list on error (don't break dashboard)
         return {
             "activities": [],
@@ -671,9 +673,6 @@ async def stream_activity_updates(
     verify_dashboard_session(request)
 
     # Rate limiting: Check concurrent connections per IP (Redis-based)
-    from utils.auth import get_client_ip
-    from services.redis.redis_client import is_redis_available, get_redis
-
     client_ip = get_client_ip(request) if request else "unknown"
     connection_key = f"{SSE_CONNECTION_PREFIX}{client_ip}"
 
@@ -692,17 +691,26 @@ async def stream_activity_updates(
                 if current_connections > MAX_CONCURRENT_SSE_CONNECTIONS:
                     # Decrement since we're rejecting
                     redis.decr(connection_key)
-                    logger.warning(f"IP {client_ip} exceeded max concurrent SSE connections ({MAX_CONCURRENT_SSE_CONNECTIONS})")
+                    logger.warning(
+                        "IP %s exceeded max concurrent SSE connections (%s)",
+                        client_ip, MAX_CONCURRENT_SSE_CONNECTIONS
+                    )
                     raise HTTPException(
                         status_code=status.HTTP_429_TOO_MANY_REQUESTS,
                         detail=f"Maximum {MAX_CONCURRENT_SSE_CONNECTIONS} concurrent connections allowed"
                     )
 
-                logger.info(f"Dashboard SSE connection started for IP {client_ip} (connections: {current_connections})")
+                logger.info(
+                    "Dashboard SSE connection started for IP %s (connections: %s)",
+                    client_ip, current_connections
+                )
             except HTTPException:
                 raise
             except Exception as e:
-                logger.warning(f"Error tracking SSE connection in Redis: {e}, continuing without tracking")
+                logger.warning(
+                    "Error tracking SSE connection in Redis: %s, continuing without tracking",
+                    e
+                )
                 # Continue without tracking - don't block on Redis errors
 
     if not connection_tracked:
@@ -716,7 +724,6 @@ async def stream_activity_updates(
     async def event_generator():
         """Generate SSE events from activity stream service."""
         tracker = get_activity_tracker()
-        last_stats = None
 
         try:
             # Send initial state
@@ -731,7 +738,7 @@ async def stream_activity_updates(
                     "total_tokens_used": 0  # Will be updated by stats endpoint
                 }
             except Exception as e:
-                logger.error(f"Error getting initial state: {e}", exc_info=True)
+                logger.error("Error getting initial state: %s", e, exc_info=True)
                 error_data = json.dumps({
                     'type': 'error',
                     'error': 'Failed to fetch initial state'
@@ -744,8 +751,6 @@ async def stream_activity_updates(
                 'stats': initial_stats
             })
             yield f"data: {initial_data}\n\n"
-
-            last_stats = initial_stats
 
             # Poll for updates
             heartbeat_counter = 0
@@ -763,7 +768,7 @@ async def stream_activity_updates(
                     except asyncio.TimeoutError:
                         pass  # No activity event, continue
                 except Exception as e:
-                    logger.error(f"Error reading activity queue: {e}")
+                    logger.error("Error reading activity queue: %s", e)
 
                 # Send stats update periodically
                 stats_counter += 1
@@ -783,7 +788,7 @@ async def stream_activity_updates(
                         yield f"data: {stats_data}\n\n"
                         stats_counter = 0
                     except Exception as e:
-                        logger.error(f"Error getting stats: {e}", exc_info=True)
+                        logger.error("Error getting stats: %s", e, exc_info=True)
 
                 # Send heartbeat periodically
                 heartbeat_counter += 1
@@ -796,10 +801,10 @@ async def stream_activity_updates(
                     heartbeat_counter = 0
 
         except asyncio.CancelledError:
-            logger.info(f"Activity stream cancelled for connection {connection_id}")
+            logger.info("Activity stream cancelled for connection %s", connection_id)
             return
         except Exception as e:
-            logger.error(f"Error in activity stream: {e}", exc_info=True)
+            logger.error("Error in activity stream: %s", e, exc_info=True)
             try:
                 error_data = json.dumps({
                     'type': 'error',
@@ -815,7 +820,6 @@ async def stream_activity_updates(
             # Decrement connection count in Redis (only if we tracked it)
             # Use variables from outer scope (closure)
             if connection_tracked:
-                from services.redis.redis_client import is_redis_available, get_redis
                 if is_redis_available():
                     redis = get_redis()
                     if redis:
@@ -823,9 +827,12 @@ async def stream_activity_updates(
                             remaining = redis.decr(connection_key)
                             if remaining <= 0:
                                 redis.delete(connection_key)
-                            logger.debug(f"Dashboard SSE connection closed for IP {client_ip} (remaining: {max(0, remaining)})")
+                            logger.debug(
+                                "Dashboard SSE connection closed for IP %s (remaining: %s)",
+                                client_ip, max(0, remaining)
+                            )
                         except Exception as e:
-                            logger.debug(f"Error decrementing SSE connection count: {e}")
+                            logger.debug("Error decrementing SSE connection count: %s", e)
 
     return StreamingResponse(
         event_generator(),
@@ -836,6 +843,3 @@ async def stream_activity_updates(
             "X-Accel-Buffering": "no",  # Disable nginx buffering
         }
     )
-
-
-

@@ -1,4 +1,4 @@
-﻿"""
+"""
 Temporary Image Cleanup Service
 ================================
 
@@ -27,6 +27,14 @@ from pathlib import Path
 from typing import Optional
 import aiofiles.os  # Async file system operations
 
+try:
+    from services.redis.redis_client import get_redis, is_redis_available
+    _REDIS_AVAILABLE = True
+except ImportError:
+    get_redis = None
+    is_redis_available = None
+    _REDIS_AVAILABLE = False
+
 logger = logging.getLogger(__name__)
 
 # ============================================================================
@@ -46,7 +54,29 @@ logger = logging.getLogger(__name__)
 
 CLEANUP_LOCK_KEY = "cleanup:temp_images:lock"
 CLEANUP_LOCK_TTL = 600  # 10 minutes - auto-release if worker crashes
-_cleanup_lock_id: Optional[str] = None  # This worker's unique lock identifier
+
+
+class CleanupLockState:
+    """Encapsulates cleanup lock state to avoid global variables."""
+    def __init__(self):
+        self.lock_id: Optional[str] = None
+
+    def generate_lock_id(self) -> str:
+        """Generate unique lock ID for this worker: {pid}:{uuid}"""
+        if self.lock_id is None:
+            self.lock_id = f"{os.getpid()}:{uuid.uuid4().hex[:8]}"
+        return self.lock_id
+
+    def get_lock_id(self) -> Optional[str]:
+        """Get current lock ID."""
+        return self.lock_id
+
+    def set_lock_id(self, lock_id: str) -> None:
+        """Set lock ID."""
+        self.lock_id = lock_id
+
+
+_cleanup_lock_state = CleanupLockState()
 
 
 async def refresh_cleanup_lock() -> bool:
@@ -59,14 +89,17 @@ async def refresh_cleanup_lock() -> bool:
     Returns:
         True if lock refreshed, False if not held by this worker
     """
-    global _cleanup_lock_id
-
-    try:
-        from services.redis.redis_client import get_redis, is_redis_available
-    except ImportError:
+    if not _REDIS_AVAILABLE:
         return False
 
-    if not is_redis_available() or _cleanup_lock_id is None:
+    if not is_redis_available or not is_redis_available():
+        return False
+
+    lock_id = _cleanup_lock_state.get_lock_id()
+    if lock_id is None:
+        return False
+
+    if not get_redis:
         return False
 
     redis = get_redis()
@@ -89,26 +122,20 @@ async def refresh_cleanup_lock() -> bool:
             lua_script,
             1,
             CLEANUP_LOCK_KEY,
-            _cleanup_lock_id,
+            lock_id,
             CLEANUP_LOCK_TTL
         )
 
         if result == 1:
             return True
-        else:
-            # Lock not held by us
-            holder = await asyncio.to_thread(redis.get, CLEANUP_LOCK_KEY)
-            logger.debug(f"[Cleanup] Lock lost! Holder: {holder}, our ID: {_cleanup_lock_id}")
-            return False
-
-    except Exception as e:
-        logger.debug(f"[Cleanup] Lock refresh failed: {e}")
+        # Lock not held by us
+        holder = await asyncio.to_thread(redis.get, CLEANUP_LOCK_KEY)
+        logger.debug("[Cleanup] Lock lost! Holder: %s, our ID: %s", holder, lock_id)
         return False
 
-
-def _generate_cleanup_lock_id() -> str:
-    """Generate unique lock ID for this worker: {pid}:{uuid}"""
-    return f"{os.getpid()}:{uuid.uuid4().hex[:8]}"
+    except Exception as e:
+        logger.debug("[Cleanup] Lock refresh failed: %s", e)
+        return False
 
 
 async def acquire_cleanup_lock() -> bool:
@@ -122,18 +149,17 @@ async def acquire_cleanup_lock() -> bool:
         True if lock acquired (this worker should clean files)
         False if lock held by another worker
     """
-    global _cleanup_lock_id
-
-    try:
-        from services.redis.redis_client import get_redis, is_redis_available
-    except ImportError:
+    if not _REDIS_AVAILABLE:
         # Redis not available, assume single worker mode
         return True
 
-    if not is_redis_available():
+    if not is_redis_available or not is_redis_available():
         # No Redis = single worker mode, proceed
         logger.debug("[Cleanup] Redis unavailable, assuming single worker mode")
         return True
+
+    if not get_redis:
+        return True  # Fallback to single worker mode
 
     redis = get_redis()
     if not redis:
@@ -141,8 +167,7 @@ async def acquire_cleanup_lock() -> bool:
 
     try:
         # Generate unique ID for this worker
-        if _cleanup_lock_id is None:
-            _cleanup_lock_id = _generate_cleanup_lock_id()
+        lock_id = _cleanup_lock_state.generate_lock_id()
 
         # Attempt atomic lock acquisition: SETNX with TTL
         # Returns True only if key did not exist (lock acquired)
@@ -150,22 +175,21 @@ async def acquire_cleanup_lock() -> bool:
         acquired = await asyncio.to_thread(
             redis.set,
             CLEANUP_LOCK_KEY,
-            _cleanup_lock_id,
+            lock_id,
             nx=True,  # Only set if not exists
             ex=CLEANUP_LOCK_TTL  # TTL in seconds
         )
 
         if acquired:
-            logger.debug(f"[Cleanup] Lock acquired by this worker (id={_cleanup_lock_id})")
+            logger.debug("[Cleanup] Lock acquired by this worker (id=%s)", lock_id)
             return True
-        else:
-            # Lock held by another worker - check who
-            holder = await asyncio.to_thread(redis.get, CLEANUP_LOCK_KEY)
-            logger.info(f"[Cleanup] Another worker holds the cleanup lock (holder={holder}), skipping cleanup")
-            return False
+        # Lock held by another worker - check who
+        holder = await asyncio.to_thread(redis.get, CLEANUP_LOCK_KEY)
+        logger.info("[Cleanup] Another worker holds the cleanup lock (holder=%s), skipping cleanup", holder)
+        return False
 
     except Exception as e:
-        logger.warning(f"[Cleanup] Lock acquisition failed: {e}, proceeding anyway")
+        logger.warning("[Cleanup] Lock acquisition failed: %s, proceeding anyway", e)
         return True  # On error, proceed (better to have duplicate than no cleanup)
 
 
@@ -205,21 +229,21 @@ async def cleanup_temp_images(max_age_seconds: int = 86400):
                         # Delete file asynchronously (non-blocking)
                         await aiofiles.os.remove(file_path)
                         deleted_count += 1
-                        logger.debug(f"Deleted expired image: {file_path.name} (age: {file_age/3600:.1f}h)")
+                        logger.debug("Deleted expired image: %s (age: %.1fh)", file_path.name, file_age / 3600)
                     except Exception as e:
-                        logger.error(f"Failed to delete {file_path.name}: {e}")
+                        logger.error("Failed to delete %s: %s", file_path.name, e)
             except Exception as e:
-                logger.error(f"Failed to stat {file_path.name}: {e}")
+                logger.error("Failed to stat %s: %s", file_path.name, e)
 
         if deleted_count > 0:
-            logger.info(f"Temp image cleanup: Deleted {deleted_count} expired files")
+            logger.info("Temp image cleanup: Deleted %d expired files", deleted_count)
         else:
             logger.debug("Temp image cleanup: No expired files found")
 
         return deleted_count
 
     except Exception as e:
-        logger.error(f"Temp image cleanup failed: {e}", exc_info=True)
+        logger.error("Temp image cleanup failed: %s", e, exc_info=True)
         return deleted_count
 
 
@@ -254,7 +278,7 @@ async def start_cleanup_scheduler(interval_hours: int = 1):
 
     # This worker holds the lock - run the scheduler
     interval_seconds = interval_hours * 3600
-    logger.info(f"Starting temp image cleanup scheduler (every {interval_hours}h)")
+    logger.info("Starting temp image cleanup scheduler (every %dh)", interval_hours)
 
     while True:
         try:
@@ -273,5 +297,4 @@ async def start_cleanup_scheduler(interval_hours: int = 1):
             logger.info("[Cleanup] Cleanup scheduler stopped")
             break
         except Exception as e:
-            logger.error(f"Cleanup scheduler error: {e}", exc_info=True)
-
+            logger.error("Cleanup scheduler error: %s", e, exc_info=True)

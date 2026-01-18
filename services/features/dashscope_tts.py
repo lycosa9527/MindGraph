@@ -1,12 +1,3 @@
-﻿from pathlib import Path
-from typing import Optional, AsyncGenerator, Dict, Any
-import asyncio
-import logging
-import os
-
-from clients.tts_realtime_client import (
-from config.settings import config
-
 """
 Dashscope Real-time TTS Service
 ==============================
@@ -18,12 +9,17 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+from pathlib import Path
+from typing import Optional, AsyncGenerator
+import logging
+import os
 
-
+from clients.tts_realtime_client import (
     TTSRealtimeClient,
     SessionMode,
     AudioFormat,
 )
+from config.settings import config
 
 
 logger = logging.getLogger(__name__)

@@ -1,4 +1,4 @@
-﻿"""
+"""
 Password Reset Endpoint
 ========================
 
@@ -16,8 +16,8 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
 from config.database import get_db
-from models.auth import
-from models.messages import
+from models.auth import User
+from models.messages import Messages, Language
 from models.requests import ChangePasswordRequest, ResetPasswordWithSMSRequest
 from services.redis.redis_session_manager import get_refresh_token_manager, get_session_manager
 from services.redis.redis_user_cache import user_cache

@@ -1,6 +1,8 @@
-﻿from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, Any, List
 
 from pydantic import BaseModel, Field, field_validator
+
+from .common import DiagramType, Language, LLMModel
 
 
 """

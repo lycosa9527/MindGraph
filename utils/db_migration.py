@@ -7,6 +7,13 @@ This module provides functions for running database schema migrations.
 import logging
 from typing import Any
 from sqlalchemy import inspect, text, Column
+from sqlalchemy.dialects import mysql, postgresql
+
+try:
+    from config.database import Base, engine
+except ImportError:
+    Base = None
+    engine = None
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +29,7 @@ def _get_sqlite_column_type(column: Column) -> str:
         SQLite column type string (e.g., "INTEGER", "TEXT", "BOOLEAN")
     """
     column_type = str(column.type)
-    
+
     # Map SQLAlchemy types to SQLite types
     type_mapping = {
         "INTEGER": "INTEGER",
@@ -43,17 +50,17 @@ def _get_sqlite_column_type(column: Column) -> str:
         "DECIMAL": "NUMERIC",
         "BLOB": "BLOB",
     }
-    
+
     # Check for common patterns
     column_type_upper = column_type.upper()
     for sqlalchemy_type, sqlite_type in type_mapping.items():
         if sqlalchemy_type in column_type_upper:
             return sqlite_type
-    
+
     # Handle VARCHAR(length) -> TEXT
     if "VARCHAR" in column_type_upper or "CHAR" in column_type_upper:
         return "TEXT"
-    
+
     # Default to TEXT for unknown types
     return "TEXT"
 
@@ -69,7 +76,6 @@ def _get_postgresql_column_type(column: Column) -> str:
         PostgreSQL column type string
     """
     # For PostgreSQL, use the column type's compile method
-    from sqlalchemy.dialects import postgresql
     return str(column.type.compile(dialect=postgresql.dialect()))
 
 
@@ -83,7 +89,6 @@ def _get_mysql_column_type(column: Column) -> str:
     Returns:
         MySQL column type string
     """
-    from sqlalchemy.dialects import mysql
     return str(column.type.compile(dialect=mysql.dialect()))
 
 
@@ -102,7 +107,7 @@ def _get_column_default(column: Column, dialect: str) -> str:
         if column.nullable:
             return "DEFAULT NULL"
         return ""
-    
+
     # Handle server defaults
     if hasattr(column.default, 'arg'):
         default_value = column.default.arg
@@ -118,7 +123,7 @@ def _get_column_default(column: Column, dialect: str) -> str:
             # For callable defaults (e.g., datetime.utcnow), we can't set them in ALTER TABLE
             # They'll be handled by SQLAlchemy on insert
             return ""
-    
+
     return ""
 
 
@@ -137,8 +142,9 @@ def _add_column_sqlite(conn: Any, table_name: str, column: Column) -> bool:
     try:
         column_type = _get_sqlite_column_type(column)
         default_clause = _get_column_default(column, "sqlite")
-        
-        # SQLite limitation: Cannot add NOT NULL column without default to table with existing rows
+
+        # SQLite limitation: Cannot add NOT NULL column without default
+        # to table with existing rows
         # If column is NOT NULL and no default, make it nullable or provide a default
         if not column.nullable and not default_clause:
             # Check if table has any rows
@@ -158,25 +164,38 @@ def _add_column_sqlite(conn: Any, table_name: str, column: Column) -> bool:
                     nullable = "NOT NULL"
                 else:
                     # For unknown types, make it nullable to avoid errors
-                    logger.warning(f"Column '{column.name}' is NOT NULL without default and table has data. Making nullable.")
+                    logger.warning(
+                        "Column '%s' is NOT NULL without default and "
+                        "table has data. Making nullable.",
+                        column.name
+                    )
                     nullable = "NULL"
             else:
                 # Table is empty, can add NOT NULL without default
                 nullable = "NOT NULL"
         else:
             nullable = "NULL" if column.nullable else "NOT NULL"
-        
+
         # Build ALTER TABLE statement
         sql = f"ALTER TABLE {table_name} ADD COLUMN {column.name} {column_type} {nullable}"
         if default_clause:
             sql += f" {default_clause}"
-        
+
         conn.execute(text(sql))
         conn.commit()
-        logger.info(f"Added column '{column.name}' to table '{table_name}'")
+        logger.info(
+            "Added column '%s' to table '%s'",
+            column.name,
+            table_name
+        )
         return True
     except Exception as e:
-        logger.error(f"Failed to add column '{column.name}' to table '{table_name}': {e}")
+        logger.error(
+            "Failed to add column '%s' to table '%s': %s",
+            column.name,
+            table_name,
+            e
+        )
         try:
             conn.rollback()
         except Exception:
@@ -200,20 +219,29 @@ def _add_column_postgresql(conn: Any, table_name: str, column: Column) -> bool:
         column_type = _get_postgresql_column_type(column)
         nullable = "" if column.nullable else "NOT NULL"
         default_clause = _get_column_default(column, "postgresql")
-        
+
         # Build ALTER TABLE statement
         sql = f"ALTER TABLE {table_name} ADD COLUMN {column.name} {column_type}"
         if nullable:
             sql += f" {nullable}"
         if default_clause:
             sql += f" {default_clause}"
-        
+
         conn.execute(text(sql))
         conn.commit()
-        logger.info(f"Added column '{column.name}' to table '{table_name}'")
+        logger.info(
+            "Added column '%s' to table '%s'",
+            column.name,
+            table_name
+        )
         return True
     except Exception as e:
-        logger.error(f"Failed to add column '{column.name}' to table '{table_name}': {e}")
+        logger.error(
+            "Failed to add column '%s' to table '%s': %s",
+            column.name,
+            table_name,
+            e
+        )
         try:
             conn.rollback()
         except Exception:
@@ -237,20 +265,29 @@ def _add_column_mysql(conn: Any, table_name: str, column: Column) -> bool:
         column_type = _get_mysql_column_type(column)
         nullable = "" if column.nullable else "NOT NULL"
         default_clause = _get_column_default(column, "mysql")
-        
+
         # Build ALTER TABLE statement
         sql = f"ALTER TABLE {table_name} ADD COLUMN {column.name} {column_type}"
         if nullable:
             sql += f" {nullable}"
         if default_clause:
             sql += f" {default_clause}"
-        
+
         conn.execute(text(sql))
         conn.commit()
-        logger.info(f"Added column '{column.name}' to table '{table_name}'")
+        logger.info(
+            "Added column '%s' to table '%s'",
+            column.name,
+            table_name
+        )
         return True
     except Exception as e:
-        logger.error(f"Failed to add column '{column.name}' to table '{table_name}': {e}")
+        logger.error(
+            "Failed to add column '%s' to table '%s': %s",
+            column.name,
+            table_name,
+            e
+        )
         try:
             conn.rollback()
         except Exception:
@@ -275,54 +312,64 @@ def run_migrations() -> bool:
         bool: True if migrations completed successfully, False otherwise
     """
     try:
-        # Import here to avoid circular dependency
-        from config.database import engine, Base
-        
+        if Base is None or engine is None:
+            raise ImportError("Database dependencies not available")
+
         # Get database dialect
         dialect = engine.dialect.name
-        logger.debug(f"Running migrations for database dialect: {dialect}")
-        
+        logger.debug("Running migrations for database dialect: %s", dialect)
+
         # Create inspector to examine current database schema
         inspector = inspect(engine)
         existing_tables = set(inspector.get_table_names())
-        
+
         # Get expected tables from Base metadata
         expected_tables = set(Base.metadata.tables.keys())
-        
+
         # Only migrate existing tables (table creation is handled by init_db)
         tables_to_migrate = existing_tables & expected_tables
-        
+
         if not tables_to_migrate:
             logger.debug("No tables to migrate (all tables are new or don't exist)")
             return True
-        
+
         # Track migration results
         migration_success = True
         columns_added = 0
-        
+
         with engine.connect() as conn:
             for table_name in tables_to_migrate:
                 try:
                     # Get existing columns in the table
-                    existing_columns = {col['name'] for col in inspector.get_columns(table_name)}
-                    
+                    existing_columns = {
+                        col['name'] for col in inspector.get_columns(table_name)
+                    }
+
                     # Get expected columns from SQLAlchemy model
                     table = Base.metadata.tables[table_name]
                     expected_columns = {col.name for col in table.columns}
-                    
+
                     # Find missing columns
                     missing_columns = expected_columns - existing_columns
-                    
+
                     if not missing_columns:
-                        logger.debug(f"Table '{table_name}' is up to date (no missing columns)")
+                        logger.debug(
+                            "Table '%s' is up to date (no missing columns)",
+                            table_name
+                        )
                         continue
-                    
-                    logger.info(f"Table '{table_name}' has {len(missing_columns)} missing column(s): {', '.join(missing_columns)}")
-                    
+
+                    logger.info(
+                        "Table '%s' has %d missing column(s): %s",
+                        table_name,
+                        len(missing_columns),
+                        ', '.join(missing_columns)
+                    )
+
                     # Add each missing column
                     for column_name in missing_columns:
                         column = table.columns[column_name]
-                        
+
                         # Choose the appropriate add column function based on dialect
                         if dialect == "sqlite":
                             success = _add_column_sqlite(conn, table_name, column)
@@ -331,29 +378,42 @@ def run_migrations() -> bool:
                         elif dialect == "mysql":
                             success = _add_column_mysql(conn, table_name, column)
                         else:
-                            logger.warning(f"Unsupported database dialect '{dialect}' for column migration")
+                            logger.warning(
+                                "Unsupported database dialect '%s' for column migration",
+                                dialect
+                            )
                             success = False
-                        
+
                         if success:
                             columns_added += 1
                         else:
                             migration_success = False
-                
+
                 except Exception as e:
-                    logger.error(f"Error migrating table '{table_name}': {e}", exc_info=True)
+                    logger.error(
+                        "Error migrating table '%s': %s",
+                        table_name,
+                        e,
+                        exc_info=True
+                    )
                     migration_success = False
-        
+
         if columns_added > 0:
-            logger.info(f"Migration completed: added {columns_added} column(s) to existing tables")
+            logger.info(
+                "Migration completed: added %d column(s) to existing tables",
+                columns_added
+            )
         else:
             logger.debug("Migration check completed: no columns needed to be added")
-        
+
         return migration_success
-    
+
     except ImportError as e:
-        logger.warning(f"Could not import database dependencies: {e}. Skipping migrations.")
+        logger.warning(
+            "Could not import database dependencies: %s. Skipping migrations.",
+            e
+        )
         return True  # Don't fail startup if imports fail
     except Exception as e:
-        logger.error(f"Migration error: {e}", exc_info=True)
+        logger.error("Migration error: %s", e, exc_info=True)
         return False
-

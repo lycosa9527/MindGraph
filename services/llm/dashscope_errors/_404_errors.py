@@ -1,14 +1,12 @@
-﻿from typing import Optional, Tuple
-
-from services.infrastructure.error_handler import (
-
 """
 404 Not Found Error Parser
 ===========================
 
 Handles resource not found errors.
 """
+from typing import Optional, Tuple
 
+from services.infrastructure.error_handler import (
     LLMModelNotFoundError,
     LLMInvalidParameterError,
     LLMProviderError

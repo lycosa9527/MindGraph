@@ -1,12 +1,4 @@
-﻿from typing import List, Any, Optional, Dict
-import logging
-import re
-import sqlite3
-
-
-"""
-Database Type Migration Handler
-===============================
+"""Database Type Migration Handler.
 
 Handles column type mismatches for SQLite databases.
 SQLite doesn't support ALTER COLUMN, so table recreation is required.
@@ -21,6 +13,12 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+from typing import List, Any, Optional, Dict
+import logging
+import re
+import sqlite3
+from sqlalchemy import inspect
+from models.auth import Base
 
 
 logger = logging.getLogger(__name__)
@@ -32,7 +30,7 @@ VALID_IDENTIFIER_PATTERN = re.compile(r'^[a-zA-Z_][a-zA-Z0-9_]*$')
 def validate_identifier(name: str) -> bool:
     """Validate table/column name to prevent SQL injection"""
     if not name or not VALID_IDENTIFIER_PATTERN.match(name):
-        logger.error(f"[DBTypeMigration] Invalid identifier: '{name}' - rejected for safety")
+        logger.error("[DBTypeMigration] Invalid identifier: '%s' - rejected for safety", name)
         return False
     return True
 
@@ -188,7 +186,6 @@ def detect_type_mismatches(
     mismatches = []
 
     try:
-        from sqlalchemy import inspect
         fresh_inspector = inspect(engine)
 
         if not fresh_inspector.has_table(table_name):
@@ -202,7 +199,6 @@ def detect_type_mismatches(
 
         # Get expected columns from model
         if table_class is None:
-            from models.auth import Base
             table_metadata = Base.metadata.tables.get(table_name)
             if table_metadata is None:
                 return []
@@ -214,7 +210,6 @@ def detect_type_mismatches(
                     for col in table_class.__table__.columns
                 }
             except AttributeError:
-                from models.auth import Base
                 table_metadata = Base.metadata.tables.get(table_name)
                 if table_metadata is None:
                     return []
@@ -240,7 +235,7 @@ def detect_type_mismatches(
         return mismatches
 
     except Exception as e:
-        logger.error(f"[DBTypeMigration] Detection failed for {table_name}: {e}")
+        logger.error("[DBTypeMigration] Detection failed for %s: %s", table_name, e)
         return []
 
 
@@ -270,14 +265,12 @@ def recreate_table_with_correct_schema(
         True if recreation successful, False otherwise
     """
     if not validate_identifier(table_name):
-        logger.error(f"[DBTypeMigration] Invalid table name: '{table_name}'")
+        logger.error("[DBTypeMigration] Invalid table name: '%s'", table_name)
         return False
 
     temp_table_name = f"{table_name}_migration_new"
 
     try:
-        from models.auth import Base
-
         # Get table metadata
         if table_class is not None and hasattr(table_class, '__table__'):
             table_metadata = table_class.__table__
@@ -285,7 +278,7 @@ def recreate_table_with_correct_schema(
             table_metadata = Base.metadata.tables.get(table_name)
 
         if table_metadata is None:
-            logger.error(f"[DBTypeMigration] No table metadata for '{table_name}'")
+            logger.error("[DBTypeMigration] No table metadata for '%s'", table_name)
             return False
 
         # Build column definitions for new table
@@ -294,7 +287,7 @@ def recreate_table_with_correct_schema(
         for col in table_metadata.columns:
             col_name = col.name
             if not validate_identifier(col_name):
-                logger.error(f"[DBTypeMigration] Invalid column name: '{col_name}'")
+                logger.error("[DBTypeMigration] Invalid column name: '%s'", col_name)
                 return False
 
             column_names.append(col_name)
@@ -337,7 +330,7 @@ def recreate_table_with_correct_schema(
 
             # Step 1: Create new table with correct schema
             create_sql = f'CREATE TABLE "{temp_table_name}" ({", ".join(all_defs)})'
-            logger.debug(f"[DBTypeMigration] Creating temp table: {temp_table_name}")
+            logger.debug("[DBTypeMigration] Creating temp table: %s", temp_table_name)
             cursor.execute(create_sql)
 
             # Step 2: Copy data with type casting for mismatched columns
@@ -379,18 +372,18 @@ def recreate_table_with_correct_schema(
                     f'INSERT INTO "{temp_table_name}" ({", ".join(copy_insert)}) '
                     f'SELECT {", ".join(copy_select)} FROM "{table_name}"'
                 )
-                logger.debug(f"[DBTypeMigration] Copying data: {len(copy_insert)} columns")
+                logger.debug("[DBTypeMigration] Copying data: %d columns", len(copy_insert))
                 cursor.execute(copy_sql)
                 copied_rows = cursor.rowcount
-                logger.info(f"[DBTypeMigration] Copied {copied_rows} row(s) from '{table_name}'")
+                logger.info("[DBTypeMigration] Copied %d row(s) from '%s'", copied_rows, table_name)
 
             # Step 3: Drop old table
             cursor.execute(f'DROP TABLE "{table_name}"')
-            logger.debug(f"[DBTypeMigration] Dropped old table: {table_name}")
+            logger.debug("[DBTypeMigration] Dropped old table: %s", table_name)
 
             # Step 4: Rename new table to original name
             cursor.execute(f'ALTER TABLE "{temp_table_name}" RENAME TO "{table_name}"')
-            logger.debug(f"[DBTypeMigration] Renamed temp table to: {table_name}")
+            logger.debug("[DBTypeMigration] Renamed temp table to: %s", table_name)
 
             # Step 5: Recreate indexes
             for idx in table_metadata.indexes:
@@ -403,17 +396,17 @@ def recreate_table_with_correct_schema(
                     )
                     try:
                         cursor.execute(idx_sql)
-                        logger.debug(f"[DBTypeMigration] Recreated index: {idx_name}")
+                        logger.debug("[DBTypeMigration] Recreated index: %s", idx_name)
                     except Exception as idx_err:
-                        logger.warning(f"[DBTypeMigration] Index {idx_name} failed: {idx_err}")
+                        logger.warning("[DBTypeMigration] Index %s failed: %s", idx_name, idx_err)
 
             # Re-enable foreign key checks
             cursor.execute("PRAGMA foreign_keys=ON")
 
             conn.commit()
             logger.info(
-                f"[DBTypeMigration] Successfully recreated table '{table_name}' "
-                f"with correct schema"
+                "[DBTypeMigration] Successfully recreated table '%s' with correct schema",
+                table_name
             )
             return True
 
@@ -425,11 +418,11 @@ def recreate_table_with_correct_schema(
                 conn.commit()
             except Exception:
                 pass
-            logger.error(f"[DBTypeMigration] Table recreation failed: {e}")
+            logger.error("[DBTypeMigration] Table recreation failed: %s", e)
             return False
         finally:
             conn.close()
 
     except Exception as e:
-        logger.error(f"[DBTypeMigration] Table recreation error: {e}", exc_info=True)
+        logger.error("[DBTypeMigration] Table recreation error: %s", e, exc_info=True)
         return False

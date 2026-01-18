@@ -4,21 +4,8 @@ base agent module.
 from abc import ABC, abstractmethod
 from typing import Any, Dict, Tuple
 import logging
-import os
 
 from dotenv import load_dotenv
-
-
-"""
-Base Agent Class for MindGraph
-
-This module provides the abstract base class that all specialized
-agents inherit from, ensuring consistent interface and behavior.
-
-Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
-All Rights Reserved
-Proprietary License
-"""
 
 
 
@@ -50,7 +37,8 @@ class BaseAgent(ABC):
     async def generate_graph(
         self,
         user_prompt: str,
-        language: str = 'zh'
+        language: str = 'zh',
+        **kwargs: Any
     ) -> Dict[str, Any]:
         """
         Generate a graph specification from user prompt.
@@ -58,11 +46,18 @@ class BaseAgent(ABC):
         Args:
             user_prompt: User's input prompt
             language: Language for processing ('zh' or 'en')
+            **kwargs: Additional parameters for specific agent types
+                - dimension_preference: Preferred dimension for tree/brace maps
+                - fixed_dimension: Fixed dimension that should not change
+                - dimension_only_mode: Generate topic from dimension only
+                - user_id: User ID for token tracking
+                - organization_id: Organization ID for token tracking
+                - request_type: Request type for token tracking
+                - endpoint_path: Endpoint path for token tracking
 
         Returns:
             dict: Graph specification with styling and metadata
         """
-        pass
 
     def validate_output(self, output: Dict[str, Any]) -> Tuple[bool, str]:
         """

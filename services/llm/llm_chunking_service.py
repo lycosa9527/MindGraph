@@ -1,9 +1,14 @@
-﻿from typing import List, Dict, Any, Optional, Union
+from typing import List, Dict, Any, Optional, Union, TYPE_CHECKING
 import logging
 
 from llm_chunking.chunker import LLMSemanticChunker
 from llm_chunking.models import Chunk, ParentChunk, QAChunk
-from services.knowledge.chunking_service import Chunk as LegacyChunk
+
+if TYPE_CHECKING:
+    from services.knowledge.chunking_service import Chunk as LegacyChunk
+else:
+    # Lazy import to avoid circular dependency
+    LegacyChunk = None
 
 """
 LLM Chunking Service Wrapper
@@ -61,7 +66,7 @@ class LLMChunkingService:
         structure_type: Optional[str] = None,
         pdf_outline: Optional[List[Dict[str, Any]]] = None,
         **kwargs
-    ) -> List[LegacyChunk]:
+    ) -> List[Any]:  # Return type is List[LegacyChunk] but we use lazy import
         """
         Chunk text using LLM-based semantic chunking.
 
@@ -114,7 +119,7 @@ class LLMChunkingService:
             logger.error(
                 f"[LLMChunkingService] ✗ Failed to chunk text for doc_id={document_id}: {e}"
             )
-            logger.error(f"[LLMChunkingService] Full traceback:")
+            logger.error("[LLMChunkingService] Full traceback:")
             logger.error(traceback.format_exc())
             logger.error(f"[LLMChunkingService] Exception type: {type(e).__name__}")
             logger.error(f"[LLMChunkingService] Exception args: {e.args}")
@@ -132,6 +137,10 @@ class LLMChunkingService:
                 "MindChunk chunker returned empty result. This may indicate an issue with "
                 "the LLM service or document content."
             )
+
+        # Lazy import to avoid circular dependency
+        if LegacyChunk is None:
+            from services.knowledge.chunking_service import Chunk as LegacyChunk  # type: ignore[assignment]
 
         # Convert to legacy Chunk format
         legacy_chunks = []

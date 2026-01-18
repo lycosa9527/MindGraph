@@ -4,6 +4,7 @@ bridge map agent module.
 from typing import Any, Dict, List, Optional, Tuple
 import logging
 
+from agents.core.base_agent import BaseAgent
 
 """
 Bridge Map Agent
@@ -62,7 +63,7 @@ class BridgeMapAgent(BaseAgent):
             Dict containing success status and generated spec
         """
         try:
-            logger.debug(f"BridgeMapAgent: Starting bridge map generation for prompt")
+            logger.debug("BridgeMapAgent: Starting bridge map generation for prompt")
 
             # Three-template system for bridge maps:
             # 1. existing_analogies provided → identify relationship pattern
@@ -129,7 +130,7 @@ class BridgeMapAgent(BaseAgent):
             logger.debug("Enhancement phase started")
             enhanced_spec = self._enhance_spec(spec)
 
-            logger.info(f"BridgeMapAgent: Bridge map generation completed successfully")
+            logger.info("BridgeMapAgent: Bridge map generation completed successfully")
             logger.debug(f"Final result keys: {list(enhanced_spec.keys())}")
             logger.debug(f"Final analogies count: {len(enhanced_spec.get('analogies', []))}")
 
@@ -209,7 +210,7 @@ class BridgeMapAgent(BaseAgent):
     ) -> Optional[Dict]:
         """Generate the bridge map specification using LLM."""
         try:
-            logger.debug(f"=== BRIDGE MAP SPEC GENERATION START ===")
+            logger.debug("=== BRIDGE MAP SPEC GENERATION START ===")
             logger.debug(f"Prompt: {prompt}")
             logger.debug(f"Language: {language}")
 

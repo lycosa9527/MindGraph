@@ -57,7 +57,7 @@ def setup_early_configuration():
             if not isinstance(current_policy, asyncio.WindowsProactorEventLoopPolicy):
                 asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
                 logging.info("Windows: Set event loop policy to WindowsProactorEventLoopPolicy for Playwright support")
-        except Exception as e:  # pylint: disable=broad-except
+        except Exception:  # pylint: disable=broad-except
             # If we can't check/set, try to set it anyway
             try:
                 asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())

@@ -82,6 +82,10 @@ class TimestampedRotatingFileHandler(BaseRotatingHandler):
         now = datetime.now()
         return now >= self.next_rotation_time
 
+    def shouldRollover(self, record):
+        """Alias for should_rollover (Python logging expects camelCase)."""
+        return self.should_rollover(record)
+
     def do_rollover(self):
         """Perform rollover to a new timestamped file."""
         if self.stream:
@@ -146,6 +150,15 @@ class UnifiedFormatter(logging.Formatter):
         'RESET': '\033[0m',     # Reset
         'BOLD': '\033[1m',      # Bold
     }
+
+    def __init__(self, fmt=None, datefmt=None, style='%', validate=True, use_colors=None, _use_colors=None):
+        """
+        Initialize formatter, accepting Uvicorn's use_colors parameter.
+        We ignore use_colors since we handle our own color logic.
+        """
+        # Call parent init without use_colors (not a standard logging.Formatter parameter)
+        super().__init__(fmt=fmt, datefmt=datefmt, style=style, validate=validate)
+        # We manage our own colors in the format() method
 
     def format(self, record):
         timestamp = self.formatTime(record, '%H:%M:%S')

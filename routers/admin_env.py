@@ -1,17 +1,4 @@
-﻿from typing import Dict
-import logging
-
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
-
-from config.database import get_db
-from models.auth import User
-from services.infrastructure.env_manager import EnvManager
-from utils.auth import get_current_user, is_admin
-
-"""
-Admin Environment Settings Router
-==================================
+"""Admin Environment Settings Router.
 
 Enhanced .env configuration management endpoints with:
 - Full backup/restore capabilities
@@ -32,6 +19,14 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+from typing import Dict
+import logging
+
+from fastapi import APIRouter, Depends, HTTPException, status
+
+from models.auth import User
+from services.infrastructure.env_manager import EnvManager
+from utils.auth import get_current_user, is_admin
 
 
 
@@ -42,8 +37,7 @@ router = APIRouter(prefix="/api/auth/admin/env", tags=["Admin - Environment Sett
 
 @router.get("/settings", dependencies=[Depends(get_current_user)])
 async def get_env_settings(
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    current_user: User = Depends(get_current_user)
 ):
     """
     Get all environment settings with metadata (ADMIN ONLY)
@@ -96,7 +90,7 @@ async def get_env_settings(
             # Not sensitive, return as-is
             masked_settings[key] = value
 
-        logger.info(f"Admin {current_user.phone} accessed environment settings")
+        logger.info("Admin %s accessed environment settings", current_user.phone)
 
         return {
             "settings": masked_settings,
@@ -104,18 +98,17 @@ async def get_env_settings(
         }
 
     except Exception as e:
-        logger.error(f"Failed to get environment settings: {e}")
+        logger.error("Failed to get environment settings: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get settings: {str(e)}"
-        )
+        ) from e
 
 
 @router.put("/settings", dependencies=[Depends(get_current_user)])
 async def update_env_settings(
     request: Dict[str, str],
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    current_user: User = Depends(get_current_user)
 ):
     """
     Update environment settings in .env file (ADMIN ONLY)
@@ -183,12 +176,12 @@ async def update_env_settings(
                 filtered_request[key] = value
 
         if skipped_masked:
-            logger.info(f"Preserved {len(skipped_masked)} masked values: {', '.join(skipped_masked)}")
+            logger.info("Preserved %d masked values: %s", len(skipped_masked), ', '.join(skipped_masked))
 
         # Validate settings before writing
         is_valid, errors = env_manager.validate_env(filtered_request)
         if not is_valid:
-            logger.warning(f"Settings validation failed: {errors}")
+            logger.warning("Settings validation failed: %s", errors)
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Validation errors: {', '.join(errors)}"
@@ -196,22 +189,23 @@ async def update_env_settings(
 
         # Create backup before making changes
         backup_file = env_manager.backup_env()
-        logger.info(f"Created backup: {backup_file}")
+        logger.info("Created backup: %s", backup_file)
 
         # Write new settings
         env_manager.write_env(filtered_request)
 
         # Log the change (mask sensitive values in log)
         masked_keys = []
-        for key in filtered_request.keys():
+        for key, value in filtered_request.items():
             if any(sensitive in key for sensitive in ['API_KEY', 'SECRET', 'PASSWORD', 'PASSKEY']):
                 masked_keys.append(f"{key}=***")
             else:
-                masked_keys.append(f"{key}={filtered_request[key]}")
+                masked_keys.append(f"{key}={value}")
 
         logger.warning(
-            f"Admin {current_user.phone} updated .env settings: "
-            f"{', '.join(masked_keys)}"
+            "Admin %s updated .env settings: %s",
+            current_user.phone,
+            ', '.join(masked_keys)
         )
 
         return {
@@ -222,24 +216,23 @@ async def update_env_settings(
         }
 
     except ValueError as e:
-        logger.error(f"Settings update failed: {e}")
+        logger.error("Settings update failed: %s", e)
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e)
-        )
+        ) from e
     except Exception as e:
-        logger.error(f"Unexpected error updating settings: {e}")
+        logger.error("Unexpected error updating settings: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to update settings: {str(e)}"
-        )
+        ) from e
 
 
 @router.post("/validate", dependencies=[Depends(get_current_user)])
 async def validate_env_settings(
     request: Dict[str, str],
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    current_user: User = Depends(get_current_user)
 ):
     """
     Validate settings without writing to file (ADMIN ONLY)
@@ -274,17 +267,16 @@ async def validate_env_settings(
         }
 
     except Exception as e:
-        logger.error(f"Validation failed: {e}")
+        logger.error("Validation failed: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Validation failed: {str(e)}"
-        )
+        ) from e
 
 
 @router.get("/backups", dependencies=[Depends(get_current_user)])
 async def list_env_backups(
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    current_user: User = Depends(get_current_user)
 ):
     """
     List all available .env backup files (ADMIN ONLY)
@@ -313,23 +305,22 @@ async def list_env_backups(
         env_manager = EnvManager()
         backups = env_manager.list_backups()
 
-        logger.info(f"Admin {current_user.phone} listed {len(backups)} backups")
+        logger.info("Admin %s listed %d backups", current_user.phone, len(backups))
 
         return backups
 
     except Exception as e:
-        logger.error(f"Failed to list backups: {e}")
+        logger.error("Failed to list backups: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to list backups: {str(e)}"
-        )
+        ) from e
 
 
 @router.post("/restore", dependencies=[Depends(get_current_user)])
 async def restore_env_from_backup(
     backup_filename: str,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    current_user: User = Depends(get_current_user)
 ):
     """
     Restore .env from a backup file (ADMIN ONLY)
@@ -362,7 +353,11 @@ async def restore_env_from_backup(
 
     # Security: Validate filename to prevent path traversal
     if not backup_filename or ".." in backup_filename or "/" in backup_filename or "\\" in backup_filename:
-        logger.warning(f"Admin {current_user.phone} attempted invalid backup filename: {backup_filename}")
+        logger.warning(
+            "Admin %s attempted invalid backup filename: %s",
+            current_user.phone,
+            backup_filename
+        )
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid backup filename. Path traversal not allowed."
@@ -376,7 +371,9 @@ async def restore_env_from_backup(
 
         if success:
             logger.warning(
-                f"Admin {current_user.phone} restored .env from backup: {backup_filename}"
+                "Admin %s restored .env from backup: %s",
+                current_user.phone,
+                backup_filename
             )
 
             return {
@@ -387,29 +384,28 @@ async def restore_env_from_backup(
         else:
             raise ValueError("Restore operation failed")
 
-    except FileNotFoundError:
+    except FileNotFoundError as exc:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Backup file not found: {backup_filename}"
-        )
+        ) from exc
     except ValueError as e:
-        logger.error(f"Restore failed: {e}")
+        logger.error("Restore failed: %s", e)
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e)
-        )
+        ) from e
     except Exception as e:
-        logger.error(f"Unexpected error during restore: {e}")
+        logger.error("Unexpected error during restore: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to restore from backup: {str(e)}"
-        )
+        ) from e
 
 
 @router.get("/schema", dependencies=[Depends(get_current_user)])
 async def get_env_schema(
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    current_user: User = Depends(get_current_user)
 ):
     """
     Get environment settings schema metadata (ADMIN ONLY)
@@ -437,9 +433,8 @@ async def get_env_schema(
         return schema
 
     except Exception as e:
-        logger.error(f"Failed to get schema: {e}")
+        logger.error("Failed to get schema: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get schema: {str(e)}"
-        )
-
+        ) from e

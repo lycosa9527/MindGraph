@@ -1,8 +1,8 @@
-﻿from datetime import datetime, timedelta
-from typing import Optional, Dict, Any, List
+from datetime import datetime, timedelta
+from typing import Dict, Any, List
 import logging
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status, Body
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
@@ -10,6 +10,9 @@ from config.database import get_db
 from models.auth import User, APIKey
 from models.messages import Messages
 from utils.auth import generate_api_key
+
+from ..dependencies import get_language_dependency, require_admin
+from ..helpers import utc_to_beijing_iso
 
 """
 Admin API Key Management Endpoints
@@ -60,7 +63,7 @@ async def list_api_keys_admin(
                 func.sum(TokenUsage.total_tokens).label('total_tokens')
             ).filter(
                 TokenUsage.api_key_id == key.id,
-                TokenUsage.success == True
+                TokenUsage.success
             ).first()
 
             if key_token_stats:

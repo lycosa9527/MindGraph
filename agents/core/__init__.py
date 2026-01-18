@@ -10,6 +10,5 @@ Proprietary License
 """
 
 from .base_agent import BaseAgent
-from .agent_utils import *
 
 __all__ = ['BaseAgent']

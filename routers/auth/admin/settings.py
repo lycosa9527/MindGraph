@@ -1,10 +1,11 @@
-﻿import logging
+import logging
 import os
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 
 from models.auth import User
 from models.messages import Messages
+from ..dependencies import get_language_dependency, require_admin
 
 """
 Admin Settings Management Endpoints

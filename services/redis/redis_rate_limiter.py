@@ -1,4 +1,4 @@
-﻿"""
+"""
 Redis Rate Limiter
 ==================
 
@@ -124,15 +124,18 @@ class RedisRateLimiter:
                         f"Please try again in {minutes} minute{'s' if minutes > 1 else ''}."
                     )
                 else:
-                    error_msg = f"Too many attempts. Please try again later."
+                    error_msg = "Too many attempts. Please try again later."
 
-                logger.warning(f"[RateLimiter] Limit exceeded: {category}:{identifier} ({count}/{max_attempts})")
+                logger.warning(
+                    "[RateLimiter] Limit exceeded: %s:%s (%s/%s)",
+                    category, identifier, count, max_attempts
+                )
                 return False, count, error_msg
 
             return True, count, ""
 
         except Exception as e:
-            logger.error(f"[RateLimiter] Redis error: {e}")
+            logger.error("[RateLimiter] Redis error: %s", e)
             return self._memory_check_and_record(
                 category, identifier, max_attempts, window_seconds
             )
@@ -163,7 +166,10 @@ class RedisRateLimiter:
                 f"Too many attempts ({count} in {window_seconds//60} minutes). "
                 f"Please try again in {minutes} minute{'s' if minutes > 1 else ''}."
             )
-            logger.warning(f"[RateLimiter] (memory) Limit exceeded: {key} ({count}/{max_attempts})")
+            logger.warning(
+                "[RateLimiter] (memory) Limit exceeded: %s (%s/%s)",
+                key, count, max_attempts
+            )
             return False, count, error_msg
 
         return True, count, ""
@@ -187,7 +193,7 @@ class RedisRateLimiter:
                     redis.delete(key)
                     return True
                 except Exception as e:
-                    logger.error(f"[RateLimiter] Redis clear error: {e}")
+                    logger.error("[RateLimiter] Redis clear error: %s", e)
 
         # Fallback to memory
         key = f"{category}:{identifier}"
@@ -240,7 +246,7 @@ class RedisRateLimiter:
                     return remaining, max(0, reset_seconds)
 
                 except Exception as e:
-                    logger.error(f"[RateLimiter] Redis error: {e}")
+                    logger.error("[RateLimiter] Redis error: %s", e)
 
         # Fallback to memory
         key = f"{category}:{identifier}"
@@ -259,16 +265,22 @@ class RedisRateLimiter:
         return remaining, max(0, reset_seconds)
 
 
-# Global singleton
-_rate_limiter: Optional[RedisRateLimiter] = None
+# Singleton instance holder
+class _RateLimiterHolder:
+    """Holder for singleton rate limiter instance."""
+    _instance: Optional[RedisRateLimiter] = None
+
+    @classmethod
+    def get_instance(cls) -> RedisRateLimiter:
+        """Get or create singleton rate limiter instance."""
+        if cls._instance is None:
+            cls._instance = RedisRateLimiter()
+        return cls._instance
 
 
 def get_rate_limiter() -> RedisRateLimiter:
     """Get or create global rate limiter instance."""
-    global _rate_limiter
-    if _rate_limiter is None:
-        _rate_limiter = RedisRateLimiter()
-    return _rate_limiter
+    return _RateLimiterHolder.get_instance()
 
 
 # ============================================================================
@@ -284,7 +296,7 @@ DEFAULT_WINDOW_MINUTES = 15
 def check_login_rate_limit(phone: str) -> Tuple[bool, str]:
     """Check login rate limit for phone number."""
     limiter = get_rate_limiter()
-    allowed, count, error = limiter.check_and_record(
+    allowed, _, error = limiter.check_and_record(
         "login", phone, DEFAULT_MAX_LOGIN_ATTEMPTS, DEFAULT_WINDOW_MINUTES * 60
     )
     return allowed, error
@@ -294,7 +306,7 @@ def check_ip_rate_limit(ip: str) -> Tuple[bool, str]:
     """Check login rate limit for IP address."""
     limiter = get_rate_limiter()
     # IP limit is 2x phone limit
-    allowed, count, error = limiter.check_and_record(
+    allowed, _, error = limiter.check_and_record(
         "ip", ip, DEFAULT_MAX_LOGIN_ATTEMPTS * 2, DEFAULT_WINDOW_MINUTES * 60
     )
     return allowed, error
@@ -303,7 +315,7 @@ def check_ip_rate_limit(ip: str) -> Tuple[bool, str]:
 def check_captcha_rate_limit(identifier: str) -> Tuple[bool, str]:
     """Check captcha verification rate limit."""
     limiter = get_rate_limiter()
-    allowed, count, error = limiter.check_and_record(
+    allowed, _, error = limiter.check_and_record(
         "captcha", identifier, DEFAULT_MAX_CAPTCHA_ATTEMPTS, DEFAULT_WINDOW_MINUTES * 60
     )
     return allowed, error

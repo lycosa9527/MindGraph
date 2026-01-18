@@ -36,6 +36,52 @@ class DocumentCleaner:
         return cls._instance
 
     @staticmethod
+    def _remove_urls_emails_preserving_markdown(text: str) -> str:
+        """
+        Remove URLs and emails while preserving Markdown links and images.
+
+        Args:
+            text: Text to process
+
+        Returns:
+            Text with URLs/emails removed but markdown preserved
+        """
+        email_pattern = r"([a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+)"
+        text = re.sub(email_pattern, "", text)
+
+        markdown_link_pattern = r"\[([^\]]*)\]\((https?://[^)]+)\)"
+        markdown_image_pattern = r"!\[.*?\]\((https?://[^)]+)\)"
+        placeholders: list[tuple[str, str, str]] = []
+
+        def replace_markdown_with_placeholder(match):
+            link_text = match.group(1)
+            url = match.group(2)
+            placeholder = f"__MARKDOWN_PLACEHOLDER_{len(placeholders)}__"
+            placeholders.append(("link", link_text, url))
+            return placeholder
+
+        def replace_image_with_placeholder(match):
+            url = match.group(1)
+            placeholder = f"__MARKDOWN_PLACEHOLDER_{len(placeholders)}__"
+            placeholders.append(("image", "image", url))
+            return placeholder
+
+        text = re.sub(markdown_link_pattern, replace_markdown_with_placeholder, text)
+        text = re.sub(markdown_image_pattern, replace_image_with_placeholder, text)
+
+        url_pattern = r"https?://\S+"
+        text = re.sub(url_pattern, "", text)
+
+        for idx, (link_type, text_or_alt, url) in enumerate(placeholders):
+            placeholder = f"__MARKDOWN_PLACEHOLDER_{idx}__"
+            if link_type == "link":
+                text = text.replace(placeholder, f"[{text_or_alt}]({url})")
+            else:
+                text = text.replace(placeholder, f"![{text_or_alt}]({url})")
+
+        return text
+
+    @staticmethod
     def clean(
         text: str,
         remove_extra_spaces: bool = True,
@@ -56,85 +102,20 @@ class DocumentCleaner:
             return text
 
         # Step 1: Remove invalid symbols and control characters
-        # Remove <| and |> (common in some document formats)
         text = re.sub(r"<\|", "<", text)
         text = re.sub(r"\|>", ">", text)
-
-        # Remove control characters (except newline, tab, carriage return)
-        # \x00-\x08: NULL to BS
-        # \x0B: Vertical Tab
-        # \x0C: Form Feed
-        # \x0E-\x1F: SO to US
-        # \x7F: DEL
-        # \xEF\xBF\xBE: UTF-8 BOM
         text = re.sub(r"[\x00-\x08\x0B\x0C\x0E-\x1F\x7F\xEF\xBF\xBE]", "", text)
-
-        # Remove Unicode U+FFFE (non-character)
         text = re.sub("\ufffe", "", text)
 
         # Step 2: Remove extra spaces (if enabled)
         if remove_extra_spaces:
-            # Remove multiple consecutive newlines (3+ -> 2)
             text = re.sub(r"\n{3,}", "\n\n", text)
-
-            # Remove multiple consecutive spaces/tabs
-            # Includes various Unicode space characters:
-            # \t: Tab
-            # \f: Form Feed
-            # \r: Carriage Return
-            # \x20: Space
-            # \u00a0: Non-breaking space
-            # \u1680: Ogham space mark
-            # \u180e: Mongolian vowel separator
-            # \u2000-\u200a: Various en/em spaces
-            # \u202f: Narrow no-break space
-            # \u205f: Medium mathematical space
-            # \u3000: Ideographic space
-            pattern = r"[\t\f\r\x20\u00a0\u1680\u180e\u2000-\u200a\u202f\u205f\u3000]{2,}"
-            text = re.sub(pattern, " ", text)
+            space_pattern = r"[\t\f\r\x20\u00a0\u1680\u180e\u2000-\u200a\u202f\u205f\u3000]{2,}"
+            text = re.sub(space_pattern, " ", text)
 
         # Step 3: Remove URLs and emails (if enabled, but preserve markdown)
         if remove_urls_emails:
-            # Remove email addresses
-            email_pattern = r"([a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+)"
-            text = re.sub(email_pattern, "", text)
-
-            # Remove URLs but preserve Markdown links and images
-            markdown_link_pattern = r"\[([^\]]*)\]\((https?://[^)]+)\)"
-            markdown_image_pattern = r"!\[.*?\]\((https?://[^)]+)\)"
-            placeholders: list[tuple[str, str, str]] = []  # (type, text, url)
-
-            def replace_markdown_with_placeholder(match):
-                link_type = "link"
-                link_text = match.group(1)
-                url = match.group(2)
-                placeholder = f"__MARKDOWN_PLACEHOLDER_{len(placeholders)}__"
-                placeholders.append((link_type, link_text, url))
-                return placeholder
-
-            def replace_image_with_placeholder(match):
-                link_type = "image"
-                url = match.group(1)
-                placeholder = f"__MARKDOWN_PLACEHOLDER_{len(placeholders)}__"
-                placeholders.append((link_type, "image", url))
-                return placeholder
-
-            # Protect markdown links first
-            text = re.sub(markdown_link_pattern, replace_markdown_with_placeholder, text)
-            # Then protect markdown images
-            text = re.sub(markdown_image_pattern, replace_image_with_placeholder, text)
-
-            # Now remove all remaining URLs
-            url_pattern = r"https?://\S+"
-            text = re.sub(url_pattern, "", text)
-
-            # Restore the Markdown links and images
-            for i, (link_type, text_or_alt, url) in enumerate(placeholders):
-                placeholder = f"__MARKDOWN_PLACEHOLDER_{i}__"
-                if link_type == "link":
-                    text = text.replace(placeholder, f"[{text_or_alt}]({url})")
-                else:  # image
-                    text = text.replace(placeholder, f"![{text_or_alt}]({url})")
+            text = DocumentCleaner._remove_urls_emails_preserving_markdown(text)
 
         return text
 

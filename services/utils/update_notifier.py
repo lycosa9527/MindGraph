@@ -1,4 +1,4 @@
-﻿"""
+"""
 Update Notification Service
 ============================
 
@@ -97,13 +97,13 @@ class UpdateNotifier:
         enabled: bool,
         version: str = "",
         title: str = "",
-        title_en: str = "",  # Kept for API compatibility, but not stored
+        title_en: str = "",
         message: str = "",
-        message_en: str = "",  # Kept for API compatibility, but not stored
-        show_changelog: bool = False,  # Kept for API compatibility
-        changelog_items: Optional[list] = None,  # Kept for API compatibility
-        changelog_items_en: Optional[list] = None,  # Kept for API compatibility
-        **kwargs  # Ignore any extra fields
+        message_en: str = "",
+        show_changelog: bool = False,
+        changelog_items: Optional[list] = None,
+        changelog_items_en: Optional[list] = None,
+        **kwargs
     ) -> Dict:
         """
         Set or update the notification configuration.
@@ -117,6 +117,7 @@ class UpdateNotifier:
         Returns:
             Updated notification configuration
         """
+        _ = (title_en, message_en, show_changelog, changelog_items, changelog_items_en, kwargs)
         db = self._get_db()
         try:
             notification = self._ensure_notification_exists(db)
@@ -139,9 +140,12 @@ class UpdateNotifier:
                     UpdateNotificationDismissed.version != version
                 ).delete(synchronize_session=False)
                 db.commit()
-                logger.info(f"Version changed from {old_version} to {version}, cleaned up {deleted} old dismissed records")
+                logger.info(
+                    "Version changed from %s to %s, cleaned up %s old dismissed records",
+                    old_version, version, deleted
+                )
 
-            logger.info(f"Update notification set: enabled={enabled}, version={version}")
+            logger.info("Update notification set: enabled=%s, version=%s", enabled, version)
 
             return {
                 "enabled": notification.enabled,
@@ -152,7 +156,7 @@ class UpdateNotifier:
             }
         except Exception as e:
             db.rollback()
-            logger.error(f"Failed to set notification: {e}")
+            logger.error("Failed to set notification: %s", e)
             raise
         finally:
             db.close()
@@ -255,7 +259,7 @@ class UpdateNotifier:
                     )
                     db.add(dismissed)
                     db.commit()
-                    logger.debug(f"User {user_id} dismissed notification for version {version}")
+                    logger.debug("User %s dismissed notification for version %s", user_id, version)
                 except Exception:
                     # Race condition or duplicate - that's fine
                     db.rollback()
@@ -263,7 +267,7 @@ class UpdateNotifier:
             return True
         except Exception as e:
             db.rollback()
-            logger.error(f"Failed to dismiss notification: {e}")
+            logger.error("Failed to dismiss notification: %s", e)
             return False
         finally:
             db.close()
@@ -294,7 +298,7 @@ class UpdateNotifier:
             }
         except Exception as e:
             db.rollback()
-            logger.error(f"Failed to disable notification: {e}")
+            logger.error("Failed to disable notification: %s", e)
             raise
         finally:
             db.close()
@@ -311,11 +315,11 @@ class UpdateNotifier:
             deleted = db.query(UpdateNotificationDismissed).delete()
             db.commit()
 
-            logger.info(f"Cleared {deleted} dismissed states")
+            logger.info("Cleared %s dismissed states", deleted)
             return True
         except Exception as e:
             db.rollback()
-            logger.error(f"Failed to clear dismissed: {e}")
+            logger.error("Failed to clear dismissed: %s", e)
             return False
         finally:
             db.close()

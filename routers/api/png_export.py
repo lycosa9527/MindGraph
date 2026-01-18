@@ -1,21 +1,3 @@
-﻿from pathlib import Path
-from typing import
-import asyncio
-import json
-import logging
-import os
-import time
-import uuid
-
-from fastapi import APIRouter, HTTPException, Depends, Request
-from fastapi.responses import Response, PlainTextResponse, FileResponse
-import aiofiles
-
-from models import (
-from models.auth import User
-from services.infrastructure.browser import BrowserContextManager
-from utils.auth import get_current_user_or_api_key
-
 """
 PNG Export API Router
 =====================
@@ -30,12 +12,35 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+from pathlib import Path
+from typing import Dict, Any, Optional
+import asyncio
+import json
+import logging
+import os
+import time
+import uuid
 
+from fastapi import APIRouter, HTTPException, Depends, Request
+from fastapi.responses import Response, PlainTextResponse, FileResponse
+import aiofiles
+
+from models import (
     ExportPNGRequest,
     GeneratePNGRequest,
     GenerateDingTalkRequest,
     Messages,
     get_request_language
+)
+from models.auth import User
+from services.infrastructure.browser import BrowserContextManager
+from utils.auth import get_current_user_or_api_key
+
+from .helpers import (
+    check_endpoint_rate_limit,
+    get_rate_limit_identifier,
+    generate_signed_url,
+    verify_signed_url
 )
 
 logger = logging.getLogger(__name__)
@@ -142,7 +147,7 @@ async def _export_png_core(
 
     try:
         # Load JS files from disk for embedding (like old version)
-        logger.debug(f"[ExportPNG] Loading JavaScript files for embedding")
+        logger.debug("[ExportPNG] Loading JavaScript files for embedding")
 
         # Read local D3.js content for embedding in PNG generation (like old version)
         d3_js_path = Path(__file__).parent.parent.parent / 'static' / 'js' / 'd3.min.js'
@@ -198,7 +203,6 @@ async def _export_png_core(
                         # Patch the loadScript method to check if script is already in DOM before making HTTP request
                         # This prevents failures when scripts are embedded directly in HTML
                         # Find the loadScript method and wrap it
-                        load_script_pattern = r'(loadScript\(src\) \{[^}]+const existingScript = document\.querySelector[^}]+\}[^}]+if \(existingScript\) \{[^}]+\}[^}]+)'
 
                         # Enhanced version that also checks cache
                         patched_load_script = r'''loadScript(src) {
@@ -270,7 +274,7 @@ async def _export_png_core(
                             # Replace the entire method
                             old_method = load_script_match.group(0)
                             content = content.replace(old_method, patched_load_script)
-                            logger.debug(f"[ExportPNG] Successfully patched loadScript method")
+                            logger.debug("[ExportPNG] Successfully patched loadScript method")
 
                         # CRITICAL: Patch loadRenderer() to validate cached renderer objects
                         # The cache might have {renderer: true} from old code, which is not a renderer object
@@ -287,9 +291,9 @@ async def _export_png_core(
                 this.cache.delete(config.module);
             }'''
                             content = re.sub(cache_check_pattern, patched_cache_check, content)
-                            logger.debug(f"[ExportPNG] Successfully patched loadRenderer cache validation")
+                            logger.debug("[ExportPNG] Successfully patched loadRenderer cache validation")
                         else:
-                            logger.warning(f"[ExportPNG] Could not find loadScript method to patch - using fallback")
+                            logger.warning("[ExportPNG] Could not find loadScript method to patch - using fallback")
                             # Fallback: patch the specific loadScript calls in loadRenderer
                             # Try multiple variations of the string
                             replacements = [
@@ -314,7 +318,7 @@ async def _export_png_core(
                             for old_str, new_str in replacements:
                                 if old_str in content:
                                     content = content.replace(old_str, new_str)
-                                    logger.debug(f"[ExportPNG] Patched shared-utilities loadScript call")
+                                    logger.debug("[ExportPNG] Patched shared-utilities loadScript call")
                                     break
                             else:
                                 # Try matching with the .then() call included
@@ -330,9 +334,9 @@ async def _export_png_core(
                                     }
                                     return this.loadScript('/static/js/renderers/shared-utilities.js').then(() => {"""
                                     content = content.replace(old_with_then, new_with_then)
-                                    logger.debug(f"[ExportPNG] Patched shared-utilities loadScript call (with .then())")
+                                    logger.debug("[ExportPNG] Patched shared-utilities loadScript call (with .then())")
                                 else:
-                                    logger.warning(f"[ExportPNG] Could not find shared-utilities loadScript call to patch")
+                                    logger.warning("[ExportPNG] Could not find shared-utilities loadScript call to patch")
                     embedded_js_content[key] = content
                 logger.debug(f"[ExportPNG] JS file '{key}' loaded ({len(content)} bytes)")
             except Exception as e:
@@ -359,7 +363,7 @@ async def _export_png_core(
             'mind_map': {'module': 'mind-map-renderer', 'renderer': 'MindMapRenderer'},
             'concept_map': {'module': 'concept-map-renderer', 'renderer': 'ConceptMapRenderer'}
         }
-        renderer_info = renderer_info_map.get(diagram_type, {})
+        renderer_info_map.get(diagram_type, {})
 
         # Build renderer scripts section
         renderer_scripts_parts = [
@@ -683,7 +687,7 @@ async def _export_png_core(
         logger.debug(f"[ExportPNG] HTML content length: {len(html)} characters")
 
         # Create browser context (like old version)
-        logger.debug(f"[ExportPNG] Creating browser context")
+        logger.debug("[ExportPNG] Creating browser context")
         async with BrowserContextManager() as context:
             page = await context.new_page()
 
@@ -983,7 +987,7 @@ async def generate_png_from_prompt(
         organization_id = getattr(current_user, 'organization_id', None) if current_user and hasattr(current_user, 'id') else None
 
         # Detect learning sheet from prompt
-        from agents.main_agent import _detect_learning_sheet_from_prompt, _clean_prompt_for_learning_sheet
+        from agents.core.learning_sheet import _detect_learning_sheet_from_prompt, _clean_prompt_for_learning_sheet
         is_learning_sheet = _detect_learning_sheet_from_prompt(prompt, language)
         logger.debug(f"[GeneratePNG] Learning sheet detected: {is_learning_sheet}")
 
@@ -1015,7 +1019,7 @@ async def generate_png_from_prompt(
             if api_key_id:
                 logger.debug(f"[GeneratePNG] Using API key ID {api_key_id} for token tracking")
         else:
-            logger.debug(f"[GeneratePNG] Request state not available")
+            logger.debug("[GeneratePNG] Request state not available")
 
         start_time = time.time()
         response, usage_data = await llm_service.chat_with_usage(
@@ -1039,7 +1043,7 @@ async def generate_png_from_prompt(
 
         # Check for non-JSON response (LLM asking for more information)
         if isinstance(result, dict) and result.get('_error') == 'non_json_response':
-            logger.warning(f"[GeneratePNG] LLM returned non-JSON response asking for more info")
+            logger.warning("[GeneratePNG] LLM returned non-JSON response asking for more info")
             error_msg = "无法理解您的意图，请更具体地说明图表类型和主题，或点击下方的图表卡片。" if lang == 'zh' else "Unable to process user's intention, please be more specific about the diagram type and topic, or click the diagrams card below."
             raise HTTPException(status_code=400, detail=error_msg)
 
@@ -1205,7 +1209,7 @@ async def generate_dingtalk_png(
             organization_id = getattr(current_user, 'organization_id', None)
 
         # Detect learning sheet from prompt
-        from agents.main_agent import _detect_learning_sheet_from_prompt, _clean_prompt_for_learning_sheet
+        from agents.core.learning_sheet import _detect_learning_sheet_from_prompt, _clean_prompt_for_learning_sheet
         is_learning_sheet = _detect_learning_sheet_from_prompt(prompt, language)
         logger.debug(f"[GenerateDingTalk] Learning sheet detected: {is_learning_sheet}")
 
@@ -1260,7 +1264,7 @@ async def generate_dingtalk_png(
 
         # Check for non-JSON response (LLM asking for more information)
         if isinstance(result, dict) and result.get('_error') == 'non_json_response':
-            logger.warning(f"[GenerateDingTalk] LLM returned non-JSON response asking for more info")
+            logger.warning("[GenerateDingTalk] LLM returned non-JSON response asking for more info")
             error_msg = "无法理解您的意图，请更具体地说明图表类型和主题，或点击下方的图表卡片。" if lang == 'zh' else "Unable to process user's intention, please be more specific about the diagram type and topic, or click the diagrams card below."
             raise HTTPException(status_code=400, detail=error_msg)
 

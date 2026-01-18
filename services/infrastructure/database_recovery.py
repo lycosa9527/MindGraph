@@ -30,14 +30,8 @@ import logging
 import os
 import shutil
 import sqlite3
-import sys
 import time
 
-from services.infrastructure.recovery_locks import (
-    INTEGRITY_CHECK_CACHE_TTL,
-    get_integrity_check_cache,
-    set_integrity_check_cache
-)
 
 logger = logging.getLogger(__name__)
 
@@ -108,22 +102,11 @@ class DatabaseRecovery:
         if not self.db_path or not self.db_path.exists():
             return True, "Database does not exist yet (will be created)"
 
-        # Check cache first
-        cache_data = get_integrity_check_cache()
-        if cache_data is not None:
-            cached_result, cache_time = cache_data
-            if time.time() - cache_time < INTEGRITY_CHECK_CACHE_TTL:
-                logger.debug(
-                    "[Recovery] Using cached integrity check result (age: %.1fs)",
-                    time.time() - cache_time
-                )
-                message = (
-                    "Database integrity check passed (cached)" if cached_result
-                    else "Database integrity check failed (cached)"
-                )
-                return cached_result, message
+        # Note: Cache check removed - lock mechanism ensures only one worker checks
+        # Other workers skip via lock acquisition failure in recovery_startup.py
 
         conn = None
+        check_start_time = time.time()
         try:
             conn = sqlite3.connect(str(self.db_path), timeout=30.0)
             cursor = conn.cursor()
@@ -131,17 +114,19 @@ class DatabaseRecovery:
             # Use quick_check for faster validation (less thorough but much faster)
             # Use full integrity_check for thorough validation (slower but catches more issues)
             pragma_cmd = "PRAGMA quick_check" if use_quick_check else "PRAGMA integrity_check"
+            logger.debug("[Recovery] Running %s...", pragma_cmd)
             cursor.execute(pragma_cmd)
             result = cursor.fetchone()
+            check_duration = time.time() - check_start_time
 
             if result and result[0] == "ok":
-                # Cache successful result
-                set_integrity_check_cache((True, time.time()))
                 check_type = "quick" if use_quick_check else "full"
+                logger.info(
+                    "[Recovery] Database integrity check passed (%s) in %.1fs",
+                    check_type, check_duration
+                )
                 return True, f"Database integrity check passed ({check_type})"
             else:
-                # Cache failed result
-                set_integrity_check_cache((False, time.time()))
                 error_msg = result[0] if result else 'unknown error'
                 return False, f"Integrity check failed: {error_msg}"
 

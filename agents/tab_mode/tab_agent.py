@@ -5,10 +5,10 @@ from typing import Dict, List, Any, Optional
 import json
 import logging
 import re
-import time
 
 from pydantic import BaseModel, Field
 
+from agents.core.base_agent import BaseAgent
 from prompts import get_prompt
 from services.infrastructure.error_handler import LLMServiceError
 from services.llm import llm_service
@@ -82,7 +82,7 @@ class TabAgent(BaseAgent):
         super().__init__(model=model)
         self.diagram_type = "tab_mode"
 
-        logger.info("TabAgent initialized", {
+        logger.info("TabAgent initialized", extra={
             'model': model,
             'diagram_type': self.diagram_type
         })
@@ -103,7 +103,7 @@ class TabAgent(BaseAgent):
             JSON string with extracted context
         """
         try:
-            logger.debug("TabAgent: Extracting diagram context", {
+            logger.debug("TabAgent: Extracting diagram context", extra={
                 'diagram_type': diagram_type,
                 'spec_keys': list(spec.keys()) if isinstance(spec, dict) else []
             })
@@ -181,15 +181,15 @@ class TabAgent(BaseAgent):
                 }
 
             result = json.dumps(context, ensure_ascii=False)
-            logger.debug("TabAgent: Diagram context extracted", {
+            logger.debug("TabAgent: Diagram context extracted", extra={
                 'diagram_type': diagram_type,
                 'context_keys': list(context.keys()),
                 'context_preview': str(context)[:200]
             })
             return result
 
-        except Exception as  # pylint: disable=broad-except e:
-            logger.error("TabAgent: Error extracting diagram context", {
+        except Exception as e:  # pylint: disable=broad-except
+            logger.error("TabAgent: Error extracting diagram context", extra={
                 'diagram_type': diagram_type,
                 'error': str(e)
             }, exc_info=True)
@@ -215,7 +215,7 @@ class TabAgent(BaseAgent):
             JSON string with node information
         """
         try:
-            logger.debug("TabAgent: Extracting node info", {
+            logger.debug("TabAgent: Extracting node info", extra={
                 'node_id': node_id,
                 'node_type': node_type,
                 'diagram_type': diagram_type
@@ -316,15 +316,15 @@ class TabAgent(BaseAgent):
                         ]
 
             result = json.dumps(info, ensure_ascii=False)
-            logger.debug("TabAgent: Node info extracted", {
+            logger.debug("TabAgent: Node info extracted", extra={
                 'node_id': node_id,
                 'info_keys': list(info.keys()),
                 'info_preview': str(info)[:200]
             })
             return result
 
-        except Exception as  # pylint: disable=broad-except e:
-            logger.error("TabAgent: Error extracting node info", {
+        except Exception as e:  # pylint: disable=broad-except
+            logger.error("TabAgent: Error extracting node info", extra={
                 'node_id': node_id,
                 'node_type': node_type,
                 'error': str(e)
@@ -352,7 +352,7 @@ class TabAgent(BaseAgent):
                          than those in existing_nodes (which should include previous pages).
         """
         try:
-            logger.info("TabAgent: Generating suggestions", {
+            logger.info("TabAgent: Generating suggestions", extra={
                 'diagram_type': diagram_type,
                 'node_category': node_category,
                 'partial_input': partial_input[:50] if partial_input else '',
@@ -368,7 +368,7 @@ class TabAgent(BaseAgent):
 
             # Get prompt template
             prompt_key = f"tab_mode_{diagram_type}_autocomplete"
-            logger.debug("TabAgent: Fetching prompt", {
+            logger.debug("TabAgent: Fetching prompt", extra={
                 'prompt_key': prompt_key,
                 'language': language
             })
@@ -376,21 +376,21 @@ class TabAgent(BaseAgent):
             prompt_template = get_prompt(prompt_key, language, "suggestion")
 
             if not prompt_template:
-                logger.warning("TabAgent: No prompt found, using generic", {
+                logger.warning("TabAgent: No prompt found, using generic", extra={
                     'prompt_key': prompt_key,
                     'language': language,
                     'diagram_type': diagram_type
                 })
                 prompt_template = self._get_generic_autocomplete_prompt  # pylint: disable=protected-access(diagram_type, language)
             else:
-                logger.debug("TabAgent: Prompt found", {
+                logger.debug("TabAgent: Prompt found", extra={
                     'prompt_key': prompt_key,
                     'prompt_length': len(prompt_template)
                 })
 
             # Format prompt
             logger.debug("TabAgent: Formatting prompt")
-            system_prompt = self._format_autocomplete_prompt  # pylint: disable=protected-access(
+            system_prompt = self._format_autocomplete_prompt(
                 prompt_template,
                 diagram_type,
                 main_topics,
@@ -400,13 +400,13 @@ class TabAgent(BaseAgent):
                 page_offset
             )
 
-            logger.debug("TabAgent: Prompt formatted", {
+            logger.debug("TabAgent: Prompt formatted", extra={
                 'system_prompt_length': len(system_prompt),
                 'system_prompt_preview': system_prompt[:200]
             })
 
             # Use llm_service directly (maintains middleware benefits)
-            logger.info("TabAgent: Calling LLM service", {
+            logger.info("TabAgent: Calling LLM service", extra={
                 'model': 'doubao',
                 'max_tokens': 100,
                 'temperature': 0.3,
@@ -434,7 +434,7 @@ class TabAgent(BaseAgent):
 
             elapsed_time = time.time() - start_time
 
-            logger.info("TabAgent: LLM response received", {
+            logger.info("TabAgent: LLM response received", extra={
                 'response_length': len(response) if response else 0,
                 'response_preview': response[:200] if response else None,
                 'elapsed_time_seconds': round(elapsed_time, 2)
@@ -444,14 +444,14 @@ class TabAgent(BaseAgent):
             logger.debug("TabAgent: Parsing suggestions from response")
             suggestions = self._parse_suggestions  # pylint: disable=protected-access(response)
 
-            logger.debug("TabAgent: Parsed suggestions", {
+            logger.debug("TabAgent: Parsed suggestions", extra={
                 'count_before_validation': len(suggestions),
                 'suggestions_preview': suggestions[:5]
             })
 
             suggestions = self._validate_suggestions  # pylint: disable=protected-access(suggestions)
 
-            logger.info("TabAgent: Suggestions generated successfully", {
+            logger.info("TabAgent: Suggestions generated successfully", extra={
                 'count': len(suggestions),
                 'suggestions': suggestions[:5],  # Log first 5
                 'all_suggestions': suggestions  # Log all for debugging
@@ -460,7 +460,7 @@ class TabAgent(BaseAgent):
             return suggestions[:5]
 
         except LLMServiceError as e:
-            logger.error("TabAgent: LLM service error generating suggestions", {
+            logger.error("TabAgent: LLM service error generating suggestions", extra={
                 'error': str(e),
                 'error_type': type(e).__name__,
                 'diagram_type': diagram_type,
@@ -468,14 +468,14 @@ class TabAgent(BaseAgent):
             }, exc_info=True)
             return []
         except ValueError as e:
-            logger.error("TabAgent: Validation error generating suggestions", {
+            logger.error("TabAgent: Validation error generating suggestions", extra={
                 'error': str(e),
                 'error_type': type(e).__name__,
                 'diagram_type': diagram_type
             }, exc_info=True)
             return []
-        except Exception as  # pylint: disable=broad-except e:
-            logger.error("TabAgent: Unexpected error generating suggestions", {
+        except Exception as e:  # pylint: disable=broad-except
+            logger.error("TabAgent: Unexpected error generating suggestions", extra={
                 'error': str(e),
                 'error_type': type(e).__name__,
                 'diagram_type': diagram_type,
@@ -499,7 +499,7 @@ class TabAgent(BaseAgent):
         Generate child nodes for expansion.
         """
         try:
-            logger.debug("TabAgent: Generating expansion", {
+            logger.debug("TabAgent: Generating expansion", extra={
                 'diagram_type': diagram_type,
                 'node_text': node_text,
                 'num_children': num_children
@@ -516,7 +516,7 @@ class TabAgent(BaseAgent):
 
             # Construct the full prompt key that matches the registry
             prompt_key = f"tab_mode_{normalized_diagram_type}_expansion_{language}"
-            logger.debug("TabAgent: Fetching expansion prompt", {
+            logger.debug("TabAgent: Fetching expansion prompt", extra={
                 'prompt_key': prompt_key,
                 'diagram_type': diagram_type,
                 'normalized_diagram_type': normalized_diagram_type,
@@ -529,14 +529,14 @@ class TabAgent(BaseAgent):
             prompt_template = PROMPT_REGISTRY.get(prompt_key, "")
 
             if not prompt_template:
-                logger.warning("TabAgent: No expansion prompt found", {
+                logger.warning("TabAgent: No expansion prompt found", extra={
                     'prompt_key': prompt_key,
                     'language': language,
                     'diagram_type': diagram_type
                 })
                 return []
             else:
-                logger.debug("TabAgent: Expansion prompt found", {
+                logger.debug("TabAgent: Expansion prompt found", extra={
                     'prompt_key': prompt_key,
                     'prompt_length': len(prompt_template)
                 })
@@ -550,13 +550,13 @@ class TabAgent(BaseAgent):
                 num_children=num_children
             )
 
-            logger.debug("TabAgent: Expansion prompt formatted", {
+            logger.debug("TabAgent: Expansion prompt formatted", extra={
                 'system_prompt_length': len(system_prompt),
                 'system_prompt_preview': system_prompt[:200]
             })
 
             # Use llm_service directly (maintains middleware)
-            logger.info("TabAgent: Calling LLM service for expansion", {
+            logger.info("TabAgent: Calling LLM service for expansion", extra={
                 'model': 'doubao',
                 'max_tokens': 150,
                 'temperature': 0.5,
@@ -584,7 +584,7 @@ class TabAgent(BaseAgent):
 
             elapsed_time = time.time() - start_time
 
-            logger.info("TabAgent: Expansion response received", {
+            logger.info("TabAgent: Expansion response received", extra={
                 'response_length': len(response) if response else 0,
                 'response_preview': response[:200] if response else None,
                 'elapsed_time_seconds': round(elapsed_time, 2)
@@ -594,7 +594,7 @@ class TabAgent(BaseAgent):
             logger.debug("TabAgent: Parsing expansion response")
             children_texts = self._parse_suggestions  # pylint: disable=protected-access(response)
 
-            logger.debug("TabAgent: Parsed children texts", {
+            logger.debug("TabAgent: Parsed children texts", extra={
                 'count_before_validation': len(children_texts),
                 'children_preview': children_texts[:5]
             })
@@ -609,7 +609,7 @@ class TabAgent(BaseAgent):
                     "id": f"child_{idx}"
                 })
 
-            logger.info("TabAgent: Expansion generated successfully", {
+            logger.info("TabAgent: Expansion generated successfully", extra={
                 'count': len(children),
                 'children': [c['text'] for c in children],
                 'all_children': children  # Log all for debugging
@@ -618,7 +618,7 @@ class TabAgent(BaseAgent):
             return children
 
         except LLMServiceError as e:
-            logger.error("TabAgent: LLM service error generating expansion", {
+            logger.error("TabAgent: LLM service error generating expansion", extra={
                 'error': str(e),
                 'error_type': type(e).__name__,
                 'diagram_type': diagram_type,
@@ -626,14 +626,14 @@ class TabAgent(BaseAgent):
             }, exc_info=True)
             return []
         except ValueError as e:
-            logger.error("TabAgent: Validation error generating expansion", {
+            logger.error("TabAgent: Validation error generating expansion", extra={
                 'error': str(e),
                 'error_type': type(e).__name__,
                 'diagram_type': diagram_type
             }, exc_info=True)
             return []
-        except Exception as  # pylint: disable=broad-except e:
-            logger.error("TabAgent: Unexpected error generating expansion", {
+        except Exception as e:  # pylint: disable=broad-except
+            logger.error("TabAgent: Unexpected error generating expansion", extra={
                 'error': str(e),
                 'error_type': type(e).__name__,
                 'diagram_type': diagram_type,
@@ -656,7 +656,7 @@ class TabAgent(BaseAgent):
         Args:
             page_offset: When > 0, adds instruction to provide different suggestions.
         """
-        logger.debug("TabAgent: Formatting autocomplete prompt", {
+        logger.debug("TabAgent: Formatting autocomplete prompt", extra={
             'diagram_type': diagram_type,
             'node_category': node_category,
             'main_topics_count': len(main_topics),
@@ -704,7 +704,7 @@ class TabAgent(BaseAgent):
 
     def _parse_suggestions(self, response: str) -> List[str]:
         """Parse LLM response into list of suggestions."""
-        logger.debug("TabAgent: Parsing suggestions", {
+        logger.debug("TabAgent: Parsing suggestions", extra={
             'response_type': type(response).__name__,
             'response_length': len(response) if response else 0,
             'response_preview': str(response)[:300] if response else None
@@ -719,7 +719,7 @@ class TabAgent(BaseAgent):
             parsed = json.loads(response)
             if isinstance(parsed, list):
                 suggestions = [str(s).strip() for s in parsed if s]
-                logger.debug("TabAgent: Parsed suggestions from JSON array", {
+                logger.debug("TabAgent: Parsed suggestions from JSON array", extra={
                     'count': len(suggestions),
                     'suggestions': suggestions
                 })
@@ -728,14 +728,14 @@ class TabAgent(BaseAgent):
                 suggestions = parsed['suggestions']
                 if isinstance(suggestions, list):
                     result = [s.get('text', str(s)) if isinstance(s, dict) else str(s) for s in suggestions]
-                    logger.debug("TabAgent: Parsed suggestions from JSON object", {
+                    logger.debug("TabAgent: Parsed suggestions from JSON object", extra={
                         'count': len(result),
                         'suggestions': result,
                         'parsed_keys': list(parsed.keys())
                     })
                     return result
-        except Exception as  # pylint: disable=broad-except e:
-            logger.warning("TabAgent: JSON parsing failed, using fallback", {
+        except Exception as e:  # pylint: disable=broad-except
+            logger.warning("TabAgent: JSON parsing failed, using fallback", extra={
                 'error': str(e),
                 'error_type': type(e).__name__
             })
@@ -753,14 +753,13 @@ class TabAgent(BaseAgent):
             if not line or line.startswith('#') or line.startswith('---') or line.startswith('```'):
                 continue
             # Remove list markers
-            original_line = line
             line = re.sub(r'^\d+[\.\)]\s*', '', line)
             line = re.sub(r'^[-*]\s+', '', line)
             line = line.strip()
             if line and len(line) > 0 and len(line) <= 100:
                 lines.append(line)
 
-        logger.debug("TabAgent: Parsed suggestions from text lines (fallback)", {
+        logger.debug("TabAgent: Parsed suggestions from text lines (fallback)", extra={
             'count': len(lines),
             'lines': lines
         })
@@ -768,7 +767,7 @@ class TabAgent(BaseAgent):
 
     def _validate_suggestions(self, suggestions: List[str]) -> List[str]:
         """Validate and clean suggestions."""
-        logger.debug("TabAgent: Validating suggestions", {
+        logger.debug("TabAgent: Validating suggestions", extra={
             'input_count': len(suggestions),
             'input_preview': suggestions[:5]
         })
@@ -785,7 +784,7 @@ class TabAgent(BaseAgent):
             else:
                 invalid_count += 1
 
-        logger.debug("TabAgent: Validation complete", {
+        logger.debug("TabAgent: Validation complete", extra={
             'validated_count': len(validated),
             'invalid_count': invalid_count,
             'validated_preview': validated[:5]

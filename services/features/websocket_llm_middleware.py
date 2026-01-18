@@ -5,7 +5,7 @@ import logging
 import time
 
 from config.settings import config
-from services.infrastructure.error_handler import error_handler, LLMServiceError
+from services.infrastructure.error_handler import LLMServiceError
 from services.infrastructure.rate_limiter import get_rate_limiter
 from services.monitoring.performance_tracker import performance_tracker
 from services.redis.redis_token_buffer import get_token_tracker

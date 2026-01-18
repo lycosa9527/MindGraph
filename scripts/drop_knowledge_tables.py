@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 """
 Drop knowledge space tables to allow recreation with new schema.
 
@@ -13,6 +13,7 @@ Usage:
 """
 import sys
 import os
+import logging
 from pathlib import Path
 
 # Add project root to path
@@ -22,26 +23,12 @@ sys.path.insert(0, str(project_root))
 # Set up environment before importing
 os.environ.setdefault('PYTHONPATH', str(project_root))
 
-try:
-    import sqlite3
-    USE_SQLITE_DIRECT = True
-except ImportError:
-    USE_SQLITE_DIRECT = False
-
-try:
-    from sqlalchemy import text, create_engine
-    from config.database import DATABASE_URL
-    USE_SQLALCHEMY = True
-except ImportError:
-    USE_SQLALCHEMY = False
-
-import logging
-
 logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
 logger = logging.getLogger(__name__)
 
 
 def get_db_path():
+    from pathlib import Path
     """Extract database file path from DATABASE_URL."""
     db_url = os.getenv('DATABASE_URL', 'sqlite:///./data/mindgraph.db')
 
@@ -59,6 +46,7 @@ def get_db_path():
 
 
 def drop_knowledge_tables():
+    import sqlite3
     """Drop document_chunks and child_chunks tables."""
     db_path = get_db_path()
 

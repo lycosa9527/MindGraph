@@ -1,17 +1,4 @@
 """
-mind map agent module.
-"""
-from dataclasses import dataclass
-from datetime import datetime
-from typing import Dict, List, Optional, Tuple, Any, Union
-import json
-import logging
-import math
-
-from config.settings import Config
-
-#!/usr/bin/env python3
-"""
 MindGraph v2.4.0 - Advanced Mind Map Agent with Clockwise Positioning System
 
 This agent implements a revolutionary clockwise positioning system that:
@@ -32,6 +19,16 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+from dataclasses import dataclass
+from typing import Dict, List, Optional, Tuple, Any
+import logging
+import traceback
+
+from agents.core.base_agent import BaseAgent
+from agents.core.agent_utils import extract_json_from_response
+from config.settings import Config
+from prompts import get_prompt
+from services.llm import llm_service
 
 
 logger = logging.getLogger(__name__)
@@ -114,19 +111,21 @@ class MindMapAgent(BaseAgent):
 
     async def generate_graph(
         self,
-        prompt: str,
+        user_prompt: str,
         language: str = "en",
         # Token tracking parameters
         user_id: Optional[int] = None,
         organization_id: Optional[int] = None,
         request_type: str = 'diagram_generation',
-        endpoint_path: Optional[str] = None
+        endpoint_path: Optional[str] = None,
+        **kwargs: Any
     ) -> Dict[str, Any]:
         """Generate a mind map from a prompt."""
         try:
             # Clear caches at the start of each generation
             self._clear_caches()            # Generate the initial mind map specification
-            spec, recovery_warnings = await self._generate_mind_map_spec(                prompt,
+            spec, recovery_warnings = await self._generate_mind_map_spec(
+                user_prompt,
                 language,
                 user_id=user_id,
                 organization_id=organization_id,
@@ -142,7 +141,7 @@ class MindMapAgent(BaseAgent):
             # Validate the generated spec
             is_valid, validation_msg = self.validate_output(spec)
             if not is_valid:
-                logger.warning(f"MindMapAgent: Validation failed: {validation_msg}")
+                logger.warning("MindMapAgent: Validation failed: %s", validation_msg)
                 # If this was a partial recovery attempt, enhance the error message
                 if recovery_warnings:
                     error_msg = f'Partial recovery attempted but validation failed: {validation_msg}. Original LLM response had issues.'
@@ -156,7 +155,7 @@ class MindMapAgent(BaseAgent):
             # Enhance the spec with layout and dimensions
             enhanced_spec = await self.enhance_spec(spec)
 
-            logger.info(f"MindMapAgent: Successfully generated mind map")
+            logger.info("MindMapAgent: Successfully generated mind map")
             result = {
                 'success': True,
                 'spec': enhanced_spec,
@@ -171,7 +170,7 @@ class MindMapAgent(BaseAgent):
             return result
 
         except Exception as e:
-            logger.error(f"MindMapAgent: Error generating mind map: {e}")
+            logger.error("MindMapAgent: Error generating mind map: %s", e)
             return {
                 'success': False,
                 'error': f'Generation failed: {str(e)}'
@@ -189,20 +188,20 @@ class MindMapAgent(BaseAgent):
     ) -> Tuple[Optional[Dict[str, Any]], Optional[List[str]]]:
         """Generate the mind map specification using LLM."""
         try:
-            # Import centralized prompt system
-            from prompts import get_prompt
-
             # Get prompt from centralized system
             system_prompt = get_prompt("mind_map", language, "generation")
 
             if not system_prompt:
-                logger.error(f"MindMapAgent: No prompt found for language {language}")
-                return None
+                logger.error("MindMapAgent: No prompt found for language %s", language)
+                return None, None
 
-            user_prompt = f"请为以下描述创建一个思维导图：{prompt}" if language == "zh" else f"Please create a mind map for the following description: {prompt}"
+            user_prompt = (
+                f"请为以下描述创建一个思维导图：{prompt}"
+                if language == "zh"
+                else f"Please create a mind map for the following description: {prompt}"
+            )
 
             # Call middleware directly - clean and efficient!
-            from services.llm import llm_service
             response = await llm_service.chat(
                 prompt=user_prompt,
                 model=self.model,
@@ -222,8 +221,6 @@ class MindMapAgent(BaseAgent):
                 return None, None
 
             # Extract JSON from response
-            from ..core.agent_utils import extract_json_from_response
-
             # Check if response is already a dictionary (from mock client)
             recovery_warnings = None
             if isinstance(response, dict):
@@ -236,9 +233,9 @@ class MindMapAgent(BaseAgent):
                 if not spec:
                     # Log the actual response for debugging with more context
                     response_preview = response_str[:500] + "..." if len(response_str) > 500 else response_str
-                    logger.error(f"MindMapAgent: Failed to extract JSON from LLM response")
-                    logger.error(f"MindMapAgent: Response length: {len(response_str)}, Preview: {response_preview}")
-                    logger.error(f"MindMapAgent: This may indicate LLM returned invalid JSON or non-JSON response")
+                    logger.error("MindMapAgent: Failed to extract JSON from LLM response")
+                    logger.error("MindMapAgent: Response length: %s, Preview: %s", len(response_str), response_preview)
+                    logger.error("MindMapAgent: This may indicate LLM returned invalid JSON or non-JSON response")
                     # Return None to trigger error handling upstream
                     return None, None
 
@@ -247,9 +244,9 @@ class MindMapAgent(BaseAgent):
                     warnings = spec.get("_recovery_warnings", [])
                     recovered_count = spec.get("_recovered_count", 0)
                     logger.warning(
-                        f"MindMapAgent: Partial JSON recovery succeeded. "
-                        f"Recovered {recovered_count} branches. "
-                        f"Warnings: {', '.join(warnings)}"
+                        "MindMapAgent: Partial JSON recovery succeeded. Recovered %s branches. Warnings: %s",
+                        recovered_count,
+                        ', '.join(warnings)
                     )
                     # Store warnings to return separately
                     recovery_warnings = warnings
@@ -261,22 +258,22 @@ class MindMapAgent(BaseAgent):
             return spec, recovery_warnings
 
         except Exception as e:
-            logger.error(f"MindMapAgent: Error in spec generation: {e}")
+            logger.error("MindMapAgent: Error in spec generation: %s", e)
             return None, None
 
-    def validate_output(self, spec: Dict) -> Tuple[bool, str]:
+    def validate_output(self, output: Dict[str, Any]) -> Tuple[bool, str]:
         """Validate a mind map specification."""
         try:
-            if not spec or not isinstance(spec, dict):
+            if not output or not isinstance(output, dict):
                 return False, "Invalid specification"
 
-            if 'topic' not in spec or not spec['topic']:
+            if 'topic' not in output or not output['topic']:
                 return False, "Missing topic"
 
-            if 'children' not in spec or not isinstance(spec['children'], list):
+            if 'children' not in output or not isinstance(output['children'], list):
                 return False, "Missing children"
 
-            if not spec['children']:
+            if not output['children']:
                 return False, "At least one child branch is required"
 
             return True, "Valid mind map specification"
@@ -300,7 +297,7 @@ class MindMapAgent(BaseAgent):
             branches = {}
             children_by_branch = {}
 
-            for key, pos in positions.items():
+            for _key, pos in positions.items():
                 if pos is None:
                     continue
                 if pos.get('node_type') == 'branch':
@@ -374,7 +371,7 @@ class MindMapAgent(BaseAgent):
             # Check for overlapping nodes
             all_positions = [pos for pos in positions.values() if pos is not None]
             for i, pos1 in enumerate(all_positions):
-                for j, pos2 in enumerate(all_positions[i+1:], i+1):
+                for _j, pos2 in enumerate(all_positions[i+1:], i+1):
                     if self._nodes_overlap(pos1, pos2):
                         issues.append(
                             f"OVERLAP: {pos1.get('text', 'Node')} and {pos2.get('text', 'Node')} overlap"
@@ -420,7 +417,7 @@ class MindMapAgent(BaseAgent):
             vertical_overlap = top1 < bottom2 and top2 < bottom1
 
             return horizontal_overlap and vertical_overlap
-        except:
+        except (KeyError, TypeError, ValueError):
             return False
 
     async def enhance_spec(self, spec: Dict) -> Dict:
@@ -445,13 +442,13 @@ class MindMapAgent(BaseAgent):
             is_valid, validation_summary, validation_details = self.validate_layout_geometry(layout)
 
             # Log validation results
-            logger.debug(f"Layout geometry validation: {validation_summary}")
+            logger.debug("Layout geometry validation: %s", validation_summary)
             if validation_details:
                 for detail in validation_details:
                     if detail.startswith("CRITICAL") or detail.startswith("WARNING") or detail.startswith("OVERLAP"):
-                        logger.warning(f"  {detail}")
+                        logger.warning("  %s", detail)
                     else:
-                        logger.debug(f"  {detail}")
+                        logger.debug("  %s", detail)
 
             # Store validation results
             layout['validation'] = {
@@ -468,9 +465,8 @@ class MindMapAgent(BaseAgent):
             return spec
 
         except Exception as e:
-            import traceback
-            logger.error(f"MindMapAgent error: {e}")
-            logger.error(f"Traceback: {traceback.format_exc()}")
+            logger.error("MindMapAgent error: %s", e)
+            logger.error("Traceback: %s", traceback.format_exc())
             return {"success": False, "error": f"MindMapAgent failed: {e}"}
 
     def _generate_mind_map_layout(self, topic: str, children: List[Dict]) -> Dict:
@@ -491,7 +487,7 @@ class MindMapAgent(BaseAgent):
         4. Position branches at mathematical centers of their children
         5. Place central topic at (0,0) - perfect balance achieved
         """
-        logger.debug(f"Starting simple balanced layout for {len(children)} branches")
+        logger.debug("Starting simple balanced layout for %s branches", len(children))
 
         # Initialize positions dictionary
         positions = {}
@@ -513,7 +509,7 @@ class MindMapAgent(BaseAgent):
             # Use helper function to safely get text (handles both 'label' and 'text' fields)
             branch_label = self._get_node_text(branch)
             if not branch_label:
-                logger.warning(f"Branch missing 'label' and 'text' keys: {branch}")
+                logger.warning("Branch missing 'label' and 'text' keys: %s", branch)
                 continue
             branch_width = self._get_capped_node_width(branch_label, 'branch')
             max_branch_width = max(max_branch_width, branch_width)
@@ -523,7 +519,7 @@ class MindMapAgent(BaseAgent):
                 # Use helper function to safely get text (handles both 'label' and 'text' fields)
                 child_label = self._get_node_text(child)
                 if not child_label:
-                    logger.warning(f"Child node missing 'label' and 'text' keys: {child}")
+                    logger.warning("Child node missing 'label' and 'text' keys: %s", child)
                     continue
                 child_width = self._get_capped_node_width(child_label, 'child')
                 max_child_width = max(max_child_width, child_width)
@@ -534,7 +530,11 @@ class MindMapAgent(BaseAgent):
         right_branches_x = gap_topic_to_branch + max_branch_width/2
         right_children_x = gap_topic_to_branch + max_branch_width + gap_branch_to_child + max_child_width/2
 
-        logger.debug(f"Column positions: Left Children={left_children_x:.1f}, Left Branches={left_branches_x:.1f}, Right Branches={right_branches_x:.1f}, Right Children={right_children_x:.1f}")
+        logger.debug(
+            "Column positions: Left Children=%.1f, Left Branches=%.1f, "
+            "Right Branches=%.1f, Right Children=%.1f",
+            left_children_x, left_branches_x, right_branches_x, right_children_x
+        )
 
         # STEP 2: Simple Balanced Layout System
         layout_result = self._simple_balanced_layout(children, left_children_x, right_children_x, left_branches_x, right_branches_x)
@@ -552,7 +552,7 @@ class MindMapAgent(BaseAgent):
             'text': topic, 'node_type': 'topic', 'angle': 0
         }
 
-        logger.debug(f"Two-stage system completed, topic added at (0, 0)")
+        logger.debug("Two-stage system completed, topic added at (0, 0)")
 
         # STEP 3: Center all positions around (0,0) for proper D3 rendering
         # Keep topic fixed at (0, 0) as visual anchor, only center branches/children
@@ -584,21 +584,24 @@ class MindMapAgent(BaseAgent):
                     # Topic stays fixed at (0, 0) as the visual anchor
                     # CRITICAL: Modify positions dictionary in place so connections read updated values
                     adjusted_count = 0
-                    for key in positions:
-                        if positions[key] is not None and key != 'topic':
-                            positions[key]['x'] -= content_center_x
-                            positions[key]['y'] -= content_center_y
+                    for key, pos_value in positions.items():
+                        if pos_value is not None and key != 'topic':
+                            pos_value['x'] -= content_center_x
+                            pos_value['y'] -= content_center_y
                             adjusted_count += 1
 
-                    logger.debug(f"Centered {adjusted_count} positions (topic kept at origin): offset X={content_center_x:.1f}, Y={content_center_y:.1f}")
+                    logger.debug(
+                        "Centered %s positions (topic kept at origin): "
+                        "offset X=%.1f, Y=%.1f",
+                        adjusted_count, content_center_x, content_center_y
+                    )
                 else:
-                    logger.debug(f"Centering skipped: no valid coordinates")
+                    logger.debug("Centering skipped: no valid coordinates")
             else:
-                logger.warning(f"Positions dict is empty or None!")
+                logger.warning("Positions dict is empty or None!")
         except Exception as e:
-            logger.error(f"ERROR in centering step: {e}")
-            import traceback
-            logger.error(f"Traceback: {traceback.format_exc()}")
+            logger.error("ERROR in centering step: %s", e)
+            logger.error("Traceback: %s", traceback.format_exc())
 
         # STEP 4: Generate connection data AFTER all positions are finalized and centered
         # Since all node positions are now finalized, we can directly read coordinates from positions
@@ -609,7 +612,7 @@ class MindMapAgent(BaseAgent):
         # STEP 5: Compute recommended dimensions
         recommended_dimensions = self._compute_recommended_dimensions(positions, topic, children)
 
-        logger.debug(f"🎉 SIMPLE BALANCED LAYOUT - Layout complete!")
+        logger.debug("🎉 SIMPLE BALANCED LAYOUT - Layout complete!")
 
         # Return complete layout
         return {
@@ -645,13 +648,16 @@ class MindMapAgent(BaseAgent):
         4. Calculate left/right branch height centers and translate to origin
         5. Translate all nodes (branches + children) together
         """
-        logger.debug(f"📍 Simple balanced layout: Processing {len(children)} branches")
+        logger.debug("📍 Simple balanced layout: Processing %s branches", len(children))
 
         num_branches = len(children)
         is_odd = num_branches % 2 != 0
 
         if is_odd:
-            logger.debug(f"Odd number of branches ({num_branches}) detected - will handle uneven distribution")
+            logger.debug(
+                "Odd number of branches (%s) detected - will handle uneven distribution",
+                num_branches
+            )
 
         # STEP 1: Clean left/right split with clockwise ordering
         # For odd numbers: put more branches on the right side
@@ -660,9 +666,9 @@ class MindMapAgent(BaseAgent):
         right_branches = children[:mid_point]      # First half → RIGHT side (keep original order)
         left_branches = children[mid_point:][::-1]  # Second half → LEFT side (reverse for clockwise)
 
-        logger.debug(f"Split: {len(right_branches)} right branches, {len(left_branches)} left branches (clockwise layout)")
+        logger.debug("Split: %s right branches, %s left branches (clockwise layout)", len(right_branches), len(left_branches))
         if is_odd:
-            logger.debug(f"  Note: Odd distribution - right side has {len(right_branches)}, left side has {len(left_branches)}")
+            logger.debug("  Note: Odd distribution - right side has %s, left side has %s", len(right_branches), len(left_branches))
 
         # STEP 2: Stack children vertically on each side (no auto-centering)
         right_positions = self._stack_children_vertically(right_branches, right_children_x, "right", num_branches)
@@ -688,7 +694,7 @@ class MindMapAgent(BaseAgent):
             all_positions, children, left_branches_x, right_branches_x, mid_point
         )
 
-        logger.debug(f"Simple layout complete: {len(all_positions)} total positions")
+        logger.debug("Simple layout complete: %s total positions", len(all_positions))
 
         return {
             'positions': all_positions,
@@ -710,7 +716,7 @@ class MindMapAgent(BaseAgent):
         # Start from a fixed position (will be translated later)
         current_y = 0
 
-        logger.debug(f"Stacking children on {side} side at X={column_x}")
+        logger.debug("Stacking children on %s side at X=%s", side, column_x)
 
         # Collect all children from all branches on this side
         # For clockwise ordering: right side children in original order, left side children reversed
@@ -758,10 +764,10 @@ class MindMapAgent(BaseAgent):
             avg_font_size = sum(font_sizes) / len(font_sizes)
 
             # Dynamic spacing: 6px base + 0.3x average font size (scales with font changes)
-            CHILD_SPACING = max(6, int(6 + avg_font_size * 0.3))
-            logger.debug(f"Dynamic spacing: {CHILD_SPACING}px (based on avg font size {avg_font_size:.1f})")
+            child_spacing = max(6, int(6 + avg_font_size * 0.3))
+            logger.debug("Dynamic spacing: %spx (based on avg font size %.1f)", child_spacing, avg_font_size)
         else:
-            CHILD_SPACING = 8  # Fallback for empty case
+            child_spacing = 8  # Fallback for empty case
 
         # Calculate dimensions and positions for all children
         for i, child_info in enumerate(all_children):
@@ -795,21 +801,24 @@ class MindMapAgent(BaseAgent):
                     # Triple spacing between different branch groups
                     spacing_multiplier = 3.0
                     gap_type = "group"
-                    logger.debug(f"Branch group boundary: {current_branch} → {next_branch}, using triple spacing")
+                    logger.debug(
+                        "Branch group boundary: %s → %s, using triple spacing",
+                        current_branch, next_branch
+                    )
                 else:
                     # Normal spacing within same branch group
                     spacing_multiplier = 1.0
                     gap_type = "normal"
 
                 # Calculate spacing with multiplier
-                base_gap = CHILD_SPACING * spacing_multiplier
+                base_gap = child_spacing * spacing_multiplier
                 center_to_center = (child_height / 2) + base_gap + (next_child_height / 2)
                 current_y += center_to_center
 
                 if i == 0 or gap_type == "group":  # Log spacing details for first gap and group boundaries
-                    logger.debug(f"{gap_type.capitalize()} gap: {child_height/2:.1f} + {base_gap:.1f} + {next_child_height/2:.1f} = {center_to_center:.1f}px")
+                    logger.debug("%s gap: %.1f + %.1f + %.1f = %.1fpx", gap_type.capitalize(), child_height/2, base_gap, next_child_height/2, center_to_center)
 
-        logger.debug(f"Stacked {len(all_children)} children on {side} side")
+        logger.debug("Stacked %s children on %s side", len(all_children), side)
         return positions
 
     def _balance_side_heights(self, left_positions: Dict, right_positions: Dict) -> Dict:
@@ -820,20 +829,26 @@ class MindMapAgent(BaseAgent):
         if left_positions:
             left_y_values = [pos['y'] for pos in left_positions.values()]
             left_heights = [pos['height'] for pos in left_positions.values()]
-            left_total_height = max(left_y_values) + max(left_heights)/2 - (min(left_y_values) - max(left_heights)/2)
+            left_total_height = (
+                max(left_y_values) + max(left_heights)/2 -
+                (min(left_y_values) - max(left_heights)/2)
+            )
         else:
             left_total_height = 0
 
         if right_positions:
             right_y_values = [pos['y'] for pos in right_positions.values()]
             right_heights = [pos['height'] for pos in right_positions.values()]
-            right_total_height = max(right_y_values) + max(right_heights)/2 - (min(right_y_values) - max(right_heights)/2)
+            right_total_height = (
+                max(right_y_values) + max(right_heights)/2 -
+                (min(right_y_values) - max(right_heights)/2)
+            )
         else:
             right_total_height = 0
 
         height_diff = abs(left_total_height - right_total_height)
 
-        logger.debug(f"Height balance: Left={left_total_height:.1f}, Right={right_total_height:.1f}, Diff={height_diff:.1f}")
+        logger.debug("Height balance: Left=%.1f, Right=%.1f, Diff=%.1f", left_total_height, right_total_height, height_diff)
 
         # Add padding to shorter side by shifting positions
         balanced_positions = {}
@@ -847,12 +862,12 @@ class MindMapAgent(BaseAgent):
                 # Left side is shorter, add padding (shift down)
                 for key, pos in left_positions.items():
                     balanced_positions[key]['y'] += padding
-                logger.debug(f"Added {padding:.1f}px padding to left side")
+                logger.debug("Added %.1fpx padding to left side", padding)
             else:
                 # Right side is shorter, add padding (shift down)
                 for key, pos in right_positions.items():
                     balanced_positions[key]['y'] += padding
-                logger.debug(f"Added {padding:.1f}px padding to right side")
+                logger.debug("Added %.1fpx padding to right side", padding)
 
         # Center both sides around Y=0 while preserving spacing
         if balanced_positions:
@@ -862,18 +877,21 @@ class MindMapAgent(BaseAgent):
             for pos in balanced_positions.values():
                 pos['y'] -= center_offset
 
-            logger.debug(f"Centered all children around Y=0 (offset: {center_offset:.1f})")
+            logger.debug("Centered all children around Y=0 (offset: %.1f)", center_offset)
 
             # Verify no overlaps after centering
             positions_list = list(balanced_positions.values())
             overlaps_detected = 0
             for i, pos1 in enumerate(positions_list):
-                for j, pos2 in enumerate(positions_list[i+1:], i+1):
+                for _j, pos2 in enumerate(positions_list[i+1:], i+1):
                     if self._nodes_overlap(pos1, pos2):
                         overlaps_detected += 1
 
             if overlaps_detected > 0:
-                logger.warning(f"WARNING: {overlaps_detected} overlaps detected after centering - spacing may need adjustment")
+                logger.warning(
+                    "WARNING: %s overlaps detected after centering - spacing may need adjustment",
+                    overlaps_detected
+                )
 
         return balanced_positions
 
@@ -894,7 +912,7 @@ class MindMapAgent(BaseAgent):
         for branch_idx, branch in enumerate(children):
             branch_text = self._get_node_text(branch)
             if not branch_text:
-                logger.warning(f"Branch {branch_idx} missing text, skipping")
+                logger.warning("Branch %s missing text, skipping", branch_idx)
                 continue
 
             # Calculate branch dimensions (use capped width for text wrapping)
@@ -907,7 +925,7 @@ class MindMapAgent(BaseAgent):
 
             # Find this branch's children
             branch_children = []
-            for key, pos in child_positions.items():
+            for _key, pos in child_positions.items():
                 if pos.get('branch_index') == branch_idx:
                     branch_children.append(pos)
 
@@ -915,13 +933,16 @@ class MindMapAgent(BaseAgent):
             if branch_children:
                 children_y_positions = [child['y'] for child in branch_children]
                 branch_y = sum(children_y_positions) / len(children_y_positions)
-                logger.debug(f"Branch {branch_idx} ('{branch_text}'): Mathematical center at Y={branch_y:.1f}")
+                logger.debug(
+                    "Branch %s ('%s'): Mathematical center at Y=%.1f",
+                    branch_idx, branch_text, branch_y
+                )
             else:
                 # For branches without children, spread them vertically to avoid overlaps
                 empty_branch_spacing = 80  # 80px spacing between empty branches
                 empty_branch_offset = (branch_idx - num_branches // 2) * empty_branch_spacing
                 branch_y = empty_branch_offset
-                logger.debug(f"Branch {branch_idx} ('{branch_text}'): No children, positioned at Y={branch_y} (offset={empty_branch_offset})")
+                logger.debug("Branch %s ('%s'): No children, positioned at Y=%s (offset=%s)", branch_idx, branch_text, branch_y, empty_branch_offset)
 
             # Store branch position
             branch_key = f'branch_{branch_idx}'
@@ -932,10 +953,10 @@ class MindMapAgent(BaseAgent):
                 'branch_index': branch_idx, 'angle': 0
             }
 
-        logger.debug(f"Positioned {len(positions)} branches at mathematical centers")
+        logger.debug("Positioned %s branches at mathematical centers", len(positions))
         return positions
 
-    def _translate_sides_to_origin(self, all_positions: Dict, children: List[Dict], left_branches_x: float, right_branches_x: float, mid_point: int) -> Dict:
+    def _translate_sides_to_origin(self, all_positions: Dict, children: List[Dict], _left_branches_x: float, _right_branches_x: float, mid_point: int) -> Dict:
         """
         Translate left and right side branch nodes (and their children) so that
         each side's branch height center is at the origin (Y=0).
@@ -951,7 +972,7 @@ class MindMapAgent(BaseAgent):
             Dictionary with translated positions
         """
         logger.debug("🔄 Translating sides to origin based on branch height centers")
-        logger.debug(f"Total branches: {len(children)}, mid_point: {mid_point}")
+        logger.debug("Total branches: %s, mid_point: %s", len(children), mid_point)
 
         # Separate left and right branch positions
         left_branches = []
@@ -963,14 +984,14 @@ class MindMapAgent(BaseAgent):
                 branch_pos = all_positions[branch_key]
                 if branch_idx >= mid_point:
                     left_branches.append((branch_idx, branch_pos))
-                    logger.debug(f"  Left branch {branch_idx}: Y={branch_pos['y']:.1f}")
+                    logger.debug("  Left branch %s: Y=%.1f", branch_idx, branch_pos['y'])
                 else:
                     right_branches.append((branch_idx, branch_pos))
-                    logger.debug(f"  Right branch {branch_idx}: Y={branch_pos['y']:.1f}")
+                    logger.debug("  Right branch %s: Y=%.1f", branch_idx, branch_pos['y'])
             else:
-                logger.warning(f"Branch {branch_idx} not found in all_positions!")
+                logger.warning("Branch %s not found in all_positions!", branch_idx)
 
-        logger.debug(f"Found {len(left_branches)} left branches, {len(right_branches)} right branches")
+        logger.debug("Found %s left branches, %s right branches", len(left_branches), len(right_branches))
 
         # Calculate height centers for each side
         # Note: y coordinate is already the center of the node (as per renderer convention)
@@ -983,22 +1004,22 @@ class MindMapAgent(BaseAgent):
             branch_centers = [pos['y'] for _, pos in branches]
             height_center = sum(branch_centers) / len(branch_centers)
             branch_y_str = ', '.join([f'{pos["y"]:.1f}' for _, pos in branches])
-            logger.debug(f"  Branch Y values: [{branch_y_str}]")
-            logger.debug(f"  Calculated height center: {height_center:.1f}")
+            logger.debug("  Branch Y values: [%s]", branch_y_str)
+            logger.debug("  Calculated height center: %.1f", height_center)
             return height_center
 
         left_center_y = calculate_height_center(left_branches)
         right_center_y = calculate_height_center(right_branches)
 
-        logger.debug(f"Left side branch height center: {left_center_y:.1f} (from {len(left_branches)} branches)")
-        logger.debug(f"Right side branch height center: {right_center_y:.1f} (from {len(right_branches)} branches)")
+        logger.debug("Left side branch height center: %.1f (from %s branches)", left_center_y, len(left_branches))
+        logger.debug("Right side branch height center: %.1f (from %s branches)", right_center_y, len(right_branches))
 
         # Calculate translation offsets (to move centers to Y=0)
         left_offset = 0.0 - left_center_y
         right_offset = 0.0 - right_center_y
 
-        logger.debug(f"Left side translation offset: {left_offset:.1f}")
-        logger.debug(f"Right side translation offset: {right_offset:.1f}")
+        logger.debug("Left side translation offset: %.1f", left_offset)
+        logger.debug("Right side translation offset: %.1f", right_offset)
 
         # Apply translations
         translated_positions = {}
@@ -1016,11 +1037,17 @@ class MindMapAgent(BaseAgent):
                 if branch_index is not None and branch_index >= mid_point:
                     new_pos['y'] += left_offset
                     left_translated_count += 1
-                    logger.debug(f"  Translated left branch {branch_index}: {pos['y']:.1f} → {new_pos['y']:.1f}")
+                    logger.debug(
+                        "  Translated left branch %s: %.1f → %.1f",
+                        branch_index, pos['y'], new_pos['y']
+                    )
                 elif branch_index is not None:
                     new_pos['y'] += right_offset
                     right_translated_count += 1
-                    logger.debug(f"  Translated right branch {branch_index}: {pos['y']:.1f} → {new_pos['y']:.1f}")
+                    logger.debug(
+                        "  Translated right branch %s: %.1f → %.1f",
+                        branch_index, pos['y'], new_pos['y']
+                    )
             elif node_type == 'child':
                 # Child node: translate based on its parent branch's side
                 if branch_index is not None and branch_index >= mid_point:
@@ -1033,8 +1060,11 @@ class MindMapAgent(BaseAgent):
 
             translated_positions[key] = new_pos
 
-        logger.debug(f"Translation applied: {left_translated_count} left branches, {right_translated_count} right branches")
-        logger.debug(f"Translation complete: {len(translated_positions)} total positions")
+        logger.debug(
+            "Translation applied: %s left branches, %s right branches",
+            left_translated_count, right_translated_count
+        )
+        logger.debug("Translation complete: %s total positions", len(translated_positions))
 
         return translated_positions
 
@@ -1045,10 +1075,13 @@ class MindMapAgent(BaseAgent):
         STAGE 1: Natural perfect layout with validation
         STAGE 2: Strategic phantom compensation if needed
         """
-        logger.debug(f"Starting Two-Stage Smart Positioning System for {len(children)} branches")
+        logger.debug("Starting Two-Stage Smart Positioning System for %s branches", len(children))
 
         # STAGE 1: Natural perfect layout
-        stage1_result = self._stage1_natural_layout(children, left_children_x, right_children_x, left_branches_x, right_branches_x)
+        stage1_result = self._stage1_natural_layout(
+            children, left_children_x, right_children_x,
+            left_branches_x, right_branches_x
+        )
 
         if stage1_result['all_principles_satisfied']:
             logger.debug("Stage 1 SUCCESS: Natural layout satisfies all principles")
@@ -1058,12 +1091,16 @@ class MindMapAgent(BaseAgent):
                 'violations': []
             }
 
-        logger.debug(f"WARNING Stage 1: {len(stage1_result['violations'])} violations detected")
+        logger.debug("WARNING Stage 1: %s violations detected", len(stage1_result['violations']))
         for violation in stage1_result['violations']:
-            logger.debug(f"  Violation: {violation}")
+            logger.debug("  Violation: %s", violation)
 
         # STAGE 2: Strategic phantom compensation
-        stage2_result = self._stage2_phantom_compensation(stage1_result['positions'], stage1_result['violations'], children)
+        stage2_result = self._stage2_phantom_compensation(
+            stage1_result['positions'],
+            stage1_result['violations'],
+            children
+        )
 
         if stage2_result['all_principles_satisfied']:
             logger.debug("Stage 2 SUCCESS: Phantom compensation solved all violations")
@@ -1087,7 +1124,7 @@ class MindMapAgent(BaseAgent):
 
         Creates perfect spacing layout using only real children, then validates all principles.
         """
-        logger.debug(f"📍 Stage 1: Creating natural perfect layout")
+        logger.debug("📍 Stage 1: Creating natural perfect layout")
 
         # Step 1: Assign children to sides with branch coherence
         side_assignments = self._assign_children_to_sides_coherently(children)
@@ -1112,7 +1149,7 @@ class MindMapAgent(BaseAgent):
         # Step 6: Comprehensive validation
         validation_results = self._validate_all_principles(all_positions, children)
 
-        logger.debug(f"Stage 1 validation: {validation_results['summary']}")
+        logger.debug("Stage 1 validation: %s", validation_results['summary'])
 
         return {
             'positions': all_positions,
@@ -1147,7 +1184,7 @@ class MindMapAgent(BaseAgent):
                 else:
                     right_side_children.append(child_info)
 
-        logger.debug(f"Side assignment: Left={len(left_side_children)}, Right={len(right_side_children)}")
+        logger.debug("Side assignment: Left=%s, Right=%s", len(left_side_children), len(right_side_children))
 
         return {
             'left_children': left_side_children,
@@ -1161,7 +1198,7 @@ class MindMapAgent(BaseAgent):
         if not side_children:
             return {}
 
-        EDGE_BUFFER = 8  # Fixed 8px gap between node edges
+        edge_buffer = 8  # Fixed 8px gap between node edges
 
         # Calculate heights for all children
         for child_info in side_children:
@@ -1178,7 +1215,7 @@ class MindMapAgent(BaseAgent):
             next_height = side_children[i + 1]['height']
 
             # Center-to-center = half of current + buffer + half of next
-            center_spacing = (current_height / 2) + EDGE_BUFFER + (next_height / 2)
+            center_spacing = (current_height / 2) + edge_buffer + (next_height / 2)
             spacings.append(center_spacing)
 
         # Position children using calculated spacings
@@ -1208,7 +1245,7 @@ class MindMapAgent(BaseAgent):
             for pos in positions.values():
                 pos['y'] -= center_offset
 
-        logger.debug(f"Positioned {len(positions)} children with even spacing")
+        logger.debug("Positioned %s children with even spacing", len(positions))
         return positions
 
     def _position_branches_at_centers(self, children: List[Dict], child_positions: Dict, left_branches_x: float, right_branches_x: float) -> Dict:
@@ -1222,7 +1259,7 @@ class MindMapAgent(BaseAgent):
         for branch_idx, branch in enumerate(children):
             branch_text = self._get_node_text(branch)
             if not branch_text:
-                logger.warning(f"Branch {branch_idx} missing text, skipping")
+                logger.warning("Branch %s missing text, skipping", branch_idx)
                 continue
 
             # Calculate branch dimensions (use capped width for text wrapping)
@@ -1235,7 +1272,7 @@ class MindMapAgent(BaseAgent):
 
             # Find this branch's children
             branch_children = []
-            for key, pos in child_positions.items():
+            for _key, pos in child_positions.items():
                 if pos.get('branch_index') == branch_idx:
                     branch_children.append(pos)
 
@@ -1243,7 +1280,10 @@ class MindMapAgent(BaseAgent):
             if branch_children:
                 children_y_positions = [child['y'] for child in branch_children]
                 branch_y = sum(children_y_positions) / len(children_y_positions)
-                logger.debug(f"Branch {branch_idx}: center-aligned to children at Y={branch_y:.1f}")
+                logger.debug(
+                    "Branch %s: center-aligned to children at Y=%.1f",
+                    branch_idx, branch_y
+                )
             else:
                 branch_y = 0.0  # Default to center if no children
                 logger.debug(f"Branch {branch_idx}: no children, positioned at Y=0")
@@ -1257,7 +1297,7 @@ class MindMapAgent(BaseAgent):
                 'branch_index': branch_idx, 'angle': 0
             }
 
-        logger.debug(f"Positioned {len(positions)} branches at mathematical centers")
+        logger.debug("Positioned %s branches at mathematical centers", len(positions))
         return positions
 
     def _validate_all_principles(self, positions: Dict, children: List[Dict]) -> Dict:
@@ -1303,7 +1343,7 @@ class MindMapAgent(BaseAgent):
         """
         violations = []
 
-        for branch_idx, branch in enumerate(children):
+        for branch_idx, _branch in enumerate(children):
             branch_key = f'branch_{branch_idx}'
             if branch_key not in positions:
                 continue
@@ -1313,7 +1353,7 @@ class MindMapAgent(BaseAgent):
 
             # Find children for this branch
             branch_children = []
-            for key, pos in positions.items():
+            for _key, pos in positions.items():
                 if pos.get('branch_index') == branch_idx and pos.get('node_type') == 'child':
                     branch_children.append(pos)
 
@@ -1326,7 +1366,10 @@ class MindMapAgent(BaseAgent):
                 error = abs(branch_y - mathematical_center)
 
                 if error > 5:
-                    violations.append(f"CRITICAL: Branch {branch_idx} misaligned by {error:.1f}px (Branch Y: {branch_y:.1f}, Center: {mathematical_center:.1f})")
+                    violations.append(
+                        f"CRITICAL: Branch {branch_idx} misaligned by {error:.1f}px "
+                        f"(Branch Y: {branch_y:.1f}, Center: {mathematical_center:.1f})"
+                    )
 
         return violations
 
@@ -1347,7 +1390,10 @@ class MindMapAgent(BaseAgent):
                 error = abs(branch_y - 0)  # Should be at Y=0
 
                 if error > 5:  # 5px tolerance
-                    violations.append(f"CRITICAL: Middle branch {branch_idx} not horizontally aligned (Y={branch_y:.1f}, should be 0)")
+                    violations.append(
+                        f"CRITICAL: Middle branch {branch_idx} not horizontally aligned "
+                        f"(Y={branch_y:.1f}, should be 0)"
+                    )
 
         return violations
 
@@ -1361,8 +1407,8 @@ class MindMapAgent(BaseAgent):
         real_positions = [(key, pos) for key, pos in positions.items()
                          if pos and pos.get('node_type') in ['topic', 'branch', 'child']]
 
-        for i, (key1, pos1) in enumerate(real_positions):
-            for j, (key2, pos2) in enumerate(real_positions[i+1:], i+1):
+        for i, (_key1, pos1) in enumerate(real_positions):
+            for _j, (_key2, pos2) in enumerate(real_positions[i+1:], i+1):
                 if self._nodes_overlap(pos1, pos2):
                     violations.append(f"OVERLAP: {pos1.get('text', 'Node')} and {pos2.get('text', 'Node')} overlap")
 
@@ -1401,7 +1447,7 @@ class MindMapAgent(BaseAgent):
         """
         STAGE 2: Strategic phantom compensation for alignment violations.
         """
-        logger.debug(f"Stage 2: Starting phantom compensation for {len(violations)} violations")
+        logger.debug("Stage 2: Starting phantom compensation for %s violations", len(violations))
 
         # Identify middle branch alignment violations
         middle_violations = [v for v in violations if 'Middle branch' in v and 'not horizontally aligned' in v]
@@ -1421,7 +1467,7 @@ class MindMapAgent(BaseAgent):
         # Re-validate with phantom compensation
         validation_results = self._validate_all_principles(compensated_positions, children)
 
-        logger.debug(f"Stage 2 validation: {validation_results['summary']}")
+        logger.debug("Stage 2 validation: %s", validation_results['summary'])
 
         return {
             'positions': compensated_positions,
@@ -1430,11 +1476,11 @@ class MindMapAgent(BaseAgent):
             'stage': 2
         }
 
-    def _add_phantom_compensation(self, positions: Dict, violations: List[str], children: List[Dict]) -> Dict:
+    def _add_phantom_compensation(self, positions: Dict, _violations: List[str], children: List[Dict]) -> Dict:
         """
         Add strategic phantom nodes to fix middle branch alignment violations.
         """
-        logger.debug(f"🎭 Adding phantom compensation for violations")
+        logger.debug("🎭 Adding phantom compensation for violations")
 
         compensated_positions = positions.copy()
         middle_branches = self._identify_middle_branches_systematically(len(children))
@@ -1450,7 +1496,7 @@ class MindMapAgent(BaseAgent):
 
             # Find children for this branch
             branch_children = []
-            for key, pos in positions.items():
+            for _key, pos in positions.items():
                 if pos.get('branch_index') == branch_idx and pos.get('node_type') == 'child':
                     branch_children.append(pos)
 
@@ -1479,11 +1525,11 @@ class MindMapAgent(BaseAgent):
 
                 compensated_positions[branch_key]['y'] = new_branch_y
 
-                logger.debug(f"Branch {branch_idx}: Added {len(phantoms)} phantoms")
-                logger.debug(f"  Children Y: {children_y_positions}")
-                logger.debug(f"  Phantom Y: {phantom_y_positions}")
-                logger.debug(f"  All Y: {all_y_positions}")
-                logger.debug(f"  Branch Y: {current_branch_y:.1f}→{new_branch_y:.1f} (target=0)")
+                logger.debug("Branch %s: Added %s phantoms", branch_idx, len(phantoms))
+                logger.debug("  Children Y: %s", children_y_positions)
+                logger.debug("  Phantom Y: %s", phantom_y_positions)
+                logger.debug("  All Y: %s", all_y_positions)
+                logger.debug("  Branch Y: %.1f→%.1f (target=0)", current_branch_y, new_branch_y)
 
         return compensated_positions
 
@@ -1502,22 +1548,22 @@ class MindMapAgent(BaseAgent):
         current_sum = sum(children_y)
         current_count = len(children_y)
 
-        logger.debug(f"Phantom calculation:")
-        logger.debug(f"  Children Y: {children_y}")
-        logger.debug(f"  Current sum: {current_sum}, count: {current_count}")
-        logger.debug(f"  Current center: {current_center:.1f}")
-        logger.debug(f"  Target center: {target_center}")
-        logger.debug(f"  Offset needed: {offset_needed:.1f}")
+        logger.debug("Phantom calculation:")
+        logger.debug("  Children Y: %s", children_y)
+        logger.debug("  Current sum: %s, count: %s", current_sum, current_count)
+        logger.debug("  Current center: %.1f", current_center)
+        logger.debug("  Target center: %s", target_center)
+        logger.debug("  Offset needed: %.1f", offset_needed)
 
         # Simple targeted approach: add phantoms in the direction needed to shift center
         if offset_needed > 0:
             # Need to shift center UP → Add phantoms ABOVE current center
             phantom_y = max(children_y) + 60  # 60px above highest child
-            logger.debug(f"  Strategy: Add phantoms ABOVE at Y={phantom_y}")
+            logger.debug("  Strategy: Add phantoms ABOVE at Y=%s", phantom_y)
         else:
             # Need to shift center DOWN → Add phantoms BELOW current center
             phantom_y = min(children_y) - 60  # 60px below lowest child
-            logger.debug(f"  Strategy: Add phantoms BELOW at Y={phantom_y}")
+            logger.debug("  Strategy: Add phantoms BELOW at Y=%s", phantom_y)
 
         # Calculate how many phantoms needed: new_center = (current_sum + N*phantom_y) / (current_count + N) = target_center
         # Solve: current_sum + N*phantom_y = target_center * (current_count + N)
@@ -1527,7 +1573,7 @@ class MindMapAgent(BaseAgent):
         denominator = phantom_y - target_center
         numerator = target_center * current_count - current_sum
 
-        logger.debug(f"  Equation: N * {denominator} = {numerator}")
+        logger.debug("  Equation: N * %s = %s", denominator, numerator)
 
         if abs(denominator) > 0.1:
             phantom_count_exact = numerator / denominator
@@ -1538,14 +1584,14 @@ class MindMapAgent(BaseAgent):
             else:
                 phantom_count = max(1, round(abs(phantom_count_exact)))  # Fallback to rounding
 
-            logger.debug(f"  Phantom count: {phantom_count_exact:.2f} → {phantom_count:.2f}")
+            logger.debug("  Phantom count: %.2f → %.2f", phantom_count_exact, phantom_count)
         else:
             phantom_count = 1
-            logger.debug(f"  Denominator too small, using 1 phantom")
+            logger.debug("  Denominator too small, using 1 phantom")
 
         # Verification
         verification_center = (current_sum + phantom_count * phantom_y) / (current_count + phantom_count)
-        logger.debug(f"  Verification: new center would be {verification_center:.1f} (target={target_center})")
+        logger.debug("  Verification: new center would be %.1f (target=%s)", verification_center, target_center)
 
         phantoms = []
 
@@ -1556,10 +1602,10 @@ class MindMapAgent(BaseAgent):
             phantoms.append({
                 'x': branch_children[0]['x'],  # Same X as children
                 'y': exact_phantom_y, 'width': 50, 'height': 30,
-                'text': f'phantom_exact', 'node_type': 'phantom',
+                'text': 'phantom_exact', 'node_type': 'phantom',
                 'is_phantom': True, 'angle': 0
             })
-            logger.debug(f"  Created 1 exact phantom at Y={exact_phantom_y:.1f}")
+            logger.debug("  Created 1 exact phantom at Y=%.1f", exact_phantom_y)
         else:
             # For integer phantom count, spread them to avoid overlaps
             phantom_count_int = int(phantom_count)
@@ -1574,9 +1620,9 @@ class MindMapAgent(BaseAgent):
                     'text': f'phantom_{i}', 'node_type': 'phantom',
                     'is_phantom': True, 'angle': 0
                 })
-            logger.debug(f"  Created {phantom_count_int} spread phantoms at Y={phantom_y}+offset")
+            logger.debug("  Created %s spread phantoms at Y=%s+offset", phantom_count_int, phantom_y)
 
-        logger.debug(f"Calculated {len(phantoms)} phantom nodes for offset {offset_needed:.1f}")
+        logger.debug("Calculated %s phantom nodes for offset %.1f", len(phantoms), offset_needed)
         return phantoms
 
     def _position_balanced_children(self, balanced_data: Dict, left_children_x: float, right_children_x: float) -> Dict:
@@ -1585,7 +1631,7 @@ class MindMapAgent(BaseAgent):
 
         This creates perfect vertical alignment on both sides with no overlaps.
         """
-        logger.debug(f"📍 Positioning balanced children")
+        logger.debug("📍 Positioning balanced children")
 
         positions = {}
 
@@ -1619,10 +1665,16 @@ class MindMapAgent(BaseAgent):
                         'child_index': child_info['child_idx'], 'angle': 0
                     }
 
-                    logger.debug(f"  Left child {child_info['branch_idx']}_{child_info['child_idx']}: '{child_text}' at Y={child_y:.1f}")
+                    logger.debug(
+                        "  Left child %s_%s: '%s' at Y=%.1f",
+                        child_info['branch_idx'], child_info['child_idx'], child_text, child_y
+                    )
                 else:
                     # Phantom child - just reserve space, don't create position
-                    logger.debug(f"  Left phantom {child_info['branch_idx']}_{child_info['child_idx']}: reserved space at Y={child_y:.1f}")
+                    logger.debug(
+                        "  Left phantom %s_%s: reserved space at Y=%.1f",
+                        child_info['branch_idx'], child_info['child_idx'], child_y
+                    )
 
         # Position right side children
         right_children = balanced_data['right_children']
@@ -1650,12 +1702,18 @@ class MindMapAgent(BaseAgent):
                         'child_index': child_info['child_idx'], 'angle': 0
                     }
 
-                    logger.debug(f"  Right child {child_info['branch_idx']}_{child_info['child_idx']}: '{child_text}' at Y={child_y:.1f}")
+                    logger.debug(
+                        "  Right child %s_%s: '%s' at Y=%.1f",
+                        child_info['branch_idx'], child_info['child_idx'], child_text, child_y
+                    )
                 else:
                     # Phantom child - just reserve space, don't create position
-                    logger.debug(f"  Right phantom {child_info['branch_idx']}_{child_info['child_idx']}: reserved space at Y={child_y:.1f}")
+                    logger.debug(
+                        "  Right phantom %s_%s: reserved space at Y=%.1f",
+                        child_info['branch_idx'], child_info['child_idx'], child_y
+                    )
 
-        logger.debug(f"Positioned {len(positions)} real children with perfect spacing")
+        logger.debug("Positioned %s real children with perfect spacing", len(positions))
         return positions
 
     def _calculate_center_out_branches(self, children: List[Dict], child_positions: Dict, left_branches_x: float, right_branches_x: float) -> Dict:
@@ -1664,7 +1722,7 @@ class MindMapAgent(BaseAgent):
 
         This is the key innovation that ensures middle branches align with central topic.
         """
-        logger.debug(f"Calculating center-out branch positions")
+        logger.debug("Calculating center-out branch positions")
 
         positions = {}
         num_branches = len(children)
@@ -1673,13 +1731,13 @@ class MindMapAgent(BaseAgent):
         # CORE PRINCIPLE: Start with middle branches at Y=0
         middle_branches = self._identify_middle_branches_smart(num_branches)
 
-        logger.debug(f"Middle branches identified: {middle_branches}")
+        logger.debug("Middle branches identified: %s", middle_branches)
 
         for branch_idx in range(num_branches):
             branch_data = children[branch_idx]
             branch_text = self._get_node_text(branch_data)
             if not branch_text:
-                logger.warning(f"Branch {branch_idx} missing text, skipping")
+                logger.warning("Branch %s missing text, skipping", branch_idx)
                 continue
 
             # Calculate branch dimensions (use capped width for text wrapping)
@@ -1692,7 +1750,7 @@ class MindMapAgent(BaseAgent):
 
             # Find this branch's children
             branch_children = []
-            for key, pos in child_positions.items():
+            for _key, pos in child_positions.items():
                 if pos.get('branch_index') == branch_idx:
                     branch_children.append(pos)
 
@@ -1700,17 +1758,17 @@ class MindMapAgent(BaseAgent):
             if branch_idx in middle_branches:
                 # FORCE middle branches to Y=0 (same as central topic)
                 branch_y = 0.0
-                logger.debug(f"MIDDLE branch {branch_idx}: FORCED to Y=0")
+                logger.debug("MIDDLE branch %s: FORCED to Y=0", branch_idx)
             else:
                 # Other branches: center-aligned to their children
                 if branch_children:
                     children_y_positions = [child['y'] for child in branch_children]
                     branch_y = sum(children_y_positions) / len(children_y_positions)
-                    logger.debug(f"  Regular branch {branch_idx}: center-aligned to children at Y={branch_y:.1f}")
+                    logger.debug("  Regular branch %s: center-aligned to children at Y=%.1f", branch_idx, branch_y)
                 else:
                     # No children: position relative to middle branches
                     branch_y = 0.0  # Default to center
-                    logger.debug(f"  Childless branch {branch_idx}: positioned at Y=0")
+                    logger.debug("  Childless branch %s: positioned at Y=0", branch_idx)
 
             # Store branch position
             branch_key = f'branch_{branch_idx}'
@@ -1722,9 +1780,9 @@ class MindMapAgent(BaseAgent):
             }
 
             side = "LEFT" if is_left_side else "RIGHT"
-            logger.debug(f"  Branch {branch_idx} ({side}): '{branch_text}' at Y={branch_y:.1f}")
+            logger.debug("  Branch %s (%s): '%s' at Y=%.1f", branch_idx, side, branch_text, branch_y)
 
-        logger.debug(f"All {num_branches} branches positioned with center-out method")
+        logger.debug("All %s branches positioned with center-out method", num_branches)
         return positions
 
     def _identify_middle_branches_smart(self, num_branches: int) -> List[int]:
@@ -1744,17 +1802,19 @@ class MindMapAgent(BaseAgent):
             # Odd number of branches: return the single middle branch
             return [mid_point]
 
-    def _apply_middle_branch_horizontal_alignment(self, positions: Dict, topic_y: float, num_branches: int) -> None:
+    def _apply_middle_branch_horizontal_alignment(
+        self, positions: Dict, topic_y: float, num_branches: int
+    ) -> None:
         """
         Smart middle branch horizontal alignment while preserving mathematical precision.
         Only affects the middle branches on each side for perfect horizontal alignment.
         """
-        logger.debug(f"Applying middle branch horizontal alignment")
+        logger.debug("Applying middle branch horizontal alignment")
 
         # Identify middle branches on each side
         middle_branches = self._identify_middle_branches(num_branches)
 
-        logger.debug(f"Middle branches identified: {middle_branches}")
+        logger.debug("Middle branches identified: %s", middle_branches)
 
         # Apply horizontal alignment to middle branches
         for side, branch_index in middle_branches.items():
@@ -1763,15 +1823,15 @@ class MindMapAgent(BaseAgent):
             if branch_key in positions:
                 branch_pos = positions[branch_key]
                 if branch_pos is None:
-                    logger.debug(f"WARNING: Branch position is None for {branch_key}")
+                    logger.debug("WARNING: Branch position is None for %s", branch_key)
                     continue
 
                 original_y = branch_pos.get('y', 0)
 
                 # Apply horizontal alignment to topic center
-                logger.debug(f"  Setting branch Y: {branch_pos} → {topic_y}")
+                logger.debug("  Setting branch Y: %s → %s", branch_pos, topic_y)
                 if branch_pos is None:
-                    logger.error(f"  ERROR: branch_pos is None!")
+                    logger.error("  ERROR: branch_pos is None!")
                     continue
                 branch_pos['y'] = topic_y
 
@@ -1781,9 +1841,9 @@ class MindMapAgent(BaseAgent):
                 # Adjust children positions to maintain visual balance
                 self._adjust_children_positions(positions, branch_index, y_offset)
 
-                logger.debug(f"Middle branch {branch_index} ({side}): {original_y:.1f} → {topic_y:.1f} (offset: {y_offset:.1f})")
+                logger.debug("Middle branch %s (%s): %.1f → %.1f (offset: %.1f)", branch_index, side, original_y, topic_y, y_offset)
             else:
-                logger.debug(f"WARNING: Middle branch {branch_index} not found in positions")
+                logger.debug("WARNING: Middle branch %s not found in positions", branch_index)
 
     def _identify_middle_branches(self, num_branches: int) -> Dict[str, int]:
         """
@@ -1803,13 +1863,13 @@ class MindMapAgent(BaseAgent):
             # Find middle index of right side branches
             right_middle_idx = len(right_branches) // 2
             middle_branches['right'] = right_branches[right_middle_idx]
-            logger.debug(f"Right side branches: {right_branches}, middle: {right_branches[right_middle_idx]}")
+            logger.debug("Right side branches: %s, middle: %s", right_branches, right_branches[right_middle_idx])
 
         if left_branches:
             # Find middle index of left side branches
             left_middle_idx = len(left_branches) // 2
             middle_branches['left'] = left_branches[left_middle_idx]
-            logger.debug(f"Left side branches: {left_branches}, middle: {left_branches[left_middle_idx]}")
+            logger.debug("Left side branches: %s, middle: %s", left_branches, left_branches[left_middle_idx])
 
         return middle_branches
 
@@ -1821,7 +1881,7 @@ class MindMapAgent(BaseAgent):
         adjusted_count = 0
         adjusted_children = []
 
-        for key, pos in positions.items():
+        for _key, pos in positions.items():
             if (pos is not None and
                 pos.get('node_type') == 'child' and
                 pos.get('branch_index') == branch_index):
@@ -1831,9 +1891,9 @@ class MindMapAgent(BaseAgent):
                 adjusted_count += 1
                 adjusted_children.append(pos)
 
-                logger.debug(f"    Adjusted child '{pos.get('text', 'unknown')}': {old_y:.1f} → {pos['y']:.1f}")
+                logger.debug("    Adjusted child '%s': %.1f → %.1f", pos.get('text', 'unknown'), old_y, pos['y'])
 
-        logger.debug(f"  📝 Adjusted {adjusted_count} children by offset {y_offset:.1f}")
+        logger.debug("  📝 Adjusted %s children by offset %.1f", adjusted_count, y_offset)
 
         # After adjusting children, fix any overlaps within this branch
         if len(adjusted_children) > 1:
@@ -1862,9 +1922,12 @@ class MindMapAgent(BaseAgent):
                 old_y = curr_child['y']
                 curr_child['y'] = required_y
 
-                logger.debug(f"      Fixed intra-branch overlap: '{curr_child.get('text', 'child')}' {old_y:.1f} → {required_y:.1f}")
+                logger.debug(
+                    "      Fixed intra-branch overlap: '%s' %.1f → %.1f",
+                    curr_child.get('text', 'child'), old_y, required_y
+                )
 
-    def _generate_connections(self, topic: str, children: List[Dict], positions: Dict) -> List[Dict]:
+    def _generate_connections(self, _topic: str, children: List[Dict], positions: Dict) -> List[Dict]:
         """
         Generate connection data for lines between nodes.
 
@@ -1890,8 +1953,8 @@ class MindMapAgent(BaseAgent):
         topic_x = topic_pos.get('x', 0)
         topic_y = topic_pos.get('y', 0)
 
-        logger.debug(f"Generating connections: {len(children)} branches, {len(positions)} positions")
-        logger.debug(f"Topic position: ({topic_x:.1f}, {topic_y:.1f})")
+        logger.debug("Generating connections: %s branches, %s positions", len(children), len(positions))
+        logger.debug("Topic position: (%.1f, %.1f)", topic_x, topic_y)
 
         # Connections from topic to branches
         # Use array index i which matches branch_key = f'branch_{i}'
@@ -1899,7 +1962,7 @@ class MindMapAgent(BaseAgent):
             branch_key = f'branch_{i}'
 
             if branch_key not in positions:
-                logger.warning(f"Branch {i} not found in positions (key: {branch_key})")
+                logger.warning("Branch %s not found in positions (key: %s)", i, branch_key)
                 continue
 
             branch_pos = positions[branch_key]
@@ -1921,24 +1984,29 @@ class MindMapAgent(BaseAgent):
             # The actual_branch_idx in _stack_children_vertically maps back to original array index
             # So we use i (array index) to find children, which matches how they're stored
             nested_children = branch_data.get('children', [])
-            logger.debug(f"Branch {i} ('{branch_data.get('label', '')}'): {len(nested_children)} children in spec")
+            logger.debug(
+                "Branch %s ('%s'): %s children in spec",
+                i, branch_data.get('label', ''), len(nested_children)
+            )
 
-            for j, nested_child in enumerate(nested_children):
+            for j, _nested_child in enumerate(nested_children):
                 child_key = f'child_{i}_{j}'
 
                 if child_key not in positions:
                     # Child key not found - log for debugging
                     available_keys = [k for k in positions.keys() if k.startswith('child_')]
                     available_for_branch = [k for k in positions.keys() if k.startswith(f'child_{i}_')]
-                    logger.warning(f"Connection generation: Child key '{child_key}' not found for branch {i}, child {j}")
-                    logger.debug(f"  Branch {i} has {len(nested_children)} children in spec")
-                    logger.debug(f"  Available child keys for branch {i}: {available_for_branch}")
-                    logger.debug(f"  All child keys in positions: {sorted(available_keys)}")
+                    logger.warning("Connection generation: Child key '%s' not found for branch %s, child %s", child_key, i, j)
+                    logger.debug("  Branch %s has %s children in spec", i, len(nested_children))
+                    logger.debug("  Available child keys for branch %s: %s", i, available_for_branch)
+                    logger.debug("  All child keys in positions: %s", sorted(available_keys))
                     # Check by branch_index to see what's actually stored
-                    available_by_index = [(k, p.get('branch_index'), p.get('child_index'), p.get('text', '')[:20])
-                                         for k, p in positions.items()
-                                         if p.get('branch_index') == i and p.get('node_type') == 'child']
-                    logger.debug(f"  Children with branch_index={i}: {available_by_index}")
+                    available_by_index = [
+                        (k, p.get('branch_index'), p.get('child_index'), p.get('text', '')[:20])
+                        for k, p in positions.items()
+                        if p.get('branch_index') == i and p.get('node_type') == 'child'
+                    ]
+                    logger.debug("  Children with branch_index=%s: %s", i, available_by_index)
                     continue
 
                 child_pos = positions[child_key]
@@ -1947,10 +2015,10 @@ class MindMapAgent(BaseAgent):
 
                 # Verify coordinates are valid
                 if not (isinstance(child_x, (int, float)) and isinstance(child_y, (int, float))):
-                    logger.warning(f"Invalid coordinates for child {child_key}: ({child_x}, {child_y})")
+                    logger.warning("Invalid coordinates for child %s: (%s, %s)", child_key, child_x, child_y)
                     continue
 
-                logger.debug(f"  Connection {i}→{j}: branch({branch_x:.1f},{branch_y:.1f}) → child({child_x:.1f},{child_y:.1f})")
+                logger.debug("  Connection %s→%s: branch(%.1f,%.1f) → child(%.1f,%.1f)", i, j, branch_x, branch_y, child_x, child_y)
 
                 # Create branch-to-child connection
                 # CRITICAL: Use the exact coordinates from positions dictionary (already centered)
@@ -1967,19 +2035,26 @@ class MindMapAgent(BaseAgent):
         # Verify connections match node positions
         if connections:
             sample_conn = connections[0]
-            logger.debug(f"Sample connection coordinates: from({sample_conn['from']['x']:.1f}, {sample_conn['from']['y']:.1f}) to({sample_conn['to']['x']:.1f}, {sample_conn['to']['y']:.1f})")
+            logger.debug(
+                "Sample connection coordinates: from(%.1f, %.1f) to(%.1f, %.1f)",
+                sample_conn['from']['x'], sample_conn['from']['y'],
+                sample_conn['to']['x'], sample_conn['to']['y']
+            )
             # Verify the 'from' position matches a node position
             if sample_conn['from']['type'] == 'topic':
                 topic_pos = positions.get('topic', {})
                 if topic_pos:
                     expected_x, expected_y = topic_pos.get('x', 0), topic_pos.get('y', 0)
                     if abs(sample_conn['from']['x'] - expected_x) > 0.1 or abs(sample_conn['from']['y'] - expected_y) > 0.1:
-                        logger.warning(f"Connection topic position mismatch! Expected ({expected_x:.1f}, {expected_y:.1f}), got ({sample_conn['from']['x']:.1f}, {sample_conn['from']['y']:.1f})")
+                        logger.warning(
+                            "Connection topic position mismatch! Expected (%.1f, %.1f), got (%.1f, %.1f)",
+                            expected_x, expected_y, sample_conn['from']['x'], sample_conn['from']['y']
+                        )
 
-        logger.debug(f"Generated {len(connections)} connections total")
+        logger.debug("Generated %s connections total", len(connections))
         return connections
 
-    def _compute_recommended_dimensions(self, positions: Dict, topic: str, children: List[Dict]) -> Dict:
+    def _compute_recommended_dimensions(self, positions: Dict, _topic: str, _children: List[Dict]) -> Dict:
         """Compute recommended canvas dimensions based on content."""
         if not positions:
             return {"baseWidth": 800, "baseHeight": 600, "width": 800, "height": 600, "padding": 80}
@@ -2295,7 +2370,10 @@ class MindMapAgent(BaseAgent):
 
         final_spacing = max(min_spacing, min(max_spacing, optimal_spacing))
 
-        logger.debug(f"    Spacing calculation: base={base_spacing}, density={density_factor:.2f}, height={height_factor:.2f}, final={final_spacing}")
+        logger.debug(
+            "    Spacing calculation: base=%s, density=%.2f, height=%.2f, final=%s",
+            base_spacing, density_factor, height_factor, final_spacing
+        )
 
         return final_spacing
 
@@ -2431,15 +2509,15 @@ class MindMapAgent(BaseAgent):
 
             # Detect overlaps
             for i, (key1, pos1) in enumerate(all_positions):
-                for j, (key2, pos2) in enumerate(all_positions[i+1:], i+1):
+                for _j, (key2, pos2) in enumerate(all_positions[i+1:], i+1):
                     if self._nodes_overlap(pos1, pos2):
                         overlaps_found.append((key1, pos1, key2, pos2))
 
             if not overlaps_found:
-                logger.debug(f"No overlaps found after {iteration} iterations")
+                logger.debug("No overlaps found after %s iterations", iteration)
                 break
 
-            logger.debug(f"Iteration {iteration + 1}: Found {len(overlaps_found)} overlaps")
+            logger.debug("Iteration %s: Found %s overlaps", iteration + 1, len(overlaps_found))
 
             # Fix overlaps by adjusting Y positions
             for key1, pos1, key2, pos2 in overlaps_found:
@@ -2464,19 +2542,25 @@ class MindMapAgent(BaseAgent):
                         if required_move > 0:
                             pos1['y'] += required_move
                             overlap_fixes += 1
-                            logger.debug(f"  Fixed overlap: moved '{pos1.get('text', 'node')}' down by {required_move:.1f}px (min_sep={min_separation:.1f}px)")
+                            logger.debug(
+                                "  Fixed overlap: moved '%s' down by %.1fpx (min_sep=%.1fpx)",
+                                pos1.get('text', 'node'), required_move, min_separation
+                            )
                     else:
                         # Move pos2 down
                         required_move = (pos1['y'] + pos1['height']/2) + min_separation - (pos2['y'] - pos2['height']/2)
                         if required_move > 0:
                             pos2['y'] += required_move
                             overlap_fixes += 1
-                            logger.debug(f"  Fixed overlap: moved '{pos2.get('text', 'node')}' down by {required_move:.1f}px (min_sep={min_separation:.1f}px)")
+                            logger.debug(
+                                "  Fixed overlap: moved '%s' down by %.1fpx (min_sep=%.1fpx)",
+                                pos2.get('text', 'node'), required_move, min_separation
+                            )
 
         if overlap_fixes > 0:
-            logger.debug(f"Applied {overlap_fixes} overlap fixes")
+            logger.debug("Applied %s overlap fixes", overlap_fixes)
         else:
-            logger.debug(f"No overlap fixes needed")
+            logger.debug("No overlap fixes needed")
 
     def _get_max_branches(self) -> int:
         """Get maximum number of branches allowed."""

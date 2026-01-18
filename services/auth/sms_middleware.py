@@ -1,4 +1,4 @@
-﻿"""
+"""
 sms middleware module.
 """
 from contextlib import asynccontextmanager
@@ -6,6 +6,7 @@ from datetime import datetime
 from typing import Dict, Any, Optional, Tuple
 import asyncio
 import hashlib
+import hmac
 import json
 import logging
 import os
@@ -623,8 +624,8 @@ class SMSMiddleware:
                 logger.warning(f"[SMSMiddleware] Rate limiter acquisition failed: {e}")
                 if self.enable_error_handling:
                     raise SMSServiceError(
-                        f"SMS service temporarily unavailable due to rate limiting. "
-                        f"Please try again in a moment."
+                        "SMS service temporarily unavailable due to rate limiting. "
+                        "Please try again in a moment."
                     ) from e
                 raise
 

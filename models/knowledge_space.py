@@ -1,4 +1,5 @@
-﻿from datetime import datetime
+from datetime import datetime
+import pickle
 
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Text, JSON, Enum, Index, CheckConstraint, UniqueConstraint, LargeBinary, Float
 from sqlalchemy.orm import relationship

@@ -1,12 +1,12 @@
 """
 ip geolocation module.
 """
-from datetime import datetime, timezone
+from datetime import datetime
 from pathlib import Path
 from typing import Optional, Dict
+import ipaddress
 import json
 import logging
-import os
 import threading
 
 from services.redis.redis_client import is_redis_available, get_redis
@@ -188,7 +188,7 @@ class IPGeolocationService:
         """Convert IP address to integer for range checking."""
         try:
             return int(ipaddress.IPv4Address(ip))
-        except:
+        except ValueError:
             return 0
 
     def _normalize_province_name(self, province: str) -> str:

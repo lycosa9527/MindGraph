@@ -1,9 +1,8 @@
-﻿"""
+"""
 brace map palette module.
 """
 from typing import Optional, Dict, Any, AsyncGenerator
 import logging
-import re
 
 from agents.node_palette.base_palette_generator import BasePaletteGenerator
 
@@ -137,8 +136,7 @@ class BraceMapPaletteGenerator(BasePaletteGenerator):
             Stage-specific formatted prompt
         """
         # Detect language from content (Chinese topic = Chinese prompt)
-        language = self._detect_language  # pylint: disable=protected-access(center_topic, educational_context)
-        context_desc = educational_context.get('raw_message', 'General K12 teaching') if educational_context else 'General K12 teaching'
+        educational_context.get('raw_message', 'General K12 teaching') if educational_context else 'General K12 teaching'
 
         # Get stage and stage_data directly from educational_context (passed through in generate_batch)
         # This is more reliable than session_stages lookup - avoids state sync issues
@@ -158,11 +156,11 @@ class BraceMapPaletteGenerator(BasePaletteGenerator):
         if stage == 'dimensions':
             return self._build_dimensions_prompt  # pylint: disable=protected-access(center_topic, context_desc, language, count, batch_num)
         elif stage == 'parts':
-            dimension = stage_data.get('dimension', '')
+            stage_data.get('dimension', '')
             return self._build_parts_prompt  # pylint: disable=protected-access(center_topic, dimension, context_desc, language, count, batch_num)
         elif stage == 'subparts':
-            part_name = stage_data.get('part_name', '')
-            dimension = stage_data.get('dimension', '')  # Get dimension for subparts prompt
+            stage_data.get('part_name', '')
+            stage_data.get('dimension', '')  # Get dimension for subparts prompt
             return self._build_subparts_prompt  # pylint: disable=protected-access(center_topic, part_name, dimension, context_desc, language, count, batch_num)
         else:
             # Fallback to dimensions

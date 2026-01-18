@@ -1,5 +1,4 @@
-﻿from typing import List, TypeVar, Callable, Awaitable, Any, Optional
-import asyncio
+﻿from typing import List, TypeVar, Callable, Awaitable, Optional
 import logging
 
 

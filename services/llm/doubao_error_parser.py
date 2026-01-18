@@ -1,9 +1,3 @@
-﻿from typing import Dict, Optional, Tuple
-import logging
-import re
-
-from services.infrastructure.error_handler import (
-
 """
 Volcengine Doubao Error Parser
 ===============================
@@ -20,9 +14,12 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+from typing import Optional, Tuple
+import logging
+import re
 
+from services.infrastructure.error_handler import (
     LLMServiceError,
-    LLMTimeoutError,
     LLMRateLimitError,
     LLMContentFilterError,
     LLMProviderError,

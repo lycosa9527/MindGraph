@@ -1,14 +1,4 @@
-﻿from typing import List, Optional
-import ipaddress
-import logging
-import os
-import uuid
-
-from services.redis.redis_client import is_redis_available, get_redis
-
-"""
-Redis Bayi IP Whitelist Service
-=================================
+"""Redis Bayi IP Whitelist Service.
 
 High-performance IP whitelist management using Redis Set.
 Replaces in-memory set for multi-worker support and dynamic management.
@@ -31,7 +21,18 @@ All Rights Reserved
 Proprietary License
 """
 
+from typing import List, Optional, TYPE_CHECKING
+import importlib
+import ipaddress
+import logging
+import os
+import types
+import uuid
 
+from services.redis.redis_client import is_redis_available, get_redis
+
+if TYPE_CHECKING:
+    pass
 
 logger = logging.getLogger(__name__)
 
@@ -55,12 +56,99 @@ WHITELIST_KEY = "bayi:ip_whitelist"
 
 WHITELIST_LOAD_LOCK_KEY = "bayi:whitelist:load:lock"
 WHITELIST_LOAD_LOCK_TTL = 300  # 5 minutes - enough for loading, auto-release on crash
-_whitelist_load_lock_id: Optional[str] = None  # This worker's unique lock identifier
 
 
-def _generate_whitelist_load_lock_id() -> str:
-    """Generate unique lock ID for this worker: {pid}:{uuid}"""
-    return f"{os.getpid()}:{uuid.uuid4().hex[:8]}"
+class AuthModuleLoader:
+    """Lazy loads utils.auth module to avoid circular imports."""
+
+    def __init__(self):
+        """Initialize auth module loader."""
+        self._module: Optional[types.ModuleType] = None
+        self._load_attempted: bool = False
+
+    def get(self):
+        """Get utils.auth module, loading it lazily if needed."""
+        if not self._load_attempted:
+            self._load_attempted = True
+            try:
+                auth_module = importlib.import_module("utils.auth")
+                self._module = auth_module
+            except ImportError:
+                self._module = None
+        return self._module
+
+
+_auth_loader = AuthModuleLoader()
+
+
+def _get_auth_module():
+    """Lazy load utils.auth module to avoid circular imports."""
+    return _auth_loader.get()
+
+
+class WhitelistLoadLockManager:
+    """Manages whitelist load lock state without global variables."""
+
+    def __init__(self):
+        """Initialize lock manager."""
+        self._lock_id: Optional[str] = None
+
+    def _generate_lock_id(self) -> str:
+        """Generate unique lock ID for this worker: {pid}:{uuid}"""
+        return f"{os.getpid()}:{uuid.uuid4().hex[:8]}"
+
+    def get_lock_id(self) -> str:
+        """Get or generate lock ID for this worker."""
+        if self._lock_id is None:
+            self._lock_id = self._generate_lock_id()
+        return self._lock_id
+
+    def acquire(self) -> bool:
+        """
+        Attempt to acquire the whitelist load lock.
+
+        Uses Redis SETNX for atomic lock acquisition.
+        Only ONE worker across all processes can hold this lock.
+
+        Returns:
+            True if lock acquired (this worker should load whitelist)
+            False if lock held by another worker
+        """
+        if not is_redis_available():
+            logger.debug("[BayiWhitelist] Redis unavailable, assuming single worker mode for whitelist loading")
+            return True
+
+        redis = get_redis()
+        if not redis:
+            return True
+
+        try:
+            lock_id = self.get_lock_id()
+            acquired = redis.set(
+                WHITELIST_LOAD_LOCK_KEY,
+                lock_id,
+                nx=True,
+                ex=WHITELIST_LOAD_LOCK_TTL
+            )
+
+            if acquired:
+                logger.debug("[BayiWhitelist] Lock acquired by this worker (id=%s)", lock_id)
+                return True
+
+            holder = redis.get(WHITELIST_LOAD_LOCK_KEY)
+            logger.info(
+                "[BayiWhitelist] Another worker holds the whitelist load lock (holder=%s), "
+                "skipping whitelist load",
+                holder
+            )
+            return False
+
+        except Exception as e:
+            logger.warning("[BayiWhitelist] Lock acquisition failed: %s, proceeding anyway", e)
+            return True
+
+
+_lock_manager = WhitelistLoadLockManager()
 
 
 def acquire_whitelist_load_lock() -> bool:
@@ -74,43 +162,7 @@ def acquire_whitelist_load_lock() -> bool:
         True if lock acquired (this worker should load whitelist)
         False if lock held by another worker
     """
-    global _whitelist_load_lock_id
-
-    if not is_redis_available():
-        # No Redis = single worker mode, proceed
-        logger.debug("[BayiWhitelist] Redis unavailable, assuming single worker mode for whitelist loading")
-        return True
-
-    redis = get_redis()
-    if not redis:
-        return True  # Fallback to single worker mode
-
-    try:
-        # Generate unique ID for this worker
-        if _whitelist_load_lock_id is None:
-            _whitelist_load_lock_id = _generate_whitelist_load_lock_id()
-
-        # Attempt atomic lock acquisition: SETNX with TTL
-        # Returns True only if key did not exist (lock acquired)
-        acquired = redis.set(
-            WHITELIST_LOAD_LOCK_KEY,
-            _whitelist_load_lock_id,
-            nx=True,  # Only set if not exists
-            ex=WHITELIST_LOAD_LOCK_TTL  # TTL in seconds
-        )
-
-        if acquired:
-            logger.debug(f"[BayiWhitelist] Lock acquired by this worker (id={_whitelist_load_lock_id})")
-            return True
-        else:
-            # Lock held by another worker - check who
-            holder = redis.get(WHITELIST_LOAD_LOCK_KEY)
-            logger.info(f"[BayiWhitelist] Another worker holds the whitelist load lock (holder={holder}), skipping whitelist load")
-            return False
-
-    except Exception as e:
-        logger.warning(f"[BayiWhitelist] Lock acquisition failed: {e}, proceeding anyway")
-        return True  # On error, proceed (better to have duplicate than no whitelist)
+    return _lock_manager.acquire()
 
 
 class BayiIPWhitelist:
@@ -125,7 +177,6 @@ class BayiIPWhitelist:
 
     def __init__(self):
         """Initialize BayiIPWhitelist instance."""
-        pass
 
     def _normalize_ip(self, ip: str) -> Optional[str]:
         """
@@ -141,7 +192,7 @@ class BayiIPWhitelist:
             ip_addr = ipaddress.ip_address(ip)
             return str(ip_addr)
         except ValueError:
-            logger.warning(f"[BayiWhitelist] Invalid IP address format: {ip}")
+            logger.warning("[BayiWhitelist] Invalid IP address format: %s", ip)
             return None
 
     def _use_redis(self) -> bool:
@@ -169,18 +220,21 @@ class BayiIPWhitelist:
                     # O(1) lookup in Redis Set
                     is_member = redis.sismember(WHITELIST_KEY, normalized_ip)
                     if is_member:
-                        logger.debug(f"[BayiWhitelist] IP {ip} matched whitelist entry (Redis)")
+                        logger.debug("[BayiWhitelist] IP %s matched whitelist entry (Redis)", ip)
                         return True
                     return False
                 except Exception as e:
-                    logger.warning(f"[BayiWhitelist] Redis error checking IP {ip}, falling back to in-memory: {e}")
+                    logger.warning(
+                        "[BayiWhitelist] Redis error checking IP %s, falling back to in-memory: %s",
+                        ip,
+                        e
+                    )
                     # Fall through to in-memory fallback
 
         # Fallback to in-memory set (backward compatibility)
-        # Import here to avoid circular import
-        import utils.auth as auth_module
-        if normalized_ip in auth_module.BAYI_IP_WHITELIST:
-            logger.debug(f"[BayiWhitelist] IP {ip} matched whitelist entry (in-memory fallback)")
+        auth_module = _get_auth_module()
+        if auth_module and normalized_ip in auth_module.BAYI_IP_WHITELIST:
+            logger.debug("[BayiWhitelist] IP %s matched whitelist entry (in-memory fallback)", ip)
             return True
 
         return False
@@ -198,11 +252,11 @@ class BayiIPWhitelist:
         """
         normalized_ip = self._normalize_ip(ip)
         if not normalized_ip:
-            logger.warning(f"[BayiWhitelist] Cannot add invalid IP: {ip}")
+            logger.warning("[BayiWhitelist] Cannot add invalid IP: %s", ip)
             return False
 
         if not self._use_redis():
-            logger.warning(f"[BayiWhitelist] Redis unavailable, cannot add IP {ip}")
+            logger.warning("[BayiWhitelist] Redis unavailable, cannot add IP %s", ip)
             return False
 
         redis = get_redis()
@@ -213,13 +267,12 @@ class BayiIPWhitelist:
             # Add to Redis Set (SADD returns number of members added)
             added = redis.sadd(WHITELIST_KEY, normalized_ip)
             if added > 0:
-                logger.info(f"[BayiWhitelist] Added IP {ip} to whitelist (by {added_by})")
+                logger.info("[BayiWhitelist] Added IP %s to whitelist (by %s)", ip, added_by)
                 return True
-            else:
-                logger.debug(f"[BayiWhitelist] IP {ip} already in whitelist")
-                return True  # Already exists, consider it success
+            logger.debug("[BayiWhitelist] IP %s already in whitelist", ip)
+            return True
         except Exception as e:
-            logger.error(f"[BayiWhitelist] Failed to add IP {ip}: {e}")
+            logger.error("[BayiWhitelist] Failed to add IP %s: %s", ip, e)
             return False
 
     def remove_ip(self, ip: str) -> bool:
@@ -234,11 +287,11 @@ class BayiIPWhitelist:
         """
         normalized_ip = self._normalize_ip(ip)
         if not normalized_ip:
-            logger.warning(f"[BayiWhitelist] Cannot remove invalid IP: {ip}")
+            logger.warning("[BayiWhitelist] Cannot remove invalid IP: %s", ip)
             return False
 
         if not self._use_redis():
-            logger.warning(f"[BayiWhitelist] Redis unavailable, cannot remove IP {ip}")
+            logger.warning("[BayiWhitelist] Redis unavailable, cannot remove IP %s", ip)
             return False
 
         redis = get_redis()
@@ -249,13 +302,12 @@ class BayiIPWhitelist:
             # Remove from Redis Set (SREM returns number of members removed)
             removed = redis.srem(WHITELIST_KEY, normalized_ip)
             if removed > 0:
-                logger.info(f"[BayiWhitelist] Removed IP {ip} from whitelist")
+                logger.info("[BayiWhitelist] Removed IP %s from whitelist", ip)
                 return True
-            else:
-                logger.debug(f"[BayiWhitelist] IP {ip} not in whitelist")
-                return False
+            logger.debug("[BayiWhitelist] IP %s not in whitelist", ip)
+            return False
         except Exception as e:
-            logger.error(f"[BayiWhitelist] Failed to remove IP {ip}: {e}")
+            logger.error("[BayiWhitelist] Failed to remove IP %s: %s", ip, e)
             return False
 
     def list_ips(self) -> List[str]:
@@ -266,9 +318,10 @@ class BayiIPWhitelist:
             List of whitelisted IP addresses
         """
         if not self._use_redis():
-            # Fallback to in-memory set
-            import utils.auth as auth_module
-            return list(auth_module.BAYI_IP_WHITELIST)
+            auth_module = _get_auth_module()
+            if auth_module:
+                return list(auth_module.BAYI_IP_WHITELIST)
+            return []
 
         redis = get_redis()
         if not redis:
@@ -279,10 +332,11 @@ class BayiIPWhitelist:
             ips = redis.smembers(WHITELIST_KEY)
             return sorted(list(ips)) if ips else []
         except Exception as e:
-            logger.error(f"[BayiWhitelist] Failed to list IPs: {e}")
-            # Fallback to in-memory set
-            import utils.auth as auth_module
-            return list(auth_module.BAYI_IP_WHITELIST)
+            logger.error("[BayiWhitelist] Failed to list IPs: %s", e)
+            auth_module = _get_auth_module()
+            if auth_module:
+                return list(auth_module.BAYI_IP_WHITELIST)
+            return []
 
     def load_from_env(self) -> int:
         """
@@ -299,17 +353,12 @@ class BayiIPWhitelist:
         """
         # Try to acquire lock - only one worker should load whitelist
         if not acquire_whitelist_load_lock():
-            # Another worker is loading whitelist, skip
-            # Return 0 since whitelist will be loaded by another worker
             return 0
 
-        import os
-        # Import here to avoid circular import
-        import utils.auth as auth_module
-
+        auth_module = _get_auth_module()
         whitelist_str = os.getenv("BAYI_IP_WHITELIST", "").strip()
         if not whitelist_str:
-            if auth_module.AUTH_MODE == "bayi":
+            if auth_module and auth_module.AUTH_MODE == "bayi":
                 logger.info("[BayiWhitelist] No IPs in BAYI_IP_WHITELIST env var")
             return 0
 
@@ -333,30 +382,39 @@ class BayiIPWhitelist:
                     errors += 1
             else:
                 errors += 1
-                if auth_module.AUTH_MODE == "bayi":
-                    logger.warning(f"[BayiWhitelist] Invalid IP entry in BAYI_IP_WHITELIST: {ip_entry}")
+                if auth_module and auth_module.AUTH_MODE == "bayi":
+                    logger.warning("[BayiWhitelist] Invalid IP entry in BAYI_IP_WHITELIST: %s", ip_entry)
 
-        if auth_module.AUTH_MODE == "bayi":
+        if auth_module and auth_module.AUTH_MODE == "bayi":
             if count > 0:
-                logger.info(f"[BayiWhitelist] Loaded {count} IP(s) from env var into Redis")
+                logger.info("[BayiWhitelist] Loaded %d IP(s) from env var into Redis", count)
             if errors > 0:
-                logger.warning(f"[BayiWhitelist] {errors} invalid IP entries skipped")
+                logger.warning("[BayiWhitelist] %d invalid IP entries skipped", errors)
 
         return count
 
 
-# Singleton instance
-_bayi_whitelist_instance: Optional[BayiIPWhitelist] = None
+class BayiWhitelistSingleton:
+    """Manages singleton instance without global statement."""
+
+    def __init__(self):
+        """Initialize singleton manager."""
+        self._instance: Optional[BayiIPWhitelist] = None
+
+    def get(self) -> BayiIPWhitelist:
+        """Get singleton instance of BayiIPWhitelist."""
+        if self._instance is None:
+            self._instance = BayiIPWhitelist()
+        return self._instance
+
+
+_singleton_manager = BayiWhitelistSingleton()
 
 
 def get_bayi_whitelist() -> BayiIPWhitelist:
     """Get singleton instance of BayiIPWhitelist."""
-    global _bayi_whitelist_instance
-    if _bayi_whitelist_instance is None:
-        _bayi_whitelist_instance = BayiIPWhitelist()
-    return _bayi_whitelist_instance
+    return _singleton_manager.get()
 
 
 # Convenience alias
 bayi_whitelist = get_bayi_whitelist()
-

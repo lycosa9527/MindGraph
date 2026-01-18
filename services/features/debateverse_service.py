@@ -1,14 +1,3 @@
-﻿from datetime import datetime
-from typing import Dict, List, Optional, Any
-import logging
-import random
-
-from sqlalchemy.orm import Session
-
-from models.debateverse import (
-from services.features.debateverse_context_builder import DebateVerseContextBuilder
-from services.llm import llm_service
-
 """
 DebateVerse Service
 ===================
@@ -20,10 +9,18 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+from datetime import datetime
+from typing import Dict, Optional
+import logging
+import random
 
+from sqlalchemy.orm import Session
 
-    DebateSession, DebateParticipant, DebateMessage, DebateJudgment
+from models.debateverse import (
+    DebateSession, DebateParticipant, DebateMessage
 )
+from services.features.debateverse_context_builder import DebateVerseContextBuilder
+from services.llm import llm_service
 
 logger = logging.getLogger(__name__)
 
@@ -289,7 +286,7 @@ class DebateVerseService:
                     response_content += chunk.get('content', '')
 
         # Save message to database
-        session = self.db.query(DebateSession).filter_by(id=self.session_id).first()
+        self.db.query(DebateSession).filter_by(id=self.session_id).first()
         round_number = self._get_next_round_number(stage)
 
         message = DebateMessage(

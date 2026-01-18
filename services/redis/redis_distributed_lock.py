@@ -1,4 +1,4 @@
-﻿"""
+"""
 Redis Distributed Lock Service
 ==============================
 
@@ -90,12 +90,18 @@ class DistributedLock:
             True if lock acquired, False if max retries exhausted
         """
         if not is_redis_available():
-            logger.warning(f"[DistributedLock] Redis unavailable, assuming single worker mode for {self.resource}")
+            logger.warning(
+                "[DistributedLock] Redis unavailable, assuming single worker mode for %s",
+                self.resource
+            )
             return True  # Fallback: assume single worker if Redis unavailable
 
         redis = get_redis()
         if not redis:
-            logger.warning(f"[DistributedLock] Redis client unavailable, assuming single worker mode for {self.resource}")
+            logger.warning(
+                "[DistributedLock] Redis client unavailable, assuming single worker mode for %s",
+                self.resource
+            )
             return True
 
         # Generate unique lock ID for this process
@@ -117,7 +123,11 @@ class DistributedLock:
 
                 if acquired:
                     self._acquired = True
-                    logger.debug(f"[DistributedLock] Lock acquired for {self.resource} (id={self.lock_id})")
+                    logger.debug(
+                        "[DistributedLock] Lock acquired for %s (id=%s)",
+                        self.resource,
+                        self.lock_id
+                    )
                     return True
                 else:
                     # Lock held by another process - check who
@@ -126,22 +136,34 @@ class DistributedLock:
                         # Retry with exponential backoff
                         delay = self.retry_base_delay * (2 ** attempt)
                         logger.debug(
-                            f"[DistributedLock] Lock held for {self.resource} "
-                            f"(holder={holder}, attempt {attempt + 1}/{self.max_retries}), "
-                            f"retrying after {delay:.2f}s"
+                            "[DistributedLock] Lock held for %s "
+                            "(holder=%s, attempt %s/%s), "
+                            "retrying after %.2fs",
+                            self.resource,
+                            holder,
+                            attempt + 1,
+                            self.max_retries,
+                            delay
                         )
                         await asyncio.sleep(delay)
                         continue
                     else:
                         # All retries exhausted
                         logger.warning(
-                            f"[DistributedLock] Failed to acquire lock for {self.resource} "
-                            f"after {self.max_retries} attempts (holder={holder})"
+                            "[DistributedLock] Failed to acquire lock for %s "
+                            "after %s attempts (holder=%s)",
+                            self.resource,
+                            self.max_retries,
+                            holder
                         )
                         return False
 
             except Exception as e:
-                logger.warning(f"[DistributedLock] Lock acquisition error for {self.resource}: {e}")
+                logger.warning(
+                    "[DistributedLock] Lock acquisition error for %s: %s",
+                    self.resource,
+                    e
+                )
                 # On error, assume single worker mode (fail open)
                 return True
 
@@ -183,19 +205,29 @@ class DistributedLock:
 
             if result:
                 self._acquired = False
-                logger.debug(f"[DistributedLock] Lock released for {self.resource} (id={self.lock_id})")
+                logger.debug(
+                    "[DistributedLock] Lock released for %s (id=%s)",
+                    self.resource,
+                    self.lock_id
+                )
                 return True
             else:
                 # Check current holder for logging
                 current_holder = await asyncio.to_thread(redis.get, self.lock_key)
                 logger.warning(
-                    f"[DistributedLock] Lock not released (not held by us or already released): {self.resource}. "
-                    f"Current holder: {current_holder}"
+                    "[DistributedLock] Lock not released (not held by us or already released): %s. "
+                    "Current holder: %s",
+                    self.resource,
+                    current_holder
                 )
                 return False
 
         except Exception as e:
-            logger.warning(f"[DistributedLock] Lock release error for {self.resource}: {e}")
+            logger.warning(
+                "[DistributedLock] Lock release error for %s: %s",
+                self.resource,
+                e
+            )
             return False
 
     async def __aenter__(self):
@@ -239,4 +271,3 @@ async def phone_registration_lock(phone: str):
 
     async with lock:
         yield lock
-

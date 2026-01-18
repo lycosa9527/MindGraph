@@ -6,7 +6,6 @@ Extract teacher prompts, diagram agent prompts, and unclear intention cases from
 import re
 import json
 from pathlib import Path
-from collections import defaultdict
 from datetime import datetime
 
 def parse_log_line(line):
@@ -323,11 +322,11 @@ def main():
     print(f"Total diagram agent prompts: {len(all_diagram_prompts)}")
     print(f"Total unclear intentions: {len(unique_intentions)}")
     print(f"\nResults saved to: {output_dir}")
-    print(f"  - extracted_prompts.json (complete data)")
-    print(f"  - teacher_prompts.txt")
-    print(f"  - unclear_prompts.txt")
-    print(f"  - diagram_agent_prompts.txt")
-    print(f"  - unclear_intentions.txt")
+    print("  - extracted_prompts.json (complete data)")
+    print("  - teacher_prompts.txt")
+    print("  - unclear_prompts.txt")
+    print("  - diagram_agent_prompts.txt")
+    print("  - unclear_intentions.txt")
 
 if __name__ == "__main__":
     main()

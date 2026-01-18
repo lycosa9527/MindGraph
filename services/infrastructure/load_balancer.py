@@ -23,7 +23,7 @@ import random
 import time
 
 from services.infrastructure.rate_limiter import LoadBalancerRateLimiter
-from services.redis.redis_client import is_redis_available, redis_ops
+from services.redis.redis_client import is_redis_available, RedisOps
 
 if TYPE_CHECKING:
     from services.infrastructure.rate_limiter import DashscopeRateLimiter
@@ -245,7 +245,7 @@ class LLMLoadBalancer:
             # Redis INCR is atomic, so even if all 5 workers call it simultaneously,
             # they get sequential counter values (1, 2, 3, 4, 5), ensuring even distribution.
             if self._use_redis:
-                counter = redis_ops.increment(ROUND_ROBIN_KEY, ttl_seconds=86400)  # 24h TTL
+                counter = RedisOps.increment(ROUND_ROBIN_KEY, ttl_seconds=86400)  # 24h TTL
                 if counter is not None:
                     # Even counter → Dashscope, odd → Volcengine
                     provider = (
@@ -367,7 +367,8 @@ class LLMLoadBalancer:
         self,
         provider: str,
         success: bool,
-        duration: float
+        duration: float,
+        error: Optional[str] = None
     ) -> None:
         """
         Record performance metrics for a provider in Redis.
@@ -381,7 +382,10 @@ class LLMLoadBalancer:
             provider: Provider name ('dashscope' or 'volcengine')
             success: Whether request succeeded
             duration: Request duration in seconds
+            error: Optional error message for failed requests
         """
+        # Note: error parameter is accepted for API compatibility but not currently stored
+        _ = error  # Acknowledge parameter to avoid unused warning
         if not self._use_redis:
             return  # Skip if Redis unavailable
 
@@ -399,17 +403,17 @@ class LLMLoadBalancer:
             failed_requests_key = f"{metrics_key}:failed_requests"
             total_duration_key = f"{metrics_key}:total_duration"
 
-            redis_ops.increment(total_requests_key, ttl_seconds=3600)
-            redis_ops.increment_float(total_duration_key, duration, ttl_seconds=3600)
+            RedisOps.increment(total_requests_key, ttl_seconds=3600)
+            RedisOps.increment_float(total_duration_key, duration, ttl_seconds=3600)
 
             if success:
-                redis_ops.increment(successful_requests_key, ttl_seconds=3600)
+                RedisOps.increment(successful_requests_key, ttl_seconds=3600)
             else:
-                redis_ops.increment(failed_requests_key, ttl_seconds=3600)
+                RedisOps.increment(failed_requests_key, ttl_seconds=3600)
 
             # Update metadata (min/max duration, last_updated) - acceptable race condition
             # This is approximate data, so minor race conditions are acceptable
-            metrics_json = redis_ops.get(metrics_key)
+            metrics_json = RedisOps.get(metrics_key)
             if metrics_json:
                 metrics = json.loads(metrics_json)
             else:
@@ -424,7 +428,7 @@ class LLMLoadBalancer:
             metrics['last_updated'] = time.time()
 
             # Store metadata with 1 hour TTL
-            redis_ops.set_with_ttl(
+            RedisOps.set_with_ttl(
                 metrics_key,
                 json.dumps(metrics),
                 ttl_seconds=3600
@@ -436,10 +440,10 @@ class LLMLoadBalancer:
                 'success': success,
                 'duration': duration
             }
-            redis_ops.list_push(window_key, json.dumps(window_data))
+            RedisOps.list_push(window_key, json.dumps(window_data))
 
             # Trim window to last 100 entries
-            window_length = redis_ops.list_length(window_key)
+            window_length = RedisOps.list_length(window_key)
             if window_length > 100:
                 # Keep only last 100 entries
                 # Note: ltrim keeps elements from start to end index
@@ -447,10 +451,10 @@ class LLMLoadBalancer:
                 # Workaround: Use list_pop_many to remove excess from front
                 excess = window_length - 100
                 if excess > 0:
-                    redis_ops.list_pop_many(window_key, excess)
+                    RedisOps.list_pop_many(window_key, excess)
 
             # Set TTL on window key
-            redis_ops.set_ttl(window_key, 3600)
+            RedisOps.set_ttl(window_key, 3600)
 
         except Exception as e:
             # Non-critical: metrics tracking failure shouldn't break load balancing
@@ -487,7 +491,7 @@ class LLMLoadBalancer:
             window_key = f"{METRICS_KEY_PREFIX}{provider}:window"
 
             # Get metrics
-            metrics_json = redis_ops.get(metrics_key)
+            metrics_json = RedisOps.get(metrics_key)
             if not metrics_json:
                 return {
                     'success_rate': 1.0,
@@ -502,27 +506,27 @@ class LLMLoadBalancer:
             successful_requests_key = f"{metrics_key}:successful_requests"
             total_duration_key = f"{metrics_key}:total_duration"
 
-            total_str = redis_ops.get(total_requests_key)
-            successful_str = redis_ops.get(successful_requests_key)
-            total_duration_str = redis_ops.get(total_duration_key)
+            total_str = RedisOps.get(total_requests_key)
+            successful_str = RedisOps.get(successful_requests_key)
+            total_duration_str = RedisOps.get(total_duration_key)
 
             total = int(total_str) if total_str else 0
             successful = int(successful_str) if successful_str else 0
             total_duration = float(total_duration_str) if total_duration_str else 0.0
 
             # Get metadata from JSON
-            metrics = json.loads(metrics_json) if metrics_json else {}
+            json.loads(metrics_json) if metrics_json else {}
 
             success_rate = successful / total if total > 0 else 1.0
             avg_duration = total_duration / total if total > 0 else 0.0
 
             # Count recent failures (last 100 requests)
             recent_failures = 0
-            window_length = redis_ops.list_length(window_key)
+            window_length = RedisOps.list_length(window_key)
             if window_length > 0:
                 # Get last 100 entries (negative indices: -100 to -1)
                 start_idx = -min(100, window_length)
-                window_data = redis_ops.list_range(window_key, start_idx, -1)
+                window_data = RedisOps.list_range(window_key, start_idx, -1)
                 for entry_json in window_data:
                     try:
                         entry = json.loads(entry_json)

@@ -1,4 +1,4 @@
-﻿"""
+"""
 Registration Endpoints
 ======================
 
@@ -20,8 +20,8 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from sqlalchemy.orm import Session
 
 from config.database import get_db
-from models.messages import
-from models.auth import
+from models.messages import Messages, Language
+from models.auth import User, Organization
 from models.requests import RegisterRequest, RegisterWithSMSRequest
 from utils.auth import (
     AUTH_MODE, hash_password, get_client_ip,

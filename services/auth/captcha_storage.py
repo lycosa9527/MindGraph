@@ -1,11 +1,11 @@
-﻿"""
+"""
 captcha storage module.
 """
 from typing import Optional, Dict, Tuple
 import logging
 import time
 
-from services.redis.redis_client import redis_ops
+from services.redis.redis_client import RedisOps
 
 """
 Redis Captcha Storage
@@ -51,7 +51,7 @@ class CaptchaStorage:
         """Store captcha with automatic expiration."""
         key = f"{self.PREFIX}{captcha_id}"
         code_upper = code.upper()
-        success = redis_ops.set_with_ttl(key, code_upper, expires_in_seconds)
+        success = RedisOps.set_with_ttl(key, code_upper, expires_in_seconds)
         if success:
             logger.debug(f"[Captcha] Stored: {captcha_id[:8]}... (code: {code_upper}, TTL: {expires_in_seconds}s)")
         else:
@@ -61,12 +61,12 @@ class CaptchaStorage:
     def get(self, captcha_id: str) -> Optional[Dict]:
         """Get captcha code."""
         key = f"{self.PREFIX}{captcha_id}"
-        code = redis_ops.get(key)
+        code = RedisOps.get(key)
 
         if code is None:
             return None
 
-        ttl = redis_ops.get_ttl(key)
+        ttl = RedisOps.get_ttl(key)
         expires_at = time.time() + ttl if ttl > 0 else time.time()
 
         return {
@@ -91,7 +91,7 @@ class CaptchaStorage:
         key = f"{self.PREFIX}{captcha_id}"
 
         # Atomic get and delete using pipeline
-        stored_code = redis_ops.get_and_delete(key)
+        stored_code = RedisOps.get_and_delete(key)
 
         if stored_code is None:
             logger.warning(f"[Captcha] Not found: {captcha_id[:8]}... (key: {key})")
@@ -120,7 +120,7 @@ class CaptchaStorage:
     def remove(self, captcha_id: str):
         """Remove a captcha code."""
         key = f"{self.PREFIX}{captcha_id}"
-        redis_ops.delete(key)
+        RedisOps.delete(key)
         logger.debug(f"[Captcha] Removed: {captcha_id[:8]}...")
 
 

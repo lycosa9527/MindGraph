@@ -1,8 +1,12 @@
-﻿"""
-base palette generator module.
+"""
+Base Node Palette Generator
+============================
+
+Shared logic for all diagram-specific palette generators.
 """
 from abc import ABC, abstractmethod
-from typing import List
+from difflib import SequenceMatcher
+from typing import Optional, Dict, Any, Tuple, AsyncGenerator
 import logging
 import re
 import time
@@ -10,8 +14,7 @@ import time
 from services.llm import llm_service
 
 """
-Base Node Palette Generator
-============================
+base palette generator module.
 
 Shared logic for all diagram-specific palette generators.
 
@@ -215,14 +218,12 @@ class BasePaletteGenerator(ABC):
 
                             # Yield nodes in round-robin order (ensures interleaving)
                             # Yield up to 4 nodes (one from each LLM if available)
-                            yielded_any = False
                             for _ in range(len(self.llm_models)):
                                 llm = llm_yield_order[next_llm_index]
                                 next_llm_index = (next_llm_index + 1) % len(llm_yield_order)
 
                                 if len(pending_nodes[llm]) > 0:
                                     yield pending_nodes[llm].pop(0)
-                                    yielded_any = True
 
                             # If no nodes yielded (all buffers empty), don't block
                             # The next node arrival will trigger another round-robin cycle

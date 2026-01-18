@@ -1,11 +1,3 @@
-﻿from typing import Dict, List, Optional, Any
-import logging
-
-from sqlalchemy.orm import Session
-
-from models.debateverse import DebateSession, DebateMessage, DebateParticipant
-from prompts.debateverse import (
-
 """
 DebateVerse Context Builder
 ============================
@@ -17,8 +9,13 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+from typing import Dict, List, Optional, Any
+import logging
 
+from sqlalchemy.orm import Session
 
+from models.debateverse import DebateSession, DebateMessage, DebateParticipant
+from prompts.debateverse import (
     get_debater_system_prompt,
     get_judge_system_prompt,
     get_cross_exam_questioner_prompt,

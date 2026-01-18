@@ -1,6 +1,10 @@
-from typing import Any, Dict, List, Optional, Tuple
+"""
+double bubble map agent module.
+"""
+from typing import Any, Dict, Optional, Tuple
 import logging
 
+from agents.core.base_agent import BaseAgent
 
 """
 Double Bubble Map Agent
@@ -49,7 +53,7 @@ class DoubleBubbleMapAgent(BaseAgent):
             Dict containing success status and generated spec
         """
         try:
-            logger.debug(f"DoubleBubbleMapAgent: Starting double bubble map generation for prompt")
+            logger.debug("DoubleBubbleMapAgent: Starting double bubble map generation for prompt")
 
             # Generate the double bubble map specification
             spec = await self._generate_double_bubble_map_spec(                prompt,
@@ -98,7 +102,7 @@ class DoubleBubbleMapAgent(BaseAgent):
                 if retry_spec and not (isinstance(retry_spec, dict) and retry_spec.get('_error')):
                     retry_is_valid, retry_validation_msg = self.validate_output(retry_spec)
                     if retry_is_valid:
-                        logger.info(f"DoubleBubbleMapAgent: Retry generation succeeded after validation failure")
+                        logger.info("DoubleBubbleMapAgent: Retry generation succeeded after validation failure")
                         spec = retry_spec
                     else:
                         logger.error(f"DoubleBubbleMapAgent: Retry generation also failed validation: {retry_validation_msg}")
@@ -107,7 +111,7 @@ class DoubleBubbleMapAgent(BaseAgent):
                             'error': f'Generated invalid specification after retry: {retry_validation_msg}'
                         }
                 else:
-                    logger.error(f"DoubleBubbleMapAgent: Retry generation failed to extract valid JSON")
+                    logger.error("DoubleBubbleMapAgent: Retry generation failed to extract valid JSON")
                     return {
                         'success': False,
                         'error': f'Generated invalid specification: {validation_msg}'
@@ -116,7 +120,7 @@ class DoubleBubbleMapAgent(BaseAgent):
             # Enhance the spec with layout and dimensions
             enhanced_spec = self._enhance_spec(spec)
 
-            logger.info(f"DoubleBubbleMapAgent: Double bubble map generation completed successfully")
+            logger.info("DoubleBubbleMapAgent: Double bubble map generation completed successfully")
             return {
                 'success': True,
                 'spec': enhanced_spec,
@@ -144,7 +148,7 @@ class DoubleBubbleMapAgent(BaseAgent):
         try:
             # Import centralized prompt system
             from prompts import get_prompt
-            from ..main_agent import extract_double_bubble_topics_llm
+            from ..core.topic_extraction import extract_double_bubble_topics_llm
 
             # Extract two topics for comparison using specialized LLM extraction (async)
             topics = await extract_double_bubble_topics_llm(prompt, language, self.model)
@@ -193,8 +197,8 @@ class DoubleBubbleMapAgent(BaseAgent):
                 if isinstance(spec, dict) and spec.get('_error') == 'non_json_response':
                     # LLM returned non-JSON asking for more info - retry with more explicit prompt
                     logger.warning(
-                        f"DoubleBubbleMapAgent: LLM returned non-JSON response asking for more info. "
-                        f"Retrying with explicit JSON-only prompt."
+                        "DoubleBubbleMapAgent: LLM returned non-JSON response asking for more info. "
+                        "Retrying with explicit JSON-only prompt."
                     )
 
                     # Retry with more explicit prompt emphasizing JSON-only output
@@ -230,17 +234,17 @@ class DoubleBubbleMapAgent(BaseAgent):
                         # If still non-JSON, return None
                         if isinstance(spec, dict) and spec.get('_error') == 'non_json_response':
                             logger.error(
-                                f"DoubleBubbleMapAgent: Retry also returned non-JSON response. "
-                                f"Giving up after 1 retry attempt."
+                                "DoubleBubbleMapAgent: Retry also returned non-JSON response. "
+                                "Giving up after 1 retry attempt."
                             )
                             return None
 
                 if not spec or (isinstance(spec, dict) and spec.get('_error')):
                     # Log the actual response for debugging with more context
                     response_preview = response_str[:500] + "..." if len(response_str) > 500 else response_str
-                    logger.error(f"DoubleBubbleMapAgent: Failed to extract JSON from LLM response")
+                    logger.error("DoubleBubbleMapAgent: Failed to extract JSON from LLM response")
                     logger.error(f"DoubleBubbleMapAgent: Response length: {len(response_str)}, Preview: {response_preview}")
-                    logger.error(f"DoubleBubbleMapAgent: This may indicate LLM returned invalid JSON or non-JSON response")
+                    logger.error("DoubleBubbleMapAgent: This may indicate LLM returned invalid JSON or non-JSON response")
                     # Return None to trigger error handling upstream
                     return None
 

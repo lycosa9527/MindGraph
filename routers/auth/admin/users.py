@@ -1,4 +1,4 @@
-﻿from typing import Optional
+from typing import Optional
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Body, Query, status
@@ -11,6 +11,9 @@ from models.messages import Messages, Language
 from services.redis.redis_org_cache import org_cache
 from services.redis.redis_user_cache import user_cache
 from utils.auth import hash_password
+
+from ..dependencies import get_language_dependency, require_admin
+from ..helpers import utc_to_beijing_iso
 
 """
 Admin User Management Endpoints
@@ -99,7 +102,7 @@ async def list_users_admin(
             func.coalesce(func.sum(TokenUsage.output_tokens), 0).label('output_tokens'),
             func.coalesce(func.sum(TokenUsage.total_tokens), 0).label('total_tokens')
         ).filter(
-            TokenUsage.success == True,
+            TokenUsage.success,
             TokenUsage.user_id.isnot(None)
         ).group_by(
             TokenUsage.user_id

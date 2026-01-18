@@ -1,9 +1,10 @@
 """
 bubble map agent module.
 """
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple
 import logging
 
+from agents.core.base_agent import BaseAgent
 
 """
 Bubble Map Agent
@@ -48,7 +49,7 @@ class BubbleMapAgent(BaseAgent):
             Dict containing success status and generated spec
         """
         try:
-            logger.debug(f"BubbleMapAgent: Starting bubble map generation for prompt")
+            logger.debug("BubbleMapAgent: Starting bubble map generation for prompt")
 
             # Generate the bubble map specification
             spec = await self._generate_bubble_map_spec(                prompt,
@@ -77,7 +78,7 @@ class BubbleMapAgent(BaseAgent):
             # Enhance the spec with layout and dimensions
             enhanced_spec = self._enhance_spec(spec)
 
-            logger.info(f"BubbleMapAgent: Bubble map generation completed successfully")
+            logger.info("BubbleMapAgent: Bubble map generation completed successfully")
             return {
                 'success': True,
                 'spec': enhanced_spec,

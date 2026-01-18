@@ -1,8 +1,3 @@
-﻿from typing import List, Optional, Dict, Any
-import logging
-import os
-
-
 """
 Qdrant Service for Knowledge Space
 Author: lycosa9527
@@ -15,7 +10,13 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+from typing import List, Optional, Dict, Any
+import logging
+import os
 
+import qdrant_client
+from qdrant_client.http import models as rest
+from qdrant_client.http.models import Distance
 
 # Try to import QuantizationType, fallback to string literal if not available
 try:
@@ -152,7 +153,7 @@ class QdrantService:
                             always_ram=True,
                         )
                     )
-                    logger.info(f"[Qdrant] Configuring SQ8 compression (4x storage savings)")
+                    logger.info("[Qdrant] Configuring SQ8 compression (4x storage savings)")
                 elif self.compression_type == "IVF_SQ8":
                     # IVF_SQ8: Inverted File Index + SQ8 (requires more setup)
                     # For now, use SQ8 (IVF_SQ8 needs additional index configuration)
@@ -163,13 +164,13 @@ class QdrantService:
                             always_ram=True,
                         )
                     )
-                    logger.info(f"[Qdrant] Using SQ8 compression (IVF_SQ8 requires additional index setup)")
+                    logger.info("[Qdrant] Using SQ8 compression (IVF_SQ8 requires additional index setup)")
             else:
                 # Compression disabled - log warning
                 logger.warning(
-                    f"[Qdrant] Creating collection WITHOUT compression. "
-                    f"Storage usage will be ~4x larger than with SQ8 compression. "
-                    f"Set QDRANT_COMPRESSION=SQ8 to enable compression."
+                    "[Qdrant] Creating collection WITHOUT compression. "
+                    "Storage usage will be ~4x larger than with SQ8 compression. "
+                    "Set QDRANT_COMPRESSION=SQ8 to enable compression."
                 )
 
             # Create collection with optional quantization
@@ -183,8 +184,8 @@ class QdrantService:
             else:
                 # Warn if compression is disabled
                 logger.warning(
-                    f"[Qdrant] Collection created without compression. "
-                    f"Consider enabling SQ8 compression for ~4x storage savings."
+                    "[Qdrant] Collection created without compression. "
+                    "Consider enabling SQ8 compression for ~4x storage savings."
                 )
 
             self.client.create_collection(**create_params)
@@ -496,7 +497,7 @@ class QdrantService:
             metadata: Optional list of metadata dicts
         """
         if not chunk_ids or not embeddings:
-            logger.warning(f"[Qdrant] Empty chunk_ids or embeddings for update")
+            logger.warning("[Qdrant] Empty chunk_ids or embeddings for update")
             return
 
         if len(chunk_ids) != len(embeddings):

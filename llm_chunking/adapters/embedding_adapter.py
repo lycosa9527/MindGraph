@@ -1,8 +1,8 @@
-﻿from abc import ABC, abstractmethod
-from typing import List
+from abc import ABC, abstractmethod
+from typing import List, Dict, Any, Union
 import logging
 
-from llm_chunking.models import Chunk, ParentChunk, ChildChunk, QAChunk
+from llm_chunking.models import Chunk, ParentChunk, QAChunk
 
 """
 Embedding adapters for different chunk structures.

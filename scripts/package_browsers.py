@@ -26,12 +26,9 @@ Proprietary License
 import os
 import sys
 import platform
-import shutil
 import zipfile
-import subprocess
 import tempfile
 import urllib.request
-import json
 from pathlib import Path
 
 def get_project_root():
@@ -52,7 +49,7 @@ def download_playwright_browser_for_platform(target_platform):
         Path to downloaded Chromium directory, or None if failed
     """
     print(f"[INFO] Downloading Chromium for {target_platform} platform...")
-    print(f"    This may take 5-10 minutes (~150MB)...")
+    print("    This may take 5-10 minutes (~150MB)...")
 
     try:
         # Get Chromium revision from current installation
@@ -107,7 +104,7 @@ def download_playwright_browser_for_platform(target_platform):
         extract_dir = temp_dir / "extracted"
         extract_dir.mkdir(exist_ok=True)
 
-        print(f"[INFO] Extracting zip file...")
+        print("[INFO] Extracting zip file...")
         with zipfile.ZipFile(zip_file, 'r') as zipf:
             zipf.extractall(extract_dir)
 
@@ -122,7 +119,7 @@ def download_playwright_browser_for_platform(target_platform):
             if chromium_dirs:
                 chromium_dir = chromium_dirs[0]
             else:
-                print(f"[ERROR] Could not find Chromium directory in extracted files")
+                print("[ERROR] Could not find Chromium directory in extracted files")
                 return None
 
         print(f"[SUCCESS] Downloaded Chromium for {target_platform}")
@@ -202,7 +199,7 @@ def package_platform_chromium(zip_path, platform_name, chromium_source_dir):
 
     print(f"[INFO] Packaging {platform_name} Chromium into zip...")
     print(f"    Source: {chromium_source_dir}")
-    print(f"    This may take a few minutes (~150MB per platform)...")
+    print("    This may take a few minutes (~150MB per platform)...")
 
     total_files = sum(1 for _ in chromium_source_dir.rglob('*') if _.is_file())
     processed = 0
@@ -257,9 +254,9 @@ def package_chromium():
     platforms_to_package = ['windows', 'linux', 'mac']
 
     print("[INFO] This will download and package Chromium for all platforms:")
-    print(f"    - Windows")
-    print(f"    - Linux")
-    print(f"    - macOS")
+    print("    - Windows")
+    print("    - Linux")
+    print("    - macOS")
     print()
     print("[INFO] This may take 15-30 minutes and download ~450MB...")
     print()
@@ -275,8 +272,8 @@ def package_chromium():
             playwright_chromium_path = get_playwright_browser_path()
             if not playwright_chromium_path:
                 print(f"[ERROR] Chromium not found for {platform_name}")
-                print(f"[INFO] Please install Chromium first:")
-                print(f"    python -m playwright install chromium")
+                print("[INFO] Please install Chromium first:")
+                print("    python -m playwright install chromium")
                 continue
             # Find the Chromium directory (parent of executable)
             chromium_source_dir = Path(os.path.dirname(playwright_chromium_path))
@@ -317,12 +314,12 @@ def package_chromium():
             if platform_name in existing_platforms:
                 print(f"[INFO] {platform_name} platform already exists, will be replaced")
     else:
-        print(f"[INFO] Creating new multi-platform zip file...")
+        print("[INFO] Creating new multi-platform zip file...")
 
     # Create/update zip file
     print(f"[INFO] Packaging {platform_name} Chromium into zip...")
     print(f"    Source: {chromium_source_dir}")
-    print(f"    This may take a few minutes (~150MB per platform)...")
+    print("    This may take a few minutes (~150MB per platform)...")
 
     total_files = sum(1 for _ in chromium_source_dir.rglob('*') if _.is_file())
     processed = 0

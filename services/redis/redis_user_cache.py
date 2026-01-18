@@ -1,10 +1,10 @@
-﻿from datetime import datetime
+from datetime import datetime
 from typing import Optional, Dict
 import logging
 
 from config.database import SessionLocal
 from models.auth import User
-from services.redis.redis_client import is_redis_available, redis_ops, get_redis
+from services.redis.redis_client import is_redis_available, RedisOps, get_redis
 
 """
 Redis User Cache Service
@@ -176,7 +176,7 @@ class UserCache:
         try:
             # Try cache read
             key = f"{USER_KEY_PREFIX}{user_id}"
-            cached = redis_ops.hash_get_all(key)
+            cached = RedisOps.hash_get_all(key)
 
             if cached:
                 try:
@@ -188,7 +188,7 @@ class UserCache:
                     logger.error(f"[UserCache] Corrupted cache for user ID {user_id}: {e}", exc_info=True)
                     # Invalidate corrupted entry
                     try:
-                        redis_ops.delete(key)
+                        RedisOps.delete(key)
                     except Exception:
                         pass
                     # Fallback to SQLite
@@ -220,7 +220,7 @@ class UserCache:
         try:
             # Try cache index lookup
             index_key = f"{USER_PHONE_INDEX_PREFIX}{phone}"
-            user_id_str = redis_ops.get(index_key)
+            user_id_str = RedisOps.get(index_key)
 
             if user_id_str:
                 try:
@@ -231,7 +231,7 @@ class UserCache:
                     logger.error(f"[UserCache] Invalid user ID in phone index for {phone[:3]}***{phone[-4:]}: {e}")
                     # Invalidate corrupted index
                     try:
-                        redis_ops.delete(index_key)
+                        RedisOps.delete(index_key)
                     except Exception:
                         pass
                     # Fallback to SQLite
@@ -265,7 +265,7 @@ class UserCache:
 
             # Store user hash
             user_key = f"{USER_KEY_PREFIX}{user.id}"
-            success = redis_ops.hash_set(user_key, user_dict)
+            success = RedisOps.hash_set(user_key, user_dict)
 
             if not success:
                 logger.warning(f"[UserCache] Failed to cache user ID {user.id}")
@@ -305,12 +305,12 @@ class UserCache:
         try:
             # Delete user hash
             user_key = f"{USER_KEY_PREFIX}{user_id}"
-            redis_ops.delete(user_key)
+            RedisOps.delete(user_key)
 
             # Delete phone index
             if phone:
                 phone_index_key = f"{USER_PHONE_INDEX_PREFIX}{phone}"
-                redis_ops.delete(phone_index_key)
+                RedisOps.delete(phone_index_key)
 
             logger.info(f"[UserCache] Invalidated cache for user ID {user_id}")
             logger.debug(f"[UserCache] Deleted cache keys: user:{user_id}, user:phone:{phone}")

@@ -1,9 +1,3 @@
-﻿from typing import Optional
-import random
-import re
-import string
-
-
 """
 Invitation code utilities
 
@@ -18,6 +12,10 @@ All Rights Reserved
 Proprietary License
 """
 
+from typing import Optional
+import random
+import re
+import string
 
 
 INVITE_PATTERN = re.compile(r"^[A-Z]{4}-[A-Z0-9]{5}$")
@@ -59,6 +57,3 @@ def normalize_or_generate(invitation_code: Optional[str], name: Optional[str], c
         if INVITE_PATTERN.fullmatch(candidate):
             return candidate
     return generate_invitation_code(name, code)
-
-
-

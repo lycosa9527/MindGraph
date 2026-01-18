@@ -1,4 +1,4 @@
-﻿from datetime import datetime
+from datetime import datetime
 from typing import Optional, Dict, Any, List
 import asyncio
 import json
@@ -7,7 +7,7 @@ import os
 import threading
 import time
 
-from services.redis.redis_client import is_redis_available, get_redis, redis_ops
+from services.redis.redis_client import is_redis_available, get_redis
 
 """
 Redis Token Buffer
@@ -380,7 +380,7 @@ class RedisTokenBuffer:
                     current_size = redis.llen(BUFFER_KEY) or 0
                     if current_size >= MAX_BUFFER_SIZE:
                         self._total_dropped += 1
-                        logger.warning(f"[TokenBuffer] Buffer overflow! Dropping record.")
+                        logger.warning("[TokenBuffer] Buffer overflow! Dropping record.")
                         return False
 
                     redis.rpush(BUFFER_KEY, json.dumps(record))

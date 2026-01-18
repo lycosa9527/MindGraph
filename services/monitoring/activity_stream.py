@@ -1,6 +1,5 @@
-﻿from collections import defaultdict
-from datetime import datetime, timezone
-from typing import Dict, Optional, Set
+﻿from datetime import datetime, timezone
+from typing import Dict, Optional
 import asyncio
 import json
 import logging
@@ -205,7 +204,7 @@ class ActivityStreamService:
             redis = get_redis()
             if not redis:
                 # Redis unavailable - allow broadcast (shouldn't happen in production)
-                logger.warning(f"[ActivityStream] Redis unavailable, skipping deduplication check")
+                logger.warning("[ActivityStream] Redis unavailable, skipping deduplication check")
                 return False
 
             # SETNX: Set if not exists, returns True if set, False if already exists

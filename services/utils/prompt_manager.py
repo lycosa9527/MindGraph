@@ -1,4 +1,4 @@
-﻿"""
+"""
 Prompt Manager
 ==============
 
@@ -14,15 +14,13 @@ Proprietary License
 
 import logging
 import re
-from typing import Dict, List, Optional, Any, Set
-from pathlib import Path
+from typing import Dict, List, Optional, Set
 
 logger = logging.getLogger(__name__)
 
 
 class PromptTemplateError(Exception):
     """Raised when prompt template is invalid or missing."""
-    pass
 
 
 class PromptManager:
@@ -42,7 +40,7 @@ class PromptManager:
     """
 
     def __init__(self):
-        self._prompts: Dict[str, Dict[str, Dict[str, str]]] = {}
+        self._prompts: Dict[str, Dict[str, Dict[str, Dict[str, str]]]] = {}
         self._initialized = False
         logger.info("[PromptManager] Initialized")
 
@@ -81,7 +79,10 @@ class PromptManager:
             function='welcome',
             name='default',
             language='en',
-            template="Hello! I'm here to help you optimize your {diagram_type} diagram about '{topic}'. How can I assist you?"
+            template=(
+                "Hello! I'm here to help you optimize your {diagram_type} "
+                "diagram about '{topic}'. How can I assist you?"
+            )
         )
 
         self.register_prompt(
@@ -98,7 +99,11 @@ class PromptManager:
             function='nodes',
             name='circle_map',
             language='en',
-            template="Generate {count} descriptive attributes or observations about: {center_topic}\n\nProvide diverse, specific characteristics."
+            template=(
+                "Generate {count} descriptive attributes or observations "
+                "about: {center_topic}\n\nProvide diverse, specific "
+                "characteristics."
+            )
         )
 
         self.register_prompt(
@@ -115,7 +120,12 @@ class PromptManager:
             function='intent',
             name='default',
             language='en',
-            template="Classify the user's intent from this message: '{user_message}'\n\nPossible intents: {intents}\n\nRespond with JSON: {{\"intent\": \"...\", \"parameters\": {{}}}}"
+            template=(
+                "Classify the user's intent from this message: "
+                "'{user_message}'\n\nPossible intents: {intents}\n\n"
+                "Respond with JSON: {{\"intent\": \"...\", "
+                "\"parameters\": {{}}}}"
+            )
         )
 
         self.register_prompt(
@@ -123,7 +133,11 @@ class PromptManager:
             function='intent',
             name='default',
             language='zh',
-            template="分类用户意图: '{user_message}'\n\n可能的意图: {intents}\n\n用JSON格式回答: {{\"intent\": \"...\", \"parameters\": {{}}}}"
+            template=(
+                "分类用户意图: '{user_message}'\n\n可能的意图: {intents}\n\n"
+                "用JSON格式回答: {{\"intent\": \"...\", "
+                "\"parameters\": {{}}}}"
+            )
         )
 
     def register_prompt(
@@ -156,7 +170,8 @@ class PromptManager:
         self._prompts[category][function][name][language] = template
 
         logger.debug(
-            f"[PromptManager] Registered: {category}/{function}/{name}/{language}"
+            "[PromptManager] Registered: %s/%s/%s/%s",
+            category, function, name, language
         )
 
     def get_prompt(
@@ -250,7 +265,9 @@ class PromptManager:
             function in self._prompts[category] and
             'default' in self._prompts[category][function] and
             language in self._prompts[category][function]['default']):
-            logger.debug(f"[PromptManager] Using default name for {name}")
+            logger.debug(
+                "[PromptManager] Using default name for %s", name
+            )
             return self._prompts[category][function]['default'][language]
 
         # Try English fallback
@@ -258,7 +275,9 @@ class PromptManager:
             function in self._prompts[category] and
             name in self._prompts[category][function] and
             'en' in self._prompts[category][function][name]):
-            logger.debug(f"[PromptManager] Using English fallback for {language}")
+            logger.debug(
+                "[PromptManager] Using English fallback for %s", language
+            )
             return self._prompts[category][function][name]['en']
 
         # Try default English
@@ -266,7 +285,7 @@ class PromptManager:
             function in self._prompts[category] and
             'default' in self._prompts[category][function] and
             'en' in self._prompts[category][function]['default']):
-            logger.debug(f"[PromptManager] Using default English")
+            logger.debug("[PromptManager] Using default English")
             return self._prompts[category][function]['default']['en']
 
         return None
@@ -371,4 +390,3 @@ class PromptManager:
 
 # Singleton instance
 prompt_manager = PromptManager()
-

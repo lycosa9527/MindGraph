@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 """
 Apply ip2region database patches from data/ip2region_issue folder.
 
@@ -16,7 +16,7 @@ import json
 import ipaddress
 import sys
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
 from datetime import datetime
 
 # Paths
@@ -29,7 +29,7 @@ def ip_to_int(ip: str) -> int:
     """Convert IP address to integer."""
     try:
         return int(ipaddress.IPv4Address(ip))
-    except:
+    except ValueError:
         return 0
 
 
@@ -44,13 +44,11 @@ def parse_patch_file(patch_path: Path) -> List[Dict]:
         # Try UTF-8 first, fallback to GBK/GB2312 for Windows compatibility
         encodings = ['utf-8', 'gbk', 'gb2312', 'utf-8-sig']
         content = None
-        encoding_used = None
 
         for enc in encodings:
             try:
                 with open(patch_path, 'r', encoding=enc) as f:
                     content = f.read()
-                    encoding_used = enc
                     break
             except UnicodeDecodeError:
                 continue
@@ -232,12 +230,11 @@ def apply_patches():
     test_ips = ['39.144.0.1', '39.144.10.5', '39.144.177.100']
 
     # Set console encoding for Windows to display Chinese correctly
-    import sys
     if sys.platform == 'win32':
         try:
             import io
             sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
-        except:
+        except (OSError, AttributeError):
             pass
 
     for test_ip in test_ips:

@@ -1,9 +1,8 @@
-﻿"""
+"""
 double bubble palette module.
 """
 from typing import Optional, Dict, Any, AsyncGenerator
 import logging
-import re
 
 from agents.node_palette.base_palette_generator import BasePaletteGenerator
 
@@ -117,42 +116,42 @@ class DoubleBubblePaletteGenerator(BasePaletteGenerator):
                 # Parse pipe-separated format: "left_attr | right_attr | dimension" (dimension is optional)
                 parts = text.split('|')  # Split on all pipes
                 if len(parts) >= 2:
-                        left_text = parts[0].strip()
-                        right_text = parts[1].strip()
-                        dimension = parts[2].strip() if len(parts) >= 3 else None
+                    left_text = parts[0].strip()
+                    right_text = parts[1].strip()
+                    dimension = parts[2].strip() if len(parts) >= 3 else None
 
-                        # Filter out invalid/unwanted nodes:
-                        # 1. Main topic names only (e.g., "福特 | 大众")
-                        if (left_text.lower() == left_topic_lower and right_text.lower() == right_topic_lower):
-                            logger.debug(f"[DoubleBubble] Skipping main topic node: '{left_text} | {right_text}'")
-                            continue
+                    # Filter out invalid/unwanted nodes:
+                    # 1. Main topic names only (e.g., "福特 | 大众")
+                    if (left_text.lower() == left_topic_lower and right_text.lower() == right_topic_lower):
+                        logger.debug(f"[DoubleBubble] Skipping main topic node: '{left_text} | {right_text}'")
+                        continue
 
-                        # 2. Empty or very short values (likely formatting artifacts)
-                        if len(left_text) < 2 or len(right_text) < 2:
-                            logger.debug(f"[DoubleBubble] Skipping too short: '{left_text} | {right_text}'")
-                            continue
+                    # 2. Empty or very short values (likely formatting artifacts)
+                    if len(left_text) < 2 or len(right_text) < 2:
+                        logger.debug(f"[DoubleBubble] Skipping too short: '{left_text} | {right_text}'")
+                        continue
 
-                        # 3. Markdown table separators (e.g., "| ---" or "---")
-                        if left_text.startswith('-') or right_text.startswith('-'):
-                            logger.debug(f"[DoubleBubble] Skipping markdown separator: '{left_text} | {right_text}'")
-                            continue
+                    # 3. Markdown table separators (e.g., "| ---" or "---")
+                    if left_text.startswith('-') or right_text.startswith('-'):
+                        logger.debug(f"[DoubleBubble] Skipping markdown separator: '{left_text} | {right_text}'")
+                        continue
 
-                        # 4. Header-like patterns containing "vs" or similar
-                        if ('vs' in left_text.lower() and 'vs' in right_text.lower()):
-                            logger.debug(f"[DoubleBubble] Skipping header pattern: '{left_text} | {right_text}'")
-                            continue
+                    # 4. Header-like patterns containing "vs" or similar
+                    if ('vs' in left_text.lower() and 'vs' in right_text.lower()):
+                        logger.debug(f"[DoubleBubble] Skipping header pattern: '{left_text} | {right_text}'")
+                        continue
 
-                        # Valid difference pair - add left, right, and optional dimension fields
-                        node['left'] = left_text
-                        node['right'] = right_text
-                        if dimension and len(dimension) > 0:
-                            node['dimension'] = dimension
-                        # Keep text as-is for backwards compatibility
-                        node['text'] = text
+                    # Valid difference pair - add left, right, and optional dimension fields
+                    node['left'] = left_text
+                    node['right'] = right_text
+                    if dimension and len(dimension) > 0:
+                        node['dimension'] = dimension
+                    # Keep text as-is for backwards compatibility
+                    node['text'] = text
 
-                        dim_info = f" | dimension='{dimension}'" if dimension else ""
-                        logger.debug(f"[DoubleBubble] Parsed pair successfully: left='{left_text}' | right='{right_text}'{dim_info}")
-                        logger.debug(f"[DoubleBubble] Node now has: {node.keys()}")
+                    dim_info = f" | dimension='{dimension}'" if dimension else ""
+                    logger.debug(f"[DoubleBubble] Parsed pair successfully: left='{left_text}' | right='{right_text}'{dim_info}")
+                    logger.debug(f"[DoubleBubble] Node now has: {node.keys()}")
                 else:
                     # Malformed pipe-separated format (has | but couldn't parse properly)
                     logger.warning(f"[DoubleBubble] DIFFERENCES mode - skipping malformed node: '{text}'")
@@ -189,11 +188,11 @@ class DoubleBubblePaletteGenerator(BasePaletteGenerator):
 
         # Build prompt based on mode
         if mode == 'similarities':
-            return self._build_similarities_prompt  # pylint: disable=protected-access(
+            return self._build_similarities_prompt(
                 left_topic, right_topic, context_desc, count, batch_num, language
             )
         else:  # differences
-            return self._build_differences_prompt  # pylint: disable=protected-access(
+            return self._build_differences_prompt(
                 left_topic, right_topic, context_desc, count, batch_num, language
             )
 

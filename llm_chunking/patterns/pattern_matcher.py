@@ -1,4 +1,4 @@
-﻿"""
+"""
 Pattern-based boundary detection for fast chunking.
 
 Uses heuristic rules and regex patterns to identify boundaries:
@@ -92,7 +92,6 @@ class PatternMatcher:
         Returns:
             Tuple of (splitter, is_whitespace)
         """
-        splitter_is_whitespace = True
 
         # Priority 1: Largest sequence of newlines/carriage returns
         if "\n" in text or "\r" in text:
@@ -372,7 +371,8 @@ class PatternMatcher:
         counter = token_counter or self.token_counter
         if not counter:
             # Fallback: use character-based estimation
-            counter = lambda t: len(t) // 4
+            def counter(t):
+                return len(t) // 4
 
         # Phase 2: Fixed separator first strategy (from Dify)
         fixed_sep = fixed_separator or self.fixed_separator
@@ -422,7 +422,7 @@ class PatternMatcher:
                 current_pos = pos + len(paragraph)
 
             # Phase 2: Use cumulative lengths and binary search for merging
-            cum_lens = list(accumulate([len(p) for p in paragraphs], initial=0))
+            list(accumulate([len(p) for p in paragraphs], initial=0))
 
             # Use cached lengths to determine boundaries
             for i, (paragraph, length, start_pos) in enumerate(zip(paragraphs, paragraph_lengths, paragraph_positions)):

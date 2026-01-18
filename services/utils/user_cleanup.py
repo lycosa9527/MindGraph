@@ -1,4 +1,4 @@
-﻿"""
+"""
 User Cleanup Service for Knowledge Space
 Author: lycosa9527
 Made by: MindSpring Team
@@ -17,7 +17,7 @@ from pathlib import Path
 
 from sqlalchemy.orm import Session
 
-from models.knowledge_space import DocumentChunk, KnowledgeDocument, KnowledgeSpace
+from models.knowledge_space import KnowledgeSpace
 from services.llm.qdrant_service import get_qdrant_service
 
 logger = logging.getLogger(__name__)
@@ -44,21 +44,16 @@ def cleanup_user_knowledge_space(db: Session, user_id: int) -> None:
         ).first()
 
         if not space:
-            logger.debug(f"[UserCleanup] No knowledge space found for user {user_id}")
+            logger.debug("[UserCleanup] No knowledge space found for user %s", user_id)
             return
-
-        # Get all documents
-        documents = db.query(KnowledgeDocument).filter(
-            KnowledgeDocument.space_id == space.id
-        ).all()
 
         # Delete Qdrant collection
         try:
             qdrant = get_qdrant_service()
             qdrant.delete_user_collection(user_id)
-            logger.info(f"[UserCleanup] Deleted Qdrant collection for user {user_id}")
+            logger.info("[UserCleanup] Deleted Qdrant collection for user %s", user_id)
         except Exception as e:
-            logger.error(f"[UserCleanup] Failed to delete Qdrant collection for user {user_id}: {e}")
+            logger.error("[UserCleanup] Failed to delete Qdrant collection for user %s: %s", user_id, e)
 
         # Delete files
         storage_dir = Path(os.getenv("KNOWLEDGE_STORAGE_DIR", "./storage/knowledge_documents"))
@@ -67,17 +62,17 @@ def cleanup_user_knowledge_space(db: Session, user_id: int) -> None:
         if user_dir.exists():
             try:
                 shutil.rmtree(user_dir)
-                logger.info(f"[UserCleanup] Deleted file storage for user {user_id}")
+                logger.info("[UserCleanup] Deleted file storage for user %s", user_id)
             except Exception as e:
-                logger.error(f"[UserCleanup] Failed to delete file storage for user {user_id}: {e}")
+                logger.error("[UserCleanup] Failed to delete file storage for user %s: %s", user_id, e)
 
         # Delete database records (cascade will handle chunks)
         db.delete(space)
         db.commit()
 
-        logger.info(f"[UserCleanup] Cleaned up knowledge space for user {user_id}")
+        logger.info("[UserCleanup] Cleaned up knowledge space for user %s", user_id)
 
     except Exception as e:
-        logger.error(f"[UserCleanup] Failed to cleanup knowledge space for user {user_id}: {e}")
+        logger.error("[UserCleanup] Failed to cleanup knowledge space for user %s: %s", user_id, e)
         db.rollback()
         raise

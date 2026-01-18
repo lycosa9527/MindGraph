@@ -1,11 +1,12 @@
-﻿from typing import Optional, Dict, Any, List
+from typing import Dict, Any
 import logging
 
-from fastapi import APIRouter, Depends, HTTPException, status, Request, Header
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 
 from models.auth import User
 from models.messages import Messages, Language
 from utils.auth import AUTH_MODE
+from ..dependencies import get_language_dependency, require_admin
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +20,7 @@ async def list_bayi_ip_whitelist(
 ) -> Dict[str, Any]:
     """List all whitelisted IPs for bayi mode (ADMIN ONLY)"""
     if AUTH_MODE != "bayi":
-        error_msg = Messages.error("feature_not_available", lang)
+        Messages.error("feature_not_available", lang)
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Bayi mode not enabled")
 
     try:
@@ -72,7 +73,7 @@ async def add_bayi_ip_whitelist(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Failed to add IP to whitelist"
             )
-    except ValueError as e:
+    except ValueError:
         error_msg = Messages.error("invalid_ip_address", lang, ip)
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
     except Exception as e:
@@ -108,7 +109,7 @@ async def remove_bayi_ip_whitelist(
         else:
             error_msg = f"IP {ip} not found in whitelist"
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
-    except ValueError as e:
+    except ValueError:
         error_msg = f"Invalid IP address format: {ip}"
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
     except HTTPException:

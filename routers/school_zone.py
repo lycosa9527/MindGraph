@@ -1,21 +1,4 @@
-﻿from datetime import datetime
-from typing import Optional
-import logging
-
-from fastapi import APIRouter, Depends, HTTPException, Query, status
-from pydantic import BaseModel, Field
-from sqlalchemy.orm import Session
-
-from config.database import get_db
-from models.auth import User
-from models.messages import Messages, Language
-from models.school_zone import SharedDiagram, SharedDiagramLike, SharedDiagramComment
-from routers.auth.dependencies import get_language_dependency
-from utils.auth import get_current_user
-
-"""
-School Zone Router
-==================
+"""School Zone Router.
 
 API endpoints for organization-scoped content sharing.
 Users can share MindMate courses and MindGraph diagrams within their organization.
@@ -27,6 +10,18 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+from datetime import datetime
+from typing import Optional
+import logging
+
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from pydantic import BaseModel, Field
+from sqlalchemy.orm import Session
+
+from config.database import get_db
+from models.auth import User
+from models.school_zone import SharedDiagram, SharedDiagramLike, SharedDiagramComment
+from utils.auth import get_current_user
 
 
 
@@ -67,6 +62,7 @@ class SharedDiagramResponse(BaseModel):
     is_liked: bool = False
 
     class Config:
+        """Pydantic configuration for SharedDiagramResponse."""
         from_attributes = True
 
 
@@ -83,6 +79,7 @@ class CommentResponse(BaseModel):
     created_at: str
 
     class Config:
+        """Pydantic configuration for SharedDiagramResponse."""
         from_attributes = True
 
 
@@ -90,8 +87,8 @@ class CommentResponse(BaseModel):
 # Helper Functions
 # =============================================================================
 
-def require_organization(user: User, lang: Language):
-    """Check that user belongs to an organization"""
+def require_organization(user: User):
+    """Check that user belongs to an organization."""
     if not user.organization_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -140,20 +137,19 @@ async def list_shared_diagrams(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
-    lang: Language = Depends(get_language_dependency)
+    db: Session = Depends(get_db)
 ):
     """
     List shared diagrams within the user's organization.
 
     Only returns diagrams shared by users in the same organization.
     """
-    require_organization(current_user, lang)
+    require_organization(current_user)
 
     # Build query - filter by organization
     query = db.query(SharedDiagram).filter(
         SharedDiagram.organization_id == current_user.organization_id,
-        SharedDiagram.is_active == True
+        SharedDiagram.is_active is True
     )
 
     # Apply content type filter
@@ -194,15 +190,14 @@ async def list_shared_diagrams(
 async def create_shared_diagram(
     data: SharedDiagramCreate,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
-    lang: Language = Depends(get_language_dependency)
+    db: Session = Depends(get_db)
 ):
     """
     Share a diagram with the organization.
 
     Creates a new shared diagram visible to all users in the same organization.
     """
-    require_organization(current_user, lang)
+    require_organization(current_user)
 
     # Create the shared diagram
     diagram = SharedDiagram(
@@ -221,7 +216,7 @@ async def create_shared_diagram(
     db.commit()
     db.refresh(diagram)
 
-    logger.info(f"User {current_user.id} shared diagram '{data.title}' in org {current_user.organization_id}")
+    logger.info("User %s shared diagram '%s' in org %s", current_user.id, data.title, current_user.organization_id)
 
     return {
         "message": "Diagram shared successfully",
@@ -233,20 +228,19 @@ async def create_shared_diagram(
 async def get_shared_diagram(
     post_id: str,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
-    lang: Language = Depends(get_language_dependency)
+    db: Session = Depends(get_db)
 ):
     """
     Get a specific shared diagram.
 
     Returns the diagram data including the full diagram_data for rendering.
     """
-    require_organization(current_user, lang)
+    require_organization(current_user)
 
     diagram = db.query(SharedDiagram).filter(
         SharedDiagram.id == post_id,
         SharedDiagram.organization_id == current_user.organization_id,
-        SharedDiagram.is_active == True
+        SharedDiagram.is_active is True
     ).first()
 
     if not diagram:
@@ -269,15 +263,14 @@ async def get_shared_diagram(
 async def delete_shared_diagram(
     post_id: str,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
-    lang: Language = Depends(get_language_dependency)
+    db: Session = Depends(get_db)
 ):
     """
     Delete a shared diagram.
 
     Only the author or organization managers can delete diagrams.
     """
-    require_organization(current_user, lang)
+    require_organization(current_user)
 
     diagram = db.query(SharedDiagram).filter(
         SharedDiagram.id == post_id,
@@ -304,7 +297,7 @@ async def delete_shared_diagram(
     diagram.is_active = False
     db.commit()
 
-    logger.info(f"User {current_user.id} deleted shared diagram {post_id}")
+    logger.info("User %s deleted shared diagram %s", current_user.id, post_id)
 
     return {"message": "Diagram deleted successfully"}
 
@@ -313,21 +306,20 @@ async def delete_shared_diagram(
 async def toggle_like(
     post_id: str,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
-    lang: Language = Depends(get_language_dependency)
+    db: Session = Depends(get_db)
 ):
     """
     Toggle like on a shared diagram.
 
     If already liked, removes the like. Otherwise, adds a like.
     """
-    require_organization(current_user, lang)
+    require_organization(current_user)
 
     # Check diagram exists and is in user's org
     diagram = db.query(SharedDiagram).filter(
         SharedDiagram.id == post_id,
         SharedDiagram.organization_id == current_user.organization_id,
-        SharedDiagram.is_active == True
+        SharedDiagram.is_active is True
     ).first()
 
     if not diagram:
@@ -372,19 +364,18 @@ async def list_comments(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
-    lang: Language = Depends(get_language_dependency)
+    db: Session = Depends(get_db)
 ):
     """
     List comments on a shared diagram.
     """
-    require_organization(current_user, lang)
+    require_organization(current_user)
 
     # Check diagram exists and is in user's org
     diagram = db.query(SharedDiagram).filter(
         SharedDiagram.id == post_id,
         SharedDiagram.organization_id == current_user.organization_id,
-        SharedDiagram.is_active == True
+        SharedDiagram.is_active is True
     ).first()
 
     if not diagram:
@@ -396,7 +387,7 @@ async def list_comments(
     # Get comments
     query = db.query(SharedDiagramComment).filter(
         SharedDiagramComment.diagram_id == post_id,
-        SharedDiagramComment.is_active == True
+        SharedDiagramComment.is_active is True
     ).order_by(SharedDiagramComment.created_at.desc())
 
     total = query.count()
@@ -427,19 +418,18 @@ async def create_comment(
     post_id: str,
     data: CommentCreate,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
-    lang: Language = Depends(get_language_dependency)
+    db: Session = Depends(get_db)
 ):
     """
     Add a comment to a shared diagram.
     """
-    require_organization(current_user, lang)
+    require_organization(current_user)
 
     # Check diagram exists and is in user's org
     diagram = db.query(SharedDiagram).filter(
         SharedDiagram.id == post_id,
         SharedDiagram.organization_id == current_user.organization_id,
-        SharedDiagram.is_active == True
+        SharedDiagram.is_active is True
     ).first()
 
     if not diagram:
@@ -481,15 +471,14 @@ async def delete_comment(
     post_id: str,
     comment_id: int,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
-    lang: Language = Depends(get_language_dependency)
+    db: Session = Depends(get_db)
 ):
     """
     Delete a comment.
 
     Only the comment author or organization managers can delete comments.
     """
-    require_organization(current_user, lang)
+    require_organization(current_user)
 
     # SECURITY: First verify the diagram belongs to user's organization
     diagram = db.query(SharedDiagram).filter(
@@ -532,21 +521,19 @@ async def delete_comment(
 
     db.commit()
 
-    logger.info(f"User {current_user.id} deleted comment {comment_id} on diagram {post_id}")
+    logger.info("User %s deleted comment %s on diagram %s", current_user.id, comment_id, post_id)
 
     return {"message": "Comment deleted successfully"}
 
 
 @router.get("/categories")
 async def list_categories(
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
-    lang: Language = Depends(get_language_dependency)
+    current_user: User = Depends(get_current_user)
 ):
     """
     Get list of available categories for school zone content.
     """
-    require_organization(current_user, lang)
+    require_organization(current_user)
 
     # Return predefined categories
     categories = [

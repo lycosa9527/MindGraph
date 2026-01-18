@@ -24,7 +24,6 @@ from fastapi.responses import FileResponse, RedirectResponse
 from sqlalchemy.exc import IntegrityError
 
 from config.database import SessionLocal
-from config.settings import config
 from models.auth import User, Organization
 from services.redis.redis_session_manager import get_session_manager
 from utils.auth import (
@@ -129,7 +128,7 @@ async def login_by_xz(
                             Organization.code == BAYI_DEFAULT_ORG_CODE
                         ).first()
                         if not org:
-                            logger.error(f"Failed to create or retrieve bayi organization")
+                            logger.error("Failed to create or retrieve bayi organization")
                             return RedirectResponse(url="/demo", status_code=303)
                         # Cache the org that was created by another request (race condition)
                         try:
@@ -187,7 +186,7 @@ async def login_by_xz(
                         logger.debug(f"User creation race condition (expected): {e}")
                         bayi_user = db.query(User).filter(User.phone == user_phone).first()
                         if not bayi_user:
-                            logger.error(f"Failed to create or retrieve bayi IP user after race condition")
+                            logger.error("Failed to create or retrieve bayi IP user after race condition")
                             return RedirectResponse(url="/demo", status_code=303)
                         # Cache the user that was created by another request (race condition)
                         try:
@@ -309,7 +308,7 @@ async def login_by_xz(
             # Invalid or expired token: redirect to demo passkey page
             return RedirectResponse(url="/demo", status_code=303)
 
-        logger.info(f"Token validation passed - proceeding with user creation/retrieval")
+        logger.info("Token validation passed - proceeding with user creation/retrieval")
 
         # Mark token as used (replay attack prevention) and cache validation result
         try:

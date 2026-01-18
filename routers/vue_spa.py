@@ -3,7 +3,7 @@
 from fastapi import APIRouter, Request
 from fastapi.responses import FileResponse, HTMLResponse
 
-from services.infrastructure.spa_handler import VUE_DIST_DIR, is_vue_spa_available
+from services.infrastructure.spa_handler import VUE_DIST_DIR
 
 """
 Vue SPA Router

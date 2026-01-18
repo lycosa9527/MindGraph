@@ -78,7 +78,7 @@ async def _check_application_health() -> Dict[str, Any]:
 async def _check_redis_health() -> Dict[str, Any]:
     """Check Redis health status with timeout."""
     try:
-        from services.redis.redis_client import is_redis_available, redis_ops
+        from services.redis.redis_client import is_redis_available, RedisOps
 
         if not is_redis_available():
             return {
@@ -88,13 +88,13 @@ async def _check_redis_health() -> Dict[str, Any]:
 
         # Add timeout protection
         ping_result = await asyncio.wait_for(
-            asyncio.to_thread(redis_ops.ping),
+            asyncio.to_thread(RedisOps.ping),
             timeout=2.0
         )
 
         if ping_result:
             info = await asyncio.wait_for(
-                asyncio.to_thread(redis_ops.info, "server"),
+                asyncio.to_thread(RedisOps.info, "server"),
                 timeout=2.0
             )
             # Check if info() returned empty dict (indicates failure)
@@ -241,7 +241,7 @@ async def redis_health_check():
 
     Returns Redis connection status.
     """
-    from services.redis.redis_client import is_redis_available, redis_ops
+    from services.redis.redis_client import is_redis_available, RedisOps
 
     if not is_redis_available():
         return {
@@ -251,8 +251,8 @@ async def redis_health_check():
 
     try:
         # Test connection
-        if redis_ops.ping():
-            info = redis_ops.info("server")
+        if RedisOps.ping():
+            info = RedisOps.info("server")
             return {
                 "status": "healthy",
                 "version": info.get("redis_version", "unknown"),
@@ -369,11 +369,7 @@ async def comprehensive_health_check(
         - Hit rate limits
         Use ?include_llm=true only when you need to verify LLM connectivity.
     """
-    from fastapi import Request
-    from fastapi import Request as FastAPIRequest
     # Import app lazily to avoid circular import
-    import main  # pylint: disable=import-outside-toplevel
-    app = main.app
 
     # Use single timestamp for consistency
     check_timestamp = int(time.time())
@@ -384,7 +380,7 @@ async def comprehensive_health_check(
 
     # Execute independent checks in parallel for better performance
     tasks = [
-        _check_application_health(app),
+        _check_application_health(),
         _check_redis_health(),
         _check_database_health(),
     ]

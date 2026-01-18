@@ -1,9 +1,8 @@
-﻿"""
+"""
 bridge map palette module.
 """
 from typing import Optional, Dict, Any, AsyncGenerator
 import logging
-import re
 
 from agents.node_palette.base_palette_generator import BasePaletteGenerator
 

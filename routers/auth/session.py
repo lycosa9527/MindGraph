@@ -1,4 +1,4 @@
-﻿"""
+"""
 Session Management Endpoints
 ============================
 
@@ -16,7 +16,7 @@ Proprietary License
 import hashlib
 import logging
 from datetime import datetime
-from typing import
+from typing import Optional
 
 from jose import jwt, JWTError
 
@@ -24,8 +24,8 @@ from fastapi import APIRouter, Depends, Request, Response, Header, HTTPException
 from sqlalchemy.orm import Session
 
 from config.database import get_db
-from models.auth import
-from models.messages import
+from models.auth import User
+from models.messages import Messages, get_request_language, Language
 from services.redis.redis_activity_tracker import get_activity_tracker
 from services.redis.redis_org_cache import org_cache
 from services.redis.redis_rate_limiter import RedisRateLimiter
@@ -34,7 +34,7 @@ from services.redis.redis_user_cache import user_cache
 from utils.auth import (
     get_current_user, get_user_role, is_https, get_client_ip,
     create_access_token, create_refresh_token, hash_refresh_token, compute_device_hash,
-    ACCESS_TOKEN_EXPIRY_MINUTES, REFRESH_TOKEN_EXPIRY_DAYS, get_jwt_secret, JWT_ALGORITHM
+    ACCESS_TOKEN_EXPIRY_MINUTES
 )
 
 from .dependencies import get_language_dependency
@@ -295,7 +295,7 @@ async def get_session_status(
         - {"status": "invalidated", "message": "...", "timestamp": "..."} - Session was invalidated
     """
     accept_language = request.headers.get("Accept-Language", "")
-    lang: Language = get_request_language(x_language, accept_language)
+    get_request_language(x_language, accept_language)
     client_ip = get_client_ip(request)
 
     logger.info(f"[TokenAudit] /session-status called: user={current_user.id}, ip={client_ip}")
@@ -423,6 +423,5 @@ async def logout(
 
     logger.info(f"[TokenAudit] Logout: user={current_user.id}, phone={current_user.phone}, ip={client_ip}")
 
-    from models.messages import
     return {"message": Messages.success("logged_out", lang)}
 

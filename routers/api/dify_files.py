@@ -1,4 +1,5 @@
-﻿from typing import
+from typing import Optional
+import aiohttp
 import logging
 import os
 

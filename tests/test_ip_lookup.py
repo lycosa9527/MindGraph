@@ -23,7 +23,7 @@ def import_ip_geolocation():
     try:
         spec.loader.exec_module(module)
         return module
-    except ImportError as e:
+    except ImportError:
         # If redis_client import fails, try to mock it
         import types
         # Create a mock redis_client module
@@ -111,7 +111,7 @@ async def test_ip_lookup():
         
         if location:
             print("   [OK] Lookup successful!")
-            print(f"\n   Location Details:")
+            print("\n   Location Details:")
             print(f"     Province: {location.get('province', 'N/A')}")
             print(f"     City: {location.get('city', 'N/A')}")
             print(f"     Country: {location.get('country', 'N/A')}")

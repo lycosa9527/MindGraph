@@ -111,12 +111,12 @@ class TestIPGeolocationService:
         # If IPv4 database exists, searcher should be initialized
         if DB_FILE_PATH_V4.exists():
             assert service.searcher_v4 is not None, "IPv4 searcher should be initialized"
-            print(f"IPv4 database initialized successfully")
+            print("IPv4 database initialized successfully")
         
         # If IPv6 database exists, searcher should be initialized
         if DB_FILE_PATH_V6.exists():
             assert service.searcher_v6 is not None, "IPv6 searcher should be initialized"
-            print(f"IPv6 database initialized successfully")
+            print("IPv6 database initialized successfully")
     
     @pytest.mark.asyncio
     async def test_invalid_ip_handling(self):

@@ -1,14 +1,12 @@
-﻿from typing import Optional, Tuple
-
-from services.infrastructure.error_handler import (
-
 """
 429 Rate Limit Error Parser
 ============================
 
 Handles rate limiting and quota exhaustion errors.
 """
+from typing import Optional, Tuple
 
+from services.infrastructure.error_handler import (
     LLMRateLimitError,
     LLMQuotaExhaustedError
 )

@@ -3,7 +3,6 @@ from pathlib import Path
 from typing import AsyncGenerator, Dict, Optional, List
 import asyncio
 import logging
-import os
 import re
 
 
@@ -79,7 +78,6 @@ class LogStreamer:
             base_name = base_name[:-4]
 
         # Pattern: base_name.YYYY-MM-DD_HH-MM-SS.log
-        pattern = f"{base_name}.*.log"
         matching_files = []
 
         try:

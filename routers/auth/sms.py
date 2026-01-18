@@ -1,21 +1,3 @@
-﻿"""
-sms module.
-"""
-from typing import Optional
-import logging
-
-from fastapi import APIRouter, Depends, HTTPException, Header, Request, status
-from sqlalchemy.orm import Session
-
-from config.database import get_db
-from models.messages import Messages, get_request_language, Language
-from models.requests import SendSMSCodeRequest, SendSMSCodeSimpleRequest, VerifySMSCodeRequest
-from services.auth.sms_middleware import (
-from services.redis.redis_rate_limiter import get_rate_limiter
-from services.redis.redis_sms_storage import get_sms_storage
-from services.redis.redis_user_cache import user_cache
-from utils.auth import AUTH_MODE
-
 """
 SMS Verification Endpoints
 ==========================
@@ -29,9 +11,15 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+import logging
 
+from fastapi import APIRouter, Depends, HTTPException, Request, status
+from sqlalchemy.orm import Session
 
-
+from config.database import get_db
+from models.messages import Messages, Language
+from models.requests import SendSMSCodeRequest, SendSMSCodeSimpleRequest, VerifySMSCodeRequest
+from services.auth.sms_middleware import (
     get_sms_middleware,
     SMSServiceError,
     SMS_CODE_EXPIRY_MINUTES,
@@ -39,6 +27,13 @@ Proprietary License
     SMS_MAX_ATTEMPTS_PER_PHONE,
     SMS_MAX_ATTEMPTS_WINDOW_HOURS
 )
+from services.redis.redis_rate_limiter import get_rate_limiter
+from services.redis.redis_sms_storage import get_sms_storage
+from services.redis.redis_user_cache import user_cache
+from utils.auth import AUTH_MODE
+
+from .captcha import verify_captcha_with_retry
+from .dependencies import get_language_dependency
 
 logger = logging.getLogger(__name__)
 

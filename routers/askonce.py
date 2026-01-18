@@ -1,4 +1,4 @@
-﻿from typing import
+from typing import List, Optional
 import asyncio
 import json
 import logging
@@ -7,7 +7,6 @@ from fastapi import APIRouter, HTTPException, Request, Depends
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
-from config.settings import config
 from routers.auth.dependencies import get_current_user_optional
 from services.llm import llm_service
 

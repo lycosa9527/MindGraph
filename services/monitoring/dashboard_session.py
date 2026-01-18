@@ -1,10 +1,10 @@
-﻿from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Optional, Dict
 import json
 import logging
-import os
+import secrets
 
-from services.redis.redis_client import is_redis_available, redis_ops, get_redis
+from services.redis.redis_client import is_redis_available, get_redis
 
 """
 Dashboard Session Manager Service

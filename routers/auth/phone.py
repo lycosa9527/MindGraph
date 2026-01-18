@@ -1,4 +1,4 @@
-﻿"""
+"""
 Phone Number Change Endpoints
 =============================
 
@@ -12,14 +12,13 @@ Proprietary License
 """
 
 import logging
-from typing import
 
-from fastapi import APIRouter, Depends, HTTPException, Header, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
 from config.database import get_db
-from models.auth import
-from models.messages import
+from models.auth import User
+from models.messages import Messages, Language
 from models.requests import SendChangePhoneSMSRequest, ChangePhoneRequest
 from services.redis.redis_sms_storage import get_sms_storage
 from services.redis.redis_rate_limiter import get_rate_limiter

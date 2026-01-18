@@ -1,4 +1,4 @@
-﻿from typing import
+from typing import Optional
 
 from fastapi import Depends, Header, HTTPException, Request, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials

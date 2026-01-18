@@ -1,14 +1,11 @@
-﻿from pathlib import Path
-from typing import
+from pathlib import Path
+from typing import List, Optional
 import logging
-import os
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
 from pydantic import BaseModel
-from sqlalchemy.orm import Session
 
-from config.database import get_db
 from models.auth import User
 from services.utils.update_notifier import update_notifier
 from utils.auth import get_current_user, is_admin

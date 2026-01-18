@@ -1,14 +1,12 @@
-﻿from typing import Optional, Tuple
-
-from services.infrastructure.error_handler import (
-
 """
 Content Filter Error Parser
 ============================
 
 Handles content filtering and policy violation errors.
 """
+from typing import Optional, Tuple
 
+from services.infrastructure.error_handler import (
     LLMQuotaExhaustedError,
     LLMContentFilterError
 )

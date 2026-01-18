@@ -1,4 +1,4 @@
-﻿"""
+"""
 Redis Organization Cache Service
 ================================
 
@@ -29,7 +29,7 @@ import logging
 from typing import Optional, Dict
 from datetime import datetime
 
-from services.redis.redis_client import is_redis_available, redis_ops, get_redis
+from services.redis.redis_client import is_redis_available, RedisOps, get_redis
 from config.database import SessionLocal
 from models.auth import Organization
 
@@ -174,7 +174,7 @@ class OrganizationCache:
         try:
             # Try cache read
             key = f"{ORG_KEY_PREFIX}{org_id}"
-            cached = redis_ops.hash_get_all(key)
+            cached = RedisOps.hash_get_all(key)
 
             if cached:
                 try:
@@ -186,7 +186,7 @@ class OrganizationCache:
                     logger.error(f"[OrgCache] Corrupted cache for org ID {org_id}: {e}", exc_info=True)
                     # Invalidate corrupted entry
                     try:
-                        redis_ops.delete(key)
+                        RedisOps.delete(key)
                     except Exception:
                         pass
                     # Fallback to SQLite
@@ -218,7 +218,7 @@ class OrganizationCache:
         try:
             # Try cache index lookup
             index_key = f"{ORG_CODE_INDEX_PREFIX}{code}"
-            org_id_str = redis_ops.get(index_key)
+            org_id_str = RedisOps.get(index_key)
 
             if org_id_str:
                 try:
@@ -229,7 +229,7 @@ class OrganizationCache:
                     logger.error(f"[OrgCache] Invalid org ID in code index for {code}: {e}")
                     # Invalidate corrupted index
                     try:
-                        redis_ops.delete(index_key)
+                        RedisOps.delete(index_key)
                     except Exception:
                         pass
                     # Fallback to SQLite
@@ -262,7 +262,7 @@ class OrganizationCache:
         try:
             # Try cache index lookup
             index_key = f"{ORG_INVITE_INDEX_PREFIX}{invite_code}"
-            org_id_str = redis_ops.get(index_key)
+            org_id_str = RedisOps.get(index_key)
 
             if org_id_str:
                 try:
@@ -274,7 +274,7 @@ class OrganizationCache:
                     logger.error(f"[OrgCache] Invalid org ID in invite index for {masked_invite}: {e}")
                     # Invalidate corrupted index
                     try:
-                        redis_ops.delete(index_key)
+                        RedisOps.delete(index_key)
                     except Exception:
                         pass
                     # Fallback to SQLite
@@ -310,7 +310,7 @@ class OrganizationCache:
 
             # Store org hash
             org_key = f"{ORG_KEY_PREFIX}{org.id}"
-            success = redis_ops.hash_set(org_key, org_dict)
+            success = RedisOps.hash_set(org_key, org_dict)
 
             if not success:
                 logger.warning(f"[OrgCache] Failed to cache org ID {org.id}")
@@ -355,17 +355,17 @@ class OrganizationCache:
         try:
             # Delete org hash
             org_key = f"{ORG_KEY_PREFIX}{org_id}"
-            redis_ops.delete(org_key)
+            RedisOps.delete(org_key)
 
             # Delete code index
             if code:
                 code_index_key = f"{ORG_CODE_INDEX_PREFIX}{code}"
-                redis_ops.delete(code_index_key)
+                RedisOps.delete(code_index_key)
 
             # Delete invitation code index
             if invite_code:
                 invite_index_key = f"{ORG_INVITE_INDEX_PREFIX}{invite_code}"
-                redis_ops.delete(invite_index_key)
+                RedisOps.delete(invite_index_key)
 
             logger.info(f"[OrgCache] Invalidated cache for org ID {org_id}")
             logger.debug(f"[OrgCache] Deleted cache keys: org:{org_id}, org:code:{code}, org:invite:{invite_code}")

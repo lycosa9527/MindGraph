@@ -1,10 +1,3 @@
-﻿from typing import Optional, Tuple
-import hashlib
-import logging
-
-from services.redis.redis_client import is_redis_available, redis_ops
-from services.redis.redis_rate_limiter import RedisRateLimiter
-
 """
 Redis Bayi Token Tracking Service
 ==================================
@@ -28,6 +21,13 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+from typing import Optional, Tuple
+import hashlib
+import logging
+import time
+
+from services.redis.redis_client import is_redis_available, RedisOps
+from services.redis.redis_rate_limiter import RedisRateLimiter
 
 
 
@@ -94,13 +94,13 @@ class BayiTokenTracker:
 
         try:
             # Check if token hash exists in Redis
-            exists = redis_ops.exists(key)
+            exists = RedisOps.exists(key)
             if exists:
-                logger.debug(f"[BayiToken] Token already used (replay attack prevented)")
+                logger.debug("[BayiToken] Token already used (replay attack prevented)")
                 return True
             return False
         except Exception as e:
-            logger.warning(f"[BayiToken] Redis error checking token usage, allowing request: {e}")
+            logger.warning("[BayiToken] Redis error checking token usage, allowing request: %s", e)
             # Fail-open: if Redis fails, allow request (backward compatibility)
             return False
 
@@ -123,14 +123,13 @@ class BayiTokenTracker:
         try:
             # Store token hash with TTL (matches token expiration)
             # Use current timestamp as value (for potential audit trail)
-            import time
             timestamp = str(int(time.time()))
-            success = redis_ops.set_with_ttl(key, timestamp, TOKEN_TTL)
+            success = RedisOps.set_with_ttl(key, timestamp, TOKEN_TTL)
             if success:
-                logger.debug(f"[BayiToken] Marked token as used (TTL: {TOKEN_TTL}s)")
+                logger.debug("[BayiToken] Marked token as used (TTL: %ss)", TOKEN_TTL)
             return success
         except Exception as e:
-            logger.warning(f"[BayiToken] Failed to mark token as used: {e}")
+            logger.warning("[BayiToken] Failed to mark token as used: %s", e)
             return False
 
     def is_token_validated(self, token: str) -> Optional[bool]:
@@ -150,16 +149,16 @@ class BayiTokenTracker:
         key = f"{TOKEN_VALID_PREFIX}{token_hash}"
 
         try:
-            cached = redis_ops.get(key)
+            cached = RedisOps.get(key)
             if cached == "1":
-                logger.debug(f"[BayiToken] Token validation cached (valid)")
+                logger.debug("[BayiToken] Token validation cached (valid)")
                 return True
             elif cached == "0":
-                logger.debug(f"[BayiToken] Token validation cached (invalid)")
+                logger.debug("[BayiToken] Token validation cached (invalid)")
                 return False
             return None  # Not cached
         except Exception as e:
-            logger.warning(f"[BayiToken] Redis error checking validation cache: {e}")
+            logger.warning("[BayiToken] Redis error checking validation cache: %s", e)
             return None
 
     def cache_token_validation(self, token: str, valid: bool) -> bool:
@@ -182,12 +181,12 @@ class BayiTokenTracker:
         try:
             # Cache validation result with TTL (matches token expiration)
             value = "1" if valid else "0"
-            success = redis_ops.set_with_ttl(key, value, TOKEN_TTL)
+            success = RedisOps.set_with_ttl(key, value, TOKEN_TTL)
             if success:
-                logger.debug(f"[BayiToken] Cached token validation result: {valid} (TTL: {TOKEN_TTL}s)")
+                logger.debug("[BayiToken] Cached token validation result: %s (TTL: %ss)", valid, TOKEN_TTL)
             return success
         except Exception as e:
-            logger.warning(f"[BayiToken] Failed to cache token validation: {e}")
+            logger.warning("[BayiToken] Failed to cache token validation: %s", e)
             return False
 
     def check_rate_limit(self, ip: str) -> Tuple[bool, int, str]:
@@ -220,38 +219,12 @@ class BayiTokenTracker:
         return self._rate_limiter.clear("bayi_token", ip)
 
 
-# Singleton instance
-_bayi_token_instance: Optional[BayiTokenTracker] = None
-
-
 def get_bayi_token_tracker() -> BayiTokenTracker:
     """Get singleton instance of BayiTokenTracker."""
-    global _bayi_token_instance
-    if _bayi_token_instance is None:
-        _bayi_token_instance = BayiTokenTracker()
-    return _bayi_token_instance
+    if not hasattr(get_bayi_token_tracker, '_instance'):
+        setattr(get_bayi_token_tracker, '_instance', BayiTokenTracker())
+    return getattr(get_bayi_token_tracker, '_instance')
 
 
 # Convenience alias
 bayi_token_tracker = get_bayi_token_tracker()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

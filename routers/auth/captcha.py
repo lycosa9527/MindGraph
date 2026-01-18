@@ -1,17 +1,3 @@
-﻿from typing import
-import asyncio
-import base64
-import logging
-import random
-import uuid
-
-from fastapi import APIRouter, HTTPException, Header, Request, Response, status
-
-from models.messages import Messages, get_request_language, Language
-from services.auth.captcha_storage import get_captcha_storage
-from services.redis.redis_rate_limiter import check_captcha_rate_limit
-from utils.auth import (
-
 """
 Captcha Endpoints
 =================
@@ -24,9 +10,19 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+from typing import Optional, Tuple
+import asyncio
+import base64
+import logging
+import random
+import uuid
 
+from fastapi import APIRouter, HTTPException, Header, Request, Response, status
 
-
+from models.messages import Messages, get_request_language, Language
+from services.auth.captcha_storage import get_captcha_storage
+from services.redis.redis_rate_limiter import check_captcha_rate_limit
+from utils.auth import (
     CAPTCHA_SESSION_COOKIE_NAME,
     RATE_LIMIT_WINDOW_MINUTES,
     is_https

@@ -60,7 +60,7 @@ def process_document_task(self, user_id: int, document_id: int):
     except Exception as e:
         import traceback
         logger.error(f"[KnowledgeSpaceTask] ✗ Failed to process document {document_id} for user {user_id}: {e}")
-        logger.error(f"[KnowledgeSpaceTask] Full traceback:")
+        logger.error("[KnowledgeSpaceTask] Full traceback:")
         logger.error(traceback.format_exc())
         logger.error(f"[KnowledgeSpaceTask] Exception type: {type(e).__name__}")
         logger.error(f"[KnowledgeSpaceTask] Exception args: {e.args}")

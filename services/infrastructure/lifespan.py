@@ -31,6 +31,7 @@ async def lifespan(fastapi_app: FastAPI):
     Handles application initialization and cleanup.
     """
     # Startup
+    logger.info("[LIFESPAN] Starting lifespan initialization...")
     fastapi_app.state.start_time = time.time()
     fastapi_app.state.is_shutting_down = False
 
@@ -38,6 +39,7 @@ async def lifespan(fastapi_app: FastAPI):
     import signal
     signal.signal(signal.SIGINT, _handle_shutdown_signal)
     signal.signal(signal.SIGTERM, _handle_shutdown_signal)
+    logger.info("[LIFESPAN] Signal handlers registered")
 
     # Only log startup banner from first worker to avoid repetition
     worker_id = os.getenv('UVICORN_WORKER_ID', '0')
@@ -48,6 +50,7 @@ async def lifespan(fastapi_app: FastAPI):
 
     # Initialize Redis (REQUIRED for caching, rate limiting, sessions)
     # Application will exit if Redis is not available
+    logger.info("[LIFESPAN] Initializing Redis...")
     try:
         init_redis_sync()
         if worker_id == '0' or not worker_id:
@@ -61,6 +64,7 @@ async def lifespan(fastapi_app: FastAPI):
 
     # Check system dependencies for Knowledge Space feature (Tesseract OCR)
     # Application will exit if required dependencies are missing
+    logger.info("[LIFESPAN] Checking system dependencies...")
     if worker_id == '0' or not worker_id:
         try:
             if not check_system_dependencies(exit_on_error=True):
@@ -80,6 +84,7 @@ async def lifespan(fastapi_app: FastAPI):
     # Frontend assets are now served from frontend/dist/ via Vue SPA handler
 
     # Initialize Database with corruption detection and recovery
+    logger.info("[LIFESPAN] Initializing database...")
     try:
         # pylint: disable=import-outside-toplevel
         from config.database import init_db
@@ -89,6 +94,7 @@ async def lifespan(fastapi_app: FastAPI):
         # Check database integrity on startup (uses Redis lock to ensure only one worker checks)
         # Note: Removed worker_id check - Redis lock handles multi-worker coordination
         # If corruption is detected, interactive recovery wizard is triggered
+        logger.info("[LIFESPAN] Checking database integrity...")
         if not check_database_on_startup():
             logger.critical("Database recovery failed or was aborted. Shutting down.")
             raise SystemExit(1)
@@ -96,6 +102,7 @@ async def lifespan(fastapi_app: FastAPI):
         if worker_id == '0' or not worker_id:
             logger.info("Database integrity verified")
 
+        logger.info("[LIFESPAN] Initializing database connection...")
         init_db()
         if worker_id == '0' or not worker_id:
             logger.info("Database initialized successfully")
@@ -104,6 +111,7 @@ async def lifespan(fastapi_app: FastAPI):
 
         # Load cache from SQLite and IP geolocation database in parallel to save startup time
         # Note: Both use Redis lock/distributed coordination to ensure only one worker loads
+        logger.info("[LIFESPAN] Loading cache and IP database...")
         def load_user_cache():
             """Load user cache from SQLite (runs in thread pool)."""
             try:
@@ -262,6 +270,7 @@ async def lifespan(fastapi_app: FastAPI):
             logger.warning("Failed to initialize diagram cache: %s", e)
 
     # Yield control to application
+    logger.info("[LIFESPAN] Startup complete, yielding to application...")
     try:
         yield
     finally:

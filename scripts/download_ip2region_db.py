@@ -9,7 +9,6 @@ Usage:
     python scripts/download_ip2region_db.py
 """
 
-import os
 import sys
 import urllib.request
 import httpx

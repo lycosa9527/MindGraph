@@ -1,14 +1,12 @@
-﻿from typing import Optional, Tuple
-
-from services.infrastructure.error_handler import (
-
 """
 500 Internal Server Error and 503 Service Unavailable Error Parsers
 ====================================================================
 
 Handles server-side errors and service unavailability.
 """
+from typing import Optional, Tuple
 
+from services.infrastructure.error_handler import (
     LLMTimeoutError,
     LLMProviderError,
     LLMServiceError

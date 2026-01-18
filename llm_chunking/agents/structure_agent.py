@@ -101,11 +101,11 @@ class StructureAgent:
         except Exception as e:
             import traceback
             logger.error(f"[StructureAgent] ✗ Failed to create DocumentStructure: {e}")
-            logger.error(f"[StructureAgent] Full traceback:")
+            logger.error("[StructureAgent] Full traceback:")
             logger.error(traceback.format_exc())
             logger.error(f"[StructureAgent] Exception type: {type(e).__name__}")
             logger.error(f"[StructureAgent] Exception args: {e.args}")
-            logger.error(f"[StructureAgent] DocumentStructure import check:")
+            logger.error("[StructureAgent] DocumentStructure import check:")
             try:
                 from llm_chunking.models import DocumentStructure as DS
                 logger.error(f"[StructureAgent] DocumentStructure imported successfully: {DS}")

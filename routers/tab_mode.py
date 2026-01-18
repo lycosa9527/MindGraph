@@ -1,4 +1,4 @@
-﻿from typing import
+from typing import Optional
 import logging
 import time
 
@@ -6,12 +6,21 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from agents.tab_mode import TabAgent
 from config.settings import config
-from config.settings import config
 from models import Messages, get_request_language
 from models.auth import User
 from models.requests import TabExpandRequest, TabSuggestionRequest
 from models.responses import TabExpandChild, TabExpandResponse, TabSuggestionItem, TabSuggestionResponse
+from utils.auth import get_current_user_or_api_key
 from services.infrastructure.error_handler import (
+    LLMServiceError,
+    LLMContentFilterError,
+    LLMRateLimitError,
+    LLMTimeoutError,
+    LLMInvalidParameterError,
+    LLMQuotaExhaustedError,
+    LLMModelNotFoundError,
+    LLMAccessDeniedError
+)
 
 """
 Tab Mode Router
@@ -27,18 +36,6 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
-
-
-
-    LLMServiceError,
-    LLMContentFilterError,
-    LLMRateLimitError,
-    LLMTimeoutError,
-    LLMInvalidParameterError,
-    LLMQuotaExhaustedError,
-    LLMModelNotFoundError,
-    LLMAccessDeniedError
-)
 
 logger = logging.getLogger(__name__)
 

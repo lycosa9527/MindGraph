@@ -1,19 +1,3 @@
-﻿from typing import List, Dict, Any, Optional, Union
-import logging
-
-from llm_chunking.agents.boundary_agent import BoundaryAgent
-from llm_chunking.agents.structure_agent import StructureAgent
-from llm_chunking.models import (
-from llm_chunking.optimizations.batch_processor import BatchProcessor
-from llm_chunking.optimizations.cache_manager import CacheManager
-from llm_chunking.optimizations.sampler import DocumentSampler
-from llm_chunking.patterns.embedding_boundary_detector import EmbeddingBoundaryDetector
-from llm_chunking.patterns.pattern_matcher import PatternMatcher
-from llm_chunking.patterns.toc_detector import TOCDetector
-from llm_chunking.structures import (
-from llm_chunking.utils.token_counter import TokenCounter
-from llm_chunking.utils.validators import ChunkValidator
-
 """
 Main LLM-based semantic chunker.
 
@@ -24,18 +8,26 @@ Orchestrates the complete chunking workflow:
 4. LLM refinement for unclear boundaries (20% of chunks)
 5. Validate and return chunks
 """
+from typing import List, Dict, Any, Optional, Union
+import logging
 
+from llm_chunking.agents.boundary_agent import BoundaryAgent
+from llm_chunking.agents.structure_agent import StructureAgent
+from llm_chunking.models import (
     Chunk,
     ParentChunk,
     ChildChunk,
     QAChunk,
     DocumentStructure,
 )
-    GeneralStructure,
-    ParentChildStructure,
-    QAStructure,
-    get_structure,
-)
+from llm_chunking.optimizations.batch_processor import BatchProcessor
+from llm_chunking.optimizations.cache_manager import CacheManager
+from llm_chunking.optimizations.sampler import DocumentSampler
+from llm_chunking.patterns.embedding_boundary_detector import EmbeddingBoundaryDetector
+from llm_chunking.patterns.pattern_matcher import PatternMatcher
+from llm_chunking.patterns.toc_detector import TOCDetector
+from llm_chunking.utils.token_counter import TokenCounter
+from llm_chunking.utils.validators import ChunkValidator
 
 logger = logging.getLogger(__name__)
 
@@ -103,7 +95,7 @@ class LLMSemanticChunker:
                     "embedding-based chunking will be disabled"
                 )
                 self.embedding_detector = None
-        except Exception as  # pylint: disable=broad-except e:
+        except Exception as e:  # pylint: disable=broad-except
             logger.warning(f"[LLMSemanticChunker] Failed to initialize embedding detector: {e}")
             self.embedding_detector = None
 
@@ -201,12 +193,12 @@ class LLMSemanticChunker:
 
             return chunks
 
-        except Exception as  # pylint: disable=broad-except e:
+        except Exception as e:  # pylint: disable=broad-except
             import traceback
             logger.error(
                 f"[LLMSemanticChunker] ✗ Error during chunking for doc_id={document_id}: {e}"
             )
-            logger.error(f"[LLMSemanticChunker] Full traceback:")
+            logger.error("[LLMSemanticChunker] Full traceback:")
             logger.error(traceback.format_exc())
             logger.error(f"[LLMSemanticChunker] Exception type: {type(e).__name__}")
             logger.error(f"[LLMSemanticChunker] Exception args: {e.args}")

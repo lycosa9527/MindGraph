@@ -1,4 +1,4 @@
-﻿from typing import List
+from typing import List, Optional
 import json
 import logging
 
@@ -219,7 +219,7 @@ Return JSON array:
 
                 types = []
                 for result in results:
-                    text_idx = result.get("text", 1) - 1
+                    result.get("text", 1) - 1
                     content_type = result.get("content_type", "theory")
                     types.append(content_type)
 

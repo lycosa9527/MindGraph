@@ -24,14 +24,7 @@ from threading import Lock
 
 
 if TYPE_CHECKING:
-    from clients.llm import (
-        QwenClient,
-        DeepSeekClient,
-        KimiClient,
-        HunyuanClient,
-        VolcengineClient
-    )
-    from clients.omni_client import OmniClient
+    pass
 
 logger = logging.getLogger(__name__)
 

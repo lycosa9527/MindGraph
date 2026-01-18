@@ -1,4 +1,4 @@
-﻿from typing import
+from typing import Dict, Any, Optional
 import json
 import logging
 import os
@@ -98,7 +98,7 @@ async def ai_assistant_stream(
 
     async def generate():
         """Async generator function for SSE streaming"""
-        logger.debug(f"[GENERATOR] Async generator function called - starting execution")
+        logger.debug("[GENERATOR] Async generator function called - starting execution")
         chunk_count = 0  # Initialize outside try block for finally access
         start_time = time.time()
         captured_usage: Dict[str, Any] = {}  # Store usage from message_end
@@ -107,7 +107,7 @@ async def ai_assistant_stream(
         try:
             logger.debug(f"[STREAM] Creating AsyncDifyClient with URL: {api_url}")
             client = AsyncDifyClient(api_key=api_key, api_url=api_url, timeout=timeout)
-            logger.debug(f"[STREAM] AsyncDifyClient created successfully")
+            logger.debug("[STREAM] AsyncDifyClient created successfully")
 
             # Convert request files to DifyFile objects
             dify_files = None
@@ -186,7 +186,7 @@ async def ai_assistant_stream(
 
             # Ensure at least one event is yielded to prevent RuntimeError
             if chunk_count == 0:
-                logger.warning(f"[STREAM] No chunks yielded, sending completion event")
+                logger.warning("[STREAM] No chunks yielded, sending completion event")
                 yield f"data: {json.dumps({'event': 'message_complete', 'timestamp': int(time.time() * 1000)})}\n\n"
 
         except Exception as e:
@@ -204,7 +204,7 @@ async def ai_assistant_stream(
         finally:
             # Always ensure at least one event is yielded to prevent RuntimeError
             if chunk_count == 0:
-                logger.warning(f"[STREAM] Generator completed without yielding, sending error event")
+                logger.warning("[STREAM] Generator completed without yielding, sending error event")
                 error_data = {
                     'event': 'error',
                     'error': 'No response returned from stream',
@@ -213,7 +213,7 @@ async def ai_assistant_stream(
                 }
                 yield f"data: {json.dumps(error_data)}\n\n"
 
-    logger.debug(f"[SETUP] Creating StreamingResponse with async generator")
+    logger.debug("[SETUP] Creating StreamingResponse with async generator")
     return StreamingResponse(
         generate(),
         media_type='text/event-stream',

@@ -31,10 +31,9 @@ INTEGRITY_CHECK_LOCK_KEY = "recovery:integrity_check:lock"
 INTEGRITY_CHECK_LOCK_TTL = 300  # 5 minutes
 _integrity_check_lock_id: Optional[str] = None
 
-# Cache for integrity check result to avoid redundant checks during startup
-# Format: (is_healthy: bool, timestamp: float)
-_integrity_check_cache: Optional[Tuple[bool, float]] = None
-INTEGRITY_CHECK_CACHE_TTL = 300  # Cache valid for 5 minutes
+# Note: No cache needed - lock mechanism ensures only one worker checks integrity
+# Other workers skip via lock acquisition failure
+_integrity_check_cache: Optional[Tuple[bool, float]] = None  # Unused, kept for API compatibility
 
 # Import Redis client (optional dependency)
 try:
@@ -162,11 +161,20 @@ def release_integrity_check_lock() -> bool:
 
 
 def get_integrity_check_cache() -> Optional[Tuple[bool, float]]:
-    """Get the cached integrity check result."""
-    return _integrity_check_cache
+    """
+    Get cached integrity check result (no-op - cache disabled).
+    
+    Cache is disabled because lock mechanism already ensures only one worker
+    checks integrity. Other workers skip via lock acquisition failure.
+    """
+    return None
 
 
 def set_integrity_check_cache(value: Tuple[bool, float]) -> None:
-    """Set the cached integrity check result."""
-    global _integrity_check_cache  # pylint: disable=global-statement
-    _integrity_check_cache = value
+    """
+    Set cached integrity check result (no-op - cache disabled).
+    
+    Cache is disabled because lock mechanism already ensures only one worker
+    checks integrity. Other workers skip via lock acquisition failure.
+    """
+    # No-op: cache disabled

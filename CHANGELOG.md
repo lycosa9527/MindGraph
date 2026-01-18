@@ -7,6 +7,172 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [5.7.1] - 2026-01-18 - Code Quality Improvements
+
+### Fixed
+
+- **Database Recovery Module** (`services/infrastructure/database_recovery.py`)
+  - Removed unused imports: `get_integrity_check_cache` and `set_integrity_check_cache` from `recovery_locks`
+  - Fixed linter warnings for unused imports
+  - Improved code cleanliness and maintainability
+
+## [5.7.0] - 2026-01-18 - Agent Architecture Refactoring and Code Modularization
+
+### Changed
+
+- **Agent Utilities Modularization** (`agents/core/agent_utils.py`)
+  - Refactored monolithic `agent_utils.py` from ~1,200 lines to 50 lines
+  - Converted to backward compatibility wrapper that re-exports from specialized modules
+  - Split functionality into focused modules:
+    - `json_parser.py` - JSON parsing and extraction utilities
+    - `characteristics.py` - Characteristics generation functions
+    - `topic_extraction_utils.py` - Topic extraction utilities
+    - `topic_extraction.py` - Central topic extraction
+    - `llm_clients.py` - LLM client abstractions
+    - `prompt_helpers.py` - Prompt management helpers
+    - `workflow.py` - Workflow utilities
+    - `graph_spec.py` - Graph specification utilities
+    - `diagram_detection.py` - Diagram detection logic
+    - `learning_sheet.py` - Learning sheet generation
+    - `json_parser.py` - JSON parsing utilities
+    - `utils.py` - General utilities
+  - Improved code organization and maintainability
+  - Better separation of concerns for different utility domains
+
+- **Main Agent Refactoring** (`agents/main_agent.py`)
+  - Removed monolithic `main_agent.py` (2,110 lines deleted)
+  - Extracted concept map generation to `agents/concept_maps/concept_map_generation.py`
+  - Functionality distributed to specialized modules in `agents/core/`
+  - Improved modularity and code reusability
+
+- **Authentication Module Refactoring** (`utils/auth.py`)
+  - Removed monolithic `utils/auth.py` (1,509 lines deleted)
+  - Functionality moved to `utils/auth/` directory with specialized modules:
+    - `authentication.py` - Core authentication logic
+    - `account_lockout.py` - Account lockout management
+    - `api_keys.py` - API key management
+    - `bayi_mode.py` - Bayi mode functionality
+    - `config.py` - Authentication configuration
+    - `demo_mode.py` - Demo mode support
+    - `enterprise_mode.py` - Enterprise mode support
+    - `invitations.py` - Invitation management
+    - `ip_whitelist.py` - IP whitelist functionality
+    - `jwt_secret.py` - JWT secret management
+    - `password.py` - Password utilities
+    - `request_helpers.py` - Request helper functions
+    - `roles.py` - Role management
+    - `tokens.py` - Token management
+    - `websocket_auth.py` - WebSocket authentication
+  - Better organization and maintainability
+
+- **Agent Files Updated** (`agents/`)
+  - Updated all agent files to use new modular structure:
+    - `concept_map_agent.py` - Now imports from `concept_map_generation` module
+    - `mind_map_agent.py` - Refactored to use new utilities (506 lines changed)
+    - All thinking map agents updated (bridge, bubble, circle, double_bubble, flow, multi_flow, tree)
+    - All node palette generators updated (base, brace, bridge, bubble, circle, double_bubble, flow, mindmap, multi_flow, tree)
+    - `tab_agent.py` - Updated to use new modular structure (93 lines changed)
+  - Improved consistency across agent implementations
+  - Better use of specialized utility modules
+
+- **Redis Services Refactoring** (`services/redis/`)
+  - Major refactoring across all Redis service modules:
+    - `redis_client.py` - Core client improvements (241 lines changed)
+    - `redis_bayi_whitelist.py` - Enhanced whitelist management (258 lines changed)
+    - `redis_diagram_cache.py` - Improved caching logic (173 lines changed)
+    - `redis_cache_loader.py` - Better cache loading (130 lines changed)
+    - `redis_activity_tracker.py` - Enhanced activity tracking (97 lines changed)
+    - `redis_bayi_token.py` - Improved token management (73 lines changed)
+    - `redis_distributed_lock.py` - Better locking mechanism (61 lines changed)
+    - `redis_rate_limiter.py` - Enhanced rate limiting (44 lines changed)
+    - `redis_session_manager.py` - Improved session management (44 lines changed)
+    - `redis_org_cache.py` - Better organization caching (24 lines changed)
+    - `redis_user_cache.py` - Enhanced user caching (18 lines changed)
+    - `redis_sms_storage.py` - Improved SMS storage (18 lines changed)
+    - `redis_token_buffer.py` - Better token buffering (6 lines changed)
+  - Improved error handling and consistency
+  - Better code organization
+
+- **LLM Chunking Improvements** (`llm_chunking/`)
+  - Refactored chunking modules for better maintainability:
+    - `chunker.py` - Core chunking improvements (40 lines changed)
+    - `adapters/embedding_adapter.py` - Better adapter pattern
+    - `agents/` - Updated boundary, content_type, and structure agents
+    - `optimizations/batch_processor.py` - Improved batch processing
+    - `patterns/` - Enhanced pattern matching and question detection
+    - `structures.py` - Better structure handling
+    - `teaching/` - Improved teaching chunker and concept extractor
+  - Better code organization and consistency
+
+- **Router Improvements** (`routers/`)
+  - Refactored multiple router modules:
+    - `admin_env.py` - Enhanced admin environment management (107 lines changed)
+    - `admin_logs.py` - Improved log management (28 lines changed)
+    - `api/` - Various API router improvements
+    - `public_dashboard.py` - Enhanced dashboard (136 lines changed)
+    - `school_zone.py` - Improved school zone functionality (101 lines changed)
+    - `auth/` - Various authentication router improvements
+  - Better error handling and code organization
+
+- **Service Layer Improvements** (`services/`)
+  - Refactored various service modules:
+    - `utils/backup_scheduler.py` - Enhanced backup scheduling (584 lines changed)
+    - `knowledge/document_cleaner.py` - Improved document cleaning (117 lines changed)
+    - `utils/temp_image_cleaner.py` - Better image cleanup (109 lines changed)
+    - `llm/llm_service.py` - Enhanced LLM service (55 lines changed)
+    - `infrastructure/load_balancer.py` - Improved load balancing (44 lines changed)
+    - Various other service improvements
+  - Better code organization and maintainability
+
+- **Client Improvements** (`clients/`)
+  - `llm.py` - Enhanced LLM client (32 lines changed)
+  - Better error handling and consistency
+
+- **Configuration Improvements** (`config/`)
+  - `database.py` - Enhanced database configuration (5 lines changed)
+  - Better configuration management
+
+- **Model Updates** (`models/`)
+  - Minor improvements to various model files
+  - Better type hints and consistency
+
+- **Utility Improvements** (`utils/`)
+  - `db_migration.py` - Enhanced database migration (166 lines changed)
+  - `db_type_migration.py` - Improved type migration (53 lines changed)
+  - `dependency_checker.py` - Better dependency checking (46 lines changed)
+  - `env_utils.py` - Enhanced environment utilities (26 lines changed)
+  - `dashscope_error_handler.py` - Improved error handling (13 lines changed)
+  - `invitations.py` - Better invitation management (13 lines changed)
+
+- **Application Configuration** (`uvicorn_config.py`)
+  - Enhanced uvicorn configuration (48 lines changed)
+  - Better server configuration management
+
+### Removed
+
+- **Documentation Cleanup**
+  - Removed `routers/api/PNG_EXPORT_FIX.md` (93 lines) - Documentation no longer needed
+
+### Technical Details
+
+- **Code Statistics**
+  - 164 files changed across the codebase
+  - 2,761 insertions, 7,242 deletions (net reduction of 4,481 lines)
+  - Significant code reduction while maintaining functionality
+  - Improved code quality and maintainability
+
+- **Refactoring Focus**
+  - Code modularization and organization
+  - Separation of concerns
+  - Backward compatibility maintenance
+  - Improved maintainability
+  - Better code reusability
+
+- **Build Configuration**
+  - Added `.ruff_cache/` to `.gitignore` for Python linting cache
+
+---
+
 ## [5.6.0] - 2026-01-18 - Major Code Refactoring and Configuration Modularization
 
 ### Changed

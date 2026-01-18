@@ -1,6 +1,10 @@
+"""
+multi flow map agent module.
+"""
 from typing import Dict, List, Any, Tuple, Optional
 import logging
 
+from agents.core.base_agent import BaseAgent
 
 """
 Multi-Flow Map Agent
@@ -73,7 +77,7 @@ class MultiFlowMapAgent(BaseAgent):
                 }
             enhanced_spec = enhanced_result['spec']
 
-            logger.info(f"MultiFlowMapAgent: Multi-flow map generation completed successfully")
+            logger.info("MultiFlowMapAgent: Multi-flow map generation completed successfully")
             return {
                 'success': True,
                 'spec': enhanced_spec,
@@ -270,7 +274,7 @@ class MultiFlowMapAgent(BaseAgent):
 
             # Calculate dimensions based on content complexity
             max_side = max(len(causes), len(effects))
-            total_items = len(causes) + len(effects)
+            len(causes) + len(effects)
 
             # Estimate text width requirements (rough approximation)
             max_cause_length = max((len(c) for c in causes), default=0)
