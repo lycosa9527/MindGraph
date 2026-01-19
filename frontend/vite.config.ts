@@ -25,7 +25,9 @@ export default defineConfig({
     },
   },
   server: {
-    port: 3000,
+    port: 5173, // Use Vite's default port (less likely to have permission issues)
+    host: '0.0.0.0', // Bind to all interfaces (works better in WSL)
+    strictPort: false, // Allow Vite to use another port if 5173 is taken
     proxy: {
       '/api': {
         target: backendHost,

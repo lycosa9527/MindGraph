@@ -32,15 +32,18 @@ def check_database_on_startup() -> bool:
     This is a safety measure to prevent data loss from automated decisions.
 
     Performance: Uses quick_check by default for faster startup (seconds vs minutes).
-    Set SKIP_INTEGRITY_CHECK=1 to skip entirely (not recommended for production).
-    Set USE_FULL_INTEGRITY_CHECK=1 to use thorough check (slower but more thorough).
+    Set SKIP_INTEGRITY_CHECK=true to skip entirely (not recommended for production).
+    Set DB_QUICK_CHECK_ENABLED=false to use full integrity_check (slower but more thorough).
+    Set USE_FULL_INTEGRITY_CHECK=true to use thorough check (deprecated, use DB_QUICK_CHECK_ENABLED=false).
 
     Returns:
         True if startup should continue, False to abort
     """
     # Check if integrity check should be skipped (for development/testing)
-    if os.getenv("SKIP_INTEGRITY_CHECK", "").lower() in ("1", "true", "yes"):
-        logger.info("[Recovery] Integrity check skipped (SKIP_INTEGRITY_CHECK=1)")
+    skip_check_env = os.getenv("SKIP_INTEGRITY_CHECK", "")
+    logger.info("[Recovery] SKIP_INTEGRITY_CHECK=%s", skip_check_env)
+    if skip_check_env.lower() in ("true", "yes"):
+        logger.info("[Recovery] Integrity check skipped (SKIP_INTEGRITY_CHECK=true)")
         return True
 
     # Try to acquire lock - only one worker should check integrity
@@ -55,11 +58,25 @@ def check_database_on_startup() -> bool:
         # Use quick_check by default for faster startup
         # quick_check catches most corruption issues and is much faster
         # Full integrity_check can take 2-3 minutes on databases with 2000+ users
-        use_full_check = os.getenv(
-            "USE_FULL_INTEGRITY_CHECK", ""
-        ).lower() in ("1", "true", "yes")
+        # Check DB_QUICK_CHECK_ENABLED first (new preferred way)
+        db_quick_check_env = os.getenv("DB_QUICK_CHECK_ENABLED", "true")
+        quick_check_enabled = db_quick_check_env.lower() in ("true", "yes")
+        # Fallback to USE_FULL_INTEGRITY_CHECK for backward compatibility
+        use_full_int_check_env = os.getenv("USE_FULL_INTEGRITY_CHECK", "")
+        use_full_check = use_full_int_check_env.lower() in ("true", "yes")
+        # Use quick_check if enabled AND not forcing full check
+        use_quick_check = quick_check_enabled and not use_full_check
+        logger.debug(
+            "[Recovery] Environment: DB_QUICK_CHECK_ENABLED=%s, USE_FULL_INTEGRITY_CHECK=%s",
+            db_quick_check_env,
+            use_full_int_check_env
+        )
+        logger.info(
+            "[Recovery] Integrity check: using quick_check=%s",
+            use_quick_check
+        )
         is_healthy, message = recovery.check_integrity(
-            use_quick_check=not use_full_check
+            use_quick_check=use_quick_check
         )
 
         if is_healthy:

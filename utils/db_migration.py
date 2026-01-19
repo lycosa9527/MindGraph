@@ -30,6 +30,10 @@ def _get_sqlite_column_type(column: Column) -> str:
     """
     column_type = str(column.type)
 
+    # Handle ENUM types - SQLite doesn't support ENUM, store as TEXT
+    if hasattr(column.type, 'enums') or 'ENUM' in str(type(column.type)).upper():
+        return "TEXT"
+
     # Map SQLAlchemy types to SQLite types
     type_mapping = {
         "INTEGER": "INTEGER",
@@ -160,7 +164,13 @@ def _add_column_sqlite(conn: Any, table_name: str, column: Column) -> bool:
                     default_clause = "DEFAULT 0"
                     nullable = "NOT NULL"
                 elif "TEXT" in column_type:
-                    default_clause = "DEFAULT ''"
+                    # For TEXT columns, try to get the actual default value first
+                    # If column has a default, use it; otherwise use empty string
+                    actual_default = _get_column_default(column, "sqlite")
+                    if actual_default:
+                        default_clause = actual_default
+                    else:
+                        default_clause = "DEFAULT ''"
                     nullable = "NOT NULL"
                 else:
                     # For unknown types, make it nullable to avoid errors

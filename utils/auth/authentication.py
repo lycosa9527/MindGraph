@@ -134,7 +134,7 @@ def get_current_user(
     # DEBUG: Log session validation attempt
     now = int(time.time())
     exp_info = f"exp={token_exp}, expired_ago={(now - token_exp) if token_exp > 0 else 'unknown'}s"
-    logger.info(
+    logger.debug(
         "[Auth] get_current_user session check: user=%s, token=%s..., %s",
         user_id, token_hash[:8], exp_info
     )

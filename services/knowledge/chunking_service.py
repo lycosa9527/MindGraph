@@ -12,7 +12,7 @@ Proprietary License
 """
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import List, Dict, Any, Optional, Callable, Union, TYPE_CHECKING
+from typing import List, Dict, Any, Optional, Callable, Union
 import logging
 import os
 import asyncio
@@ -24,9 +24,15 @@ import semchunk
 from config.settings import config
 from services.llm import llm_service as llm_svc
 
-if TYPE_CHECKING:
+try:
     from llm_chunking.chunker import LLMSemanticChunker
     from llm_chunking.models import ParentChunk, QAChunk
+    HAS_LLM_CHUNKING = True
+except ImportError:
+    HAS_LLM_CHUNKING = False
+    LLMSemanticChunker = None  # type: ignore
+    ParentChunk = None  # type: ignore
+    QAChunk = None  # type: ignore
 
 logger = logging.getLogger(__name__)
 
@@ -340,10 +346,14 @@ def _initialize_mindchunk_service():
             "MindChunk cannot work without LLM service."
         ) from e
 
-    # Lazy import to avoid circular dependency
-    from llm_chunking.chunker import LLMSemanticChunker
+    if not HAS_LLM_CHUNKING or LLMSemanticChunker is None:
+        raise RuntimeError(
+            "[ChunkingService] llm_chunking module not available. "
+            "MindChunk requires llm_chunking package."
+        )
+
     chunker = LLMSemanticChunker(
-        llm_service=llm_svc.get_llm_service(),
+        llm_service=llm_svc,
         sample_pages=int(os.getenv("CHUNK_SAMPLE_PAGES", "30")),
         batch_size=int(os.getenv("CHUNK_BATCH_SIZE", "10"))
     )
@@ -550,7 +560,12 @@ class MindChunkAdapter(BaseChunkingService):
             )
 
         # Convert to legacy Chunk format
-        from llm_chunking.models import ParentChunk, QAChunk
+        if not HAS_LLM_CHUNKING or ParentChunk is None or QAChunk is None:
+            raise RuntimeError(
+                "[MindChunkAdapter] llm_chunking.models not available. "
+                "Cannot convert chunks to legacy format."
+            )
+
         chunks = []
         try:
             if isinstance(llm_chunks[0], ParentChunk):
@@ -683,7 +698,17 @@ class MindChunkAdapter(BaseChunkingService):
         Returns:
             Estimated chunk count
         """
-        return self.llm_service.estimate_chunk_count(text_length, self.chunk_size)
+        # Use similar estimation logic as ChunkingService
+        # Estimate based on chunk_size and overlap
+        char_size = self.chunk_size * 4  # Approximate chars per token
+        char_overlap = self.overlap * 4
+        effective_size = char_size - char_overlap
+
+        if effective_size <= 0:
+            return 1
+
+        count = max(1, (text_length + effective_size - 1) // effective_size)
+        return count
 
     def validate_chunk_count(self, chunk_count: int, user_id: int) -> bool:
         """

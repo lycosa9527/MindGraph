@@ -371,12 +371,158 @@ class RetrievalTestService:
 
         return dcg / idcg
 
+    def calculate_f1_score(self, precision: float, recall: float) -> float:
+        """
+        Calculate F1 score: harmonic mean of precision and recall.
+
+        Args:
+            precision: Precision score (0-1)
+            recall: Recall score (0-1)
+
+        Returns:
+            F1 score (0-1)
+        """
+        if precision + recall == 0:
+            return 0.0
+        return 2 * (precision * recall) / (precision + recall)
+
+    def calculate_precision_at_k(
+        self,
+        retrieved_chunk_ids: List[int],
+        relevant_chunk_ids: List[int],
+        k: int
+    ) -> float:
+        """
+        Calculate precision at K: relevant retrieved in top K / K.
+
+        Args:
+            retrieved_chunk_ids: List of retrieved chunk IDs (in order)
+            relevant_chunk_ids: List of relevant chunk IDs
+            k: Cutoff rank
+
+        Returns:
+            Precision@K score (0-1)
+        """
+        if not retrieved_chunk_ids or k == 0:
+            return 0.0
+
+        top_k = retrieved_chunk_ids[:k]
+        relevant_set = set(relevant_chunk_ids)
+        relevant_retrieved = len([cid for cid in top_k if cid in relevant_set])
+
+        return relevant_retrieved / k
+
+    def calculate_recall_at_k(
+        self,
+        retrieved_chunk_ids: List[int],
+        relevant_chunk_ids: List[int],
+        k: int
+    ) -> float:
+        """
+        Calculate recall at K: relevant retrieved in top K / total relevant.
+
+        Args:
+            retrieved_chunk_ids: List of retrieved chunk IDs (in order)
+            relevant_chunk_ids: List of relevant chunk IDs
+            k: Cutoff rank
+
+        Returns:
+            Recall@K score (0-1)
+        """
+        if not relevant_chunk_ids:
+            return 1.0
+
+        if not retrieved_chunk_ids or k == 0:
+            return 0.0
+
+        top_k = retrieved_chunk_ids[:k]
+        relevant_set = set(relevant_chunk_ids)
+        relevant_retrieved = len([cid for cid in top_k if cid in relevant_set])
+
+        return relevant_retrieved / len(relevant_chunk_ids)
+
+    def calculate_hit_rate_at_k(
+        self,
+        retrieved_chunk_ids: List[int],
+        relevant_chunk_ids: List[int],
+        k: int
+    ) -> float:
+        """
+        Calculate hit rate at K: 1.0 if at least one relevant in top K, else 0.0.
+
+        Args:
+            retrieved_chunk_ids: List of retrieved chunk IDs (in order)
+            relevant_chunk_ids: List of relevant chunk IDs
+            k: Cutoff rank
+
+        Returns:
+            Hit Rate@K score (0.0 or 1.0)
+        """
+        if not relevant_chunk_ids:
+            return 1.0
+
+        if not retrieved_chunk_ids or k == 0:
+            return 0.0
+
+        top_k = retrieved_chunk_ids[:k]
+        relevant_set = set(relevant_chunk_ids)
+
+        return 1.0 if any(cid in relevant_set for cid in top_k) else 0.0
+
+    def calculate_map(
+        self,
+        retrieved_lists: List[List[int]],
+        relevant_lists: List[List[int]]
+    ) -> float:
+        """
+        Calculate Mean Average Precision (MAP) across multiple queries.
+
+        Args:
+            retrieved_lists: List of retrieved chunk ID lists (one per query)
+            relevant_lists: List of relevant chunk ID lists (one per query)
+
+        Returns:
+            MAP score (0-1)
+        """
+        if not retrieved_lists or not relevant_lists:
+            return 0.0
+
+        if len(retrieved_lists) != len(relevant_lists):
+            raise ValueError(
+                "retrieved_lists and relevant_lists must have same length"
+            )
+
+        average_precisions = []
+
+        for retrieved_ids, relevant_ids in zip(retrieved_lists, relevant_lists):
+            if not relevant_ids:
+                continue
+
+            relevant_set = set(relevant_ids)
+            precisions_at_relevant = []
+            relevant_found = 0
+
+            for rank, chunk_id in enumerate(retrieved_ids, start=1):
+                if chunk_id in relevant_set:
+                    relevant_found += 1
+                    precision_at_rank = relevant_found / rank
+                    precisions_at_relevant.append(precision_at_rank)
+
+            if precisions_at_relevant:
+                average_precision = sum(precisions_at_relevant) / len(relevant_ids)
+                average_precisions.append(average_precision)
+
+        if not average_precisions:
+            return 0.0
+
+        return sum(average_precisions) / len(average_precisions)
+
     def calculate_quality_metrics(
         self,
         retrieved_chunk_ids: List[int],
         expected_chunk_ids: List[int],
         relevance_scores: Optional[Dict[int, float]] = None
-    ) -> Dict[str, float]:
+    ) -> Dict[str, Any]:
         """
         Calculate all quality metrics for retrieval results.
 
@@ -386,11 +532,12 @@ class RetrievalTestService:
             relevance_scores: Optional dict mapping chunk_id -> relevance score (for NDCG)
 
         Returns:
-            Dict with precision, recall, mrr, ndcg
+            Dict with precision, recall, mrr, ndcg, f1, precision_at_k, recall_at_k
         """
         precision = self.calculate_precision(retrieved_chunk_ids, expected_chunk_ids)
         recall = self.calculate_recall(retrieved_chunk_ids, expected_chunk_ids)
         mrr = self.calculate_mrr(retrieved_chunk_ids, expected_chunk_ids)
+        f1 = self.calculate_f1_score(precision, recall)
 
         # NDCG requires relevance scores
         if relevance_scores:
@@ -400,11 +547,29 @@ class RetrievalTestService:
             binary_scores = {chunk_id: 1.0 for chunk_id in expected_chunk_ids}
             ndcg = self.calculate_ndcg(retrieved_chunk_ids, binary_scores)
 
+        # Calculate Precision@K and Recall@K for different K values
+        k_values = [1, 3, 5, 10]
+        precision_at_k = {
+            k: self.calculate_precision_at_k(
+                retrieved_chunk_ids, expected_chunk_ids, k
+            )
+            for k in k_values
+        }
+        recall_at_k = {
+            k: self.calculate_recall_at_k(
+                retrieved_chunk_ids, expected_chunk_ids, k
+            )
+            for k in k_values
+        }
+
         return {
             "precision": precision,
             "recall": recall,
             "mrr": mrr,
-            "ndcg": ndcg
+            "ndcg": ndcg,
+            "f1": f1,
+            "precision_at_k": precision_at_k,
+            "recall_at_k": recall_at_k
         }
 
     def run_evaluation(

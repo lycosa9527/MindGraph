@@ -15,6 +15,7 @@ import {
   MagicStick,
   OfficeBuilding,
   Share,
+  Tools,
   VideoPlay,
 } from '@element-plus/icons-vue'
 
@@ -49,6 +50,7 @@ const currentMode = computed(() => {
   if (path.startsWith('/mindmate')) return 'mindmate'
   if (path.startsWith('/mindgraph') || path.startsWith('/canvas')) return 'mindgraph'
   if (path.startsWith('/knowledge-space')) return 'knowledge-space'
+  if (path.startsWith('/chunk-test')) return 'chunk-test'
   if (path.startsWith('/askonce')) return 'askonce'
   if (path.startsWith('/debateverse')) return 'debateverse'
   if (path.startsWith('/school-zone')) return 'school-zone'
@@ -94,6 +96,8 @@ function setMode(index: string) {
     router.push('/mindgraph')
   } else if (index === 'knowledge-space') {
     router.push('/knowledge-space')
+  } else if (index === 'chunk-test') {
+    router.push('/chunk-test')
   } else if (index === 'askonce') {
     router.push('/askonce')
   } else if (index === 'debateverse') {
@@ -221,6 +225,13 @@ async function handleDiagramSelect(diagram: SavedDiagram) {
         <el-icon><Document /></el-icon>
         <template #title>个人知识库</template>
       </el-menu-item>
+      <el-menu-item
+        v-if="isAuthenticated"
+        index="chunk-test"
+      >
+        <el-icon><Tools /></el-icon>
+        <template #title>RAG分块测试</template>
+      </el-menu-item>
       <el-menu-item index="askonce">
         <el-icon><MagicStick /></el-icon>
         <template #title>{{ t('askonce.title') }}</template>
@@ -281,12 +292,17 @@ async function handleDiagramSelect(diagram: SavedDiagram) {
       v-else-if="!isCollapsed && currentMode === 'knowledge-space'"
       class="flex-1 overflow-hidden"
     />
+    <!-- Chunk Test: Show document history (same as knowledge space) -->
+    <KnowledgeSpaceHistory
+      v-else-if="!isCollapsed && currentMode === 'chunk-test'"
+      class="flex-1 overflow-hidden"
+    />
 
     <!-- Spacer to push user section to bottom (when no history shown) -->
     <div
       v-if="
         isCollapsed ||
-        !['mindmate', 'mindgraph', 'knowledge-space', 'askonce', 'debateverse'].includes(
+        !['mindmate', 'mindgraph', 'knowledge-space', 'chunk-test', 'askonce', 'debateverse'].includes(
           currentMode
         )
       "

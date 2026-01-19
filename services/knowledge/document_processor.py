@@ -735,7 +735,6 @@ class DocumentProcessor:
 
 def get_document_processor() -> DocumentProcessor:
     """Get global document processor instance."""
-    # Use function attribute to avoid global statement
     if not hasattr(get_document_processor, '_instance'):
         get_document_processor._instance = DocumentProcessor()
     return get_document_processor._instance

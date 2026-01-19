@@ -470,3 +470,32 @@ class EvaluationRunResponse(BaseModel):
     evaluated_queries: int
     average_metrics: Dict[str, float]
     query_results: List[Dict[str, Any]]
+
+
+class ChunkTestProgressResponse(BaseModel):
+    """Response model for chunk test progress."""
+
+    test_id: int
+    status: str  # 'pending', 'processing', 'completed', 'failed'
+    current_method: Optional[str] = None
+    current_stage: Optional[str] = None
+    progress_percent: int = 0
+    completed_methods: Optional[List[str]] = None
+
+
+class ChunkTestResultResponse(BaseModel):
+    """Response model for chunk test results."""
+
+    test_id: int
+    dataset_name: str
+    document_ids: Optional[List[int]] = None
+    chunking_comparison: Dict[str, Any]
+    retrieval_comparison: Dict[str, Any]
+    summary: Dict[str, Any]
+    evaluation_results: Optional[Dict[str, Any]] = None
+    status: Optional[str] = None
+    current_method: Optional[str] = None
+    current_stage: Optional[str] = None
+    progress_percent: Optional[int] = None
+    completed_methods: Optional[List[str]] = None
+    created_at: str

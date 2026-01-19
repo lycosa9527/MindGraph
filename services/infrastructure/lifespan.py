@@ -114,8 +114,17 @@ async def lifespan(fastapi_app: FastAPI):
         # Load cache from SQLite and IP geolocation database in parallel to save startup time
         # Note: Both use Redis lock/distributed coordination to ensure only one worker loads
         logger.info("[LIFESPAN] Loading cache and IP database...")
+        
+        # Check if user auth cache preloading is enabled
+        preload_auth_cache = os.getenv("PRELOAD_USER_AUTH_CACHE", "true").lower() in ("1", "true", "yes")
+        
         def load_user_cache():
             """Load user cache from SQLite (runs in thread pool)."""
+            if not preload_auth_cache:
+                if worker_id == '0' or not worker_id:
+                    logger.info("[CacheLoader] User auth cache preloading skipped (PRELOAD_USER_AUTH_CACHE disabled)")
+                return True  # Return True to indicate skip was intentional
+            
             try:
                 # pylint: disable=import-outside-toplevel
                 from services.redis.redis_cache_loader import reload_cache_from_sqlite
@@ -162,13 +171,14 @@ async def lifespan(fastapi_app: FastAPI):
         elif cache_result:
             # Cache loading completed (either by this worker or another worker via lock)
             # The actual loading logs come from reload_cache_from_sqlite() itself
-            if worker_id == '0' or not worker_id:
+            if preload_auth_cache and (worker_id == '0' or not worker_id):
                 logger.info("[CacheLoader] User cache loading completed successfully")
         else:
             # cache_result is False - cache loading failed
-            logger.warning("[CacheLoader] Cache loading returned False - cache may not be preloaded")
-            if worker_id == '0' or not worker_id:
-                logger.warning("[CacheLoader] WARNING: User authentication data may not be preloaded into Redis cache")
+            if preload_auth_cache:
+                logger.warning("[CacheLoader] Cache loading returned False - cache may not be preloaded")
+                if worker_id == '0' or not worker_id:
+                    logger.warning("[CacheLoader] WARNING: User authentication data may not be preloaded into Redis cache")
 
         if isinstance(ip_db_result, Exception):
             if worker_id == '0' or not worker_id:

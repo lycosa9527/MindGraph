@@ -1,11 +1,3 @@
-from datetime import datetime
-import pickle
-
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Text, JSON, Enum, Index, CheckConstraint, UniqueConstraint, LargeBinary, Float
-from sqlalchemy.orm import relationship
-
-from models.auth import Base
-
 """
 Knowledge Space Models for MindGraph
 Author: lycosa9527
@@ -17,6 +9,16 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+from datetime import datetime
+import pickle
+
+from sqlalchemy import (
+    Column, Integer, String, DateTime, ForeignKey, Text, JSON, Enum, Index,
+    CheckConstraint, UniqueConstraint, LargeBinary, Float
+)
+from sqlalchemy.orm import relationship
+
+from models.auth import Base
 
 
 
@@ -83,7 +85,8 @@ class KnowledgeDocument(Base):
     )
     error_message = Column(Text, nullable=True)  # Error details if failed
     processing_task_id = Column(String(255), nullable=True)  # Celery task ID
-    processing_progress = Column(String(50), nullable=True)  # Current processing stage: 'extracting', 'cleaning', 'chunking', 'embedding', 'indexing'
+    # Current processing stage: 'extracting', 'cleaning', 'chunking', 'embedding', 'indexing'
+    processing_progress = Column(String(50), nullable=True)
     processing_progress_percent = Column(Integer, default=0, nullable=False)  # Progress percentage 0-100
 
     # Processing results
@@ -97,7 +100,8 @@ class KnowledgeDocument(Base):
     batch_id = Column(Integer, ForeignKey("document_batches.id", ondelete="SET NULL"), nullable=True, index=True)
 
     # Advanced metadata
-    doc_metadata = Column(JSON, nullable=True)  # Custom metadata dict (renamed from 'metadata' - reserved in SQLAlchemy)
+    # Custom metadata dict (renamed from 'metadata' - reserved in SQLAlchemy)
+    doc_metadata = Column(JSON, nullable=True)
     tags = Column(JSON, nullable=True)  # Array of tag strings
     category = Column(String(100), nullable=True, index=True)  # Document category
     custom_fields = Column(JSON, nullable=True)  # User-defined custom fields
@@ -145,7 +149,8 @@ class DocumentChunk(Base):
     end_char = Column(Integer, nullable=False)
 
     # Additional metadata
-    meta_data = Column(JSON, nullable=True)  # Store additional info (renamed from metadata to avoid SQLAlchemy reserved name)
+    # Store additional info (renamed from metadata to avoid SQLAlchemy reserved name)
+    meta_data = Column(JSON, nullable=True)
 
     # Timestamp
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
@@ -281,7 +286,10 @@ class ChunkAttachment(Base):
     )
 
     def __repr__(self):
-        return f"<ChunkAttachment id={self.id} chunk_id={self.chunk_id} file_name={self.file_name} type={self.attachment_type}>"
+        return (
+            f"<ChunkAttachment id={self.id} chunk_id={self.chunk_id} "
+            f"file_name={self.file_name} type={self.attachment_type}>"
+        )
 
 
 class ChildChunk(Base):
@@ -359,7 +367,10 @@ class DocumentBatch(Base):
     documents = relationship("KnowledgeDocument", backref="batch")
 
     def __repr__(self):
-        return f"<DocumentBatch id={self.id} user_id={self.user_id} status={self.status} progress={self.completed_count}/{self.total_count}>"
+        return (
+            f"<DocumentBatch id={self.id} user_id={self.user_id} "
+            f"status={self.status} progress={self.completed_count}/{self.total_count}>"
+        )
 
 
 class DocumentVersion(Base):
@@ -477,8 +488,18 @@ class DocumentRelationship(Base):
     __tablename__ = "document_relationships"
 
     id = Column(Integer, primary_key=True, index=True)
-    source_document_id = Column(Integer, ForeignKey("knowledge_documents.id", ondelete="CASCADE"), nullable=False, index=True)
-    target_document_id = Column(Integer, ForeignKey("knowledge_documents.id", ondelete="CASCADE"), nullable=False, index=True)
+    source_document_id = Column(
+        Integer,
+        ForeignKey("knowledge_documents.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True
+    )
+    target_document_id = Column(
+        Integer,
+        ForeignKey("knowledge_documents.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True
+    )
 
     # Relationship type
     relationship_type = Column(
@@ -498,17 +519,38 @@ class DocumentRelationship(Base):
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
 
     # Relationships
-    source_document = relationship("KnowledgeDocument", foreign_keys=[source_document_id], backref="outgoing_relationships")
-    target_document = relationship("KnowledgeDocument", foreign_keys=[target_document_id], backref="incoming_relationships")
+    source_document = relationship(
+        "KnowledgeDocument",
+        foreign_keys=[source_document_id],
+        backref="outgoing_relationships"
+    )
+    target_document = relationship(
+        "KnowledgeDocument",
+        foreign_keys=[target_document_id],
+        backref="incoming_relationships"
+    )
 
     # Constraints
     __table_args__ = (
-        UniqueConstraint('source_document_id', 'target_document_id', 'relationship_type', name='uq_document_relationship'),
-        Index('ix_document_relationships_source_target', 'source_document_id', 'target_document_id'),
+        UniqueConstraint(
+            'source_document_id',
+            'target_document_id',
+            'relationship_type',
+            name='uq_document_relationship'
+        ),
+        Index(
+            'ix_document_relationships_source_target',
+            'source_document_id',
+            'target_document_id'
+        ),
     )
 
     def __repr__(self):
-        return f"<DocumentRelationship id={self.id} source={self.source_document_id} -> target={self.target_document_id} type={self.relationship_type}>"
+        return (
+            f"<DocumentRelationship id={self.id} "
+            f"source={self.source_document_id} -> target={self.target_document_id} "
+            f"type={self.relationship_type}>"
+        )
 
 
 class EvaluationDataset(Base):
@@ -571,3 +613,51 @@ class EvaluationResult(Base):
 
     def __repr__(self):
         return f"<EvaluationResult id={self.id} dataset_id={self.dataset_id} method={self.method}>"
+
+
+class ChunkTestResult(Base):
+    """
+    Chunk test result for comparing chunking methods.
+
+    Stores results from RAG chunk testing comparing semchunk vs mindchunk.
+    """
+    __tablename__ = "chunk_test_results"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    dataset_name = Column(String(100), nullable=False, index=True)  # 'FinanceBench', 'user_documents', etc.
+    document_ids = Column(JSON, nullable=True)  # List of document IDs tested (for user documents)
+
+    # Chunking comparison
+    semchunk_chunk_count = Column(Integer, nullable=False, default=0)
+    mindchunk_chunk_count = Column(Integer, nullable=False, default=0)
+    chunk_stats = Column(JSON, nullable=True)  # Detailed chunk statistics
+
+    # Retrieval comparison
+    retrieval_metrics = Column(JSON, nullable=True)  # {semchunk: {...}, mindchunk: {...}}
+    comparison_summary = Column(JSON, nullable=True)  # Winner, differences, recommendations
+
+    # Evaluation results
+    evaluation_results = Column(JSON, nullable=True)  # Comprehensive metrics organized by dimension
+
+    # Progress tracking
+    status = Column(
+        Enum('pending', 'processing', 'completed', 'failed', name='chunk_test_status'),
+        default='pending',
+        nullable=False,
+        index=True
+    )
+    current_method = Column(String(50), nullable=True)  # Currently processing chunking method
+    # Current stage: 'chunking', 'retrieval', 'evaluation', 'completed'
+    current_stage = Column(String(50), nullable=True)
+    progress_percent = Column(Integer, default=0, nullable=False)  # Overall progress (0-100)
+    completed_methods = Column(JSON, nullable=True)  # List of completed methods: ['spacy', 'semchunk', ...]
+
+    # Timestamp
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+
+    # Relationships
+    user = relationship("User", backref="chunk_test_results")
+
+    def __repr__(self):
+        return f"<ChunkTestResult id={self.id} user_id={self.user_id} dataset_name={self.dataset_name}>"

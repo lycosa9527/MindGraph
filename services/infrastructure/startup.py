@@ -6,6 +6,7 @@ Handles:
 - Environment file UTF-8 encoding check
 - Signal handler registration for graceful shutdown
 - Logs directory creation
+- Tiktoken encoding file caching (offline loading)
 """
 
 import os
@@ -15,6 +16,7 @@ import signal
 import logging
 from dotenv import load_dotenv
 from utils.env_utils import ensure_utf8_env_file
+from utils.tiktoken_cache import ensure_tiktoken_cache
 
 # Global flag to track shutdown state
 _SHUTDOWN_EVENT = None  # pylint: disable=global-statement
@@ -84,6 +86,14 @@ def setup_early_configuration():
 
     # Create logs directory
     os.makedirs("logs", exist_ok=True)
+
+    # Setup tiktoken encoding file cache (must be before any tiktoken imports)
+    # This downloads encoding files locally to avoid repeated downloads
+    try:
+        ensure_tiktoken_cache()
+    except Exception as e:  # pylint: disable=broad-except
+        # Non-critical: tiktoken will download files automatically if cache fails
+        print(f"[Startup] Warning: Could not setup tiktoken cache: {e}")
 
     # Register signal handlers for graceful shutdown
     signal.signal(signal.SIGINT, _handle_shutdown_signal)

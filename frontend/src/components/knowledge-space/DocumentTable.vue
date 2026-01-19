@@ -13,6 +13,8 @@ const props = defineProps<{
   documents: KnowledgeDocument[]
   loading: boolean
   selectedIds: number[]
+  showDataset?: boolean
+  greyOutDataset?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -253,6 +255,23 @@ const isRowSelected = (docId: number) => props.selectedIds.includes(docId)
         </template>
       </ElTableColumn>
 
+      <ElTableColumn
+        v-if="showDataset"
+        :label="isZh ? '数据集' : 'Dataset'"
+        width="120"
+        align="center"
+        :class-name="greyOutDataset ? 'dataset-column-greyed' : ''"
+      >
+        <template #default="{ row }">
+          <span
+            class="text-sm"
+            :class="greyOutDataset ? 'text-stone-400' : 'text-stone-600'"
+          >
+            {{ (row as any).dataset_name || '-' }}
+          </span>
+        </template>
+      </ElTableColumn>
+
       <ElTableColumn :label="isZh ? '上传时间' : 'Upload Date'" width="140">
         <template #default="{ row }">
           <span class="text-stone-600 text-sm">{{ formatDate(row.created_at) }}</span>
@@ -339,5 +358,10 @@ const isRowSelected = (docId: number) => props.selectedIds.includes(docId)
   --el-button-hover-text-color: #991b1b;
   --el-button-hover-bg-color: #fef2f2;
   padding: 6px;
+}
+
+.dataset-column-greyed :deep(.cell) {
+  color: #a8a29e;
+  opacity: 0.6;
 }
 </style>

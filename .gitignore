@@ -197,3 +197,9 @@ static/
 docs/
 # ruff
 .ruff_cache/
+
+# Tiktoken encoding cache (downloaded files, ~1.6MB)
+storage/tiktoken_cache/
+
+# RAG test datasets
+services/knowledge/rag_chunk_test/rag-test/

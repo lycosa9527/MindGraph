@@ -96,6 +96,18 @@ const routes: RouteRecordRaw[] = [
     meta: { requiresAuth: true, layout: 'main' },
   },
   {
+    path: '/chunk-test',
+    name: 'ChunkTest',
+    component: () => import('@/pages/ChunkTestPage.vue'),
+    meta: { requiresAuth: true, layout: 'main' },
+  },
+  {
+    path: '/chunk-test/results/:testId',
+    name: 'ChunkTestResults',
+    component: () => import('@/pages/ChunkTestResultsPage.vue'),
+    meta: { requiresAuth: true, layout: 'main' },
+  },
+  {
     path: '/dashboard',
     name: 'PublicDashboard',
     component: () => import('@/pages/PublicDashboardPage.vue'),

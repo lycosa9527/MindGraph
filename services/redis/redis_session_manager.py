@@ -479,7 +479,7 @@ class RedisSessionManager:
         """
         token_hash = _hash_token(token)
         token_preview = token_hash[:8]
-        logger.info("[Session] is_session_valid called: user=%s, token=%s...", user_id, token_preview)
+        logger.debug("[Session] is_session_valid called: user=%s, token=%s...", user_id, token_preview)
 
         if not self._use_redis():
             # Graceful degradation: allow authentication if Redis unavailable
@@ -499,7 +499,7 @@ class RedisSessionManager:
                 # Sessions are stored as timestamp:device_hash:token_hash
                 all_sessions = redis.smembers(session_set_key)
                 session_count = len(all_sessions)
-                logger.info("[Session] Validating token against %s session(s): user=%s", session_count, user_id)
+                logger.debug("[Session] Validating token against %s session(s): user=%s", session_count, user_id)
 
                 for idx, session_entry in enumerate(all_sessions):
                     entry_ts, entry_device_hash, entry_token_hash = self._parse_session_entry(session_entry)
@@ -511,7 +511,7 @@ class RedisSessionManager:
                         idx, entry_device_preview, entry_token_preview, age_seconds
                     )
                     if entry_token_hash == token_hash:
-                        logger.info(
+                        logger.debug(
                             "[Session] Session VALID: user=%s, "
                             "matched session[%s], age=%.0fs",
                             user_id,

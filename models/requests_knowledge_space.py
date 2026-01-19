@@ -87,3 +87,25 @@ class RollbackRequest(BaseModel):
     """Request model for rolling back a document to a previous version."""
 
     version_number: int
+
+
+class ChunkTestBenchmarkRequest(BaseModel):
+    """Request model for testing chunking methods with benchmark dataset."""
+
+    dataset_name: str = Field(..., pattern="^(FinanceBench|KG-RAG|FRAMES|PubMedQA)$")
+    queries: Optional[List[str]] = None  # Optional custom queries
+    modes: Optional[List[str]] = Field(
+        default=["spacy", "semchunk", "chonkie", "langchain", "mindchunk"],
+        description="Chunking modes to compare: 'spacy', 'semchunk', 'chonkie', 'langchain', 'mindchunk', 'qa'"
+    )
+
+
+class ChunkTestUserDocumentsRequest(BaseModel):
+    """Request model for testing chunking methods with user documents."""
+
+    document_ids: List[int] = Field(..., min_length=1)
+    queries: List[str] = Field(..., min_length=1)
+    modes: Optional[List[str]] = Field(
+        default=["spacy", "semchunk", "chonkie", "langchain", "mindchunk"],
+        description="Chunking modes to compare: 'spacy', 'semchunk', 'chonkie', 'langchain', 'mindchunk', 'qa'"
+    )
