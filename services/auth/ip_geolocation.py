@@ -1,18 +1,4 @@
 """
-ip geolocation module.
-"""
-from datetime import datetime
-from pathlib import Path
-from typing import Optional, Dict
-import ipaddress
-import json
-import logging
-import threading
-
-from services.redis.redis_client import is_redis_available, get_redis
-from config.settings import config
-
-"""
 IP Geolocation Service
 ======================
 
@@ -36,28 +22,37 @@ Copyright 2024-2025 北京思源智教科技有限公司
 All Rights Reserved
 Proprietary License
 """
+from datetime import datetime
+from pathlib import Path
+from typing import Optional, Dict
+import ipaddress
+import json
+import logging
+import threading
+
+from services.redis.redis_client import is_redis_available, get_redis
+from config.settings import config
 
 
 try:
     # Try importing py-ip2region (official Python binding for xdb format)
     try:
-        from ip2region.searcher import new_with_file_only, new_with_buffer
-        from ip2region.util import load_header_from_file, IPv4, IPv6
+        from ip2region.searcher import new_with_file_only as _new_with_file_only_func
+        from ip2region.util import IPv4 as _ipv4_type, IPv6 as _ipv6_type
         IP2REGION_AVAILABLE = True
+        NEW_WITH_FILE_ONLY = _new_with_file_only_func
+        IPV4_TYPE = _ipv4_type
+        IPV6_TYPE = _ipv6_type
     except ImportError:
         IP2REGION_AVAILABLE = False
-        new_with_file_only = None
-        new_with_buffer = None
-        load_header_from_file = None
-        IPv4 = None
-        IPv6 = None
+        NEW_WITH_FILE_ONLY = None
+        IPV4_TYPE = None
+        IPV6_TYPE = None
 except Exception:
     IP2REGION_AVAILABLE = False
-    new_with_file_only = None
-    new_with_buffer = None
-    load_header_from_file = None
-    IPv4 = None
-    IPv6 = None
+    NEW_WITH_FILE_ONLY = None
+    IPV4_TYPE = None
+    IPV6_TYPE = None
 
 
 logger = logging.getLogger(__name__)
@@ -74,6 +69,129 @@ DB_FILE_PATH_V6 = Path("data/ip2region_v6.xdb")  # IPv6 database (optional)
 
 # Patch cache file (patches take priority over main database)
 PATCHES_CACHE = Path("data/ip2region_patches_cache.json")
+
+# Mapping of city names to province names for ECharts map
+CITY_TO_PROVINCE = {
+    # Direct municipalities
+    "北京市": "北京",
+    "上海市": "上海",
+    "天津市": "天津",
+    "重庆市": "重庆",
+    # Jiangsu cities
+    "南京市": "江苏",
+    "苏州市": "江苏",
+    "无锡市": "江苏",
+    "常州市": "江苏",
+    "镇江市": "江苏",
+    "扬州市": "江苏",
+    "泰州市": "江苏",
+    "南通市": "江苏",
+    "盐城市": "江苏",
+    "淮安市": "江苏",
+    "宿迁市": "江苏",
+    "徐州市": "江苏",
+    "连云港市": "江苏",
+    # Zhejiang cities
+    "杭州市": "浙江",
+    "宁波市": "浙江",
+    "温州市": "浙江",
+    "嘉兴市": "浙江",
+    "湖州市": "浙江",
+    "绍兴市": "浙江",
+    "金华市": "浙江",
+    "衢州市": "浙江",
+    "舟山市": "浙江",
+    "台州市": "浙江",
+    "丽水市": "浙江",
+    # Guangdong cities
+    "广州市": "广东",
+    "深圳市": "广东",
+    "珠海市": "广东",
+    "汕头市": "广东",
+    "佛山市": "广东",
+    "韶关市": "广东",
+    "湛江市": "广东",
+    "肇庆市": "广东",
+    "江门市": "广东",
+    "茂名市": "广东",
+    "惠州市": "广东",
+    "梅州市": "广东",
+    "汕尾市": "广东",
+    "河源市": "广东",
+    "阳江市": "广东",
+    "清远市": "广东",
+    "东莞市": "广东",
+    "中山市": "广东",
+    "潮州市": "广东",
+    "揭阳市": "广东",
+    "云浮市": "广东",
+    # Shandong cities
+    "济南市": "山东",
+    "青岛市": "山东",
+    "淄博市": "山东",
+    "枣庄市": "山东",
+    "东营市": "山东",
+    "烟台市": "山东",
+    "潍坊市": "山东",
+    "济宁市": "山东",
+    "泰安市": "山东",
+    "威海市": "山东",
+    "日照市": "山东",
+    "临沂市": "山东",
+    "德州市": "山东",
+    "聊城市": "山东",
+    "滨州市": "山东",
+    "菏泽市": "山东",
+    # Add more mappings as needed
+}
+
+# Major Chinese cities/provinces coordinates
+# Format: {name: {"lat": latitude, "lng": longitude}}
+COORDINATES = {
+    # Provinces
+    "北京": {"lat": 39.9042, "lng": 116.4074},
+    "上海": {"lat": 31.2304, "lng": 121.4737},
+    "天津": {"lat": 39.3434, "lng": 117.3616},
+    "重庆": {"lat": 29.5630, "lng": 106.5516},
+    "广东": {"lat": 23.1291, "lng": 113.2644},  # Guangzhou
+    "江苏": {"lat": 32.0603, "lng": 118.7969},  # Nanjing
+    "浙江": {"lat": 30.2741, "lng": 120.1551},  # Hangzhou
+    "山东": {"lat": 36.6512, "lng": 117.1201},  # Jinan
+    "四川": {"lat": 30.6624, "lng": 104.0633},  # Chengdu
+    "湖北": {"lat": 30.5928, "lng": 114.3055},  # Wuhan
+    "河南": {"lat": 34.7466, "lng": 113.6254},  # Zhengzhou
+    "湖南": {"lat": 28.2278, "lng": 112.9388},  # Changsha
+    "河北": {"lat": 38.0428, "lng": 114.5149},  # Shijiazhuang
+    "安徽": {"lat": 31.8206, "lng": 117.2272},  # Hefei
+    "福建": {"lat": 26.0745, "lng": 119.2965},  # Fuzhou
+    "辽宁": {"lat": 41.8057, "lng": 123.4315},  # Shenyang
+    "陕西": {"lat": 34.3416, "lng": 108.9398},  # Xi'an
+    "江西": {"lat": 28.6820, "lng": 115.8579},  # Nanchang
+    "云南": {"lat": 25.0389, "lng": 102.7183},  # Kunming
+    "广西": {"lat": 22.8170, "lng": 108.3669},  # Nanning
+    "山西": {"lat": 37.8706, "lng": 112.5489},  # Taiyuan
+    "内蒙古": {"lat": 40.8414, "lng": 111.7519},  # Hohhot
+    "黑龙江": {"lat": 45.7731, "lng": 126.6849},  # Harbin
+    "吉林": {"lat": 43.8171, "lng": 125.3235},  # Changchun
+    "贵州": {"lat": 26.6470, "lng": 106.6302},  # Guiyang
+    "新疆": {"lat": 43.8256, "lng": 87.6168},  # Urumqi
+    "甘肃": {"lat": 36.0611, "lng": 103.8343},  # Lanzhou
+    "海南": {"lat": 20.0444, "lng": 110.1999},  # Haikou
+    "宁夏": {"lat": 38.4872, "lng": 106.2309},  # Yinchuan
+    "青海": {"lat": 36.6171, "lng": 101.7782},  # Xining
+    "西藏": {"lat": 29.6626, "lng": 91.1160},  # Lhasa
+    # Major cities (more specific)
+    "深圳": {"lat": 22.5431, "lng": 114.0579},
+    "广州": {"lat": 23.1291, "lng": 113.2644},
+    "杭州": {"lat": 30.2741, "lng": 120.1551},
+    "南京": {"lat": 32.0603, "lng": 118.7969},
+    "成都": {"lat": 30.6624, "lng": 104.0633},
+    "武汉": {"lat": 30.5928, "lng": 114.3055},
+    "西安": {"lat": 34.3416, "lng": 108.9398},
+    "苏州": {"lat": 31.2989, "lng": 120.5853},
+    "郑州": {"lat": 34.7466, "lng": 113.6254},
+    "长沙": {"lat": 28.2278, "lng": 112.9388},
+}
 
 
 class IPGeolocationService:
@@ -119,9 +237,9 @@ class IPGeolocationService:
                     # In multi-worker setups, this prevents ~45MB memory duplication per worker
                     # Performance is still good due to OS page caching and Redis caching (30-day TTL)
                     # Based on: https://github.com/lionsoul2014/ip2region/tree/master/binding/python
-                    if IPv4 is None or new_with_file_only is None:
+                    if IPV4_TYPE is None or NEW_WITH_FILE_ONLY is None:
                         raise ImportError("ip2region module not properly imported")
-                    self.searcher_v4 = new_with_file_only(IPv4, str(DB_FILE_PATH_V4))
+                    self.searcher_v4 = NEW_WITH_FILE_ONLY(IPV4_TYPE, str(DB_FILE_PATH_V4))
 
                     file_size_mb = DB_FILE_PATH_V4.stat().st_size / 1024 / 1024
                     logger.info(
@@ -140,9 +258,9 @@ class IPGeolocationService:
                 try:
                     # Use file-only mode to avoid loading entire database into memory per worker
                     # In multi-worker setups, this prevents ~35MB memory duplication per worker
-                    if IPv6 is None or new_with_file_only is None:
+                    if IPV6_TYPE is None or NEW_WITH_FILE_ONLY is None:
                         raise ImportError("ip2region module not properly imported")
-                    self.searcher_v6 = new_with_file_only(IPv6, str(DB_FILE_PATH_V6))
+                    self.searcher_v6 = NEW_WITH_FILE_ONLY(IPV6_TYPE, str(DB_FILE_PATH_V6))
 
                     file_size_mb = DB_FILE_PATH_V6.stat().st_size / 1024 / 1024
                     logger.info(
@@ -210,81 +328,6 @@ class IPGeolocationService:
         """
         if not province:
             return province
-
-        # Mapping of city names to province names for ECharts map
-        CITY_TO_PROVINCE = {
-            # Direct municipalities
-            "北京市": "北京",
-            "上海市": "上海",
-            "天津市": "天津",
-            "重庆市": "重庆",
-            # Jiangsu cities
-            "南京市": "江苏",
-            "苏州市": "江苏",
-            "无锡市": "江苏",
-            "常州市": "江苏",
-            "镇江市": "江苏",
-            "扬州市": "江苏",
-            "泰州市": "江苏",
-            "南通市": "江苏",
-            "盐城市": "江苏",
-            "淮安市": "江苏",
-            "宿迁市": "江苏",
-            "徐州市": "江苏",
-            "连云港市": "江苏",
-            # Zhejiang cities
-            "杭州市": "浙江",
-            "宁波市": "浙江",
-            "温州市": "浙江",
-            "嘉兴市": "浙江",
-            "湖州市": "浙江",
-            "绍兴市": "浙江",
-            "金华市": "浙江",
-            "衢州市": "浙江",
-            "舟山市": "浙江",
-            "台州市": "浙江",
-            "丽水市": "浙江",
-            # Guangdong cities
-            "广州市": "广东",
-            "深圳市": "广东",
-            "珠海市": "广东",
-            "汕头市": "广东",
-            "佛山市": "广东",
-            "韶关市": "广东",
-            "湛江市": "广东",
-            "肇庆市": "广东",
-            "江门市": "广东",
-            "茂名市": "广东",
-            "惠州市": "广东",
-            "梅州市": "广东",
-            "汕尾市": "广东",
-            "河源市": "广东",
-            "阳江市": "广东",
-            "清远市": "广东",
-            "东莞市": "广东",
-            "中山市": "广东",
-            "潮州市": "广东",
-            "揭阳市": "广东",
-            "云浮市": "广东",
-            # Shandong cities
-            "济南市": "山东",
-            "青岛市": "山东",
-            "淄博市": "山东",
-            "枣庄市": "山东",
-            "东营市": "山东",
-            "烟台市": "山东",
-            "潍坊市": "山东",
-            "济宁市": "山东",
-            "泰安市": "山东",
-            "威海市": "山东",
-            "日照市": "山东",
-            "临沂市": "山东",
-            "德州市": "山东",
-            "聊城市": "山东",
-            "滨州市": "山东",
-            "菏泽市": "山东",
-            # Add more mappings as needed
-        }
 
         # Check if it's a city name that needs conversion
         if province in CITY_TO_PROVINCE:
@@ -369,7 +412,7 @@ class IPGeolocationService:
 
             if version_file.exists():
                 try:
-                    with open(version_file, 'r') as f:
+                    with open(version_file, 'r', encoding='utf-8') as f:
                         lines = f.readlines()
                         if lines:
                             download_time = datetime.fromisoformat(lines[0].strip())
@@ -548,54 +591,6 @@ class IPGeolocationService:
         Get approximate coordinates for province/city.
         This is a simplified mapping - expand as needed.
         """
-        # Major Chinese cities/provinces coordinates
-        # Format: {name: {"lat": latitude, "lng": longitude}}
-        COORDINATES = {
-            # Provinces
-            "北京": {"lat": 39.9042, "lng": 116.4074},
-            "上海": {"lat": 31.2304, "lng": 121.4737},
-            "天津": {"lat": 39.3434, "lng": 117.3616},
-            "重庆": {"lat": 29.5630, "lng": 106.5516},
-            "广东": {"lat": 23.1291, "lng": 113.2644},  # Guangzhou
-            "江苏": {"lat": 32.0603, "lng": 118.7969},  # Nanjing
-            "浙江": {"lat": 30.2741, "lng": 120.1551},  # Hangzhou
-            "山东": {"lat": 36.6512, "lng": 117.1201},  # Jinan
-            "四川": {"lat": 30.6624, "lng": 104.0633},  # Chengdu
-            "湖北": {"lat": 30.5928, "lng": 114.3055},  # Wuhan
-            "河南": {"lat": 34.7466, "lng": 113.6254},  # Zhengzhou
-            "湖南": {"lat": 28.2278, "lng": 112.9388},  # Changsha
-            "河北": {"lat": 38.0428, "lng": 114.5149},  # Shijiazhuang
-            "安徽": {"lat": 31.8206, "lng": 117.2272},  # Hefei
-            "福建": {"lat": 26.0745, "lng": 119.2965},  # Fuzhou
-            "辽宁": {"lat": 41.8057, "lng": 123.4315},  # Shenyang
-            "陕西": {"lat": 34.3416, "lng": 108.9398},  # Xi'an
-            "江西": {"lat": 28.6820, "lng": 115.8579},  # Nanchang
-            "云南": {"lat": 25.0389, "lng": 102.7183},  # Kunming
-            "广西": {"lat": 22.8170, "lng": 108.3669},  # Nanning
-            "山西": {"lat": 37.8706, "lng": 112.5489},  # Taiyuan
-            "内蒙古": {"lat": 40.8414, "lng": 111.7519},  # Hohhot
-            "黑龙江": {"lat": 45.7731, "lng": 126.6849},  # Harbin
-            "吉林": {"lat": 43.8171, "lng": 125.3235},  # Changchun
-            "贵州": {"lat": 26.6470, "lng": 106.6302},  # Guiyang
-            "新疆": {"lat": 43.8256, "lng": 87.6168},  # Urumqi
-            "甘肃": {"lat": 36.0611, "lng": 103.8343},  # Lanzhou
-            "海南": {"lat": 20.0444, "lng": 110.1999},  # Haikou
-            "宁夏": {"lat": 38.4872, "lng": 106.2309},  # Yinchuan
-            "青海": {"lat": 36.6171, "lng": 101.7782},  # Xining
-            "西藏": {"lat": 29.6626, "lng": 91.1160},  # Lhasa
-            # Major cities (more specific)
-            "深圳": {"lat": 22.5431, "lng": 114.0579},
-            "广州": {"lat": 23.1291, "lng": 113.2644},
-            "杭州": {"lat": 30.2741, "lng": 120.1551},
-            "南京": {"lat": 32.0603, "lng": 118.7969},
-            "成都": {"lat": 30.6624, "lng": 104.0633},
-            "武汉": {"lat": 30.5928, "lng": 114.3055},
-            "西安": {"lat": 34.3416, "lng": 108.9398},
-            "苏州": {"lat": 31.2989, "lng": 120.5853},
-            "郑州": {"lat": 34.7466, "lng": 113.6254},
-            "长沙": {"lat": 28.2278, "lng": 112.9388},
-        }
-
         # Try city first, then province
         if city and city in COORDINATES:
             return COORDINATES[city]
@@ -692,21 +687,27 @@ class IPGeolocationService:
 
 
 # Global singleton instance with thread-safe initialization
-_geolocation_service: Optional[IPGeolocationService] = None
-_geolocation_lock = threading.Lock()
+class GeolocationServiceSingleton:
+    """Thread-safe singleton wrapper for IPGeolocationService."""
+    _instance: Optional[IPGeolocationService] = None
+    _lock = threading.Lock()
+
+    @classmethod
+    def get_instance(cls) -> IPGeolocationService:
+        """
+        Get global IP geolocation service instance (thread-safe singleton).
+
+        Uses double-checked locking pattern to ensure only one instance is created
+        even when multiple requests initialize the service simultaneously during startup.
+        """
+        if cls._instance is None:
+            with cls._lock:
+                # Double-check after acquiring lock (another thread might have created it)
+                if cls._instance is None:
+                    cls._instance = IPGeolocationService()
+        return cls._instance
 
 
 def get_geolocation_service() -> IPGeolocationService:
-    """
-    Get global IP geolocation service instance (thread-safe singleton).
-
-    Uses double-checked locking pattern to ensure only one instance is created
-    even when multiple requests initialize the service simultaneously during startup.
-    """
-    global _geolocation_service
-    if _geolocation_service is None:
-        with _geolocation_lock:
-            # Double-check after acquiring lock (another thread might have created it)
-            if _geolocation_service is None:
-                _geolocation_service = IPGeolocationService()
-    return _geolocation_service
+    """Get global IP geolocation service instance (thread-safe singleton)."""
+    return GeolocationServiceSingleton.get_instance()

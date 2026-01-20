@@ -233,7 +233,7 @@ def check_database_on_startup() -> bool:
         logger.critical("[Recovery] ")
         logger.critical("[Recovery] To recover, run the application interactively:")
         logger.critical("[Recovery]   1. Stop the service: sudo systemctl stop mindgraph")
-        logger.critical("[Recovery]   2. Run manually: python run_server.py")
+        logger.critical("[Recovery]   2. Run manually: python main.py")
         logger.critical("[Recovery]   3. Follow the recovery wizard prompts")
         logger.critical("[Recovery]   4. After recovery, restart the service")
         logger.critical("[Recovery] ")

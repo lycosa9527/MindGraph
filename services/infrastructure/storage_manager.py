@@ -10,7 +10,7 @@ All Rights Reserved
 Proprietary License
 """
 from pathlib import Path
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Any
 import logging
 import os
 import shutil
@@ -261,13 +261,18 @@ class StorageManager:
         return alerts
 
 
-# Global instance
-_storage_manager: Optional[StorageManager] = None
+def _create_storage_manager_getter():
+    """Create storage manager getter with closure-based singleton."""
+    instance = None
+
+    def _getter() -> StorageManager:
+        """Get global storage manager instance."""
+        nonlocal instance
+        if instance is None:
+            instance = StorageManager()
+        return instance
+
+    return _getter
 
 
-def get_storage_manager() -> StorageManager:
-    """Get global storage manager instance."""
-    global _storage_manager
-    if _storage_manager is None:
-        _storage_manager = StorageManager()
-    return _storage_manager
+get_storage_manager = _create_storage_manager_getter()

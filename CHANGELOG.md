@@ -7,6 +7,49 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [5.10.1] - 2026-01-20 - Logging Stream Handling Fix
+
+### Fixed
+
+- **Logging Configuration Robustness**
+  - Fixed "I/O operation on closed file" errors during application startup
+  - Implemented preventive stream usability checking before creating logging handlers
+  - Added `_is_stream_usable()` function to safely check if streams are usable without triggering errors
+  - Modified `setup_logging()` to conditionally create console handler only if `sys.stdout` is usable
+  - Enhanced `SafeStreamHandler` to gracefully handle closed streams during emit operations
+  - Improved `TimestampedRotatingFileHandler.emit()` to automatically reopen closed file streams
+  - Added fallback to `NullHandler` if no handlers can be created (prevents application crashes)
+  - Protected print statements in `process_manager.py` and `server_launcher.py` to handle closed streams gracefully
+  - Fixed logging setup order: moved `sys.stderr` wrapping to after `main` module import to ensure logging handlers are created first
+
+### Changed
+
+- **Logging Infrastructure**
+  - `services/infrastructure/logging_config.py` - Major improvements to stream handling (150+ lines changed)
+    - Added preventive stream checking before handler creation
+    - Simplified error handling logic
+    - Improved reliability by checking streams before use rather than handling errors after
+    - Better graceful degradation when streams are unavailable
+  - `services/infrastructure/server_launcher.py` - Fixed startup sequence (15 lines changed)
+    - Moved `sys.stderr` wrapping to after logging configuration
+    - Added error handling for print statements in exception paths
+  - `services/infrastructure/process_manager.py` - Enhanced shutdown handling (20 lines changed)
+    - Protected print statements with try-except blocks
+    - Improved graceful shutdown when streams are closed
+
+### Technical Details
+
+- **Root Cause**: Logging handlers were being created with potentially closed streams (especially `sys.stdout`), which caused "I/O operation on closed file" errors when handlers tried to write log messages
+- **Solution**: Implemented preventive checking using `_is_stream_usable()` function that safely determines if a stream can be used before creating handlers
+- **Benefits**:
+  - Prevents errors by checking streams before handler creation
+  - More reliable logging setup that works even when stdout/stderr are closed
+  - Cleaner code with simpler error handling logic
+  - Better performance by avoiding unnecessary handler creation
+  - Graceful degradation to file-only logging or NullHandler when needed
+
+---
+
 ## [5.10.0] - 2026-01-20 - Chunk Test API Refactoring and Enhanced Features
 
 ### Added

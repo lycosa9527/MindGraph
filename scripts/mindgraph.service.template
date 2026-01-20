@@ -10,7 +10,7 @@ Group={{GROUP}}
 WorkingDirectory={{WORKING_DIR}}
 
 # Use full path to Python (works with conda or venv)
-ExecStart={{PYTHON_PATH}} run_server.py
+ExecStart={{PYTHON_PATH}} main.py
 
 # Environment variables (optional - .env file is preferred)
 # Environment="PATH={{PYTHON_BIN_DIR}}:$PATH"

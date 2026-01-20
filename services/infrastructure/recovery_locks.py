@@ -170,7 +170,7 @@ def get_integrity_check_cache() -> Optional[Tuple[bool, float]]:
     return None
 
 
-def set_integrity_check_cache(value: Tuple[bool, float]) -> None:
+def set_integrity_check_cache(_value: Tuple[bool, float]) -> None:
     """
     Set cached integrity check result (no-op - cache disabled).
     

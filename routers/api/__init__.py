@@ -15,8 +15,6 @@ import logging
 
 from fastapi import APIRouter
 
-logger = logging.getLogger(__name__)
-
 from . import (
     config,
     diagram_generation,
@@ -32,10 +30,12 @@ from . import (
     diagrams,
 )
 
+logger = logging.getLogger(__name__)
+
 try:
-    from . import knowledge_space
+    from . import knowledge_space  # pylint: disable=invalid-name
 except Exception as e:
-    knowledge_space = None
+    knowledge_space = None  # pylint: disable=invalid-name
     logger.debug("[API] Failed to import knowledge_space router: %s", e, exc_info=True)
 
 # Create main router with prefix and tags

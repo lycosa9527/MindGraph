@@ -1,5 +1,23 @@
 """
-sms middleware module.
+SMS Middleware Module
+
+Unified SMS service and middleware for Tencent Cloud SMS API.
+Provides native async HTTP calls with TC3-HMAC-SHA256 signature,
+bypassing the synchronous Tencent SDK entirely.
+
+Features:
+- Native async HTTP calls via httpx
+- Rate limiting (concurrent request limits)
+- QPM (Queries Per Minute) limiting
+- Error handling
+- Performance tracking
+
+@author lycosa9527
+@made_by MindSpring Team
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 from contextlib import asynccontextmanager
 from datetime import datetime
@@ -20,29 +38,6 @@ from config.settings import config
 from models.messages import Messages, Language
 from services.infrastructure.rate_limiter import DashscopeRateLimiter
 from services.monitoring.performance_tracker import performance_tracker
-
-"""
-SMS Middleware
-==============
-
-Unified SMS service and middleware for Tencent Cloud SMS API.
-Provides native async HTTP calls with TC3-HMAC-SHA256 signature,
-bypassing the synchronous Tencent SDK entirely.
-
-Features:
-- Native async HTTP calls via httpx
-- Rate limiting (concurrent request limits)
-- QPM (Queries Per Minute) limiting
-- Error handling
-- Performance tracking
-
-@author lycosa9527
-@made_by MindSpring Team
-
-Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
-All Rights Reserved
-Proprietary License
-"""
 
 
 
@@ -89,7 +84,6 @@ SMS_TIMEOUT_SECONDS = 10
 
 class SMSServiceError(Exception):
     """Custom exception for SMS service errors"""
-    pass
 
 
 class SMSService:
@@ -570,13 +564,16 @@ class SMSMiddleware:
                 enabled=True
             )
             logger.info(
-                f"[SMSMiddleware] Initialized with rate limiting: "
-                f"QPM={self.qpm_limit}, Concurrent={self.max_concurrent_requests}"
+                "[SMSMiddleware] Initialized with rate limiting: "
+                "QPM=%s, Concurrent=%s",
+                self.qpm_limit,
+                self.max_concurrent_requests
             )
         else:
             logger.info(
-                f"[SMSMiddleware] Initialized without rate limiting: "
-                f"Concurrent={self.max_concurrent_requests}"
+                "[SMSMiddleware] Initialized without rate limiting: "
+                "Concurrent=%s",
+                self.max_concurrent_requests
             )
 
     @property
@@ -618,97 +615,175 @@ class SMSMiddleware:
         request_id = f"sms_{purpose}_{int(time.time() * 1000)}"
         masked_phone = f"{phone[:3]}****{phone[-4:]}" if len(phone) >= 7 else "****"
 
+        # Track active requests (for monitoring, even without rate limiter)
+        async with self._request_lock:
+            self._active_requests += 1
+            logger.debug(
+                "[SMSMiddleware] Request %s started "
+                "(%s/%s active) "
+                "for %s (%s)",
+                request_id,
+                self._active_requests,
+                self.max_concurrent_requests,
+                masked_phone,
+                purpose
+            )
+
         # Apply rate limiting if enabled
-        rate_limit_context = None
         if self.enable_rate_limiting and self.rate_limiter:
             try:
-                rate_limit_context = await self.rate_limiter.__aenter__()
+                async with self.rate_limiter:
+                    try:
+                        # Prepare context for request
+                        ctx = {
+                            'request_id': request_id,
+                            'phone': phone,
+                            'masked_phone': masked_phone,
+                            'purpose': purpose,
+                            'user_id': user_id,
+                            'organization_id': organization_id,
+                            'start_time': request_start_time
+                        }
+
+                        yield ctx
+
+                        # Track successful request
+                        duration = time.time() - request_start_time
+                        if self.enable_performance_tracking:
+                            self._track_performance(
+                                duration=duration,
+                                success=True,
+                                error=None,
+                                purpose=purpose
+                            )
+
+                        logger.debug(
+                            "[SMSMiddleware] Request %s completed successfully "
+                            "in %.2fs for %s",
+                            request_id,
+                            duration,
+                            masked_phone
+                        )
+
+                    except Exception as e:
+                        # Track failed request
+                        duration = time.time() - request_start_time
+                        if self.enable_performance_tracking:
+                            self._track_performance(
+                                duration=duration,
+                                success=False,
+                                error=str(e),
+                                purpose=purpose
+                            )
+
+                        logger.error(
+                            "[SMSMiddleware] Request %s failed "
+                            "after %.2fs for %s: %s",
+                            request_id,
+                            duration,
+                            masked_phone,
+                            e,
+                            exc_info=True
+                        )
+
+                        # Apply error handling if enabled
+                        if self.enable_error_handling:
+                            # Re-raise with SMS-specific error context
+                            raise SMSServiceError(f"SMS request failed: {e}") from e
+                        raise
+                    finally:
+                        # Decrement active requests
+                        async with self._request_lock:
+                            self._active_requests -= 1
+                            logger.debug(
+                                "[SMSMiddleware] Request %s completed "
+                                "(%s/%s active)",
+                                request_id,
+                                self._active_requests,
+                                self.max_concurrent_requests
+                            )
             except Exception as e:
                 logger.warning("[SMSMiddleware] Rate limiter acquisition failed: %s", e)
+                # Decrement active requests on rate limiter failure
+                async with self._request_lock:
+                    self._active_requests -= 1
                 if self.enable_error_handling:
                     raise SMSServiceError(
                         "SMS service temporarily unavailable due to rate limiting. "
                         "Please try again in a moment."
                     ) from e
                 raise
+        else:
+            # No rate limiting - proceed directly
+            try:
+                # Prepare context for request
+                ctx = {
+                    'request_id': request_id,
+                    'phone': phone,
+                    'masked_phone': masked_phone,
+                    'purpose': purpose,
+                    'user_id': user_id,
+                    'organization_id': organization_id,
+                    'start_time': request_start_time
+                }
 
-        # Track active requests (for monitoring, even without rate limiter)
-        async with self._request_lock:
-            self._active_requests += 1
-            logger.debug(
-                f"[SMSMiddleware] Request {request_id} started "
-                f"({self._active_requests}/{self.max_concurrent_requests} active) "
-                f"for {masked_phone} ({purpose})"
-            )
+                yield ctx
 
-        try:
-            # Prepare context for request
-            ctx = {
-                'request_id': request_id,
-                'phone': phone,
-                'masked_phone': masked_phone,
-                'purpose': purpose,
-                'user_id': user_id,
-                'organization_id': organization_id,
-                'start_time': request_start_time
-            }
+                # Track successful request
+                duration = time.time() - request_start_time
+                if self.enable_performance_tracking:
+                    self._track_performance(
+                        duration=duration,
+                        success=True,
+                        error=None,
+                        purpose=purpose
+                    )
 
-            yield ctx
-
-            # Track successful request
-            duration = time.time() - request_start_time
-            if self.enable_performance_tracking:
-                self._track_performance(
-                    duration=duration,
-                    success=True,
-                    error=None,
-                    purpose=purpose
-                )
-
-            logger.debug(
-                f"[SMSMiddleware] Request {request_id} completed successfully "
-                f"in {duration:.2f}s for {masked_phone}"
-            )
-
-        except Exception as e:
-            # Track failed request
-            duration = time.time() - request_start_time
-            if self.enable_performance_tracking:
-                self._track_performance(
-                    duration=duration,
-                    success=False,
-                    error=str(e),
-                    purpose=purpose
-                )
-
-            logger.error(
-                f"[SMSMiddleware] Request {request_id} failed "
-                f"after {duration:.2f}s for {masked_phone}: {e}",
-                exc_info=True
-            )
-
-            # Apply error handling if enabled
-            if self.enable_error_handling:
-                # Re-raise with SMS-specific error context
-                raise SMSServiceError(f"SMS request failed: {e}") from e
-            else:
-                raise
-
-        finally:
-            # Release rate limiter
-            if rate_limit_context and self.rate_limiter:
-                try:
-                    await self.rate_limiter.__aexit__(None, None, None)
-                except Exception as e:
-                    logger.debug("[SMSMiddleware] Error releasing rate limiter: %s", e)
-
-            # Decrement active requests
-            async with self._request_lock:
-                self._active_requests -= 1
                 logger.debug(
-                    f"[SMSMiddleware] Request {request_id} completed "
-                    f"({self._active_requests}/{self.max_concurrent_requests} active)"
+                    "[SMSMiddleware] Request %s completed successfully "
+                    "in %.2fs for %s",
+                    request_id,
+                    duration,
+                    masked_phone
                 )
+
+            except Exception as e:
+                # Track failed request
+                duration = time.time() - request_start_time
+                if self.enable_performance_tracking:
+                    self._track_performance(
+                        duration=duration,
+                        success=False,
+                        error=str(e),
+                        purpose=purpose
+                    )
+
+                logger.error(
+                    "[SMSMiddleware] Request %s failed "
+                    "after %.2fs for %s: %s",
+                    request_id,
+                    duration,
+                    masked_phone,
+                    e,
+                    exc_info=True
+                )
+
+                # Apply error handling if enabled
+                if self.enable_error_handling:
+                    # Re-raise with SMS-specific error context
+                    raise SMSServiceError(f"SMS request failed: {e}") from e
+                raise
+            finally:
+                # Decrement active requests
+                async with self._request_lock:
+                    self._active_requests -= 1
+                    logger.debug(
+                        "[SMSMiddleware] Request %s completed "
+                        "(%s/%s active)",
+                        request_id,
+                        self._active_requests,
+                        self.max_concurrent_requests
+                    )
 
     async def send_verification_code(
         self,
@@ -777,8 +852,26 @@ class SMSMiddleware:
         await self._sms_service.close()
 
 
-# Singleton instance for SMS middleware
-_sms_middleware: Optional[SMSMiddleware] = None
+class _SMSMiddlewareSingleton:
+    """Singleton holder for SMS middleware instance."""
+    _instance: Optional[SMSMiddleware] = None
+
+    @classmethod
+    def get_instance(cls) -> SMSMiddleware:
+        """Get singleton SMS middleware instance."""
+        if cls._instance is None:
+            cls._instance = SMSMiddleware()
+        return cls._instance
+
+    @classmethod
+    def get_instance_if_exists(cls) -> Optional[SMSMiddleware]:
+        """Get singleton instance if it exists, otherwise None."""
+        return cls._instance
+
+    @classmethod
+    def reset_instance(cls) -> None:
+        """Reset singleton instance (for testing/shutdown)."""
+        cls._instance = None
 
 
 def get_sms_middleware() -> SMSMiddleware:
@@ -788,10 +881,7 @@ def get_sms_middleware() -> SMSMiddleware:
     Returns:
         SMSMiddleware instance
     """
-    global _sms_middleware
-    if _sms_middleware is None:
-        _sms_middleware = SMSMiddleware()
-    return _sms_middleware
+    return _SMSMiddlewareSingleton.get_instance()
 
 
 def get_sms_service() -> SMSMiddleware:
@@ -807,14 +897,14 @@ def get_sms_service() -> SMSMiddleware:
     return get_sms_middleware()
 
 
-async def shutdown_sms_service():
+async def shutdown_sms_service() -> None:
     """
     Shutdown SMS service (call on app shutdown)
 
     Closes the httpx async client properly.
     """
-    global _sms_middleware
-    if _sms_middleware is not None:
-        await _sms_middleware.close()
-        _sms_middleware = None
+    instance = _SMSMiddlewareSingleton.get_instance_if_exists()
+    if instance is not None:
+        await instance.close()
+        _SMSMiddlewareSingleton.reset_instance()
         logger.info("SMS service shut down")

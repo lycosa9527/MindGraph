@@ -1,13 +1,4 @@
 """
-captcha storage module.
-"""
-from typing import Optional, Dict, Tuple
-import logging
-import time
-
-from services.redis.redis_client import RedisOps
-
-"""
 Redis Captcha Storage
 =====================
 
@@ -26,6 +17,11 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+from typing import Optional, Dict, Tuple
+import logging
+import time
+
+from services.redis.redis_client import RedisOps
 
 
 
@@ -128,14 +124,20 @@ class CaptchaStorage:
         logger.debug("[Captcha] Removed: %s", captcha_preview)
 
 
-# Global singleton instance
-_captcha_storage: Optional[CaptchaStorage] = None
+class _CaptchaStorageSingleton:
+    """Singleton wrapper for CaptchaStorage instance."""
+
+    _instance: Optional[CaptchaStorage] = None
+
+    @classmethod
+    def get_instance(cls) -> CaptchaStorage:
+        """Get the singleton captcha storage instance."""
+        if cls._instance is None:
+            cls._instance = CaptchaStorage()
+            logger.info("[CaptchaStorage] Initialized (Redis)")
+        return cls._instance
 
 
 def get_captcha_storage() -> CaptchaStorage:
     """Get the global captcha storage instance."""
-    global _captcha_storage
-    if _captcha_storage is None:
-        _captcha_storage = CaptchaStorage()
-        logger.info("[CaptchaStorage] Initialized (Redis)")
-    return _captcha_storage
+    return _CaptchaStorageSingleton.get_instance()

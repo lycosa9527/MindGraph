@@ -1,10 +1,3 @@
-﻿"""
-security logger module.
-"""
-from typing import Optional
-import logging
-
-
 """
 Security Event Logger
 =====================
@@ -32,6 +25,8 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+from typing import Optional
+import logging
 
 
 logger = logging.getLogger(__name__)

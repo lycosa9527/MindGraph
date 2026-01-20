@@ -351,7 +351,7 @@ class ChunkTestDocumentService:
                         method_index=method_idx,
                         total_methods=total_methods
                     )
-                    validated_progress, is_valid = validate_progress(
+                    validated_progress, _ = validate_progress(
                         new_progress,
                         previous_progress,
                         f'embedding ({method_name})'
@@ -392,7 +392,7 @@ class ChunkTestDocumentService:
                         method_index=method_idx,
                         total_methods=total_methods
                     )
-                    validated_progress, is_valid = validate_progress(
+                    validated_progress, _ = validate_progress(
                         new_progress,
                         previous_progress,
                         f'indexing ({method_name})'
@@ -443,7 +443,7 @@ class ChunkTestDocumentService:
                             method_index=method_idx + 1,
                             total_methods=total_methods
                         )
-                        validated_progress, is_valid = validate_progress(
+                        validated_progress, _ = validate_progress(
                             next_method_progress,
                             previous_progress,
                             f'chunking (skipped {method_name})'
@@ -481,7 +481,7 @@ class ChunkTestDocumentService:
                 get_progress_percent('completed'),
                 100
             )
-            validated_progress, is_valid = validate_progress(
+            validated_progress, _ = validate_progress(
                 final_progress,
                 previous_progress,
                 'completed'
@@ -595,24 +595,24 @@ class ChunkTestDocumentService:
                 document_id
             )
             return
-        
+
         if document.status != 'processing':
             logger.debug(
                 "[ChunkTestDocument] Document %s is not in processing status, skipping cleanup",
                 document_id
             )
             return
-        
+
         logger.info(
             "[ChunkTestDocument] Cleaning up incomplete processing for document %s",
             document_id
         )
-        
+
         # Get all chunks for this document (may be partial)
         chunks = self.db.query(ChunkTestDocumentChunk).filter(
             ChunkTestDocumentChunk.document_id == document_id
         ).all()
-        
+
         # Delete from Qdrant - group by chunking_method to delete from correct collections
         if chunks:
             # Group chunks by chunking_method
@@ -622,7 +622,7 @@ class ChunkTestDocumentService:
                 if method not in chunks_by_method:
                     chunks_by_method[method] = []
                 chunks_by_method[method].append(chunk.id)
-            
+
             # Delete from each method-specific collection
             for method, chunk_ids in chunks_by_method.items():
                 try:
@@ -640,7 +640,7 @@ class ChunkTestDocumentService:
                         "[ChunkTestDocument] Failed to delete Qdrant points for method %s: %s",
                         method, e
                     )
-        
+
         # Delete all chunks from database
         if chunks:
             self.db.query(ChunkTestDocumentChunk).filter(
@@ -651,14 +651,14 @@ class ChunkTestDocumentService:
                 "[ChunkTestDocument] Deleted %d chunks from database",
                 len(chunks)
             )
-        
+
         # Reset document status to 'pending' so it can be retried
         document.status = 'pending'
         document.processing_progress = None
         document.processing_progress_percent = 0
-        document.error_message = "Processing was interrupted and cleaned up. Please retry."
+        document.error_message =             "Processing was interrupted and cleaned up. Please retry."
         self.db.commit()
-        
+
         logger.info(
             "[ChunkTestDocument] ✓ Cleaned up incomplete processing for document %s, "
             "reset to 'pending' status",

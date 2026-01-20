@@ -1,13 +1,3 @@
-from collections import deque
-from typing import Optional, Dict, Any
-import asyncio
-import logging
-import os
-import time
-import uuid
-
-from services.redis.redis_client import is_redis_available, get_redis
-
 """
 Dashscope Rate Limiter (Redis-backed)
 =====================================
@@ -27,6 +17,16 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
+from collections import deque
+from typing import Optional, Dict, Any
+import asyncio
+import logging
+import os
+import time
+import uuid
+
+from services.redis.redis_client import is_redis_available, get_redis
 
 
 
@@ -147,6 +147,9 @@ class DashscopeRateLimiter:
         self._local_total_waits = 0
         self._local_total_wait_time = 0.0
 
+        # Lua script SHA (lazy-loaded when first used)
+        self._acquire_script_sha: Optional[str] = None
+
         # Verify Redis is available (REQUIRED for rate limiting)
         if not self._use_redis():
             raise RuntimeError(
@@ -248,14 +251,14 @@ class DashscopeRateLimiter:
 
         try:
             # Register script once (idempotent)
-            if not hasattr(self, '_acquire_script_sha'):
+            if self._acquire_script_sha is None:
                 try:
                     self._acquire_script_sha = redis.script_load(acquire_script)
                 except Exception as e:
                     logger.error("[RateLimiter] Failed to load Lua script: %s", e)
                     raise RuntimeError(
-                        "Rate limiting requires Redis. Failed to load Lua script: %s. "
-                        "Please ensure Redis is running and configured correctly." % e
+                        f"Rate limiting requires Redis. Failed to load Lua script: {e}. "
+                        "Please ensure Redis is running and configured correctly."
                     ) from e
 
             # Loop until we successfully acquire
@@ -301,15 +304,15 @@ class DashscopeRateLimiter:
                         except Exception as retry_error:
                             logger.error("[RateLimiter] Failed to reload Lua script: %s", retry_error)
                             raise RuntimeError(
-                                "Rate limiting requires Redis. Lua script execution failed: %s. "
-                                "Please ensure Redis is running and configured correctly." % retry_error
+                                f"Rate limiting requires Redis. Lua script execution failed: {retry_error}. "
+                                "Please ensure Redis is running and configured correctly."
                             ) from retry_error
                     else:
                         # Other Redis errors
                         logger.error("[RateLimiter] Lua script execution failed: %s", script_error)
                         raise RuntimeError(
-                            "Rate limiting requires Redis. Lua script execution failed: %s. "
-                            "Please ensure Redis is running and configured correctly." % script_error
+                            f"Rate limiting requires Redis. Lua script execution failed: {script_error}. "
+                            "Please ensure Redis is running and configured correctly."
                         ) from script_error
 
                 # Result format: {success, reason, current_value, ...}
@@ -394,8 +397,8 @@ class DashscopeRateLimiter:
         except Exception as e:
             logger.error("[RateLimiter] Redis acquire failed: %s", e)
             raise RuntimeError(
-                "Rate limiting requires Redis. Redis operation failed: %s. "
-                "Please ensure Redis is running and configured correctly." % e
+                f"Rate limiting requires Redis. Redis operation failed: {e}. "
+                "Please ensure Redis is running and configured correctly."
             ) from e
 
     async def _memory_acquire(self) -> None:
@@ -600,12 +603,24 @@ class DashscopeRateLimiter:
 
 
 # Singleton instance (will be initialized by LLMService)
-_rate_limiter: Optional[DashscopeRateLimiter] = None
+class RateLimiterSingleton:
+    """Singleton container for rate limiter instance."""
+    _instance: Optional[DashscopeRateLimiter] = None
+
+    @classmethod
+    def get(cls) -> Optional[DashscopeRateLimiter]:
+        """Get the rate limiter instance."""
+        return cls._instance
+
+    @classmethod
+    def set(cls, instance: DashscopeRateLimiter) -> None:
+        """Set the rate limiter instance."""
+        cls._instance = instance
 
 
 def get_rate_limiter() -> Optional[DashscopeRateLimiter]:
     """Get the global rate limiter instance."""
-    return _rate_limiter
+    return RateLimiterSingleton.get()
 
 
 def initialize_rate_limiter(
@@ -624,13 +639,13 @@ def initialize_rate_limiter(
     Returns:
         Initialized rate limiter instance
     """
-    global _rate_limiter
-    _rate_limiter = DashscopeRateLimiter(
+    instance = DashscopeRateLimiter(
         qpm_limit=qpm_limit,
         concurrent_limit=concurrent_limit,
         enabled=enabled
     )
-    return _rate_limiter
+    RateLimiterSingleton.set(instance)
+    return instance
 
 
 class LoadBalancerRateLimiter:
@@ -805,4 +820,3 @@ class LoadBalancerRateLimiter:
 
     async def __aexit__(self, exc_type, _exc_val, _exc_tb):
         """Context manager support."""
-        pass

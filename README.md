@@ -7,61 +7,36 @@
 [![Vue](https://img.shields.io/badge/Vue-3.5+-42b883.svg)](https://vuejs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.6+-3178c6.svg)](https://www.typescriptlang.org/)
 [![License](https://img.shields.io/badge/License-Proprietary-red.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/Version-5.0.0-brightgreen.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-5.10.1-brightgreen.svg)](CHANGELOG.md)
 [![Built with Cursor](https://img.shields.io/badge/Built%20with-Cursor%20AI-blueviolet.svg)](https://cursor.sh)
 [![wakatime](https://wakatime.com/badge/user/60ba0518-3829-457f-ae10-3eff184d5f69/project/a278db63-dcfb-4dae-b731-330443000199.svg)](https://wakatime.com/@lyc9527/projects/tkidgnziyn)
 
-Transform natural language into professional visual diagrams. **API-first platform** for Dify, Coze, and any HTTP integration. **Complete interactive suite** for K-12 education with AI-powered learning tools.
+Transform natural language into professional visual diagrams. API-first platform for Dify, Coze, and HTTP integrations. Complete interactive suite for K-12 education with AI-powered learning tools.
 
-将自然语言转换为专业可视化图表。面向Dify、Coze和任何HTTP集成的**API优先平台**。面向K-12教育的**完整交互套件**，配备AI驱动的学习工具。
+将自然语言转换为专业可视化图表。面向Dify、Coze和HTTP集成的API优先平台。面向K-12教育的完整交互套件，配备AI驱动的学习工具。
 
 ---
 
-## 💡 **Project Highlight** | **项目亮点**
+## 💡 Project Highlight | 项目亮点
 
-> ### 🎯 **Built by a Non-Programmer with Cursor AI**
-> 
-> **English:** This **entire enterprise-grade application** was created by someone with **ZERO programming knowledge** using [Cursor AI](https://cursor.sh) - an AI-powered code editor. From FastAPI backend to interactive frontend, from database design to API security, **everything was built through AI pair programming**. This project proves that **anyone with vision and ideas can build professional software** in the AI era, regardless of technical background.
-> 
-> **中文:** 这个**完整的企业级应用**由一个**零编程知识**的人使用 [Cursor AI](https://cursor.sh)（AI驱动的代码编辑器）创建。从FastAPI后端到交互式前端，从数据库设计到API安全，**一切都通过AI结对编程完成**。这个项目证明了在AI时代，**任何有愿景和想法的人都可以构建专业软件**，无论技术背景如何。
->
-> **Key Achievement | 关键成就:**
-> - ✅ **Vue 3 + TypeScript** modern frontend | **Vue 3 + TypeScript** 现代前端
-> - ✅ **FastAPI + Python** high-performance backend | **FastAPI + Python** 高性能后端
-> - ✅ **4,000+ concurrent connections** supported | 支持**4,000+并发连接**
-> - ✅ **10 diagram types** with AI generation | **10种图表类型**的AI生成
-> - ✅ **9 thinking tools** for deep analysis | **9种思考工具**深度分析
-> - ✅ **Voice input** with real-time recognition | **语音输入**实时识别
-> - ✅ **Bilingual** English/Chinese support | **双语**中英文支持
-> - ✅ **100% AI-assisted development** | **100% AI辅助开发**
+> **Built with [Cursor AI](https://cursor.sh)** - This enterprise-grade application demonstrates that anyone with vision can build professional software through AI-assisted development, regardless of technical background.  
+> **使用 [Cursor AI](https://cursor.sh) 构建** - 这个企业级应用证明了在AI时代，任何有愿景的人都可以通过AI辅助开发构建专业软件，无论技术背景如何。
 
 ---
 
 ## ✨ Features | 核心功能
 
-### 🎯 10 Professional Diagram Types | 10种专业图表类型
-- **Thinking Maps | 思维图示** (8 types | 8种): 
-  - **Circle Map | 圆圈图**: Defining in context, associations | 在语境中定义，关联
-  - **Bubble Map | 气泡图**: Describing with adjectives, attributes | 用形容词描述，属性特征
-  - **Double Bubble Map | 双气泡图**: Comparing and contrasting two concepts | 对比两个概念
-  - **Tree Map | 树形图**: Classifying and grouping, hierarchy | 分类和分组，层次结构
-  - **Brace Map | 括号图**: Whole-to-part relationships | 整体与部分的关系
-  - **Flow Map | 流程图**: Sequencing and ordering steps | 步骤序列和排序
-  - **Multi-Flow Map | 复流程图**: Cause-effect relationships | 因果关系
-  - **Bridge Map | 桥形图**: Analogies and similarities | 类比和相似性
+### 🎯 Diagram Types | 图表类型
+**10 Professional Diagram Types | 10种专业图表类型**
+
+- **Thinking Maps | 思维图示** (8 types | 8种): Circle Map, Bubble Map, Double Bubble Map, Tree Map, Brace Map, Flow Map, Multi-Flow Map, Bridge Map
 - **Mind Map | 思维导图**: Radial brainstorming and concept organization | 放射状头脑风暴和概念组织
 - **Concept Map | 概念图**: Advanced relationship mapping between concepts | 概念间的高级关系映射
 
-### 🧠 9 Thinking Tools | 9种思考工具
-- **5W1H Analysis | 5W1H分析**: Who, What, When, Where, Why, How
-- **Four Quadrant | 四象限分析**: Priority and decision matrix | 优先级和决策矩阵
-- **Three Position | 三角分析**: Multi-perspective analysis | 多视角分析
-- **WHWM Analysis | WHWM分析**: What, How, Why, Meaning
-- **Factor Analysis | 因素分析**: Root cause identification | 根本原因识别
-- **Goal Analysis | 目标分析**: Objective breakdown | 目标分解
-- **Possibility Analysis | 可能性分析**: Option exploration | 方案探索
-- **Result Analysis | 结果分析**: Outcome evaluation | 结果评估
-- **Perspective Analysis | 角度分析**: Viewpoint comparison | 观点对比
+### 🧠 Thinking Tools | 思考工具
+**9 Analysis Tools | 9种分析工具**
+
+5W1H Analysis, Four Quadrant, Three Position, WHWM Analysis, Factor Analysis, Goal Analysis, Possibility Analysis, Result Analysis, Perspective Analysis
 
 ### 🤖 AI-Powered Generation | AI驱动生成
 - **Smart Classification | 智能分类**: Auto-detect diagram type from natural language | 从自然语言自动检测图表类型
@@ -69,7 +44,7 @@ Transform natural language into professional visual diagrams. **API-first platfo
 - **Node Palette | 节点调色板**: AI-suggested nodes with streaming batches | AI推荐节点流式批次
 - **Auto-Complete | 智能补全**: Context-aware diagram completion | 上下文感知图表补全
 - **Math & Chemical Formulas | 数学和化学公式**: LaTeX and chemical equation rendering | LaTeX和化学方程式渲染
-- **Bilingual | 双语**: Perfect Chinese/English support | 完美中英文支持
+- **Bilingual Support | 双语支持**: Perfect Chinese/English support | 完美中英文支持
 
 ### 🎤 Voice Input | 语音输入
 - **Real-time Recognition | 实时识别**: Browser-based speech-to-text | 浏览器语音转文字
@@ -81,23 +56,28 @@ Transform natural language into professional visual diagrams. **API-first platfo
 - **20% Intelligent Knockout | 20%智能隐藏**: Active recall practice | 主动回忆练习
 - **Multi-Angle Teaching | 多角度教学**: Tests understanding from multiple perspectives | 从多个角度测试理解
 
-### 🔐 Secure Authentication | 安全认证
+### 🔐 Authentication & Security | 认证与安全
 - **API Key Authentication | API密钥认证**: For external services (Dify, partners) | 用于外部服务（Dify、合作伙伴）
 - **JWT Token Authentication | JWT令牌认证**: For authenticated users | 用于已认证用户
 - **SMS Verification | 短信验证**: Secure phone-based authentication | 安全的手机验证
 - **Admin Panel | 管理面板**: Complete API key management | 完整的API密钥管理
 
 ### 💾 Database & Storage | 数据库和存储
-- **Hybrid Architecture | 混合架构**: SQLite (persistent) + Redis (ephemeral) | SQLite（持久化）+ Redis（临时数据）
-- **SQLite | SQLite**: Stores users, organizations, token history | 存储用户、组织、令牌历史
-- **Redis | Redis**: Handles captcha, rate limiting, sessions, activity tracking | 处理验证码、速率限制、会话、活动跟踪
+- **Hybrid Architecture | 混合架构**: SQLite (persistent) + Redis (ephemeral) + Qdrant (vectors) | SQLite（持久化）+ Redis（临时数据）+ Qdrant（向量）
 - **Automated Backups | 自动备份**: Daily scheduled backups with retention policy | 每日定时备份与保留策略
 - **Recovery Wizard | 恢复向导**: Interactive database recovery system | 交互式数据库恢复系统
 - **Data Anomaly Detection | 数据异常检测**: Detects significant data loss | 检测重大数据丢失
 
+### 📚 Knowledge Space (RAG) | 知识空间 (RAG)
+- **Document Management | 文档管理**: Upload, process, and manage knowledge documents | 上传、处理和管理知识文档
+- **Intelligent Chunking | 智能分块**: Semantic chunking with MindChunk or fast SemChunk | 使用MindChunk语义分块或快速SemChunk
+- **Advanced Retrieval | 高级检索**: Vector search, keyword search, hybrid retrieval with reranking | 向量搜索、关键词搜索、混合检索与重排序
+- **Chunk Testing | 分块测试**: Evaluate and optimize chunking strategies | 评估和优化分块策略
+- **Background Processing | 后台处理**: Celery-based async document processing | 基于Celery的异步文档处理
+
 ### ⚡ Performance | 性能表现
-- **Async Architecture | 异步架构**: 4,000+ concurrent connections | 4,000+并发连接
-- **Fast Response | 快速响应**: Average 8.7s end-to-end | 平均8.7秒端到端
+- **4,000+ Concurrent Connections | 4,000+并发连接**: FastAPI async architecture | FastAPI异步架构
+- **Average Response Time | 平均响应时间**: 8.7s end-to-end | 8.7秒端到端
 - **Production Ready | 生产就绪**: FastAPI + Uvicorn ASGI
 - **systemd Support | systemd支持**: One-command Linux deployment | 一键Linux部署
 
@@ -120,6 +100,8 @@ Transform natural language into professional visual diagrams. **API-first platfo
 - **Uvicorn** - Lightning-fast ASGI server
 - **SQLite** - Persistent data storage
 - **Redis** - Caching and session management
+- **Qdrant** - Vector database for RAG and semantic search
+- **Celery** - Distributed task queue for background processing
 - **Playwright** - PNG diagram generation
 
 ### AI/LLM | AI/大语言模型
@@ -134,63 +116,65 @@ Transform natural language into professional visual diagrams. **API-first platfo
 
 ### Prerequisites | 前置要求
 
-- **Python 3.8+** (Recommended: 3.13+ for best performance | 推荐：3.13+以获得最佳性能)
-- **Node.js 18+** (Required for frontend build | 前端构建必需)
-- **Redis 7.0+** (Required | 必需) - For caching, rate limiting, and session management | 用于缓存、速率限制和会话管理
+- **Python 3.8+** (Recommended: 3.13+ | 推荐：3.13+)
+- **Node.js 18+** (Required for frontend | 前端必需)
+- **Redis 7.0+** (Required | 必需) - For caching, rate limiting, sessions | 用于缓存、速率限制、会话
+- **Qdrant** (Required for Knowledge Space | 知识空间必需) - Vector database for RAG | RAG向量数据库
 - Internet connection for LLM API access | 互联网连接以访问LLM API
-- Modern web browser | 现代网页浏览器
 
-**Redis Setup | Redis设置:**
+**Setup Redis | Redis设置:**
 
 ```bash
-# Option 1: Ubuntu/Debian (Redis 7.0.x)
+# Ubuntu/Debian
 sudo apt install redis-server
-sudo systemctl start redis-server
-sudo systemctl enable redis-server
+sudo systemctl start redis-server && sudo systemctl enable redis-server
 
-# Option 2: macOS
-brew install redis
-brew services start redis
+# macOS
+brew install redis && brew services start redis
 
-# Verify Redis is running | 验证Redis运行
+# Verify | 验证
 redis-cli ping  # Should return: PONG
+```
+
+**Setup Qdrant | Qdrant设置:**
+
+```bash
+# Recommended: Use provided script | 推荐：使用提供的脚本
+bash scripts/install_qdrant.sh
+
+# Or Docker | 或使用Docker
+docker run -p 6333:6333 qdrant/qdrant
+
+# Verify | 验证
+curl http://localhost:6333/collections  # Should return JSON
 ```
 
 ### Installation | 安装
 
 ```bash
-# 1. Clone repository
+# 1. Clone repository | 克隆仓库
 git clone https://github.com/lycosa9527/MindGraph.git
 cd MindGraph
 
-# 2. Install backend dependencies and Playwright browsers
+# 2. Install backend dependencies and Playwright browsers | 安装后端依赖和Playwright浏览器
 python scripts/setup.py
-# This will automatically install Python packages and Playwright Chromium browser
 
-# 3. Build frontend (Vue 3 + TypeScript)
+# 3. Build frontend | 构建前端
 cd frontend
 npm install
 npm run build
 cd ..
 
-# 4. Configure environment
+# 4. Configure environment | 配置环境
 cp env.example .env
-# Edit .env and add your QWEN_API_KEY (required for diagram generation)
-```
-
-**Note | 注意:** The setup script automatically installs Playwright Chromium browser binaries required for PNG generation. If you encounter issues, manually run:
-**注意：** 安装脚本会自动安装Playwright Chromium浏览器，这是PNG生成所必需的。如果遇到问题，请手动运行：
-
-```bash
-playwright install chromium
+# Edit .env and add your QWEN_API_KEY | 编辑.env并添加您的QWEN_API_KEY
 ```
 
 **Frontend Development | 前端开发:**
 
 ```bash
-# For development with hot reload | 热重载开发模式
 cd frontend
-npm run dev
+npm run dev  # Hot reload development mode | 热重载开发模式
 ```
 
 ### Configuration | 配置
@@ -198,41 +182,22 @@ npm run dev
 **Required environment variables | 必需的环境变量:**
 
 ```bash
-# LLM API Key (Required for diagram generation)
+# LLM API Key (Required | 必需)
 QWEN_API_KEY=your-qwen-api-key-here
 
 # Redis Configuration (REQUIRED | 必需)
-# MindGraph uses SQLite + Redis hybrid architecture:
-#   - SQLite: Persistent data (users, organizations, token history)
-#   - Redis: Ephemeral data (captcha, rate limiting, sessions, buffers)
 REDIS_URL=redis://localhost:6379/0
 
-# Optional: Additional LLM models
-HUNYUAN_SECRET_ID=your-hunyuan-id
-HUNYUAN_SECRET_KEY=your-hunyuan-key
-ARK_API_KEY=your-ark-api-key-here  # For Doubao/Volcengine
+# Qdrant Configuration (REQUIRED for Knowledge Space | 知识空间必需)
+QDRANT_HOST=localhost:6333
 
-# Server Configuration
+# Server Configuration | 服务器配置
 PORT=9527
 HOST=0.0.0.0
-EXTERNAL_HOST=localhost  # Or your public IP/domain
-DEBUG=False  # Set to True for development
+DEBUG=False  # Set to True for development | 开发时设置为True
 
-# Authentication Mode (standard, enterprise, demo, bayi)
+# Authentication Mode | 认证模式 (standard, enterprise, demo, bayi)
 AUTH_MODE=standard
-
-# JWT Configuration (JWT_SECRET_KEY auto-generated via Redis)
-JWT_EXPIRY_HOURS=168
-
-# Optional: Database backup (enabled by default)
-BACKUP_ENABLED=true
-BACKUP_HOUR=3
-BACKUP_RETENTION_COUNT=2
-
-# Optional: Tencent Cloud SMS (for phone verification)
-TENCENT_SMS_SECRET_ID=your-tencent-secret-id
-TENCENT_SMS_SECRET_KEY=your-tencent-secret-key
-TENCENT_SMS_SDK_APP_ID=1400000000
 ```
 
 **See `env.example` for complete configuration options | 查看 `env.example` 了解完整配置选项**
@@ -240,29 +205,15 @@ TENCENT_SMS_SDK_APP_ID=1400000000
 ### Running the Server | 运行服务器
 
 ```bash
-python run_server.py
+python main.py
 ```
 
-**Server Output | 服务器输出:**
-```
-🚀 MindGraph FastAPI Server Starting...
-Environment: production
-Host: 0.0.0.0
-Port: 9527
+**Important Notes | 重要提示:**
 
-✅ Redis connected: redis://localhost:6379/0
-✅ Server ready at: http://localhost:9527
-✅ Interactive Editor: http://localhost:9527/editor
-✅ API Documentation: http://localhost:9527/docs (DEBUG mode only)
-✅ Admin Panel: http://localhost:9527/admin
-✅ Health Check: http://localhost:9527/health
-```
-
-**Note | 注意:** If Redis is not running, the application will fail to start. Ensure Redis is running before starting the server.  
-**注意：** 如果Redis未运行，应用程序将无法启动。启动服务器前请确保Redis正在运行。
-
-**Note | 注意:** API documentation (`/docs`) is only available when `DEBUG=True` in `.env` for security.
-**注意：** API文档 (`/docs`) 仅在 `.env` 中设置 `DEBUG=True` 时可用，以确保安全。
+- **Redis** must be running before starting the server | Redis必须在启动服务器前运行
+- **Qdrant** is required for Knowledge Space features | 知识空间功能需要Qdrant
+- **Celery** worker starts automatically for background processing | Celery工作进程自动启动用于后台处理
+- **API documentation** (`/docs`) is only available when `DEBUG=True` | API文档 (`/docs`) 仅在 `DEBUG=True` 时可用
 
 ### Access Points | 访问入口
 
@@ -274,6 +225,8 @@ Port: 9527
 | **Health Check** | http://localhost:9527/health | Server status endpoint |
 | **Database Health** | http://localhost:9527/health/database | Database integrity check |
 | **Redis Health** | http://localhost:9527/health/redis | Redis connection status |
+| **Qdrant Health** | http://localhost:9527/health/qdrant | Qdrant connection status |
+| **Knowledge Space** | http://localhost:9527/knowledge-space | Knowledge Space management interface |
 
 ---
 
@@ -283,7 +236,8 @@ Port: 9527
 
 MindGraph supports two authentication methods | MindGraph支持两种认证方式:
 
-**1. API Key (for external services) | API密钥（用于外部服务）**
+**1. API Key | API密钥** (for external services | 用于外部服务)
+
 ```http
 POST /api/generate_png
 Content-Type: application/json
@@ -295,10 +249,8 @@ X-API-Key: mg_your_api_key_here
 }
 ```
 
-**Note | 注意:** API keys are generated with the `mg_` prefix (e.g., `mg_abc123xyz456...`).  
-**注意：** API密钥以 `mg_` 前缀生成（例如：`mg_abc123xyz456...`）。
+**2. JWT Token | JWT令牌** (for authenticated users | 用于已认证用户)
 
-**2. JWT Token (for authenticated users) | JWT令牌（用于已认证用户）**
 ```http
 POST /api/generate_png
 Content-Type: application/json
@@ -311,14 +263,17 @@ Authorization: Bearer your_jwt_token_here
 ```
 
 **Generate API Key | 生成API密钥:**
+
 1. Access admin panel at `/admin` | 访问 `/admin` 管理面板
 2. Go to "🔑 API Keys" tab | 进入"🔑 API Keys"标签页
 3. Click "Create New API Key" | 点击"创建新API密钥"
 4. Copy the generated key (shown only once!) | 复制生成的密钥（仅显示一次！）
 
+**Note | 注意:** API keys are generated with the `mg_` prefix | API密钥以 `mg_` 前缀生成
+
 ### Dify Integration | Dify集成
 
-**HTTP Request Node Configuration:**
+**HTTP Request Node Configuration | HTTP请求节点配置:**
 
 ```json
 {
@@ -335,7 +290,7 @@ Authorization: Bearer your_jwt_token_here
 }
 ```
 
-**Returns:** Binary PNG image ready for display
+**Returns | 返回:** Binary PNG image ready for display | 可直接显示的二进制PNG图像
 
 ### Python Example | Python示例
 
@@ -425,6 +380,52 @@ Transform any diagram into an interactive learning experience | 将任何图表�
 
 ---
 
+## 📚 Knowledge Space (RAG) | 知识空间 (RAG)
+
+**Enterprise-Grade RAG System for Document Management | 企业级RAG文档管理系统**
+
+### Features | 功能特性
+
+- **Document Upload & Processing | 文档上传和处理**: Support for PDF, DOCX, TXT, MD with automatic extraction and background processing | 支持PDF、DOCX、TXT、MD格式，自动提取和后台处理
+- **Intelligent Chunking | 智能分块**: SemChunk (fast) or MindChunk (LLM-based semantic) with configurable size and overlap | SemChunk（快速）或MindChunk（基于LLM的语义分块），可配置大小和重叠
+- **Advanced Retrieval | 高级检索**: Vector search, keyword search, hybrid retrieval with Qwen3-rerank model | 向量搜索、关键词搜索、混合检索与Qwen3-rerank模型
+- **Chunk Testing & Evaluation | 分块测试与评估**: Test strategies, evaluate quality, performance metrics | 测试策略、评估质量、性能指标
+- **Vector Database | 向量数据库**: Qdrant integration with per-user isolation and automatic embeddings | Qdrant集成，每用户隔离，自动嵌入生成
+
+### Usage | 使用方法
+
+1. **Access Knowledge Space | 访问知识空间**: Navigate to `/knowledge-space` in the web interface | 在Web界面中导航到 `/knowledge-space`
+2. **Upload Documents | 上传文档**: Upload your knowledge documents | 上传您的知识文档
+3. **Wait for Processing | 等待处理**: Documents are processed in the background | 文档在后台处理
+4. **Query Knowledge | 查询知识**: Use semantic search to find relevant information | 使用语义搜索查找相关信息
+5. **Test Chunking | 测试分块**: Evaluate and optimize chunking strategies | 评估和优化分块策略
+
+### Configuration | 配置
+
+Key environment variables for Knowledge Space | 知识空间的关键环境变量:
+
+```bash
+# Qdrant Configuration (REQUIRED)
+QDRANT_HOST=localhost:6333
+
+# Chunking Configuration
+CHUNKING_ENGINE=semchunk  # or mindchunk for LLM-based chunking
+CHUNK_SIZE=500
+CHUNK_OVERLAP=50
+
+# Retrieval Configuration
+DEFAULT_RETRIEVAL_METHOD=hybrid  # vector, keyword, or hybrid
+HYBRID_VECTOR_WEIGHT=0.5
+HYBRID_KEYWORD_WEIGHT=0.5
+RERANKING_MODE=reranking_model
+
+# Embedding Configuration
+DASHSCOPE_EMBEDDING_MODEL=text-embedding-v4
+DASHSCOPE_RERANK_MODEL=qwen3-rerank
+```
+
+---
+
 ## 📚 Documentation
 
 - [**API Reference**](docs/API_REFERENCE.md) - Complete API documentation with bilingual examples
@@ -441,7 +442,7 @@ Transform any diagram into an interactive learning experience | 将任何图表�
 
 ```bash
 # Start server | 启动服务器
-python run_server.py
+python main.py
 
 # Run tests (in another terminal) | 运行测试（在另一个终端）
 cd tests
@@ -488,46 +489,13 @@ This project is licensed under a **Proprietary License (All Rights Reserved)** -
 
 **IMPORTANT NOTICE | 重要声明:**
 
-This software is **NOT open source**. Unauthorized use, copying, modification, distribution, or execution is strictly prohibited by law.  
-本软件**不是开源软件**。未经授权使用、复制、修改、分发或执行严格禁止。
-
-**Key Points | 要点:**
-- Viewing source code for learning purposes only (viewing only) | 仅可查看源代码用于学习目的（仅查看）
-- **All use requires explicit written permission** | **所有使用都需要明确的书面许可**
-- **Running or executing** the software requires explicit permission | **运行或执行**软件需要明确许可
-- **Educational use** requires explicit permission | **教育用途**需要明确许可
-- **Commercial use** requires explicit permission | **商业用途**需要明确许可
-- **Modifying or distributing** requires explicit permission | **修改或分发**需要明确许可
-- **Creating derivative works** requires explicit permission | **创建衍生作品**需要明确许可
+This software is **NOT open source**. All use, modification, distribution, or execution requires explicit written permission.  
+本软件**不是开源软件**。所有使用、修改、分发或执行都需要明确的书面许可。
 
 **Licensing Inquiries | 许可咨询:**
 
-For licensing requests, please contact:  
-如需许可请求，请联系：
-
-- **Email | 邮件**: Contact via GitHub  
 - **GitHub**: [lycosa9527](https://github.com/lycosa9527)
 - **Company | 公司**: 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
-
-**Educational Use | 教育用途:**
-
-Educational institutions must obtain explicit written permission before any use. Please contact us with details about your intended use.  
-教育机构在使用前必须获得明确的书面许可。请联系我们并提供使用详情。
-
-**Commercial Use | 商业用途:**
-
-Commercial licensing is available. Please contact us to discuss terms and pricing.  
-商业许可可用。请联系我们讨论条款和定价。
-
-**Contributions | 贡献:**
-
-If you wish to contribute to this project, please contact us first. Contributors must sign a Contributor License Agreement (CLA).  
-如果您想为此项目做贡献，请先联系我们。贡献者必须签署贡献者许可协议（CLA）。
-
-**Trademark Notice | 商标声明:**
-
-The **MindGraph** name, logos, and branding are trademarks of 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.) and may not be used without explicit written permission.  
-**MindGraph** 名称、标志和品牌是北京思源智教科技有限公司的商标，未经明确书面许可不得使用。
 
 See [NOTICE](NOTICE) file for complete trademark and attribution information.
 
@@ -545,15 +513,11 @@ See [NOTICE](NOTICE) file for complete trademark and attribution information.
 
 ## 🌟 Acknowledgments | 致谢
 
-### Developed by 北京思源智教科技有限公司 | 由北京思源智教科技有限公司开发
+**Developed by 北京思源智教科技有限公司 | 由北京思源智教科技有限公司开发**  
 **Beijing Siyuan Zhijiao Technology Co., Ltd. | 北京思源智教科技有限公司**
 
-> **Powered by [Cursor AI](https://cursor.sh)** - The AI-first code editor that made this project possible
-> 
+> **Powered by [Cursor AI](https://cursor.sh)** - The AI-first code editor that made this project possible  
 > **由 [Cursor AI](https://cursor.sh) 驱动** - 让这个项目成为可能的AI优先代码编辑器
-
-*AI-Powered Visual Learning for the Next Generation*  
-*下一代AI驱动的可视化学习*
 
 ---
 
@@ -561,6 +525,3 @@ See [NOTICE](NOTICE) file for complete trademark and attribution information.
 
 If you find MindGraph useful, please consider giving it a ⭐ on GitHub!  
 如果您觉得MindGraph有用，请考虑在GitHub上给它一个⭐！
-
-**This project demonstrates that with AI assistance, anyone can build enterprise software - no coding background required!**  
-**这个项目证明了在AI的帮助下，任何人都可以构建企业软件 - 无需编程背景！**

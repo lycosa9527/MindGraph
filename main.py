@@ -19,10 +19,6 @@ Features:
 Status: Production Ready
 """
 
-# Standard library imports
-import sys
-import asyncio
-
 # Third-party imports
 from fastapi import FastAPI
 
@@ -39,7 +35,6 @@ from services.infrastructure.logging_config import setup_logging
 from services.infrastructure.lifespan import lifespan
 from services.infrastructure.middleware import setup_middleware
 from services.infrastructure.exception_handlers import setup_exception_handlers
-from services.infrastructure.port_manager import check_port_available, cleanup_stale_process, ShutdownErrorFilter
 from services.infrastructure.spa_handler import setup_vue_spa, is_dev_mode
 
 # Early configuration setup (must happen before logging)
@@ -121,98 +116,5 @@ app.include_router(debateverse.router)
 # ============================================================================
 
 if __name__ == "__main__":
-    import uvicorn  # pylint: disable=import-outside-toplevel
-
-    # CRITICAL FIX for Windows: Set event loop policy to support subprocesses
-    # Playwright requires subprocess support, which SelectorEventLoop doesn't provide on Windows
-    if sys.platform == 'win32':
-        asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
-        logger.info("Windows detected: Set event loop policy to WindowsProactorEventLoopPolicy for Playwright support")
-
-    # Print configuration summary
-    config.print_config_summary()
-
-    logger.info("=" * 80)
-    logger.info("Starting FastAPI application with Uvicorn")
-    logger.info("Server: http://%s:%s", config.host, config.port)
-    logger.info("API Docs: http://%s:%s/docs", config.host, config.port)
-
-    # Pre-flight port availability check
-    logger.info("Checking port availability...")
-    is_available, pid_using_port = check_port_available(config.host, config.port)
-
-    if not is_available:
-        logger.warning("⚠️  Port %s is already in use", config.port)
-
-        if pid_using_port:
-            logger.warning("Process %s is using the port", pid_using_port)
-
-            # Attempt automatic cleanup
-            if cleanup_stale_process(pid_using_port, config.port):
-                logger.info("✅ Port cleanup successful, proceeding with startup...")
-            else:
-                logger.error("=" * 80)
-                logger.error("❌ Cannot start server - port %s is still in use", config.port)
-                logger.error("💡 Manual cleanup required:")
-                if sys.platform == 'win32':
-                    logger.error("   Windows: taskkill /F /PID %s", pid_using_port)
-                else:
-                    logger.error("   Linux/Mac: kill -9 %s", pid_using_port)
-                logger.error("=" * 80)
-                sys.exit(1)
-        else:
-            logger.error("=" * 80)
-            logger.error("❌ Cannot start server - port %s is in use", config.port)
-            logger.error("💡 Could not detect the process using the port")
-            logger.error("   Please check manually and free the port")
-            logger.error("=" * 80)
-            sys.exit(1)
-    else:
-        logger.info("✅ Port %s is available", config.port)
-
-    if config.debug:
-        logger.warning("⚠️  Reload mode enabled - may cause slow shutdown (use Ctrl+C twice if needed)")
-    logger.info("=" * 80)
-
-    # Install stderr filter to suppress multiprocessing shutdown tracebacks
-    original_stderr = sys.stderr
-    sys.stderr = ShutdownErrorFilter(original_stderr)
-
-    # Install custom exception hook to suppress shutdown errors
-    original_excepthook = sys.excepthook
-
-    def custom_excepthook(exc_type, exc_value, exc_traceback) -> None:
-        """Custom exception hook to suppress expected shutdown errors"""
-        # Suppress CancelledError during shutdown
-        if exc_type == asyncio.CancelledError:
-            return
-        # Suppress BrokenPipeError and ConnectionResetError during shutdown
-        if exc_type in (BrokenPipeError, ConnectionResetError):
-            return
-        # Call original handler for other exceptions
-        original_excepthook(exc_type, exc_value, exc_traceback)
-
-    sys.excepthook = custom_excepthook
-
-    try:
-        # Run Uvicorn server with optimized shutdown settings
-        uvicorn.run(
-            "main:app",
-            host=config.host,
-            port=config.port,
-            reload=config.debug,  # Auto-reload in debug mode
-            log_level="info",
-            log_config=None,  # Use our custom logging configuration
-            timeout_graceful_shutdown=5,  # Fast shutdown for cleaner exit
-            limit_concurrency=1000,  # Prevent too many hanging connections
-            timeout_keep_alive=5  # Close idle connections faster
-        )
-    except KeyboardInterrupt:
-        # Graceful shutdown on Ctrl+C
-        logger.info("=" * 80)
-        logger.info("Shutting down gracefully...")
-        logger.info("=" * 80)
-    finally:
-        # Restore original stderr and exception hook
-        sys.stderr = original_stderr
-        sys.excepthook = original_excepthook
+    from services.infrastructure.server_launcher import run_server
+    run_server()

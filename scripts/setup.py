@@ -108,7 +108,6 @@ REQUIRED_LOG_FILES = [
 ESSENTIAL_FILES = [
     "VERSION",
     "main.py",
-    "run_server.py",
     "requirements.txt",
     "uvicorn_config.py"
 ]
@@ -1241,7 +1240,7 @@ def print_next_steps() -> None:
     """Print next steps for the user"""
     print("\n[INFO] Next steps:")
     print("    1. Copy env.example to .env and configure your API keys")
-    print("    2. Run: python run_server.py")
+    print("    2. Run: python main.py")
     print("    3. Open http://localhost:9527 in your browser")
 
     # Show platform-specific hints

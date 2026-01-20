@@ -1,15 +1,4 @@
-from pathlib import Path
-import logging
-import os
-
-from fastapi import FastAPI, Request
-from fastapi.responses import FileResponse, HTMLResponse
-from fastapi.staticfiles import StaticFiles
-
-
-"""
-Vue SPA Handler
-===============
+"""Vue SPA Handler.
 
 Handles serving the Vue 3 SPA in production mode.
 In development, the Vite dev server handles frontend routing.
@@ -27,6 +16,13 @@ Environment Variables:
 Copyright 2024-2025 Beijing Siyuan Zhijiao Technology Co., Ltd.
 All Rights Reserved
 """
+from pathlib import Path
+import logging
+import os
+
+from fastapi import FastAPI
+from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.staticfiles import StaticFiles
 
 
 logger = logging.getLogger(__name__)
@@ -133,7 +129,7 @@ def setup_vue_spa(app: FastAPI) -> bool:
     return True
 
 
-async def serve_vue_spa(request: Request) -> FileResponse:
+async def serve_vue_spa() -> FileResponse:
     """
     Serve Vue SPA index.html for client-side routing.
 

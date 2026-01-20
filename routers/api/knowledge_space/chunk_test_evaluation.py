@@ -38,8 +38,6 @@ async def get_chunk_test_chunks(
 
     Args:
         test_id: Test result ID
-    """
-    check_feature_enabled()
         method: Chunking method ('spacy', 'semchunk', 'chonkie', 'langchain', 'mindchunk')
 
     Returns:

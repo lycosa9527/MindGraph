@@ -104,6 +104,53 @@ class TimestampedRotatingFileHandler(BaseRotatingHandler):
         self.baseFilename = new_filename
         self.stream = self._open()  # pylint: disable=protected-access
 
+    def emit(self, record):
+        """Emit a record, handling closed streams gracefully."""
+        # Check if stream is usable before attempting to write
+        if not _is_stream_usable(self.stream):
+            # Try to reopen the stream
+            try:
+                if self.stream:
+                    try:
+                        self.stream.close()
+                    except (ValueError, OSError):
+                        pass
+                self.stream = None
+                self.stream = self._open()
+            except (ValueError, OSError):
+                # Can't reopen, silently ignore
+                return
+
+        try:
+            super().emit(record)
+        except (ValueError, OSError, AttributeError, RuntimeError) as e:
+            # Handle "I/O operation on closed file" errors gracefully
+            error_str = str(e).lower()
+            if any(phrase in error_str for phrase in [
+                "closed file", "i/o operation", "bad file descriptor",
+                "operation on closed", "stream is closed"
+            ]):
+                # Stream is closed, try to reopen it
+                try:
+                    if self.stream:
+                        try:
+                            self.stream.close()
+                        except (ValueError, OSError):
+                            pass
+                    self.stream = None
+                    self.stream = self._open()
+                    super().emit(record)
+                except (ValueError, OSError, AttributeError, RuntimeError):
+                    # If we can't reopen, silently ignore
+                    return
+            else:
+                # Re-raise other errors
+                raise
+        except Exception:
+            # Catch any other unexpected errors to prevent logging failures
+            # from crashing the application
+            return
+
     def _cleanup_old_files(self) -> None:
         """Remove old log files beyond backup_count."""
         base_dir = os.path.dirname(self.base_filename) or '.'
@@ -136,6 +183,62 @@ class TimestampedRotatingFileHandler(BaseRotatingHandler):
                     os.remove(filepath)
                 except OSError:
                     pass
+
+
+def _is_stream_usable(stream) -> bool:
+    """
+    Check if a stream is usable for logging without triggering errors.
+    
+    Returns True if stream can be written to, False otherwise.
+    This function is safe to call even if the stream is closed.
+    """
+    if stream is None:
+        return False
+    
+    try:
+        # Check if stream has 'closed' attribute
+        if hasattr(stream, 'closed'):
+            if stream.closed:
+                return False
+        
+        # Check if stream has 'write' method (required for logging)
+        if not hasattr(stream, 'write'):
+            return False
+        
+        # For file-like objects, check if they're in a valid state
+        # We don't actually write to avoid side effects, just check attributes
+        # The actual write will happen in the handler's emit() method
+        return True
+    except (AttributeError, ValueError, OSError):
+        # Can't determine, assume not usable to be safe
+        return False
+
+
+class SafeStreamHandler(logging.StreamHandler):
+    """StreamHandler that gracefully handles closed streams."""
+
+    def emit(self, record):
+        """Emit a record, handling closed streams gracefully."""
+        if not _is_stream_usable(self.stream):
+            return
+
+        try:
+            super().emit(record)
+        except (ValueError, OSError, AttributeError, RuntimeError) as e:
+            # Handle "I/O operation on closed file" errors gracefully
+            error_str = str(e).lower()
+            if any(phrase in error_str for phrase in [
+                "closed file", "i/o operation", "bad file descriptor",
+                "operation on closed", "stream is closed"
+            ]):
+                # Stream is closed, silently ignore
+                return
+            # Re-raise other errors
+            raise
+        except Exception:
+            # Catch any other unexpected errors to prevent logging failures
+            # from crashing the application
+            return
 
 
 class UnifiedFormatter(logging.Formatter):
@@ -349,35 +452,59 @@ def setup_logging():
     unified_formatter = UnifiedFormatter()
 
     # Use UTF-8 encoding for console output to handle emojis and Chinese characters
-    console_handler = logging.StreamHandler(
-        io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', line_buffering=True)
-    )
-    console_handler.setFormatter(unified_formatter)
+    # Only create console handler if stdout is usable
+    # This prevents errors when stdout is closed (e.g., in uvicorn workers or reload mode)
+    handlers = []
+    
+    if _is_stream_usable(sys.stdout):
+        console_handler = SafeStreamHandler(sys.stdout)
+        console_handler.setFormatter(unified_formatter)
+        handlers.append(console_handler)
+    # If stdout is not usable, we'll only use file handler (more reliable)
 
     # Use custom TimestampedRotatingFileHandler to create timestamped log files every 72 hours
     # Each file is named with the start timestamp: app.YYYY-MM-DD_HH-MM-SS.log
-    file_handler = TimestampedRotatingFileHandler(
-        os.path.join("logs", "app.log"),
-        interval_hours=72,  # Every 72 hours (3 days)
-        backup_count=10,  # Keep 10 backup files (30 days of logs)
-        encoding="utf-8"
-    )
-    file_handler.setFormatter(unified_formatter)
+    # File handler is always created as it's more reliable than console streams
+    try:
+        file_handler = TimestampedRotatingFileHandler(
+            os.path.join("logs", "app.log"),
+            interval_hours=72,  # Every 72 hours (3 days)
+            backup_count=10,  # Keep 10 backup files (30 days of logs)
+            encoding="utf-8"
+        )
+        file_handler.setFormatter(unified_formatter)
+        handlers.append(file_handler)
+    except (OSError, IOError) as e:
+        # If we can't create file handler, at least try to use console if available
+        # This is a fallback for edge cases where logs directory can't be created
+        if handlers:
+            pass  # At least we have console handler
+        else:
+            # Last resort: create a null handler to prevent errors
+            handlers.append(logging.NullHandler())
 
     # Determine log level - always use DEBUG for full verbose logging
     # Override with VERBOSE_LOGGING env var if set, otherwise default to DEBUG
     if hasattr(config, 'verbose_logging') and config.verbose_logging:
         log_level = logging.DEBUG
-        print("[INIT] VERBOSE_LOGGING enabled - setting log level to DEBUG")
+        try:
+            print("[INIT] VERBOSE_LOGGING enabled - setting log level to DEBUG")
+        except (ValueError, OSError):
+            pass
     else:
         # Default to DEBUG for full verbose logging
         log_level_str = getattr(config, 'log_level', 'DEBUG')
         log_level = getattr(logging, log_level_str.upper(), logging.DEBUG)
-        print(f"[INIT] Setting log level to {log_level_str.upper()} (DEBUG) for full verbose logging")
+        try:
+            print(f"[INIT] Setting log level to {log_level_str.upper()} (DEBUG) for full verbose logging")
+        except (ValueError, OSError):
+            pass
 
+    # Configure logging with available handlers
+    # Use force=True to replace any existing configuration
     logging.basicConfig(
         level=logging.DEBUG,  # Always DEBUG for full verbose logging
-        handlers=[console_handler, file_handler],
+        handlers=handlers,
         force=True
     )
 
@@ -399,8 +526,9 @@ def setup_logging():
     for uvicorn_logger_name in ['uvicorn', 'uvicorn.error']:
         uvicorn_logger = logging.getLogger(uvicorn_logger_name)
         uvicorn_logger.handlers = []  # Remove default handlers
-        uvicorn_logger.addHandler(console_handler)
-        uvicorn_logger.addHandler(file_handler)
+        # Only add handlers that were successfully created
+        for handler in handlers:
+            uvicorn_logger.addHandler(handler)
         uvicorn_logger.addFilter(UvicornInvalidRequestFilter())  # Downgrade invalid request warnings
         uvicorn_logger.propagate = False
 
@@ -412,8 +540,9 @@ def setup_logging():
     frontend_logger = logging.getLogger('frontend')
     frontend_logger.setLevel(logging.DEBUG)  # Always accept all frontend logs
     frontend_logger.handlers = []  # Remove default handlers
-    frontend_logger.addHandler(console_handler)  # Also show in console
-    frontend_logger.addHandler(file_handler)  # Write to same app.log file as backend logs
+    # Only add handlers that were successfully created
+    for handler in handlers:
+        frontend_logger.addHandler(handler)
     frontend_logger.propagate = False  # Don't propagate to root logger to avoid double logging
 
     if os.getenv('UVICORN_WORKER_ID') is None:
@@ -443,8 +572,9 @@ def setup_logging():
     openai_logger = logging.getLogger('openai')
     openai_logger.setLevel(log_level)  # Use global log level instead of hardcoded DEBUG
     openai_logger.handlers = []  # Remove default handlers
-    openai_logger.addHandler(console_handler)
-    openai_logger.addHandler(file_handler)
+    # Only add handlers that were successfully created
+    for handler in handlers:
+        openai_logger.addHandler(handler)
     openai_logger.addFilter(OpenAIHTTPLogFilter())
     openai_logger.propagate = False
 
