@@ -14,9 +14,38 @@ Proprietary License
 """
 
 import os
+import sys
 import logging
 import multiprocessing
 from typing import Literal, cast, Any
+
+# Import SafeStreamHandler to handle closed streams gracefully
+try:
+    from services.infrastructure.logging_config import SafeStreamHandler, _is_stream_usable
+except ImportError:
+    # Fallback if import fails (shouldn't happen in normal operation)
+    SafeStreamHandler = logging.StreamHandler
+    def _is_stream_usable(stream):
+        """Fallback check for stream usability."""
+        if stream is None:
+            return False
+        try:
+            if hasattr(stream, 'closed') and stream.closed:
+                return False
+            return hasattr(stream, 'write')
+        except (AttributeError, ValueError, OSError):
+            return False
+
+
+class SafeStdoutHandler(SafeStreamHandler):
+    """SafeStreamHandler that uses stdout, falling back to stderr if stdout is closed."""
+    
+    def __init__(self, stream=None):
+        """Initialize handler with safe stream selection."""
+        if stream is None:
+            # Use stdout if available, otherwise fall back to stderr
+            stream = sys.stdout if _is_stream_usable(sys.stdout) else sys.stderr
+        super().__init__(stream)
 
 # ============================================================================
 # SERVER CONFIGURATION
@@ -135,14 +164,12 @@ LOGGING_CONFIG = {
     },
     "handlers": {
         "default": {
-            "class": "logging.StreamHandler",
+            "()": SafeStdoutHandler,
             "formatter": "default",
-            "stream": "ext://sys.stdout",
         },
         "access": {
-            "class": "logging.StreamHandler",
+            "()": SafeStdoutHandler,
             "formatter": "access",
-            "stream": "ext://sys.stdout",
         },
     },
     "loggers": {

@@ -1,3 +1,14 @@
+"""
+RAG Service for Knowledge Space
+Author: lycosa9527
+Made by: MindSpring Team
+
+Orchestrates retrieval and reranking with hybrid search (vector + keyword).
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
+"""
 from collections import Counter
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timedelta
@@ -29,18 +40,6 @@ from services.infrastructure.kb_rate_limiter import get_kb_rate_limiter
 from services.knowledge.keyword_search_service import get_keyword_search_service
 from services.llm.embedding_cache import get_embedding_cache
 from services.llm.qdrant_service import get_qdrant_service
-
-"""
-RAG Service for Knowledge Space
-Author: lycosa9527
-Made by: MindSpring Team
-
-Orchestrates retrieval and reranking with hybrid search (vector + keyword).
-
-Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
-All Rights Reserved
-Proprietary License
-"""
 
 
 logger = logging.getLogger(__name__)
@@ -372,7 +371,7 @@ class RAGService:
         method = method or self.default_method
 
         # Check KB rate limit for retrieval
-        allowed, count, error_msg = self.kb_rate_limiter.check_retrieval_limit(user_id)
+        allowed, _, error_msg = self.kb_rate_limiter.check_retrieval_limit(user_id)
         if not allowed:
             logger.warning("[RAGService] Rate limit exceeded for user %s: %s", user_id, error_msg)
             raise HTTPException(
@@ -537,7 +536,7 @@ class RAGService:
 
     def vector_search(
         self,
-        db: Session,
+        _db: Session,
         user_id: int,
         query: str,
         top_k: int,
@@ -547,7 +546,7 @@ class RAGService:
         Semantic search using vector similarity.
 
         Args:
-            db: Database session
+            _db: Database session (unused, kept for API consistency)
             user_id: User ID
             query: Query string
             top_k: Number of results
@@ -739,7 +738,7 @@ class RAGService:
 
     def _vector_search_with_scores(
         self,
-        db: Session,
+        _db: Session,
         user_id: int,
         query: str,
         top_k: int,
@@ -1139,7 +1138,7 @@ class RAGService:
 
     def enhance_prompt(
         self,
-        user_id: int,
+        _user_id: int,
         prompt: str,
         context_chunks: List[str],
         max_context_length: int = 2000
@@ -1148,7 +1147,7 @@ class RAGService:
         Enhance prompt with knowledge base context.
 
         Args:
-            user_id: User ID
+            _user_id: User ID (unused, kept for API consistency)
             prompt: Original prompt
             context_chunks: Retrieved context chunks
             max_context_length: Maximum context length in characters
@@ -1178,13 +1177,18 @@ class RAGService:
         return enhanced
 
 
-# Global instance
-_rag_service: Optional[RAGService] = None
+class RAGServiceSingleton:
+    """Singleton wrapper for RAG service instance."""
+    _instance: Optional[RAGService] = None
+
+    @classmethod
+    def get_instance(cls) -> RAGService:
+        """Get singleton RAG service instance."""
+        if cls._instance is None:
+            cls._instance = RAGService()
+        return cls._instance
 
 
 def get_rag_service() -> RAGService:
     """Get global RAG service instance."""
-    global _rag_service
-    if _rag_service is None:
-        _rag_service = RAGService()
-    return _rag_service
+    return RAGServiceSingleton.get_instance()

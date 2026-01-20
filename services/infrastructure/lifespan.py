@@ -19,15 +19,17 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from clients.llm import close_httpx_clients
+from config.celery import CeleryStartupError, init_celery_worker_check
 from config.database import close_db, init_db
 from services.auth.sms_middleware import shutdown_sms_service
 from services.infrastructure.recovery_startup import check_database_on_startup
 from services.infrastructure.startup import _handle_shutdown_signal
-from services.redis.redis_client import close_redis_sync, init_redis_sync, RedisStartupError
+from services.llm.qdrant_service import QdrantStartupError, init_qdrant_sync
+from services.redis.redis_client import RedisStartupError, close_redis_sync, init_redis_sync
 from services.utils.backup_scheduler import start_backup_scheduler
 from services.utils.temp_image_cleaner import start_cleanup_scheduler
 from utils.auth import display_demo_info
-from utils.dependency_checker import check_system_dependencies, DependencyError
+from utils.dependency_checker import DependencyError, check_system_dependencies
 
 logger = logging.getLogger(__name__)
 
@@ -64,6 +66,34 @@ async def lifespan(fastapi_app: FastAPI):
             logger.info("Redis initialized successfully")
     except RedisStartupError:
         # Error message already logged by init_redis_sync with instructions
+        # Exit cleanly without traceback using os._exit to prevent Starlette
+        # from catching and logging the full stack trace
+        logger.error("Application startup failed. Exiting.")
+        os._exit(1)  # pylint: disable=protected-access
+
+    # Initialize Qdrant (REQUIRED for Knowledge Space vector storage)
+    # Application will exit if Qdrant is not available
+    logger.info("[LIFESPAN] Initializing Qdrant...")
+    try:
+        init_qdrant_sync()
+        if worker_id == '0' or not worker_id:
+            logger.info("Qdrant initialized successfully")
+    except QdrantStartupError:
+        # Error message already logged by init_qdrant_sync with instructions
+        # Exit cleanly without traceback using os._exit to prevent Starlette
+        # from catching and logging the full stack trace
+        logger.error("Application startup failed. Exiting.")
+        os._exit(1)  # pylint: disable=protected-access
+
+    # Check Celery worker availability (REQUIRED for background task processing)
+    # Application will exit if Celery worker is not available
+    logger.info("[LIFESPAN] Checking Celery worker availability...")
+    try:
+        init_celery_worker_check()
+        if worker_id == '0' or not worker_id:
+            logger.info("Celery worker is available")
+    except CeleryStartupError:
+        # Error message already logged by init_celery_worker_check with instructions
         # Exit cleanly without traceback using os._exit to prevent Starlette
         # from catching and logging the full stack trace
         logger.error("Application startup failed. Exiting.")

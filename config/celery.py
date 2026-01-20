@@ -183,6 +183,47 @@ def setup_celery_logging():
 # Setup logging before creating Celery app
 setup_celery_logging()
 
+# Module-level logger
+logger = logging.getLogger(__name__)
+
+# Error message width (matching Redis format)
+_ERROR_WIDTH = 70
+
+
+class CeleryStartupError(Exception):
+    """
+    Raised when Celery worker is not available during startup.
+
+    This is a controlled startup failure - the error message has already
+    been logged with instructions. Catching this exception should exit
+    cleanly without logging additional tracebacks.
+    """
+
+
+def _log_celery_error(title: str, details: list[str]) -> None:
+    """
+    Log a Celery error with clean, professional formatting.
+
+    Args:
+        title: Error title (e.g., "CELERY WORKER NOT AVAILABLE")
+        details: List of detail lines to display
+    """
+    separator = "=" * _ERROR_WIDTH
+
+    lines = [
+        "",
+        separator,
+        title.center(_ERROR_WIDTH),
+        separator,
+        "",
+    ]
+    lines.extend(details)
+    lines.extend(["", separator, ""])
+
+    error_msg = "\n".join(lines)
+    logger.critical(error_msg)
+
+
 # Redis configuration
 REDIS_HOST = os.getenv('REDIS_HOST', 'localhost')
 REDIS_PORT = os.getenv('REDIS_PORT', '6379')
@@ -228,6 +269,105 @@ celery_app.conf.update(
     task_default_queue='default',
 )
 
+
+def init_celery_worker_check() -> bool:
+    """
+    Check if Celery worker is available (synchronous version for startup).
+
+    Celery is REQUIRED. Application will exit if worker is not available.
+
+    Returns:
+        True if Celery worker is available.
+
+    Raises:
+        CeleryStartupError: Application will exit if Celery worker is unavailable.
+    """
+    logger.info("[Celery] Checking Celery worker availability...")
+
+    # Check if celery package is installed
+    try:
+        import celery  # noqa: F401
+    except ImportError:
+        _log_celery_error(
+            title="CELERY PACKAGE NOT INSTALLED",
+            details=[
+                "The 'celery' package is required but not installed.",
+                "",
+                "To fix, run:",
+                "  pip install celery",
+            ]
+        )
+        raise CeleryStartupError("Celery package not installed") from None
+
+    try:
+        # Use Celery's inspect API to check for active workers
+        # This requires Redis to be available (already validated)
+        inspect = celery_app.control.inspect(timeout=2.0)
+        active_workers = inspect.active()
+
+        if active_workers is None:
+            # No workers found or connection failed
+            _log_celery_error(
+                title="CELERY WORKER NOT AVAILABLE",
+                details=[
+                    "No Celery workers are running or cannot connect to workers.",
+                    "",
+                    "MindGraph requires Celery worker. Please start Celery worker:",
+                    "",
+                    "  celery -A config.celery worker --loglevel=info",
+                    "",
+                    "Or use the server launcher which starts Celery automatically:",
+                    "  python main.py",
+                    "",
+                    "Ensure Redis is running (required for Celery broker).",
+                ]
+            )
+            raise CeleryStartupError("Celery worker not available") from None
+
+        if not active_workers:
+            # Empty dict means no workers
+            _log_celery_error(
+                title="CELERY WORKER NOT AVAILABLE",
+                details=[
+                    "No active Celery workers found.",
+                    "",
+                    "MindGraph requires Celery worker. Please start Celery worker:",
+                    "",
+                    "  celery -A config.celery worker --loglevel=info",
+                    "",
+                    "Or use the server launcher which starts Celery automatically:",
+                    "  python main.py",
+                ]
+            )
+            raise CeleryStartupError("No active Celery workers found") from None
+
+        worker_count = len(active_workers)
+        logger.info("[Celery] Found %d active worker(s)", worker_count)
+        return True
+
+    except CeleryStartupError:
+        # Re-raise our custom exception
+        raise
+    except Exception as exc:
+        # Connection error or other unexpected error
+        _log_celery_error(
+            title="CELERY WORKER CHECK FAILED",
+            details=[
+                f"Failed to check Celery worker availability: {exc}",
+                "",
+                "MindGraph requires Celery worker. Please ensure:",
+                "",
+                "  1. Redis is running (required for Celery broker)",
+                "  2. Celery worker is started:",
+                "     celery -A config.celery worker --loglevel=info",
+                "",
+                "Or use the server launcher which starts Celery automatically:",
+                "  python main.py",
+            ]
+        )
+        raise CeleryStartupError(f"Failed to check Celery worker: {exc}") from exc
+
+
 # Initialize services in Celery workers
 # This ensures MindChunk can use LLM services in worker processes
 def _init_worker_services():
@@ -238,8 +378,6 @@ def _init_worker_services():
     - Redis is initialized (for caching, rate limiting)
     - LLM service is initialized (for MindChunk)
     """
-    logger = logging.getLogger(__name__)
-
     # Initialize Redis first (LLM service may depend on it)
     try:
         if not is_redis_available():

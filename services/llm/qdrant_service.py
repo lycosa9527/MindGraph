@@ -16,7 +16,6 @@ import os
 import random
 
 import qdrant_client
-from config.settings import config
 from qdrant_client.http import models as rest
 from qdrant_client.http.models import Distance
 
@@ -27,7 +26,46 @@ except ImportError:
     # QuantizationType not available in this version, use string literal instead
     QuantizationType = None
 
+from config.settings import config
+
 logger = logging.getLogger(__name__)
+
+# Error message width (matching Redis format)
+_ERROR_WIDTH = 70
+
+
+class QdrantStartupError(Exception):
+    """
+    Raised when Qdrant connection fails during startup.
+
+    This is a controlled startup failure - the error message has already
+    been logged with instructions. Catching this exception should exit
+    cleanly without logging additional tracebacks.
+    """
+
+
+def _log_qdrant_error(title: str, details: list[str]) -> None:
+    """
+    Log a Qdrant error with clean, professional formatting.
+
+    Args:
+        title: Error title (e.g., "QDRANT CONNECTION FAILED")
+        details: List of detail lines to display
+    """
+    separator = "=" * _ERROR_WIDTH
+
+    lines = [
+        "",
+        separator,
+        title.center(_ERROR_WIDTH),
+        separator,
+        "",
+    ]
+    lines.extend(details)
+    lines.extend(["", separator, ""])
+
+    error_msg = "\n".join(lines)
+    logger.critical(error_msg)
 
 
 class QdrantService:
@@ -111,7 +149,12 @@ class QdrantService:
             return f"{self.collection_prefix}{user_id}_chunk_test_{chunking_method}"
         return f"{self.collection_prefix}{user_id}_knowledge"
 
-    def create_user_collection(self, user_id: int, vector_size: Optional[int] = None, chunking_method: Optional[str] = None) -> None:
+    def create_user_collection(
+        self,
+        user_id: int,
+        vector_size: Optional[int] = None,
+        chunking_method: Optional[str] = None
+    ) -> None:
         """
         Create or get collection for user with compression support.
 
@@ -758,7 +801,7 @@ class QdrantService:
             # Check if collection exists
             collection_name = self.get_user_collection(user_id)
             if not collection_name:
-                result["errors"].append("Collection does not exist for user %s" % user_id)
+                result["errors"].append(f"Collection does not exist for user {user_id}")
                 return result
 
             result["collection_exists"] = True
@@ -823,13 +866,87 @@ class QdrantService:
         return result
 
 
-# Global instance
-_qdrant_service: Optional[QdrantService] = None
+def init_qdrant_sync() -> bool:
+    """
+    Initialize Qdrant connection (synchronous version for startup).
+
+    Qdrant is REQUIRED. Application will exit if connection fails.
+
+    Returns:
+        True if Qdrant is available.
+
+    Raises:
+        QdrantStartupError: Application will exit if Qdrant is unavailable.
+    """
+    qdrant_host = os.getenv("QDRANT_HOST", "")
+    qdrant_url = os.getenv("QDRANT_URL", "")
+
+    logger.info("[Qdrant] Validating Qdrant connection...")
+
+    # Check if Qdrant is configured
+    if not qdrant_url and not qdrant_host:
+        _log_qdrant_error(
+            title="QDRANT NOT CONFIGURED",
+            details=[
+                "Qdrant server is not configured.",
+                "",
+                "Set one of the following in your .env file:",
+                "  QDRANT_HOST=localhost:6333",
+                "  or",
+                "  QDRANT_URL=http://localhost:6333",
+                "",
+                "Install Qdrant:",
+                "  bash scripts/install_qdrant.sh",
+                "",
+                "Or download from: https://github.com/qdrant/qdrant/releases",
+            ]
+        )
+        raise QdrantStartupError("Qdrant not configured") from None
+
+    try:
+        # Try to create Qdrant client and verify connection
+        if qdrant_url:
+            logger.info("[Qdrant] Connecting to %s...", qdrant_url)
+            client = qdrant_client.QdrantClient(url=qdrant_url)
+        else:
+            if ':' in qdrant_host:
+                host, port = qdrant_host.rsplit(':', 1)
+                port = int(port)
+            else:
+                host = qdrant_host
+                port = 6333
+            logger.info("[Qdrant] Connecting to %s:%s...", host, port)
+            client = qdrant_client.QdrantClient(host=host, port=port)
+
+        # Test connection by getting collections (lightweight operation)
+        client.get_collections()
+        logger.info("[Qdrant] Connected successfully")
+        return True
+
+    except Exception as exc:
+        connection_info = qdrant_url if qdrant_url else f"{qdrant_host or 'localhost:6333'}"
+        _log_qdrant_error(
+            title="QDRANT CONNECTION FAILED",
+            details=[
+                f"Failed to connect to Qdrant at: {connection_info}",
+                f"Error: {exc}",
+                "",
+                "MindGraph requires Qdrant. Please ensure Qdrant is running:",
+                "",
+                "  Install:  bash scripts/install_qdrant.sh",
+                "",
+                "  Ubuntu:   sudo systemctl start qdrant",
+                "",
+                "  Or run:   qdrant",
+                "",
+                "Then set QDRANT_HOST=localhost:6333 in your .env file",
+            ]
+        )
+        raise QdrantStartupError(f"Failed to connect to Qdrant: {exc}") from exc
 
 
 def get_qdrant_service() -> QdrantService:
     """Get global Qdrant service instance."""
-    global _qdrant_service
-    if _qdrant_service is None:
-        _qdrant_service = QdrantService()
-    return _qdrant_service
+    if not hasattr(get_qdrant_service, 'instance'):
+        get_qdrant_service.instance = QdrantService()
+    return get_qdrant_service.instance
