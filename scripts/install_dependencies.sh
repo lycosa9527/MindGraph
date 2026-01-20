@@ -103,6 +103,73 @@ command_exists() {
     command -v "$1" >/dev/null 2>&1
 }
 
+# Function to detect conda environment
+detect_conda_env() {
+    if [ -n "$CONDA_DEFAULT_ENV" ] || [ -n "$CONDA_PREFIX" ]; then
+        return 0
+    fi
+    return 1
+}
+
+# Function to find the best Python command
+find_python_cmd() {
+    # First check if we're in a conda environment
+    if detect_conda_env; then
+        # Try python first (conda environments usually have python)
+        if command_exists python && python -c "import sys; sys.exit(0)" 2>/dev/null; then
+            echo "python"
+            return 0
+        fi
+        # Fallback to python3 in conda
+        if command_exists python3 && python3 -c "import sys; sys.exit(0)" 2>/dev/null; then
+            echo "python3"
+            return 0
+        fi
+    fi
+    
+    # Try python3 first (standard on most systems)
+    if command_exists python3 && python3 -c "import sys; sys.exit(0)" 2>/dev/null; then
+        echo "python3"
+        return 0
+    fi
+    
+    # Fallback to python
+    if command_exists python && python -c "import sys; sys.exit(0)" 2>/dev/null; then
+        echo "python"
+        return 0
+    fi
+    
+    return 1
+}
+
+# Function to find the best pip command
+find_pip_cmd() {
+    PYTHON_CMD=$(find_python_cmd)
+    if [ -z "$PYTHON_CMD" ]; then
+        return 1
+    fi
+    
+    # Try python -m pip first (most reliable, works in conda)
+    if $PYTHON_CMD -m pip --version >/dev/null 2>&1; then
+        echo "$PYTHON_CMD -m pip"
+        return 0
+    fi
+    
+    # Try pip3
+    if command_exists pip3 && pip3 --version >/dev/null 2>&1; then
+        echo "pip3"
+        return 0
+    fi
+    
+    # Try pip
+    if command_exists pip && pip --version >/dev/null 2>&1; then
+        echo "pip"
+        return 0
+    fi
+    
+    return 1
+}
+
 # Function to check if service is running
 service_running() {
     if command_exists systemctl; then
@@ -185,11 +252,9 @@ install_redis() {
 
 # Function to check if Qdrant Python package is installed
 check_qdrant_python_package() {
-    if command_exists python3; then
-        python3 -c "import qdrant_client" 2>/dev/null && return 0
-    fi
-    if command_exists python; then
-        python -c "import qdrant_client" 2>/dev/null && return 0
+    PYTHON_CMD=$(find_python_cmd)
+    if [ -n "$PYTHON_CMD" ]; then
+        $PYTHON_CMD -c "import qdrant_client" 2>/dev/null && return 0
     fi
     return 1
 }
@@ -229,10 +294,9 @@ install_qdrant() {
         else
             echo -e "${YELLOW}⚠ Qdrant server is running but Python package is missing${NC}"
             echo -e "${YELLOW}Installing Qdrant Python package...${NC}"
-            if command_exists pip3; then
-                pip3 install qdrant-client
-            elif command_exists pip; then
-                pip install qdrant-client
+            PIP_CMD=$(find_pip_cmd)
+            if [ -n "$PIP_CMD" ]; then
+                $PIP_CMD install qdrant-client
             else
                 echo -e "${RED}✗ pip not found. Please install qdrant-client manually: pip install qdrant-client${NC}"
                 return 1
@@ -276,10 +340,9 @@ install_qdrant() {
                     return 0
                 else
                     echo -e "${YELLOW}Installing Qdrant Python package...${NC}"
-                    if command_exists pip3; then
-                        pip3 install qdrant-client
-                    elif command_exists pip; then
-                        pip install qdrant-client
+                    PIP_CMD=$(find_pip_cmd)
+                    if [ -n "$PIP_CMD" ]; then
+                        $PIP_CMD install qdrant-client
                     fi
                     if check_qdrant_python_package; then
                         echo -e "${GREEN}✓ Qdrant Python package installed successfully${NC}"
@@ -426,10 +489,9 @@ EOF
     # Install Python package if not already installed
     if ! check_qdrant_python_package; then
         echo -e "${YELLOW}Installing Qdrant Python package...${NC}"
-        if command_exists pip3; then
-            pip3 install qdrant-client
-        elif command_exists pip; then
-            pip install qdrant-client
+        PIP_CMD=$(find_pip_cmd)
+        if [ -n "$PIP_CMD" ]; then
+            $PIP_CMD install qdrant-client
         else
             echo -e "${RED}✗ pip not found. Please install qdrant-client manually: pip install qdrant-client${NC}"
             return 1
@@ -468,19 +530,27 @@ install_celery() {
     echo "================================================"
     echo ""
 
-    # Check if Python is available
-    if ! command_exists python3 && ! command_exists python; then
+    # Find Python command
+    PYTHON_CMD=$(find_python_cmd)
+    if [ -z "$PYTHON_CMD" ]; then
         echo -e "${RED}✗ Python not found. Please install Python 3.8+ first.${NC}"
         return 1
     fi
 
-    # Determine Python command
-    if command_exists python3; then
-        PYTHON_CMD=python3
-        PIP_CMD=pip3
-    else
-        PYTHON_CMD=python
-        PIP_CMD=pip
+    # Find pip command
+    PIP_CMD=$(find_pip_cmd)
+    if [ -z "$PIP_CMD" ]; then
+        echo -e "${RED}✗ pip not found. Please install pip first.${NC}"
+        return 1
+    fi
+
+    # Show environment info
+    if detect_conda_env; then
+        if [ -n "$CONDA_DEFAULT_ENV" ]; then
+            echo -e "${BLUE}Detected conda environment: $CONDA_DEFAULT_ENV${NC}"
+        fi
+        echo -e "${BLUE}Using Python: $PYTHON_CMD ($($PYTHON_CMD --version 2>&1 | awk '{print $2}'))${NC}"
+        echo -e "${BLUE}Using pip: $PIP_CMD${NC}"
     fi
 
     # Check Python version
@@ -526,15 +596,6 @@ install_celery() {
     # Install missing components
     if [ "$CELERY_INSTALLED" = false ]; then
         echo -e "${YELLOW}Installing Celery...${NC}"
-    fi
-
-    # Check if pip is available
-    if ! command_exists $PIP_CMD; then
-        echo -e "${YELLOW}pip not found. Installing pip...${NC}"
-        $PYTHON_CMD -m ensurepip --upgrade || {
-            echo -e "${RED}Failed to install pip. Please install pip manually.${NC}"
-            return 1
-        }
     fi
 
     # Install missing packages
