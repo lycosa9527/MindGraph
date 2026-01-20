@@ -78,6 +78,14 @@ if [ "$EUID" -ne 0 ] && [ "$INSTALL_QDRANT" = true ]; then
     exit 1
 fi
 
+# Warn if running with sudo (may affect conda environment detection)
+if [ "$EUID" -eq 0 ] && [ -n "$SUDO_USER" ]; then
+    echo -e "${YELLOW}Note:${NC} Running with sudo. The script will try to detect your conda environment."
+    echo -e "${YELLOW}      If Python/pip are not found, try: sudo -E $0${NC}"
+    echo -e "${YELLOW}      (This preserves your environment variables)${NC}"
+    echo ""
+fi
+
 # Detect OS
 if [ -f /etc/os-release ]; then
     . /etc/os-release
@@ -105,14 +113,111 @@ command_exists() {
 
 # Function to detect conda environment
 detect_conda_env() {
+    # Check environment variables first (works when not using sudo)
     if [ -n "$CONDA_DEFAULT_ENV" ] || [ -n "$CONDA_PREFIX" ]; then
         return 0
     fi
+    
+    # If running with sudo, try to find conda from the original user
+    if [ -n "$SUDO_USER" ]; then
+        SUDO_USER_HOME=$(eval echo ~$SUDO_USER)
+        
+        # Check if conda is initialized in user's shell (bashrc, zshrc, etc.)
+        if [ -f "$SUDO_USER_HOME/.bashrc" ] && grep -q "conda initialize" "$SUDO_USER_HOME/.bashrc" 2>/dev/null; then
+            return 0
+        fi
+        if [ -f "$SUDO_USER_HOME/.zshrc" ] && grep -q "conda initialize" "$SUDO_USER_HOME/.zshrc" 2>/dev/null; then
+            return 0
+        fi
+        
+        # Try to find conda in common locations for the original user
+        if [ -d "$SUDO_USER_HOME/.conda" ] || [ -d "$SUDO_USER_HOME/anaconda3" ] || [ -d "$SUDO_USER_HOME/miniconda3" ]; then
+            return 0
+        fi
+        
+        # Check if conda is in PATH for the original user
+        if sudo -u "$SUDO_USER" bash -c 'command -v conda >/dev/null 2>&1'; then
+            return 0
+        fi
+        
+        # Check if Python path suggests conda (common conda Python paths)
+        if sudo -u "$SUDO_USER" bash -c 'python -c "import sys; sys.exit(0 if \"conda\" in sys.executable.lower() or \"anaconda\" in sys.executable.lower() or \"miniconda\" in sys.executable.lower() else 1)"' 2>/dev/null; then
+            return 0
+        fi
+    fi
+    
+    # Check system-wide conda installations
+    if [ -d "/opt/conda" ] || [ -d "/usr/local/anaconda3" ] || [ -d "/usr/local/miniconda3" ]; then
+        return 0
+    fi
+    
+    # Check if conda is in PATH
+    if command_exists conda; then
+        return 0
+    fi
+    
     return 1
 }
 
 # Function to find the best Python command
 find_python_cmd() {
+    # If running with sudo, try to use Python from the original user's environment
+    if [ -n "$SUDO_USER" ]; then
+        SUDO_USER_HOME=$(eval echo ~$SUDO_USER)
+        
+        # Try to find conda environment Python
+        if [ -n "$CONDA_PREFIX" ] && [ -f "$CONDA_PREFIX/bin/python" ]; then
+            if "$CONDA_PREFIX/bin/python" -c "import sys; sys.exit(0)" 2>/dev/null; then
+                echo "$CONDA_PREFIX/bin/python"
+                return 0
+            fi
+        fi
+        
+        # Try common conda locations for the original user
+        for CONDA_BASE in "$SUDO_USER_HOME/anaconda3" "$SUDO_USER_HOME/miniconda3" "$SUDO_USER_HOME/.conda" "/opt/conda" "/usr/local/anaconda3" "/usr/local/miniconda3"; do
+            if [ -d "$CONDA_BASE" ]; then
+                # Try to find conda environments directory
+                if [ -d "$CONDA_BASE/envs" ]; then
+                    # Try common environment names (python313, base, etc.)
+                    for ENV_NAME in python313 python3.13 base; do
+                        if [ -f "$CONDA_BASE/envs/$ENV_NAME/bin/python" ]; then
+                            if sudo -u "$SUDO_USER" bash -c "\"$CONDA_BASE/envs/$ENV_NAME/bin/python\" -c 'import sys; sys.exit(0)'" 2>/dev/null; then
+                                echo "sudo -u $SUDO_USER $CONDA_BASE/envs/$ENV_NAME/bin/python"
+                                return 0
+                            fi
+                        fi
+                    done
+                    # Try any environment that has python
+                    for ENV_DIR in "$CONDA_BASE/envs"/*; do
+                        if [ -d "$ENV_DIR" ] && [ -f "$ENV_DIR/bin/python" ]; then
+                            if sudo -u "$SUDO_USER" bash -c "\"$ENV_DIR/bin/python\" -c 'import sys; sys.exit(0)'" 2>/dev/null; then
+                                echo "sudo -u $SUDO_USER $ENV_DIR/bin/python"
+                                return 0
+                            fi
+                        fi
+                    done
+                fi
+                # Try base environment
+                if [ -f "$CONDA_BASE/bin/python" ]; then
+                    if sudo -u "$SUDO_USER" bash -c "\"$CONDA_BASE/bin/python\" -c 'import sys; sys.exit(0)'" 2>/dev/null; then
+                        echo "sudo -u $SUDO_USER $CONDA_BASE/bin/python"
+                        return 0
+                    fi
+                fi
+            fi
+        done
+        
+        # Try to run python as the original user (will use their PATH including conda)
+        if sudo -u "$SUDO_USER" bash -c 'command -v python >/dev/null 2>&1 && python -c "import sys; sys.exit(0)" 2>/dev/null'; then
+            echo "sudo -u $SUDO_USER python"
+            return 0
+        fi
+        if sudo -u "$SUDO_USER" bash -c 'command -v python3 >/dev/null 2>&1 && python3 -c "import sys; sys.exit(0)" 2>/dev/null'; then
+            echo "sudo -u $SUDO_USER python3"
+            return 0
+        fi
+    fi
+    
     # First check if we're in a conda environment
     if detect_conda_env; then
         # Try python first (conda environments usually have python)
@@ -142,6 +247,18 @@ find_python_cmd() {
     return 1
 }
 
+# Helper function to execute Python command (handles sudo -u prefix)
+execute_python_cmd() {
+    PYTHON_CMD="$1"
+    shift
+    if echo "$PYTHON_CMD" | grep -q "^sudo -u"; then
+        ACTUAL_PYTHON=$(echo "$PYTHON_CMD" | sed 's/sudo -u [^ ]* //')
+        sudo -u "$SUDO_USER" bash -c "$ACTUAL_PYTHON $*"
+    else
+        $PYTHON_CMD "$@"
+    fi
+}
+
 # Function to find the best pip command
 find_pip_cmd() {
     PYTHON_CMD=$(find_python_cmd)
@@ -149,10 +266,33 @@ find_pip_cmd() {
         return 1
     fi
     
-    # Try python -m pip first (most reliable, works in conda)
-    if $PYTHON_CMD -m pip --version >/dev/null 2>&1; then
-        echo "$PYTHON_CMD -m pip"
-        return 0
+    # If Python command starts with "sudo -u", handle it specially
+    if echo "$PYTHON_CMD" | grep -q "^sudo -u"; then
+        # Extract the actual python command
+        ACTUAL_PYTHON=$(echo "$PYTHON_CMD" | sed 's/sudo -u [^ ]* //')
+        # Try python -m pip with sudo -u
+        if sudo -u "$SUDO_USER" bash -c "$ACTUAL_PYTHON -m pip --version >/dev/null 2>&1"; then
+            echo "sudo -u $SUDO_USER $ACTUAL_PYTHON -m pip"
+            return 0
+        fi
+    else
+        # Try python -m pip first (most reliable, works in conda)
+        if $PYTHON_CMD -m pip --version >/dev/null 2>&1; then
+            echo "$PYTHON_CMD -m pip"
+            return 0
+        fi
+    fi
+    
+    # If running with sudo, try pip from original user
+    if [ -n "$SUDO_USER" ]; then
+        if sudo -u "$SUDO_USER" bash -c 'command -v pip3 >/dev/null 2>&1 && pip3 --version >/dev/null 2>&1'; then
+            echo "sudo -u $SUDO_USER pip3"
+            return 0
+        fi
+        if sudo -u "$SUDO_USER" bash -c 'command -v pip >/dev/null 2>&1 && pip --version >/dev/null 2>&1'; then
+            echo "sudo -u $SUDO_USER pip"
+            return 0
+        fi
     fi
     
     # Try pip3
@@ -254,7 +394,12 @@ install_redis() {
 check_qdrant_python_package() {
     PYTHON_CMD=$(find_python_cmd)
     if [ -n "$PYTHON_CMD" ]; then
-        $PYTHON_CMD -c "import qdrant_client" 2>/dev/null && return 0
+        # Handle sudo -u prefix
+        if echo "$PYTHON_CMD" | grep -q "^sudo -u"; then
+            sudo -u "$SUDO_USER" bash -c "$(echo "$PYTHON_CMD" | sed 's/sudo -u [^ ]* //') -c 'import qdrant_client'" 2>/dev/null && return 0
+        else
+            $PYTHON_CMD -c "import qdrant_client" 2>/dev/null && return 0
+        fi
     fi
     return 1
 }
@@ -548,13 +693,27 @@ install_celery() {
     if detect_conda_env; then
         if [ -n "$CONDA_DEFAULT_ENV" ]; then
             echo -e "${BLUE}Detected conda environment: $CONDA_DEFAULT_ENV${NC}"
+        elif [ -n "$SUDO_USER" ]; then
+            echo -e "${BLUE}Detected conda environment for user: $SUDO_USER${NC}"
         fi
-        echo -e "${BLUE}Using Python: $PYTHON_CMD ($($PYTHON_CMD --version 2>&1 | awk '{print $2}'))${NC}"
+        # Get Python version safely
+        if echo "$PYTHON_CMD" | grep -q "^sudo -u"; then
+            ACTUAL_PYTHON=$(echo "$PYTHON_CMD" | sed 's/sudo -u [^ ]* //')
+            PYTHON_VERSION_STR=$(sudo -u "$SUDO_USER" bash -c "$ACTUAL_PYTHON --version 2>&1")
+        else
+            PYTHON_VERSION_STR=$($PYTHON_CMD --version 2>&1)
+        fi
+        echo -e "${BLUE}Using Python: $PYTHON_CMD ($(echo "$PYTHON_VERSION_STR" | awk '{print $2}'))${NC}"
         echo -e "${BLUE}Using pip: $PIP_CMD${NC}"
     fi
 
     # Check Python version
-    PYTHON_VERSION=$($PYTHON_CMD --version 2>&1 | awk '{print $2}' | cut -d. -f1,2)
+    if echo "$PYTHON_CMD" | grep -q "^sudo -u"; then
+        ACTUAL_PYTHON=$(echo "$PYTHON_CMD" | sed 's/sudo -u [^ ]* //')
+        PYTHON_VERSION=$(sudo -u "$SUDO_USER" bash -c "$ACTUAL_PYTHON --version 2>&1" | awk '{print $2}' | cut -d. -f1,2)
+    else
+        PYTHON_VERSION=$($PYTHON_CMD --version 2>&1 | awk '{print $2}' | cut -d. -f1,2)
+    fi
     PYTHON_MAJOR=$(echo $PYTHON_VERSION | cut -d. -f1)
     PYTHON_MINOR=$(echo $PYTHON_VERSION | cut -d. -f2)
 
@@ -567,21 +726,42 @@ install_celery() {
 
     # Check if Celery is already installed
     CELERY_INSTALLED=false
-    if $PYTHON_CMD -c "import celery" 2>/dev/null; then
-        CELERY_INSTALLED=true
-        CELERY_VERSION=$($PYTHON_CMD -c "import celery; print(celery.__version__)" 2>/dev/null)
-        echo -e "${GREEN}✓ Celery is already installed (version $CELERY_VERSION)${NC}"
+    if echo "$PYTHON_CMD" | grep -q "^sudo -u"; then
+        ACTUAL_PYTHON=$(echo "$PYTHON_CMD" | sed 's/sudo -u [^ ]* //')
+        if sudo -u "$SUDO_USER" bash -c "$ACTUAL_PYTHON -c 'import celery'" 2>/dev/null; then
+            CELERY_INSTALLED=true
+            CELERY_VERSION=$(sudo -u "$SUDO_USER" bash -c "$ACTUAL_PYTHON -c 'import celery; print(celery.__version__)'" 2>/dev/null)
+            echo -e "${GREEN}✓ Celery is already installed (version $CELERY_VERSION)${NC}"
+        else
+            echo -e "${YELLOW}⚠ Celery is not installed${NC}"
+        fi
     else
-        echo -e "${YELLOW}⚠ Celery is not installed${NC}"
+        if $PYTHON_CMD -c "import celery" 2>/dev/null; then
+            CELERY_INSTALLED=true
+            CELERY_VERSION=$($PYTHON_CMD -c "import celery; print(celery.__version__)" 2>/dev/null)
+            echo -e "${GREEN}✓ Celery is already installed (version $CELERY_VERSION)${NC}"
+        else
+            echo -e "${YELLOW}⚠ Celery is not installed${NC}"
+        fi
     fi
 
     # Check if Redis Python package is installed
     REDIS_PKG_INSTALLED=false
-    if $PYTHON_CMD -c "import redis" 2>/dev/null; then
-        REDIS_PKG_INSTALLED=true
-        echo -e "${GREEN}✓ Redis Python package is installed${NC}"
+    if echo "$PYTHON_CMD" | grep -q "^sudo -u"; then
+        ACTUAL_PYTHON=$(echo "$PYTHON_CMD" | sed 's/sudo -u [^ ]* //')
+        if sudo -u "$SUDO_USER" bash -c "$ACTUAL_PYTHON -c 'import redis'" 2>/dev/null; then
+            REDIS_PKG_INSTALLED=true
+            echo -e "${GREEN}✓ Redis Python package is installed${NC}"
+        else
+            echo -e "${YELLOW}⚠ Redis Python package is not installed${NC}"
+        fi
     else
-        echo -e "${YELLOW}⚠ Redis Python package is not installed${NC}"
+        if $PYTHON_CMD -c "import redis" 2>/dev/null; then
+            REDIS_PKG_INSTALLED=true
+            echo -e "${GREEN}✓ Redis Python package is installed${NC}"
+        else
+            echo -e "${YELLOW}⚠ Redis Python package is not installed${NC}"
+        fi
     fi
 
     # Install Redis server if needed
@@ -619,21 +799,42 @@ install_celery() {
     # Verify installation
     VERIFY_FAILED=false
     if [ "$CELERY_INSTALLED" = false ]; then
-        if $PYTHON_CMD -c "import celery" 2>/dev/null; then
-            CELERY_VERSION=$($PYTHON_CMD -c "import celery; print(celery.__version__)" 2>/dev/null)
-            echo -e "${GREEN}✓ Celery installed successfully (version $CELERY_VERSION)${NC}"
+        if echo "$PYTHON_CMD" | grep -q "^sudo -u"; then
+            ACTUAL_PYTHON=$(echo "$PYTHON_CMD" | sed 's/sudo -u [^ ]* //')
+            if sudo -u "$SUDO_USER" bash -c "$ACTUAL_PYTHON -c 'import celery'" 2>/dev/null; then
+                CELERY_VERSION=$(sudo -u "$SUDO_USER" bash -c "$ACTUAL_PYTHON -c 'import celery; print(celery.__version__)'" 2>/dev/null)
+                echo -e "${GREEN}✓ Celery installed successfully (version $CELERY_VERSION)${NC}"
+            else
+                echo -e "${RED}✗ Celery installation failed${NC}"
+                VERIFY_FAILED=true
+            fi
         else
-            echo -e "${RED}✗ Celery installation failed${NC}"
-            VERIFY_FAILED=true
+            if $PYTHON_CMD -c "import celery" 2>/dev/null; then
+                CELERY_VERSION=$($PYTHON_CMD -c "import celery; print(celery.__version__)" 2>/dev/null)
+                echo -e "${GREEN}✓ Celery installed successfully (version $CELERY_VERSION)${NC}"
+            else
+                echo -e "${RED}✗ Celery installation failed${NC}"
+                VERIFY_FAILED=true
+            fi
         fi
     fi
 
     if [ "$REDIS_PKG_INSTALLED" = false ]; then
-        if $PYTHON_CMD -c "import redis" 2>/dev/null; then
-            echo -e "${GREEN}✓ Redis Python package installed${NC}"
+        if echo "$PYTHON_CMD" | grep -q "^sudo -u"; then
+            ACTUAL_PYTHON=$(echo "$PYTHON_CMD" | sed 's/sudo -u [^ ]* //')
+            if sudo -u "$SUDO_USER" bash -c "$ACTUAL_PYTHON -c 'import redis'" 2>/dev/null; then
+                echo -e "${GREEN}✓ Redis Python package installed${NC}"
+            else
+                echo -e "${RED}✗ Redis Python package installation failed${NC}"
+                VERIFY_FAILED=true
+            fi
         else
-            echo -e "${RED}✗ Redis Python package installation failed${NC}"
-            VERIFY_FAILED=true
+            if $PYTHON_CMD -c "import redis" 2>/dev/null; then
+                echo -e "${GREEN}✓ Redis Python package installed${NC}"
+            else
+                echo -e "${RED}✗ Redis Python package installation failed${NC}"
+                VERIFY_FAILED=true
+            fi
         fi
     fi
 
