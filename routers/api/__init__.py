@@ -15,6 +15,8 @@ import logging
 
 from fastapi import APIRouter
 
+logger = logging.getLogger(__name__)
+
 from . import (
     config,
     diagram_generation,
@@ -32,10 +34,9 @@ from . import (
 
 try:
     from . import knowledge_space
-except Exception:
+except Exception as e:
     knowledge_space = None
-
-logger = logging.getLogger(__name__)
+    logger.debug("[API] Failed to import knowledge_space router: %s", e, exc_info=True)
 
 # Create main router with prefix and tags
 router = APIRouter(prefix="/api", tags=["api"])
@@ -59,6 +60,10 @@ if knowledge_space is not None:
     router.include_router(knowledge_space.router)
     logger.info("[API] Knowledge Space router registered at /api/knowledge-space")
 else:
-    logger.warning("[API] Knowledge Space router NOT registered - import failed or router is None")
+    logger.warning(
+        "[API] Knowledge Space router NOT registered - import failed or router is None. "
+        "Check DEBUG logs for details. This may be due to missing dependencies (Qdrant, Celery) "
+        "or feature flags."
+    )
 
 __all__ = ["router"]
