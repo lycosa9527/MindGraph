@@ -5,19 +5,21 @@
  */
 import { computed } from 'vue'
 import { ElButton, ElIcon, ElTooltip } from 'element-plus'
-import { Upload, VideoPlay } from '@element-plus/icons-vue'
+import { Upload, VideoPlay, RefreshRight } from '@element-plus/icons-vue'
 import { useLanguage } from '@/composables/useLanguage'
 
 const props = defineProps<{
   documentCount: number
   canUpload: boolean
   hasDocuments: boolean
+  hasPendingDocuments?: boolean
 }>()
 
 const emit = defineEmits<{
   (e: 'upload'): void
   (e: 'test-user-documents'): void
   (e: 'test-all-datasets'): void
+  (e: 'process-documents'): void
 }>()
 
 const { isZh } = useLanguage()
@@ -36,6 +38,22 @@ const { isZh } = useLanguage()
       </span>
     </div>
     <div class="flex items-center gap-2 shrink-0">
+      <!-- Process Documents Button -->
+      <ElTooltip
+        :content="isZh ? '处理待处理的文档' : 'Process pending documents'"
+        :disabled="hasPendingDocuments"
+        placement="bottom"
+      >
+        <ElButton
+          class="process-docs-btn"
+          size="small"
+          :disabled="!hasPendingDocuments"
+          @click="emit('process-documents')"
+        >
+          <ElIcon class="mr-1"><RefreshRight /></ElIcon>
+          {{ isZh ? '处理文档' : 'Process Documents' }}
+        </ElButton>
+      </ElTooltip>
       <!-- Test Upload Documents Button -->
       <ElTooltip
         :content="isZh ? '请等待文档处理完成后再进行测试' : 'Please wait for documents to finish processing before testing'"
@@ -100,6 +118,21 @@ const { isZh } = useLanguage()
   --el-button-active-bg-color: #1d4ed8;
   --el-button-active-border-color: #1d4ed8;
   --el-button-text-color: #ffffff;
+  font-weight: 500;
+  border-radius: 9999px;
+}
+
+/* Process Documents button - Swiss Design style (green accent) */
+.process-docs-btn {
+  --el-button-bg-color: #10b981;
+  --el-button-border-color: #10b981;
+  --el-button-hover-bg-color: #059669;
+  --el-button-hover-border-color: #059669;
+  --el-button-active-bg-color: #047857;
+  --el-button-active-border-color: #047857;
+  --el-button-text-color: #ffffff;
+  --el-button-disabled-bg-color: #f5f5f4;
+  --el-button-disabled-text-color: #a8a29e;
   font-weight: 500;
   border-radius: 9999px;
 }

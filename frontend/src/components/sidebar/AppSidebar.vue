@@ -23,12 +23,14 @@ import { ChevronDown, KeyRound, LogIn, LogOut, Menu, Settings, UserRound } from 
 
 import { AccountInfoModal, ChangePasswordModal, LoginModal } from '@/components/auth'
 import { useLanguage } from '@/composables/useLanguage'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useAuthStore, useMindMateStore, useUIStore } from '@/stores'
 import { useAskOnceStore } from '@/stores/askonce'
 import { type SavedDiagram, useSavedDiagramsStore } from '@/stores/savedDiagrams'
 
 import AskOnceHistory from './AskOnceHistory.vue'
 import ChatHistory from './ChatHistory.vue'
+import ChunkTestHistory from './ChunkTestHistory.vue'
 import DebateHistory from './DebateHistory.vue'
 import DiagramHistory from './DiagramHistory.vue'
 import KnowledgeSpaceHistory from './KnowledgeSpaceHistory.vue'
@@ -41,6 +43,7 @@ const authStore = useAuthStore()
 const mindMateStore = useMindMateStore()
 const askOnceStore = useAskOnceStore()
 const _savedDiagramsStore = useSavedDiagramsStore()
+const { featureRagChunkTest } = useFeatureFlags()
 
 const isCollapsed = computed(() => uiStore.sidebarCollapsed)
 
@@ -226,7 +229,7 @@ async function handleDiagramSelect(diagram: SavedDiagram) {
         <template #title>个人知识库</template>
       </el-menu-item>
       <el-menu-item
-        v-if="isAuthenticated"
+        v-if="isAuthenticated && featureRagChunkTest"
         index="chunk-test"
       >
         <el-icon><Tools /></el-icon>
@@ -292,9 +295,10 @@ async function handleDiagramSelect(diagram: SavedDiagram) {
       v-else-if="!isCollapsed && currentMode === 'knowledge-space'"
       class="flex-1 overflow-hidden"
     />
-    <!-- Chunk Test: Show document history (same as knowledge space) -->
-    <KnowledgeSpaceHistory
-      v-else-if="!isCollapsed && currentMode === 'chunk-test'"
+    <!-- Chunk Test: Show test history -->
+    <ChunkTestHistory
+      v-else-if="!isCollapsed && currentMode === 'chunk-test' && featureRagChunkTest"
+      :is-blurred="!isAuthenticated"
       class="flex-1 overflow-hidden"
     />
 
@@ -302,9 +306,7 @@ async function handleDiagramSelect(diagram: SavedDiagram) {
     <div
       v-if="
         isCollapsed ||
-        !['mindmate', 'mindgraph', 'knowledge-space', 'chunk-test', 'askonce', 'debateverse'].includes(
-          currentMode
-        )
+        !(currentMode === 'mindmate' || currentMode === 'mindgraph' || currentMode === 'knowledge-space' || (featureRagChunkTest && currentMode === 'chunk-test') || currentMode === 'askonce' || currentMode === 'debateverse')
       "
       class="flex-1"
     />

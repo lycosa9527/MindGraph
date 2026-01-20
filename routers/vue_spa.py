@@ -180,19 +180,50 @@ async def vue_debateverse(request: Request):
     return await _serve_index()
 
 
+@router.get("/{path:path}", response_class=HTMLResponse)
+async def vue_catch_all(request: Request, path: str):
+    """
+    Catch-all route for Vue SPA client-side routing.
+    
+    This handles any route that isn't matched by API endpoints or static files.
+    Vue Router will handle the actual routing client-side.
+    """
+    # Skip API routes, static files, and other non-SPA routes
+    if (
+        path.startswith("api/")
+        or path.startswith("static/")
+        or path.startswith("assets/")
+        or path.startswith("ws")
+        or path in ["health", "healthz", "ready", "docs", "redoc", "openapi.json"]
+        or "." in path.split("/")[-1]  # Skip files with extensions
+    ):
+        raise HTTPException(status_code=404, detail="Not found")
+    
+    return await _serve_index()
+
+
 async def _serve_index() -> FileResponse:
     """Serve Vue SPA index.html."""
     index_path = VUE_DIST_DIR / "index.html"
+    
+    logger.debug("Serving Vue SPA index - checking path: %s", index_path)
+    logger.debug("VUE_DIST_DIR exists: %s", VUE_DIST_DIR.exists())
+    logger.debug("index.html exists: %s", index_path.exists())
 
     if not index_path.exists():
+        logger.error("Vue SPA index.html not found at: %s", index_path)
+        logger.error("VUE_DIST_DIR: %s", VUE_DIST_DIR)
+        logger.error("VUE_DIST_DIR absolute: %s", VUE_DIST_DIR.resolve())
         return HTMLResponse(
-            content="""
+            content=f"""
             <!DOCTYPE html>
             <html>
             <head><title>Frontend Not Built</title></head>
             <body>
                 <h1>Frontend Not Built</h1>
                 <p>The Vue frontend has not been built yet.</p>
+                <p>Expected path: {index_path}</p>
+                <p>VUE_DIST_DIR: {VUE_DIST_DIR}</p>
                 <p>Run the following commands:</p>
                 <pre>
 cd frontend
@@ -205,6 +236,7 @@ npm run build
             status_code=503
         )
 
+    logger.info("Serving Vue SPA index.html from: %s", index_path)
     return FileResponse(
         path=str(index_path),
         media_type="text/html"

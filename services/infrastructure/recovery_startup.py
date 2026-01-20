@@ -9,6 +9,7 @@ import os
 import sys
 from typing import Any, Dict
 
+from config.database import recover_from_kill_9, SessionLocal
 from services.infrastructure.database_recovery import DatabaseRecovery
 from services.infrastructure.recovery_locks import (
     acquire_integrity_check_lock,
@@ -16,6 +17,106 @@ from services.infrastructure.recovery_locks import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+def cleanup_incomplete_chunk_operations() -> int:
+    """
+    Clean up incomplete chunk operations after kill -9.
+    
+    Detects documents stuck in 'processing' status and:
+    1. Cleans up partial Qdrant data
+    2. Deletes partial chunks from database
+    3. Resets status to 'pending' for retry
+    
+    Returns:
+        Number of documents cleaned up
+    """
+    try:
+        # Import here to avoid circular dependencies
+        from models.knowledge_space import ChunkTestDocument
+        from services.knowledge.chunk_test_document_service import ChunkTestDocumentService
+        
+        db = SessionLocal()
+        cleaned_count = 0
+        
+        try:
+            # Find all documents stuck in 'processing' status
+            stuck_docs = db.query(ChunkTestDocument).filter(
+                ChunkTestDocument.status == 'processing'
+            ).all()
+            
+            if not stuck_docs:
+                logger.debug("[Recovery] No documents stuck in processing status")
+                return 0
+            
+            logger.info(
+                "[Recovery] Found %d document(s) stuck in 'processing' status, cleaning up...",
+                len(stuck_docs)
+            )
+            
+            # Group by user_id to create service instances efficiently
+            docs_by_user = {}
+            for doc in stuck_docs:
+                if doc.user_id not in docs_by_user:
+                    docs_by_user[doc.user_id] = []
+                docs_by_user[doc.user_id].append(doc)
+            
+            # Clean up each document
+            for user_id, docs in docs_by_user.items():
+                try:
+                    service = ChunkTestDocumentService(db, user_id)
+                    for doc in docs:
+                        try:
+                            service.cleanup_incomplete_processing(doc.id)
+                            cleaned_count += 1
+                            logger.info(
+                                "[Recovery] Cleaned up incomplete processing for document %s (user %s)",
+                                doc.id, user_id
+                            )
+                        except Exception as e:
+                            logger.error(
+                                "[Recovery] Failed to cleanup document %s: %s",
+                                doc.id, e,
+                                exc_info=True
+                            )
+                except Exception as e:
+                    logger.error(
+                        "[Recovery] Failed to create service for user %s: %s",
+                        user_id, e,
+                        exc_info=True
+                    )
+            
+            if cleaned_count > 0:
+                logger.info(
+                    "[Recovery] Successfully cleaned up %d incomplete chunk operation(s)",
+                    cleaned_count
+                )
+            
+            return cleaned_count
+            
+        except Exception as e:
+            logger.error(
+                "[Recovery] Error during incomplete chunk operations cleanup: %s",
+                e,
+                exc_info=True
+            )
+            db.rollback()
+            return 0
+        finally:
+            db.close()
+            
+    except ImportError as e:
+        logger.debug(
+            "[Recovery] Could not import chunk test models (may not be available): %s",
+            e
+        )
+        return 0
+    except Exception as e:
+        logger.warning(
+            "[Recovery] Error during incomplete chunk operations cleanup: %s",
+            e
+        )
+        return 0
 
 
 def check_database_on_startup() -> bool:
@@ -39,6 +140,26 @@ def check_database_on_startup() -> bool:
     Returns:
         True if startup should continue, False to abort
     """
+    # First, recover from potential kill -9 scenarios
+    # This clears stale locks and connections before integrity check
+    logger.info("[Recovery] Recovering from potential kill -9 scenario...")
+    recovery_success = recover_from_kill_9()
+    if not recovery_success:
+        logger.warning(
+            "[Recovery] Database recovery from kill -9 failed, "
+            "but continuing with integrity check"
+        )
+    
+    # Clean up incomplete chunk operations (Qdrant + database)
+    # This abandons partial work and resets documents to 'pending' for retry
+    logger.info("[Recovery] Cleaning up incomplete chunk operations...")
+    cleaned_count = cleanup_incomplete_chunk_operations()
+    if cleaned_count > 0:
+        logger.info(
+            "[Recovery] Cleaned up %d incomplete chunk operation(s) from kill -9",
+            cleaned_count
+        )
+    
     # Check if integrity check should be skipped (for development/testing)
     skip_check_env = os.getenv("SKIP_INTEGRITY_CHECK", "")
     logger.info("[Recovery] SKIP_INTEGRITY_CHECK=%s", skip_check_env)

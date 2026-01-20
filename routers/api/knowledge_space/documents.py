@@ -68,9 +68,8 @@ async def upload_document(
             file_size=len(content)
         )
 
-        # Trigger background processing
-        # Works with both Celery (if available) and fallback thread-based processing
-        process_document_task.delay(current_user.id, document.id)
+        # Note: Processing must be triggered manually via /documents/start-processing
+        # or /documents/process-selected endpoints
 
         return DocumentResponse(
             id=document.id,

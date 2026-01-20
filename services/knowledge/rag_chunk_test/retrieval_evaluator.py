@@ -11,15 +11,18 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Callable
 import logging
 import time
 import uuid
+
+from sqlalchemy.orm import Session
 
 from clients.dashscope_embedding import get_embedding_client
 from services.infrastructure.kb_rate_limiter import get_kb_rate_limiter
 from services.knowledge.chunking_service import Chunk
 from services.knowledge.retrieval_test_service import RetrievalTestService
+from services.knowledge.document_processing import generate_embeddings_with_cache
 from services.llm.qdrant_service import get_qdrant_service
 
 
@@ -43,7 +46,11 @@ class RetrievalEvaluator:
         _method: str = "hybrid",
         top_k: int = 5,
         test_user_id: int = 0,
-        collection_name: Optional[str] = None
+        collection_name: Optional[str] = None,
+        progress_callback: Optional[Callable[[str, Optional[str], str, int], None]] = None,
+        method_name: Optional[str] = None,
+        db: Optional[Session] = None,
+        user_id: Optional[int] = None
     ) -> Dict[str, Any]:
         """
         Test retrieval on chunked documents.
@@ -55,6 +62,10 @@ class RetrievalEvaluator:
             top_k: Number of results to retrieve
             test_user_id: User ID for testing (uses 0 for test collections)
             collection_name: Optional collection name (auto-generated if None)
+            progress_callback: Optional callback function(status, method, stage, progress)
+            method_name: Optional chunking method name for progress reporting
+            db: Optional database session for embedding caching
+            user_id: Optional user ID for embedding caching (uses test_user_id if not provided)
 
         Returns:
             Retrieval results with metrics
@@ -81,15 +92,35 @@ class RetrievalEvaluator:
 
         try:
             # Step 1: Generate embeddings for chunks
+            if progress_callback:
+                progress_callback("processing", method_name, "embedding", 0)
             embedding_start = time.time()
             texts = [chunk.text for chunk in chunks]
-            embeddings = self.embedding_client.embed_texts(texts)
+
+            # Use cached embedding generation if db and user_id provided, otherwise direct embedding
+            if db is not None:
+                cache_user_id = user_id if user_id is not None else test_user_id
+                embeddings = generate_embeddings_with_cache(
+                    self.embedding_client,
+                    self.rate_limiter,
+                    texts,
+                    cache_user_id,
+                    db
+                )
+            else:
+                # Fallback to direct embedding for backward compatibility
+                embeddings = self.embedding_client.embed_texts(texts)
+
             timing["embedding_ms"] = (time.time() - embedding_start) * 1000
+            if progress_callback:
+                progress_callback("processing", method_name, "embedding", 50)
 
             if len(embeddings) != len(chunks):
                 raise ValueError(f"Embedding count ({len(embeddings)}) != chunk count ({len(chunks)})")
 
             # Step 2: Store in temporary Qdrant collection
+            if progress_callback:
+                progress_callback("processing", method_name, "indexing", 50)
             store_start = time.time()
             # Generate unique chunk IDs (Qdrant requires positive integers)
             # Use hash of chunk text + index to create unique IDs
@@ -125,8 +156,12 @@ class RetrievalEvaluator:
                 metadata=qdrant_metadata
             )
             timing["store_ms"] = (time.time() - store_start) * 1000
+            if progress_callback:
+                progress_callback("processing", method_name, "indexing", 100)
 
             # Step 3: Perform retrieval
+            if progress_callback:
+                progress_callback("processing", method_name, "retrieval", 0)
             retrieval_start = time.time()
             query_embedding = self.embedding_client.embed_query(query)
 
@@ -137,6 +172,8 @@ class RetrievalEvaluator:
                 top_k=top_k
             )
             timing["retrieval_ms"] = (time.time() - retrieval_start) * 1000
+            if progress_callback:
+                progress_callback("processing", method_name, "retrieval", 100)
 
             # Step 4: Format results
             # Create mapping from chunk_id to chunk index
@@ -297,23 +334,43 @@ class RetrievalEvaluator:
         else:
             return "tie"
 
-    def cleanup_test_collection(self, test_user_id: int = 0):
+    def cleanup_test_collection(self, test_user_id: int = 0, collection_name: Optional[str] = None):
         """
         Clean up temporary test collection.
 
         Args:
             test_user_id: User ID for test collection
+            collection_name: Optional specific collection name to delete.
+                           If None, deletes all collections for test_user_id.
         """
         try:
-            # Delete all documents for test user
-            self.qdrant.delete_user_collection(test_user_id)
-            logger.debug(
-                "[RetrievalEvaluator] Cleaned up test collection for user %s",
-                test_user_id
-            )
+            if collection_name:
+                # Delete specific collection by name
+                try:
+                    self.qdrant.client.delete_collection(collection_name=collection_name)
+                    logger.debug(
+                        "[RetrievalEvaluator] Cleaned up test collection: %s (user_id=%s)",
+                        collection_name,
+                        test_user_id
+                    )
+                except Exception as e:
+                    # Collection might not exist, log but don't fail
+                    logger.debug(
+                        "[RetrievalEvaluator] Collection %s not found or already deleted: %s",
+                        collection_name,
+                        e
+                    )
+            else:
+                # Delete all collections for test user (fallback)
+                self.qdrant.delete_user_collection(test_user_id)
+                logger.debug(
+                    "[RetrievalEvaluator] Cleaned up all test collections for user %s",
+                    test_user_id
+                )
         except Exception as e:
             logger.warning(
-                "[RetrievalEvaluator] Failed to cleanup test collection for user %s: %s",
+                "[RetrievalEvaluator] Failed to cleanup test collection (user_id=%s, collection=%s): %s",
                 test_user_id,
+                collection_name,
                 e
             )

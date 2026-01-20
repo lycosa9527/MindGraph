@@ -94,22 +94,36 @@ class QdrantService:
                 self.compression_type
             )
 
-    def _get_collection_name(self, user_id: int) -> str:
-        """Get collection name for user."""
+    def _get_collection_name(self, user_id: int, chunking_method: Optional[str] = None) -> str:
+        """
+        Get collection name for user.
+        
+        Args:
+            user_id: User ID
+            chunking_method: Optional chunking method name for chunk test isolation
+                           (e.g., 'semchunk', 'spacy'). If provided, creates separate collection.
+        
+        Returns:
+            Collection name
+        """
+        if chunking_method:
+            # For chunk tests, use separate collection per method for better isolation
+            return f"{self.collection_prefix}{user_id}_chunk_test_{chunking_method}"
         return f"{self.collection_prefix}{user_id}_knowledge"
 
-    def create_user_collection(self, user_id: int, vector_size: Optional[int] = None) -> None:
+    def create_user_collection(self, user_id: int, vector_size: Optional[int] = None, chunking_method: Optional[str] = None) -> None:
         """
         Create or get collection for user with compression support.
 
         Args:
             user_id: User ID
             vector_size: Embedding vector size (default: from config.EMBEDDING_DIMENSIONS or 768)
+            chunking_method: Optional chunking method name for chunk test isolation
         """
         if vector_size is None:
             # Use optimized dimensions from config (default: 768 for compression efficiency)
             vector_size = config.EMBEDDING_DIMENSIONS or 768
-        collection_name = self._get_collection_name(user_id)
+        collection_name = self._get_collection_name(user_id, chunking_method)
 
         try:
             # Check if collection exists
@@ -218,17 +232,18 @@ class QdrantService:
             logger.error("[Qdrant] Failed to create collection for user %s: %s", user_id, e)
             raise
 
-    def get_user_collection(self, user_id: int) -> Optional[str]:
+    def get_user_collection(self, user_id: int, chunking_method: Optional[str] = None) -> Optional[str]:
         """
         Get existing collection name for user.
 
         Args:
             user_id: User ID
+            chunking_method: Optional chunking method name for chunk test isolation
 
         Returns:
             Collection name or None if not found
         """
-        collection_name = self._get_collection_name(user_id)
+        collection_name = self._get_collection_name(user_id, chunking_method)
 
         try:
             collections = self.client.get_collections()
@@ -245,7 +260,8 @@ class QdrantService:
         chunk_ids: List[int],
         embeddings: List[List[float]],
         document_ids: List[int],
-        metadata: Optional[List[Dict[str, Any]]] = None
+        metadata: Optional[List[Dict[str, Any]]] = None,
+        chunking_method: Optional[str] = None
     ) -> None:
         """
         Add document embeddings to user's collection.
@@ -256,6 +272,8 @@ class QdrantService:
             embeddings: List of embedding vectors
             document_ids: List of document IDs (for metadata)
             metadata: Optional list of metadata dicts
+            chunking_method: Optional chunking method name for chunk test isolation
+                          (if provided, uses separate collection per method)
         """
         if not chunk_ids or not embeddings:
             logger.warning("[Qdrant] Empty chunk_ids or embeddings for user %s", user_id)
@@ -267,9 +285,9 @@ class QdrantService:
         # Get vector size from first embedding or use optimized default
         vector_size = len(embeddings[0]) if embeddings else (config.EMBEDDING_DIMENSIONS or 768)
 
-        # Create collection if needed
-        self.create_user_collection(user_id, vector_size)
-        collection_name = self._get_collection_name(user_id)
+        # Create collection if needed (with method-specific collection for chunk tests)
+        self.create_user_collection(user_id, vector_size, chunking_method)
+        collection_name = self._get_collection_name(user_id, chunking_method)
 
         # Prepare points with payload (metadata)
         points = []
@@ -455,20 +473,21 @@ class QdrantService:
             logger.error("[Qdrant] Search failed for user %s: %s", user_id, e)
             raise
 
-    def delete_chunks(self, user_id: int, chunk_ids: List[int]) -> None:
+    def delete_chunks(self, user_id: int, chunk_ids: List[int], chunking_method: Optional[str] = None) -> None:
         """
         Delete specific chunks by chunk IDs from Qdrant.
 
         Args:
             user_id: User ID
             chunk_ids: List of chunk IDs to delete
+            chunking_method: Optional chunking method name for chunk test isolation
         """
         if not chunk_ids:
             return
 
-        collection_name = self.get_user_collection(user_id)
+        collection_name = self.get_user_collection(user_id, chunking_method)
         if not collection_name:
-            logger.warning("[Qdrant] No collection found for user %s", user_id)
+            logger.warning("[Qdrant] No collection found for user %s (method: %s)", user_id, chunking_method)
             return
 
         try:

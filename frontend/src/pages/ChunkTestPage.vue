@@ -5,25 +5,29 @@
  * Page for testing and comparing RAG chunking strategies
  * Shows default benchmark datasets and user documents
  */
-import { ref, computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
+
 import { ElButton, ElIcon, ElMessage } from 'element-plus'
+
 import { RefreshRight } from '@element-plus/icons-vue'
-import {
-  useBenchmarks,
-  useUpdateDatasets,
-  useTestUserDocuments,
-  useTestBenchmarkDataset,
-  useTestQueries,
-} from '@/composables/queries/useChunkTestQueries'
-import { useKnowledgeSpace } from '@/composables/useKnowledgeSpace'
-import type { KnowledgeDocument } from '@/stores/knowledgeSpace'
+
+import ChunkPreviewModal from '@/components/knowledge-space/ChunkPreviewModal.vue'
 import ChunkTestHeader from '@/components/knowledge-space/ChunkTestHeader.vue'
 import DatasetTable from '@/components/knowledge-space/DatasetTable.vue'
 import DocumentTable from '@/components/knowledge-space/DocumentTable.vue'
 import DocumentUpload from '@/components/knowledge-space/DocumentUpload.vue'
 import ProcessingProgressBar from '@/components/knowledge-space/ProcessingProgressBar.vue'
-import ChunkPreviewModal from '@/components/knowledge-space/ChunkPreviewModal.vue'
+import type { ChunkTestDocument } from '@/composables/queries/useChunkTestDocumentQueries'
+import {
+  useBenchmarks,
+  useTestBenchmarkDataset,
+  useTestBenchmarkDatasetAsync,
+  useTestQueries,
+  useTestUserDocuments,
+  useUpdateDatasets,
+} from '@/composables/queries/useChunkTestQueries'
+import { useChunkTestDocumentsComposable } from '@/composables/useChunkTestDocuments'
 import { useLanguage } from '@/composables/useLanguage'
 
 const { isZh } = useLanguage()
@@ -33,6 +37,7 @@ const { data: benchmarksData, isLoading: isLoadingBenchmarks } = useBenchmarks()
 const updateDatasetsMutation = useUpdateDatasets()
 const testUserDocumentsMutation = useTestUserDocuments()
 const testBenchmarkMutation = useTestBenchmarkDataset()
+const testBenchmarkAsyncMutation = useTestBenchmarkDatasetAsync()
 const { data: defaultQueries } = useTestQueries('mixed', 20)
 
 const {
@@ -44,8 +49,11 @@ const {
   fetchDocuments,
   uploadDocument,
   deleteDocument,
-  resumePolling,
-} = useKnowledgeSpace()
+  startProcessing,
+  processSelected,
+  startProcessingMutation,
+  processSelectedMutation,
+} = useChunkTestDocumentsComposable()
 
 const datasets = computed(() => benchmarksData.value?.benchmarks || [])
 const selectedDocumentIds = ref<number[]>([])
@@ -55,12 +63,17 @@ const viewingDocumentId = ref<number | null>(null)
 const viewingDocumentName = ref('')
 
 const hasDocuments = computed(() => {
-  return documents.value.some((doc: KnowledgeDocument) => doc.status === 'completed')
+  return documents.value.some((doc: ChunkTestDocument) => doc.status === 'completed')
+})
+
+const hasPendingDocuments = computed(() => {
+  return documents.value.some(
+    (doc: ChunkTestDocument) => doc.status === 'pending' || doc.status === 'failed'
+  )
 })
 
 onMounted(async () => {
   await fetchDocuments()
-  resumePolling()
 })
 
 const handleUpload = () => {
@@ -72,7 +85,7 @@ const handleDelete = (id: number) => {
 }
 
 const handleView = (id: number) => {
-  const doc = documents.value.find((d: KnowledgeDocument) => d.id === id)
+  const doc = documents.value.find((d: ChunkTestDocument) => d.id === id)
   if (doc && doc.status === 'completed') {
     viewingDocumentId.value = id
     viewingDocumentName.value = doc.file_name
@@ -80,10 +93,22 @@ const handleView = (id: number) => {
   }
 }
 
+const handleProcessDocuments = async () => {
+  try {
+    if (selectedDocumentIds.value.length > 0) {
+      await processSelectedMutation.mutateAsync(selectedDocumentIds.value)
+    } else {
+      await startProcessingMutation.mutateAsync()
+    }
+  } catch (error) {
+    // Error handled by mutation
+  }
+}
+
 const handleTestUserDocuments = async () => {
   // Get completed documents (use selected if available, otherwise all completed)
   const completedDocs = documents.value.filter(
-    (doc: KnowledgeDocument) => doc.status === 'completed'
+    (doc: ChunkTestDocument) => doc.status === 'completed'
   )
 
   if (completedDocs.length === 0) {
@@ -91,27 +116,31 @@ const handleTestUserDocuments = async () => {
     return
   }
 
-  const docIdsToTest = selectedDocumentIds.value.length > 0
-    ? selectedDocumentIds.value.filter((id) =>
-        completedDocs.some((doc: KnowledgeDocument) => doc.id === id)
-      )
-    : completedDocs.map((doc: KnowledgeDocument) => doc.id)
+  const docIdsToTest =
+    selectedDocumentIds.value.length > 0
+      ? selectedDocumentIds.value.filter((id) =>
+          completedDocs.some((doc: ChunkTestDocument) => doc.id === id)
+        )
+      : completedDocs.map((doc: ChunkTestDocument) => doc.id)
 
   if (docIdsToTest.length === 0) {
-    ElMessage.warning(isZh ? '请选择已完成的文档进行测试' : 'Please select completed documents for testing')
+    ElMessage.warning(
+      isZh ? '请选择已完成的文档进行测试' : 'Please select completed documents for testing'
+    )
     return
   }
 
   // Use default queries if available, otherwise generate simple queries
-  const queries = defaultQueries.value && defaultQueries.value.length > 0
-    ? defaultQueries.value.slice(0, 10) // Use first 10 queries
-    : [
-        'What is the main topic?',
-        'What are the key points?',
-        'What information is provided?',
-        'What are the important details?',
-        'What can you tell me about this document?',
-      ]
+  const queries =
+    defaultQueries.value && defaultQueries.value.length > 0
+      ? defaultQueries.value.slice(0, 10) // Use first 10 queries
+      : [
+          'What is the main topic?',
+          'What are the key points?',
+          'What information is provided?',
+          'What are the important details?',
+          'What can you tell me about this document?',
+        ]
 
   try {
     ElMessage.info(isZh ? '开始测试上传文档...' : 'Starting test for uploaded documents...')
@@ -120,13 +149,16 @@ const handleTestUserDocuments = async () => {
       queries,
     })
     // Navigate to results page immediately
-    router.push(`/chunk-test/results/${result.test_id}`)
+    if (result && result.test_id) {
+      await router.push(`/chunk-test/results/${result.test_id}`)
+    } else {
+      ElMessage.error(
+        isZh ? '测试启动失败：未收到测试ID' : 'Test failed to start: No test ID received'
+      )
+    }
   } catch (error) {
-    ElMessage.error(
-      error instanceof Error
-        ? error.message
-        : isZh ? '测试失败' : 'Test failed'
-    )
+    console.error('Failed to start test:', error)
+    ElMessage.error(error instanceof Error ? error.message : isZh ? '测试失败' : 'Test failed')
   }
 }
 
@@ -136,48 +168,27 @@ const handleTestAllDatasets = async () => {
     return
   }
 
+  // Test the first dataset and navigate to progress page
+  const dataset = datasets.value[0]
+
   try {
-    ElMessage.info(isZh ? '开始测试所有数据集...' : 'Starting test for all datasets...')
-    const results = []
-
-    for (const dataset of datasets.value) {
-      try {
-        ElMessage.info(
-          isZh
-            ? `正在测试数据集: ${dataset.name}...`
-            : `Testing dataset: ${dataset.name}...`
-        )
-        const result = await testBenchmarkMutation.mutateAsync({
-          dataset_name: dataset.name,
-        })
-        results.push({ dataset: dataset.name, result })
-      } catch (error) {
-        console.error(`Failed to test dataset ${dataset.name}:`, error)
-        ElMessage.warning(
-          isZh
-            ? `数据集 ${dataset.name} 测试失败`
-            : `Failed to test dataset ${dataset.name}`
-        )
-      }
-    }
-
-    if (results.length > 0) {
-      ElMessage.success(
-        isZh
-          ? `所有数据集测试完成！共测试 ${results.length} 个数据集`
-          : `All datasets tested! Tested ${results.length} datasets`
-      )
-      // TODO: Display aggregated results in a modal or results panel
-      console.log('All test results:', results)
+    ElMessage.info(
+      isZh ? `开始测试数据集: ${dataset.name}...` : `Starting test for dataset: ${dataset.name}...`
+    )
+    const result = await testBenchmarkAsyncMutation.mutateAsync({
+      dataset_name: dataset.name,
+    })
+    // Navigate to results page immediately
+    if (result && result.test_id) {
+      await router.push(`/chunk-test/results/${result.test_id}`)
     } else {
-      ElMessage.error(isZh ? '所有数据集测试失败' : 'All dataset tests failed')
+      ElMessage.error(
+        isZh ? '测试启动失败：未收到测试ID' : 'Test failed to start: No test ID received'
+      )
     }
   } catch (error) {
-    ElMessage.error(
-      error instanceof Error
-        ? error.message
-        : isZh ? '测试失败' : 'Test failed'
-    )
+    console.error('Failed to start test:', error)
+    ElMessage.error(error instanceof Error ? error.message : isZh ? '测试失败' : 'Test failed')
   }
 }
 
@@ -187,9 +198,7 @@ const handleUpdateDatasets = async () => {
     ElMessage.success(isZh ? '数据集更新成功' : 'Datasets updated successfully')
   } catch (error) {
     ElMessage.error(
-      error instanceof Error
-        ? error.message
-        : isZh ? '数据集更新失败' : 'Failed to update datasets'
+      error instanceof Error ? error.message : isZh ? '数据集更新失败' : 'Failed to update datasets'
     )
   }
 }
@@ -202,7 +211,9 @@ const handleUpdateDatasets = async () => {
       :document-count="documentCount"
       :can-upload="canUpload"
       :has-documents="hasDocuments"
+      :has-pending-documents="hasPendingDocuments"
       @upload="handleUpload"
+      @process-documents="handleProcessDocuments"
       @test-user-documents="handleTestUserDocuments"
       @test-all-datasets="handleTestAllDatasets"
     />
@@ -266,6 +277,7 @@ const handleUpdateDatasets = async () => {
       v-model:visible="showChunkPreviewModal"
       :document-id="viewingDocumentId"
       :file-name="viewingDocumentName"
+      :is-chunk-test="true"
     />
   </div>
 </template>

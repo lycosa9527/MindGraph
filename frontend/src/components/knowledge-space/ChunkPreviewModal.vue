@@ -31,6 +31,7 @@ const props = defineProps<{
   visible: boolean
   documentId: number | null
   fileName: string
+  isChunkTest?: boolean  // If true, use chunk test endpoints
 }>()
 
 const emit = defineEmits<{
@@ -55,8 +56,13 @@ async function fetchChunks() {
   
   loading.value = true
   try {
+    // Use chunk test endpoint if isChunkTest is true
+    const endpoint = props.isChunkTest
+      ? `/api/knowledge-space/chunk-test/documents/${props.documentId}/chunks`
+      : `/api/knowledge-space/documents/${props.documentId}/chunks`
+    
     const response = await apiRequest(
-      `/api/knowledge-space/documents/${props.documentId}/chunks?page=${currentPage.value}&page_size=${pageSize.value}`
+      `${endpoint}?page=${currentPage.value}&page_size=${pageSize.value}`
     )
     
     if (response.ok) {

@@ -1,8 +1,11 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import tailwindcss from '@tailwindcss/vite'
-import { resolve } from 'path'
+import { resolve, dirname } from 'path'
 import { readFileSync } from 'fs'
+import { fileURLToPath } from 'url'
+
+const __dirname = dirname(fileURLToPath(import.meta.url))
 
 // Read version from VERSION file (single source of truth)
 const version = readFileSync(resolve(__dirname, '../VERSION'), 'utf-8').trim()
@@ -25,9 +28,9 @@ export default defineConfig({
     },
   },
   server: {
-    port: 5173, // Use Vite's default port (less likely to have permission issues)
-    host: '0.0.0.0', // Bind to all interfaces (works better in WSL)
-    strictPort: false, // Allow Vite to use another port if 5173 is taken
+    port: 3000, // Use port 3000 to avoid permission issues
+    host: process.env.VITE_HOST || 'localhost', // Default to localhost; set VITE_HOST=0.0.0.0 for WSL/remote access
+    strictPort: false, // Allow Vite to use another port if 3000 is taken
     proxy: {
       '/api': {
         target: backendHost,

@@ -10,7 +10,9 @@ All Rights Reserved
 Proprietary License
 """
 from datetime import datetime
+from typing import Optional
 import pickle
+import uuid
 
 from sqlalchemy import (
     Column, Integer, String, DateTime, ForeignKey, Text, JSON, Enum, Index,
@@ -19,6 +21,11 @@ from sqlalchemy import (
 from sqlalchemy.orm import relationship
 
 from models.auth import Base
+
+
+def generate_uuid():
+    """Generate a UUID string for session IDs."""
+    return str(uuid.uuid4())
 
 
 
@@ -620,11 +627,13 @@ class ChunkTestResult(Base):
     Chunk test result for comparing chunking methods.
 
     Stores results from RAG chunk testing comparing semchunk vs mindchunk.
+    Uses UUID for session_id to enable secure, non-guessable session tracking.
     """
     __tablename__ = "chunk_test_results"
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    session_id = Column(String(36), nullable=True, index=True, default=generate_uuid)  # UUID for session tracking
     dataset_name = Column(String(100), nullable=False, index=True)  # 'FinanceBench', 'user_documents', etc.
     document_ids = Column(JSON, nullable=True)  # List of document IDs tested (for user documents)
 
@@ -659,5 +668,132 @@ class ChunkTestResult(Base):
     # Relationships
     user = relationship("User", backref="chunk_test_results")
 
+    @property
+    def processing_progress(self) -> Optional[str]:
+        """
+        Get standardized progress string format compatible with ChunkTestDocument.
+        
+        Returns:
+            Progress string in format "stage (method)" or "stage"
+        """
+        if not self.current_stage:
+            return None
+        
+        if self.current_method:
+            return f"{self.current_stage} ({self.current_method})"
+        return self.current_stage
+
+    @property
+    def processing_progress_percent(self) -> int:
+        """
+        Get progress percentage (alias for progress_percent for consistency).
+        
+        Returns:
+            Progress percentage (0-100)
+        """
+        return self.progress_percent
+
     def __repr__(self):
         return f"<ChunkTestResult id={self.id} user_id={self.user_id} dataset_name={self.dataset_name}>"
+
+
+class ChunkTestDocument(Base):
+    """
+    Document uploaded specifically for chunk testing.
+
+    Separate from KnowledgeDocument - these are temporary test documents
+    that don't interfere with the user's knowledge space.
+    Max 5 documents per user for testing purposes.
+    """
+    __tablename__ = "chunk_test_documents"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    file_name = Column(String(255), nullable=False)
+    file_path = Column(String(500), nullable=False)  # Storage path
+    file_type = Column(String(100), nullable=False)  # MIME type
+    file_size = Column(Integer, nullable=False)  # Bytes
+
+    # Processing status
+    status = Column(
+        Enum('pending', 'processing', 'completed', 'failed', name='chunk_test_document_status'),
+        default='pending',
+        nullable=False,
+        index=True
+    )
+    error_message = Column(Text, nullable=True)  # Error details if failed
+    processing_task_id = Column(String(255), nullable=True)  # Celery task ID
+    # Current processing stage: 'extracting', 'cleaning', 'chunking', 'embedding', 'indexing'
+    processing_progress = Column(String(50), nullable=True)
+    processing_progress_percent = Column(Integer, default=0, nullable=False)  # Progress percentage 0-100
+
+    # Processing results
+    chunk_count = Column(Integer, default=0, nullable=False)
+    meta_data = Column(JSON, nullable=True)  # Store processing results and metadata
+
+    # Timestamps
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+
+    # Relationships
+    user = relationship("User", backref="chunk_test_documents")
+    chunks = relationship("ChunkTestDocumentChunk", back_populates="document", cascade="all, delete-orphan")
+
+    # Constraints
+    __table_args__ = (
+        CheckConstraint("status IN ('pending', 'processing', 'completed', 'failed')", name='chk_chunk_test_document_status'),
+        Index('ix_chunk_test_documents_user_id_status', 'user_id', 'status'),
+    )
+
+    @property
+    def progress_percent(self) -> int:
+        """
+        Get progress percentage (alias for processing_progress_percent for consistency).
+        
+        Returns:
+            Progress percentage (0-100)
+        """
+        return self.processing_progress_percent
+
+    def __repr__(self):
+        return f"<ChunkTestDocument id={self.id} file_name={self.file_name} status={self.status}>"
+
+
+class ChunkTestDocumentChunk(Base):
+    """
+    Text chunk from a chunk test document.
+
+    Separate from DocumentChunk - these chunks are only used for testing.
+    """
+    __tablename__ = "chunk_test_document_chunks"
+
+    id = Column(Integer, primary_key=True, index=True)
+    document_id = Column(Integer, ForeignKey("chunk_test_documents.id", ondelete="CASCADE"), nullable=False, index=True)
+    chunk_index = Column(Integer, nullable=False)  # Order within document
+    text = Column(Text, nullable=False)  # Chunk content
+
+    # Position in original document
+    start_char = Column(Integer, nullable=False)
+    end_char = Column(Integer, nullable=False)
+
+    # Chunking method used (spacy, semchunk, chonkie, langchain, mindchunk)
+    chunking_method = Column(String(50), nullable=True, index=True)
+
+    # Additional metadata
+    meta_data = Column(JSON, nullable=True)
+
+    # Timestamp
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    # Relationships
+    document = relationship("ChunkTestDocument", back_populates="chunks")
+
+    # Indexes for efficient queries
+    __table_args__ = (
+        Index('ix_chunk_test_document_chunks_document_id_chunk_index', 'document_id', 'chunk_index'),
+        Index('ix_chunk_test_document_chunks_chunking_method', 'chunking_method'),
+        Index('ix_chunk_test_document_chunks_document_method', 'document_id', 'chunking_method'),
+    )
+
+    def __repr__(self):
+        return f"<ChunkTestDocumentChunk id={self.id} document_id={self.document_id} chunk_index={self.chunk_index}>"

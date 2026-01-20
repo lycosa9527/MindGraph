@@ -131,6 +131,63 @@ def _get_column_default(column: Column, dialect: str) -> str:
     return ""
 
 
+def _create_index_if_needed(conn: Any, table_name: str, column: Column, dialect: str) -> bool:
+    """
+    Create an index for a column if it has index=True.
+
+    Args:
+        conn: Database connection
+        table_name: Name of the table
+        column: SQLAlchemy Column object
+        dialect: Database dialect ('sqlite', 'postgresql', 'mysql')
+
+    Returns:
+        True if index was created or not needed, False on error
+    """
+    try:
+        # Check if column has index=True
+        # In SQLAlchemy, index=True creates an implicit index
+        # column.index can be True (boolean), an Index object, or False/None
+        column_index = getattr(column, 'index', False)
+        if not column_index:
+            return True  # No index needed
+
+        # Generate index name (SQLAlchemy convention: ix_<table>_<column>)
+        index_name = f"ix_{table_name}_{column.name}"
+
+        # Check if index already exists
+        inspector = inspect(conn)
+        existing_indexes = [idx['name'] for idx in inspector.get_indexes(table_name)]
+        if index_name in existing_indexes:
+            logger.debug("Index '%s' already exists on table '%s'", index_name, table_name)
+            return True
+
+        # Create index
+        create_index_sql = f"CREATE INDEX IF NOT EXISTS {index_name} ON {table_name}({column.name})"
+        conn.execute(text(create_index_sql))
+        conn.commit()
+        logger.info(
+            "Created index '%s' on column '%s' in table '%s'",
+            index_name,
+            column.name,
+            table_name
+        )
+        return True
+    except Exception as e:
+        logger.warning(
+            "Failed to create index for column '%s' in table '%s': %s",
+            column.name,
+            table_name,
+            e
+        )
+        # Don't fail the migration if index creation fails
+        try:
+            conn.rollback()
+        except Exception:
+            pass
+        return True  # Return True to not block migration
+
+
 def _add_column_sqlite(conn: Any, table_name: str, column: Column) -> bool:
     """
     Add a column to a SQLite table.
@@ -198,6 +255,10 @@ def _add_column_sqlite(conn: Any, table_name: str, column: Column) -> bool:
             column.name,
             table_name
         )
+
+        # Create index if needed
+        _create_index_if_needed(conn, table_name, column, "sqlite")
+
         return True
     except Exception as e:
         logger.error(
@@ -244,6 +305,10 @@ def _add_column_postgresql(conn: Any, table_name: str, column: Column) -> bool:
             column.name,
             table_name
         )
+
+        # Create index if needed
+        _create_index_if_needed(conn, table_name, column, "postgresql")
+
         return True
     except Exception as e:
         logger.error(
@@ -290,6 +355,10 @@ def _add_column_mysql(conn: Any, table_name: str, column: Column) -> bool:
             column.name,
             table_name
         )
+
+        # Create index if needed
+        _create_index_if_needed(conn, table_name, column, "mysql")
+
         return True
     except Exception as e:
         logger.error(
@@ -335,12 +404,20 @@ def run_migrations() -> bool:
 
         # Get expected tables from Base metadata
         expected_tables = set(Base.metadata.tables.keys())
+        
+        # Log registered tables for debugging
+        logger.debug(
+            "Registered tables in Base.metadata: %s",
+            ', '.join(sorted(expected_tables))
+        )
 
         # Only migrate existing tables (table creation is handled by init_db)
         tables_to_migrate = existing_tables & expected_tables
-
+        
         if not tables_to_migrate:
             logger.debug("No tables to migrate (all tables are new or don't exist)")
+            logger.debug("Existing tables: %s", ', '.join(sorted(existing_tables)))
+            logger.debug("Expected tables: %s", ', '.join(sorted(expected_tables)))
             return True
 
         # Track migration results

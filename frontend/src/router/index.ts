@@ -4,6 +4,7 @@
 import { type RouteRecordRaw, createRouter, createWebHistory } from 'vue-router'
 
 import { useAuthStore } from '@/stores/auth'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 
 const routes: RouteRecordRaw[] = [
   {
@@ -99,13 +100,13 @@ const routes: RouteRecordRaw[] = [
     path: '/chunk-test',
     name: 'ChunkTest',
     component: () => import('@/pages/ChunkTestPage.vue'),
-    meta: { requiresAuth: true, layout: 'main' },
+    meta: { requiresAuth: true, requiresFeatureFlag: 'ragChunkTest', layout: 'main' },
   },
   {
     path: '/chunk-test/results/:testId',
     name: 'ChunkTestResults',
     component: () => import('@/pages/ChunkTestResultsPage.vue'),
-    meta: { requiresAuth: true, layout: 'main' },
+    meta: { requiresAuth: true, requiresFeatureFlag: 'ragChunkTest', layout: 'main' },
   },
   {
     path: '/dashboard',
@@ -135,6 +136,7 @@ const router = createRouter({
 // Navigation guards
 router.beforeEach(async (to, _from, next) => {
   const authStore = useAuthStore()
+  const { featureRagChunkTest } = useFeatureFlags()
 
   // Check authentication status - only for protected routes
   // checkAuth() is smart: it uses cached user if available, only makes API call if needed
@@ -152,6 +154,11 @@ router.beforeEach(async (to, _from, next) => {
 
   // Check organization membership for school zone
   if (to.meta.requiresOrganization && !authStore.user?.schoolId) {
+    return next({ name: 'MindMate' })
+  }
+
+  // Check feature flags
+  if (to.meta.requiresFeatureFlag === 'ragChunkTest' && !featureRagChunkTest.value) {
     return next({ name: 'MindMate' })
   }
 

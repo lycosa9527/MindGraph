@@ -109,3 +109,13 @@ class ChunkTestUserDocumentsRequest(BaseModel):
         default=["spacy", "semchunk", "chonkie", "langchain", "mindchunk"],
         description="Chunking modes to compare: 'spacy', 'semchunk', 'chonkie', 'langchain', 'mindchunk', 'qa'"
     )
+
+
+class ManualEvaluationRequest(BaseModel):
+    """Request model for manual chunk evaluation."""
+
+    query: str = Field(..., min_length=1, max_length=500)
+    method: str = Field(..., description="Chunking method to evaluate")
+    chunk_ids: Optional[List[int]] = None
+    answer: Optional[str] = None
+    model: str = Field(default="qwen-max", description="DashScope model to use")

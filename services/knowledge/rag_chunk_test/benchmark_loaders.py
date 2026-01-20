@@ -28,13 +28,12 @@ except ImportError:
 
 try:
     from models.knowledge_space import (
-        KnowledgeDocument,
-        DocumentChunk,
-        KnowledgeSpace
+        ChunkTestDocument,
+        ChunkTestDocumentChunk
     )
-    HAS_KNOWLEDGE_MODELS = True
+    HAS_CHUNK_TEST_MODELS = True
 except ImportError:
-    HAS_KNOWLEDGE_MODELS = False
+    HAS_CHUNK_TEST_MODELS = False
 
 
 logger = logging.getLogger(__name__)
@@ -628,20 +627,18 @@ class UserDocumentLoader(BenchmarkLoader):
         return "user_documents"
 
     def load_documents(self) -> List[Dict[str, Any]]:
-        """Load user documents from database."""
-        if not HAS_KNOWLEDGE_MODELS:
+        """Load chunk test documents from database."""
+        if not HAS_CHUNK_TEST_MODELS:
             raise ImportError(
-                "Knowledge space models not available. "
+                "Chunk test document models not available. "
                 "Cannot load user documents."
             )
 
         documents = []
         for doc_id in self.document_ids:
-            doc = self.db.query(KnowledgeDocument).join(
-                KnowledgeSpace
-            ).filter(
-                KnowledgeDocument.id == doc_id,
-                KnowledgeSpace.user_id == self.user_id
+            doc = self.db.query(ChunkTestDocument).filter(
+                ChunkTestDocument.id == doc_id,
+                ChunkTestDocument.user_id == self.user_id
             ).first()
 
             if not doc:
@@ -651,13 +648,38 @@ class UserDocumentLoader(BenchmarkLoader):
                 )
                 continue
 
-            # Get all chunks for this document
-            chunks = self.db.query(DocumentChunk).filter(
-                DocumentChunk.document_id == doc_id
-            ).order_by(DocumentChunk.chunk_index).all()
+            # Extract original text from file (not from chunks)
+            # This ensures we get the original document text, not reconstructed from chunks
+            # which may have been processed with different chunking methods
+            from services.knowledge.document_processor import get_document_processor
+            from services.knowledge.document_cleaner import get_document_cleaner
 
-            # Combine chunks into full text
-            full_text = "\n\n".join(chunk.text for chunk in chunks)
+            processor = get_document_processor()
+            cleaner = get_document_cleaner()
+
+            # Extract text from file
+            if doc.file_type == 'application/pdf':
+                text, _ = processor.extract_text_with_pages(doc.file_path, doc.file_type)
+            else:
+                text = processor.extract_text(doc.file_path, doc.file_type)
+
+            # Ensure text is string
+            if isinstance(text, list):
+                text = "\n".join(str(item) for item in text)
+            if not isinstance(text, str):
+                text = str(text) if text else ""
+
+            # Clean text (same as ChunkTestDocumentService)
+            full_text = cleaner.clean(
+                text,
+                remove_extra_spaces=True,
+                remove_urls_emails=False
+            )
+
+            # Get chunk count for metadata (optional, for reference)
+            chunks = self.db.query(ChunkTestDocumentChunk).filter(
+                ChunkTestDocumentChunk.document_id == doc_id
+            ).count()
 
             documents.append({
                 "id": f"user_doc_{doc_id}",

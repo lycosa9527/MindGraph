@@ -13,7 +13,6 @@ Proprietary License
 """
 from typing import List, Dict, Any, Optional
 import logging
-import os
 import time
 
 try:
@@ -46,12 +45,17 @@ try:
 except ImportError:
     HAS_LANGCHAIN = False
 
+try:
+    from llm_chunking.chunker import LLMSemanticChunker
+    HAS_LLM_CHUNKING = True
+except ImportError:
+    HAS_LLM_CHUNKING = False
+    LLMSemanticChunker = None  # type: ignore
+
 import tiktoken
 
 from services.knowledge.chunking_service import (
-    get_chunking_service,
-    Chunk,
-    _chunking_service_container
+    Chunk
 )
 from services.knowledge.rag_chunk_test.qa_generator import QAGenerator
 
@@ -293,47 +297,41 @@ class ChunkComparator:
             return chunks, chunking_time
 
         # Get chunking service for semchunk/mindchunk methods
-        # Store original environment variable
-        original_engine = os.environ.get("CHUNKING_ENGINE")
-
-        try:
-            if method == "semchunk":
-                # Set environment variable for semchunk
-                os.environ["CHUNKING_ENGINE"] = "semchunk"
-                # Force reinitialize to use semchunk
-                _chunking_service_container["instance"] = None
-                service = get_chunking_service()
-            elif method == "mindchunk":
-                # Set environment variable for mindchunk
-                os.environ["CHUNKING_ENGINE"] = "mindchunk"
-                # Force reinitialize to use mindchunk
-                _chunking_service_container["instance"] = None
-                service = get_chunking_service()
-            else:
+        # Create separate service instances instead of modifying global state (thread-safe)
+        if method == "semchunk":
+            # Create semchunk service instance directly (thread-safe)
+            from services.knowledge.chunking_service import ChunkingService
+            service = ChunkingService(mode="automatic")
+        elif method == "mindchunk":
+            # Create mindchunk service instance directly (thread-safe)
+            # Need to create LLMSemanticChunker first, then wrap it
+            if not HAS_LLM_CHUNKING:
                 raise ValueError(
-                    f"Unknown chunking method: {method}. "
-                    f"Supported methods: 'spacy', 'semchunk', 'chonkie', 'langchain', 'mindchunk', 'qa'"
+                    "MindChunk chunking requires llm_chunking library. "
+                    "Install with: pip install llm-chunking"
                 )
-
-            # Chunk the text
-            chunks = service.chunk_text(text, metadata=metadata or {})
-            chunking_time = (time.time() - start_time) * 1000
-
-            logger.debug(
-                "[ChunkComparator] Chunked with %s: %s chunks in %.2fms",
-                method,
-                len(chunks),
-                chunking_time
+            from services.knowledge.chunking_service import MindChunkAdapter
+            from llm_chunking.chunker import LLMSemanticChunker
+            chunker = LLMSemanticChunker()
+            service = MindChunkAdapter(chunker)
+        else:
+            raise ValueError(
+                f"Unknown chunking method: {method}. "
+                f"Supported methods: 'spacy', 'semchunk', 'chonkie', 'langchain', 'mindchunk', 'qa'"
             )
 
-            return chunks, chunking_time
+        # Chunk the text
+        chunks = service.chunk_text(text, metadata=metadata or {})
+        chunking_time = (time.time() - start_time) * 1000
 
-        finally:
-            # Restore original environment variable
-            if original_engine:
-                os.environ["CHUNKING_ENGINE"] = original_engine
-            elif "CHUNKING_ENGINE" in os.environ:
-                del os.environ["CHUNKING_ENGINE"]
+        logger.debug(
+            "[ChunkComparator] Chunked with %s: %s chunks in %.2fms",
+            method,
+            len(chunks),
+            chunking_time
+        )
+
+        return chunks, chunking_time
 
     def compare_chunk_stats(
         self,

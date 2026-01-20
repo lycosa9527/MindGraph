@@ -93,14 +93,16 @@ elif not is_dev_mode():
 # Health check endpoints
 app.include_router(health_router)
 
-# Vue SPA handles all page routes (v5.0.0+)
-app.include_router(vue_spa.router)
+# API routes must be registered BEFORE vue_spa catch-all route
 # Authentication & utility routes (loginByXz, favicon)
 app.include_router(pages.router)
 app.include_router(cache.router)
 app.include_router(api.router)
 app.include_router(node_palette.router)  # Node Palette endpoints
 app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])  # Authentication system
+
+# Vue SPA handles all page routes (v5.0.0+) - MUST be registered AFTER API routes
+app.include_router(vue_spa.router)
 app.include_router(admin_env.router)  # Admin environment settings management
 app.include_router(admin_logs.router)  # Admin log streaming
 app.include_router(admin_realtime.router)  # Admin realtime user activity monitoring

@@ -11,7 +11,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
-from typing import List, Dict, Any, Optional, Callable
+from typing import List, Dict, Any, Optional, Callable, TYPE_CHECKING
 import logging
 import uuid
 
@@ -26,7 +26,17 @@ from services.knowledge.rag_chunk_test.retrieval_evaluator import RetrievalEvalu
 from services.knowledge.rag_chunk_test.answer_quality_evaluator import AnswerQualityEvaluator
 from services.knowledge.rag_chunk_test.diversity_evaluator import DiversityEvaluator
 from services.knowledge.rag_chunk_test.cross_method_comparator import CrossMethodComparator
-from services.knowledge.retrieval_test_service import RetrievalTestService
+from services.knowledge.rag_chunk_test.metrics_calculator import MetricsCalculator
+from services.knowledge.rag_chunk_test.summary_generator import SummaryGenerator
+from services.knowledge.progress_tracking import (
+    format_progress_string,
+    get_progress_percent,
+    validate_progress,
+    ensure_completion_progress
+)
+
+if TYPE_CHECKING:
+    from models.knowledge_space import ChunkTestResult
 
 
 logger = logging.getLogger(__name__)
@@ -42,6 +52,13 @@ class RAGChunkTestService:
         self.answer_quality_evaluator = AnswerQualityEvaluator()
         self.diversity_evaluator = DiversityEvaluator()
         self.cross_method_comparator = CrossMethodComparator()
+        self.metrics_calculator = MetricsCalculator(
+            self.chunk_comparator,
+            self.answer_quality_evaluator,
+            self.diversity_evaluator,
+            self.cross_method_comparator
+        )
+        self.summary_generator = SummaryGenerator()
 
     def run_chunk_test(
         self,
@@ -79,7 +96,8 @@ class RAGChunkTestService:
         user_id: int,
         dataset_name: str,
         custom_queries: Optional[List[str]] = None,
-        modes: Optional[List[str]] = None
+        modes: Optional[List[str]] = None,
+        progress_callback: Optional[Callable[[str, Optional[str], str, int, List[str]], Optional[bool]]] = None
     ) -> Dict[str, Any]:
         """
         Test chunking methods with benchmark dataset.
@@ -89,6 +107,8 @@ class RAGChunkTestService:
             user_id: User ID
             dataset_name: Benchmark dataset name
             custom_queries: Optional custom queries (uses dataset queries if not provided)
+            modes: List of chunking methods to test (default: 5 methods)
+            progress_callback: Optional callback function(status, method, stage, progress, completed_methods)
 
         Returns:
             Test results
@@ -140,7 +160,8 @@ class RAGChunkTestService:
             expected_chunks_map=expected_chunks_map if expected_chunks_map else None,
             relevance_scores_map=relevance_scores_map if relevance_scores_map else None,
             modes=modes,
-            answers_map=answers_map if answers_map else None
+            answers_map=answers_map if answers_map else None,
+            progress_callback=progress_callback
         )
 
     def test_user_documents(
@@ -150,7 +171,7 @@ class RAGChunkTestService:
         document_ids: List[int],
         queries: List[str],
         modes: Optional[List[str]] = None,
-        progress_callback: Optional[Callable[[str, Optional[str], str, int, List[str]], None]] = None
+        progress_callback: Optional[Callable[[str, Optional[str], str, int, List[str]], Optional[bool]]] = None
     ) -> Dict[str, Any]:
         """
         Test chunking methods with user's uploaded documents.
@@ -206,7 +227,7 @@ class RAGChunkTestService:
         relevance_scores_map: Optional[Dict[str, Dict[int, float]]] = None,
         modes: Optional[List[str]] = None,
         answers_map: Optional[Dict[str, str]] = None,
-        progress_callback: Optional[Callable[[str, Optional[str], str, int, List[str]], None]] = None
+        progress_callback: Optional[Callable[[str, Optional[str], str, int, List[str]], Optional[bool]]] = None
     ) -> Dict[str, Any]:
         """
         Compare chunking methods (semchunk vs mindchunk vs qa).
@@ -241,13 +262,55 @@ class RAGChunkTestService:
         test_user_id = 0  # Special test user ID
 
         completed_methods = []
+        previous_progress = 0
 
-        def update_progress(status: str, method: Optional[str], stage: str, progress: int):
-            """Helper to update progress via callback."""
+        def update_progress(status: str, method: Optional[str], stage: str, progress: int) -> bool:
+            """Helper to update progress via callback. Returns False if cancelled."""
+            nonlocal previous_progress
+            
+            # Validate progress to ensure it never decreases
+            validated_progress, is_valid = validate_progress(
+                progress,
+                previous_progress,
+                f'{stage} ({method})' if method else stage
+            )
+            previous_progress = validated_progress
+            
+            # Use standardized progress string format
+            progress_string = format_progress_string(stage, method)
+            logger.debug(
+                "[RAGChunkTest] Updating progress: status=%s, method=%s, stage=%s, "
+                "progress=%s%% (validated: %s%%), progress_string=%s, completed_methods=%s",
+                status, method, stage, progress, validated_progress, progress_string, completed_methods
+            )
             if progress_callback:
-                progress_callback(status, method, stage, progress, completed_methods.copy())
+                try:
+                    # Use validated progress in callback
+                    result = progress_callback(status, method, stage, validated_progress, completed_methods.copy())
+                    # If callback returns False, processing was cancelled
+                    if result is False:
+                        logger.info(
+                            "[RAGChunkTest] Progress callback returned False, "
+                            "indicating cancellation: stage=%s, method=%s",
+                            stage, method
+                        )
+                        return False
+                    logger.debug(
+                        "[RAGChunkTest] Progress callback completed successfully: "
+                        "stage=%s, method=%s, progress=%s%%, progress_string=%s",
+                        stage, method, progress, progress_string
+                    )
+                except Exception as callback_error:
+                    logger.error(
+                        "[RAGChunkTest] Error in progress callback: %s",
+                        callback_error,
+                        exc_info=True
+                    )
+                    # Don't stop execution on callback errors, but log them
+            return True
 
         # Initialize progress
+        logger.info("[RAGChunkTest] Initializing test progress tracking")
         update_progress("processing", None, "chunking", 0)
 
         results = {
@@ -268,8 +331,19 @@ class RAGChunkTestService:
         total_methods = len(modes)
 
         for method_idx, mode in enumerate(modes):
-            update_progress("processing", mode, "chunking", int(10 * method_idx))
-            logger.info("[RAGChunkTest] Chunking with method: %s", mode)
+            # Use standardized progress calculation
+            progress_value = get_progress_percent(
+                'chunking',
+                method_index=method_idx,
+                total_methods=total_methods
+            )
+            logger.info(
+                "[RAGChunkTest] Starting chunking with method %s (%d/%d): progress=%s%%",
+                mode, method_idx + 1, total_methods, progress_value
+            )
+            if not update_progress("processing", mode, "chunking", progress_value):
+                logger.warning("[RAGChunkTest] Test cancelled before starting method %s", mode)
+                raise RuntimeError("Test cancelled by user")
 
             for doc_idx, doc in enumerate(documents):
                 doc_text = doc.get("text", "")
@@ -294,12 +368,18 @@ class RAGChunkTestService:
                     # Continue with other modes
                     all_chunks[mode].extend([])
 
-                # Update progress within method (each doc adds ~2% per method)
-                progress = int(10 * method_idx + (10 * doc_idx / total_docs))
-                update_progress("processing", mode, "chunking", progress)
+                # Update progress within method using standardized calculation
+                # Interpolate between method start and end progress
+                method_start = get_progress_percent('chunking', method_idx, total_methods)
+                method_end = get_progress_percent('chunking', method_idx + 1, total_methods)
+                doc_progress = method_start + int((method_end - method_start) * (doc_idx + 1) / total_docs)
+                if not update_progress("processing", mode, "chunking", doc_progress):
+                    raise RuntimeError("Test cancelled by user")
 
             completed_methods.append(mode)
-            update_progress("processing", mode, "chunking", int(10 * (method_idx + 1)))
+            method_end_progress = get_progress_percent('chunking', method_idx + 1, total_methods)
+            if not update_progress("processing", mode, "chunking", method_end_progress):
+                raise RuntimeError("Test cancelled by user")
 
         # Step 2: Compare chunk statistics
         # Build stats for each mode
@@ -326,43 +406,112 @@ class RAGChunkTestService:
         results["chunking_comparison"] = chunk_stats
 
         # Step 2: Test retrieval for each query (50-80% progress)
-        update_progress("processing", None, "retrieval", 50)
+        logger.info("[RAGChunkTest] Starting retrieval testing phase: progress=50%%")
+        if not update_progress("processing", None, "retrieval", 50):
+            logger.warning("[RAGChunkTest] Test cancelled before retrieval phase")
+            raise RuntimeError("Test cancelled by user")
         retrieval_results = {mode: [] for mode in modes}
         total_queries = len(queries)
         progress_per_query = 30 / (total_queries * total_methods) if total_queries > 0 else 0
 
-        for query_idx, query in enumerate(queries):
-            for method_idx, mode in enumerate(modes):
-                if all_chunks[mode]:
-                    try:
-                        update_progress(
-                            "processing",
-                            mode,
-                            "retrieval",
-                            int(50 + progress_per_query * (query_idx * total_methods + method_idx))
-                        )
-                        collection_name = f"test_{mode}_{uuid.uuid4().hex[:8]}"
-                        result = self.retrieval_evaluator.test_retrieval(
-                            all_chunks[mode],
-                            query,
-                            _method="hybrid",
-                            top_k=5,
-                            test_user_id=test_user_id,
-                            collection_name=collection_name
-                        )
-                        retrieval_results[mode].append({
-                            "query": query,
-                            "result": result
-                        })
-                        # Cleanup
-                        self.retrieval_evaluator.cleanup_test_collection(test_user_id)
-                    except Exception as e:
-                        logger.error(
-                            "[RAGChunkTest] %s retrieval failed for query '%s': %s",
-                            mode,
-                            query[:50],
-                            e
-                        )
+        # Track all created collections for cleanup
+        created_collections = []
+
+        try:
+            for query_idx, query in enumerate(queries):
+                for method_idx, mode in enumerate(modes):
+                    if all_chunks[mode]:
+                        collection_name = None
+                        try:
+                            if not update_progress(
+                                "processing",
+                                mode,
+                                "retrieval",
+                                int(50 + progress_per_query * (query_idx * total_methods + method_idx))
+                            ):
+                                raise RuntimeError("Test cancelled by user")
+                            collection_name = f"test_{mode}_{uuid.uuid4().hex[:8]}"
+                            created_collections.append((test_user_id, collection_name))
+
+                            # Create nested progress callback for retrieval stages
+                            # Capture loop variables as default arguments to avoid
+                            # cell-var-from-loop
+                            def retrieval_progress_callback(
+                                status: str,
+                                method: Optional[str],
+                                stage: str,
+                                progress: int,
+                                captured_query_idx: int = query_idx,
+                                captured_method_idx: int = method_idx,
+                                captured_mode: str = mode
+                            ) -> None:
+                                """Nested callback to report retrieval sub-stages."""
+                                # Map internal progress (0-100) to overall progress
+                                # range. Retrieval phase is 50-80%, so each
+                                # query+method gets 30% / (total_queries *
+                                # total_methods)
+                                base_progress = (
+                                    50 + progress_per_query *
+                                    (captured_query_idx * total_methods +
+                                     captured_method_idx)
+                                )
+                                stage_progress = int(
+                                    base_progress +
+                                    (progress_per_query * progress / 100)
+                                )
+                                # Use method parameter or fallback to mode from
+                                # closure
+                                callback_method = (
+                                    method if method is not None else captured_mode
+                                )
+                                update_progress(
+                                    status, callback_method, stage, stage_progress
+                                )
+
+                            result = self.retrieval_evaluator.test_retrieval(
+                                all_chunks[mode],
+                                query,
+                                _method="hybrid",
+                                top_k=5,
+                                test_user_id=test_user_id,
+                                collection_name=collection_name,
+                                progress_callback=retrieval_progress_callback,
+                                method_name=mode,
+                                db=_db,
+                                user_id=_user_id
+                            )
+                            retrieval_results[mode].append({
+                                "query": query,
+                                "result": result
+                            })
+                            # Cleanup immediately after successful test
+                            self.retrieval_evaluator.cleanup_test_collection(test_user_id, collection_name)
+                            created_collections.remove((test_user_id, collection_name))
+                        except Exception as e:
+                            logger.error(
+                                "[RAGChunkTest] %s retrieval failed for query '%s': %s",
+                                mode,
+                                query[:50],
+                                e
+                            )
+                            # Collection will be cleaned up in finally block
+        finally:
+            # Ensure all collections are cleaned up even if test fails or is cancelled
+            for user_id, collection_name in created_collections:
+                try:
+                    self.retrieval_evaluator.cleanup_test_collection(user_id, collection_name)
+                    logger.debug(
+                        "[RAGChunkTest] Cleaned up test collection: %s (user_id=%s)",
+                        collection_name,
+                        user_id
+                    )
+                except Exception as cleanup_error:
+                    logger.warning(
+                        "[RAGChunkTest] Failed to cleanup collection %s (user_id=%s): %s",
+                        collection_name,
+                        user_id,
+                        cleanup_error
+                    )
 
         # Step 4: Compare retrieval results
         # If we have exactly 2 modes, compare them
@@ -388,7 +537,7 @@ class RAGChunkTestService:
                     comparison["query"] = query
                     comparison_results.append(comparison)
 
-            avg_metrics_result = self._calculate_average_metrics(
+            avg_metrics_result = self.metrics_calculator.calculate_average_metrics(
                 comparison_results,
                 modes,
                 retrieval_results,
@@ -402,7 +551,7 @@ class RAGChunkTestService:
                 "note": "Metrics are averaged across all queries"
             }
         else:
-            avg_metrics_result = self._calculate_average_metrics_per_mode(
+            avg_metrics_result = self.metrics_calculator.calculate_average_metrics_per_mode(
                 retrieval_results,
                 modes,
                 queries,
@@ -423,9 +572,12 @@ class RAGChunkTestService:
             }
 
         # Step 3: Calculate comprehensive metrics by dimension (80-95% progress)
-        update_progress("processing", None, "evaluation", 80)
+        logger.info("[RAGChunkTest] Starting evaluation phase: progress=80%%")
+        if not update_progress("processing", None, "evaluation", 80):
+            logger.warning("[RAGChunkTest] Test cancelled before evaluation phase")
+            raise RuntimeError("Test cancelled by user")
         avg_metrics = results.get("retrieval_comparison", {}).get("average", {})
-        results["evaluation_results"] = self._calculate_comprehensive_metrics(
+        results["evaluation_results"] = self.metrics_calculator.calculate_comprehensive_metrics(
             all_chunks,
             retrieval_results,
             documents,
@@ -436,16 +588,22 @@ class RAGChunkTestService:
             avg_metrics,
             answers_map
         )
-        update_progress("processing", None, "evaluation", 95)
+        if not update_progress("processing", None, "evaluation", 95):
+            raise RuntimeError("Test cancelled by user")
 
         # Step 4: Generate summary (95-100% progress)
-        results["summary"] = self._generate_summary(
+        logger.info("[RAGChunkTest] Generating summary: progress=95%%")
+        results["summary"] = self.summary_generator.generate_summary(
             chunk_stats,
             results.get("retrieval_comparison", {})
         )
 
-        # Mark as completed
-        update_progress("completed", None, "completed", 100)
+        # Mark as completed - ensure progress reaches 100%
+        logger.info("[RAGChunkTest] Marking test as completed: progress=100%%")
+        final_progress = ensure_completion_progress(100, 100)
+        if not update_progress("completed", None, "completed", final_progress):
+            logger.warning("[RAGChunkTest] Test cancelled before completion")
+            raise RuntimeError("Test cancelled by user")
 
         logger.info(
             "[RAGChunkTest] Test completed: chunks=%s",
@@ -454,510 +612,81 @@ class RAGChunkTestService:
 
         return results
 
-    def _calculate_average_metrics(
+    def get_chunks_for_test(
         self,
-        comparison_results: List[Dict[str, Any]],
-        modes: Optional[List[str]] = None,
-        retrieval_results: Optional[Dict[str, List[Dict[str, Any]]]] = None,
-        queries: Optional[List[str]] = None,
-        expected_chunks_map: Optional[Dict[str, List[int]]] = None
-    ) -> Dict[str, Any]:
+        db: Session,
+        user_id: int,
+        test_result: "ChunkTestResult",
+        method: str
+    ) -> List[Dict[str, Any]]:
         """
-        Calculate average metrics across all queries.
+        Regenerate chunks for a test result using a specific method.
 
         Args:
-            comparison_results: List of comparison results per query
-            modes: List of chunking modes
-            retrieval_results: Optional raw retrieval results (for MAP/Hit Rate calculation)
-            queries: Optional list of queries (for MAP/Hit Rate calculation)
-            expected_chunks_map: Optional map of query -> expected chunk IDs
+            db: Database session
+            user_id: User ID (for verification)
+            test_result: ChunkTestResult instance
+            method: Chunking method name ('spacy', 'semchunk', 'chonkie', 'langchain', 'mindchunk')
 
         Returns:
-            Dictionary with average metrics per mode
+            List of chunks with text, metadata, and position info
         """
-        if not comparison_results:
-            return {}
+        if test_result.user_id != user_id:
+            raise ValueError("Test does not belong to user")
 
-        if modes is None:
-            modes = ["spacy", "semchunk", "chonkie", "langchain", "mindchunk"]
+        # Load documents based on test type
+        if test_result.dataset_name and test_result.dataset_name != "user_documents":
+            # Benchmark dataset
+            loader = get_benchmark_loader(test_result.dataset_name)
+            documents = loader.load_documents()
+        elif test_result.document_ids:
+            # User documents
+            loader = UserDocumentLoader(db, user_id, test_result.document_ids)
+            documents = loader.load_documents()
+        else:
+            raise ValueError("Test has no associated documents or dataset")
 
-        metrics_by_mode = {mode: [] for mode in modes}
+        if not documents:
+            raise ValueError("No documents found")
 
-        for result in comparison_results:
-            for mode in modes:
-                if mode in result and "metrics" in result[mode]:
-                    metrics_by_mode[mode].append(result[mode]["metrics"])
+        # Chunk all documents with the specified method
+        all_chunks = []
+        for doc in documents:
+            doc_text = doc.get("text", "")
+            doc_metadata = doc.get("metadata", {})
+            doc_metadata["document_id"] = doc.get("id", "")
 
-        avg_metrics = {}
-        k_values = [1, 3, 5, 10]
-
-        for mode in modes:
-            if metrics_by_mode[mode]:
-                mode_metrics = metrics_by_mode[mode]
-                avg_metrics[mode] = {
-                    "precision": sum(m.get("precision", 0) for m in mode_metrics) / len(mode_metrics),
-                    "recall": sum(m.get("recall", 0) for m in mode_metrics) / len(mode_metrics),
-                    "mrr": sum(m.get("mrr", 0) for m in mode_metrics) / len(mode_metrics),
-                    "ndcg": sum(m.get("ndcg", 0) for m in mode_metrics) / len(mode_metrics),
-                    "f1": sum(m.get("f1", 0) for m in mode_metrics) / len(mode_metrics),
-                    "precision_at_k": {
-                        k: sum(m.get("precision_at_k", {}).get(k, 0) for m in mode_metrics) / len(mode_metrics)
-                        for k in k_values
-                    },
-                    "recall_at_k": {
-                        k: sum(m.get("recall_at_k", {}).get(k, 0) for m in mode_metrics) / len(mode_metrics)
-                        for k in k_values
-                    }
-                }
-
-        # Calculate Hit Rate@K and MAP if we have retrieval results
-        if retrieval_results and queries and expected_chunks_map:
-            retrieval_service = RetrievalTestService()
-
-            for mode in modes:
-                if mode not in avg_metrics:
-                    continue
-
-                retrieved_lists = []
-                relevant_lists = []
-
-                for query in queries:
-                    query_results = [
-                        r for r in retrieval_results.get(mode, [])
-                        if r.get("query") == query
-                    ]
-                    if query_results:
-                        result = query_results[0]["result"]
-                        retrieved_ids = [r["chunk_id"] for r in result.get("results", [])]
-                        expected_ids = expected_chunks_map.get(query, [])
-
-                        retrieved_lists.append(retrieved_ids)
-                        relevant_lists.append(expected_ids)
-
-                if retrieved_lists and relevant_lists:
-                    # Calculate Hit Rate@K
-                    hit_rates = {k: [] for k in k_values}
-                    for retrieved_ids, relevant_ids in zip(retrieved_lists, relevant_lists):
-                        for k in k_values:
-                            hit_rate = retrieval_service.calculate_hit_rate_at_k(
-                                retrieved_ids, relevant_ids, k
-                            )
-                            hit_rates[k].append(hit_rate)
-
-                    avg_metrics[mode]["hit_rate_at_k"] = {
-                        k: sum(hit_rates[k]) / len(hit_rates[k])
-                        if hit_rates[k] else 0.0
-                        for k in k_values
-                    }
-
-                    # Calculate MAP
-                    map_score = retrieval_service.calculate_map(retrieved_lists, relevant_lists)
-                    avg_metrics[mode]["map"] = map_score
-
-        return avg_metrics
-
-    def _calculate_average_metrics_per_mode(
-        self,
-        retrieval_results: Dict[str, List[Dict[str, Any]]],
-        modes: List[str],
-        _queries: List[str],
-        expected_chunks_map: Optional[Dict[str, List[int]]] = None
-    ) -> Dict[str, Any]:
-        """
-        Calculate average metrics per mode from individual retrieval results.
-
-        Args:
-            retrieval_results: Dict mapping mode -> list of query results
-            modes: List of chunking modes
-            queries: List of queries
-            expected_chunks_map: Optional map of query -> expected chunk IDs
-
-        Returns:
-            Dictionary with average metrics per mode
-        """
-        retrieval_service = RetrievalTestService()
-
-        avg_metrics = {}
-        k_values = [1, 3, 5, 10]
-
-        for mode in modes:
-            mode_results = retrieval_results.get(mode, [])
-            if not mode_results:
-                continue
-
-            all_metrics = []
-            retrieved_lists = []
-            relevant_lists = []
-
-            for query_result in mode_results:
-                query = query_result.get("query", "")
-                result = query_result.get("result", {})
-                retrieved_ids = [r["chunk_id"] for r in result.get("results", [])]
-                expected_ids = expected_chunks_map.get(query, []) if expected_chunks_map else []
-
-                if expected_ids:
-                    metrics = retrieval_service.calculate_quality_metrics(
-                        retrieved_ids, expected_ids
-                    )
-                    all_metrics.append(metrics)
-                    retrieved_lists.append(retrieved_ids)
-                    relevant_lists.append(expected_ids)
-
-            if all_metrics:
-                avg_metrics[mode] = {
-                    "precision": sum(m.get("precision", 0) for m in all_metrics) / len(all_metrics),
-                    "recall": sum(m.get("recall", 0) for m in all_metrics) / len(all_metrics),
-                    "mrr": sum(m.get("mrr", 0) for m in all_metrics) / len(all_metrics),
-                    "ndcg": sum(m.get("ndcg", 0) for m in all_metrics) / len(all_metrics),
-                    "f1": sum(m.get("f1", 0) for m in all_metrics) / len(all_metrics),
-                    "precision_at_k": {
-                        k: sum(m.get("precision_at_k", {}).get(k, 0) for m in all_metrics) / len(all_metrics)
-                        for k in k_values
-                    },
-                    "recall_at_k": {
-                        k: sum(m.get("recall_at_k", {}).get(k, 0) for m in all_metrics) / len(all_metrics)
-                        for k in k_values
-                    }
-                }
-
-                # Calculate Hit Rate@K and MAP
-                if retrieved_lists and relevant_lists:
-                    hit_rates = {k: [] for k in k_values}
-                    for retrieved_ids, relevant_ids in zip(retrieved_lists, relevant_lists):
-                        for k in k_values:
-                            hit_rate = retrieval_service.calculate_hit_rate_at_k(
-                                retrieved_ids, relevant_ids, k
-                            )
-                            hit_rates[k].append(hit_rate)
-
-                    avg_metrics[mode]["hit_rate_at_k"] = {
-                        k: sum(hit_rates[k]) / len(hit_rates[k])
-                        if hit_rates[k] else 0.0
-                        for k in k_values
-                    }
-
-                    map_score = retrieval_service.calculate_map(retrieved_lists, relevant_lists)
-                    avg_metrics[mode]["map"] = map_score
-
-        return avg_metrics
-
-    def _generate_summary(
-        self,
-        chunk_stats: Dict[str, Any],
-        retrieval_comparison: Dict[str, Any]
-    ) -> Dict[str, Any]:
-        """Generate summary of comparison results."""
-        summary = {
-            "chunking_winner": "tie",
-            "retrieval_winner": "tie",
-            "recommendations": []
-        }
-
-        # Get modes from chunk_stats
-        modes = [k for k in chunk_stats.keys() if k != "comparison"]
-        if len(modes) < 2:
-            return summary
-
-        # Determine chunking winner
-        mode_a_count = chunk_stats.get(modes[0], {}).get("count", 0)
-        mode_b_count = chunk_stats.get(modes[1], {}).get("count", 0)
-        if mode_b_count > mode_a_count:
-            summary["chunking_winner"] = modes[1]
-            summary["recommendations"].append(
-                f"{modes[1]} produces more chunks, potentially better granularity"
-            )
-        elif mode_a_count > mode_b_count:
-            summary["chunking_winner"] = modes[0]
-            summary["recommendations"].append(
-                f"{modes[0]} produces fewer chunks, potentially more efficient"
-            )
-
-        # Determine retrieval winner
-        if "average" in retrieval_comparison:
-            avg = retrieval_comparison["average"]
-            if "comparison" in avg and "winner" in avg.get("comparison", {}):
-                summary["retrieval_winner"] = avg["comparison"]["winner"]
-            elif modes[0] in avg and modes[1] in avg:
-                # Compare average metrics
-                score_a = (
-                    avg[modes[0]].get("precision", 0) * 0.3 +
-                    avg[modes[0]].get("recall", 0) * 0.3 +
-                    avg[modes[0]].get("mrr", 0) * 0.2 +
-                    avg[modes[0]].get("ndcg", 0) * 0.2
+            try:
+                chunks, _ = self.chunk_comparator.chunk_with_method(
+                    doc_text,
+                    method,
+                    doc_metadata
                 )
-                score_b = (
-                    avg[modes[1]].get("precision", 0) * 0.3 +
-                    avg[modes[1]].get("recall", 0) * 0.3 +
-                    avg[modes[1]].get("mrr", 0) * 0.2 +
-                    avg[modes[1]].get("ndcg", 0) * 0.2
-                )
-                if score_b > score_a:
-                    summary["retrieval_winner"] = modes[1]
-                elif score_a > score_b:
-                    summary["retrieval_winner"] = modes[0]
-
-        # Add recommendations
-        if summary["retrieval_winner"] != "tie":
-            summary["recommendations"].append(
-                f"{summary['retrieval_winner']} shows better retrieval performance"
-            )
-
-        return summary
-
-    def _calculate_comprehensive_metrics(
-        self,
-        all_chunks: Dict[str, List],
-        retrieval_results: Dict[str, List[Dict[str, Any]]],
-        documents: List[Dict[str, Any]],
-        queries: List[str],
-        modes: List[str],
-        expected_chunks_map: Optional[Dict[str, List[int]]],
-        _chunk_stats: Dict[str, Any],
-        avg_metrics: Optional[Dict[str, Any]] = None,
-        answers_map: Optional[Dict[str, str]] = None
-    ) -> Dict[str, Any]:
-        """
-        Calculate comprehensive metrics organized by dimension.
-
-        Args:
-            all_chunks: Dict mapping mode -> list of all chunks
-            retrieval_results: Dict mapping mode -> list of retrieval results per query
-            documents: List of documents
-            queries: List of queries
-            modes: List of chunking modes
-            expected_chunks_map: Optional map of query -> expected chunk IDs
-            chunk_stats: Chunk statistics
-
-        Returns:
-            Dictionary organized by evaluation dimension
-        """
-        evaluation_results = {
-            "standard_ir": {},
-            "chunk_quality": {},
-            "answer_quality": {},
-            "diversity_efficiency": {},
-            "cross_method": {},
-            "query_count": len(queries),
-            "note": "All metrics are averaged across queries unless otherwise specified"
-        }
-
-        # Create document text map for coverage calculation
-        doc_text_map = {doc.get("id", ""): doc.get("text", "") for doc in documents}
-
-        # Calculate metrics per mode
-        for mode in modes:
-            mode_chunks = all_chunks.get(mode, [])
-            mode_retrieval_results = retrieval_results.get(mode, [])
-
-            # Standard IR Metrics (use pre-calculated average metrics)
-            if avg_metrics and mode in avg_metrics:
-                evaluation_results["standard_ir"][mode] = avg_metrics[mode].copy()
-            else:
-                evaluation_results["standard_ir"][mode] = {}
-
-            # Chunk Quality Metrics
-            evaluation_results["chunk_quality"][mode] = {}
-            if mode_chunks:
-                # Coverage score (average across documents)
-                coverage_scores = []
-                for doc in documents:
-                    doc_id = doc.get("id", "")
-                    doc_text = doc_text_map.get(doc_id, "")
-                    # Find chunks for this document
-                    doc_chunks = [
-                        c for c in mode_chunks
-                        if c.metadata.get("document_id") == doc_id
-                    ]
-                    if doc_text and doc_chunks:
-                        coverage = self.chunk_comparator.calculate_coverage_score(
-                            doc_chunks, doc_text
-                        )
-                        coverage_scores.append(coverage)
-
-                evaluation_results["chunk_quality"][mode]["coverage_score"] = (
-                    sum(coverage_scores) / len(coverage_scores)
-                    if coverage_scores else 0.0
+                all_chunks.extend(chunks)
+            except Exception as e:
+                logger.warning(
+                    "[RAGChunkTest] Failed to chunk document %s with method %s: %s",
+                    doc.get("id"),
+                    method,
+                    e
                 )
 
-                # Semantic coherence
-                try:
-                    coherence = self.chunk_comparator.calculate_chunk_coherence(mode_chunks)
-                    evaluation_results["chunk_quality"][mode]["semantic_coherence"] = coherence
-                except Exception as e:
-                    logger.warning(
-                        "[RAGChunkTest] Failed to calculate coherence for %s: %s",
-                        mode,
-                        e
-                    )
-                    evaluation_results["chunk_quality"][mode]["semantic_coherence"] = 0.0
+        # Convert chunks to dict format
+        result = []
+        for idx, chunk in enumerate(all_chunks):
+            chunk_dict = {
+                "chunk_index": idx,
+                "text": chunk.text,
+                "metadata": chunk.metadata or {},
+            }
+            # Add position info if available
+            if hasattr(chunk, 'start_char') and hasattr(chunk, 'end_char'):
+                chunk_dict["start_char"] = chunk.start_char
+                chunk_dict["end_char"] = chunk.end_char
 
-            # Answer Quality Metrics (if answers available)
-            evaluation_results["answer_quality"][mode] = {}
-            if answers_map:
-                answer_coverage_scores = []
-                answer_completeness_scores = []
-                context_recall_scores = []
+            result.append(chunk_dict)
 
-                for query in queries:
-                    answer = answers_map.get(query, "")
-                    if not answer:
-                        continue
-
-                    query_results = [
-                        r for r in mode_retrieval_results
-                        if r.get("query") == query
-                    ]
-                    if query_results:
-                        result = query_results[0]["result"]
-                        retrieved_chunk_ids = [r["chunk_id"] for r in result.get("results", [])]
-                        retrieved_chunks = [
-                            c for c in mode_chunks
-                            if c.chunk_index in retrieved_chunk_ids
-                        ]
-
-                        if retrieved_chunks:
-                            # Find document text for context recall
-                            doc_id = retrieved_chunks[0].metadata.get("document_id", "")
-                            doc_text = doc_text_map.get(doc_id, "")
-
-                            # Calculate answer coverage
-                            coverage = self.answer_quality_evaluator.calculate_answer_coverage(
-                                retrieved_chunks, answer
-                            )
-                            answer_coverage_scores.append(coverage)
-
-                            # Calculate answer completeness
-                            completeness = self.answer_quality_evaluator.calculate_answer_completeness(
-                                retrieved_chunks, answer
-                            )
-                            answer_completeness_scores.append(completeness)
-
-                            # Calculate context recall
-                            if doc_text:
-                                context_recall = self.answer_quality_evaluator.calculate_context_recall(
-                                    retrieved_chunks, answer, doc_text
-                                )
-                                context_recall_scores.append(context_recall)
-
-                evaluation_results["answer_quality"][mode]["answer_coverage"] = (
-                    sum(answer_coverage_scores) / len(answer_coverage_scores)
-                    if answer_coverage_scores else 0.0
-                )
-                evaluation_results["answer_quality"][mode]["answer_completeness"] = (
-                    sum(answer_completeness_scores) / len(answer_completeness_scores)
-                    if answer_completeness_scores else 0.0
-                )
-                evaluation_results["answer_quality"][mode]["context_recall"] = (
-                    sum(context_recall_scores) / len(context_recall_scores)
-                    if context_recall_scores else 0.0
-                )
-
-            # Diversity & Efficiency Metrics
-            evaluation_results["diversity_efficiency"][mode] = {}
-            if mode_chunks:
-                # Storage efficiency
-                storage_eff = self.diversity_evaluator.calculate_storage_efficiency(mode_chunks)
-                evaluation_results["diversity_efficiency"][mode]["storage_efficiency"] = storage_eff
-
-                # Semantic diversity (for retrieved chunks)
-                if mode_retrieval_results:
-                    diversity_scores = []
-                    for query_result in mode_retrieval_results:
-                        result = query_result.get("result", {})
-                        retrieved_chunk_ids = [r["chunk_id"] for r in result.get("results", [])]
-                        retrieved_chunks = [
-                            c for c in mode_chunks
-                            if c.chunk_index in retrieved_chunk_ids
-                        ]
-                        if len(retrieved_chunks) > 1:
-                            diversity = self.diversity_evaluator.calculate_intra_list_diversity(
-                                retrieved_chunks
-                            )
-                            diversity_scores.append(diversity)
-
-                    evaluation_results["diversity_efficiency"][mode]["semantic_diversity"] = (
-                        sum(diversity_scores) / len(diversity_scores)
-                        if diversity_scores else 0.0
-                    )
-
-                    # Diversity at K
-                    k_values = [1, 3, 5]
-                    diversity_at_k = {}
-                    for k in k_values:
-                        k_diversity_scores = []
-                        for query_result in mode_retrieval_results:
-                            result = query_result.get("result", {})
-                            retrieved_chunk_ids = [r["chunk_id"] for r in result.get("results", [])[:k]]
-                            retrieved_chunks = [
-                                c for c in mode_chunks
-                                if c.chunk_index in retrieved_chunk_ids
-                            ]
-                            if len(retrieved_chunks) > 1:
-                                diversity = self.diversity_evaluator.calculate_diversity_at_k(
-                                    retrieved_chunks, k
-                                )
-                                k_diversity_scores.append(diversity)
-                        diversity_at_k[k] = (
-                            sum(k_diversity_scores) / len(k_diversity_scores)
-                            if k_diversity_scores else 0.0
-                        )
-                    evaluation_results["diversity_efficiency"][mode]["diversity_at_k"] = diversity_at_k
-
-                    # Latency metrics
-                    timing_data = [
-                        r.get("result", {}).get("timing", {})
-                        for r in mode_retrieval_results
-                    ]
-                    latency_metrics = self.diversity_evaluator.calculate_latency_metrics(timing_data)
-                    evaluation_results["diversity_efficiency"][mode].update(latency_metrics)
-
-        # Cross-Method Comparison (only if 2 modes)
-        if len(modes) == 2:
-            mode_a, mode_b = modes[0], modes[1]
-            chunks_a = all_chunks.get(mode_a, [])
-            chunks_b = all_chunks.get(mode_b, [])
-
-            if chunks_a and chunks_b:
-                # Chunk alignment
-                alignment = self.cross_method_comparator.calculate_chunk_alignment(
-                    chunks_a, chunks_b
-                )
-                evaluation_results["cross_method"]["chunk_alignment"] = alignment
-
-                # Overlap analysis
-                overlap = self.cross_method_comparator.analyze_method_overlap(
-                    chunks_a, chunks_b
-                )
-                evaluation_results["cross_method"]["overlap_analysis"] = overlap
-
-                # Complementarity (if we have retrieval results and expected chunks)
-                if expected_chunks_map and retrieval_results.get(mode_a) and retrieval_results.get(mode_b):
-                    complementarity_scores = []
-                    for query in queries:
-                        result_a = [
-                            r for r in retrieval_results[mode_a]
-                            if r.get("query") == query
-                        ]
-                        result_b = [
-                            r for r in retrieval_results[mode_b]
-                            if r.get("query") == query
-                        ]
-                        if result_a and result_b:
-                            retrieved_a = [r["chunk_id"] for r in result_a[0]["result"].get("results", [])]
-                            retrieved_b = [r["chunk_id"] for r in result_b[0]["result"].get("results", [])]
-                            relevant = expected_chunks_map.get(query, [])
-                            if relevant:
-                                comp = self.cross_method_comparator.calculate_complementarity(
-                                    retrieved_a, retrieved_b, relevant
-                                )
-                                complementarity_scores.append(comp)
-
-                    evaluation_results["cross_method"]["complementarity"] = (
-                        sum(complementarity_scores) / len(complementarity_scores)
-                        if complementarity_scores else 0.0
-                    )
-
-        return evaluation_results
+        return result
 
 
 def get_rag_chunk_test_service() -> RAGChunkTestService:

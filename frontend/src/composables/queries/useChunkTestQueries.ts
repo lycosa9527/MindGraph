@@ -3,6 +3,7 @@
  * 
  * Vue Query composables for chunk test functionality
  */
+import { computed, type ComputedRef, type Ref, unref } from 'vue'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/vue-query'
 import { apiRequest } from '@/utils/apiClient'
 
@@ -41,6 +42,22 @@ export interface ChunkTestResult {
   progress_percent?: number
   completed_methods?: string[]
   created_at: string
+}
+
+export interface ChunkTestHistoryItem {
+  test_id: number
+  dataset_name: string
+  document_ids?: number[]
+  semchunk_chunk_count?: number
+  mindchunk_chunk_count?: number
+  status: string
+  summary: Record<string, any>
+  created_at: string
+}
+
+export interface ChunkTestHistoryResponse {
+  results: ChunkTestHistoryItem[]
+  total: number
 }
 
 export interface TestUserDocumentsRequest {
@@ -148,6 +165,32 @@ export function useTestBenchmarkDataset() {
 }
 
 /**
+ * Test chunking methods with a benchmark dataset (async background execution)
+ */
+export function useTestBenchmarkDatasetAsync() {
+  return useMutation<ChunkTestResult, Error, TestBenchmarkRequest>({
+    mutationFn: async (request: TestBenchmarkRequest) => {
+      const response = await apiRequest('/api/knowledge-space/chunk-test/benchmark-async', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          dataset_name: request.dataset_name,
+          queries: request.queries,
+          modes: request.modes,
+        }),
+      })
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ detail: 'Failed to start benchmark test' }))
+        throw new Error(error.detail || 'Failed to start benchmark test')
+      }
+      return response.json()
+    },
+  })
+}
+
+/**
  * Get test queries for a dataset
  */
 export function useTestQueries(datasetName?: string, count: number = 20) {
@@ -210,5 +253,153 @@ export function useChunkTestResult(testId: number) {
       return response.json()
     },
     enabled: !!testId,
+  })
+}
+
+/**
+ * Get chunk test history (recent tests)
+ */
+export function useChunkTestHistory(limit: number = 20) {
+  return useQuery<ChunkTestHistoryResponse>({
+    queryKey: ['chunk-test', 'history', limit],
+    queryFn: async () => {
+      const params = new URLSearchParams()
+      params.append('limit', limit.toString())
+      const response = await apiRequest(`/api/knowledge-space/chunk-test/results?${params.toString()}`)
+      if (!response.ok) {
+        throw new Error('Failed to fetch chunk test history')
+      }
+      return response.json()
+    },
+  })
+}
+
+export interface ChunkTestChunk {
+  chunk_index: number
+  text: string
+  metadata?: Record<string, any>
+  start_char?: number
+  end_char?: number
+}
+
+export interface ChunkTestChunksResponse {
+  chunks: ChunkTestChunk[]
+  method: string
+  test_id: number
+}
+
+export interface ManualEvaluationRequest {
+  query: string
+  method: string
+  chunk_ids?: number[]
+  answer?: string
+  model?: string
+}
+
+export interface ManualEvaluationResult {
+  test_id: number
+  method: string
+  query: string
+  chunk_count: number
+  results: Array<{
+    type: string
+    evaluation?: Record<string, any>
+    evaluations?: Array<{
+      chunk_index: number
+      evaluation: Record<string, any>
+    }>
+  }>
+}
+
+/**
+ * Get chunks for a test and method (on-demand generation)
+ */
+export function useChunkTestChunks(testId: Ref<number> | ComputedRef<number>, method: Ref<string> | ComputedRef<string>) {
+  return useQuery<ChunkTestChunksResponse>({
+    queryKey: computed(() => ['chunk-test', 'chunks', unref(testId), unref(method)]),
+    queryFn: async () => {
+      const id = unref(testId)
+      const m = unref(method)
+      if (!id || !m) {
+        throw new Error('Test ID and method are required')
+      }
+      const response = await apiRequest(`/api/knowledge-space/chunk-test/${id}/chunks/${m}`)
+      if (!response.ok) {
+        throw new Error('Failed to fetch chunks')
+      }
+      return response.json()
+    },
+    enabled: computed(() => !!unref(testId) && !!unref(method)),
+  })
+}
+
+/**
+ * Manual evaluation mutation using DashScope models
+ */
+export function useManualEvaluation() {
+  return useMutation<ManualEvaluationResult, Error, { testId: number; request: ManualEvaluationRequest }>({
+    mutationFn: async ({ testId, request }) => {
+      const response = await apiRequest(`/api/knowledge-space/chunk-test/${testId}/evaluate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(request),
+      })
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ detail: 'Failed to evaluate chunks' }))
+        throw new Error(error.detail || 'Failed to evaluate chunks')
+      }
+      return response.json()
+    },
+  })
+}
+
+/**
+ * Delete chunk test result mutation
+ */
+export function useDeleteChunkTest() {
+  const queryClient = useQueryClient()
+  
+  return useMutation<void, Error, number>({
+    mutationFn: async (testId: number) => {
+      const response = await apiRequest(`/api/knowledge-space/chunk-test/results/${testId}`, {
+        method: 'DELETE',
+      })
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ detail: 'Failed to delete test' }))
+        throw new Error(error.detail || 'Failed to delete test')
+      }
+    },
+    onSuccess: () => {
+      // Invalidate history query to refetch after deletion
+      queryClient.invalidateQueries({ queryKey: ['chunk-test', 'history'] })
+    },
+  })
+}
+
+/**
+ * Cancel chunk test mutation
+ */
+export function useCancelChunkTest() {
+  const queryClient = useQueryClient()
+  
+  return useMutation<{ success: boolean; message: string }, Error, number>({
+    mutationFn: async (testId: number) => {
+      const response = await apiRequest(`/api/knowledge-space/chunk-test/${testId}/cancel`, {
+        method: 'POST',
+      })
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ detail: 'Failed to cancel test' }))
+        throw new Error(error.detail || 'Failed to cancel test')
+      }
+      return response.json()
+    },
+    onSuccess: (_, testId) => {
+      // Invalidate progress and result queries to refetch updated status
+      queryClient.invalidateQueries({ queryKey: ['chunk-test', 'progress', testId] })
+      queryClient.invalidateQueries({ queryKey: ['chunk-test', 'result', testId] })
+      queryClient.invalidateQueries({ queryKey: ['chunk-test', 'history'] })
+    },
   })
 }

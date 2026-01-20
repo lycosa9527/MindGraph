@@ -476,6 +476,7 @@ class ChunkTestProgressResponse(BaseModel):
     """Response model for chunk test progress."""
 
     test_id: int
+    session_id: Optional[str] = None  # UUID for session tracking
     status: str  # 'pending', 'processing', 'completed', 'failed'
     current_method: Optional[str] = None
     current_stage: Optional[str] = None
@@ -487,6 +488,7 @@ class ChunkTestResultResponse(BaseModel):
     """Response model for chunk test results."""
 
     test_id: int
+    session_id: Optional[str] = None  # UUID for session tracking
     dataset_name: str
     document_ids: Optional[List[int]] = None
     chunking_comparison: Dict[str, Any]

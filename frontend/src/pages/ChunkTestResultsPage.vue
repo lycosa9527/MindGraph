@@ -4,11 +4,12 @@
  * Route: /chunk-test/results/:testId
  * Shows real-time progress and final metrics table
  */
-import { computed, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ElProgress, ElTable, ElTableColumn, ElTag, ElIcon, ElButton, ElMessage } from 'element-plus'
-import { Loading, Check, CircleCheck, CircleClose } from '@element-plus/icons-vue'
-import { useChunkTestProgress, useChunkTestResult } from '@/composables/queries/useChunkTestQueries'
+import { ElProgress, ElTable, ElTableColumn, ElTag, ElIcon, ElButton, ElMessage, ElCard, ElMessageBox } from 'element-plus'
+import { Loading, Check, CircleCheck, CircleClose, View } from '@element-plus/icons-vue'
+import { Sparkles } from 'lucide-vue-next'
+import { useChunkTestProgress, useChunkTestResult, useChunkTestChunks, useCancelChunkTest } from '@/composables/queries/useChunkTestQueries'
 import { useLanguage } from '@/composables/useLanguage'
 
 const route = useRoute()
@@ -19,6 +20,19 @@ const testId = computed(() => parseInt(route.params.testId as string, 10))
 
 const { data: progress, isLoading: isLoadingProgress } = useChunkTestProgress(testId.value)
 const { data: result, isLoading: isLoadingResult } = useChunkTestResult(testId.value)
+const cancelTestMutation = useCancelChunkTest()
+
+// Chunk viewing state
+const selectedMethod = ref<string>('')
+const showChunks = ref(false)
+const { data: chunksData, isLoading: isLoadingChunks } = useChunkTestChunks(
+  computed(() => testId.value),
+  computed(() => selectedMethod.value)
+)
+
+// Manual evaluation state
+const showManualEvaluation = ref(false)
+const evaluationMethod = ref<string>('')
 
 const isProcessing = computed(() => {
   const status = progress.value?.status || result.value?.status
@@ -111,6 +125,59 @@ const metricsTableData = computed(() => {
 const handleBack = () => {
   router.push('/chunk-test')
 }
+
+const getMethodKeyFromLabel = (label: string): string => {
+  const reverseMap: Record<string, string> = {
+    'spaCy': 'spacy',
+    'SemChunk': 'semchunk',
+    'Chonkie': 'chonkie',
+    'LangChain': 'langchain',
+    'MindChunk': 'mindchunk',
+  }
+  return reverseMap[label] || label.toLowerCase()
+}
+
+const handleViewChunks = (method: string) => {
+  selectedMethod.value = method
+  showChunks.value = true
+}
+
+const handleManualEvaluation = (method: string) => {
+  evaluationMethod.value = method
+  showManualEvaluation.value = true
+}
+
+const handleCloseChunks = () => {
+  showChunks.value = false
+  selectedMethod.value = ''
+}
+
+const handleCancelTest = async () => {
+  try {
+    await ElMessageBox.confirm(
+      isZh.value
+        ? '确定要取消这个测试吗？测试将在下一个检查点停止。'
+        : 'Are you sure you want to cancel this test? The test will stop at the next checkpoint.',
+      isZh.value ? '取消测试' : 'Cancel Test',
+      {
+        confirmButtonText: isZh.value ? '取消测试' : 'Cancel Test',
+        cancelButtonText: isZh.value ? '返回' : 'Back',
+        type: 'warning',
+      }
+    )
+
+    await cancelTestMutation.mutateAsync(testId.value)
+    ElMessage.success(
+      isZh.value ? '测试取消请求已发送' : 'Test cancellation requested'
+    )
+  } catch (error) {
+    if (error instanceof Error && error.message !== 'cancel') {
+      ElMessage.error(
+        error.message || (isZh.value ? '取消失败' : 'Failed to cancel test')
+      )
+    }
+  }
+}
 </script>
 
 <template>
@@ -123,9 +190,20 @@ const handleBack = () => {
         </h1>
         <span class="text-sm text-stone-500">#{{ testId }}</span>
       </div>
-      <ElButton size="small" @click="handleBack">
-        {{ isZh ? '返回' : 'Back' }}
-      </ElButton>
+      <div class="flex items-center gap-2">
+        <ElButton
+          v-if="isProcessing"
+          size="small"
+          type="warning"
+          @click="handleCancelTest"
+          :loading="cancelTestMutation.isPending.value"
+        >
+          {{ isZh ? '取消测试' : 'Cancel Test' }}
+        </ElButton>
+        <ElButton size="small" @click="handleBack">
+          {{ isZh ? '返回' : 'Back' }}
+        </ElButton>
+      </div>
     </div>
 
     <!-- Content -->
@@ -229,13 +307,39 @@ const handleBack = () => {
 
       <!-- Results Table (shown when completed) -->
       <div v-if="isCompleted && metricsTableData.length > 0">
-        <h2 class="text-lg font-semibold text-stone-900 mb-4">
-          {{ isZh ? '评估指标' : 'Evaluation Metrics' }}
-        </h2>
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-lg font-semibold text-stone-900">
+            {{ isZh ? '评估指标' : 'Evaluation Metrics' }}
+          </h2>
+        </div>
 
         <div class="bg-white rounded-lg border border-stone-200 overflow-hidden">
           <ElTable :data="metricsTableData" stripe style="width: 100%">
             <ElTableColumn prop="method" :label="isZh ? '方法' : 'Method'" width="120" fixed="left" />
+            <ElTableColumn :label="isZh ? '操作' : 'Actions'" width="240" fixed="right">
+              <template #default="{ row }">
+                <div class="flex items-center gap-2">
+                  <ElButton
+                    size="small"
+                    type="primary"
+                    link
+                    @click="handleViewChunks(getMethodKeyFromLabel(row.method))"
+                  >
+                    <ElIcon class="mr-1"><View /></ElIcon>
+                    {{ isZh ? '查看分块' : 'View Chunks' }}
+                  </ElButton>
+                  <ElButton
+                    size="small"
+                    type="success"
+                    link
+                    @click="handleManualEvaluation(getMethodKeyFromLabel(row.method))"
+                  >
+                    <ElIcon class="mr-1"><Sparkles /></ElIcon>
+                    {{ isZh ? '手动评估' : 'Evaluate' }}
+                  </ElButton>
+                </div>
+              </template>
+            </ElTableColumn>
 
             <!-- Standard IR Metrics -->
             <ElTableColumn :label="isZh ? '标准IR指标' : 'Standard IR Metrics'" align="center">
@@ -270,6 +374,63 @@ const handleBack = () => {
         </div>
       </div>
 
+      <!-- Chunks View (shown when viewing chunks) -->
+      <div v-if="showChunks && isCompleted" class="mt-6">
+        <div class="mb-4 flex items-center justify-between">
+          <h2 class="text-lg font-semibold text-stone-900">
+            {{ isZh ? `查看分块 - ${methodLabels[selectedMethod] || selectedMethod}` : `View Chunks - ${methodLabels[selectedMethod] || selectedMethod}` }}
+          </h2>
+          <ElButton size="small" @click="handleCloseChunks">
+            {{ isZh ? '关闭' : 'Close' }}
+          </ElButton>
+        </div>
+          <div v-if="isLoadingChunks" class="text-center py-8">
+            <ElIcon class="text-stone-400 animate-spin text-4xl mb-4">
+              <Loading />
+            </ElIcon>
+            <p class="text-stone-600">
+              {{ isZh ? '正在生成分块...' : 'Generating chunks...' }}
+            </p>
+          </div>
+          <div v-else-if="chunksData && chunksData.chunks.length > 0" class="chunks-container">
+            <div class="mb-4 text-sm text-stone-600">
+              {{ isZh ? `共 ${chunksData.chunks.length} 个分块` : `Total ${chunksData.chunks.length} chunks` }}
+            </div>
+            <div class="space-y-4">
+              <ElCard
+                v-for="(chunk, idx) in chunksData.chunks"
+                :key="idx"
+                shadow="hover"
+                class="chunk-card"
+              >
+                <template #header>
+                  <div class="flex items-center justify-between">
+                    <span class="font-medium text-stone-900">
+                      {{ isZh ? `分块 #${chunk.chunk_index + 1}` : `Chunk #${chunk.chunk_index + 1}` }}
+                    </span>
+                    <span v-if="chunk.start_char !== undefined && chunk.end_char !== undefined" class="text-xs text-stone-500">
+                      {{ isZh ? `位置: ${chunk.start_char}-${chunk.end_char}` : `Position: ${chunk.start_char}-${chunk.end_char}` }}
+                    </span>
+                  </div>
+                </template>
+                <div class="chunk-content text-sm text-stone-700 leading-relaxed whitespace-pre-wrap">
+                  {{ chunk.text }}
+                </div>
+                <div v-if="chunk.metadata && Object.keys(chunk.metadata).length > 0" class="mt-3 pt-3 border-t border-stone-200">
+                  <div class="text-xs text-stone-500">
+                    <div v-for="(value, key) in chunk.metadata" :key="key" class="mb-1">
+                      <span class="font-medium">{{ key }}:</span> {{ value }}
+                    </div>
+                  </div>
+                </div>
+              </ElCard>
+            </div>
+          </div>
+          <div v-else-if="chunksData && chunksData.chunks.length === 0" class="text-center py-8 text-stone-500">
+            {{ isZh ? '没有找到分块' : 'No chunks found' }}
+          </div>
+        </div>
+
       <!-- Loading State -->
       <div v-if="isLoadingProgress && !progress" class="text-center py-12">
         <ElIcon class="text-stone-400 animate-spin text-4xl mb-4">
@@ -280,6 +441,13 @@ const handleBack = () => {
         </p>
       </div>
     </div>
+
+    <!-- Manual Evaluation Modal -->
+    <ManualEvaluationModal
+      v-model:visible="showManualEvaluation"
+      :test-id="testId"
+      :method="evaluationMethod"
+    />
   </div>
 </template>
 
@@ -300,5 +468,35 @@ const handleBack = () => {
 
 :deep(.el-table td) {
   color: #292524;
+}
+
+.chunks-container {
+  max-height: 600px;
+  overflow-y: auto;
+}
+
+.chunk-card {
+  border: 1px solid #e7e5e4;
+}
+
+.chunk-card:hover {
+  border-color: #d6d3d1;
+}
+
+.chunk-content {
+  max-height: 300px;
+  overflow-y: auto;
+  padding: 8px;
+  background-color: #fafaf9;
+  border-radius: 4px;
+}
+
+:deep(.el-collapse-item__header) {
+  font-weight: 600;
+  color: #1c1917;
+}
+
+:deep(.el-collapse-item__content) {
+  padding-bottom: 16px;
 }
 </style>

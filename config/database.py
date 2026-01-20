@@ -17,6 +17,7 @@ import logging
 import os
 import shutil
 import sys
+import time
 import uuid
 
 from sqlalchemy import create_engine, event, inspect, text
@@ -55,6 +56,27 @@ from models.auth import (
 from models.token_usage import TokenUsage
 
 logger = logging.getLogger(__name__)
+
+# Import knowledge_space models to ensure they're registered with Base.metadata for migrations
+# This MUST happen before run_migrations() is called
+try:
+    from models.knowledge_space import (
+        ChunkTestDocument, ChunkTestDocumentChunk, ChunkTestResult,
+        KnowledgeSpace, KnowledgeDocument, DocumentChunk
+    )
+    # Verify models are registered by accessing their tables
+    _ = ChunkTestDocument.__tablename__
+    _ = ChunkTestDocumentChunk.__tablename__
+    _ = ChunkTestResult.__tablename__
+    _ = KnowledgeSpace.__tablename__
+    _ = KnowledgeDocument.__tablename__
+    _ = DocumentChunk.__tablename__
+    logger.debug("Knowledge space models imported and registered for migrations")
+except ImportError as e:
+    # Knowledge space models may not be available in all environments
+    logger.warning("Could not import knowledge space models: %s", e)
+except Exception as e:
+    logger.warning("Error registering knowledge space models: %s", e)
 
 # ============================================================================
 # DISTRIBUTED LOCK FOR MULTI-WORKER COORDINATION (WAL Checkpoint)
@@ -859,6 +881,85 @@ def check_integrity() -> bool:
             return False
     except Exception as e:
         logger.error("[Database] Integrity check error: %s", e)
+        return False
+
+
+def recover_from_kill_9():
+    """
+    Recover from kill -9 scenarios by cleaning up stale locks and connections.
+    
+    This function should be called on startup to handle cases where the process
+    was killed with kill -9 (SIGKILL), which bypasses graceful shutdown.
+    
+    Handles:
+    - SQLite WAL file locks from killed processes
+    - Stale database connections in connection pool
+    - Database file locks that may persist
+    
+    Returns:
+        bool: True if recovery succeeded, False otherwise
+    """
+    if "sqlite" not in DATABASE_URL:
+        return True  # Not SQLite, no recovery needed
+
+    try:
+        logger.info("[Database] Recovering from potential kill -9 scenario...")
+
+        # First, dispose of any existing connections in the pool
+        # This clears stale connections from previous process
+        try:
+            engine.dispose()
+            logger.debug("[Database] Disposed existing connection pool")
+        except Exception as e:
+            logger.warning("[Database] Error disposing connection pool: %s", e)
+
+        # Force checkpoint WAL to clear any locks
+        # This is safe even if WAL is already checkpointed
+        try:
+            checkpoint_result = checkpoint_wal()
+            if checkpoint_result:
+                logger.debug("[Database] WAL checkpoint completed during recovery")
+            else:
+                logger.warning("[Database] WAL checkpoint failed during recovery")
+        except Exception as e:
+            logger.warning("[Database] Error during WAL checkpoint recovery: %s", e)
+
+        # Try to open a new connection to verify database is accessible
+        # This will fail if database is still locked
+        try:
+            with engine.connect() as conn:
+                # Execute a simple query to verify database is accessible
+                result = conn.execute(text("SELECT 1"))
+                result.fetchone()
+                logger.debug("[Database] Database connection verified after recovery")
+        except Exception as e:
+            logger.error(
+                "[Database] Database still locked after recovery attempt: %s",
+                e
+            )
+            # Try one more time with a short delay
+            time.sleep(0.1)
+            try:
+                with engine.connect() as conn:
+                    result = conn.execute(text("SELECT 1"))
+                    result.fetchone()
+                    logger.info("[Database] Database connection verified after retry")
+            except Exception as retry_error:
+                logger.error(
+                    "[Database] Database recovery failed: %s",
+                    retry_error
+                )
+                return False
+
+        logger.info("[Database] Recovery from kill -9 scenario completed successfully")
+        return True
+        
+    except Exception as e:
+        logger.error(
+            "[Database] Error during kill -9 recovery: %s",
+            e,
+            exc_info=True
+        )
         return False
 
 

@@ -17,6 +17,7 @@ import sys
 from fastapi import APIRouter
 
 from . import (
+    config,
     diagram_generation,
     png_export,
     sse_streaming,
@@ -41,6 +42,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api", tags=["api"])
 
 # Include all sub-routers
+router.include_router(config.router)
 router.include_router(diagram_generation.router)
 router.include_router(png_export.router)
 router.include_router(sse_streaming.router)
