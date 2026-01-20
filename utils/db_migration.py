@@ -159,7 +159,7 @@ def _create_index_if_needed(conn: Any, table_name: str, column: Column, dialect:
         inspector = inspect(conn)
         existing_indexes = [idx['name'] for idx in inspector.get_indexes(table_name)]
         if index_name in existing_indexes:
-            logger.debug("Index '%s' already exists on table '%s'", index_name, table_name)
+            logger.debug("[DBMigration] Index '%s' already exists on table '%s'", index_name, table_name)
             return True
 
         # Create index
@@ -167,7 +167,7 @@ def _create_index_if_needed(conn: Any, table_name: str, column: Column, dialect:
         conn.execute(text(create_index_sql))
         conn.commit()
         logger.info(
-            "Created index '%s' on column '%s' in table '%s'",
+            "[DBMigration] Created index '%s' on column '%s' in table '%s'",
             index_name,
             column.name,
             table_name
@@ -175,7 +175,7 @@ def _create_index_if_needed(conn: Any, table_name: str, column: Column, dialect:
         return True
     except Exception as e:
         logger.warning(
-            "Failed to create index for column '%s' in table '%s': %s",
+            "[DBMigration] Failed to create index for column '%s' in table '%s': %s",
             column.name,
             table_name,
             e
@@ -232,7 +232,7 @@ def _add_column_sqlite(conn: Any, table_name: str, column: Column) -> bool:
                 else:
                     # For unknown types, make it nullable to avoid errors
                     logger.warning(
-                        "Column '%s' is NOT NULL without default and "
+                        "[DBMigration] Column '%s' is NOT NULL without default and "
                         "table has data. Making nullable.",
                         column.name
                     )
@@ -251,7 +251,7 @@ def _add_column_sqlite(conn: Any, table_name: str, column: Column) -> bool:
         conn.execute(text(sql))
         conn.commit()
         logger.info(
-            "Added column '%s' to table '%s'",
+            "[DBMigration] Added column '%s' to table '%s'",
             column.name,
             table_name
         )
@@ -262,7 +262,7 @@ def _add_column_sqlite(conn: Any, table_name: str, column: Column) -> bool:
         return True
     except Exception as e:
         logger.error(
-            "Failed to add column '%s' to table '%s': %s",
+            "[DBMigration] Failed to add column '%s' to table '%s': %s",
             column.name,
             table_name,
             e
@@ -301,7 +301,7 @@ def _add_column_postgresql(conn: Any, table_name: str, column: Column) -> bool:
         conn.execute(text(sql))
         conn.commit()
         logger.info(
-            "Added column '%s' to table '%s'",
+            "[DBMigration] Added column '%s' to table '%s'",
             column.name,
             table_name
         )
@@ -312,7 +312,7 @@ def _add_column_postgresql(conn: Any, table_name: str, column: Column) -> bool:
         return True
     except Exception as e:
         logger.error(
-            "Failed to add column '%s' to table '%s': %s",
+            "[DBMigration] Failed to add column '%s' to table '%s': %s",
             column.name,
             table_name,
             e
@@ -351,7 +351,7 @@ def _add_column_mysql(conn: Any, table_name: str, column: Column) -> bool:
         conn.execute(text(sql))
         conn.commit()
         logger.info(
-            "Added column '%s' to table '%s'",
+            "[DBMigration] Added column '%s' to table '%s'",
             column.name,
             table_name
         )
@@ -362,7 +362,7 @@ def _add_column_mysql(conn: Any, table_name: str, column: Column) -> bool:
         return True
     except Exception as e:
         logger.error(
-            "Failed to add column '%s' to table '%s': %s",
+            "[DBMigration] Failed to add column '%s' to table '%s': %s",
             column.name,
             table_name,
             e
@@ -396,7 +396,7 @@ def run_migrations() -> bool:
 
         # Get database dialect
         dialect = engine.dialect.name
-        logger.debug("Running migrations for database dialect: %s", dialect)
+        logger.debug("[DBMigration] Running migrations for database dialect: %s", dialect)
 
         # Create inspector to examine current database schema
         inspector = inspect(engine)
@@ -407,7 +407,7 @@ def run_migrations() -> bool:
         
         # Log registered tables for debugging
         logger.debug(
-            "Registered tables in Base.metadata: %s",
+            "[DBMigration] Registered tables in Base.metadata: %s",
             ', '.join(sorted(expected_tables))
         )
 
@@ -415,9 +415,9 @@ def run_migrations() -> bool:
         tables_to_migrate = existing_tables & expected_tables
         
         if not tables_to_migrate:
-            logger.debug("No tables to migrate (all tables are new or don't exist)")
-            logger.debug("Existing tables: %s", ', '.join(sorted(existing_tables)))
-            logger.debug("Expected tables: %s", ', '.join(sorted(expected_tables)))
+            logger.debug("[DBMigration] No tables to migrate (all tables are new or don't exist)")
+            logger.debug("[DBMigration] Existing tables: %s", ', '.join(sorted(existing_tables)))
+            logger.debug("[DBMigration] Expected tables: %s", ', '.join(sorted(expected_tables)))
             return True
 
         # Track migration results
@@ -441,13 +441,13 @@ def run_migrations() -> bool:
 
                     if not missing_columns:
                         logger.debug(
-                            "Table '%s' is up to date (no missing columns)",
+                            "[DBMigration] Table '%s' is up to date (no missing columns)",
                             table_name
                         )
                         continue
 
                     logger.info(
-                        "Table '%s' has %d missing column(s): %s",
+                        "[DBMigration] Table '%s' has %d missing column(s): %s",
                         table_name,
                         len(missing_columns),
                         ', '.join(missing_columns)
@@ -466,7 +466,7 @@ def run_migrations() -> bool:
                             success = _add_column_mysql(conn, table_name, column)
                         else:
                             logger.warning(
-                                "Unsupported database dialect '%s' for column migration",
+                                "[DBMigration] Unsupported database dialect '%s' for column migration",
                                 dialect
                             )
                             success = False
@@ -478,7 +478,7 @@ def run_migrations() -> bool:
 
                 except Exception as e:
                     logger.error(
-                        "Error migrating table '%s': %s",
+                        "[DBMigration] Error migrating table '%s': %s",
                         table_name,
                         e,
                         exc_info=True
@@ -487,20 +487,20 @@ def run_migrations() -> bool:
 
         if columns_added > 0:
             logger.info(
-                "Migration completed: added %d column(s) to existing tables",
+                "[DBMigration] Migration completed: added %d column(s) to existing tables",
                 columns_added
             )
         else:
-            logger.debug("Migration check completed: no columns needed to be added")
+            logger.debug("[DBMigration] Migration check completed: no columns needed to be added")
 
         return migration_success
 
     except ImportError as e:
         logger.warning(
-            "Could not import database dependencies: %s. Skipping migrations.",
+            "[DBMigration] Could not import database dependencies: %s. Skipping migrations.",
             e
         )
         return True  # Don't fail startup if imports fail
     except Exception as e:
-        logger.error("Migration error: %s", e, exc_info=True)
+        logger.error("[DBMigration] Migration error: %s", e, exc_info=True)
         return False

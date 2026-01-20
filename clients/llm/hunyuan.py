@@ -50,7 +50,7 @@ class HunyuanClient:
             timeout=self.timeout
         )
 
-        logger.debug('HunyuanClient initialized with OpenAI-compatible API: %s', self.model_name)
+        logger.debug('[HunyuanClient] HunyuanClient initialized with OpenAI-compatible API: %s', self.model_name)
 
     async def async_chat_completion(
         self,

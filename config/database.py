@@ -71,12 +71,12 @@ try:
     _ = KnowledgeSpace.__tablename__
     _ = KnowledgeDocument.__tablename__
     _ = DocumentChunk.__tablename__
-    logger.debug("Knowledge space models imported and registered for migrations")
+    logger.debug("[Database] Knowledge space models imported and registered for migrations")
 except ImportError as e:
     # Knowledge space models may not be available in all environments
-    logger.warning("Could not import knowledge space models: %s", e)
+    logger.warning("[Database] Could not import knowledge space models: %s", e)
 except Exception as e:
-    logger.warning("Error registering knowledge space models: %s", e)
+    logger.warning("[Database] Error registering knowledge space models: %s", e)
 
 # ============================================================================
 # DISTRIBUTED LOCK FOR MULTI-WORKER COORDINATION (WAL Checkpoint)

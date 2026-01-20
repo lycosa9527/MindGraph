@@ -344,7 +344,7 @@ class VolcengineClient:
         )
 
         logger.debug(
-            'VolcengineClient initialized: %s → endpoint=%s',
+            '[VolcengineClient] VolcengineClient initialized: %s → endpoint=%s',
             model_alias,
             self.endpoint_id
         )

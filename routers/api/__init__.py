@@ -12,7 +12,6 @@ This module imports and registers all API endpoint routers, including:
 - And other feature-specific routers
 """
 import logging
-import sys
 
 from fastapi import APIRouter
 
@@ -58,10 +57,8 @@ router.include_router(diagrams.router)
 # Knowledge Space router (has its own prefix)
 if knowledge_space is not None:
     router.include_router(knowledge_space.router)
-    logger.info("Knowledge Space router registered at /api/knowledge-space")
-    print("INFO: Knowledge Space router registered at /api/knowledge-space", file=sys.stderr)
+    logger.info("[API] Knowledge Space router registered at /api/knowledge-space")
 else:
-    logger.warning("Knowledge Space router NOT registered - import failed or router is None")
-    print("WARNING: Knowledge Space router NOT registered - import failed or router is None", file=sys.stderr)
+    logger.warning("[API] Knowledge Space router NOT registered - import failed or router is None")
 
 __all__ = ["router"]

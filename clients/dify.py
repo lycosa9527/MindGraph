@@ -765,4 +765,4 @@ class AsyncDifyClient:
 
 # Only log from main worker to avoid duplicate messages
 if os.getenv('UVICORN_WORKER_ID') is None or os.getenv('UVICORN_WORKER_ID') == '0':
-    logger.debug("Dify client module loaded")
+    logger.debug("[DifyClient] Dify client module loaded")

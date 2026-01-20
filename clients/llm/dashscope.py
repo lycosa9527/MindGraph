@@ -505,7 +505,7 @@ class DeepSeekClient:
         self.model_name = config.DEEPSEEK_MODEL
         # DIVERSITY FIX: Lower temperature for DeepSeek (reasoning model, more deterministic)
         self.default_temperature = 0.6
-        logger.debug('DeepSeekClient initialized with model: %s', self.model_name)
+        logger.debug('[DeepSeekClient] DeepSeekClient initialized with model: %s', self.model_name)
 
     async def async_chat_completion(
         self,
@@ -754,7 +754,7 @@ class KimiClient:
         self.model_name = config.KIMI_MODEL
         # DIVERSITY FIX: Higher temperature for Kimi to increase creative variation
         self.default_temperature = 1.0
-        logger.debug('KimiClient initialized with model: %s', self.model_name)
+        logger.debug('[KimiClient] KimiClient initialized with model: %s', self.model_name)
 
     async def async_chat_completion(
         self,

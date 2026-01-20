@@ -60,7 +60,7 @@ def _initialize_clients():
 
         # Only log from main worker to avoid duplicate messages
         if os.getenv('UVICORN_WORKER_ID') is None or os.getenv('UVICORN_WORKER_ID') == '0':
-            logger.info("LLM clients initialized successfully (Qwen, DeepSeek, Kimi, Hunyuan, Doubao)")
+            logger.info("[LLMClients] LLM clients initialized successfully (Qwen, DeepSeek, Kimi, Hunyuan, Doubao)")
     except Exception as e:
         logger.warning('Failed to initialize LLM clients: %s', e)
 

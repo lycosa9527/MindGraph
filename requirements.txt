@@ -115,8 +115,10 @@ celery>=5.4.0  # Background task processing for document uploads (optional but r
 # ============================================================================
 # CACHING (Redis - REQUIRED)
 # ============================================================================
-redis>=5.2.0  # Redis client for caching (captcha, rate limiting, sessions)
-# Note: Updated for Redis 8.4 compatibility. Use latest version for best support.
+redis>=7.1.0  # Redis client for caching (captcha, rate limiting, sessions)
+# Note: Updated to latest version for Redis 8.4 compatibility.
+# Requires Python 3.10+ (compatible with Python 3.13+ recommended version).
+# For optimized performance: pip install "redis[hiredis]"
 
 # ============================================================================
 # IP GEOLOCATION (Local Database - No External APIs)

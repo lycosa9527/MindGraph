@@ -653,12 +653,36 @@ class DocumentProcessor:
         """Extract text using pytesseract OCR."""
         if not TESSERACT_AVAILABLE:
             raise ImportError(
-                "pytesseract and PIL required for Tesseract OCR"
+                "pytesseract and PIL required for Tesseract OCR. "
+                "Install with: pip install pytesseract Pillow"
             )
 
-        image = Image.open(file_path)
-        text = pytesseract.image_to_string(image, lang='chi_sim+eng')  # Chinese + English
-        return text
+        try:
+            image = Image.open(file_path)
+            text = pytesseract.image_to_string(image, lang='chi_sim+eng')  # Chinese + English
+            return text
+        except Exception as e:
+            # Check if this is a TesseractNotFoundError
+            error_str = str(e).lower()
+            if 'tesseract' in error_str and ('not found' in error_str or 'not installed' in error_str or 'not in your path' in error_str):
+                logger.error(
+                    "[DocumentProcessor] Tesseract OCR binary not found: %s",
+                    str(e)
+                )
+                error_msg = (
+                    "Tesseract OCR binary not found. "
+                    "The pytesseract Python package is installed, but the Tesseract binary is missing or not in PATH.\n"
+                    "Install Tesseract:\n"
+                    "  - Ubuntu/Debian: sudo apt-get install tesseract-ocr tesseract-ocr-chi-sim\n"
+                    "  - macOS: brew install tesseract\n"
+                    "  - Windows: Download from https://github.com/UB-Mannheim/tesseract/wiki\n"
+                    f"Original error: {str(e)}"
+                )
+                raise RuntimeError(error_msg) from e
+            else:
+                logger.error("[DocumentProcessor] Tesseract OCR failed: %s", str(e))
+                error_msg = f"Tesseract OCR failed: {str(e)}"
+                raise RuntimeError(error_msg) from e
 
     def _extract_pptx(self, file_path: str) -> str:
         """Extract text from PPTX."""
