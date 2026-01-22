@@ -8,11 +8,13 @@ Handles:
 """
 
 import logging
+import traceback
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from fastapi import HTTPException
 from config.settings import config
+from services.infrastructure.monitoring.critical_alert import CriticalAlertService
 
 logger = logging.getLogger(__name__)
 
@@ -83,9 +85,15 @@ async def http_exception_handler(request: Request, exc: HTTPException):
     )
 
 
-async def general_exception_handler(_request: Request, exc: Exception):
+async def general_exception_handler(request: Request, exc: Exception):
     """Handle all unhandled exceptions"""
-    logger.error("Unhandled exception: %s: %s", type(exc).__name__, exc, exc_info=True)
+    exception_type = type(exc).__name__
+    exception_message = str(exc)
+    request_path = getattr(request.url, 'path', '') if request and request.url else ''
+
+    stack_trace = ''.join(traceback.format_exception(type(exc), exc, exc.__traceback__))
+
+    logger.error("Unhandled exception: %s: %s", exception_type, exception_message, exc_info=True)
 
     error_response = {"error": "An unexpected error occurred. Please try again later."}
 
@@ -93,10 +101,69 @@ async def general_exception_handler(_request: Request, exc: Exception):
     if config.debug:
         error_response["debug"] = str(exc)
 
+    # Check if this is a critical exception that warrants SMS alert
+    is_critical = _is_critical_exception(exception_type, exception_message)
+
+    if is_critical:
+        try:
+            await CriticalAlertService.send_unhandled_exception_alert(
+                component="Application",
+                exception_type=exception_type,
+                error_message=exception_message,
+                stack_trace=stack_trace,
+                request_path=request_path
+            )
+        except Exception as alert_error:  # pylint: disable=broad-except
+            logger.error("Failed to send unhandled exception alert: %s", alert_error, exc_info=True)
+
     return JSONResponse(
         status_code=500,
         content=error_response
     )
+
+
+def _is_critical_exception(exception_type: str, exception_message: str) -> bool:
+    """
+    Determine if an exception is critical and warrants SMS alert.
+
+    Args:
+        exception_type: Exception class name
+        exception_message: Exception message
+
+    Returns:
+        True if critical, False otherwise
+    """
+    critical_exception_types = (
+        "DatabaseError",
+        "OperationalError",
+        "IntegrityError",
+        "ConnectionError",
+        "TimeoutError",
+        "MemoryError",
+        "OSError",
+        "SystemError",
+        "RuntimeError"
+    )
+
+    critical_keywords = (
+        "database",
+        "corruption",
+        "connection",
+        "memory",
+        "disk",
+        "file system",
+        "critical",
+        "fatal"
+    )
+
+    if exception_type in critical_exception_types:
+        return True
+
+    message_lower = exception_message.lower()
+    if any(keyword in message_lower for keyword in critical_keywords):
+        return True
+
+    return False
 
 
 def setup_exception_handlers(app: FastAPI):

@@ -30,12 +30,12 @@ from routers import (
     public_dashboard, school_zone, askonce, debateverse, vue_spa
 )
 from routers.health import router as health_router
-from services.infrastructure.startup import setup_early_configuration
-from services.infrastructure.logging_config import setup_logging
-from services.infrastructure.lifespan import lifespan
-from services.infrastructure.middleware import setup_middleware
-from services.infrastructure.exception_handlers import setup_exception_handlers
-from services.infrastructure.spa_handler import setup_vue_spa, is_dev_mode
+from services.infrastructure.lifecycle.startup import setup_early_configuration
+from services.infrastructure.utils.logging_config import setup_logging
+from services.infrastructure.lifecycle.lifespan import lifespan
+from services.infrastructure.http.middleware import setup_middleware
+from services.infrastructure.http.exception_handlers import setup_exception_handlers
+from services.infrastructure.utils.spa_handler import setup_vue_spa, is_dev_mode
 
 # Early configuration setup (must happen before logging)
 setup_early_configuration()
@@ -116,5 +116,5 @@ app.include_router(debateverse.router)
 # ============================================================================
 
 if __name__ == "__main__":
-    from services.infrastructure.server_launcher import run_server
+    from services.infrastructure.process.server_launcher import run_server
     run_server()

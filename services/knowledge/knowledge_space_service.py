@@ -21,7 +21,7 @@ from sqlalchemy.orm import Session
 
 from clients.dashscope_embedding import get_embedding_client
 from models.knowledge_space import KnowledgeSpace, KnowledgeDocument, DocumentChunk, DocumentBatch, DocumentVersion
-from services.infrastructure.kb_rate_limiter import get_kb_rate_limiter
+from services.infrastructure.rate_limiting.kb_rate_limiter import get_kb_rate_limiter
 from services.knowledge.chunking_service import get_chunking_service
 from services.knowledge.document_cleaner import get_document_cleaner
 from services.knowledge.document_processor import get_document_processor

@@ -18,7 +18,7 @@ from typing import Optional, Tuple
 import logging
 import re
 
-from services.infrastructure.error_handler import (
+from services.infrastructure.http.error_handler import (
     LLMServiceError,
     LLMRateLimitError,
     LLMContentFilterError,
@@ -597,7 +597,10 @@ def parse_and_raise_doubao_error(error_code: str, error_message: str, status_cod
 
     # Log error with details
     logger.error(
-        f"Doubao API error ({error_code}): {exception.__class__.__name__} - {str(exception)}",
+        "Doubao API error (%s): %s - %s",
+        error_code,
+        exception.__class__.__name__,
+        str(exception),
         extra={
             'error_code': error_code,
             'status_code': status_code,
@@ -610,4 +613,3 @@ def parse_and_raise_doubao_error(error_code: str, error_message: str, status_cod
     exception.user_message = user_message  # type: ignore[attr-defined]
 
     raise exception
-

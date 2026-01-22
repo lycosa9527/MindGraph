@@ -19,7 +19,7 @@ import uuid
 from sqlalchemy.orm import Session
 
 from clients.dashscope_embedding import get_embedding_client
-from services.infrastructure.kb_rate_limiter import get_kb_rate_limiter
+from services.infrastructure.rate_limiting.kb_rate_limiter import get_kb_rate_limiter
 from services.knowledge.chunking_service import Chunk
 from services.knowledge.retrieval_test_service import RetrievalTestService
 from services.knowledge.document_processing import generate_embeddings_with_cache

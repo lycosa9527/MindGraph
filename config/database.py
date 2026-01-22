@@ -561,6 +561,18 @@ def init_db():
                 # Re-raise genuine errors (syntax, permissions, corruption, etc.)
                 # This ensures we don't silently ignore real database problems
                 logger.error("Database initialization error: %s", e)
+                # Send critical alert for database errors during initialization
+                try:
+                    from services.infrastructure.monitoring.critical_alert import CriticalAlertService
+                    error_msg_lower = str(e).lower()
+                    if "corrupt" in error_msg_lower or "integrity" in error_msg_lower:
+                        CriticalAlertService.send_startup_failure_alert_sync(
+                            component="Database",
+                            error_message=f"Database error during initialization: {str(e)}",
+                            details="Database may be corrupted or have integrity issues. Check database file and permissions."
+                        )
+                except Exception as alert_error:  # pylint: disable=broad-except
+                    logger.error("Failed to send database error alert: %s", alert_error)
                 raise
     else:
         logger.info("All database tables already exist - skipping creation")

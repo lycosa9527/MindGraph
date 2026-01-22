@@ -11,7 +11,7 @@ from pydantic import BaseModel, Field
 
 from agents.core.base_agent import BaseAgent
 from prompts import get_prompt, PROMPT_REGISTRY
-from services.infrastructure.error_handler import LLMServiceError
+from services.infrastructure.http.error_handler import LLMServiceError
 from services.llm import llm_service
 
 """

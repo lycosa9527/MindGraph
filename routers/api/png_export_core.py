@@ -18,7 +18,7 @@ import logging
 import re
 
 from config.settings import Config
-from services.infrastructure.browser import BrowserContextManager
+from services.infrastructure.utils.browser import BrowserContextManager
 
 logger = logging.getLogger(__name__)
 

@@ -22,11 +22,11 @@ import logging
 import random
 import time
 
-from services.infrastructure.rate_limiter import LoadBalancerRateLimiter
+from services.infrastructure.rate_limiting.rate_limiter import LoadBalancerRateLimiter
 from services.redis.redis_client import is_redis_available, RedisOps
 
 if TYPE_CHECKING:
-    from services.infrastructure.rate_limiter import DashscopeRateLimiter
+    from services.infrastructure.rate_limiting.rate_limiter import DashscopeRateLimiter
 
 logger = logging.getLogger(__name__)
 

@@ -1,21 +1,18 @@
-import logging
-
-from fastapi import APIRouter, Request, HTTPException
-from fastapi.responses import FileResponse, HTMLResponse
-
-from services.infrastructure.spa_handler import VUE_DIST_DIR
-
-"""
-Vue SPA Router
-==============
+"""Vue SPA Router.
 
 FastAPI router for serving Vue 3 SPA in production mode.
 This router is conditionally included when Vue SPA is available.
 
 Copyright 2024-2025 Beijing Siyuan Zhijiao Technology Co., Ltd.
-All Rights Reserved
+All Rights Reserved.
 """
 
+import logging
+
+from fastapi import APIRouter, HTTPException
+from fastapi.responses import FileResponse, HTMLResponse
+
+from services.infrastructure.utils.spa_handler import VUE_DIST_DIR
 
 
 logger = logging.getLogger(__name__)
@@ -43,148 +40,150 @@ async def vue_favicon():
 
 
 @router.get("/", response_class=HTMLResponse)
-async def vue_index(request: Request):
+async def vue_index():
     """Serve Vue SPA index for root path."""
     return await _serve_index()
 
 
 @router.get("/editor", response_class=HTMLResponse)
-async def vue_editor(request: Request):
+async def vue_editor():
     """Serve Vue SPA for editor route."""
     return await _serve_index()
 
 
 @router.get("/admin", response_class=HTMLResponse)
-async def vue_admin(request: Request):
+async def vue_admin():
     """Serve Vue SPA for admin route."""
     return await _serve_index()
 
 
 @router.get("/admin/{path:path}", response_class=HTMLResponse)
-async def vue_admin_sub(request: Request, path: str):
+async def vue_admin_sub(path: str):
     """Serve Vue SPA for admin sub-routes."""
+    _ = path  # Path parameter required by FastAPI but not used
     return await _serve_index()
 
 
 @router.get("/login", response_class=HTMLResponse)
-async def vue_login(request: Request):
+async def vue_login():
     """Serve Vue SPA for login route."""
     return await _serve_index()
 
 
 @router.get("/auth", response_class=HTMLResponse)
-async def vue_auth(request: Request):
+async def vue_auth():
     """Serve Vue SPA for auth route."""
     return await _serve_index()
 
 
 @router.get("/demo", response_class=HTMLResponse)
-async def vue_demo(request: Request):
+async def vue_demo():
     """Serve Vue SPA for demo route."""
     return await _serve_index()
 
 
 @router.get("/dashboard", response_class=HTMLResponse)
-async def vue_dashboard(request: Request):
+async def vue_dashboard():
     """Serve Vue SPA for dashboard route."""
     return await _serve_index()
 
 
 @router.get("/dashboard/login", response_class=HTMLResponse)
-async def vue_dashboard_login(request: Request):
+async def vue_dashboard_login():
     """Serve Vue SPA for dashboard login route."""
     return await _serve_index()
 
 
 @router.get("/pub-dash", response_class=HTMLResponse)
-async def vue_pub_dash(request: Request):
+async def vue_pub_dash():
     """Serve Vue SPA for public dashboard route."""
     return await _serve_index()
 
 
 @router.get("/debug", response_class=HTMLResponse)
-async def vue_debug(request: Request):
+async def vue_debug():
     """Serve Vue SPA for debug route."""
     return await _serve_index()
 
 
 @router.get("/mindmate", response_class=HTMLResponse)
-async def vue_mindmate(request: Request):
+async def vue_mindmate():
     """Serve Vue SPA for mindmate route."""
     return await _serve_index()
 
 
 @router.get("/mindgraph", response_class=HTMLResponse)
-async def vue_mindgraph(request: Request):
+async def vue_mindgraph():
     """Serve Vue SPA for mindgraph route."""
     return await _serve_index()
 
 
 @router.get("/canvas", response_class=HTMLResponse)
-async def vue_canvas(request: Request):
+async def vue_canvas():
     """Serve Vue SPA for canvas route."""
     return await _serve_index()
 
 
 @router.get("/template", response_class=HTMLResponse)
-async def vue_template(request: Request):
+async def vue_template():
     """Serve Vue SPA for template route."""
     return await _serve_index()
 
 
 @router.get("/course", response_class=HTMLResponse)
-async def vue_course(request: Request):
+async def vue_course():
     """Serve Vue SPA for course route."""
     return await _serve_index()
 
 
 @router.get("/community", response_class=HTMLResponse)
-async def vue_community(request: Request):
+async def vue_community():
     """Serve Vue SPA for community route."""
     return await _serve_index()
 
 
 @router.get("/school-zone", response_class=HTMLResponse)
-async def vue_school_zone(request: Request):
+async def vue_school_zone():
     """Serve Vue SPA for school-zone route."""
     return await _serve_index()
 
 
 @router.get("/school-zone/{path:path}", response_class=HTMLResponse)
-async def vue_school_zone_sub(request: Request, path: str):
+async def vue_school_zone_sub(path: str):
     """Serve Vue SPA for school-zone sub-routes."""
+    _ = path  # Path parameter required by FastAPI but not used
     return await _serve_index()
 
 
 @router.get("/knowledge-space", response_class=HTMLResponse)
-async def vue_knowledge_space(request: Request):
+async def vue_knowledge_space():
     """Serve Vue SPA for knowledge-space route."""
     return await _serve_index()
 
 
 @router.get("/knowledge-space/{path:path}", response_class=HTMLResponse)
-async def vue_knowledge_space_sub(request: Request, path: str):
+async def vue_knowledge_space_sub(path: str):
     """Serve Vue SPA for knowledge-space sub-routes."""
+    _ = path  # Path parameter required by FastAPI but not used
     return await _serve_index()
 
 
 @router.get("/askonce", response_class=HTMLResponse)
-async def vue_askonce(request: Request):
+async def vue_askonce():
     """Serve Vue SPA for askonce route."""
     return await _serve_index()
 
 
 @router.get("/debateverse", response_class=HTMLResponse)
-async def vue_debateverse(request: Request):
+async def vue_debateverse():
     """Serve Vue SPA for debateverse route."""
     return await _serve_index()
 
 
 @router.get("/{path:path}", response_class=HTMLResponse)
-async def vue_catch_all(request: Request, path: str):
-    """
-    Catch-all route for Vue SPA client-side routing.
-    
+async def vue_catch_all(path: str):
+    """Catch-all route for Vue SPA client-side routing.
+
     This handles any route that isn't matched by API endpoints or static files.
     Vue Router will handle the actual routing client-side.
     """
@@ -198,14 +197,13 @@ async def vue_catch_all(request: Request, path: str):
         or "." in path.split("/")[-1]  # Skip files with extensions
     ):
         raise HTTPException(status_code=404, detail="Not found")
-    
+
     return await _serve_index()
 
 
 async def _serve_index() -> FileResponse:
     """Serve Vue SPA index.html."""
     index_path = VUE_DIST_DIR / "index.html"
-    
     logger.debug("Serving Vue SPA index - checking path: %s", index_path)
     logger.debug("VUE_DIST_DIR exists: %s", VUE_DIST_DIR.exists())
     logger.debug("index.html exists: %s", index_path.exists())

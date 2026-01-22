@@ -25,7 +25,7 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from models.auth import User
-from services.infrastructure.env_manager import EnvManager
+from services.infrastructure.utils.env_manager import EnvManager
 from utils.auth import get_current_user, is_admin
 
 

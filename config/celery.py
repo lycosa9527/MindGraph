@@ -20,7 +20,7 @@ from celery.signals import worker_process_init, worker_ready
 from dotenv import load_dotenv
 
 from config.settings import config
-from services.infrastructure.error_handler import LLMServiceError
+from services.infrastructure.http.error_handler import LLMServiceError
 from services.llm import llm_service
 from services.redis.redis_client import (
     RedisStartupError,

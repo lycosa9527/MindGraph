@@ -17,7 +17,7 @@ import json
 import logging
 import re
 
-from services.infrastructure.error_handler import LLMProviderError
+from services.infrastructure.http.error_handler import LLMProviderError
 from services.llm.dashscope_errors import (
     has_chinese_characters,
     parse_400_errors,

@@ -6,7 +6,7 @@ Handles resource not found errors.
 """
 from typing import Optional, Tuple
 
-from services.infrastructure.error_handler import (
+from services.infrastructure.http.error_handler import (
     LLMModelNotFoundError,
     LLMInvalidParameterError,
     LLMProviderError

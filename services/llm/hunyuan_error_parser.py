@@ -19,7 +19,7 @@ from typing import Optional, Tuple, NoReturn
 import logging
 import re
 
-from services.infrastructure.error_handler import (
+from services.infrastructure.http.error_handler import (
     LLMServiceError,
     LLMTimeoutError,
     LLMRateLimitError,

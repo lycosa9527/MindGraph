@@ -10,11 +10,14 @@ import sys
 from typing import Any, Dict
 
 from config.database import recover_from_kill_9, SessionLocal
-from services.infrastructure.database_recovery import DatabaseRecovery
-from services.infrastructure.recovery_locks import (
+from models.knowledge_space import ChunkTestDocument
+from services.infrastructure.monitoring.critical_alert import CriticalAlertService
+from services.infrastructure.recovery.database_recovery import DatabaseRecovery
+from services.infrastructure.recovery.recovery_locks import (
     acquire_integrity_check_lock,
     release_integrity_check_lock
 )
+from services.knowledge.chunk_test_document_service import ChunkTestDocumentService
 
 logger = logging.getLogger(__name__)
 
@@ -22,45 +25,41 @@ logger = logging.getLogger(__name__)
 def cleanup_incomplete_chunk_operations() -> int:
     """
     Clean up incomplete chunk operations after kill -9.
-    
+
     Detects documents stuck in 'processing' status and:
     1. Cleans up partial Qdrant data
     2. Deletes partial chunks from database
     3. Resets status to 'pending' for retry
-    
+
     Returns:
         Number of documents cleaned up
     """
     try:
-        # Import here to avoid circular dependencies
-        from models.knowledge_space import ChunkTestDocument
-        from services.knowledge.chunk_test_document_service import ChunkTestDocumentService
-        
         db = SessionLocal()
         cleaned_count = 0
-        
+
         try:
             # Find all documents stuck in 'processing' status
             stuck_docs = db.query(ChunkTestDocument).filter(
                 ChunkTestDocument.status == 'processing'
             ).all()
-            
+
             if not stuck_docs:
                 logger.debug("[Recovery] No documents stuck in processing status")
                 return 0
-            
+
             logger.info(
                 "[Recovery] Found %d document(s) stuck in 'processing' status, cleaning up...",
                 len(stuck_docs)
             )
-            
+
             # Group by user_id to create service instances efficiently
             docs_by_user = {}
             for doc in stuck_docs:
                 if doc.user_id not in docs_by_user:
                     docs_by_user[doc.user_id] = []
                 docs_by_user[doc.user_id].append(doc)
-            
+
             # Clean up each document
             for user_id, docs in docs_by_user.items():
                 try:
@@ -85,15 +84,15 @@ def cleanup_incomplete_chunk_operations() -> int:
                         user_id, e,
                         exc_info=True
                     )
-            
+
             if cleaned_count > 0:
                 logger.info(
                     "[Recovery] Successfully cleaned up %d incomplete chunk operation(s)",
                     cleaned_count
                 )
-            
+
             return cleaned_count
-            
+
         except Exception as e:
             logger.error(
                 "[Recovery] Error during incomplete chunk operations cleanup: %s",
@@ -104,7 +103,7 @@ def cleanup_incomplete_chunk_operations() -> int:
             return 0
         finally:
             db.close()
-            
+
     except ImportError as e:
         logger.debug(
             "[Recovery] Could not import chunk test models (may not be available): %s",
@@ -149,7 +148,7 @@ def check_database_on_startup() -> bool:
             "[Recovery] Database recovery from kill -9 failed, "
             "but continuing with integrity check"
         )
-    
+
     # Clean up incomplete chunk operations (Qdrant + database)
     # This abandons partial work and resets documents to 'pending' for retry
     logger.info("[Recovery] Cleaning up incomplete chunk operations...")
@@ -159,7 +158,7 @@ def check_database_on_startup() -> bool:
             "[Recovery] Cleaned up %d incomplete chunk operation(s) from kill -9",
             cleaned_count
         )
-    
+
     # Check if integrity check should be skipped (for development/testing)
     skip_check_env = os.getenv("SKIP_INTEGRITY_CHECK", "")
     logger.info("[Recovery] SKIP_INTEGRITY_CHECK=%s", skip_check_env)
@@ -209,6 +208,16 @@ def check_database_on_startup() -> bool:
 
     # Database is corrupted - ALWAYS require human decision
     logger.error("[Recovery] DATABASE CORRUPTION DETECTED: %s", message)
+
+    # Send critical alert for database corruption
+    try:
+        CriticalAlertService.send_startup_failure_alert_sync(
+            component="Database",
+            error_message=f"Database corruption detected: {message}",
+            details="Database integrity check failed. Manual recovery required. Check logs for details."
+        )
+    except Exception as alert_error:  # pylint: disable=broad-except
+        logger.error("[Recovery] Failed to send database corruption alert: %s", alert_error)
 
     # Check if we're in interactive mode
     if sys.stdin.isatty():

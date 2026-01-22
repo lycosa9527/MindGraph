@@ -176,8 +176,8 @@ def _get_local_chromium_executable():
     Returns:
         str or None: Path to Chromium executable, or None if not found
     """
-    # Get project root (assuming this file is in services/)
-    project_root = Path(__file__).parent.parent
+    # Get project root (assuming this file is in services/infrastructure/utils/)
+    project_root = Path(__file__).parent.parent.parent.parent
     browsers_dir = project_root / "browsers" / "chromium"
 
     if not browsers_dir.exists():

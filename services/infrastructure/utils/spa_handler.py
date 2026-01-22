@@ -28,8 +28,8 @@ from fastapi.staticfiles import StaticFiles
 logger = logging.getLogger(__name__)
 
 # Vue SPA dist directory
-# Path: services/infrastructure/spa_handler.py -> go up 3 levels to project root
-VUE_DIST_DIR = Path(__file__).parent.parent.parent / "frontend" / "dist"
+# Path: services/infrastructure/utils/spa_handler.py -> go up 4 levels to project root
+VUE_DIST_DIR = Path(__file__).parent.parent.parent.parent / "frontend" / "dist"
 
 
 def is_vue_spa_available() -> bool:
@@ -121,7 +121,7 @@ def setup_vue_spa(app: FastAPI) -> bool:
         logger.debug("Mounted /gallery for featured diagrams")
 
     # Mount static folder for runtime uploads (announcement images, etc.)
-    static_dir = Path(__file__).parent.parent.parent / "static"
+    static_dir = Path(__file__).parent.parent.parent.parent / "static"
     if static_dir.exists():
         app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
         logger.debug("Mounted /static for runtime uploads")

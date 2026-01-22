@@ -153,7 +153,11 @@ class OmniRealtimeClient:
         }
 
         try:
-            self.ws = await websockets.connect(url, additional_headers=headers)
+            self.ws = await websockets.connect(
+                url,
+                additional_headers=headers,
+                proxy=None,  # Disable automatic proxy detection (websockets 15.0+)
+            )
             self._connected = True
             logger.debug("WebSocket connected to Omni API")
 

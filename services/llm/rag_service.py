@@ -36,7 +36,7 @@ from models.knowledge_space import (
     DocumentRelationship,
     ChunkAttachment
 )
-from services.infrastructure.kb_rate_limiter import get_kb_rate_limiter
+from services.infrastructure.rate_limiting.kb_rate_limiter import get_kb_rate_limiter
 from services.knowledge.keyword_search_service import get_keyword_search_service
 from services.llm.embedding_cache import get_embedding_cache
 from services.llm.qdrant_service import get_qdrant_service

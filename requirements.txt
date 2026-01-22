@@ -14,97 +14,97 @@
 #   - Set DEBUG=False for production
 #   - Optional: Configure Sentry DSN for error tracking
 #
-# LAST UPDATED: 2025-01-10 - Updated to latest compatible versions
+# LAST UPDATED: 2026-01-20 - Updated to latest versions
 
 # ============================================================================
 # WEB FRAMEWORK
 # ============================================================================
 fastapi>=0.128.0
 uvicorn[standard]>=0.40.0
-jinja2>=3.1.4
-starlette>=0.50.0  # FastAPI dependency (explicit for version control)
+jinja2>=3.1.6
+# Note: Starlette is managed by FastAPI - do not pin explicitly
 pydantic>=2.12.5
 pydantic-settings>=2.12.0
-email-validator>=2.2.0  # Pydantic email validation
+email-validator>=2.3.0  # Pydantic email validation
 orjson>=3.11.5  # Fast JSON serialization for API responses
 
 # ============================================================================
 # HTTP & NETWORKING
 # ============================================================================
 aiohttp>=3.13.3  # Used by Dify client (MindMate integration)
-openai>=2.14.0
+openai>=2.15.0
 python-multipart>=0.0.21
-httpx[http2]>=0.28.0  # Primary async HTTP client with HTTP/2 (LLM clients, SMS)
-websockets>=14.2  # WebSocket support (Omni realtime voice)
+httpx[http2]>=0.28.1  # Primary async HTTP client with HTTP/2 (LLM clients, SMS)
+websockets>=16.0  # WebSocket support (Omni realtime voice)
 
 # ============================================================================
 # AI & LANGUAGE PROCESSING
 # ============================================================================
 # LangChain 1.x - Major upgrade with create_agent, LangGraph runtime, and middleware
-langchain>=1.2.3
+langchain>=1.2.6
 langchain-community>=0.4.1
 langchain-core>=1.2.7
-langchain-openai>=0.1.0  # Explicitly pin compatible version
-langchain-text-splitters>=0.3.0  # Text chunking for RAG (Personal Knowledge Space)
-langgraph>=1.0.5
-langgraph-checkpoint>=3.0.1
-dashscope>=1.25.7
+langchain-openai>=1.1.7  # Updated to latest version
+langchain-text-splitters>=1.1.0  # Text chunking for RAG (Personal Knowledge Space)
+langgraph>=1.0.6
+langgraph-checkpoint>=4.0.0
+dashscope>=1.25.8
 
 # ============================================================================
 # CONFIGURATION & ENVIRONMENT
 # ============================================================================
-PyYAML>=6.0.2
-python-dotenv>=1.0.1
+PyYAML>=6.0.3
+python-dotenv>=1.2.1
 
 # ============================================================================
 # ASYNC SUPPORT
 # ============================================================================
 nest_asyncio>=1.6.0
-aiofiles>=24.1.0
+aiofiles>=25.1.0
 
 # ============================================================================
 # BROWSER AUTOMATION & IMAGE PROCESSING
 # ============================================================================
 playwright>=1.57.0
-Pillow>=11.3.0  # Image processing (also used for OCR in Personal Knowledge Space)
+Pillow>=12.1.0  # Image processing (also used for OCR in Personal Knowledge Space)
 
 # ============================================================================
 # SYSTEM MONITORING & UTILITIES
 # ============================================================================
 psutil>=7.2.1  # System resource monitoring
-watchfiles>=1.0.0  # File watching for auto-reload
+watchfiles>=1.1.1  # File watching for auto-reload
 
 # ============================================================================
 # DATABASE & AUTHENTICATION
 # ============================================================================
 SQLAlchemy>=2.0.45
-alembic>=1.14.0  # Database migrations
+alembic>=1.18.1  # Database migrations
 python-jose[cryptography]>=3.3.0
 bcrypt>=5.0.0  # Password hashing (direct bcrypt, passlib removed in v4.12.0)
 captcha>=0.6
-pycryptodome>=3.20.0  # AES decryption for bayi mode
+pycryptodome>=3.23.0  # AES decryption for bayi mode
 # Note: Tencent SMS uses native async httpx calls (no SDK needed)
 
 # ============================================================================
 # PERSONAL KNOWLEDGE SPACE (RAG) DEPENDENCIES - REQUIRED
 # ============================================================================
 numpy>=1.24.0  # Numerical operations for embedding normalization and validation
-qdrant-client>=1.9.0  # Vector database for document embeddings (REQUIRED - Qdrant server must be running)
+qdrant-client>=1.16.2  # Vector database for document embeddings (REQUIRED - Qdrant server must be running)
 jieba3>=1.0.2  # Chinese text segmentation for FTS5 full-text search (modern Python 3 rewrite, no pkg_resources)
 langdetect>=1.0.9  # Language detection for documents
-semchunk>=2.2.0  # Semantic text chunking (fast, token-aware, Chinese support)
-tiktoken>=0.7.0  # OpenAI tokenizer for semchunk (accurate token counting)
+semchunk>=3.2.3  # Semantic text chunking (fast, token-aware, Chinese support)
+tiktoken>=0.12.0  # OpenAI tokenizer for semchunk (accurate token counting)
 spacy>=3.8.11  # NLP library for sentence-based chunking (offline, requires: python -m spacy download en_core_web_sm)
-chonkie>=1.5.0  # Modern chunking library with multiple strategies (offline, base features)
-datasets>=2.14.0  # Hugging Face datasets library for benchmark dataset loading
+chonkie>=1.5.2  # Modern chunking library with multiple strategies (offline, base features)
+datasets>=4.5.0  # Hugging Face datasets library for benchmark dataset loading
 PyPDF2>=3.0.1  # PDF text extraction (alternative: pdfplumber>=0.11.0)
-python-docx>=1.1.2  # DOCX text extraction
-python-pptx>=0.6.23  # PPTX text extraction
-openpyxl>=3.1.2  # XLSX text extraction
-beautifulsoup4>=4.12.0  # HTML text extraction
-pdfplumber>=0.11.0  # PDF text extraction with page info (fallback for PyPDF2)
+python-docx>=1.2.0  # DOCX text extraction
+python-pptx>=1.0.2  # PPTX text extraction
+openpyxl>=3.1.5  # XLSX text extraction
+beautifulsoup4>=4.14.3  # HTML text extraction
+pdfplumber>=0.11.9  # PDF text extraction with page info (fallback for PyPDF2)
 pytesseract>=0.3.13  # OCR for image text extraction (requires Tesseract binary)
-celery>=5.4.0  # Background task processing for document uploads (REQUIRED - application will exit if not available)
+celery>=5.6.2  # Background task processing for document uploads (REQUIRED - application will exit if not available)
 # Note: Tesseract OCR binary must be installed separately:
 #   - Windows: Download from https://github.com/UB-Mannheim/tesseract/wiki
 #   - macOS: brew install tesseract
@@ -147,4 +147,4 @@ cos-python-sdk-v5>=1.9.41  # Tencent Cloud Object Storage (COS) SDK for online b
 # ============================================================================
 pytest>=9.0.2
 pytest-asyncio>=1.3.0
-pytest-cov>=6.0.0  # Code coverage
+pytest-cov>=7.0.0  # Code coverage

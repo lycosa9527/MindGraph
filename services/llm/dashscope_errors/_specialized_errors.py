@@ -6,7 +6,7 @@ Handles specialized errors including WebSocket, Audio/Video, Flow, Schema, etc.
 """
 from typing import Optional, Tuple
 
-from services.infrastructure.error_handler import (
+from services.infrastructure.http.error_handler import (
     LLMInvalidParameterError,
     LLMProviderError,
     LLMServiceError,

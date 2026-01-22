@@ -7,6 +7,99 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [5.11.0] - 2026-01-23 - Major Infrastructure and LLM Service Refactoring
+
+### Changed
+
+- **Infrastructure Code Reorganization**
+  - Reorganized monolithic `services/infrastructure/` files into logical subdirectories:
+    - `http/` - HTTP-related handlers (error_handler.py, exception_handlers.py, middleware.py)
+    - `lifecycle/` - Application lifecycle management (lifespan.py, startup.py)
+    - `monitoring/` - Monitoring and health checks (critical_alert.py, health_monitor.py, process_monitor.py)
+    - `process/` - Process management (process_manager.py, server_launcher.py)
+    - `rate_limiting/` - Rate limiting functionality (kb_rate_limiter.py, rate_limiter.py)
+    - `recovery/` - Database recovery (database_check_state.py, database_recovery.py, recovery_locks.py, recovery_startup.py)
+    - `utils/` - Utility functions (browser.py, client_manager.py, dependency_checker.py, env_manager.py, load_balancer.py, logging_config.py, port_manager.py, spa_handler.py, storage_manager.py)
+  - Improved code organization and maintainability
+  - Better separation of concerns for different infrastructure components
+  - Updated all imports across the codebase to use new module structure
+
+- **LLM Service Modularization**
+  - Split monolithic `services/llm/llm_service.py` (2065 lines) into focused modules:
+    - `llm_health.py` - Health check functionality
+    - `llm_load_balancer_helper.py` - Load balancer integration
+    - `llm_message_builder.py` - Message construction utilities
+    - `llm_metrics_tracker.py` - Metrics tracking
+    - `llm_multi_service.py` - Multi-service management
+    - `llm_request_executor.py` - Request execution logic
+    - `llm_service_init.py` - Service initialization
+    - `llm_utils.py` - Utility functions
+  - Enhanced `services/llm/__init__.py` with improved service exports (921 lines added)
+  - Better code maintainability and testability
+  - Improved separation of concerns
+
+- **Updated Dependencies**
+  - Updated `requirements.txt` with new dependencies (64 lines changed)
+  - Enhanced `env.example` with new configuration options (69 lines added)
+  - Updated database configuration in `config/database.py` (12 lines added)
+
+- **Router Updates**
+  - Updated `routers/health.py` with improved health check endpoints (217 lines changed)
+  - Enhanced `routers/tab_mode.py` with better tab management (69 lines changed)
+  - Improved `routers/vue_spa.py` with enhanced SPA handling (78 lines changed)
+  - Updated `routers/node_palette.py` and `routers/admin_env.py` with new imports
+
+- **Client Updates**
+  - Updated LLM client imports in `clients/llm/dashscope.py`, `hunyuan.py`, `volcengine.py`
+  - Enhanced `clients/omni_client.py` with improved error handling (6 lines changed)
+  - Added TTS realtime client updates in `clients/tts_realtime_client.py`
+
+- **Service Updates**
+  - Updated `services/auth/sms_middleware.py` with improved middleware handling (152 lines changed)
+  - Enhanced `services/features/websocket_llm_middleware.py` with better WebSocket support (4 lines changed)
+  - Updated knowledge space services with new imports
+  - Improved Redis cache loader in `services/redis/redis_cache_loader.py` (25 lines changed)
+
+- **Configuration Updates**
+  - Updated `main.py` with new import paths for infrastructure modules (14 lines changed)
+  - Enhanced `config/celery.py` with improved Celery configuration (2 lines changed)
+  - Updated `uvicorn_config.py` with new configuration options (2 lines changed)
+
+### Removed
+
+- **Deleted Monolithic Files**
+  - Removed `services/infrastructure/browser.py` (458 lines) - moved to `utils/`
+  - Removed `services/infrastructure/client_manager.py` (180 lines) - moved to `utils/`
+  - Removed `services/infrastructure/database_recovery.py` (1094 lines) - moved to `recovery/`
+  - Removed `services/infrastructure/dependency_checker.py` (211 lines) - moved to `utils/`
+  - Removed `services/infrastructure/env_manager.py` (569 lines) - moved to `utils/`
+  - Removed `services/infrastructure/error_handler.py` (266 lines) - moved to `http/`
+  - Removed `services/infrastructure/exception_handlers.py` (108 lines) - moved to `http/`
+  - Removed `services/infrastructure/kb_rate_limiter.py` (187 lines) - moved to `rate_limiting/`
+  - Removed `services/infrastructure/lifespan.py` (437 lines) - moved to `lifecycle/`
+  - Removed `services/infrastructure/load_balancer.py` (668 lines) - moved to `utils/`
+  - Removed `services/infrastructure/logging_config.py` (586 lines) - moved to `utils/`
+  - Removed `services/infrastructure/middleware.py` (394 lines) - moved to `http/`
+  - Removed `services/infrastructure/port_manager.py` (212 lines) - moved to `utils/`
+  - Removed `services/infrastructure/process_manager.py` (449 lines) - moved to `process/`
+  - Removed `services/infrastructure/rate_limiter.py` (822 lines) - moved to `rate_limiting/`
+  - Removed `services/infrastructure/recovery_locks.py` (180 lines) - moved to `recovery/`
+  - Removed `services/infrastructure/recovery_startup.py` (293 lines) - moved to `recovery/`
+  - Removed `services/infrastructure/server_launcher.py` (254 lines) - moved to `process/`
+  - Removed `services/infrastructure/spa_handler.py` (205 lines) - moved to `utils/`
+  - Removed `services/infrastructure/startup.py` (100 lines) - moved to `lifecycle/`
+  - Removed `services/infrastructure/storage_manager.py` (278 lines) - moved to `utils/`
+  - Removed `services/llm/llm_service.py` (2065 lines) - split into multiple modules
+
+### Technical Details
+
+- **Total Changes**: 58 files changed, 1514 insertions(+), 10186 deletions(-)
+- **Architecture Improvement**: Better code organization following separation of concerns principle
+- **Maintainability**: Reduced file sizes, improved module boundaries, easier to navigate and maintain
+- **Backward Compatibility**: All functionality preserved, only import paths changed
+
+---
+
 ## [5.10.1] - 2026-01-20 - Logging Stream Handling Fix
 
 ### Fixed

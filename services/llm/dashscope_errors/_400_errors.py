@@ -8,7 +8,7 @@ file errors, audio/video errors, and other bad request scenarios.
 from typing import Optional, Tuple
 import re
 
-from services.infrastructure.error_handler import (
+from services.infrastructure.http.error_handler import (
     LLMInvalidParameterError,
     LLMProviderError,
     LLMModelNotFoundError

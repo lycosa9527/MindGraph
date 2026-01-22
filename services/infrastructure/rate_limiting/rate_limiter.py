@@ -820,3 +820,4 @@ class LoadBalancerRateLimiter:
 
     async def __aexit__(self, exc_type, _exc_val, _exc_tb):
         """Context manager support."""
+        pass

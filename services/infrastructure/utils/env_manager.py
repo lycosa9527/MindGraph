@@ -355,13 +355,13 @@ class EnvManager:
         """Validate LOG_LEVEL is valid"""
         valid_levels = ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL']
         if value.upper() not in valid_levels:
-            errors.append(f"LOG_LEVEL must be one of {valid_levels}, got '{value}'")
+            errors.append(f"LOG_LEVEL must be one of {valid_levels}, got {value}")
 
     def _validate_auth_mode(self, value: str, errors: List[str]):
         """Validate AUTH_MODE is valid"""
         valid_modes = ['standard', 'enterprise', 'demo', 'bayi']
         if value.lower() not in valid_modes:
-            errors.append(f"AUTH_MODE must be one of {valid_modes}, got '{value}'")
+            errors.append(f"AUTH_MODE must be one of {valid_modes}, got {value}")
 
     def restore_env(self, backup_filename: str) -> bool:
         """

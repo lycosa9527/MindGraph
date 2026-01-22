@@ -6,7 +6,7 @@ Handles authentication and authorization errors.
 """
 from typing import Optional, Tuple
 
-from services.infrastructure.error_handler import (
+from services.infrastructure.http.error_handler import (
     LLMAccessDeniedError,
     LLMInvalidParameterError,
     LLMQuotaExhaustedError,

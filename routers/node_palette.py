@@ -35,7 +35,7 @@ from models.requests_thinking import (
     NodePaletteFinishRequest,
     NodePaletteCleanupRequest
 )
-from services.infrastructure.error_handler import (
+from services.infrastructure.http.error_handler import (
     LLMContentFilterError,
     LLMRateLimitError,
     LLMTimeoutError,

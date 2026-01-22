@@ -18,7 +18,7 @@ import re
 from openai import AsyncOpenAI, RateLimitError, APIStatusError
 
 from config.settings import config
-from services.infrastructure.error_handler import (
+from services.infrastructure.http.error_handler import (
     LLMRateLimitError,
     LLMProviderError,
     LLMInvalidParameterError,

@@ -137,6 +137,7 @@ class TTSRealtimeClient:
                 additional_headers=headers,
                 ping_interval=20,
                 ping_timeout=10,
+                proxy=None,  # Disable automatic proxy detection (websockets 15.0+)
             )
 
             self._connected = True

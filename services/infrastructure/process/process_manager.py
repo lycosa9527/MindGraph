@@ -126,9 +126,33 @@ def start_celery_worker() -> Optional[subprocess.Popen[bytes]]:
     """
     Start Celery worker as a subprocess (REQUIRED).
 
-    Assumes Celery installation and dependencies have been verified. Starts
-    the worker process. Application will exit if Celery cannot be started.
+    Assumes Celery installation and dependencies have been verified. Checks
+    if a worker is already running before starting a new one. Application will
+    exit if Celery cannot be started.
     """
+    # Check if a Celery worker is already running
+    # Retry a few times in case Redis is still initializing
+    for attempt in range(3):
+        try:
+            from config.celery import celery_app
+            inspect = celery_app.control.inspect(timeout=2.0)
+            active_workers = inspect.active()
+            
+            if active_workers is not None and active_workers:
+                worker_count = len(active_workers)
+                print(f"[CELERY] Found {worker_count} existing Celery worker(s), reusing...")
+                print("[CELERY] Celery worker is already running, skipping startup")
+                return None
+            # If active_workers is None or empty, break and start a new worker
+            break
+        except Exception:
+            # If check fails, wait a bit and retry (Redis might still be initializing)
+            if attempt < 2:
+                time.sleep(0.5)
+                continue
+            # On final attempt failure, proceed to start a new worker
+            break
+    
     print("[CELERY] Starting Celery worker for background task processing...")
 
     python_exe = sys.executable
@@ -153,7 +177,7 @@ def start_celery_worker() -> Optional[subprocess.Popen[bytes]]:
         # Redirect output to files for detached processes (optional but recommended)
         # If detached, stdout/stderr won't be visible in terminal anyway
         celery_log_dir = os.path.join(
-            os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+            os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))),
             'logs'
         )
         os.makedirs(celery_log_dir, exist_ok=True)
@@ -185,7 +209,7 @@ def start_celery_worker() -> Optional[subprocess.Popen[bytes]]:
             celery_cmd,
             stdout=celery_stdout,
             stderr=celery_stderr,
-            cwd=os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+            cwd=os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))),
             creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if sys.platform == 'win32' else 0,
             start_new_session=start_new_session,
             bufsize=1,
@@ -447,3 +471,43 @@ def setup_signal_handlers() -> None:
 
     signal.signal(signal.SIGTERM, signal_handler)
     signal.signal(signal.SIGINT, signal_handler)
+
+
+def get_qdrant_process() -> Optional[subprocess.Popen[bytes]]:
+    """
+    Get Qdrant process object for monitoring.
+
+    Returns:
+        Qdrant process object or None if not managed by app
+    """
+    return ServerState.qdrant_process
+
+
+def get_celery_process() -> Optional[subprocess.Popen[bytes]]:
+    """
+    Get Celery worker process object for monitoring.
+
+    Returns:
+        Celery process object or None if not managed by app
+    """
+    return ServerState.celery_worker_process
+
+
+def is_qdrant_managed() -> bool:
+    """
+    Check if Qdrant is managed by the application (subprocess).
+
+    Returns:
+        True if Qdrant is managed as subprocess, False if external/systemd
+    """
+    return ServerState.qdrant_process is not None
+
+
+def is_celery_managed() -> bool:
+    """
+    Check if Celery is managed by the application (subprocess).
+
+    Returns:
+        True if Celery is managed as subprocess, False if external/systemd
+    """
+    return ServerState.celery_worker_process is not None

@@ -68,6 +68,26 @@ class _LockIdManager:
         return cls._lock_id is not None
 
 
+def is_cache_loading_in_progress() -> bool:
+    """
+    Check if cache loading is already in progress by another worker.
+
+    Returns:
+        True if lock exists (another worker is loading), False otherwise
+    """
+    if not is_redis_available():
+        return False
+
+    redis = get_redis()
+    if not redis:
+        return False
+
+    try:
+        return redis.exists(CACHE_LOADER_LOCK_KEY) > 0
+    except Exception:
+        return False
+
+
 def acquire_cache_loader_lock() -> bool:
     """
     Attempt to acquire the cache loader lock.
@@ -107,7 +127,7 @@ def acquire_cache_loader_lock() -> bool:
         else:
             # Lock held by another worker - check who
             holder = redis.get(CACHE_LOADER_LOCK_KEY)
-            logger.info(
+            logger.debug(
                 "[CacheLoader] Another worker holds the cache loader lock "
                 "(holder=%s), skipping cache load",
                 holder
@@ -306,7 +326,8 @@ def reload_cache_from_sqlite() -> bool:
     # Try to acquire lock - only one worker should load cache
     if not acquire_cache_loader_lock():
         # Another worker is loading cache, skip
-        logger.info("[CacheLoader] Another worker is loading cache, skipping (cache will be loaded by that worker)")
+        # Use DEBUG level since this is expected behavior in multi-worker setups
+        logger.debug("[CacheLoader] Another worker is loading cache, skipping (cache will be loaded by that worker)")
         return True  # Return True since cache will be loaded by another worker
 
     start_time = time.time()

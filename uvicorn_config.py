@@ -21,7 +21,7 @@ from typing import Literal, cast, Any
 
 # Import SafeStreamHandler to handle closed streams gracefully
 try:
-    from services.infrastructure.logging_config import SafeStreamHandler, _is_stream_usable
+    from services.infrastructure.utils.logging_config import SafeStreamHandler, _is_stream_usable
 except ImportError:
     # Fallback if import fails (shouldn't happen in normal operation)
     SafeStreamHandler = logging.StreamHandler

@@ -26,12 +26,12 @@ except ImportError:
     LOGGING_CONFIG = None
 
 from config.settings import config
-from services.infrastructure.dependency_checker import (
+from services.infrastructure.utils.dependency_checker import (
     check_redis_installed,
     check_celery_installed,
     check_qdrant_installed
 )
-from services.infrastructure.process_manager import (
+from services.infrastructure.process.process_manager import (
     start_redis_server,
     start_celery_worker,
     start_qdrant_server,
@@ -39,7 +39,7 @@ from services.infrastructure.process_manager import (
     stop_qdrant_server,
     setup_signal_handlers
 )
-from services.infrastructure.port_manager import ShutdownErrorFilter
+from services.infrastructure.utils.port_manager import ShutdownErrorFilter
 
 logger = logging.getLogger(__name__)
 
@@ -65,7 +65,7 @@ def run_server() -> None:
     setup_signal_handlers()
 
     try:
-        script_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        script_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
         os.chdir(script_dir)
 
         os.makedirs("logs", exist_ok=True)
@@ -82,18 +82,8 @@ def run_server() -> None:
         workers_str = os.getenv('UVICORN_WORKERS')
         workers = int(workers_str) if workers_str else default_workers
 
-        print()
-        print("    ███╗   ███╗██╗███╗   ██╗██████╗  ██████╗ ██████╗  █████╗ ██████╗ ██╗  ██╗")
-        print("    ████╗ ████║██║████╗  ██║██╔══██╗██╔════╝ ██╔══██╗██╔══██╗██╔══██╗██║  ██║")
-        print("    ██╔████╔██║██║██╔██╗ ██║██║  ██║██║  ███╗██████╔╝███████║██████╔╝███████║")
-        print("    ██║╚██╔╝██║██║██║╚██╗██║██║  ██║██║   ██║██╔══██╗██╔══██║██╔═══╝ ██╔══██║")
-        print("    ██║ ╚═╝ ██║██║██║ ╚████║██████╔╝╚██████╔╝██║  ██║██║  ██║██║     ██║  ██║")
-        print("    ╚═╝     ╚═╝╚═╝╚═╝  ╚═══╝╚═════╝ ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝     ╚═╝  ╚═╝")
-        print("=" * 80)
-        print("    AI-Powered Visual Thinking Tools for K12 Education")
-        print(f"    Version {config.version} | 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)")
-        print("=" * 80)
-        print()
+        # Banner is now printed in setup_early_configuration() before logging
+        # Print server configuration summary
         print(f"Environment: {environment} (DEBUG={debug})")
         print(f"Host: {host}")
         print(f"Port: {port}")
@@ -151,8 +141,11 @@ def run_server() -> None:
             sys.exit(1)
         print(f"[CELERY] {message}")
         print("[CELERY] Starting Celery worker...")
-        start_celery_worker()
-        print("[CELERY] Celery worker started successfully")
+        celery_worker = start_celery_worker()
+        if celery_worker:
+            print("[CELERY] Celery worker started successfully")
+        else:
+            print("[CELERY] Using existing Celery worker")
         print()
 
         try:

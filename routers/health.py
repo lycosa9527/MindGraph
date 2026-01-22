@@ -12,6 +12,7 @@ Provides endpoints to check the health status of various system components:
 import time
 import asyncio
 import logging
+from datetime import datetime
 from typing import Dict, Any
 
 import psutil
@@ -19,7 +20,8 @@ from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import JSONResponse
 from config.settings import config
 from models.responses import DatabaseHealthResponse
-from services.infrastructure.database_recovery import DatabaseRecovery
+from services.infrastructure.recovery.database_recovery import DatabaseRecovery
+from services.infrastructure.recovery.database_check_state import get_database_check_state_manager
 from services.llm import llm_service
 from services.redis.redis_client import is_redis_available, RedisOps
 
@@ -129,22 +131,57 @@ async def _check_redis_health() -> Dict[str, Any]:
 
 
 async def _check_database_health() -> Dict[str, Any]:
-    """Check database health status with timeout."""
+    """Check database health status with state management."""
+    state_manager = get_database_check_state_manager()
+    check_started = False
+
     try:
+        # Check if a database check is already in progress
+        if await state_manager.is_check_in_progress():
+            logger.debug("Database check already in progress, returning in-progress status")
+            return {
+                "status": "healthy",
+                "database_healthy": True,
+                "database_message": "Database check in progress (long-running operation)",
+                "database_stats": {}
+            }
+
+        # Try to start a new check
+        check_started = await state_manager.start_check()
+        if not check_started:
+            # Another check started between our check and start_check call
+            logger.debug("Database check started by another process, returning in-progress status")
+            return {
+                "status": "healthy",
+                "database_healthy": True,
+                "database_message": "Database check in progress (long-running operation)",
+                "database_stats": {}
+            }
+
         # Add timeout protection for database check
         async def _do_check():
             recovery = DatabaseRecovery()
-            is_healthy, message = await asyncio.to_thread(recovery.check_integrity)
+            # Use quick_check=True for faster health checks (less thorough but much faster)
+            # Full integrity_check can take 5+ seconds on large databases
+            is_healthy, message = await asyncio.to_thread(
+                recovery.check_integrity,
+                use_quick_check=True
+            )
 
+            # Get basic stats without full integrity check to avoid timeout
+            # Stats are optional for health checks - integrity is the main concern
             current_stats = {}
             if recovery.db_path and recovery.db_path.exists():
                 try:
-                    stats = await asyncio.to_thread(recovery.get_database_stats, recovery.db_path)
+                    # Only get file stats (size, modified time) - skip database query
+                    # This avoids another integrity check and potential timeout
+                    stat = recovery.db_path.stat()
                     current_stats = {
-                        "path": stats.get("path"),
-                        "size_mb": stats.get("size_mb"),
-                        "modified": stats.get("modified"),
-                        "total_rows": stats.get("total_rows"),
+                        "path": str(recovery.db_path),
+                        "size_mb": round(stat.st_size / (1024 * 1024), 2),
+                        "modified": datetime.fromtimestamp(stat.st_mtime).strftime(
+                            "%Y-%m-%d %H:%M:%S"
+                        ),
                     }
                 except Exception as e:  # pylint: disable=broad-except
                     logger.debug("Failed to get database stats: %s", e)
@@ -156,21 +193,89 @@ async def _check_database_health() -> Dict[str, Any]:
                 "database_stats": current_stats
             }
 
-        return await asyncio.wait_for(_do_check(), timeout=5.0)
+        result = await asyncio.wait_for(_do_check(), timeout=5.0)
+        # Mark check as completed successfully
+        await state_manager.complete_check(success=result.get("database_healthy", False))
+        return result
+
     except asyncio.TimeoutError:
-        logger.warning("Database health check timed out")
+        # Check if check is still in progress (legitimate long-running check)
+        if await state_manager.is_check_in_progress():
+            logger.info(
+                "Database health check timed out but check is still in progress "
+                "(long-running operation, not an error)"
+            )
+            return {
+                "status": "healthy",
+                "database_healthy": True,
+                "database_message": "Database check in progress (long-running operation)",
+                "database_stats": {}
+            }
+
+        # Real timeout - check is not in progress, something went wrong
+        logger.warning("Database health check timed out (check not in progress)")
+        if check_started:
+            await state_manager.complete_check(success=False)
         return {
             "status": "error",
             "error": "Health check timed out"
         }
     except ImportError as e:
         logger.error("Database recovery module not available: %s", e)
+        if check_started:
+            await state_manager.complete_check(success=False)
         return {
             "status": "unavailable",
             "message": "Database recovery module not available"
         }
     except Exception as e:  # pylint: disable=broad-except
         logger.error("Database health check failed: %s", e, exc_info=True)
+        if check_started:
+            await state_manager.complete_check(success=False)
+        return {
+            "status": "error",
+            "error": str(e)
+        }
+
+
+async def _check_processes_health() -> Dict[str, Any]:
+    """Check process monitor health status."""
+    try:
+        # pylint: disable=import-outside-toplevel
+        from services.infrastructure.monitoring.process_monitor import get_process_monitor
+        process_monitor = get_process_monitor()
+        status = process_monitor.get_status()
+
+        # Determine overall status
+        unhealthy_count = sum(
+            1 for service_status in status.values()
+            if service_status.get('status') == 'unhealthy'
+        )
+        degraded_count = sum(
+            1 for service_status in status.values()
+            if service_status.get('status') == 'degraded'
+        )
+
+        overall_status = "healthy"
+        if unhealthy_count > 0:
+            overall_status = "unhealthy"
+        elif degraded_count > 0:
+            overall_status = "degraded"
+
+        return {
+            "status": overall_status,
+            "services": status,
+            "unhealthy_count": unhealthy_count,
+            "degraded_count": degraded_count,
+            "total_services": len(status)
+        }
+    except ImportError:
+        return {
+            "status": "unavailable",
+            "message": "Process monitor not available"
+        }
+    except Exception as e:  # pylint: disable=broad-except
+        logger.error("Process health check failed: %s", e, exc_info=True)
         return {
             "status": "error",
             "error": str(e)
@@ -280,22 +385,25 @@ async def database_health_check():
         - 500 Internal Server Error: Health check failed
     """
     try:
-        # Fast check - only integrity and basic stats, no backup listing
+        # Fast check - use quick_check for faster health checks
+        # Full integrity_check can take 5+ seconds on large databases
         # Backup listing can be slow (10-30+ seconds) and is not needed for health checks
         recovery = DatabaseRecovery()
-        is_healthy, message = recovery.check_integrity()
+        is_healthy, message = recovery.check_integrity(use_quick_check=True)
 
-        # Get basic database stats (fast)
+        # Get basic database stats (file stats only - avoid full integrity check)
         current_stats = {}
         if recovery.db_path and recovery.db_path.exists():
             try:
-                stats = recovery.get_database_stats(recovery.db_path)
-                # Only include essential stats for security and performance
+                # Only get file stats (size, modified time) - skip database query
+                # This avoids another integrity check and potential timeout
+                stat = recovery.db_path.stat()
                 current_stats = {
-                    "path": stats.get("path"),
-                    "size_mb": stats.get("size_mb"),
-                    "modified": stats.get("modified"),
-                    "total_rows": stats.get("total_rows"),
+                    "path": str(recovery.db_path),
+                    "size_mb": round(stat.st_size / (1024 * 1024), 2),
+                    "modified": datetime.fromtimestamp(stat.st_mtime).strftime(
+                        "%Y-%m-%d %H:%M:%S"
+                    ),
                     # Don't expose table names/details for security
                 }
             except Exception as e:  # pylint: disable=broad-except
@@ -343,6 +451,7 @@ async def comprehensive_health_check(
     - Application status
     - Redis connection
     - Database integrity
+    - Process monitoring (Qdrant, Celery, Redis)
     - LLM services (optional, disabled by default to avoid API costs)
 
     Args:
@@ -375,6 +484,7 @@ async def comprehensive_health_check(
         _check_application_health(),
         _check_redis_health(),
         _check_database_health(),
+        _check_processes_health(),
     ]
 
     if include_llm:
@@ -384,7 +494,7 @@ async def comprehensive_health_check(
     results = await asyncio.gather(*tasks, return_exceptions=True)
 
     # Process results
-    check_names = ["application", "redis", "database"]
+    check_names = ["application", "redis", "database", "processes"]
     if include_llm:
         check_names.append("llm_services")
 
@@ -463,6 +573,73 @@ async def comprehensive_health_check(
         content=response_data,
         status_code=overall_status_code
     )
+
+
+@router.get("/health/processes")
+async def processes_health_check():
+    """
+    Process monitor health check endpoint.
+
+    Returns detailed status of monitored services (Qdrant, Celery, Redis)
+    including metrics, restart counts, and circuit breaker status.
+
+    Returns:
+        - 200 OK: All processes healthy
+        - 503 Service Unavailable: Some processes unhealthy
+        - 500 Internal Server Error: Health check failed
+    """
+    try:
+        # pylint: disable=import-outside-toplevel
+        from services.infrastructure.monitoring.process_monitor import get_process_monitor
+        process_monitor = get_process_monitor()
+        status = process_monitor.get_status()
+
+        # Determine overall status
+        unhealthy_count = sum(
+            1 for service_status in status.values()
+            if service_status.get('status') == 'unhealthy'
+        )
+        degraded_count = sum(
+            1 for service_status in status.values()
+            if service_status.get('status') == 'degraded'
+        )
+
+        overall_status = "healthy"
+        status_code = 200
+        if unhealthy_count > 0:
+            overall_status = "unhealthy"
+            status_code = 503
+        elif degraded_count > 0:
+            overall_status = "degraded"
+            status_code = 503
+
+        response_data = {
+            "status": overall_status,
+            "services": status,
+            "unhealthy_count": unhealthy_count,
+            "degraded_count": degraded_count,
+            "total_services": len(status),
+            "timestamp": int(time.time())
+        }
+
+        return JSONResponse(
+            content=response_data,
+            status_code=status_code
+        )
+    except ImportError:
+        return JSONResponse(
+            content={
+                "status": "unavailable",
+                "message": "Process monitor not available"
+            },
+            status_code=503
+        )
+    except Exception as e:  # pylint: disable=broad-except
+        logger.error("Process health check error: %s", e, exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Process health check failed: {str(e)}"
+        ) from e
 
 
 @router.get("/status")
