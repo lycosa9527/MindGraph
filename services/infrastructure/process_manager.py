@@ -15,7 +15,7 @@ import signal
 import atexit
 import subprocess
 import urllib.request
-from typing import Optional, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     import redis as redis_module
@@ -29,6 +29,8 @@ else:
 class ServerState:
     """Module-level state for server processes"""
     celery_worker_process: Optional[subprocess.Popen[bytes]] = None
+    celery_stdout_file: Optional[Any] = None
+    celery_stderr_file: Optional[Any] = None
     qdrant_process: Optional[subprocess.Popen[bytes]] = None
     redis_started_by_app: bool = False
     shutdown_in_progress: bool = False
@@ -144,18 +146,67 @@ def start_celery_worker() -> Optional[subprocess.Popen[bytes]]:
         celery_cmd.extend(['--pool=solo'])
 
     try:
+        # Detach from terminal on Linux/Unix so worker survives terminal closure
+        # On Windows, CREATE_NEW_PROCESS_GROUP already provides some isolation
+        start_new_session = sys.platform != 'win32'
+
+        # Redirect output to files for detached processes (optional but recommended)
+        # If detached, stdout/stderr won't be visible in terminal anyway
+        celery_log_dir = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+            'logs'
+        )
+        os.makedirs(celery_log_dir, exist_ok=True)
+
+        celery_stdout = None
+        celery_stderr = None
+        if start_new_session:
+            # When detached, redirect to log files
+            ServerState.celery_stdout_file = open(
+                os.path.join(celery_log_dir, 'celery_worker.log'),
+                'a',
+                encoding='utf-8',
+                buffering=1
+            )
+            ServerState.celery_stderr_file = open(
+                os.path.join(celery_log_dir, 'celery_worker_error.log'),
+                'a',
+                encoding='utf-8',
+                buffering=1
+            )
+            celery_stdout = ServerState.celery_stdout_file
+            celery_stderr = ServerState.celery_stderr_file
+        else:
+            # On Windows, keep stdout/stderr attached for debugging
+            celery_stdout = sys.stdout
+            celery_stderr = sys.stderr
+
         ServerState.celery_worker_process = subprocess.Popen(
             celery_cmd,
-            stdout=sys.stdout,
-            stderr=sys.stderr,
+            stdout=celery_stdout,
+            stderr=celery_stderr,
             cwd=os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
             creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if sys.platform == 'win32' else 0,
+            start_new_session=start_new_session,
             bufsize=1,
         )
 
-        atexit.register(stop_celery_worker)
+        # Only register atexit handler if CELERY_MANAGED_BY_APP is not set to 'false'
+        # When using nohup/systemd, you might want Celery to survive main process restarts
+        celery_managed = os.getenv('CELERY_MANAGED_BY_APP', 'true').lower() not in ('false', '0', 'no')
+        if celery_managed:
+            atexit.register(stop_celery_worker)
+        else:
+            print(
+                "[CELERY] Celery worker is running independently "
+                "(CELERY_MANAGED_BY_APP=false). It will not be stopped when main process exits."
+            )
 
-        print(f"[CELERY] Worker started (PID: {ServerState.celery_worker_process.pid})")
+        if start_new_session:
+            print(f"[CELERY] Worker started in detached mode (PID: {ServerState.celery_worker_process.pid})")
+            print(f"[CELERY] Logs: {os.path.join(celery_log_dir, 'celery_worker.log')}")
+        else:
+            print(f"[CELERY] Worker started (PID: {ServerState.celery_worker_process.pid})")
         return ServerState.celery_worker_process
 
     except (subprocess.SubprocessError, OSError, FileNotFoundError) as e:
@@ -324,6 +375,22 @@ def stop_celery_worker() -> None:
                 ServerState.celery_worker_process.kill()
             except (OSError, ProcessLookupError):
                 pass
+
+        # Close log file handles if they were opened
+        if ServerState.celery_stdout_file is not None:
+            try:
+                ServerState.celery_stdout_file.close()
+            except (OSError, ValueError):
+                pass
+            ServerState.celery_stdout_file = None
+
+        if ServerState.celery_stderr_file is not None:
+            try:
+                ServerState.celery_stderr_file.close()
+            except (OSError, ValueError):
+                pass
+            ServerState.celery_stderr_file = None
+
         ServerState.celery_worker_process = None
         try:
             print("[CELERY] Worker stopped")

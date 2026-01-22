@@ -13,6 +13,7 @@ Proprietary License
 import logging
 import logging.handlers
 import os
+import time
 
 from celery.app import Celery
 from celery.signals import worker_process_init, worker_ready
@@ -141,12 +142,12 @@ def setup_celery_logging():
     ]
 
     for logger_name in celery_loggers:
-        logger = logging.getLogger(logger_name)
-        logger.handlers = []
-        logger.addHandler(console_handler)
-        logger.addHandler(file_handler)  # Add file handler
-        logger.setLevel(logging.DEBUG)  # Full verbose logging
-        logger.propagate = False
+        celery_logger = logging.getLogger(logger_name)
+        celery_logger.handlers = []
+        celery_logger.addHandler(console_handler)
+        celery_logger.addHandler(file_handler)  # Add file handler
+        celery_logger.setLevel(logging.DEBUG)  # Full verbose logging
+        celery_logger.propagate = False
 
     # Configure root logger to catch all messages
     root_logger.addHandler(console_handler)
@@ -157,12 +158,12 @@ def setup_celery_logging():
     # This catches MainProcess and ForkPoolWorker loggers
     for logger_name in list(logging.Logger.manager.loggerDict.keys()):
         if isinstance(logger_name, str) and 'celery' in logger_name.lower():
-            logger = logging.getLogger(logger_name)
-            logger.handlers = []
-            logger.addHandler(console_handler)
-            logger.addHandler(file_handler)  # Add file handler
-            logger.setLevel(logging.DEBUG)  # Full verbose logging
-            logger.propagate = False
+            celery_logger = logging.getLogger(logger_name)
+            celery_logger.handlers = []
+            celery_logger.addHandler(console_handler)
+            celery_logger.addHandler(file_handler)  # Add file handler
+            celery_logger.setLevel(logging.DEBUG)  # Full verbose logging
+            celery_logger.propagate = False
 
     # Set all application loggers to DEBUG for verbose logging
     app_loggers = [
@@ -176,9 +177,9 @@ def setup_celery_logging():
         'config',
     ]
     for logger_prefix in app_loggers:
-        logger = logging.getLogger(logger_prefix)
-        logger.setLevel(logging.DEBUG)
-        logger.propagate = True  # Let it propagate to root
+        app_logger = logging.getLogger(logger_prefix)
+        app_logger.setLevel(logging.DEBUG)
+        app_logger.propagate = True  # Let it propagate to root
 
 # Setup logging before creating Celery app
 setup_celery_logging()
@@ -275,6 +276,7 @@ def init_celery_worker_check() -> bool:
     Check if Celery worker is available (synchronous version for startup).
 
     Celery is REQUIRED. Application will exit if worker is not available.
+    Uses retry logic with exponential backoff to handle workers that are starting up.
 
     Returns:
         True if Celery worker is available.
@@ -284,88 +286,131 @@ def init_celery_worker_check() -> bool:
     """
     logger.info("[Celery] Checking Celery worker availability...")
 
-    # Check if celery package is installed
-    try:
-        import celery  # noqa: F401
-    except ImportError:
-        _log_celery_error(
-            title="CELERY PACKAGE NOT INSTALLED",
-            details=[
-                "The 'celery' package is required but not installed.",
-                "",
-                "To fix, run:",
-                "  pip install celery",
-            ]
-        )
-        raise CeleryStartupError("Celery package not installed") from None
+    # Retry configuration
+    max_retries = int(os.getenv('CELERY_CHECK_MAX_RETRIES', '5'))
+    initial_delay = float(os.getenv('CELERY_CHECK_INITIAL_DELAY', '1.0'))
+    max_delay = float(os.getenv('CELERY_CHECK_MAX_DELAY', '16.0'))
 
-    try:
-        # Use Celery's inspect API to check for active workers
-        # This requires Redis to be available (already validated)
-        inspect = celery_app.control.inspect(timeout=2.0)
-        active_workers = inspect.active()
+    last_exception = None
+    for attempt in range(max_retries):
+        try:
+            # Use Celery's inspect API to check for active workers
+            # This requires Redis to be available (already validated)
+            inspect = celery_app.control.inspect(timeout=2.0)
+            active_workers = inspect.active()
 
-        if active_workers is None:
-            # No workers found or connection failed
+            if active_workers is None:
+                # No workers found or connection failed - retry
+                if attempt < max_retries - 1:
+                    delay = min(initial_delay * (2 ** attempt), max_delay)
+                    logger.warning(
+                        "[Celery] No workers found (attempt %d/%d). "
+                        "Retrying in %.1f seconds...",
+                        attempt + 1, max_retries, delay
+                    )
+                    time.sleep(delay)
+                    last_exception = None
+                    continue
+                # Final attempt failed
+                _log_celery_error(
+                    title="CELERY WORKER NOT AVAILABLE",
+                    details=[
+                        "No Celery workers are running or cannot connect to workers.",
+                        "",
+                        f"Checked {max_retries} times with retries.",
+                        "",
+                        "MindGraph requires Celery worker. Please start Celery worker:",
+                        "",
+                        "  celery -A config.celery worker --loglevel=info",
+                        "",
+                        "Or use the server launcher which starts Celery automatically:",
+                        "  python main.py",
+                        "",
+                        "Ensure Redis is running (required for Celery broker).",
+                    ]
+                )
+                raise CeleryStartupError("Celery worker not available") from None
+
+            if not active_workers:
+                # Empty dict means no workers - retry
+                if attempt < max_retries - 1:
+                    delay = min(initial_delay * (2 ** attempt), max_delay)
+                    logger.warning(
+                        "[Celery] No active workers found (attempt %d/%d). "
+                        "Retrying in %.1f seconds...",
+                        attempt + 1, max_retries, delay
+                    )
+                    time.sleep(delay)
+                    last_exception = None
+                    continue
+                # Final attempt failed
+                _log_celery_error(
+                    title="CELERY WORKER NOT AVAILABLE",
+                    details=[
+                        "No active Celery workers found.",
+                        "",
+                        f"Checked {max_retries} times with retries.",
+                        "",
+                        "MindGraph requires Celery worker. Please start Celery worker:",
+                        "",
+                        "  celery -A config.celery worker --loglevel=info",
+                        "",
+                        "Or use the server launcher which starts Celery automatically:",
+                        "  python main.py",
+                    ]
+                )
+                raise CeleryStartupError("No active Celery workers found") from None
+
+            # Success - workers found
+            worker_count = len(active_workers)
+            if attempt > 0:
+                logger.info(
+                    "[Celery] Found %d active worker(s) after %d retry attempt(s)",
+                    worker_count, attempt
+                )
+            else:
+                logger.info("[Celery] Found %d active worker(s)", worker_count)
+            return True
+
+        except CeleryStartupError:
+            # Re-raise our custom exception immediately (don't retry)
+            raise
+        except Exception as exc:
+            # Connection error or other unexpected error - retry
+            last_exception = exc
+            if attempt < max_retries - 1:
+                delay = min(initial_delay * (2 ** attempt), max_delay)
+                logger.warning(
+                    "[Celery] Worker check failed: %s (attempt %d/%d). "
+                    "Retrying in %.1f seconds...",
+                    exc, attempt + 1, max_retries, delay
+                )
+                time.sleep(delay)
+                continue
+            # Final attempt failed
             _log_celery_error(
-                title="CELERY WORKER NOT AVAILABLE",
+                title="CELERY WORKER CHECK FAILED",
                 details=[
-                    "No Celery workers are running or cannot connect to workers.",
+                    f"Failed to check Celery worker availability: {exc}",
                     "",
-                    "MindGraph requires Celery worker. Please start Celery worker:",
+                    f"Checked {max_retries} times with retries.",
                     "",
-                    "  celery -A config.celery worker --loglevel=info",
+                    "MindGraph requires Celery worker. Please ensure:",
+                    "",
+                    "  1. Redis is running (required for Celery broker)",
+                    "  2. Celery worker is started:",
+                    "     celery -A config.celery worker --loglevel=info",
                     "",
                     "Or use the server launcher which starts Celery automatically:",
                     "  python main.py",
-                    "",
-                    "Ensure Redis is running (required for Celery broker).",
                 ]
             )
-            raise CeleryStartupError("Celery worker not available") from None
+            raise CeleryStartupError(f"Failed to check Celery worker: {exc}") from exc
 
-        if not active_workers:
-            # Empty dict means no workers
-            _log_celery_error(
-                title="CELERY WORKER NOT AVAILABLE",
-                details=[
-                    "No active Celery workers found.",
-                    "",
-                    "MindGraph requires Celery worker. Please start Celery worker:",
-                    "",
-                    "  celery -A config.celery worker --loglevel=info",
-                    "",
-                    "Or use the server launcher which starts Celery automatically:",
-                    "  python main.py",
-                ]
-            )
-            raise CeleryStartupError("No active Celery workers found") from None
-
-        worker_count = len(active_workers)
-        logger.info("[Celery] Found %d active worker(s)", worker_count)
-        return True
-
-    except CeleryStartupError:
-        # Re-raise our custom exception
-        raise
-    except Exception as exc:
-        # Connection error or other unexpected error
-        _log_celery_error(
-            title="CELERY WORKER CHECK FAILED",
-            details=[
-                f"Failed to check Celery worker availability: {exc}",
-                "",
-                "MindGraph requires Celery worker. Please ensure:",
-                "",
-                "  1. Redis is running (required for Celery broker)",
-                "  2. Celery worker is started:",
-                "     celery -A config.celery worker --loglevel=info",
-                "",
-                "Or use the server launcher which starts Celery automatically:",
-                "  python main.py",
-            ]
-        )
-        raise CeleryStartupError(f"Failed to check Celery worker: {exc}") from exc
+    # Should never reach here, but handle it just in case
+    if last_exception:
+        raise CeleryStartupError(f"Failed to check Celery worker after {max_retries} attempts") from last_exception
+    raise CeleryStartupError(f"Failed to check Celery worker after {max_retries} attempts")
 
 
 # Initialize services in Celery workers
@@ -379,65 +424,66 @@ def _init_worker_services():
     - LLM service is initialized (for MindChunk)
     """
     # Initialize Redis first (LLM service may depend on it)
+    worker_logger = logging.getLogger(__name__)
     try:
         if not is_redis_available():
-            logger.info("[Celery] Initializing Redis in worker process...")
+            worker_logger.info("[Celery] Initializing Redis in worker process...")
             init_redis_sync()
-            logger.info("[Celery] ✓ Redis initialized in worker process")
+            worker_logger.info("[Celery] ✓ Redis initialized in worker process")
         else:
-            logger.debug("[Celery] Redis already initialized in worker process")
+            worker_logger.debug("[Celery] Redis already initialized in worker process")
     except RedisStartupError as e:
-        logger.warning("[Celery] Redis initialization failed: %s", e)
+        worker_logger.warning("[Celery] Redis initialization failed: %s", e)
     except (OSError, ConnectionError) as e:
-        logger.warning("[Celery] Redis connection error: %s", e)
+        worker_logger.warning("[Celery] Redis connection error: %s", e)
 
 
     # Initialize LLM service for MindChunk
     try:
         # Check if API key is configured
         if not config.QWEN_API_KEY:
-            logger.error(
+            worker_logger.error(
                 "[Celery] QWEN_API_KEY not configured. "
                 "LLM service cannot be initialized. MindChunk will fall back to semchunk."
             )
             return
 
-        logger.info("[Celery] Checking LLM service initialization...")
-        logger.debug("[Celery] QWEN_API_KEY configured: %s...", config.QWEN_API_KEY[:10])
-        logger.debug("[Celery] DASHSCOPE_API_URL: %s", config.DASHSCOPE_API_URL)
+        worker_logger.info("[Celery] Checking LLM service initialization...")
+        worker_logger.debug("[Celery] QWEN_API_KEY configured: %s...", config.QWEN_API_KEY[:10])
+        worker_logger.debug("[Celery] DASHSCOPE_API_URL: %s", config.DASHSCOPE_API_URL)
 
         if not llm_service.client_manager.is_initialized():
-            logger.info("[Celery] Initializing LLM service in worker process...")
+            worker_logger.info("[Celery] Initializing LLM service in worker process...")
             llm_service.initialize()
 
             # Verify initialization succeeded
             if llm_service.client_manager.is_initialized():
-                logger.info("[Celery] ✓ LLM service initialized successfully in worker process")
-                logger.debug("[Celery] Available models: %s", llm_service.client_manager.get_available_models())
+                worker_logger.info("[Celery] ✓ LLM service initialized successfully in worker process")
+                worker_logger.debug("[Celery] Available models: %s", llm_service.client_manager.get_available_models())
             else:
-                logger.error("[Celery] ✗ LLM service initialization failed - is_initialized() returned False")
+                worker_logger.error("[Celery] ✗ LLM service initialization failed - is_initialized() returned False")
         else:
-            logger.info("[Celery] LLM service already initialized in worker process")
+            worker_logger.info("[Celery] LLM service already initialized in worker process")
     except ImportError as e:
-        logger.error(
+        worker_logger.error(
             "[Celery] Failed to import LLM service dependencies: %s. "
             "MindChunk will not be available.",
             e
         )
     except LLMServiceError as e:
-        logger.error(
+        worker_logger.error(
             "[Celery] LLM service initialization error: %s. "
             "MindChunk will not be available.",
             e
         )
     except (OSError, ConnectionError) as e:
-        logger.error(
+        worker_logger.error(
             "[Celery] LLM service connection error: %s. "
             "MindChunk will not be available.",
             e
         )
     except RuntimeError as e:
-        logger.error(
+        worker_logger.error(
             "[Celery] LLM service runtime error: %s. "
             "MindChunk will not be available.",
             e
@@ -450,8 +496,7 @@ def on_worker_process_init(_sender=None, **_kwargs):
     # Reconfigure logging in worker process to use unified format
     setup_celery_logging()
 
-    # Get logger after setup
-    logger = logging.getLogger(__name__)
+    # Use module-level logger (already defined at line 188)
     worker_name = os.environ.get('CELERY_WORKER_NAME', 'unknown')
     pid = os.getpid()
 
@@ -470,8 +515,8 @@ def on_worker_ready(_sender=None, **_kwargs):
     Note: This runs in MainProcess, not in worker processes.
     Worker processes initialize services via worker_process_init signal.
     """
-    logger = logging.getLogger(__name__)
-    logger.info("[Celery] Worker ready - services initialized in worker processes")
+    ready_logger = logging.getLogger(__name__)
+    ready_logger.info("[Celery] Worker ready - services initialized in worker processes")
 
     # Note: LLM service initialization happens in worker_process_init signal
     # which runs in each ForkPoolWorker process, not in MainProcess.
