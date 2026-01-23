@@ -1,11 +1,10 @@
 /**
  * Knowledge Space Store - Pinia store for UI state only
- * 
+ *
  * Note: API calls are handled by Vue Query composables.
  * This store provides a thin wrapper for backward compatibility.
  * Components should use Vue Query composables directly for new code.
  */
-import { computed } from 'vue'
 import { defineStore } from 'pinia'
 
 export interface KnowledgeDocument {

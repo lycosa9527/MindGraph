@@ -22,3 +22,4 @@ export {
 export { useLLMResultsStore, type LLMResult, type LLMModel, type ModelState } from './llmResults'
 export { useAskOnceStore, type AskOnceMessage, type ModelResponse, type ModelId } from './askonce'
 export { useKnowledgeSpaceStore, type KnowledgeDocument } from './knowledgeSpace'
+export { useFeatureFlagsStore } from './featureFlags'

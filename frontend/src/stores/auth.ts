@@ -36,13 +36,17 @@ const MODE_KEY = 'auth_mode'
 const API_BASE = '/api/auth'
 
 export const useAuthStore = defineStore('auth', () => {
-  // Get query client at setup time (has proper context)
-  // This may fail if Vue Query is not yet initialized, so we handle gracefully
-  let queryClient: ReturnType<typeof useQueryClient> | null = null
-  try {
-    queryClient = useQueryClient()
-  } catch {
-    // Vue Query not yet initialized, will be null
+  // Lazy getter for query client - only gets it when needed and in proper Vue context
+  // This prevents calling useQueryClient() outside of setup/effect scope
+  function getQueryClient(): ReturnType<typeof useQueryClient> | null {
+    try {
+      // Only call useQueryClient when actually needed, not at store initialization
+      // This ensures we're in a proper Vue context (component setup or effect)
+      return useQueryClient()
+    } catch {
+      // Vue Query not available or not in proper context
+      return null
+    }
   }
 
   // Helper to get translated message
@@ -150,6 +154,7 @@ export const useAuthStore = defineStore('auth', () => {
     sessionStorage.setItem(USER_KEY, JSON.stringify(normalizedUser))
 
     // Invalidate Dify queries to trigger refetch after login
+    const queryClient = getQueryClient()
     if (queryClient) {
       queryClient.invalidateQueries({ queryKey: difyKeys.all })
     }
@@ -218,6 +223,7 @@ export const useAuthStore = defineStore('auth', () => {
     }
 
     // Clear Vue Query cache to prevent data leakage between users
+    const queryClient = getQueryClient()
     if (queryClient) {
       queryClient.clear()
     }
@@ -251,7 +257,7 @@ export const useAuthStore = defineStore('auth', () => {
       console.debug('[Auth] checkAuth already in progress, waiting...')
       // Wait for the current check to complete
       while (isCheckingAuth.value) {
-        await new Promise(resolve => setTimeout(resolve, 50))
+        await new Promise((resolve) => setTimeout(resolve, 50))
       }
       // Return cached result (user is set if auth succeeded)
       return !!user.value
@@ -466,7 +472,8 @@ export const useAuthStore = defineStore('auth', () => {
         if (!refreshResult.success) {
           console.log('[Auth] Refresh failed, calling handleSessionInvalidation')
           // Use backend error message if available, otherwise use generic message
-          const errorMessage = refreshResult.errorMessage || getTranslatedMessage('notification.sessionInvalidated')
+          const errorMessage =
+            refreshResult.errorMessage || getTranslatedMessage('notification.sessionInvalidated')
           handleSessionInvalidation(errorMessage)
         }
         return
@@ -474,7 +481,10 @@ export const useAuthStore = defineStore('auth', () => {
 
       if (response.ok) {
         const data = await response.json()
-        console.log(`[Auth] Session status: ${data.status}`, data.message ? `message: ${data.message}` : '')
+        console.log(
+          `[Auth] Session status: ${data.status}`,
+          data.message ? `message: ${data.message}` : ''
+        )
         if (data.status === 'invalidated') {
           console.log(`[Auth] Session invalidated by backend: ${data.message}`)
           handleSessionInvalidation(data.message)
@@ -516,6 +526,7 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.removeItem('auth_user')
 
     // Clear Vue Query cache
+    const queryClient = getQueryClient()
     if (queryClient) {
       queryClient.clear()
     }

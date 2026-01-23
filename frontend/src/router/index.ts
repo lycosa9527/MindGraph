@@ -4,7 +4,7 @@
 import { type RouteRecordRaw, createRouter, createWebHistory } from 'vue-router'
 
 import { useAuthStore } from '@/stores/auth'
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { useFeatureFlagsStore } from '@/stores/featureFlags'
 
 const routes: RouteRecordRaw[] = [
   {
@@ -136,7 +136,12 @@ const router = createRouter({
 // Navigation guards
 router.beforeEach(async (to, _from, next) => {
   const authStore = useAuthStore()
-  const { featureRagChunkTest } = useFeatureFlags()
+  const featureFlagsStore = useFeatureFlagsStore()
+  
+  // Fetch feature flags if needed (for router guard - doesn't use vue-query)
+  if (to.meta.requiresFeatureFlag) {
+    await featureFlagsStore.fetchFlags()
+  }
 
   // Check authentication status - only for protected routes
   // checkAuth() is smart: it uses cached user if available, only makes API call if needed
@@ -171,7 +176,7 @@ router.beforeEach(async (to, _from, next) => {
   }
 
   // Check feature flags
-  if (to.meta.requiresFeatureFlag === 'ragChunkTest' && !featureRagChunkTest.value) {
+  if (to.meta.requiresFeatureFlag === 'ragChunkTest' && !featureFlagsStore.getFeatureRagChunkTest()) {
     return next({ name: 'MindMate' })
   }
 

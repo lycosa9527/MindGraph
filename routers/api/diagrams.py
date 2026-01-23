@@ -16,6 +16,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 from datetime import datetime
 import logging
 
@@ -34,11 +35,11 @@ logger = logging.getLogger(__name__)
 router = APIRouter(tags=["diagrams"])
 
 
-@router.post('/diagrams', response_model=DiagramResponse)
+@router.post("/diagrams", response_model=DiagramResponse)
 async def create_diagram(
     req: DiagramCreateRequest,
     request: Request,
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """
     Create a new diagram.
@@ -48,7 +49,9 @@ async def create_diagram(
     """
     # Rate limiting
     identifier = get_rate_limit_identifier(current_user, request)
-    await check_endpoint_rate_limit('diagrams', identifier, max_requests=100, window_seconds=60)
+    await check_endpoint_rate_limit(
+        "diagrams", identifier, max_requests=100, window_seconds=60
+    )
 
     cache = get_diagram_cache()
 
@@ -59,7 +62,7 @@ async def create_diagram(
         diagram_type=req.diagram_type,
         spec=req.spec,
         language=req.language,
-        thumbnail=req.thumbnail
+        thumbnail=req.thumbnail,
     )
 
     if not success:
@@ -72,31 +75,36 @@ async def create_diagram(
         raise HTTPException(status_code=500, detail="Diagram created but ID is missing")
     diagram = await cache.get_diagram(current_user.id, diagram_id)
     if not diagram:
-        raise HTTPException(status_code=500, detail="Diagram created but failed to retrieve")
+        raise HTTPException(
+            status_code=500, detail="Diagram created but failed to retrieve"
+        )
 
     logger.info(
-        "[Diagrams] Created diagram %s for user %s",
-        diagram_id, current_user.id
+        "[Diagrams] Created diagram %s for user %s", diagram_id, current_user.id
     )
 
     return DiagramResponse(
-        id=diagram['id'],
-        title=diagram['title'],
-        diagram_type=diagram['diagram_type'],
-        spec=diagram['spec'],
-        language=diagram.get('language', 'zh'),
-        thumbnail=diagram.get('thumbnail'),
-        created_at=datetime.fromisoformat(diagram['created_at']) if diagram.get('created_at') else datetime.utcnow(),
-        updated_at=datetime.fromisoformat(diagram['updated_at']) if diagram.get('updated_at') else datetime.utcnow()
+        id=diagram["id"],
+        title=diagram["title"],
+        diagram_type=diagram["diagram_type"],
+        spec=diagram["spec"],
+        language=diagram.get("language", "zh"),
+        thumbnail=diagram.get("thumbnail"),
+        created_at=datetime.fromisoformat(diagram["created_at"])
+        if diagram.get("created_at")
+        else datetime.utcnow(),
+        updated_at=datetime.fromisoformat(diagram["updated_at"])
+        if diagram.get("updated_at")
+        else datetime.utcnow(),
     )
 
 
-@router.get('/diagrams', response_model=DiagramListResponse)
+@router.get("/diagrams", response_model=DiagramListResponse)
 async def list_diagrams(
     request: Request,
     page: int = Query(1, ge=1, description="Page number"),
     page_size: int = Query(10, ge=1, le=50, description="Items per page"),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """
     List user's diagrams with pagination.
@@ -105,38 +113,44 @@ async def list_diagrams(
     """
     # Rate limiting
     identifier = get_rate_limit_identifier(current_user, request)
-    await check_endpoint_rate_limit('diagrams', identifier, max_requests=100, window_seconds=60)
+    await check_endpoint_rate_limit(
+        "diagrams", identifier, max_requests=100, window_seconds=60
+    )
 
     cache = get_diagram_cache()
     result = await cache.list_diagrams(current_user.id, page, page_size)
 
     # Convert to response models
     items = []
-    for d in result['diagrams']:
-        items.append(DiagramListItem(
-            id=d['id'],
-            title=d['title'],
-            diagram_type=d['diagram_type'],
-            thumbnail=d.get('thumbnail'),
-            updated_at=datetime.fromisoformat(d['updated_at']) if d.get('updated_at') else datetime.utcnow(),
-            is_pinned=d.get('is_pinned', False)
-        ))
+    for d in result["diagrams"]:
+        items.append(
+            DiagramListItem(
+                id=d["id"],
+                title=d["title"],
+                diagram_type=d["diagram_type"],
+                thumbnail=d.get("thumbnail"),
+                updated_at=datetime.fromisoformat(d["updated_at"])
+                if d.get("updated_at")
+                else datetime.utcnow(),
+                is_pinned=d.get("is_pinned", False),
+            )
+        )
 
     return DiagramListResponse(
         diagrams=items,
-        total=result['total'],
-        page=result['page'],
-        page_size=result['page_size'],
-        has_more=result['has_more'],
-        max_diagrams=result['max_diagrams']
+        total=result["total"],
+        page=result["page"],
+        page_size=result["page_size"],
+        has_more=result["has_more"],
+        max_diagrams=result["max_diagrams"],
     )
 
 
-@router.get('/diagrams/{diagram_id}', response_model=DiagramResponse)
+@router.get("/diagrams/{diagram_id}", response_model=DiagramResponse)
 async def get_diagram(
     diagram_id: str,
     request: Request,
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """
     Get a specific diagram by ID.
@@ -145,7 +159,9 @@ async def get_diagram(
     """
     # Rate limiting
     identifier = get_rate_limit_identifier(current_user, request)
-    await check_endpoint_rate_limit('diagrams', identifier, max_requests=100, window_seconds=60)
+    await check_endpoint_rate_limit(
+        "diagrams", identifier, max_requests=100, window_seconds=60
+    )
 
     cache = get_diagram_cache()
     diagram = await cache.get_diagram(current_user.id, diagram_id)
@@ -154,23 +170,27 @@ async def get_diagram(
         raise HTTPException(status_code=404, detail="Diagram not found")
 
     return DiagramResponse(
-        id=diagram['id'],
-        title=diagram['title'],
-        diagram_type=diagram['diagram_type'],
-        spec=diagram['spec'],
-        language=diagram.get('language', 'zh'),
-        thumbnail=diagram.get('thumbnail'),
-        created_at=datetime.fromisoformat(diagram['created_at']) if diagram.get('created_at') else datetime.utcnow(),
-        updated_at=datetime.fromisoformat(diagram['updated_at']) if diagram.get('updated_at') else datetime.utcnow()
+        id=diagram["id"],
+        title=diagram["title"],
+        diagram_type=diagram["diagram_type"],
+        spec=diagram["spec"],
+        language=diagram.get("language", "zh"),
+        thumbnail=diagram.get("thumbnail"),
+        created_at=datetime.fromisoformat(diagram["created_at"])
+        if diagram.get("created_at")
+        else datetime.utcnow(),
+        updated_at=datetime.fromisoformat(diagram["updated_at"])
+        if diagram.get("updated_at")
+        else datetime.utcnow(),
     )
 
 
-@router.put('/diagrams/{diagram_id}', response_model=DiagramResponse)
+@router.put("/diagrams/{diagram_id}", response_model=DiagramResponse)
 async def update_diagram(
     diagram_id: str,
     req: DiagramUpdateRequest,
     request: Request,
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """
     Update an existing diagram.
@@ -179,7 +199,9 @@ async def update_diagram(
     """
     # Rate limiting
     identifier = get_rate_limit_identifier(current_user, request)
-    await check_endpoint_rate_limit('diagrams', identifier, max_requests=100, window_seconds=60)
+    await check_endpoint_rate_limit(
+        "diagrams", identifier, max_requests=100, window_seconds=60
+    )
 
     cache = get_diagram_cache()
 
@@ -189,18 +211,20 @@ async def update_diagram(
         raise HTTPException(status_code=404, detail="Diagram not found")
 
     # Merge updates
-    title = req.title if req.title is not None else existing['title']
-    spec = req.spec if req.spec is not None else existing['spec']
-    thumbnail = req.thumbnail if req.thumbnail is not None else existing.get('thumbnail')
+    title = req.title if req.title is not None else existing["title"]
+    spec = req.spec if req.spec is not None else existing["spec"]
+    thumbnail = (
+        req.thumbnail if req.thumbnail is not None else existing.get("thumbnail")
+    )
 
     success, _, error = await cache.save_diagram(
         user_id=current_user.id,
         diagram_id=diagram_id,
         title=title,
-        diagram_type=existing['diagram_type'],  # Cannot change type
+        diagram_type=existing["diagram_type"],  # Cannot change type
         spec=spec,
-        language=existing.get('language', 'zh'),
-        thumbnail=thumbnail
+        language=existing.get("language", "zh"),
+        thumbnail=thumbnail,
     )
 
     if not success:
@@ -209,30 +233,35 @@ async def update_diagram(
     # Get updated diagram
     diagram = await cache.get_diagram(current_user.id, diagram_id)
     if not diagram:
-        raise HTTPException(status_code=500, detail="Diagram updated but failed to retrieve")
+        raise HTTPException(
+            status_code=500, detail="Diagram updated but failed to retrieve"
+        )
 
     logger.info(
-        "[Diagrams] Updated diagram %s for user %s",
-        diagram_id, current_user.id
+        "[Diagrams] Updated diagram %s for user %s", diagram_id, current_user.id
     )
 
     return DiagramResponse(
-        id=diagram['id'],
-        title=diagram['title'],
-        diagram_type=diagram['diagram_type'],
-        spec=diagram['spec'],
-        language=diagram.get('language', 'zh'),
-        thumbnail=diagram.get('thumbnail'),
-        created_at=datetime.fromisoformat(diagram['created_at']) if diagram.get('created_at') else datetime.utcnow(),
-        updated_at=datetime.fromisoformat(diagram['updated_at']) if diagram.get('updated_at') else datetime.utcnow()
+        id=diagram["id"],
+        title=diagram["title"],
+        diagram_type=diagram["diagram_type"],
+        spec=diagram["spec"],
+        language=diagram.get("language", "zh"),
+        thumbnail=diagram.get("thumbnail"),
+        created_at=datetime.fromisoformat(diagram["created_at"])
+        if diagram.get("created_at")
+        else datetime.utcnow(),
+        updated_at=datetime.fromisoformat(diagram["updated_at"])
+        if diagram.get("updated_at")
+        else datetime.utcnow(),
     )
 
 
-@router.delete('/diagrams/{diagram_id}')
+@router.delete("/diagrams/{diagram_id}")
 async def delete_diagram(
     diagram_id: str,
     request: Request,
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """
     Soft delete a diagram.
@@ -241,7 +270,9 @@ async def delete_diagram(
     """
     # Rate limiting
     identifier = get_rate_limit_identifier(current_user, request)
-    await check_endpoint_rate_limit('diagrams', identifier, max_requests=100, window_seconds=60)
+    await check_endpoint_rate_limit(
+        "diagrams", identifier, max_requests=100, window_seconds=60
+    )
 
     cache = get_diagram_cache()
     success, error = await cache.delete_diagram(current_user.id, diagram_id)
@@ -252,18 +283,17 @@ async def delete_diagram(
         raise HTTPException(status_code=400, detail=error or "Failed to delete diagram")
 
     logger.info(
-        "[Diagrams] Deleted diagram %s for user %s",
-        diagram_id, current_user.id
+        "[Diagrams] Deleted diagram %s for user %s", diagram_id, current_user.id
     )
 
     return {"success": True, "message": "Diagram deleted"}
 
 
-@router.post('/diagrams/{diagram_id}/duplicate', response_model=DiagramResponse)
+@router.post("/diagrams/{diagram_id}/duplicate", response_model=DiagramResponse)
 async def duplicate_diagram(
     diagram_id: str,
     request: Request,
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """
     Duplicate an existing diagram.
@@ -273,7 +303,9 @@ async def duplicate_diagram(
     """
     # Rate limiting
     identifier = get_rate_limit_identifier(current_user, request)
-    await check_endpoint_rate_limit('diagrams', identifier, max_requests=100, window_seconds=60)
+    await check_endpoint_rate_limit(
+        "diagrams", identifier, max_requests=100, window_seconds=60
+    )
 
     cache = get_diagram_cache()
     success, new_id, error = await cache.duplicate_diagram(current_user.id, diagram_id)
@@ -283,38 +315,50 @@ async def duplicate_diagram(
             raise HTTPException(status_code=403, detail=error)
         if "not found" in (error or "").lower():
             raise HTTPException(status_code=404, detail=error)
-        raise HTTPException(status_code=400, detail=error or "Failed to duplicate diagram")
+        raise HTTPException(
+            status_code=400, detail=error or "Failed to duplicate diagram"
+        )
 
     # Get the new diagram
     if not new_id:
-        raise HTTPException(status_code=500, detail="Diagram duplicated but ID is missing")
+        raise HTTPException(
+            status_code=500, detail="Diagram duplicated but ID is missing"
+        )
     diagram = await cache.get_diagram(current_user.id, new_id)
     if not diagram:
-        raise HTTPException(status_code=500, detail="Diagram duplicated but failed to retrieve")
+        raise HTTPException(
+            status_code=500, detail="Diagram duplicated but failed to retrieve"
+        )
 
     logger.info(
         "[Diagrams] Duplicated diagram %s to %s for user %s",
-        diagram_id, new_id, current_user.id
+        diagram_id,
+        new_id,
+        current_user.id,
     )
 
     return DiagramResponse(
-        id=diagram['id'],
-        title=diagram['title'],
-        diagram_type=diagram['diagram_type'],
-        spec=diagram['spec'],
-        language=diagram.get('language', 'zh'),
-        thumbnail=diagram.get('thumbnail'),
-        created_at=datetime.fromisoformat(diagram['created_at']) if diagram.get('created_at') else datetime.utcnow(),
-        updated_at=datetime.fromisoformat(diagram['updated_at']) if diagram.get('updated_at') else datetime.utcnow()
+        id=diagram["id"],
+        title=diagram["title"],
+        diagram_type=diagram["diagram_type"],
+        spec=diagram["spec"],
+        language=diagram.get("language", "zh"),
+        thumbnail=diagram.get("thumbnail"),
+        created_at=datetime.fromisoformat(diagram["created_at"])
+        if diagram.get("created_at")
+        else datetime.utcnow(),
+        updated_at=datetime.fromisoformat(diagram["updated_at"])
+        if diagram.get("updated_at")
+        else datetime.utcnow(),
     )
 
 
-@router.post('/diagrams/{diagram_id}/pin')
+@router.post("/diagrams/{diagram_id}/pin")
 async def pin_diagram(
     diagram_id: str,
     request: Request,
     pinned: bool = Query(True, description="True to pin, False to unpin"),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """
     Pin or unpin a diagram to appear at the top of the list.
@@ -323,7 +367,9 @@ async def pin_diagram(
     """
     # Rate limiting
     identifier = get_rate_limit_identifier(current_user, request)
-    await check_endpoint_rate_limit('diagrams', identifier, max_requests=100, window_seconds=60)
+    await check_endpoint_rate_limit(
+        "diagrams", identifier, max_requests=100, window_seconds=60
+    )
 
     cache = get_diagram_cache()
     success, error = await cache.pin_diagram(current_user.id, diagram_id, pinned)
@@ -335,8 +381,11 @@ async def pin_diagram(
 
     action = "Pinned" if pinned else "Unpinned"
     logger.info(
-        "[Diagrams] %s diagram %s for user %s",
-        action, diagram_id, current_user.id
+        "[Diagrams] %s diagram %s for user %s", action, diagram_id, current_user.id
     )
 
-    return {"success": True, "message": f"Diagram {action.lower()}", "is_pinned": pinned}
+    return {
+        "success": True,
+        "message": f"Diagram {action.lower()}",
+        "is_pinned": pinned,
+    }

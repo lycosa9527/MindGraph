@@ -22,6 +22,7 @@ import { useDiagramStore, usePanelsStore } from '@/stores'
 import type { MindGraphNode } from '@/types'
 
 import BraceOverlay from './BraceOverlay.vue'
+import BridgeOverlay from './BridgeOverlay.vue'
 import BraceEdge from './edges/BraceEdge.vue'
 // Import custom edge components
 import CurvedEdge from './edges/CurvedEdge.vue'
@@ -511,6 +512,9 @@ const gridConfig = {
 
       <!-- Brace overlay for brace maps (draws unified curly braces) -->
       <BraceOverlay />
+
+      <!-- Bridge overlay for bridge maps (draws vertical lines, triangles, and dimension label) -->
+      <BridgeOverlay />
     </VueFlow>
   </div>
 </template>

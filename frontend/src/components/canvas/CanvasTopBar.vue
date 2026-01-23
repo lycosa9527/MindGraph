@@ -62,16 +62,11 @@ const savedDiagramsStore = useSavedDiagramsStore()
 const chartType = computed(() => (route.query.type as string) || '复流程图')
 
 /**
- * Generate default diagram name with date stamp
- * Format: "新圆圈图 01-08" / "New Circle Map 01-08"
+ * Generate default diagram name (simple, no timestamp)
+ * Format: "新圆圈图" / "New Circle Map"
  */
 function generateDefaultName(): string {
-  const now = new Date()
-  const month = String(now.getMonth() + 1).padStart(2, '0')
-  const day = String(now.getDate()).padStart(2, '0')
-  const dateStamp = `${month}-${day}`
-
-  return isZh.value ? `新${chartType.value} ${dateStamp}` : `New ${chartType.value} ${dateStamp}`
+  return isZh.value ? `新${chartType.value}` : `New ${chartType.value}`
 }
 
 // File name editing state (UI only)
@@ -79,8 +74,15 @@ const isFileNameEditing = ref(false)
 const fileNameInputRef = ref<InstanceType<typeof ElInput> | null>(null)
 
 // Use Pinia store for title (synced with diagram state)
+// Priority: topic > user-edited title > simple default (no timestamp)
 const fileName = computed({
-  get: () => diagramStore.effectiveTitle || generateDefaultName(),
+  get: () => {
+    const topicText = diagramStore.getTopicNodeText()
+    if (topicText) {
+      return topicText
+    }
+    return diagramStore.effectiveTitle || generateDefaultName()
+  },
   set: (value: string) => diagramStore.setTitle(value, true),
 })
 

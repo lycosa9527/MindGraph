@@ -21,7 +21,7 @@ import { Delete, Loading, Warning } from '@element-plus/icons-vue'
 
 import { Edit3, FileImage, Lock, MoreHorizontal, Pin, Trash2 } from 'lucide-vue-next'
 
-import { useLanguage } from '@/composables'
+import { useLanguage, useNotifications } from '@/composables'
 import { useAuthStore } from '@/stores'
 import { type SavedDiagram, useSavedDiagramsStore } from '@/stores/savedDiagrams'
 
@@ -34,6 +34,7 @@ const emit = defineEmits<{
 }>()
 
 const { isZh } = useLanguage()
+const notify = useNotifications()
 const authStore = useAuthStore()
 const savedDiagramsStore = useSavedDiagramsStore()
 
@@ -202,11 +203,17 @@ async function confirmDelete(): Promise<void> {
 
   isDeleting.value = true
   try {
-    await savedDiagramsStore.deleteDiagram(deletingDiagramId.value)
-    showDeleteDialog.value = false
-    deletingDiagramId.value = null
+    const success = await savedDiagramsStore.deleteDiagram(deletingDiagramId.value)
+    if (success) {
+      notify.success(isZh.value ? '图示已删除' : 'Diagram deleted')
+      showDeleteDialog.value = false
+      deletingDiagramId.value = null
+    } else {
+      notify.error(isZh.value ? '删除失败' : 'Failed to delete diagram')
+    }
   } catch (error) {
     console.error('[DiagramHistory] Delete error:', error)
+    notify.error(isZh.value ? '删除失败' : 'Failed to delete diagram')
   } finally {
     isDeleting.value = false
   }

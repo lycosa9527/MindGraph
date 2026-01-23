@@ -214,7 +214,7 @@ export const useDiagramStore = defineStore('diagram', () => {
       return data.value.nodes.map((node) => {
         const vueFlowNode = diagramNodeToVueFlowNode(node, diagramType)
         // If this is the event node, count causes and effects connecting to it
-        if (node.id === 'event' && data.value?.connections) {
+        if (node.id === 'event' && data.value?.connections && vueFlowNode.data) {
           const causeCount = data.value.connections.filter(
             (conn) => conn.target === 'event' && conn.source?.startsWith('cause-')
           ).length
@@ -645,6 +645,7 @@ export const useDiagramStore = defineStore('diagram', () => {
               'rightDifferences',
               'leftBranches',
               'rightBranches',
+              'analogies', // Bridge map analogies are converted to nodes, don't preserve array
             ].includes(key)
         )
       ),

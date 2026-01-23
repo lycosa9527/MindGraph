@@ -8,6 +8,94 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ---
 
 
+## [5.13.0] - 2026-01-24 - Bridge Map Feature and UI Improvements
+
+### Added
+
+- **Bridge Map Visualization**
+  - Added `BridgeOverlay.vue` component for rendering bridge map visual elements
+  - Draws horizontal bridge lines connecting analogy pairs
+  - Renders triangle separators between pairs with "as" labels
+  - Displays alternative dimensions section below bridge map with chips
+  - Supports dimension label positioning and styling
+  - Language-aware labels (Chinese/English)
+
+- **Bridge Map Node Styling**
+  - Enhanced `BranchNode.vue` with bridge map support
+  - Bridge map nodes render as text-only (no borders, backgrounds, or shadows)
+  - Conditional handle visibility (hidden for bridge maps, handled by overlay)
+  - Improved visual distinction for bridge map nodes
+
+- **Bridge Map Dimension Labels**
+  - Enhanced `LabelNode.vue` with bridge map dimension label support
+  - Two-line format: "类比关系:" / "Analogy relationship:" label with bracketed value
+  - Right-aligned text for bridge maps
+  - Bold, non-italic styling for dimension labels
+  - Editable dimension values with placeholder support
+
+- **Feature Flags Store**
+  - Added new `featureFlags.ts` Pinia store for centralized feature flag management
+  - Supports synchronous access to cached flags (useful for router guards)
+  - Automatic caching with 5-minute expiration
+  - Better separation of concerns between composables and stores
+
+### Changed
+
+- **Diagram Title Generation**
+  - Removed date stamp from default diagram names (simplified format)
+  - Updated title priority: topic node text > user-edited title > simple default name
+  - Enhanced `CanvasTopBar.vue` and `CanvasPage.vue` with improved title logic
+  - Better user experience with cleaner, more intuitive naming
+
+- **Inline Text Editing**
+  - Enhanced `InlineEditableText.vue` with improved input width handling
+  - Input width now matches display text width for better visual consistency
+  - Improved wrapper and container styling for better text alignment
+  - Better handling of text overflow and truncation
+
+- **Feature Flags Architecture**
+  - Refactored `useFeatureFlags.ts` composable to use new `featureFlags` store
+  - Updated `router/index.ts` to use `featureFlagsStore` instead of composable
+  - Better integration between router guards and feature flag system
+  - Improved code reusability and maintainability
+
+- **Diagram History**
+  - Enhanced `DiagramHistory.vue` with notification feedback for delete operations
+  - Added success/error notifications using `useNotifications` composable
+  - Better user feedback for diagram deletion actions
+
+- **Diagram Store**
+  - Enhanced `diagram.ts` store with improved bridge map handling
+  - Added `analogies` to excluded keys when preserving diagram data
+  - Better null safety checks for multi-flow map event nodes
+
+- **Saved Diagrams Store**
+  - Improved `savedDiagrams.ts` store with better 404 error handling
+  - Handles race conditions where diagram was already deleted
+  - Automatically removes deleted diagrams from local list even on 404
+  - Better cleanup of active diagram state on deletion
+
+- **Backend Code Quality**
+  - Improved code formatting in `routers/api/diagrams.py` (PEP8 compliance)
+  - Better string formatting consistency (double quotes)
+  - Improved code readability and maintainability
+
+- **Spec Loader Refactoring**
+  - Moved `specLoader.ts` store to `specLoader/` directory structure
+  - Better code organization and modularity
+
+### Technical Details
+
+- **Total Changes**: 22 files changed, ~1500+ insertions(+), ~200 deletions(-)
+- **Key Improvements**:
+  - Complete bridge map visualization system with overlay rendering
+  - Improved diagram title management and user experience
+  - Better feature flag architecture with store-based approach
+  - Enhanced error handling and user feedback
+  - Code quality improvements and PEP8 compliance
+
+---
+
 ## [5.12.0] - 2026-01-23 - Diagram Enhancements and Authentication Improvements
 
 ### Added

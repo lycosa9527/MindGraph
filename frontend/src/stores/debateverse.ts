@@ -99,7 +99,7 @@ interface LocalStorageData {
 // Constants
 // ============================================================================
 
-const AVAILABLE_MODELS = ['qwen', 'doubao', 'deepseek', 'kimi'] as const
+const _AVAILABLE_MODELS = ['qwen', 'doubao', 'deepseek', 'kimi'] as const
 const STORAGE_KEY = 'debateverse_recent'
 const CURRENT_SESSION_KEY = 'debateverse_current_session'
 const TTL_MS = 7 * 24 * 60 * 60 * 1000 // 7 days
@@ -167,9 +167,7 @@ export const useDebateVerseStore = defineStore('debateverse', () => {
     participants.value.filter((p) => p.side === 'negative')
   )
 
-  const judgeParticipant = computed(() =>
-    participants.value.find((p) => p.role === 'judge')
-  )
+  const judgeParticipant = computed(() => participants.value.find((p) => p.role === 'judge'))
 
   const userParticipant = computed(() => {
     if (!userRole.value || userRole.value === 'viewer') return null
@@ -280,9 +278,13 @@ export const useDebateVerseStore = defineStore('debateverse', () => {
   }
 
   // Auto-save on changes
-  watch(recentDebates, () => {
-    saveToStorage()
-  }, { deep: true })
+  watch(
+    recentDebates,
+    () => {
+      saveToStorage()
+    },
+    { deep: true }
+  )
 
   // Load from storage on initialization
   loadFromStorage()
@@ -320,7 +322,7 @@ export const useDebateVerseStore = defineStore('debateverse', () => {
       if (!raw) return
 
       const data: CurrentSessionStorage = JSON.parse(raw)
-      
+
       // Check TTL - restore if less than 24 hours old
       const age = Date.now() - data.savedAt
       if (age > 24 * 60 * 60 * 1000) {
@@ -334,7 +336,7 @@ export const useDebateVerseStore = defineStore('debateverse', () => {
         userRole.value = data.userRole
         userSide.value = data.userSide
         userPosition.value = data.userPosition
-        
+
         // Automatically reload the session
         loadSession(data.sessionId).catch((error) => {
           console.warn('[DebateVerseStore] Failed to reload session from storage:', error)
@@ -460,9 +462,12 @@ export const useDebateVerseStore = defineStore('debateverse', () => {
     if (!currentSessionId.value) return
 
     try {
-      const response = await fetch(`/api/debateverse/sessions/${currentSessionId.value}/coin-toss`, {
-        method: 'POST',
-      })
+      const response = await fetch(
+        `/api/debateverse/sessions/${currentSessionId.value}/coin-toss`,
+        {
+          method: 'POST',
+        }
+      )
 
       if (!response.ok) {
         throw new Error(`Failed to execute coin toss: ${response.statusText}`)
@@ -503,14 +508,11 @@ export const useDebateVerseStore = defineStore('debateverse', () => {
     if (!currentSessionId.value || !userParticipant.value) return
 
     try {
-      const response = await fetch(
-        `/api/debateverse/sessions/${currentSessionId.value}/messages`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ content }),
-        }
-      )
+      const response = await fetch(`/api/debateverse/sessions/${currentSessionId.value}/messages`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content }),
+      })
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ detail: response.statusText }))
@@ -545,20 +547,20 @@ export const useDebateVerseStore = defineStore('debateverse', () => {
     try {
       // Decode base64 audio (MP3 format from Dashscope)
       const audioData = Uint8Array.from(atob(audioBase64), (c) => c.charCodeAt(0))
-      
+
       // Create blob URL for MP3 audio
       const blob = new Blob([audioData], { type: 'audio/mpeg' })
       const audioUrl = URL.createObjectURL(blob)
-      
+
       // Use HTMLAudioElement for MP3 playback
       const audio = new Audio(audioUrl)
-      
+
       // Preload audio to reduce gaps
       audio.preload = 'auto'
-      
+
       // Set volume to ensure consistent playback
       audio.volume = 1.0
-      
+
       currentAudioElement.value = audio
       isPlayingAudio.value = true
 
@@ -576,7 +578,7 @@ export const useDebateVerseStore = defineStore('debateverse', () => {
         }
         audio.addEventListener('canplay', onCanPlay)
         audio.addEventListener('error', onError)
-        
+
         // Timeout after 2 seconds
         setTimeout(() => {
           audio.removeEventListener('canplay', onCanPlay)
@@ -589,7 +591,7 @@ export const useDebateVerseStore = defineStore('debateverse', () => {
         URL.revokeObjectURL(audioUrl)
         currentAudioElement.value = null
         isPlayingAudio.value = false
-        
+
         // Play next queued audio immediately (no delay)
         if (audioQueue.value.length > 0) {
           const nextChunk = audioQueue.value.shift()
@@ -607,7 +609,7 @@ export const useDebateVerseStore = defineStore('debateverse', () => {
         URL.revokeObjectURL(audioUrl)
         currentAudioElement.value = null
         isPlayingAudio.value = false
-        
+
         // Try next chunk if available
         if (audioQueue.value.length > 0) {
           const nextChunk = audioQueue.value.shift()
@@ -624,7 +626,7 @@ export const useDebateVerseStore = defineStore('debateverse', () => {
       console.error('[DebateVerse] Error playing audio chunk:', error)
       currentAudioElement.value = null
       isPlayingAudio.value = false
-      
+
       // Try next chunk if available
       if (audioQueue.value.length > 0) {
         const nextChunk = audioQueue.value.shift()
@@ -649,7 +651,7 @@ export const useDebateVerseStore = defineStore('debateverse', () => {
       }
       currentAudioElement.value = null
     }
-    
+
     audioQueue.value = []
     isPlayingAudio.value = false
   }
@@ -690,12 +692,10 @@ export const useDebateVerseStore = defineStore('debateverse', () => {
       // Immediately trigger the next action based on response
       if (data.action === 'trigger_speaker' && data.has_next_speaker) {
         // Immediately trigger stream for next speaker
-        console.log(`[DebateVerse] Triggering next speaker: ${data.participant_name} (${data.participant_role})`)
-        await streamDebaterResponse(
-          data.participant_id,
-          data.stage,
-          data.language || 'zh'
+        console.log(
+          `[DebateVerse] Triggering next speaker: ${data.participant_name} (${data.participant_role})`
         )
+        await streamDebaterResponse(data.participant_id, data.stage, data.language || 'zh')
       } else if (data.action === 'advance_stage' && data.next_stage) {
         // Advance to next stage
         console.log(`[DebateVerse] Advancing to next stage: ${data.next_stage}`)
@@ -728,8 +728,10 @@ export const useDebateVerseStore = defineStore('debateverse', () => {
     currentSpeaker.value = participantId
 
     try {
-      console.log(`[DebateVerse] Starting stream for participant ${participantId} in stage ${stage}`)
-      
+      console.log(
+        `[DebateVerse] Starting stream for participant ${participantId} in stage ${stage}`
+      )
+
       const response = await fetch(
         `/api/debateverse/sessions/${currentSessionId.value}/stream/${participantId}?stage=${stage}&language=${language}`,
         {
@@ -797,7 +799,8 @@ export const useDebateVerseStore = defineStore('debateverse', () => {
                     created_at: new Date().toISOString(),
                   }
                 }
-                streamingMessage.value.thinking = (streamingMessage.value.thinking || '') + data.content
+                streamingMessage.value.thinking =
+                  (streamingMessage.value.thinking || '') + data.content
               } else if (data.type === 'audio_chunk' && data.data) {
                 // Handle audio chunk for TTS playback
                 playAudioChunk(data.data)
@@ -805,7 +808,9 @@ export const useDebateVerseStore = defineStore('debateverse', () => {
                 // Stream complete, reload session to get new messages
                 console.log(`[DebateVerse] Stream complete for participant ${participantId}`)
                 streamingMessage.value = null
-                await loadSession(currentSessionId.value!)
+                if (currentSessionId.value) {
+                  await loadSession(currentSessionId.value)
+                }
                 break
               } else if (data.type === 'error') {
                 streamingMessage.value = null
@@ -877,5 +882,6 @@ export const useDebateVerseStore = defineStore('debateverse', () => {
     addRecentDebate,
     removeRecentDebate,
     renameRecentDebate,
+    clearCurrentSessionStorage,
   }
 })

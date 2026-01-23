@@ -362,6 +362,21 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
           authStore.handleTokenExpired('您的登录已过期，请重新登录后删除图表')
           return false
         }
+        // If diagram doesn't exist (404), still remove from local list
+        // This handles race conditions where diagram was already deleted
+        if (response.status === 404) {
+          console.warn(`[SavedDiagrams] Diagram ${diagramId} not found (404), removing from local list`)
+          diagrams.value = diagrams.value.filter((d) => d.id !== diagramId)
+          total.value--
+          if (currentDiagramId.value === diagramId) {
+            currentDiagramId.value = null
+          }
+          // Clear active diagram if it's the one being deleted
+          if (activeDiagramId.value === diagramId) {
+            activeDiagramId.value = null
+          }
+          return true // Consider it successful since it's already gone
+        }
         throw new Error(`Failed to delete diagram: ${response.status}`)
       }
 
@@ -372,6 +387,11 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
       // Clear current if deleted
       if (currentDiagramId.value === diagramId) {
         currentDiagramId.value = null
+      }
+
+      // Clear active diagram if it's the one being deleted
+      if (activeDiagramId.value === diagramId) {
+        activeDiagramId.value = null
       }
 
       return true

@@ -67,6 +67,7 @@ export interface DiagramNode {
   style?: NodeStyle
   childIds?: string[] // Child node IDs for flat storage
   parentId?: string
+  data?: Record<string, unknown> // Custom data for specific diagram types
 }
 
 // Hierarchical node for tree operations - children are actual nodes

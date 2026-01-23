@@ -376,6 +376,10 @@ class RedisDiagramCache:
 
         Returns diagram data or None if not found.
         """
+        # #region agent log
+        with open(r'c:\Users\roywa\Documents\CursorProjects\MindGraph\.cursor\debug.log', 'a', encoding='utf-8') as f:
+            f.write(json.dumps({'sessionId': 'debug-session', 'runId': 'run1', 'hypothesisId': 'C', 'location': 'redis_diagram_cache.py:373', 'message': 'get_diagram called', 'data': {'user_id': user_id, 'diagram_id': diagram_id}, 'timestamp': int(time.time() * 1000)}) + '\n')
+        # #endregion
         self._ensure_worker_started()
 
         # Try Redis first
@@ -388,10 +392,18 @@ class RedisDiagramCache:
 
                     if data:
                         diagram = json.loads(data)
+                        # #region agent log
+                        with open(r'c:\Users\roywa\Documents\CursorProjects\MindGraph\.cursor\debug.log', 'a', encoding='utf-8') as f:
+                            f.write(json.dumps({'sessionId': 'debug-session', 'runId': 'run1', 'hypothesisId': 'C', 'location': 'redis_diagram_cache.py:391', 'message': 'get_diagram: found in Redis', 'data': {'diagram_id': diagram_id, 'is_deleted': diagram.get('is_deleted', False), 'has_spec': 'spec' in diagram}, 'timestamp': int(time.time() * 1000)}) + '\n')
+                        # #endregion
                         if not diagram.get('is_deleted', False):
                             # Refresh TTL on access
                             redis.expire(diagram_key, CACHE_TTL)
                             return diagram
+                        # #region agent log
+                        with open(r'c:\Users\roywa\Documents\CursorProjects\MindGraph\.cursor\debug.log', 'a', encoding='utf-8') as f:
+                            f.write(json.dumps({'sessionId': 'debug-session', 'runId': 'run1', 'hypothesisId': 'C', 'location': 'redis_diagram_cache.py:395', 'message': 'get_diagram: returning None (is_deleted=True)', 'data': {'diagram_id': diagram_id}, 'timestamp': int(time.time() * 1000)}) + '\n')
+                        # #endregion
                         return None
 
                 except Exception as e:
@@ -506,9 +518,17 @@ class RedisDiagramCache:
 
         # Cache miss: Load from SQLite and merge with pending creates
         items = await self._load_list_from_sqlite(user_id)
+        # #region agent log
+        with open(r'c:\Users\roywa\Documents\CursorProjects\MindGraph\.cursor\debug.log', 'a', encoding='utf-8') as f:
+            f.write(json.dumps({'sessionId': 'debug-session', 'runId': 'run1', 'hypothesisId': 'D', 'location': 'redis_diagram_cache.py:508', 'message': 'list_diagrams: loaded from SQLite', 'data': {'user_id': user_id, 'count': len(items), 'diagram_ids': [i['id'] for i in items]}, 'timestamp': int(time.time() * 1000)}) + '\n')
+        # #endregion
 
         # Merge with pending creates from Redis (not yet in SQLite)
         pending_items = await self._get_pending_creates_for_user(user_id)
+        # #region agent log
+        with open(r'c:\Users\roywa\Documents\CursorProjects\MindGraph\.cursor\debug.log', 'a', encoding='utf-8') as f:
+            f.write(json.dumps({'sessionId': 'debug-session', 'runId': 'run1', 'hypothesisId': 'D', 'location': 'redis_diagram_cache.py:511', 'message': 'list_diagrams: pending creates', 'data': {'user_id': user_id, 'count': len(pending_items), 'diagram_ids': [i['id'] for i in pending_items]}, 'timestamp': int(time.time() * 1000)}) + '\n')
+        # #endregion
         for p in pending_items:
             if not any(i['id'] == p['id'] for i in items):
                 items.append(p)
@@ -599,6 +619,10 @@ class RedisDiagramCache:
                     data = redis.get(diagram_key)
                     if data:
                         diagram_data = json.loads(data)
+                        # #region agent log
+                        with open(r'c:\Users\roywa\Documents\CursorProjects\MindGraph\.cursor\debug.log', 'a', encoding='utf-8') as f:
+                            f.write(json.dumps({'sessionId': 'debug-session', 'runId': 'run1', 'hypothesisId': 'D', 'location': 'redis_diagram_cache.py:600', 'message': '_get_pending_creates: checking diagram', 'data': {'diagram_id': diagram_id, 'is_deleted': diagram_data.get('is_deleted', False)}, 'timestamp': int(time.time() * 1000)}) + '\n')
+                        # #endregion
                         if not diagram_data.get('is_deleted'):
                             items.append({
                                 'id': diagram_data['id'],
@@ -625,13 +649,98 @@ class RedisDiagramCache:
         Returns:
             Tuple of (success, error_message)
         """
+        # #region agent log
+        with open(r'c:\Users\roywa\Documents\CursorProjects\MindGraph\.cursor\debug.log', 'a', encoding='utf-8') as f:
+            f.write(json.dumps({'sessionId': 'debug-session', 'runId': 'run1', 'hypothesisId': 'A', 'location': 'redis_diagram_cache.py:619', 'message': 'delete_diagram called', 'data': {'user_id': user_id, 'diagram_id': diagram_id}, 'timestamp': int(time.time() * 1000)}) + '\n')
+        # #endregion
         self._ensure_worker_started()
 
         diagram_key = self._get_diagram_key(user_id, diagram_id)
 
-        # Get diagram from Redis or SQLite
-        diagram_data = await self.get_diagram(user_id, diagram_id)
+        # Get diagram directly from Redis or SQLite (including deleted ones)
+        # We need to check even if deleted, so we can't use get_diagram() which filters deleted
+        diagram_data = None
+        
+        # Try Redis first (even if deleted)
+        if self._use_redis():
+            redis = get_redis()
+            if redis:
+                try:
+                    data = redis.get(diagram_key)
+                    if data:
+                        diagram_data = json.loads(data)
+                        # #region agent log
+                        with open(r'c:\Users\roywa\Documents\CursorProjects\MindGraph\.cursor\debug.log', 'a', encoding='utf-8') as f:
+                            f.write(json.dumps({'sessionId': 'debug-session', 'runId': 'run1', 'hypothesisId': 'A', 'location': 'redis_diagram_cache.py:661', 'message': 'delete_diagram: found in Redis', 'data': {'diagram_id': diagram_id, 'is_deleted': diagram_data.get('is_deleted', False)}, 'timestamp': int(time.time() * 1000)}) + '\n')
+                        # #endregion
+                        # If already deleted, return success (idempotent delete)
+                        if diagram_data.get('is_deleted', False):
+                            # #region agent log
+                            with open(r'c:\Users\roywa\Documents\CursorProjects\MindGraph\.cursor\debug.log', 'a', encoding='utf-8') as f:
+                                f.write(json.dumps({'sessionId': 'debug-session', 'runId': 'run1', 'hypothesisId': 'A', 'location': 'redis_diagram_cache.py:667', 'message': 'delete_diagram: already deleted, returning success', 'data': {'diagram_id': diagram_id}, 'timestamp': int(time.time() * 1000)}) + '\n')
+                            # #endregion
+                            return True, None
+                except Exception as e:
+                    logger.warning("[DiagramCache] Redis get failed during delete: %s", e)
+
+        # If not in Redis, check SQLite
         if not diagram_data:
+            try:
+                db = SessionLocal()
+                try:
+                    diagram = db.query(Diagram).filter(
+                        Diagram.id == diagram_id,
+                        Diagram.user_id == user_id
+                    ).first()
+                    
+                    if diagram:
+                        # Parse spec JSON
+                        try:
+                            spec = json.loads(diagram.spec)
+                        except json.JSONDecodeError:
+                            spec = {}
+                        
+                        diagram_data = {
+                            'id': diagram.id,
+                            'user_id': diagram.user_id,
+                            'title': diagram.title,
+                            'diagram_type': diagram.diagram_type,
+                            'spec': spec,
+                            'language': diagram.language,
+                            'thumbnail': diagram.thumbnail,
+                            'created_at': diagram.created_at.isoformat() if diagram.created_at else None,
+                            'updated_at': diagram.updated_at.isoformat() if diagram.updated_at else None,
+                            'is_deleted': diagram.is_deleted,
+                            'is_pinned': diagram.is_pinned if hasattr(diagram, 'is_pinned') else False
+                        }
+                        # #region agent log
+                        with open(r'c:\Users\roywa\Documents\CursorProjects\MindGraph\.cursor\debug.log', 'a', encoding='utf-8') as f:
+                            f.write(json.dumps({'sessionId': 'debug-session', 'runId': 'run1', 'hypothesisId': 'A', 'location': 'redis_diagram_cache.py:695', 'message': 'delete_diagram: found in SQLite', 'data': {'diagram_id': diagram_id, 'is_deleted': diagram.is_deleted}, 'timestamp': int(time.time() * 1000)}) + '\n')
+                        # #endregion
+                        # If already deleted in SQLite, return success
+                        if diagram.is_deleted:
+                            # #region agent log
+                            with open(r'c:\Users\roywa\Documents\CursorProjects\MindGraph\.cursor\debug.log', 'a', encoding='utf-8') as f:
+                                f.write(json.dumps({'sessionId': 'debug-session', 'runId': 'run1', 'hypothesisId': 'A', 'location': 'redis_diagram_cache.py:699', 'message': 'delete_diagram: already deleted in SQLite, returning success', 'data': {'diagram_id': diagram_id}, 'timestamp': int(time.time() * 1000)}) + '\n')
+                            # #endregion
+                            return True, None
+                    else:
+                        # #region agent log
+                        with open(r'c:\Users\roywa\Documents\CursorProjects\MindGraph\.cursor\debug.log', 'a', encoding='utf-8') as f:
+                            f.write(json.dumps({'sessionId': 'debug-session', 'runId': 'run1', 'hypothesisId': 'B', 'location': 'redis_diagram_cache.py:703', 'message': 'delete_diagram: diagram not found in SQLite', 'data': {'user_id': user_id, 'diagram_id': diagram_id}, 'timestamp': int(time.time() * 1000)}) + '\n')
+                        # #endregion
+                        return False, "Diagram not found"
+                finally:
+                    db.close()
+            except Exception as e:
+                logger.error("[DiagramCache] SQLite check failed during delete: %s", e)
+                return False, "Database error"
+        
+        if not diagram_data:
+            # #region agent log
+            with open(r'c:\Users\roywa\Documents\CursorProjects\MindGraph\.cursor\debug.log', 'a', encoding='utf-8') as f:
+                f.write(json.dumps({'sessionId': 'debug-session', 'runId': 'run1', 'hypothesisId': 'B', 'location': 'redis_diagram_cache.py:710', 'message': 'delete_diagram: diagram not found anywhere', 'data': {'user_id': user_id, 'diagram_id': diagram_id}, 'timestamp': int(time.time() * 1000)}) + '\n')
+            # #endregion
             return False, "Diagram not found"
 
         # Mark as deleted
@@ -664,6 +773,10 @@ class RedisDiagramCache:
                         "[DiagramCache] Deleted diagram %s for user %s",
                         diagram_id, user_id
                     )
+                    # #region agent log
+                    with open(r'c:\Users\roywa\Documents\CursorProjects\MindGraph\.cursor\debug.log', 'a', encoding='utf-8') as f:
+                        f.write(json.dumps({'sessionId': 'debug-session', 'runId': 'run1', 'hypothesisId': 'A', 'location': 'redis_diagram_cache.py:667', 'message': 'delete_diagram: Redis delete success', 'data': {'user_id': user_id, 'diagram_id': diagram_id, 'is_deleted': True}, 'timestamp': int(time.time() * 1000)}) + '\n')
+                    # #endregion
                     return True, None
 
                 except Exception as e:

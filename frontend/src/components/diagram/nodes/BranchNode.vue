@@ -29,16 +29,37 @@ const defaultStyle = computed(() => getNodeStyle(isChild.value ? 'child' : 'bran
 // Check if this is a tree map (needs vertical handles)
 const isTreeMap = computed(() => props.data.diagramType === 'tree_map')
 
-const nodeStyle = computed(() => ({
-  backgroundColor:
-    props.data.style?.backgroundColor || defaultStyle.value.backgroundColor || '#e3f2fd',
-  borderColor: props.data.style?.borderColor || defaultStyle.value.borderColor || '#4e79a7',
-  color: props.data.style?.textColor || defaultStyle.value.textColor || '#333333',
-  fontSize: `${props.data.style?.fontSize || defaultStyle.value.fontSize || 16}px`,
-  fontWeight: props.data.style?.fontWeight || defaultStyle.value.fontWeight || 'normal',
-  borderWidth: `${props.data.style?.borderWidth || defaultStyle.value.borderWidth || 2}px`,
-  borderRadius: `${props.data.style?.borderRadius || 8}px`,
-}))
+// Check if this is a bridge map node (should be text-only, including first pair)
+const isBridgeMap = computed(() => props.data.diagramType === 'bridge_map')
+const isFirstPair = computed(() => {
+  if (!isBridgeMap.value) return true
+  const pairIndex = props.data.pairIndex
+  return pairIndex === undefined || pairIndex === 0
+})
+
+const nodeStyle = computed(() => {
+  // For all bridge map nodes (including first pair), remove borders, background, and shadows (text-only)
+  const shouldHaveBorder = !isBridgeMap.value
+  const shouldHaveBackground = !isBridgeMap.value
+  const shouldHaveShadow = !isBridgeMap.value
+
+  return {
+    backgroundColor: shouldHaveBackground
+      ? props.data.style?.backgroundColor || defaultStyle.value.backgroundColor || '#e3f2fd'
+      : 'transparent',
+    borderColor: shouldHaveBorder
+      ? props.data.style?.borderColor || defaultStyle.value.borderColor || '#4e79a7'
+      : 'transparent',
+    color: props.data.style?.textColor || defaultStyle.value.textColor || '#333333',
+    fontSize: `${props.data.style?.fontSize || defaultStyle.value.fontSize || 16}px`,
+    fontWeight: props.data.style?.fontWeight || defaultStyle.value.fontWeight || 'normal',
+    borderWidth: shouldHaveBorder
+      ? `${props.data.style?.borderWidth || defaultStyle.value.borderWidth || 2}px`
+      : '0px',
+    borderRadius: `${props.data.style?.borderRadius || 8}px`,
+    boxShadow: shouldHaveShadow ? undefined : 'none',
+  }
+})
 
 // Inline editing state
 const isEditing = ref(false)
@@ -58,8 +79,11 @@ function handleEditCancel() {
 
 <template>
   <div
-    class="branch-node flex items-center justify-center px-4 py-2 border-solid cursor-grab select-none"
-    :class="{ 'tree-map-node': isTreeMap }"
+    class="branch-node flex items-center justify-center px-4 py-2 cursor-grab select-none"
+    :class="{
+      'tree-map-node': isTreeMap,
+      'border-none': isBridgeMap,
+    }"
     :style="nodeStyle"
   >
     <InlineEditableText
@@ -74,17 +98,18 @@ function handleEditCancel() {
     />
 
     <!-- Connection handles for horizontal layouts (mind maps, etc.) -->
+    <!-- Hide handles for bridge maps (connections handled by overlay) -->
     <Handle
-      v-if="!isTreeMap"
+      v-if="!isTreeMap && !isBridgeMap"
       type="target"
       :position="Position.Left"
-      class="!bg-blue-400"
+      class="bg-blue-400!"
     />
     <Handle
-      v-if="!isTreeMap"
+      v-if="!isTreeMap && !isBridgeMap"
       type="source"
       :position="Position.Right"
-      class="!bg-blue-400"
+      class="bg-blue-400!"
     />
 
     <!-- Connection handles for tree maps (vertical layout) -->
@@ -92,13 +117,13 @@ function handleEditCancel() {
       v-if="isTreeMap"
       type="target"
       :position="Position.Top"
-      class="!bg-blue-400"
+      class="bg-blue-400!"
     />
     <Handle
       v-if="isTreeMap"
       type="source"
       :position="Position.Bottom"
-      class="!bg-blue-400"
+      class="bg-blue-400!"
     />
   </div>
 </template>
@@ -118,7 +143,12 @@ function handleEditCancel() {
   min-width: 120px;
 }
 
-.branch-node:hover {
+/* Bridge map nodes (all pairs): no shadow */
+.branch-node.border-none {
+  box-shadow: none !important;
+}
+
+.branch-node:hover:not(.border-none) {
   box-shadow: 0 3px 10px rgba(0, 0, 0, 0.12);
   border-color: #3b82f6;
 }

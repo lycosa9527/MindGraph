@@ -126,6 +126,9 @@ export function diagramNodeToVueFlowNode(
   const nodeWidth = node.type === 'boundary' ? node.style?.width : undefined
   const nodeHeight = node.type === 'boundary' ? node.style?.height : undefined
 
+  // Preserve custom data fields from node.data (like pairIndex, position for bridge maps)
+  const customData = node.data || {}
+  
   return {
     id: node.id,
     type: mappedType,
@@ -142,6 +145,8 @@ export function diagramNodeToVueFlowNode(
       isDraggable,
       isSelectable,
       originalNode: node,
+      // Preserve custom fields from node.data (e.g., pairIndex, position for bridge maps)
+      ...customData,
     },
     draggable: isDraggable,
     selectable: isSelectable,

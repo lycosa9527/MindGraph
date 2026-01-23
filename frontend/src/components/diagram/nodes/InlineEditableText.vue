@@ -81,6 +81,9 @@ const localIsEditing = ref(false)
 const editText = ref(props.text)
 const originalText = ref(props.text)
 const inputRef = ref<HTMLInputElement | HTMLTextAreaElement | null>(null)
+const displayRef = ref<HTMLSpanElement | null>(null)
+const wrapperRef = ref<HTMLDivElement | null>(null)
+const inputWidth = ref<string | undefined>(undefined)
 
 // IME Autocomplete (only initialize if enabled)
 const imeAutocomplete = props.enableIME
@@ -148,6 +151,12 @@ const showIMEDropdown = computed(() => {
  */
 function startEditing(): void {
   if (localIsEditing.value) return
+
+  // Measure display text width before switching to edit mode
+  if (displayRef.value) {
+    const width = displayRef.value.offsetWidth
+    inputWidth.value = `${width}px`
+  }
 
   localIsEditing.value = true
   originalText.value = editText.value
@@ -350,7 +359,9 @@ onUnmounted(() => {
     <!-- Edit mode: show input with ghost text -->
     <div
       v-if="localIsEditing"
+      ref="wrapperRef"
       class="inline-edit-wrapper"
+      :style="{ width: inputWidth }"
     >
       <!-- Input container with ghost text overlay -->
       <div class="inline-edit-container">
@@ -413,6 +424,7 @@ onUnmounted(() => {
     <!-- Display mode: show text -->
     <span
       v-else
+      ref="displayRef"
       class="inline-edit-display"
       :class="[textClass, truncate ? 'truncate-text' : 'whitespace-pre-wrap']"
       :style="{ maxWidth: maxWidth, textAlign: textAlign }"
@@ -428,19 +440,24 @@ onUnmounted(() => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 100%;
+  width: fit-content;
+  max-width: 100%;
   min-height: 1.5em;
   position: relative;
 }
 
 .inline-edit-wrapper {
   position: relative;
-  width: 100%;
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
 }
 
 .inline-edit-container {
   position: relative;
-  width: 100%;
+  display: inline-block;
+  width: fit-content;
+  max-width: 100%;
 }
 
 .inline-edit-input {
@@ -454,9 +471,12 @@ onUnmounted(() => {
   border-radius: 4px;
   box-shadow: none;
   width: 100%;
+  min-width: 20px;
+  max-width: 100%;
   resize: none;
   position: relative;
   z-index: 2;
+  box-sizing: border-box;
 }
 
 .inline-edit-input:focus {
