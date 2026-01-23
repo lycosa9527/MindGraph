@@ -33,10 +33,7 @@ from services.infrastructure.utils.browser import log_browser_diagnostics
 from services.llm import llm_service
 from services.llm.qdrant_service import QdrantStartupError, init_qdrant_sync
 from services.redis.redis_bayi_whitelist import get_bayi_whitelist
-from services.redis.redis_cache_loader import (
-    is_cache_loading_in_progress,
-    reload_cache_from_sqlite
-)
+from services.redis.redis_cache_loader import reload_cache_from_sqlite
 from services.redis.redis_client import RedisStartupError, close_redis_sync, init_redis_sync
 from services.redis.redis_diagram_cache import get_diagram_cache
 from services.redis.redis_token_buffer import get_token_tracker
@@ -66,7 +63,7 @@ async def lifespan(fastapi_app: FastAPI):
     # Only log startup messages from first worker to avoid repetition
     worker_id = os.getenv('UVICORN_WORKER_ID', '0')
     is_main_worker = (worker_id == '0' or not worker_id)
-    
+
     if is_main_worker:
         logger.info("=" * 80)
         logger.info("FastAPI Application Starting")
@@ -238,13 +235,9 @@ async def lifespan(fastapi_app: FastAPI):
                 return True  # Return True to indicate skip was intentional
 
             try:
-                # Check if another worker is already loading cache
-                # This avoids unnecessary lock acquisition attempts
-                if is_cache_loading_in_progress():
-                    logger.debug("[CacheLoader] Cache loading already in progress, skipping")
-                    return True  # Return True since cache will be loaded by another worker
-
-                # reload_cache_from_sqlite() handles logging internally
+                # reload_cache_from_sqlite() handles Redis lock internally
+                # No need for pre-check - let the atomic lock handle coordination
+                # The Redis SETNX operation is atomic, so the lock acquisition prevents race conditions
                 result = reload_cache_from_sqlite()
                 return result
             except Exception as e:  # pylint: disable=broad-except
@@ -376,7 +369,7 @@ async def lifespan(fastapi_app: FastAPI):
     # Backs up SQLite database daily, keeps configurable retention (default: 2 backups)
     # Uses Redis distributed lock to ensure only ONE worker runs backups across all workers
     # All workers start the scheduler, but only the lock holder executes backups
-    backup_scheduler_task = None
+    backup_scheduler_task: Optional[asyncio.Task] = None
     try:
         backup_scheduler_task = asyncio.create_task(start_backup_scheduler())
         # Don't log here - the scheduler will log whether it acquired the lock

@@ -15,6 +15,7 @@ import asyncio
 import signal
 import logging
 import inspect
+import uuid
 from pathlib import Path
 from dotenv import load_dotenv
 from utils.env_utils import ensure_utf8_env_file
@@ -25,6 +26,118 @@ try:
     _PSUTIL_AVAILABLE = True
 except ImportError:
     _PSUTIL_AVAILABLE = False
+
+try:
+    from services.redis.redis_client import get_redis, is_redis_available
+    _REDIS_AVAILABLE = True
+except ImportError:
+    _REDIS_AVAILABLE = False
+
+    def get_redis():
+        """Fallback function when Redis is not available"""
+        return None
+
+    def is_redis_available():
+        """Fallback function when Redis is not available"""
+        return False
+
+# ============================================================================
+# DISTRIBUTED LOCK FOR BANNER PRINTING
+# ============================================================================
+#
+# Problem: Multiple Uvicorn workers all call setup_early_configuration() during startup,
+# causing the banner to print multiple times when UVICORN_WORKER_ID is not set correctly.
+#
+# Solution: Redis-based distributed lock ensures only ONE worker prints the banner.
+# Uses SETNX (SET if Not eXists) with TTL for crash safety.
+#
+# Key: banner:print:lock
+# Value: {worker_pid}:{uuid} (unique identifier per worker)
+# TTL: 10 seconds (enough for banner printing, auto-release if worker crashes)
+# ============================================================================
+
+BANNER_LOCK_KEY = "banner:print:lock"
+BANNER_LOCK_TTL = 10  # 10 seconds - enough for banner printing
+
+
+class _BannerLockIdManager:
+    """Manages the worker lock ID for banner printing."""
+    _lock_id = None
+
+    @classmethod
+    def get_lock_id(cls) -> str:
+        """Get or generate the lock ID for this worker."""
+        if cls._lock_id is None:
+            cls._lock_id = f"{os.getpid()}:{uuid.uuid4().hex[:8]}"
+        return cls._lock_id
+
+
+def _acquire_banner_lock() -> bool:
+    """
+    Attempt to acquire the banner printing lock.
+
+    Uses Redis SETNX for atomic lock acquisition.
+    Only ONE worker across all processes can hold this lock.
+
+    Returns:
+        True if lock acquired (this worker should print banner)
+        False if lock held by another worker
+    """
+    try:
+        if not _REDIS_AVAILABLE or not is_redis_available():
+            # No Redis = single worker mode, proceed
+            return True
+
+        redis = get_redis()
+        if not redis:
+            return True  # Fallback to single worker mode
+
+        # Generate unique ID for this worker
+        worker_lock_id = _BannerLockIdManager.get_lock_id()
+
+        # Attempt atomic lock acquisition: SETNX with TTL
+        # Returns True only if key did not exist (lock acquired)
+        acquired = redis.set(
+            BANNER_LOCK_KEY,
+            worker_lock_id,
+            nx=True,  # Only set if not exists
+            ex=BANNER_LOCK_TTL  # TTL in seconds
+        )
+
+        return bool(acquired)
+
+    except Exception:  # pylint: disable=broad-except
+        # If Redis is not available or not initialized yet, assume single worker mode
+        return True
+
+
+def _release_banner_lock() -> None:
+    """Release the banner lock if held by this worker."""
+    try:
+        if not _REDIS_AVAILABLE or not is_redis_available():
+            return
+
+        redis = get_redis()
+        if not redis:
+            return
+
+        worker_lock_id = _BannerLockIdManager.get_lock_id()
+
+        # Lua script: Only delete if lock value matches our lock_id
+        # This ensures we only release our own lock
+        lua_script = """
+        if redis.call("GET", KEYS[1]) == ARGV[1] then
+            return redis.call("DEL", KEYS[1])
+        else
+            return 0
+        end
+        """
+
+        redis.eval(lua_script, 1, BANNER_LOCK_KEY, worker_lock_id)
+    except Exception:  # pylint: disable=broad-except
+        # Ignore errors during lock release (non-critical)
+        pass
+
 
 class _ShutdownEventManager:
     """Manages shutdown event state without using global variables"""
@@ -123,10 +236,15 @@ class _BannerManager:
     def _should_print_banner(cls) -> bool:
         """
         Determine if we should print the banner.
-        
+
         Banner should only print:
         - In the main process (not workers, not reloader)
         - Once per process (using class variable)
+        - Only one worker across all processes (using Redis lock)
+
+        Uses Redis distributed lock to ensure only ONE worker prints the banner
+        across all workers in multi-worker setups. Falls back to class variable
+        if Redis is unavailable.
         """
         # Already printed in this process
         if cls._banner_printed:
@@ -136,12 +254,20 @@ class _BannerManager:
         if _is_uvicorn_reloader_process():
             return False
 
+        # Try to acquire Redis lock - only one worker should print banner
+        # This handles cases where UVICORN_WORKER_ID is not set correctly
+        if not _acquire_banner_lock():
+            # Another worker is printing banner, skip
+            return False
+
         # Skip if we're a Uvicorn worker (workers have UVICORN_WORKER_ID set)
         # Only print in the main process that spawns workers
+        # Note: This check is secondary to Redis lock - Redis lock handles coordination
         worker_id = os.getenv('UVICORN_WORKER_ID')
         if worker_id is not None:
-            # We're a worker process - don't print banner
+            # We're a worker process - release lock and don't print banner
             # The main process (which spawned us) already printed it
+            _release_banner_lock()
             return False
 
         return True
@@ -150,34 +276,38 @@ class _BannerManager:
     def print_startup_banner(cls) -> None:
         """
         Print the MindGraph startup banner.
-        Only prints once in the main process (not in workers or reloader).
+        Only prints once across all workers (using Redis lock) and once per process.
         """
         if not cls._should_print_banner():
             return
 
-        # Read version from VERSION file directly to avoid importing config
         try:
-            version_file = Path(__file__).parent.parent.parent.parent / 'VERSION'
-            version = version_file.read_text().strip()
-        except Exception:  # pylint: disable=broad-except
-            version = "0.0.0"
+            # Read version from VERSION file directly to avoid importing config
+            try:
+                version_file = Path(__file__).parent.parent.parent.parent / 'VERSION'
+                version = version_file.read_text().strip()
+            except Exception:  # pylint: disable=broad-except
+                version = "0.0.0"
 
-        # Print banner using direct print() to bypass logging system
-        print()
-        print("    ███╗   ███╗██╗███╗   ██╗██████╗  ██████╗ ██████╗  █████╗ ██████╗ ██╗  ██╗")
-        print("    ████╗ ████║██║████╗  ██║██╔══██╗██╔════╝ ██╔══██╗██╔══██╗██╔══██╗██║  ██║")
-        print("    ██╔████╔██║██║██╔██╗ ██║██║  ██║██║  ███╗██████╔╝███████║██████╔╝███████║")
-        print("    ██║╚██╔╝██║██║██║╚██╗██║██║  ██║██║   ██║██╔══██╗██╔══██║██╔═══╝ ██╔══██║")
-        print("    ██║ ╚═╝ ██║██║██║ ╚████║██████╔╝╚██████╔╝██║  ██║██║  ██║██║     ██║  ██║")
-        print("    ╚═╝     ╚═╝╚═╝╚═╝  ╚═══╝╚═════╝ ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝     ╚═╝  ╚═╝")
-        print("=" * 80)
-        print("    AI-Powered Visual Thinking Tools for K12 Education")
-        print(f"    Version {version} | 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)")
-        print("=" * 80)
-        print()
+            # Print banner using direct print() to bypass logging system
+            print()
+            print("    ███╗   ███╗██╗███╗   ██╗██████╗  ██████╗ ██████╗  █████╗ ██████╗ ██╗  ██╗")
+            print("    ████╗ ████║██║████╗  ██║██╔══██╗██╔════╝ ██╔══██╗██╔══██╗██╔══██╗██║  ██║")
+            print("    ██╔████╔██║██║██╔██╗ ██║██║  ██║██║  ███╗██████╔╝███████║██████╔╝███████║")
+            print("    ██║╚██╔╝██║██║██║╚██╗██║██║  ██║██║   ██║██╔══██╗██╔══██║██╔═══╝ ██╔══██║")
+            print("    ██║ ╚═╝ ██║██║██║ ╚████║██████╔╝╚██████╔╝██║  ██║██║  ██║██║     ██║  ██║")
+            print("    ╚═╝     ╚═╝╚═╝╚═╝  ╚═══╝╚═════╝ ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝     ╚═╝  ╚═╝")
+            print("=" * 80)
+            print("    AI-Powered Visual Thinking Tools for K12 Education")
+            print(f"    Version {version} | 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)")
+            print("=" * 80)
+            print()
 
-        # Mark banner as printed in this process
-        cls._banner_printed = True
+            # Mark banner as printed in this process
+            cls._banner_printed = True
+        finally:
+            # Always release the lock when done
+            _release_banner_lock()
 
 
 def _print_startup_banner() -> None:
