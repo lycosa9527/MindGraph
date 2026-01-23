@@ -7,6 +7,8 @@
 import { computed, onMounted, ref, watch } from 'vue'
 
 import {
+  ElButton,
+  ElDialog,
   ElDropdown,
   ElDropdownItem,
   ElDropdownMenu,
@@ -15,7 +17,7 @@ import {
   ElScrollbar,
 } from 'element-plus'
 
-import { Loading } from '@element-plus/icons-vue'
+import { Delete, Loading, Warning } from '@element-plus/icons-vue'
 
 import { Edit3, FileImage, Lock, MoreHorizontal, Pin, Trash2 } from 'lucide-vue-next'
 
@@ -38,6 +40,11 @@ const savedDiagramsStore = useSavedDiagramsStore()
 // Show all or just 10
 const showAll = ref(false)
 const INITIAL_LIMIT = 10
+
+// Delete dialog state
+const showDeleteDialog = ref(false)
+const deletingDiagramId = ref<string | null>(null)
+const isDeleting = ref(false)
 
 // Computed
 const diagrams = computed(() => savedDiagramsStore.diagrams)
@@ -183,26 +190,40 @@ async function handleRenameDiagram(diagramId: string): Promise<void> {
   }
 }
 
-// Handle delete diagram
-async function handleDeleteDiagram(diagramId: string): Promise<void> {
-  try {
-    await ElMessageBox.confirm(
-      isZh.value
-        ? '确定要删除这个图示吗？此操作不可撤销。'
-        : 'Are you sure you want to delete this diagram? This cannot be undone.',
-      isZh.value ? '删除图示' : 'Delete Diagram',
-      {
-        confirmButtonText: isZh.value ? '删除' : 'Delete',
-        cancelButtonText: isZh.value ? '取消' : 'Cancel',
-        type: 'warning',
-      }
-    )
+// Handle delete diagram - open dialog
+function handleDeleteDiagram(diagramId: string): void {
+  deletingDiagramId.value = diagramId
+  showDeleteDialog.value = true
+}
 
-    await savedDiagramsStore.deleteDiagram(diagramId)
-  } catch {
-    // User cancelled
+// Confirm delete
+async function confirmDelete(): Promise<void> {
+  if (!deletingDiagramId.value) return
+
+  isDeleting.value = true
+  try {
+    await savedDiagramsStore.deleteDiagram(deletingDiagramId.value)
+    showDeleteDialog.value = false
+    deletingDiagramId.value = null
+  } catch (error) {
+    console.error('[DiagramHistory] Delete error:', error)
+  } finally {
+    isDeleting.value = false
   }
 }
+
+// Cancel delete
+function cancelDelete(): void {
+  showDeleteDialog.value = false
+  deletingDiagramId.value = null
+}
+
+// Get diagram title for delete dialog
+const deletingDiagramTitle = computed(() => {
+  if (!deletingDiagramId.value) return ''
+  const diagram = diagrams.value.find((d) => d.id === deletingDiagramId.value)
+  return diagram?.title || (isZh.value ? '未命名' : 'Untitled')
+})
 
 // Handle pin/unpin diagram
 async function handlePinDiagram(diagramId: string): Promise<void> {
@@ -586,6 +607,56 @@ function toggleShowAll(): void {
         </p>
       </div>
     </div>
+
+    <!-- Delete Confirmation Dialog -->
+    <ElDialog
+      v-model="showDeleteDialog"
+      :title="isZh ? '删除图示' : 'Delete Diagram'"
+      width="420px"
+      :close-on-click-modal="false"
+      :close-on-press-escape="!isDeleting"
+      class="delete-dialog"
+    >
+      <div class="delete-dialog-content">
+        <div class="delete-icon-wrapper">
+          <ElIcon
+            :size="48"
+            class="delete-icon"
+          >
+            <Warning />
+          </ElIcon>
+        </div>
+        <div class="delete-message">
+          <p class="delete-title">
+            {{ isZh ? '确定要删除这个图示吗？' : 'Are you sure you want to delete this diagram?' }}
+          </p>
+          <p class="delete-subtitle">
+            {{ deletingDiagramTitle }}
+          </p>
+          <p class="delete-warning">
+            {{ isZh ? '此操作不可撤销。' : 'This action cannot be undone.' }}
+          </p>
+        </div>
+      </div>
+      <template #footer>
+        <div class="delete-dialog-footer">
+          <ElButton
+            :disabled="isDeleting"
+            @click="cancelDelete"
+          >
+            {{ isZh ? '取消' : 'Cancel' }}
+          </ElButton>
+          <ElButton
+            type="danger"
+            :loading="isDeleting"
+            :icon="Delete"
+            @click="confirmDelete"
+          >
+            {{ isZh ? '删除' : 'Delete' }}
+          </ElButton>
+        </div>
+      </template>
+    </ElDialog>
   </div>
 </template>
 
@@ -732,5 +803,121 @@ function toggleShowAll(): void {
   background-color: #fafaf9;
   border-color: #a8a29e;
   color: #57534e;
+}
+
+/* Delete Dialog - Swiss Design */
+.delete-dialog :deep(.el-dialog) {
+  border-radius: 12px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+}
+
+.delete-dialog :deep(.el-dialog__header) {
+  padding: 24px 24px 16px;
+  border-bottom: 1px solid #f5f5f4;
+}
+
+.delete-dialog :deep(.el-dialog__title) {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1c1917;
+  letter-spacing: -0.01em;
+}
+
+.delete-dialog :deep(.el-dialog__body) {
+  padding: 24px;
+}
+
+.delete-dialog :deep(.el-dialog__footer) {
+  padding: 16px 24px 24px;
+  border-top: 1px solid #f5f5f4;
+}
+
+.delete-dialog-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 8px 0;
+}
+
+.delete-icon-wrapper {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background-color: #fef2f2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+.delete-icon {
+  color: #ef4444;
+}
+
+.delete-message {
+  width: 100%;
+}
+
+.delete-title {
+  font-size: 16px;
+  font-weight: 500;
+  color: #1c1917;
+  margin: 0 0 8px;
+  line-height: 1.5;
+}
+
+.delete-subtitle {
+  font-size: 14px;
+  font-weight: 400;
+  color: #57534e;
+  margin: 0 0 12px;
+  padding: 8px 12px;
+  background-color: #fafaf9;
+  border-radius: 6px;
+  word-break: break-word;
+}
+
+.delete-warning {
+  font-size: 13px;
+  color: #78716c;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.delete-dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.delete-dialog-footer .el-button {
+  min-width: 80px;
+  font-weight: 500;
+  border-radius: 6px;
+  padding: 8px 20px;
+}
+
+.delete-dialog-footer .el-button--default {
+  color: #57534e;
+  border-color: #d6d3d1;
+  background-color: #ffffff;
+}
+
+.delete-dialog-footer .el-button--default:hover {
+  color: #1c1917;
+  border-color: #a8a29e;
+  background-color: #fafaf9;
+}
+
+.delete-dialog-footer .el-button--danger {
+  background-color: #ef4444;
+  border-color: #ef4444;
+  color: #ffffff;
+}
+
+.delete-dialog-footer .el-button--danger:hover {
+  background-color: #dc2626;
+  border-color: #dc2626;
 }
 </style>

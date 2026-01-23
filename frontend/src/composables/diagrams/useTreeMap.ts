@@ -103,12 +103,36 @@ export function useTreeMap(options: TreeMapOptions = {}) {
       marginY: DEFAULT_PADDING,
     })
 
-    // Create topic node with Dagre position
+    // Calculate center X position of all category nodes to center-align topic node
+    let categoryCenterX = 0
+    if (categories.length > 0) {
+      let minCategoryX = Infinity
+      let maxCategoryX = -Infinity
+      categories.forEach((category, catIndex) => {
+        const categoryId = category.id || `tree-cat-${catIndex}`
+        const categoryPos = layoutResult.positions.get(categoryId)
+        if (categoryPos) {
+          const categoryRight = categoryPos.x + nodeWidth
+          if (categoryPos.x < minCategoryX) minCategoryX = categoryPos.x
+          if (categoryRight > maxCategoryX) maxCategoryX = categoryRight
+        }
+      })
+      if (minCategoryX !== Infinity && maxCategoryX !== -Infinity) {
+        categoryCenterX = (minCategoryX + maxCategoryX) / 2
+      }
+    }
+
+    // Create topic node with Dagre position, centered above categories
     const topicPos = layoutResult.positions.get(rootId)
+    const topicX = categories.length > 0 && categoryCenterX > 0
+      ? categoryCenterX - nodeWidth / 2
+      : topicPos
+        ? topicPos.x
+        : 0
     nodes.push({
       id: rootId,
       type: 'topic',
-      position: topicPos ? { x: topicPos.x, y: topicPos.y } : { x: 0, y: 0 },
+      position: { x: topicX, y: topicPos ? topicPos.y : 0 },
       data: {
         label: root.text,
         nodeType: 'topic',

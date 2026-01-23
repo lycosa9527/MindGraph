@@ -10,7 +10,7 @@
  * - Generous whitespace, clean geometric shapes
  * - Reference: Linear, Vercel, Stripe aesthetics
  */
-import { computed, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 
 import { ElPageHeader, ElTabs } from 'element-plus'
 
@@ -99,6 +99,11 @@ const pageHeaderTitle = computed(() => {
 
 // Close modal
 function closeModal() {
+  // Prevent closing if this is a session expired modal (user must login)
+  if (authStore.showSessionExpiredModal) {
+    return
+  }
+
   isVisible.value = false
   resetAllForms()
   currentView.value = 'login'
@@ -172,9 +177,33 @@ watch(
   (newValue) => {
     if (newValue) {
       refreshCaptcha()
+      // Prevent body scroll when session expired modal is shown
+      if (authStore.showSessionExpiredModal) {
+        document.body.style.overflow = 'hidden'
+      }
+    } else {
+      // Restore body scroll when modal closes
+      document.body.style.overflow = ''
     }
   }
 )
+
+// Also watch for session expired modal state changes
+watch(
+  () => authStore.showSessionExpiredModal,
+  (isSessionExpired) => {
+    if (isSessionExpired && props.visible) {
+      document.body.style.overflow = 'hidden'
+    } else if (!props.visible) {
+      document.body.style.overflow = ''
+    }
+  }
+)
+
+// Cleanup: restore body scroll on unmount
+onBeforeUnmount(() => {
+  document.body.style.overflow = ''
+})
 
 // Handle login
 async function handleLogin() {
@@ -206,10 +235,17 @@ async function handleLogin() {
     if (result.success) {
       const userName = result.user?.username || ''
       notify.success(userName ? `登录成功，${userName}欢迎你` : '登录成功')
-      setTimeout(() => {
-        closeModal()
+
+      // If this is a session expired modal, emit success immediately (handler will close modal)
+      // Otherwise, close modal normally after delay
+      if (authStore.showSessionExpiredModal) {
         emit('success')
-      }, 1500)
+      } else {
+        setTimeout(() => {
+          closeModal()
+          emit('success')
+        }, 1500)
+      }
     } else {
       notify.error(result.message || t('auth.loginFailed'))
       loginForm.value.captcha = ''
@@ -370,10 +406,17 @@ async function handleSmsLogin() {
       if (data.token) authStore.setToken(data.token)
       const userName = data.user?.name || ''
       notify.success(userName ? `登录成功，${userName}欢迎你` : '登录成功')
-      setTimeout(() => {
-        closeModal()
+
+      // If this is a session expired modal, emit success immediately (handler will close modal)
+      // Otherwise, close modal normally after delay
+      if (authStore.showSessionExpiredModal) {
         emit('success')
-      }, 1500)
+      } else {
+        setTimeout(() => {
+          closeModal()
+          emit('success')
+        }, 1500)
+      }
     } else {
       notify.error(data.detail || '短信登录失败')
     }
@@ -434,6 +477,11 @@ async function handleResetPassword() {
 
 // Handle backdrop click
 function handleBackdropClick(event: MouseEvent) {
+  // Prevent closing session expired modal by clicking backdrop
+  if (authStore.showSessionExpiredModal) {
+    return
+  }
+
   if (event.target === event.currentTarget) {
     closeModal()
   }
@@ -445,11 +493,15 @@ function handleBackdropClick(event: MouseEvent) {
     <Transition name="modal">
       <div
         v-if="isVisible"
-        class="fixed inset-0 z-50 flex items-center justify-center p-4"
+        class="fixed inset-0 z-[9999] flex items-center justify-center p-4"
+        :class="{ 'pointer-events-auto': authStore.showSessionExpiredModal }"
         @click="handleBackdropClick"
       >
-        <!-- Backdrop -->
-        <div class="absolute inset-0 bg-stone-900/60 backdrop-blur-[2px]" />
+        <!-- Backdrop with stronger blur for session expired -->
+        <div
+          class="absolute inset-0 bg-stone-900/70 backdrop-blur-md"
+          :class="{ 'pointer-events-auto': authStore.showSessionExpiredModal }"
+        />
 
         <!-- Modal -->
         <div class="relative w-full max-w-sm">
@@ -457,8 +509,9 @@ function handleBackdropClick(event: MouseEvent) {
           <div class="bg-white rounded-xl shadow-2xl overflow-hidden">
             <!-- Header -->
             <div class="px-8 pt-8 pb-4 text-center border-b border-stone-100 relative">
-              <!-- Close button -->
+              <!-- Close button (hidden for session expired modal) -->
               <el-button
+                v-if="!authStore.showSessionExpiredModal"
                 class="close-btn"
                 :icon="Close"
                 circle

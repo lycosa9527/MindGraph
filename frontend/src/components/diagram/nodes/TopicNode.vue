@@ -23,14 +23,59 @@ const { getNodeStyle } = useTheme({
 
 const defaultStyle = computed(() => getNodeStyle('topic'))
 
-// Tree map and brace map use pill shape (fully rounded ends), others use default circle
+// Tree map and brace map use pill shape (fully rounded ends)
 const isPillShape = computed(
   () => props.data.diagramType === 'tree_map' || props.data.diagramType === 'brace_map'
 )
+// Multi-flow map uses rounded rectangle
+const isRoundedRectangle = computed(() => props.data.diagramType === 'multi_flow_map')
 
 // Specific diagram type checks for handle positioning
 const isTreeMap = computed(() => props.data.diagramType === 'tree_map')
 const isBraceMap = computed(() => props.data.diagramType === 'brace_map')
+const isMultiFlowMap = computed(() => props.data.diagramType === 'multi_flow_map')
+
+// For multi-flow maps: get cause count to generate handles dynamically
+const causeCount = computed(() => {
+  if (!isMultiFlowMap.value) return 0
+  return (props.data.causeCount as number) || 4 // Default to 4 if not specified
+})
+
+// For multi-flow maps: get effect count to generate handles dynamically
+const effectCount = computed(() => {
+  if (!isMultiFlowMap.value) return 0
+  return (props.data.effectCount as number) || 4 // Default to 4 if not specified
+})
+
+// Generate handle positions for multi-flow map causes (evenly distributed)
+const leftHandlePositions = computed(() => {
+  if (causeCount.value === 0) return []
+  const positions: Array<{ id: string; top: string }> = []
+  for (let i = 0; i < causeCount.value; i++) {
+    // Distribute evenly: for 4 causes, positions are at 20%, 40%, 60%, 80%
+    const topPercent = ((i + 1) * 100) / (causeCount.value + 1)
+    positions.push({
+      id: `left-${i}`,
+      top: `${topPercent}%`,
+    })
+  }
+  return positions
+})
+
+// Generate handle positions for multi-flow map effects (evenly distributed)
+const rightHandlePositions = computed(() => {
+  if (effectCount.value === 0) return []
+  const positions: Array<{ id: string; top: string }> = []
+  for (let i = 0; i < effectCount.value; i++) {
+    // Distribute evenly: for 4 effects, positions are at 20%, 40%, 60%, 80%
+    const topPercent = ((i + 1) * 100) / (effectCount.value + 1)
+    positions.push({
+      id: `right-${i}`,
+      top: `${topPercent}%`,
+    })
+  }
+  return positions
+})
 
 const nodeStyle = computed(() => ({
   backgroundColor:
@@ -40,8 +85,13 @@ const nodeStyle = computed(() => ({
   fontSize: `${props.data.style?.fontSize || defaultStyle.value.fontSize || 18}px`,
   fontWeight: props.data.style?.fontWeight || defaultStyle.value.fontWeight || 'bold',
   borderWidth: `${props.data.style?.borderWidth || defaultStyle.value.borderWidth || 3}px`,
-  // Pill shape for tree map (9999px creates fully rounded ends), circle for others
-  borderRadius: isPillShape.value ? '9999px' : `${props.data.style?.borderRadius || 50}%`,
+  // Pill shape for tree map (9999px creates fully rounded ends)
+  // Rounded rectangle for multi-flow map, circle for others
+  borderRadius: isPillShape.value
+    ? '9999px'
+    : isRoundedRectangle.value
+      ? `${props.data.style?.borderRadius || 8}px`
+      : `${props.data.style?.borderRadius || 50}%`,
 }))
 
 // Inline editing state
@@ -64,7 +114,7 @@ function handleEditCancel() {
 <template>
   <div
     class="topic-node flex items-center justify-center px-6 py-4 border-solid cursor-default select-none"
-    :class="{ 'pill-shape': isPillShape }"
+    :class="{ 'pill-shape': isPillShape, 'rounded-rectangle': isRoundedRectangle }"
     :style="nodeStyle"
   >
     <InlineEditableText
@@ -80,28 +130,28 @@ function handleEditCancel() {
 
     <!-- Connection handles for horizontal layouts (mind maps, bubble maps, etc.) -->
     <Handle
-      v-if="!isPillShape"
+      v-if="!isPillShape && !isMultiFlowMap"
       type="source"
       :position="Position.Right"
-      class="!bg-blue-500"
+      class="bg-blue-500!"
     />
     <Handle
-      v-if="!isPillShape"
+      v-if="!isPillShape && !isMultiFlowMap"
       type="source"
       :position="Position.Left"
-      class="!bg-blue-500"
+      class="bg-blue-500!"
     />
     <Handle
-      v-if="!isPillShape"
+      v-if="!isPillShape && !isMultiFlowMap"
       type="source"
       :position="Position.Top"
-      class="!bg-blue-500"
+      class="bg-blue-500!"
     />
     <Handle
-      v-if="!isPillShape"
+      v-if="!isPillShape && !isMultiFlowMap"
       type="source"
       :position="Position.Bottom"
-      class="!bg-blue-500"
+      class="bg-blue-500!"
     />
 
     <!-- Connection handle for tree maps (vertical layout - bottom only) -->
@@ -109,7 +159,7 @@ function handleEditCancel() {
       v-if="isTreeMap"
       type="source"
       :position="Position.Bottom"
-      class="!bg-blue-500"
+      class="bg-blue-500!"
     />
 
     <!-- Connection handle for brace maps (horizontal layout - right only) -->
@@ -117,8 +167,34 @@ function handleEditCancel() {
       v-if="isBraceMap"
       type="source"
       :position="Position.Right"
-      class="!bg-blue-500"
+      class="bg-blue-500!"
     />
+
+    <!-- Connection handles for multi-flow maps (left target for causes, right source for effects) -->
+    <!-- Dynamically generate left handles based on cause count, evenly distributed -->
+    <template v-if="isMultiFlowMap">
+      <Handle
+        v-for="handle in leftHandlePositions"
+        :id="handle.id"
+        :key="handle.id"
+        type="target"
+        :position="Position.Left"
+        :style="{ top: handle.top }"
+        class="bg-blue-500!"
+      />
+    </template>
+    <!-- Dynamically generate right handles based on effect count, evenly distributed -->
+    <template v-if="isMultiFlowMap">
+      <Handle
+        v-for="handle in rightHandlePositions"
+        :id="handle.id"
+        :key="handle.id"
+        type="source"
+        :position="Position.Right"
+        :style="{ top: handle.top }"
+        class="bg-blue-500!"
+      />
+    </template>
   </div>
 </template>
 
@@ -139,5 +215,18 @@ function handleEditCancel() {
   min-height: 40px;
   padding-left: 24px;
   padding-right: 24px;
+}
+
+/* Multi-flow map rounded rectangle adjustments */
+.topic-node.rounded-rectangle {
+  min-width: 140px;
+  min-height: 50px;
+}
+
+/* Hide handle dots visually while keeping them functional */
+.topic-node :deep(.vue-flow__handle) {
+  opacity: 0;
+  border: none;
+  background: transparent;
 }
 </style>

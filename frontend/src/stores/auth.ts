@@ -62,6 +62,7 @@ export const useAuthStore = defineStore('auth', () => {
   const sessionMonitorInterval = ref<number | null>(null)
   const showSessionExpiredModal = ref(false)
   const sessionExpiredMessage = ref('')
+  const pendingRedirect = ref<string | null>(null) // Store intended route after session expired login
   const isCheckingAuth = ref(false) // Prevent duplicate concurrent checkAuth calls
   const lastSessionCheckTime = ref<number>(0) // Track last session status check to prevent rapid-fire calls
   const hasVerifiedAuthThisSession = ref(false) // Track if we've verified auth with server in this session
@@ -495,8 +496,10 @@ export const useAuthStore = defineStore('auth', () => {
   /**
    * Handle token expiration - clears auth state and shows login modal
    * This is called when API calls return 401 due to expired JWT token
+   * @param message - Optional message to display
+   * @param redirectPath - Optional path to redirect to after successful login
    */
-  function handleTokenExpired(message?: string): void {
+  function handleTokenExpired(message?: string, redirectPath?: string): void {
     // Prevent multiple triggers
     if (showSessionExpiredModal.value) {
       return
@@ -515,6 +518,11 @@ export const useAuthStore = defineStore('auth', () => {
     // Clear Vue Query cache
     if (queryClient) {
       queryClient.clear()
+    }
+
+    // Store redirect path if provided
+    if (redirectPath) {
+      setPendingRedirect(redirectPath)
     }
 
     // Show notification at top of screen
@@ -539,6 +547,22 @@ export const useAuthStore = defineStore('auth', () => {
   function closeSessionExpiredModal(): void {
     showSessionExpiredModal.value = false
     sessionExpiredMessage.value = ''
+  }
+
+  /**
+   * Set pending redirect path (for redirect after session expired login)
+   */
+  function setPendingRedirect(path: string | null): void {
+    pendingRedirect.value = path
+  }
+
+  /**
+   * Get and clear pending redirect path
+   */
+  function getAndClearPendingRedirect(): string | null {
+    const path = pendingRedirect.value
+    pendingRedirect.value = null
+    return path
   }
 
   async function requireAuth(redirectUrl?: string): Promise<boolean> {
@@ -573,6 +597,7 @@ export const useAuthStore = defineStore('auth', () => {
     loading,
     showSessionExpiredModal,
     sessionExpiredMessage,
+    pendingRedirect,
 
     // Getters
     isAuthenticated,
@@ -599,5 +624,7 @@ export const useAuthStore = defineStore('auth', () => {
     handleTokenExpired,
     closeSessionExpiredModal,
     refreshAccessToken,
+    setPendingRedirect,
+    getAndClearPendingRedirect,
   }
 })

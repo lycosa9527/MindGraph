@@ -141,8 +141,21 @@ router.beforeEach(async (to, _from, next) => {
   // Check authentication status - only for protected routes
   // checkAuth() is smart: it uses cached user if available, only makes API call if needed
   if (to.meta.requiresAuth) {
+    // Check if user was previously authenticated (before checkAuth clears it)
+    const hadUserBeforeCheck = !!authStore.user || !!sessionStorage.getItem('auth_user')
+    
     const isAuthenticated = await authStore.checkAuth()
     if (!isAuthenticated) {
+      // If user existed before checkAuth but checkAuth failed, session expired
+      if (hadUserBeforeCheck && to.name !== 'Login') {
+        // Session expired - show modal overlay and prevent navigation
+        // Stay on current page (from) instead of navigating to protected route
+        authStore.handleTokenExpired(undefined, null) // null = stay on current page
+        // Prevent navigation - user must login first
+        return next(false)
+      }
+      
+      // User was never authenticated - redirect to login page
       return next({ name: 'Login', query: { redirect: to.fullPath } })
     }
   }

@@ -65,6 +65,8 @@ export function useMultiFlowMap(options: MultiFlowMapOptions = {}) {
         diagramType: 'multi_flow_map',
         isDraggable: false,
         isSelectable: true,
+        causeCount: data.value.causes.length, // Pass cause count for handle generation
+        effectCount: data.value.effects.length, // Pass effect count for handle generation
       },
       draggable: false,
     })
@@ -123,12 +125,15 @@ export function useMultiFlowMap(options: MultiFlowMapOptions = {}) {
     const result: MindGraphEdge[] = []
 
     // Edges from causes to event (arrows pointing to event)
+    // Connect from cause's right handle to topic's specific left handle (left-0, left-1, etc.)
     data.value.causes.forEach((_, index) => {
       result.push({
         id: `edge-cause-${index}`,
         source: `cause-${index}`,
         target: 'event',
         type: 'straight',
+        sourceHandle: 'right',
+        targetHandle: `left-${index}`, // Use specific handle ID matching the cause index
         data: {
           edgeType: 'straight' as const,
           animated: false,
@@ -137,12 +142,15 @@ export function useMultiFlowMap(options: MultiFlowMapOptions = {}) {
     })
 
     // Edges from event to effects (arrows pointing to effects)
+    // Connect from topic's specific right handle to effect's left handle
     data.value.effects.forEach((_, index) => {
       result.push({
         id: `edge-effect-${index}`,
         source: 'event',
         target: `effect-${index}`,
         type: 'straight',
+        sourceHandle: `right-${index}`, // Use specific handle ID matching the effect index
+        targetHandle: 'left',
         data: {
           edgeType: 'straight' as const,
           animated: false,

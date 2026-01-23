@@ -11,8 +11,34 @@ import type { MindGraphEdgeData } from '@/types'
 
 const props = defineProps<EdgeProps<MindGraphEdgeData>>()
 
-// Calculate straight path
+// Calculate straight path with offset to prevent line from sticking through arrowhead
 const path = computed(() => {
+  // Calculate distance and angle from source to target
+  const dx = props.targetX - props.sourceX
+  const dy = props.targetY - props.sourceY
+  const distance = Math.sqrt(dx * dx + dy * dy)
+
+  // Offset distance to pull back from target
+  // With userSpaceOnUse, refX=12 means arrowhead attaches 12px from end
+  // Reduced offset to make arrows stick closer to topic nodes
+  const arrowOffset = 10
+
+  // Only apply offset if the path is long enough
+  if (distance > arrowOffset) {
+    const angle = Math.atan2(dy, dx)
+    const adjustedTargetX = props.targetX - Math.cos(angle) * arrowOffset
+    const adjustedTargetY = props.targetY - Math.sin(angle) * arrowOffset
+
+    const [edgePath, labelX, labelY] = getStraightPath({
+      sourceX: props.sourceX,
+      sourceY: props.sourceY,
+      targetX: adjustedTargetX,
+      targetY: adjustedTargetY,
+    })
+    return { edgePath, labelX, labelY }
+  }
+
+  // Fallback for very short paths
   const [edgePath, labelX, labelY] = getStraightPath({
     sourceX: props.sourceX,
     sourceY: props.sourceY,
@@ -37,15 +63,15 @@ const markerId = computed(() => `arrow-${props.id}`)
   <defs>
     <marker
       :id="markerId"
-      markerWidth="10"
-      markerHeight="10"
-      refX="8"
-      refY="3"
+      markerWidth="20"
+      markerHeight="20"
+      refX="12"
+      refY="5"
       orient="auto"
-      markerUnits="strokeWidth"
+      markerUnits="userSpaceOnUse"
     >
       <path
-        d="M0,0 L0,6 L9,3 z"
+        d="M0,0 L0,10 L15,5 z"
         :fill="edgeStyle.stroke"
       />
     </marker>

@@ -4,7 +4,7 @@
  * Handles dynamic layout switching based on route meta
  */
 import { computed, defineAsyncComponent, onMounted, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
 import { LoginModal } from '@/components/auth'
 import VersionNotification from '@/components/common/VersionNotification.vue'
@@ -14,6 +14,7 @@ import { useAuthStore, useUIStore } from '@/stores'
 const notify = useNotifications()
 
 const route = useRoute()
+const router = useRouter()
 const uiStore = useUIStore()
 const authStore = useAuthStore()
 const { isZh } = useLanguage()
@@ -45,7 +46,23 @@ watch(
 
 // Handle successful login after session expired
 function handleSessionExpiredLoginSuccess() {
+  // Restore body scroll first
+  document.body.style.overflow = ''
+  
+  // Close the session expired modal
   authStore.closeSessionExpiredModal()
+  
+  // Clear any pending redirect - we want to stay on the current page
+  authStore.getAndClearPendingRedirect()
+  
+  // Refresh the current route to reload data with new auth state
+  // Use router.currentRoute to ensure we get the current route reactively
+  const currentPath = router.currentRoute.value.fullPath
+  router.replace(currentPath).catch(() => {
+    // If replace fails, just reload the page to ensure fresh state
+    window.location.reload()
+  })
+  
   // Note: notification is already shown in LoginModal.vue, no need to duplicate here
 }
 

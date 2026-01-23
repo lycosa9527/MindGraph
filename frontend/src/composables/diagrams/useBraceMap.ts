@@ -105,16 +105,69 @@ export function useBraceMap(options: BraceMapOptions = {}) {
       marginY: DEFAULT_PADDING,
     })
 
-    // Create VueFlow nodes with Dagre positions
+    // Build parent-child map from edges
+    const childrenMap = new Map<string, string[]>()
+    dagreEdges.forEach((edge) => {
+      if (!childrenMap.has(edge.source)) {
+        childrenMap.set(edge.source, [])
+      }
+      childrenMap.get(edge.source)!.push(edge.target)
+    })
+
+    // Calculate adjusted Y positions by centering each parent relative to its children
+    // Process from deepest level to shallowest (bottom-up)
+    const adjustedY = new Map<string, number>()
+    const maxDepth = Math.max(
+      ...Array.from(nodeInfos.values()).map((info) => info.depth)
+    )
+
+    // Initialize with original positions
+    dagreNodes.forEach((node) => {
+      const pos = layoutResult.positions.get(node.id)
+      if (pos) {
+        adjustedY.set(node.id, pos.y)
+      }
+    })
+
+    // Process each depth level from bottom to top
+    for (let depth = maxDepth; depth >= 0; depth--) {
+      dagreNodes.forEach((node) => {
+        const info = nodeInfos.get(node.id)
+        if (info?.depth === depth) {
+          const directChildren = childrenMap.get(node.id) || []
+          if (directChildren.length > 0) {
+            // Calculate vertical center of direct children
+            let minY = Infinity
+            let maxY = -Infinity
+            directChildren.forEach((childId) => {
+              const childY = adjustedY.get(childId)
+              if (childY !== undefined) {
+                const childTop = childY
+                const childBottom = childY + nodeHeight
+                if (childTop < minY) minY = childTop
+                if (childBottom > maxY) maxY = childBottom
+              }
+            })
+            if (minY !== Infinity && maxY !== -Infinity) {
+              const childrenCenterY = (minY + maxY) / 2
+              adjustedY.set(node.id, childrenCenterY - nodeHeight / 2)
+            }
+          }
+        }
+      })
+    }
+
+    // Create VueFlow nodes with adjusted positions
     dagreNodes.forEach((dagreNode) => {
       const info = nodeInfos.get(dagreNode.id)
       const pos = layoutResult.positions.get(dagreNode.id)
+      const adjustedPosY = adjustedY.get(dagreNode.id)
 
       if (info && pos) {
         nodes.push({
           id: dagreNode.id,
           type: info.depth === 0 ? 'topic' : 'brace',
-          position: { x: pos.x, y: pos.y },
+          position: { x: pos.x, y: adjustedPosY !== undefined ? adjustedPosY : pos.y },
           data: {
             label: info.text,
             nodeType: info.depth === 0 ? 'topic' : 'brace',

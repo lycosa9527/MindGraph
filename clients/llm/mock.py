@@ -1,7 +1,11 @@
 """
-Mock LLM Client for Testing
+Mock LLM Client for Testing (DEPRECATED)
+
+DEPRECATED: This file serves no purpose in production environments where LLM is always configured.
+It is only kept as a fallback safety mechanism for edge cases where LLM initialization fails.
 
 Provides a mock LLM client that returns structured responses for testing purposes.
+This should not be used in production - real LLM clients should always be configured.
 
 Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved
@@ -149,8 +153,8 @@ class MockLLMClient:
             elif 'multi-flow' in content_lower:
                 return {
                     "event": "Multi-Flow Event",
-                    "causes": ["Cause 1", "Cause 2", "Cause 3"],
-                    "effects": ["Effect 1", "Effect 2", "Effect 3"]
+                    "causes": ["Cause 1", "Cause 2", "Cause 3", "Cause 4"],
+                    "effects": ["Effect 1", "Effect 2", "Effect 3", "Effect 4"]
                 }
             elif 'flow map' in content_lower or 'flow maps' in content_lower:
                 return {

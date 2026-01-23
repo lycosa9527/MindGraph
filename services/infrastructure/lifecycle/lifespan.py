@@ -23,7 +23,7 @@ from clients.llm import close_httpx_clients
 from config.celery import CeleryStartupError, init_celery_worker_check
 from config.database import close_db, init_db, start_wal_checkpoint_scheduler
 from services.auth.ip_geolocation import get_geolocation_service
-from services.auth.sms_middleware import shutdown_sms_service
+from services.auth.sms_middleware import get_sms_middleware, shutdown_sms_service
 from services.infrastructure.monitoring.critical_alert import CriticalAlertService
 from services.infrastructure.monitoring.health_monitor import get_health_monitor
 from services.infrastructure.monitoring.process_monitor import get_process_monitor
@@ -41,6 +41,7 @@ from services.utils.backup_scheduler import start_backup_scheduler
 from services.utils.temp_image_cleaner import start_cleanup_scheduler
 from services.utils.update_notifier import update_notifier
 from utils.auth import AUTH_MODE, display_demo_info
+from utils.auth.config import ADMIN_PHONES
 from utils.dependency_checker import DependencyError, check_system_dependencies
 
 logger = logging.getLogger(__name__)
@@ -416,6 +417,45 @@ async def lifespan(fastapi_app: FastAPI):
     except Exception as e:  # pylint: disable=broad-except
         if is_main_worker:
             logger.warning("Failed to initialize diagram cache: %s", e)
+
+    # Send startup notification SMS to admin phones
+    if is_main_worker:
+        try:
+            # Check if startup SMS notification is enabled
+            sms_startup_enabled = os.getenv("SMS_STARTUP_NOTIFICATION_ENABLED", "true").lower() in ("true", "1", "yes")
+            if not sms_startup_enabled:
+                logger.debug("[LIFESPAN] Startup SMS notification disabled (SMS_STARTUP_NOTIFICATION_ENABLED=false)")
+            else:
+                sms_middleware = get_sms_middleware()
+                if sms_middleware.is_available:
+                    admin_phones = [phone.strip() for phone in ADMIN_PHONES if phone.strip()]
+                    if admin_phones:
+                        # Get startup notification template ID from environment variable
+                        startup_template_id = os.getenv("TENCENT_SMS_TEMPLATE_STARTUP", "").strip()
+                        if not startup_template_id:
+                            logger.warning(
+                                "[LIFESPAN] TENCENT_SMS_TEMPLATE_STARTUP not configured, "
+                                "skipping startup SMS notification"
+                            )
+                        else:
+                            # Message: "MindGraph已在主服务器启动，短信通知系统启用成功。"
+                            success, message = await sms_middleware.send_notification(
+                                phones=admin_phones,
+                                template_id=startup_template_id,
+                                template_params=[],  # Template has no parameters
+                                lang="zh"
+                            )
+                            if success:
+                                logger.info("[LIFESPAN] Startup SMS notification sent successfully: %s", message)
+                            else:
+                                logger.warning("[LIFESPAN] Failed to send startup SMS notification: %s", message)
+                    else:
+                        logger.debug("[LIFESPAN] No admin phones configured, skipping startup SMS notification")
+                else:
+                    logger.debug("[LIFESPAN] SMS service not available, skipping startup SMS notification")
+        except Exception as e:  # pylint: disable=broad-except
+            # Don't fail startup if SMS notification fails
+            logger.warning("[LIFESPAN] Failed to send startup SMS notification (non-critical): %s", e)
 
     # Yield control to application
     if is_main_worker:

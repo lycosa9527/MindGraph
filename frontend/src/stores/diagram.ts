@@ -209,6 +209,25 @@ export const useDiagramStore = defineStore('diagram', () => {
       return recalculatedNodes.map((node) => diagramNodeToVueFlowNode(node, diagramType))
     }
 
+    // For multi-flow maps, add causeCount and effectCount to event node for handle generation
+    if (diagramType === 'multi_flow_map') {
+      return data.value.nodes.map((node) => {
+        const vueFlowNode = diagramNodeToVueFlowNode(node, diagramType)
+        // If this is the event node, count causes and effects connecting to it
+        if (node.id === 'event' && data.value?.connections) {
+          const causeCount = data.value.connections.filter(
+            (conn) => conn.target === 'event' && conn.source?.startsWith('cause-')
+          ).length
+          const effectCount = data.value.connections.filter(
+            (conn) => conn.source === 'event' && conn.target?.startsWith('effect-')
+          ).length
+          vueFlowNode.data.causeCount = causeCount || 4 // Default to 4 if no connections found
+          vueFlowNode.data.effectCount = effectCount || 4 // Default to 4 if no connections found
+        }
+        return vueFlowNode
+      })
+    }
+
     return data.value.nodes.map((node) => diagramNodeToVueFlowNode(node, diagramType))
   })
 

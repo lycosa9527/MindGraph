@@ -7,6 +7,103 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+
+## [5.12.0] - 2026-01-23 - Diagram Enhancements and Authentication Improvements
+
+### Added
+
+- **SMS Startup Notification Feature**
+  - Added `SMS_STARTUP_NOTIFICATION_ENABLED` configuration option in `env.example`
+  - Added `TENCENT_SMS_TEMPLATE_STARTUP` template configuration for startup notifications
+  - Enables SMS notifications during application startup lifecycle
+
+- **Multi-Flow Map Visual Enhancements**
+  - Enhanced `FlowNode.vue` with pill-shaped styling for multi-flow maps
+  - Added conditional handle visibility based on node type (causes connect from right, effects connect to left)
+  - Improved `TopicNode.vue` with rounded rectangle styling for multi-flow maps
+  - Added dynamic handle positioning for multi-flow map causes and effects (evenly distributed)
+  - Enhanced `StraightEdge.vue` with improved arrowhead positioning and offset calculation
+  - Better visual distinction between different diagram types
+
+- **Session Expired Modal Enhancements**
+  - Enhanced `LoginModal.vue` with improved session expired modal handling
+  - Added body scroll prevention when session expired modal is shown
+  - Improved modal backdrop styling with stronger blur effect
+  - Added prevention of closing session expired modal via backdrop click or close button
+  - Enhanced `App.vue` with better session expired login success handling
+  - Improved route refresh after successful login from session expired state
+
+- **Diagram History Improvements**
+  - Enhanced `DiagramHistory.vue` with improved history management (223 lines added)
+  - Better history loading and display functionality
+  - Improved user experience for diagram history navigation
+
+### Changed
+
+- **LLM Client Error Handling**
+  - Enhanced `clients/llm/__init__.py` with improved error logging for unavailable LLM clients
+  - Changed mock client fallback from warning to error level logging
+  - Added deprecation warnings for mock client usage in production
+  - Updated `clients/llm/mock.py` with deprecation notices
+  - Improved mock client test data (added 4th cause/effect for multi-flow maps)
+
+- **Frontend Diagram Components**
+  - Enhanced `FlowNode.vue` with multi-flow map support (35 lines changed)
+    - Added pill shape styling for multi-flow maps
+    - Conditional handle visibility based on diagram type
+    - Better handle positioning for horizontal flow connections
+  - Improved `TopicNode.vue` with multi-flow map enhancements (117 lines added)
+    - Added rounded rectangle styling for multi-flow maps
+    - Dynamic handle generation based on cause/effect counts
+    - Evenly distributed handle positions for better visual balance
+  - Enhanced `StraightEdge.vue` with better arrowhead positioning (40 lines changed)
+    - Improved offset calculation to prevent line from sticking through arrowhead
+    - Better marker sizing and positioning using userSpaceOnUse
+    - Enhanced arrowhead visual appearance
+
+- **Diagram Composables**
+  - Enhanced `useBraceMap.ts` with improved brace map handling (57 lines changed)
+  - Improved `useMultiFlowMap.ts` with better multi-flow map support (8 lines added)
+  - Enhanced `useTreeMap.ts` with improved tree map functionality (28 lines changed)
+
+- **Frontend Stores**
+  - Enhanced `auth.ts` store with session expired modal state management (29 lines changed)
+  - Improved `diagram.ts` store with better diagram state handling (19 lines added)
+  - Enhanced `savedDiagrams.ts` store with improved saved diagram management (84 lines changed)
+  - Improved `specLoader.ts` store with better spec loading functionality (117 lines changed)
+
+- **Router Updates**
+  - Enhanced `router/index.ts` with improved route handling (13 lines added)
+
+- **API Client**
+  - Improved `apiClient.ts` with better error handling (6 lines changed)
+
+### Refactored
+
+- **SMS Middleware Simplification**
+  - Major refactoring of `services/auth/sms_middleware.py` (647 lines removed)
+  - Moved SMS service logic to dedicated `services/auth/sms_service.py` module
+  - Simplified middleware to focus on request handling, rate limiting, and performance tracking
+  - Better separation of concerns between middleware and service layers
+  - Improved code maintainability and testability
+
+- **Lifecycle Improvements**
+  - Enhanced `services/infrastructure/lifecycle/lifespan.py` with improved lifecycle management (42 lines changed)
+  - Better application startup and shutdown handling
+
+### Technical Details
+
+- **Total Changes**: 20 files changed, 886 insertions(+), 694 deletions(-)
+- **Net Change**: +192 lines of code
+- **Key Improvements**:
+  - Better visual design for multi-flow maps with pill shapes and rounded rectangles
+  - Enhanced user experience for session expired scenarios
+  - Improved code organization with SMS service separation
+  - Better error handling and logging throughout the application
+
+---
+---
+
 ## [5.11.0] - 2026-01-23 - Major Infrastructure and LLM Service Refactoring
 
 ### Changed

@@ -16,10 +16,83 @@ import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 
 import { useAuthStore } from './auth'
+import { getDefaultTemplate, loadSpecForDiagramType } from './specLoader'
+import type { DiagramType } from '@/types'
 
 // Security constants - must match backend limits
 const MAX_SPEC_SIZE_KB = 500 // Backend limit from DIAGRAM_MAX_SPEC_SIZE_KB
 const MAX_THUMBNAIL_SIZE = 150000 // Max base64 chars (~100KB decoded)
+
+/**
+ * Check if a diagram spec is empty/unmodified (still matches default template)
+ * 
+ * This function compares the current diagram against the default template by:
+ * 1. Loading the default template for the diagram type
+ * 2. Converting it to nodes using the same loader function
+ * 3. Comparing node texts (normalized and sorted) to detect if diagram is unchanged
+ * 
+ * This approach is more accurate than regex patterns because:
+ * - Uses actual template data (single source of truth)
+ * - Automatically adapts if templates change
+ * - Avoids false positives from regex matching
+ * - Compares structure, not just text patterns
+ */
+function isDiagramEmpty(spec: Record<string, unknown>, diagramType: DiagramType): boolean {
+  // Check if spec has nodes array (saved diagram format)
+  if (!('nodes' in spec) || !Array.isArray(spec.nodes)) {
+    return false
+  }
+
+  const currentNodes = spec.nodes as Array<Record<string, unknown>>
+
+  // If no nodes, consider it empty
+  if (currentNodes.length === 0) {
+    return true
+  }
+
+  // Get default template for this diagram type
+  const defaultTemplate = getDefaultTemplate(diagramType)
+  if (!defaultTemplate) {
+    // If no default template exists, consider it non-empty
+    return false
+  }
+
+  // Convert default template to nodes using the same loader
+  let defaultNodes: Array<{ text: string }>
+  try {
+    const defaultResult = loadSpecForDiagramType(defaultTemplate, diagramType)
+    defaultNodes = defaultResult.nodes.map((node) => ({
+      text: String(node.text || '').trim(),
+    }))
+  } catch (error) {
+    // If loading fails, fall back to false (not empty)
+    console.warn('[SavedDiagrams] Failed to load default template for comparison:', error)
+    return false
+  }
+
+  // Normalize and sort node texts for comparison
+  const normalizeTexts = (nodes: Array<{ text: string }>): string[] => {
+    return nodes
+      .map((node) => node.text)
+      .filter((text) => text.length > 0) // Filter out empty texts
+      .sort()
+  }
+
+  const currentTexts = normalizeTexts(
+    currentNodes.map((node) => ({
+      text: String(node.text || '').trim(),
+    }))
+  )
+  const defaultTexts = normalizeTexts(defaultNodes)
+
+  // Compare: if texts match exactly, diagram is empty/unmodified
+  if (currentTexts.length !== defaultTexts.length) {
+    return false
+  }
+
+  // Check if all current texts match default texts
+  return currentTexts.every((text, index) => text === defaultTexts[index])
+}
 
 // Types
 export interface SavedDiagram {
@@ -410,6 +483,7 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
    * - If diagram is already saved (activeDiagramId set): update existing
    * - If new diagram and slots available: save as new
    * - If new diagram and slots full: skip (return skipped status)
+   * - If new diagram is empty/unmodified: skip (return skipped status)
    *
    * @param title - Diagram title
    * @param diagramType - Type of diagram
@@ -447,13 +521,19 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
         }
       }
 
-      // Case 2: New diagram - check if we have slots
+      // Case 2: New diagram - check if it's empty/unmodified
+      if (isDiagramEmpty(spec, diagramType as DiagramType)) {
+        // Empty diagram - skip auto-save silently
+        return { success: false, action: 'skipped', error: 'Diagram is empty/unmodified' }
+      }
+
+      // Case 3: New diagram - check if we have slots
       if (!canSaveMore.value) {
         // Slots full - skip auto-save silently
         return { success: false, action: 'skipped', error: 'No available slots' }
       }
 
-      // Case 3: New diagram with available slots - save it
+      // Case 4: New diagram with available slots - save it
       const saved = await saveDiagram(title, diagramType, spec, language, thumbnail)
 
       if (saved) {

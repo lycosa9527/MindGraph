@@ -121,8 +121,13 @@ def get_llm_client(
         logger.debug('Using %s LLM client', model_id)
         return client
     else:
-        logger.warning('Qwen client not available, using mock client for testing')
-        # Return a mock client for testing when real client is not available
+        logger.error(
+            'LLM client not available for model "%s". This should not happen in production. '
+            'Falling back to deprecated mock client. Please check LLM configuration.',
+            model_id
+        )
+        # DEPRECATED: Mock client fallback - should not be used in production
+        # Real LLM clients should always be configured
         return MockLLMClient()
 
 

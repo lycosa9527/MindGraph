@@ -498,13 +498,37 @@ export function loadTreeMapSpec(spec: Record<string, unknown>): SpecLoaderResult
       marginY: DEFAULT_PADDING,
     })
 
-    // Create topic node with Dagre position
+    // Calculate center X position of all category nodes to center-align topic node
+    let categoryCenterX = 0
+    if (categories.length > 0) {
+      let minCategoryX = Infinity
+      let maxCategoryX = -Infinity
+      categories.forEach((category, catIndex) => {
+        const categoryId = category.id || `tree-cat-${catIndex}`
+        const categoryPos = layoutResult.positions.get(categoryId)
+        if (categoryPos) {
+          const categoryRight = categoryPos.x + NODE_WIDTH
+          if (categoryPos.x < minCategoryX) minCategoryX = categoryPos.x
+          if (categoryRight > maxCategoryX) maxCategoryX = categoryRight
+        }
+      })
+      if (minCategoryX !== Infinity && maxCategoryX !== -Infinity) {
+        categoryCenterX = (minCategoryX + maxCategoryX) / 2
+      }
+    }
+
+    // Create topic node with Dagre position, centered above categories
     const topicPos = layoutResult.positions.get(rootId)
+    const topicX = categories.length > 0 && categoryCenterX > 0
+      ? categoryCenterX - NODE_WIDTH / 2
+      : topicPos
+        ? topicPos.x
+        : DEFAULT_CENTER_X - NODE_WIDTH / 2
     nodes.push({
       id: rootId,
       text: root.text,
       type: 'topic',
-      position: topicPos ? { x: topicPos.x, y: topicPos.y } : { x: DEFAULT_CENTER_X - NODE_WIDTH / 2, y: 60 },
+      position: { x: topicX, y: topicPos ? topicPos.y : 60 },
     })
 
     // Create category and leaf nodes with Dagre positions
@@ -867,7 +891,13 @@ export function loadMultiFlowMapSpec(spec: Record<string, unknown>): SpecLoaderR
         y: causeStartY + index * verticalSpacing - nodeHeight / 2,
       },
     })
-    connections.push({ id: `edge-cause-${index}`, source: `cause-${index}`, target: 'event' })
+    connections.push({
+      id: `edge-cause-${index}`,
+      source: `cause-${index}`,
+      target: 'event',
+      sourceHandle: 'right',
+      targetHandle: `left-${index}`, // Use specific handle ID matching the cause index
+    })
   })
 
   // Effects
@@ -882,7 +912,13 @@ export function loadMultiFlowMapSpec(spec: Record<string, unknown>): SpecLoaderR
         y: effectStartY + index * verticalSpacing - nodeHeight / 2,
       },
     })
-    connections.push({ id: `edge-effect-${index}`, source: 'event', target: `effect-${index}` })
+    connections.push({
+      id: `edge-effect-${index}`,
+      source: 'event',
+      target: `effect-${index}`,
+      sourceHandle: `right-${index}`, // Use specific handle ID matching the effect index
+      targetHandle: 'left',
+    })
   })
 
   return { nodes, connections }
@@ -979,17 +1015,72 @@ export function loadBraceMapSpec(spec: Record<string, unknown>): SpecLoaderResul
       marginY: DEFAULT_PADDING,
     })
 
-    // Create nodes with Dagre positions
+    // Build parent-child map from edges
+    const childrenMap = new Map<string, string[]>()
+    flatData.dagreEdges.forEach((edge) => {
+      if (!childrenMap.has(edge.source)) {
+        childrenMap.set(edge.source, [])
+      }
+      childrenMap.get(edge.source)!.push(edge.target)
+    })
+
+    // Calculate adjusted Y positions by centering each parent relative to its children
+    // Process from deepest level to shallowest (bottom-up)
+    const adjustedY = new Map<string, number>()
+    const maxDepth = Math.max(
+      ...Array.from(flatData.nodeInfos.values()).map((info) => info.depth)
+    )
+
+    // Initialize with original positions
+    flatData.dagreNodes.forEach((node) => {
+      const pos = layoutResult.positions.get(node.id)
+      if (pos) {
+        adjustedY.set(node.id, pos.y)
+      }
+    })
+
+    // Process each depth level from bottom to top
+    for (let depth = maxDepth; depth >= 0; depth--) {
+      flatData.dagreNodes.forEach((node) => {
+        const info = flatData.nodeInfos.get(node.id)
+        if (info?.depth === depth) {
+          const directChildren = childrenMap.get(node.id) || []
+          if (directChildren.length > 0) {
+            // Calculate vertical center of direct children
+            let minY = Infinity
+            let maxY = -Infinity
+            directChildren.forEach((childId) => {
+              const childY = adjustedY.get(childId)
+              if (childY !== undefined) {
+                const childTop = childY
+                const childBottom = childY + DEFAULT_NODE_HEIGHT
+                if (childTop < minY) minY = childTop
+                if (childBottom > maxY) maxY = childBottom
+              }
+            })
+            if (minY !== Infinity && maxY !== -Infinity) {
+              const childrenCenterY = (minY + maxY) / 2
+              adjustedY.set(node.id, childrenCenterY - DEFAULT_NODE_HEIGHT / 2)
+            }
+          }
+        }
+      })
+    }
+
+    // Create nodes with adjusted positions
     flatData.dagreNodes.forEach((dagreNode) => {
       const info = flatData.nodeInfos.get(dagreNode.id)
       const pos = layoutResult.positions.get(dagreNode.id)
+      const adjustedPosY = adjustedY.get(dagreNode.id)
 
-      nodes.push({
-        id: dagreNode.id,
-        text: info?.text || '',
-        type: info?.depth === 0 ? 'topic' : 'brace',
-        position: pos ? { x: pos.x, y: pos.y } : { x: 0, y: 0 },
-      })
+      if (info && pos) {
+        nodes.push({
+          id: dagreNode.id,
+          text: info.text || '',
+          type: info.depth === 0 ? 'topic' : 'brace',
+          position: { x: pos.x, y: adjustedPosY !== undefined ? adjustedPosY : pos.y },
+        })
+      }
     })
 
     // Create connections
@@ -1412,8 +1503,8 @@ const DEFAULT_TEMPLATES: Record<string, Record<string, unknown>> = {
   },
   multi_flow_map: {
     event: '事件',
-    causes: ['原因1', '原因2'],
-    effects: ['结果1', '结果2'],
+    causes: ['原因1', '原因2', '原因3', '原因4'],
+    effects: ['结果1', '结果2', '结果3', '结果4'],
   },
   bridge_map: {
     relating_factor: '如同',
