@@ -12,6 +12,7 @@ import {
 } from '@/composables/diagrams/layoutConfig'
 import { calculateDagreLayout } from '@/composables/diagrams/useDagreLayout'
 import type { Connection, DiagramNode } from '@/types'
+
 import type { SpecLoaderResult } from './types'
 
 interface MindMapBranch {

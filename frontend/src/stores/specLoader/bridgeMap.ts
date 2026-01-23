@@ -8,6 +8,7 @@ import {
   DEFAULT_PADDING,
 } from '@/composables/diagrams/layoutConfig'
 import type { Connection, DiagramNode } from '@/types'
+
 import type { SpecLoaderResult } from './types'
 
 /**

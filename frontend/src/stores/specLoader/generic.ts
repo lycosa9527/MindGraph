@@ -3,6 +3,7 @@
  * Used for saved diagrams that already have nodes and connections arrays
  */
 import type { Connection, DiagramNode } from '@/types'
+
 import type { SpecLoaderResult } from './types'
 
 /**

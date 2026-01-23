@@ -9,6 +9,7 @@ import {
   DEFAULT_TOPIC_RADIUS,
 } from '@/composables/diagrams/layoutConfig'
 import type { Connection, DiagramNode } from '@/types'
+
 import type { SpecLoaderResult } from './types'
 
 /**

@@ -4,8 +4,9 @@
  * NO connection lines between nodes (unlike bubble maps)
  */
 import type { Connection, DiagramNode } from '@/types'
-import { calculateCircleMapLayout } from './utils'
+
 import type { SpecLoaderResult } from './types'
+import { calculateCircleMapLayout } from './utils'
 
 /**
  * Recalculate circle map layout from existing nodes
@@ -55,16 +56,16 @@ export function recalculateCircleMapLayout(nodes: DiagramNode[]): DiagramNode[] 
     contextNodes.forEach((node, index) => {
       const angleDeg = (index * 360) / nodeCount - 90
       const angleRad = (angleDeg * Math.PI) / 180
-    const x = layout.centerX + layout.childrenRadius * Math.cos(angleRad) - layout.uniformContextR
-    const y = layout.centerY + layout.childrenRadius * Math.sin(angleRad) - layout.uniformContextR
+      const x = layout.centerX + layout.childrenRadius * Math.cos(angleRad) - layout.uniformContextR
+      const y = layout.centerY + layout.childrenRadius * Math.sin(angleRad) - layout.uniformContextR
 
-    result.push({
-      id: `context-${index}`,
-      text: node.text,
-      type: 'bubble',
-      position: { x, y },
-      style: { size: layout.uniformContextR * 2 },
-    })
+      result.push({
+        id: `context-${index}`,
+        text: node.text,
+        type: 'bubble',
+        position: { x, y },
+        style: { size: layout.uniformContextR * 2 },
+      })
     })
   }
 
@@ -118,16 +119,16 @@ export function loadCircleMapSpec(spec: Record<string, unknown>): SpecLoaderResu
     context.forEach((ctx, index) => {
       const angleDeg = (index * 360) / nodeCount - 90
       const angleRad = (angleDeg * Math.PI) / 180
-    const x = layout.centerX + layout.childrenRadius * Math.cos(angleRad) - layout.uniformContextR
-    const y = layout.centerY + layout.childrenRadius * Math.sin(angleRad) - layout.uniformContextR
+      const x = layout.centerX + layout.childrenRadius * Math.cos(angleRad) - layout.uniformContextR
+      const y = layout.centerY + layout.childrenRadius * Math.sin(angleRad) - layout.uniformContextR
 
-    nodes.push({
-      id: `context-${index}`,
-      text: ctx,
-      type: 'bubble', // Maps to 'circle' node type for circle maps
-      position: { x, y },
-      style: { size: layout.uniformContextR * 2 }, // Diameter for perfect circle
-    })
+      nodes.push({
+        id: `context-${index}`,
+        text: ctx,
+        type: 'bubble', // Maps to 'circle' node type for circle maps
+        position: { x, y },
+        style: { size: layout.uniformContextR * 2 }, // Diameter for perfect circle
+      })
       // NO connection created - circle maps have no lines
     })
   }

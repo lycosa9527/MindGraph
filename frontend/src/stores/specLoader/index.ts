@@ -7,6 +7,7 @@
  * making it easier to maintain and test each diagram type independently.
  */
 import type { DiagramType } from '@/types'
+
 import { loadBraceMapSpec } from './braceMap'
 import { loadBridgeMapSpec } from './bridgeMap'
 import { loadBubbleMapSpec } from './bubbleMap'

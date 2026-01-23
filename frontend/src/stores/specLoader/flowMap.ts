@@ -17,6 +17,7 @@ import {
   FLOW_SUBSTEP_SPACING,
 } from '@/composables/diagrams/layoutConfig'
 import type { Connection, DiagramNode } from '@/types'
+
 import type { SpecLoaderResult } from './types'
 
 interface FlowSubstepEntry {
