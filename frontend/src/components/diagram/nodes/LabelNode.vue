@@ -5,6 +5,7 @@
  * Supports inline text editing on double-click
  */
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
+import type { CSSProperties } from 'vue'
 
 import { useVueFlow } from '@vue-flow/core'
 
@@ -78,7 +79,7 @@ async function recalculatePosition() {
   }
   
   const allCenters = bridgeNodes.flatMap((node) => {
-    const dims = getNodeDimensions(node as NodeWithDimensions)
+    const dims = getNodeDimensions(node as (typeof bridgeNodes)[0] & NodeWithDimensions)
     return [node.position.y + dims.height / 2]
   })
   const centerY = allCenters.length > 0 
@@ -186,7 +187,7 @@ onUnmounted(() => {
   }
 })
 
-const nodeStyle = computed(() => {
+const nodeStyle = computed((): CSSProperties => {
   // For bridge map dimension labels, use different styling (no italic, bold, dark blue)
   const isBridgeDimension = props.data.diagramType === 'bridge_map' && props.data.isDimensionLabel
   
@@ -196,10 +197,10 @@ const nodeStyle = computed(() => {
     fontSize: `${props.data.style?.fontSize || (isBridgeDimension ? 14 : 14)}px`,
     fontStyle: isBridgeDimension ? 'normal' : 'italic',
     fontWeight: props.data.style?.fontWeight || (isBridgeDimension ? 'bold' : 'normal'),
-    textAlign: isBridgeDimension ? 'right' : 'center', // Always right-aligned for bridge maps (like old JS with text-anchor: end)
+    textAlign: (isBridgeDimension ? 'right' : 'center') as 'left' | 'right' | 'center' | 'justify' | 'start' | 'end',
     padding: isBridgeDimension ? '4px 8px' : '4px 8px',
     whiteSpace: isBridgeDimension ? 'normal' : 'nowrap', // Allow natural wrapping for bridge maps
-    wordWrap: isBridgeDimension ? 'break-word' : 'normal', // Enable word wrapping for long text
+    overflowWrap: (isBridgeDimension ? 'break-word' : 'normal') as 'normal' | 'break-word' | 'anywhere',
   }
 })
 

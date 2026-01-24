@@ -350,6 +350,16 @@ const alternativeDimensionChips = computed(() => {
 const dimensionLabelPosition = computed(() => {
   // First try to get position from dimension label node
   const nodes = getNodes.value
+  
+  // Helper to get node dimensions (redefined here for use in this computed)
+  const getNodeDimensions = (node: (typeof nodes)[0] & NodeWithDimensions) => {
+    const width =
+      node.dimensions?.width ?? node.measured?.width ?? DEFAULT_NODE_WIDTH
+    const height =
+      node.dimensions?.height ?? node.measured?.height ?? DEFAULT_NODE_HEIGHT
+    return { width, height }
+  }
+  
   const labelNode = nodes.find((node) => node.id === 'dimension-label')
   if (labelNode) {
     const dims = getNodeDimensions(labelNode as (typeof nodes)[0] & NodeWithDimensions)

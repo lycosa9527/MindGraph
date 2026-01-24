@@ -155,7 +155,7 @@ router.beforeEach(async (to, _from, next) => {
       if (hadUserBeforeCheck && to.name !== 'Login') {
         // Session expired - show modal overlay and prevent navigation
         // Stay on current page (from) instead of navigating to protected route
-        authStore.handleTokenExpired(undefined, null) // null = stay on current page
+        authStore.handleTokenExpired(undefined, undefined) // undefined = stay on current page
         // Prevent navigation - user must login first
         return next(false)
       }

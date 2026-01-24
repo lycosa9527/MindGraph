@@ -108,7 +108,7 @@ export async function apiRequest(endpoint: string, options: RequestInit = {}): P
       console.debug('[ApiClient] Refresh failed, showing login modal')
       const authStore = useAuthStore()
       // Pass null to stay on current page (no redirect)
-      authStore.handleTokenExpired('Your session has expired. Please log in again.', null)
+      authStore.handleTokenExpired('Your session has expired. Please log in again.', undefined)
     }
   }
 
@@ -215,7 +215,7 @@ export async function apiUpload(
     } else {
       const authStore = useAuthStore()
       // Pass null to stay on current page (no redirect)
-      authStore.handleTokenExpired('Your session has expired. Please log in again.', null)
+      authStore.handleTokenExpired('Your session has expired. Please log in again.', undefined)
     }
   }
 
