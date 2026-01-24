@@ -26,8 +26,11 @@ export function recalculateCircleMapLayout(nodes: DiagramNode[]): DiagramNode[] 
   const contextNodes = nodes.filter((n) => n.type === 'bubble' && n.id.startsWith('context-'))
   const nodeCount = contextNodes.length
 
-  // Calculate layout based on current node count
-  const layout = calculateCircleMapLayout(nodeCount)
+  // Get context texts for adaptive sizing
+  const contextTexts = contextNodes.map((n) => n.text)
+
+  // Calculate layout based on current node count and context texts
+  const layout = calculateCircleMapLayout(nodeCount, contextTexts)
 
   const result: DiagramNode[] = []
 
@@ -53,15 +56,16 @@ export function recalculateCircleMapLayout(nodes: DiagramNode[]): DiagramNode[] 
     })
   }
 
-  // Context nodes - evenly distributed around with uniform size (matching old JS version)
+  // Context nodes - evenly distributed around with adaptive size based on text length
+  // Preserve existing sizes if already set, otherwise calculate adaptively
   // Handle division by zero case
   if (nodeCount > 0) {
     contextNodes.forEach((node, index) => {
       const angleDeg = (index * 360) / nodeCount - 90
       const angleRad = (angleDeg * Math.PI) / 180
-      // Use uniform size for all context nodes (matching old JS: uniformContextR * 2)
-      const contextSize = layout.uniformContextR * 2
-      const contextRadius = layout.uniformContextR
+      // Use existing size if set, otherwise calculate adaptive size based on text length
+      const contextSize = node.style?.size || calculateAdaptiveCircleSize(node.text, false)
+      const contextRadius = contextSize / 2
       const x = layout.centerX + layout.childrenRadius * Math.cos(angleRad) - contextRadius
       const y = layout.centerY + layout.childrenRadius * Math.sin(angleRad) - contextRadius
 
@@ -93,8 +97,8 @@ export function loadCircleMapSpec(spec: Record<string, unknown>): SpecLoaderResu
   const context = Array.isArray(spec.context) ? (spec.context as string[]) : []
   const nodeCount = context.length
 
-  // Calculate layout using shared utility
-  const layout = calculateCircleMapLayout(nodeCount)
+  // Calculate layout using shared utility with context texts for adaptive sizing
+  const layout = calculateCircleMapLayout(nodeCount, context)
 
   const nodes: DiagramNode[] = []
   // Circle maps have NO connections (no lines between nodes)
@@ -121,15 +125,15 @@ export function loadCircleMapSpec(spec: Record<string, unknown>): SpecLoaderResu
     style: { size: topicSize }, // Adaptive diameter based on text length
   })
 
-  // Context nodes - perfect circles distributed around with uniform size (matching old JS version)
+  // Context nodes - perfect circles distributed around with adaptive size based on text length
   // Handle division by zero case
   if (nodeCount > 0) {
     context.forEach((ctx, index) => {
       const angleDeg = (index * 360) / nodeCount - 90
       const angleRad = (angleDeg * Math.PI) / 180
-      // Use uniform size for all context nodes (matching old JS: uniformContextR * 2)
-      const contextSize = layout.uniformContextR * 2
-      const contextRadius = layout.uniformContextR
+      // Calculate adaptive size for each context node based on text length
+      const contextSize = calculateAdaptiveCircleSize(ctx, false)
+      const contextRadius = contextSize / 2
       const x = layout.centerX + layout.childrenRadius * Math.cos(angleRad) - contextRadius
       const y = layout.centerY + layout.childrenRadius * Math.sin(angleRad) - contextRadius
 
@@ -138,7 +142,7 @@ export function loadCircleMapSpec(spec: Record<string, unknown>): SpecLoaderResu
         text: ctx,
         type: 'bubble', // Maps to 'circle' node type for circle maps
         position: { x, y },
-        style: { size: contextSize }, // Uniform diameter for all context nodes
+        style: { size: contextSize }, // Adaptive diameter based on text length
       })
       // NO connection created - circle maps have no lines
     })

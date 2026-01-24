@@ -71,16 +71,37 @@ export function calculateAdaptiveCircleSize(text: string, isTopic: boolean = fal
 }
 
 /**
- * Calculate circle map layout based on node count
+ * Calculate circle map layout based on node count and context texts
+ * Uses adaptive sizing for context nodes based on text length
  * Shared by both loadCircleMapSpec and recalculateCircleMapLayout
  *
  * @param nodeCount - Number of context nodes
+ * @param contextTexts - Array of context node texts for adaptive sizing
  * @returns Layout calculation result with positions and radii
  */
-export function calculateCircleMapLayout(nodeCount: number): CircleMapLayoutResult {
-  const uniformContextR = DEFAULT_CONTEXT_RADIUS
+export function calculateCircleMapLayout(
+  nodeCount: number,
+  contextTexts: string[] = []
+): CircleMapLayoutResult {
   const topicR = DEFAULT_TOPIC_RADIUS
   const padding = DEFAULT_PADDING
+
+  // Calculate adaptive sizes for context nodes and find maximum radius
+  // Default minimum radius for layout calculations
+  const defaultContextR = DEFAULT_CONTEXT_RADIUS
+  let maxContextR = defaultContextR
+
+  if (contextTexts.length > 0) {
+    // Calculate adaptive size for each context node and find maximum radius
+    contextTexts.forEach((text) => {
+      const adaptiveSize = calculateAdaptiveCircleSize(text, false)
+      const adaptiveRadius = adaptiveSize / 2
+      maxContextR = Math.max(maxContextR, adaptiveRadius)
+    })
+  }
+
+  // Use maxContextR for layout calculations to ensure all nodes fit
+  const uniformContextR = maxContextR
 
   // Calculate childrenRadius using both constraints (matching original D3 logic)
   const targetRadialDistance = topicR + topicR * 0.5 + uniformContextR + 5

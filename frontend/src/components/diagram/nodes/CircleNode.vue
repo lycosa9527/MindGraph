@@ -32,22 +32,16 @@ const defaultStyle = computed(() => getNodeStyle(isTopicNode.value ? 'topic' : '
 const diagramStore = useDiagramStore()
 
 // Get the circle size from data or calculate adaptively based on text length
-// Context nodes always use uniform size (set by loaders), topic nodes can be adaptive
+// Both topic and context nodes use adaptive sizing based on text length
 const circleSize = computed(() => {
   // If size is explicitly set in style, use it
   if (props.data.style?.size) {
     return props.data.style.size
   }
   
-  // For topic nodes, calculate adaptive size based on text length
-  // For context nodes, use default uniform size (70px diameter)
-  if (isTopicNode.value) {
-    const text = props.data.label || ''
-    return calculateAdaptiveCircleSize(text, true)
-  }
-  
-  // Context nodes: default uniform size (matching old JS: uniformContextR * 2 = 70px)
-  return 70
+  // Calculate adaptive size based on text length for both topic and context nodes
+  const text = props.data.label || ''
+  return calculateAdaptiveCircleSize(text, isTopicNode.value)
 })
 
 // Watch for text changes and update node size in store (only for topic nodes)
@@ -64,12 +58,12 @@ watch(
   }
 )
 
-// Listen for text_updated event to recalculate size (only for topic nodes)
+// Listen for text_updated event to recalculate size (for both topic and context nodes)
 function handleTextUpdated(payload: { nodeId: string; text: string }) {
-  if (payload.nodeId === props.id && diagramStore.type === 'circle_map' && isTopicNode.value) {
-    const adaptiveSize = calculateAdaptiveCircleSize(payload.text, true)
+  if (payload.nodeId === props.id && diagramStore.type === 'circle_map') {
+    const adaptiveSize = calculateAdaptiveCircleSize(payload.text, isTopicNode.value)
     nextTick(() => {
-      diagramStore.saveNodeStyle(props.id, { size: adaptiveSize })
+      diagramStore.saveNodeStyle(payload.nodeId, { size: adaptiveSize })
     })
   }
 }
