@@ -6,11 +6,12 @@
 import type { Connection, DiagramNode } from '@/types'
 
 import type { SpecLoaderResult } from './types'
-import { calculateCircleMapLayout } from './utils'
+import { calculateAdaptiveCircleSize, calculateCircleMapLayout } from './utils'
 
 /**
  * Recalculate circle map layout from existing nodes
  * Called when nodes are added/deleted to update boundary and positions
+ * Preserves adaptive sizes based on text content
  *
  * @param nodes - Current diagram nodes
  * @returns Recalculated nodes with updated positions
@@ -39,32 +40,37 @@ export function recalculateCircleMapLayout(nodes: DiagramNode[]): DiagramNode[] 
     style: { width: layout.outerCircleR * 2, height: layout.outerCircleR * 2 },
   })
 
-  // Topic node - centered
+  // Topic node - centered with adaptive size
   if (topicNode) {
+    const topicSize = calculateAdaptiveCircleSize(topicNode.text, true)
+    const topicRadius = topicSize / 2
     result.push({
       id: 'topic',
       text: topicNode.text,
       type: 'center',
-      position: { x: layout.centerX - layout.topicR, y: layout.centerY - layout.topicR },
-      style: { size: layout.topicR * 2 },
+      position: { x: layout.centerX - topicRadius, y: layout.centerY - topicRadius },
+      style: { size: topicSize },
     })
   }
 
-  // Context nodes - evenly distributed around
+  // Context nodes - evenly distributed around with uniform size (matching old JS version)
   // Handle division by zero case
   if (nodeCount > 0) {
     contextNodes.forEach((node, index) => {
       const angleDeg = (index * 360) / nodeCount - 90
       const angleRad = (angleDeg * Math.PI) / 180
-      const x = layout.centerX + layout.childrenRadius * Math.cos(angleRad) - layout.uniformContextR
-      const y = layout.centerY + layout.childrenRadius * Math.sin(angleRad) - layout.uniformContextR
+      // Use uniform size for all context nodes (matching old JS: uniformContextR * 2)
+      const contextSize = layout.uniformContextR * 2
+      const contextRadius = layout.uniformContextR
+      const x = layout.centerX + layout.childrenRadius * Math.cos(angleRad) - contextRadius
+      const y = layout.centerY + layout.childrenRadius * Math.sin(angleRad) - contextRadius
 
       result.push({
         id: `context-${index}`,
         text: node.text,
         type: 'bubble',
         position: { x, y },
-        style: { size: layout.uniformContextR * 2 },
+        style: { size: contextSize },
       })
     })
   }
@@ -105,29 +111,34 @@ export function loadCircleMapSpec(spec: Record<string, unknown>): SpecLoaderResu
 
   // Topic node - perfect circle at center
   // Use 'center' type which maps to 'circle' in vueflow
+  const topicSize = calculateAdaptiveCircleSize(topic, true)
+  const topicRadius = topicSize / 2
   nodes.push({
     id: 'topic',
     text: topic,
     type: 'center', // Maps to 'circle' node type for perfect circle rendering
-    position: { x: layout.centerX - layout.topicR, y: layout.centerY - layout.topicR },
-    style: { size: layout.topicR * 2 }, // Diameter for perfect circle
+    position: { x: layout.centerX - topicRadius, y: layout.centerY - topicRadius },
+    style: { size: topicSize }, // Adaptive diameter based on text length
   })
 
-  // Context nodes - perfect circles distributed around
+  // Context nodes - perfect circles distributed around with uniform size (matching old JS version)
   // Handle division by zero case
   if (nodeCount > 0) {
     context.forEach((ctx, index) => {
       const angleDeg = (index * 360) / nodeCount - 90
       const angleRad = (angleDeg * Math.PI) / 180
-      const x = layout.centerX + layout.childrenRadius * Math.cos(angleRad) - layout.uniformContextR
-      const y = layout.centerY + layout.childrenRadius * Math.sin(angleRad) - layout.uniformContextR
+      // Use uniform size for all context nodes (matching old JS: uniformContextR * 2)
+      const contextSize = layout.uniformContextR * 2
+      const contextRadius = layout.uniformContextR
+      const x = layout.centerX + layout.childrenRadius * Math.cos(angleRad) - contextRadius
+      const y = layout.centerY + layout.childrenRadius * Math.sin(angleRad) - contextRadius
 
       nodes.push({
         id: `context-${index}`,
         text: ctx,
         type: 'bubble', // Maps to 'circle' node type for circle maps
         position: { x, y },
-        style: { size: layout.uniformContextR * 2 }, // Diameter for perfect circle
+        style: { size: contextSize }, // Uniform diameter for all context nodes
       })
       // NO connection created - circle maps have no lines
     })

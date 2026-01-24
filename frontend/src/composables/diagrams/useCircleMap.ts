@@ -7,6 +7,7 @@
 import { computed, ref } from 'vue'
 
 import type { Connection, DiagramNode, MindGraphEdge, MindGraphNode } from '@/types'
+import { calculateAdaptiveCircleSize } from '@/stores/specLoader/utils'
 
 import { DEFAULT_BUBBLE_RADIUS, DEFAULT_PADDING, DEFAULT_TOPIC_RADIUS } from './layoutConfig'
 
@@ -118,11 +119,13 @@ export function useCircleMap(options: CircleMapOptions = {}) {
       selectable: false,
     })
 
-    // Central topic node - centered, non-draggable, perfect circle
+    // Central topic node - centered, non-draggable, perfect circle with adaptive sizing
+    const topicSize = calculateAdaptiveCircleSize(data.value.topic, true)
+    const topicRadius = topicSize / 2
     result.push({
       id: 'topic',
       type: 'circle', // Use CircleNode for perfect circle rendering
-      position: { x: l.centerX - l.topicR, y: l.centerY - l.topicR },
+      position: { x: l.centerX - topicRadius, y: l.centerY - topicRadius },
       data: {
         label: data.value.topic,
         nodeType: 'topic',
@@ -130,7 +133,7 @@ export function useCircleMap(options: CircleMapOptions = {}) {
         isDraggable: false,
         isSelectable: true,
         style: {
-          size: l.topicR * 2, // Diameter for perfect circle
+          size: topicSize, // Adaptive diameter based on text length
         },
       },
       draggable: false,
@@ -151,8 +154,14 @@ export function useCircleMap(options: CircleMapOptions = {}) {
 
     // Context nodes positioned around the circle
     // Start from top (-90 degrees) with even angle distribution
+    // All context nodes use uniform size (matching old JS version)
     data.value.context.forEach((ctx, index) => {
       const nodeId = `context-${index}`
+      
+      // Use uniform size for all context nodes (matching old JS: uniformContextR * 2)
+      const contextSize = l.uniformContextR * 2
+      const contextRadius = l.uniformContextR
+      
       let x: number
       let y: number
 
@@ -166,8 +175,8 @@ export function useCircleMap(options: CircleMapOptions = {}) {
         const angleRad = (angleDeg * Math.PI) / 180
 
         // Position at childrenRadius from center
-        x = l.centerX + l.childrenRadius * Math.cos(angleRad) - l.uniformContextR
-        y = l.centerY + l.childrenRadius * Math.sin(angleRad) - l.uniformContextR
+        x = l.centerX + l.childrenRadius * Math.cos(angleRad) - contextRadius
+        y = l.centerY + l.childrenRadius * Math.sin(angleRad) - contextRadius
       }
 
       result.push({
@@ -181,7 +190,7 @@ export function useCircleMap(options: CircleMapOptions = {}) {
           isDraggable: true,
           isSelectable: true,
           style: {
-            size: l.uniformContextR * 2, // Diameter for perfect circle
+            size: contextSize, // Uniform diameter for all context nodes
           },
         },
         draggable: true,

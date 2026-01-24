@@ -535,19 +535,179 @@ const gridConfig = {
   box-shadow: 0 0 0 2px #3b82f6;
 }
 
-/* Circle node selection styles - use drop-shadow filter for circular glow */
-/* Matches the old JS selection-manager.js behavior */
+/* ============================================
+   CIRCLE NODE SELECTION ANIMATION OPTIONS
+   ============================================
+   Uncomment ONE of the options below to use it.
+   Each option provides a different visual style for selected circle nodes.
+   ============================================ */
+
+/* OPTION 1: Pulsing Glow (Animated) - Smooth pulsing effect */
+/* Creates a breathing/pulsing animation that draws attention */
+@keyframes pulseGlow {
+  0%, 100% {
+    filter: drop-shadow(0 0 8px rgba(102, 126, 234, 0.6))
+      drop-shadow(0 0 4px rgba(102, 126, 234, 0.4));
+  }
+  50% {
+    filter: drop-shadow(0 0 16px rgba(102, 126, 234, 0.9))
+      drop-shadow(0 0 8px rgba(102, 126, 234, 0.7));
+  }
+}
+.vue-flow__node-circle.selected {
+  box-shadow: none !important;
+  animation: pulseGlow 2s ease-in-out infinite;
+}
+
+/* OPTION 2: Clean Ring Border - Minimalist approach */
+/* Simple, clean ring that doesn't distract from content */
+/*
+.vue-flow__node-circle.selected {
+  box-shadow: none !important;
+  filter: drop-shadow(0 0 0 3px rgba(102, 126, 234, 0.8))
+    drop-shadow(0 0 0 1px rgba(102, 126, 234, 0.4));
+}
+*/
+
+/* OPTION 3: Scale + Glow - Subtle size increase with glow */
+/* Node slightly grows and glows when selected */
+/*
+.vue-flow__node-circle.selected {
+  box-shadow: none !important;
+  filter: drop-shadow(0 0 12px rgba(102, 126, 234, 0.8))
+    drop-shadow(0 0 4px rgba(102, 126, 234, 0.6));
+  transform: scale(1.05);
+}
+*/
+
+/* OPTION 4: Gradient Border Glow - Animated gradient ring */
+/* Creates a rotating gradient effect around the border */
+/*
+@keyframes gradientRotate {
+  0% {
+    filter: drop-shadow(0 0 12px rgba(102, 126, 234, 0.8))
+      drop-shadow(0 0 4px rgba(147, 51, 234, 0.6));
+  }
+  50% {
+    filter: drop-shadow(0 0 12px rgba(147, 51, 234, 0.8))
+      drop-shadow(0 0 4px rgba(102, 126, 234, 0.6));
+  }
+  100% {
+    filter: drop-shadow(0 0 12px rgba(102, 126, 234, 0.8))
+      drop-shadow(0 0 4px rgba(147, 51, 234, 0.6));
+  }
+}
+.vue-flow__node-circle.selected {
+  box-shadow: none !important;
+  animation: gradientRotate 3s ease-in-out infinite;
+}
+*/
+
+/* OPTION 5: Expanding Shadow - Growing shadow effect */
+/* Shadow expands outward creating depth */
+/*
+@keyframes expandShadow {
+  0% {
+    filter: drop-shadow(0 0 4px rgba(102, 126, 234, 0.6));
+  }
+  100% {
+    filter: drop-shadow(0 0 20px rgba(102, 126, 234, 0.9))
+      drop-shadow(0 0 10px rgba(102, 126, 234, 0.7));
+  }
+}
+.vue-flow__node-circle.selected {
+  box-shadow: none !important;
+  animation: expandShadow 1.5s ease-out forwards;
+}
+*/
+
+/* OPTION 6: Color Shift + Glow - Subtle color change */
+/* Node color shifts slightly warmer with glow */
+/*
+.vue-flow__node-circle.selected {
+  box-shadow: none !important;
+  filter: drop-shadow(0 0 12px rgba(102, 126, 234, 0.8))
+    drop-shadow(0 0 4px rgba(102, 126, 234, 0.6))
+    brightness(1.1) saturate(1.1);
+}
+*/
+
+/* OPTION 7: Ripple Effect - Concentric expanding circles */
+/* Creates a ripple animation effect */
+/*
+@keyframes ripple {
+  0% {
+    filter: drop-shadow(0 0 0 rgba(102, 126, 234, 0));
+  }
+  50% {
+    filter: drop-shadow(0 0 8px rgba(102, 126, 234, 0.6))
+      drop-shadow(0 0 16px rgba(102, 126, 234, 0.3));
+  }
+  100% {
+    filter: drop-shadow(0 0 16px rgba(102, 126, 234, 0.4))
+      drop-shadow(0 0 24px rgba(102, 126, 234, 0.2));
+  }
+}
+.vue-flow__node-circle.selected {
+  box-shadow: none !important;
+  animation: ripple 2s ease-out infinite;
+}
+*/
+
+/* OPTION 8: Golden Accent - Warm golden glow */
+/* Elegant golden/yellow accent instead of blue */
+/*
+.vue-flow__node-circle.selected {
+  box-shadow: none !important;
+  filter: drop-shadow(0 0 12px rgba(234, 179, 8, 0.8))
+    drop-shadow(0 0 4px rgba(234, 179, 8, 0.6));
+}
+*/
+
+/* OPTION 9: Dual Ring - Two concentric rings */
+/* Clean double-ring effect for emphasis */
+/*
+.vue-flow__node-circle.selected {
+  box-shadow: none !important;
+  filter: drop-shadow(0 0 0 4px rgba(102, 126, 234, 0.3))
+    drop-shadow(0 0 0 2px rgba(102, 126, 234, 0.8))
+    drop-shadow(0 0 8px rgba(102, 126, 234, 0.6));
+}
+*/
+
+/* OPTION 10: Subtle Pulse - Very gentle pulsing */
+/* Minimal animation, less distracting */
+/*
+@keyframes subtlePulse {
+  0%, 100% {
+    filter: drop-shadow(0 0 10px rgba(102, 126, 234, 0.7));
+  }
+  50% {
+    filter: drop-shadow(0 0 14px rgba(102, 126, 234, 0.8));
+  }
+}
+.vue-flow__node-circle.selected {
+  box-shadow: none !important;
+  animation: subtlePulse 3s ease-in-out infinite;
+}
+*/
+
+/* OPTION 11: Original Blue Glow (Current) - Static blue glow */
+/* The original implementation - no animation */
+/*
 .vue-flow__node-circle.selected {
   box-shadow: none !important;
   filter: drop-shadow(0 0 12px rgba(102, 126, 234, 0.8))
     drop-shadow(0 0 4px rgba(102, 126, 234, 0.6));
 }
+*/
 
 /* Smooth transitions */
 .vue-flow__node {
   transition:
     box-shadow 0.2s ease,
-    filter 0.2s ease;
+    filter 0.2s ease,
+    transform 0.2s ease;
 }
 
 /* Boundary node styling - ensure it's visible and not clipped */

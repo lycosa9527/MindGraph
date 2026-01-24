@@ -69,7 +69,7 @@ async def _detect_diagram_type_from_prompt(
         detected_type = response.strip().lower()
 
         # Validate the detected type - only include working diagram types
-        # 8 thinking maps + 1 mindmap (concept_map and thinking tools are work in progress)
+        # 8 thinking maps + 1 mindmap (concept_map is work in progress)
         valid_types = {
             'circle_map', 'bubble_map', 'double_bubble_map',
             'brace_map', 'bridge_map', 'tree_map',

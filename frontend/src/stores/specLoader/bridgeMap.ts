@@ -41,8 +41,6 @@ export function loadBridgeMapSpec(spec: Record<string, unknown>): SpecLoaderResu
   }
 
   // Layout constants from layoutConfig
-  // Start X accounts for dimension label on the left (label positioned relative to startX)
-  const startX = DEFAULT_PADDING + 110
   const centerY = DEFAULT_CENTER_Y
   const gapBetweenPairs = 50 // Actual gap between node edges (right edge to left edge)
   // Bridge map nodes should be close to the bridge line (smaller gap than default)
@@ -51,6 +49,10 @@ export function loadBridgeMapSpec(spec: Record<string, unknown>): SpecLoaderResu
   // Use consistent height for both nodes to ensure symmetry
   // Use BRANCH_NODE_HEIGHT (36px) which matches BranchNode's min-height
   const nodeHeight = BRANCH_NODE_HEIGHT
+
+  // Layout constants from layoutConfig
+  // Start X accounts for dimension label on the left (label positioned relative to startX)
+  const startX = DEFAULT_PADDING + 110
 
   const nodes: DiagramNode[] = []
   const connections: Connection[] = []
@@ -121,8 +123,11 @@ export function loadBridgeMapSpec(spec: Record<string, unknown>): SpecLoaderResu
     // Nodes start at startX (left edge)
     // Label's right edge should be at: startX - gapFromNodes
     // Label's left edge (labelX) should be at: startX - gapFromNodes - estimatedLabelWidth
+    // Note: LabelNode will recalculate position using maxWidth (180px) if text is long and overlaps
     const gapFromNodes = 8 // Small gap from nodes
-    const estimatedLabelWidth = 180 // Based on max-width constraint
+    // Use realistic estimate for initial positioning (100px)
+    // LabelNode will recalculate using maxWidth (180px) if overlap detected
+    const estimatedLabelWidth = 100 // Realistic estimate for typical content (max is 180px)
     const labelX = startX - gapFromNodes - estimatedLabelWidth
 
     nodes.push({

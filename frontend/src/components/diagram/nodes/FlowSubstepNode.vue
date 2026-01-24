@@ -97,4 +97,11 @@ function handleEditCancel() {
   cursor: grabbing;
   transform: translateY(0);
 }
+
+/* Hide handle dots visually while keeping them functional */
+.flow-substep-node :deep(.vue-flow__handle) {
+  opacity: 0;
+  border: none;
+  background: transparent;
+}
 </style>

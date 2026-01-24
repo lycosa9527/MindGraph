@@ -14,6 +14,7 @@ from typing import TYPE_CHECKING, cast
 
 from prompts import get_prompt
 from services.llm import llm_service
+from services.llm.rag_service import RAGService
 
 from agents.concept_maps.concept_map_agent import ConceptMapAgent
 from agents.mind_maps.mind_map_agent import MindMapAgent
@@ -25,19 +26,9 @@ from agents.thinking_maps.double_bubble_map_agent import DoubleBubbleMapAgent
 from agents.thinking_maps.flow_map_agent import FlowMapAgent
 from agents.thinking_maps.multi_flow_map_agent import MultiFlowMapAgent
 from agents.thinking_maps.tree_map_agent import TreeMapAgent
-from agents.thinking_tools.factor_analysis_agent import FactorAnalysisAgent
-from agents.thinking_tools.three_position_analysis_agent import ThreePositionAnalysisAgent
-from agents.thinking_tools.perspective_analysis_agent import PerspectiveAnalysisAgent
-from agents.thinking_tools.goal_analysis_agent import GoalAnalysisAgent
-from agents.thinking_tools.possibility_analysis_agent import PossibilityAnalysisAgent
-from agents.thinking_tools.result_analysis_agent import ResultAnalysisAgent
-from agents.thinking_tools.five_w_one_h_agent import FiveWOneHAgent
-from agents.thinking_tools.whwm_analysis_agent import WHWMAnalysisAgent
-from agents.thinking_tools.four_quadrant_agent import FourQuadrantAgent
 from agents.core.diagram_detection import _detect_diagram_type_from_prompt
 from agents.core.learning_sheet import _clean_prompt_for_learning_sheet, _detect_learning_sheet_from_prompt
 from agents.core.utils import create_error_response, validate_inputs
-from services.llm.rag_service import RAGService
 from config.database import SessionLocal
 
 if TYPE_CHECKING:
@@ -104,25 +95,6 @@ async def _generate_spec_with_agent(
             agent = MindMapAgent(model=model)
         elif diagram_type == 'concept_map':
             agent = ConceptMapAgent(model=model)
-        # Thinking Tools
-        elif diagram_type == 'factor_analysis':
-            agent = FactorAnalysisAgent()
-        elif diagram_type == 'three_position_analysis':
-            agent = ThreePositionAnalysisAgent()
-        elif diagram_type == 'perspective_analysis':
-            agent = PerspectiveAnalysisAgent()
-        elif diagram_type == 'goal_analysis':
-            agent = GoalAnalysisAgent()
-        elif diagram_type == 'possibility_analysis':
-            agent = PossibilityAnalysisAgent()
-        elif diagram_type == 'result_analysis':
-            agent = ResultAnalysisAgent()
-        elif diagram_type == 'five_w_one_h':
-            agent = FiveWOneHAgent()
-        elif diagram_type == 'whwm_analysis':
-            agent = WHWMAnalysisAgent()
-        elif diagram_type == 'four_quadrant':
-            agent = FourQuadrantAgent()
         else:
             # Fallback to bubble map
             agent = BubbleMapAgent(model=model)

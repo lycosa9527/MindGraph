@@ -23,9 +23,13 @@ const { getNodeStyle } = useTheme({
 
 const defaultStyle = computed(() => getNodeStyle('topic'))
 
-// Tree map and brace map use pill shape (fully rounded ends)
+// Tree map, brace map, and mindmap use pill shape (fully rounded ends)
 const isPillShape = computed(
-  () => props.data.diagramType === 'tree_map' || props.data.diagramType === 'brace_map'
+  () =>
+    props.data.diagramType === 'tree_map' ||
+    props.data.diagramType === 'brace_map' ||
+    props.data.diagramType === 'mindmap' ||
+    props.data.diagramType === 'mind_map'
 )
 // Multi-flow map uses rounded rectangle
 const isRoundedRectangle = computed(() => props.data.diagramType === 'multi_flow_map')
@@ -34,6 +38,7 @@ const isRoundedRectangle = computed(() => props.data.diagramType === 'multi_flow
 const isTreeMap = computed(() => props.data.diagramType === 'tree_map')
 const isBraceMap = computed(() => props.data.diagramType === 'brace_map')
 const isMultiFlowMap = computed(() => props.data.diagramType === 'multi_flow_map')
+const isMindMap = computed(() => props.data.diagramType === 'mindmap')
 
 // For multi-flow maps: get cause count to generate handles dynamically
 const causeCount = computed(() => {
@@ -75,6 +80,61 @@ const rightHandlePositions = computed(() => {
     })
   }
   return positions
+})
+
+// For mindmaps: get total branch count and quadrant distribution
+const totalBranchCount = computed(() => {
+  if (!isMindMap.value) return 0
+  return (props.data.totalBranchCount as number) || 0
+})
+
+// Clockwise distribution: top-right → bottom-right → bottom-left → top-left
+// Returns handle positions for all 4 quadrants
+const mindMapHandlePositions = computed(() => {
+  if (totalBranchCount.value === 0) {
+    return { topRight: [], bottomRight: [], bottomLeft: [], topLeft: [] }
+  }
+
+  const total = totalBranchCount.value
+  // Match Python agent logic: first half → RIGHT, second half → LEFT (reversed)
+  // Right side: top to bottom → top-right then bottom-right
+  // Left side: bottom to top (reversed) → bottom-left then top-left
+  const midPoint = Math.ceil(total / 2)
+
+  // Count branches per quadrant based on left/right split
+  // Right side (first half): distribute between top-right and bottom-right
+  // Left side (second half): distribute between bottom-left and top-left
+  const rightCount = midPoint
+  const leftCount = total - midPoint
+
+  const counts = {
+    topRight: Math.ceil(rightCount / 2),
+    bottomRight: Math.floor(rightCount / 2),
+    bottomLeft: Math.ceil(leftCount / 2),
+    topLeft: Math.floor(leftCount / 2),
+  }
+
+  // Generate handles for each quadrant with proper spacing
+  const generateHandles = (count: number, prefix: string, isTop: boolean) => {
+    const handles: Array<{ id: string; top: string }> = []
+    for (let i = 0; i < count; i++) {
+      const numerator = (i + 1) * 100
+      const denominator = count + 1
+      const position = isTop ? `${numerator / denominator}%` : `${100 - numerator / denominator}%`
+      handles.push({
+        id: `${prefix}-${i}`,
+        top: position,
+      })
+    }
+    return handles
+  }
+
+  return {
+    topRight: generateHandles(counts.topRight, 'mindmap-top-right', true),
+    bottomRight: generateHandles(counts.bottomRight, 'mindmap-bottom-right', false),
+    bottomLeft: generateHandles(counts.bottomLeft, 'mindmap-bottom-left', false),
+    topLeft: generateHandles(counts.topLeft, 'mindmap-top-left', true),
+  }
 })
 
 const nodeStyle = computed(() => ({
@@ -128,27 +188,28 @@ function handleEditCancel() {
       @edit-start="isEditing = true"
     />
 
-    <!-- Connection handles for horizontal layouts (mind maps, bubble maps, etc.) -->
+    <!-- Connection handles for horizontal layouts (bubble maps, etc.) -->
+    <!-- Mindmaps use dynamic handles below, so exclude them here -->
     <Handle
-      v-if="!isPillShape && !isMultiFlowMap"
+      v-if="!isPillShape && !isMultiFlowMap && !isMindMap"
       type="source"
       :position="Position.Right"
       class="bg-blue-500!"
     />
     <Handle
-      v-if="!isPillShape && !isMultiFlowMap"
+      v-if="!isPillShape && !isMultiFlowMap && !isMindMap"
       type="source"
       :position="Position.Left"
       class="bg-blue-500!"
     />
     <Handle
-      v-if="!isPillShape && !isMultiFlowMap"
+      v-if="!isPillShape && !isMultiFlowMap && !isMindMap"
       type="source"
       :position="Position.Top"
       class="bg-blue-500!"
     />
     <Handle
-      v-if="!isPillShape && !isMultiFlowMap"
+      v-if="!isPillShape && !isMultiFlowMap && !isMindMap"
       type="source"
       :position="Position.Bottom"
       class="bg-blue-500!"
@@ -191,6 +252,56 @@ function handleEditCancel() {
         :key="handle.id"
         type="source"
         :position="Position.Right"
+        :style="{ top: handle.top }"
+        class="bg-blue-500!"
+      />
+    </template>
+
+    <!-- Connection handles for mindmaps (clockwise: top-right → bottom-right → bottom-left → top-left) -->
+    <!-- Top-right quadrant handles (right edge, top portion) -->
+    <template v-if="isMindMap">
+      <Handle
+        v-for="handle in mindMapHandlePositions.topRight"
+        :id="handle.id"
+        :key="handle.id"
+        type="source"
+        :position="Position.Right"
+        :style="{ top: handle.top }"
+        class="bg-blue-500!"
+      />
+    </template>
+    <!-- Bottom-right quadrant handles (right edge, bottom portion) -->
+    <template v-if="isMindMap">
+      <Handle
+        v-for="handle in mindMapHandlePositions.bottomRight"
+        :id="handle.id"
+        :key="handle.id"
+        type="source"
+        :position="Position.Right"
+        :style="{ top: handle.top }"
+        class="bg-blue-500!"
+      />
+    </template>
+    <!-- Bottom-left quadrant handles (left edge, bottom portion) -->
+    <template v-if="isMindMap">
+      <Handle
+        v-for="handle in mindMapHandlePositions.bottomLeft"
+        :id="handle.id"
+        :key="handle.id"
+        type="source"
+        :position="Position.Left"
+        :style="{ top: handle.top }"
+        class="bg-blue-500!"
+      />
+    </template>
+    <!-- Top-left quadrant handles (left edge, top portion) -->
+    <template v-if="isMindMap">
+      <Handle
+        v-for="handle in mindMapHandlePositions.topLeft"
+        :id="handle.id"
+        :key="handle.id"
+        type="source"
+        :position="Position.Left"
         :style="{ top: handle.top }"
         class="bg-blue-500!"
       />

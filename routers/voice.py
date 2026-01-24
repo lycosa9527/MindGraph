@@ -93,17 +93,7 @@ def get_diagram_prefix_map() -> Dict[str, str]:
         'bridge_map': 'node',  # Bridge maps use node prefix
         'mindmap': 'branch',
         'mind_map': 'branch',  # Alias for mindmap
-        'concept_map': 'concept',
-        # Thinking tools (use generic node prefix)
-        'factor_analysis': 'branch',
-        'three_position_analysis': 'node',
-        'perspective_analysis': 'node',
-        'goal_analysis': 'node',
-        'possibility_analysis': 'node',
-        'result_analysis': 'node',
-        'five_w_one_h': 'node',
-        'whwm_analysis': 'node',
-        'four_quadrant': 'branch'
+        'concept_map': 'concept'
     }
 
 

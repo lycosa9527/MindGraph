@@ -131,15 +131,6 @@ const VALID_DIAGRAM_TYPES: DiagramType[] = [
   'concept_map',
   'mindmap',
   'mind_map',
-  'factor_analysis',
-  'three_position_analysis',
-  'perspective_analysis',
-  'goal_analysis',
-  'possibility_analysis',
-  'result_analysis',
-  'five_w_one_h',
-  'whwm_analysis',
-  'four_quadrant',
   'diagram',
 ]
 
@@ -147,6 +138,10 @@ const MAX_HISTORY_SIZE = 50
 
 // Helper to determine edge type based on diagram type
 function getEdgeTypeForDiagram(diagramType: DiagramType | null): MindGraphEdgeType {
+  // Mindmaps use straight edges with dynamic handles
+  if (diagramType === 'mindmap' || diagramType === 'mind_map') {
+    return 'straight'
+  }
   if (!diagramType) return 'curved'
 
   const edgeTypeMap: Partial<Record<DiagramType, MindGraphEdgeType>> = {
@@ -224,6 +219,17 @@ export const useDiagramStore = defineStore('diagram', () => {
           vueFlowNode.data.causeCount = causeCount || 4 // Default to 4 if no connections found
           vueFlowNode.data.effectCount = effectCount || 4 // Default to 4 if no connections found
         }
+        return vueFlowNode
+      })
+    }
+
+    // For mindmaps, ensure branch counts are passed through from node.data
+    // (They should already be set by specLoader, but ensure they're preserved)
+    if (diagramType === 'mindmap' || diagramType === 'mind_map') {
+      return data.value.nodes.map((node) => {
+        const vueFlowNode = diagramNodeToVueFlowNode(node, diagramType)
+        // Branch counts should already be in node.data from specLoader
+        // This ensures they're preserved in vueFlowNode.data
         return vueFlowNode
       })
     }

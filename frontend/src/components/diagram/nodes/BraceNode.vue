@@ -114,4 +114,11 @@ function handleEditCancel() {
 .brace-node:active {
   cursor: grabbing;
 }
+
+/* Hide handle dots visually while keeping them functional */
+.brace-node :deep(.vue-flow__handle) {
+  opacity: 0;
+  border: none;
+  background: transparent;
+}
 </style>

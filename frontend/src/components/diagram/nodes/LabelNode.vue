@@ -4,9 +4,13 @@
  * Used for displaying classification dimensions in Tree Maps and Brace Maps
  * Supports inline text editing on double-click
  */
-import { computed, ref } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
+
+import { useVueFlow } from '@vue-flow/core'
 
 import { eventBus } from '@/composables/useEventBus'
+import { BRANCH_NODE_HEIGHT, DEFAULT_NODE_HEIGHT, DEFAULT_NODE_WIDTH } from '@/composables/diagrams/layoutConfig'
+import { useDiagramStore } from '@/stores'
 import type { MindGraphNodeProps } from '@/types'
 
 import InlineEditableText from './InlineEditableText.vue'
@@ -15,6 +19,172 @@ const props = defineProps<MindGraphNodeProps>()
 
 const isPlaceholder = computed(() => props.data.isPlaceholder || !props.data.label)
 const isBridgeDimension = computed(() => props.data.diagramType === 'bridge_map' && props.data.isDimensionLabel)
+
+// Position recalculation for bridge map dimension labels
+const labelRef = ref<HTMLElement | null>(null)
+const { getNodes, updateNode } = useVueFlow()
+const diagramStore = useDiagramStore()
+let resizeObserver: ResizeObserver | null = null
+
+// Recalculate position when text changes to prevent overlap and maintain vertical centering
+async function recalculatePosition() {
+  if (!isBridgeDimension.value || !labelRef.value) return
+
+  // Get label node and measure its actual dimensions
+  const nodes = getNodes.value
+  const labelNode = nodes.find((node) => node.id === props.id)
+  if (!labelNode) return
+
+  const labelElement = labelRef.value
+  const maxWidth = 180 // Max width from CSS (max-width: 180px)
+  // Measure actual height (changes when text wraps)
+  const actualHeight = labelElement.offsetHeight || 40 // Fallback to estimate
+  
+  // For overlap detection, always use maxWidth since wrapped text can still use full width
+  const labelX = labelNode.position.x
+  const labelRightEdge = labelX + maxWidth
+
+  // Get all bridge map nodes (excluding the label itself)
+  const bridgeNodes = nodes.filter(
+    (node) =>
+      node.data?.diagramType === 'bridge_map' &&
+      node.id !== props.id &&
+      node.data?.pairIndex !== undefined
+  )
+
+  if (bridgeNodes.length === 0) return
+
+  // Find the leftmost node
+  const leftmostNode = bridgeNodes.reduce((leftmost, node) => {
+    if (!leftmost) return node
+    return node.position.x < leftmost.position.x ? node : leftmost
+  }, bridgeNodes[0])
+
+  const leftmostX = leftmostNode.position.x
+  const gap = 8 // Same gap as in bridgeMap.ts
+
+  // Calculate center Y of bridge line (average of all node centers)
+  // Use Vue Flow's measured dimensions if available
+  interface NodeWithDimensions {
+    measured?: { width?: number; height?: number }
+    dimensions?: { width?: number; height?: number }
+  }
+  
+  // Helper to get node dimensions (same pattern as BridgeOverlay)
+  const getNodeDimensions = (node: (typeof bridgeNodes)[0] & NodeWithDimensions) => {
+    const height =
+      node.dimensions?.height ?? node.measured?.height ?? BRANCH_NODE_HEIGHT
+    return { height }
+  }
+  
+  const allCenters = bridgeNodes.flatMap((node) => {
+    const dims = getNodeDimensions(node as NodeWithDimensions)
+    return [node.position.y + dims.height / 2]
+  })
+  const centerY = allCenters.length > 0 
+    ? allCenters.reduce((a, b) => a + b, 0) / allCenters.length 
+    : labelNode.position.y + actualHeight / 2 // Fallback to current position
+
+  // Recalculate Y position to center label vertically with bridge line
+  const newLabelY = centerY - actualHeight / 2
+
+  // Check if label overlaps with nodes (accounting for gap)
+  // Always use maxWidth for calculation to account for worst-case scenario (wrapped text)
+  let adjustedX = labelX
+  let needsXUpdate = false
+  
+  if (labelRightEdge + gap > leftmostX) {
+    // Calculate new position: move label left so its right edge is gap pixels from leftmost node
+    const newLabelX = leftmostX - gap - maxWidth
+    // Allow label to go slightly negative if needed to prevent overlap
+    const minX = -50 // Allow going slightly negative (up to 50px off-canvas)
+    adjustedX = Math.max(newLabelX, minX)
+    needsXUpdate = Math.abs(adjustedX - labelX) > 1
+  }
+
+  // Check if Y position needs update (when height changes due to wrapping)
+  const needsYUpdate = Math.abs(newLabelY - labelNode.position.y) > 1
+
+  // Update node position if needed
+  if (updateNode && (needsXUpdate || needsYUpdate)) {
+    updateNode(props.id, (node) => ({
+      ...node,
+      position: { x: adjustedX, y: newLabelY },
+    }))
+    // Also update in diagram store
+    diagramStore.updateNodePosition(props.id, { x: adjustedX, y: newLabelY }, false)
+  }
+}
+
+// Watch for text changes and recalculate position
+watch(
+  () => props.data.label,
+  () => {
+    if (isBridgeDimension.value) {
+      nextTick(() => {
+        // Wait a bit for DOM to update after text change
+        setTimeout(() => {
+          recalculatePosition()
+        }, 100)
+      })
+    }
+  }
+)
+
+// Also listen to text_updated event in case text is updated externally
+eventBus.on('node:text_updated', (payload: { nodeId: string; text: string }) => {
+  if (isBridgeDimension.value && payload.nodeId === props.id) {
+    nextTick(() => {
+      setTimeout(() => {
+        recalculatePosition()
+      }, 150)
+    })
+  }
+})
+
+// Watch for node position changes (in case nodes move)
+watch(
+  () => getNodes.value,
+  () => {
+    if (isBridgeDimension.value) {
+      nextTick(() => {
+        setTimeout(() => {
+          recalculatePosition()
+        }, 100)
+      })
+    }
+  },
+  { deep: true }
+)
+
+// Recalculate on mount and set up ResizeObserver
+onMounted(() => {
+  if (isBridgeDimension.value && labelRef.value) {
+    // Initial recalculation after DOM is ready
+    nextTick(() => {
+      setTimeout(() => {
+        recalculatePosition()
+      }, 300)
+    })
+
+    // Set up ResizeObserver to detect when label size changes (e.g., text wraps)
+    resizeObserver = new ResizeObserver(() => {
+      // Debounce recalculation to avoid too many updates
+      setTimeout(() => {
+        recalculatePosition()
+      }, 100)
+    })
+    resizeObserver.observe(labelRef.value)
+  }
+})
+
+onUnmounted(() => {
+  if (resizeObserver && labelRef.value) {
+    resizeObserver.unobserve(labelRef.value)
+    resizeObserver.disconnect()
+    resizeObserver = null
+  }
+})
 
 const nodeStyle = computed(() => {
   // For bridge map dimension labels, use different styling (no italic, bold, dark blue)
@@ -26,8 +196,10 @@ const nodeStyle = computed(() => {
     fontSize: `${props.data.style?.fontSize || (isBridgeDimension ? 14 : 14)}px`,
     fontStyle: isBridgeDimension ? 'normal' : 'italic',
     fontWeight: props.data.style?.fontWeight || (isBridgeDimension ? 'bold' : 'normal'),
-    textAlign: isBridgeDimension ? 'right' : 'center', // Right aligned for bridge maps
+    textAlign: isBridgeDimension ? 'right' : 'center', // Always right-aligned for bridge maps (like old JS with text-anchor: end)
     padding: isBridgeDimension ? '4px 8px' : '4px 8px',
+    whiteSpace: isBridgeDimension ? 'normal' : 'nowrap', // Allow natural wrapping for bridge maps
+    wordWrap: isBridgeDimension ? 'break-word' : 'normal', // Enable word wrapping for long text
   }
 })
 
@@ -87,6 +259,14 @@ function handleTextSave(newText: string) {
     nodeId: props.id,
     text: newText,
   })
+  // Recalculate position after text update to prevent overlap
+  if (isBridgeDimension.value) {
+    nextTick(() => {
+      setTimeout(() => {
+        recalculatePosition()
+      }, 100)
+    })
+  }
 }
 
 function handleEditCancel() {
@@ -96,12 +276,14 @@ function handleEditCancel() {
 
 <template>
   <div
+    ref="labelRef"
     class="label-node flex cursor-pointer"
     :class="{
       'items-center justify-center select-none': !isBridgeDimension,
       'flex-col items-end justify-center': isBridgeDimension,
     }"
     :style="nodeStyle"
+    :data-bridge-dimension="isBridgeDimension ? '' : undefined"
   >
     <!-- Bridge map: two-line format -->
     <template v-if="isBridgeDimension && bridgeMapDisplay">
@@ -146,6 +328,13 @@ function handleEditCancel() {
   min-height: 24px;
   transition: opacity 0.2s ease;
   font-family: 'Inter', 'Segoe UI', sans-serif;
+}
+
+/* Bridge map dimension labels: adaptive width and wrapping */
+.label-node[data-bridge-dimension] {
+  max-width: 180px;
+  /* When wrapping is needed, text will wrap and align left */
+  /* When no overlap, text stays right-aligned */
 }
 
 .label-node:hover {

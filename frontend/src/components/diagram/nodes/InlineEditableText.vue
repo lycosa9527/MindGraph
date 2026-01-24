@@ -128,11 +128,50 @@ watch(
   }
 )
 
+/**
+ * Count Chinese characters in text
+ * Chinese characters are in Unicode ranges:
+ * - CJK Unified Ideographs: \u4E00-\u9FFF
+ * - CJK Extension A: \u3400-\u4DBF
+ * - CJK Extension B: \u20000-\u2A6DF
+ * - CJK Extension C: \u2A700-\u2B73F
+ * - CJK Extension D: \u2B740-\u2B81F
+ * - CJK Extension E: \u2B820-\u2CEAF
+ * - CJK Compatibility Ideographs: \uF900-\uFAFF
+ */
+function countChineseCharacters(text: string): number {
+  if (!text) return 0
+  // Match Chinese characters using Unicode ranges
+  const chineseRegex = /[\u4E00-\u9FFF\u3400-\u4DBF\uF900-\uFAFF]/g
+  const matches = text.match(chineseRegex)
+  return matches ? matches.length : 0
+}
+
+// Computed: should prevent wrapping (if less than 5 Chinese characters)
+// Check editText when editing, props.text when displaying
+const shouldPreventWrap = computed(() => {
+  const textToCheck = localIsEditing.value ? editText.value : props.text
+  const chineseCount = countChineseCharacters(textToCheck)
+  return chineseCount > 0 && chineseCount < 5
+})
+
 // Computed styles
 const inputStyle = computed(() => ({
   maxWidth: props.maxWidth,
   textAlign: props.textAlign,
 }))
+
+// Computed wrapper style for right-aligned text
+const wrapperStyle = computed(() => {
+  const baseStyle: Record<string, string> = {
+    width: inputWidth.value || 'auto',
+  }
+  // For right-aligned text, ensure wrapper aligns to the right
+  if (props.textAlign === 'right') {
+    baseStyle.marginLeft = 'auto'
+  }
+  return baseStyle
+})
 
 // Computed: Ghost text from IME
 const ghostText = computed(() => {
@@ -152,10 +191,35 @@ const showIMEDropdown = computed(() => {
 function startEditing(): void {
   if (localIsEditing.value) return
 
-  // Measure display text width before switching to edit mode
+  // Measure width before switching to edit mode
+  // For right-aligned text, use parent container width or maxWidth to avoid empty space
+  // For other alignments, use display text width
   if (displayRef.value) {
-    const width = displayRef.value.offsetWidth
-    inputWidth.value = `${width}px`
+    const textWidth = displayRef.value.offsetWidth
+    const parentElement = displayRef.value.parentElement
+    
+    if (props.textAlign === 'right') {
+      // For right-aligned text, use parent container width if available, otherwise maxWidth
+      // This prevents empty space on the left and allows text to expand properly
+      const maxWidthPx = parseInt(props.maxWidth) || 180
+      let calculatedWidth = maxWidthPx
+      
+      if (parentElement) {
+        // Get parent container width (accounting for padding)
+        const parentWidth = parentElement.offsetWidth || parentElement.clientWidth
+        // Use parent width if it's reasonable, but cap at maxWidth
+        // Ensure it's at least text width to avoid shrinking
+        calculatedWidth = Math.max(textWidth, Math.min(parentWidth, maxWidthPx))
+      } else {
+        // Fallback: use maxWidth, but ensure it's at least text width
+        calculatedWidth = Math.max(maxWidthPx, textWidth)
+      }
+      
+      inputWidth.value = `${calculatedWidth}px`
+    } else {
+      // For left/center aligned, use measured text width
+      inputWidth.value = `${textWidth}px`
+    }
   }
 
   localIsEditing.value = true
@@ -361,7 +425,7 @@ onUnmounted(() => {
       v-if="localIsEditing"
       ref="wrapperRef"
       class="inline-edit-wrapper"
-      :style="{ width: inputWidth }"
+      :style="wrapperStyle"
     >
       <!-- Input container with ghost text overlay -->
       <div class="inline-edit-container">
@@ -370,6 +434,7 @@ onUnmounted(() => {
           ref="inputRef"
           v-model="editText"
           class="inline-edit-input"
+          :class="{ 'whitespace-nowrap': shouldPreventWrap }"
           :style="inputStyle"
           :placeholder="placeholder"
           :maxlength="maxLength"
@@ -385,6 +450,7 @@ onUnmounted(() => {
             v-model="editText"
             type="text"
             class="inline-edit-input"
+            :class="{ 'whitespace-nowrap': shouldPreventWrap }"
             :style="inputStyle"
             :placeholder="placeholder"
             :maxlength="maxLength"
@@ -426,7 +492,14 @@ onUnmounted(() => {
       v-else
       ref="displayRef"
       class="inline-edit-display"
-      :class="[textClass, truncate ? 'truncate-text' : 'whitespace-pre-wrap']"
+      :class="[
+        textClass,
+        truncate
+          ? 'truncate-text'
+          : shouldPreventWrap
+            ? 'whitespace-nowrap'
+            : 'whitespace-pre-wrap',
+      ]"
       :style="{ maxWidth: maxWidth, textAlign: textAlign }"
       :title="truncate ? text : undefined"
     >
@@ -450,13 +523,14 @@ onUnmounted(() => {
   position: relative;
   display: inline-block;
   max-width: 100%;
-  overflow: hidden;
+  overflow: visible; /* Allow text to be visible while typing */
+  min-width: fit-content; /* Allow wrapper to expand with content */
 }
 
 .inline-edit-container {
   position: relative;
   display: inline-block;
-  width: fit-content;
+  width: 100%; /* Use full wrapper width */
   max-width: 100%;
 }
 
@@ -472,11 +546,12 @@ onUnmounted(() => {
   box-shadow: none;
   width: 100%;
   min-width: 20px;
-  max-width: 100%;
+  max-width: 100%; /* Respect wrapper width, which respects maxWidth prop */
   resize: none;
   position: relative;
   z-index: 2;
   box-sizing: border-box;
+  overflow: visible; /* Allow text to be visible */
 }
 
 .inline-edit-input:focus {

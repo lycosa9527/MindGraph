@@ -187,10 +187,7 @@ const DIAGRAM_CONFIGS: Record<string, DiagramConfig> = {
 }
 
 // Aliases for shared operation logic
-const DIAGRAM_ALIASES: Record<string, string> = {
-  factor_analysis: 'mindmap',
-  four_quadrant: 'mindmap',
-}
+const DIAGRAM_ALIASES: Record<string, string> = {}
 
 // ============================================================================
 // Composable

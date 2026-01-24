@@ -101,14 +101,32 @@ function handleEditCancel() {
     <!-- Hide handles for bridge maps (connections handled by overlay) -->
     <Handle
       v-if="!isTreeMap && !isBridgeMap"
+      id="left"
       type="target"
       :position="Position.Left"
       class="bg-blue-400!"
     />
     <Handle
       v-if="!isTreeMap && !isBridgeMap"
+      id="right"
       type="source"
       :position="Position.Right"
+      class="bg-blue-400!"
+    />
+    <!-- Right target handle for mindmap left-side children (RL direction) -->
+    <Handle
+      v-if="!isTreeMap && !isBridgeMap && (data.diagramType === 'mindmap' || data.diagramType === 'mind_map')"
+      id="right-target"
+      type="target"
+      :position="Position.Right"
+      class="bg-blue-400!"
+    />
+    <!-- Left source handle for mindmap left-side branches (RL direction) -->
+    <Handle
+      v-if="!isTreeMap && !isBridgeMap && (data.diagramType === 'mindmap' || data.diagramType === 'mind_map')"
+      id="left-source"
+      type="source"
+      :position="Position.Left"
       class="bg-blue-400!"
     />
 
@@ -155,5 +173,12 @@ function handleEditCancel() {
 
 .branch-node:active {
   cursor: grabbing;
+}
+
+/* Hide handle dots visually while keeping them functional */
+.branch-node :deep(.vue-flow__handle) {
+  opacity: 0;
+  border: none;
+  background: transparent;
 }
 </style>

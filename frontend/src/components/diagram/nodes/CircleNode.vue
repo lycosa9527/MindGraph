@@ -4,11 +4,14 @@
  * Used for both topic and context nodes in circle maps
  * Always renders as a perfect circle regardless of content
  * Supports inline text editing on double-click
+ * Adapts size based on text length
  */
-import { computed, ref } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import { eventBus } from '@/composables/useEventBus'
 import { useTheme } from '@/composables/useTheme'
+import { useDiagramStore } from '@/stores'
+import { calculateAdaptiveCircleSize } from '@/stores/specLoader/utils'
 import type { MindGraphNodeProps } from '@/types'
 
 import InlineEditableText from './InlineEditableText.vue'
@@ -26,12 +29,57 @@ const isTopicNode = computed(() => props.data.nodeType === 'topic')
 // Use 'context' for circle map context nodes (not 'bubble')
 const defaultStyle = computed(() => getNodeStyle(isTopicNode.value ? 'topic' : 'context'))
 
-// Get the circle size from data or calculate based on node type
+const diagramStore = useDiagramStore()
+
+// Get the circle size from data or calculate adaptively based on text length
+// Context nodes always use uniform size (set by loaders), topic nodes can be adaptive
 const circleSize = computed(() => {
-  // Topic nodes are larger (diameter ~120px)
-  // Context nodes are smaller (diameter ~70px)
-  const size = props.data.style?.size || (isTopicNode.value ? 120 : 70)
-  return size
+  // If size is explicitly set in style, use it
+  if (props.data.style?.size) {
+    return props.data.style.size
+  }
+  
+  // For topic nodes, calculate adaptive size based on text length
+  // For context nodes, use default uniform size (70px diameter)
+  if (isTopicNode.value) {
+    const text = props.data.label || ''
+    return calculateAdaptiveCircleSize(text, true)
+  }
+  
+  // Context nodes: default uniform size (matching old JS: uniformContextR * 2 = 70px)
+  return 70
+})
+
+// Watch for text changes and update node size in store (only for topic nodes)
+watch(
+  () => props.data.label,
+  (newText) => {
+    if (diagramStore.type === 'circle_map' && isTopicNode.value) {
+      const adaptiveSize = calculateAdaptiveCircleSize(newText || '', true)
+      // Update the node style in the store to persist the adaptive size
+      nextTick(() => {
+        diagramStore.saveNodeStyle(props.id, { size: adaptiveSize })
+      })
+    }
+  }
+)
+
+// Listen for text_updated event to recalculate size (only for topic nodes)
+function handleTextUpdated(payload: { nodeId: string; text: string }) {
+  if (payload.nodeId === props.id && diagramStore.type === 'circle_map' && isTopicNode.value) {
+    const adaptiveSize = calculateAdaptiveCircleSize(payload.text, true)
+    nextTick(() => {
+      diagramStore.saveNodeStyle(props.id, { size: adaptiveSize })
+    })
+  }
+}
+
+onMounted(() => {
+  eventBus.on('node:text_updated', handleTextUpdated)
+})
+
+onUnmounted(() => {
+  eventBus.off('node:text_updated', handleTextUpdated)
 })
 
 // Circle Map colors matching old JS bubble-map-renderer.js THEME
@@ -65,6 +113,11 @@ const isEditing = ref(false)
 
 function handleTextSave(newText: string) {
   isEditing.value = false
+  // Update size adaptively based on new text (only for topic nodes)
+  if (diagramStore.type === 'circle_map' && isTopicNode.value) {
+    const adaptiveSize = calculateAdaptiveCircleSize(newText, true)
+    diagramStore.saveNodeStyle(props.id, { size: adaptiveSize })
+  }
   eventBus.emit('node:text_updated', {
     nodeId: props.id,
     text: newText,

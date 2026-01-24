@@ -27,16 +27,6 @@ class DiagramType(str, Enum):
     BRACE_MAP = "brace_map"
     CONCEPT_MAP = "concept_map"
     MIND_MAP = "mind_map"
-    # Thinking Tools
-    FACTOR_ANALYSIS = "factor_analysis"
-    THREE_POSITION_ANALYSIS = "three_position_analysis"
-    PERSPECTIVE_ANALYSIS = "perspective_analysis"
-    GOAL_ANALYSIS = "goal_analysis"
-    POSSIBILITY_ANALYSIS = "possibility_analysis"
-    RESULT_ANALYSIS = "result_analysis"
-    FIVE_W_ONE_H = "five_w_one_h"
-    WHWM_ANALYSIS = "whwm_analysis"
-    FOUR_QUADRANT = "four_quadrant"
 
 
 class LLMModel(str, Enum):

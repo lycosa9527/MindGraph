@@ -134,9 +134,24 @@ export function useMindMap(options: MindMapOptions = {}) {
     })
 
     // Get virtual root position to calculate offset
+    // Virtual root should align with topic node's edge (not center)
+    // For right side: align with topic's right edge (topicX + DEFAULT_NODE_WIDTH/2)
+    // For left side: align with topic's left edge (topicX - DEFAULT_NODE_WIDTH/2)
     const virtualPos = layoutResult.positions.get(virtualRoot)
-    const offsetX = topicX - (virtualPos?.x || 0) + (direction * DEFAULT_NODE_WIDTH / 2)
-    const offsetY = topicY - (virtualPos?.y || 0)
+    if (!virtualPos) {
+      return { nodes: [], edges: [] }
+    }
+    
+    // Topic edge position (where branches should connect)
+    const topicEdgeX = topicX + (direction * DEFAULT_NODE_WIDTH / 2)
+    // Virtual root center X (Dagre returns top-left, so add half width)
+    const virtualRootCenterX = virtualPos.x + virtualPos.width / 2
+    // Calculate offset to align virtual root center with topic edge
+    const offsetX = topicEdgeX - virtualRootCenterX
+    
+    // Align vertically: virtual root center Y should match topic center Y
+    const virtualRootCenterY = virtualPos.y + virtualPos.height / 2
+    const offsetY = topicY - virtualRootCenterY
 
     const nodes: MindGraphNode[] = []
     const edges: MindGraphEdge[] = []
@@ -162,22 +177,32 @@ export function useMindMap(options: MindMapOptions = {}) {
     })
 
     // Create edges (skip virtual root edges, connect to topic instead)
+    // Track handle index for each side to assign correct handle IDs
+    let leftHandleIndex = 0
+    let rightHandleIndex = 0
+
     dagreEdges.forEach((edge) => {
       if (edge.source === virtualRoot) {
+        // Connect to topic with specific handle ID based on side
+        const handleId = side === 'left' 
+          ? `mindmap-left-${leftHandleIndex++}`
+          : `mindmap-right-${rightHandleIndex++}`
+        
         edges.push({
           id: `edge-topic-${edge.target}`,
           source: 'topic',
           target: edge.target,
-          type: 'curved',
-          data: { edgeType: 'curved' as const },
+          sourceHandle: handleId,
+          type: 'straight',
+          data: { edgeType: 'straight' as const },
         })
       } else {
         edges.push({
           id: `edge-${edge.source}-${edge.target}`,
           source: edge.source,
           target: edge.target,
-          type: 'curved',
-          data: { edgeType: 'curved' as const },
+          type: 'straight',
+          data: { edgeType: 'straight' as const },
         })
       }
     })
@@ -230,8 +255,8 @@ export function useMindMap(options: MindMapOptions = {}) {
             id: `edge-${nodeId}-${child.parentId}`,
             source: nodeId,
             target: child.parentId,
-            type: 'curved',
-            data: { edgeType: 'curved' as const },
+            type: 'straight',
+            data: { edgeType: 'straight' as const },
           })
         })
       }
@@ -249,7 +274,8 @@ export function useMindMap(options: MindMapOptions = {}) {
 
     const result: MindGraphNode[] = []
 
-    // Central topic node
+    // Central topic node with total branch count for dynamic handles (clockwise distribution)
+    const totalBranches = data.value.leftBranches.length + data.value.rightBranches.length
     result.push({
       id: 'topic',
       type: 'topic',
@@ -260,6 +286,7 @@ export function useMindMap(options: MindMapOptions = {}) {
         diagramType: 'mindmap',
         isDraggable: false,
         isSelectable: true,
+        totalBranchCount: totalBranches,
       },
       draggable: false,
     })
@@ -299,7 +326,7 @@ export function useMindMap(options: MindMapOptions = {}) {
 
     const result: MindGraphNode[] = []
 
-    // Central topic node
+    // Central topic node with branch counts for dynamic handles
     result.push({
       id: 'topic',
       type: 'topic',
@@ -310,6 +337,8 @@ export function useMindMap(options: MindMapOptions = {}) {
         diagramType: 'mindmap',
         isDraggable: false,
         isSelectable: true,
+        leftBranchCount: data.value.leftBranches.length,
+        rightBranchCount: data.value.rightBranches.length,
       },
       draggable: false,
     })
@@ -331,14 +360,15 @@ export function useMindMap(options: MindMapOptions = {}) {
 
     const result: MindGraphEdge[] = []
 
-    // Edges from topic to first-level branches
+    // Edges from topic to first-level branches with handle IDs
     data.value.leftBranches.forEach((_, index) => {
       result.push({
         id: `edge-topic-l-${index}`,
         source: 'topic',
         target: `branch-l-1-${index}`,
-        type: 'curved',
-        data: { edgeType: 'curved' as const },
+        sourceHandle: `mindmap-left-${index}`,
+        type: 'straight',
+        data: { edgeType: 'straight' as const },
       })
     })
 
@@ -347,8 +377,9 @@ export function useMindMap(options: MindMapOptions = {}) {
         id: `edge-topic-r-${index}`,
         source: 'topic',
         target: `branch-r-1-${index}`,
-        type: 'curved',
-        data: { edgeType: 'curved' as const },
+        sourceHandle: `mindmap-right-${index}`,
+        type: 'straight',
+        data: { edgeType: 'straight' as const },
       })
     })
 

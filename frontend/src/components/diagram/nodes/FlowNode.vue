@@ -146,4 +146,11 @@ function handleEditCancel() {
   padding-left: 20px;
   padding-right: 20px;
 }
+
+/* Hide handle dots visually while keeping them functional */
+.flow-node :deep(.vue-flow__handle) {
+  opacity: 0;
+  border: none;
+  background: transparent;
+}
 </style>

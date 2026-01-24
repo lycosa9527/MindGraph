@@ -14,15 +14,6 @@ export type DiagramType =
   | 'concept_map'
   | 'mindmap'
   | 'mind_map'
-  | 'factor_analysis'
-  | 'three_position_analysis'
-  | 'perspective_analysis'
-  | 'goal_analysis'
-  | 'possibility_analysis'
-  | 'result_analysis'
-  | 'five_w_one_h'
-  | 'whwm_analysis'
-  | 'four_quadrant'
   | 'diagram'
 
 export type NodeType =
