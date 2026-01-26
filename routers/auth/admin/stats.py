@@ -19,8 +19,8 @@ from sqlalchemy.orm import Session
 from sqlalchemy.sql.elements import ColumnElement
 
 from config.database import get_db
-from models.auth import User, Organization
-from models.token_usage import TokenUsage
+from models.domain.auth import User, Organization
+from models.domain.token_usage import TokenUsage
 from utils.auth import get_current_user, is_admin
 
 from ..dependencies import get_language_dependency, require_admin

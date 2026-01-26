@@ -15,7 +15,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from config.database import get_db
-from models.auth import Organization
+from models.domain.auth import Organization
 from utils.auth import AUTH_MODE
 
 router = APIRouter()

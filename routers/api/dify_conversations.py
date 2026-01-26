@@ -22,8 +22,8 @@ from sqlalchemy.orm import Session
 
 from clients.dify import AsyncDifyClient
 from config.database import get_db
-from models.auth import User
-from models.pinned_conversations import PinnedConversation
+from models.domain.auth import User
+from models.domain.pinned_conversations import PinnedConversation
 from utils.auth import get_current_user
 
 

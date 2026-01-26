@@ -27,8 +27,8 @@ from agents.node_palette.flow_map_palette import get_flow_map_palette_generator
 from agents.node_palette.mindmap_palette import get_mindmap_palette_generator
 from agents.node_palette.multi_flow_palette import get_multi_flow_palette_generator
 from agents.node_palette.tree_map_palette import get_tree_map_palette_generator
-from models.auth import User
-from models.requests_thinking import (
+from models.domain.auth import User
+from models.requests.requests_thinking import (
     NodePaletteStartRequest,
     NodePaletteNextRequest,
     NodeSelectionRequest,

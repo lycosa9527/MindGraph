@@ -19,9 +19,9 @@ from fastapi import APIRouter, HTTPException, Depends, UploadFile, File
 from sqlalchemy.orm import Session
 
 from config.database import get_db
-from models.auth import User
-from models.knowledge_space import DocumentBatch, DocumentChunk
-from models.requests_knowledge_space import ProcessSelectedRequest
+from models.domain.auth import User
+from models.domain.knowledge_space import DocumentBatch, DocumentChunk
+from models.requests.requests_knowledge_space import ProcessSelectedRequest
 from models.responses import DocumentResponse, DocumentListResponse, BatchResponse
 from services.knowledge.knowledge_space_service import KnowledgeSpaceService
 from tasks.knowledge_space_tasks import (

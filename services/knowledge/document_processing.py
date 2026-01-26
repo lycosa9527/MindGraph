@@ -9,7 +9,7 @@ from typing import List, Optional, Tuple, Any, Dict
 
 from config.settings import config
 from utils.dashscope_error_handler import DashScopeError
-from models.knowledge_space import KnowledgeDocument
+from models.domain.knowledge_space import KnowledgeDocument
 from services.knowledge.chunking_service import ChunkingService
 from services.llm.embedding_cache import get_embedding_cache
 

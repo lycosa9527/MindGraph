@@ -41,8 +41,10 @@ from services.infrastructure.process.process_manager import (
     ServerState,
     start_qdrant_server,
     start_celery_worker,
+    start_postgresql_server,
     stop_qdrant_server,
-    stop_celery_worker
+    stop_celery_worker,
+    stop_postgresql_server
 )
 
 try:
@@ -54,6 +56,13 @@ try:
     from config.celery import celery_app
 except ImportError:
     celery_app = None
+
+try:
+    import psycopg2
+    _PSYCOPG2_AVAILABLE = True
+except ImportError:
+    psycopg2 = None
+    _PSYCOPG2_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
 
@@ -154,6 +163,7 @@ class ProcessMonitor:
             "qdrant": ServiceMetrics(service_name="qdrant"),
             "celery": ServiceMetrics(service_name="celery"),
             "redis": ServiceMetrics(service_name="redis"),
+            "postgresql": ServiceMetrics(service_name="postgresql"),
         }
         self._monitoring_task: Optional[asyncio.Task] = None
         self._shutdown_event = asyncio.Event()
@@ -335,6 +345,60 @@ class ProcessMonitor:
             logger.warning("[ProcessMonitor] Celery health check failed: %s", e)
             return ServiceStatus.UNHEALTHY
 
+    async def _check_postgresql_health(self) -> ServiceStatus:
+        """
+        Check PostgreSQL health.
+
+        Returns:
+            ServiceStatus (HEALTHY or UNHEALTHY)
+        """
+        try:
+            if not _PSYCOPG2_AVAILABLE or psycopg2 is None:
+                # psycopg2 not installed, skip PostgreSQL check
+                logger.debug("[ProcessMonitor] psycopg2 not available, skipping PostgreSQL health check")
+                return ServiceStatus.HEALTHY
+
+            # Store reference for type checking
+            pg_module = psycopg2
+
+            db_url = os.getenv('DATABASE_URL', '')
+            if not db_url or 'postgresql' not in db_url.lower():
+                # Not using PostgreSQL, skip check
+                return ServiceStatus.HEALTHY
+
+            # Connection test (run in thread pool to avoid blocking)
+            def check_connection():
+                try:
+                    conn = pg_module.connect(db_url, connect_timeout=2)
+                    conn.close()
+                    return True
+                except Exception:
+                    return False
+
+            connection_ok = await asyncio.wait_for(
+                asyncio.to_thread(check_connection),
+                timeout=2.5
+            )
+
+            if not connection_ok:
+                return ServiceStatus.UNHEALTHY
+
+            # Process check if subprocess managed
+            if ServerState.postgresql_process is not None:
+                return_code = ServerState.postgresql_process.poll()
+                if return_code is not None:
+                    # Process has terminated
+                    logger.warning("[ProcessMonitor] PostgreSQL process terminated (return code: %s)", return_code)
+                    return ServiceStatus.UNHEALTHY
+
+            return ServiceStatus.HEALTHY
+        except asyncio.TimeoutError:
+            logger.warning("[ProcessMonitor] PostgreSQL health check timed out")
+            return ServiceStatus.UNHEALTHY
+        except Exception as e:
+            logger.warning("[ProcessMonitor] PostgreSQL health check failed: %s", e)
+            return ServiceStatus.UNHEALTHY
+
     async def _check_restart_count(self, service_name: str) -> int:
         """
         Get restart count for service in current time window.
@@ -514,6 +578,21 @@ class ProcessMonitor:
                     logger.info("[ProcessMonitor] Celery restarted successfully (PID: %s)", process.pid)
                     return True
 
+            elif service_name == "postgresql":
+                # Stop existing process if any (run in thread pool)
+                if ServerState.postgresql_process is not None:
+                    await asyncio.to_thread(stop_postgresql_server)
+
+                # Start new process (run in thread pool)
+                process = await asyncio.to_thread(start_postgresql_server)
+                if process is not None:
+                    logger.info("[ProcessMonitor] PostgreSQL restarted successfully (PID: %s)", process.pid)
+                    return True
+                else:
+                    # Process already running externally
+                    logger.info("[ProcessMonitor] PostgreSQL is running externally")
+                    return True
+
             return False
         except Exception as e:
             logger.error("[ProcessMonitor] Failed to restart %s: %s", service_name, e, exc_info=True)
@@ -524,7 +603,7 @@ class ProcessMonitor:
         Check service status and restart if needed.
 
         Args:
-            service_name: Name of service ('qdrant', 'celery', or 'redis')
+            service_name: Name of service ('qdrant', 'celery', 'redis', or 'postgresql')
             status: Current health status
         """
         metrics = self.metrics[service_name]
@@ -556,10 +635,16 @@ class ProcessMonitor:
                 status.value
             )
 
-        # Handle restart logic (only for Qdrant and Celery, not Redis)
-        if service_name in ("qdrant", "celery") and status == ServiceStatus.UNHEALTHY:
+        # Handle restart logic (only for Qdrant, Celery, and PostgreSQL, not Redis)
+        if service_name in ("qdrant", "celery", "postgresql") and status == ServiceStatus.UNHEALTHY:
             # Check if process is actually dead
-            process = ServerState.qdrant_process if service_name == "qdrant" else ServerState.celery_worker_process
+            if service_name == "qdrant":
+                process = ServerState.qdrant_process
+            elif service_name == "celery":
+                process = ServerState.celery_worker_process
+            else:  # postgresql
+                process = ServerState.postgresql_process
+
             if process is None:
                 # Process not managed by us (external/systemd)
                 logger.debug("[ProcessMonitor] %s not managed by app, skipping restart", service_name)
@@ -641,25 +726,45 @@ class ProcessMonitor:
                     continue
 
                 # Perform health checks (run in parallel for efficiency)
-                redis_status, qdrant_status, celery_status = await asyncio.gather(
-                    self._check_redis_health(),
-                    self._check_qdrant_health(),
-                    self._check_celery_health(),
-                    return_exceptions=False
-                )
+                # Check if using PostgreSQL
+                db_url = os.getenv('DATABASE_URL', '')
+                using_postgresql = 'postgresql' in db_url.lower()
+
+                if using_postgresql:
+                    redis_status, qdrant_status, celery_status, postgresql_status = await asyncio.gather(
+                        self._check_redis_health(),
+                        self._check_qdrant_health(),
+                        self._check_celery_health(),
+                        self._check_postgresql_health(),
+                        return_exceptions=False
+                    )
+                else:
+                    redis_status, qdrant_status, celery_status = await asyncio.gather(
+                        self._check_redis_health(),
+                        self._check_qdrant_health(),
+                        self._check_celery_health(),
+                        return_exceptions=False
+                    )
+                    postgresql_status = ServiceStatus.HEALTHY  # Not using PostgreSQL
 
                 # Check and restart services if needed
                 await self._check_and_restart_service("redis", redis_status)
                 await self._check_and_restart_service("qdrant", qdrant_status)
                 await self._check_and_restart_service("celery", celery_status)
+                if using_postgresql:
+                    await self._check_and_restart_service("postgresql", postgresql_status)
 
                 # Check for multiple services down
+                statuses = [redis_status, qdrant_status, celery_status]
+                if using_postgresql:
+                    statuses.append(postgresql_status)
                 unhealthy_count = sum(
-                    1 for status in [redis_status, qdrant_status, celery_status]
+                    1 for status in statuses
                     if status == ServiceStatus.UNHEALTHY
                 )
+                total_services = 4 if using_postgresql else 3
                 if unhealthy_count >= 2:
-                    logger.error("[ProcessMonitor] Multiple services down (%d/3)", unhealthy_count)
+                    logger.error("[ProcessMonitor] Multiple services down (%d/%d)", unhealthy_count, total_services)
                     # Send SMS alert for multiple failures (with cooldown to prevent spam)
                     current_time = time.time()
                     cooldown_expired = (
@@ -670,7 +775,7 @@ class ProcessMonitor:
                     if cooldown_expired:
                         await self._send_sms_alert(
                             "system",
-                            f"Multiple services down ({unhealthy_count}/3)"
+                            f"Multiple services down ({unhealthy_count}/{total_services})"
                         )
                         self._last_multiple_failure_alert_time = current_time
                 else:

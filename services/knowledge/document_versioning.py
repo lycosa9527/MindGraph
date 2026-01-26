@@ -10,7 +10,7 @@ from typing import List
 from sqlalchemy import and_
 from sqlalchemy.orm import Session
 
-from models.knowledge_space import KnowledgeDocument, KnowledgeSpace, DocumentVersion
+from models.domain.knowledge_space import KnowledgeDocument, KnowledgeSpace, DocumentVersion
 
 
 logger = logging.getLogger(__name__)

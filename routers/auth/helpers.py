@@ -24,9 +24,9 @@ from fastapi import HTTPException, Request, Response, status
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 
-from models.auth import User
+from models.domain.auth import User
 from services.redis.redis_activity_tracker import get_activity_tracker
-from services.redis.redis_session_manager import get_session_manager
+from services.redis.session.redis_session_manager import get_session_manager
 from services.monitoring.city_flag_tracker import get_city_flag_tracker
 from services.auth.ip_geolocation import get_geolocation_service
 from utils.auth import (
@@ -193,10 +193,10 @@ async def commit_user_with_retry(
     max_retries: int = 5
 ) -> int:
     """
-    Commit user to SQLite with retry logic for database lock errors.
+    Commit user to database with retry logic for database deadlock errors.
 
-    Retries SQLite commits up to max_retries times with exponential backoff
-    and jitter if database is locked. This handles transient lock errors during
+    Retries database commits up to max_retries times with exponential backoff
+    and jitter if database deadlock is detected. This handles transient deadlock errors during
     high concurrency scenarios (e.g., 500 concurrent registrations).
 
     Args:
@@ -217,7 +217,8 @@ async def commit_user_with_retry(
             return attempt  # Return number of retries (0 = first attempt succeeded)
         except OperationalError as e:
             error_msg = str(e).lower()
-            if "database is locked" in error_msg or "locked" in error_msg:
+            # PostgreSQL deadlock detection
+            if "deadlock detected" in error_msg.lower() or "could not obtain lock" in error_msg.lower():
                 if attempt < max_retries - 1:
                     # Retry with exponential backoff + jitter (prevents thundering herd)
                     base_delay = 0.1 * (2 ** attempt)  # 0.1s, 0.2s, 0.4s, 0.8s, 1.6s
@@ -225,7 +226,7 @@ async def commit_user_with_retry(
                     delay = base_delay + jitter
                     phone_prefix = new_user.phone[:3] if new_user.phone and len(new_user.phone) >= 3 else '***'
                     logger.warning(
-                        "[Auth] SQLite lock on user registration attempt %d/%d, "
+                        "[Auth] Database deadlock on user registration attempt %d/%d, "
                         "retrying after %.3fs delay (base: %.3fs + jitter: %.3fs). "
                         "Phone: %s***",
                         attempt + 1, max_retries, delay, base_delay, jitter, phone_prefix
@@ -237,7 +238,7 @@ async def commit_user_with_retry(
                     db.rollback()
                     phone_prefix = new_user.phone[:3] if new_user.phone and len(new_user.phone) >= 3 else '***'
                     logger.error(
-                        "[Auth] SQLite lock persists after %d retries. "
+                        "[Auth] Database deadlock persists after %d retries. "
                         "Phone: %s***",
                         max_retries, phone_prefix
                     )
@@ -248,7 +249,7 @@ async def commit_user_with_retry(
             else:
                 # Other OperationalError (not a lock) - don't retry
                 db.rollback()
-                logger.error("[Auth] SQLite operational error during registration: %s", e)
+                logger.error("[Auth] Database operational error during registration: %s", e)
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                     detail="Failed to create user account"
@@ -256,7 +257,7 @@ async def commit_user_with_retry(
         except Exception as e:
             # Non-OperationalError - don't retry
             db.rollback()
-            logger.error("[Auth] Failed to create user in SQLite: %s", e, exc_info=True)
+            logger.error("[Auth] Failed to create user in database: %s", e, exc_info=True)
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Failed to create user account"

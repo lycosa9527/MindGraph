@@ -1,24 +1,4 @@
-from typing import Optional
-import logging
-
-from fastapi import APIRouter, Depends, HTTPException, Request, Body, Query, status
-from sqlalchemy import func
-from sqlalchemy.orm import Session
-
-from config.database import get_db
-from models.auth import Organization, User
-from models.messages import Messages, Language
-from models.token_usage import TokenUsage
-from services.redis.redis_org_cache import org_cache
-from services.redis.redis_user_cache import user_cache
-from utils.auth import hash_password
-
-from ..dependencies import get_language_dependency, require_admin
-from ..helpers import utc_to_beijing_iso
-
-"""
-Admin User Management Endpoints
-================================
+"""Admin User Management Endpoints.
 
 Admin-only user management endpoints:
 - GET /admin/users - List users with pagination
@@ -31,6 +11,23 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+from typing import Optional
+import logging
+
+from fastapi import APIRouter, Depends, HTTPException, Body, Query, status
+from sqlalchemy import func
+from sqlalchemy.orm import Session
+
+from config.database import get_db
+from models.domain.auth import Organization, User
+from models.domain.messages import Messages, Language
+from models.domain.token_usage import TokenUsage
+from services.redis.cache.redis_org_cache import org_cache
+from services.redis.cache.redis_user_cache import user_cache
+from utils.auth import hash_password
+
+from ..dependencies import get_language_dependency, require_admin
+from ..helpers import utc_to_beijing_iso
 
 
 
@@ -43,14 +40,11 @@ router = APIRouter()
 
 @router.get("/admin/users", dependencies=[Depends(require_admin)])
 async def list_users_admin(
-    request: Request,
-    current_user: User = Depends(require_admin),
     db: Session = Depends(get_db),
     page: int = Query(1, ge=1),
     page_size: int = Query(50, ge=1, le=100),
     search: str = Query(""),
-    organization_id: Optional[int] = Query(None),
-    lang: Language = Depends(get_language_dependency)
+    organization_id: Optional[int] = Query(None)
 ):
     """
     List users with pagination and filtering (ADMIN ONLY)
@@ -161,7 +155,6 @@ async def list_users_admin(
 async def update_user_admin(
     user_id: int,
     request: dict,
-    http_request: Request,
     current_user: User = Depends(require_admin),
     db: Session = Depends(get_db),
     lang: Language = Depends(get_language_dependency)
@@ -226,17 +219,17 @@ async def update_user_admin(
                     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
             user.organization_id = org_id
 
-    # Write to SQLite FIRST
+    # Write to database FIRST
     try:
         db.commit()
         db.refresh(user)
     except Exception as e:
         db.rollback()
-        logger.error("[Auth] Failed to update user ID %s in SQLite: %s", user_id, e)
+        logger.error("[Auth] Failed to update user ID %s in database: %s", user_id, e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to update user"
-        )
+        ) from e
 
     # Invalidate old cache entries
     try:
@@ -288,7 +281,6 @@ async def update_user_admin(
 @router.delete("/admin/users/{user_id}", dependencies=[Depends(require_admin)])
 async def delete_user_admin(
     user_id: int,
-    request: Request,
     current_user: User = Depends(require_admin),
     db: Session = Depends(get_db),
     lang: Language = Depends(get_language_dependency)
@@ -306,17 +298,17 @@ async def delete_user_admin(
 
     user_phone = user.phone
 
-    # Delete from SQLite FIRST
+    # Delete from database FIRST
     db.delete(user)
     try:
         db.commit()
     except Exception as e:
         db.rollback()
-        logger.error("[Auth] Failed to delete user ID %s in SQLite: %s", user_id, e)
+        logger.error("[Auth] Failed to delete user ID %s in database: %s", user_id, e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to delete user"
-        )
+        ) from e
 
     # Invalidate cache (non-blocking)
     try:
@@ -332,7 +324,6 @@ async def delete_user_admin(
 @router.put("/admin/users/{user_id}/unlock", dependencies=[Depends(require_admin)])
 async def unlock_user_admin(
     user_id: int,
-    request: Request,
     current_user: User = Depends(require_admin),
     db: Session = Depends(get_db),
     lang: Language = Depends(get_language_dependency)
@@ -346,17 +337,17 @@ async def unlock_user_admin(
     user.failed_login_attempts = 0
     user.locked_until = None
 
-    # Write to SQLite FIRST
+    # Write to database FIRST
     try:
         db.commit()
         db.refresh(user)
     except Exception as e:
         db.rollback()
-        logger.error("[Auth] Failed to unlock user ID %s in SQLite: %s", user_id, e)
+        logger.error("[Auth] Failed to unlock user ID %s in database: %s", user_id, e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to unlock user"
-        )
+        ) from e
 
     # Invalidate and re-cache user
     try:
@@ -374,7 +365,6 @@ async def unlock_user_admin(
 async def reset_user_password_admin(
     user_id: int,
     request: Optional[dict] = Body(None),
-    http_request: Request = None,
     current_user: User = Depends(require_admin),
     db: Session = Depends(get_db),
     lang: Language = Depends(get_language_dependency)
@@ -418,17 +408,17 @@ async def reset_user_password_admin(
     user.failed_login_attempts = 0
     user.locked_until = None
 
-    # Write to SQLite FIRST
+    # Write to database FIRST
     try:
         db.commit()
         db.refresh(user)
     except Exception as e:
         db.rollback()
-        logger.error("[Auth] Failed to reset password in SQLite: %s", e)
+        logger.error("[Auth] Failed to reset password in database: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to reset password"
-        )
+        ) from e
 
     # Invalidate and re-cache user
     try:
@@ -440,5 +430,3 @@ async def reset_user_password_admin(
 
     logger.info("Admin %s reset password for user: %s", current_user.phone, user.phone)
     return {"message": Messages.success("password_reset_for_user", lang, user.phone)}
-
-

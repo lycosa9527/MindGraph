@@ -3,8 +3,8 @@ import logging
 
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 
-from models.auth import User
-from models.messages import Messages, Language
+from models.domain.auth import User
+from models.domain.messages import Messages, Language
 from services.redis.redis_bayi_whitelist import get_bayi_whitelist
 from utils.auth import AUTH_MODE
 from ..dependencies import get_language_dependency, require_admin

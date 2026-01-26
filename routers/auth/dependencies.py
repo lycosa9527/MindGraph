@@ -17,10 +17,10 @@ from fastapi import Depends, Header, HTTPException, Request, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import JWTError
 
-from models.auth import User
-from models.messages import Messages, get_request_language, Language
-from services.redis.redis_session_manager import get_session_manager
-from services.redis.redis_user_cache import user_cache
+from models.domain.auth import User
+from models.domain.messages import Messages, get_request_language, Language
+from services.redis.session.redis_session_manager import get_session_manager
+from services.redis.cache.redis_user_cache import user_cache
 from utils.auth import decode_access_token, get_current_user, is_admin, is_admin_or_manager, is_manager
 
 

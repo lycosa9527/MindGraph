@@ -19,8 +19,8 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from config.database import get_db
-from models.auth import User, Organization
-from models.token_usage import TokenUsage
+from models.domain.auth import User, Organization
+from models.domain.token_usage import TokenUsage
 from ..dependencies import get_language_dependency, require_admin
 from ..helpers import get_beijing_now, BEIJING_TIMEZONE
 from .stats import _sql_count
@@ -107,7 +107,7 @@ async def get_stats_trends_admin(
             counts_by_date = {}
             for row in user_counts:
                 utc_date = row.date
-                # SQLite returns date as string, need to parse it
+                # Database may return date as string, need to parse it
                 if isinstance(utc_date, str):
                     utc_date = datetime.strptime(utc_date, "%Y-%m-%d").date()
                 utc_datetime = datetime.combine(utc_date, datetime.min.time())
@@ -152,7 +152,7 @@ async def get_stats_trends_admin(
             counts_by_date = {}
             for row in org_counts:
                 utc_date = row.date
-                # SQLite returns date as string, need to parse it
+                # Database may return date as string, need to parse it
                 if isinstance(utc_date, str):
                     utc_date = datetime.strptime(utc_date, "%Y-%m-%d").date()
                 utc_datetime = datetime.combine(utc_date, datetime.min.time())
@@ -190,7 +190,7 @@ async def get_stats_trends_admin(
             counts_by_date = {}
             for row in reg_counts:
                 utc_date = row.date
-                # SQLite returns date as string, need to parse it
+                # Database may return date as string, need to parse it
                 if isinstance(utc_date, str):
                     utc_date = datetime.strptime(utc_date, "%Y-%m-%d").date()
                 utc_datetime = datetime.combine(utc_date, datetime.min.time())
@@ -231,7 +231,7 @@ async def get_stats_trends_admin(
             tokens_by_date = {}
             for row in token_counts:
                 utc_date = row.date
-                # SQLite returns date as string, need to parse it
+                # Database may return date as string, need to parse it
                 if isinstance(utc_date, str):
                     utc_date = datetime.strptime(utc_date, "%Y-%m-%d").date()
                 utc_datetime = datetime.combine(utc_date, datetime.min.time())
@@ -432,7 +432,7 @@ async def get_organization_token_trends_admin(
             tokens_by_date = {}
             for row in token_counts:
                 utc_date = row.date
-                # SQLite returns date as string, need to parse it
+                # Database may return date as string, need to parse it
                 if isinstance(utc_date, str):
                     utc_date = datetime.strptime(utc_date, "%Y-%m-%d").date()
                 utc_datetime = datetime.combine(utc_date, datetime.min.time())
@@ -560,7 +560,7 @@ async def get_user_token_trends_admin(
         tokens_by_date = {}
         for row in token_counts:
             utc_date = row.date
-            # SQLite returns date as string, need to parse it
+            # Database may return date as string, need to parse it
             if isinstance(utc_date, str):
                 utc_date = datetime.strptime(utc_date, "%Y-%m-%d").date()
             utc_datetime = datetime.combine(utc_date, datetime.min.time())

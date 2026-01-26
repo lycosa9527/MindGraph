@@ -24,21 +24,12 @@ Proprietary License
 """
 
 from . import api
-from . import pages
-from . import cache
 from . import auth
-from . import admin_env
-from . import admin_logs
-from . import admin_realtime
 from . import node_palette
-from . import voice
-from . import update_notification
-from . import tab_mode
 from . import public_dashboard
-from . import school_zone
-from . import askonce
-from . import debateverse
-from . import vue_spa
+from .admin import env_router as admin_env, logs_router as admin_logs, realtime_router as admin_realtime
+from .features import voice, tab_mode, school_zone, askonce, debateverse
+from .core import pages, cache, vue_spa, update_notification
 
 __all__ = [
     "api",

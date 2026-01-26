@@ -24,7 +24,7 @@ from services.infrastructure.http.error_handler import (
     LLMContentFilterError,
     LLMTimeoutError
 )
-from services.llm.hunyuan_error_parser import parse_and_raise_hunyuan_error
+from services.llm.error_parsers.hunyuan_error_parser import parse_and_raise_hunyuan_error
 from clients.llm.base import extract_usage_from_openai_completion, extract_usage_from_stream_chunk
 
 logger = logging.getLogger(__name__)

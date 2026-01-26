@@ -27,7 +27,7 @@ from sqlalchemy.orm import Session
 
 from clients.dashscope_embedding import get_embedding_client
 from clients.dashscope_rerank import get_rerank_client
-from models.knowledge_space import (
+from models.domain.knowledge_space import (
     DocumentChunk,
     KnowledgeDocument,
     KnowledgeSpace,
@@ -144,7 +144,7 @@ class RAGService:
 
         for chunk in chunks:
             document = chunk.document
-            chunk_metadata = chunk.meta_data or {}
+            chunk_metadata = {}  # meta_data column removed to reduce database size
 
             # Filter by tags
             if "tags" in metadata_filter:
@@ -1066,8 +1066,8 @@ class RAGService:
         if not query:
             return query
 
-        # Escape double quotes for SQLite FTS5 and PostgreSQL
-        # Replace " with "" (SQLite FTS5 escaping)
+        # Escape double quotes for PostgreSQL full-text search
+        # Replace " with "" (PostgreSQL escaping)
         escaped = query.replace('"', '\\"')
 
         # Additional escaping for other special characters if needed

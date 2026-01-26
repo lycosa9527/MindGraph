@@ -17,7 +17,7 @@ import shutil
 
 from sqlalchemy.orm import Session
 
-from models.knowledge_space import KnowledgeSpace, KnowledgeDocument, DocumentChunk
+from models.domain.knowledge_space import KnowledgeSpace, KnowledgeDocument, DocumentChunk
 from services.llm.qdrant_service import get_qdrant_service
 
 

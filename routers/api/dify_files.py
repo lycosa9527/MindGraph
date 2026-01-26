@@ -17,7 +17,7 @@ import aiohttp
 from fastapi import APIRouter, HTTPException, Depends, UploadFile, File, Form
 
 from models import Messages, get_request_language
-from models.auth import User
+from models.domain.auth import User
 from utils.auth import get_current_user_or_api_key
 
 

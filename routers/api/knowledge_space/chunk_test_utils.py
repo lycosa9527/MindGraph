@@ -9,7 +9,7 @@ from typing import Optional
 from fastapi import APIRouter, HTTPException, Depends
 
 from config.settings import config
-from models.auth import User
+from models.domain.auth import User
 from services.knowledge.rag_chunk_test.test_queries import get_test_queries
 from utils.auth import get_current_user
 

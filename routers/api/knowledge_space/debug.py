@@ -17,8 +17,8 @@ from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 
 from config.database import get_db
-from models.auth import User
-from models.knowledge_space import KnowledgeSpace, KnowledgeDocument, DocumentChunk
+from models.domain.auth import User
+from models.domain.knowledge_space import KnowledgeSpace, KnowledgeDocument, DocumentChunk
 from models.responses import CompressionMetricsResponse
 from services.llm.qdrant_service import get_qdrant_service
 from utils.auth import get_current_user
@@ -81,12 +81,12 @@ async def get_qdrant_diagnostics(
         qdrant_service = get_qdrant_service()
         diagnostics = qdrant_service.get_diagnostics(current_user.id)
 
-        # Add SQLite chunk info for comparison
+        # Add database chunk info for comparison
         space = db.query(KnowledgeSpace).filter(
             KnowledgeSpace.user_id == current_user.id
         ).first()
 
-        sqlite_info = {
+        database_info = {
             "space_exists": space is not None,
             "documents_count": 0,
             "completed_documents_count": 0,
@@ -96,11 +96,11 @@ async def get_qdrant_diagnostics(
 
         if space:
             # Get document counts
-            sqlite_info["documents_count"] = db.query(KnowledgeDocument).filter(
+            database_info["documents_count"] = db.query(KnowledgeDocument).filter(
                 KnowledgeDocument.space_id == space.id
             ).count()
 
-            sqlite_info["completed_documents_count"] = db.query(KnowledgeDocument).filter(
+            database_info["completed_documents_count"] = db.query(KnowledgeDocument).filter(
                 KnowledgeDocument.space_id == space.id,
                 KnowledgeDocument.status == 'completed'
             ).count()
@@ -112,7 +112,7 @@ async def get_qdrant_diagnostics(
             ).all()]
 
             if completed_doc_ids:
-                sqlite_info["total_chunks_count"] = db.query(DocumentChunk).filter(
+                database_info["total_chunks_count"] = db.query(DocumentChunk).filter(
                     DocumentChunk.document_id.in_(completed_doc_ids)
                 ).count()
 
@@ -120,7 +120,7 @@ async def get_qdrant_diagnostics(
                 sample_chunks = db.query(DocumentChunk).filter(
                     DocumentChunk.document_id.in_(completed_doc_ids)
                 ).limit(5).all()
-                sqlite_info["chunk_ids_sample"] = [c.id for c in sample_chunks]
+                database_info["chunk_ids_sample"] = [c.id for c in sample_chunks]
 
         # Summary diagnosis
         diagnosis = []
@@ -129,21 +129,21 @@ async def get_qdrant_diagnostics(
         elif diagnostics["points_count"] == 0:
             diagnosis.append("ISSUE: Qdrant collection exists but has 0 points (embeddings)")
 
-        if sqlite_info["total_chunks_count"] > 0 and diagnostics["points_count"] == 0:
-            diagnosis.append("ISSUE: SQLite has chunks but Qdrant has no points - embeddings not stored!")
+        if database_info["total_chunks_count"] > 0 and diagnostics["points_count"] == 0:
+            diagnosis.append("ISSUE: Database has chunks but Qdrant has no points - embeddings not stored!")
 
-        if sqlite_info["total_chunks_count"] != diagnostics["points_count"]:
+        if database_info["total_chunks_count"] != diagnostics["points_count"]:
             diagnosis.append(
-                f"WARNING: Chunk count mismatch - SQLite: {sqlite_info['total_chunks_count']}, "
+                f"WARNING: Chunk count mismatch - Database: {database_info['total_chunks_count']}, "
                 f"Qdrant: {diagnostics['points_count']}"
             )
 
         if not diagnosis:
-            diagnosis.append("OK: Qdrant collection and SQLite chunks appear synchronized")
+            diagnosis.append("OK: Qdrant collection and database chunks appear synchronized")
 
         return {
             "qdrant": diagnostics,
-            "sqlite": sqlite_info,
+            "database": database_info,
             "diagnosis": diagnosis
         }
 

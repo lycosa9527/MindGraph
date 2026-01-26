@@ -11,7 +11,7 @@ import traceback
 
 from clients.dify import AsyncDifyClient, DifyFile
 from models import AIAssistantRequest, Messages, get_request_language
-from models.auth import User
+from models.domain.auth import User
 from services.redis.redis_activity_tracker import get_activity_tracker
 from services.redis.redis_token_buffer import get_token_tracker
 from utils.auth import get_current_user_or_api_key

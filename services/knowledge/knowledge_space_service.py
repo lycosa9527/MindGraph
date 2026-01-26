@@ -20,7 +20,7 @@ from sqlalchemy import and_
 from sqlalchemy.orm import Session
 
 from clients.dashscope_embedding import get_embedding_client
-from models.knowledge_space import KnowledgeSpace, KnowledgeDocument, DocumentChunk, DocumentBatch, DocumentVersion
+from models.domain.knowledge_space import KnowledgeSpace, KnowledgeDocument, DocumentChunk, DocumentBatch, DocumentVersion
 from services.infrastructure.rate_limiting.kb_rate_limiter import get_kb_rate_limiter
 from services.knowledge.chunking_service import get_chunking_service
 from services.knowledge.document_cleaner import get_document_cleaner
@@ -360,20 +360,19 @@ class KnowledgeSpaceService:
                         chunk_index=chunk.chunk_index,
                         text=chunk.text,
                         start_char=chunk.start_char,
-                        end_char=chunk.end_char,
-                        meta_data=chunk.metadata
+                        end_char=chunk.end_char
                     )
                     self.db.add(db_chunk)
                     self.db.flush()  # Flush to get ID before Qdrant insertion
                     chunk_ids.append(db_chunk.id)
-                logger.info("[RAG] ✓ Chunking: doc=%s, %s chunks saved to SQLite", document_id, len(chunk_ids))
+                logger.info("[RAG] ✓ Chunking: doc=%s, %s chunks saved to database", document_id, len(chunk_ids))
             except Exception as chunk_db_error:
                 error_msg = f"保存分块数据失败: {str(chunk_db_error)}"
                 logger.error("[RAG] ✗ Chunking FAILED: doc=%s, error=%s", document_id, chunk_db_error)
                 raise ValueError(error_msg) from chunk_db_error
 
             # Now all chunk IDs are generated - safe to insert into Qdrant
-            # Use try-except to rollback Qdrant if SQLite commit fails
+            # Use try-except to rollback Qdrant if database commit fails
             try:
                 # Store embeddings in Qdrant with document and chunk metadata
                 try:
@@ -399,23 +398,23 @@ class KnowledgeSpaceService:
                 document.chunk_count = len(chunks)
                 document.processing_progress = None
                 document.processing_progress_percent = 100
-                self.db.commit()  # Commit SQLite transaction
+                self.db.commit()  # Commit database transaction
 
             except ValueError:
                 # Re-raise ValueError (already has user-friendly message)
                 raise
             except Exception as qdrant_error:
-                # If Qdrant succeeded but SQLite commit fails, we need to clean up Qdrant
+                # If Qdrant succeeded but database commit fails, we need to clean up Qdrant
                 error_msg = f"数据保存失败: {str(qdrant_error)}"
-                logger.error("[KnowledgeSpace] Qdrant write succeeded but SQLite commit failed: %s", qdrant_error)
+                logger.error("[KnowledgeSpace] Qdrant write succeeded but database commit failed: %s", qdrant_error)
                 try:
-                    # Rollback SQLite transaction
+                    # Rollback database transaction
                     self.db.rollback()
-                    # Clean up Qdrant vectors (they were added but SQLite failed)
+                    # Clean up Qdrant vectors (they were added but database failed)
                     self.qdrant.delete_document(self.user_id, document.id)
                     logger.info("[KnowledgeSpace] Cleaned up orphaned Qdrant vectors for document %s", document_id)
                 except Exception as cleanup_error:
-                    logger.error("[KnowledgeSpace] Failed to cleanup Qdrant after SQLite failure: %s", cleanup_error)
+                    logger.error("[KnowledgeSpace] Failed to cleanup Qdrant after database failure: %s", cleanup_error)
                 raise ValueError(error_msg) from qdrant_error
 
             # Log processing completion

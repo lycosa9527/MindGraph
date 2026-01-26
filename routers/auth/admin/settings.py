@@ -15,8 +15,8 @@ import os
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
-from models.auth import User
-from models.messages import Messages
+from models.domain.auth import User
+from models.domain.messages import Messages
 from ..dependencies import get_language_dependency, require_admin
 
 

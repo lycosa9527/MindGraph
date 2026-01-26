@@ -17,8 +17,8 @@ from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 
 from config.database import get_db
-from models.auth import User
-from models.requests_knowledge_space import MetadataUpdateRequest, RollbackRequest
+from models.domain.auth import User
+from models.requests.requests_knowledge_space import MetadataUpdateRequest, RollbackRequest
 from models.responses import DocumentResponse, VersionResponse, VersionListResponse
 from services.knowledge.knowledge_space_service import KnowledgeSpaceService
 from utils.auth import get_current_user

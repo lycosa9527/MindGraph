@@ -12,7 +12,8 @@ All Rights Reserved
 Proprietary License
 """
 
-from .requests_diagram import (
+# Import from new locations
+from .requests.requests_diagram import (
     GenerateRequest,
     EnhanceRequest,
     ExportPNGRequest,
@@ -22,7 +23,7 @@ from .requests_diagram import (
     DiagramCreateRequest,
     DiagramUpdateRequest,
 )
-from .requests_assistant import (
+from .requests.requests_assistant import (
     AIAssistantRequest,
     FrontendLogRequest,
     FrontendLogBatchRequest,
@@ -43,7 +44,70 @@ from .responses import (
 )
 
 from .common import DiagramType, LLMModel, Language
-from .messages import Messages, get_request_language
+from .domain.messages import Messages, get_request_language
+
+# Backward compatibility: Re-export domain models
+from .domain import (
+    Base,
+    Organization,
+    User,
+    APIKey,
+    Diagram,
+    KnowledgeSpace,
+    KnowledgeDocument,
+    DocumentChunk,
+    DocumentBatch,
+    DocumentVersion,
+    KnowledgeQuery,
+    QueryTemplate,
+    QueryFeedback,
+    ChunkTestDocument,
+    ChunkTestDocumentChunk,
+    ChunkTestResult,
+    EvaluationDataset,
+    EvaluationResult,
+    DocumentRelationship,
+    Embedding,
+    TokenUsage,
+    DashboardActivity,
+    DebateSession,
+    DebateMessage,
+    DebateParticipant,
+    SharedDiagram,
+    SharedDiagramLike,
+    SharedDiagramComment,
+    PinnedConversation,
+    EnvSetting,
+)
+
+# Backward compatibility: Re-export request models
+from .requests import (
+    LoginRequest,
+    LoginWithSMSRequest,
+    RegisterRequest,
+    RegisterWithSMSRequest,
+    ChangePasswordRequest,
+    ResetPasswordWithSMSRequest,
+    SendSMSCodeRequest,
+    SendSMSCodeSimpleRequest,
+    VerifySMSCodeRequest,
+    SendChangePhoneSMSRequest,
+    ChangePhoneRequest,
+    DemoPasskeyRequest,
+    ProcessSelectedRequest,
+    RetrievalTestRequest,
+    QueryFeedbackRequest,
+    QueryTemplateRequest,
+    ManualEvaluationRequest,
+    EvaluationDatasetRequest,
+    EvaluationRunRequest,
+    RelationshipRequest,
+    MetadataUpdateRequest,
+    RollbackRequest,
+    TabExpandRequest,
+    TabSuggestionRequest,
+    NodePaletteRequest,
+)
 
 __all__ = [
     # Requests
@@ -77,4 +141,61 @@ __all__ = [
     # Bilingual Messages
     "Messages",
     "get_request_language",
+    # Domain models (backward compatibility)
+    "Base",
+    "Organization",
+    "User",
+    "APIKey",
+    "Diagram",
+    "KnowledgeSpace",
+    "KnowledgeDocument",
+    "DocumentChunk",
+    "DocumentBatch",
+    "DocumentVersion",
+    "KnowledgeQuery",
+    "QueryTemplate",
+    "QueryFeedback",
+    "ChunkTestDocument",
+    "ChunkTestDocumentChunk",
+    "ChunkTestResult",
+    "EvaluationDataset",
+    "EvaluationResult",
+    "DocumentRelationship",
+    "Embedding",
+    "TokenUsage",
+    "DashboardActivity",
+    "DebateSession",
+    "DebateMessage",
+    "DebateParticipant",
+    "SharedDiagram",
+    "SharedDiagramLike",
+    "SharedDiagramComment",
+    "PinnedConversation",
+    "EnvSetting",
+    # Request models (backward compatibility)
+    "LoginRequest",
+    "LoginWithSMSRequest",
+    "RegisterRequest",
+    "RegisterWithSMSRequest",
+    "ChangePasswordRequest",
+    "ResetPasswordWithSMSRequest",
+    "SendSMSCodeRequest",
+    "SendSMSCodeSimpleRequest",
+    "VerifySMSCodeRequest",
+    "SendChangePhoneSMSRequest",
+    "ChangePhoneRequest",
+    "DemoPasskeyRequest",
+    "ProcessSelectedRequest",
+    "RetrievalTestRequest",
+    "QueryFeedbackRequest",
+    "QueryTemplateRequest",
+    "ManualEvaluationRequest",
+    "EvaluationDatasetRequest",
+    "EvaluationRunRequest",
+    "RelationshipRequest",
+    "MetadataUpdateRequest",
+    "RollbackRequest",
+    "TabExpandRequest",
+    "TabSuggestionRequest",
+    "NodePaletteRequest",
 ]

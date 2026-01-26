@@ -7,7 +7,7 @@ import logging
 from fastapi import APIRouter, HTTPException, Depends
 
 from models import RecalculateLayoutRequest
-from models.auth import User
+from models.domain.auth import User
 from utils.auth import get_current_user_or_api_key
 from agents.mind_maps.mind_map_agent import MindMapAgent
 

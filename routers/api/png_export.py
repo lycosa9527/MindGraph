@@ -31,7 +31,7 @@ from models import (
     Messages,
     get_request_language
 )
-from models.auth import User
+from models.domain.auth import User
 from utils.auth import get_current_user_or_api_key
 from config.settings import config
 from prompts import get_prompt

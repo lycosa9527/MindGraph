@@ -14,7 +14,7 @@ from typing import Tuple, Optional
 import logging
 import os
 
-from services.redis.redis_rate_limiter import RedisRateLimiter
+from services.redis.rate_limiting.redis_rate_limiter import RedisRateLimiter
 
 
 

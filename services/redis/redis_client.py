@@ -4,8 +4,8 @@ Redis Client Service
 
 Centralized Redis connection management for MindGraph.
 
-Redis is REQUIRED. MindGraph uses SQLite + Redis architecture:
-- SQLite: Persistent data (users, organizations, token history)
+Redis is REQUIRED. MindGraph uses PostgreSQL + Redis architecture:
+- PostgreSQL: Persistent data (users, organizations, token history)
 - Redis: Ephemeral data (captcha, rate limiting, sessions, buffers)
 
 Configuration via environment variables:

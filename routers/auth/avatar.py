@@ -6,9 +6,9 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from config.database import get_db
-from models.auth import User
-from models.messages import Messages, Language
-from services.redis.redis_user_cache import user_cache
+from models.domain.auth import User
+from models.domain.messages import Messages, Language
+from services.redis.cache.redis_user_cache import user_cache
 from utils.auth import get_current_user
 
 from .dependencies import get_language_dependency

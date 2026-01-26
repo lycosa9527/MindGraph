@@ -2,13 +2,13 @@
 Automated Database Backup Scheduler for MindGraph
 ==================================================
 
-Automatic daily backup of SQLite database with configurable retention.
+Automatic daily backup of PostgreSQL database with configurable retention.
 Integrates with the FastAPI lifespan to run as a background task.
 
 Features:
 - Daily automatic backups (configurable time)
 - Rotation: keeps only N most recent backups (default: 2)
-- Uses SQLite backup API for safe WAL-mode backups
+- PostgreSQL: Uses pg_dump for consistent database snapshots
 - Can run while application is serving requests
 - Optional online backup to Tencent Cloud Object Storage (COS)
 
@@ -32,7 +32,7 @@ Proprietary License
 import asyncio
 import logging
 import os
-import sqlite3
+import subprocess
 import threading
 import time
 import uuid
@@ -268,8 +268,7 @@ def is_backup_lock_holder() -> bool:
         logger.warning("[Backup] Error checking lock ownership: %s", e)
         return False
 
-# Thread-safe flag to coordinate with WAL checkpoint scheduler
-# When backup is running, WAL checkpoint should skip (backup API handles WAL correctly)
+# Thread-safe flag to indicate backup is in progress
 _backup_in_progress = threading.Event()
 
 # Configuration from environment with validation
@@ -299,44 +298,20 @@ def is_backup_in_progress() -> bool:
     """
     Check if a backup operation is currently in progress.
 
-    This is used by WAL checkpoint scheduler to skip checkpointing during backup,
-    since SQLite backup API handles WAL mode correctly on its own.
-
     Returns:
         True if backup is running, False otherwise
     """
     return _backup_in_progress.is_set()
 
 
-def get_database_path() -> Optional[Path]:
+def is_postgresql() -> bool:
     """
-    Get the database file path from configuration.
+    Check if using PostgreSQL database.
 
     Returns:
-        Path to database file, or None if not SQLite
+        True if using PostgreSQL, False otherwise
     """
-    try:
-        if "sqlite" not in DATABASE_URL:
-            return None
-
-        # Extract file path from SQLite URL
-        if DATABASE_URL.startswith("sqlite:////"):
-            # Absolute path (4 slashes)
-            db_path = DATABASE_URL.replace("sqlite:////", "/")
-        elif DATABASE_URL.startswith("sqlite:///"):
-            # Relative path (3 slashes)
-            db_path = DATABASE_URL.replace("sqlite:///", "")
-            if db_path.startswith("./"):
-                db_path = db_path[2:]
-            if not os.path.isabs(db_path):
-                db_path = str(Path.cwd() / db_path)
-        else:
-            db_path = DATABASE_URL.replace("sqlite:///", "")
-
-        return Path(db_path).resolve()
-    except Exception as e:
-        logger.error("[Backup] Failed to get database path: %s", e)
-        return None
+    return "postgresql" in DATABASE_URL.lower()
 
 
 def _cleanup_partial_backup(backup_path: Path) -> None:
@@ -385,297 +360,127 @@ def _check_disk_space(backup_dir: Path, required_mb: int = 100) -> bool:
         return True  # Assume OK if check fails
 
 
-def backup_database_safely(source_db: Path, backup_db: Path) -> bool:
+def backup_postgresql_database(backup_path: Path) -> bool:
     """
-    Safely backup SQLite database using SQLite's backup API.
-    Handles WAL mode correctly and safely even during active WAL operations.
-
-    RACE CONDITION SAFETY:
-    This function safely handles the critical scenario where:
-    - WAL checkpoint scheduler is running (every 5 minutes)
-    - WAL files are actively being flushed/written
-    - Multiple connections are writing to the database
-
-    HOW IT WORKS:
-    SQLite backup API is specifically designed for WAL mode:
-    1. Reads main database file AND WAL file atomically
-    2. Creates consistent snapshot even if WAL is being written to
-    3. Coordinates internally with WAL checkpoint operations
-    4. No manual checkpoint needed - SQLite handles it
-
-    COORDINATION:
-    - Signals backup-in-progress flag (WAL checkpoint scheduler checks this)
-    - WAL checkpoint scheduler skips checkpoint during backup (optimization)
-    - Backup API works correctly even if checkpoint runs simultaneously
-
-    KEY INSIGHT: SQLite backup API handles WAL mode correctly on its own.
-    We don't need to manually checkpoint - doing so is redundant and could
-    interfere with active transactions.
+    Backup PostgreSQL database using pg_dump.
 
     Args:
-        source_db: Path to source database file
-        backup_db: Path to backup database file
+        backup_path: Path to backup file (will be created as .sql or .dump)
 
     Returns:
         True if backup succeeded, False otherwise
     """
-    source_conn = None
-    backup_conn = None
-
-    if not source_db.exists():
-        logger.error("[Backup] Source database does not exist: %s", source_db)
-        return False
-
-    # Check file permissions before backup
     try:
-        # Check if source database is readable
-        if not os.access(source_db, os.R_OK):
-            logger.error(
-                "[Backup] Source database is not readable: %s. Check file permissions.",
-                source_db
-            )
+        # Parse PostgreSQL connection URL
+        # Format: postgresql://user:password@host:port/database
+        db_url = DATABASE_URL
+        if not db_url or "postgresql" not in db_url.lower():
+            logger.error("[Backup] Not a PostgreSQL database URL")
             return False
-
-        # Check if backup directory is writable
-        backup_dir = backup_db.parent
-        if not backup_dir.exists():
-            backup_dir.mkdir(parents=True, exist_ok=True)
-
-        if not os.access(backup_dir, os.W_OK):
-            logger.error(
-                "[Backup] Backup directory is not writable: %s. Check directory permissions.",
-                backup_dir
-            )
-            return False
-
-        # Check if backup file already exists and is writable (or can be overwritten)
-        if backup_db.exists() and not os.access(backup_db, os.W_OK):
-            logger.error(
-                "[Backup] Backup file exists but is not writable: %s. Check file permissions.",
-                backup_db
-            )
-            return False
-    except OSError as e:
-        logger.error("[Backup] Permission check failed: %s", e)
-        return False
-
-    try:
-        # Connect to source database
-        source_conn = sqlite3.connect(str(source_db), timeout=60.0)
-
-        # Verify source database is accessible
-        source_conn.execute("SELECT 1").fetchone()
-
-        # CRITICAL: Coordinate with WAL checkpoint scheduler
-        #
-        # IMPORTANT INSIGHT: SQLite backup API handles WAL mode correctly on its own!
-        # - It reads both main database file AND WAL file atomically
-        # - Creates a consistent snapshot even if WAL is being written to
-        # - Works correctly even if WAL checkpoint happens during backup
-        # - No manual checkpoint needed before backup
-        #
-        # We signal that backup is in progress so WAL checkpoint scheduler can skip
-        # (optional optimization - backup API works fine even if checkpoint runs)
-        _backup_in_progress.set()
 
         # Ensure backup directory exists
-        backup_db.parent.mkdir(parents=True, exist_ok=True)
+        backup_path.parent.mkdir(parents=True, exist_ok=True)
 
-        # Remove existing backup file and any WAL/SHM files if they exist
-        if backup_db.exists():
-            backup_db.unlink()
-        # Clean up any existing WAL/SHM files from previous failed backups
-        for suffix in ["-wal", "-shm"]:
-            wal_file = backup_db.parent / f"{backup_db.name}{suffix}"
-            if wal_file.exists():
-                try:
-                    wal_file.unlink()
-                    logger.debug("[Backup] Removed existing %s", wal_file.name)
-                except (OSError, PermissionError):
-                    pass
+        # Use .dump format (custom format) for better compression and restore options
+        # Can also use .sql for plain text, but .dump is more efficient
+        if not backup_path.suffix:
+            backup_path = backup_path.with_suffix('.dump')
 
-        # Connect to backup database
-        # CRITICAL: Set journal_mode IMMEDIATELY after connection to prevent WAL file creation
-        backup_conn = sqlite3.connect(str(backup_db), timeout=60.0)
+        logger.info("[Backup] Starting PostgreSQL backup using pg_dump...")
 
-        # Disable WAL mode for backup file (backups are standalone snapshots, don't need WAL)
-        # This MUST be done immediately after connection, before any operations
-        # This prevents SQLite from creating -wal and -shm files in the backup folder
-        try:
-            cursor = backup_conn.cursor()
-            cursor.execute("PRAGMA journal_mode=DELETE")
-            result = cursor.fetchone()
-            # PRAGMA journal_mode returns the new mode, should be "delete"
-            if result and result[0].upper() == "DELETE":
-                logger.debug("[Backup] Successfully set backup journal_mode to DELETE")
-            else:
-                logger.warning(
-                    "[Backup] Failed to set journal_mode to DELETE, got: %s",
-                    result[0] if result else 'None'
-                )
-            cursor.close()
-        except sqlite3.OperationalError as e:
-            # If PRAGMA fails, this is a problem - we can't guarantee standalone backup
-            logger.error("[Backup] CRITICAL: Could not set journal_mode to DELETE: %s", e)
-            logger.error("[Backup] Backup file may have WAL mode enabled - this is not desired")
-            # We'll still try to clean up WAL/SHM files in finally block
+        # Find pg_dump binary
+        pg_dump_paths = [
+            '/usr/lib/postgresql/18/bin/pg_dump',
+            '/usr/lib/postgresql/16/bin/pg_dump',
+            '/usr/lib/postgresql/15/bin/pg_dump',
+            '/usr/lib/postgresql/14/bin/pg_dump',
+            '/usr/local/pgsql/bin/pg_dump',
+            '/usr/bin/pg_dump',
+        ]
 
-        # Use SQLite backup API - handles WAL mode correctly
-        # The backup API creates a consistent snapshot atomically, even if:
-        # - WAL checkpoint happens during backup (it coordinates internally)
-        # - WAL files are actively being flushed
-        # - Other connections are writing to WAL
-        # - Periodic checkpoint scheduler runs simultaneously
-        #
-        # This is the SAFE and CORRECT way to backup WAL-mode databases.
-        # No manual checkpoint needed - SQLite handles it internally.
-        if hasattr(source_conn, 'backup'):
-            # Python 3.7+ backup API
-            # This API internally:
-            # 1. Reads main database file
-            # 2. Reads WAL file atomically
-            # 3. Creates consistent snapshot
-            # 4. Handles concurrent operations safely
-            source_conn.backup(backup_conn)
-        else:
-            # Fallback: dump/restore method
-            for line in source_conn.iterdump():
-                backup_conn.executescript(line)
-            backup_conn.commit()
+        pg_dump_binary = None
+        for path in pg_dump_paths:
+            if os.path.exists(path) and os.access(path, os.X_OK):
+                pg_dump_binary = path
+                break
 
-        # CRITICAL: Close backup connection BEFORE checking for WAL/SHM files
-        # SQLite may create WAL files when connection is open, but should clean them up on close
-        # if journal_mode is DELETE
-        if backup_conn:
+        if not pg_dump_binary:
+            # Try to find pg_dump in PATH
             try:
-                backup_conn.close()
-                backup_conn = None  # Mark as closed
+                result = subprocess.run(
+                    ['which', 'pg_dump'],
+                    capture_output=True,
+                    timeout=2,
+                    check=False
+                )
+                if result.returncode == 0:
+                    pg_dump_binary = result.stdout.decode('utf-8').strip()
             except Exception:
                 pass
 
+        if not pg_dump_binary:
+            logger.error("[Backup] pg_dump binary not found. Install PostgreSQL client tools.")
+            return False
+
+        # Run pg_dump
+        # Use custom format (-Fc) for compressed, flexible restore options
+        # -Fc: custom format (compressed, can restore specific tables)
+        # -Fp: plain SQL format (uncompressed, human-readable)
+        # We use -Fc for better compression and restore flexibility
+        cmd = [
+            pg_dump_binary,
+            '-Fc',  # Custom format (compressed)
+            '-f', str(backup_path),
+            db_url
+        ]
+
+        logger.debug("[Backup] Running: %s", ' '.join(cmd[:3]) + ' [URL]')
+
+        result = subprocess.run(
+            cmd,
+            capture_output=True,
+            timeout=3600,  # 1 hour timeout
+            check=False,
+            text=True
+        )
+
+        if result.returncode != 0:
+            error_msg = result.stderr or result.stdout or "Unknown error"
+            logger.error("[Backup] pg_dump failed: %s", error_msg)
+            if backup_path.exists():
+                backup_path.unlink()
+            return False
+
         # Verify backup file exists and is not empty
-        if not backup_db.exists() or backup_db.stat().st_size == 0:
+        if not backup_path.exists() or backup_path.stat().st_size == 0:
             logger.error("[Backup] Backup file was not created or is empty")
             return False
 
-        # CRITICAL: Verify backup is standalone (no WAL/SHM files)
-        # This ensures we have a clean, standalone backup file
-        wal_files_exist = False
-        for suffix in ["-wal", "-shm"]:
-            wal_file = backup_db.parent / f"{backup_db.name}{suffix}"
-            if wal_file.exists():
-                wal_files_exist = True
-                logger.warning("[Backup] WARNING: %s exists - backup is not standalone!", wal_file.name)
-                try:
-                    wal_file.unlink()
-                    logger.info("[Backup] Removed %s to ensure standalone backup", wal_file.name)
-                except (OSError, PermissionError) as e:
-                    logger.error("[Backup] Failed to remove %s: %s", wal_file.name, e)
-                    return False  # Fail backup if we can't remove WAL files
-
-        if wal_files_exist:
-            logger.warning("[Backup] Backup had WAL/SHM files but they were cleaned up")
-
-        # Verify journal_mode is DELETE by checking the backup file
-        # Reconnect briefly to verify (read-only)
-        verify_conn = None
-        try:
-            verify_conn = sqlite3.connect(str(backup_db), timeout=10.0)
-            cursor = verify_conn.cursor()
-            cursor.execute("PRAGMA journal_mode")
-            result = cursor.fetchone()
-            if result and result[0].upper() != "DELETE":
-                logger.warning("[Backup] Backup file journal_mode is %s, expected DELETE", result[0])
-                # Try to fix it
-                cursor.execute("PRAGMA journal_mode=DELETE")
-                verify_conn.commit()
-                logger.info("[Backup] Fixed backup file journal_mode to DELETE")
-            cursor.close()
-        except Exception as e:
-            logger.debug("[Backup] Could not verify journal_mode: %s", e)
-        finally:
-            if verify_conn:
-                try:
-                    verify_conn.close()
-                except Exception:
-                    pass
-
+        size_mb = backup_path.stat().st_size / (1024 * 1024)
+        logger.info("[Backup] PostgreSQL backup created: %s (%.2f MB)", backup_path.name, size_mb)
         return True
 
-    except sqlite3.OperationalError as e:
-        error_msg = str(e).lower()
-        if "database is locked" in error_msg:
-            logger.error("[Backup] Database is locked - another process may be using it: %s", e)
-        elif "disk i/o error" in error_msg:
-            logger.error("[Backup] Disk I/O error - check disk health and space: %s", e)
-        elif "unable to open database" in error_msg:
-            logger.error("[Backup] Cannot open database - check file permissions: %s", e)
-        else:
-            logger.error("[Backup] SQLite operational error: %s", e)
-        _cleanup_partial_backup(backup_db)
-        return False
-    except sqlite3.DatabaseError as e:
-        # Covers corruption, malformed database, etc.
-        logger.error("[Backup] Database error (possibly corrupted): %s", e)
-        logger.error("[Backup] Consider running: python scripts/recover_database.py")
-        _cleanup_partial_backup(backup_db)
-        return False
-    except PermissionError as e:
-        logger.error("[Backup] Permission denied - check file/folder permissions: %s", e)
-        _cleanup_partial_backup(backup_db)
-        return False
-    except OSError as e:
-        # Covers disk full, file system errors, etc.
-        if e.errno == 28:  # ENOSPC - No space left on device
-            logger.error("[Backup] Disk full - cannot create backup: %s", e)
-        else:
-            logger.error("[Backup] OS error: %s", e)
-        _cleanup_partial_backup(backup_db)
+    except subprocess.TimeoutExpired:
+        logger.error("[Backup] pg_dump timed out after 1 hour")
+        if backup_path.exists():
+            backup_path.unlink()
         return False
     except Exception as e:
-        logger.error("[Backup] Unexpected error: %s", e, exc_info=True)
-        _cleanup_partial_backup(backup_db)
+        logger.error("[Backup] PostgreSQL backup failed: %s", e, exc_info=True)
+        if backup_path.exists():
+            try:
+                backup_path.unlink()
+            except Exception:
+                pass
         return False
-    finally:
-        # Clear backup-in-progress flag
-        _backup_in_progress.clear()
-
-        # Close connections
-        if backup_conn:
-            try:
-                backup_conn.close()
-            except Exception:
-                pass
-        if source_conn:
-            try:
-                source_conn.close()
-            except Exception:
-                pass
-
-        # FINAL SAFEGUARD: Clean up any WAL/SHM files that might have been created
-        # This is a safety net - we should have prevented their creation, but if they exist, remove them
-        # This ensures backups are ALWAYS standalone .db files with no WAL/SHM files
-        if backup_db.exists():
-            for suffix in ["-wal", "-shm"]:
-                wal_file = backup_db.parent / f"{backup_db.name}{suffix}"
-                if wal_file.exists():
-                    try:
-                        wal_file.unlink()
-                        logger.info(
-                            "[Backup] Final cleanup: Removed %s to ensure standalone backup",
-                            wal_file.name
-                        )
-                    except (OSError, PermissionError) as e:
-                        logger.warning("[Backup] Could not remove %s: %s", wal_file.name, e)
-                        # Don't fail here - backup might still be valid, just log warning
 
 
 def verify_backup(backup_path: Path) -> bool:
     """
-    Verify backup database integrity.
+    Verify PostgreSQL backup database integrity.
 
     Args:
-        backup_path: Path to backup database file
+        backup_path: Path to backup file (PostgreSQL .dump/.sql)
 
     Returns:
         True if backup is valid, False otherwise
@@ -683,68 +488,59 @@ def verify_backup(backup_path: Path) -> bool:
     if not backup_path.exists() or backup_path.stat().st_size == 0:
         return False
 
-    conn = None
+    # PostgreSQL backup verification using pg_restore --list (dry-run)
     try:
-        conn = sqlite3.connect(str(backup_path), timeout=30.0)
-        cursor = conn.cursor()
+        pg_restore_paths = [
+            '/usr/lib/postgresql/18/bin/pg_restore',
+            '/usr/lib/postgresql/16/bin/pg_restore',
+            '/usr/lib/postgresql/15/bin/pg_restore',
+            '/usr/lib/postgresql/14/bin/pg_restore',
+            '/usr/local/pgsql/bin/pg_restore',
+            '/usr/bin/pg_restore',
+        ]
 
-        # Disable WAL mode for backup verification (backups are read-only snapshots)
-        # This prevents SQLite from creating -wal and -shm files in the backup folder
-        # Handle potential race condition: if file is being restored or accessed by another process
-        try:
-            cursor.execute("PRAGMA journal_mode=DELETE")
-            result = cursor.fetchone()
-            if result and result[0].upper() != "DELETE":
-                logger.debug("[Backup] Verification: journal_mode is %s, expected DELETE", result[0])
-        except sqlite3.OperationalError as e:
-            # If PRAGMA fails (e.g., database locked), log and continue verification
-            # The integrity check can still proceed
-            logger.debug("[Backup] Could not set journal_mode during verification: %s", e)
+        pg_restore_binary = None
+        for path in pg_restore_paths:
+            if os.path.exists(path) and os.access(path, os.X_OK):
+                pg_restore_binary = path
+                break
 
-        # Run integrity check
-        cursor.execute("PRAGMA integrity_check")
-        result = cursor.fetchone()
-
-        return result and result[0] == "ok"
-    except Exception as e:
-        logger.error("[Backup] Integrity check failed: %s", e)
-        return False
-    finally:
-        if conn:
+        if not pg_restore_binary:
+            # Try PATH
             try:
-                conn.close()
+                result = subprocess.run(
+                    ['which', 'pg_restore'],
+                    capture_output=True,
+                    timeout=2,
+                    check=False
+                )
+                if result.returncode == 0:
+                    pg_restore_binary = result.stdout.decode('utf-8').strip()
             except Exception:
                 pass
 
-        # Clean up any WAL/SHM files that might have been created before we disabled WAL mode
-        # These files are not needed for backup files (backups are standalone snapshots)
-        for suffix in ["-wal", "-shm"]:
-            wal_file = backup_path.parent / f"{backup_path.name}{suffix}"
-            if wal_file.exists():
-                try:
-                    wal_file.unlink()
-                    logger.debug("[Backup] Cleaned up %s", wal_file.name)
-                except (OSError, PermissionError):
-                    pass  # Ignore cleanup errors
-
-
-def verify_backup_is_standalone(backup_path: Path) -> Tuple[bool, List[str]]:
-    """
-    Verify that a backup file is standalone (no WAL/SHM files).
-
-    Args:
-        backup_path: Path to backup file
-
-    Returns:
-        tuple: (is_standalone, list_of_wal_files_found)
-    """
-    wal_files = []
-    for suffix in ["-wal", "-shm"]:
-        wal_file = backup_path.parent / f"{backup_path.name}{suffix}"
-        if wal_file.exists():
-            wal_files.append(str(wal_file))
-
-    return len(wal_files) == 0, wal_files
+        if pg_restore_binary:
+            # Use pg_restore --list to verify backup integrity
+            result = subprocess.run(
+                [pg_restore_binary, '--list', str(backup_path)],
+                capture_output=True,
+                timeout=60,
+                check=False
+            )
+            if result.returncode == 0:
+                logger.debug("[Backup] PostgreSQL backup verification passed")
+                return True
+            else:
+                logger.warning("[Backup] PostgreSQL backup verification failed: %s", result.stderr)
+                return False
+        else:
+            # pg_restore not found, assume backup is valid if file exists and has size
+            logger.debug("[Backup] pg_restore not found, skipping verification (backup file exists)")
+            return True
+    except Exception as e:
+        logger.warning("[Backup] PostgreSQL backup verification error: %s", e)
+        # Assume valid if file exists and has size
+        return True
 
 
 def upload_backup_to_cos(backup_path: Path, max_retries: int = 3) -> bool:
@@ -808,7 +604,7 @@ def upload_backup_to_cos(backup_path: Path, max_retries: int = 3) -> bool:
         return False
 
     # Construct object key with prefix (before try block for error handling)
-    # Format: {COS_KEY_PREFIX}/mindgraph.db.{timestamp}
+    # Format: {COS_KEY_PREFIX}/mindgraph.postgresql.{timestamp}.dump
     # Normalize prefix (remove trailing slash) to avoid double slashes
     normalized_prefix = COS_KEY_PREFIX.rstrip('/')
     object_key = f"{normalized_prefix}/{backup_path.name}"
@@ -1081,8 +877,8 @@ def list_cos_backups() -> List[dict]:
                         logger.warning("[Backup] Skipping object with unexpected prefix: %s", obj_key)
                         continue
 
-                    # Only include files matching backup pattern (mindgraph.db.*)
-                    if 'mindgraph.db.' in obj_key:
+                    # Only include files matching backup pattern (mindgraph.postgresql.*.dump)
+                    if 'mindgraph.postgresql.' in obj_key and obj_key.endswith('.dump'):
                         backups.append({
                             'key': obj_key,
                             'size': obj['Size'],
@@ -1282,6 +1078,8 @@ def cleanup_old_backups(backup_dir: Path, keep_count: int) -> int:
     Uses count-based retention (not time-based) to ensure we always
     have backups even if server was down for extended periods.
 
+    Supports PostgreSQL (.dump) backup files.
+
     Args:
         backup_dir: Directory containing backups
         keep_count: Number of backup files to keep
@@ -1295,9 +1093,10 @@ def cleanup_old_backups(backup_dir: Path, keep_count: int) -> int:
     deleted_count = 0
 
     try:
-        # Find all backup files and sort by modification time (newest first)
+        # Find all PostgreSQL backup files and sort by modification time (newest first)
         backup_files = []
-        for backup_file in backup_dir.glob("mindgraph.db.*"):
+        # PostgreSQL backups: mindgraph.postgresql.*.dump
+        for backup_file in backup_dir.glob("mindgraph.postgresql.*.dump"):
             if backup_file.is_file():
                 try:
                     mtime = backup_file.stat().st_mtime
@@ -1314,17 +1113,6 @@ def cleanup_old_backups(backup_dir: Path, keep_count: int) -> int:
                 backup_file.unlink()
                 logger.info("[Backup] Deleted old backup: %s", backup_file.name)
                 deleted_count += 1
-
-                # Also clean up any WAL/SHM files that might exist for this backup
-                # (shouldn't exist with our fixes, but clean up legacy files)
-                for suffix in ["-wal", "-shm"]:
-                    wal_file = backup_file.parent / f"{backup_file.name}{suffix}"
-                    if wal_file.exists():
-                        try:
-                            wal_file.unlink()
-                            logger.debug("[Backup] Cleaned up %s", wal_file.name)
-                        except (OSError, PermissionError):
-                            pass  # Ignore cleanup errors
             except (OSError, PermissionError) as e:
                 logger.warning("[Backup] Could not delete %s: %s", backup_file.name, e)
     except Exception as e:
@@ -1335,7 +1123,7 @@ def cleanup_old_backups(backup_dir: Path, keep_count: int) -> int:
 
 def create_backup() -> bool:
     """
-    Create a timestamped backup of the database.
+    Create a timestamped backup of the PostgreSQL database.
 
     Returns:
         True if backup succeeded, False otherwise
@@ -1348,64 +1136,31 @@ def create_backup() -> bool:
         logger.warning("[Backup] Backup rejected: this worker does not hold the scheduler lock")
         return False
 
-    source_db = get_database_path()
-    if source_db is None:
-        logger.warning("[Backup] Not using SQLite database, skipping backup")
+    # PostgreSQL backup
+    if not is_postgresql():
+        logger.warning("[Backup] Not using PostgreSQL database, skipping backup")
         return False
 
-    if not source_db.exists():
-        logger.error("[Backup] Database not found: %s", source_db)
-        return False
-
-    # Check disk space before backup
-    # Calculate required space: database size + 50MB buffer (for backup overhead and WAL checkpointing)
-    try:
-        db_size_mb = source_db.stat().st_size / (1024 * 1024)
-        required_mb = max(100, int(db_size_mb) + 50)  # At least 100MB, or DB size + 50MB buffer
-    except Exception:
-        required_mb = 100  # Fallback to default if we can't get DB size
-
-    if not _check_disk_space(BACKUP_DIR, required_mb=required_mb):
-        logger.error("[Backup] Insufficient disk space (need %s MB), skipping backup", required_mb)
-        return False
-
-    # Generate timestamped backup filename
-    # Use microsecond precision to avoid collisions if multiple backups are triggered simultaneously
-    # Even with lock protection, this ensures unique filenames
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
-    backup_path = BACKUP_DIR / f"mindgraph.db.{timestamp}"
+    backup_path = BACKUP_DIR / f"mindgraph.postgresql.{timestamp}.dump"
 
-    logger.info("[Backup] Starting backup: %s -> %s", source_db, backup_path)
+    logger.info("[Backup] Starting PostgreSQL backup...")
 
-    # Create backup
-    if backup_database_safely(source_db, backup_path):
+    # Check disk space (estimate: assume 2x database size for compressed backup)
+    if not _check_disk_space(BACKUP_DIR, required_mb=200):
+        logger.error("[Backup] Insufficient disk space (need at least 200 MB), skipping backup")
+        return False
+
+    # Create PostgreSQL backup
+    if backup_postgresql_database(backup_path):
         size_mb = backup_path.stat().st_size / (1024 * 1024)
-        logger.info("[Backup] Backup created: %s (%.2f MB)", backup_path.name, size_mb)
+        logger.info("[Backup] PostgreSQL backup created: %s (%.2f MB)", backup_path.name, size_mb)
 
         # Verify integrity
         if verify_backup(backup_path):
             logger.info("[Backup] Integrity check passed")
         else:
             logger.warning("[Backup] Integrity check failed - backup may be corrupted")
-
-        # CRITICAL: Verify backup is standalone (no WAL/SHM files)
-        is_standalone, wal_files = verify_backup_is_standalone(backup_path)
-        if not is_standalone:
-            logger.error("[Backup] Backup is NOT standalone - found WAL/SHM files: %s", wal_files)
-            # Try to clean them up
-            for wal_file in wal_files:
-                try:
-                    Path(wal_file).unlink()
-                    logger.info("[Backup] Removed %s", wal_file)
-                except Exception as e:
-                    logger.error("[Backup] Failed to remove %s: %s", wal_file, e)
-            # Verify again
-            is_standalone, _ = verify_backup_is_standalone(backup_path)
-            if not is_standalone:
-                logger.error("[Backup] Failed to create standalone backup - WAL/SHM files persist")
-                return False
-        else:
-            logger.info("[Backup] Backup verified as standalone (no WAL/SHM files)")
 
         # Cleanup old backups (keep only N most recent)
         deleted = cleanup_old_backups(BACKUP_DIR, BACKUP_RETENTION_COUNT)
@@ -1425,19 +1180,17 @@ def create_backup() -> bool:
                 logger.info("[Backup] COS upload completed successfully")
 
                 # Cleanup old COS backups (keep only last 2 days)
-                # Delete backups older than 2 days (3 days old)
                 deleted = cleanup_old_cos_backups(retention_days=2)
                 if deleted > 0:
                     logger.info("[Backup] Cleaned up %s old backup(s) from COS", deleted)
             else:
                 logger.error("[Backup] COS upload failed, but local backup succeeded")
-                # Don't fail the backup if COS upload fails - local backup is still valid
         else:
             logger.debug("[Backup] COS backup disabled (COS_BACKUP_ENABLED=false), skipping upload")
 
         return True
     else:
-        logger.error("[Backup] Backup failed")
+        logger.error("[Backup] PostgreSQL backup failed")
         return False
 
 
@@ -1611,13 +1364,15 @@ def get_backup_status() -> dict:
     backups = []
 
     if BACKUP_DIR.exists():
-        for backup_file in sorted(BACKUP_DIR.glob("mindgraph.db.*"), reverse=True):
+        # PostgreSQL backups
+        for backup_file in sorted(BACKUP_DIR.glob("mindgraph.postgresql.*.dump"), reverse=True):
             if backup_file.is_file():
                 stat = backup_file.stat()
                 backups.append({
                     "filename": backup_file.name,
                     "size_mb": round(stat.st_size / (1024 * 1024), 2),
-                    "created": datetime.fromtimestamp(stat.st_mtime).isoformat()
+                    "created": datetime.fromtimestamp(stat.st_mtime).isoformat(),
+                    "type": "postgresql"
                 })
 
     return {

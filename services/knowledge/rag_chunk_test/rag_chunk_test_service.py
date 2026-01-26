@@ -36,7 +36,7 @@ from services.knowledge.progress_tracking import (
 )
 
 if TYPE_CHECKING:
-    from models.knowledge_space import ChunkTestResult
+    from models.domain.knowledge_space import ChunkTestResult
 
 
 logger = logging.getLogger(__name__)

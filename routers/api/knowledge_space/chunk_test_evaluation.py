@@ -9,10 +9,10 @@ from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 
 from config.database import get_db
-from models.auth import User
+from models.domain.auth import User
 from utils.auth import get_current_user
-from models.knowledge_space import ChunkTestResult
-from models.requests_knowledge_space import ManualEvaluationRequest
+from models.domain.knowledge_space import ChunkTestResult
+from models.requests.requests_knowledge_space import ManualEvaluationRequest
 from routers.api.knowledge_space.chunk_test_utils import check_feature_enabled
 from services.knowledge.chunking_service import Chunk
 from services.knowledge.rag_chunk_test import get_rag_chunk_test_service

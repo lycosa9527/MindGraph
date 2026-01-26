@@ -19,9 +19,9 @@ import uuid
 
 from fastapi import APIRouter, HTTPException, Header, Request, Response, status
 
-from models.messages import Messages, get_request_language, Language
+from models.domain.messages import Messages, get_request_language, Language
 from services.auth.captcha_storage import get_captcha_storage
-from services.redis.redis_rate_limiter import check_captcha_rate_limit
+from services.redis.rate_limiting.redis_rate_limiter import check_captcha_rate_limit
 from utils.auth import (
     CAPTCHA_SESSION_COOKIE_NAME,
     RATE_LIMIT_WINDOW_MINUTES,

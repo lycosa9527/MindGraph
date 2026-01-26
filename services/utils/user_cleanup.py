@@ -17,7 +17,7 @@ from pathlib import Path
 
 from sqlalchemy.orm import Session
 
-from models.knowledge_space import KnowledgeSpace
+from models.domain.knowledge_space import KnowledgeSpace
 from services.llm.qdrant_service import get_qdrant_service
 
 logger = logging.getLogger(__name__)

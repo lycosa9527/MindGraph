@@ -9,7 +9,7 @@ import numpy as np
 
 from clients.dashscope_embedding import DashScopeEmbeddingClient, get_embedding_client
 from config.settings import config
-from models.knowledge_space import Embedding
+from models.domain.knowledge_space import Embedding
 from services.redis.redis_client import get_redis, is_redis_available
 
 """
@@ -18,7 +18,7 @@ Author: lycosa9527
 Made by: MindSpring Team
 
 Implements embedding caching following Dify's approach:
-- Document embeddings: SQLite (permanent cache)
+- Document embeddings: database (permanent cache)
 - Query embeddings: Redis (10min TTL)
 
 Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
@@ -35,7 +35,7 @@ class EmbeddingCache:
     """
     Embedding cache service following Dify's approach.
 
-    - Document embeddings: Stored in SQLite (permanent, hash-based lookup)
+    - Document embeddings: Stored in database (permanent, hash-based lookup)
     - Query embeddings: Stored in Redis (10min TTL)
     """
 
@@ -55,7 +55,7 @@ class EmbeddingCache:
 
     def get_document_embedding(self, db: Session, text: str) -> Optional[List[float]]:
         """
-        Get document embedding from SQLite cache (permanent cache).
+        Get document embedding from database cache (permanent cache).
 
         Args:
             db: Database session
@@ -86,7 +86,7 @@ class EmbeddingCache:
 
     def cache_document_embedding(self, db: Session, text: str, embedding: List[float]) -> None:
         """
-        Cache document embedding in SQLite (permanent cache).
+        Cache document embedding in database (permanent cache).
 
         Args:
             db: Database session

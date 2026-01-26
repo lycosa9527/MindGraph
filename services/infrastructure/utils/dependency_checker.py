@@ -5,9 +5,11 @@ Handles checking for required dependencies:
 - Redis (Python package + server binary/service)
 - Celery (Python package + Redis + Qdrant dependencies)
 - Qdrant (Python package + server binary/service)
+- PostgreSQL (Python package + server binaries)
 """
 
 import os
+import re
 import sys
 import subprocess
 import importlib.util
@@ -18,9 +20,15 @@ from typing import Optional
 # Try importing optional dependencies at module level
 try:
     import redis
-    redis_module: Optional[ModuleType] = redis
+    REDIS_MODULE: Optional[ModuleType] = redis
 except ImportError:
-    redis_module = None
+    REDIS_MODULE = None
+
+try:
+    import psycopg2
+    PSYCOPG2_MODULE: Optional[ModuleType] = psycopg2
+except ImportError:
+    PSYCOPG2_MODULE = None
 
 
 def check_package_installed(package_name: str) -> bool:
@@ -37,7 +45,7 @@ def check_redis_installed() -> tuple[bool, str]:
         tuple[bool, str]: (is_installed, message)
     """
     # Check Python package
-    if redis_module is None:
+    if REDIS_MODULE is None:
         return False, "Redis Python package not installed. Install with: pip install redis"
 
     # Check if Redis server binary exists in PATH
@@ -71,12 +79,12 @@ def check_redis_installed() -> tuple[bool, str]:
 
     # Check if Redis is already running (connection test)
     redis_running = False
-    if redis_module is not None:
+    if REDIS_MODULE is not None:
         try:
             redis_host = os.getenv('REDIS_HOST', 'localhost')
             redis_port_str = os.getenv('REDIS_PORT', '6379')
             redis_port = int(redis_port_str)
-            redis_client_class = getattr(redis_module, 'Redis')
+            redis_client_class = getattr(REDIS_MODULE, 'Redis')
             r = redis_client_class(host=redis_host, port=redis_port, socket_connect_timeout=1)
             r.ping()
             redis_running = True
@@ -110,7 +118,7 @@ def check_celery_installed() -> tuple[bool, str]:
         return False, "Celery Python package not installed. Install with: pip install celery"
 
     # Check Redis dependency (required for Celery)
-    if redis_module is None:
+    if REDIS_MODULE is None:
         return False, (
             "Celery requires Redis but Redis Python package is not installed. "
             "Install with: pip install redis"
@@ -121,7 +129,7 @@ def check_celery_installed() -> tuple[bool, str]:
         redis_host = os.getenv('REDIS_HOST', 'localhost')
         redis_port_str = os.getenv('REDIS_PORT', '6379')
         redis_port = int(redis_port_str)
-        redis_client_class = getattr(redis_module, 'Redis')
+        redis_client_class = getattr(REDIS_MODULE, 'Redis')
         r = redis_client_class(host=redis_host, port=redis_port, socket_connect_timeout=1)
         r.ping()
     except Exception as e:
@@ -208,4 +216,113 @@ def check_qdrant_installed() -> tuple[bool, str]:
         "  - Run: bash scripts/install_qdrant.sh\n"
         "  - Or download from: https://github.com/qdrant/qdrant/releases\n"
         "  - Or set QDRANT_HOST to point to an existing Qdrant server"
+    )
+
+
+def check_postgresql_installed() -> tuple[bool, str]:
+    """
+    Check if PostgreSQL is installed (Python package + server binaries).
+
+    Checks for:
+    - psycopg2 Python package
+    - postgres binary (PostgreSQL server)
+    - initdb binary (for initializing data directory)
+
+    Returns:
+        tuple[bool, str]: (is_installed, message)
+    """
+    # Check Python package (psycopg2-binary)
+    if not check_package_installed('psycopg2'):
+        return False, (
+            "PostgreSQL Python package not installed. "
+            "Install with: pip install psycopg2-binary"
+        )
+
+    # Check for postgres binary in common locations
+    postgres_paths = [
+        '/usr/lib/postgresql/18/bin/postgres',  # PostgreSQL 18 (WSL/Ubuntu)
+        '/usr/lib/postgresql/16/bin/postgres',  # PostgreSQL 16
+        '/usr/lib/postgresql/15/bin/postgres',  # PostgreSQL 15
+        '/usr/lib/postgresql/14/bin/postgres',  # PostgreSQL 14
+        '/usr/local/pgsql/bin/postgres',  # Custom installation
+        '/usr/bin/postgres',  # System-wide
+    ]
+
+    postgres_binary_found = False
+    postgres_version = None
+    for path in postgres_paths:
+        if os.path.exists(path) and os.access(path, os.X_OK):
+            postgres_binary_found = True
+            # Try to extract version from path or binary
+            if '18' in path:
+                postgres_version = '18'
+            elif '16' in path:
+                postgres_version = '16'
+            elif '15' in path:
+                postgres_version = '15'
+            elif '14' in path:
+                postgres_version = '14'
+            else:
+                # Try to get version from binary
+                try:
+                    result = subprocess.run(
+                        [path, '--version'],
+                        capture_output=True,
+                        timeout=2,
+                        check=False,
+                        text=True
+                    )
+                    if result.returncode == 0 and 'postgres' in result.stdout.lower():
+                        # Extract version number
+                        version_match = re.search(r'(\d+)', result.stdout)
+                        if version_match:
+                            postgres_version = version_match.group(1)
+                except Exception:
+                    pass
+            break
+
+    # Check for initdb binary (same directory as postgres)
+    initdb_binary_found = False
+    if postgres_binary_found:
+        # Check initdb in same directory as postgres
+        postgres_dir = os.path.dirname(path)
+        initdb_path = os.path.join(postgres_dir, 'initdb')
+        if os.path.exists(initdb_path) and os.access(initdb_path, os.X_OK):
+            initdb_binary_found = True
+
+    # Check if PostgreSQL is already running (connection test)
+    postgres_running = False
+    if PSYCOPG2_MODULE is not None:
+        try:
+            db_url = os.getenv('DATABASE_URL', '')
+            if db_url and 'postgresql' in db_url:
+                # Try to connect (quick timeout)
+                conn = PSYCOPG2_MODULE.connect(
+                    db_url,
+                    connect_timeout=1
+                )
+                conn.close()
+                postgres_running = True
+        except Exception:
+            pass
+
+    if postgres_running:
+        version_msg = f" (version {postgres_version})" if postgres_version else ""
+        return True, f"PostgreSQL is installed and running{version_msg}"
+
+    if postgres_binary_found and initdb_binary_found:
+        version_msg = f" (version {postgres_version})" if postgres_version else ""
+        return True, f"PostgreSQL is installed but not running{version_msg}"
+
+    if postgres_binary_found and not initdb_binary_found:
+        return False, (
+            "PostgreSQL postgres binary found but initdb binary not found. "
+            "Install PostgreSQL with: sudo apt-get install postgresql postgresql-contrib"
+        )
+
+    return False, (
+        "PostgreSQL binaries not found. Install PostgreSQL:\n"
+        "  - Ubuntu/Debian: sudo apt-get install postgresql postgresql-contrib\n"
+        "  - macOS: brew install postgresql\n"
+        "  - Or download from: https://www.postgresql.org/download/"
     )

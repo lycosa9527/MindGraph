@@ -10,11 +10,11 @@ Handles:
 
 import os
 import sys
-import io
 import logging
 import re
 from logging.handlers import BaseRotatingHandler
 from datetime import datetime, timedelta
+from typing import Literal
 from urllib.parse import urlparse
 from config.settings import config
 
@@ -77,20 +77,15 @@ class TimestampedRotatingFileHandler(BaseRotatingHandler):
             base_name = base_name[:-4]
         return os.path.join(base_dir, f"{base_name}.{timestamp_str}.log")
 
-    def should_rollover(self, _record):
+    def should_rollover(self, record):
         """Check if we should rollover to a new file."""
         now = datetime.now()
         return now >= self.next_rotation_time
-
-    def shouldRollover(self, record):
-        """Alias for should_rollover (Python logging expects camelCase)."""
-        return self.should_rollover(record)
 
     def do_rollover(self):
         """Perform rollover to a new timestamped file."""
         if self.stream:
             self.stream.close()
-            self.stream = None  # type: ignore[assignment]
 
         # Clean up old files
         self._cleanup_old_files()  # pylint: disable=protected-access
@@ -104,6 +99,14 @@ class TimestampedRotatingFileHandler(BaseRotatingHandler):
         self.baseFilename = new_filename
         self.stream = self._open()  # pylint: disable=protected-access
 
+    def __getattr__(self, name):
+        """Handle camelCase method calls from Python logging framework."""
+        if name == 'shouldRollover':
+            return self.should_rollover
+        if name == 'doRollover':
+            return self.do_rollover
+        raise AttributeError(f"'{self.__class__.__name__}' object has no attribute '{name}'")
+
     def emit(self, record):
         """Emit a record, handling closed streams gracefully."""
         # Check if stream is usable before attempting to write
@@ -115,7 +118,6 @@ class TimestampedRotatingFileHandler(BaseRotatingHandler):
                         self.stream.close()
                     except (ValueError, OSError):
                         pass
-                self.stream = None
                 self.stream = self._open()
             except (ValueError, OSError):
                 # Can't reopen, silently ignore
@@ -123,9 +125,9 @@ class TimestampedRotatingFileHandler(BaseRotatingHandler):
 
         try:
             super().emit(record)
-        except (ValueError, OSError, AttributeError, RuntimeError) as e:
+        except (ValueError, OSError, AttributeError, RuntimeError) as error:
             # Handle "I/O operation on closed file" errors gracefully
-            error_str = str(e).lower()
+            error_str = str(error).lower()
             if any(phrase in error_str for phrase in [
                 "closed file", "i/o operation", "bad file descriptor",
                 "operation on closed", "stream is closed"
@@ -137,7 +139,6 @@ class TimestampedRotatingFileHandler(BaseRotatingHandler):
                             self.stream.close()
                         except (ValueError, OSError):
                             pass
-                    self.stream = None
                     self.stream = self._open()
                     super().emit(record)
                 except (ValueError, OSError, AttributeError, RuntimeError):
@@ -188,23 +189,23 @@ class TimestampedRotatingFileHandler(BaseRotatingHandler):
 def _is_stream_usable(stream) -> bool:
     """
     Check if a stream is usable for logging without triggering errors.
-    
+
     Returns True if stream can be written to, False otherwise.
     This function is safe to call even if the stream is closed.
     """
     if stream is None:
         return False
-    
+
     try:
         # Check if stream has 'closed' attribute
         if hasattr(stream, 'closed'):
             if stream.closed:
                 return False
-        
+
         # Check if stream has 'write' method (required for logging)
         if not hasattr(stream, 'write'):
             return False
-        
+
         # For file-like objects, check if they're in a valid state
         # We don't actually write to avoid side effects, just check attributes
         # The actual write will happen in the handler's emit() method
@@ -224,9 +225,9 @@ class SafeStreamHandler(logging.StreamHandler):
 
         try:
             super().emit(record)
-        except (ValueError, OSError, AttributeError, RuntimeError) as e:
+        except (ValueError, OSError, AttributeError, RuntimeError) as error:
             # Handle "I/O operation on closed file" errors gracefully
-            error_str = str(e).lower()
+            error_str = str(error).lower()
             if any(phrase in error_str for phrase in [
                 "closed file", "i/o operation", "bad file descriptor",
                 "operation on closed", "stream is closed"
@@ -254,7 +255,7 @@ class UnifiedFormatter(logging.Formatter):
         'BOLD': '\033[1m',      # Bold
     }
 
-    def __init__(self, fmt=None, datefmt=None, style='%', validate=True, use_colors=None, _use_colors=None):
+    def __init__(self, fmt=None, datefmt=None, style: Literal['%', '{', '$'] = '%', validate=True, **_kwargs):
         """
         Initialize formatter, accepting Uvicorn's use_colors parameter.
         We ignore use_colors since we handle our own color logic.
@@ -455,7 +456,7 @@ def setup_logging():
     # Only create console handler if stdout is usable
     # This prevents errors when stdout is closed (e.g., in uvicorn workers or reload mode)
     handlers = []
-    
+
     if _is_stream_usable(sys.stdout):
         console_handler = SafeStreamHandler(sys.stdout)
         console_handler.setFormatter(unified_formatter)
@@ -474,7 +475,7 @@ def setup_logging():
         )
         file_handler.setFormatter(unified_formatter)
         handlers.append(file_handler)
-    except (OSError, IOError) as e:
+    except (OSError, IOError):
         # If we can't create file handler, at least try to use console if available
         # This is a fallback for edge cases where logs directory can't be created
         if handlers:

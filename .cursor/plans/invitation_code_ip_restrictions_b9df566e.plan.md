@@ -67,6 +67,7 @@ Add IP restriction functionality to invitation codes and support email-based reg
 ### PostgreSQL+Redis Optimization for IP Separation
 
 **Current State (SQLite + Redis):**
+
 - Organization lookup: SQLite query (can be slow under concurrent load)
 - IP geolocation: Redis cached (30-day TTL) ✅ Already efficient
 - Registration flow: Sequential checks
@@ -74,16 +75,19 @@ Add IP restriction functionality to invitation codes and support email-based reg
 **With PostgreSQL + Redis:**
 
 1. **Faster Organization Lookups:**
+
    - PostgreSQL indexes on `invitation_code`, `ip_restriction_enabled`, `block_mainland_china`
    - Redis cache for organization data (already exists: `redis_org_cache.py`)
    - Query optimization: Filter organizations with IP restrictions enabled early
 
 2. **Better Concurrent Registration Handling:**
+
    - PostgreSQL handles concurrent writes better than SQLite
    - No database-level locks blocking other registrations
    - Better connection pooling for high-traffic scenarios
 
 3. **Enhanced Redis Caching Strategy:**
+
    - Cache organization IP restriction settings: `org:ip_restrictions:{org_id}`
    - Cache IP geolocation results (already implemented: 30-day TTL)
    - Two-level cache: Organization settings + IP location = fast decision
@@ -120,6 +124,7 @@ Add IP restriction functionality to invitation codes and support email-based reg
    ```
 
 6. **Performance Benefits:**
+
    - **Organization lookup**: ~1ms (Redis cache) vs ~10-50ms (SQLite query)
    - **IP geolocation**: ~0.5ms (Redis cache) vs ~5-10ms (local DB lookup)
    - **Concurrent registrations**: No blocking, better throughput
@@ -137,6 +142,7 @@ Add IP restriction functionality to invitation codes and support email-based reg
    ```
 
 8. **Implementation Strategy:**
+
    - Update `services/redis/redis_org_cache.py` to cache IP restriction fields
    - Add Redis cache invalidation when org settings change
    - Use PostgreSQL partial indexes for organizations with IP restrictions enabled
@@ -323,9 +329,11 @@ async def get_invitation_code_info(invitation_code: str) -> Dict:
 1. Validate captcha/SMS
 2. Validate invitation code format
 3. **Lookup organization by invitation code** (optimized):
+
    - Check Redis cache first: `org:by_invitation:{code}`
    - If cache miss: Query PostgreSQL with indexed `invitation_code` lookup
    - Cache result in Redis (including IP restriction fields)
+
 4. **NEW**: Check organization's `account_type`:
 
    - If "phone": Require phone field, validate 11-digit Chinese mobile format
@@ -341,6 +349,7 @@ async def get_invitation_code_info(invitation_code: str) -> Dict:
      - Block registration if IP is from mainland China
 
 6. Create user account with phone OR email based on account_type
+
    - PostgreSQL handles concurrent writes efficiently
    - No database-level locks blocking other registrations
 
@@ -383,21 +392,25 @@ async def get_invitation_code_info(invitation_code: str) -> Dict:
 ### Performance Improvements
 
 **Organization Lookup:**
+
 - **SQLite**: 10-50ms per query, blocks on concurrent writes
 - **PostgreSQL + Redis**: ~1ms (cache hit), ~5-10ms (cache miss with indexed query)
 - **Improvement**: 5-50x faster, no blocking
 
 **IP Geolocation Check:**
+
 - **Current**: Already optimized with Redis caching (30-day TTL)
 - **PostgreSQL benefit**: Better concurrent handling when cache misses occur
 - **Improvement**: Maintains ~0.5ms cache hit, better handling of cache misses
 
 **Concurrent Registration Handling:**
+
 - **SQLite**: Database-level locks, sequential writes under high load
 - **PostgreSQL**: Row-level locking, concurrent writes, better connection pooling
 - **Improvement**: Can handle 10-100x more concurrent registrations
 
 **Overall Registration Flow:**
+
 - **SQLite + Redis**: ~15-60ms per registration (under load)
 - **PostgreSQL + Redis**: ~2-15ms per registration (under load)
 - **Improvement**: 3-4x faster, scales better with concurrent users
@@ -413,6 +426,7 @@ async def get_invitation_code_info(invitation_code: str) -> Dict:
 ### Migration Path
 
 If migrating from SQLite to PostgreSQL:
+
 1. Existing Redis caching continues to work (no changes needed)
 2. Add PostgreSQL indexes during migration
 3. Update `redis_org_cache.py` to cache IP restriction fields

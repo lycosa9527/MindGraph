@@ -11,9 +11,9 @@ from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 
 from config.database import get_db
-from models.auth import User
-from models.knowledge_space import ChunkTestResult
-from models.requests_knowledge_space import (
+from models.domain.auth import User
+from models.domain.knowledge_space import ChunkTestResult
+from models.requests.requests_knowledge_space import (
     ChunkTestBenchmarkRequest,
     ChunkTestUserDocumentsRequest
 )

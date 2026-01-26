@@ -22,7 +22,7 @@ from jose import JWTError, jwt
 from sqlalchemy.orm import Session
 
 from config.database import SessionLocal
-from models.auth import User, APIKey
+from models.domain.auth import User, APIKey
 from .config import AUTH_MODE, JWT_ALGORITHM
 from .jwt_secret import get_jwt_secret
 from .tokens import security, api_key_header, decode_access_token
@@ -39,9 +39,9 @@ _user_cache = None
 _org_cache = None
 
 try:
-    from services.redis.redis_session_manager import get_session_manager, _hash_token as redis_hash_token
-    from services.redis.redis_user_cache import user_cache
-    from services.redis.redis_org_cache import org_cache
+    from services.redis.session.redis_session_manager import get_session_manager, _hash_token as redis_hash_token
+    from services.redis.cache.redis_user_cache import user_cache
+    from services.redis.cache.redis_org_cache import org_cache
     _REDIS_AVAILABLE = True
     _get_session_manager = get_session_manager
     _hash_token = redis_hash_token

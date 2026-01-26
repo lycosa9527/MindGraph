@@ -18,7 +18,7 @@ from typing import Optional
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
-from models.auth import APIKey
+from models.domain.auth import APIKey
 
 logger = logging.getLogger(__name__)
 

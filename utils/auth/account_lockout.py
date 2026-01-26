@@ -25,7 +25,7 @@ _REDIS_AVAILABLE = False
 _USER_CACHE = None
 
 try:
-    from services.redis.redis_user_cache import user_cache as redis_user_cache
+    from services.redis.cache.redis_user_cache import user_cache as redis_user_cache
     _REDIS_AVAILABLE = True
     _USER_CACHE = redis_user_cache
 except ImportError:

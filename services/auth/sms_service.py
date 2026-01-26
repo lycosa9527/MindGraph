@@ -31,7 +31,7 @@ import time
 
 import httpx
 
-from models.messages import Messages, Language
+from models.domain.messages import Messages, Language
 
 
 logger = logging.getLogger(__name__)

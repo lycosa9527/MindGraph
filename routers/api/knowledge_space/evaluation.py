@@ -18,9 +18,9 @@ from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 
 from config.database import get_db
-from models.auth import User
-from models.knowledge_space import EvaluationDataset, EvaluationResult
-from models.requests_knowledge_space import EvaluationDatasetRequest, EvaluationRunRequest
+from models.domain.auth import User
+from models.domain.knowledge_space import EvaluationDataset, EvaluationResult
+from models.requests.requests_knowledge_space import EvaluationDatasetRequest, EvaluationRunRequest
 from models.responses import EvaluationDatasetResponse, EvaluationRunResponse
 from services.knowledge.knowledge_space_service import KnowledgeSpaceService
 from services.knowledge.retrieval_test_service import get_retrieval_test_service

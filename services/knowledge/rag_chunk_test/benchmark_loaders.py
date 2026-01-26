@@ -27,7 +27,7 @@ except ImportError:
     logging.warning("[BenchmarkLoaders] datasets library not installed. Hugging Face fallback disabled.")
 
 try:
-    from models.knowledge_space import (
+    from models.domain.knowledge_space import (
         ChunkTestDocument,
         ChunkTestDocumentChunk
     )

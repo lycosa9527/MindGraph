@@ -16,7 +16,7 @@ import time
 
 from sqlalchemy.orm import Session
 
-from models.knowledge_space import (
+from models.domain.knowledge_space import (
     DocumentChunk,
     KnowledgeDocument,
     KnowledgeSpace,
@@ -118,7 +118,7 @@ class RetrievalTestService:
             ).all()
 
             logger.debug(
-                "[RAG] SQLite lookup: %d chunks from %d IDs",
+                "[RAG] database lookup: %d chunks from %d IDs",
                 len(chunks),
                 len(chunk_ids)
             )
@@ -172,7 +172,7 @@ class RetrievalTestService:
                             "chunk_index": chunk.chunk_index,
                             "start_char": chunk.start_char,
                             "end_char": chunk.end_char,
-                            "metadata": chunk.meta_data or {},
+                            "metadata": {},
                         })
             else:
                 timing["rerank_ms"] = 0

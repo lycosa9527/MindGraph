@@ -16,7 +16,7 @@ import random
 
 from sqlalchemy.orm import Session
 
-from models.debateverse import (
+from models.domain.debateverse import (
     DebateSession, DebateParticipant, DebateMessage
 )
 from services.features.debateverse_context_builder import DebateVerseContextBuilder

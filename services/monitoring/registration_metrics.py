@@ -12,9 +12,9 @@ Tracks registration performance metrics for monitoring and observability.
 
 Features:
 - Registration attempts, successes, and failures
-- Failure reasons (lock timeout, SQLite lock, phone exists, etc.)
+- Failure reasons (lock timeout, database deadlock, phone exists, etc.)
 - Average registration time
-- SQLite commit retry counts
+- Database commit retry counts
 - Cache write success rate
 
 Metrics are logged to structured logs and can be exported to Prometheus/StatsD if needed.
@@ -48,7 +48,7 @@ class RegistrationMetrics:
             'total_failures': 0,
             'failures_by_reason': {
                 'lock_timeout': 0,
-                'sqlite_lock': 0,
+                'database_deadlock': 0,
                 'phone_exists': 0,
                 'captcha_failed': 0,
                 'sms_code_invalid': 0,
@@ -58,7 +58,7 @@ class RegistrationMetrics:
             'total_registration_time': 0.0,
             'min_registration_time': float('inf'),
             'max_registration_time': 0.0,
-            'sqlite_commit_retries': {
+            'database_commit_retries': {
                 'total_retries': 0,
                 'retry_counts': {}  # {retry_count: frequency}
             },
@@ -78,7 +78,7 @@ class RegistrationMetrics:
 
         Args:
             duration: Registration duration in seconds
-            retry_count: Number of SQLite commit retries (0 = no retries)
+            retry_count: Number of database commit retries (0 = no retries)
             cache_write_success: Whether cache write succeeded
         """
         with self._lock:
@@ -93,8 +93,8 @@ class RegistrationMetrics:
 
             # Track retries
             if retry_count > 0:
-                self._metrics['sqlite_commit_retries']['total_retries'] += retry_count
-                retry_counts = self._metrics['sqlite_commit_retries']['retry_counts']
+                self._metrics['database_commit_retries']['total_retries'] += retry_count
+                retry_counts = self._metrics['database_commit_retries']['retry_counts']
                 retry_counts[retry_count] = retry_counts.get(retry_count, 0) + 1
 
             # Track cache writes
@@ -108,7 +108,7 @@ class RegistrationMetrics:
         Record a failed registration.
 
         Args:
-            reason: Failure reason (lock_timeout, sqlite_lock, phone_exists, etc.)
+            reason: Failure reason (lock_timeout, database_deadlock, phone_exists, etc.)
             duration: Registration duration in seconds (if available)
         """
         with self._lock:
@@ -161,12 +161,12 @@ class RegistrationMetrics:
 
             # Calculate average retries
             if metrics['total_successes'] > 0:
-                metrics['avg_sqlite_retries'] = (
-                    metrics['sqlite_commit_retries']['total_retries'] /
+                metrics['avg_database_retries'] = (
+                    metrics['database_commit_retries']['total_retries'] /
                     metrics['total_successes']
                 )
             else:
-                metrics['avg_sqlite_retries'] = 0.0
+                metrics['avg_database_retries'] = 0.0
 
             return metrics
 
@@ -190,7 +190,7 @@ class RegistrationMetrics:
                     ),
                     'max_registration_time_ms': f"{metrics['max_registration_time'] * 1000:.2f}",
                     'failures_by_reason': metrics['failures_by_reason'],
-                    'avg_sqlite_retries': f"{metrics['avg_sqlite_retries']:.2f}",
+                    'avg_database_retries': f"{metrics['avg_database_retries']:.2f}",
                     'cache_write_success_rate': f"{metrics['cache_write_success_rate']:.2%}",
                 }
             }
@@ -205,7 +205,7 @@ class RegistrationMetrics:
                 'total_failures': 0,
                 'failures_by_reason': {
                     'lock_timeout': 0,
-                    'sqlite_lock': 0,
+                    'database_deadlock': 0,
                     'phone_exists': 0,
                     'captcha_failed': 0,
                     'sms_code_invalid': 0,
@@ -215,7 +215,7 @@ class RegistrationMetrics:
                 'total_registration_time': 0.0,
                 'min_registration_time': float('inf'),
                 'max_registration_time': 0.0,
-                'sqlite_commit_retries': {
+                'database_commit_retries': {
                     'total_retries': 0,
                     'retry_counts': {}
                 },

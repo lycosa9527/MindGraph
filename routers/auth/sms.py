@@ -17,8 +17,8 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
 from config.database import get_db
-from models.messages import Messages, Language
-from models.requests_auth import SendSMSCodeRequest, SendSMSCodeSimpleRequest, VerifySMSCodeRequest
+from models.domain.messages import Messages, Language
+from models.requests.requests_auth import SendSMSCodeRequest, SendSMSCodeSimpleRequest, VerifySMSCodeRequest
 from services.auth.sms_middleware import (
     get_sms_middleware,
     SMSServiceError,
@@ -27,9 +27,9 @@ from services.auth.sms_middleware import (
     SMS_MAX_ATTEMPTS_PER_PHONE,
     SMS_MAX_ATTEMPTS_WINDOW_HOURS
 )
-from services.redis.redis_rate_limiter import get_rate_limiter
+from services.redis.rate_limiting.redis_rate_limiter import get_rate_limiter
 from services.redis.redis_sms_storage import get_sms_storage
-from services.redis.redis_user_cache import user_cache
+from services.redis.cache.redis_user_cache import user_cache
 from utils.auth import AUTH_MODE
 
 from .captcha import verify_captcha_with_retry
@@ -43,8 +43,8 @@ router = APIRouter()
 @router.post("/sms/send")
 async def send_sms_code(
     request: SendSMSCodeRequest,
-    http_request: Request,
-    db: Session = Depends(get_db),
+    _http_request: Request,
+    _db: Session = Depends(get_db),
     lang: Language = Depends(get_language_dependency)
 ):
     """
@@ -171,7 +171,7 @@ async def send_sms_code(
             )
 
     # Check rate limit within time window using Redis rate limiter
-    allowed, window_count, error_message = rate_limiter.check_and_record(
+    allowed, window_count, _error_message = rate_limiter.check_and_record(
         "sms", phone, SMS_MAX_ATTEMPTS_PER_PHONE, SMS_MAX_ATTEMPTS_WINDOW_HOURS * 3600
     )
 
@@ -205,7 +205,7 @@ async def send_sms_code(
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail=str(e)
-        )
+        ) from e
 
     if not success:
         # SMS sending failed - remove the Redis record
@@ -232,8 +232,8 @@ async def send_sms_code(
 @router.post("/sms/verify")
 async def verify_sms_code(
     request: VerifySMSCodeRequest,
-    http_request: Request,
-    db: Session = Depends(get_db),
+    _http_request: Request,
+    _db: Session = Depends(get_db),
     lang: Language = Depends(get_language_dependency)
 ):
     """
@@ -283,7 +283,7 @@ def _verify_and_consume_sms_code(
     phone: str,
     code: str,
     purpose: str,
-    db: Session,
+    _db: Session,
     lang: Language = "en"
 ) -> bool:
     """
@@ -320,9 +320,9 @@ def _verify_and_consume_sms_code(
 
 async def _send_sms_code_with_purpose(
     request: SendSMSCodeSimpleRequest,
-    http_request: Request,
+    _http_request: Request,
     purpose: str,
-    db: Session,
+    _db: Session,
     lang: Language
 ):
     """
@@ -436,7 +436,7 @@ async def _send_sms_code_with_purpose(
             )
 
     # Check rate limit within time window using Redis rate limiter
-    allowed, window_count, error_message = rate_limiter.check_and_record(
+    allowed, window_count, _error_message = rate_limiter.check_and_record(
         "sms", phone, SMS_MAX_ATTEMPTS_PER_PHONE, SMS_MAX_ATTEMPTS_WINDOW_HOURS * 3600
     )
 
@@ -470,7 +470,7 @@ async def _send_sms_code_with_purpose(
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail=str(e)
-        )
+        ) from e
 
     if not success:
         # SMS sending failed - remove the Redis record
@@ -541,6 +541,3 @@ async def send_sms_code_for_register(
     Not available in demo/bayi modes.
     """
     return await _send_sms_code_with_purpose(request, http_request, "register", db, lang)
-
-
-

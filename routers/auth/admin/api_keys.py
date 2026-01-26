@@ -20,9 +20,9 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from config.database import get_db
-from models.auth import User, APIKey
-from models.messages import Messages
-from models.token_usage import TokenUsage
+from models.domain.auth import User, APIKey
+from models.domain.messages import Messages
+from models.domain.token_usage import TokenUsage
 from utils.auth import generate_api_key
 
 from ..dependencies import get_language_dependency, require_admin

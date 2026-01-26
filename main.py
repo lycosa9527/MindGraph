@@ -25,11 +25,12 @@ from fastapi import FastAPI
 # First-party imports
 from config.settings import config
 from routers import (
-    pages, cache, api, node_palette, auth, admin_env, admin_logs,
-    admin_realtime, voice, update_notification, tab_mode,
-    public_dashboard, school_zone, askonce, debateverse, vue_spa
+    api, node_palette, auth, public_dashboard
 )
-from routers.health import router as health_router
+from routers.admin import env_router as admin_env, logs_router as admin_logs, realtime_router as admin_realtime
+from routers.features import voice, tab_mode, school_zone, askonce, debateverse
+from routers.core import pages, cache, vue_spa, update_notification
+from routers.core.health import router as health_router
 from services.infrastructure.lifecycle.startup import setup_early_configuration
 from services.infrastructure.utils.logging_config import setup_logging
 from services.infrastructure.lifecycle.lifespan import lifespan

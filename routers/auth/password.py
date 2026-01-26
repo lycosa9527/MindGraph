@@ -16,11 +16,11 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
 from config.database import get_db
-from models.auth import User
-from models.messages import Messages, Language
-from models.requests_auth import ChangePasswordRequest, ResetPasswordWithSMSRequest
-from services.redis.redis_session_manager import get_refresh_token_manager, get_session_manager
-from services.redis.redis_user_cache import user_cache
+from models.domain.auth import User
+from models.domain.messages import Messages, Language
+from models.requests.requests_auth import ChangePasswordRequest, ResetPasswordWithSMSRequest
+from services.redis.session import get_refresh_token_manager, get_session_manager
+from services.redis.cache.redis_user_cache import user_cache
 from utils.auth import hash_password, get_client_ip, get_current_user, verify_password
 
 from .dependencies import get_language_dependency
@@ -44,7 +44,7 @@ async def reset_password_with_sms(
     Allows users to reset their password using SMS verification.
     Also unlocks the account if it was locked.
     """
-    # Find user (use cache with SQLite fallback)
+    # Find user (use cache with database fallback)
     cached_user = user_cache.get_by_phone(request.phone)
 
     if not cached_user:
@@ -79,12 +79,12 @@ async def reset_password_with_sms(
     user.failed_login_attempts = 0  # Unlock account
     user.locked_until = None
 
-    # Write to SQLite FIRST
+    # Write to database FIRST
     try:
         db.commit()
     except Exception as e:
         db.rollback()
-        logger.error("[Auth] Failed to update password in SQLite: %s", e)
+        logger.error("[Auth] Failed to update password in database: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to reset password"

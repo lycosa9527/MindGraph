@@ -19,14 +19,14 @@ from sqlalchemy.orm import Session
 from sqlalchemy.sql import func
 
 from config.database import get_db
-from models.auth import Organization, User
-from models.messages import Messages, Language
+from models.domain.auth import Organization, User
+from models.domain.messages import Messages, Language
 try:
-    from models.token_usage import TokenUsage
+    from models.domain.token_usage import TokenUsage
 except ImportError:
     TokenUsage = None
-from services.redis.redis_org_cache import org_cache
-from services.redis.redis_user_cache import user_cache
+from services.redis.cache.redis_org_cache import org_cache
+from services.redis.cache.redis_user_cache import user_cache
 from utils.invitations import normalize_or_generate
 from ..dependencies import get_language_dependency, require_admin
 from ..helpers import utc_to_beijing_iso
@@ -145,7 +145,7 @@ async def create_organization_admin(
         error_msg = Messages.error("missing_required_fields", lang, "code, name")
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
 
-    # Check code uniqueness (use cache with SQLite fallback)
+    # Check code uniqueness (use cache with database fallback)
     existing = org_cache.get_by_code(request["code"])
     if not existing:
         existing = db.query(Organization).filter(Organization.code == request["code"]).first()
@@ -182,14 +182,14 @@ async def create_organization_admin(
         created_at=datetime.now(timezone.utc)
     )
 
-    # Write to SQLite FIRST
+    # Write to database FIRST
     db.add(new_org)
     try:
         db.commit()
         db.refresh(new_org)
     except Exception as e:
         db.rollback()
-        logger.error("[Auth] Failed to create org in SQLite: %s", e)
+        logger.error("[Auth] Failed to create org in database: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to create organization"
@@ -222,7 +222,7 @@ async def update_organization_admin(
     lang: Language = Depends(get_language_dependency)
 ):
     """Update organization (ADMIN ONLY)"""
-    # Load org (use cache with SQLite fallback)
+    # Load org (use cache with database fallback)
     org = org_cache.get_by_id(org_id)
     if not org:
         org = db.query(Organization).filter(Organization.id == org_id).first()
@@ -307,13 +307,13 @@ async def update_organization_admin(
     if "is_active" in request:
         org.is_active = bool(request.get("is_active"))
 
-    # Write to SQLite FIRST
+    # Write to database FIRST
     try:
         db.commit()
         db.refresh(org)
     except Exception as e:
         db.rollback()
-        logger.error("[Auth] Failed to update org ID %s in SQLite: %s", org_id, e)
+        logger.error("[Auth] Failed to update org ID %s in database: %s", org_id, e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to update organization"
@@ -354,7 +354,7 @@ async def delete_organization_admin(
     lang: Language = Depends(get_language_dependency)
 ):
     """Delete organization (ADMIN ONLY)"""
-    # Load org (use cache with SQLite fallback)
+    # Load org (use cache with database fallback)
     org = org_cache.get_by_id(org_id)
     if not org:
         org = db.query(Organization).filter(Organization.id == org_id).first()
@@ -371,13 +371,13 @@ async def delete_organization_admin(
         error_msg = Messages.error("cannot_delete_organization_with_users", lang, user_count)
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
 
-    # Delete from SQLite FIRST
+    # Delete from database FIRST
     db.delete(org)
     try:
         db.commit()
     except Exception as e:
         db.rollback()
-        logger.error("[Auth] Failed to delete org ID %s in SQLite: %s", org_id, e)
+        logger.error("[Auth] Failed to delete org ID %s in database: %s", org_id, e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to delete organization"

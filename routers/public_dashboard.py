@@ -29,8 +29,8 @@ from sqlalchemy.orm import Session
 
 from config.database import get_db
 from config.settings import config
-from models.auth import User
-from models.token_usage import TokenUsage
+from models.domain.auth import User
+from models.domain.token_usage import TokenUsage
 from routers.auth.helpers import get_beijing_now, get_beijing_today_start_utc
 from services.auth.ip_geolocation import get_geolocation_service
 from services.monitoring.activity_stream import get_activity_stream_service
@@ -38,7 +38,7 @@ from services.monitoring.city_flag_tracker import get_city_flag_tracker
 from services.monitoring.dashboard_session import get_dashboard_session_manager
 from services.redis.redis_activity_tracker import get_activity_tracker
 from services.redis.redis_client import is_redis_available, get_redis
-from services.redis.redis_rate_limiter import RedisRateLimiter
+from services.redis.rate_limiting.redis_rate_limiter import RedisRateLimiter
 from utils.auth import get_client_ip
 
 logger = logging.getLogger(__name__)

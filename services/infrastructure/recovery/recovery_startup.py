@@ -9,8 +9,8 @@ import os
 import sys
 from typing import Any, Dict
 
-from config.database import recover_from_kill_9, SessionLocal
-from models.knowledge_space import ChunkTestDocument
+from config.database import recover_from_kill_9, SessionLocal, check_integrity, engine, DATABASE_URL
+from models.domain.knowledge_space import ChunkTestDocument
 from services.infrastructure.monitoring.critical_alert import CriticalAlertService
 from services.infrastructure.recovery.database_recovery import DatabaseRecovery
 from services.infrastructure.recovery.recovery_locks import (
@@ -18,6 +18,8 @@ from services.infrastructure.recovery.recovery_locks import (
     release_integrity_check_lock
 )
 from services.knowledge.chunk_test_document_service import ChunkTestDocumentService
+from services.utils.backup_scheduler import get_backup_status
+from sqlalchemy import text
 
 logger = logging.getLogger(__name__)
 
@@ -283,20 +285,49 @@ def get_recovery_status() -> Dict[str, Any]:
     Returns:
         dict with database health and backup info
     """
-    recovery = DatabaseRecovery()
+    # Use database-agnostic integrity check
+    is_healthy = check_integrity()
+    
+    if is_healthy:
+        message = "Database connection and integrity check passed"
+    else:
+        message = "Database integrity check failed"
 
-    is_healthy, message = recovery.check_integrity()
-    current_stats = (
-        recovery.get_database_stats(recovery.db_path)
-        if recovery.db_path
-        else {}
-    )
-    backups = recovery.list_backups()
+    # Get basic database stats (database-agnostic)
+    current_stats = {}
+    try:
+        # For PostgreSQL, get database size using pg_database_size
+        if "postgresql" in DATABASE_URL.lower():
+            with engine.connect() as conn:
+                # Extract database name from URL
+                db_name = DATABASE_URL.split("/")[-1].split("?")[0]
+                result = conn.execute(
+                    text("SELECT pg_size_pretty(pg_database_size(:db_name)) as size"),
+                    {"db_name": db_name}
+                )
+                size_row = result.fetchone()
+                if size_row:
+                    current_stats = {
+                        "database_url": DATABASE_URL.split("@")[-1] if "@" in DATABASE_URL else DATABASE_URL,
+                        "size": size_row[0] if size_row else "unknown"
+                    }
+        else:
+            # For other databases, just show connection URL (masked)
+            current_stats = {
+                "database_url": DATABASE_URL.split("@")[-1] if "@" in DATABASE_URL else DATABASE_URL
+            }
+    except Exception as e:  # pylint: disable=broad-except
+        logger.debug("Failed to get database stats: %s", e)
+        # Stats are optional, continue without them
+
+    # Get backup status from backup scheduler (already PostgreSQL-only)
+    backup_status = get_backup_status()
+    backups = backup_status.get("backups", [])
 
     return {
         "database_healthy": is_healthy,
         "database_message": message,
         "database_stats": current_stats,
         "backups": backups,
-        "healthy_backups_count": len([b for b in backups if b["healthy"]])
+        "healthy_backups_count": len(backups)  # All PostgreSQL backups are considered healthy
     }

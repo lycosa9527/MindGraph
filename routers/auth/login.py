@@ -20,20 +20,20 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from sqlalchemy.orm import Session
 
 from config.database import get_db
-from models.messages import Messages, Language
-from models.auth import User, Organization
-from models.requests_auth import DemoPasskeyRequest, LoginRequest, LoginWithSMSRequest
-from services.redis.redis_org_cache import org_cache
-from services.redis.redis_rate_limiter import (
+from models.domain.messages import Messages, Language
+from models.domain.auth import User, Organization
+from models.requests.requests_auth import DemoPasskeyRequest, LoginRequest, LoginWithSMSRequest
+from services.redis.cache.redis_org_cache import org_cache
+from services.redis.rate_limiting.redis_rate_limiter import (
     check_login_rate_limit,
     clear_login_attempts,
     get_login_attempts_remaining,
     RedisRateLimiter
 )
 from services.monitoring.dashboard_session import get_dashboard_session_manager
-from services.redis.redis_diagram_cache import get_diagram_cache
-from services.redis.redis_session_manager import get_session_manager, get_refresh_token_manager
-from services.redis.redis_user_cache import user_cache
+from services.redis.cache.redis_diagram_cache import get_diagram_cache
+from services.redis.session.redis_session_manager import get_session_manager, get_refresh_token_manager
+from services.redis.cache.redis_user_cache import user_cache
 from utils.auth import (
     AUTH_MODE,
     BAYI_DEFAULT_ORG_CODE,
@@ -123,7 +123,7 @@ async def login(
             detail=error_msg
         )
 
-    # Find user (use cache with SQLite fallback)
+    # Find user (use cache with database fallback)
     cached_user = user_cache.get_by_phone(request.phone)
 
     if not cached_user:
@@ -234,7 +234,7 @@ async def login(
     else:
         user = cached_user  # Fallback to cached user
 
-    # Get organization (use cache with SQLite fallback)
+    # Get organization (use cache with database fallback)
     org = org_cache.get_by_id(user.organization_id) if user.organization_id else None
 
     # Check organization status (locked or expired)
@@ -351,7 +351,7 @@ async def login_with_sms(
     - Bypasses account lockout
     - Quick verification
     """
-    # Find user first (use cache with SQLite fallback)
+    # Find user first (use cache with database fallback)
     user = user_cache.get_by_phone(request.phone)
 
     if not user:
@@ -442,7 +442,7 @@ async def login_with_sms(
     # Set cookies (both access and refresh tokens)
     set_auth_cookies(response, token, refresh_token_value, http_request)
 
-    # Use cache for org lookup (with SQLite fallback)
+    # Use cache for org lookup (with database fallback)
     org = org_cache.get_by_id(user.organization_id) if user.organization_id else None
     if not org and user.organization_id:
         org = db.query(Organization).filter(Organization.id == user.organization_id).first()
@@ -526,7 +526,7 @@ async def verify_demo(
         user_phone = "demo-admin@system.com" if is_admin_access else "demo@system.com"
         user_name = "Demo Admin" if is_admin_access else "Demo User"
 
-    # Get or create user (use cache with SQLite fallback)
+    # Get or create user (use cache with database fallback)
     auth_user = user_cache.get_by_phone(user_phone)
 
     if not auth_user:

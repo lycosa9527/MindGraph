@@ -24,7 +24,7 @@ import logging
 import time
 
 from config.settings import config
-from models.messages import Language
+from models.domain.messages import Language
 from services.infrastructure.rate_limiting.rate_limiter import DashscopeRateLimiter
 from services.monitoring.performance_tracker import performance_tracker
 from services.auth.sms_service import (

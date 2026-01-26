@@ -7,6 +7,72 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [5.14.0] - 2026-01-26 - Major Codebase Refactoring and Reorganization
+
+### Changed
+
+- **Models Reorganization**
+  - Moved domain models to `models/domain/` subdirectory (auth, diagrams, knowledge_space, messages, etc.)
+  - Moved request models to `models/requests/` subdirectory (requests_diagram, requests_assistant, requests_auth, etc.)
+  - Updated `models/__init__.py` to maintain backward compatibility with re-exports
+  - Improved code organization and maintainability
+
+- **Routers Reorganization**
+  - Moved admin routers to `routers/admin/` (env, logs, realtime)
+  - Moved core routers to `routers/core/` (cache, health, pages, update_notification, vue_spa)
+  - Moved feature routers to `routers/features/` (askonce, debateverse, school_zone, tab_mode, voice)
+  - Updated router imports in `main.py` and `routers/__init__.py`
+  - Better separation of concerns and modular structure
+
+- **Services Reorganization**
+  - Reorganized infrastructure services into `services/infrastructure/` subdirectories
+    - `lifecycle/`: Application lifecycle management (lifespan, startup, launch_progress)
+    - `monitoring/`: Process monitoring and health checks
+    - `process/`: Process management and server launching
+    - `rate_limiting/`: Rate limiting services
+    - `recovery/`: Recovery and startup services
+    - `utils/`: Infrastructure utilities (dependency_checker, logging_config, storage_manager)
+  - Moved LLM error parsers to `services/llm/error_parsers/` subdirectory
+  - Reorganized Redis services into `services/redis/cache/`, `services/redis/rate_limiting/`, `services/redis/session/` subdirectories
+  - Improved code organization and discoverability
+
+- **Scripts and Utils Reorganization**
+  - Moved migration utilities to `utils/migration/` subdirectory
+  - Organized scripts into subdirectories (`chunk_test/`, `db/`, `setup/`, `utils/`)
+  - Better organization of utility scripts and database migration tools
+
+- **Database Configuration**
+  - Refactored `config/database.py` with improved structure and organization
+  - Reduced file size and improved maintainability
+
+- **Import Updates**
+  - Updated imports across 155+ files to reflect new directory structure
+  - Maintained backward compatibility through re-exports in `__init__.py` files
+  - Improved import clarity and organization
+
+### Removed
+
+- **Deprecated Files**
+  - Removed old flat model files (models/auth.py, models/diagrams.py, models/knowledge_space.py, etc.)
+  - Removed old flat router files (routers/admin_env.py, routers/admin_logs.py, routers/cache.py, etc.)
+  - Removed deprecated scripts (scripts/setup.py, scripts/install_dependencies.sh, etc.)
+  - Removed old migration utilities (utils/db_migration.py, utils/db_type_migration.py)
+  - Removed deprecated Redis service files (redis_cache_loader.py, redis_diagram_cache.py, etc.)
+  - Removed old LLM error parser files (dashscope_error_parser.py, doubao_error_parser.py, hunyuan_error_parser.py)
+  - Cleaned up obsolete code and reduced technical debt
+
+### Technical Details
+
+- **Total Changes**: 155 files changed, 2,381 insertions(+), 27,642 deletions(-)
+- **Key Improvements**:
+  - Major codebase reorganization for better maintainability
+  - Improved directory structure following domain-driven design principles
+  - Better separation of concerns across models, routers, and services
+  - Reduced code duplication and improved code discoverability
+  - Maintained backward compatibility through re-exports
+  - Significant reduction in technical debt
+
+---
 
 ## [5.13.0] - 2026-01-24 - Bridge Map Feature and UI Improvements
 

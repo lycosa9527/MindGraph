@@ -10,8 +10,8 @@ import time
 
 from fastapi import HTTPException, Request
 
-from models.auth import User
-from services.redis.redis_rate_limiter import RedisRateLimiter
+from models.domain.auth import User
+from services.redis.rate_limiting.redis_rate_limiter import RedisRateLimiter
 from utils.auth import get_jwt_secret
 
 

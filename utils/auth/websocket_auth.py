@@ -17,7 +17,7 @@ from fastapi.websockets import WebSocketDisconnect
 from sqlalchemy.orm import Session
 
 from config.database import get_db
-from models.auth import User
+from models.domain.auth import User
 from .tokens import decode_access_token
 
 logger = logging.getLogger(__name__)
@@ -28,8 +28,8 @@ _get_session_manager = None
 _user_cache = None
 
 try:
-    from services.redis.redis_session_manager import get_session_manager
-    from services.redis.redis_user_cache import user_cache
+    from services.redis.session.redis_session_manager import get_session_manager
+    from services.redis.cache.redis_user_cache import user_cache
     _REDIS_AVAILABLE = True
     _get_session_manager = get_session_manager
     _user_cache = user_cache

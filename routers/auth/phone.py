@@ -17,12 +17,12 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
 from config.database import get_db
-from models.auth import User
-from models.messages import Messages, Language
-from models.requests_auth import SendChangePhoneSMSRequest, ChangePhoneRequest
+from models.domain.auth import User
+from models.domain.messages import Messages, Language
+from models.requests.requests_auth import SendChangePhoneSMSRequest, ChangePhoneRequest
 from services.redis.redis_sms_storage import get_sms_storage
-from services.redis.redis_rate_limiter import get_rate_limiter
-from services.redis.redis_user_cache import user_cache
+from services.redis.rate_limiting.redis_rate_limiter import get_rate_limiter
+from services.redis.cache.redis_user_cache import user_cache
 from services.auth.sms_middleware import (
     get_sms_middleware,
     SMSServiceError,

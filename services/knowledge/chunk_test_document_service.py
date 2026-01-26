@@ -19,7 +19,7 @@ from sqlalchemy import and_
 from sqlalchemy.orm import Session
 
 from clients.dashscope_embedding import get_embedding_client
-from models.knowledge_space import ChunkTestDocument, ChunkTestDocumentChunk
+from models.domain.knowledge_space import ChunkTestDocument, ChunkTestDocumentChunk
 from services.infrastructure.rate_limiting.kb_rate_limiter import get_kb_rate_limiter
 from services.knowledge.chunking_service import get_chunking_service
 from services.knowledge.document_cleaner import get_document_cleaner

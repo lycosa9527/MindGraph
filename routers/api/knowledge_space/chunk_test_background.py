@@ -10,7 +10,7 @@ from datetime import datetime, timedelta
 from typing import List, Optional, Set
 
 from config.database import SessionLocal
-from models.knowledge_space import ChunkTestResult
+from models.domain.knowledge_space import ChunkTestResult
 from services.knowledge.rag_chunk_test import get_rag_chunk_test_service
 
 logger = logging.getLogger(__name__)

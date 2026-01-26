@@ -20,19 +20,19 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from sqlalchemy.orm import Session
 
 from config.database import get_db
-from models.messages import Messages, Language
-from models.auth import User, Organization
-from models.requests_auth import RegisterRequest, RegisterWithSMSRequest
+from models.domain.messages import Messages, Language
+from models.domain.auth import User, Organization
+from models.requests.requests_auth import RegisterRequest, RegisterWithSMSRequest
 from utils.auth import (
     AUTH_MODE, hash_password, get_client_ip,
     create_access_token, create_refresh_token, compute_device_hash,
     ACCESS_TOKEN_EXPIRY_MINUTES
 )
 from utils.invitations import INVITE_PATTERN
-from services.redis.redis_user_cache import user_cache
-from services.redis.redis_org_cache import org_cache
+from services.redis.cache.redis_user_cache import user_cache
+from services.redis.cache.redis_org_cache import org_cache
 from services.redis.redis_distributed_lock import phone_registration_lock
-from services.redis.redis_session_manager import get_session_manager, get_refresh_token_manager
+from services.redis.session.redis_session_manager import get_session_manager, get_refresh_token_manager
 from services.monitoring.registration_metrics import registration_metrics
 
 from .dependencies import get_language_dependency
@@ -147,7 +147,7 @@ async def register(
             detail=error_msg
         )
 
-    # Use cache for org lookup (with SQLite fallback)
+    # Use cache for org lookup (with database fallback)
     org = org_cache.get_by_invitation_code(provided_invite)
     if not org:
         org = db.query(Organization).filter(
@@ -161,12 +161,12 @@ async def register(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail=error_msg
             )
-        # Cache organization after SQLite query for next time
+        # Cache organization after database query for next time
         if org:
             try:
                 org_cache.cache_org(org)
             except Exception as e:
-                logger.debug("[Auth] Failed to cache org after SQLite query: %s", e)
+                logger.debug("[Auth] Failed to cache org after database query: %s", e)
 
     logger.debug(
         "User registering with invitation code for organization: %s (%s)",
@@ -176,7 +176,7 @@ async def register(
     # Use distributed lock to prevent race condition on phone uniqueness check
     try:
         async with phone_registration_lock(request.phone):
-            # Check if phone already exists (use cache with SQLite fallback)
+            # Check if phone already exists (use cache with database fallback)
             existing_user = user_cache.get_by_phone(request.phone)
             if existing_user:
                 duration = time.time() - start_time
@@ -196,7 +196,7 @@ async def register(
                 created_at=datetime.now(timezone.utc)
             )
 
-            # Write to SQLite FIRST (source of truth) with retry logic for lock errors
+            # Write to database FIRST (source of truth) with retry logic for lock errors
             db.add(new_user)
             retry_count = await commit_user_with_retry(db, new_user, max_retries=5)
     except RuntimeError as e:
@@ -216,10 +216,10 @@ async def register(
             registration_metrics.record_failure('sms_code_invalid', duration)
         raise
     except Exception as e:
-        # Track other failures (SQLite lock, etc.)
+        # Track other failures (database lock, etc.)
         duration = time.time() - start_time
         if "database is locked" in str(e).lower() or "locked" in str(e).lower():
-            registration_metrics.record_failure('sqlite_lock', duration)
+            registration_metrics.record_failure('database_deadlock', duration)
         else:
             registration_metrics.record_failure('other', duration)
         raise
@@ -380,7 +380,7 @@ async def register_with_sms(
             detail=error_msg
         )
 
-    # Use cache for org lookup (with SQLite fallback)
+    # Use cache for org lookup (with database fallback)
     org = org_cache.get_by_invitation_code(provided_invite)
     if not org:
         org = db.query(Organization).filter(
@@ -394,17 +394,17 @@ async def register_with_sms(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail=error_msg
             )
-        # Cache organization after SQLite query for next time
+        # Cache organization after database query for next time
         if org:
             try:
                 org_cache.cache_org(org)
             except Exception as e:
-                logger.debug("[Auth] Failed to cache org after SQLite query: %s", e)
+                logger.debug("[Auth] Failed to cache org after database query: %s", e)
 
     # Use distributed lock to prevent race condition on phone uniqueness check
     try:
         async with phone_registration_lock(request.phone):
-            # Check if phone already exists (use cache with SQLite fallback)
+            # Check if phone already exists (use cache with database fallback)
             existing_user = user_cache.get_by_phone(request.phone)
             if existing_user:
                 duration = time.time() - start_time
@@ -438,7 +438,7 @@ async def register_with_sms(
                 created_at=datetime.now(timezone.utc)
             )
 
-            # Write to SQLite FIRST (source of truth) with retry logic for lock errors
+            # Write to database FIRST (source of truth) with retry logic for lock errors
             db.add(new_user)
             retry_count = await commit_user_with_retry(db, new_user, max_retries=5)
     except RuntimeError as e:
@@ -458,7 +458,7 @@ async def register_with_sms(
     except Exception as e:
         duration = time.time() - start_time
         if "database is locked" in str(e).lower() or "locked" in str(e).lower():
-            registration_metrics.record_failure('sqlite_lock', duration)
+            registration_metrics.record_failure('database_deadlock', duration)
         else:
             registration_metrics.record_failure('other', duration)
         raise

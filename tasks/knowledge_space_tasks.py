@@ -17,7 +17,7 @@ from celery import group
 
 from config.celery import celery_app
 from config.database import SessionLocal
-from models.knowledge_space import DocumentBatch, KnowledgeDocument
+from models.domain.knowledge_space import DocumentBatch, KnowledgeDocument
 from services.knowledge.knowledge_space_service import KnowledgeSpaceService
 
 logger = logging.getLogger(__name__)

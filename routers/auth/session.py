@@ -23,16 +23,14 @@ from jose import jwt, JWTError
 
 from fastapi import APIRouter, Depends, Request, Response, Header, HTTPException, status
 
-from config.database import get_db
-from models.auth import User
-from models.messages import Messages, get_request_language, Language
+from models import User, Messages, get_request_language, Language
 from services.redis.redis_activity_tracker import get_activity_tracker
-from services.redis.redis_org_cache import org_cache
-from services.redis.redis_rate_limiter import RedisRateLimiter
-from services.redis.redis_session_manager import (
+from services.redis.cache.redis_org_cache import org_cache
+from services.redis.rate_limiting.redis_rate_limiter import RedisRateLimiter
+from services.redis.session.redis_session_manager import (
     get_session_manager, get_refresh_token_manager
 )
-from services.redis.redis_user_cache import user_cache
+from services.redis.cache.redis_user_cache import user_cache
 from utils.auth import (
     get_current_user, get_user_role, is_https, get_client_ip,
     create_access_token, create_refresh_token, hash_refresh_token,
@@ -287,7 +285,7 @@ async def get_me(
     Get current authenticated user profile
     """
     try:
-        # Get organization (use cache with SQLite fallback)
+        # Get organization (use cache with database fallback)
         org = None
         try:
             if current_user.organization_id:

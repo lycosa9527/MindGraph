@@ -25,18 +25,31 @@ try:
 except ImportError:
     LOGGING_CONFIG = None
 
+try:
+    from utils.sqlite_data_migration import migrate_sqlite_to_postgresql
+except ImportError:
+    migrate_sqlite_to_postgresql = None
+
+try:
+    import main as main_module
+except ImportError:
+    main_module = None
+
 from config.settings import config
 from services.infrastructure.utils.dependency_checker import (
     check_redis_installed,
     check_celery_installed,
-    check_qdrant_installed
+    check_qdrant_installed,
+    check_postgresql_installed
 )
 from services.infrastructure.process.process_manager import (
     start_redis_server,
     start_celery_worker,
     start_qdrant_server,
+    start_postgresql_server,
     stop_celery_worker,
     stop_qdrant_server,
+    stop_postgresql_server,
     setup_signal_handlers
 )
 from services.infrastructure.utils.port_manager import ShutdownErrorFilter
@@ -102,6 +115,15 @@ def run_server() -> None:
         print("Press Ctrl+C to stop the server")
         print()
 
+        # ========================================================================
+        # DEPENDENCY CHECKING AND STARTUP SEQUENCE
+        # ========================================================================
+        # All services (Redis, PostgreSQL, Qdrant, Celery) must be verified
+        # as running before the application continues. This ensures the app
+        # doesn't start in a partially-ready state.
+        # ========================================================================
+
+        # 1. Redis (REQUIRED - always checked)
         print("[REDIS] Checking Redis installation...")
         is_installed, message = check_redis_installed()
         if not is_installed:
@@ -111,11 +133,58 @@ def run_server() -> None:
             sys.exit(1)
         print(f"[REDIS] {message}")
         print("[REDIS] Starting Redis server...")
-        start_redis_server()
+        start_redis_server()  # Verifies Redis is running (exits if not ready)
+        print("[REDIS] ✓ Redis is ready")
         print()
 
-        config.print_config_summary()
+        # 2. PostgreSQL (REQUIRED if DATABASE_URL contains postgresql)
+        db_url = os.getenv('DATABASE_URL', '')
+        using_postgresql = 'postgresql' in db_url.lower()
 
+        if using_postgresql:
+            print("[POSTGRESQL] Checking PostgreSQL installation...")
+            is_installed, message = check_postgresql_installed()
+            if not is_installed:
+                print("[ERROR] PostgreSQL is REQUIRED but not installed.")
+                print(f"        {message}")
+                print("        Application cannot start without PostgreSQL.")
+                sys.exit(1)
+            print(f"[POSTGRESQL] {message}")
+            print("[POSTGRESQL] Starting PostgreSQL server...")
+            postgresql_server = start_postgresql_server()  # Verifies PostgreSQL is running (exits if not ready)
+            if postgresql_server:
+                print("[POSTGRESQL] ✓ PostgreSQL server started as subprocess")
+            else:
+                print("[POSTGRESQL] ✓ PostgreSQL server is running (external or systemd service)")
+            print()
+
+            # Run data migration from SQLite to PostgreSQL if needed
+            print("[Migration] Checking for SQLite to PostgreSQL migration...")
+            try:
+                if migrate_sqlite_to_postgresql is None:
+                    print("[ERROR] Migration module not available")
+                    print("        Application cannot start without successful migration check.")
+                    sys.exit(1)
+                success, error, stats = migrate_sqlite_to_postgresql()
+                if not success:
+                    if error:
+                        print(f"[ERROR] Migration failed: {error}")
+                        print("        Application cannot start without successful migration.")
+                        sys.exit(1)
+                elif stats:
+                    print("[Migration] Migration completed successfully")
+                    print(f"[Migration] Tables migrated: {stats.get('tables_migrated', 0)}")
+                    print(f"[Migration] Total records: {stats.get('total_records', 0)}")
+                else:
+                    print("[Migration] No migration needed (already migrated or no SQLite database)")
+            except Exception as e:
+                print(f"[ERROR] Migration check failed: {e}")
+                traceback.print_exc()
+                print("        Application cannot start without successful migration check.")
+                sys.exit(1)
+            print()
+
+        # 3. Qdrant (REQUIRED - always checked)
         print("[QDRANT] Checking Qdrant installation...")
         is_installed, message = check_qdrant_installed()
         if not is_installed:
@@ -125,13 +194,14 @@ def run_server() -> None:
             sys.exit(1)
         print(f"[QDRANT] {message}")
         print("[QDRANT] Starting Qdrant server...")
-        qdrant_server = start_qdrant_server()
+        qdrant_server = start_qdrant_server()  # Verifies Qdrant is running (exits if not ready)
         if qdrant_server:
-            print("[QDRANT] Qdrant server started as subprocess")
+            print("[QDRANT] ✓ Qdrant server started as subprocess")
         else:
-            print("[QDRANT] Qdrant server is running (external or systemd service)")
+            print("[QDRANT] ✓ Qdrant server is running (external or systemd service)")
         print()
 
+        # 4. Celery (REQUIRED - always checked)
         print("[CELERY] Checking Celery installation...")
         is_installed, message = check_celery_installed()
         if not is_installed:
@@ -141,17 +211,31 @@ def run_server() -> None:
             sys.exit(1)
         print(f"[CELERY] {message}")
         print("[CELERY] Starting Celery worker...")
-        celery_worker = start_celery_worker()
+        celery_worker = start_celery_worker()  # Verifies Celery is running (exits if not ready)
         if celery_worker:
-            print("[CELERY] Celery worker started successfully")
+            print("[CELERY] ✓ Celery worker started successfully")
         else:
-            print("[CELERY] Using existing Celery worker")
+            print("[CELERY] ✓ Using existing Celery worker")
         print()
+
+        # All services verified and running - continue with application startup
+        print("=" * 80)
+        print("All required services are ready:")
+        print("  ✓ Redis")
+        if using_postgresql:
+            print("  ✓ PostgreSQL")
+        print("  ✓ Qdrant")
+        print("  ✓ Celery")
+        print("=" * 80)
+        print()
+
+        config.print_config_summary()
 
         try:
             print("[DEBUG] Testing FastAPI app import...")
             try:
-                import main as main_module
+                if main_module is None:
+                    raise ImportError("main module not available")
                 try:
                     print(f"[DEBUG] App imported successfully: {main_module.app}")
                 except (ValueError, OSError):
@@ -226,12 +310,16 @@ def run_server() -> None:
             print("Shutting down gracefully...")
             stop_celery_worker()
             stop_qdrant_server()
+            if using_postgresql:
+                stop_postgresql_server()
             print("=" * 80)
         finally:
             sys.stderr = original_stderr
             sys.excepthook = original_excepthook
             stop_celery_worker()
             stop_qdrant_server()
+            if using_postgresql:
+                stop_postgresql_server()
 
     except KeyboardInterrupt:
         print("\n" + "=" * 80)

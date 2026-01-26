@@ -16,7 +16,7 @@ from datetime import datetime
 from fastapi import HTTPException, status
 
 from config.database import SessionLocal
-from models.auth import User, Organization
+from models.domain.auth import User, Organization
 from .config import ENTERPRISE_DEFAULT_ORG_CODE, ENTERPRISE_DEFAULT_USER_PHONE
 from .password import hash_password
 
@@ -28,8 +28,8 @@ _org_cache = None
 _user_cache = None
 
 try:
-    from services.redis.redis_org_cache import org_cache
-    from services.redis.redis_user_cache import user_cache
+    from services.redis.cache.redis_org_cache import org_cache
+    from services.redis.cache.redis_user_cache import user_cache
     _REDIS_AVAILABLE = True
     _org_cache = org_cache
     _user_cache = user_cache

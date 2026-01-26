@@ -25,7 +25,7 @@ from services.infrastructure.http.error_handler import (
     LLMAccessDeniedError,
     LLMTimeoutError
 )
-from services.llm.dashscope_error_parser import parse_and_raise_dashscope_error
+from services.llm.error_parsers.dashscope_error_parser import parse_and_raise_dashscope_error
 
 logger = logging.getLogger(__name__)
 

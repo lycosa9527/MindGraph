@@ -6,7 +6,7 @@ import logging
 from typing import List, Dict, Set, Tuple, Any, Optional
 
 from config.settings import config
-from models.knowledge_space import KnowledgeDocument, DocumentChunk
+from models.domain.knowledge_space import KnowledgeDocument, DocumentChunk
 from services.knowledge.chunking_service import ChunkingService
 from services.llm.embedding_cache import get_embedding_cache
 
@@ -258,7 +258,6 @@ def process_updated_chunks(
             existing_chunk.text = new_chunk.text
             existing_chunk.start_char = new_chunk.start_char
             existing_chunk.end_char = new_chunk.end_char
-            existing_chunk.meta_data = new_chunk.metadata or {}
 
             updated_chunk_ids.append(existing_chunk.id)
             updated_embeddings.append(cached_embedding)
@@ -330,8 +329,7 @@ def process_new_chunks(
                 chunk_index=chunk_index,
                 text=new_chunk.text,
                 start_char=new_chunk.start_char,
-                end_char=new_chunk.end_char,
-                meta_data=new_chunk.metadata
+                end_char=new_chunk.end_char
             )
             db.add(db_chunk)
             db.flush()

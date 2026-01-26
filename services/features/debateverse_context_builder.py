@@ -14,7 +14,7 @@ import logging
 
 from sqlalchemy.orm import Session
 
-from models.debateverse import DebateSession, DebateMessage, DebateParticipant
+from models.domain.debateverse import DebateSession, DebateMessage, DebateParticipant
 from prompts.debateverse import (
     get_debater_system_prompt,
     get_judge_system_prompt,

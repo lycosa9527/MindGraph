@@ -7,7 +7,7 @@ Manages application update notifications shown to users after login.
 Features:
 - Enable/disable update notification display
 - Configurable notification content (title, message, version)
-- Tracks which users have seen the notification (in SQLite)
+- Tracks which users have seen the notification (in database)
 - Batched writes for dismissed records (performance optimized)
 - Persists notification state to database
 
@@ -30,7 +30,7 @@ from typing import Dict, Optional
 from sqlalchemy.orm import Session
 
 from config.database import SessionLocal
-from models.auth import UpdateNotification, UpdateNotificationDismissed
+from models.domain.auth import UpdateNotification, UpdateNotificationDismissed
 
 logger = logging.getLogger(__name__)
 
@@ -39,13 +39,13 @@ class UpdateNotifier:
     """
     Manages update notifications for the application.
 
-    Stores notification state in SQLite database for persistence.
+    Stores notification state in database database for persistence.
     Uses immediate writes for multi-worker compatibility.
     """
 
     def __init__(self):
         """Initialize the UpdateNotifier."""
-        logger.info("UpdateNotifier initialized (SQLite storage)")
+        logger.info("UpdateNotifier initialized (database storage)")
 
     def _get_db(self) -> Session:
         """Get a database session."""

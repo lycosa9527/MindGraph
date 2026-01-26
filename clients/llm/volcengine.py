@@ -28,7 +28,7 @@ from services.infrastructure.http.error_handler import (
     LLMContentFilterError,
     LLMTimeoutError
 )
-from services.llm.doubao_error_parser import parse_and_raise_doubao_error
+from services.llm.error_parsers.doubao_error_parser import parse_and_raise_doubao_error
 from clients.llm.base import extract_usage_from_openai_completion, extract_usage_from_stream_chunk
 
 logger = logging.getLogger(__name__)

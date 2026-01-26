@@ -22,10 +22,10 @@ import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 
-from models.auth import User
-from models.requests_diagram import DiagramCreateRequest, DiagramUpdateRequest
+from models.domain.auth import User
+from models.requests.requests_diagram import DiagramCreateRequest, DiagramUpdateRequest
 from models.responses import DiagramListItem, DiagramListResponse, DiagramResponse
-from services.redis.redis_diagram_cache import get_diagram_cache
+from services.redis.cache.redis_diagram_cache import get_diagram_cache
 from utils.auth import get_current_user
 
 from .helpers import check_endpoint_rate_limit, get_rate_limit_identifier

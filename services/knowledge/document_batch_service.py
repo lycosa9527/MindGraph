@@ -7,7 +7,7 @@ import shutil
 from pathlib import Path
 from typing import List, Dict, Any
 
-from models.knowledge_space import KnowledgeDocument, DocumentBatch
+from models.domain.knowledge_space import KnowledgeDocument, DocumentBatch
 
 
 logger = logging.getLogger(__name__)

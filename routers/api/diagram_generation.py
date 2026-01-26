@@ -15,7 +15,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 
 from agents.core.workflow import agent_graph_workflow_with_styles
 from models import GenerateRequest, GenerateResponse, Messages, get_request_language
-from models.auth import User
+from models.domain.auth import User
 from utils.auth import get_current_user_or_api_key
 from services.redis.redis_activity_tracker import get_activity_tracker
 from services.monitoring.activity_stream import get_activity_stream_service

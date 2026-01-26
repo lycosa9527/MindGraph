@@ -27,7 +27,7 @@ import logging
 import time
 
 from services.redis.redis_client import is_redis_available, RedisOps
-from services.redis.redis_rate_limiter import RedisRateLimiter
+from services.redis.rate_limiting.redis_rate_limiter import RedisRateLimiter
 
 
 

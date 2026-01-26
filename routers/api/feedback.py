@@ -17,7 +17,7 @@ from fastapi.responses import JSONResponse
 
 from models import FeedbackRequest
 from services.auth.captcha_storage import get_captcha_storage
-from services.redis.redis_user_cache import user_cache
+from services.redis.cache.redis_user_cache import user_cache
 from utils.auth import decode_access_token
 
 logger = logging.getLogger(__name__)
@@ -83,7 +83,7 @@ async def submit_feedback(
                 payload = decode_access_token(token)
                 user_id_from_token = payload.get("sub")
                 if user_id_from_token:
-                    # Use cache for user lookup (with SQLite fallback)
+                    # Use cache for user lookup (with database fallback)
                     current_user = user_cache.get_by_id(int(user_id_from_token))
                     if current_user:
                         user_id_from_db = current_user.id

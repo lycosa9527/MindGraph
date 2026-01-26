@@ -21,7 +21,7 @@ from fastapi import FastAPI
 
 from clients.llm import close_httpx_clients
 from config.celery import CeleryStartupError, init_celery_worker_check
-from config.database import close_db, init_db, start_wal_checkpoint_scheduler
+from config.database import close_db, init_db
 from services.auth.ip_geolocation import get_geolocation_service
 from services.auth.sms_middleware import get_sms_middleware, shutdown_sms_service
 from services.infrastructure.monitoring.critical_alert import CriticalAlertService
@@ -29,13 +29,35 @@ from services.infrastructure.monitoring.health_monitor import get_health_monitor
 from services.infrastructure.monitoring.process_monitor import get_process_monitor
 from services.infrastructure.recovery.recovery_startup import check_database_on_startup
 from services.infrastructure.lifecycle.startup import _handle_shutdown_signal
+from services.infrastructure.lifecycle.launch_progress import (
+    ApplicationLaunchProgressTracker,
+    STAGE_SIGNAL_HANDLERS,
+    STAGE_REDIS,
+    STAGE_QDRANT,
+    STAGE_CELERY,
+    STAGE_DEPENDENCIES,
+    STAGE_DB_INTEGRITY,
+    STAGE_DB_INIT,
+    STAGE_CACHE_LOADING,
+    STAGE_IP_DATABASE,
+    STAGE_IP_WHITELIST,
+    STAGE_LLM_SERVICE,
+    STAGE_PLAYWRIGHT,
+    STAGE_CLEANUP_SCHEDULER,
+    STAGE_BACKUP_SCHEDULER,
+    STAGE_PROCESS_MONITOR,
+    STAGE_HEALTH_MONITOR,
+    STAGE_DIAGRAM_CACHE,
+    STAGE_SMS_NOTIFICATION,
+    STAGE_COMPLETE
+)
 from services.infrastructure.utils.browser import log_browser_diagnostics
 from services.llm import llm_service
 from services.llm.qdrant_service import QdrantStartupError, init_qdrant_sync
 from services.redis.redis_bayi_whitelist import get_bayi_whitelist
-from services.redis.redis_cache_loader import reload_cache_from_sqlite
+from services.redis.cache.redis_cache_loader import reload_cache_from_database
 from services.redis.redis_client import RedisStartupError, close_redis_sync, init_redis_sync
-from services.redis.redis_diagram_cache import get_diagram_cache
+from services.redis.cache.redis_diagram_cache import get_diagram_cache
 from services.redis.redis_token_buffer import get_token_tracker
 from services.utils.backup_scheduler import start_backup_scheduler
 from services.utils.temp_image_cleaner import start_cleanup_scheduler
@@ -65,6 +87,9 @@ async def lifespan(fastapi_app: FastAPI):
     worker_id = os.getenv('UVICORN_WORKER_ID', '0')
     is_main_worker = (worker_id == '0' or not worker_id)
 
+    # Initialize progress tracker (only for main worker)
+    progress_tracker = ApplicationLaunchProgressTracker(is_main_worker=is_main_worker)
+
     if is_main_worker:
         logger.info("=" * 80)
         logger.info("FastAPI Application Starting")
@@ -72,91 +97,100 @@ async def lifespan(fastapi_app: FastAPI):
         logger.info("[LIFESPAN] Starting lifespan initialization...")
         logger.info("[LIFESPAN] Signal handlers registered")
 
-    # Initialize Redis (REQUIRED for caching, rate limiting, sessions)
-    # Application will exit if Redis is not available
-    if is_main_worker:
-        logger.info("[LIFESPAN] Initializing Redis...")
-    try:
-        init_redis_sync()
-        if is_main_worker:
-            logger.info("Redis initialized successfully")
-    except RedisStartupError as e:
-        # Error message already logged by init_redis_sync with instructions
-        # Send critical alert before exiting
-        try:
-            CriticalAlertService.send_startup_failure_alert_sync(
-                component="Redis",
-                error_message=f"Redis startup failed: {str(e)}",
-                details=(
-                    "Application cannot start without Redis. "
-                    "Check Redis connection and configuration."
-                )
-            )
-        except Exception as alert_error:  # pylint: disable=broad-except
-            logger.error("Failed to send startup failure alert: %s", alert_error)
-        logger.error("Application startup failed. Exiting.")
-        os._exit(1)  # pylint: disable=protected-access
+    with progress_tracker:
+        # Stage 0: Signal handlers registered
+        progress_tracker.update_stage(STAGE_SIGNAL_HANDLERS)
 
-    # Initialize Qdrant (REQUIRED for Knowledge Space vector storage)
-    # Application will exit if Qdrant is not available
-    if is_main_worker:
-        logger.info("[LIFESPAN] Initializing Qdrant...")
-    try:
-        init_qdrant_sync()
+        # Stage 1: Initialize Redis (REQUIRED for caching, rate limiting, sessions)
+        # Application will exit if Redis is not available
+        progress_tracker.update_stage(STAGE_REDIS)
         if is_main_worker:
-            logger.info("Qdrant initialized successfully")
-    except QdrantStartupError as e:
-        # Error message already logged by init_qdrant_sync with instructions
-        # Send critical alert before exiting
+            logger.info("[LIFESPAN] Initializing Redis...")
         try:
-            CriticalAlertService.send_startup_failure_alert_sync(
-                component="Qdrant",
-                error_message=f"Qdrant startup failed: {str(e)}",
-                details=(
-                    "Application cannot start without Qdrant. "
-                    "Check Qdrant connection and configuration."
+            init_redis_sync()
+            if is_main_worker:
+                logger.info("Redis initialized successfully")
+        except RedisStartupError as e:
+            # Error message already logged by init_redis_sync with instructions
+            # Send critical alert before exiting
+            try:
+                CriticalAlertService.send_startup_failure_alert_sync(
+                    component="Redis",
+                    error_message=f"Redis startup failed: {str(e)}",
+                    details=(
+                        "Application cannot start without Redis. "
+                        "Check Redis connection and configuration."
+                    )
                 )
-            )
-        except Exception as alert_error:  # pylint: disable=broad-except
-            logger.error("Failed to send startup failure alert: %s", alert_error)
-        logger.error("Application startup failed. Exiting.")
-        os._exit(1)  # pylint: disable=protected-access
+            except Exception as alert_error:  # pylint: disable=broad-except
+                logger.error("Failed to send startup failure alert: %s", alert_error)
+            logger.error("Application startup failed. Exiting.")
+            os._exit(1)  # pylint: disable=protected-access
 
-    # Check Celery worker availability (REQUIRED for background task processing)
-    # Application will exit if Celery worker is not available
-    if is_main_worker:
-        logger.info("[LIFESPAN] Checking Celery worker availability...")
-    try:
-        init_celery_worker_check()
+        # Stage 2: Initialize Qdrant (REQUIRED for Knowledge Space vector storage)
+        # Application will exit if Qdrant is not available
+        progress_tracker.update_stage(STAGE_QDRANT)
         if is_main_worker:
-            logger.info("Celery worker is available")
-    except CeleryStartupError as e:
-        # Error message already logged by init_celery_worker_check with instructions
-        # Send critical alert before exiting
+            logger.info("[LIFESPAN] Initializing Qdrant...")
         try:
-            CriticalAlertService.send_startup_failure_alert_sync(
-                component="Celery",
-                error_message=f"Celery worker unavailable: {str(e)}",
-                details=(
-                    "Application cannot start without Celery worker. "
-                    "Start Celery worker: celery -A config.celery worker --loglevel=info"
+            init_qdrant_sync()
+            if is_main_worker:
+                logger.info("Qdrant initialized successfully")
+        except QdrantStartupError as e:
+            # Error message already logged by init_qdrant_sync with instructions
+            # Send critical alert before exiting
+            try:
+                CriticalAlertService.send_startup_failure_alert_sync(
+                    component="Qdrant",
+                    error_message=f"Qdrant startup failed: {str(e)}",
+                    details=(
+                        "Application cannot start without Qdrant. "
+                        "Check Qdrant connection and configuration."
+                    )
                 )
-            )
-        except Exception as alert_error:  # pylint: disable=broad-except
-            logger.error("Failed to send startup failure alert: %s", alert_error)
-        logger.error("Application startup failed. Exiting.")
-        os._exit(1)  # pylint: disable=protected-access
+            except Exception as alert_error:  # pylint: disable=broad-except
+                logger.error("Failed to send startup failure alert: %s", alert_error)
+            logger.error("Application startup failed. Exiting.")
+            os._exit(1)  # pylint: disable=protected-access
 
-    # Check system dependencies for Knowledge Space feature (Tesseract OCR)
-    # Application will exit if required dependencies are missing
-    if is_main_worker:
-        logger.info("[LIFESPAN] Checking system dependencies...")
+        # Stage 3: Check Celery worker availability (REQUIRED for background task processing)
+        # Application will exit if Celery worker is not available
+        progress_tracker.update_stage(STAGE_CELERY)
+        if is_main_worker:
+            logger.info("[LIFESPAN] Checking Celery worker availability...")
+        try:
+            init_celery_worker_check()
+            if is_main_worker:
+                logger.info("Celery worker is available")
+        except CeleryStartupError as e:
+            # Error message already logged by init_celery_worker_check with instructions
+            # Send critical alert before exiting
+            try:
+                CriticalAlertService.send_startup_failure_alert_sync(
+                    component="Celery",
+                    error_message=f"Celery worker unavailable: {str(e)}",
+                    details=(
+                        "Application cannot start without Celery worker. "
+                        "Start Celery worker: celery -A config.celery worker --loglevel=info"
+                    )
+                )
+            except Exception as alert_error:  # pylint: disable=broad-except
+                logger.error("Failed to send startup failure alert: %s", alert_error)
+            logger.error("Application startup failed. Exiting.")
+            os._exit(1)  # pylint: disable=protected-access
+
+        # Stage 4: Check system dependencies for Knowledge Space feature (Tesseract OCR)
+        # Application will exit if required dependencies are missing
+        progress_tracker.update_stage(STAGE_DEPENDENCIES)
+        if is_main_worker:
+            logger.info("[LIFESPAN] Checking system dependencies...")
         try:
             if not check_system_dependencies(exit_on_error=True):
                 # check_system_dependencies already exits, but this is a safety check
                 logger.error("System dependency check failed. Exiting.")
                 os._exit(1)  # pylint: disable=protected-access
-            logger.info("System dependencies check passed")
+            if is_main_worker:
+                logger.info("System dependencies check passed")
         except DependencyError as e:
             if is_main_worker:
                 logger.error("Dependency check failed: %s", e)
@@ -179,283 +213,298 @@ async def lifespan(fastapi_app: FastAPI):
             if is_main_worker:
                 logger.warning("Error during dependency check (non-fatal): %s", e)
 
-    # Note: Legacy JavaScript cache removed in v5.0.0 (Vue migration)
-    # Frontend assets are now served from frontend/dist/ via Vue SPA handler
+        # Note: Legacy JavaScript cache removed in v5.0.0 (Vue migration)
+        # Frontend assets are now served from frontend/dist/ via Vue SPA handler
 
-    # Initialize Database with corruption detection and recovery
-    if is_main_worker:
-        logger.info("[LIFESPAN] Initializing database...")
-    try:
-        # Check database integrity on startup (uses Redis lock to ensure only one worker checks)
-        # Note: Removed worker_id check - Redis lock handles multi-worker coordination
-        # If corruption is detected, interactive recovery wizard is triggered
+        # Stage 5: Initialize Database with corruption detection and recovery
+        progress_tracker.update_stage(STAGE_DB_INTEGRITY)
         if is_main_worker:
-            logger.info("[LIFESPAN] Checking database integrity...")
-        if not check_database_on_startup():
+            logger.info("[LIFESPAN] Initializing database...")
+        try:
+            # Check database integrity on startup (uses Redis lock to ensure only one worker checks)
+            # Note: Removed worker_id check - Redis lock handles multi-worker coordination
+            # If corruption is detected, interactive recovery wizard is triggered
             if is_main_worker:
-                logger.critical("Database recovery failed or was aborted. Shutting down.")
-            try:
-                CriticalAlertService.send_startup_failure_alert_sync(
-                    component="Database",
-                    error_message="Database recovery failed or was aborted",
-                    details=(
-                        "Database integrity check failed and recovery was not successful. "
-                        "Manual intervention required."
-                    )
-                )
-            except Exception as alert_error:  # pylint: disable=broad-except
+                logger.info("[LIFESPAN] Checking database integrity...")
+            if not check_database_on_startup():
                 if is_main_worker:
-                    logger.error("Failed to send startup failure alert: %s", alert_error)
-            raise SystemExit(1)
-        # Only log from first worker to avoid duplicate messages
-        if is_main_worker:
-            logger.info("Database integrity verified")
-            logger.info("[LIFESPAN] Initializing database connection...")
-        init_db()
-        if is_main_worker:
-            logger.info("Database initialized successfully")
-            # Display demo info if in demo mode
-            display_demo_info()
-
-        # Load cache from SQLite and IP geolocation database in parallel to save startup time
-        # Note: Both use Redis lock/distributed coordination to ensure only one worker loads
-        if is_main_worker:
-            logger.info("[LIFESPAN] Loading cache and IP database...")
-
-        # Check if user auth cache preloading is enabled
-        preload_auth_cache = os.getenv("PRELOAD_USER_AUTH_CACHE", "true").lower() in ("1", "true", "yes")
-
-        def load_user_cache():
-            """Load user cache from SQLite (runs in thread pool)."""
-            if not preload_auth_cache:
-                if is_main_worker:
-                    logger.info(
-                        "[CacheLoader] User auth cache preloading skipped "
-                        "(PRELOAD_USER_AUTH_CACHE disabled)"
+                    logger.critical("Database recovery failed or was aborted. Shutting down.")
+                try:
+                    CriticalAlertService.send_startup_failure_alert_sync(
+                        component="Database",
+                        error_message="Database recovery failed or was aborted",
+                        details=(
+                            "Database integrity check failed and recovery was not successful. "
+                            "Manual intervention required."
+                        )
                     )
-                return True  # Return True to indicate skip was intentional
-
-            try:
-                # reload_cache_from_sqlite() handles Redis lock internally
-                # No need for pre-check - let the atomic lock handle coordination
-                # The Redis SETNX operation is atomic, so the lock acquisition prevents race conditions
-                result = reload_cache_from_sqlite()
-                return result
-            except Exception as e:  # pylint: disable=broad-except
-                logger.error("Failed to load cache from SQLite: %s", e, exc_info=True)
-                return False
-
-        def load_ip_database():
-            """Initialize IP geolocation database (runs in thread pool)."""
-            try:
-                geolocation_service = get_geolocation_service()
-                if geolocation_service.is_ready():
+                except Exception as alert_error:  # pylint: disable=broad-except
                     if is_main_worker:
-                        logger.info("IP Geolocation Service initialized successfully")
-                    return True
-                else:
+                        logger.error("Failed to send startup failure alert: %s", alert_error)
+                raise SystemExit(1)
+            # Stage 6: Initialize database connection
+            progress_tracker.update_stage(STAGE_DB_INIT)
+            # Only log from first worker to avoid duplicate messages
+            if is_main_worker:
+                logger.info("Database integrity verified")
+                logger.info("[LIFESPAN] Initializing database connection...")
+            init_db()
+            if is_main_worker:
+                logger.info("Database initialized successfully")
+                # Display demo info if in demo mode
+                display_demo_info()
+
+            # Stage 7 & 8: Load cache from database and IP geolocation database in parallel
+            # Note: Both use Redis lock/distributed coordination to ensure only one worker loads
+            progress_tracker.update_stage(STAGE_CACHE_LOADING)
+            if is_main_worker:
+                logger.info("[LIFESPAN] Loading cache and IP database...")
+
+            # Check if user auth cache preloading is enabled
+            preload_auth_cache = os.getenv("PRELOAD_USER_AUTH_CACHE", "true").lower() in ("1", "true", "yes")
+
+            def load_user_cache():
+                """Load user cache from database (runs in thread pool)."""
+                if not preload_auth_cache:
+                    if is_main_worker:
+                        logger.info(
+                            "[CacheLoader] User auth cache preloading skipped "
+                            "(PRELOAD_USER_AUTH_CACHE disabled)"
+                        )
+                    return True  # Return True to indicate skip was intentional
+
+                try:
+                    # reload_cache_from_database() handles Redis lock internally
+                    # No need for pre-check - let the atomic lock handle coordination
+                    # The Redis SETNX operation is atomic, so the lock acquisition prevents race conditions
+                    result = reload_cache_from_database()
+                    return result
+                except Exception as e:  # pylint: disable=broad-except
+                    logger.error("Failed to load cache from database: %s", e, exc_info=True)
+                    return False
+
+            def load_ip_database():
+                """Initialize IP geolocation database (runs in thread pool)."""
+                try:
+                    geolocation_service = get_geolocation_service()
+                    if geolocation_service.is_ready():
+                        if is_main_worker:
+                            logger.info("IP Geolocation Service initialized successfully")
+                        return True
+                    else:
+                        if is_main_worker:
+                            logger.warning(
+                                "IP Geolocation database not available "
+                                "(database file missing or failed to load)"
+                            )
+                        return False
+                except Exception as e:  # pylint: disable=broad-except
+                    if is_main_worker:
+                        logger.warning("Failed to initialize IP Geolocation Service: %s", e)
+                    return False
+
+            # Run both operations in parallel using thread pool
+            cache_result, ip_db_result = await asyncio.gather(
+                asyncio.to_thread(load_user_cache),
+                asyncio.to_thread(load_ip_database),
+                return_exceptions=True
+            )
+
+            # Both operations completed - update progress for IP database stage
+            progress_tracker.update_stage(STAGE_IP_DATABASE)
+
+            # Handle results
+            if isinstance(cache_result, Exception):
+                if is_main_worker:
+                    logger.error("Failed to load cache from database: %s", cache_result, exc_info=True)
+            elif cache_result:
+                # Cache loading completed (either by this worker or another worker via lock)
+                # The actual loading logs come from reload_cache_from_database() itself
+                if preload_auth_cache and is_main_worker:
+                    logger.info("[CacheLoader] User cache loading completed successfully")
+            else:
+                # cache_result is False - cache loading failed
+                if preload_auth_cache:
                     if is_main_worker:
                         logger.warning(
-                            "IP Geolocation database not available "
-                            "(database file missing or failed to load)"
+                            "[CacheLoader] Cache loading returned False - cache may not be preloaded"
                         )
-                    return False
+                        logger.warning(
+                            "[CacheLoader] WARNING: User authentication data may not be "
+                            "preloaded into Redis cache"
+                        )
+
+            if isinstance(ip_db_result, Exception):
+                if is_main_worker:
+                    logger.warning("Failed to initialize IP Geolocation Service: %s", ip_db_result)
+            elif not ip_db_result:
+                # Already logged in load_ip_database
+                pass
+
+            # Stage 9: Load IP whitelist from env var into Redis (uses Redis lock to ensure only one worker loads)
+            # Note: Removed worker_id check - Redis lock handles multi-worker coordination
+            progress_tracker.update_stage(STAGE_IP_WHITELIST)
+            try:
+                if AUTH_MODE == "bayi":
+                    whitelist = get_bayi_whitelist()
+                    count = whitelist.load_from_env()
+                    # Only log from first worker to avoid duplicate messages
+                    if count > 0 and is_main_worker:
+                        logger.info("Loaded %s IP(s) from BAYI_IP_WHITELIST into Redis", count)
             except Exception as e:  # pylint: disable=broad-except
                 if is_main_worker:
-                    logger.warning("Failed to initialize IP Geolocation Service: %s", e)
-                return False
-
-        # Run both operations in parallel using thread pool
-        cache_result, ip_db_result = await asyncio.gather(
-            asyncio.to_thread(load_user_cache),
-            asyncio.to_thread(load_ip_database),
-            return_exceptions=True
-        )
-
-        # Handle results
-        if isinstance(cache_result, Exception):
-            if is_main_worker:
-                logger.error("Failed to load cache from SQLite: %s", cache_result, exc_info=True)
-        elif cache_result:
-            # Cache loading completed (either by this worker or another worker via lock)
-            # The actual loading logs come from reload_cache_from_sqlite() itself
-            if preload_auth_cache and is_main_worker:
-                logger.info("[CacheLoader] User cache loading completed successfully")
-        else:
-            # cache_result is False - cache loading failed
-            if preload_auth_cache:
-                if is_main_worker:
-                    logger.warning(
-                        "[CacheLoader] Cache loading returned False - cache may not be preloaded"
-                    )
-                    logger.warning(
-                        "[CacheLoader] WARNING: User authentication data may not be "
-                        "preloaded into Redis cache"
-                    )
-
-        if isinstance(ip_db_result, Exception):
-            if is_main_worker:
-                logger.warning("Failed to initialize IP Geolocation Service: %s", ip_db_result)
-        elif not ip_db_result:
-            # Already logged in load_ip_database
-            pass
-
-        # Load IP whitelist from env var into Redis (uses Redis lock to ensure only one worker loads)
-        # Note: Removed worker_id check - Redis lock handles multi-worker coordination
-        try:
-            if AUTH_MODE == "bayi":
-                whitelist = get_bayi_whitelist()
-                count = whitelist.load_from_env()
-                # Only log from first worker to avoid duplicate messages
-                if count > 0 and is_main_worker:
-                    logger.info("Loaded %s IP(s) from BAYI_IP_WHITELIST into Redis", count)
+                    logger.warning("Failed to load IP whitelist into Redis: %s", e)
+                # Don't fail startup - system can work with in-memory whitelist
         except Exception as e:  # pylint: disable=broad-except
             if is_main_worker:
-                logger.warning("Failed to load IP whitelist into Redis: %s", e)
-            # Don't fail startup - system can work with in-memory whitelist
-    except Exception as e:  # pylint: disable=broad-except
-        if is_main_worker:
-            logger.error("Failed to initialize database: %s", e)
+                logger.error("Failed to initialize database: %s", e)
+                progress_tracker.add_error(f"Database initialization error: {str(e)}")
 
-    # Initialize LLM Service
-    try:
-        llm_service.initialize()
-        if is_main_worker:
-            logger.info("LLM Service initialized")
-    except Exception as e:  # pylint: disable=broad-except
-        if is_main_worker:
-            logger.warning("Failed to initialize LLM Service: %s", e)
-
-    # Verify Playwright installation (for PNG generation)
-    if is_main_worker:
+        # Stage 10: Initialize LLM Service
+        progress_tracker.update_stage(STAGE_LLM_SERVICE)
         try:
-            await log_browser_diagnostics()
-        except NotImplementedError:
-            logger.error("=" * 80)
-            logger.error("CRITICAL: Playwright browsers are not installed!")
-            logger.error(
-                "PNG generation endpoints (/api/generate_png, /api/generate_dingtalk) will fail."
-            )
-            logger.error("To fix: conda activate python3.13 && playwright install chromium")
-            logger.error("=" * 80)
+            llm_service.initialize()
+            if is_main_worker:
+                logger.info("LLM Service initialized")
         except Exception as e:  # pylint: disable=broad-except
-            logger.warning("Could not verify Playwright installation: %s", e)
+            if is_main_worker:
+                logger.warning("Failed to initialize LLM Service: %s", e)
+                progress_tracker.add_error(f"LLM Service initialization error: {str(e)}")
 
-    # Start temp image cleanup task
-    cleanup_task = None
-    try:
-        cleanup_task = asyncio.create_task(start_cleanup_scheduler(interval_hours=1))
+        # Stage 11: Verify Playwright installation (for PNG generation)
+        progress_tracker.update_stage(STAGE_PLAYWRIGHT)
         if is_main_worker:
-            logger.info("Temp image cleanup scheduler started")
-    except Exception as e:  # pylint: disable=broad-except
-        if is_main_worker:
-            logger.warning("Failed to start cleanup scheduler: %s", e)
+            try:
+                await log_browser_diagnostics()
+            except NotImplementedError:
+                logger.error("=" * 80)
+                logger.error("CRITICAL: Playwright browsers are not installed!")
+                logger.error(
+                    "PNG generation endpoints (/api/generate_png, /api/generate_dingtalk) will fail."
+                )
+                logger.error("To fix: conda activate python3.13 && playwright install chromium")
+                logger.error("=" * 80)
+                progress_tracker.add_error("Playwright browsers not installed")
+            except Exception as e:  # pylint: disable=broad-except
+                logger.warning("Could not verify Playwright installation: %s", e)
+                progress_tracker.add_error(f"Playwright verification error: {str(e)}")
 
-    # Start WAL checkpoint scheduler (checkpoints SQLite WAL every 5 minutes)
-    # This is critical for database safety, especially when using kill -9 (SIGKILL)
-    # which bypasses graceful shutdown. Periodic checkpointing ensures WAL file
-    # doesn't grow too large and reduces corruption risk.
-    wal_checkpoint_task = None
-    try:
-        wal_checkpoint_task = asyncio.create_task(
-            start_wal_checkpoint_scheduler(interval_minutes=5)
-        )
-        if is_main_worker:
-            logger.info("WAL checkpoint scheduler started (every 5 min)")
-    except Exception as e:  # pylint: disable=broad-except
-        if is_main_worker:
-            logger.warning("Failed to start WAL checkpoint scheduler: %s", e)
-
-    # Start database backup scheduler (daily automatic backups)
-    # Backs up SQLite database daily, keeps configurable retention (default: 2 backups)
-    # Uses Redis distributed lock to ensure only ONE worker runs backups across all workers
-    # All workers start the scheduler, but only the lock holder executes backups
-    backup_scheduler_task: Optional[asyncio.Task] = None
-    try:
-        backup_scheduler_task = asyncio.create_task(start_backup_scheduler())
-        # Don't log here - the scheduler will log whether it acquired the lock
-    except Exception as e:  # pylint: disable=broad-except
-        if worker_id == '0' or not worker_id:
-            logger.warning("Failed to start backup scheduler: %s", e)
-
-    # Start process monitor (health monitoring and auto-restart for Qdrant, Celery, Redis)
-    # Uses Redis distributed lock to ensure only ONE worker monitors across all workers
-    # All workers start the monitor, but only the lock holder performs monitoring
-    process_monitor_task: Optional[asyncio.Task] = None
-    try:
-        process_monitor = get_process_monitor()
-        process_monitor_task = asyncio.create_task(process_monitor.start())
-        if is_main_worker:
-            logger.info("Process monitor started")
-    except Exception as e:  # pylint: disable=broad-except
-        if is_main_worker:
-            logger.warning("Failed to start process monitor: %s", e)
-        process_monitor_task = None  # Ensure it's None if initialization failed
-
-    # Start health monitor (periodic health checks via /health/all endpoint)
-    # Uses Redis distributed lock to ensure only ONE worker monitors across all workers
-    # All workers start the monitor, but only the lock holder performs monitoring
-    health_monitor_task: Optional[asyncio.Task] = None
-    try:
-        health_monitor = get_health_monitor()
-        health_monitor_task = asyncio.create_task(health_monitor.start())
-        if is_main_worker:
-            logger.info("Health monitor started")
-    except Exception as e:  # pylint: disable=broad-except
-        if is_main_worker:
-            logger.warning("Failed to start health monitor: %s", e)
-        health_monitor_task = None  # Ensure it's None if initialization failed
-
-    # Initialize Diagram Cache (Redis with SQLite persistence)
-    # Note: health_monitor_task is used in the finally block for cleanup
-    _ = health_monitor_task  # Reference to prevent pylint unused variable warning
-    # Starts background sync worker for dirty tracking
-    try:
-        diagram_cache = get_diagram_cache()
-        if is_main_worker:
-            logger.info("Diagram cache initialized")
-    except Exception as e:  # pylint: disable=broad-except
-        if is_main_worker:
-            logger.warning("Failed to initialize diagram cache: %s", e)
-
-    # Send startup notification SMS to admin phones
-    if is_main_worker:
+        # Stage 12: Start temp image cleanup task
+        progress_tracker.update_stage(STAGE_CLEANUP_SCHEDULER)
+        cleanup_task = None
         try:
-            # Check if startup SMS notification is enabled
-            sms_startup_enabled = os.getenv("SMS_STARTUP_NOTIFICATION_ENABLED", "true").lower() in ("true", "1", "yes")
-            if not sms_startup_enabled:
-                logger.debug("[LIFESPAN] Startup SMS notification disabled (SMS_STARTUP_NOTIFICATION_ENABLED=false)")
-            else:
-                sms_middleware = get_sms_middleware()
-                if sms_middleware.is_available:
-                    admin_phones = [phone.strip() for phone in ADMIN_PHONES if phone.strip()]
-                    if admin_phones:
-                        # Get startup notification template ID from environment variable
-                        startup_template_id = os.getenv("TENCENT_SMS_TEMPLATE_STARTUP", "").strip()
-                        if not startup_template_id:
-                            logger.warning(
-                                "[LIFESPAN] TENCENT_SMS_TEMPLATE_STARTUP not configured, "
-                                "skipping startup SMS notification"
-                            )
-                        else:
-                            # Message: "MindGraph已在主服务器启动，短信通知系统启用成功。"
-                            success, message = await sms_middleware.send_notification(
-                                phones=admin_phones,
-                                template_id=startup_template_id,
-                                template_params=[],  # Template has no parameters
-                                lang="zh"
-                            )
-                            if success:
-                                logger.info("[LIFESPAN] Startup SMS notification sent successfully: %s", message)
-                            else:
-                                logger.warning("[LIFESPAN] Failed to send startup SMS notification: %s", message)
-                    else:
-                        logger.debug("[LIFESPAN] No admin phones configured, skipping startup SMS notification")
+            cleanup_task = asyncio.create_task(start_cleanup_scheduler(interval_hours=1))
+            if is_main_worker:
+                logger.info("Temp image cleanup scheduler started")
+        except Exception as e:  # pylint: disable=broad-except
+            if is_main_worker:
+                logger.warning("Failed to start cleanup scheduler: %s", e)
+                progress_tracker.add_error(f"Cleanup scheduler error: {str(e)}")
+
+        # Stage 13: Start database backup scheduler (daily automatic backups)
+        # Backs up database daily, keeps configurable retention (default: 2 backups)
+        # Uses Redis distributed lock to ensure only ONE worker runs backups across all workers
+        # All workers start the scheduler, but only the lock holder executes backups
+        progress_tracker.update_stage(STAGE_BACKUP_SCHEDULER)
+        backup_scheduler_task: Optional[asyncio.Task] = None
+        try:
+            backup_scheduler_task = asyncio.create_task(start_backup_scheduler())
+            # Don't log here - the scheduler will log whether it acquired the lock
+        except Exception as e:  # pylint: disable=broad-except
+            if worker_id == '0' or not worker_id:
+                logger.warning("Failed to start backup scheduler: %s", e)
+                progress_tracker.add_error(f"Backup scheduler error: {str(e)}")
+
+        # Stage 15: Start process monitor (health monitoring and auto-restart for Qdrant, Celery, Redis)
+        # Uses Redis distributed lock to ensure only ONE worker monitors across all workers
+        # All workers start the monitor, but only the lock holder performs monitoring
+        progress_tracker.update_stage(STAGE_PROCESS_MONITOR)
+        process_monitor_task: Optional[asyncio.Task] = None
+        try:
+            process_monitor = get_process_monitor()
+            process_monitor_task = asyncio.create_task(process_monitor.start())
+            if is_main_worker:
+                logger.info("Process monitor started")
+        except Exception as e:  # pylint: disable=broad-except
+            if is_main_worker:
+                logger.warning("Failed to start process monitor: %s", e)
+                progress_tracker.add_error(f"Process monitor error: {str(e)}")
+            process_monitor_task = None  # Ensure it's None if initialization failed
+
+        # Stage 16: Start health monitor (periodic health checks via /health/all endpoint)
+        # Uses Redis distributed lock to ensure only ONE worker monitors across all workers
+        # All workers start the monitor, but only the lock holder performs monitoring
+        progress_tracker.update_stage(STAGE_HEALTH_MONITOR)
+        health_monitor_task: Optional[asyncio.Task] = None
+        try:
+            health_monitor = get_health_monitor()
+            health_monitor_task = asyncio.create_task(health_monitor.start())
+            if is_main_worker:
+                logger.info("Health monitor started")
+        except Exception as e:  # pylint: disable=broad-except
+            if is_main_worker:
+                logger.warning("Failed to start health monitor: %s", e)
+                progress_tracker.add_error(f"Health monitor error: {str(e)}")
+            health_monitor_task = None  # Ensure it's None if initialization failed
+
+        # Stage 16: Initialize Diagram Cache (Redis with database persistence)
+        # Note: health_monitor_task is used in the finally block for cleanup
+        _ = health_monitor_task  # Reference to prevent pylint unused variable warning
+        # Starts background sync worker for dirty tracking
+        progress_tracker.update_stage(STAGE_DIAGRAM_CACHE)
+        try:
+            diagram_cache = get_diagram_cache()
+            if is_main_worker:
+                logger.info("Diagram cache initialized")
+        except Exception as e:  # pylint: disable=broad-except
+            if is_main_worker:
+                logger.warning("Failed to initialize diagram cache: %s", e)
+                progress_tracker.add_error(f"Diagram cache error: {str(e)}")
+
+        # Stage 18: Send startup notification SMS to admin phones
+        progress_tracker.update_stage(STAGE_SMS_NOTIFICATION)
+        if is_main_worker:
+            try:
+                # Check if startup SMS notification is enabled
+                sms_startup_enabled = os.getenv("SMS_STARTUP_NOTIFICATION_ENABLED", "true").lower() in ("true", "1", "yes")
+                if not sms_startup_enabled:
+                    logger.debug("[LIFESPAN] Startup SMS notification disabled (SMS_STARTUP_NOTIFICATION_ENABLED=false)")
                 else:
-                    logger.debug("[LIFESPAN] SMS service not available, skipping startup SMS notification")
-        except Exception as e:  # pylint: disable=broad-except
-            # Don't fail startup if SMS notification fails
-            logger.warning("[LIFESPAN] Failed to send startup SMS notification (non-critical): %s", e)
+                    sms_middleware = get_sms_middleware()
+                    if sms_middleware.is_available:
+                        admin_phones = [phone.strip() for phone in ADMIN_PHONES if phone.strip()]
+                        if admin_phones:
+                            # Get startup notification template ID from environment variable
+                            startup_template_id = os.getenv("TENCENT_SMS_TEMPLATE_STARTUP", "").strip()
+                            if not startup_template_id:
+                                logger.warning(
+                                    "[LIFESPAN] TENCENT_SMS_TEMPLATE_STARTUP not configured, "
+                                    "skipping startup SMS notification"
+                                )
+                            else:
+                                # Message: "MindGraph已在主服务器启动，短信通知系统启用成功。"
+                                success, message = await sms_middleware.send_notification(
+                                    phones=admin_phones,
+                                    template_id=startup_template_id,
+                                    template_params=[],  # Template has no parameters
+                                    lang="zh"
+                                )
+                                if success:
+                                    logger.info("[LIFESPAN] Startup SMS notification sent successfully: %s", message)
+                                else:
+                                    logger.warning("[LIFESPAN] Failed to send startup SMS notification: %s", message)
+                        else:
+                            logger.debug("[LIFESPAN] No admin phones configured, skipping startup SMS notification")
+                    else:
+                        logger.debug("[LIFESPAN] SMS service not available, skipping startup SMS notification")
+            except Exception as e:  # pylint: disable=broad-except
+                # Don't fail startup if SMS notification fails
+                logger.warning("[LIFESPAN] Failed to send startup SMS notification (non-critical): %s", e)
+                progress_tracker.add_error(f"SMS notification error: {str(e)}")
+
+        # Stage 19: Complete
+        progress_tracker.update_stage(STAGE_COMPLETE)
+        progress_tracker.print_summary()
 
     # Yield control to application
     if is_main_worker:
@@ -486,16 +535,6 @@ async def lifespan(fastapi_app: FastAPI):
                 pass
             if is_main_worker:
                 logger.info("Temp image cleanup scheduler stopped")
-
-        # Stop WAL checkpoint scheduler
-        if wal_checkpoint_task:
-            wal_checkpoint_task.cancel()
-            try:
-                await wal_checkpoint_task
-            except asyncio.CancelledError:
-                pass
-            if is_main_worker:
-                logger.info("WAL checkpoint scheduler stopped")
 
         # Stop backup scheduler (runs on all workers, but only lock holder executes)
         if backup_scheduler_task:

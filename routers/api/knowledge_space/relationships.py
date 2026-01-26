@@ -17,9 +17,9 @@ from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 
 from config.database import get_db
-from models.auth import User
-from models.knowledge_space import DocumentRelationship, KnowledgeDocument, KnowledgeSpace
-from models.requests_knowledge_space import RelationshipRequest
+from models.domain.auth import User
+from models.domain.knowledge_space import DocumentRelationship, KnowledgeDocument, KnowledgeSpace
+from models.requests.requests_knowledge_space import RelationshipRequest
 from models.responses import RelationshipResponse
 from services.knowledge.knowledge_space_service import KnowledgeSpaceService
 from utils.auth import get_current_user

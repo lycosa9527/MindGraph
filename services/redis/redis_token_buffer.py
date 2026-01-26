@@ -9,19 +9,19 @@ import time
 
 from services.redis.redis_client import is_redis_available, get_redis
 from config.database import SessionLocal, check_disk_space
-from models.token_usage import TokenUsage
+from models.domain.token_usage import TokenUsage
 
 """
 Redis Token Buffer
 ===================
 
 Shared token usage buffer using Redis.
-Collects token usage records from all workers and flushes to SQLite periodically.
+Collects token usage records from all workers and flushes to database periodically.
 
 Features:
 - Shared buffer across all workers (no data loss on worker crash)
 - Atomic list operations for thread safety
-- Periodic batch flush to SQLite for persistence
+- Periodic batch flush to database for persistence
 - Graceful fallback to per-worker memory buffer
 
 Key Schema:
@@ -56,7 +56,7 @@ class RedisTokenBuffer:
     Redis-based token usage buffer.
 
     Collects token usage records in Redis (shared across all workers)
-    and flushes them to SQLite in batches for persistent storage.
+    and flushes them to database in batches for persistent storage.
 
     This solves the per-worker buffer problem where worker crashes
     could lose buffered data.
@@ -190,7 +190,7 @@ class RedisTokenBuffer:
             return len(self._memory_buffer)
 
     async def _flush_buffer(self):
-        """Flush buffer to SQLite database."""
+        """Flush buffer to database."""
         if not self._enabled:
             return
 
@@ -311,7 +311,7 @@ class RedisTokenBuffer:
         Track token usage (non-blocking, batched).
 
         Records are added to a shared Redis buffer and flushed to
-        SQLite periodically.
+        database periodically.
 
         Returns:
             True if added to buffer, False if disabled or overflow
