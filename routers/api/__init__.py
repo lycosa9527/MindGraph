@@ -15,10 +15,9 @@ import logging
 
 from fastapi import APIRouter
 
-from config.settings import config
+from config.settings import config as app_config
 
 from . import (
-    config as config_router,
     diagram_generation,
     png_export,
     sse_streaming,
@@ -31,15 +30,16 @@ from . import (
     image_proxy,
     diagrams,
 )
+from . import config
 
 logger = logging.getLogger(__name__)
 
-knowledge_space = None
-if config.FEATURE_KNOWLEDGE_SPACE:
+knowledge_space_module = None
+if app_config.FEATURE_KNOWLEDGE_SPACE:
     try:
-        from . import knowledge_space  # pylint: disable=invalid-name
+        from . import knowledge_space as knowledge_space_module
     except Exception as e:
-        knowledge_space = None  # pylint: disable=invalid-name
+        knowledge_space_module = None
         logger.debug("[API] Failed to import knowledge_space router: %s", e, exc_info=True)
 else:
     logger.debug("[API] Knowledge Space feature disabled via FEATURE_KNOWLEDGE_SPACE flag")
@@ -48,7 +48,7 @@ else:
 router = APIRouter(prefix="/api", tags=["api"])
 
 # Include all sub-routers
-router.include_router(config_router.router)
+router.include_router(config.router)
 router.include_router(diagram_generation.router)
 router.include_router(png_export.router)
 router.include_router(sse_streaming.router)
@@ -62,11 +62,11 @@ router.include_router(image_proxy.router)
 router.include_router(diagrams.router)
 
 # Knowledge Space router (has its own prefix)
-if knowledge_space is not None:
-    router.include_router(knowledge_space.router)
+if knowledge_space_module is not None:
+    router.include_router(knowledge_space_module.router)
     logger.info("[API] Knowledge Space router registered at /api/knowledge-space")
 else:
-    if config.FEATURE_KNOWLEDGE_SPACE:
+    if app_config.FEATURE_KNOWLEDGE_SPACE:
         logger.warning(
             "[API] Knowledge Space router NOT registered - import failed or router is None. "
             "Check DEBUG logs for details. This may be due to missing dependencies (Qdrant, Celery)."
