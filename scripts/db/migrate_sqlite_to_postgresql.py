@@ -95,8 +95,7 @@ try:
     from utils.migration.sqlite_migration_tables import verify_migration
 except ImportError as e:
     print(f"[ERROR] Failed to import migration module: {e}")
-    print("\nPlease ensure you're running this script from the project root.")
-    print("Required dependencies:")
+    print("\nRequired dependencies:")
     print("  - psycopg2-binary: pip install psycopg2-binary")
     sys.exit(1)
 

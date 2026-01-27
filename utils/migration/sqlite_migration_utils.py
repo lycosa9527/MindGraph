@@ -39,11 +39,14 @@ from sqlalchemy import create_engine, inspect, text
 
 logger = logging.getLogger(__name__)
 
-# Migration marker file
-MIGRATION_MARKER_FILE = Path("backup/.migration_completed")
-BACKUP_DIR = Path("backup")
-MIGRATION_LOCK_FILE = Path("backup/.migration.lock")
-MIGRATION_PROGRESS_FILE = Path("backup/.migration_progress.json")
+# Calculate project root (utils/migration/ is 3 levels down from project root)
+_project_root = Path(__file__).parent.parent.parent
+
+# Migration marker file (relative to project root)
+MIGRATION_MARKER_FILE = _project_root / "backup" / ".migration_completed"
+BACKUP_DIR = _project_root / "backup"
+MIGRATION_LOCK_FILE = _project_root / "backup" / ".migration.lock"
+MIGRATION_PROGRESS_FILE = _project_root / "backup" / ".migration_progress.json"
 
 
 def get_sqlite_db_path() -> Optional[Path]:
@@ -75,7 +78,8 @@ def get_sqlite_db_path() -> Optional[Path]:
             if db_path_str.startswith("./"):
                 db_path_str = db_path_str[2:]
             if not os.path.isabs(db_path_str):
-                db_path = Path.cwd() / db_path_str
+                # Use project root as base for relative paths
+                db_path = _project_root / db_path_str
             else:
                 db_path = Path(db_path_str)
         else:
@@ -87,10 +91,10 @@ def get_sqlite_db_path() -> Optional[Path]:
     # If DATABASE_URL is PostgreSQL or not SQLite, check common default locations
     # This allows migration even when DATABASE_URL is already set to PostgreSQL
     common_locations = [
-        Path("data/mindgraph.db"),  # New default location
-        Path("mindgraph.db"),       # Old default location
-        Path("./data/mindgraph.db"),
-        Path("./mindgraph.db"),
+        _project_root / "data" / "mindgraph.db",  # New default location
+        _project_root / "mindgraph.db",           # Old default location
+        Path("/root/mindgraph/mindgraph.db"),     # Common server location
+        Path("/root/mindgraph/data/mindgraph.db"), # Alternative server location
     ]
 
     # Also check WSL paths if running in WSL (Windows filesystem mounted at /mnt/c/)
