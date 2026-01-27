@@ -4,6 +4,31 @@ Cleanup Orphaned Records from SQLite Database
 Removes records that reference deleted parent records (orphaned foreign keys).
 This should be run BEFORE migration to clean up the database.
 
+Usage:
+    python scripts/db/cleanup_orphaned_records.py
+    
+    # With options:
+    python scripts/db/cleanup_orphaned_records.py --live
+    python scripts/db/cleanup_orphaned_records.py --live --yes
+
+Options:
+    --live    Actually delete orphaned records (default is dry-run mode)
+    --yes     Skip confirmation prompt (useful for non-interactive execution)
+
+Examples:
+    # Dry run (default - shows what would be deleted without actually deleting)
+    python scripts/db/cleanup_orphaned_records.py
+    
+    # Actually delete orphaned records (with confirmation)
+    python scripts/db/cleanup_orphaned_records.py --live
+    
+    # Delete without confirmation prompt
+    python scripts/db/cleanup_orphaned_records.py --live --yes
+
+Note: This script should be run from the project root directory.
+      It will automatically find the SQLite database using DATABASE_URL
+      environment variable or by checking common locations.
+
 Author: lycosa9527
 Made by: MindSpring Team
 """
