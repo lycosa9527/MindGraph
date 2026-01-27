@@ -627,7 +627,7 @@ def migrate_sqlite_to_postgresql(force: bool = False) -> Tuple[bool, Optional[st
 
                 # Retry failed tables (dependencies might have been created)
                 # Use multiple retry passes to handle complex dependency chains
-                max_retries = 3
+                max_retries = 5  # Increased from 3 to handle complex dependency chains
                 for retry_pass in range(max_retries):
                     if not tables_failed:
                         break
@@ -643,6 +643,7 @@ def migrate_sqlite_to_postgresql(force: bool = False) -> Tuple[bool, Optional[st
                     existing_tables = set(inspector.get_table_names())
 
                     retry_failed = []
+                    tables_created_this_pass = []  # Track tables created in this pass
                     for table_name in tables_failed:
                         # Check if table was created by another process/retry
                         if table_name in existing_tables:
@@ -656,14 +657,24 @@ def migrate_sqlite_to_postgresql(force: bool = False) -> Tuple[bool, Optional[st
                             # Check if parent tables exist (for foreign key dependencies)
                             parent_tables_missing = []
                             for fk in table.foreign_keys:
-                                parent_table = fk.column.table.name
-                                if parent_table not in existing_tables and parent_table != table_name:
-                                    parent_tables_missing.append(parent_table)
+                                try:
+                                    parent_table = fk.column.table.name
+                                    if parent_table not in existing_tables and parent_table != table_name:
+                                        parent_tables_missing.append(parent_table)
+                                except AttributeError as e:
+                                    logger.error(
+                                        "[Migration] Error getting parent table for FK %s in table %s: %s",
+                                        fk.parent.name if hasattr(fk, 'parent') else 'unknown',
+                                        table_name, e
+                                    )
+                                    # If we can't determine parent table, skip this FK check
+                                    continue
 
                             if parent_tables_missing:
-                                logger.debug(
-                                    "[Migration] Table %s still waiting for parent tables: %s",
-                                    table_name, ', '.join(parent_tables_missing)
+                                logger.warning(
+                                    "[Migration] Table %s still waiting for parent tables: %s (existing: %s)",
+                                    table_name, ', '.join(parent_tables_missing),
+                                    ', '.join(sorted(existing_tables))[:200]  # Limit length
                                 )
                                 retry_failed.append(table_name)
                                 continue
@@ -680,6 +691,9 @@ def migrate_sqlite_to_postgresql(force: bool = False) -> Tuple[bool, Optional[st
                                 if table_name in inspector.get_table_names():
                                     tables_created += 1
                                     logger.info("[Migration] ✓ Created table (retry %d): %s", retry_pass + 1, table_name)
+                                    # Refresh existing_tables and inspector so subsequent tables in this pass can see the new table
+                                    inspector = inspect(pg_engine)  # Create fresh inspector
+                                    existing_tables = set(inspector.get_table_names())
                                 else:
                                     logger.error(
                                         "[Migration] ✗ Table creation reported success but table %s still missing",
