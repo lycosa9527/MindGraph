@@ -75,6 +75,32 @@ except Exception as e:
     # If .env loading fails, continue anyway (might not exist)
     print(f"[WARNING] Could not load .env file: {e}")
 
+# Set default PostgreSQL data directory for Ubuntu when running as root
+# This avoids permission issues with /root/ directories
+if sys.platform != 'win32':
+    try:
+        # Check if running as root
+        is_root = os.geteuid() == 0 if hasattr(os, 'geteuid') else False
+        
+        # Check if POSTGRESQL_DATA_DIR is not already set
+        if is_root and not os.getenv('POSTGRESQL_DATA_DIR'):
+            # Check if we're on Ubuntu/Linux (not macOS)
+            try:
+                with open('/etc/os-release', 'r', encoding='utf-8') as os_file:
+                    os_release = os_file.read()
+                    if 'ubuntu' in os_release.lower() or 'debian' in os_release.lower():
+                        # Use /var/lib/postgresql/mindgraph as default on Ubuntu/Debian
+                        default_pg_dir = '/var/lib/postgresql/mindgraph'
+                        os.environ['POSTGRESQL_DATA_DIR'] = default_pg_dir
+                        print(f"[INFO] Running as root on Ubuntu - using PostgreSQL data directory: {default_pg_dir}")
+                        print(f"[INFO] (Set POSTGRESQL_DATA_DIR environment variable to override)")
+            except (FileNotFoundError, OSError, PermissionError):
+                # Not Ubuntu/Debian or can't read /etc/os-release, skip
+                pass
+    except (AttributeError, OSError):
+        # Windows or can't determine root status, skip
+        pass
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,

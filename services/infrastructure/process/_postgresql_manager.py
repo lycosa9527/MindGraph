@@ -234,6 +234,17 @@ def start_postgresql_server(server_state) -> Optional[subprocess.Popen[bytes]]:
 
     resolved_str = str(data_path)
     is_wsl_windows_fs = resolved_str.startswith('/mnt/')
+    
+    # Better WSL detection: check /proc/version for WSL indicators
+    is_wsl = False
+    if sys.platform != 'win32':
+        try:
+            with open('/proc/version', 'r', encoding='utf-8') as proc_file:
+                proc_version = proc_file.read().lower()
+                if 'microsoft' in proc_version or 'wsl' in proc_version:
+                    is_wsl = True
+        except (FileNotFoundError, OSError, PermissionError):
+            pass
 
     if not is_wsl_windows_fs:
         try:
@@ -248,12 +259,13 @@ def start_postgresql_server(server_state) -> Optional[subprocess.Popen[bytes]]:
         except Exception:
             pass
 
-    if is_wsl_windows_fs:
+    # WSL: Use Linux-native path in user's home directory
+    if is_wsl or is_wsl_windows_fs:
         linux_native_dir = Path.home() / '.mindgraph' / 'postgresql'
         linux_native_dir.mkdir(parents=True, exist_ok=True)
 
         try:
-            print("[POSTGRESQL] Detected Windows-mounted filesystem - using Linux-native path")
+            print("[POSTGRESQL] Detected WSL/Windows-mounted filesystem - using Linux-native path")
             print(f"[POSTGRESQL] Original path: {data_path}")
             print(f"[POSTGRESQL] Using Linux-native path: {linux_native_dir}")
             print("[POSTGRESQL] (To use a custom path, set POSTGRESQL_DATA_DIR to a Linux-native location)")
@@ -261,6 +273,58 @@ def start_postgresql_server(server_state) -> Optional[subprocess.Popen[bytes]]:
             pass
 
         data_path = linux_native_dir.resolve()
+
+    # Ubuntu/Debian (not WSL): If running as root and data directory is under /root/, use alternative location
+    elif not is_wsl:
+        is_root = False
+        if sys.platform != 'win32':
+            try:
+                is_root = os.geteuid() == 0
+            except AttributeError:
+                is_root = False
+        
+        if is_root and str(data_path).startswith('/root/'):
+            # Check if we're on Ubuntu/Debian
+            is_ubuntu_debian = False
+            try:
+                with open('/etc/os-release', 'r', encoding='utf-8') as os_file:
+                    os_release = os_file.read().lower()
+                    if 'ubuntu' in os_release or 'debian' in os_release:
+                        is_ubuntu_debian = True
+            except (FileNotFoundError, OSError, PermissionError):
+                pass
+            
+            if is_ubuntu_debian:
+                # Use /var/lib/postgresql/mindgraph as alternative location (accessible to postgres user)
+                alternative_dir = Path('/var/lib/postgresql/mindgraph')
+                alternative_dir.mkdir(parents=True, exist_ok=True)
+                
+                try:
+                    print("[POSTGRESQL] Detected root user on Ubuntu/Debian with /root/ path - using alternative location")
+                    print(f"[POSTGRESQL] Original path: {data_path}")
+                    print(f"[POSTGRESQL] Using alternative path: {alternative_dir}")
+                    print("[POSTGRESQL] (To use a custom path, set POSTGRESQL_DATA_DIR environment variable)")
+                except (ValueError, OSError):
+                    pass
+                
+                data_path = alternative_dir.resolve()
+                
+                # Ensure postgres user owns this directory
+                try:
+                    subprocess.run(
+                        ['chown', '-R', 'postgres:postgres', str(data_path)],
+                        check=False,
+                        timeout=5,
+                        capture_output=True
+                    )
+                    subprocess.run(
+                        ['chmod', '700', str(data_path)],
+                        check=False,
+                        timeout=5,
+                        capture_output=True
+                    )
+                except (subprocess.SubprocessError, FileNotFoundError, OSError):
+                    pass
 
     data_path.mkdir(parents=True, exist_ok=True)
 
