@@ -5,12 +5,12 @@ This script migrates all data from SQLite database to PostgreSQL database.
 It can be run independently of the server startup process.
 
 Usage:
-    python scripts/migrate_sqlite_to_postgresql.py
+    python scripts/db/migrate_sqlite_to_postgresql.py
     
     # With options:
-    python scripts/migrate_sqlite_to_postgresql.py --force
-    python scripts/migrate_sqlite_to_postgresql.py --verify-only
-    python scripts/migrate_sqlite_to_postgresql.py --check-status
+    python scripts/db/migrate_sqlite_to_postgresql.py --force
+    python scripts/db/migrate_sqlite_to_postgresql.py --verify-only
+    python scripts/db/migrate_sqlite_to_postgresql.py --check-status
 
 Options:
     --force              Force migration even if PostgreSQL is not empty (DANGEROUS)
@@ -21,13 +21,13 @@ Options:
 
 Examples:
     # Check migration status
-    python scripts/migrate_sqlite_to_postgresql.py --check-status
+    python scripts/db/migrate_sqlite_to_postgresql.py --check-status
     
     # Run migration
-    python scripts/migrate_sqlite_to_postgresql.py
+    python scripts/db/migrate_sqlite_to_postgresql.py
     
     # Verify existing migration
-    python scripts/migrate_sqlite_to_postgresql.py --verify-only
+    python scripts/db/migrate_sqlite_to_postgresql.py --verify-only
 
 Note: This script requires:
     - psycopg2-binary: pip install psycopg2-binary
@@ -50,7 +50,7 @@ from pathlib import Path
 from typing import Optional
 
 # Add project root to path
-project_root = Path(__file__).parent.parent
+project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
 # Set up environment
@@ -498,16 +498,16 @@ def main() -> None:
         epilog="""
 Examples:
   # Check if migration is needed
-  python scripts/migrate_sqlite_to_postgresql.py --check-status
+  python scripts/db/migrate_sqlite_to_postgresql.py --check-status
   
   # Run migration
-  python scripts/migrate_sqlite_to_postgresql.py
+  python scripts/db/migrate_sqlite_to_postgresql.py
   
   # Verify existing migration
-  python scripts/migrate_sqlite_to_postgresql.py --verify-only
+  python scripts/db/migrate_sqlite_to_postgresql.py --verify-only
   
   # Force migration (dangerous)
-  python scripts/migrate_sqlite_to_postgresql.py --force
+  python scripts/db/migrate_sqlite_to_postgresql.py --force
         """
     )
 
