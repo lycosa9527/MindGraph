@@ -55,6 +55,166 @@ def _verify_postgresql_on_port(host: str, port: int, db_url: Optional[str] = Non
         return False
 
 
+def _ensure_postgres_directory_ownership(data_path: Path) -> bool:
+    """
+    Ensure postgres user exists and owns the PostgreSQL data directory.
+    
+    This function:
+    1. Checks if postgres user exists, creates it if not
+    2. Creates the directory if it doesn't exist
+    3. Sets ownership to postgres:postgres
+    4. Sets permissions to 700
+    5. Verifies postgres user can access the directory
+    
+    Args:
+        data_path: Path to PostgreSQL data directory
+        
+    Returns:
+        bool: True if setup successful, False otherwise
+    """
+    if sys.platform == 'win32':
+        return True
+    
+    # Check if postgres user exists
+    postgres_user_exists = False
+    try:
+        result = subprocess.run(
+            ['id', '-u', 'postgres'],
+            capture_output=True,
+            timeout=2,
+            check=False
+        )
+        postgres_user_exists = result.returncode == 0
+    except (subprocess.SubprocessError, FileNotFoundError):
+        pass
+    
+    # Create postgres user if it doesn't exist
+    if not postgres_user_exists:
+        try:
+            create_result = subprocess.run(
+                ['useradd', '-r', '-s', '/bin/bash', '-d', '/var/lib/postgresql', '-m', 'postgres'],
+                capture_output=True,
+                timeout=5,
+                check=False,
+                text=True
+            )
+            if create_result.returncode == 0:
+                postgres_user_exists = True
+            else:
+                try:
+                    print(f"[WARNING] Could not create postgres user: {create_result.stderr}")
+                    print("[POSTGRESQL] Please create postgres user manually:")
+                    print("  sudo useradd -r -s /bin/bash -d /var/lib/postgresql -m postgres")
+                except (ValueError, OSError):
+                    pass
+                return False
+        except (subprocess.SubprocessError, FileNotFoundError) as e:
+            try:
+                print(f"[ERROR] Failed to create postgres user: {e}")
+            except (ValueError, OSError):
+                pass
+            return False
+    
+    if not postgres_user_exists:
+        return False
+    
+    # Create directory if it doesn't exist
+    try:
+        data_path.mkdir(parents=True, exist_ok=True)
+    except OSError as e:
+        try:
+            print(f"[ERROR] Could not create directory {data_path}: {e}")
+        except (ValueError, OSError):
+            pass
+        return False
+    
+    # Check current ownership
+    try:
+        stat_info = data_path.stat()
+        current_uid = stat_info.st_uid
+        current_gid = stat_info.st_gid
+        
+        # Get postgres user UID/GID
+        id_result = subprocess.run(
+            ['id', '-u', 'postgres'],
+            capture_output=True,
+            timeout=2,
+            check=True,
+            text=True
+        )
+        postgres_uid = int(id_result.stdout.strip())
+        
+        gid_result = subprocess.run(
+            ['id', '-g', 'postgres'],
+            capture_output=True,
+            timeout=2,
+            check=True,
+            text=True
+        )
+        postgres_gid = int(gid_result.stdout.strip())
+        
+        # Only change ownership if needed
+        if current_uid != postgres_uid or current_gid != postgres_gid:
+            chown_result = subprocess.run(
+                ['chown', '-R', 'postgres:postgres', str(data_path)],
+                check=False,
+                timeout=10,
+                capture_output=True,
+                text=True
+            )
+            if chown_result.returncode != 0:
+                try:
+                    print(f"[ERROR] Could not change ownership: {chown_result.stderr}")
+                    print(f"[POSTGRESQL] Please run: sudo chown -R postgres:postgres {data_path}")
+                except (ValueError, OSError):
+                    pass
+                return False
+        
+        # Set permissions to 700
+        chmod_result = subprocess.run(
+            ['chmod', '700', str(data_path)],
+            check=False,
+            timeout=5,
+            capture_output=True,
+            text=True
+        )
+        if chmod_result.returncode != 0:
+            try:
+                print(f"[WARNING] Could not set permissions: {chmod_result.stderr}")
+            except (ValueError, OSError):
+                pass
+        
+        # Verify postgres user can access (test as postgres user, not using sudo since we're root)
+        # Use su instead of sudo for more reliable access
+        test_result = subprocess.run(
+            ['su', '-', 'postgres', '-c', f'test -w "{data_path}" && echo OK'],
+            check=False,
+            timeout=5,
+            capture_output=True,
+            text=True
+        )
+        if test_result.returncode != 0 or 'OK' not in test_result.stdout:
+            try:
+                print(f"[WARNING] Verification failed - postgres user may not have access")
+                print(f"[POSTGRESQL] Directory: {data_path}")
+                print(f"[POSTGRESQL] Please verify: sudo -u postgres test -w {data_path}")
+            except (ValueError, OSError):
+                pass
+            return False
+        
+        return True
+        
+    except (subprocess.SubprocessError, FileNotFoundError, OSError, ValueError) as e:
+        try:
+            print(f"[ERROR] Failed to set directory ownership: {e}")
+            print(f"[POSTGRESQL] Please manually run:")
+            print(f"  sudo chown -R postgres:postgres {data_path}")
+            print(f"  sudo chmod 700 {data_path}")
+        except (ValueError, OSError):
+            pass
+        return False
+
+
 def start_postgresql_server(server_state) -> Optional[subprocess.Popen[bytes]]:
     """
     Start PostgreSQL server as a subprocess if not already running (REQUIRED).
@@ -245,6 +405,9 @@ def start_postgresql_server(server_state) -> Optional[subprocess.Popen[bytes]]:
                     is_wsl = True
         except (FileNotFoundError, OSError, PermissionError):
             pass
+    
+    # Track if we've handled Ubuntu case to avoid double-processing
+    ubuntu_path_handled = False
 
     if not is_wsl_windows_fs:
         try:
@@ -274,7 +437,7 @@ def start_postgresql_server(server_state) -> Optional[subprocess.Popen[bytes]]:
 
         data_path = linux_native_dir.resolve()
 
-    # Ubuntu/Debian (not WSL): If running as root and data directory is under /root/, use alternative location
+    # Ubuntu/Debian (not WSL): Handle root user cases
     elif not is_wsl:
         is_root = False
         if sys.platform != 'win32':
@@ -283,7 +446,7 @@ def start_postgresql_server(server_state) -> Optional[subprocess.Popen[bytes]]:
             except AttributeError:
                 is_root = False
         
-        if is_root and str(data_path).startswith('/root/'):
+        if is_root:
             # Check if we're on Ubuntu/Debian
             is_ubuntu_debian = False
             try:
@@ -295,43 +458,43 @@ def start_postgresql_server(server_state) -> Optional[subprocess.Popen[bytes]]:
                 pass
             
             if is_ubuntu_debian:
-                # Use /var/lib/postgresql/mindgraph as alternative location (accessible to postgres user)
-                alternative_dir = Path('/var/lib/postgresql/mindgraph')
-                alternative_dir.mkdir(parents=True, exist_ok=True)
+                # If path is under /root/, use alternative location
+                if str(data_path).startswith('/root/'):
+                    alternative_dir = Path('/var/lib/postgresql/mindgraph')
+                    
+                    try:
+                        print("[POSTGRESQL] Detected root user on Ubuntu/Debian with /root/ path - using alternative location")
+                        print(f"[POSTGRESQL] Original path: {data_path}")
+                        print(f"[POSTGRESQL] Using alternative path: {alternative_dir}")
+                        print("[POSTGRESQL] (To use a custom path, set POSTGRESQL_DATA_DIR environment variable)")
+                    except (ValueError, OSError):
+                        pass
+                    
+                    data_path = alternative_dir.resolve()
+                    ubuntu_path_handled = True
                 
-                try:
-                    print("[POSTGRESQL] Detected root user on Ubuntu/Debian with /root/ path - using alternative location")
-                    print(f"[POSTGRESQL] Original path: {data_path}")
-                    print(f"[POSTGRESQL] Using alternative path: {alternative_dir}")
-                    print("[POSTGRESQL] (To use a custom path, set POSTGRESQL_DATA_DIR environment variable)")
-                except (ValueError, OSError):
-                    pass
+                # If path is /var/lib/postgresql/mindgraph (set via env var or redirected), ensure ownership
+                if str(data_path) == '/var/lib/postgresql/mindgraph' and not ubuntu_path_handled:
+                    ubuntu_path_handled = True
                 
-                data_path = alternative_dir.resolve()
-                
-                # Ensure postgres user owns this directory
-                try:
-                    subprocess.run(
-                        ['chown', '-R', 'postgres:postgres', str(data_path)],
-                        check=False,
-                        timeout=5,
-                        capture_output=True
-                    )
-                    subprocess.run(
-                        ['chmod', '700', str(data_path)],
-                        check=False,
-                        timeout=5,
-                        capture_output=True
-                    )
-                except (subprocess.SubprocessError, FileNotFoundError, OSError):
-                    pass
+                # Ensure postgres user exists and directory has correct ownership for Ubuntu paths
+                if ubuntu_path_handled:
+                    if not _ensure_postgres_directory_ownership(data_path):
+                        try:
+                            print("[ERROR] Failed to set up PostgreSQL data directory ownership")
+                            print("[POSTGRESQL] PostgreSQL initialization may fail")
+                        except (ValueError, OSError):
+                            pass
 
-    data_path.mkdir(parents=True, exist_ok=True)
-
-    try:
-        os.chmod(data_path, 0o700)
-    except OSError:
-        pass
+    # Create directory if it doesn't exist (Ubuntu case already handled ownership)
+    if not data_path.exists():
+        data_path.mkdir(parents=True, exist_ok=True)
+        # Only set permissions if we didn't already handle Ubuntu case above
+        if not ubuntu_path_handled:
+            try:
+                os.chmod(data_path, 0o700)
+            except OSError:
+                pass
 
     pg_version_file = data_path / 'PG_VERSION'
     if not pg_version_file.exists():
