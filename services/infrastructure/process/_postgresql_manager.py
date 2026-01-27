@@ -289,9 +289,9 @@ def start_postgresql_server(server_state) -> Optional[subprocess.Popen[bytes]]:
         initdb_base_cmd = [initdb_binary, '-D', str(data_path), '-U', initdb_user, '--locale=C', '--encoding=UTF8']
         use_shell = False
         
-        # If running as root, try to run initdb as a non-root user
+        # If running as root, ensure postgres user exists and can access the data directory
         if is_root:
-            # Try to find postgres user first
+            # Step 1: Ensure postgres user exists (find or create)
             postgres_user_exists = False
             try:
                 result = subprocess.run(
@@ -304,16 +304,108 @@ def start_postgresql_server(server_state) -> Optional[subprocess.Popen[bytes]]:
             except (subprocess.SubprocessError, FileNotFoundError):
                 pass
             
-            if postgres_user_exists:
-                # Use su to run as postgres user (with proper command quoting)
-                cmd_str = ' '.join(shlex.quote(str(arg)) for arg in initdb_base_cmd)
-                initdb_cmd = ['su', '-', 'postgres', '-c', cmd_str]
-                use_shell = False
+            if not postgres_user_exists:
+                # Try to create postgres user
                 try:
-                    print("[POSTGRESQL] Running initdb as 'postgres' user (running as root)")
-                except (ValueError, OSError):
-                    pass
-            else:
+                    print("[POSTGRESQL] Creating 'postgres' user for PostgreSQL initialization...")
+                    create_result = subprocess.run(
+                        ['useradd', '-r', '-s', '/bin/bash', '-d', '/var/lib/postgresql', '-m', 'postgres'],
+                        capture_output=True,
+                        timeout=5,
+                        check=False
+                    )
+                    if create_result.returncode == 0:
+                        postgres_user_exists = True
+                        try:
+                            print("[POSTGRESQL] 'postgres' user created successfully")
+                        except (ValueError, OSError):
+                            pass
+                    else:
+                        # Try sudo -u postgres as fallback
+                        sudo_available = False
+                        try:
+                            result = subprocess.run(
+                                ['which', 'sudo'],
+                                capture_output=True,
+                                timeout=2,
+                                check=False
+                            )
+                            sudo_available = result.returncode == 0
+                        except (subprocess.SubprocessError, FileNotFoundError):
+                            pass
+                        
+                        if not sudo_available:
+                            try:
+                                print("[ERROR] Cannot create 'postgres' user and sudo is not available")
+                                print("        PostgreSQL's initdb cannot be run as root for security reasons.")
+                                print("        Solutions:")
+                                print("        1. Run the script as a non-root user")
+                                print("        2. Create a 'postgres' user manually: useradd -r -s /bin/bash -d /var/lib/postgresql -m postgres")
+                                print("        3. Initialize PostgreSQL manually:")
+                                print(f"           sudo -u postgres {initdb_binary} -D {data_path} -U postgres --locale=C --encoding=UTF8")
+                                print("        4. Or use an existing PostgreSQL installation")
+                            except (ValueError, OSError):
+                                pass
+                            sys.exit(1)
+                except (subprocess.SubprocessError, FileNotFoundError) as e:
+                    try:
+                        print(f"[WARNING] Could not create postgres user: {e}")
+                    except (ValueError, OSError):
+                        pass
+            
+            # Step 2: If data directory is under /root/, change ownership to postgres user
+            data_path_str = str(data_path)
+            is_under_root = data_path_str.startswith('/root/')
+            
+            if is_under_root and postgres_user_exists:
+                try:
+                    print("[POSTGRESQL] Changing ownership of data directory to 'postgres' user...")
+                    # Ensure parent storage directory exists and is accessible
+                    storage_dir = data_path.parent
+                    if not storage_dir.exists():
+                        storage_dir.mkdir(parents=True, exist_ok=True)
+                    
+                    # Change ownership of storage directory (parent) to allow postgres to traverse
+                    subprocess.run(
+                        ['chown', 'postgres:postgres', str(storage_dir)],
+                        check=False,
+                        timeout=5,
+                        capture_output=True
+                    )
+                    subprocess.run(
+                        ['chmod', '755', str(storage_dir)],
+                        check=False,
+                        timeout=5,
+                        capture_output=True
+                    )
+                    
+                    # Change ownership of data_path to postgres
+                    subprocess.run(
+                        ['chown', '-R', 'postgres:postgres', str(data_path)],
+                        check=True,
+                        timeout=10,
+                        capture_output=True
+                    )
+                    # Set proper permissions for PostgreSQL data directory
+                    subprocess.run(
+                        ['chmod', '-R', '700', str(data_path)],
+                        check=False,
+                        timeout=5,
+                        capture_output=True
+                    )
+                    try:
+                        print("[POSTGRESQL] Ownership changed successfully")
+                    except (ValueError, OSError):
+                        pass
+                except (subprocess.SubprocessError, FileNotFoundError, OSError) as e:
+                    try:
+                        print(f"[WARNING] Could not change ownership: {e}")
+                        print("[POSTGRESQL] Will attempt to continue, but initdb may fail")
+                    except (ValueError, OSError):
+                        pass
+            
+            # Step 3: Set up initdb command to run as postgres user
+            if postgres_user_exists:
                 # Try sudo -u postgres first (most reliable)
                 sudo_available = False
                 try:
@@ -344,75 +436,46 @@ def start_postgresql_server(server_state) -> Optional[subprocess.Popen[bytes]]:
                             except (ValueError, OSError):
                                 pass
                         else:
-                            raise RuntimeError("sudo -u postgres failed")
-                    except (subprocess.SubprocessError, FileNotFoundError, RuntimeError):
-                        # Try to create postgres user
-                        try:
-                            print("[POSTGRESQL] Creating 'postgres' user for PostgreSQL initialization...")
-                            create_result = subprocess.run(
-                                ['useradd', '-r', '-s', '/bin/bash', '-d', '/var/lib/postgresql', '-m', 'postgres'],
-                                capture_output=True,
-                                timeout=5,
-                                check=False
-                            )
-                            if create_result.returncode == 0:
-                                cmd_str = ' '.join(shlex.quote(str(arg)) for arg in initdb_base_cmd)
-                                initdb_cmd = ['su', '-', 'postgres', '-c', cmd_str]
-                                use_shell = False
-                                try:
-                                    print("[POSTGRESQL] Running initdb as 'postgres' user")
-                                except (ValueError, OSError):
-                                    pass
-                            else:
-                                raise RuntimeError("Failed to create postgres user")
-                        except (subprocess.SubprocessError, FileNotFoundError, RuntimeError):
-                            # Last resort: provide helpful error
-                            try:
-                                print("[ERROR] Cannot run initdb as root")
-                                print("        PostgreSQL's initdb cannot be run as root for security reasons.")
-                                print("        Solutions:")
-                                print("        1. Run the script as a non-root user")
-                                print("        2. Create a 'postgres' user: useradd -r -s /bin/bash -d /var/lib/postgresql -m postgres")
-                                print("        3. Initialize PostgreSQL manually:")
-                                print(f"           sudo -u postgres {initdb_binary} -D {data_path} -U postgres --locale=C --encoding=UTF8")
-                                print("        4. Or use an existing PostgreSQL installation")
-                            except (ValueError, OSError):
-                                pass
-                            sys.exit(1)
-                else:
-                    # No sudo available, try to create postgres user directly
-                    try:
-                        print("[POSTGRESQL] Creating 'postgres' user for PostgreSQL initialization...")
-                        create_result = subprocess.run(
-                            ['useradd', '-r', '-s', '/bin/bash', '-d', '/var/lib/postgresql', '-m', 'postgres'],
-                            capture_output=True,
-                            timeout=5,
-                            check=False
-                        )
-                        if create_result.returncode == 0:
+                            # Fallback to su
                             cmd_str = ' '.join(shlex.quote(str(arg)) for arg in initdb_base_cmd)
                             initdb_cmd = ['su', '-', 'postgres', '-c', cmd_str]
                             use_shell = False
                             try:
-                                print("[POSTGRESQL] Running initdb as 'postgres' user")
+                                print("[POSTGRESQL] Running initdb as 'postgres' user (running as root)")
                             except (ValueError, OSError):
                                 pass
-                        else:
-                            raise RuntimeError("Failed to create postgres user")
-                    except (subprocess.SubprocessError, FileNotFoundError, RuntimeError):
-                        # Last resort: provide helpful error
+                    except (subprocess.SubprocessError, FileNotFoundError):
+                        # Fallback to su
+                        cmd_str = ' '.join(shlex.quote(str(arg)) for arg in initdb_base_cmd)
+                        initdb_cmd = ['su', '-', 'postgres', '-c', cmd_str]
+                        use_shell = False
                         try:
-                            print("[ERROR] Cannot run initdb as root")
-                            print("        PostgreSQL's initdb cannot be run as root for security reasons.")
-                            print("        Solutions:")
-                            print("        1. Run the script as a non-root user")
-                            print("        2. Create a 'postgres' user: useradd -r -s /bin/bash -d /var/lib/postgresql -m postgres")
-                            print("        3. Initialize PostgreSQL manually:")
-                            print(f"           sudo -u postgres {initdb_binary} -D {data_path} -U postgres --locale=C --encoding=UTF8")
-                            print("        4. Or use an existing PostgreSQL installation")
+                            print("[POSTGRESQL] Running initdb as 'postgres' user (running as root)")
                         except (ValueError, OSError):
                             pass
-                        sys.exit(1)
+                else:
+                    # Use su directly
+                    cmd_str = ' '.join(shlex.quote(str(arg)) for arg in initdb_base_cmd)
+                    initdb_cmd = ['su', '-', 'postgres', '-c', cmd_str]
+                    use_shell = False
+                    try:
+                        print("[POSTGRESQL] Running initdb as 'postgres' user (running as root)")
+                    except (ValueError, OSError):
+                        pass
+            else:
+                # Last resort: provide helpful error
+                try:
+                    print("[ERROR] Cannot run initdb as root")
+                    print("        PostgreSQL's initdb cannot be run as root for security reasons.")
+                    print("        Solutions:")
+                    print("        1. Run the script as a non-root user")
+                    print("        2. Create a 'postgres' user: useradd -r -s /bin/bash -d /var/lib/postgresql -m postgres")
+                    print("        3. Initialize PostgreSQL manually:")
+                    print(f"           sudo -u postgres {initdb_binary} -D {data_path} -U postgres --locale=C --encoding=UTF8")
+                    print("        4. Or use an existing PostgreSQL installation")
+                except (ValueError, OSError):
+                    pass
+                sys.exit(1)
         else:
             initdb_cmd = initdb_base_cmd
         
