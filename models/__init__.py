@@ -106,7 +106,6 @@ from .requests import (
     RollbackRequest,
     TabExpandRequest,
     TabSuggestionRequest,
-    NodePaletteRequest,
 )
 
 __all__ = [
@@ -197,5 +196,4 @@ __all__ = [
     "RollbackRequest",
     "TabExpandRequest",
     "TabSuggestionRequest",
-    "NodePaletteRequest",
 ]

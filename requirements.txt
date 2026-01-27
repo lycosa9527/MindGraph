@@ -73,7 +73,7 @@ Pillow>=12.1.0  # Image processing (also used for OCR in Personal Knowledge Spac
 # ============================================================================
 psutil>=7.2.1  # System resource monitoring
 watchfiles>=1.1.1  # File watching for auto-reload
-rich>=13.0.0  # Rich terminal output with progress bars (for migration progress)
+rich>=14.2.0  # Rich terminal output with progress bars (for migration progress)
 
 # ============================================================================
 # DATABASE & AUTHENTICATION

@@ -14,10 +14,10 @@
 #   --restart    Also restart the mindgraph service after clearing cache
 #
 # @author MindSpring Team
-# @date December 13, 2025
+# @date January 27, 2026
 #
 
-set -e
+set -euo pipefail
 
 # Colors for output
 RED='\033[0;31m'
@@ -27,7 +27,8 @@ NC='\033[0m' # No Color
 
 # Get script directory and project root
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+# Script is in scripts/utils/, so go up 2 levels to reach project root
+PROJECT_ROOT="$(dirname "$(dirname "$SCRIPT_DIR")")"
 
 echo "================================================"
 echo "  MindGraph - Clear Python Bytecode Cache"
@@ -37,37 +38,89 @@ echo "Project root: $PROJECT_ROOT"
 echo ""
 
 # Change to project root
-cd "$PROJECT_ROOT"
+cd "$PROJECT_ROOT" || {
+    echo -e "${RED}Error: Could not change to project root: $PROJECT_ROOT${NC}"
+    exit 1
+}
+
+# Function to run find with exclusions for counting/listing
+# Excludes common directories that shouldn't be searched (improves performance)
+run_find() {
+    find . \( \
+        -path ./.git -o \
+        -path ./.venv -o \
+        -path ./venv -o \
+        -path ./env -o \
+        -path ./.env -o \
+        -path ./node_modules -o \
+        -path ./.pytest_cache -o \
+        -path ./.mypy_cache -o \
+        -path ./.ruff_cache -o \
+        -path ./dist -o \
+        -path ./build \
+    \) -prune -o "$@" -print
+}
+
+# Function to run find with exclusions and execute action
+run_find_exec() {
+    find . \( \
+        -path ./.git -o \
+        -path ./.venv -o \
+        -path ./venv -o \
+        -path ./env -o \
+        -path ./.env -o \
+        -path ./node_modules -o \
+        -path ./.pytest_cache -o \
+        -path ./.mypy_cache -o \
+        -path ./.ruff_cache -o \
+        -path ./dist -o \
+        -path ./build \
+    \) -prune -o "$@"
+}
 
 # Count before clearing
-PYCACHE_DIRS=$(find . -type d -name "__pycache__" 2>/dev/null | wc -l)
-PYC_FILES=$(find . -type f -name "*.pyc" 2>/dev/null | wc -l)
+PYCACHE_DIRS=$(run_find -type d -name "__pycache__" 2>/dev/null | wc -l)
+PYC_FILES=$(run_find -type f -name "*.pyc" 2>/dev/null | wc -l)
+PYO_FILES=$(run_find -type f -name "*.pyo" 2>/dev/null | wc -l)
 
 echo -e "${YELLOW}Found:${NC}"
 echo "  - $PYCACHE_DIRS __pycache__ directories"
 echo "  - $PYC_FILES .pyc files"
+echo "  - $PYO_FILES .pyo files"
 echo ""
 
 # Clear __pycache__ directories
-echo -e "${YELLOW}Clearing __pycache__ directories...${NC}"
-find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
+if [ "$PYCACHE_DIRS" -gt 0 ]; then
+    echo -e "${YELLOW}Clearing __pycache__ directories...${NC}"
+    run_find_exec -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
+fi
 
 # Clear .pyc files
-echo -e "${YELLOW}Clearing .pyc files...${NC}"
-find . -type f -name "*.pyc" -delete 2>/dev/null || true
+if [ "$PYC_FILES" -gt 0 ]; then
+    echo -e "${YELLOW}Clearing .pyc files...${NC}"
+    run_find_exec -type f -name "*.pyc" -delete 2>/dev/null || true
+fi
 
 # Clear .pyo files (optimized bytecode)
-echo -e "${YELLOW}Clearing .pyo files...${NC}"
-find . -type f -name "*.pyo" -delete 2>/dev/null || true
+if [ "$PYO_FILES" -gt 0 ]; then
+    echo -e "${YELLOW}Clearing .pyo files...${NC}"
+    run_find_exec -type f -name "*.pyo" -delete 2>/dev/null || true
+fi
 
 # Verify
-REMAINING_DIRS=$(find . -type d -name "__pycache__" 2>/dev/null | wc -l)
-REMAINING_FILES=$(find . -type f -name "*.pyc" 2>/dev/null | wc -l)
+REMAINING_DIRS=$(run_find -type d -name "__pycache__" 2>/dev/null | wc -l)
+REMAINING_FILES=$(run_find -type f -name "*.pyc" 2>/dev/null | wc -l)
+REMAINING_PYO=$(run_find -type f -name "*.pyo" 2>/dev/null | wc -l)
 
 echo ""
-echo -e "${GREEN}Cache cleared successfully!${NC}"
-echo "  - Removed $((PYCACHE_DIRS - REMAINING_DIRS)) __pycache__ directories"
-echo "  - Removed $((PYC_FILES - REMAINING_FILES)) .pyc files"
+if [ "$PYCACHE_DIRS" -eq 0 ] && [ "$PYC_FILES" -eq 0 ] && [ "$PYO_FILES" -eq 0 ]; then
+    echo -e "${GREEN}No cache files found. Cache is already clean!${NC}"
+else
+    echo -e "${GREEN}Cache cleared successfully!${NC}"
+    echo "  - Removed $((PYCACHE_DIRS - REMAINING_DIRS)) __pycache__ directories"
+    echo "  - Removed $((PYC_FILES - REMAINING_FILES)) .pyc files"
+    echo "  - Removed $((PYO_FILES - REMAINING_PYO)) .pyo files"
+fi
 echo ""
 
 # Check for --restart flag
@@ -90,7 +143,11 @@ if [[ "$1" == "--restart" ]]; then
         echo -e "${RED}Could not find service manager. Please restart manually:${NC}"
         echo "  sudo systemctl restart mindgraph"
         echo "  OR"
-        echo "  pkill -f uvicorn && cd $PROJECT_ROOT && python -m uvicorn app:app --host 0.0.0.0 --port 9527 &"
+        echo "  sudo supervisorctl restart mindgraph"
+        echo "  OR"
+        echo "  pm2 restart mindgraph"
+        echo "  OR"
+        echo "  pkill -f uvicorn && cd $PROJECT_ROOT && python -m uvicorn main:app --host 0.0.0.0 --port 9527 &"
     fi
     
     echo ""

@@ -29,7 +29,8 @@ from routers import (
 )
 from routers.admin import env_router as admin_env, logs_router as admin_logs, realtime_router as admin_realtime
 from routers.features import voice, tab_mode, school_zone, askonce, debateverse
-from routers.core import pages, cache, vue_spa, update_notification
+from routers.core import pages, cache, update_notification
+from routers.core.vue_spa import router as vue_spa
 from routers.core.health import router as health_router
 from services.infrastructure.lifecycle.startup import setup_early_configuration
 from services.infrastructure.utils.logging_config import setup_logging
@@ -91,26 +92,26 @@ app.include_router(health_router)
 
 # API routes must be registered BEFORE vue_spa catch-all route
 # Authentication & utility routes (loginByXz, favicon)
-app.include_router(pages.router)
-app.include_router(cache.router)
+app.include_router(pages)
+app.include_router(cache)
 app.include_router(api.router)
 app.include_router(node_palette.router)  # Node Palette endpoints
 app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])  # Authentication system
 
 # Vue SPA handles all page routes (v5.0.0+) - MUST be registered AFTER API routes
-app.include_router(vue_spa.router)
-app.include_router(admin_env.router)  # Admin environment settings management
-app.include_router(admin_logs.router)  # Admin log streaming
-app.include_router(admin_realtime.router)  # Admin realtime user activity monitoring
-app.include_router(voice.router)  # VoiceAgent (real-time voice conversation)
-app.include_router(update_notification.router)  # Update notification system
-app.include_router(tab_mode.router)  # Tab Mode (autocomplete and expansion)
+app.include_router(vue_spa)
+app.include_router(admin_env)  # Admin environment settings management
+app.include_router(admin_logs)  # Admin log streaming
+app.include_router(admin_realtime)  # Admin realtime user activity monitoring
+app.include_router(voice)  # VoiceAgent (real-time voice conversation)
+app.include_router(update_notification)  # Update notification system
+app.include_router(tab_mode)  # Tab Mode (autocomplete and expansion)
 # Public dashboard endpoints
 app.include_router(public_dashboard.router, prefix="/api/public", tags=["Public Dashboard"])
-app.include_router(school_zone.router)  # School Zone (organization-scoped sharing)
-app.include_router(askonce.router)  # AskOnce (多应) - Multi-LLM streaming chat
+app.include_router(school_zone)  # School Zone (organization-scoped sharing)
+app.include_router(askonce)  # AskOnce (多应) - Multi-LLM streaming chat
 # DebateVerse (论境) - US-style debate system
-app.include_router(debateverse.router)
+app.include_router(debateverse)
 
 # ============================================================================
 # APPLICATION ENTRY POINT

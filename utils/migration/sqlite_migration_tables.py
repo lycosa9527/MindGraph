@@ -28,7 +28,8 @@ except ImportError:
 from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.exc import OperationalError, ProgrammingError
 
-from config.database import Base
+# Import Base directly from models to avoid circular import with config.database
+from models.domain.auth import Base
 
 logger = logging.getLogger(__name__)
 

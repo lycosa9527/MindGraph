@@ -511,9 +511,11 @@ class RedisSessionManager:
                         idx, entry_device_preview, entry_token_preview, age_seconds
                     )
                     if entry_token_hash == token_hash:
+                        # Extend session TTL on successful validation (sliding expiration)
+                        redis.expire(session_set_key, SESSION_TTL_SECONDS)
                         logger.debug(
                             "[Session] Session VALID: user=%s, "
-                            "matched session[%s], age=%.0fs",
+                            "matched session[%s], age=%.0fs, TTL extended",
                             user_id,
                             idx,
                             age_seconds
@@ -541,7 +543,9 @@ class RedisSessionManager:
 
             is_valid = stored_hash == token_hash
             if is_valid:
-                logger.info("[Session] Session VALID (legacy mode): user=%s", user_id)
+                # Extend session TTL on successful validation (sliding expiration)
+                redis.expire(session_key, SESSION_TTL_SECONDS)
+                logger.info("[Session] Session VALID (legacy mode): user=%s, TTL extended", user_id)
             else:
                 logger.info("[Session] Session INVALID (legacy mode): user=%s, token mismatch", user_id)
 

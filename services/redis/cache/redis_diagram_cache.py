@@ -28,8 +28,6 @@ import os
 import json
 import logging
 import time
-import asyncio
-import threading
 import uuid
 from typing import Optional, Dict, Any, List, Tuple
 from datetime import datetime
@@ -53,6 +51,7 @@ DIAGRAM_KEY = "diagram:{user_id}:{diagram_id}"
 USER_META_KEY = "diagrams:user:{user_id}:meta"
 USER_LIST_KEY = "diagrams:user:{user_id}:list"  # Cached list for fast fetching
 STATS_KEY = "diagrams:stats"
+DIRTY_SET_KEY = "diagrams:dirty"  # For tracking diagrams that need sync (not used in write-through pattern)
 
 
 class RedisDiagramCache:
@@ -66,6 +65,8 @@ class RedisDiagramCache:
     """
 
     def __init__(self):
+        self._total_synced: int = 0
+        self._total_errors: int = 0
         logger.info(
             "[DiagramCache] Initialized: cache_ttl=%ss, max_per_user=%s (write-through pattern)",
             CACHE_TTL, MAX_PER_USER
@@ -414,17 +415,14 @@ class RedisDiagramCache:
         page_size: int = 10
     ) -> Dict[str, Any]:
         """
-        List user's diagrams with pagination (Redis-first).
+        List user's diagrams with pagination (cache-aside pattern).
 
-        Checks Redis cache first. On cache miss, loads from database and
-        merges with any pending creates from Redis.
+        Checks Redis cache first. On cache miss, loads from database and caches in Redis.
         Pinned diagrams are sorted first, then by updated_at desc.
 
         Returns:
             Dict with 'diagrams', 'total', 'page', 'page_size', 'has_more', 'max_diagrams'
         """
-        self._ensure_worker_started()
-
         list_key = self._get_user_list_key(user_id)
 
         # Try Redis cache first
@@ -667,9 +665,7 @@ class RedisDiagramCache:
 
     async def pin_diagram(self, user_id: int, diagram_id: str, pinned: bool) -> Tuple[bool, Optional[str]]:
         """
-        Pin or unpin a diagram (Redis-first).
-
-        Updates pin state in Redis, background worker syncs to database.
+        Pin or unpin a diagram using write-through pattern: Database first, then Redis cache.
 
         Args:
             user_id: User ID
@@ -679,51 +675,9 @@ class RedisDiagramCache:
         Returns:
             Tuple of (success, error_message)
         """
-        self._ensure_worker_started()
-
-        diagram_key = self._get_diagram_key(user_id, diagram_id)
-
-        # Get diagram from Redis or database
-        diagram_data = await self.get_diagram(user_id, diagram_id)
-        if not diagram_data:
-            return False, "Diagram not found"
-
-        # Check if deleted
-        if diagram_data.get('is_deleted'):
-            return False, "Diagram not found"
-
-        # Update pin state
         now = datetime.utcnow()
-        diagram_data['is_pinned'] = pinned
-        diagram_data['updated_at'] = now.isoformat()
 
-        # Redis-first: Update in Redis and mark for background sync
-        if self._use_redis():
-            redis = get_redis()
-            if redis:
-                try:
-                    list_key = self._get_user_list_key(user_id)
-
-                    pipe = redis.pipeline()
-                    # Update diagram with new pin state
-                    pipe.setex(diagram_key, CACHE_TTL, json.dumps(diagram_data))
-                    # Invalidate list cache (order changes with pin)
-                    pipe.delete(list_key)
-                    # Mark for background sync
-                    pipe.sadd(DIRTY_SET_KEY, f"{user_id}:{diagram_id}")
-                    pipe.execute()
-
-                    action = 'Pinned' if pinned else 'Unpinned'
-                    logger.debug(
-                        "[DiagramCache] %s diagram %s for user %s",
-                        action, diagram_id, user_id
-                    )
-                    return True, None
-
-                except Exception as e:
-                    logger.error("[DiagramCache] Redis pin failed: %s", e)
-
-        # Fallback: Write directly to database if Redis unavailable
+        # Write-through: Update database FIRST
         try:
             db = SessionLocal()
             try:
@@ -733,12 +687,12 @@ class RedisDiagramCache:
                     Diagram.is_deleted.is_(False)
                 ).first()
 
-                if diagram:
-                    diagram.is_pinned = pinned
-                    diagram.updated_at = now
-                    db.commit()
-                    return True, None
-                return False, "Diagram not found"
+                if not diagram:
+                    return False, "Diagram not found"
+
+                diagram.is_pinned = pinned
+                diagram.updated_at = now
+                db.commit()
             except Exception as e:
                 db.rollback()
                 logger.error("[DiagramCache] Database pin failed: %s", e)
@@ -748,6 +702,37 @@ class RedisDiagramCache:
         except Exception as e:
             logger.error("[DiagramCache] Pin connection failed: %s", e)
             return False, "Database error"
+
+        # Then update Redis cache
+        diagram_key = self._get_diagram_key(user_id, diagram_id)
+        if self._use_redis():
+            redis = get_redis()
+            if redis:
+                try:
+                    # Get diagram data to update cache
+                    diagram_data = await self.get_diagram(user_id, diagram_id)
+                    if diagram_data:
+                        diagram_data['is_pinned'] = pinned
+                        diagram_data['updated_at'] = now.isoformat()
+
+                        list_key = self._get_user_list_key(user_id)
+
+                        pipe = redis.pipeline()
+                        # Update diagram with new pin state
+                        pipe.setex(diagram_key, CACHE_TTL, json.dumps(diagram_data))
+                        # Invalidate list cache (order changes with pin)
+                        pipe.delete(list_key)
+                        pipe.execute()
+
+                        action = 'Pinned' if pinned else 'Unpinned'
+                        logger.debug(
+                            "[DiagramCache] %s diagram %s for user %s (write-through)",
+                            action, diagram_id, user_id
+                        )
+                except Exception as e:
+                    logger.warning("[DiagramCache] Redis cache update failed (pin saved to database): %s", e)
+
+        return True, None
 
     async def flush(self):
         """No-op for write-through pattern (no background sync needed)."""

@@ -385,17 +385,12 @@ class OrganizationCache:
             return False
 
 
-# Global singleton instance
-_org_cache: Optional[OrganizationCache] = None
-
-
 def get_org_cache() -> OrganizationCache:
     """Get or create global OrganizationCache instance."""
-    global _org_cache
-    if _org_cache is None:
-        _org_cache = OrganizationCache()
+    if not hasattr(get_org_cache, 'cache_instance'):
+        get_org_cache.cache_instance = OrganizationCache()
         logger.info("[OrgCache] Initialized")
-    return _org_cache
+    return get_org_cache.cache_instance
 
 
 # Convenience alias

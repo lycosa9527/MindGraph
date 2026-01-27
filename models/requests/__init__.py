@@ -49,7 +49,6 @@ from .requests_knowledge_space import (
 from .requests_thinking import (
     TabExpandRequest,
     TabSuggestionRequest,
-    NodePaletteRequest,
 )
 
 __all__ = [
@@ -94,5 +93,4 @@ __all__ = [
     # Thinking Requests
     "TabExpandRequest",
     "TabSuggestionRequest",
-    "NodePaletteRequest",
 ]

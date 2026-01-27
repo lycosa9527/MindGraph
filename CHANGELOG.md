@@ -7,6 +7,87 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [5.15.0] - 2026-01-27 - Infrastructure Refactoring and Process Management Improvements
+
+### Changed
+
+- **Process Management Refactoring**
+  - Refactored `services/infrastructure/process/process_manager.py` by extracting functionality into separate modules
+  - Created dedicated managers: `_redis_manager.py`, `_celery_manager.py`, `_qdrant_manager.py`, `_postgresql_manager.py`
+  - Improved code organization and maintainability (reduced process_manager.py by 1217 lines)
+  - Better separation of concerns for each service manager
+  - Enhanced error handling and process lifecycle management
+
+- **Launch Progress Tracking**
+  - Enhanced `services/infrastructure/lifecycle/launch_progress.py` with more detailed initialization stages
+  - Added granular stages for database connection, table verification, and migrations
+  - Improved LLM service initialization stages (clients, prompts, rate limiters, load balancer)
+  - Better progress visualization with Rich library enhancements
+  - Added summary display delay for better UX
+
+- **Application Lifespan Management**
+  - Major refactoring of `services/infrastructure/lifecycle/lifespan.py` (697 lines changed)
+  - Improved startup sequence and error handling
+  - Better resource cleanup on shutdown
+  - Enhanced logging and monitoring integration
+
+- **Router Import Simplification**
+  - Simplified router imports in `main.py` by removing `.router` suffix
+  - Updated imports for vue_spa, pages, cache, and feature routers
+  - Cleaner and more consistent import patterns
+
+- **Model Cleanup**
+  - Removed deprecated `NodePaletteRequest` from `models/__init__.py` and `models/requests/__init__.py`
+  - Fixed relative imports in `requests_diagram.py` and `requests_thinking.py` (changed from `.common` to `..common`)
+  - Improved import consistency across request models
+
+- **Frontend Configuration**
+  - Updated Vite dev server port from 3000 to 5173 (Vite default)
+  - Changed default host from `localhost` to `127.0.0.1` to avoid IPv6 permission issues in WSL
+  - Improved proxy configuration comments
+
+- **Redis Cache Improvements**
+  - Enhanced `services/redis/cache/redis_diagram_cache.py` with improved error handling
+  - Updated `services/redis/cache/redis_org_cache.py` and `redis_user_cache.py` with better patterns
+  - Improved `services/redis/session/redis_session_manager.py` session management
+  - Better cache initialization and cleanup
+
+- **Migration Utilities**
+  - Enhanced `utils/migration/sqlite_data_migration.py` with improved error handling
+  - Updated `utils/migration/sqlite_migration_tables.py` with better table management
+  - Improved migration utilities initialization
+
+- **Scripts and Utilities**
+  - Enhanced `scripts/utils/clear_pycache.sh` with better error handling (`set -euo pipefail`)
+  - Added directory exclusions for better performance (git, venv, node_modules, etc.)
+  - Improved script path resolution (handles scripts/utils/ subdirectory correctly)
+  - Better service restart options (systemctl, supervisorctl, pm2)
+  - Updated script date to January 27, 2026
+
+- **Dependencies**
+  - Updated `rich` library from >=13.0.0 to >=14.2.0 for better terminal output
+
+- **Monitoring and Alerts**
+  - Enhanced `services/infrastructure/monitoring/critical_alert.py` with improved alert handling
+  - Better integration with process monitoring and health checks
+
+- **Startup Configuration**
+  - Improved `services/infrastructure/lifecycle/startup.py` initialization sequence
+  - Better error handling and logging during startup
+
+### Technical Details
+
+- **Total Changes**: 23 files changed, 1,020 insertions(+), 1,795 deletions(-)
+- **Key Improvements**:
+  - Major process management refactoring for better maintainability
+  - Enhanced launch progress tracking with granular stages
+  - Improved code organization through module extraction
+  - Better error handling and resource management
+  - Cleaner import patterns and code consistency
+  - Significant code reduction through refactoring
+
+---
+
 ## [5.14.0] - 2026-01-26 - Major Codebase Refactoring and Reorganization
 
 ### Changed

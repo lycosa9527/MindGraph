@@ -20,26 +20,15 @@ from pathlib import Path
 from dotenv import load_dotenv
 from utils.env_utils import ensure_utf8_env_file
 from utils.tiktoken_cache import ensure_tiktoken_cache
+# Redis is REQUIRED - import will fail if module doesn't exist
+# This is intentional: application cannot start without Redis
+from services.redis.redis_client import get_redis, is_redis_available
 
 try:
     import psutil
     _PSUTIL_AVAILABLE = True
 except ImportError:
     _PSUTIL_AVAILABLE = False
-
-try:
-    from services.redis.redis_client import get_redis, is_redis_available
-    _REDIS_AVAILABLE = True
-except ImportError:
-    _REDIS_AVAILABLE = False
-
-    def get_redis():
-        """Fallback function when Redis is not available"""
-        return None
-
-    def is_redis_available():
-        """Fallback function when Redis is not available"""
-        return False
 
 # ============================================================================
 # DISTRIBUTED LOCK FOR BANNER PRINTING
@@ -84,8 +73,9 @@ def _acquire_banner_lock() -> bool:
         False if lock held by another worker
     """
     try:
-        if not _REDIS_AVAILABLE or not is_redis_available():
-            # No Redis = single worker mode, proceed
+        # Redis might not be initialized yet during early startup
+        # If not available, fall back to single worker mode
+        if not is_redis_available():
             return True
 
         redis = get_redis()
@@ -114,7 +104,8 @@ def _acquire_banner_lock() -> bool:
 def _release_banner_lock() -> None:
     """Release the banner lock if held by this worker."""
     try:
-        if not _REDIS_AVAILABLE or not is_redis_available():
+        # Redis might not be initialized yet during early startup
+        if not is_redis_available():
             return
 
         redis = get_redis()
@@ -320,13 +311,13 @@ def setup_early_configuration():
     Perform early configuration setup that must happen before other initialization.
     
     This includes:
-    - Banner display (first thing shown)
+    - Banner display
     - Windows event loop policy setup (required for Playwright)
     - Environment file UTF-8 encoding check and loading
     - Signal handler registration
     - Logs directory creation
     """
-    # Print banner FIRST before any other operations
+    # Print banner
     _print_startup_banner()
 
     # Fix for Windows: Set event loop policy to support subprocesses (required for Playwright)

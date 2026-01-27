@@ -1,11 +1,3 @@
-from datetime import datetime
-from typing import Optional, Dict
-import logging
-
-from config.database import SessionLocal
-from models.domain.auth import User
-from services.redis.redis_client import is_redis_available, RedisOps, get_redis
-
 """
 Redis User Cache Service
 ========================
@@ -32,6 +24,14 @@ All Rights Reserved
 Proprietary License
 """
 
+from datetime import datetime
+from typing import Optional, Dict
+import logging
+
+from config.database import SessionLocal
+from models.domain.auth import User
+from services.redis.redis_client import is_redis_available, RedisOps, get_redis
+
 
 
 logger = logging.getLogger(__name__)
@@ -51,7 +51,6 @@ class UserCache:
 
     def __init__(self):
         """Initialize UserCache instance."""
-        pass
 
     def _serialize_user(self, user: User) -> Dict[str, str]:
         """
@@ -329,19 +328,13 @@ class UserCache:
             return False
 
 
-# Global singleton instance
-_user_cache: Optional[UserCache] = None
-
-
 def get_user_cache() -> UserCache:
     """Get or create global UserCache instance."""
-    global _user_cache
-    if _user_cache is None:
-        _user_cache = UserCache()
+    if not hasattr(get_user_cache, 'cache_instance'):
+        get_user_cache.cache_instance = UserCache()
         logger.info("[UserCache] Initialized")
-    return _user_cache
+    return get_user_cache.cache_instance
 
 
 # Convenience alias
 user_cache = get_user_cache()
-

@@ -172,6 +172,12 @@ class CriticalAlertService:
         Returns:
             True if alert was sent, False if skipped (cooldown or already sent)
         """
+        # Skip SMS alerts in debug mode (frequent restarts during development)
+        is_debug_mode = os.getenv("DEBUG", "").lower() == "true"
+        if is_debug_mode:
+            logger.debug("[CriticalAlert] Critical alert skipped (DEBUG mode enabled)")
+            return False
+
         if not CRITICAL_ALERT_ENABLED:
             logger.debug("[CriticalAlert] Critical alerting disabled")
             return False
