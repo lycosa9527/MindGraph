@@ -25,9 +25,9 @@ Examples:
     # Delete without confirmation prompt
     python scripts/db/cleanup_orphaned_records.py --live --yes
 
-Note: This script should be run from the project root directory.
-      It will automatically find the SQLite database using DATABASE_URL
-      environment variable or by checking common locations.
+Note: This script can be run from any directory. It will automatically
+      find the SQLite database using DATABASE_URL environment variable
+      or by checking common locations (data/mindgraph.db, /root/mindgraph/, etc.).
 
 Author: lycosa9527
 Made by: MindSpring Team
@@ -39,6 +39,9 @@ import sys
 import shutil
 from pathlib import Path
 from typing import Optional
+
+# Calculate project root (parent of scripts directory)
+_project_root = Path(__file__).parent.parent.parent
 
 
 def get_sqlite_db_path() -> Optional[Path]:
@@ -53,7 +56,8 @@ def get_sqlite_db_path() -> Optional[Path]:
             if db_path_str.startswith("./"):
                 db_path_str = db_path_str[2:]
             if not os.path.isabs(db_path_str):
-                db_path = Path.cwd() / db_path_str
+                # Use project root as base for relative paths
+                db_path = _project_root / db_path_str
             else:
                 db_path = Path(db_path_str)
         else:
@@ -62,12 +66,12 @@ def get_sqlite_db_path() -> Optional[Path]:
         if db_path.exists():
             return db_path.resolve()
 
-    # Check common locations
+    # Check common locations relative to project root
     common_locations = [
-        Path("data/mindgraph.db"),
-        Path("mindgraph.db"),
-        Path("./data/mindgraph.db"),
-        Path("./mindgraph.db"),
+        _project_root / "data" / "mindgraph.db",
+        _project_root / "mindgraph.db",
+        Path("/root/mindgraph/mindgraph.db"),  # Common server location
+        Path("/root/mindgraph/data/mindgraph.db"),  # Alternative server location
     ]
 
     for db_path in common_locations:
