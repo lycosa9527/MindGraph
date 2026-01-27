@@ -365,27 +365,37 @@ def start_postgresql_server(server_state) -> Optional[subprocess.Popen[bytes]]:
                     if not storage_dir.exists():
                         storage_dir.mkdir(parents=True, exist_ok=True)
                     
-                    # Change ownership of storage directory (parent) to allow postgres to traverse
+                    # Change ownership of storage directory recursively (includes all subdirectories)
                     subprocess.run(
-                        ['chown', 'postgres:postgres', str(storage_dir)],
-                        check=False,
-                        timeout=5,
-                        capture_output=True
-                    )
-                    subprocess.run(
-                        ['chmod', '755', str(storage_dir)],
-                        check=False,
-                        timeout=5,
-                        capture_output=True
-                    )
-                    
-                    # Change ownership of data_path to postgres
-                    subprocess.run(
-                        ['chown', '-R', 'postgres:postgres', str(data_path)],
+                        ['chown', '-R', 'postgres:postgres', str(storage_dir)],
                         check=True,
                         timeout=10,
                         capture_output=True
                     )
+                    
+                    # Ensure parent directories have execute permission for postgres to traverse
+                    # Change ownership and permissions of parent directories in the path
+                    current_path = storage_dir.parent  # scripts/db
+                    while str(current_path) != '/' and str(current_path).startswith('/root/'):
+                        # Change ownership to postgres so it can traverse
+                        subprocess.run(
+                            ['chown', 'postgres:postgres', str(current_path)],
+                            check=False,
+                            timeout=5,
+                            capture_output=True
+                        )
+                        # Set execute permission for directory traversal
+                        subprocess.run(
+                            ['chmod', '755', str(current_path)],
+                            check=False,
+                            timeout=5,
+                            capture_output=True
+                        )
+                        # Stop at /root/MindGraph level (don't change /root itself)
+                        if str(current_path.parent) == '/root':
+                            break
+                        current_path = current_path.parent
+                    
                     # Set proper permissions for PostgreSQL data directory
                     subprocess.run(
                         ['chmod', '-R', '700', str(data_path)],
