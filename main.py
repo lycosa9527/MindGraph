@@ -28,7 +28,7 @@ from routers import (
     api, node_palette, auth, public_dashboard
 )
 from routers.admin import env_router as admin_env, logs_router as admin_logs, realtime_router as admin_realtime
-from routers.features import voice, tab_mode, school_zone, askonce, debateverse
+from routers.features import voice, tab_mode, school_zone, askonce
 from routers.core import pages, cache, update_notification
 from routers.core.vue_spa import router as vue_spa
 from routers.core.health import router as health_router
@@ -111,7 +111,17 @@ app.include_router(public_dashboard.router, prefix="/api/public", tags=["Public 
 app.include_router(school_zone)  # School Zone (organization-scoped sharing)
 app.include_router(askonce)  # AskOnce (多应) - Multi-LLM streaming chat
 # DebateVerse (论境) - US-style debate system
-app.include_router(debateverse)
+debateverse_router = None
+if config.FEATURE_DEBATEVERSE:
+    try:
+        from routers.features import debateverse
+        debateverse_router = debateverse
+        app.include_router(debateverse_router)
+        logger.info("[Main] DebateVerse router registered at /api/debateverse")
+    except Exception as e:
+        logger.warning("[Main] Failed to register DebateVerse router: %s", e, exc_info=True)
+else:
+    logger.debug("[Main] DebateVerse feature disabled via FEATURE_DEBATEVERSE flag")
 
 # ============================================================================
 # APPLICATION ENTRY POINT

@@ -22,7 +22,7 @@ class FeaturesConfigMixin:
     if TYPE_CHECKING:
         def _get_cached_value(self, _key: str, _default: Any = None) -> Any:
             """Type stub: method provided by BaseConfig."""
-            pass
+            ...
 
         @property
         def version(self) -> str:
@@ -113,6 +113,16 @@ class FeaturesConfigMixin:
     def FEATURE_RAG_CHUNK_TEST(self):
         """Enable RAG Chunk Test feature (hidden by default)."""
         return self._get_cached_value('FEATURE_RAG_CHUNK_TEST', 'False').lower() == 'true'
+
+    @property
+    def FEATURE_KNOWLEDGE_SPACE(self):
+        """Enable Knowledge Space (RAG) feature."""
+        return self._get_cached_value('FEATURE_KNOWLEDGE_SPACE', 'False').lower() == 'true'
+
+    @property
+    def FEATURE_DEBATEVERSE(self):
+        """Enable DebateVerse (debate system) feature."""
+        return self._get_cached_value('FEATURE_DEBATEVERSE', 'False').lower() == 'true'
 
     @property
     def AI_ASSISTANT_NAME(self):

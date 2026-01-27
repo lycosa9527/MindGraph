@@ -37,7 +37,7 @@ class KnowledgeSpace(Base):
     """
     __tablename__ = "knowledge_spaces"
 
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(Integer, primary_key=True, autoincrement=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), unique=True, nullable=False, index=True)
 
     # Processing rules configuration (JSON)
@@ -674,7 +674,7 @@ class ChunkTestResult(Base):
         """
         if not self.current_stage:
             return None
-        
+
         if self.current_method:
             return f"{self.current_stage} ({self.current_method})"
         return self.current_stage
@@ -737,7 +737,10 @@ class ChunkTestDocument(Base):
 
     # Constraints
     __table_args__ = (
-        CheckConstraint("status IN ('pending', 'processing', 'completed', 'failed')", name='chk_chunk_test_document_status'),
+        CheckConstraint(
+            "status IN ('pending', 'processing', 'completed', 'failed')",
+            name='chk_chunk_test_document_status'
+        ),
         Index('ix_chunk_test_documents_user_id_status', 'user_id', 'status'),
     )
 
