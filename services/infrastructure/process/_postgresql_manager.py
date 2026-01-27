@@ -1137,8 +1137,14 @@ host    all             all             ::1/128                 trust
             except (ValueError, OSError):
                 pass
 
+        # Construct PostgreSQL URL for connection test if DATABASE_URL is SQLite or invalid
+        test_db_url = db_url
+        if not test_db_url or 'sqlite' in test_db_url.lower() or 'postgresql' not in test_db_url.lower():
+            # Construct from individual PostgreSQL settings
+            test_db_url = f'postgresql://{user}:{password}@127.0.0.1:{port}/{database}'
+        
         try:
-            conn = psycopg2.connect(db_url, connect_timeout=5)
+            conn = psycopg2.connect(test_db_url, connect_timeout=5)
             conn.close()
             try:
                 print(f"[POSTGRESQL] Server started successfully (PID: {server_state.postgresql_process.pid})")
@@ -1150,6 +1156,7 @@ host    all             all             ::1/128                 trust
         except Exception as e:
             try:
                 print(f"[ERROR] PostgreSQL server started but connection test failed: {e}")
+                print(f"        Connection URL used: {test_db_url.split('@')[0]}@***" if '@' in test_db_url else test_db_url)
                 print("        Check PostgreSQL logs: tail -f logs/postgresql.log")
                 print("        Application cannot start without PostgreSQL.")
             except (ValueError, OSError):

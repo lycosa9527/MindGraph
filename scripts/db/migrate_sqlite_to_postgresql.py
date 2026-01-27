@@ -80,20 +80,20 @@ except Exception as e:
 if sys.platform != 'win32':
     try:
         # Check if running as root
-        is_root = os.geteuid() == 0 if hasattr(os, 'geteuid') else False
-        
+        IS_ROOT = os.geteuid() == 0 if hasattr(os, 'geteuid') else False
+
         # Check if POSTGRESQL_DATA_DIR is not already set
-        if is_root and not os.getenv('POSTGRESQL_DATA_DIR'):
+        if IS_ROOT and not os.getenv('POSTGRESQL_DATA_DIR'):
             # Check if we're on Ubuntu/Linux (not macOS)
             try:
                 with open('/etc/os-release', 'r', encoding='utf-8') as os_file:
                     os_release = os_file.read()
                     if 'ubuntu' in os_release.lower() or 'debian' in os_release.lower():
                         # Use /var/lib/postgresql/mindgraph as default on Ubuntu/Debian
-                        default_pg_dir = '/var/lib/postgresql/mindgraph'
-                        os.environ['POSTGRESQL_DATA_DIR'] = default_pg_dir
-                        print(f"[INFO] Running as root on Ubuntu - using PostgreSQL data directory: {default_pg_dir}")
-                        print(f"[INFO] (Set POSTGRESQL_DATA_DIR environment variable to override)")
+                        DEFAULT_PG_DIR = '/var/lib/postgresql/mindgraph'
+                        os.environ['POSTGRESQL_DATA_DIR'] = DEFAULT_PG_DIR
+                        print(f"[INFO] Running as root on Ubuntu - using PostgreSQL data directory: {DEFAULT_PG_DIR}")
+                        print("[INFO] (Set POSTGRESQL_DATA_DIR environment variable to override)")
             except (FileNotFoundError, OSError, PermissionError):
                 # Not Ubuntu/Debian or can't read /etc/os-release, skip
                 pass
@@ -421,7 +421,7 @@ def run_migration(force: bool = False, sqlite_path_override: Optional[str] = Non
     # Get PostgreSQL URL - use defaults from env.example if not set
     pg_url = os.getenv('DATABASE_URL', '')
 
-    # If DATABASE_URL not set, construct from individual PostgreSQL settings
+    # If DATABASE_URL not set or is SQLite, construct from individual PostgreSQL settings
     # Defaults match env.example values
     if not pg_url or 'postgresql' not in pg_url.lower():
         # Try to construct from individual PostgreSQL environment variables
@@ -433,6 +433,8 @@ def run_migration(force: bool = False, sqlite_path_override: Optional[str] = Non
 
         # Construct PostgreSQL URL from components
         pg_url = f"postgresql://{pg_user}:{pg_password}@{pg_host}:{pg_port}/{pg_database}"
+        # Set DATABASE_URL in environment so migration function uses correct URL
+        os.environ['DATABASE_URL'] = pg_url
         print(f"[INFO] Using PostgreSQL defaults from env.example: {pg_user}@{pg_host}:{pg_port}/{pg_database}")
 
     # Check if PostgreSQL is empty (unless forcing)
