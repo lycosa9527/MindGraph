@@ -82,7 +82,7 @@ function openDocument(documentId: number) {
           >
             <!-- Cover Image -->
             <div
-              class="aspect-[3/4] rounded-lg overflow-hidden mb-3 bg-stone-200 relative border border-stone-300"
+              class="aspect-3/4 rounded-lg overflow-hidden mb-3 bg-stone-200 relative border border-stone-300"
             >
               <img
                 v-if="document.cover_image_path"
@@ -92,7 +92,7 @@ function openDocument(documentId: number) {
               />
               <div
                 v-else
-                class="w-full h-full flex items-center justify-center bg-gradient-to-br from-stone-200 to-stone-300"
+                class="w-full h-full flex items-center justify-center bg-linear-to-br from-stone-200 to-stone-300"
               >
                 <BookOpen class="w-12 h-12 text-stone-400" />
               </div>

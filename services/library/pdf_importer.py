@@ -117,7 +117,7 @@ def import_pdfs_from_folder(
     """
     # Use LibraryService to get correct storage paths
     service = LibraryService(db)
-    
+
     if library_dir is None:
         library_dir = service.storage_dir
     if covers_dir is None:
@@ -162,7 +162,7 @@ def import_pdfs_from_folder(
         existing = db.query(LibraryDocument).filter(
             LibraryDocument.file_path.like(f"%{pdf_name}")
         ).first()
-        
+
         if existing:
             logger.debug("Skipping (already exists): %s (ID: %s)", pdf_name, existing.id)
             skipped_count += 1
@@ -175,7 +175,7 @@ def import_pdfs_from_folder(
         cover_image_path = None
         cover_filename = f"{pdf_path.stem}_cover.png"
         cover_path = service.covers_dir / cover_filename
-        
+
         if extract_covers:
             cover_image_path = _try_extract_cover(pdf_path, cover_path, dpi)
         elif cover_path.exists():
