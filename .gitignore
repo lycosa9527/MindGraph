@@ -177,6 +177,7 @@ dmypy.json
 *.rar
 *.7z
 *.iso
+*.pdf
 
 # Prototype folder
 prototype/
