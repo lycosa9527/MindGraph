@@ -1,11 +1,39 @@
-import { defineConfig } from 'vite'
+import { defineConfig, Plugin } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import tailwindcss from '@tailwindcss/vite'
 import { resolve, dirname } from 'path'
-import { readFileSync } from 'fs'
+import { readFileSync, copyFileSync, existsSync } from 'fs'
 import { fileURLToPath } from 'url'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
+
+// Plugin to copy PDF.js worker to public folder
+function copyPdfjsWorker(): Plugin {
+  return {
+    name: 'copy-pdfjs-worker',
+    buildStart() {
+      // Try .mjs first (pdfjs-dist 4.x), then .js
+      const possiblePaths = [
+        resolve(__dirname, 'node_modules/pdfjs-dist/build/pdf.worker.min.mjs'),
+        resolve(__dirname, 'node_modules/pdfjs-dist/build/pdf.worker.min.js'),
+      ]
+      const dest = resolve(__dirname, 'public/pdf.worker.min.js')
+
+      for (const src of possiblePaths) {
+        if (existsSync(src)) {
+          try {
+            copyFileSync(src, dest)
+            console.log(`[Vite] Copied PDF.js worker from ${src} to ${dest}`)
+            return
+          } catch (error) {
+            console.warn(`[Vite] Failed to copy PDF.js worker:`, error)
+          }
+        }
+      }
+      console.warn('[Vite] PDF.js worker file not found in node_modules')
+    },
+  }
+}
 
 // Read version from VERSION file (single source of truth)
 const version = readFileSync(resolve(__dirname, '../VERSION'), 'utf-8').trim()
@@ -17,7 +45,7 @@ const backendHost = process.env.VITE_BACKEND_HOST || 'http://localhost:9527'
 const backendHostWs = backendHost.replace('http://', 'ws://').replace('https://', 'wss://')
 
 export default defineConfig({
-  plugins: [vue(), tailwindcss()],
+  plugins: [vue(), tailwindcss(), copyPdfjsWorker()],
   define: {
     __APP_VERSION__: JSON.stringify(version),
     __BUILD_TIME__: JSON.stringify(Date.now()),

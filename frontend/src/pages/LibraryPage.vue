@@ -1,0 +1,161 @@
+<script setup lang="ts">
+/**
+ * LibraryPage - Simple Swiss design with 4 cover images in grid
+ * Clean, minimal design with book names underneath covers
+ */
+import { onMounted, watch } from 'vue'
+import { useRouter } from 'vue-router'
+
+import { BookOpen } from 'lucide-vue-next'
+
+import { useNotifications } from '@/composables'
+import { useLibraryStore } from '@/stores/library'
+import { getLibraryDocumentCoverUrl } from '@/utils/apiClient'
+
+const router = useRouter()
+const libraryStore = useLibraryStore()
+const notify = useNotifications()
+
+// Fetch documents on mount
+onMounted(async () => {
+  await libraryStore.fetchDocuments(1, 20)
+})
+
+// Watch for errors and show notifications
+watch(
+  () => libraryStore.documentsError,
+  (error) => {
+    if (error) {
+      const errorMessage = error.message || '加载文档列表失败'
+      notify.error(errorMessage)
+    }
+  }
+)
+
+// Get cover image URL
+function getCoverUrl(documentId: number): string {
+  return getLibraryDocumentCoverUrl(documentId)
+}
+
+// Navigate to PDF viewer
+function openDocument(documentId: number) {
+  router.push(`/library/${documentId}`)
+}
+</script>
+
+<template>
+  <div class="library-page flex-1 flex flex-col bg-stone-50 overflow-hidden">
+    <!-- Header -->
+    <div class="library-header px-6 py-5 bg-white border-b border-stone-200">
+      <h1 class="text-xl font-semibold text-stone-900">图书馆</h1>
+    </div>
+
+    <!-- Content -->
+    <div class="library-content flex-1 overflow-y-auto p-6">
+      <div
+        v-if="libraryStore.documentsLoading"
+        class="flex items-center justify-center h-full"
+      >
+        <div class="text-stone-400">加载中...</div>
+      </div>
+
+      <div
+        v-else-if="libraryStore.documentsError"
+        class="flex flex-col items-center justify-center h-full text-stone-400"
+      >
+        <BookOpen class="w-16 h-16 mb-4 opacity-30" />
+        <p class="text-lg font-medium mb-1">加载失败</p>
+        <p class="text-sm">{{ libraryStore.documentsError.message }}</p>
+      </div>
+
+      <!-- Grid of cover images -->
+      <div
+        v-else-if="libraryStore.documents.length > 0"
+        class="max-w-4xl mx-auto"
+      >
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+          <div
+            v-for="document in libraryStore.documents"
+            :key="document.id"
+            class="book-card cursor-pointer group"
+            @click="openDocument(document.id)"
+          >
+            <!-- Cover Image -->
+            <div class="aspect-[3/4] rounded-lg overflow-hidden mb-3 bg-stone-200 relative border border-stone-300">
+              <img
+                v-if="document.cover_image_path"
+                :src="getCoverUrl(document.id)"
+                :alt="document.title"
+                class="w-full h-full object-cover transition-transform duration-200 group-hover:scale-105"
+              />
+              <div
+                v-else
+                class="w-full h-full flex items-center justify-center bg-gradient-to-br from-stone-200 to-stone-300"
+              >
+                <BookOpen class="w-12 h-12 text-stone-400" />
+              </div>
+            </div>
+
+            <!-- Book Title -->
+            <h3
+              class="text-sm font-medium text-stone-800 text-center line-clamp-2 group-hover:text-indigo-600 transition-colors"
+            >
+              {{ document.title }}
+            </h3>
+          </div>
+        </div>
+      </div>
+
+      <!-- Empty state -->
+      <div
+        v-else
+        class="flex flex-col items-center justify-center h-full text-stone-400"
+      >
+        <BookOpen class="w-16 h-16 mb-4 opacity-30" />
+        <p class="text-lg font-medium mb-1">暂无图书</p>
+        <p class="text-sm">图书馆中还没有PDF文档</p>
+      </div>
+    </div>
+  </div>
+</template>
+
+<style scoped>
+.library-page {
+  min-height: 0;
+}
+
+.book-card {
+  transition: transform 0.2s ease;
+}
+
+.book-card:hover {
+  transform: translateY(-2px);
+}
+
+/* Custom scrollbar */
+.library-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.library-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.library-content::-webkit-scrollbar-thumb {
+  background: #d6d3d1;
+  border-radius: 3px;
+}
+
+.library-content::-webkit-scrollbar-thumb:hover {
+  background: #a8a29e;
+}
+
+/* Line clamp */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+</style>

@@ -34,12 +34,12 @@ from . import config
 
 logger = logging.getLogger(__name__)
 
-knowledge_space_module = None
+KNOWLEDGE_SPACE_MODULE = None
 if app_config.FEATURE_KNOWLEDGE_SPACE:
     try:
-        from . import knowledge_space as knowledge_space_module
+        from . import knowledge_space as KNOWLEDGE_SPACE_MODULE
     except Exception as e:
-        knowledge_space_module = None
+        KNOWLEDGE_SPACE_MODULE = None
         logger.debug("[API] Failed to import knowledge_space router: %s", e, exc_info=True)
 else:
     logger.debug("[API] Knowledge Space feature disabled via FEATURE_KNOWLEDGE_SPACE flag")
@@ -62,8 +62,8 @@ router.include_router(image_proxy.router)
 router.include_router(diagrams.router)
 
 # Knowledge Space router (has its own prefix)
-if knowledge_space_module is not None:
-    router.include_router(knowledge_space_module.router)
+if KNOWLEDGE_SPACE_MODULE is not None:
+    router.include_router(KNOWLEDGE_SPACE_MODULE.router)
     logger.info("[API] Knowledge Space router registered at /api/knowledge-space")
 else:
     if app_config.FEATURE_KNOWLEDGE_SPACE:

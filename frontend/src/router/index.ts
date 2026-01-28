@@ -109,6 +109,18 @@ const routes: RouteRecordRaw[] = [
     meta: { requiresAuth: true, requiresFeatureFlag: 'ragChunkTest', layout: 'main' },
   },
   {
+    path: '/library',
+    name: 'Library',
+    component: () => import('@/pages/LibraryPage.vue'),
+    meta: { layout: 'main' },
+  },
+  {
+    path: '/library/:id',
+    name: 'LibraryViewer',
+    component: () => import('@/pages/LibraryViewerPage.vue'),
+    meta: { layout: 'main' },
+  },
+  {
     path: '/dashboard',
     name: 'PublicDashboard',
     component: () => import('@/pages/PublicDashboardPage.vue'),
@@ -139,7 +151,16 @@ router.beforeEach(async (to, _from, next) => {
   const featureFlagsStore = useFeatureFlagsStore()
   
   // Fetch feature flags if needed (for router guard - doesn't use vue-query)
-  if (to.meta.requiresFeatureFlag) {
+  // Fetch flags for any route that might need feature flag checks
+  if (to.meta.requiresFeatureFlag ||
+      to.name === 'Course' ||
+      to.name === 'Template' ||
+      to.name === 'Community' ||
+      to.name === 'AskOnce' ||
+      to.name === 'DebateVerse' ||
+      to.name === 'SchoolZone' ||
+      to.name === 'KnowledgeSpace' ||
+      to.name === 'Library') {
     await featureFlagsStore.fetchFlags()
   }
 
@@ -177,6 +198,30 @@ router.beforeEach(async (to, _from, next) => {
 
   // Check feature flags
   if (to.meta.requiresFeatureFlag === 'ragChunkTest' && !featureFlagsStore.getFeatureRagChunkTest()) {
+    return next({ name: 'MindMate' })
+  }
+  if (to.name === 'Course' && !featureFlagsStore.getFeatureCourse()) {
+    return next({ name: 'MindMate' })
+  }
+  if (to.name === 'Template' && !featureFlagsStore.getFeatureTemplate()) {
+    return next({ name: 'MindMate' })
+  }
+  if (to.name === 'Community' && !featureFlagsStore.getFeatureCommunity()) {
+    return next({ name: 'MindMate' })
+  }
+  if (to.name === 'AskOnce' && !featureFlagsStore.getFeatureAskOnce()) {
+    return next({ name: 'MindMate' })
+  }
+  if (to.name === 'DebateVerse' && !featureFlagsStore.getFeatureDebateverse()) {
+    return next({ name: 'MindMate' })
+  }
+  if (to.name === 'SchoolZone' && !featureFlagsStore.getFeatureSchoolZone()) {
+    return next({ name: 'MindMate' })
+  }
+  if (to.name === 'KnowledgeSpace' && !featureFlagsStore.getFeatureKnowledgeSpace()) {
+    return next({ name: 'MindMate' })
+  }
+  if (to.name === 'Library' && !featureFlagsStore.getFeatureLibrary()) {
     return next({ name: 'MindMate' })
   }
 

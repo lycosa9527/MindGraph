@@ -184,39 +184,49 @@ def run_server() -> None:
                 sys.exit(1)
             print()
 
-        # 3. Qdrant (REQUIRED - always checked)
-        print("[QDRANT] Checking Qdrant installation...")
-        is_installed, message = check_qdrant_installed()
-        if not is_installed:
-            print("[ERROR] Qdrant is REQUIRED but not installed.")
-            print(f"        {message}")
-            print("        Application cannot start without Qdrant.")
-            sys.exit(1)
-        print(f"[QDRANT] {message}")
-        print("[QDRANT] Starting Qdrant server...")
-        qdrant_server = start_qdrant_server()  # Verifies Qdrant is running (exits if not ready)
-        if qdrant_server:
-            print("[QDRANT] ✓ Qdrant server started as subprocess")
+        # 3. Qdrant (REQUIRED only if Knowledge Space feature is enabled)
+        qdrant_server = None
+        if config.FEATURE_KNOWLEDGE_SPACE:
+            print("[QDRANT] Checking Qdrant installation...")
+            is_installed, message = check_qdrant_installed()
+            if not is_installed:
+                print("[ERROR] Qdrant is REQUIRED for Knowledge Space feature but not installed.")
+                print(f"        {message}")
+                print("        Application cannot start without Qdrant when FEATURE_KNOWLEDGE_SPACE is enabled.")
+                sys.exit(1)
+            print(f"[QDRANT] {message}")
+            print("[QDRANT] Starting Qdrant server...")
+            qdrant_server = start_qdrant_server()  # Verifies Qdrant is running (exits if not ready)
+            if qdrant_server:
+                print("[QDRANT] ✓ Qdrant server started as subprocess")
+            else:
+                print("[QDRANT] ✓ Qdrant server is running (external or systemd service)")
+            print()
         else:
-            print("[QDRANT] ✓ Qdrant server is running (external or systemd service)")
-        print()
+            print("[QDRANT] Skipping Qdrant (Knowledge Space feature is disabled)")
+            print()
 
-        # 4. Celery (REQUIRED - always checked)
-        print("[CELERY] Checking Celery installation...")
-        is_installed, message = check_celery_installed()
-        if not is_installed:
-            print("[ERROR] Celery is REQUIRED but not installed or dependencies are missing.")
-            print(f"        {message}")
-            print("        Application cannot start without Celery.")
-            sys.exit(1)
-        print(f"[CELERY] {message}")
-        print("[CELERY] Starting Celery worker...")
-        celery_worker = start_celery_worker()  # Verifies Celery is running (exits if not ready)
-        if celery_worker:
-            print("[CELERY] ✓ Celery worker started successfully")
+        # 4. Celery (REQUIRED only if Knowledge Space feature is enabled)
+        celery_worker = None
+        if config.FEATURE_KNOWLEDGE_SPACE:
+            print("[CELERY] Checking Celery installation...")
+            is_installed, message = check_celery_installed()
+            if not is_installed:
+                print("[ERROR] Celery is REQUIRED for Knowledge Space feature but not installed or dependencies are missing.")
+                print(f"        {message}")
+                print("        Application cannot start without Celery when FEATURE_KNOWLEDGE_SPACE is enabled.")
+                sys.exit(1)
+            print(f"[CELERY] {message}")
+            print("[CELERY] Starting Celery worker...")
+            celery_worker = start_celery_worker()  # Verifies Celery is running (exits if not ready)
+            if celery_worker:
+                print("[CELERY] ✓ Celery worker started successfully")
+            else:
+                print("[CELERY] ✓ Using existing Celery worker")
+            print()
         else:
-            print("[CELERY] ✓ Using existing Celery worker")
-        print()
+            print("[CELERY] Skipping Celery (Knowledge Space feature is disabled)")
+            print()
 
         # All services verified and running - continue with application startup
         print("=" * 80)
@@ -224,36 +234,31 @@ def run_server() -> None:
         print("  ✓ Redis")
         if using_postgresql:
             print("  ✓ PostgreSQL")
-        print("  ✓ Qdrant")
-        print("  ✓ Celery")
+        if config.FEATURE_KNOWLEDGE_SPACE:
+            print("  ✓ Qdrant")
+            print("  ✓ Celery")
         print("=" * 80)
         print()
 
         config.print_config_summary()
 
+        # Initialize these before try block so they're available in finally
+        original_stderr = sys.stderr
+        original_excepthook = sys.excepthook
+
         try:
             print("[DEBUG] Testing FastAPI app import...")
-            try:
-                if main_module is None:
-                    raise ImportError("main module not available")
+            if main_module is not None:
                 try:
                     print(f"[DEBUG] App imported successfully: {main_module.app}")
                 except (ValueError, OSError):
                     pass
-            except Exception as e:
-                try:
-                    print(f"[ERROR] Failed to import app: {e}")
-                    traceback.print_exc()
-                except (ValueError, OSError):
-                    pass
-                sys.exit(1)
+            else:
+                print("[DEBUG] main module not available at import time (will be imported by uvicorn)")
 
             # Setup stderr filtering AFTER logging is configured
             # This ensures logging handlers are created before we wrap sys.stderr
-            original_stderr = sys.stderr
             sys.stderr = ShutdownErrorFilter(original_stderr)
-
-            original_excepthook = sys.excepthook
 
             def custom_excepthook(exc_type, exc_value, exc_traceback) -> None:
                 """Custom exception hook to suppress expected shutdown errors"""
@@ -308,16 +313,18 @@ def run_server() -> None:
         except KeyboardInterrupt:
             print("\n" + "=" * 80)
             print("Shutting down gracefully...")
-            stop_celery_worker()
-            stop_qdrant_server()
+            if config.FEATURE_KNOWLEDGE_SPACE:
+                stop_celery_worker()
+                stop_qdrant_server()
             if using_postgresql:
                 stop_postgresql_server()
             print("=" * 80)
         finally:
             sys.stderr = original_stderr
             sys.excepthook = original_excepthook
-            stop_celery_worker()
-            stop_qdrant_server()
+            if config.FEATURE_KNOWLEDGE_SPACE:
+                stop_celery_worker()
+                stop_qdrant_server()
             if using_postgresql:
                 stop_postgresql_server()
 

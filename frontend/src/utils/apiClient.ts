@@ -222,6 +222,289 @@ export async function apiUpload(
   return response
 }
 
+// =============================================================================
+// Library API Methods
+// =============================================================================
+
+export interface LibraryDocument {
+  id: number
+  title: string
+  description: string | null
+  cover_image_path: string | null
+  views_count: number
+  likes_count: number
+  comments_count: number
+  created_at: string
+  uploader: {
+    id: number
+    name: string | null
+  }
+}
+
+export interface LibraryDocumentList {
+  documents: LibraryDocument[]
+  total: number
+  page: number
+  page_size: number
+}
+
+export interface LibraryDanmaku {
+  id: number
+  document_id: number
+  user_id: number
+  page_number: number
+  position_x: number | null
+  position_y: number | null
+  selected_text: string | null
+  text_bbox: { x: number; y: number; width: number; height: number } | null
+  content: string
+  color: string | null
+  highlight_color: string | null
+  created_at: string
+  user: {
+    id: number | null
+    name: string | null
+    avatar: string | null
+  }
+  likes_count: number
+  is_liked: boolean
+}
+
+export interface LibraryDanmakuReply {
+  id: number
+  danmaku_id: number
+  user_id: number
+  parent_reply_id: number | null
+  content: string
+  created_at: string
+  user: {
+    id: number | null
+    name: string | null
+    avatar: string | null
+  }
+}
+
+export interface CreateDanmakuData {
+  content: string
+  page_number: number
+  position_x?: number | null
+  position_y?: number | null
+  selected_text?: string | null
+  text_bbox?: { x: number; y: number; width: number; height: number } | null
+  color?: string | null
+  highlight_color?: string | null
+}
+
+export interface CreateReplyData {
+  content: string
+  parent_reply_id?: number | null
+}
+
+/**
+ * Get list of library documents
+ */
+export async function getLibraryDocuments(
+  page: number = 1,
+  pageSize: number = 20,
+  search?: string
+): Promise<LibraryDocumentList> {
+  const params = new URLSearchParams({
+    page: page.toString(),
+    page_size: pageSize.toString(),
+  })
+  if (search) {
+    params.append('search', search)
+  }
+  const response = await apiGet(`/api/library/documents?${params.toString()}`)
+  if (!response.ok) {
+    throw new Error('Failed to fetch library documents')
+  }
+  return response.json()
+}
+
+/**
+ * Get a single library document
+ */
+export async function getLibraryDocument(documentId: number): Promise<LibraryDocument> {
+  const response = await apiGet(`/api/library/documents/${documentId}`)
+  if (!response.ok) {
+    throw new Error('Failed to fetch library document')
+  }
+  return response.json()
+}
+
+/**
+ * Get PDF file URL (for viewing)
+ */
+export function getLibraryDocumentFileUrl(documentId: number): string {
+  return `/api/library/documents/${documentId}/file`
+}
+
+/**
+ * Get cover image URL
+ */
+export function getLibraryDocumentCoverUrl(documentId: number): string {
+  return `/api/library/documents/${documentId}/cover`
+}
+
+/**
+ * Upload PDF document (for future admin panel)
+ */
+export async function uploadLibraryDocument(
+  file: File,
+  title: string,
+  description?: string
+): Promise<LibraryDocument> {
+  const formData = new FormData()
+  formData.append('file', file)
+  formData.append('title', title)
+  if (description) {
+    formData.append('description', description)
+  }
+  const response = await apiUpload('/api/library/documents', formData)
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ detail: 'Upload failed' }))
+    throw new Error(error.detail || 'Failed to upload document')
+  }
+  return response.json()
+}
+
+/**
+ * Update document metadata (for future admin panel)
+ */
+export async function updateLibraryDocument(
+  documentId: number,
+  data: { title?: string; description?: string }
+): Promise<LibraryDocument> {
+  const response = await apiPut(`/api/library/documents/${documentId}`, data)
+  if (!response.ok) {
+    throw new Error('Failed to update document')
+  }
+  return response.json()
+}
+
+/**
+ * Upload cover image (for future admin panel)
+ */
+export async function uploadLibraryDocumentCover(
+  documentId: number,
+  file: File
+): Promise<{ cover_image_path: string }> {
+  const formData = new FormData()
+  formData.append('file', file)
+  const response = await apiUpload(`/api/library/documents/${documentId}/cover`, formData)
+  if (!response.ok) {
+    throw new Error('Failed to upload cover image')
+  }
+  return response.json()
+}
+
+/**
+ * Delete document (for future admin panel)
+ */
+export async function deleteLibraryDocument(documentId: number): Promise<void> {
+  const response = await apiDelete(`/api/library/documents/${documentId}`)
+  if (!response.ok) {
+    throw new Error('Failed to delete document')
+  }
+}
+
+/**
+ * Get danmaku for a document
+ */
+export async function getDanmaku(
+  documentId: number,
+  pageNumber?: number,
+  selectedText?: string
+): Promise<{ danmaku: LibraryDanmaku[] }> {
+  const params = new URLSearchParams()
+  if (pageNumber !== undefined) {
+    params.append('page_number', pageNumber.toString())
+  }
+  if (selectedText) {
+    params.append('selected_text', selectedText)
+  }
+  const queryString = params.toString()
+  const endpoint = `/api/library/documents/${documentId}/danmaku${queryString ? `?${queryString}` : ''}`
+  const response = await apiGet(endpoint)
+  if (!response.ok) {
+    throw new Error('Failed to fetch danmaku')
+  }
+  return response.json()
+}
+
+/**
+ * Create danmaku comment
+ */
+export async function createDanmaku(
+  documentId: number,
+  data: CreateDanmakuData
+): Promise<{ id: number; message: string; danmaku: LibraryDanmaku }> {
+  const response = await apiPost(`/api/library/documents/${documentId}/danmaku`, data)
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ detail: 'Failed to create danmaku' }))
+    throw new Error(error.detail || 'Failed to create danmaku')
+  }
+  return response.json()
+}
+
+/**
+ * Toggle like on danmaku
+ */
+export async function likeDanmaku(danmakuId: number): Promise<{ is_liked: boolean; likes_count: number }> {
+  const response = await apiPost(`/api/library/danmaku/${danmakuId}/like`)
+  if (!response.ok) {
+    throw new Error('Failed to toggle like')
+  }
+  return response.json()
+}
+
+/**
+ * Get replies to a danmaku
+ */
+export async function getDanmakuReplies(danmakuId: number): Promise<{ replies: LibraryDanmakuReply[] }> {
+  const response = await apiGet(`/api/library/danmaku/${danmakuId}/replies`)
+  if (!response.ok) {
+    throw new Error('Failed to fetch replies')
+  }
+  return response.json()
+}
+
+/**
+ * Reply to a danmaku
+ */
+export async function replyToDanmaku(
+  danmakuId: number,
+  data: CreateReplyData
+): Promise<{ id: number; message: string; reply: LibraryDanmakuReply }> {
+  const response = await apiPost(`/api/library/danmaku/${danmakuId}/replies`, data)
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ detail: 'Failed to create reply' }))
+    throw new Error(error.detail || 'Failed to create reply')
+  }
+  return response.json()
+}
+
+/**
+ * Delete own danmaku
+ */
+export async function deleteDanmaku(danmakuId: number): Promise<void> {
+  const response = await apiDelete(`/api/library/danmaku/${danmakuId}`)
+  if (!response.ok) {
+    throw new Error('Failed to delete danmaku')
+  }
+}
+
+/**
+ * Delete own reply
+ */
+export async function deleteDanmakuReply(replyId: number): Promise<void> {
+  const response = await apiDelete(`/api/library/danmaku/replies/${replyId}`)
+  if (!response.ok) {
+    throw new Error('Failed to delete reply')
+  }
+}
+
 // Export default object for convenience
 export default {
   request: apiRequest,

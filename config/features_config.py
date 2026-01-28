@@ -116,13 +116,68 @@ class FeaturesConfigMixin:
 
     @property
     def FEATURE_KNOWLEDGE_SPACE(self):
-        """Enable Knowledge Space (RAG) feature."""
+        """Enable Personal Knowledge Space (RAG) feature.
+        
+        Disabled by default. Set FEATURE_KNOWLEDGE_SPACE=True in .env to enable.
+        Requires Qdrant and Celery to be running.
+        """
         return self._get_cached_value('FEATURE_KNOWLEDGE_SPACE', 'False').lower() == 'true'
 
     @property
     def FEATURE_DEBATEVERSE(self):
-        """Enable DebateVerse (debate system) feature."""
+        """Enable DebateVerse (论境) debate system feature.
+        
+        Disabled by default. Set FEATURE_DEBATEVERSE=True in .env to enable.
+        """
         return self._get_cached_value('FEATURE_DEBATEVERSE', 'False').lower() == 'true'
+
+    @property
+    def FEATURE_COURSE(self):
+        """Enable Thinking Course (思维课程) feature.
+        
+        Disabled by default. Set FEATURE_COURSE=True in .env to enable.
+        """
+        return self._get_cached_value('FEATURE_COURSE', 'False').lower() == 'true'
+
+    @property
+    def FEATURE_TEMPLATE(self):
+        """Enable Template Resources (模板资源) feature.
+        
+        Disabled by default. Set FEATURE_TEMPLATE=True in .env to enable.
+        """
+        return self._get_cached_value('FEATURE_TEMPLATE', 'False').lower() == 'true'
+
+    @property
+    def FEATURE_COMMUNITY(self):
+        """Enable Community Sharing (社区分享) feature.
+        
+        Disabled by default. Set FEATURE_COMMUNITY=True in .env to enable.
+        """
+        return self._get_cached_value('FEATURE_COMMUNITY', 'False').lower() == 'true'
+
+    @property
+    def FEATURE_ASKONCE(self):
+        """Enable AskOnce (多应) multi-LLM chat feature.
+        
+        Enabled by default. Set FEATURE_ASKONCE=False in .env to disable.
+        """
+        return self._get_cached_value('FEATURE_ASKONCE', 'True').lower() == 'true'
+
+    @property
+    def FEATURE_SCHOOL_ZONE(self):
+        """Enable School Zone (学校专区) organization sharing feature.
+        
+        Disabled by default. Set FEATURE_SCHOOL_ZONE=True in .env to enable.
+        """
+        return self._get_cached_value('FEATURE_SCHOOL_ZONE', 'False').lower() == 'true'
+
+    @property
+    def FEATURE_LIBRARY(self):
+        """Enable Library (图书馆) PDF viewing feature with danmaku comments.
+        
+        Disabled by default. Set FEATURE_LIBRARY=True in .env to enable.
+        """
+        return self._get_cached_value('FEATURE_LIBRARY', 'False').lower() == 'true'
 
     @property
     def AI_ASSISTANT_NAME(self):

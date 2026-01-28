@@ -119,6 +119,20 @@ except ImportError as e:
 except Exception as e:
     logger.debug("[Database] Error registering dashboard activity models: %s", e)
 
+try:
+    from models.domain.library import (
+        LibraryDocument, LibraryDanmaku, LibraryDanmakuLike, LibraryDanmakuReply
+    )
+    _ = LibraryDocument.__tablename__
+    _ = LibraryDanmaku.__tablename__
+    _ = LibraryDanmakuLike.__tablename__
+    _ = LibraryDanmakuReply.__tablename__
+    logger.debug("[Database] Library models imported and registered for migrations")
+except ImportError as e:
+    logger.debug("[Database] Could not import library models: %s", e)
+except Exception as e:
+    logger.debug("[Database] Error registering library models: %s", e)
+
 # Ensure data directory exists for database files
 DATA_DIR = Path("data")
 DATA_DIR.mkdir(exist_ok=True)

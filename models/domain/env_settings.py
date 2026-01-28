@@ -260,6 +260,26 @@ class FeatureFlagSettings(BaseModel):
         default=False,
         description="Enable Tab Mode (autocomplete suggestions and node expansion)"
     )
+    FEATURE_COURSE: bool = Field(
+        default=False,
+        description="Enable Thinking Course (思维课程) feature"
+    )
+    FEATURE_TEMPLATE: bool = Field(
+        default=False,
+        description="Enable Template Resources (模板资源) feature"
+    )
+    FEATURE_COMMUNITY: bool = Field(
+        default=False,
+        description="Enable Community Sharing (社区分享) feature"
+    )
+    FEATURE_ASKONCE: bool = Field(
+        default=True,
+        description="Enable AskOnce (多应) multi-LLM chat feature"
+    )
+    FEATURE_SCHOOL_ZONE: bool = Field(
+        default=False,
+        description="Enable School Zone (学校专区) organization sharing feature"
+    )
 
 
 class DifySettings(BaseModel):

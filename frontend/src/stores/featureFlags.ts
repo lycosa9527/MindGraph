@@ -10,6 +10,14 @@ import { apiRequest } from '@/utils/apiClient'
 
 interface FeatureFlagsResponse {
   feature_rag_chunk_test: boolean
+  feature_course: boolean
+  feature_template: boolean
+  feature_community: boolean
+  feature_askonce: boolean
+  feature_school_zone: boolean
+  feature_debateverse: boolean
+  feature_knowledge_space: boolean
+  feature_library: boolean
 }
 
 export const useFeatureFlagsStore = defineStore('featureFlags', () => {
@@ -39,6 +47,14 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
         // Default to all features disabled if endpoint is not available
         const defaultFlags: FeatureFlagsResponse = {
           feature_rag_chunk_test: false,
+          feature_course: false,
+          feature_template: false,
+          feature_community: false,
+          feature_askonce: true,
+          feature_school_zone: false,
+          feature_debateverse: false,
+          feature_knowledge_space: false,
+          feature_library: false,
         }
         flags.value = defaultFlags
         lastFetchTime.value = now
@@ -57,6 +73,14 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
       }
       const defaultFlags: FeatureFlagsResponse = {
         feature_rag_chunk_test: false,
+        feature_course: false,
+        feature_template: false,
+        feature_community: false,
+        feature_askonce: true,
+        feature_school_zone: false,
+        feature_debateverse: false,
+        feature_knowledge_space: false,
+        feature_library: false,
       }
       flags.value = defaultFlags
       return defaultFlags
@@ -73,6 +97,38 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
     return flags.value?.feature_rag_chunk_test ?? false
   }
 
+  function getFeatureCourse(): boolean {
+    return flags.value?.feature_course ?? false
+  }
+
+  function getFeatureTemplate(): boolean {
+    return flags.value?.feature_template ?? true
+  }
+
+  function getFeatureCommunity(): boolean {
+    return flags.value?.feature_community ?? true
+  }
+
+  function getFeatureAskOnce(): boolean {
+    return flags.value?.feature_askonce ?? true
+  }
+
+  function getFeatureSchoolZone(): boolean {
+    return flags.value?.feature_school_zone ?? true
+  }
+
+  function getFeatureDebateverse(): boolean {
+    return flags.value?.feature_debateverse ?? false
+  }
+
+  function getFeatureKnowledgeSpace(): boolean {
+    return flags.value?.feature_knowledge_space ?? false
+  }
+
+  function getFeatureLibrary(): boolean {
+    return flags.value?.feature_library ?? false
+  }
+
   /**
    * Initialize flags (call this early in app lifecycle)
    */
@@ -87,6 +143,14 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
     isLoading,
     fetchFlags,
     getFeatureRagChunkTest,
+    getFeatureCourse,
+    getFeatureTemplate,
+    getFeatureCommunity,
+    getFeatureAskOnce,
+    getFeatureSchoolZone,
+    getFeatureDebateverse,
+    getFeatureKnowledgeSpace,
+    getFeatureLibrary,
     init,
   }
 })

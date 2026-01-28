@@ -17,6 +17,7 @@ import {
   Share,
   Tools,
   VideoPlay,
+  Reading,
 } from '@element-plus/icons-vue'
 
 import { ChevronDown, KeyRound, LogIn, LogOut, Menu, Settings, UserRound } from 'lucide-vue-next'
@@ -43,7 +44,17 @@ const authStore = useAuthStore()
 const mindMateStore = useMindMateStore()
 const askOnceStore = useAskOnceStore()
 const _savedDiagramsStore = useSavedDiagramsStore()
-const { featureRagChunkTest } = useFeatureFlags()
+const {
+  featureRagChunkTest,
+  featureCourse,
+  featureTemplate,
+  featureCommunity,
+  featureAskOnce,
+  featureSchoolZone,
+  featureDebateverse,
+  featureKnowledgeSpace,
+  featureLibrary,
+} = useFeatureFlags()
 
 const isCollapsed = computed(() => uiStore.sidebarCollapsed)
 
@@ -60,6 +71,7 @@ const currentMode = computed(() => {
   if (path.startsWith('/template')) return 'template'
   if (path.startsWith('/course')) return 'course'
   if (path.startsWith('/community')) return 'community'
+  if (path.startsWith('/library')) return 'library'
   return 'mindmate' // Default
 })
 
@@ -113,6 +125,8 @@ function setMode(index: string) {
     router.push('/course')
   } else if (index === 'community') {
     router.push('/community')
+  } else if (index === 'library') {
+    router.push('/library')
   }
 }
 
@@ -222,7 +236,7 @@ async function handleDiagramSelect(diagram: SavedDiagram) {
         <template #title>MindGraph</template>
       </el-menu-item>
       <el-menu-item
-        v-if="isAuthenticated"
+        v-if="isAuthenticated && featureKnowledgeSpace"
         index="knowledge-space"
       >
         <el-icon><Document /></el-icon>
@@ -235,32 +249,54 @@ async function handleDiagramSelect(diagram: SavedDiagram) {
         <el-icon><Tools /></el-icon>
         <template #title>RAG分块测试</template>
       </el-menu-item>
-      <el-menu-item index="askonce">
+      <el-menu-item
+        v-if="featureAskOnce"
+        index="askonce"
+      >
         <el-icon><MagicStick /></el-icon>
         <template #title>{{ t('askonce.title') }}</template>
       </el-menu-item>
-      <el-menu-item index="debateverse">
+      <el-menu-item
+        v-if="featureDebateverse"
+        index="debateverse"
+      >
         <el-icon><ChatDotRound /></el-icon>
         <template #title>论境</template>
       </el-menu-item>
       <el-menu-item
-        v-if="hasOrganization"
+        v-if="hasOrganization && featureSchoolZone"
         index="school-zone"
       >
         <el-icon><OfficeBuilding /></el-icon>
         <template #title>学校专区</template>
       </el-menu-item>
-      <el-menu-item index="template">
+      <el-menu-item
+        v-if="featureTemplate"
+        index="template"
+      >
         <el-icon><Files /></el-icon>
         <template #title>模板资源</template>
       </el-menu-item>
-      <el-menu-item index="course">
+      <el-menu-item
+        v-if="featureCourse"
+        index="course"
+      >
         <el-icon><VideoPlay /></el-icon>
         <template #title>思维课程</template>
       </el-menu-item>
-      <el-menu-item index="community">
+      <el-menu-item
+        v-if="featureCommunity"
+        index="community"
+      >
         <el-icon><Share /></el-icon>
         <template #title>社区分享</template>
+      </el-menu-item>
+      <el-menu-item
+        v-if="featureLibrary"
+        index="library"
+      >
+        <el-icon><Reading /></el-icon>
+        <template #title>在线图书馆</template>
       </el-menu-item>
     </el-menu>
 
@@ -292,7 +328,7 @@ async function handleDiagramSelect(diagram: SavedDiagram) {
     />
     <!-- Knowledge Space: Show document history -->
     <KnowledgeSpaceHistory
-      v-else-if="!isCollapsed && currentMode === 'knowledge-space'"
+      v-else-if="!isCollapsed && currentMode === 'knowledge-space' && featureKnowledgeSpace"
       class="flex-1 overflow-hidden"
     />
     <!-- Chunk Test: Show test history -->
@@ -306,7 +342,7 @@ async function handleDiagramSelect(diagram: SavedDiagram) {
     <div
       v-if="
         isCollapsed ||
-        !(currentMode === 'mindmate' || currentMode === 'mindgraph' || currentMode === 'knowledge-space' || (featureRagChunkTest && currentMode === 'chunk-test') || currentMode === 'askonce' || currentMode === 'debateverse')
+        !(currentMode === 'mindmate' || currentMode === 'mindgraph' || (featureKnowledgeSpace && currentMode === 'knowledge-space') || (featureRagChunkTest && currentMode === 'chunk-test') || (featureAskOnce && currentMode === 'askonce') || (featureDebateverse && currentMode === 'debateverse'))
       "
       class="flex-1"
     />

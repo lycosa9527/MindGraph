@@ -41,6 +41,12 @@ from .school_zone import (
     SharedDiagramLike,
     SharedDiagramComment,
 )
+from .library import (
+    LibraryDocument,
+    LibraryDanmaku,
+    LibraryDanmakuLike,
+    LibraryDanmakuReply,
+)
 from .pinned_conversations import PinnedConversation
 from .env_settings import EnvSetting
 
@@ -85,6 +91,11 @@ __all__ = [
     "SharedDiagram",
     "SharedDiagramLike",
     "SharedDiagramComment",
+    # Library
+    "LibraryDocument",
+    "LibraryDanmaku",
+    "LibraryDanmakuLike",
+    "LibraryDanmakuReply",
     # Pinned Conversations
     "PinnedConversation",
     # Env Settings

@@ -28,7 +28,7 @@ from . import auth
 from . import node_palette
 from . import public_dashboard
 from .admin import env_router as admin_env, logs_router as admin_logs, realtime_router as admin_realtime
-from .features import voice, tab_mode, school_zone, askonce, debateverse
+from .features import voice, tab_mode, school_zone, askonce, debateverse, library
 from .core import pages, cache, vue_spa, update_notification
 
 __all__ = [
@@ -47,6 +47,7 @@ __all__ = [
     "school_zone",
     "askonce",
     "debateverse",
+    "library",
     "vue_spa"
 ]
 

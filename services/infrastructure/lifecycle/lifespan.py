@@ -22,6 +22,7 @@ from fastapi import FastAPI
 from clients.llm import close_httpx_clients
 from config.celery import CeleryStartupError, init_celery_worker_check
 from config.database import close_db, init_db
+from config.settings import config
 from services.auth.ip_geolocation import get_geolocation_service
 from services.auth.sms_middleware import get_sms_middleware, shutdown_sms_service
 from services.infrastructure.monitoring.critical_alert import CriticalAlertService
@@ -101,55 +102,62 @@ async def lifespan(fastapi_app: FastAPI):
         logger.error("Application startup failed. Exiting.")
         os._exit(1)  # pylint: disable=protected-access
 
-    # Initialize Qdrant (REQUIRED for Knowledge Space vector storage)
-    # Application will exit if Qdrant is not available
-    if is_main_worker:
-        logger.info("[LIFESPAN] Initializing Qdrant...")
-    try:
-        init_qdrant_sync()
+    # Initialize Qdrant (REQUIRED only if Knowledge Space feature is enabled)
+    knowledge_space_enabled = config.FEATURE_KNOWLEDGE_SPACE
+    if knowledge_space_enabled:
         if is_main_worker:
-            logger.info("Qdrant initialized successfully")
-    except QdrantStartupError as e:
-        # Error message already logged by init_qdrant_sync with instructions
-        # Send critical alert before exiting
+            logger.info("[LIFESPAN] Initializing Qdrant...")
         try:
-            CriticalAlertService.send_startup_failure_alert_sync(
-                component="Qdrant",
-                error_message=f"Qdrant startup failed: {str(e)}",
-                details=(
-                    "Application cannot start without Qdrant. "
-                    "Check Qdrant connection and configuration."
+            init_qdrant_sync()
+            if is_main_worker:
+                logger.info("Qdrant initialized successfully")
+        except QdrantStartupError as e:
+            # Error message already logged by init_qdrant_sync with instructions
+            # Send critical alert before exiting
+            try:
+                CriticalAlertService.send_startup_failure_alert_sync(
+                    component="Qdrant",
+                    error_message=f"Qdrant startup failed: {str(e)}",
+                    details=(
+                        "Application cannot start without Qdrant when Knowledge Space is enabled. "
+                        "Check Qdrant connection and configuration."
+                    )
                 )
-            )
-        except Exception as alert_error:  # pylint: disable=broad-except
-            logger.error("Failed to send startup failure alert: %s", alert_error)
-        logger.error("Application startup failed. Exiting.")
-        os._exit(1)  # pylint: disable=protected-access
+            except Exception as alert_error:  # pylint: disable=broad-except
+                logger.error("Failed to send startup failure alert: %s", alert_error)
+            logger.error("Application startup failed. Exiting.")
+            os._exit(1)  # pylint: disable=protected-access
+    else:
+        if is_main_worker:
+            logger.debug("[LIFESPAN] Skipping Qdrant initialization (Knowledge Space feature is disabled)")
 
-    # Check Celery worker availability (REQUIRED for background task processing)
-    # Application will exit if Celery worker is not available
-    if is_main_worker:
-        logger.info("[LIFESPAN] Checking Celery worker availability...")
-    try:
-        init_celery_worker_check()
+    # Check Celery worker availability (REQUIRED only if Knowledge Space feature is enabled)
+    if knowledge_space_enabled:
         if is_main_worker:
-            logger.info("Celery worker is available")
-    except CeleryStartupError as e:
-        # Error message already logged by init_celery_worker_check with instructions
-        # Send critical alert before exiting
+            logger.info("[LIFESPAN] Checking Celery worker availability...")
         try:
-            CriticalAlertService.send_startup_failure_alert_sync(
-                component="Celery",
-                error_message=f"Celery worker unavailable: {str(e)}",
-                details=(
-                    "Application cannot start without Celery worker. "
-                    "Start Celery worker: celery -A config.celery worker --loglevel=info"
+            init_celery_worker_check()
+            if is_main_worker:
+                logger.info("Celery worker is available")
+        except CeleryStartupError as e:
+            # Error message already logged by init_celery_worker_check with instructions
+            # Send critical alert before exiting
+            try:
+                CriticalAlertService.send_startup_failure_alert_sync(
+                    component="Celery",
+                    error_message=f"Celery worker unavailable: {str(e)}",
+                    details=(
+                        "Application cannot start without Celery worker when Knowledge Space is enabled. "
+                        "Start Celery worker: celery -A config.celery worker --loglevel=info"
+                    )
                 )
-            )
-        except Exception as alert_error:  # pylint: disable=broad-except
-            logger.error("Failed to send startup failure alert: %s", alert_error)
-        logger.error("Application startup failed. Exiting.")
-        os._exit(1)  # pylint: disable=protected-access
+            except Exception as alert_error:  # pylint: disable=broad-except
+                logger.error("Failed to send startup failure alert: %s", alert_error)
+            logger.error("Application startup failed. Exiting.")
+            os._exit(1)  # pylint: disable=protected-access
+    else:
+        if is_main_worker:
+            logger.debug("[LIFESPAN] Skipping Celery worker check (Knowledge Space feature is disabled)")
 
     # Check system dependencies for Knowledge Space feature (Tesseract OCR)
     # Application will exit if required dependencies are missing
