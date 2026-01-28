@@ -21,6 +21,8 @@ import {
   replyToDanmaku,
   deleteDanmaku,
   deleteDanmakuReply,
+  updateDanmakuPosition,
+  type UpdateDanmakuPositionData,
 } from '@/utils/apiClient'
 
 export const useLibraryStore = defineStore('library', () => {
@@ -123,8 +125,8 @@ export const useLibraryStore = defineStore('library', () => {
 
     try {
       const result = await createDanmaku(currentDocument.value.id, data)
-      // Refresh danmaku list
-      await fetchDanmaku(data.page_number, data.selected_text || undefined)
+      // Refresh danmaku list for the page (fetch all, not filtered by text)
+      await fetchDanmaku(data.page_number)
       return result.danmaku
     } catch (error) {
       console.error('[LibraryStore] Failed to create danmaku:', error)
@@ -177,6 +179,28 @@ export const useLibraryStore = defineStore('library', () => {
       return result.reply
     } catch (error) {
       console.error('[LibraryStore] Failed to create reply:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Update danmaku position
+   */
+  async function updateDanmakuPos(danmakuId: number, data: UpdateDanmakuPositionData) {
+    try {
+      await updateDanmakuPosition(danmakuId, data)
+      // Update position in local state
+      const index = danmaku.value.findIndex((d) => d.id === danmakuId)
+      if (index !== -1) {
+        if (data.position_x !== undefined) {
+          danmaku.value[index].position_x = data.position_x
+        }
+        if (data.position_y !== undefined) {
+          danmaku.value[index].position_y = data.position_y
+        }
+      }
+    } catch (error) {
+      console.error('[LibraryStore] Failed to update danmaku position:', error)
       throw error
     }
   }
@@ -278,6 +302,7 @@ export const useLibraryStore = defineStore('library', () => {
     fetchDanmaku,
     createDanmakuComment,
     toggleDanmakuLike,
+    updateDanmakuPosition: updateDanmakuPos,
     removeDanmaku,
     danmakuForPage,
     danmakuForText,

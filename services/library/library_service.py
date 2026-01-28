@@ -17,7 +17,7 @@ from pathlib import Path
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import or_
 
 from models.domain.library import (
@@ -25,6 +25,7 @@ from models.domain.library import (
     LibraryDanmaku,
     LibraryDanmakuLike,
     LibraryDanmakuReply,
+    LibraryBookmark,
 )
 
 
@@ -48,7 +49,7 @@ class LibraryService:
         """
         self.db = db
         self.user_id = user_id
-        
+
         # Configuration
         self.storage_dir = Path(os.getenv("LIBRARY_STORAGE_DIR", "./storage/library"))
         self.covers_dir = self.storage_dir / "covers"
@@ -74,7 +75,7 @@ class LibraryService:
             Dict with documents list and pagination info
         """
         query = self.db.query(LibraryDocument).filter(
-            LibraryDocument.is_active == True
+            LibraryDocument.is_active
         )
 
         if search:
@@ -126,7 +127,7 @@ class LibraryService:
         """
         return self.db.query(LibraryDocument).filter(
             LibraryDocument.id == document_id,
-            LibraryDocument.is_active == True
+            LibraryDocument.is_active
         ).first()
 
     def increment_views(self, document_id: int) -> None:
@@ -272,7 +273,7 @@ class LibraryService:
         """
         query = self.db.query(LibraryDanmaku).filter(
             LibraryDanmaku.document_id == document_id,
-            LibraryDanmaku.is_active == True
+            LibraryDanmaku.is_active
         )
 
         if page_number is not None:
@@ -308,7 +309,59 @@ class LibraryService:
                 "is_liked": self.user_id and self.db.query(LibraryDanmakuLike).filter(
                     LibraryDanmakuLike.danmaku_id == d.id,
                     LibraryDanmakuLike.user_id == self.user_id
-                ).first() is not None
+                ).first() is not None,
+                "replies_count": self.db.query(LibraryDanmakuReply).filter(
+                    LibraryDanmakuReply.danmaku_id == d.id,
+                    LibraryDanmakuReply.is_active
+                ).count()
+            }
+            for d in danmaku_list
+        ]
+
+    def get_recent_danmaku(self, limit: int = 50) -> List[Dict[str, Any]]:
+        """
+        Get recent danmaku across all documents.
+
+        Args:
+            limit: Maximum number of danmaku to return
+
+        Returns:
+            List of danmaku dictionaries, ordered by created_at descending
+        """
+        danmaku_list = self.db.query(LibraryDanmaku).filter(
+            LibraryDanmaku.is_active
+        ).order_by(LibraryDanmaku.created_at.desc()).limit(limit).all()
+
+        return [
+            {
+                "id": d.id,
+                "document_id": d.document_id,
+                "user_id": d.user_id,
+                "page_number": d.page_number,
+                "position_x": d.position_x,
+                "position_y": d.position_y,
+                "selected_text": d.selected_text,
+                "text_bbox": d.text_bbox,
+                "content": d.content,
+                "color": d.color,
+                "highlight_color": d.highlight_color,
+                "created_at": d.created_at.isoformat() if d.created_at else None,
+                "user": {
+                    "id": d.user.id if d.user else None,
+                    "name": d.user.name if d.user else None,
+                    "avatar": d.user.avatar if d.user else None,
+                },
+                "likes_count": self.db.query(LibraryDanmakuLike).filter(
+                    LibraryDanmakuLike.danmaku_id == d.id
+                ).count(),
+                "is_liked": self.user_id and self.db.query(LibraryDanmakuLike).filter(
+                    LibraryDanmakuLike.danmaku_id == d.id,
+                    LibraryDanmakuLike.user_id == self.user_id
+                ).first() is not None,
+                "replies_count": self.db.query(LibraryDanmakuReply).filter(
+                    LibraryDanmakuReply.danmaku_id == d.id,
+                    LibraryDanmakuReply.is_active
+                ).count()
             }
             for d in danmaku_list
         ]
@@ -379,7 +432,7 @@ class LibraryService:
         """
         danmaku = self.db.query(LibraryDanmaku).filter(
             LibraryDanmaku.id == danmaku_id,
-            LibraryDanmaku.is_active == True
+            LibraryDanmaku.is_active
         ).first()
 
         if not danmaku:
@@ -424,7 +477,7 @@ class LibraryService:
         """
         replies = self.db.query(LibraryDanmakuReply).filter(
             LibraryDanmakuReply.danmaku_id == danmaku_id,
-            LibraryDanmakuReply.is_active == True
+            LibraryDanmakuReply.is_active
         ).order_by(LibraryDanmakuReply.created_at.asc()).all()
 
         return [
@@ -463,7 +516,7 @@ class LibraryService:
         """
         danmaku = self.db.query(LibraryDanmaku).filter(
             LibraryDanmaku.id == danmaku_id,
-            LibraryDanmaku.is_active == True
+            LibraryDanmaku.is_active
         ).first()
 
         if not danmaku:
@@ -496,7 +549,7 @@ class LibraryService:
         danmaku = self.db.query(LibraryDanmaku).filter(
             LibraryDanmaku.id == danmaku_id,
             LibraryDanmaku.user_id == self.user_id,
-            LibraryDanmaku.is_active == True
+            LibraryDanmaku.is_active
         ).first()
 
         if not danmaku:
@@ -504,13 +557,59 @@ class LibraryService:
 
         danmaku.is_active = False
         danmaku.updated_at = datetime.utcnow()
-        
+
         # Update document comments count
         document = danmaku.document
         if document:
             document.comments_count = max(0, document.comments_count - 1)
 
         self.db.commit()
+        return True
+
+    def update_danmaku_position(
+        self,
+        danmaku_id: int,
+        position_x: Optional[int] = None,
+        position_y: Optional[int] = None,
+        is_admin: bool = False
+    ) -> bool:
+        """
+        Update danmaku position.
+        
+        Only the creator or admin can update position.
+
+        Args:
+            danmaku_id: Danmaku ID
+            position_x: New X position
+            position_y: New Y position
+            is_admin: Whether current user is admin
+
+        Returns:
+            True if updated, False if not found or not authorized
+        """
+        danmaku = self.db.query(LibraryDanmaku).filter(
+            LibraryDanmaku.id == danmaku_id,
+            LibraryDanmaku.is_active
+        ).first()
+
+        if not danmaku:
+            return False
+
+        # Check permission: must be owner or admin
+        if danmaku.user_id != self.user_id and not is_admin:
+            return False
+
+        # Update position
+        if position_x is not None:
+            danmaku.position_x = position_x
+        if position_y is not None:
+            danmaku.position_y = position_y
+
+        danmaku.updated_at = datetime.utcnow()
+        self.db.commit()
+        self.db.refresh(danmaku)
+
+        logger.info("[Library] Updated danmaku %s position to (%s, %s)", danmaku_id, position_x, position_y)
         return True
 
     def delete_reply(self, reply_id: int) -> bool:
@@ -526,7 +625,7 @@ class LibraryService:
         reply = self.db.query(LibraryDanmakuReply).filter(
             LibraryDanmakuReply.id == reply_id,
             LibraryDanmakuReply.user_id == self.user_id,
-            LibraryDanmakuReply.is_active == True
+            LibraryDanmakuReply.is_active
         ).first()
 
         if not reply:
@@ -536,3 +635,155 @@ class LibraryService:
         reply.updated_at = datetime.utcnow()
         self.db.commit()
         return True
+
+    def create_bookmark(
+        self,
+        document_id: int,
+        page_number: int,
+        note: Optional[str] = None
+    ) -> LibraryBookmark:
+        """
+        Create a bookmark for a document page.
+
+        Args:
+            document_id: Document ID
+            page_number: Page number (1-indexed)
+            note: Optional note/description
+
+        Returns:
+            LibraryBookmark instance
+
+        Raises:
+            ValueError: If user_id is not set or bookmark already exists
+        """
+        if not self.user_id:
+            raise ValueError("User ID required to create bookmark")
+
+        # Check if bookmark already exists
+        existing = self.db.query(LibraryBookmark).filter(
+            LibraryBookmark.document_id == document_id,
+            LibraryBookmark.user_id == self.user_id,
+            LibraryBookmark.page_number == page_number
+        ).first()
+
+        if existing:
+            # Update existing bookmark
+            existing.note = note
+            existing.updated_at = datetime.utcnow()
+            self.db.commit()
+            return existing
+
+        bookmark = LibraryBookmark(
+            document_id=document_id,
+            user_id=self.user_id,
+            page_number=page_number,
+            note=note
+        )
+        self.db.add(bookmark)
+        self.db.commit()
+        self.db.refresh(bookmark)
+        return bookmark
+
+    def delete_bookmark(self, bookmark_id: int) -> bool:
+        """
+        Delete a bookmark.
+
+        Args:
+            bookmark_id: Bookmark ID
+
+        Returns:
+            True if deleted, False if not found
+        """
+        if not self.user_id:
+            return False
+
+        bookmark = self.db.query(LibraryBookmark).filter(
+            LibraryBookmark.id == bookmark_id,
+            LibraryBookmark.user_id == self.user_id
+        ).first()
+
+        if not bookmark:
+            return False
+
+        self.db.delete(bookmark)
+        self.db.commit()
+        return True
+
+    def get_bookmark(self, document_id: int, page_number: int) -> Optional[LibraryBookmark]:
+        """
+        Get bookmark for a specific document page.
+
+        Args:
+            document_id: Document ID
+            page_number: Page number
+
+        Returns:
+            LibraryBookmark or None
+        """
+        if not self.user_id:
+            return None
+
+        return self.db.query(LibraryBookmark).options(
+            joinedload(LibraryBookmark.document)
+        ).filter(
+            LibraryBookmark.document_id == document_id,
+            LibraryBookmark.user_id == self.user_id,
+            LibraryBookmark.page_number == page_number
+        ).first()
+
+    def get_recent_bookmarks(self, limit: int = 50) -> List[Dict[str, Any]]:
+        """
+        Get recent bookmarks for the current user.
+
+        Args:
+            limit: Maximum number of bookmarks to return
+
+        Returns:
+            List of bookmark dictionaries, ordered by created_at descending
+        """
+        if not self.user_id:
+            return []
+
+        bookmarks = self.db.query(LibraryBookmark).options(
+            joinedload(LibraryBookmark.document)
+        ).filter(
+            LibraryBookmark.user_id == self.user_id
+        ).order_by(LibraryBookmark.created_at.desc()).limit(limit).all()
+
+        return [
+            {
+                "id": b.id,
+                "uuid": b.uuid,
+                "document_id": b.document_id,
+                "user_id": b.user_id,
+                "page_number": b.page_number,
+                "note": b.note,
+                "created_at": b.created_at.isoformat() if b.created_at else None,
+                "updated_at": b.updated_at.isoformat() if b.updated_at else None,
+                "document": {
+                    "id": b.document.id if b.document else None,
+                    "title": b.document.title if b.document else None,
+                } if b.document else None
+            }
+            for b in bookmarks
+        ]
+
+    def get_bookmark_by_uuid(self, bookmark_uuid: str) -> Optional[LibraryBookmark]:
+        """
+        Get bookmark by UUID.
+
+        Args:
+            bookmark_uuid: Bookmark UUID
+
+        Returns:
+            LibraryBookmark or None
+        """
+        if not self.user_id:
+            return None
+
+        return self.db.query(LibraryBookmark).options(
+            joinedload(LibraryBookmark.document)
+        ).filter(
+            LibraryBookmark.uuid == bookmark_uuid,
+            LibraryBookmark.user_id == self.user_id
+        ).first()

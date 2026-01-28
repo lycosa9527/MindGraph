@@ -97,6 +97,18 @@ class ReplyCreate(BaseModel):
     parent_reply_id: Optional[int] = None
 
 
+class DanmakuUpdate(BaseModel):
+    """Request model for updating danmaku position"""
+    position_x: Optional[int] = None
+    position_y: Optional[int] = None
+
+
+class BookmarkCreate(BaseModel):
+    """Request model for creating a bookmark"""
+    page_number: int = Field(..., ge=1)
+    note: Optional[str] = None
+
+
 # =============================================================================
 # Document Endpoints
 # =============================================================================
@@ -284,7 +296,7 @@ async def upload_cover_image(
 
     allowed_extensions = {'.jpg', '.jpeg', '.png', '.webp'}
     file_ext = os.path.splitext(file.filename)[1].lower()
-    
+
     if file_ext not in allowed_extensions:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -303,6 +315,12 @@ async def upload_cover_image(
             document_id=document_id,
             cover_image_path=str(cover_path)
         )
+
+        if not document:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Document not found"
+            )
 
         return {
             "id": document.id,
@@ -420,12 +438,31 @@ async def get_danmaku(
     """
     user_id = current_user.id if current_user else None
     service = LibraryService(db, user_id=user_id)
-    
+
     danmaku_list = service.get_danmaku(
         document_id=document_id,
         page_number=page_number,
         selected_text=selected_text
     )
+
+    return {"danmaku": danmaku_list}
+
+
+@router.get("/danmaku/recent")
+async def get_recent_danmaku(
+    limit: int = Query(50, ge=1, le=100),
+    current_user: Optional[User] = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Get recent danmaku across all documents.
+
+    Returns the most recent danmaku comments ordered by creation time.
+    """
+    user_id = current_user.id if current_user else None
+    service = LibraryService(db, user_id=user_id)
+
+    danmaku_list = service.get_recent_danmaku(limit=limit)
 
     return {"danmaku": danmaku_list}
 
@@ -540,6 +577,35 @@ async def create_reply(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e)) from e
 
 
+@router.patch("/danmaku/{danmaku_id}")
+async def update_danmaku_position(
+    danmaku_id: int,
+    data: DanmakuUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Update danmaku position.
+    
+    Only the creator or admin can update position.
+    """
+    service = LibraryService(db, user_id=current_user.id)
+    updated = service.update_danmaku_position(
+        danmaku_id=danmaku_id,
+        position_x=data.position_x,
+        position_y=data.position_y,
+        is_admin=is_admin(current_user)
+    )
+
+    if not updated:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Danmaku not found or you don't have permission"
+        )
+
+    return {"message": "Danmaku position updated successfully"}
+
+
 @router.delete("/danmaku/{danmaku_id}")
 async def delete_danmaku(
     danmaku_id: int,
@@ -580,3 +646,144 @@ async def delete_reply(
         )
 
     return {"message": "Reply deleted successfully"}
+
+
+# =============================================================================
+# Bookmark Endpoints
+# =============================================================================
+
+@router.post("/documents/{document_id}/bookmarks")
+async def create_bookmark(
+    document_id: int,
+    data: BookmarkCreate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Create or update a bookmark for a document page.
+    """
+    service = LibraryService(db, user_id=current_user.id)
+
+    try:
+        bookmark = service.create_bookmark(
+            document_id=document_id,
+            page_number=data.page_number,
+            note=data.note
+        )
+
+        return {
+            "id": bookmark.id,
+            "message": "Bookmark created successfully",
+            "bookmark": {
+                "id": bookmark.id,
+                "uuid": bookmark.uuid,
+                "document_id": bookmark.document_id,
+                "page_number": bookmark.page_number,
+                "note": bookmark.note,
+                "created_at": bookmark.created_at.isoformat() if bookmark.created_at else None
+            }
+        }
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e
+
+
+@router.get("/bookmarks/recent")
+async def get_recent_bookmarks(
+    limit: int = Query(50, ge=1, le=100),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Get recent bookmarks for the current user.
+
+    Returns the most recent bookmarks ordered by creation time.
+    """
+    service = LibraryService(db, user_id=current_user.id)
+
+    bookmarks = service.get_recent_bookmarks(limit=limit)
+
+    return {"bookmarks": bookmarks}
+
+
+@router.get("/documents/{document_id}/bookmarks/{page_number}")
+async def get_bookmark(
+    document_id: int,
+    page_number: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Get bookmark for a specific document page.
+
+    Returns null if bookmark doesn't exist (200 OK, not 404).
+    This is a valid state, not an error condition.
+    """
+    service = LibraryService(db, user_id=current_user.id)
+    bookmark = service.get_bookmark(document_id, page_number)
+
+    if not bookmark:
+        return None
+
+    return {
+        "id": bookmark.id,
+        "uuid": bookmark.uuid,
+        "document_id": bookmark.document_id,
+        "page_number": bookmark.page_number,
+        "note": bookmark.note,
+        "created_at": bookmark.created_at.isoformat() if bookmark.created_at else None,
+        "updated_at": bookmark.updated_at.isoformat() if bookmark.updated_at else None,
+    }
+
+
+@router.get("/bookmarks/{bookmark_uuid}")
+async def get_bookmark_by_uuid(
+    bookmark_uuid: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Get bookmark by UUID.
+    """
+    service = LibraryService(db, user_id=current_user.id)
+    bookmark = service.get_bookmark_by_uuid(bookmark_uuid)
+
+    if not bookmark:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Bookmark not found"
+        )
+    
+    return {
+        "id": bookmark.id,
+        "uuid": bookmark.uuid,
+        "document_id": bookmark.document_id,
+        "page_number": bookmark.page_number,
+        "note": bookmark.note,
+        "created_at": bookmark.created_at.isoformat() if bookmark.created_at else None,
+        "updated_at": bookmark.updated_at.isoformat() if bookmark.updated_at else None,
+        "document": {
+            "id": bookmark.document.id if bookmark.document else None,
+            "title": bookmark.document.title if bookmark.document else None,
+        } if bookmark.document else None
+    }
+
+
+@router.delete("/bookmarks/{bookmark_id}")
+async def delete_bookmark(
+    bookmark_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Delete a bookmark.
+    """
+    service = LibraryService(db, user_id=current_user.id)
+    deleted = service.delete_bookmark(bookmark_id)
+
+    if not deleted:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Bookmark not found or you don't have permission"
+        )
+
+    return {"message": "Bookmark deleted successfully"}

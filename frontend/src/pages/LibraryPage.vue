@@ -46,8 +46,8 @@ function openDocument(documentId: number) {
 <template>
   <div class="library-page flex-1 flex flex-col bg-stone-50 overflow-hidden">
     <!-- Header -->
-    <div class="library-header px-6 py-5 bg-white border-b border-stone-200">
-      <h1 class="text-xl font-semibold text-stone-900">图书馆</h1>
+    <div class="library-header h-14 px-4 flex items-center bg-white border-b border-stone-200">
+      <h1 class="text-sm font-semibold text-stone-900">图书馆</h1>
     </div>
 
     <!-- Content -->
@@ -81,7 +81,9 @@ function openDocument(documentId: number) {
             @click="openDocument(document.id)"
           >
             <!-- Cover Image -->
-            <div class="aspect-[3/4] rounded-lg overflow-hidden mb-3 bg-stone-200 relative border border-stone-300">
+            <div
+              class="aspect-[3/4] rounded-lg overflow-hidden mb-3 bg-stone-200 relative border border-stone-300"
+            >
               <img
                 v-if="document.cover_image_path"
                 :src="getCoverUrl(document.id)"

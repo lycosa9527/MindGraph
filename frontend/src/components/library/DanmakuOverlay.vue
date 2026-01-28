@@ -70,6 +70,27 @@ function renderHighlights() {
   })
 }
 
+// Track if mouse is down to enable pointer events only during click
+const isMouseDown = ref(false)
+
+function handleCanvasMouseDown(event: MouseEvent) {
+  isMouseDown.value = true
+  if (highlightCanvasRef.value) {
+    highlightCanvasRef.value.style.pointerEvents = 'auto'
+  }
+  handleCanvasClick(event)
+}
+
+function handleCanvasMouseUp() {
+  isMouseDown.value = false
+  // Small delay to allow click event to fire
+  setTimeout(() => {
+    if (highlightCanvasRef.value && !isMouseDown.value) {
+      highlightCanvasRef.value.style.pointerEvents = 'none'
+    }
+  }, 10)
+}
+
 // Handle highlight click
 function handleCanvasClick(event: MouseEvent) {
   if (!highlightCanvasRef.value || !props.currentPage) return
@@ -125,8 +146,10 @@ onUnmounted(() => {
   >
     <canvas
       ref="highlightCanvasRef"
-      class="highlight-canvas absolute inset-0 pointer-events-auto cursor-pointer"
+      class="highlight-canvas absolute inset-0"
       @click="handleCanvasClick"
+      @mousedown="handleCanvasMouseDown"
+      @mouseup="handleCanvasMouseUp"
     />
   </div>
 </template>
@@ -138,5 +161,9 @@ onUnmounted(() => {
 
 .highlight-canvas {
   z-index: 11;
+  /* Don't capture pointer events by default - let text layer handle cursor/selection */
+  /* Only enable pointer events when clicking (handled by JS) */
+  pointer-events: none;
+  cursor: text;
 }
 </style>

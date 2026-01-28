@@ -268,6 +268,7 @@ export interface LibraryDanmaku {
   }
   likes_count: number
   is_liked: boolean
+  replies_count: number
 }
 
 export interface LibraryDanmakuReply {
@@ -293,6 +294,26 @@ export interface CreateDanmakuData {
   text_bbox?: { x: number; y: number; width: number; height: number } | null
   color?: string | null
   highlight_color?: string | null
+}
+
+export interface LibraryBookmark {
+  id: number
+  uuid: string
+  document_id: number
+  user_id: number
+  page_number: number
+  note: string | null
+  created_at: string
+  updated_at: string
+  document?: {
+    id: number
+    title: string
+  } | null
+}
+
+export interface CreateBookmarkData {
+  page_number: number
+  note?: string | null
 }
 
 export interface CreateReplyData {
@@ -434,6 +455,19 @@ export async function getDanmaku(
 }
 
 /**
+ * Get recent danmaku across all documents
+ */
+export async function getRecentDanmaku(
+  limit: number = 50
+): Promise<{ danmaku: LibraryDanmaku[] }> {
+  const response = await apiGet(`/api/library/danmaku/recent?limit=${limit}`)
+  if (!response.ok) {
+    throw new Error('Failed to fetch recent danmaku')
+  }
+  return response.json()
+}
+
+/**
  * Create danmaku comment
  */
 export async function createDanmaku(
@@ -486,12 +520,34 @@ export async function replyToDanmaku(
 }
 
 /**
+ * Update danmaku position
+ * Only the creator or admin can update position.
+ */
+export interface UpdateDanmakuPositionData {
+  position_x?: number | null
+  position_y?: number | null
+}
+
+export async function updateDanmakuPosition(
+  danmakuId: number,
+  data: UpdateDanmakuPositionData
+): Promise<void> {
+  const response = await apiPatch(`/api/library/danmaku/${danmakuId}`, data)
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ detail: 'Failed to update danmaku position' }))
+    throw new Error(error.detail || '只能移动自己的评论')
+  }
+}
+
+/**
  * Delete own danmaku
+ * Only the creator can delete their own danmaku.
  */
 export async function deleteDanmaku(danmakuId: number): Promise<void> {
   const response = await apiDelete(`/api/library/danmaku/${danmakuId}`)
   if (!response.ok) {
-    throw new Error('Failed to delete danmaku')
+    const error = await response.json().catch(() => ({ detail: 'Failed to delete danmaku' }))
+    throw new Error(error.detail || '只能删除自己的评论')
   }
 }
 
@@ -502,6 +558,75 @@ export async function deleteDanmakuReply(replyId: number): Promise<void> {
   const response = await apiDelete(`/api/library/danmaku/replies/${replyId}`)
   if (!response.ok) {
     throw new Error('Failed to delete reply')
+  }
+}
+
+/**
+ * Create or update a bookmark
+ */
+export async function createBookmark(
+  documentId: number,
+  data: CreateBookmarkData
+): Promise<{ id: number; message: string; bookmark: LibraryBookmark }> {
+  const response = await apiPost(`/api/library/documents/${documentId}/bookmarks`, data)
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ detail: 'Failed to create bookmark' }))
+    throw new Error(error.detail || 'Failed to create bookmark')
+  }
+  return response.json()
+}
+
+/**
+ * Get recent bookmarks
+ */
+export async function getRecentBookmarks(
+  limit: number = 50
+): Promise<{ bookmarks: LibraryBookmark[] }> {
+  const response = await apiGet(`/api/library/bookmarks/recent?limit=${limit}`)
+  if (!response.ok) {
+    throw new Error('Failed to fetch recent bookmarks')
+  }
+  return response.json()
+}
+
+/**
+ * Get bookmark for a specific document page
+ * Returns null if bookmark doesn't exist
+ */
+export async function getBookmark(
+  documentId: number,
+  pageNumber: number
+): Promise<LibraryBookmark | null> {
+  const response = await apiGet(`/api/library/documents/${documentId}/bookmarks/${pageNumber}`)
+  if (!response.ok) {
+    // 404 means no bookmark exists, which is valid - return null
+    if (response.status === 404) {
+      return null
+    }
+    throw new Error('Failed to fetch bookmark')
+  }
+  const data = await response.json()
+  return data || null
+}
+
+/**
+ * Get bookmark by UUID
+ */
+export async function getBookmarkByUuid(bookmarkUuid: string): Promise<LibraryBookmark> {
+  const response = await apiGet(`/api/library/bookmarks/${bookmarkUuid}`)
+  if (!response.ok) {
+    throw new Error('Failed to fetch bookmark')
+  }
+  return response.json()
+}
+
+/**
+ * Delete a bookmark
+ */
+export async function deleteBookmark(bookmarkId: number): Promise<void> {
+  const response = await apiDelete(`/api/library/bookmarks/${bookmarkId}`)
+  if (!response.ok) {
+    throw new Error('Failed to delete bookmark')
   }
 }
 

@@ -121,17 +121,24 @@ except Exception as e:
 
 try:
     from models.domain.library import (
-        LibraryDocument, LibraryDanmaku, LibraryDanmakuLike, LibraryDanmakuReply
+        LibraryDocument, LibraryDanmaku, LibraryDanmakuLike, LibraryDanmakuReply,
+        LibraryBookmark
     )
     _ = LibraryDocument.__tablename__
     _ = LibraryDanmaku.__tablename__
     _ = LibraryDanmakuLike.__tablename__
     _ = LibraryDanmakuReply.__tablename__
-    logger.debug("[Database] Library models imported and registered for migrations")
+    _ = LibraryBookmark.__tablename__
+    logger.info("[Database] Library models imported and registered for migrations")
+    logger.debug(
+        "[Database] LibraryBookmark table name: %s, registered: %s",
+        LibraryBookmark.__tablename__,
+        LibraryBookmark.__tablename__ in Base.metadata.tables
+    )
 except ImportError as e:
-    logger.debug("[Database] Could not import library models: %s", e)
+    logger.warning("[Database] Could not import library models: %s", e)
 except Exception as e:
-    logger.debug("[Database] Error registering library models: %s", e)
+    logger.warning("[Database] Error registering library models: %s", e, exc_info=True)
 
 # Ensure data directory exists for database files
 DATA_DIR = Path("data")
@@ -237,6 +244,38 @@ def init_db():
 
     # Get all tables that should exist from Base metadata
     expected_tables = set(Base.metadata.tables.keys())
+    
+    # Verify LibraryBookmark is registered (explicit check)
+    try:
+        from models.domain.library import LibraryBookmark
+        bookmark_table_name = LibraryBookmark.__tablename__
+        if bookmark_table_name not in expected_tables:
+            logger.warning(
+                "[Database] LibraryBookmark table '%s' is NOT registered in Base.metadata!",
+                bookmark_table_name
+            )
+        else:
+            logger.debug(
+                "[Database] LibraryBookmark table '%s' is registered in Base.metadata",
+                bookmark_table_name
+            )
+    except Exception as e:
+        logger.warning(
+            "[Database] Could not verify LibraryBookmark registration: %s",
+            e
+        )
+    
+    # Log registered tables for debugging
+    logger.info(
+        "[Database] Expected tables in Base.metadata (%d): %s",
+        len(expected_tables),
+        ', '.join(sorted(expected_tables))
+    )
+    logger.info(
+        "[Database] Existing tables in database (%d): %s",
+        len(existing_tables),
+        ', '.join(sorted(existing_tables))
+    )
 
     # Determine which tables need to be created
     missing_tables = expected_tables - existing_tables

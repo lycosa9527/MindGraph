@@ -11,10 +11,16 @@ Proprietary License
 """
 
 from datetime import datetime
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Boolean, Text, Index, JSON
+import uuid
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Boolean, Text, Index, JSON, UniqueConstraint
 from sqlalchemy.orm import relationship
 
 from models.domain.auth import Base
+
+
+def generate_uuid():
+    """Generate a UUID string for bookmark IDs."""
+    return str(uuid.uuid4())
 
 
 class LibraryDocument(Base):
@@ -177,3 +183,45 @@ class LibraryDanmakuReply(Base):
     
     def __repr__(self):
         return f"<LibraryDanmakuReply id={self.id} danmaku_id={self.danmaku_id}>"
+
+
+class LibraryBookmark(Base):
+    """
+    Bookmarks for library PDF documents.
+    
+    Users can bookmark specific pages in documents for quick access.
+    Uses UUID for secure, non-guessable bookmark identification.
+    """
+    __tablename__ = "library_bookmarks"
+    
+    id = Column(Integer, primary_key=True, autoincrement=True, index=True)
+    # uuid has unique=True which creates a UNIQUE constraint (implemented as UNIQUE INDEX)
+    # No need for index=True or explicit Index - unique=True already creates the index
+    uuid = Column(String(36), nullable=False, unique=True, default=generate_uuid)  # UUID for tracking/sharing
+    document_id = Column(Integer, ForeignKey("library_documents.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    
+    # Page info
+    page_number = Column(Integer, nullable=False, index=True)  # 1-indexed
+    
+    # Optional note/description
+    note = Column(Text, nullable=True)
+    
+    # Timestamps
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    
+    # Relationships
+    document = relationship("LibraryDocument")
+    user = relationship("User")
+    
+    # Unique constraint: one bookmark per user per document per page
+    __table_args__ = (
+        UniqueConstraint('document_id', 'user_id', 'page_number', name='uq_library_bookmark_doc_user_page'),
+        Index('ix_library_bookmarks_user_created', 'user_id', 'created_at'),
+        Index('ix_library_bookmarks_document_page', 'document_id', 'page_number'),
+        # Removed Index('ix_library_bookmarks_uuid', 'uuid') - redundant with unique=True on uuid column
+    )
+    
+    def __repr__(self):
+        return f"<LibraryBookmark id={self.id} uuid={self.uuid} document_id={self.document_id} page={self.page_number}>"

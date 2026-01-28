@@ -1,10 +1,11 @@
 <script setup lang="ts">
 /**
  * CommentPanel - Side panel for managing danmaku comments
- * Supports text selection mode and position mode
+ * Pin-based comment system
  */
 import { ref, computed, watch } from 'vue'
-import { Heart, MessageSquare, Send, Loader2, X } from 'lucide-vue-next'
+import { Heart, MessageSquare, Send, Loader2, X, Trash2 } from 'lucide-vue-next'
+import { ElButton, ElInput } from 'element-plus'
 
 import { useLibraryStore } from '@/stores/library'
 import { useAuthStore } from '@/stores/auth'
@@ -14,60 +15,69 @@ import type { CreateDanmakuData, CreateReplyData } from '@/utils/apiClient'
 interface Props {
   documentId: number
   currentPage: number | null
-  selectedText: string | null
-  selectedTextBbox: { x: number; y: number; width: number; height: number } | null
+  pinPosition: { x: number; y: number; pageNumber: number } | null
+  danmakuId: number | null
+}
+
+interface Emits {
+  (e: 'close'): void
 }
 
 const props = defineProps<Props>()
+const emit = defineEmits<Emits>()
 
 const libraryStore = useLibraryStore()
 const authStore = useAuthStore()
 const notify = useNotifications()
 
-// Show panel only when text is selected
-const showPanel = computed(() => !!props.selectedText)
+// Show panel when pin is placed or clicked
+const showPanel = computed(() => !!props.pinPosition || !!props.danmakuId)
 const newComment = ref('')
 const replyingTo = ref<number | null>(null)
 const replyContent = ref('')
 const creatingComment = ref(false)
 const creatingReply = ref<Record<number, boolean>>({})
+const deletingDanmaku = ref<Record<number, boolean>>({})
 
 // Get danmaku for current context
 const displayedDanmaku = computed(() => {
-  if (props.selectedText) {
-    return libraryStore.danmakuForText(props.selectedText)
+  if (props.danmakuId) {
+    // Show comments for specific pin (danmaku)
+    const danmaku = libraryStore.danmaku.find((d) => d.id === props.danmakuId)
+    return danmaku ? [danmaku] : []
   }
-  if (props.currentPage) {
+  if (props.pinPosition && props.currentPage) {
+    // Show all comments for current page when placing new pin
     return libraryStore.danmakuForPage(props.currentPage)
   }
   return []
 })
 
-// Watch for page/text changes
+// Watch for page/danmaku changes
 watch(
-  () => [props.currentPage, props.selectedText],
-  async ([page, text]) => {
+  () => [props.currentPage, props.danmakuId],
+  async ([page, danmakuId]) => {
     if (page) {
-      await libraryStore.fetchDanmaku(page, text || undefined)
+      await libraryStore.fetchDanmaku(page)
+    }
+    if (danmakuId) {
+      // Fetch replies for the selected danmaku
+      await libraryStore.fetchReplies(danmakuId)
     }
   },
   { immediate: true }
 )
 
-// Create danmaku comment
+// Create danmaku comment at pin position
 async function createComment() {
   if (!newComment.value.trim() || !props.currentPage || creatingComment.value) return
+  if (!props.pinPosition) return
 
   const data: CreateDanmakuData = {
     content: newComment.value.trim(),
-    page_number: props.currentPage,
-  }
-
-  if (props.selectedText) {
-    data.selected_text = props.selectedText
-    if (props.selectedTextBbox) {
-      data.text_bbox = props.selectedTextBbox
-    }
+    page_number: props.pinPosition.pageNumber,
+    position_x: Math.round(props.pinPosition.x),
+    position_y: Math.round(props.pinPosition.y),
   }
 
   creatingComment.value = true
@@ -75,6 +85,10 @@ async function createComment() {
     await libraryStore.createDanmakuComment(data)
     newComment.value = ''
     notify.success('评论已添加')
+    // Refresh danmaku to show new pin
+    await libraryStore.fetchDanmaku(props.pinPosition.pageNumber)
+    // Close panel after creating comment (temporary pin will be replaced by real pin)
+    emit('close')
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : '创建评论失败'
     notify.error(errorMessage)
@@ -130,10 +144,52 @@ function cancelReply() {
   replyingTo.value = null
 }
 
-// Clear text selection (close panel)
-function clearSelection() {
-  libraryStore.selectedText = null
-  libraryStore.selectedTextBbox = null
+// Delete danmaku (only allowed for comment creator)
+async function deleteDanmaku(danmakuId: number) {
+  if (deletingDanmaku.value[danmakuId]) return
+  
+  // Double-check ownership before attempting deletion
+  const danmaku = displayedDanmaku.value.find((d) => d.id === danmakuId)
+  if (!danmaku || !isOwnDanmaku(danmaku)) {
+    notify.error('只能删除自己的评论')
+    return
+  }
+  
+  deletingDanmaku.value[danmakuId] = true
+  try {
+    await libraryStore.removeDanmaku(danmakuId)
+    notify.success('评论已删除')
+    // Refresh danmaku list
+    if (props.currentPage) {
+      await libraryStore.fetchDanmaku(props.currentPage)
+    }
+    // If this was the selected danmaku, close panel
+    if (props.danmakuId === danmakuId) {
+      emit('close')
+    }
+  } catch (error) {
+    // Handle permission errors specifically
+    const errorMessage = error instanceof Error ? error.message : '删除评论失败'
+    if (errorMessage.includes('permission') || errorMessage.includes('权限') || errorMessage.includes('don\'t have permission')) {
+      notify.error('只能删除自己的评论')
+    } else {
+      notify.error(errorMessage)
+    }
+    console.error('[CommentPanel] Failed to delete danmaku:', error)
+  } finally {
+    deletingDanmaku.value[danmakuId] = false
+  }
+}
+
+// Check if current user owns the danmaku
+function isOwnDanmaku(danmaku: { user_id: number }) {
+  if (!authStore.user?.id) return false
+  return Number(authStore.user.id) === danmaku.user_id
+}
+
+// Close panel
+function closePanel() {
+  emit('close')
 }
 </script>
 
@@ -146,22 +202,23 @@ function clearSelection() {
     <div class="px-4 py-3 border-b border-stone-200 flex items-start justify-between gap-2">
       <div class="flex-1 min-w-0">
         <h3 class="text-sm font-semibold text-stone-900">
-          {{ selectedText ? '评论' : `第 ${currentPage} 页评论` }}
+          {{ danmakuId ? '评论' : pinPosition ? '添加评论' : `第 ${currentPage} 页评论` }}
         </h3>
         <p
-          v-if="selectedText"
-          class="text-xs text-stone-500 mt-1 line-clamp-2"
+          v-if="pinPosition"
+          class="text-xs text-stone-500 mt-1"
         >
-          "{{ selectedText }}"
+          点击位置: ({{ Math.round(pinPosition.x) }}, {{ Math.round(pinPosition.y) }})
         </p>
       </div>
-      <button
-        v-if="selectedText"
-        class="flex-shrink-0 p-1 text-stone-400 hover:text-stone-600 transition-colors"
-        @click="clearSelection"
+      <ElButton
+        text
+        circle
+        size="small"
+        @click="closePanel"
       >
         <X class="w-4 h-4" />
-      </button>
+      </ElButton>
     </div>
 
     <!-- Comments List -->
@@ -186,24 +243,37 @@ function clearSelection() {
               </span>
             </div>
             <p class="text-sm text-stone-800 mb-2">{{ danmaku.content }}</p>
-            <div class="flex items-center gap-4">
-              <button
-                class="flex items-center gap-1 text-xs text-stone-500 hover:text-stone-700"
+            <div class="flex items-center gap-2">
+              <ElButton
+                text
+                size="small"
                 :class="{ 'text-red-500': danmaku.is_liked }"
                 @click="toggleLike(danmaku.id)"
               >
                 <Heart
-                  :class="['w-4 h-4', danmaku.is_liked ? 'fill-current' : '']"
+                  :class="['w-4 h-4 mr-1', danmaku.is_liked ? 'fill-current' : '']"
                 />
                 <span>{{ danmaku.likes_count }}</span>
-              </button>
-              <button
-                class="flex items-center gap-1 text-xs text-stone-500 hover:text-stone-700"
+              </ElButton>
+              <ElButton
+                text
+                size="small"
                 @click="startReply(danmaku.id)"
               >
-                <MessageSquare class="w-4 h-4" />
+                <MessageSquare class="w-4 h-4 mr-1" />
                 <span>回复</span>
-              </button>
+              </ElButton>
+              <ElButton
+                v-if="isOwnDanmaku(danmaku)"
+                text
+                size="small"
+                type="danger"
+                :loading="deletingDanmaku[danmaku.id]"
+                @click="deleteDanmaku(danmaku.id)"
+              >
+                <Trash2 class="w-4 h-4 mr-1" />
+                <span>删除</span>
+              </ElButton>
             </div>
           </div>
         </div>
@@ -228,30 +298,26 @@ function clearSelection() {
           v-if="replyingTo === danmaku.id"
           class="ml-6 mt-2 flex gap-2"
         >
-          <input
+          <ElInput
             v-model="replyContent"
-            type="text"
             placeholder="输入回复..."
-            class="flex-1 px-2 py-1 text-xs border border-stone-200 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            size="small"
             @keyup.enter="submitReply(danmaku.id)"
           />
-          <button
-            class="px-2 py-1 text-xs bg-indigo-500 text-white rounded hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
-            :disabled="creatingReply[danmaku.id]"
+          <ElButton
+            type="primary"
+            size="small"
+            :loading="creatingReply[danmaku.id]"
             @click="submitReply(danmaku.id)"
           >
-            <Loader2
-              v-if="creatingReply[danmaku.id]"
-              class="w-3 h-3 animate-spin"
-            />
-            <span>发送</span>
-          </button>
-          <button
-            class="px-2 py-1 text-xs text-stone-500 hover:text-stone-700"
+            发送
+          </ElButton>
+          <ElButton
+            size="small"
             @click="cancelReply"
           >
             取消
-          </button>
+          </ElButton>
         </div>
       </div>
 
@@ -263,33 +329,24 @@ function clearSelection() {
       </div>
     </div>
 
-    <!-- Comment Input -->
+    <!-- Comment Input - Only show when placing new pin -->
     <div
-      v-if="authStore.isAuthenticated && currentPage"
+      v-if="authStore.isAuthenticated && currentPage && pinPosition"
       class="border-t border-stone-200 p-4"
     >
       <div class="flex gap-2">
-        <input
+        <ElInput
           v-model="newComment"
-          type="text"
           placeholder="添加评论..."
-          class="flex-1 px-3 py-2 text-sm border border-stone-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
           @keyup.enter="createComment"
         />
-        <button
-          class="px-4 py-2 bg-stone-900 text-white rounded-lg hover:bg-stone-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-          :disabled="creatingComment"
+        <ElButton
+          type="primary"
+          :loading="creatingComment"
           @click="createComment"
         >
-          <Loader2
-            v-if="creatingComment"
-            class="w-4 h-4 animate-spin"
-          />
-          <Send
-            v-else
-            class="w-4 h-4"
-          />
-        </button>
+          <Send class="w-4 h-4" />
+        </ElButton>
       </div>
     </div>
   </div>

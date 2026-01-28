@@ -1,11 +1,33 @@
 import { defineConfig, Plugin } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import tailwindcss from '@tailwindcss/vite'
-import { resolve, dirname } from 'path'
-import { readFileSync, copyFileSync, existsSync } from 'fs'
+import { resolve, dirname, join } from 'path'
+import { readFileSync, copyFileSync, existsSync, mkdirSync, readdirSync, statSync } from 'fs'
 import { fileURLToPath } from 'url'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
+
+// Helper function to recursively copy directory
+function copyDir(src: string, dest: string): void {
+  if (!existsSync(src)) {
+    return
+  }
+  
+  mkdirSync(dest, { recursive: true })
+  
+  const entries = readdirSync(src, { withFileTypes: true })
+  
+  for (const entry of entries) {
+    const srcPath = join(src, entry.name)
+    const destPath = join(dest, entry.name)
+    
+    if (entry.isDirectory()) {
+      copyDir(srcPath, destPath)
+    } else {
+      copyFileSync(srcPath, destPath)
+    }
+  }
+}
 
 // Plugin to copy PDF.js worker to public folder
 function copyPdfjsWorker(): Plugin {
@@ -35,6 +57,28 @@ function copyPdfjsWorker(): Plugin {
   }
 }
 
+// Plugin to copy PDF.js cmaps to public folder
+function copyPdfjsCmaps(): Plugin {
+  return {
+    name: 'copy-pdfjs-cmaps',
+    buildStart() {
+      const srcDir = resolve(__dirname, 'node_modules/pdfjs-dist/cmaps')
+      const destDir = resolve(__dirname, 'public/cmaps')
+      
+      if (existsSync(srcDir)) {
+        try {
+          copyDir(srcDir, destDir)
+          console.log(`[Vite] Copied PDF.js cmaps from ${srcDir} to ${destDir}`)
+        } catch (error) {
+          console.warn(`[Vite] Failed to copy PDF.js cmaps:`, error)
+        }
+      } else {
+        console.warn('[Vite] PDF.js cmaps directory not found in node_modules')
+      }
+    },
+  }
+}
+
 // Read version from VERSION file (single source of truth)
 const version = readFileSync(resolve(__dirname, '../VERSION'), 'utf-8').trim()
 
@@ -45,7 +89,7 @@ const backendHost = process.env.VITE_BACKEND_HOST || 'http://localhost:9527'
 const backendHostWs = backendHost.replace('http://', 'ws://').replace('https://', 'wss://')
 
 export default defineConfig({
-  plugins: [vue(), tailwindcss(), copyPdfjsWorker()],
+  plugins: [vue(), tailwindcss(), copyPdfjsWorker(), copyPdfjsCmaps()],
   define: {
     __APP_VERSION__: JSON.stringify(version),
     __BUILD_TIME__: JSON.stringify(Date.now()),

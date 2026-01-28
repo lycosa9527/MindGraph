@@ -35,6 +35,7 @@ import ChunkTestHistory from './ChunkTestHistory.vue'
 import DebateHistory from './DebateHistory.vue'
 import DiagramHistory from './DiagramHistory.vue'
 import KnowledgeSpaceHistory from './KnowledgeSpaceHistory.vue'
+import LibraryCommentsHistory from './LibraryCommentsHistory.vue'
 
 const { t } = useLanguage()
 
@@ -296,7 +297,7 @@ async function handleDiagramSelect(diagram: SavedDiagram) {
         index="library"
       >
         <el-icon><Reading /></el-icon>
-        <template #title>在线图书馆</template>
+        <template #title>图书馆</template>
       </el-menu-item>
     </el-menu>
 
@@ -334,6 +335,12 @@ async function handleDiagramSelect(diagram: SavedDiagram) {
     <!-- Chunk Test: Show test history -->
     <ChunkTestHistory
       v-else-if="!isCollapsed && currentMode === 'chunk-test' && featureRagChunkTest"
+      :is-blurred="!isAuthenticated"
+      class="flex-1 overflow-hidden"
+    />
+    <!-- Library: Show recent comments -->
+    <LibraryCommentsHistory
+      v-else-if="!isCollapsed && currentMode === 'library' && featureLibrary"
       :is-blurred="!isAuthenticated"
       class="flex-1 overflow-hidden"
     />
