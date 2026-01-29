@@ -62,14 +62,20 @@ function togglePinMode() {
   // Clear temporary pin when disabling pin mode
   if (!pinMode.value) {
     temporaryPin.value = null
-    renderPins()
+    // Only render pins if refs are available
+    if (pinsLayerRef.value && canvasRef.value) {
+      renderPins()
+    }
   }
 }
 
 // Clear temporary pin (called from parent when comment panel closes)
 function clearTemporaryPin() {
   temporaryPin.value = null
-  renderPins()
+  // Only render pins if refs are available
+  if (pinsLayerRef.value && canvasRef.value) {
+    renderPins()
+  }
 }
 
 // Update cursor based on pin mode - use custom pin cursor
@@ -147,13 +153,18 @@ async function renderPage(pageNum: number) {
   
   let retries = 0
   const maxRetries = 10
-  while (!canvasRef.value && retries < maxRetries) {
+  while ((!canvasRef.value || !pinsLayerRef.value) && retries < maxRetries) {
     await new Promise(resolve => setTimeout(resolve, 50))
     retries++
   }
   
   if (!canvasRef.value) {
     console.error('[PdfViewer] Canvas not available after retries')
+    return
+  }
+  
+  if (!pinsLayerRef.value) {
+    console.error('[PdfViewer] Pins layer not available after retries')
     return
   }
 
@@ -215,8 +226,16 @@ async function renderPage(pageNum: number) {
     // Update pins layer after canvas is rendered
     await nextTick()
     // Small delay to ensure canvas position is stable
+    // Check refs are still available before rendering pins
     setTimeout(() => {
-      renderPins()
+      if (pinsLayerRef.value && canvasRef.value) {
+        renderPins()
+      } else {
+        console.warn('[PdfViewer] Cannot render pins: refs not available in setTimeout', {
+          hasPinsLayer: !!pinsLayerRef.value,
+          hasCanvas: !!canvasRef.value
+        })
+      }
     }, 50)
     
     // Update cursor
@@ -252,6 +271,9 @@ function createPinIconElement(
 ): HTMLDivElement {
   const pinDiv = document.createElement('div')
   pinDiv.className = isTemporary ? 'pdf-pin-icon pdf-pin-temporary' : 'pdf-pin-icon'
+  // CRITICAL: Explicitly set pointer-events to auto to override parent's pointer-events: none
+  // This ensures pins are clickable and draggable
+  pinDiv.style.pointerEvents = 'auto'
   if (danmakuId) {
     pinDiv.dataset.danmakuId = danmakuId.toString()
   }
@@ -305,6 +327,11 @@ function createPinIconElement(
     
     // Store app reference for cleanup
     mountedPinApps.set(pinDiv, app)
+    
+    // Ensure pointer-events is still auto after Vue mounting (Vue might affect styles)
+    nextTick(() => {
+      pinDiv.style.pointerEvents = 'auto'
+    })
   } catch (error) {
     console.error('[PdfViewer] Failed to mount pin icon:', error)
     // Fallback: create a simple div with text if Vue mounting fails
@@ -318,15 +345,41 @@ function createPinIconElement(
     pinDiv.style.width = '36px'
     pinDiv.style.height = '36px'
     pinDiv.style.fontSize = '20px'
+    // Ensure pointer-events is auto for fallback too
+    pinDiv.style.pointerEvents = 'auto'
+  }
+  
+  // Add click handler directly to pin element (in addition to delegation)
+  // This ensures clicks work even if Element Plus components stop propagation
+  if (danmakuId) {
+    pinDiv.addEventListener('click', (e) => {
+      // Don't handle if we're dragging
+      if (draggingPin.value) {
+        return
+      }
+      
+      // Stop propagation to prevent canvas click handler
+      e.stopPropagation()
+      e.preventDefault()
+      
+      // Emit pin click event directly
+      console.log('[PdfViewer] Pin clicked directly:', { danmakuId, pinElement: pinDiv })
+      emit('pin-click', danmakuId)
+    }, true) // Use capture phase to catch before Element Plus handlers
   }
   
   // Add drag event listeners for all pins (middle mouse button only)
   // We'll check permissions in handlePinDragStart
-  if (danmakuId && danmaku) {
+  // Attach drag handler if danmakuId exists, danmaku will be fetched if needed
+  if (danmakuId) {
     pinDiv.addEventListener('mousedown', (e) => {
       // Only start drag on middle mouse button (button === 1)
       if (e.button === 1) {
-        handlePinDragStart(e, danmakuId, pinDiv, danmaku)
+        // Find danmaku from props if not passed directly
+        const pinDanmaku = danmaku || (props.danmaku || []).find((d) => d.id === danmakuId)
+        if (pinDanmaku) {
+          handlePinDragStart(e, danmakuId, pinDiv, pinDanmaku)
+        }
       }
     })
   }
@@ -427,29 +480,31 @@ function renderPins() {
   })
 
   // Render temporary pin if exists (only if no comment created yet at this position)
-  if (temporaryPin.value) {
+  // Store in local variable to prevent race conditions with watchers
+  const currentTemporaryPin = temporaryPin.value
+  if (currentTemporaryPin) {
     // Check if there's already a danmaku at this position (comment was created)
     const hasCommentAtPosition = (props.danmaku || []).some((d) => 
       d.page_number === currentPage.value &&
       d.position_x !== null &&
       d.position_y !== null &&
-      Math.abs(d.position_x - temporaryPin.value!.x) < 5 &&
-      Math.abs(d.position_y - temporaryPin.value!.y) < 5
+      Math.abs(d.position_x - currentTemporaryPin.x) < 5 &&
+      Math.abs(d.position_y - currentTemporaryPin.y) < 5
     )
     
     // Only show temporary pin if no comment exists at this position
     if (!hasCommentAtPosition) {
       const tempPin = createPinIconElement(null, true, 0)
       // Scale temporary pin position to match rendered canvas size
-      const tempScaledX = temporaryPin.value.x * scaleX
-      const tempScaledY = temporaryPin.value.y * scaleY
+      const tempScaledX = currentTemporaryPin.x * scaleX
+      const tempScaledY = currentTemporaryPin.y * scaleY
       tempPin.style.left = `${tempScaledX}px`
       tempPin.style.top = `${tempScaledY}px`
       tempPin.style.position = 'absolute' // Ensure absolute positioning
       pinsLayerRef.value.appendChild(tempPin)
       
       console.log('[PdfViewer] Temporary pin positioned:', {
-        tempPinPosition: temporaryPin.value,
+        tempPinPosition: currentTemporaryPin,
         scaledPosition: { x: tempScaledX, y: tempScaledY },
         pinStyle: { left: tempPin.style.left, top: tempPin.style.top }
       })
@@ -479,6 +534,7 @@ function renderPins() {
     if (danmaku.position_x === null || danmaku.position_y === null) return
 
     const repliesCount = danmaku.replies_count || 0
+    // Always pass danmaku object to ensure handlers are attached correctly
     const pinDiv = createPinIconElement(danmaku.id, false, repliesCount, danmaku)
     
     // Validate stored position is within canvas bounds
@@ -563,8 +619,14 @@ function renderPins() {
     
     pinsLayerRef.value.appendChild(pinDiv)
     
+    // CRITICAL: Ensure pointer-events is auto after appending to DOM
+    // This overrides any parent styles that might affect it
+    pinDiv.style.pointerEvents = 'auto'
+    
     // After appending, verify actual position and fix if needed
     nextTick().then(() => {
+      // Double-check pointer-events is still auto
+      pinDiv.style.pointerEvents = 'auto'
       const pinRect = pinDiv.getBoundingClientRect()
       const pinsLayerRect = pinsLayerRef.value?.getBoundingClientRect()
       const relativeX = pinsLayerRect ? pinRect.left - pinsLayerRect.left : 0
@@ -841,7 +903,9 @@ async function handlePinDragEnd(event: MouseEvent) {
     console.error('[PdfViewer] Failed to update pin position:', error)
     
     // Revert position on error
-    renderPins()
+    if (pinsLayerRef.value && canvasRef.value) {
+      renderPins()
+    }
   }
   
   draggingPin.value = null
@@ -1009,7 +1073,8 @@ onMounted(async () => {
   
   let retries = 0
   const maxRetries = 20
-  while ((!containerRef.value || !canvasRef.value) && retries < maxRetries) {
+  // Wait for all refs including pinsLayerRef before proceeding
+  while ((!containerRef.value || !canvasRef.value || !pinsLayerRef.value) && retries < maxRetries) {
     await new Promise(resolve => setTimeout(resolve, 50))
     retries++
   }
@@ -1028,10 +1093,15 @@ onMounted(async () => {
     console.log('[PdfViewer] Pin click handler attached to container (capture phase)')
   }
   
-  if (canvasRef.value) {
+  // Only load PDF if all required refs are available
+  if (canvasRef.value && pinsLayerRef.value) {
     loadPdf()
   } else {
-    console.error('[PdfViewer] Canvas not available on mount')
+    console.error('[PdfViewer] Required refs not available on mount', {
+      hasCanvas: !!canvasRef.value,
+      hasPinsLayer: !!pinsLayerRef.value,
+      hasContainer: !!containerRef.value
+    })
   }
   
   // Initialize cursor
@@ -1067,26 +1137,36 @@ watch(() => props.pdfUrl, async () => {
   await nextTick()
   let retries = 0
   const maxRetries = 20
-  while ((!containerRef.value || !canvasRef.value) && retries < maxRetries) {
+  // Wait for all refs including pinsLayerRef
+  while ((!containerRef.value || !canvasRef.value || !pinsLayerRef.value) && retries < maxRetries) {
     await new Promise(resolve => setTimeout(resolve, 50))
     retries++
   }
   
-  if (canvasRef.value) {
+  if (canvasRef.value && pinsLayerRef.value) {
     loadPdf()
   } else {
-    console.error('[PdfViewer] Canvas not available when pdfUrl changed')
+    console.error('[PdfViewer] Required refs not available when pdfUrl changed', {
+      hasCanvas: !!canvasRef.value,
+      hasPinsLayer: !!pinsLayerRef.value
+    })
   }
 })
 
 watch(() => props.danmaku, () => {
-  renderPins()
+  // Only render pins if refs are available
+  if (pinsLayerRef.value && canvasRef.value) {
+    renderPins()
+  }
 }, { deep: true })
 
 watch(currentPage, () => {
   // Clear temporary pin when page changes
   temporaryPin.value = null
-  renderPins()
+  // Only render pins if refs are available
+  if (pinsLayerRef.value && canvasRef.value) {
+    renderPins()
+  }
 })
 
 watch(pinMode, () => {
@@ -1094,12 +1174,18 @@ watch(pinMode, () => {
   // Clear temporary pin when pin mode is disabled
   if (!pinMode.value) {
     temporaryPin.value = null
-    renderPins()
+    // Only render pins if refs are available
+    if (pinsLayerRef.value && canvasRef.value) {
+      renderPins()
+    }
   }
 })
 
 watch(temporaryPin, () => {
-  renderPins()
+  // Only render pins if refs are available
+  if (pinsLayerRef.value && canvasRef.value) {
+    renderPins()
+  }
 })
 </script>
 
@@ -1205,7 +1291,9 @@ watch(temporaryPin, () => {
   cursor: pointer;
   transition: all 0.2s ease;
   /* Pin icons capture clicks for opening comment panel */
-  pointer-events: auto;
+  /* CRITICAL: pointer-events must be auto to override parent's pointer-events: none */
+  /* Also set inline in JS to ensure it works */
+  pointer-events: auto !important;
   /* Ensure pins are above pins layer and visible */
   z-index: 21;
   margin-left: -18px; /* Center the 36px button */
