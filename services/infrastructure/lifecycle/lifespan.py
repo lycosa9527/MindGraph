@@ -42,7 +42,6 @@ from services.redis.cache.redis_diagram_cache import get_diagram_cache
 from services.redis.redis_token_buffer import get_token_tracker
 from services.utils.backup_scheduler import start_backup_scheduler
 from services.utils.temp_image_cleaner import start_cleanup_scheduler
-from services.library.auto_import_scheduler import start_library_auto_import_scheduler
 from services.library.pdf_importer import auto_import_new_pdfs
 from services.utils.update_notifier import update_notifier
 from utils.auth import AUTH_MODE, display_demo_info
@@ -394,7 +393,7 @@ async def lifespan(fastapi_app: FastAPI):
             logger.warning("Failed to start backup scheduler: %s", e)
 
     # One-time auto-import on startup (import any PDFs that were added while server was down)
-    # This runs immediately on startup, before the periodic scheduler starts
+    # This runs immediately on startup - periodic checking has been removed
     try:
         db_startup = SessionLocal()
         try:
@@ -414,17 +413,8 @@ async def lifespan(fastapi_app: FastAPI):
         if is_main_worker:
             logger.warning("Failed to initialize startup auto-import: %s", e)
 
-    # Start library auto-import scheduler (periodic automatic PDF import)
-    # Checks for new PDFs in storage/library/ and imports them automatically
-    # Uses Redis distributed lock to ensure only ONE worker runs imports across all workers
-    # All workers start the scheduler, but only the lock holder executes imports
-    library_auto_import_task: Optional[asyncio.Task] = None
-    try:
-        library_auto_import_task = asyncio.create_task(start_library_auto_import_scheduler())
-        # Don't log here - the scheduler will log whether it acquired the lock
-    except Exception as e:  # pylint: disable=broad-except
-        if worker_id == '0' or not worker_id:
-            logger.warning("Failed to start library auto-import scheduler: %s", e)
+    # Library auto-import is now only performed once at startup (see above)
+    # Periodic auto-import scheduler has been removed to reduce unnecessary checks
 
     # Start process monitor (health monitoring and auto-restart for Qdrant, Celery, Redis)
     # Uses Redis distributed lock to ensure only ONE worker monitors across all workers
@@ -573,14 +563,7 @@ async def lifespan(fastapi_app: FastAPI):
                 pass
             # Only log on worker that was the lock holder (scheduler handles this internally)
 
-        # Stop library auto-import scheduler (runs on all workers, but only lock holder executes)
-        if library_auto_import_task:
-            library_auto_import_task.cancel()
-            try:
-                await library_auto_import_task
-            except asyncio.CancelledError:
-                pass
-            # Only log on worker that was the lock holder (scheduler handles this internally)
+        # Library auto-import scheduler no longer runs (removed periodic checking)
 
         # Stop process monitor
         if process_monitor_task:
