@@ -37,6 +37,7 @@ class PDFStructureInfo:
         self.trailer_offset: Optional[int] = None
         self.file_size: int = 0
         self.xref_location: str = 'unknown'
+        self.has_incremental_updates: bool = False
         self.needs_optimization: bool = False
         self.analysis_error: Optional[str] = None
 
@@ -87,6 +88,14 @@ def analyze_pdf_structure(pdf_path: Path) -> PDFStructureInfo:
             else:
                 trailer_offset = file_size - read_size + trailer_pos_in_tail
                 info.trailer_offset = trailer_offset
+                
+                # Check for incremental updates (/Prev in trailer)
+                # Read trailer section to check for /Prev
+                trailer_section_start = max(0, trailer_pos_in_tail - 500)
+                trailer_section = tail[trailer_section_start:].decode('latin-1', errors='ignore')
+                if '/Prev' in trailer_section:
+                    info.has_incremental_updates = True
+                    logger.debug("PDF %s has incremental updates (/Prev found in trailer)", pdf_path.name)
 
             # Find startxref offset
             startxref_pos = tail.rfind(b'startxref')
@@ -110,15 +119,16 @@ def analyze_pdf_structure(pdf_path: Path) -> PDFStructureInfo:
                     xref_position_ratio = xref_offset / file_size if file_size > 0 else 0
                     if xref_position_ratio < 0.1:
                         info.xref_location = 'beginning'
-                        info.needs_optimization = False
+                        # Still need optimization if has incremental updates
+                        info.needs_optimization = info.has_incremental_updates
                     elif xref_position_ratio > 0.9:
                         info.xref_location = 'end'
-                        # Need optimization if xref at end AND not linearized
-                        info.needs_optimization = not info.is_linearized
+                        # Need optimization if xref at end OR has incremental updates OR not linearized
+                        info.needs_optimization = info.has_incremental_updates or not info.is_linearized
                     else:
                         info.xref_location = f'middle ({round(xref_position_ratio * 100, 1)}%)'
                         # Middle xref typically means incremental updates - needs optimization
-                        info.needs_optimization = not info.is_linearized
+                        info.needs_optimization = True
     except Exception as e:
         info.analysis_error = str(e)
         logger.debug("Error analyzing PDF structure: %s", e, exc_info=True)
@@ -145,6 +155,12 @@ def linearize_pdf_with_qpdf(input_path: Path, output_path: Path) -> Tuple[bool, 
     """
     Linearize PDF using qpdf.
     
+    Uses --linearize which:
+    - Moves xref table to beginning
+    - Removes incremental updates (/Prev)
+    - Creates linearization dictionary
+    - Enables efficient lazy loading
+    
     qpdf exit codes:
     - 0: success
     - 2: errors (operation failed)
@@ -158,6 +174,10 @@ def linearize_pdf_with_qpdf(input_path: Path, output_path: Path) -> Tuple[bool, 
         (success: bool, error_message: Optional[str])
     """
     try:
+        # Use --linearize which automatically:
+        # - Removes incremental updates
+        # - Moves xref to beginning
+        # - Creates proper linearization structure
         result = subprocess.run(
             ['qpdf', '--linearize', str(input_path), str(output_path)],
             capture_output=True,
@@ -176,7 +196,8 @@ def linearize_pdf_with_qpdf(input_path: Path, output_path: Path) -> Tuple[bool, 
                 )
             return True, None
         else:
-            return False, result.stderr or result.stdout
+            error_msg = result.stderr or result.stdout or "Unknown error"
+            return False, error_msg
     except FileNotFoundError:
         return False, 'qpdf not found. Please install qpdf: https://qpdf.sourceforge.io/'
     except subprocess.TimeoutExpired:
@@ -268,10 +289,22 @@ def optimize_pdf(
 
     # Check if optimization is needed
     if not info.needs_optimization:
-        logger.debug("PDF %s does not need optimization (linearized or xref at beginning)", pdf_path.name)
+        logger.debug("PDF %s does not need optimization (linearized, xref at beginning, no incremental updates)", pdf_path.name)
         return True, None, stats
 
-    logger.info("Optimizing PDF: %s (xref at %s)", pdf_path.name, info.xref_location)
+    # Log reason for optimization
+    reasons = []
+    if info.has_incremental_updates:
+        reasons.append("has incremental updates (/Prev)")
+    if info.xref_location == 'end':
+        reasons.append(f"xref at {info.xref_location}")
+    elif info.xref_location != 'beginning':
+        reasons.append(f"xref at {info.xref_location}")
+    if not info.is_linearized:
+        reasons.append("not linearized")
+    
+    reason_str = ", ".join(reasons) if reasons else "unknown"
+    logger.info("Optimizing PDF: %s (%s)", pdf_path.name, reason_str)
 
     # Create backup if requested
     if backup:
@@ -331,6 +364,17 @@ def optimize_pdf(
         stats['size_change'] = size_change
         stats['method'] = method
 
+        # Verify optimization succeeded
+        verify_info = analyze_pdf_structure(pdf_path)
+        if verify_info.analysis_error:
+            logger.warning("Could not verify optimization for %s: %s", pdf_path.name, verify_info.analysis_error)
+        elif verify_info.has_incremental_updates:
+            logger.warning("Optimization completed but PDF still has incremental updates - may need re-linearization")
+        elif not verify_info.is_linearized:
+            logger.warning("Optimization completed but PDF is not marked as linearized")
+        elif verify_info.xref_location != 'beginning':
+            logger.warning("Optimization completed but xref is at %s (expected beginning)", verify_info.xref_location)
+
         logger.info(
             "Successfully optimized %s: %s bytes -> %s bytes (%s bytes)",
             pdf_path.name,
@@ -369,8 +413,17 @@ def should_optimize_pdf(pdf_path: Path) -> Tuple[bool, Optional[str], PDFStructu
     if not info.needs_optimization:
         return False, None, info
 
-    reason = f"XRef table at {info.xref_location} ({info.xref_size_kb} KB)"
+    reasons = []
+    if info.has_incremental_updates:
+        reasons.append("has incremental updates (/Prev)")
     if info.xref_location == 'end':
-        reason += " - linearization will enable efficient lazy loading"
+        reasons.append(f"xref at {info.xref_location} ({info.xref_size_kb} KB)")
+    elif info.xref_location != 'beginning':
+        reasons.append(f"xref at {info.xref_location} ({info.xref_size_kb} KB)")
+    if not info.is_linearized:
+        reasons.append("not linearized")
+    
+    reason = " - ".join(reasons) if reasons else f"XRef table at {info.xref_location} ({info.xref_size_kb} KB)"
+    reason += " - linearization will enable efficient lazy loading"
 
     return True, reason, info
