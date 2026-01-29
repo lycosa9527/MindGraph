@@ -15,11 +15,12 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+import argparse
 import logging
 import re
 import sys
 from pathlib import Path
-from typing import Optional, Dict, Any, List
+from typing import Dict, Any, List
 
 # Add project root to path
 project_root = Path(__file__).parent.parent
@@ -32,33 +33,33 @@ logger = logging.getLogger(__name__)
 def find_all_startxref(pdf_path: Path) -> List[Dict[str, Any]]:
     """
     Find all startxref markers in PDF (for incremental updates).
-    
+
     Returns:
         List of dicts with startxref info, ordered from latest to oldest
     """
     results = []
     file_size = pdf_path.stat().st_size
-    
+
     with open(pdf_path, 'rb') as f:
         # Read last 32KB to find all startxref markers
         read_size = min(32768, file_size)
         f.seek(max(0, file_size - read_size))
         tail = f.read()
-        
+
         # Find all startxref positions
         pos = 0
         while True:
             pos = tail.find(b'startxref', pos)
             if pos == -1:
                 break
-            
+
             # Calculate actual file offset
             file_offset = file_size - read_size + pos
-            
+
             # Read the startxref section
             startxref_section = tail[pos:pos + 200].decode('latin-1', errors='ignore')
             startxref_match = re.search(r'startxref\s+(\d+)', startxref_section)
-            
+
             if startxref_match:
                 xref_offset = int(startxref_match.group(1))
                 results.append({
@@ -66,9 +67,9 @@ def find_all_startxref(pdf_path: Path) -> List[Dict[str, Any]]:
                     'xref_offset': xref_offset,
                     'position_ratio': xref_offset / file_size if file_size > 0 else 0
                 })
-            
+
             pos += 9
-    
+
     # Sort by startxref offset (latest first)
     results.sort(key=lambda x: x['startxref_offset'], reverse=True)
     return results
@@ -77,7 +78,7 @@ def find_all_startxref(pdf_path: Path) -> List[Dict[str, Any]]:
 def read_trailer_dict(pdf_path: Path, trailer_offset: int) -> Dict[str, Any]:
     """
     Read trailer dictionary at given offset.
-    
+
     Returns:
         Dict with trailer information
     """
@@ -88,35 +89,35 @@ def read_trailer_dict(pdf_path: Path, trailer_offset: int) -> Dict[str, Any]:
         'has_xref_stream': False,
         'xref_stream_offset': None
     }
-    
+
     with open(pdf_path, 'rb') as f:
         # Read around trailer
         f.seek(max(0, trailer_offset - 500))
         trailer_data = f.read(2000)
         trailer_text = trailer_data.decode('latin-1', errors='ignore')
-        
+
         # Check for /Prev (previous xref)
         prev_match = re.search(r'/Prev\s+(\d+)', trailer_text)
         if prev_match:
             result['has_prev'] = True
             result['prev_xref_offset'] = int(prev_match.group(1))
-        
+
         # Check for /Linearized
         result['is_linearized'] = '/Linearized' in trailer_text
-        
+
         # Check for /XRefStm (xref stream)
         xref_stm_match = re.search(r'/XRefStm\s+(\d+)', trailer_text)
         if xref_stm_match:
             result['has_xref_stream'] = True
             result['xref_stream_offset'] = int(xref_stm_match.group(1))
-    
+
     return result
 
 
 def check_linearization_dict(pdf_path: Path) -> Dict[str, Any]:
     """
     Check if PDF has linearization dictionary at the beginning.
-    
+
     Returns:
         Dict with linearization info
     """
@@ -126,18 +127,18 @@ def check_linearization_dict(pdf_path: Path) -> Dict[str, Any]:
         'file_length': None,
         'first_page_offset': None
     }
-    
+
     file_size = pdf_path.stat().st_size
-    
+
     # Read first 8KB to find linearization dictionary
     with open(pdf_path, 'rb') as f:
         head = f.read(min(8192, file_size))
         head_text = head.decode('latin-1', errors='ignore')
-        
+
         # Look for /Linearized marker
         if '/Linearized' in head_text:
             result['has_linearization_dict'] = True
-            
+
             # Try to find the linearization dictionary object
             # Format: obj\n<< /Linearized 1 /L <file_size> /O <first_page_offset> ... >>
             linearized_match = re.search(r'/Linearized\s+(\d+)', head_text)
@@ -145,19 +146,19 @@ def check_linearization_dict(pdf_path: Path) -> Dict[str, Any]:
                 # Look for /L (file length) and /O (first page offset)
                 l_match = re.search(r'/L\s+(\d+)', head_text)
                 o_match = re.search(r'/O\s+(\d+)', head_text)
-                
+
                 if l_match:
                     result['file_length'] = int(l_match.group(1))
                 if o_match:
                     result['first_page_offset'] = int(o_match.group(1))
-    
+
     return result
 
 
 def analyze_xref_chain(pdf_path: Path) -> Dict[str, Any]:
     """
     Analyze complete xref chain to see what PDF.js will encounter.
-    
+
     Returns:
         Dict with complete xref chain analysis
     """
@@ -174,24 +175,24 @@ def analyze_xref_chain(pdf_path: Path) -> Dict[str, Any]:
         'main_xref_size_kb': 0,
         'needs_full_scan': False
     }
-    
+
     # Check for linearization dictionary
     lin_info = check_linearization_dict(pdf_path)
     result['is_linearized'] = lin_info['has_linearization_dict']
-    
+
     # Find all startxref markers
     startxref_list = find_all_startxref(pdf_path)
     result['total_xref_tables'] = len(startxref_list)
-    
+
     if not startxref_list:
         result['needs_full_scan'] = True
         return result
-    
+
     # Analyze each xref table
     for i, startxref_info in enumerate(startxref_list):
         xref_offset = startxref_info['xref_offset']
         position_ratio = startxref_info['position_ratio']
-        
+
         # Find trailer for this xref
         # Trailer is before startxref
         with open(pdf_path, 'rb') as f:
@@ -200,14 +201,13 @@ def analyze_xref_chain(pdf_path: Path) -> Dict[str, Any]:
             f.seek(read_start)
             trailer_data = f.read(3000)
             trailer_text = trailer_data.decode('latin-1', errors='ignore')
-            
+
             # Find trailer dictionary
             trailer_dict = {}
             trailer_match = re.search(r'trailer\s*<<(.*?)>>', trailer_text, re.DOTALL)
             if trailer_match:
-                trailer_content = trailer_match.group(1)
                 trailer_dict = read_trailer_dict(pdf_path, read_start + trailer_match.start())
-            
+
             # Calculate xref table size
             trailer_pos = trailer_text.rfind('trailer')
             if trailer_pos != -1:
@@ -216,7 +216,7 @@ def analyze_xref_chain(pdf_path: Path) -> Dict[str, Any]:
                 xref_size = trailer_abs_offset - xref_offset
             else:
                 xref_size = 0
-        
+
         xref_info = {
             'index': i + 1,
             'xref_offset': xref_offset,
@@ -228,16 +228,16 @@ def analyze_xref_chain(pdf_path: Path) -> Dict[str, Any]:
             'has_prev': trailer_dict.get('has_prev', False),
             'prev_xref_offset': trailer_dict.get('prev_xref_offset')
         }
-        
+
         result['xref_chain'].append(xref_info)
-        
+
         # Main xref is the first one (latest)
         if i == 0:
             result['main_xref_location'] = xref_info['position']
             result['main_xref_offset'] = xref_offset
             result['main_xref_size_bytes'] = xref_size
             result['main_xref_size_kb'] = xref_info['xref_size_kb']
-    
+
     # Determine if PDF.js needs to scan
     if result['total_xref_tables'] > 1:
         result['needs_full_scan'] = True
@@ -245,7 +245,7 @@ def analyze_xref_chain(pdf_path: Path) -> Dict[str, Any]:
         result['needs_full_scan'] = True
     elif result['main_xref_location'] != 'beginning' and not result['is_linearized']:
         result['needs_full_scan'] = True
-    
+
     return result
 
 
@@ -254,53 +254,53 @@ def diagnose_pdf(pdf_path: Path) -> None:
     Diagnose a single PDF file.
     """
     logger.info("=" * 80)
-    logger.info(f"Diagnosing: {pdf_path.name}")
+    logger.info("Diagnosing: %s", pdf_path.name)
     logger.info("=" * 80)
-    
+
     if not pdf_path.exists():
-        logger.error(f"File not found: {pdf_path}")
+        logger.error("File not found: %s", pdf_path)
         return
-    
+
     analysis = analyze_xref_chain(pdf_path)
-    
+
     logger.info("")
     logger.info("📊 FILE INFORMATION:")
-    logger.info(f"   Size: {analysis['file_size']:,} bytes ({analysis['file_size_mb']} MB)")
+    logger.info("   Size: %s bytes (%s MB)", f"{analysis['file_size']:,}", analysis['file_size_mb'])
     logger.info("")
-    
+
     logger.info("🔍 LINEARIZATION STATUS:")
     if analysis['is_linearized']:
         logger.info("   ✅ PDF is LINEARIZED (has /Linearized dictionary)")
     else:
         logger.info("   ❌ PDF is NOT LINEARIZED")
     logger.info("")
-    
+
     logger.info("📋 XREF TABLE ANALYSIS:")
-    logger.info(f"   Total xref tables found: {analysis['total_xref_tables']}")
-    
+    logger.info("   Total xref tables found: %s", analysis['total_xref_tables'])
+
     if analysis['total_xref_tables'] == 0:
         logger.error("   ⚠️  NO XREF TABLES FOUND - PDF may be corrupted!")
         return
-    
-    for i, xref_info in enumerate(analysis['xref_chain']):
+
+    for xref_info in analysis['xref_chain']:
         logger.info("")
-        logger.info(f"   XRef Table #{xref_info['index']} (latest first):")
-        logger.info(f"      Offset: {xref_info['xref_offset']:,} bytes ({xref_info['xref_offset_mb']} MB)")
-        logger.info(f"      Location: {xref_info['position']} ({xref_info['position_ratio']*100:.1f}% into file)")
-        logger.info(f"      Size: {xref_info['xref_size_bytes']:,} bytes ({xref_info['xref_size_kb']} KB)")
-        
+        logger.info("   XRef Table #%s (latest first):", xref_info['index'])
+        logger.info("      Offset: %s bytes (%s MB)", f"{xref_info['xref_offset']:,}", xref_info['xref_offset_mb'])
+        logger.info("      Location: %s (%.1f%% into file)", xref_info['position'], xref_info['position_ratio']*100)
+        logger.info("      Size: %s bytes (%s KB)", f"{xref_info['xref_size_bytes']:,}", xref_info['xref_size_kb'])
+
         if xref_info['has_prev']:
-            logger.info(f"      ⚠️  Has /Prev pointing to previous xref at offset {xref_info['prev_xref_offset']}")
-            logger.info(f"      ⚠️  This means PDF has INCREMENTAL UPDATES")
-            logger.info(f"      ⚠️  PDF.js will need to follow the chain!")
-    
+            logger.info("      ⚠️  Has /Prev pointing to previous xref at offset %s", xref_info['prev_xref_offset'])
+            logger.info("      ⚠️  This means PDF has INCREMENTAL UPDATES")
+            logger.info("      ⚠️  PDF.js will need to follow the chain!")
+
     logger.info("")
     logger.info("🎯 PDF.JS BEHAVIOR PREDICTION:")
-    
+
     if analysis['needs_full_scan']:
         logger.info("   ❌ PDF.js will need to SCAN THROUGH THE FILE")
         logger.info("   ❌ This causes full file download!")
-        
+
         reasons = []
         if analysis['total_xref_tables'] > 1:
             reasons.append(f"Multiple xref tables ({analysis['total_xref_tables']})")
@@ -308,47 +308,45 @@ def diagnose_pdf(pdf_path: Path) -> None:
             reasons.append("Main xref at end (non-linearized)")
         if analysis['main_xref_location'] == 'middle':
             reasons.append("Main xref in middle")
-        
+
         logger.info("")
         logger.info("   Root causes:")
         for reason in reasons:
-            logger.info(f"      • {reason}")
+            logger.info("      • %s", reason)
     else:
         logger.info("   ✅ PDF.js should be able to read xref quickly")
-        logger.info(f"   ✅ Expected initial download: ~{analysis['main_xref_size_kb']} KB")
-    
+        logger.info("   ✅ Expected initial download: ~%s KB", analysis['main_xref_size_kb'])
+
     logger.info("")
     logger.info("💡 RECOMMENDATIONS:")
-    
+
     if not analysis['is_linearized']:
         logger.info("   1. Run qpdf --linearize to linearize the PDF")
         logger.info("      This will:")
         logger.info("        • Move xref table to beginning")
         logger.info("        • Remove incremental updates")
         logger.info("        • Enable efficient lazy loading")
-    
+
     if analysis['total_xref_tables'] > 1:
         logger.info("   2. PDF has incremental updates - linearization will remove them")
-    
+
     if analysis['main_xref_location'] != 'beginning':
         logger.info("   3. Xref table is not at beginning - linearization will fix this")
-    
+
     logger.info("")
 
 
 def main():
     """Main entry point."""
-    import argparse
-    
     parser = argparse.ArgumentParser(description="Diagnose PDF xref structure")
     parser.add_argument(
         'pdf_path',
         type=Path,
         help='Path to PDF file to diagnose'
     )
-    
+
     args = parser.parse_args()
-    
+
     diagnose_pdf(args.pdf_path)
 
 

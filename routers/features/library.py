@@ -220,8 +220,10 @@ async def get_document_file(
     # Log request details for debugging
     range_header = request.headers.get('Range', 'none')
     method = request.method
-    logger.debug("[Library] Serving PDF file: %s (ID: %s, Size: %s bytes, Method: %s, Range: %s)",
-                document.title, document_id, file_size, method, range_header)
+    # Use INFO level for Range requests to help debug server issues
+    log_level = logger.info if range_header != 'none' else logger.debug
+    log_level("[Library] Serving PDF file: %s (ID: %s, Size: %s bytes, Method: %s, Range: %s)",
+              document.title, document_id, file_size, method, range_header)
 
     # Only increment views for GET requests, not HEAD requests
     if method == "GET":
@@ -273,8 +275,8 @@ async def get_document_file(
                 f.seek(start)
                 content = f.read(content_length)
 
-            logger.debug("[Library] Range request: bytes=%s-%s/%s (length=%s)",
-                        start, end, file_size, content_length)
+            logger.info("[Library] ✅ Range request handled: bytes=%s-%s/%s (length=%s, status=206)",
+                       start, end, file_size, content_length)
 
             return Response(
                 content=content,

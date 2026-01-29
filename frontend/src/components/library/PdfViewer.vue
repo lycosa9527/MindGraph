@@ -52,6 +52,11 @@ const loading = ref(false)
 const pinMode = ref(false) // Pin placement mode - must be enabled from toolbar
 const temporaryPin = ref<{ x: number; y: number } | null>(null) // Temporary pin shown immediately on click
 
+// Track loading task and background operations for cancellation
+const loadingTask = ref<any>(null)
+const isUnmounted = ref(false)
+const backgroundPreloadPromises = ref<Promise<void>[]>([])
+
 // Lazy loading tracking
 const lazyLoadStats = ref({
   metadataLoadStart: 0,
@@ -241,7 +246,17 @@ async function loadPdf() {
     console.log('[LAZY LOADING]   ⚠️  NOTE: For non-linearized PDFs, xref table is at END of file')
     console.log('[LAZY LOADING]   ⚠️  PDF.js MUST read xref to locate pages - this is unavoidable')
     
-    const loadingTask = pdfjsLib.getDocument({
+    // Cancel any existing loading task
+    if (loadingTask.value) {
+      try {
+        loadingTask.value.destroy()
+        console.log('[PdfViewer] Cancelled previous loading task')
+      } catch (error) {
+        console.warn('[PdfViewer] Error cancelling previous loading task:', error)
+      }
+    }
+    
+    loadingTask.value = pdfjsLib.getDocument({
       url: props.pdfUrl,
       useSystemFonts: true,
       cMapUrl: '/cmaps/',
@@ -259,7 +274,11 @@ async function loadPdf() {
     // For non-linearized PDFs, xref is at END, so PDF.js may download significant data
     let structureBytesLoaded = 0
     let progressUpdates: Array<{loaded: number, total: number, timestamp: number}> = []
-    loadingTask.onProgress = (progress: any) => {
+    loadingTask.value.onProgress = (progress: any) => {
+      // Stop tracking progress if component is unmounted
+      if (isUnmounted.value) {
+        return
+      }
       const now = performance.now()
       if (progress.total > 0) {
         const percent = Math.round((progress.loaded / progress.total) * 100)
@@ -295,7 +314,29 @@ async function loadPdf() {
     console.log('[LAZY LOADING]   PDF.js is reading xref table to locate pages')
     console.log('[LAZY LOADING]   For non-linearized PDFs, this requires reading from END of file')
     
-    const doc = await loadingTask.promise
+    // Check if component was unmounted before waiting for promise
+    if (isUnmounted.value) {
+      console.log('[PdfViewer] Component unmounted, cancelling PDF load')
+      try {
+        loadingTask.value?.destroy()
+      } catch (error) {
+        console.warn('[PdfViewer] Error destroying loading task:', error)
+      }
+      return
+    }
+    
+    const doc = await loadingTask.value.promise
+    
+    // Check again after promise resolves (component might have been unmounted during download)
+    if (isUnmounted.value) {
+      console.log('[PdfViewer] Component unmounted during PDF load, aborting')
+      try {
+        doc.destroy()
+      } catch (error) {
+        console.warn('[PdfViewer] Error destroying PDF document:', error)
+      }
+      return
+    }
     lazyLoadStats.value.metadataLoadEnd = performance.now()
     lazyLoadStats.value.metadataSize = structureBytesLoaded
     
@@ -389,9 +430,20 @@ async function loadPdf() {
     
     // Preload function - actually renders page to trigger content download
     const preloadPage = async (pageNum: number, renderToHiddenCanvas: boolean = false): Promise<void> => {
+      // Check if component is unmounted before starting
+      if (isUnmounted.value) {
+        return
+      }
+      
       try {
         const pageLoadStart = performance.now()
         const page = await pdfDocument.value.getPage(pageNum)
+        
+        // Check again after page load
+        if (isUnmounted.value) {
+          return
+        }
+        
         const getPageTime = performance.now() - pageLoadStart
         
         // Actually render the page to trigger content download
@@ -412,7 +464,7 @@ async function loadPdf() {
             
             const renderStart = performance.now()
             const context = hiddenCanvas.getContext('2d')
-            if (context) {
+            if (context && !isUnmounted.value) {
               await page.render({
                 canvasContext: context,
                 viewport: viewport,
@@ -427,8 +479,8 @@ async function loadPdf() {
         
         const totalLoadTime = getPageTime + renderTime
         
-        // Track page load
-        if (!lazyLoadStats.value.pagesLoaded.has(pageNum)) {
+        // Track page load (only if not unmounted)
+        if (!isUnmounted.value && !lazyLoadStats.value.pagesLoaded.has(pageNum)) {
           lazyLoadStats.value.pagesLoaded.add(pageNum)
           lazyLoadStats.value.pageLoadTimes.set(pageNum, totalLoadTime)
           
@@ -443,7 +495,10 @@ async function loadPdf() {
           console.log(`   📦 Estimated Size: ~${formatBytes(estimatedPageSize)}`)
         }
       } catch (error) {
-        console.error(`[PdfViewer] Failed to preload page ${pageNum}:`, error)
+        // Only log error if component is still mounted
+        if (!isUnmounted.value) {
+          console.error(`[PdfViewer] Failed to preload page ${pageNum}:`, error)
+        }
       }
     }
     
@@ -465,30 +520,52 @@ async function loadPdf() {
     // Render page 1 immediately (this triggers the actual content download)
     await renderPage(1)
     
-    // Preload remaining pages (2-5) in the background by actually rendering them
-    if (initialPagesToLoad > 1) {
-      console.log('')
-      console.log(`📄 [LAZY LOADING] STEP 4: Preloading Remaining Pages (2-${initialPagesToLoad}) in Background`)
-      console.log('   Rendering pages to hidden canvases to trigger content downloads')
-      
-      const backgroundPreloadPromises: Promise<void>[] = []
-      for (let pageNum = 2; pageNum <= initialPagesToLoad; pageNum++) {
-        // Render to hidden canvas to trigger actual content download
-        backgroundPreloadPromises.push(preloadPage(pageNum, true))
-      }
-      
-      // Don't await - let these load in background
-      Promise.all(backgroundPreloadPromises).then(() => {
+      // Preload remaining pages (2-5) in the background by actually rendering them
+      if (initialPagesToLoad > 1 && !isUnmounted.value) {
         console.log('')
-        console.log(`✅ [LAZY LOADING] Background Preload Complete: ${initialPagesToLoad} pages total`)
-        console.log(`   📊 Pages Loaded: ${lazyLoadStats.value.pagesLoaded.size} of ${totalPages.value}`)
-        console.log(`   💾 Total Downloaded: ~${formatBytes(lazyLoadStats.value.totalBytesDownloaded)}`)
-        console.log('   💡 Remaining pages will load on-demand when you navigate to them')
-      }).catch((error) => {
-        console.error('[PdfViewer] Background preload failed:', error)
-      })
-    }
+        console.log(`📄 [LAZY LOADING] STEP 4: Preloading Remaining Pages (2-${initialPagesToLoad}) in Background`)
+        console.log('   Rendering pages to hidden canvases to trigger content downloads')
+        
+        const preloadPromises: Promise<void>[] = []
+        for (let pageNum = 2; pageNum <= initialPagesToLoad; pageNum++) {
+          // Render to hidden canvas to trigger actual content download
+          preloadPromises.push(preloadPage(pageNum, true))
+        }
+        
+        // Store promises for cancellation
+        backgroundPreloadPromises.value = preloadPromises
+        
+        // Don't await - let these load in background
+        Promise.all(preloadPromises).then(() => {
+          // Check if component was unmounted before logging
+          if (isUnmounted.value) {
+            return
+          }
+          console.log('')
+          console.log(`✅ [LAZY LOADING] Background Preload Complete: ${initialPagesToLoad} pages total`)
+          console.log(`   📊 Pages Loaded: ${lazyLoadStats.value.pagesLoaded.size} of ${totalPages.value}`)
+          console.log(`   💾 Total Downloaded: ~${formatBytes(lazyLoadStats.value.totalBytesDownloaded)}`)
+          console.log('   💡 Remaining pages will load on-demand when you navigate to them')
+        }).catch((error) => {
+          // Only log error if component is still mounted
+          if (!isUnmounted.value) {
+            console.error('[PdfViewer] Background preload failed:', error)
+          }
+        })
+      }
   } catch (error: any) {
+    // Don't show errors if component was unmounted (user navigated away)
+    if (isUnmounted.value) {
+      console.log('[PdfViewer] PDF load cancelled (component unmounted)')
+      return
+    }
+    
+    // Check if error is due to cancellation
+    if (error?.name === 'AbortException' || error?.message?.includes('destroyed') || error?.message?.includes('cancelled')) {
+      console.log('[PdfViewer] PDF load cancelled')
+      return
+    }
+    
     console.error('')
     console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
     console.error('❌ [LAZY LOADING] PDF Load Failed')
@@ -517,13 +594,22 @@ async function loadPdf() {
     
     notify.error(userMessage)
   } finally {
-    loading.value = false
+    // Only update loading state if component is still mounted
+    if (!isUnmounted.value) {
+      loading.value = false
+    }
   }
 }
 
 // Render current page
 async function renderPage(pageNum: number) {
   if (!pdfDocument.value || pageNum < 1 || pageNum > totalPages.value) return
+  
+  // Check if component is unmounted
+  if (isUnmounted.value) {
+    console.log('[PdfViewer] Component unmounted, skipping page render')
+    return
+  }
 
   // Check if page already loaded
   const isAlreadyLoaded = lazyLoadStats.value.pagesLoaded.has(pageNum)
@@ -563,8 +649,19 @@ async function renderPage(pageNum: number) {
 
   loading.value = true
   try {
+    // Check again before starting page load
+    if (isUnmounted.value) {
+      return
+    }
+    
     const pageLoadStart = performance.now()
     const page = await pdfDocument.value.getPage(pageNum)
+    
+    // Check again after page load
+    if (isUnmounted.value) {
+      return
+    }
+    
     const pageLoadTime = performance.now() - pageLoadStart
     
     // Track page load
@@ -648,11 +745,20 @@ async function renderPage(pageNum: number) {
       viewport: scaledViewport,
     }).promise
 
+    // Check again after render completes
+    if (isUnmounted.value) {
+      return
+    }
+
     // Update pins layer after canvas is rendered
     await nextTick()
     // Small delay to ensure canvas position is stable
     // Check refs are still available before rendering pins
     setTimeout(() => {
+      // Check if component was unmounted during timeout
+      if (isUnmounted.value) {
+        return
+      }
       if (pinsLayerRef.value && canvasRef.value) {
         renderPins()
       } else {
@@ -666,12 +772,23 @@ async function renderPage(pageNum: number) {
     // Update cursor
     updateCursor()
 
+    // Check again before updating state
+    if (isUnmounted.value) {
+      return
+    }
+    
     currentPage.value = pageNum
     emit('page-change', pageNum)
   } catch (error) {
-    console.error(`[PdfViewer] Failed to render page ${pageNum}:`, error)
+    // Only log error if component is still mounted
+    if (!isUnmounted.value) {
+      console.error(`[PdfViewer] Failed to render page ${pageNum}:`, error)
+    }
   } finally {
-    loading.value = false
+    // Only update loading state if component is still mounted
+    if (!isUnmounted.value) {
+      loading.value = false
+    }
   }
 }
 
@@ -1508,6 +1625,9 @@ function handleResize() {
 }
 
 onMounted(async () => {
+  // Reset unmounted flag when component mounts
+  isUnmounted.value = false
+  
   await nextTick()
   
   let retries = 0
@@ -1516,6 +1636,11 @@ onMounted(async () => {
   while ((!containerRef.value || !canvasRef.value || !pinsLayerRef.value) && retries < maxRetries) {
     await new Promise(resolve => setTimeout(resolve, 50))
     retries++
+  }
+  
+  // Check if component was unmounted during wait
+  if (isUnmounted.value) {
+    return
   }
   
   // Set up click handler for placing pins directly on canvas
@@ -1550,6 +1675,36 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
+  // Mark component as unmounted to stop all async operations
+  isUnmounted.value = true
+  
+  console.log('[PdfViewer] Component unmounting, cancelling PDF downloads...')
+  
+  // Cancel PDF loading task
+  if (loadingTask.value) {
+    try {
+      loadingTask.value.destroy()
+      console.log('[PdfViewer] ✅ Cancelled PDF loading task')
+    } catch (error) {
+      console.warn('[PdfViewer] Error cancelling loading task:', error)
+    }
+    loadingTask.value = null
+  }
+  
+  // Cancel PDF document if it exists
+  if (pdfDocument.value) {
+    try {
+      pdfDocument.value.destroy()
+      console.log('[PdfViewer] ✅ Destroyed PDF document')
+    } catch (error) {
+      console.warn('[PdfViewer] Error destroying PDF document:', error)
+    }
+    pdfDocument.value = null
+  }
+  
+  // Clear background preload promises (they will be cancelled when component unmounts)
+  backgroundPreloadPromises.value = []
+  
   // Log lazy loading summary
   if (lazyLoadStats.value.pagesLoaded.size > 0) {
     console.log('')
@@ -1586,10 +1741,26 @@ onUnmounted(() => {
     clearTimeout(resizeTimeout)
   }
   window.removeEventListener('resize', handleResize)
+  
+  console.log('[PdfViewer] ✅ Cleanup complete, all downloads cancelled')
 })
 
 watch(() => props.pdfUrl, async () => {
   if (!props.pdfUrl) return
+  
+  // Cancel any existing loading before starting new one
+  if (loadingTask.value) {
+    try {
+      loadingTask.value.destroy()
+      console.log('[PdfViewer] Cancelled previous loading task due to URL change')
+    } catch (error) {
+      console.warn('[PdfViewer] Error cancelling previous loading task:', error)
+    }
+    loadingTask.value = null
+  }
+  
+  // Reset unmounted flag when URL changes (component is still mounted)
+  isUnmounted.value = false
   
   await nextTick()
   let retries = 0
@@ -1598,6 +1769,11 @@ watch(() => props.pdfUrl, async () => {
   while ((!containerRef.value || !canvasRef.value || !pinsLayerRef.value) && retries < maxRetries) {
     await new Promise(resolve => setTimeout(resolve, 50))
     retries++
+  }
+  
+  // Check if component was unmounted during wait
+  if (isUnmounted.value) {
+    return
   }
   
   if (canvasRef.value && pinsLayerRef.value) {

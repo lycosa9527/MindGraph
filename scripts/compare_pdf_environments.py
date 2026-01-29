@@ -13,21 +13,23 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+import argparse
+import importlib
 import logging
 import os
 import subprocess
 import sys
 from pathlib import Path
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, Optional
 
-# Add project root to path
+# Add project root to path before importing project modules
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
-from services.library.pdf_optimizer import (
-    analyze_pdf_structure,
-    check_qpdf_available
-)
+# Import project modules dynamically to satisfy linter requirements
+_pdf_optimizer_module = importlib.import_module('services.library.pdf_optimizer')
+analyze_pdf_structure = _pdf_optimizer_module.analyze_pdf_structure
+check_qpdf_available = _pdf_optimizer_module.check_qpdf_available
 
 logging.basicConfig(level=logging.INFO, format='%(message)s')
 logger = logging.getLogger(__name__)
@@ -62,17 +64,17 @@ def check_environment() -> Dict[str, Any]:
         'library_storage_dir': os.getenv('LIBRARY_STORAGE_DIR', './storage/library'),
         'current_working_dir': str(Path.cwd()),
     }
-    
+
     if env_info['qpdf_available']:
         env_info['qpdf_version'] = get_qpdf_version()
-    
+
     return env_info
 
 
 def analyze_pdf_collection(library_dir: Path) -> Dict[str, Any]:
     """Analyze all PDFs in library directory."""
     pdf_files = list(library_dir.glob("*.pdf"))
-    
+
     if not pdf_files:
         return {
             'total': 0,
@@ -83,7 +85,7 @@ def analyze_pdf_collection(library_dir: Path) -> Dict[str, Any]:
             'needs_optimization': 0,
             'pdfs': []
         }
-    
+
     results = {
         'total': len(pdf_files),
         'linearized': 0,
@@ -94,10 +96,10 @@ def analyze_pdf_collection(library_dir: Path) -> Dict[str, Any]:
         'needs_optimization': 0,
         'pdfs': []
     }
-    
+
     for pdf_path in sorted(pdf_files):
         info = analyze_pdf_structure(pdf_path)
-        
+
         pdf_info = {
             'filename': pdf_path.name,
             'file_size_mb': round(info.file_size / 1024 / 1024, 2),
@@ -108,9 +110,9 @@ def analyze_pdf_collection(library_dir: Path) -> Dict[str, Any]:
             'needs_optimization': info.needs_optimization,
             'analysis_error': info.analysis_error
         }
-        
+
         results['pdfs'].append(pdf_info)
-        
+
         if info.is_linearized:
             results['linearized'] += 1
         if info.has_incremental_updates:
@@ -123,7 +125,7 @@ def analyze_pdf_collection(library_dir: Path) -> Dict[str, Any]:
             results['xref_at_middle'] += 1
         if info.needs_optimization:
             results['needs_optimization'] += 1
-    
+
     return results
 
 
@@ -159,18 +161,18 @@ def print_pdf_analysis_report(analysis: Dict[str, Any]) -> None:
     logger.info("PDF COLLECTION ANALYSIS")
     logger.info("=" * 80)
     logger.info("")
-    
+
     if analysis['total'] == 0:
         logger.info("No PDF files found in library directory")
         return
-    
+
     logger.info("Total PDFs: %d", analysis['total'])
     logger.info("")
     logger.info("Optimization Status:")
-    logger.info("  Linearized: %d (%.1f%%)", 
-                analysis['linearized'], 
+    logger.info("  Linearized: %d (%.1f%%)",
+                analysis['linearized'],
                 (analysis['linearized'] / analysis['total'] * 100) if analysis['total'] > 0 else 0)
-    logger.info("  Has Incremental Updates: %d (%.1f%%)", 
+    logger.info("  Has Incremental Updates: %d (%.1f%%)",
                 analysis['has_incremental_updates'],
                 (analysis['has_incremental_updates'] / analysis['total'] * 100) if analysis['total'] > 0 else 0)
     logger.info("  Needs Optimization: %d (%.1f%%)",
@@ -182,7 +184,7 @@ def print_pdf_analysis_report(analysis: Dict[str, Any]) -> None:
     logger.info("  At End: %d", analysis['xref_at_end'])
     logger.info("  In Middle: %d", analysis['xref_at_middle'])
     logger.info("")
-    
+
     # Show problematic PDFs
     problematic = [p for p in analysis['pdfs'] if p['needs_optimization']]
     if problematic:
@@ -195,7 +197,7 @@ def print_pdf_analysis_report(analysis: Dict[str, Any]) -> None:
                 issues.append("not linearized")
             if pdf['xref_location'] != 'beginning':
                 issues.append(f"xref at {pdf['xref_location']}")
-            
+
             logger.info("  • %s (%s MB)", pdf['filename'], pdf['file_size_mb'])
             logger.info("    Issues: %s", ", ".join(issues))
         logger.info("")
@@ -203,8 +205,6 @@ def print_pdf_analysis_report(analysis: Dict[str, Any]) -> None:
 
 def main():
     """Main entry point."""
-    import argparse
-    
     parser = argparse.ArgumentParser(
         description="Compare PDF optimization status between environments"
     )
@@ -214,51 +214,51 @@ def main():
         default=None,
         help='Path to library directory (default: storage/library)'
     )
-    
+
     args = parser.parse_args()
-    
+
     # Determine library directory
     if args.library_dir:
         library_dir = args.library_dir.resolve()
     else:
         storage_dir_env = os.getenv("LIBRARY_STORAGE_DIR", "./storage/library")
         library_dir = Path(storage_dir_env).resolve()
-        
+
         if not library_dir.exists():
             library_dir = project_root / 'storage' / 'library'
-    
+
     if not library_dir.exists():
         logger.error("Library directory not found: %s", library_dir)
         return
-    
+
     # Check environment
     env_info = check_environment()
     print_environment_report(env_info)
-    
+
     # Analyze PDFs
     analysis = analyze_pdf_collection(library_dir)
     print_pdf_analysis_report(analysis)
-    
+
     # Recommendations
     logger.info("=" * 80)
     logger.info("RECOMMENDATIONS")
     logger.info("=" * 80)
     logger.info("")
-    
+
     if not env_info['qpdf_available']:
         logger.info("1. Install qpdf to enable PDF optimization")
         logger.info("")
-    
+
     if analysis['needs_optimization'] > 0:
         logger.info("2. Fix problematic PDFs by running:")
         logger.info("   python scripts/fix_pdf_xref_issues.py --library-dir %s", library_dir)
         logger.info("")
-    
+
     if analysis['has_incremental_updates'] > 0:
         logger.info("3. PDFs with incremental updates will cause PDF.js to download entire file")
         logger.info("   Re-linearize them to remove incremental updates")
         logger.info("")
-    
+
     if analysis['needs_optimization'] == 0 and env_info['qpdf_available']:
         logger.info("✅ All PDFs appear to be optimized!")
         logger.info("   If PDF.js still downloads entire files, check:")

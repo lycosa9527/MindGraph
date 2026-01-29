@@ -49,17 +49,34 @@ def _try_extract_cover(
     """
     Try to extract cover image for a PDF if it doesn't exist.
 
+    Verifies existing covers and validates newly extracted covers.
+    Invalid covers are automatically removed.
+
     Args:
         pdf_path: Path to PDF file
         cover_path: Path where cover should be saved
         dpi: DPI for cover extraction
 
     Returns:
-        Cover image path if extraction successful, None otherwise
+        Cover image path if extraction successful and verified, None otherwise
     """
     if cover_path.exists():
-        logger.info("Using existing cover: %s", cover_path.name)
-        return str(cover_path)
+        # Verify existing cover is valid
+        from services.library.pdf_cover_extractor import verify_cover_image
+        is_valid, error_msg = verify_cover_image(cover_path)
+        if is_valid:
+            logger.info("Using existing valid cover: %s", cover_path.name)
+            return str(cover_path)
+        logger.warning(
+            "Existing cover is invalid, will regenerate: %s - %s",
+            cover_path.name,
+            error_msg
+        )
+        # Remove invalid cover
+        try:
+            cover_path.unlink()
+        except Exception:
+            pass
 
     is_available, error_msg = check_cover_extraction_available()
     if not is_available:
@@ -72,8 +89,23 @@ def _try_extract_cover(
 
     logger.info("Extracting cover for %s...", pdf_path.name)
     if extract_pdf_cover(pdf_path, cover_path, dpi):
-        logger.info("Successfully extracted cover: %s", cover_path.name)
-        return str(cover_path)
+        # Verify the extracted cover
+        from services.library.pdf_cover_extractor import verify_cover_image
+        is_valid, verify_error = verify_cover_image(cover_path)
+        if is_valid:
+            logger.info("Successfully extracted and verified cover: %s", cover_path.name)
+            return str(cover_path)
+        logger.warning(
+            "Cover extraction succeeded but verification failed for %s: %s",
+            pdf_path.name,
+            verify_error
+        )
+        # Remove invalid cover
+        try:
+            cover_path.unlink()
+        except Exception:
+            pass
+        return None
 
     logger.warning("Failed to extract cover for %s", pdf_path.name)
     return None
@@ -174,6 +206,8 @@ def import_pdfs_from_folder(
 
     imported_count = 0
     skipped_count = 0
+    covers_extracted = 0
+    covers_failed = 0
 
     # Check optimization tools availability
     qpdf_available = check_qpdf_available()
@@ -298,11 +332,14 @@ def import_pdfs_from_folder(
             cover_image_path = _try_extract_cover(pdf_path, cover_path, dpi)
             # Normalize cover path if extracted
             if cover_image_path:
+                covers_extracted += 1
                 cover_image_path = normalize_library_path(
                     Path(cover_image_path),
                     service.covers_dir,
                     Path.cwd()
                 )
+            else:
+                covers_failed += 1
         elif cover_path.exists():
             cover_image_path = normalize_library_path(
                 cover_path,
@@ -364,6 +401,8 @@ def import_pdfs_from_folder(
     logger.info("Import complete: %s imported, %s skipped", imported_count, skipped_count)
     if auto_optimize:
         logger.info("Optimization: %s optimized, %s errors", optimized_count, optimization_errors)
+    if extract_covers and (covers_extracted > 0 or covers_failed > 0):
+        logger.info("Cover extraction: %s extracted, %s failed", covers_extracted, covers_failed)
     return (imported_count, skipped_count)
 
 
@@ -424,6 +463,8 @@ def auto_import_new_pdfs(
     imported_count = 0
     skipped_count = 0
     optimized_count = 0
+    covers_extracted = 0
+    covers_failed = 0
 
     for pdf_path in pdf_files:
         pdf_name = pdf_path.name
@@ -500,11 +541,14 @@ def auto_import_new_pdfs(
                 cover_path = service.covers_dir / cover_filename
                 cover_image_path = _try_extract_cover(pdf_path, cover_path, dpi)
                 if cover_image_path:
+                    covers_extracted += 1
                     cover_image_path = normalize_library_path(
                         Path(cover_image_path),
                         service.covers_dir,
                         Path.cwd()
                     )
+                else:
+                    covers_failed += 1
 
             # Create document record
             document = LibraryDocument(
@@ -568,6 +612,12 @@ def auto_import_new_pdfs(
             skipped_count,
             optimized_count
         )
+        if extract_covers:
+            logger.info(
+                "Cover extraction: %s extracted, %s failed",
+                covers_extracted,
+                covers_failed
+            )
     else:
         logger.debug("Auto-import: No new PDFs to import")
 

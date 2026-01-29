@@ -58,6 +58,9 @@ optimize_existing_library_pdfs = _pdf_importer.optimize_existing_library_pdfs
 validate_pdf_file = _pdf_utils.validate_pdf_file
 optimize_oversized_covers = _pdf_cover_extractor.optimize_oversized_covers
 regenerate_all_covers = _pdf_cover_extractor.regenerate_all_covers
+extract_missing_covers_from_database = _pdf_cover_extractor.extract_missing_covers_from_database
+verify_all_covers_in_database = _pdf_cover_extractor.verify_all_covers_in_database
+check_cover_extraction_available = _pdf_cover_extractor.check_cover_extraction_available
 LibraryService = _library_service.LibraryService
 
 # Define project_root using Path after imports
@@ -73,12 +76,21 @@ logger = logging.getLogger(__name__)
 def get_library_dir() -> Path:
     """Get the library storage directory."""
     storage_dir_env = os.getenv("LIBRARY_STORAGE_DIR", "./storage/library")
-    storage_dir = Path(storage_dir_env).resolve()
-
-    if not storage_dir.exists():
-        # Try relative to project root
-        storage_dir = project_root / 'storage' / 'library'
-
+    
+    # If absolute path, use it directly
+    if os.path.isabs(storage_dir_env):
+        return Path(storage_dir_env).resolve()
+    
+    # For relative paths, always resolve relative to project root
+    # This ensures the script works regardless of current working directory
+    if storage_dir_env.startswith('./'):
+        # Remove leading './' and resolve relative to project root
+        relative_path = storage_dir_env[2:]  # Remove './'
+        storage_dir = (project_root / relative_path).resolve()
+    else:
+        # Resolve relative to project root
+        storage_dir = (project_root / storage_dir_env).resolve()
+    
     return storage_dir
 
 
@@ -208,8 +220,29 @@ def import_pdfs(
     logger.info("=" * 70)
     logger.info("")
 
+    # Log cover extraction settings
+    if extract_covers:
+        logger.info("Cover extraction: ENABLED (DPI: %s)", dpi)
+        # Check if cover extraction is available
+        is_available, error_msg = check_cover_extraction_available()
+        if is_available:
+            logger.info("  Cover extraction tools: Available")
+        else:
+            logger.warning("  Cover extraction tools: NOT AVAILABLE - %s", error_msg)
+            logger.warning("  Covers will not be extracted. Install dependencies to enable.")
+    else:
+        logger.info("Cover extraction: DISABLED (use --no-covers to disable)")
+    logger.info("")
+
     db = SessionLocal()
     try:
+        # Use correctly resolved library_dir to construct covers_dir
+        # This ensures paths are correct regardless of current working directory
+        covers_dir = library_dir / "covers"
+        covers_dir.mkdir(parents=True, exist_ok=True)
+        logger.info("Covers directory: %s", covers_dir)
+        logger.info("")
+
         # First, optimize any existing PDFs in the database that need it
         if auto_optimize:
             logger.info("Step 1: Optimizing existing PDFs in database...")
@@ -224,8 +257,29 @@ def import_pdfs(
                 logger.warning("  Failed to optimize %s PDF(s)", opt_errors)
             logger.info("")
 
-        # Then import new PDFs
-        logger.info("Step 2: Importing new PDFs...")
+        # Extract missing covers for existing PDFs (before importing new ones)
+        if extract_covers:
+            is_available, _ = check_cover_extraction_available()
+            if is_available:
+                logger.info("Step 2: Extracting missing covers for existing PDFs...")
+                extracted, skipped_covers, cover_errors = extract_missing_covers_from_database(
+                    db,
+                    library_dir=library_dir,
+                    covers_dir=covers_dir,
+                    dpi=dpi
+                )
+                if extracted > 0:
+                    logger.info("  Extracted %s missing cover(s)", extracted)
+                if skipped_covers > 0:
+                    logger.info("  Skipped %s (covers already exist)", skipped_covers)
+                if cover_errors > 0:
+                    logger.warning("  Failed to extract %s cover(s)", cover_errors)
+                logger.info("")
+
+        # Then import new PDFs (with cover extraction)
+        logger.info("Step 3: Importing new PDFs...")
+        if extract_covers:
+            logger.info("  Cover images will be extracted for each new PDF")
         imported, skipped = auto_import_new_pdfs(
             db,
             library_dir=library_dir,
@@ -234,6 +288,26 @@ def import_pdfs(
             auto_optimize=auto_optimize,
             optimize_backup=backup
         )
+
+        # Verify all covers after extraction/import
+        if extract_covers:
+            logger.info("")
+            logger.info("Step 4: Verifying cover images...")
+            valid_count, missing_count, invalid_count, invalid_details = verify_all_covers_in_database(
+                db,
+                library_dir=library_dir,
+                covers_dir=covers_dir
+            )
+            logger.info("")
+            logger.info("Cover verification summary:")
+            logger.info("  Valid covers: %s", valid_count)
+            logger.info("  Missing covers: %s", missing_count)
+            logger.info("  Invalid covers: %s", invalid_count)
+            if invalid_count > 0:
+                logger.warning("")
+                logger.warning("⚠️  Some covers are invalid and may need to be regenerated")
+                logger.warning("   Run with --regenerate-covers to fix invalid covers")
+
         return imported, skipped
     finally:
         db.close()
@@ -911,15 +985,28 @@ Examples:
         logger.info("")
 
     logger.info("Actions to perform:")
-    logger.info("  1. Validate PDFs")
+    step_num = 1
+    logger.info("  %d. Validate PDFs", step_num)
+    step_num += 1
+    
     if not args.no_optimize and len(existing_need_opt) > 0:
-        logger.info("  2. Optimize %s existing PDF(s) in database", len(existing_need_opt))
+        logger.info("  %d. Optimize %s existing PDF(s) in database", step_num, len(existing_need_opt))
+        step_num += 1
+    
     if not args.no_optimize and len(new_need_opt) > 0:
-        logger.info("  3. Linearize %s new PDF(s) during import", len(new_need_opt))
+        logger.info("  %d. Linearize %s new PDF(s) during import", step_num, len(new_need_opt))
+        step_num += 1
+    
+    # Always show cover extraction step (it's enabled by default)
     if not args.no_covers:
-        logger.info("  4. Extract cover images")
+        logger.info("  %d. Extract cover images for all PDFs (DPI: %s)", step_num, args.dpi)
+        step_num += 1
+    else:
+        logger.info("  %d. Extract cover images: SKIPPED (--no-covers flag used)", step_num)
+        step_num += 1
+    
     if len(new_pdfs) > 0:
-        logger.info("  5. Create %s database record(s)", len(new_pdfs))
+        logger.info("  %d. Create %s database record(s)", step_num, len(new_pdfs))
     logger.info("")
 
     if not args.yes:
@@ -947,6 +1034,25 @@ Examples:
         library_dir, check_db_size=True
     )
 
+    # Cover verification
+    cover_valid_count = 0
+    cover_missing_count = 0
+    cover_invalid_count = 0
+    if not args.no_covers:
+        db = SessionLocal()
+        try:
+            # Use correctly resolved library_dir to construct covers_dir
+            covers_dir = library_dir / "covers"
+            cover_valid_count, cover_missing_count, cover_invalid_count, _ = verify_all_covers_in_database(
+                db,
+                library_dir=library_dir,
+                covers_dir=covers_dir
+            )
+        except Exception as e:
+            logger.warning("Failed to verify covers: %s", e)
+        finally:
+            db.close()
+
     logger.info("")
     logger.info("=" * 70)
     logger.info("FINAL SUMMARY")
@@ -954,11 +1060,17 @@ Examples:
     logger.info("PDFs imported: %s", imported)
     logger.info("PDFs skipped: %s", skipped)
     logger.info("")
-    logger.info("Verification:")
+    logger.info("PDF Verification:")
     logger.info("  Total PDFs in library: %s", total)
     logger.info("  Optimized (xref at front): %s", verified_count)
     logger.info("  Not optimized: %s", len(failed))
     logger.info("  Size mismatches: %s", len(size_mismatches))
+    if not args.no_covers:
+        logger.info("")
+        logger.info("Cover Verification:")
+        logger.info("  Valid covers: %s", cover_valid_count)
+        logger.info("  Missing covers: %s", cover_missing_count)
+        logger.info("  Invalid covers: %s", cover_invalid_count)
 
     if failed:
         logger.error("")

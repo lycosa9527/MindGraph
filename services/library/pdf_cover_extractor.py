@@ -623,6 +623,393 @@ def regenerate_covers_from_database(
     return (regenerated, skipped, errors)
 
 
+def extract_missing_covers_from_database(
+    db,
+    library_dir: Path,
+    covers_dir: Path,
+    dpi: int = DEFAULT_DPI,
+    max_width: int = DEFAULT_MAX_WIDTH,
+    image_format: Literal["JPEG", "PNG"] = DEFAULT_FORMAT,
+    quality: int = DEFAULT_QUALITY
+) -> tuple[int, int, int]:
+    """
+    Extract cover images for documents in database that don't have covers.
+
+    Extracts covers for PDFs that either:
+    1. Don't have a cover_image_path set in database, OR
+    2. Have cover_image_path set but the file doesn't exist on disk
+
+    Automatically verifies each extracted cover and removes invalid ones.
+
+    Args:
+        db: Database session
+        library_dir: Directory containing PDFs
+        covers_dir: Directory to save covers
+        dpi: Resolution for rendering (default: 96)
+        max_width: Maximum width in pixels (default: 400)
+        image_format: Output format - "JPEG" or "PNG" (default: JPEG)
+        quality: JPEG quality 1-100 (default: 80)
+
+    Returns:
+        Tuple of (extracted_count, skipped_count, error_count)
+        - extracted_count: Successfully extracted and verified covers
+        - skipped_count: Covers that already exist (both in DB and on disk)
+        - error_count: Failed extractions or verification failures
+    """
+    from services.library.pdf_utils import resolve_library_path as resolve_pdf_path
+    from services.library.pdf_utils import normalize_library_path
+
+    # Get all active documents
+    all_documents = db.query(LibraryDocument).filter(
+        LibraryDocument.is_active
+    ).all()
+
+    if not all_documents:
+        logger.info("No documents found in database")
+        return (0, 0, 0)
+
+    # Filter documents that need covers:
+    # 1. No cover_image_path set, OR
+    # 2. cover_image_path set but file doesn't exist
+    documents_needing_covers = []
+    for doc in all_documents:
+        if not doc.cover_image_path:
+            # No cover path in database
+            documents_needing_covers.append((doc, None))
+        else:
+            # Check if file actually exists
+            # Try to resolve the stored path
+            stored_path = doc.cover_image_path
+            cover_path = None
+
+            # Try different resolution strategies
+            stored_path_obj = Path(stored_path)
+            if stored_path_obj.is_absolute():
+                cover_path = stored_path_obj
+            else:
+                # Remove common prefixes
+                path_clean = stored_path.replace('\\', '/')
+                if path_clean.startswith('covers/'):
+                    path_clean = path_clean[7:]
+                elif 'covers/' in path_clean:
+                    path_clean = path_clean.split('covers/')[-1]
+                if path_clean.startswith('storage/library/covers/'):
+                    path_clean = path_clean[24:]
+                elif 'storage/library/covers/' in path_clean:
+                    path_clean = path_clean.split('storage/library/covers/')[-1]
+                if path_clean.startswith('storage/library/'):
+                    path_clean = path_clean[16:]
+
+                # Try covers_dir + filename
+                cover_path = covers_dir / path_clean
+                if not cover_path.exists() and '/' in path_clean:
+                    cover_path = covers_dir / Path(path_clean).name
+
+            # Also try document ID pattern as fallback
+            if not cover_path or not cover_path.exists():
+                for ext in ['.png', '.jpg', '.jpeg']:
+                    test_path = covers_dir / f"{doc.id}_cover{ext}"
+                    if test_path.exists():
+                        cover_path = test_path
+                        break
+
+            # If file doesn't exist, we need to extract
+            if not cover_path or not cover_path.exists():
+                documents_needing_covers.append((doc, None))
+
+    if not documents_needing_covers:
+        logger.info("All documents already have covers (both in database and on disk)")
+        return (0, 0, 0)
+
+    logger.info("Found %s document(s) needing covers", len(documents_needing_covers))
+    logger.info("Extracting missing covers to %s", covers_dir)
+    logger.info(
+        "Settings: DPI=%s, max_width=%spx, format=%s, quality=%s",
+        dpi, max_width, image_format, quality
+    )
+
+    # Ensure covers directory exists
+    covers_dir.mkdir(parents=True, exist_ok=True)
+
+    # Determine file extension
+    ext = "jpg" if image_format == "JPEG" else "png"
+
+    extracted = 0
+    skipped = 0
+    errors = 0
+
+    for doc, _ in documents_needing_covers:
+        # Resolve PDF path
+        pdf_path = resolve_pdf_path(doc.file_path, library_dir, Path.cwd())
+
+        if not pdf_path or not pdf_path.exists():
+            logger.warning(
+                "PDF not found for document %s: %s",
+                doc.id,
+                doc.file_path
+            )
+            errors += 1
+            continue
+
+        # Use document ID for cover filename (matches import pattern)
+        cover_filename = f"{doc.id}_cover.{ext}"
+        cover_path = covers_dir / cover_filename
+
+        # Check if cover already exists (both file and database)
+        if cover_path.exists():
+            # Verify the existing cover is valid
+            is_valid, error_msg = verify_cover_image(cover_path)
+            if is_valid:
+                # Update database if path is missing
+                if not doc.cover_image_path:
+                    normalized_cover_path = normalize_library_path(
+                        cover_path,
+                        covers_dir,
+                        Path.cwd()
+                    )
+                    doc.cover_image_path = normalized_cover_path
+                    db.commit()
+                logger.debug("Cover already exists and is valid for document %s: %s", doc.id, cover_filename)
+                skipped += 1
+                continue
+            else:
+                # Cover file exists but is invalid, remove it and regenerate
+                logger.warning(
+                    "Existing cover is invalid for document %s: %s. Will regenerate.",
+                    doc.id,
+                    error_msg
+                )
+                try:
+                    cover_path.unlink()
+                except Exception:
+                    pass
+
+        # Extract cover
+        logger.info("Extracting cover for document %s (%s)...", doc.id, pdf_path.name)
+        if extract_pdf_cover(pdf_path, cover_path, dpi, max_width, image_format, quality):
+            # Verify the extracted cover
+            is_valid, error_msg = verify_cover_image(cover_path)
+            if is_valid:
+                # Update database with cover path
+                from services.library.pdf_utils import normalize_library_path
+                normalized_cover_path = normalize_library_path(
+                    cover_path,
+                    covers_dir,
+                    Path.cwd()
+                )
+                doc.cover_image_path = normalized_cover_path
+                db.commit()
+                extracted += 1
+                logger.info("Successfully extracted and verified cover for document %s", doc.id)
+            else:
+                logger.error(
+                    "Cover extraction succeeded but verification failed for document %s: %s",
+                    doc.id,
+                    error_msg
+                )
+                # Remove invalid cover file
+                try:
+                    cover_path.unlink()
+                except Exception:
+                    pass
+                errors += 1
+        else:
+            logger.error("Failed to extract cover for document %s", doc.id)
+            errors += 1
+
+    logger.info("")
+    logger.info("Missing covers extraction complete:")
+    logger.info("  Extracted: %s", extracted)
+    logger.info("  Skipped (already exist): %s", skipped)
+    logger.info("  Errors: %s", errors)
+
+    return (extracted, skipped, errors)
+
+
+def verify_cover_image(cover_path: Path) -> tuple[bool, Optional[str]]:
+    """
+    Verify that a cover image file exists and is valid.
+
+    Args:
+        cover_path: Path to cover image file
+
+    Returns:
+        Tuple of (is_valid, error_message)
+        - is_valid: True if cover is valid, False otherwise
+        - error_message: Error message if invalid, None if valid
+    """
+    if not cover_path.exists():
+        return False, f"Cover file does not exist: {cover_path}"
+
+    if not cover_path.is_file():
+        return False, f"Cover path is not a file: {cover_path}"
+
+    try:
+        file_size = cover_path.stat().st_size
+        if file_size == 0:
+            return False, f"Cover file is empty: {cover_path}"
+
+        # Try to open and verify it's a valid image using PIL
+        if PIL_AVAILABLE:
+            try:
+                img = Image.open(cover_path)
+                img.verify()  # Verify it's a valid image file
+                # Get image dimensions
+                width, height = img.size
+                if width == 0 or height == 0:
+                    return False, f"Cover image has invalid dimensions: {width}x{height}"
+                return True, None
+            except Exception as e:
+                return False, f"Cover file is not a valid image: {e}"
+
+        # Fallback: check file extension and size
+        ext = cover_path.suffix.lower()
+        if ext not in ['.jpg', '.jpeg', '.png']:
+            return False, f"Cover file has invalid extension: {ext}"
+
+        # Minimum reasonable size for a cover image (1KB)
+        if file_size < 1024:
+            return False, f"Cover file is too small ({file_size} bytes), may be corrupted"
+
+        return True, None
+
+    except PermissionError:
+        return False, f"Permission denied reading cover file: {cover_path}"
+    except Exception as e:
+        return False, f"Error verifying cover file: {e}"
+
+
+def verify_all_covers_in_database(
+    db,
+    library_dir: Path,
+    covers_dir: Path
+) -> tuple[int, int, int, list]:
+    """
+    Verify all cover images for documents in the database.
+
+    Checks:
+    1. If cover_image_path is set in database
+    2. If cover file exists on disk
+    3. If cover file is a valid image
+
+    Args:
+        db: Database session
+        library_dir: Directory containing PDFs (unused, kept for API compatibility)
+        covers_dir: Directory containing cover images
+
+    Returns:
+        Tuple of (valid_count, missing_count, invalid_count, invalid_details)
+        - valid_count: Number of valid covers
+        - missing_count: Number of missing covers (path set but file doesn't exist)
+        - invalid_count: Number of invalid covers (file exists but is corrupted)
+        - invalid_details: List of tuples (doc_id, reason) for invalid covers
+    """
+
+    documents = db.query(LibraryDocument).filter(
+        LibraryDocument.is_active
+    ).all()
+
+    if not documents:
+        logger.info("No documents found in database")
+        return (0, 0, 0, [])
+
+    logger.info("Verifying covers for %s document(s)...", len(documents))
+    logger.info("Covers directory: %s", covers_dir)
+
+    valid_count = 0
+    missing_count = 0
+    invalid_count = 0
+    invalid_details = []
+
+    for doc in documents:
+        if not doc.cover_image_path:
+            missing_count += 1
+            logger.debug("Document %s: No cover_image_path set", doc.id)
+            continue
+
+        # Resolve cover path - handle multiple path formats
+        stored_path = doc.cover_image_path
+        cover_path = None
+
+        # Strategy 1: If absolute path, use it directly
+        stored_path_obj = Path(stored_path)
+        if stored_path_obj.is_absolute():
+            cover_path = stored_path_obj
+        else:
+            # Strategy 2: Remove common prefixes and use covers_dir
+            # Handle paths like "covers/filename.png" or "storage/library/covers/filename.png"
+            path_clean = stored_path.replace('\\', '/')
+            
+            # Remove "covers/" prefix if present
+            if path_clean.startswith('covers/'):
+                path_clean = path_clean[7:]  # Remove "covers/"
+            elif 'covers/' in path_clean:
+                # Extract filename after "covers/"
+                path_clean = path_clean.split('covers/')[-1]
+            
+            # Remove "storage/library/covers/" prefix if present
+            if path_clean.startswith('storage/library/covers/'):
+                path_clean = path_clean[24:]  # Remove "storage/library/covers/"
+            elif 'storage/library/covers/' in path_clean:
+                path_clean = path_clean.split('storage/library/covers/')[-1]
+            
+            # Remove "storage/library/" prefix if present (legacy)
+            if path_clean.startswith('storage/library/'):
+                path_clean = path_clean[16:]  # Remove "storage/library/"
+            
+            # Now try to resolve: could be just filename or relative path
+            # First try: covers_dir + filename
+            cover_path = covers_dir / path_clean
+            
+            # If that doesn't exist and path_clean contains slashes, try extracting just filename
+            if not cover_path.exists() and '/' in path_clean:
+                filename = Path(path_clean).name
+                cover_path = covers_dir / filename
+
+        # Verify the resolved path exists
+        if not cover_path or not cover_path.exists():
+            # Last resort: try to find by document ID pattern (common naming convention)
+            # Try different extensions
+            for ext in ['.png', '.jpg', '.jpeg']:
+                test_path = covers_dir / f"{doc.id}_cover{ext}"
+                if test_path.exists():
+                    cover_path = test_path
+                    break
+            else:
+                # Still not found - use the resolved path for error reporting
+                if not cover_path:
+                    # Fallback: construct from cleaned filename
+                    cover_path = covers_dir / path_clean if 'path_clean' in locals() else covers_dir / stored_path
+
+        is_valid, error_msg = verify_cover_image(cover_path)
+        if is_valid:
+            valid_count += 1
+            logger.debug("Document %s: Cover valid (%s)", doc.id, cover_path.name)
+        else:
+            invalid_count += 1
+            invalid_details.append((doc.id, doc.title or f"Document {doc.id}", error_msg or "Unknown error"))
+            logger.warning(
+                "Document %s (%s): Cover invalid - %s",
+                doc.id,
+                doc.title or f"Document {doc.id}",
+                error_msg or "Unknown error"
+            )
+
+    logger.info("")
+    logger.info("Cover verification complete:")
+    logger.info("  Valid: %s", valid_count)
+    logger.info("  Missing (no cover_image_path): %s", missing_count)
+    logger.info("  Invalid: %s", invalid_count)
+
+    if invalid_details:
+        logger.info("")
+        logger.info("Invalid covers details:")
+        for doc_id, title, reason in invalid_details:
+            logger.info("  - Document %s (%s): %s", doc_id, title, reason)
+
+    return (valid_count, missing_count, invalid_count, invalid_details)
+
+
 def check_cover_extraction_available() -> tuple[bool, Optional[str]]:
     """
     Check if cover extraction is available.

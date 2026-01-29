@@ -124,7 +124,7 @@ fi
 echo ""
 
 # Check for --restart flag
-if [[ "$1" == "--restart" ]]; then
+if [ $# -gt 0 ] && [[ "$1" == "--restart" ]]; then
     echo -e "${YELLOW}Restarting mindgraph service...${NC}"
     
     # Try systemctl first (systemd)

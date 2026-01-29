@@ -88,7 +88,7 @@ def analyze_pdf_structure(pdf_path: Path) -> PDFStructureInfo:
             else:
                 trailer_offset = file_size - read_size + trailer_pos_in_tail
                 info.trailer_offset = trailer_offset
-                
+
                 # Check for incremental updates (/Prev in trailer)
                 # Read trailer section to check for /Prev
                 trailer_section_start = max(0, trailer_pos_in_tail - 500)
@@ -289,7 +289,11 @@ def optimize_pdf(
 
     # Check if optimization is needed
     if not info.needs_optimization:
-        logger.debug("PDF %s does not need optimization (linearized, xref at beginning, no incremental updates)", pdf_path.name)
+        logger.debug(
+            "PDF %s does not need optimization (linearized, xref at beginning, "
+            "no incremental updates)",
+            pdf_path.name
+        )
         return True, None, stats
 
     # Log reason for optimization
@@ -302,7 +306,7 @@ def optimize_pdf(
         reasons.append(f"xref at {info.xref_location}")
     if not info.is_linearized:
         reasons.append("not linearized")
-    
+
     reason_str = ", ".join(reasons) if reasons else "unknown"
     logger.info("Optimizing PDF: %s (%s)", pdf_path.name, reason_str)
 
@@ -422,7 +426,7 @@ def should_optimize_pdf(pdf_path: Path) -> Tuple[bool, Optional[str], PDFStructu
         reasons.append(f"xref at {info.xref_location} ({info.xref_size_kb} KB)")
     if not info.is_linearized:
         reasons.append("not linearized")
-    
+
     reason = " - ".join(reasons) if reasons else f"XRef table at {info.xref_location} ({info.xref_size_kb} KB)"
     reason += " - linearization will enable efficient lazy loading"
 
