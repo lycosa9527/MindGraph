@@ -194,6 +194,10 @@ frontend/dist/
 # These are user uploads, not part of the codebase
 static/
 
+# Library book cover images
+# These are user uploads or extracted from PDFs, not part of the codebase
+storage/library/covers/
+
 # Documentation
 docs/
 # ruff
