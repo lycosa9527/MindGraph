@@ -1,13 +1,15 @@
 {
   "name": "mindgraph-frontend",
   "private": true,
-  "version": "5.14.0",
+  "version": "5.15.1",
   "type": "module",
   "scripts": {
     "sync-version": "npx tsx scripts/sync-version.ts",
     "dev": "vite",
     "prebuild": "npm run sync-version",
     "build": "vue-tsc --noEmit && vite build",
+    "postbuild": "node scripts/verify-pdf-worker.js",
+    "verify-pdf-worker": "node scripts/verify-pdf-worker.js",
     "preview": "vite preview",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",

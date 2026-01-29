@@ -39,6 +39,36 @@ async def vue_favicon():
     raise HTTPException(status_code=404, detail="Favicon not found")
 
 
+@router.get("/pdf.worker.min.js")
+async def vue_pdf_worker():
+    """Serve PDF.js worker from Vue dist."""
+    worker_path = VUE_DIST_DIR / "pdf.worker.min.js"
+    logger.debug("Attempting to serve PDF.js worker from: %s", worker_path)
+    logger.debug("VUE_DIST_DIR exists: %s", VUE_DIST_DIR.exists())
+    
+    if worker_path.exists() and worker_path.is_file():
+        logger.info("Serving PDF.js worker from dist: %s", worker_path)
+        return FileResponse(
+            path=str(worker_path),
+            media_type="application/javascript"
+        )
+    
+    # Fallback to public folder (dev mode)
+    fallback_path = VUE_DIST_DIR.parent / "public" / "pdf.worker.min.js"
+    logger.debug("Checking fallback path: %s", fallback_path)
+    if fallback_path.exists() and fallback_path.is_file():
+        logger.info("Serving PDF.js worker from public folder: %s", fallback_path)
+        return FileResponse(
+            path=str(fallback_path),
+            media_type="application/javascript"
+        )
+    
+    logger.error("PDF.js worker not found at %s (exists: %s) or %s (exists: %s)", 
+                 worker_path, worker_path.exists() if worker_path.parent.exists() else "parent missing",
+                 fallback_path, fallback_path.exists() if fallback_path.parent.exists() else "parent missing")
+    raise HTTPException(status_code=404, detail=f"PDF.js worker not found. Checked: {worker_path}, {fallback_path}")
+
+
 @router.get("/", response_class=HTMLResponse)
 async def vue_index():
     """Serve Vue SPA index for root path."""
