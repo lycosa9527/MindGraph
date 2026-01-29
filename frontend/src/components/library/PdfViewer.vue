@@ -126,20 +126,35 @@ defineExpose({
 async function loadPdf() {
   try {
     loading.value = true
+    console.log('[PdfViewer] Loading PDF from URL:', props.pdfUrl)
+    
     const loadingTask = pdfjsLib.getDocument({
       url: props.pdfUrl,
       useSystemFonts: true,
       cMapUrl: '/cmaps/',
       cMapPacked: true,
     })
+    
     const doc = await loadingTask.promise
     pdfDocument.value = markRaw(doc)
     totalPages.value = doc.numPages
+    
+    console.log('[PdfViewer] PDF loaded successfully:', { pages: totalPages.value })
 
     // Render first page
     await renderPage(1)
-  } catch (error) {
+  } catch (error: any) {
     console.error('[PdfViewer] Failed to load PDF:', error)
+    const errorMessage = error?.message || 'Failed to load PDF'
+    notify.error(`PDF加载失败: ${errorMessage}`)
+    
+    // Log detailed error info for debugging
+    if (error?.name) {
+      console.error('[PdfViewer] Error name:', error.name)
+    }
+    if (error?.stack) {
+      console.error('[PdfViewer] Error stack:', error.stack)
+    }
   } finally {
     loading.value = false
   }

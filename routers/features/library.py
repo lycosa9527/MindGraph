@@ -182,12 +182,63 @@ async def get_document_file(
             detail="Document not found"
         )
 
+    # Resolve file path - handle both absolute (from WSL) and relative paths
     file_path = Path(document.file_path)
+    
+    # If path doesn't exist, try multiple resolution strategies
     if not file_path.exists():
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="PDF file not found"
-        )
+        filename = file_path.name
+        tried_paths = [str(file_path)]
+        
+        # Strategy 1: Try relative to storage_dir (most common case)
+        relative_path = service.storage_dir / filename
+        if relative_path.exists():
+            logger.info("[Library] Resolved path for document %s: %s (original: %s)", 
+                        document_id, relative_path, document.file_path)
+            file_path = relative_path
+        else:
+            tried_paths.append(str(relative_path))
+            
+            # Strategy 2: If stored path is relative, try storage_dir + path
+            if not Path(document.file_path).is_absolute():
+                try_relative = service.storage_dir / document.file_path
+                if try_relative.exists():
+                    logger.info("[Library] Resolved relative path for document %s: %s", 
+                                document_id, try_relative)
+                    file_path = try_relative
+                else:
+                    tried_paths.append(str(try_relative))
+            
+            # Strategy 3: Try resolving from current working directory
+            try_cwd = Path.cwd() / document.file_path
+            if try_cwd.exists():
+                logger.info("[Library] Resolved CWD path for document %s: %s", 
+                            document_id, try_cwd)
+                file_path = try_cwd
+            else:
+                tried_paths.append(str(try_cwd))
+            
+            # If still not found, log all attempts and raise error
+            if not file_path.exists():
+                logger.error("[Library] PDF file not found for document %s (ID: %s)", 
+                            document.title, document_id)
+                logger.error("[Library] Stored file_path: %s", document.file_path)
+                logger.error("[Library] Storage dir: %s (exists: %s, absolute: %s)", 
+                            service.storage_dir, service.storage_dir.exists(), 
+                            service.storage_dir.resolve())
+                logger.error("[Library] Tried paths: %s", tried_paths)
+                logger.error("[Library] Current working directory: %s", Path.cwd())
+                
+                # List files in storage_dir for debugging
+                if service.storage_dir.exists():
+                    files_in_storage = list(service.storage_dir.glob("*.pdf"))
+                    logger.error("[Library] PDF files in storage_dir: %s", 
+                                [f.name for f in files_in_storage])
+                
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=f"PDF file not found. Tried: {', '.join(tried_paths)}"
+                )
 
     service.increment_views(document_id)
 

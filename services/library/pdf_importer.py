@@ -157,9 +157,13 @@ def import_pdfs_from_folder(
         pdf_name = pdf_path.name
         file_size = pdf_path.stat().st_size
 
-        # Use the same path format as LibraryService (absolute path)
+        # Store relative path to storage_dir (works across WSL/Ubuntu)
+        # This avoids path issues when absolute paths differ between environments
         final_path = service.storage_dir / pdf_name
-        file_path = str(final_path.resolve())
+        # Use relative path from project root, or just filename if in storage_dir
+        # Store as relative path: storage/library/filename.pdf
+        storage_dir_relative = final_path.relative_to(Path.cwd()) if final_path.is_relative_to(Path.cwd()) else pdf_name
+        file_path = str(storage_dir_relative) if '/' in str(storage_dir_relative) else f"storage/library/{pdf_name}"
 
         # Check if already exists in database (by filename match)
         existing = db.query(LibraryDocument).filter(

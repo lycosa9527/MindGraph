@@ -3,7 +3,7 @@
  * LibraryPage - Simple Swiss design with 4 cover images in grid
  * Clean, minimal design with book names underneath covers
  */
-import { onMounted, watch } from 'vue'
+import { onMounted, watch, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { BookOpen } from 'lucide-vue-next'
@@ -15,6 +15,9 @@ import { getLibraryDocumentCoverUrl } from '@/utils/apiClient'
 const router = useRouter()
 const libraryStore = useLibraryStore()
 const notify = useNotifications()
+
+// Track which cover images have loaded successfully
+const coverImageLoaded = ref<Record<number, boolean>>({})
 
 // Fetch documents on mount
 onMounted(async () => {
@@ -35,6 +38,29 @@ watch(
 // Get cover image URL
 function getCoverUrl(documentId: number): string {
   return getLibraryDocumentCoverUrl(documentId)
+}
+
+// Handle cover image load error (404 or other error)
+function handleCoverError(event: Event) {
+  const img = event.target as HTMLImageElement
+  const src = img.src
+  // Extract document ID from URL: /api/library/documents/{id}/cover
+  const match = src.match(/\/documents\/(\d+)\/cover/)
+  if (match) {
+    const documentId = parseInt(match[1], 10)
+    coverImageLoaded.value[documentId] = false
+  }
+}
+
+// Handle cover image load success
+function handleCoverLoad(event: Event) {
+  const img = event.target as HTMLImageElement
+  const src = img.src
+  const match = src.match(/\/documents\/(\d+)\/cover/)
+  if (match) {
+    const documentId = parseInt(match[1], 10)
+    coverImageLoaded.value[documentId] = true
+  }
 }
 
 // Navigate to PDF viewer
@@ -85,14 +111,15 @@ function openDocument(documentId: number) {
               class="aspect-3/4 rounded-lg overflow-hidden mb-3 bg-stone-200 relative border border-stone-300"
             >
               <img
-                v-if="document.cover_image_path"
                 :src="getCoverUrl(document.id)"
                 :alt="document.title"
                 class="w-full h-full object-cover transition-transform duration-200 group-hover:scale-105"
+                @error="handleCoverError"
+                @load="handleCoverLoad"
               />
               <div
-                v-else
-                class="w-full h-full flex items-center justify-center bg-linear-to-br from-stone-200 to-stone-300"
+                v-show="!coverImageLoaded[document.id]"
+                class="w-full h-full flex items-center justify-center bg-linear-to-br from-stone-200 to-stone-300 absolute inset-0"
               >
                 <BookOpen class="w-12 h-12 text-stone-400" />
               </div>
