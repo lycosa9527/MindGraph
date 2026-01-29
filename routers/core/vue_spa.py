@@ -180,11 +180,12 @@ async def vue_debateverse():
     return await _serve_index()
 
 
-@router.get("/{path:path}", response_class=HTMLResponse)
+@router.get("/{path:path}")
 async def vue_catch_all(path: str):
     """Catch-all route for Vue SPA client-side routing.
 
     This handles any route that isn't matched by API endpoints or static files.
+    First checks if the path is a static file in dist root, then falls back to SPA routing.
     Vue Router will handle the actual routing client-side.
     """
     # Skip API routes, static files, and other non-SPA routes
@@ -192,12 +193,44 @@ async def vue_catch_all(path: str):
         path.startswith("api/")
         or path.startswith("static/")
         or path.startswith("assets/")
+        or path.startswith("cmaps/")
+        or path.startswith("gallery/")
         or path.startswith("ws")
         or path in ["health", "healthz", "ready", "docs", "redoc", "openapi.json"]
-        or "." in path.split("/")[-1]  # Skip files with extensions
     ):
         raise HTTPException(status_code=404, detail="Not found")
 
+    # Check if this is a file with extension - try to serve from dist root first
+    if "." in path.split("/")[-1]:
+        file_path = VUE_DIST_DIR / path
+        if file_path.exists() and file_path.is_file():
+            # Determine media type based on extension
+            media_type = "application/octet-stream"
+            if path.endswith(".js") or path.endswith(".mjs"):
+                media_type = "application/javascript"
+            elif path.endswith(".css"):
+                media_type = "text/css"
+            elif path.endswith(".svg"):
+                media_type = "image/svg+xml"
+            elif path.endswith(".png"):
+                media_type = "image/png"
+            elif path.endswith(".jpg") or path.endswith(".jpeg"):
+                media_type = "image/jpeg"
+            elif path.endswith(".webp"):
+                media_type = "image/webp"
+            elif path.endswith(".json"):
+                media_type = "application/json"
+            elif path.endswith(".ico"):
+                media_type = "image/x-icon"
+
+            return FileResponse(
+                path=str(file_path),
+                media_type=media_type
+            )
+        # File doesn't exist, return 404
+        raise HTTPException(status_code=404, detail="File not found")
+
+    # No file extension - this is an SPA route, serve index.html
     return await _serve_index()
 
 

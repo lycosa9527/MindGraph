@@ -24,6 +24,8 @@ import traceback
 from pathlib import Path
 from typing import Optional
 
+from sqlalchemy import inspect as sqlalchemy_inspect
+
 # Add project root to path before importing project modules
 _script_dir = Path(__file__).parent
 _project_root = _script_dir.parent
@@ -34,7 +36,16 @@ if sys.platform == "win32":
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
     sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
 
+# Set up logging first
+logging.basicConfig(
+    level=logging.INFO,
+    format='[%(asctime)s] %(levelname)s | %(name)s | %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
+logger = logging.getLogger(__name__)
+
 # Import project modules after modifying sys.path
+# config.database imports library models, ensuring they're registered with Base.metadata
 _config_db_module = importlib.import_module('config.database')
 _pdf_importer_module = importlib.import_module('services.library.pdf_importer')
 _pdf_cover_module = importlib.import_module('services.library.pdf_cover_extractor')
@@ -45,15 +56,6 @@ import_pdfs_from_folder = _pdf_importer_module.import_pdfs_from_folder
 extract_all_covers = _pdf_cover_module.extract_all_covers
 check_cover_extraction_available = _pdf_cover_module.check_cover_extraction_available
 LibraryService = _library_module.LibraryService
-
-
-# Set up logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='[%(asctime)s] %(levelname)s | %(name)s | %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S'
-)
-logger = logging.getLogger(__name__)
 
 
 def import_pdfs(
@@ -73,6 +75,25 @@ def import_pdfs(
     """
     db = SessionLocal()
     try:
+        # Check if library_documents table exists
+        inspector = sqlalchemy_inspect(db.bind)
+        existing_tables = inspector.get_table_names()
+
+        if "library_documents" not in existing_tables:
+            print("\n" + "=" * 80)
+            print("ERROR: Library tables do not exist in the database!")
+            print("=" * 80)
+            print("\nPlease run database migrations first:")
+            print("  python scripts/db/run_migrations.py")
+            print("\nThis will create the required library tables:")
+            print("  - library_documents")
+            print("  - library_danmaku")
+            print("  - library_danmaku_likes")
+            print("  - library_danmaku_replies")
+            print("  - library_bookmarks")
+            print("=" * 80)
+            sys.exit(1)
+
         print("Importing PDFs from storage/library/...")
         print()
 
@@ -91,8 +112,17 @@ def import_pdfs(
         print(f"Error: {e}")
         sys.exit(1)
     except Exception as e:
-        print(f"\nError importing PDFs: {e}")
-        traceback.print_exc()
+        error_msg = str(e)
+        if "library_documents" in error_msg and "does not exist" in error_msg:
+            print("\n" + "=" * 80)
+            print("ERROR: Library tables do not exist in the database!")
+            print("=" * 80)
+            print("\nPlease run database migrations first:")
+            print("  python scripts/db/run_migrations.py")
+            print("=" * 80)
+        else:
+            print(f"\nError importing PDFs: {e}")
+            traceback.print_exc()
         sys.exit(1)
     finally:
         db.close()

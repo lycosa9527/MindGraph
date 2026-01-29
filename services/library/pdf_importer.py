@@ -48,21 +48,24 @@ def _try_extract_cover(
         Cover image path if extraction successful, None otherwise
     """
     if cover_path.exists():
+        logger.info("Using existing cover: %s", cover_path.name)
         return str(cover_path)
 
     is_available, error_msg = check_cover_extraction_available()
     if not is_available:
-        logger.debug(
+        logger.warning(
             "Skipping cover extraction for %s: %s",
             pdf_path.name,
             error_msg
         )
         return None
 
-    logger.debug("Extracting cover for %s", pdf_path.name)
+    logger.info("Extracting cover for %s...", pdf_path.name)
     if extract_pdf_cover(pdf_path, cover_path, dpi):
+        logger.info("Successfully extracted cover: %s", cover_path.name)
         return str(cover_path)
 
+    logger.warning("Failed to extract cover for %s", pdf_path.name)
     return None
 
 
