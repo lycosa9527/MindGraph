@@ -14,7 +14,6 @@ import asyncio
 import logging
 import os
 import uuid
-from pathlib import Path
 from typing import Optional
 
 from config.database import SessionLocal
@@ -30,7 +29,26 @@ AUTO_IMPORT_INTERVAL = int(os.getenv("LIBRARY_AUTO_IMPORT_INTERVAL", "5"))  # mi
 # Distributed lock configuration
 AUTO_IMPORT_LOCK_KEY = "library:auto_import:lock"
 AUTO_IMPORT_LOCK_TTL = 300  # 5 minutes - enough time for import, auto-release on crash
-_worker_lock_id: Optional[str] = None
+
+
+class _LockState:
+    """Manages worker lock ID state to avoid global variables."""
+    _lock_id: Optional[str] = None
+
+    @classmethod
+    def set_lock_id(cls, lock_id: str) -> None:
+        """Set the worker lock ID."""
+        cls._lock_id = lock_id
+
+    @classmethod
+    def get_lock_id(cls) -> Optional[str]:
+        """Get the worker lock ID."""
+        return cls._lock_id
+
+    @classmethod
+    def clear_lock_id(cls) -> None:
+        """Clear the worker lock ID."""
+        cls._lock_id = None
 
 
 def _generate_lock_id() -> str:
@@ -49,20 +67,23 @@ def acquire_auto_import_lock() -> bool:
         True if lock acquired (this worker should run scheduler)
         False if lock held by another worker or Redis unavailable
     """
-    global _worker_lock_id
-
     if not is_redis_available():
         logger.debug("[Library Auto-Import] Redis unavailable, skipping lock acquisition")
         return False
 
     try:
         redis_client = get_redis()
-        _worker_lock_id = _generate_lock_id()
+        if redis_client is None:
+            logger.debug("[Library Auto-Import] Redis client unavailable, skipping lock acquisition")
+            return False
+
+        lock_id = _generate_lock_id()
+        _LockState.set_lock_id(lock_id)
 
         # Try to acquire lock: SETNX with TTL
         acquired = redis_client.set(
             AUTO_IMPORT_LOCK_KEY,
-            _worker_lock_id,
+            lock_id,
             nx=True,
             ex=AUTO_IMPORT_LOCK_TTL
         )
@@ -70,7 +91,7 @@ def acquire_auto_import_lock() -> bool:
         if acquired:
             logger.info(
                 "[Library Auto-Import] Lock acquired (worker: %s)",
-                _worker_lock_id
+                lock_id
             )
             return True
 
@@ -94,16 +115,18 @@ def refresh_auto_import_lock() -> bool:
     Returns:
         True if lock refreshed, False otherwise
     """
-    global _worker_lock_id
-
-    if not _worker_lock_id or not is_redis_available():
+    lock_id = _LockState.get_lock_id()
+    if not lock_id or not is_redis_available():
         return False
 
     try:
         redis_client = get_redis()
+        if redis_client is None:
+            return False
+
         current_value = redis_client.get(AUTO_IMPORT_LOCK_KEY)
 
-        if current_value and current_value.decode() == _worker_lock_id:
+        if current_value and current_value.decode() == lock_id:
             redis_client.expire(AUTO_IMPORT_LOCK_KEY, AUTO_IMPORT_LOCK_TTL)
             return True
 

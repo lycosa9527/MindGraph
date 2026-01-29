@@ -21,7 +21,7 @@ from fastapi import FastAPI
 
 from clients.llm import close_httpx_clients
 from config.celery import CeleryStartupError, init_celery_worker_check
-from config.database import close_db, init_db
+from config.database import SessionLocal, close_db, init_db
 from config.settings import config
 from services.auth.ip_geolocation import get_geolocation_service
 from services.auth.sms_middleware import get_sms_middleware, shutdown_sms_service
@@ -43,6 +43,7 @@ from services.redis.redis_token_buffer import get_token_tracker
 from services.utils.backup_scheduler import start_backup_scheduler
 from services.utils.temp_image_cleaner import start_cleanup_scheduler
 from services.library.auto_import_scheduler import start_library_auto_import_scheduler
+from services.library.pdf_importer import auto_import_new_pdfs
 from services.utils.update_notifier import update_notifier
 from utils.auth import AUTH_MODE, display_demo_info
 from utils.auth.config import ADMIN_PHONES
@@ -395,8 +396,6 @@ async def lifespan(fastapi_app: FastAPI):
     # One-time auto-import on startup (import any PDFs that were added while server was down)
     # This runs immediately on startup, before the periodic scheduler starts
     try:
-        from config.database import SessionLocal
-        from services.library.pdf_importer import auto_import_new_pdfs
         db_startup = SessionLocal()
         try:
             imported, skipped = auto_import_new_pdfs(db_startup, extract_covers=True)
@@ -531,7 +530,7 @@ async def lifespan(fastapi_app: FastAPI):
         # Wait a brief moment for monitor tasks to log their initial startup messages
         # This ensures completion messages appear after all startup logging
         await asyncio.sleep(0.3)
-    
+
     # Print completion messages after all startup activities are complete
     if is_main_worker:
         logger.info("[LIFESPAN] Startup complete, yielding to application...")
@@ -570,6 +569,15 @@ async def lifespan(fastapi_app: FastAPI):
             backup_scheduler_task.cancel()
             try:
                 await backup_scheduler_task
+            except asyncio.CancelledError:
+                pass
+            # Only log on worker that was the lock holder (scheduler handles this internally)
+
+        # Stop library auto-import scheduler (runs on all workers, but only lock holder executes)
+        if library_auto_import_task:
+            library_auto_import_task.cancel()
+            try:
+                await library_auto_import_task
             except asyncio.CancelledError:
                 pass
             # Only log on worker that was the lock holder (scheduler handles this internally)

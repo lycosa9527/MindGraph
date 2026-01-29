@@ -97,7 +97,7 @@ def validate_library_sync(
 
     # Step 2: Get all database records
     db_documents = db.query(LibraryDocument).filter(
-        LibraryDocument.is_active == True
+        LibraryDocument.is_active
     ).all()
 
     logger.debug("Sync validation: Found %s database record(s)", len(db_documents))
@@ -136,7 +136,6 @@ def validate_library_sync(
     # Step 5: Check PDFs -> Covers
     if covers_dir.exists():
         cover_files = list(covers_dir.glob("*_cover.*"))
-        cover_names = {c.stem.replace('_cover', '') for c in cover_files}
 
         for pdf_path in pdf_files:
             pdf_name = pdf_path.name

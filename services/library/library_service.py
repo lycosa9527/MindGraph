@@ -27,10 +27,7 @@ from models.domain.library import (
     LibraryDanmakuReply,
     LibraryBookmark,
 )
-from services.library.pdf_utils import (
-    normalize_library_path,
-    resolve_library_path
-)
+from services.library.pdf_utils import normalize_library_path
 
 
 logger = logging.getLogger(__name__)

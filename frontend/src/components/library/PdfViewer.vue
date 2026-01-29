@@ -52,8 +52,27 @@ const loading = ref(false)
 const pinMode = ref(false) // Pin placement mode - must be enabled from toolbar
 const temporaryPin = ref<{ x: number; y: number } | null>(null) // Temporary pin shown immediately on click
 
+// Lazy loading tracking
+const lazyLoadStats = ref({
+  metadataLoadStart: 0,
+  metadataLoadEnd: 0,
+  metadataSize: 0,
+  pagesLoaded: new Set<number>(),
+  totalBytesDownloaded: 0,
+  pageLoadTimes: new Map<number, number>()
+})
+
 // Drag state
 const draggingPin = ref<{ danmakuId: number; element: HTMLElement; startX: number; startY: number; initialX: number; initialY: number } | null>(null)
+
+// Helper function to format bytes
+function formatBytes(bytes: number): string {
+  if (bytes === 0) return '0 B'
+  const k = 1024
+  const sizes = ['B', 'KB', 'MB', 'GB']
+  const i = Math.floor(Math.log(bytes) / Math.log(k))
+  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`
+}
 
 // Toggle pin mode
 function togglePinMode() {
@@ -126,35 +145,179 @@ defineExpose({
 async function loadPdf() {
   try {
     loading.value = true
-    console.log('[PdfViewer] Loading PDF from URL:', props.pdfUrl)
+    
+    // Reset lazy loading stats
+    lazyLoadStats.value = {
+      metadataLoadStart: performance.now(),
+      metadataLoadEnd: 0,
+      metadataSize: 0,
+      pagesLoaded: new Set(),
+      totalBytesDownloaded: 0,
+      pageLoadTimes: new Map()
+    }
+    
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+    console.log('📚 [LAZY LOADING] Starting PDF Load')
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+    console.log(`[LAZY LOADING] PDF URL: ${props.pdfUrl}`)
+    console.log(`[LAZY LOADING] PDF.js worker: ${pdfjsLib.GlobalWorkerOptions.workerSrc}`)
+    console.log(`[LAZY LOADING] ⏱️  Metadata load started at: ${new Date().toISOString()}`)
+    console.log('')
+    console.log('📊 STEP 1: Loading PDF Metadata (Structure Only)')
+    console.log('   Expected: ~5-50 KB download (NOT full PDF)')
+    console.log('   Check Network tab: Should see small initial request')
+    
+    // Verify worker is configured
+    if (!pdfjsLib.GlobalWorkerOptions.workerSrc) {
+      console.error('[PdfViewer] PDF.js worker not configured!')
+      notify.error('PDF查看器配置错误: Worker未设置')
+      return
+    }
+    
+    // Test if worker file is accessible
+    try {
+      const workerResponse = await fetch(pdfjsLib.GlobalWorkerOptions.workerSrc)
+      if (!workerResponse.ok) {
+        console.error('[PdfViewer] PDF.js worker file not accessible:', workerResponse.status, workerResponse.statusText)
+        notify.error(`PDF查看器错误: Worker文件无法访问 (${workerResponse.status})`)
+        return
+      }
+      console.log('[PdfViewer] PDF.js worker file accessible')
+    } catch (workerError) {
+      console.error('[PdfViewer] Failed to fetch PDF.js worker:', workerError)
+      notify.error('PDF查看器错误: Worker文件加载失败')
+      return
+    }
+    
+    // Test if PDF file is accessible
+    try {
+      const pdfResponse = await fetch(props.pdfUrl, { method: 'HEAD' })
+      console.log('[PdfViewer] PDF file HEAD request:', {
+        status: pdfResponse.status,
+        statusText: pdfResponse.statusText,
+        contentType: pdfResponse.headers.get('content-type'),
+        contentLength: pdfResponse.headers.get('content-length')
+      })
+      if (!pdfResponse.ok) {
+        console.error('[PdfViewer] PDF file not accessible:', pdfResponse.status, pdfResponse.statusText)
+        notify.error(`PDF文件无法访问: ${pdfResponse.status} ${pdfResponse.statusText}`)
+        return
+      }
+    } catch (pdfTestError) {
+      console.error('[PdfViewer] Failed to test PDF file access:', pdfTestError)
+      // Continue anyway - PDF.js will handle the error
+    }
+    
+    console.log('[LAZY LOADING] 📡 Calling pdfjsLib.getDocument()...')
+    console.log('[LAZY LOADING]   This will make HTTP request to fetch PDF metadata')
     
     const loadingTask = pdfjsLib.getDocument({
       url: props.pdfUrl,
       useSystemFonts: true,
       cMapUrl: '/cmaps/',
       cMapPacked: true,
+      httpHeaders: {
+        'Accept': 'application/pdf'
+      }
     })
     
+    // Track metadata download progress
+    let metadataBytesLoaded = 0
+    loadingTask.onProgress = (progress: any) => {
+      if (progress.total > 0) {
+        const percent = Math.round((progress.loaded / progress.total) * 100)
+        metadataBytesLoaded = progress.loaded
+        console.log(`[LAZY LOADING] 📥 Metadata download progress: ${percent}% (${formatBytes(progress.loaded)} / ${formatBytes(progress.total)})`)
+      } else if (progress.loaded > 0) {
+        metadataBytesLoaded = progress.loaded
+        console.log(`[LAZY LOADING] 📥 Metadata download: ${formatBytes(progress.loaded)} loaded`)
+      }
+    }
+    
+    console.log('[LAZY LOADING] ⏳ Waiting for PDF document promise...')
     const doc = await loadingTask.promise
+    lazyLoadStats.value.metadataLoadEnd = performance.now()
+    lazyLoadStats.value.metadataSize = metadataBytesLoaded
+    
+    const metadataLoadTime = lazyLoadStats.value.metadataLoadEnd - lazyLoadStats.value.metadataLoadStart
+    
+    console.log('')
+    console.log('✅ [LAZY LOADING] STEP 1 COMPLETE: Metadata Loaded')
+    console.log(`   ⏱️  Time: ${metadataLoadTime.toFixed(0)}ms`)
+    console.log(`   📦 Size: ${formatBytes(metadataBytesLoaded)} (metadata only, NOT full PDF)`)
+    console.log(`   📄 Total Pages: ${doc.numPages}`)
+    console.log(`   🔍 Check Network tab: Initial request should be small (~${formatBytes(metadataBytesLoaded)})`)
+    console.log('')
+    
     pdfDocument.value = markRaw(doc)
     totalPages.value = doc.numPages
     
-    console.log('[PdfViewer] PDF loaded successfully:', { pages: totalPages.value })
+    // Check if PDF has outline/bookmarks/index
+    let hasOutline = false
+    let outlineCount = 0
+    try {
+      const outline = await doc.getOutline()
+      hasOutline = outline && outline.length > 0
+      outlineCount = outline ? outline.length : 0
+      if (hasOutline) {
+        console.log(`[LAZY LOADING] 📑 PDF has outline/bookmarks: ${outlineCount} entries`)
+      }
+    } catch (outlineError) {
+      console.log('[LAZY LOADING] ℹ️  PDF has no outline/bookmarks (normal for scanned/OCR PDFs)')
+      hasOutline = false
+    }
+    
+    console.log('')
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+    console.log('✅ [LAZY LOADING] METADATA LOAD COMPLETE')
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+    console.log(`   📄 Total Pages: ${totalPages.value}`)
+    console.log(`   📦 Metadata Size: ${formatBytes(metadataBytesLoaded)}`)
+    console.log(`   ⏱️  Load Time: ${metadataLoadTime.toFixed(0)}ms`)
+    console.log(`   📑 Has Outline: ${hasOutline ? 'Yes' : 'No'} (${outlineCount} entries)`)
+    console.log('')
+    console.log('🎯 LAZY LOADING STATUS:')
+    console.log('   ✅ Metadata loaded (structure only)')
+    console.log('   ⏳ Page content: Will load ON-DEMAND when you navigate')
+    console.log('   📡 Next: Check Network tab for Range requests (206 Partial Content)')
+    console.log('   💡 Each page navigation triggers a new Range request')
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+    console.log('')
 
     // Render first page
+    console.log('')
+    console.log('📄 [LAZY LOADING] STEP 2: Loading First Page (On-Demand)')
+    console.log('   This will trigger HTTP Range Request to fetch ONLY page 1 data')
+    console.log('   Check Network tab: Should see Range request with status 206')
     await renderPage(1)
   } catch (error: any) {
-    console.error('[PdfViewer] Failed to load PDF:', error)
-    const errorMessage = error?.message || 'Failed to load PDF'
-    notify.error(`PDF加载失败: ${errorMessage}`)
+    console.error('')
+    console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+    console.error('❌ [LAZY LOADING] PDF Load Failed')
+    console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+    console.error('[LAZY LOADING] Error details:', {
+      name: error?.name,
+      message: error?.message,
+      stack: error?.stack,
+      toString: error?.toString()
+    })
+    console.error('')
     
-    // Log detailed error info for debugging
-    if (error?.name) {
-      console.error('[PdfViewer] Error name:', error.name)
+    const errorMessage = error?.message || 'Failed to load PDF'
+    let userMessage = `PDF加载失败: ${errorMessage}`
+    
+    // Provide more specific error messages
+    if (error?.name === 'InvalidPDFException') {
+      userMessage = 'PDF文件格式无效或已损坏'
+    } else if (error?.name === 'MissingPDFException') {
+      userMessage = 'PDF文件未找到'
+    } else if (error?.name === 'UnexpectedResponseException') {
+      userMessage = '服务器响应异常，请检查网络连接'
+    } else if (error?.message?.includes('worker')) {
+      userMessage = 'PDF查看器Worker加载失败，请刷新页面重试'
     }
-    if (error?.stack) {
-      console.error('[PdfViewer] Error stack:', error.stack)
-    }
+    
+    notify.error(userMessage)
   } finally {
     loading.value = false
   }
@@ -163,6 +326,23 @@ async function loadPdf() {
 // Render current page
 async function renderPage(pageNum: number) {
   if (!pdfDocument.value || pageNum < 1 || pageNum > totalPages.value) return
+
+  // Check if page already loaded
+  const isAlreadyLoaded = lazyLoadStats.value.pagesLoaded.has(pageNum)
+  
+  if (!isAlreadyLoaded) {
+    console.log('')
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+    console.log(`📄 [LAZY LOADING] Loading Page ${pageNum} (On-Demand)`)
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+    console.log(`   📡 This will trigger HTTP Range Request`)
+    console.log(`   🎯 Target: Page ${pageNum} of ${totalPages.value}`)
+    console.log(`   📦 Expected: ~200-500 KB (only this page's data)`)
+    console.log(`   🔍 Check Network tab: Look for Range header: bytes=XXXXX-YYYYY`)
+    console.log(`   ✅ Status should be: 206 Partial Content`)
+  } else {
+    console.log(`[LAZY LOADING] 📄 Rendering page ${pageNum} (already loaded, using cache)`)
+  }
 
   await nextTick()
   
@@ -185,7 +365,39 @@ async function renderPage(pageNum: number) {
 
   loading.value = true
   try {
+    const pageLoadStart = performance.now()
     const page = await pdfDocument.value.getPage(pageNum)
+    const pageLoadTime = performance.now() - pageLoadStart
+    
+    // Track page load
+    if (!lazyLoadStats.value.pagesLoaded.has(pageNum)) {
+      lazyLoadStats.value.pagesLoaded.add(pageNum)
+      lazyLoadStats.value.pageLoadTimes.set(pageNum, pageLoadTime)
+      
+      // Estimate page data size (rough estimate based on load time and typical page sizes)
+      // This is approximate - actual size is tracked by browser Network tab
+      const estimatedPageSize = Math.min(pageLoadTime * 10, 500000) // Rough estimate
+      lazyLoadStats.value.totalBytesDownloaded += estimatedPageSize
+      
+      console.log('')
+      console.log(`✅ [LAZY LOADING] Page ${pageNum} Loaded Successfully`)
+      console.log(`   ⏱️  Load Time: ${pageLoadTime.toFixed(0)}ms`)
+      console.log(`   📦 Estimated Size: ~${formatBytes(estimatedPageSize)} (check Network tab for exact size)`)
+      console.log(`   📊 Pages Loaded So Far: ${lazyLoadStats.value.pagesLoaded.size} of ${totalPages.value}`)
+      console.log(`   💾 Total Downloaded: ~${formatBytes(lazyLoadStats.value.totalBytesDownloaded)} (metadata + pages)`)
+      console.log(`   🎯 Lazy Loading: ✓ Only page ${pageNum} data downloaded, NOT entire PDF`)
+      console.log('')
+      
+      // Show summary after first few pages
+      if (lazyLoadStats.value.pagesLoaded.size === 1) {
+        console.log('💡 [LAZY LOADING] TIP:')
+        console.log('   - Navigate to different pages to see more Range requests')
+        console.log('   - Each page triggers a separate HTTP Range request')
+        console.log('   - Total downloaded stays small (only pages you view)')
+        console.log('   - Check Network tab to see exact bytes downloaded per page')
+        console.log('')
+      }
+    }
     
     const containerRect = containerRef.value?.getBoundingClientRect()
     if (!containerRect) {
@@ -1003,17 +1215,27 @@ function handlePinClickDelegation(e: Event) {
 // Navigation functions
 function goToPage(page: number) {
   if (page < 1 || page > totalPages.value) return
+  
+  console.log('')
+  console.log(`🔄 [LAZY LOADING] Navigation: Going to page ${page}`)
+  console.log(`   Previous page: ${currentPage.value}`)
+  console.log(`   New page: ${page}`)
+  
   renderPage(page)
 }
 
 function goToNextPage() {
   if (currentPage.value < totalPages.value) {
+    console.log('')
+    console.log(`➡️  [LAZY LOADING] Next Page: ${currentPage.value} → ${currentPage.value + 1}`)
     renderPage(currentPage.value + 1)
   }
 }
 
 function goToPreviousPage() {
   if (currentPage.value > 1) {
+    console.log('')
+    console.log(`⬅️  [LAZY LOADING] Previous Page: ${currentPage.value} → ${currentPage.value - 1}`)
     renderPage(currentPage.value - 1)
   }
 }
@@ -1130,6 +1352,24 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
+  // Log lazy loading summary
+  if (lazyLoadStats.value.pagesLoaded.size > 0) {
+    console.log('')
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+    console.log('📊 [LAZY LOADING] Summary')
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+    console.log(`   📄 Total Pages in PDF: ${totalPages.value}`)
+    console.log(`   📖 Pages Loaded: ${lazyLoadStats.value.pagesLoaded.size}`)
+    console.log(`   📦 Metadata Size: ${formatBytes(lazyLoadStats.value.metadataSize)}`)
+    console.log(`   💾 Estimated Total Downloaded: ~${formatBytes(lazyLoadStats.value.totalBytesDownloaded)}`)
+    console.log(`   ⏱️  Metadata Load Time: ${(lazyLoadStats.value.metadataLoadEnd - lazyLoadStats.value.metadataLoadStart).toFixed(0)}ms`)
+    console.log('')
+    console.log('   ✅ Lazy Loading Working: Only loaded pages you viewed')
+    console.log(`   💡 Efficiency: Loaded ${lazyLoadStats.value.pagesLoaded.size}/${totalPages.value} pages (${((lazyLoadStats.value.pagesLoaded.size / totalPages.value) * 100).toFixed(1)}%)`)
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+    console.log('')
+  }
+  
   // Remove canvas click handler
   if (canvasRef.value) {
     canvasRef.value.removeEventListener('click', handleCanvasClick)

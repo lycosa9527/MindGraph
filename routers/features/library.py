@@ -15,7 +15,7 @@ import logging
 import os
 import tempfile
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status, UploadFile, File, Form
+from fastapi import APIRouter, Depends, HTTPException, Query, status, UploadFile, File, Form, Request
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
@@ -23,7 +23,7 @@ from sqlalchemy.orm import Session
 from config.database import get_db
 from models.domain.auth import User
 from services.library import LibraryService
-from services.library.pdf_utils import resolve_library_path, validate_pdf_file, normalize_library_path
+from services.library.pdf_utils import resolve_library_path, validate_pdf_file
 from utils.auth import get_current_user
 from utils.auth.roles import is_admin
 
@@ -167,12 +167,14 @@ async def get_document(
 @router.get("/documents/{document_id}/file")
 async def get_document_file(
     document_id: int,
+    request: Request,
     db: Session = Depends(get_db)
 ):
     """
     Serve PDF file (public).
 
     Increments view count when accessed.
+    Supports range requests for PDF.js streaming.
     """
     service = LibraryService(db)
     document = service.get_document(document_id)
@@ -191,28 +193,42 @@ async def get_document_file(
     )
 
     if not file_path or not file_path.exists():
-        logger.error("[Library] PDF file not found for document %s (ID: %s)", 
+        logger.error("[Library] PDF file not found for document %s (ID: %s)",
                     document.title, document_id)
         logger.error("[Library] Stored file_path: %s", document.file_path)
         logger.error("[Library] Storage dir: %s", service.storage_dir)
-        
+
         # List files in storage_dir for debugging
         if service.storage_dir.exists():
             files_in_storage = list(service.storage_dir.glob("*.pdf"))
-            logger.error("[Library] PDF files in storage_dir: %s", 
+            logger.error("[Library] PDF files in storage_dir: %s",
                         [f.name for f in files_in_storage])
-        
+
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"PDF file not found for document {document_id}"
         )
 
+    # Get file size for Content-Length header
+    file_size = file_path.stat().st_size
+
+    # Log request details for debugging
+    logger.debug("[Library] Serving PDF file: %s (ID: %s, Size: %s bytes, Range: %s)",
+                document.title, document_id, file_size, request.headers.get('Range', 'none'))
+
     service.increment_views(document_id)
 
+    # FileResponse automatically handles range requests if the file exists
+    # Add explicit headers for better PDF.js compatibility
     return FileResponse(
         path=str(file_path),
         media_type="application/pdf",
-        filename=document.title + ".pdf"
+        filename=document.title + ".pdf",
+        headers={
+            'Accept-Ranges': 'bytes',
+            'Content-Length': str(file_size),
+            'Cache-Control': 'public, max-age=3600',
+        }
     )
 
 
@@ -787,7 +803,7 @@ async def get_bookmark_by_uuid(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Bookmark not found"
         )
-    
+
     return {
         "id": bookmark.id,
         "uuid": bookmark.uuid,
