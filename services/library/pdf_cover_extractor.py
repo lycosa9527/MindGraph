@@ -16,6 +16,9 @@ import logging
 from pathlib import Path
 from typing import Optional, Literal
 
+from models.domain.library import LibraryDocument
+from services.library.pdf_utils import resolve_library_path
+
 logger = logging.getLogger(__name__)
 
 # Default settings for web-optimized thumbnails
@@ -524,6 +527,100 @@ def optimize_oversized_covers(
         logger.info("  Space saved: %.1f KB (%.0f%%)", saved, (saved / total_old_size) * 100)
 
     return (regenerated, skipped, len(existing_covers))
+
+
+def regenerate_covers_from_database(
+    db,
+    library_dir: Path,
+    covers_dir: Path,
+    dpi: int = DEFAULT_DPI,
+    max_width: int = DEFAULT_MAX_WIDTH,
+    image_format: Literal["JPEG", "PNG"] = DEFAULT_FORMAT,
+    quality: int = DEFAULT_QUALITY
+) -> tuple[int, int, int]:
+    """
+    Regenerate cover images for all documents in the database.
+
+    Uses document IDs for cover filenames (matching the import pattern).
+
+    Args:
+        db: Database session
+        library_dir: Directory containing PDFs
+        covers_dir: Directory to save covers
+        dpi: Resolution for rendering (default: 96)
+        max_width: Maximum width in pixels (default: 400)
+        image_format: Output format - "JPEG" or "PNG" (default: JPEG)
+        quality: JPEG quality 1-100 (default: 80)
+
+    Returns:
+        Tuple of (regenerated_count, skipped_count, error_count)
+    """
+    # Get all active documents from database
+    documents = db.query(LibraryDocument).filter(
+        LibraryDocument.is_active
+    ).all()
+
+    if not documents:
+        logger.info("No documents found in database")
+        return (0, 0, 0)
+
+    logger.info("Found %s document(s) in database", len(documents))
+    logger.info("Regenerating covers to %s", covers_dir)
+    logger.info(
+        "Settings: DPI=%s, max_width=%spx, format=%s, quality=%s",
+        dpi, max_width, image_format, quality
+    )
+
+    # Determine file extension
+    ext = "jpg" if image_format == "JPEG" else "png"
+
+    # Clean up old covers first
+    if covers_dir.exists():
+        old_covers = list(covers_dir.glob("*_cover.*"))
+        for old_cover in old_covers:
+            try:
+                old_cover.unlink()
+                logger.debug("Removed old cover: %s", old_cover.name)
+            except OSError:
+                pass
+
+    regenerated = 0
+    skipped = 0
+    errors = 0
+
+    for doc in documents:
+        # Resolve PDF path
+        pdf_path = resolve_library_path(doc.file_path, library_dir, Path.cwd())
+
+        if not pdf_path or not pdf_path.exists():
+            logger.warning(
+                "PDF not found for document %s: %s",
+                doc.id,
+                doc.file_path
+            )
+            errors += 1
+            continue
+
+        # Use document ID for cover filename (matches import pattern)
+        cover_filename = f"{doc.id}_cover.{ext}"
+        cover_path = covers_dir / cover_filename
+
+        # Extract cover
+        if extract_pdf_cover(pdf_path, cover_path, dpi, max_width, image_format, quality):
+            # Update database with new cover path
+            doc.cover_image_path = f"covers/{cover_filename}"
+            db.commit()
+            regenerated += 1
+        else:
+            logger.error("Failed to extract cover for document %s", doc.id)
+            errors += 1
+
+    logger.info("")
+    logger.info("Regeneration complete:")
+    logger.info("  Regenerated: %s", regenerated)
+    logger.info("  Errors: %s", errors)
+
+    return (regenerated, skipped, errors)
 
 
 def check_cover_extraction_available() -> tuple[bool, Optional[str]]:

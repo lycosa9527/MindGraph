@@ -706,6 +706,8 @@ Examples:
 
     # Handle regenerate-covers mode (force all)
     if args.regenerate_covers:
+        from services.library.pdf_cover_extractor import regenerate_covers_from_database
+
         logger.info("")
         logger.info("=" * 70)
         logger.info("REGENERATE ALL COVERS")
@@ -716,8 +718,17 @@ Examples:
         logger.info("  - DPI: %s (screen resolution)", args.dpi)
         logger.info("  - Max Width: %spx", args.cover_width)
         logger.info("  - Quality: %s%%", args.cover_quality)
+        logger.info("  - Naming: {document_id}_cover.jpg (matches database)")
         logger.info("")
-        logger.info("PDFs to process: %s", len(results))
+
+        # Get document count from database
+        db = SessionLocal()
+        try:
+            doc_count = db.query(LibraryDocument).filter(LibraryDocument.is_active).count()
+            logger.info("Documents in database: %s", doc_count)
+        finally:
+            db.close()
+
         logger.info("")
 
         if not args.yes:
@@ -731,29 +742,31 @@ Examples:
                 logger.info("Cancelled.")
                 sys.exit(0)
 
-        # Get covers directory
+        # Regenerate covers using database
         db = SessionLocal()
         try:
             service = LibraryService(db)
             covers_dir = service.covers_dir
+
+            regenerated, _, errors = regenerate_covers_from_database(
+                db=db,
+                library_dir=library_dir,
+                covers_dir=covers_dir,
+                dpi=args.dpi,
+                max_width=args.cover_width,
+                image_format="JPEG",
+                quality=args.cover_quality
+            )
         finally:
             db.close()
-
-        regenerated, total, old_removed = regenerate_all_covers(
-            library_dir=library_dir,
-            covers_dir=covers_dir,
-            dpi=args.dpi,
-            max_width=args.cover_width,
-            image_format="JPEG",
-            quality=args.cover_quality
-        )
 
         logger.info("")
         logger.info("=" * 70)
         logger.info("REGENERATION COMPLETE")
         logger.info("=" * 70)
-        logger.info("Old covers removed: %s", old_removed)
-        logger.info("New covers created: %s / %s", regenerated, total)
+        logger.info("Covers regenerated: %s", regenerated)
+        if errors > 0:
+            logger.warning("Errors: %s", errors)
 
         # Show size comparison
         new_covers = list(covers_dir.glob("*_cover.jpg"))

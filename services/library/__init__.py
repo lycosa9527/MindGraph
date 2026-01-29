@@ -18,6 +18,7 @@ from .pdf_cover_extractor import (
     extract_pdf_cover,
     extract_all_covers,
     regenerate_all_covers,
+    regenerate_covers_from_database,
     optimize_oversized_covers,
     check_cover_extraction_available
 )
@@ -39,6 +40,7 @@ __all__ = [
     "extract_pdf_cover",
     "extract_all_covers",
     "regenerate_all_covers",
+    "regenerate_covers_from_database",
     "optimize_oversized_covers",
     "check_cover_extraction_available",
     "analyze_pdf_structure",
