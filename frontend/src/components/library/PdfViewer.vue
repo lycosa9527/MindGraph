@@ -15,9 +15,9 @@ import { useAuthStore } from '@/stores/auth'
 import { useNotifications } from '@/composables'
 import type { LibraryDanmaku } from '@/utils/apiClient'
 
-// Set up PDF.js worker - use local copy instead of CDN
+// Set up PDF.js worker - use local copy from /pdfjs/ directory (served via StaticFiles mount)
 if (typeof window !== 'undefined') {
-  pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js'
+  pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdfjs/pdf.worker.min.js'
 }
 
 interface Props {

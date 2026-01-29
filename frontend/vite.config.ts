@@ -29,71 +29,50 @@ function copyDir(src: string, dest: string): void {
   }
 }
 
-// Plugin to copy PDF.js worker to public folder (for dev) and dist (for build)
+// Plugin to copy PDF.js worker to public/pdfjs/ folder (served via StaticFiles mount)
 function copyPdfjsWorker(): Plugin {
   return {
     name: 'copy-pdfjs-worker',
     buildStart() {
-      // Copy to public/ for dev server and as fallback
+      // Copy to public/pdfjs/ for dev server
       const possiblePaths = [
         resolve(__dirname, 'node_modules/pdfjs-dist/build/pdf.worker.min.mjs'),
         resolve(__dirname, 'node_modules/pdfjs-dist/build/pdf.worker.min.js'),
       ]
-      const publicDest = resolve(__dirname, 'public/pdf.worker.min.js')
+      const pdfjsDir = resolve(__dirname, 'public/pdfjs')
+      const publicDest = resolve(pdfjsDir, 'pdf.worker.min.js')
+
+      // Create pdfjs directory if it doesn't exist
+      if (!existsSync(pdfjsDir)) {
+        mkdirSync(pdfjsDir, { recursive: true })
+      }
 
       for (const src of possiblePaths) {
         if (existsSync(src)) {
           try {
             copyFileSync(src, publicDest)
-            console.log(`[Vite] Copied PDF.js worker to public/: ${src}`)
+            console.log(`[Vite] Copied PDF.js worker to public/pdfjs/: ${src}`)
             break
           } catch (error) {
-            console.warn(`[Vite] Failed to copy PDF.js worker to public/:`, error)
+            console.warn(`[Vite] Failed to copy PDF.js worker to public/pdfjs/:`, error)
           }
         }
       }
     },
     writeBundle() {
-      // Copy directly to dist/ after build completes (ensures it's not deleted)
-      const possiblePaths = [
-        resolve(__dirname, 'node_modules/pdfjs-dist/build/pdf.worker.min.mjs'),
-        resolve(__dirname, 'node_modules/pdfjs-dist/build/pdf.worker.min.js'),
-      ]
-      const distDest = resolve(__dirname, 'dist/pdf.worker.min.js')
-      const publicDest = resolve(__dirname, 'public/pdf.worker.min.js')
+      // Vite automatically copies public/pdfjs/ → dist/pdfjs/ during build
+      // Just verify it exists (don't copy again - rely on Vite's automatic copying)
+      const distDest = resolve(__dirname, 'dist/pdfjs/pdf.worker.min.js')
+      const publicDest = resolve(__dirname, 'public/pdfjs/pdf.worker.min.js')
 
-      // Try to copy from node_modules first, fallback to public/
-      let copied = false
-      for (const src of possiblePaths) {
-        if (existsSync(src)) {
-          try {
-            copyFileSync(src, distDest)
-            console.log(`[Vite] Copied PDF.js worker to dist/: ${src}`)
-            copied = true
-            break
-          } catch (error) {
-            console.warn(`[Vite] Failed to copy PDF.js worker to dist/:`, error)
-          }
-        }
-      }
-
-      // Fallback: copy from public/ if node_modules copy failed
-      if (!copied && existsSync(publicDest)) {
-        try {
-          copyFileSync(publicDest, distDest)
-          console.log(`[Vite] Copied PDF.js worker to dist/ from public/: ${publicDest}`)
-          copied = true
-        } catch (error) {
-          console.warn(`[Vite] Failed to copy PDF.js worker from public/ to dist/:`, error)
-        }
-      }
-
-      // Verify the file was copied successfully
+      // Verify the file was copied by Vite
       if (!existsSync(distDest)) {
-        console.error('[Vite] ❌ ERROR: PDF.js worker file not found in dist/ after build!')
+        console.error('[Vite] ❌ ERROR: PDF.js worker file not found in dist/pdfjs/ after build!')
         console.error(`[Vite] Expected location: ${distDest}`)
+        console.error(`[Vite] Source should be: ${publicDest}`)
+        console.error('[Vite] Vite should have automatically copied it from public/pdfjs/')
         console.error('[Vite] This will cause 404 errors in production.')
-        throw new Error('PDF.js worker file missing in dist/ directory')
+        throw new Error('PDF.js worker file missing in dist/pdfjs/ directory')
       }
 
       // Verify file is not empty

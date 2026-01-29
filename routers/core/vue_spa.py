@@ -24,9 +24,8 @@ router = APIRouter(tags=["Vue SPA"])
 async def diagnostic_static_files():
     """Diagnostic endpoint to check static file serving configuration."""
     import os
-    from pathlib import Path
     
-    worker_path = VUE_DIST_DIR / "pdf.worker.min.js"
+    worker_path = VUE_DIST_DIR / "pdfjs" / "pdf.worker.min.js"
     index_path = VUE_DIST_DIR / "index.html"
     
     return {
@@ -35,6 +34,7 @@ async def diagnostic_static_files():
         "vue_dist_dir_absolute": str(VUE_DIST_DIR.resolve()),
         "pdf_worker_path": str(worker_path),
         "pdf_worker_exists": worker_path.exists() if worker_path.parent.exists() else False,
+        "pdfjs_dir_exists": (VUE_DIST_DIR / "pdfjs").exists(),
         "index_html_exists": index_path.exists(),
         "current_working_directory": os.getcwd(),
     }
@@ -59,36 +59,6 @@ async def vue_favicon():
     raise HTTPException(status_code=404, detail="Favicon not found")
 
 
-@router.get("/pdf.worker.min.js")
-async def vue_pdf_worker(request: Request):
-    """Serve PDF.js worker from Vue dist."""
-    worker_path = VUE_DIST_DIR / "pdf.worker.min.js"
-    logger.info("[PDF Worker] Request received: %s %s", request.method, request.url)
-    logger.info("[PDF Worker] Attempting to serve from: %s", worker_path)
-    logger.info("[PDF Worker] VUE_DIST_DIR: %s (exists: %s)", VUE_DIST_DIR, VUE_DIST_DIR.exists())
-    
-    if worker_path.exists() and worker_path.is_file():
-        logger.info("[PDF Worker] ✓ Serving PDF.js worker from dist: %s", worker_path)
-        return FileResponse(
-            path=str(worker_path),
-            media_type="application/javascript"
-        )
-    
-    # Fallback to public folder (dev mode)
-    fallback_path = VUE_DIST_DIR.parent / "public" / "pdf.worker.min.js"
-    logger.info("[PDF Worker] Checking fallback path: %s (exists: %s)", fallback_path, fallback_path.exists())
-    if fallback_path.exists() and fallback_path.is_file():
-        logger.info("[PDF Worker] ✓ Serving PDF.js worker from public folder: %s", fallback_path)
-        return FileResponse(
-            path=str(fallback_path),
-            media_type="application/javascript"
-        )
-    
-    logger.error("[PDF Worker] ❌ PDF.js worker not found!")
-    logger.error("[PDF Worker] Checked dist: %s (exists: %s)", worker_path, worker_path.exists() if worker_path.parent.exists() else "parent missing")
-    logger.error("[PDF Worker] Checked public: %s (exists: %s)", fallback_path, fallback_path.exists() if fallback_path.parent.exists() else "parent missing")
-    logger.error("[PDF Worker] VUE_DIST_DIR absolute path: %s", VUE_DIST_DIR.resolve())
-    raise HTTPException(status_code=404, detail=f"PDF.js worker not found. Checked: {worker_path}, {fallback_path}")
 
 
 @router.get("/", response_class=HTMLResponse)
@@ -233,7 +203,7 @@ async def vue_debateverse():
 
 
 @router.get("/{path:path}")
-async def vue_catch_all(path: str, request: Request):
+async def vue_catch_all(path: str):
     """Catch-all route for Vue SPA client-side routing.
 
     This handles any route that isn't matched by API endpoints or static files.
@@ -246,6 +216,7 @@ async def vue_catch_all(path: str, request: Request):
         or path.startswith("static/")
         or path.startswith("assets/")
         or path.startswith("cmaps/")
+        or path.startswith("pdfjs/")
         or path.startswith("gallery/")
         or path.startswith("ws")
         or path in ["health", "healthz", "ready", "docs", "redoc", "openapi.json"]

@@ -12,8 +12,8 @@ import { fileURLToPath } from 'url'
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const projectRoot = resolve(__dirname, '..')
 
-const publicPath = resolve(projectRoot, 'public/pdf.worker.min.js')
-const distPath = resolve(projectRoot, 'dist/pdf.worker.min.js')
+const publicPath = resolve(projectRoot, 'public/pdfjs/pdf.worker.min.js')
+const distPath = resolve(projectRoot, 'dist/pdfjs/pdf.worker.min.js')
 
 let hasErrors = false
 let hasWarnings = false
