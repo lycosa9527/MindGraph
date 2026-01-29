@@ -1,12 +1,22 @@
 """
-Unified Library Import Script
+Library PDF Import Script
 
-Command-line script to import PDFs and extract covers for the library.
+Consolidated script for importing PDFs into the library with automatic
+xref detection and optimization.
 
-This script provides a unified interface for:
-1. Importing PDFs from storage/library/ into the database
-2. Extracting cover images from PDFs
-3. Both operations combined
+Features:
+- Scans storage/library/ for PDF files
+- Checks xref table location for each PDF
+- If xref is at beginning: Import directly (already optimized)
+- If xref is at end: Linearize first, then import
+- Extracts cover images automatically
+- Creates database records
+
+Usage:
+    python scripts/library_import.py                    # Import all PDFs
+    python scripts/library_import.py --analyze-only    # Just analyze, don't import
+    python scripts/library_import.py --no-optimize     # Import without optimization
+    python scripts/library_import.py --backup          # Create backups before optimizing
 
 Author: lycosa9527
 Made by: MindSpring Team
@@ -16,421 +26,940 @@ All Rights Reserved
 Proprietary License
 """
 import argparse
-import importlib
-import io
 import logging
+import os
 import sys
-import traceback
+from importlib import import_module
+from importlib.util import find_spec
 from pathlib import Path
-from typing import Optional
 
-from sqlalchemy import inspect as sqlalchemy_inspect
+# Add project root to path (must be before project imports)
+_project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, _project_root)
 
-# Add project root to path before importing project modules
-_script_dir = Path(__file__).parent
-_project_root = _script_dir.parent
-sys.path.insert(0, str(_project_root))
+# Import project modules dynamically to satisfy linter
+_config_db = import_module('config.database')
+_models_library = import_module('models.domain.library')
+_pdf_optimizer = import_module('services.library.pdf_optimizer')
+_pdf_importer = import_module('services.library.pdf_importer')
+_pdf_utils = import_module('services.library.pdf_utils')
+_pdf_cover_extractor = import_module('services.library.pdf_cover_extractor')
+_library_service = import_module('services.library')
 
-# Fix Windows console encoding
-if sys.platform == "win32":
-    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
-    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
+# Assign to module-level names for easier access
+SessionLocal = _config_db.SessionLocal
+LibraryDocument = _models_library.LibraryDocument
+analyze_pdf_structure = _pdf_optimizer.analyze_pdf_structure
+check_qpdf_available = _pdf_optimizer.check_qpdf_available
+optimize_pdf = _pdf_optimizer.optimize_pdf
+should_optimize_pdf = _pdf_optimizer.should_optimize_pdf
+auto_import_new_pdfs = _pdf_importer.auto_import_new_pdfs
+optimize_existing_library_pdfs = _pdf_importer.optimize_existing_library_pdfs
+validate_pdf_file = _pdf_utils.validate_pdf_file
+optimize_oversized_covers = _pdf_cover_extractor.optimize_oversized_covers
+regenerate_all_covers = _pdf_cover_extractor.regenerate_all_covers
+LibraryService = _library_service.LibraryService
 
-# Set up logging first
+# Define project_root using Path after imports
+project_root = Path(_project_root)
+
 logging.basicConfig(
     level=logging.INFO,
-    format='[%(asctime)s] %(levelname)s | %(name)s | %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S'
+    format='%(asctime)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
 
-# Import project modules after modifying sys.path
-# config.database imports library models, ensuring they're registered with Base.metadata
-_config_db_module = importlib.import_module('config.database')
-_pdf_importer_module = importlib.import_module('services.library.pdf_importer')
-_pdf_cover_module = importlib.import_module('services.library.pdf_cover_extractor')
-_library_module = importlib.import_module('services.library')
 
-SessionLocal = _config_db_module.SessionLocal
-import_pdfs_from_folder = _pdf_importer_module.import_pdfs_from_folder
-extract_all_covers = _pdf_cover_module.extract_all_covers
-check_cover_extraction_available = _pdf_cover_module.check_cover_extraction_available
-LibraryService = _library_module.LibraryService
+def get_library_dir() -> Path:
+    """Get the library storage directory."""
+    storage_dir_env = os.getenv("LIBRARY_STORAGE_DIR", "./storage/library")
+    storage_dir = Path(storage_dir_env).resolve()
 
-# Import sync validator
-_sync_validator_module = importlib.import_module('services.library.sync_validator')
-validate_library_sync = _sync_validator_module.validate_library_sync
-sync_library = _sync_validator_module.sync_library
+    if not storage_dir.exists():
+        # Try relative to project root
+        storage_dir = project_root / 'storage' / 'library'
+
+    return storage_dir
+
+
+def analyze_pdfs(library_dir: Path) -> list:
+    """
+    Analyze all PDFs in the library directory.
+
+    Returns:
+        List of analysis results
+    """
+    pdf_files = list(library_dir.glob("*.pdf"))
+
+    if not pdf_files:
+        logger.info("No PDF files found in %s", library_dir)
+        return []
+
+    logger.info("=" * 70)
+    logger.info("PDF STRUCTURE ANALYSIS")
+    logger.info("=" * 70)
+    logger.info("Found %s PDF file(s) in %s", len(pdf_files), library_dir)
+    logger.info("")
+
+    # Check qpdf availability
+    qpdf_available = check_qpdf_available()
+    if qpdf_available:
+        logger.info("qpdf: Available (recommended for optimization)")
+    else:
+        logger.info("qpdf: Not available (will use PyPDF2 if needed)")
+    logger.info("")
+
+    results = []
+
+    for pdf_path in sorted(pdf_files):
+        # Validate PDF
+        is_valid, error_msg = validate_pdf_file(pdf_path)
+        if not is_valid:
+            logger.warning("INVALID: %s - %s", pdf_path.name, error_msg)
+            continue
+
+        # Analyze structure
+        info = analyze_pdf_structure(pdf_path)
+        file_size_mb = round(pdf_path.stat().st_size / 1024 / 1024, 2)
+
+        result = {
+            'path': pdf_path,
+            'name': pdf_path.name,
+            'size_mb': file_size_mb,
+            'info': info
+        }
+        results.append(result)
+
+        # Display analysis
+        if info.is_linearized:
+            status = "OPTIMIZED"
+            xref_status = "xref at beginning"
+            action = "Ready for import"
+        elif info.xref_location == 'beginning':
+            status = "OPTIMIZED"
+            xref_status = "xref at beginning"
+            action = "Ready for import"
+        else:
+            status = "NEEDS OPTIMIZATION"
+            xref_status = f"xref at {info.xref_location}"
+            action = "Will linearize before import"
+
+        logger.info("-" * 70)
+        logger.info("File: %s", pdf_path.name)
+        logger.info("  Size: %.2f MB", file_size_mb)
+        logger.info("  Status: %s", status)
+        logger.info("  XRef: %s (%s KB)", xref_status, info.xref_size_kb)
+        logger.info("  Linearized: %s", "Yes" if info.is_linearized else "No")
+        logger.info("  Action: %s", action)
+
+        if info.analysis_error:
+            logger.warning("  Warning: %s", info.analysis_error)
+
+    # Summary
+    logger.info("")
+    logger.info("=" * 70)
+    logger.info("SUMMARY")
+    logger.info("=" * 70)
+
+    optimized = sum(
+        1 for r in results
+        if r['info'].is_linearized or r['info'].xref_location == 'beginning'
+    )
+    needs_opt = len(results) - optimized
+
+    logger.info("Total PDFs: %s", len(results))
+    logger.info("Already optimized: %s", optimized)
+    logger.info("Need optimization: %s", needs_opt)
+
+    if needs_opt > 0:
+        logger.info("")
+        logger.info("PDFs needing optimization will be linearized during import.")
+        logger.info("This moves the xref table to the beginning for faster loading.")
+
+    return results
 
 
 def import_pdfs(
+    library_dir: Path,
+    auto_optimize: bool = True,
+    backup: bool = False,
     extract_covers: bool = True,
-    dpi: int = 200,
-    library_dir: Optional[Path] = None,
-    covers_dir: Optional[Path] = None
-) -> None:
+    dpi: int = 96
+) -> tuple:
     """
     Import PDFs from library directory into database.
 
+    Also optimizes existing PDFs that are already in the database but need
+    optimization (xref at end).
+
     Args:
-        extract_covers: If True, extract covers for PDFs that don't have them (default: True)
+        library_dir: Directory containing PDFs
+        auto_optimize: If True, linearize PDFs with xref at end
+        backup: If True, create backup before optimizing
+        extract_covers: If True, extract cover images
         dpi: DPI for cover extraction
-        library_dir: Custom library directory (uses default if None)
-        covers_dir: Custom covers directory (uses default if None)
+
+    Returns:
+        Tuple of (imported_count, skipped_count)
     """
+    logger.info("")
+    logger.info("=" * 70)
+    logger.info("IMPORTING PDFs")
+    logger.info("=" * 70)
+    logger.info("")
+
     db = SessionLocal()
     try:
-        # Check if library_documents table exists
-        inspector = sqlalchemy_inspect(db.bind)
-        existing_tables = inspector.get_table_names()
+        # First, optimize any existing PDFs in the database that need it
+        if auto_optimize:
+            logger.info("Step 1: Optimizing existing PDFs in database...")
+            optimized, _, opt_errors = optimize_existing_library_pdfs(
+                db,
+                library_dir=library_dir,
+                backup=backup
+            )
+            if optimized > 0:
+                logger.info("  Optimized %s existing PDF(s)", optimized)
+            if opt_errors > 0:
+                logger.warning("  Failed to optimize %s PDF(s)", opt_errors)
+            logger.info("")
 
-        if "library_documents" not in existing_tables:
-            print("\n" + "=" * 80)
-            print("ERROR: Library tables do not exist in the database!")
-            print("=" * 80)
-            print("\nPlease run database migrations first:")
-            print("  python scripts/db/run_migrations.py")
-            print("\nThis will create the required library tables:")
-            print("  - library_documents")
-            print("  - library_danmaku")
-            print("  - library_danmaku_likes")
-            print("  - library_danmaku_replies")
-            print("  - library_bookmarks")
-            print("=" * 80)
-            sys.exit(1)
-
-        print("Importing PDFs from storage/library/...")
-        print()
-
-        imported_count, skipped_count = import_pdfs_from_folder(
-            db=db,
+        # Then import new PDFs
+        logger.info("Step 2: Importing new PDFs...")
+        imported, skipped = auto_import_new_pdfs(
+            db,
             library_dir=library_dir,
-            covers_dir=covers_dir,
             extract_covers=extract_covers,
-            dpi=dpi
+            dpi=dpi,
+            auto_optimize=auto_optimize,
+            optimize_backup=backup
+        )
+        return imported, skipped
+    finally:
+        db.close()
+
+
+def optimize_existing_pdfs(
+    library_dir: Path,
+    backup: bool = True
+) -> tuple:
+    """
+    Optimize existing PDFs in library and update database records.
+
+    This function:
+    1. Gets all documents from database
+    2. Checks if each PDF needs optimization (xref at end)
+    3. Linearizes PDFs that need it
+    4. Updates file_size in database after optimization
+
+    Args:
+        library_dir: Directory containing PDFs
+        backup: If True, create backup before optimizing
+
+    Returns:
+        Tuple of (optimized_count, skipped_count, error_count)
+    """
+    logger.info("")
+    logger.info("=" * 70)
+    logger.info("OPTIMIZING EXISTING LIBRARY PDFs")
+    logger.info("=" * 70)
+    logger.info("")
+    logger.info("This will optimize PDFs already in the database and update file sizes.")
+    logger.info("")
+
+    db = SessionLocal()
+    try:
+        optimized, skipped, errors = optimize_existing_library_pdfs(
+            db,
+            library_dir=library_dir,
+            backup=backup
+        )
+        return (optimized, skipped, errors)
+    finally:
+        db.close()
+
+
+def optimize_pdf_files_only(
+    library_dir: Path,
+    backup: bool = True
+) -> tuple:
+    """
+    Optimize PDF files without touching the database.
+
+    Use this when you don't have PostgreSQL running or just want to
+    linearize files without updating database records.
+
+    Args:
+        library_dir: Directory containing PDFs
+        backup: If True, create backup before optimizing
+
+    Returns:
+        Tuple of (optimized_count, skipped_count, error_count)
+    """
+    pdf_files = list(library_dir.glob("*.pdf"))
+
+    if not pdf_files:
+        logger.info("No PDF files found in %s", library_dir)
+        return (0, 0, 0)
+
+    logger.info("")
+    logger.info("=" * 70)
+    logger.info("OPTIMIZING PDF FILES (no database)")
+    logger.info("=" * 70)
+    logger.info("")
+
+    qpdf_available = check_qpdf_available()
+    if not qpdf_available:
+        try:
+            if find_spec("PyPDF2") is None:
+                raise ImportError("PyPDF2 not found")
+            logger.info("Using PyPDF2 for optimization (qpdf not available)")
+        except ImportError:
+            logger.error("Neither qpdf nor PyPDF2 available. Cannot optimize.")
+            return (0, len(pdf_files), 0)
+    else:
+        logger.info("Using qpdf for optimization")
+
+    optimized = 0
+    skipped = 0
+    errors = 0
+
+    for pdf_path in sorted(pdf_files):
+        pdf_name = pdf_path.name
+
+        # Validate PDF
+        is_valid, error_msg = validate_pdf_file(pdf_path)
+        if not is_valid:
+            logger.warning("Skipping invalid PDF: %s - %s", pdf_name, error_msg)
+            skipped += 1
+            continue
+
+        # Check if optimization needed
+        should_opt, reason, info = should_optimize_pdf(pdf_path)
+
+        if not should_opt:
+            logger.debug(
+                "Skipping %s: already optimized (xref at %s)",
+                pdf_name,
+                info.xref_location
+            )
+            skipped += 1
+            continue
+
+        # Optimize
+        logger.info("Optimizing: %s (%s)", pdf_name, reason)
+        success, error, stats = optimize_pdf(
+            pdf_path,
+            backup=backup,
+            prefer_qpdf=qpdf_available
         )
 
-        print("=" * 80)
-        print(f"Import complete: {imported_count} imported, {skipped_count} skipped")
-
-    except ValueError as e:
-        print(f"Error: {e}")
-        sys.exit(1)
-    except Exception as e:
-        error_msg = str(e)
-        if "library_documents" in error_msg and "does not exist" in error_msg:
-            print("\n" + "=" * 80)
-            print("ERROR: Library tables do not exist in the database!")
-            print("=" * 80)
-            print("\nPlease run database migrations first:")
-            print("  python scripts/db/run_migrations.py")
-            print("=" * 80)
+        if success:
+            if stats['was_optimized']:
+                optimized += 1
+                logger.info(
+                    "  Success: %s -> %s bytes (%+s, method: %s)",
+                    f"{stats['original_size']:,}",
+                    f"{stats['new_size']:,}",
+                    f"{stats['size_change']:,}",
+                    stats['method']
+                )
+            else:
+                skipped += 1
+                logger.debug("  No optimization needed")
         else:
-            print(f"\nError importing PDFs: {e}")
-            traceback.print_exc()
-        sys.exit(1)
-    finally:
-        db.close()
+            errors += 1
+            logger.error("  Failed: %s", error)
+
+    # Summary
+    logger.info("")
+    logger.info("Optimization complete (files only, no database update):")
+    logger.info("  Optimized: %s", optimized)
+    logger.info("  Skipped: %s", skipped)
+    logger.info("  Errors: %s", errors)
+
+    return (optimized, skipped, errors)
 
 
-def extract_covers_only(
-    dpi: int = 200,
-    library_dir: Optional[Path] = None,
-    covers_dir: Optional[Path] = None
-) -> None:
+def verify_all_pdfs_optimized(library_dir: Path, check_db_size: bool = False) -> tuple:
     """
-    Extract covers for all PDFs in library directory.
+    Verify that all PDFs in the library have xref at the beginning.
+
+    Optionally checks that database file_size matches actual file size.
 
     Args:
-        dpi: DPI for cover extraction
-        library_dir: Custom library directory (uses default if None)
-        covers_dir: Custom covers directory (uses default if None)
-    """
-    # Check if cover extraction is available
-    is_available, error_msg = check_cover_extraction_available()
-    if not is_available:
-        print(f"Error: {error_msg}")
-        sys.exit(1)
+        library_dir: Directory containing PDFs
+        check_db_size: If True, also verify database file_size matches (requires DB)
 
-    # Use LibraryService to get default paths if not provided
-    if library_dir is None or covers_dir is None:
-        db = SessionLocal()
+    Returns:
+        Tuple of (total_count, optimized_count, failed_list, size_mismatch_list)
+        failed_list contains tuples of (filename, xref_location)
+        size_mismatch_list contains tuples of (filename, db_size, actual_size)
+    """
+    pdf_files = list(library_dir.glob("*.pdf"))
+
+    if not pdf_files:
+        return (0, 0, [], [])
+
+    logger.info("")
+    logger.info("=" * 70)
+    logger.info("VERIFICATION: Checking all PDFs have xref at beginning")
+    logger.info("=" * 70)
+    logger.info("")
+
+    optimized_count = 0
+    failed_list = []
+    size_mismatch_list = []
+
+    # Get database records if checking size
+    db_size_map = {}
+    if check_db_size:
         try:
-            service = LibraryService(db)
-            if library_dir is None:
-                library_dir = service.storage_dir
-            if covers_dir is None:
-                covers_dir = service.covers_dir
-        finally:
-            db.close()
+            db = SessionLocal()
+            try:
+                documents = db.query(LibraryDocument).filter(
+                    LibraryDocument.is_active
+                ).all()
+                for doc in documents:
+                    # Extract filename from path
+                    doc_filename = Path(doc.file_path).name
+                    db_size_map[doc_filename] = doc.file_size
+            finally:
+                db.close()
+        except Exception as e:
+            logger.warning("Could not check database sizes: %s", e)
+            check_db_size = False
 
-    print(f"Extracting covers from {library_dir}...")
-    print()
+    for pdf_path in sorted(pdf_files):
+        pdf_name = pdf_path.name
 
-    success_count, total_count = extract_all_covers(
-        library_dir=library_dir,
-        covers_dir=covers_dir,
-        dpi=dpi
-    )
+        # Validate PDF
+        is_valid, _ = validate_pdf_file(pdf_path)
+        if not is_valid:
+            continue
 
-    print("=" * 80)
-    print(f"Extraction complete: {success_count}/{total_count} covers extracted")
+        # Analyze structure
+        info = analyze_pdf_structure(pdf_path)
 
+        if info.analysis_error:
+            failed_list.append((pdf_name, f"error: {info.analysis_error}"))
+            continue
 
-def sync_library_command(
-    library_dir: Optional[Path] = None,
-    covers_dir: Optional[Path] = None,
-    extract_covers: bool = True,
-    dpi: int = 200,
-    remove_orphans: bool = True
-) -> None:
-    """
-    Validate and sync library (check PDFs, covers, database records).
+        # Check if optimized (xref at beginning OR linearized)
+        is_optimized = info.is_linearized or info.xref_location == 'beginning'
 
-    Args:
-        library_dir: Custom library directory (uses default if None)
-        covers_dir: Custom covers directory (uses default if None)
-        extract_covers: If True, extract missing covers (default: True)
-        dpi: DPI for cover extraction
-        remove_orphans: If True, remove orphaned records and covers (default: True)
-    """
-    db = SessionLocal()
-    try:
-        # Check if library_documents table exists
-        inspector = sqlalchemy_inspect(db.bind)
-        existing_tables = inspector.get_table_names()
-
-        if "library_documents" not in existing_tables:
-            print("\n" + "=" * 80)
-            print("ERROR: Library tables do not exist in the database!")
-            print("=" * 80)
-            print("\nPlease run database migrations first:")
-            print("  python scripts/db/run_migrations.py")
-            print("=" * 80)
-            sys.exit(1)
-
-        print("Validating library sync...")
-        print()
-
-        # Validate sync
-        report = validate_library_sync(db, library_dir, covers_dir)
-
-        # Print report
-        print("=" * 80)
-        print("Sync Validation Report")
-        print("=" * 80)
-        print(f"PDFs without database records: {len(report.pdfs_without_db)}")
-        if report.pdfs_without_db:
-            for pdf in report.pdfs_without_db:
-                print(f"  - {pdf.name}")
-        print(f"Database records without PDFs: {len(report.db_records_without_pdf)}")
-        if report.db_records_without_pdf:
-            for doc in report.db_records_without_pdf:
-                print(f"  - {doc.title} (ID: {doc.id}, path: {doc.file_path})")
-        print(f"PDFs without cover images: {len(report.pdfs_without_cover)}")
-        if report.pdfs_without_cover:
-            for pdf, doc_id in report.pdfs_without_cover:
-                print(f"  - {pdf.name}" + (f" (doc ID: {doc_id})" if doc_id else ""))
-        print(f"Cover images without PDFs: {len(report.covers_without_pdf)}")
-        if report.covers_without_pdf:
-            for cover in report.covers_without_pdf:
-                print(f"  - {cover.name}")
-        print(f"Cover images without database records: {len(report.covers_without_db)}")
-        if report.covers_without_db:
-            for cover in report.covers_without_db:
-                print(f"  - {cover.name}")
-        print()
-
-        if report.is_synced:
-            print("✓ Library is in sync - all PDFs, covers, and database records match!")
+        if is_optimized:
+            optimized_count += 1
+            logger.debug("  ✓ %s - xref at %s", pdf_name, info.xref_location)
         else:
-            print("⚠ Library is out of sync - fixing issues...")
-            print()
+            failed_list.append((pdf_name, info.xref_location))
+            logger.warning("  ✗ %s - xref at %s (NOT OPTIMIZED)", pdf_name, info.xref_location)
 
-            # Sync library
-            results = sync_library(
-                db,
-                library_dir,
-                covers_dir,
-                extract_covers,
-                dpi,
-                remove_orphans
-            )
+        # Check file size matches database
+        if check_db_size and pdf_name in db_size_map:
+            try:
+                actual_size = pdf_path.stat().st_size
+                db_size = db_size_map[pdf_name]
+                if actual_size != db_size:
+                    size_mismatch_list.append((pdf_name, db_size, actual_size))
+                    logger.warning(
+                        "  ⚠ %s - size mismatch: DB=%s, actual=%s",
+                        pdf_name,
+                        f"{db_size:,}",
+                        f"{actual_size:,}"
+                    )
+            except OSError:
+                pass
 
-            print("=" * 80)
-            print("Sync Results")
-            print("=" * 80)
-            print(f"Imported PDFs: {results['imported']}")
-            print(f"Extracted covers: {results['covers_extracted']}")
-            print(f"Removed orphaned records: {results['orphan_records_removed']}")
-            print(f"Removed orphaned covers: {results['orphan_covers_removed']}")
-            print("=" * 80)
+    # Summary
+    total = len(pdf_files)
+    logger.info("")
+    logger.info("Verification Results:")
+    logger.info("  Total PDFs: %s", total)
+    logger.info("  Optimized (xref at front): %s", optimized_count)
+    logger.info("  Not optimized: %s", len(failed_list))
+    if check_db_size:
+        logger.info("  Size mismatches: %s", len(size_mismatch_list))
 
-    except Exception as e:
-        print(f"\nError syncing library: {e}")
-        traceback.print_exc()
-        sys.exit(1)
-    finally:
-        db.close()
+    if failed_list:
+        logger.info("")
+        logger.warning("The following PDFs still need optimization:")
+        for name, location in failed_list:
+            logger.warning("  - %s (xref at %s)", name, location)
+        logger.info("")
+        logger.info("Run with --optimize-only to fix these PDFs.")
+
+    if size_mismatch_list:
+        logger.info("")
+        logger.warning("The following PDFs have file size mismatches in database:")
+        for name, db_size, actual_size in size_mismatch_list:
+            logger.warning("  - %s (DB: %s, actual: %s)", name, f"{db_size:,}", f"{actual_size:,}")
+        logger.info("")
+        logger.info("Run with --optimize-only to update database sizes.")
+
+    if not failed_list and not size_mismatch_list:
+        logger.info("")
+        logger.info("✓ All PDFs are optimized! Ready for efficient lazy loading.")
+
+    return (total, optimized_count, failed_list, size_mismatch_list)
 
 
-def main() -> None:
-    """Main entry point for command-line script."""
+def main():
+    """Main entry point."""
     parser = argparse.ArgumentParser(
-        description='Import PDFs and extract covers for library',
+        description='Library PDF Import - Analyze, optimize, and import PDFs',
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  # Import PDFs and extract covers (default behavior)
-  python scripts/library_import.py import
-
-  # Import PDFs without extracting covers
-  python scripts/library_import.py import --no-extract-covers
-
-  # Import with custom DPI for cover extraction
-  python scripts/library_import.py import --dpi 300
-
-  # Extract covers only
-  python scripts/library_import.py extract-covers
-
-  # Extract covers with custom DPI
-  python scripts/library_import.py extract-covers --dpi 300
-
-  # Validate and sync library (check PDFs, covers, database)
-  python scripts/library_import.py sync
-
-  # Sync without removing orphans
-  python scripts/library_import.py sync --no-remove-orphans
-
-  # Import with custom directories
-  python scripts/library_import.py import --library-dir /path/to/pdfs --covers-dir /path/to/covers
+  python scripts/library_import.py                    # Analyze and import all PDFs
+  python scripts/library_import.py --analyze-only    # Just analyze, don't import
+  python scripts/library_import.py --no-optimize     # Import without optimization
+  python scripts/library_import.py --optimize-only   # Just optimize existing PDFs
+  python scripts/library_import.py --backup          # Create backups before optimizing
         """
     )
 
-    subparsers = parser.add_subparsers(dest='command', help='Command to execute')
-
-    # Import command
-    import_parser = subparsers.add_parser(
-        'import',
-        help='Import PDFs into database (extracts covers by default)'
-    )
-    import_parser.add_argument(
-        '--no-extract-covers',
-        action='store_false',
-        dest='extract_covers',
-        help='Skip cover extraction (covers are extracted by default)'
-    )
-    import_parser.add_argument(
-        '--dpi',
-        type=int,
-        default=200,
-        help='DPI for cover extraction (default: 200)'
-    )
-    import_parser.add_argument(
-        '--library-dir',
-        type=Path,
-        help='Custom library directory (default: storage/library)'
-    )
-    import_parser.add_argument(
-        '--covers-dir',
-        type=Path,
-        help='Custom covers directory (default: storage/library/covers)'
+    parser.add_argument(
+        '--analyze-only',
+        action='store_true',
+        help='Only analyze PDFs, do not import or optimize'
     )
 
-    # Extract covers command
-    extract_parser = subparsers.add_parser(
-        'extract-covers',
-        help='Extract cover images from PDFs'
-    )
-    extract_parser.add_argument(
-        '--dpi',
-        type=int,
-        default=200,
-        help='DPI for cover extraction (default: 200)'
-    )
-    extract_parser.add_argument(
-        '--library-dir',
-        type=Path,
-        help='Custom library directory (default: storage/library)'
-    )
-    extract_parser.add_argument(
-        '--covers-dir',
-        type=Path,
-        help='Custom covers directory (default: storage/library/covers)'
+    parser.add_argument(
+        '--optimize-only',
+        action='store_true',
+        help='Only optimize existing PDFs, do not import'
     )
 
-    # Sync command
-    sync_parser = subparsers.add_parser(
-        'sync',
-        help='Validate and sync library (check PDFs, covers, database records)'
+    parser.add_argument(
+        '--files-only',
+        action='store_true',
+        help='Only process files, do not connect to database (use with --optimize-only)'
     )
-    sync_parser.add_argument(
-        '--no-extract-covers',
-        action='store_false',
-        dest='extract_covers',
-        help='Skip cover extraction during sync'
+
+    parser.add_argument(
+        '--no-optimize',
+        action='store_true',
+        help='Import PDFs without optimizing (not recommended)'
     )
-    sync_parser.add_argument(
+
+    parser.add_argument(
+        '--backup',
+        action='store_true',
+        help='Create backup before optimizing PDFs'
+    )
+
+    parser.add_argument(
+        '--no-covers',
+        action='store_true',
+        help='Do not extract cover images'
+    )
+
+    parser.add_argument(
+        '--regenerate-covers',
+        action='store_true',
+        help='Regenerate ALL cover images with optimized settings (JPEG, smaller size)'
+    )
+
+    parser.add_argument(
+        '--optimize-covers',
+        action='store_true',
+        help='Only regenerate covers that are too large (>100 KB by default)'
+    )
+
+    parser.add_argument(
+        '--max-cover-size',
+        type=int,
+        default=100,
+        help='Max cover size in KB for --optimize-covers (default: 100)'
+    )
+
+    parser.add_argument(
         '--dpi',
         type=int,
-        default=200,
-        help='DPI for cover extraction (default: 200)'
+        default=96,
+        help='DPI for cover extraction (default: 96 for web thumbnails)'
     )
-    sync_parser.add_argument(
-        '--no-remove-orphans',
-        action='store_false',
-        dest='remove_orphans',
-        help='Do not remove orphaned records and covers'
+
+    parser.add_argument(
+        '--cover-width',
+        type=int,
+        default=400,
+        help='Max cover width in pixels (default: 400)'
     )
-    sync_parser.add_argument(
+
+    parser.add_argument(
+        '--cover-quality',
+        type=int,
+        default=80,
+        help='JPEG quality 1-100 (default: 80)'
+    )
+
+    parser.add_argument(
         '--library-dir',
-        type=Path,
-        help='Custom library directory (default: storage/library)'
+        type=str,
+        default=None,
+        help='Library directory path (default: from LIBRARY_STORAGE_DIR env)'
     )
-    sync_parser.add_argument(
-        '--covers-dir',
-        type=Path,
-        help='Custom covers directory (default: storage/library/covers)'
+
+    parser.add_argument(
+        '-v', '--verbose',
+        action='store_true',
+        help='Enable verbose logging'
+    )
+
+    parser.add_argument(
+        '-y', '--yes',
+        action='store_true',
+        help='Skip confirmation prompts (auto-confirm all actions)'
     )
 
     args = parser.parse_args()
 
-    if not args.command:
-        parser.print_help()
+    if args.verbose:
+        logging.getLogger().setLevel(logging.DEBUG)
+
+    # Get library directory
+    if args.library_dir:
+        library_dir = Path(args.library_dir).resolve()
+    else:
+        library_dir = get_library_dir()
+
+    if not library_dir.exists():
+        logger.error("Library directory not found: %s", library_dir)
+        logger.info("Please create the directory or set LIBRARY_STORAGE_DIR env variable")
         sys.exit(1)
 
-    try:
-        if args.command == 'import':
-            import_pdfs(
-                extract_covers=getattr(args, 'extract_covers', True),
-                dpi=args.dpi,
-                library_dir=args.library_dir,
-                covers_dir=args.covers_dir
-            )
-        elif args.command == 'extract-covers':
-            extract_covers_only(
-                dpi=args.dpi,
-                library_dir=args.library_dir,
-                covers_dir=args.covers_dir
-            )
-        elif args.command == 'sync':
-            sync_library_command(
-                library_dir=args.library_dir,
-                covers_dir=args.covers_dir,
-                extract_covers=getattr(args, 'extract_covers', True),
-                dpi=args.dpi,
-                remove_orphans=getattr(args, 'remove_orphans', True)
+    logger.info("Library directory: %s", library_dir)
+
+    # Always analyze first
+    results = analyze_pdfs(library_dir)
+
+    if not results:
+        logger.info("No valid PDFs found to process")
+        sys.exit(0)
+
+    if args.analyze_only:
+        logger.info("")
+        logger.info("Analysis complete. Use without --analyze-only to import PDFs.")
+        sys.exit(0)
+
+    # Handle optimize-covers mode (smart - only regenerate oversized covers)
+    if args.optimize_covers:
+        logger.info("")
+        logger.info("=" * 70)
+        logger.info("OPTIMIZE OVERSIZED COVERS")
+        logger.info("=" * 70)
+        logger.info("")
+
+        # Get covers directory
+        db = SessionLocal()
+        try:
+            service = LibraryService(db)
+            covers_dir = service.covers_dir
+        finally:
+            db.close()
+
+        # Check existing covers
+        existing_covers = list(covers_dir.glob("*_cover.*")) if covers_dir.exists() else []
+        oversized = [c for c in existing_covers if c.stat().st_size / 1024 > args.max_cover_size]
+
+        logger.info("Existing covers: %s", len(existing_covers))
+        logger.info("Oversized (> %s KB): %s", args.max_cover_size, len(oversized))
+        logger.info("")
+
+        if not oversized:
+            logger.info("All covers are already optimized! Nothing to do.")
+            sys.exit(0)
+
+        logger.info("Oversized covers to regenerate:")
+        for cover in sorted(oversized):
+            size_kb = cover.stat().st_size / 1024
+            logger.info("  - %s (%.1f KB)", cover.name, size_kb)
+        logger.info("")
+        logger.info("New settings: JPEG, DPI=%s, width=%spx, quality=%s%%",
+                    args.dpi, args.cover_width, args.cover_quality)
+        logger.info("")
+
+        if not args.yes:
+            try:
+                response = input(f"Regenerate {len(oversized)} oversized cover(s)? [y/N]: ").strip().lower()
+                if response not in ('y', 'yes'):
+                    logger.info("Cancelled by user.")
+                    sys.exit(0)
+            except (EOFError, KeyboardInterrupt):
+                logger.info("")
+                logger.info("Cancelled.")
+                sys.exit(0)
+
+        regenerated, skipped, total = optimize_oversized_covers(
+            library_dir=library_dir,
+            covers_dir=covers_dir,
+            max_size_kb=args.max_cover_size,
+            dpi=args.dpi,
+            max_width=args.cover_width,
+            image_format="JPEG",
+            quality=args.cover_quality
+        )
+
+        sys.exit(0)
+
+    # Handle regenerate-covers mode (force all)
+    if args.regenerate_covers:
+        logger.info("")
+        logger.info("=" * 70)
+        logger.info("REGENERATE ALL COVERS")
+        logger.info("=" * 70)
+        logger.info("")
+        logger.info("This will regenerate ALL cover images with optimized settings:")
+        logger.info("  - Format: JPEG (much smaller than PNG)")
+        logger.info("  - DPI: %s (screen resolution)", args.dpi)
+        logger.info("  - Max Width: %spx", args.cover_width)
+        logger.info("  - Quality: %s%%", args.cover_quality)
+        logger.info("")
+        logger.info("PDFs to process: %s", len(results))
+        logger.info("")
+
+        if not args.yes:
+            try:
+                response = input("Proceed with regenerating ALL covers? [y/N]: ").strip().lower()
+                if response not in ('y', 'yes'):
+                    logger.info("Cancelled by user.")
+                    sys.exit(0)
+            except (EOFError, KeyboardInterrupt):
+                logger.info("")
+                logger.info("Cancelled.")
+                sys.exit(0)
+
+        # Get covers directory
+        db = SessionLocal()
+        try:
+            service = LibraryService(db)
+            covers_dir = service.covers_dir
+        finally:
+            db.close()
+
+        regenerated, total, old_removed = regenerate_all_covers(
+            library_dir=library_dir,
+            covers_dir=covers_dir,
+            dpi=args.dpi,
+            max_width=args.cover_width,
+            image_format="JPEG",
+            quality=args.cover_quality
+        )
+
+        logger.info("")
+        logger.info("=" * 70)
+        logger.info("REGENERATION COMPLETE")
+        logger.info("=" * 70)
+        logger.info("Old covers removed: %s", old_removed)
+        logger.info("New covers created: %s / %s", regenerated, total)
+
+        # Show size comparison
+        new_covers = list(covers_dir.glob("*_cover.jpg"))
+        if new_covers:
+            total_size = sum(c.stat().st_size for c in new_covers)
+            avg_size = total_size / len(new_covers) / 1024
+            logger.info("Average cover size: %.1f KB", avg_size)
+
+        sys.exit(0)
+
+    # Count PDFs needing optimization
+    needs_optimization = [
+        r for r in results
+        if not r['info'].is_linearized and r['info'].xref_location != 'beginning'
+    ]
+    already_optimized = len(results) - len(needs_optimization)
+
+    if args.optimize_only:
+        # Show what will be done and ask for confirmation
+        logger.info("")
+        logger.info("=" * 70)
+        logger.info("OPTIMIZATION PLAN")
+        logger.info("=" * 70)
+        logger.info("")
+
+        if args.files_only:
+            logger.info("Mode: FILES ONLY (no database connection)")
+        else:
+            logger.info("Mode: Full (will update database file_size)")
+        logger.info("")
+
+        logger.info("PDFs detected: %s", len(results))
+        logger.info("  - Already optimized: %s", already_optimized)
+        logger.info("  - Need optimization: %s", len(needs_optimization))
+        logger.info("")
+
+        if len(needs_optimization) == 0:
+            logger.info("All PDFs are already optimized. Nothing to do.")
+            sys.exit(0)
+
+        logger.info("PDFs to linearize:")
+        for r in needs_optimization:
+            logger.info("  - %s (%.2f MB, xref at %s)",
+                        r['name'], r['size_mb'], r['info'].xref_location)
+        logger.info("")
+
+        if args.backup:
+            logger.info("Backups will be created (.pdf.backup)")
+        else:
+            logger.info("No backups will be created (use --backup to enable)")
+        logger.info("")
+
+        if not args.yes:
+            try:
+                response = input(
+                    f"Proceed with linearizing {len(needs_optimization)} PDF(s)? [y/N]: "
+                ).strip().lower()
+                if response not in ('y', 'yes'):
+                    logger.info("Cancelled by user.")
+                    sys.exit(0)
+            except (EOFError, KeyboardInterrupt):
+                logger.info("")
+                logger.info("Cancelled.")
+                sys.exit(0)
+
+        # Use files-only mode if requested (no database needed)
+        if args.files_only:
+            optimized, _, errors = optimize_pdf_files_only(
+                library_dir,
+                backup=args.backup
             )
         else:
-            parser.print_help()
-            sys.exit(1)
+            optimized, _, errors = optimize_existing_pdfs(
+                library_dir,
+                backup=args.backup
+            )
 
-    except KeyboardInterrupt:
-        print("\n\nOperation cancelled by user")
-        sys.exit(130)
-    except Exception as e:
-        logger.error("Unexpected error: %s", e, exc_info=True)
+        # Verification step
+        if optimized > 0 or errors == 0:
+            # Use check_db_size=True only if not in files-only mode
+            check_db = not args.files_only
+            total, verified_count, failed, size_mismatches = verify_all_pdfs_optimized(
+                library_dir, check_db_size=check_db
+            )
+            if failed:
+                logger.error("")
+                logger.error("VERIFICATION FAILED: %s PDF(s) still not optimized!", len(failed))
+                sys.exit(1)
+
+        sys.exit(0 if errors == 0 else 1)
+
+    # Check if files_only is used without optimize_only (doesn't make sense for import)
+    if args.files_only:
+        logger.error("--files-only can only be used with --optimize-only")
+        logger.error("Import mode requires database connection to create records.")
+        logger.info("")
+        logger.info("Usage examples:")
+        logger.info("  Optimize files only (no DB): python scripts/library_import.py --optimize-only --files-only")
+        logger.info("  Full import (needs DB):      python scripts/library_import.py")
         sys.exit(1)
+
+    # Import mode - check which PDFs are already in database
+    db = SessionLocal()
+    try:
+        existing_docs = db.query(LibraryDocument).filter(
+            LibraryDocument.is_active
+        ).all()
+        existing_filenames = {Path(doc.file_path).name for doc in existing_docs}
+    finally:
+        db.close()
+
+    # Categorize PDFs
+    new_pdfs = [r for r in results if r['name'] not in existing_filenames]
+    existing_pdfs = [r for r in results if r['name'] in existing_filenames]
+    existing_need_opt = [r for r in existing_pdfs if r['info'].needs_optimization]
+    new_need_opt = [r for r in new_pdfs if r['info'].needs_optimization]
+
+    # Show import plan
+    logger.info("")
+    logger.info("=" * 70)
+    logger.info("IMPORT PLAN")
+    logger.info("=" * 70)
+    logger.info("")
+    logger.info("PDFs detected: %s", len(results))
+    logger.info("  - New (will be imported): %s", len(new_pdfs))
+    logger.info("  - Already in database: %s", len(existing_pdfs))
+    logger.info("")
+    logger.info("Optimization status:")
+    logger.info("  - Already optimized: %s", already_optimized)
+    logger.info("  - Need optimization: %s", len(needs_optimization))
+    if existing_need_opt:
+        logger.info("    - Existing PDFs needing optimization: %s", len(existing_need_opt))
+    if new_need_opt:
+        logger.info("    - New PDFs needing optimization: %s", len(new_need_opt))
+    logger.info("")
+
+    if not args.no_optimize and len(needs_optimization) > 0:
+        logger.info("The following PDFs will be linearized:")
+        for r in needs_optimization:
+            status = "(existing)" if r['name'] in existing_filenames else "(new)"
+            logger.info("  - %s (%.2f MB) %s", r['name'], r['size_mb'], status)
+        logger.info("")
+
+    logger.info("Actions to perform:")
+    logger.info("  1. Validate PDFs")
+    if not args.no_optimize and len(existing_need_opt) > 0:
+        logger.info("  2. Optimize %s existing PDF(s) in database", len(existing_need_opt))
+    if not args.no_optimize and len(new_need_opt) > 0:
+        logger.info("  3. Linearize %s new PDF(s) during import", len(new_need_opt))
+    if not args.no_covers:
+        logger.info("  4. Extract cover images")
+    if len(new_pdfs) > 0:
+        logger.info("  5. Create %s database record(s)", len(new_pdfs))
+    logger.info("")
+
+    if not args.yes:
+        try:
+            response = input("Proceed with import? [y/N]: ").strip().lower()
+            if response not in ('y', 'yes'):
+                logger.info("Cancelled by user.")
+                sys.exit(0)
+        except (EOFError, KeyboardInterrupt):
+            logger.info("")
+            logger.info("Cancelled.")
+            sys.exit(0)
+
+    # Import PDFs
+    imported, skipped = import_pdfs(
+        library_dir,
+        auto_optimize=not args.no_optimize,
+        backup=args.backup,
+        extract_covers=not args.no_covers,
+        dpi=args.dpi
+    )
+
+    # Verification step (check DB sizes since we have database access)
+    total, verified_count, failed, size_mismatches = verify_all_pdfs_optimized(
+        library_dir, check_db_size=True
+    )
+
+    logger.info("")
+    logger.info("=" * 70)
+    logger.info("FINAL SUMMARY")
+    logger.info("=" * 70)
+    logger.info("PDFs imported: %s", imported)
+    logger.info("PDFs skipped: %s", skipped)
+    logger.info("")
+    logger.info("Verification:")
+    logger.info("  Total PDFs in library: %s", total)
+    logger.info("  Optimized (xref at front): %s", verified_count)
+    logger.info("  Not optimized: %s", len(failed))
+    logger.info("  Size mismatches: %s", len(size_mismatches))
+
+    if failed:
+        logger.error("")
+        logger.error("WARNING: %s PDF(s) still have xref at end!", len(failed))
+        logger.error("These PDFs will have slower initial load times.")
+        logger.error("Run with --optimize-only to fix them.")
+    elif size_mismatches:
+        logger.warning("")
+        logger.warning("WARNING: %s PDF(s) have file size mismatch in database.", len(size_mismatches))
+        logger.warning("Run with --optimize-only to update database.")
+    else:
+        logger.info("")
+        logger.info("✓ All PDFs verified! Ready for efficient lazy loading.")
+        logger.info("  Optimized PDFs have xref at beginning -> fast initial load")
 
 
 if __name__ == "__main__":

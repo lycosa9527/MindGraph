@@ -58,6 +58,13 @@ except ImportError:
     celery_app = None
 
 try:
+    from config.settings import config
+    _CONFIG_AVAILABLE = True
+except ImportError:
+    config = None
+    _CONFIG_AVAILABLE = False
+
+try:
     import psycopg2
     _PSYCOPG2_AVAILABLE = True
 except ImportError:
@@ -279,6 +286,11 @@ class ProcessMonitor:
         Returns:
             ServiceStatus (HEALTHY or UNHEALTHY)
         """
+        # Skip Qdrant check if RAG is disabled
+        if _CONFIG_AVAILABLE and config is not None:
+            if not config.FEATURE_KNOWLEDGE_SPACE:
+                return ServiceStatus.HEALTHY
+
         try:
             # HTTP check (run in thread pool to avoid blocking)
             def check_http():
@@ -319,6 +331,11 @@ class ProcessMonitor:
         Returns:
             ServiceStatus (HEALTHY or UNHEALTHY)
         """
+        # Skip Celery check if RAG is disabled
+        if _CONFIG_AVAILABLE and config is not None:
+            if not config.FEATURE_KNOWLEDGE_SPACE:
+                return ServiceStatus.HEALTHY
+
         try:
             if celery_app is None:
                 logger.warning("[ProcessMonitor] Celery app not available")
@@ -730,39 +747,64 @@ class ProcessMonitor:
                 db_url = os.getenv('DATABASE_URL', '')
                 using_postgresql = 'postgresql' in db_url.lower()
 
+                # Check if RAG is enabled (determines if Celery and Qdrant are needed)
+                rag_enabled = (
+                    _CONFIG_AVAILABLE and
+                    config is not None and
+                    config.FEATURE_KNOWLEDGE_SPACE
+                )
+
                 if using_postgresql:
-                    redis_status, qdrant_status, celery_status, postgresql_status = await asyncio.gather(
-                        self._check_redis_health(),
-                        self._check_qdrant_health(),
-                        self._check_celery_health(),
-                        self._check_postgresql_health(),
-                        return_exceptions=False
-                    )
+                    if rag_enabled:
+                        redis_status, qdrant_status, celery_status, postgresql_status = await asyncio.gather(
+                            self._check_redis_health(),
+                            self._check_qdrant_health(),
+                            self._check_celery_health(),
+                            self._check_postgresql_health(),
+                            return_exceptions=False
+                        )
+                    else:
+                        redis_status, postgresql_status = await asyncio.gather(
+                            self._check_redis_health(),
+                            self._check_postgresql_health(),
+                            return_exceptions=False
+                        )
+                        qdrant_status = ServiceStatus.HEALTHY  # RAG disabled, skip Qdrant
+                        celery_status = ServiceStatus.HEALTHY  # RAG disabled, skip Celery
                 else:
-                    redis_status, qdrant_status, celery_status = await asyncio.gather(
-                        self._check_redis_health(),
-                        self._check_qdrant_health(),
-                        self._check_celery_health(),
-                        return_exceptions=False
-                    )
+                    if rag_enabled:
+                        redis_status, qdrant_status, celery_status = await asyncio.gather(
+                            self._check_redis_health(),
+                            self._check_qdrant_health(),
+                            self._check_celery_health(),
+                            return_exceptions=False
+                        )
+                    else:
+                        redis_status = await self._check_redis_health()
+                        qdrant_status = ServiceStatus.HEALTHY  # RAG disabled, skip Qdrant
+                        celery_status = ServiceStatus.HEALTHY  # RAG disabled, skip Celery
                     postgresql_status = ServiceStatus.HEALTHY  # Not using PostgreSQL
 
                 # Check and restart services if needed
                 await self._check_and_restart_service("redis", redis_status)
-                await self._check_and_restart_service("qdrant", qdrant_status)
-                await self._check_and_restart_service("celery", celery_status)
+                if rag_enabled:
+                    await self._check_and_restart_service("qdrant", qdrant_status)
+                    await self._check_and_restart_service("celery", celery_status)
                 if using_postgresql:
                     await self._check_and_restart_service("postgresql", postgresql_status)
 
                 # Check for multiple services down
-                statuses = [redis_status, qdrant_status, celery_status]
+                statuses = [redis_status]
+                if rag_enabled:
+                    statuses.append(qdrant_status)
+                    statuses.append(celery_status)
                 if using_postgresql:
                     statuses.append(postgresql_status)
                 unhealthy_count = sum(
                     1 for status in statuses
                     if status == ServiceStatus.UNHEALTHY
                 )
-                total_services = 4 if using_postgresql else 3
+                total_services = len(statuses)
                 if unhealthy_count >= 2:
                     logger.error("[ProcessMonitor] Multiple services down (%d/%d)", unhealthy_count, total_services)
                     # Send SMS alert for multiple failures (with cooldown to prevent spam)

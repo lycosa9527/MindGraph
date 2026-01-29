@@ -32,6 +32,7 @@ from services.library.pdf_cover_extractor import (
     extract_pdf_cover,
     check_cover_extraction_available
 )
+from services.library.pdf_optimizer import should_optimize_pdf
 
 logger = logging.getLogger(__name__)
 
@@ -44,6 +45,7 @@ class SyncReport:
     pdfs_without_cover: List[Tuple[Path, Optional[int]]]  # (pdf_path, document_id)
     covers_without_pdf: List[Path]
     covers_without_db: List[Path]
+    pdfs_not_optimized: List[Tuple[Path, str]]  # (pdf_path, xref_location)
     is_synced: bool
 
 
@@ -81,6 +83,7 @@ def validate_library_sync(
     pdfs_without_cover: List[Tuple[Path, Optional[int]]] = []
     covers_without_pdf: List[Path] = []
     covers_without_db: List[Path] = []
+    pdfs_not_optimized: List[Tuple[Path, str]] = []
 
     # Step 1: Scan PDFs in folder
     pdf_files: List[Path] = []
@@ -214,6 +217,12 @@ def validate_library_sync(
                 if not found_in_db:
                     covers_without_db.append(cover_path)
 
+    # Step 7: Check PDF optimization status
+    for pdf_path in pdf_files:
+        needs_opt, _, info = should_optimize_pdf(pdf_path)
+        if needs_opt and not info.analysis_error:
+            pdfs_not_optimized.append((pdf_path, info.xref_location))
+
     is_synced = (
         len(pdfs_without_db) == 0 and
         len(db_records_without_pdf) == 0 and
@@ -228,6 +237,7 @@ def validate_library_sync(
         pdfs_without_cover=pdfs_without_cover,
         covers_without_pdf=covers_without_pdf,
         covers_without_db=covers_without_db,
+        pdfs_not_optimized=pdfs_not_optimized,
         is_synced=is_synced
     )
 

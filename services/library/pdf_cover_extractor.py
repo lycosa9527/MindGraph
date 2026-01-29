@@ -14,9 +14,15 @@ Proprietary License
 import io
 import logging
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Literal
 
 logger = logging.getLogger(__name__)
+
+# Default settings for web-optimized thumbnails
+DEFAULT_DPI = 96  # Screen resolution DPI
+DEFAULT_MAX_WIDTH = 400  # Thumbnail width in pixels
+DEFAULT_FORMAT = "JPEG"  # JPEG for smaller files
+DEFAULT_QUALITY = 80  # JPEG quality (1-100)
 
 # Try PyMuPDF first (pure Python, no external dependencies)
 try:
@@ -43,7 +49,10 @@ except ImportError:
 def extract_pdf_cover_pymupdf(
     pdf_path: Path,
     output_path: Path,
-    dpi: int = 200
+    dpi: int = DEFAULT_DPI,
+    max_width: int = DEFAULT_MAX_WIDTH,
+    image_format: Literal["JPEG", "PNG"] = DEFAULT_FORMAT,
+    quality: int = DEFAULT_QUALITY
 ) -> bool:
     """
     Extract first page of PDF as cover image using PyMuPDF.
@@ -51,7 +60,10 @@ def extract_pdf_cover_pymupdf(
     Args:
         pdf_path: Path to PDF file
         output_path: Path to save cover image
-        dpi: Resolution for image (default: 200)
+        dpi: Resolution for rendering (default: 96)
+        max_width: Maximum width in pixels (default: 400)
+        image_format: Output format - "JPEG" or "PNG" (default: JPEG)
+        quality: JPEG quality 1-100 (default: 80)
 
     Returns:
         True if successful, False otherwise
@@ -77,8 +89,16 @@ def extract_pdf_cover_pymupdf(
         img_data = pix.tobytes("png")
         cover_image = Image.open(io.BytesIO(img_data))
 
-        # Resize if too large (max width 800px, maintain aspect ratio)
-        max_width = 800
+        # Convert to RGB if saving as JPEG (JPEG doesn't support alpha)
+        if image_format == "JPEG" and cover_image.mode in ('RGBA', 'LA', 'P'):
+            # Create white background
+            background = Image.new('RGB', cover_image.size, (255, 255, 255))
+            if cover_image.mode == 'P':
+                cover_image = cover_image.convert('RGBA')
+            background.paste(cover_image, mask=cover_image.split()[-1] if cover_image.mode == 'RGBA' else None)
+            cover_image = background
+
+        # Resize if too large (maintain aspect ratio)
         if cover_image.width > max_width:
             ratio = max_width / cover_image.width
             new_height = int(cover_image.height * ratio)
@@ -87,17 +107,21 @@ def extract_pdf_cover_pymupdf(
                 Image.Resampling.LANCZOS
             )
 
-        # Save as PNG
+        # Save image
         output_path.parent.mkdir(parents=True, exist_ok=True)
-        cover_image.save(output_path, "PNG", optimize=True)
+        if image_format == "JPEG":
+            cover_image.save(output_path, "JPEG", quality=quality, optimize=True)
+        else:
+            cover_image.save(output_path, "PNG", optimize=True)
 
         file_size_kb = output_path.stat().st_size / 1024
         logger.info(
-            "Extracted cover: %s (%dx%dpx, %.1f KB)",
+            "Extracted cover: %s (%dx%dpx, %.1f KB, %s)",
             output_path.name,
             cover_image.width,
             cover_image.height,
-            file_size_kb
+            file_size_kb,
+            image_format
         )
 
         doc.close()
@@ -117,7 +141,10 @@ def extract_pdf_cover_pymupdf(
 def extract_pdf_cover_pdf2image(
     pdf_path: Path,
     output_path: Path,
-    dpi: int = 200
+    dpi: int = DEFAULT_DPI,
+    max_width: int = DEFAULT_MAX_WIDTH,
+    image_format: Literal["JPEG", "PNG"] = DEFAULT_FORMAT,
+    quality: int = DEFAULT_QUALITY
 ) -> bool:
     """
     Extract first page of PDF as cover image using pdf2image.
@@ -125,7 +152,10 @@ def extract_pdf_cover_pdf2image(
     Args:
         pdf_path: Path to PDF file
         output_path: Path to save cover image
-        dpi: Resolution for image (default: 200)
+        dpi: Resolution for rendering (default: 96)
+        max_width: Maximum width in pixels (default: 400)
+        image_format: Output format - "JPEG" or "PNG" (default: JPEG)
+        quality: JPEG quality 1-100 (default: 80)
 
     Returns:
         True if successful, False otherwise
@@ -147,8 +177,15 @@ def extract_pdf_cover_pdf2image(
         # Get first page image
         cover_image = images[0]
 
-        # Resize if too large (max width 800px, maintain aspect ratio)
-        max_width = 800
+        # Convert to RGB if saving as JPEG (JPEG doesn't support alpha)
+        if image_format == "JPEG" and cover_image.mode in ('RGBA', 'LA', 'P'):
+            background = Image.new('RGB', cover_image.size, (255, 255, 255))
+            if cover_image.mode == 'P':
+                cover_image = cover_image.convert('RGBA')
+            background.paste(cover_image, mask=cover_image.split()[-1] if cover_image.mode == 'RGBA' else None)
+            cover_image = background
+
+        # Resize if too large (maintain aspect ratio)
         if cover_image.width > max_width:
             ratio = max_width / cover_image.width
             new_height = int(cover_image.height * ratio)
@@ -157,17 +194,21 @@ def extract_pdf_cover_pdf2image(
                 Image.Resampling.LANCZOS
             )
 
-        # Save as PNG
+        # Save image
         output_path.parent.mkdir(parents=True, exist_ok=True)
-        cover_image.save(output_path, "PNG", optimize=True)
+        if image_format == "JPEG":
+            cover_image.save(output_path, "JPEG", quality=quality, optimize=True)
+        else:
+            cover_image.save(output_path, "PNG", optimize=True)
 
         file_size_kb = output_path.stat().st_size / 1024
         logger.info(
-            "Extracted cover: %s (%dx%dpx, %.1f KB)",
+            "Extracted cover: %s (%dx%dpx, %.1f KB, %s)",
             output_path.name,
             cover_image.width,
             cover_image.height,
-            file_size_kb
+            file_size_kb,
+            image_format
         )
         return True
 
@@ -185,7 +226,10 @@ def extract_pdf_cover_pdf2image(
 def extract_pdf_cover(
     pdf_path: Path,
     output_path: Path,
-    dpi: int = 200
+    dpi: int = DEFAULT_DPI,
+    max_width: int = DEFAULT_MAX_WIDTH,
+    image_format: Literal["JPEG", "PNG"] = DEFAULT_FORMAT,
+    quality: int = DEFAULT_QUALITY
 ) -> bool:
     """
     Extract first page of PDF as cover image.
@@ -195,7 +239,10 @@ def extract_pdf_cover(
     Args:
         pdf_path: Path to PDF file
         output_path: Path to save cover image
-        dpi: Resolution for image (default: 200)
+        dpi: Resolution for rendering (default: 96)
+        max_width: Maximum width in pixels (default: 400)
+        image_format: Output format - "JPEG" or "PNG" (default: JPEG)
+        quality: JPEG quality 1-100 (default: 80)
 
     Returns:
         True if successful, False otherwise
@@ -208,9 +255,13 @@ def extract_pdf_cover(
         return False
 
     if PYMUPDF_AVAILABLE:
-        return extract_pdf_cover_pymupdf(pdf_path, output_path, dpi)
+        return extract_pdf_cover_pymupdf(
+            pdf_path, output_path, dpi, max_width, image_format, quality
+        )
     elif PDF2IMAGE_AVAILABLE:
-        return extract_pdf_cover_pdf2image(pdf_path, output_path, dpi)
+        return extract_pdf_cover_pdf2image(
+            pdf_path, output_path, dpi, max_width, image_format, quality
+        )
     else:
         logger.error(
             "Cannot extract cover for %s - no PDF rendering library available",
@@ -222,7 +273,11 @@ def extract_pdf_cover(
 def extract_all_covers(
     library_dir: Path,
     covers_dir: Path,
-    dpi: int = 200
+    dpi: int = DEFAULT_DPI,
+    max_width: int = DEFAULT_MAX_WIDTH,
+    image_format: Literal["JPEG", "PNG"] = DEFAULT_FORMAT,
+    quality: int = DEFAULT_QUALITY,
+    force: bool = False
 ) -> tuple[int, int]:
     """
     Extract covers for all PDFs in library directory.
@@ -230,7 +285,11 @@ def extract_all_covers(
     Args:
         library_dir: Directory containing PDFs
         covers_dir: Directory to save covers
-        dpi: Resolution for images (default: 200)
+        dpi: Resolution for rendering (default: 96)
+        max_width: Maximum width in pixels (default: 400)
+        image_format: Output format - "JPEG" or "PNG" (default: JPEG)
+        quality: JPEG quality 1-100 (default: 80)
+        force: If True, regenerate all covers even if they exist
 
     Returns:
         Tuple of (success_count, total_count)
@@ -247,25 +306,38 @@ def extract_all_covers(
 
     logger.info("Found %s PDF file(s) in %s", len(pdf_files), library_dir)
     logger.info("Extracting covers to %s", covers_dir)
+    logger.info(
+        "Settings: DPI=%s, max_width=%spx, format=%s, quality=%s",
+        dpi, max_width, image_format, quality
+    )
+
+    # Determine file extension
+    ext = "jpg" if image_format == "JPEG" else "png"
 
     success_count = 0
-    for pdf_path in pdf_files:
-        # Generate cover filename: {pdf_name_without_ext}_cover.png
+    skipped_count = 0
+    for pdf_path in sorted(pdf_files):
         pdf_name = pdf_path.stem
-        cover_filename = f"{pdf_name}_cover.png"
+        cover_filename = f"{pdf_name}_cover.{ext}"
         cover_path = covers_dir / cover_filename
 
+        # Skip if cover exists and not forcing regeneration
+        if cover_path.exists() and not force:
+            logger.debug("Skipping (cover exists): %s", pdf_path.name)
+            skipped_count += 1
+            continue
+
         logger.debug("Processing: %s", pdf_path.name)
-        if extract_pdf_cover(pdf_path, cover_path, dpi):
+        if extract_pdf_cover(pdf_path, cover_path, dpi, max_width, image_format, quality):
             success_count += 1
 
     logger.info(
-        "Completed: %s/%s covers extracted successfully",
+        "Completed: %s extracted, %s skipped (already exist)",
         success_count,
-        len(pdf_files)
+        skipped_count
     )
 
-    if success_count < len(pdf_files):
+    if success_count < len(pdf_files) - skipped_count:
         if not PYMUPDF_AVAILABLE and not PDF2IMAGE_AVAILABLE:
             logger.warning(
                 "To extract covers, please install PyMuPDF (recommended): "
@@ -277,6 +349,181 @@ def extract_all_covers(
             )
 
     return (success_count, len(pdf_files))
+
+
+def regenerate_all_covers(
+    library_dir: Path,
+    covers_dir: Path,
+    dpi: int = DEFAULT_DPI,
+    max_width: int = DEFAULT_MAX_WIDTH,
+    image_format: Literal["JPEG", "PNG"] = DEFAULT_FORMAT,
+    quality: int = DEFAULT_QUALITY,
+    cleanup_old: bool = True
+) -> tuple[int, int, int]:
+    """
+    Regenerate all cover images with new settings.
+
+    Removes old covers and creates new ones with optimized settings.
+
+    Args:
+        library_dir: Directory containing PDFs
+        covers_dir: Directory to save covers
+        dpi: Resolution for rendering (default: 96)
+        max_width: Maximum width in pixels (default: 400)
+        image_format: Output format - "JPEG" or "PNG" (default: JPEG)
+        quality: JPEG quality 1-100 (default: 80)
+        cleanup_old: If True, remove old cover files first
+
+    Returns:
+        Tuple of (regenerated_count, total_count, old_removed_count)
+    """
+    old_removed = 0
+
+    # Clean up old covers if requested
+    if cleanup_old and covers_dir.exists():
+        old_covers = list(covers_dir.glob("*_cover.*"))
+        for old_cover in old_covers:
+            try:
+                old_size_kb = old_cover.stat().st_size / 1024
+                old_cover.unlink()
+                old_removed += 1
+                logger.debug("Removed old cover: %s (%.1f KB)", old_cover.name, old_size_kb)
+            except OSError as e:
+                logger.warning("Failed to remove %s: %s", old_cover.name, e)
+
+        if old_removed > 0:
+            logger.info("Removed %s old cover file(s)", old_removed)
+
+    # Extract new covers with force=True to ensure all are regenerated
+    success, total = extract_all_covers(
+        library_dir=library_dir,
+        covers_dir=covers_dir,
+        dpi=dpi,
+        max_width=max_width,
+        image_format=image_format,
+        quality=quality,
+        force=True
+    )
+
+    return (success, total, old_removed)
+
+
+def optimize_oversized_covers(
+    library_dir: Path,
+    covers_dir: Path,
+    max_size_kb: float = 100.0,
+    dpi: int = DEFAULT_DPI,
+    max_width: int = DEFAULT_MAX_WIDTH,
+    image_format: Literal["JPEG", "PNG"] = DEFAULT_FORMAT,
+    quality: int = DEFAULT_QUALITY
+) -> tuple[int, int, int]:
+    """
+    Check existing covers and only regenerate those that are too large.
+
+    Args:
+        library_dir: Directory containing PDFs
+        covers_dir: Directory to save covers
+        max_size_kb: Maximum allowed size in KB (default: 100 KB)
+        dpi: Resolution for rendering (default: 96)
+        max_width: Maximum width in pixels (default: 400)
+        image_format: Output format - "JPEG" or "PNG" (default: JPEG)
+        quality: JPEG quality 1-100 (default: 80)
+
+    Returns:
+        Tuple of (regenerated_count, skipped_count, total_checked)
+    """
+    if not covers_dir.exists():
+        logger.warning("Covers directory not found: %s", covers_dir)
+        return (0, 0, 0)
+
+    # Find all existing covers
+    existing_covers = list(covers_dir.glob("*_cover.*"))
+    if not existing_covers:
+        logger.info("No existing covers found in %s", covers_dir)
+        return (0, 0, 0)
+
+    logger.info("Checking %s existing cover(s) for optimization", len(existing_covers))
+    logger.info("Threshold: %.0f KB (covers larger than this will be regenerated)", max_size_kb)
+
+    # Determine new file extension
+    ext = "jpg" if image_format == "JPEG" else "png"
+
+    regenerated = 0
+    skipped = 0
+    total_old_size = 0
+    total_new_size = 0
+
+    for cover_path in sorted(existing_covers):
+        cover_size_kb = cover_path.stat().st_size / 1024
+        total_old_size += cover_size_kb
+
+        # Check if cover is too large
+        if cover_size_kb <= max_size_kb:
+            logger.debug(
+                "OK: %s (%.1f KB <= %.0f KB)",
+                cover_path.name,
+                cover_size_kb,
+                max_size_kb
+            )
+            skipped += 1
+            total_new_size += cover_size_kb
+            continue
+
+        # Find corresponding PDF
+        # Cover name format: {pdf_stem}_cover.{ext}
+        cover_stem = cover_path.stem.replace('_cover', '')
+        pdf_path = library_dir / f"{cover_stem}.pdf"
+
+        if not pdf_path.exists():
+            logger.warning(
+                "PDF not found for oversized cover: %s (%.1f KB)",
+                cover_path.name,
+                cover_size_kb
+            )
+            skipped += 1
+            total_new_size += cover_size_kb
+            continue
+
+        # Remove old cover
+        try:
+            cover_path.unlink()
+        except OSError as e:
+            logger.error("Failed to remove %s: %s", cover_path.name, e)
+            skipped += 1
+            total_new_size += cover_size_kb
+            continue
+
+        # Generate new cover with optimized settings
+        new_cover_path = covers_dir / f"{cover_stem}_cover.{ext}"
+        if extract_pdf_cover(
+            pdf_path, new_cover_path, dpi, max_width, image_format, quality
+        ):
+            new_size_kb = new_cover_path.stat().st_size / 1024
+            total_new_size += new_size_kb
+            logger.info(
+                "Optimized: %s (%.1f KB -> %.1f KB, saved %.1f KB)",
+                cover_stem,
+                cover_size_kb,
+                new_size_kb,
+                cover_size_kb - new_size_kb
+            )
+            regenerated += 1
+        else:
+            logger.error("Failed to regenerate cover for %s", pdf_path.name)
+            skipped += 1
+
+    # Summary
+    logger.info("")
+    logger.info("Optimization complete:")
+    logger.info("  Regenerated: %s", regenerated)
+    logger.info("  Skipped (already small): %s", skipped)
+    logger.info("  Total size before: %.1f KB", total_old_size)
+    logger.info("  Total size after: %.1f KB", total_new_size)
+    if total_old_size > 0:
+        saved = total_old_size - total_new_size
+        logger.info("  Space saved: %.1f KB (%.0f%%)", saved, (saved / total_old_size) * 100)
+
+    return (regenerated, skipped, len(existing_covers))
 
 
 def check_cover_extraction_available() -> tuple[bool, Optional[str]]:

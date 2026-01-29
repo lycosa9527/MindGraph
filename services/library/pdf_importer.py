@@ -28,7 +28,13 @@ from services.library.pdf_cover_extractor import (
 )
 from services.library.pdf_utils import (
     validate_pdf_file,
-    normalize_library_path
+    normalize_library_path,
+    resolve_library_path
+)
+from services.library.pdf_optimizer import (
+    optimize_pdf,
+    should_optimize_pdf,
+    check_qpdf_available
 )
 
 
@@ -100,13 +106,20 @@ def import_pdfs_from_folder(
     covers_dir: Optional[Path] = None,
     uploader_id: Optional[int] = None,
     extract_covers: bool = True,
-    dpi: int = 200
+    dpi: int = 200,
+    auto_optimize: bool = True,
+    optimize_backup: bool = True,
+    fail_on_optimization_error: bool = False
 ) -> Tuple[int, int]:
     """
     Import PDFs from storage/library/ into the database.
     
     Scans the library directory for PDF files and creates LibraryDocument records
     for any PDFs that aren't already in the database. Skips PDFs that already exist.
+    
+    Automatically checks xref location for each PDF:
+    - If xref is at beginning: Import directly
+    - If xref is at end: Optimize (linearize) first, then import
     
     Args:
         db: Database session
@@ -115,6 +128,9 @@ def import_pdfs_from_folder(
         uploader_id: User ID to use as uploader (default: first admin user)
         extract_covers: If True, extract cover images for PDFs that don't have covers (default: True)
         dpi: DPI for cover extraction (default: 200)
+        auto_optimize: If True, automatically optimize PDFs with xref at end (default: True)
+        optimize_backup: If True, create backup before optimizing (default: True)
+        fail_on_optimization_error: If True, skip importing PDFs that fail optimization (default: False)
     
     Returns:
         Tuple of (imported_count, skipped_count)
@@ -153,9 +169,23 @@ def import_pdfs_from_folder(
         return (0, 0)
 
     logger.info("Found %s PDF file(s) in %s", len(pdf_files), library_dir)
+    if auto_optimize:
+        logger.info("Auto-optimization enabled: Will check xref location and optimize if needed")
 
     imported_count = 0
     skipped_count = 0
+
+    # Check optimization tools availability
+    qpdf_available = check_qpdf_available()
+
+    if auto_optimize:
+        if not qpdf_available:
+            logger.info("qpdf not available, will use PyPDF2 for optimization if available")
+        else:
+            logger.info("Using qpdf for optimization (recommended)")
+
+    optimized_count = 0
+    optimization_errors = 0
 
     for pdf_path in pdf_files:
         pdf_name = pdf_path.name
@@ -170,6 +200,55 @@ def import_pdfs_from_folder(
             )
             skipped_count += 1
             continue
+
+        # STEP 1: Always check xref location first
+        should_opt, reason, info = should_optimize_pdf(pdf_path)
+
+        if info.analysis_error:
+            logger.warning("Could not analyze PDF structure for %s: %s", pdf_name, info.analysis_error)
+        else:
+            logger.debug(
+                "PDF %s: xref at %s (%s KB), linearized: %s, needs optimization: %s",
+                pdf_name,
+                info.xref_location,
+                info.xref_size_kb,
+                info.is_linearized,
+                info.needs_optimization
+            )
+
+        # STEP 2: Optimize if needed and requested
+        if auto_optimize and should_opt:
+            logger.info("Optimizing %s: %s", pdf_name, reason)
+            success, error, stats = optimize_pdf(
+                pdf_path,
+                backup=optimize_backup,
+                prefer_qpdf=qpdf_available
+            )
+            if success:
+                optimized_count += 1
+                if stats['was_optimized']:
+                    logger.info(
+                        "Optimized %s: %s -> %s bytes (%+s bytes, method: %s)",
+                        pdf_name,
+                        f"{stats['original_size']:,}",
+                        f"{stats['new_size']:,}",
+                        f"{stats['size_change']:,}",
+                        stats['method']
+                    )
+            else:
+                optimization_errors += 1
+                logger.warning("Failed to optimize %s: %s", pdf_name, error)
+                if fail_on_optimization_error:
+                    logger.warning("Skipping %s due to optimization failure", pdf_name)
+                    skipped_count += 1
+                    continue
+        elif should_opt and not auto_optimize:
+            logger.info(
+                "PDF %s needs optimization (xref at %s) but optimization disabled. "
+                "Use auto_optimize=True to enable automatic optimization.",
+                pdf_name,
+                info.xref_location
+            )
 
         file_size = pdf_path.stat().st_size
 
@@ -195,7 +274,8 @@ def import_pdfs_from_folder(
                 service.storage_dir,
                 Path.cwd()
             )
-            if doc_path_normalized == file_path or doc.file_path.endswith(pdf_name):
+            # Use Path().name for exact filename comparison to avoid partial matches
+            if doc_path_normalized == file_path or Path(doc.file_path).name == pdf_name:
                 found_existing = True
                 break
 
@@ -282,6 +362,8 @@ def import_pdfs_from_folder(
         imported_count += 1
 
     logger.info("Import complete: %s imported, %s skipped", imported_count, skipped_count)
+    if auto_optimize:
+        logger.info("Optimization: %s optimized, %s errors", optimized_count, optimization_errors)
     return (imported_count, skipped_count)
 
 
@@ -289,19 +371,26 @@ def auto_import_new_pdfs(
     db: Session,
     library_dir: Optional[Path] = None,
     extract_covers: bool = True,
-    dpi: int = 200
+    dpi: int = 200,
+    auto_optimize: bool = True,
+    optimize_backup: bool = True,
+    fail_on_optimization_error: bool = False
 ) -> Tuple[int, int]:
     """
     Automatically import new PDFs from storage/library/ folder.
 
     Scans for PDF files, validates them, and imports any that don't have
-    database records. Extracts cover images automatically.
+    database records. Automatically checks xref location and linearizes
+    PDFs if xref is at the end (for efficient lazy loading).
 
     Args:
         db: Database session
         library_dir: Directory containing PDFs (default: storage/library)
         extract_covers: If True, extract cover images (default: True)
         dpi: DPI for cover extraction (default: 200)
+        auto_optimize: If True, linearize PDFs with xref at end (default: True)
+        optimize_backup: If True, create backup before optimizing (default: True)
+        fail_on_optimization_error: If True, skip importing PDFs that fail optimization (default: False)
 
     Returns:
         Tuple of (imported_count, skipped_count)
@@ -323,8 +412,18 @@ def auto_import_new_pdfs(
 
     logger.info("Auto-import: Found %s PDF file(s) in %s", len(pdf_files), library_dir)
 
+    # Check optimization tools availability
+    qpdf_available = False
+    if auto_optimize:
+        qpdf_available = check_qpdf_available()
+        if qpdf_available:
+            logger.debug("Using qpdf for PDF optimization")
+        else:
+            logger.debug("qpdf not available, will use PyPDF2 for optimization if available")
+
     imported_count = 0
     skipped_count = 0
+    optimized_count = 0
 
     for pdf_path in pdf_files:
         pdf_name = pdf_path.name
@@ -335,9 +434,6 @@ def auto_import_new_pdfs(
             logger.debug("Skipping invalid PDF: %s - %s", pdf_name, error_msg)
             skipped_count += 1
             continue
-
-        # Normalize path
-        file_path = normalize_library_path(pdf_path, service.storage_dir, Path.cwd())
 
         # Check if already exists in database
         existing = db.query(LibraryDocument).filter(
@@ -351,8 +447,44 @@ def auto_import_new_pdfs(
 
         # Import this PDF
         try:
+            # STEP 1: Check xref location and optimize if needed
+            if auto_optimize:
+                should_opt, reason, info = should_optimize_pdf(pdf_path)
+                if should_opt:
+                    logger.info("Optimizing %s: %s", pdf_name, reason)
+                    success, error, stats = optimize_pdf(
+                        pdf_path,
+                        backup=optimize_backup,
+                        prefer_qpdf=qpdf_available
+                    )
+                    if success and stats['was_optimized']:
+                        optimized_count += 1
+                        logger.info(
+                            "Optimized %s: %s -> %s bytes (method: %s)",
+                            pdf_name,
+                            f"{stats['original_size']:,}",
+                            f"{stats['new_size']:,}",
+                            stats['method']
+                        )
+                    elif not success:
+                        logger.warning("Failed to optimize %s: %s", pdf_name, error)
+                        if fail_on_optimization_error:
+                            logger.warning("Skipping %s due to optimization failure", pdf_name)
+                            skipped_count += 1
+                            continue
+                else:
+                    logger.debug(
+                        "PDF %s already optimized (xref at %s)",
+                        pdf_name,
+                        info.xref_location if not info.analysis_error else "unknown"
+                    )
+
+            # Get file size after potential optimization
             file_size = pdf_path.stat().st_size
             title = pdf_path.stem
+
+            # Normalize path
+            file_path = normalize_library_path(pdf_path, service.storage_dir, Path.cwd())
 
             # Get uploader
             admin_user = get_admin_user(db)
@@ -380,7 +512,7 @@ def auto_import_new_pdfs(
                 description=None,
                 file_path=file_path,
                 file_size=file_size,
-                cover_image_path=None,  # Will be set after cover rename
+                cover_image_path=None,
                 uploader_id=uploader_id,
                 views_count=0,
                 likes_count=0,
@@ -406,13 +538,12 @@ def auto_import_new_pdfs(
                         )
                         document.cover_image_path = cover_image_path
                         db.commit()
-                    except Exception as e:
+                    except Exception as rename_err:
                         logger.warning(
                             "Failed to rename cover for %s: %s",
                             pdf_name,
-                            e
+                            rename_err
                         )
-                        # Keep old cover path
                         document.cover_image_path = cover_image_path
                         db.commit()
 
@@ -431,8 +562,173 @@ def auto_import_new_pdfs(
             skipped_count += 1
 
     if imported_count > 0:
-        logger.info("Auto-import complete: %s imported, %s skipped", imported_count, skipped_count)
+        logger.info(
+            "Auto-import complete: %s imported, %s skipped, %s optimized",
+            imported_count,
+            skipped_count,
+            optimized_count
+        )
     else:
         logger.debug("Auto-import: No new PDFs to import")
 
     return (imported_count, skipped_count)
+
+
+def optimize_existing_library_pdfs(
+    db: Session,
+    library_dir: Optional[Path] = None,
+    backup: bool = False
+) -> Tuple[int, int, int]:
+    """
+    Optimize existing PDFs in the library that are already in the database.
+
+    This function:
+    1. Gets all active documents from database
+    2. Checks if each PDF needs optimization (xref at end)
+    3. Linearizes PDFs that need it
+    4. Updates file_size in database after optimization
+
+    Use this to fix PDFs that were imported before optimization was enabled.
+
+    Args:
+        db: Database session
+        library_dir: Directory containing PDFs (default: storage/library)
+        backup: If True, create backup before optimizing (default: False)
+
+    Returns:
+        Tuple of (optimized_count, skipped_count, error_count)
+    """
+    service = LibraryService(db)
+
+    if library_dir is None:
+        library_dir = service.storage_dir
+
+    if not library_dir.exists():
+        logger.warning("Library directory not found: %s", library_dir)
+        return (0, 0, 0)
+
+    # Get all active documents from database
+    documents = db.query(LibraryDocument).filter(
+        LibraryDocument.is_active
+    ).all()
+
+    if not documents:
+        logger.info("No documents found in database")
+        return (0, 0, 0)
+
+    logger.info("Checking %s existing library document(s) for optimization", len(documents))
+
+    # Check optimization tools
+    qpdf_available = check_qpdf_available()
+
+    if qpdf_available:
+        logger.info("Using qpdf for optimization")
+    else:
+        logger.info("qpdf not available, will use PyPDF2 for optimization if available")
+
+    optimized_count = 0
+    skipped_count = 0
+    error_count = 0
+
+    for doc in documents:
+        # Resolve file path
+        pdf_path = resolve_library_path(
+            doc.file_path,
+            service.storage_dir,
+            Path.cwd()
+        )
+
+        if not pdf_path or not pdf_path.exists():
+            logger.warning(
+                "PDF file not found for document %s: %s",
+                doc.id,
+                doc.file_path
+            )
+            error_count += 1
+            continue
+
+        pdf_name = pdf_path.name
+
+        # Validate PDF
+        is_valid, error_msg = validate_pdf_file(pdf_path)
+        if not is_valid:
+            logger.warning(
+                "Invalid PDF for document %s: %s - %s",
+                doc.id,
+                pdf_name,
+                error_msg
+            )
+            error_count += 1
+            continue
+
+        # Check if optimization needed
+        should_opt, reason, info = should_optimize_pdf(pdf_path)
+
+        if not should_opt:
+            logger.debug(
+                "Document %s (%s): already optimized (xref at %s)",
+                doc.id,
+                pdf_name,
+                info.xref_location
+            )
+            skipped_count += 1
+            continue
+
+        # Optimize
+        logger.info(
+            "Optimizing document %s (%s): %s",
+            doc.id,
+            pdf_name,
+            reason
+        )
+
+        old_size = pdf_path.stat().st_size
+        success, error, stats = optimize_pdf(
+            pdf_path,
+            backup=backup,
+            prefer_qpdf=qpdf_available
+        )
+
+        if success and stats['was_optimized']:
+            optimized_count += 1
+
+            # Get actual file size and verify it changed
+            try:
+                new_size = pdf_path.stat().st_size
+            except OSError as e:
+                logger.error("  Cannot read file size after optimization: %s", e)
+                error_count += 1
+                continue
+
+            # Only update database if size actually changed
+            if new_size != doc.file_size:
+                doc.file_size = new_size
+                db.commit()
+                logger.info(
+                    "  Optimized: %s -> %s bytes (%+s, method: %s)",
+                    f"{old_size:,}",
+                    f"{new_size:,}",
+                    f"{stats['size_change']:,}",
+                    stats['method']
+                )
+            else:
+                logger.info(
+                    "  Optimized (size unchanged): %s bytes (method: %s)",
+                    f"{new_size:,}",
+                    stats['method']
+                )
+        elif success:
+            skipped_count += 1
+            logger.debug("  No optimization needed")
+        else:
+            error_count += 1
+            logger.error("  Failed: %s", error)
+
+    logger.info(
+        "Optimization complete: %s optimized, %s skipped, %s errors",
+        optimized_count,
+        skipped_count,
+        error_count
+    )
+
+    return (optimized_count, skipped_count, error_count)

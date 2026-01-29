@@ -16,10 +16,13 @@ import json
 import secrets
 import logging
 from urllib.parse import urlparse
+from typing import Callable
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
+from starlette.types import ASGIApp, Message, Receive, Scope, Send
+from starlette.middleware.gzip import GZipResponder
 from config.settings import config
 from services.auth.security_logger import security_log
 
@@ -270,6 +273,79 @@ async def add_cache_control_headers(request: Request, call_next):
     return response
 
 
+class SelectiveGZipMiddleware:
+    """
+    GZip middleware that excludes PDF files from compression.
+    
+    PDF files must not be compressed because:
+    1. They are already compressed internally
+    2. Compression breaks HTTP range requests needed for lazy loading
+    3. Range requests require byte-level accuracy which is lost with compression
+    """
+    
+    def __init__(self, app: ASGIApp, minimum_size: int = 1000, compresslevel: int = 9):
+        self.app = app
+        self.minimum_size = minimum_size
+        self.compresslevel = compresslevel
+    
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] == "http":
+            path = scope.get("path", "")
+            # Check if this is a PDF file endpoint BEFORE processing
+            is_pdf_endpoint = (
+                path.startswith("/api/library/documents/") and "/file" in path
+            )
+            
+            if is_pdf_endpoint:
+                # Skip compression for PDF files - pass through directly
+                # This preserves range request support
+                await self.app(scope, receive, send)
+            else:
+                # Use GZipResponder for other responses (standard compression)
+                responder = GZipResponder(
+                    self.app,
+                    minimum_size=self.minimum_size,
+                    compresslevel=self.compresslevel
+                )
+                await responder(scope, receive, send)
+        else:
+            await self.app(scope, receive, send)
+
+
+async def ensure_pdf_range_support(request: Request, call_next):
+    """
+    Ensure PDF responses have proper headers for range request support.
+    
+    This runs after the response is created to add Accept-Ranges header
+    if it's missing. This is a safety net in case SelectiveGZipMiddleware
+    doesn't catch all cases.
+    """
+    response = await call_next(request)
+    
+    # Check if this is a PDF file response
+    content_type = response.headers.get('Content-Type', '')
+    path = request.url.path
+    
+    if content_type == 'application/pdf' or (
+        path.startswith('/api/library/documents/') and '/file' in path
+    ):
+        # Ensure Accept-Ranges is set for range request support
+        if 'Accept-Ranges' not in response.headers:
+            response.headers['Accept-Ranges'] = 'bytes'
+        # Ensure Content-Encoding is not set (shouldn't be, but double-check)
+        if 'Content-Encoding' in response.headers:
+            encoding = response.headers['Content-Encoding']
+            if encoding in ('gzip', 'deflate', 'br'):
+                logger.warning(
+                    "[Middleware] PDF file was compressed (%s), removing compression header. "
+                    "This breaks range requests! Path: %s",
+                    encoding, path
+                )
+                del response.headers['Content-Encoding']
+    
+    return response
+
+
 async def log_requests(request: Request, call_next):
     """
     Log all HTTP requests and responses with timing information.
@@ -383,12 +459,16 @@ def setup_middleware(app: FastAPI):
         allow_headers=["*"],
     )
 
-    # GZip Compression
-    app.add_middleware(GZipMiddleware, minimum_size=1000)
+    # GZip Compression with PDF exclusion
+    # Use custom SelectiveGZipMiddleware that excludes PDF files to support range requests
+    app.add_middleware(SelectiveGZipMiddleware, minimum_size=1000)
 
     # Custom middleware (registered as decorators, executed in order)
+    # Note: Middleware executes in reverse order of registration
+    # So log_requests runs first, then add_cache_control_headers, etc.
     app.middleware("http")(limit_request_body_size)
     app.middleware("http")(csrf_protection)
     app.middleware("http")(add_security_headers)
     app.middleware("http")(add_cache_control_headers)
+    app.middleware("http")(ensure_pdf_range_support)  # Safety net for PDF headers
     app.middleware("http")(log_requests)

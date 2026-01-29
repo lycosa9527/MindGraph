@@ -16,7 +16,7 @@ import os
 import tempfile
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status, UploadFile, File, Form, Request
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
@@ -24,6 +24,7 @@ from config.database import get_db
 from models.domain.auth import User
 from services.library import LibraryService
 from services.library.pdf_utils import resolve_library_path, validate_pdf_file
+from services.library.pdf_optimizer import should_optimize_pdf, optimize_pdf
 from utils.auth import get_current_user
 from utils.auth.roles import is_admin
 
@@ -165,6 +166,7 @@ async def get_document(
 
 
 @router.get("/documents/{document_id}/file")
+@router.head("/documents/{document_id}/file")
 async def get_document_file(
     document_id: int,
     request: Request,
@@ -173,7 +175,10 @@ async def get_document_file(
     """
     Serve PDF file (public).
 
-    Increments view count when accessed.
+    Supports both GET and HEAD methods.
+    - GET: Returns the PDF file and increments view count
+    - HEAD: Returns headers only (for checking file accessibility)
+    
     Supports range requests for PDF.js streaming.
     """
     service = LibraryService(db)
@@ -209,24 +214,92 @@ async def get_document_file(
             detail=f"PDF file not found for document {document_id}"
         )
 
-    # Get file size for Content-Length header
+    # Get file size for logging and range request handling
     file_size = file_path.stat().st_size
 
     # Log request details for debugging
-    logger.debug("[Library] Serving PDF file: %s (ID: %s, Size: %s bytes, Range: %s)",
-                document.title, document_id, file_size, request.headers.get('Range', 'none'))
+    range_header = request.headers.get('Range', 'none')
+    method = request.method
+    logger.debug("[Library] Serving PDF file: %s (ID: %s, Size: %s bytes, Method: %s, Range: %s)",
+                document.title, document_id, file_size, method, range_header)
 
-    service.increment_views(document_id)
+    # Only increment views for GET requests, not HEAD requests
+    if method == "GET":
+        service.increment_views(document_id)
 
-    # FileResponse automatically handles range requests if the file exists
-    # Add explicit headers for better PDF.js compatibility
+    # Handle HEAD requests - return headers only
+    if method == "HEAD":
+        return Response(
+            status_code=status.HTTP_200_OK,
+            headers={
+                'Accept-Ranges': 'bytes',
+                'Content-Length': str(file_size),
+                'Content-Type': 'application/pdf',
+                'Cache-Control': 'public, max-age=3600',
+            }
+        )
+
+    # Handle range requests manually to ensure proper support
+    # FileResponse should handle this, but we'll ensure it works correctly
+    # by checking Range header and responding appropriately
+    if range_header and range_header != 'none':
+        # Parse Range header: "bytes=start-end" or "bytes=start-"
+        try:
+            range_match = range_header.replace('bytes=', '').split('-')
+            start = int(range_match[0]) if range_match[0] else None
+            end = int(range_match[1]) if range_match[1] and range_match[1] else file_size - 1
+
+            if start is None:
+                # Suffix range: "bytes=-suffix_length"
+                start = file_size - end
+                end = file_size - 1
+
+            # Validate range
+            if start < 0 or end >= file_size or start > end:
+                return Response(
+                    status_code=status.HTTP_416_REQUESTED_RANGE_NOT_SATISFIABLE,
+                    headers={
+                        'Content-Range': f'bytes */{file_size}',
+                        'Accept-Ranges': 'bytes',
+                    }
+                )
+
+            # Calculate content length for range
+            content_length = end - start + 1
+
+            # Read the requested range from file
+            # Using synchronous I/O is fine here - range reads are fast
+            with open(file_path, 'rb') as f:
+                f.seek(start)
+                content = f.read(content_length)
+
+            logger.debug("[Library] Range request: bytes=%s-%s/%s (length=%s)",
+                        start, end, file_size, content_length)
+
+            return Response(
+                content=content,
+                status_code=status.HTTP_206_PARTIAL_CONTENT,
+                headers={
+                    'Content-Range': f'bytes {start}-{end}/{file_size}',
+                    'Content-Length': str(content_length),
+                    'Content-Type': 'application/pdf',
+                    'Accept-Ranges': 'bytes',
+                    'Cache-Control': 'public, max-age=3600',
+                }
+            )
+        except (ValueError, IndexError) as e:
+            logger.warning("[Library] Invalid Range header '%s': %s", range_header, e)
+            # Fall through to full file response
+
+    # Full file request (no Range header) - use FileResponse
+    # FileResponse automatically handles range requests, but we've already
+    # handled them above for better control
     return FileResponse(
         path=str(file_path),
         media_type="application/pdf",
         filename=document.title + ".pdf",
         headers={
             'Accept-Ranges': 'bytes',
-            'Content-Length': str(file_size),
             'Cache-Control': 'public, max-age=3600',
         }
     )
@@ -265,10 +338,37 @@ async def upload_document(
                 detail=f"Invalid PDF file: {error_msg}"
             )
 
+        # Check and optimize PDF if xref is at end
+        pdf_path = Path(tmp_path)
+        should_opt, reason, _ = should_optimize_pdf(pdf_path)
+        if should_opt:
+            logger.info(
+                "[Library] Optimizing uploaded PDF %s: %s",
+                file.filename,
+                reason
+            )
+            success, error, stats = optimize_pdf(pdf_path, backup=False)
+            if success and stats['was_optimized']:
+                logger.info(
+                    "[Library] Optimized %s: %s -> %s bytes",
+                    file.filename,
+                    f"{stats['original_size']:,}",
+                    f"{stats['new_size']:,}"
+                )
+            elif not success:
+                logger.warning(
+                    "[Library] Failed to optimize uploaded PDF %s: %s",
+                    file.filename,
+                    error
+                )
+
+        # Get file size after potential optimization
+        file_size = pdf_path.stat().st_size
+
         document = service.upload_document(
             file_name=file.filename,
             file_path=tmp_path,
-            file_size=len(content),
+            file_size=file_size,
             title=title,
             description=description
         )

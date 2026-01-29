@@ -161,11 +161,14 @@ async function loadPdf() {
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
     console.log(`[LAZY LOADING] PDF URL: ${props.pdfUrl}`)
     console.log(`[LAZY LOADING] PDF.js worker: ${pdfjsLib.GlobalWorkerOptions.workerSrc}`)
-    console.log(`[LAZY LOADING] ⏱️  Metadata load started at: ${new Date().toISOString()}`)
+    console.log(`[LAZY LOADING] ⏱️  Structure load started at: ${new Date().toISOString()}`)
     console.log('')
-    console.log('📊 STEP 1: Loading PDF Metadata (Structure Only)')
-    console.log('   Expected: ~5-50 KB download (NOT full PDF)')
-    console.log('   Check Network tab: Should see small initial request')
+    console.log('📊 STEP 1: Loading PDF Structure (XRef Table)')
+    console.log('   PDF.js needs xref table to locate pages in the PDF file')
+    console.log('   For LINEARIZED PDFs: xref is at beginning (~5-50 KB)')
+    console.log('   For NON-LINEARIZED PDFs: xref is at END (may be large)')
+    console.log('   ⚠️  This is unavoidable - PDF.js MUST read xref to work')
+    console.log('   ✅ Page CONTENT will load lazily after structure is loaded')
     
     // Verify worker is configured
     if (!pdfjsLib.GlobalWorkerOptions.workerSrc) {
@@ -192,61 +195,150 @@ async function loadPdf() {
     // Test if PDF file is accessible
     try {
       const pdfResponse = await fetch(props.pdfUrl, { method: 'HEAD' })
+      const contentLength = pdfResponse.headers.get('content-length')
+      const fileSizeMB = contentLength ? (parseInt(contentLength) / 1024 / 1024).toFixed(2) : 'unknown'
       console.log('[PdfViewer] PDF file HEAD request:', {
         status: pdfResponse.status,
         statusText: pdfResponse.statusText,
         contentType: pdfResponse.headers.get('content-type'),
-        contentLength: pdfResponse.headers.get('content-length')
+        contentLength: contentLength ? `${fileSizeMB} MB (${contentLength} bytes)` : 'unknown',
+        acceptRanges: pdfResponse.headers.get('accept-ranges')
       })
       if (!pdfResponse.ok) {
         console.error('[PdfViewer] PDF file not accessible:', pdfResponse.status, pdfResponse.statusText)
         notify.error(`PDF文件无法访问: ${pdfResponse.status} ${pdfResponse.statusText}`)
         return
       }
+      
+      // Check if server supports range requests
+      const acceptRanges = pdfResponse.headers.get('accept-ranges')
+      if (acceptRanges === 'bytes') {
+        console.log('[PdfViewer] ✅ Server supports Range requests (HTTP 206)')
+      } else {
+        console.warn('[PdfViewer] ⚠️  Server may not support Range requests:', acceptRanges)
+        console.warn('[PdfViewer] ⚠️  This could cause full file downloads instead of Range requests')
+      }
     } catch (pdfTestError) {
       console.error('[PdfViewer] Failed to test PDF file access:', pdfTestError)
       // Continue anyway - PDF.js will handle the error
     }
     
+    // Monitor network requests for this PDF file
+    // This will help us see if PDF.js is making Range requests or full downloads
+    console.log('')
+    console.log('🔍 [NETWORK MONITORING] Monitoring PDF file requests...')
+    console.log('   📡 Check Network tab in DevTools for detailed request info')
+    console.log('   🎯 Look for:')
+    console.log('      - Status: 206 (Partial Content) = Range request ✅')
+    console.log('      - Status: 200 (OK) = Full file download ❌')
+    console.log('      - Request Headers: Range: bytes=XXXX-YYYY')
+    console.log('      - Response Headers: Content-Range: bytes XXXX-YYYY/TOTAL')
+    console.log('')
+    
     console.log('[LAZY LOADING] 📡 Calling pdfjsLib.getDocument()...')
-    console.log('[LAZY LOADING]   This will make HTTP request to fetch PDF metadata')
+    console.log('[LAZY LOADING]   This will make HTTP request to fetch PDF structure (xref table)')
+    console.log('[LAZY LOADING]   Using lazy loading options: disableAutoFetch=true, disableStream=true')
+    console.log('[LAZY LOADING]   ⚠️  NOTE: For non-linearized PDFs, xref table is at END of file')
+    console.log('[LAZY LOADING]   ⚠️  PDF.js MUST read xref to locate pages - this is unavoidable')
     
     const loadingTask = pdfjsLib.getDocument({
       url: props.pdfUrl,
       useSystemFonts: true,
       cMapUrl: '/cmaps/',
       cMapPacked: true,
+      disableAutoFetch: true,  // Disable automatic fetching - only fetch what's needed
+      disableStream: true,     // Disable streaming - required for disableAutoFetch to work
+      rangeChunkSize: 65536,   // 64KB chunks for range requests (smaller = more requests but faster initial load)
       httpHeaders: {
         'Accept': 'application/pdf'
       }
     })
     
-    // Track metadata download progress
-    let metadataBytesLoaded = 0
+    // Track structure download progress
+    // NOTE: This tracks ALL bytes downloaded, including xref table/streams
+    // For non-linearized PDFs, xref is at END, so PDF.js may download significant data
+    let structureBytesLoaded = 0
+    let progressUpdates: Array<{loaded: number, total: number, timestamp: number}> = []
     loadingTask.onProgress = (progress: any) => {
+      const now = performance.now()
       if (progress.total > 0) {
         const percent = Math.round((progress.loaded / progress.total) * 100)
-        metadataBytesLoaded = progress.loaded
-        console.log(`[LAZY LOADING] 📥 Metadata download progress: ${percent}% (${formatBytes(progress.loaded)} / ${formatBytes(progress.total)})`)
+        structureBytesLoaded = progress.loaded
+        progressUpdates.push({ loaded: progress.loaded, total: progress.total, timestamp: now })
+        console.log(`[LAZY LOADING] 📥 Structure download progress: ${percent}% (${formatBytes(progress.loaded)} / ${formatBytes(progress.total)})`)
+        console.log(`[LAZY LOADING]   ℹ️  This includes xref table/streams needed to locate pages`)
+        
+        // Warn if download is very large (likely full file download)
+        if (progress.loaded > 10 * 1024 * 1024) { // > 10 MB
+          const loadedMB = (progress.loaded / 1024 / 1024).toFixed(2)
+          const totalMB = progress.total ? (progress.total / 1024 / 1024).toFixed(2) : 'unknown'
+          console.warn(`[LAZY LOADING] ⚠️  WARNING: Large download detected: ${loadedMB} MB / ${totalMB} MB`)
+          console.warn(`[LAZY LOADING] ⚠️  This suggests PDF.js may be downloading entire file`)
+          console.warn(`[LAZY LOADING] ⚠️  Check Network tab: Are requests status 200 (full) or 206 (range)?`)
+        }
       } else if (progress.loaded > 0) {
-        metadataBytesLoaded = progress.loaded
-        console.log(`[LAZY LOADING] 📥 Metadata download: ${formatBytes(progress.loaded)} loaded`)
+        structureBytesLoaded = progress.loaded
+        progressUpdates.push({ loaded: progress.loaded, total: 0, timestamp: now })
+        console.log(`[LAZY LOADING] 📥 Structure download: ${formatBytes(progress.loaded)} loaded`)
+        
+        // Warn if download is very large
+        if (progress.loaded > 10 * 1024 * 1024) { // > 10 MB
+          const loadedMB = (progress.loaded / 1024 / 1024).toFixed(2)
+          console.warn(`[LAZY LOADING] ⚠️  WARNING: Large download detected: ${loadedMB} MB`)
+          console.warn(`[LAZY LOADING] ⚠️  This suggests PDF.js may be downloading entire file`)
+          console.warn(`[LAZY LOADING] ⚠️  Check Network tab: Are requests status 200 (full) or 206 (range)?`)
+        }
       }
     }
     
     console.log('[LAZY LOADING] ⏳ Waiting for PDF document promise...')
+    console.log('[LAZY LOADING]   PDF.js is reading xref table to locate pages')
+    console.log('[LAZY LOADING]   For non-linearized PDFs, this requires reading from END of file')
+    
     const doc = await loadingTask.promise
     lazyLoadStats.value.metadataLoadEnd = performance.now()
-    lazyLoadStats.value.metadataSize = metadataBytesLoaded
+    lazyLoadStats.value.metadataSize = structureBytesLoaded
     
-    const metadataLoadTime = lazyLoadStats.value.metadataLoadEnd - lazyLoadStats.value.metadataLoadStart
+    const structureLoadTime = lazyLoadStats.value.metadataLoadEnd - lazyLoadStats.value.metadataLoadStart
     
     console.log('')
-    console.log('✅ [LAZY LOADING] STEP 1 COMPLETE: Metadata Loaded')
-    console.log(`   ⏱️  Time: ${metadataLoadTime.toFixed(0)}ms`)
-    console.log(`   📦 Size: ${formatBytes(metadataBytesLoaded)} (metadata only, NOT full PDF)`)
+    console.log('✅ [LAZY LOADING] STEP 1 COMPLETE: PDF Structure Loaded')
+    console.log(`   ⏱️  Time: ${structureLoadTime.toFixed(0)}ms`)
+    console.log(`   📦 Size: ${formatBytes(structureBytesLoaded)} (xref table/structure, NOT page content)`)
     console.log(`   📄 Total Pages: ${doc.numPages}`)
-    console.log(`   🔍 Check Network tab: Initial request should be small (~${formatBytes(metadataBytesLoaded)})`)
+    
+    // Analyze download pattern
+    if (progressUpdates.length > 0) {
+      const firstUpdate = progressUpdates[0]
+      const lastUpdate = progressUpdates[progressUpdates.length - 1]
+      const downloadDuration = lastUpdate.timestamp - firstUpdate.timestamp
+      const downloadRate = structureBytesLoaded / (downloadDuration / 1000) // bytes per second
+      
+      console.log(`   📊 Download Analysis:`)
+      console.log(`      Updates: ${progressUpdates.length} progress events`)
+      console.log(`      Duration: ${downloadDuration.toFixed(0)}ms`)
+      console.log(`      Rate: ${formatBytes(downloadRate)}/s`)
+      
+      // Check if this looks like a full file download
+      const fileSizeEstimate = lastUpdate.total || structureBytesLoaded
+      const downloadRatio = structureBytesLoaded / fileSizeEstimate
+      if (downloadRatio > 0.8) {
+        console.warn(`   ⚠️  WARNING: Downloaded ${(downloadRatio * 100).toFixed(1)}% of file`)
+        console.warn(`   ⚠️  This suggests PDF.js downloaded MOST or ALL of the file`)
+        console.warn(`   ⚠️  Expected: Only xref table (~0.05-5 MB from end)`)
+        console.warn(`   ⚠️  Actual: ${formatBytes(structureBytesLoaded)}`)
+        console.warn(`   ⚠️  Check Network tab: Look for status 200 (full download) vs 206 (range)`)
+      } else if (downloadRatio > 0.1) {
+        console.warn(`   ⚠️  Downloaded ${(downloadRatio * 100).toFixed(1)}% of file`)
+        console.warn(`   ⚠️  This is larger than expected for xref table only`)
+        console.warn(`   ⚠️  May indicate PDF.js reading object streams or multiple xref tables`)
+      }
+    }
+    
+    console.log(`   ⚠️  NOTE: Large size is normal for non-linearized PDFs`)
+    console.log(`   ⚠️  PDF.js MUST read xref to know where pages are located`)
+    console.log(`   ✅ Page content will load lazily via Range requests (206 Partial Content)`)
+    console.log(`   🔍 Check Network tab: Look for Range requests after this initial structure load`)
     console.log('')
     
     pdfDocument.value = markRaw(doc)
@@ -269,27 +361,133 @@ async function loadPdf() {
     
     console.log('')
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
-    console.log('✅ [LAZY LOADING] METADATA LOAD COMPLETE')
+    console.log('✅ [LAZY LOADING] PDF STRUCTURE LOAD COMPLETE')
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
     console.log(`   📄 Total Pages: ${totalPages.value}`)
-    console.log(`   📦 Metadata Size: ${formatBytes(metadataBytesLoaded)}`)
-    console.log(`   ⏱️  Load Time: ${metadataLoadTime.toFixed(0)}ms`)
+    console.log(`   📦 Structure Size: ${formatBytes(structureBytesLoaded)} (xref table/streams)`)
+    console.log(`   ⏱️  Load Time: ${structureLoadTime.toFixed(0)}ms`)
     console.log(`   📑 Has Outline: ${hasOutline ? 'Yes' : 'No'} (${outlineCount} entries)`)
     console.log('')
     console.log('🎯 LAZY LOADING STATUS:')
-    console.log('   ✅ Metadata loaded (structure only)')
-    console.log('   ⏳ Page content: Will load ON-DEMAND when you navigate')
-    console.log('   📡 Next: Check Network tab for Range requests (206 Partial Content)')
-    console.log('   💡 Each page navigation triggers a new Range request')
+    console.log('   ✅ PDF structure loaded (xref table - needed to locate pages)')
+    console.log('   ⚠️  Large structure size is normal for non-linearized PDFs')
+    console.log('   ⚠️  PDF.js MUST read xref from end of file to know page locations')
+    console.log('   ✅ Page CONTENT will load ON-DEMAND via Range requests (206 Partial Content)')
+    console.log('   📡 Next: Check Network tab for Range requests when rendering pages')
+    console.log('   💡 Each page render triggers a new Range request for that page\'s content')
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
     console.log('')
 
     // Render first page
     console.log('')
-    console.log('📄 [LAZY LOADING] STEP 2: Loading First Page (On-Demand)')
-    console.log('   This will trigger HTTP Range Request to fetch ONLY page 1 data')
-    console.log('   Check Network tab: Should see Range request with status 206')
+    console.log('📄 [LAZY LOADING] STEP 2: Preloading Initial Pages (Pages 1-5)')
+    console.log('   This will trigger HTTP Range Requests to fetch ONLY pages 1-5 data')
+    console.log('   Check Network tab: Should see Range requests with status 206')
+    
+    // Preload first 5 pages
+    const initialPagesToLoad = Math.min(5, totalPages.value)
+    
+    // Preload function - actually renders page to trigger content download
+    const preloadPage = async (pageNum: number, renderToHiddenCanvas: boolean = false): Promise<void> => {
+      try {
+        const pageLoadStart = performance.now()
+        const page = await pdfDocument.value.getPage(pageNum)
+        const getPageTime = performance.now() - pageLoadStart
+        
+        // Actually render the page to trigger content download
+        // This is what causes PDF.js to make HTTP Range requests for page content
+        let renderTime = 0
+        if (renderToHiddenCanvas) {
+          // Create a hidden canvas to render to (triggers content download)
+          const hiddenCanvas = document.createElement('canvas')
+          hiddenCanvas.style.display = 'none'
+          hiddenCanvas.style.position = 'absolute'
+          hiddenCanvas.style.visibility = 'hidden'
+          document.body.appendChild(hiddenCanvas)
+          
+          try {
+            const viewport = page.getViewport({ scale: 0.5, rotation: 0 })
+            hiddenCanvas.width = viewport.width
+            hiddenCanvas.height = viewport.height
+            
+            const renderStart = performance.now()
+            const context = hiddenCanvas.getContext('2d')
+            if (context) {
+              await page.render({
+                canvasContext: context,
+                viewport: viewport,
+              }).promise
+              renderTime = performance.now() - renderStart
+            }
+          } finally {
+            // Clean up hidden canvas
+            document.body.removeChild(hiddenCanvas)
+          }
+        }
+        
+        const totalLoadTime = getPageTime + renderTime
+        
+        // Track page load
+        if (!lazyLoadStats.value.pagesLoaded.has(pageNum)) {
+          lazyLoadStats.value.pagesLoaded.add(pageNum)
+          lazyLoadStats.value.pageLoadTimes.set(pageNum, totalLoadTime)
+          
+          // Better estimate: actual render time indicates content was downloaded
+          const estimatedPageSize = renderToHiddenCanvas 
+            ? Math.min(totalLoadTime * 100, 500000) // More accurate when rendered
+            : Math.min(totalLoadTime * 10, 500000)  // Less accurate for getPage only
+          lazyLoadStats.value.totalBytesDownloaded += estimatedPageSize
+          
+          console.log(`✅ [LAZY LOADING] Page ${pageNum} Preloaded${renderToHiddenCanvas ? ' (content downloaded)' : ''}`)
+          console.log(`   ⏱️  Load Time: ${totalLoadTime.toFixed(0)}ms`)
+          console.log(`   📦 Estimated Size: ~${formatBytes(estimatedPageSize)}`)
+        }
+      } catch (error) {
+        console.error(`[PdfViewer] Failed to preload page ${pageNum}:`, error)
+      }
+    }
+    
+    // Load page 1 first (required for initial render)
+    // Page 1 will be rendered normally, so we don't need to pre-render it
+    const page1LoadStart = performance.now()
+    await pdfDocument.value.getPage(1)
+    const page1LoadTime = performance.now() - page1LoadStart
+    
+    if (!lazyLoadStats.value.pagesLoaded.has(1)) {
+      lazyLoadStats.value.pagesLoaded.add(1)
+      lazyLoadStats.value.pageLoadTimes.set(1, page1LoadTime)
+    }
+    
+    console.log('')
+    console.log('📄 [LAZY LOADING] STEP 3: Rendering First Page')
+    console.log('   Page 1 will be rendered, triggering content download')
+    
+    // Render page 1 immediately (this triggers the actual content download)
     await renderPage(1)
+    
+    // Preload remaining pages (2-5) in the background by actually rendering them
+    if (initialPagesToLoad > 1) {
+      console.log('')
+      console.log(`📄 [LAZY LOADING] STEP 4: Preloading Remaining Pages (2-${initialPagesToLoad}) in Background`)
+      console.log('   Rendering pages to hidden canvases to trigger content downloads')
+      
+      const backgroundPreloadPromises: Promise<void>[] = []
+      for (let pageNum = 2; pageNum <= initialPagesToLoad; pageNum++) {
+        // Render to hidden canvas to trigger actual content download
+        backgroundPreloadPromises.push(preloadPage(pageNum, true))
+      }
+      
+      // Don't await - let these load in background
+      Promise.all(backgroundPreloadPromises).then(() => {
+        console.log('')
+        console.log(`✅ [LAZY LOADING] Background Preload Complete: ${initialPagesToLoad} pages total`)
+        console.log(`   📊 Pages Loaded: ${lazyLoadStats.value.pagesLoaded.size} of ${totalPages.value}`)
+        console.log(`   💾 Total Downloaded: ~${formatBytes(lazyLoadStats.value.totalBytesDownloaded)}`)
+        console.log('   💡 Remaining pages will load on-demand when you navigate to them')
+      }).catch((error) => {
+        console.error('[PdfViewer] Background preload failed:', error)
+      })
+    }
   } catch (error: any) {
     console.error('')
     console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
