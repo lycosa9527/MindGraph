@@ -53,9 +53,9 @@ const pageInput = computed({
   },
 })
 
-function handlePageInput(value: number | null) {
-  if (value !== null && value >= 1 && value <= props.totalPages) {
-    emit('go-to-page', value)
+function handlePageInput(cur: number | undefined, prev: number | undefined) {
+  if (cur !== undefined && cur !== null && cur >= 1 && cur <= props.totalPages) {
+    emit('go-to-page', cur)
   }
 }
 </script>

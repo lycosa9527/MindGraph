@@ -397,8 +397,12 @@ function renderPins() {
     return
   }
 
+  // Store refs in local constants for TypeScript control flow analysis
+  const pinsLayer = pinsLayerRef.value
+  const canvas = canvasRef.value
+
   // Clear existing pins and unmount Vue apps
-  const existingPins = pinsLayerRef.value.querySelectorAll('.pdf-pin-icon')
+  const existingPins = pinsLayer.querySelectorAll('.pdf-pin-icon')
   existingPins.forEach((pin) => {
     const app = mountedPinApps.get(pin as HTMLDivElement)
     if (app) {
@@ -406,11 +410,11 @@ function renderPins() {
       mountedPinApps.delete(pin as HTMLDivElement)
     }
   })
-  pinsLayerRef.value.innerHTML = ''
+  pinsLayer.innerHTML = ''
 
   // Get canvas dimensions (intrinsic size from width/height attributes)
-  const canvasIntrinsicWidth = canvasRef.value.width
-  const canvasIntrinsicHeight = canvasRef.value.height
+  const canvasIntrinsicWidth = canvas.width
+  const canvasIntrinsicHeight = canvas.height
   
   // Validate canvas has valid dimensions
   if (canvasIntrinsicWidth === 0 || canvasIntrinsicHeight === 0) {
@@ -422,7 +426,7 @@ function renderPins() {
   }
   
   // Get canvas rendered size (actual displayed size, may be scaled by CSS)
-  const canvasRect = canvasRef.value.getBoundingClientRect()
+  const canvasRect = canvas.getBoundingClientRect()
   const canvasRenderedWidth = canvasRect.width
   const canvasRenderedHeight = canvasRect.height
   
@@ -449,16 +453,16 @@ function renderPins() {
   // Both canvas and pins layer are children of canvas-wrapper
   // Canvas is display:block, pins layer is position:absolute
   // They should both start at (0,0) relative to wrapper
-  pinsLayerRef.value.style.width = `${canvasRenderedWidth}px`
-  pinsLayerRef.value.style.height = `${canvasRenderedHeight}px`
-  pinsLayerRef.value.style.left = '0'
-  pinsLayerRef.value.style.top = '0'
-  pinsLayerRef.value.style.position = 'absolute' // Ensure absolute positioning
+  pinsLayer.style.width = `${canvasRenderedWidth}px`
+  pinsLayer.style.height = `${canvasRenderedHeight}px`
+  pinsLayer.style.left = '0'
+  pinsLayer.style.top = '0'
+  pinsLayer.style.position = 'absolute' // Ensure absolute positioning
   
   // Debug: Check actual positions
-  const wrapper = pinsLayerRef.value.parentElement
+  const wrapper = pinsLayer.parentElement
   const wrapperRect = wrapper?.getBoundingClientRect()
-  const pinsLayerRect = pinsLayerRef.value.getBoundingClientRect()
+  const pinsLayerRect = pinsLayer.getBoundingClientRect()
   
   console.log('[PdfViewer] Pins layer positioned:', {
     canvasIntrinsic: { width: canvasIntrinsicWidth, height: canvasIntrinsicHeight },
@@ -467,10 +471,10 @@ function renderPins() {
     wrapperRect: wrapperRect ? { left: wrapperRect.left, top: wrapperRect.top, width: wrapperRect.width, height: wrapperRect.height } : null,
     pinsLayerRect: { left: pinsLayerRect.left, top: pinsLayerRect.top, width: pinsLayerRect.width, height: pinsLayerRect.height },
     pinsLayerStyle: { 
-      width: pinsLayerRef.value.style.width, 
-      height: pinsLayerRef.value.style.height,
-      left: pinsLayerRef.value.style.left,
-      top: pinsLayerRef.value.style.top
+      width: pinsLayer.style.width, 
+      height: pinsLayer.style.height,
+      left: pinsLayer.style.left,
+      top: pinsLayer.style.top
     },
     scale: { x: scaleX, y: scaleY },
     offset: wrapperRect ? {
@@ -501,7 +505,7 @@ function renderPins() {
       tempPin.style.left = `${tempScaledX}px`
       tempPin.style.top = `${tempScaledY}px`
       tempPin.style.position = 'absolute' // Ensure absolute positioning
-      pinsLayerRef.value.appendChild(tempPin)
+      pinsLayer.appendChild(tempPin)
       
       console.log('[PdfViewer] Temporary pin positioned:', {
         tempPinPosition: currentTemporaryPin,
@@ -602,8 +606,8 @@ function renderPins() {
       pinStyle: { left: pinDiv.style.left, top: pinDiv.style.top, position: pinDiv.style.position },
       actualPosition: { left: actualLeft, top: actualTop },
       computedStyle: { left: computedLeft, top: computedTop },
-      pinsLayerSize: { width: pinsLayerRef.value.style.width, height: pinsLayerRef.value.style.height },
-      pinsLayerPosition: { left: pinsLayerRef.value.style.left, top: pinsLayerRef.value.style.top }
+      pinsLayerSize: { width: pinsLayer.style.width, height: pinsLayer.style.height },
+      pinsLayerPosition: { left: pinsLayer.style.left, top: pinsLayer.style.top }
     })
     
     // Double-check: if position is still invalid, force it to (0, 0)
@@ -617,7 +621,7 @@ function renderPins() {
       pinDiv.style.top = '0px'
     }
     
-    pinsLayerRef.value.appendChild(pinDiv)
+    pinsLayer.appendChild(pinDiv)
     
     // CRITICAL: Ensure pointer-events is auto after appending to DOM
     // This overrides any parent styles that might affect it
@@ -674,7 +678,7 @@ function renderPins() {
   console.log('[PdfViewer] Pins rendered:', {
     pinsCreated: pageDanmaku.length,
     temporaryPin: temporaryPin.value !== null,
-    pinsLayerChildren: pinsLayerRef.value.children.length
+    pinsLayerChildren: pinsLayer.children.length
   })
 }
 
