@@ -26,6 +26,10 @@ from services.library.pdf_cover_extractor import (
     extract_pdf_cover,
     check_cover_extraction_available
 )
+from services.library.pdf_utils import (
+    validate_pdf_file,
+    normalize_library_path
+)
 
 
 logger = logging.getLogger(__name__)
@@ -155,23 +159,48 @@ def import_pdfs_from_folder(
 
     for pdf_path in pdf_files:
         pdf_name = pdf_path.name
+
+        # Validate PDF file (magic bytes check)
+        is_valid, error_msg = validate_pdf_file(pdf_path)
+        if not is_valid:
+            logger.warning(
+                "Skipping invalid PDF file %s: %s",
+                pdf_name,
+                error_msg
+            )
+            skipped_count += 1
+            continue
+
         file_size = pdf_path.stat().st_size
 
-        # Store relative path to storage_dir (works across WSL/Ubuntu)
-        # This avoids path issues when absolute paths differ between environments
-        final_path = service.storage_dir / pdf_name
-        # Use relative path from project root, or just filename if in storage_dir
-        # Store as relative path: storage/library/filename.pdf
-        storage_dir_relative = final_path.relative_to(Path.cwd()) if final_path.is_relative_to(Path.cwd()) else pdf_name
-        file_path = str(storage_dir_relative) if '/' in str(storage_dir_relative) else f"storage/library/{pdf_name}"
+        # Normalize path for cross-platform compatibility
+        file_path = normalize_library_path(
+            pdf_path,
+            service.storage_dir,
+            Path.cwd()
+        )
 
-        # Check if already exists in database (by filename match)
+        # Check if already exists in database (exact filename match)
+        # Normalize stored paths for comparison
         existing = db.query(LibraryDocument).filter(
             LibraryDocument.file_path.like(f"%{pdf_name}")
-        ).first()
+        ).all()
 
-        if existing:
-            logger.debug("Skipping (already exists): %s (ID: %s)", pdf_name, existing.id)
+        # Check if any existing record matches this file
+        found_existing = False
+        for doc in existing:
+            # Compare normalized paths
+            doc_path_normalized = normalize_library_path(
+                Path(doc.file_path) if Path(doc.file_path).is_absolute() else service.storage_dir / pdf_name,
+                service.storage_dir,
+                Path.cwd()
+            )
+            if doc_path_normalized == file_path or doc.file_path.endswith(pdf_name):
+                found_existing = True
+                break
+
+        if found_existing:
+            logger.debug("Skipping (already exists): %s", pdf_name)
             skipped_count += 1
             continue
 
@@ -179,14 +208,27 @@ def import_pdfs_from_folder(
         title = pdf_path.stem
 
         # Look for cover image or extract if needed
+        # Note: Cover will be renamed to {document_id}_cover.png after document creation
+        # For now, use pdf_name pattern for initial extraction
         cover_image_path = None
         cover_filename = f"{pdf_path.stem}_cover.png"
         cover_path = service.covers_dir / cover_filename
 
         if extract_covers:
             cover_image_path = _try_extract_cover(pdf_path, cover_path, dpi)
+            # Normalize cover path if extracted
+            if cover_image_path:
+                cover_image_path = normalize_library_path(
+                    Path(cover_image_path),
+                    service.covers_dir,
+                    Path.cwd()
+                )
         elif cover_path.exists():
-            cover_image_path = str(cover_path)
+            cover_image_path = normalize_library_path(
+                cover_path,
+                service.covers_dir,
+                Path.cwd()
+            )
 
         # Create document record
         document = LibraryDocument(
@@ -194,7 +236,7 @@ def import_pdfs_from_folder(
             description=None,
             file_path=file_path,
             file_size=file_size,
-            cover_image_path=cover_image_path,
+            cover_image_path=None,  # Will be set after cover rename
             uploader_id=uploader_id,
             views_count=0,
             likes_count=0,
@@ -206,14 +248,191 @@ def import_pdfs_from_folder(
         db.commit()
         db.refresh(document)
 
+        # Rename cover to use document_id pattern if it exists
+        if cover_image_path:
+            old_cover_path = Path(cover_image_path)
+            if old_cover_path.exists():
+                new_cover_path = service.covers_dir / f"{document.id}_cover.png"
+                try:
+                    old_cover_path.rename(new_cover_path)
+                    cover_image_path = normalize_library_path(
+                        new_cover_path,
+                        service.covers_dir,
+                        Path.cwd()
+                    )
+                    document.cover_image_path = cover_image_path
+                    db.commit()
+                except Exception as e:
+                    logger.warning(
+                        "Failed to rename cover for %s: %s",
+                        pdf_name,
+                        e
+                    )
+                    # Keep old cover path
+                    document.cover_image_path = cover_image_path
+                    db.commit()
+
         logger.info(
             "Imported PDF: %s (ID: %s, Size: %.2f MB%s)",
             pdf_name,
             document.id,
             file_size / 1024 / 1024,
-            f", Cover: {cover_image_path}" if cover_image_path else ""
+            f", Cover: {document.cover_image_path}" if document.cover_image_path else ""
         )
         imported_count += 1
 
     logger.info("Import complete: %s imported, %s skipped", imported_count, skipped_count)
+    return (imported_count, skipped_count)
+
+
+def auto_import_new_pdfs(
+    db: Session,
+    library_dir: Optional[Path] = None,
+    extract_covers: bool = True,
+    dpi: int = 200
+) -> Tuple[int, int]:
+    """
+    Automatically import new PDFs from storage/library/ folder.
+
+    Scans for PDF files, validates them, and imports any that don't have
+    database records. Extracts cover images automatically.
+
+    Args:
+        db: Database session
+        library_dir: Directory containing PDFs (default: storage/library)
+        extract_covers: If True, extract cover images (default: True)
+        dpi: DPI for cover extraction (default: 200)
+
+    Returns:
+        Tuple of (imported_count, skipped_count)
+    """
+    service = LibraryService(db)
+
+    if library_dir is None:
+        library_dir = service.storage_dir
+
+    if not library_dir.exists():
+        logger.warning("Library directory not found: %s", library_dir)
+        return (0, 0)
+
+    # Find all PDF files
+    pdf_files = list(library_dir.glob("*.pdf"))
+    if not pdf_files:
+        logger.debug("No PDF files found in %s", library_dir)
+        return (0, 0)
+
+    logger.info("Auto-import: Found %s PDF file(s) in %s", len(pdf_files), library_dir)
+
+    imported_count = 0
+    skipped_count = 0
+
+    for pdf_path in pdf_files:
+        pdf_name = pdf_path.name
+
+        # Validate PDF file
+        is_valid, error_msg = validate_pdf_file(pdf_path)
+        if not is_valid:
+            logger.debug("Skipping invalid PDF: %s - %s", pdf_name, error_msg)
+            skipped_count += 1
+            continue
+
+        # Normalize path
+        file_path = normalize_library_path(pdf_path, service.storage_dir, Path.cwd())
+
+        # Check if already exists in database
+        existing = db.query(LibraryDocument).filter(
+            LibraryDocument.file_path.like(f"%{pdf_name}")
+        ).first()
+
+        if existing:
+            logger.debug("Skipping (already exists): %s", pdf_name)
+            skipped_count += 1
+            continue
+
+        # Import this PDF
+        try:
+            file_size = pdf_path.stat().st_size
+            title = pdf_path.stem
+
+            # Get uploader
+            admin_user = get_admin_user(db)
+            if not admin_user:
+                logger.error("Cannot auto-import: No users found in database")
+                break
+            uploader_id = admin_user.id
+
+            # Extract cover if needed
+            cover_image_path = None
+            if extract_covers:
+                cover_filename = f"{pdf_path.stem}_cover.png"
+                cover_path = service.covers_dir / cover_filename
+                cover_image_path = _try_extract_cover(pdf_path, cover_path, dpi)
+                if cover_image_path:
+                    cover_image_path = normalize_library_path(
+                        Path(cover_image_path),
+                        service.covers_dir,
+                        Path.cwd()
+                    )
+
+            # Create document record
+            document = LibraryDocument(
+                title=title,
+                description=None,
+                file_path=file_path,
+                file_size=file_size,
+                cover_image_path=None,  # Will be set after cover rename
+                uploader_id=uploader_id,
+                views_count=0,
+                likes_count=0,
+                comments_count=0,
+                is_active=True
+            )
+
+            db.add(document)
+            db.commit()
+            db.refresh(document)
+
+            # Rename cover to use document_id pattern if it exists
+            if cover_image_path:
+                old_cover_path = Path(cover_image_path)
+                if old_cover_path.exists():
+                    new_cover_path = service.covers_dir / f"{document.id}_cover.png"
+                    try:
+                        old_cover_path.rename(new_cover_path)
+                        cover_image_path = normalize_library_path(
+                            new_cover_path,
+                            service.covers_dir,
+                            Path.cwd()
+                        )
+                        document.cover_image_path = cover_image_path
+                        db.commit()
+                    except Exception as e:
+                        logger.warning(
+                            "Failed to rename cover for %s: %s",
+                            pdf_name,
+                            e
+                        )
+                        # Keep old cover path
+                        document.cover_image_path = cover_image_path
+                        db.commit()
+
+            logger.info(
+                "Auto-imported PDF: %s (ID: %s, Size: %.2f MB%s)",
+                pdf_name,
+                document.id,
+                file_size / 1024 / 1024,
+                f", Cover: {document.cover_image_path}" if document.cover_image_path else ""
+            )
+            imported_count += 1
+
+        except Exception as e:
+            logger.error("Error auto-importing PDF %s: %s", pdf_name, e, exc_info=True)
+            db.rollback()
+            skipped_count += 1
+
+    if imported_count > 0:
+        logger.info("Auto-import complete: %s imported, %s skipped", imported_count, skipped_count)
+    else:
+        logger.debug("Auto-import: No new PDFs to import")
+
     return (imported_count, skipped_count)

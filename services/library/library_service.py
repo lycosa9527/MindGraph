@@ -27,6 +27,10 @@ from models.domain.library import (
     LibraryDanmakuReply,
     LibraryBookmark,
 )
+from services.library.pdf_utils import (
+    normalize_library_path,
+    resolve_library_path
+)
 
 
 logger = logging.getLogger(__name__)
@@ -51,7 +55,8 @@ class LibraryService:
         self.user_id = user_id
 
         # Configuration
-        self.storage_dir = Path(os.getenv("LIBRARY_STORAGE_DIR", "./storage/library"))
+        storage_dir_env = os.getenv("LIBRARY_STORAGE_DIR", "./storage/library")
+        self.storage_dir = Path(storage_dir_env).resolve()
         self.covers_dir = self.storage_dir / "covers"
         self.storage_dir.mkdir(parents=True, exist_ok=True)
         self.covers_dir.mkdir(parents=True, exist_ok=True)
@@ -178,13 +183,29 @@ class LibraryService:
         final_path = self.storage_dir / file_name
         shutil.move(file_path, final_path)
 
+        # Normalize path for storage
+        normalized_path = normalize_library_path(
+            final_path,
+            self.storage_dir,
+            Path.cwd()
+        )
+
+        # Normalize cover path if provided
+        normalized_cover_path = None
+        if cover_image_path:
+            normalized_cover_path = normalize_library_path(
+                Path(cover_image_path),
+                self.covers_dir,
+                Path.cwd()
+            )
+
         # Create document record
         document = LibraryDocument(
             title=title,
             description=description,
-            file_path=str(final_path),
+            file_path=normalized_path,
             file_size=file_size,
-            cover_image_path=cover_image_path,
+            cover_image_path=normalized_cover_path,
             uploader_id=self.user_id,
             views_count=0,
             likes_count=0,

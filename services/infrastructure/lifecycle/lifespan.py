@@ -42,6 +42,7 @@ from services.redis.cache.redis_diagram_cache import get_diagram_cache
 from services.redis.redis_token_buffer import get_token_tracker
 from services.utils.backup_scheduler import start_backup_scheduler
 from services.utils.temp_image_cleaner import start_cleanup_scheduler
+from services.library.auto_import_scheduler import start_library_auto_import_scheduler
 from services.utils.update_notifier import update_notifier
 from utils.auth import AUTH_MODE, display_demo_info
 from utils.auth.config import ADMIN_PHONES
@@ -390,6 +391,41 @@ async def lifespan(fastapi_app: FastAPI):
     except Exception as e:  # pylint: disable=broad-except
         if worker_id == '0' or not worker_id:
             logger.warning("Failed to start backup scheduler: %s", e)
+
+    # One-time auto-import on startup (import any PDFs that were added while server was down)
+    # This runs immediately on startup, before the periodic scheduler starts
+    try:
+        from config.database import SessionLocal
+        from services.library.pdf_importer import auto_import_new_pdfs
+        db_startup = SessionLocal()
+        try:
+            imported, skipped = auto_import_new_pdfs(db_startup, extract_covers=True)
+            if imported > 0:
+                logger.info(
+                    "[Library] Startup auto-import: Imported %s PDF(s), skipped %s",
+                    imported,
+                    skipped
+                )
+        except Exception as e:  # pylint: disable=broad-except
+            if is_main_worker:
+                logger.warning("Failed to run startup auto-import: %s", e)
+        finally:
+            db_startup.close()
+    except Exception as e:  # pylint: disable=broad-except
+        if is_main_worker:
+            logger.warning("Failed to initialize startup auto-import: %s", e)
+
+    # Start library auto-import scheduler (periodic automatic PDF import)
+    # Checks for new PDFs in storage/library/ and imports them automatically
+    # Uses Redis distributed lock to ensure only ONE worker runs imports across all workers
+    # All workers start the scheduler, but only the lock holder executes imports
+    library_auto_import_task: Optional[asyncio.Task] = None
+    try:
+        library_auto_import_task = asyncio.create_task(start_library_auto_import_scheduler())
+        # Don't log here - the scheduler will log whether it acquired the lock
+    except Exception as e:  # pylint: disable=broad-except
+        if worker_id == '0' or not worker_id:
+            logger.warning("Failed to start library auto-import scheduler: %s", e)
 
     # Start process monitor (health monitoring and auto-restart for Qdrant, Celery, Redis)
     # Uses Redis distributed lock to ensure only ONE worker monitors across all workers

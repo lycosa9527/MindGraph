@@ -57,6 +57,11 @@ extract_all_covers = _pdf_cover_module.extract_all_covers
 check_cover_extraction_available = _pdf_cover_module.check_cover_extraction_available
 LibraryService = _library_module.LibraryService
 
+# Import sync validator
+_sync_validator_module = importlib.import_module('services.library.sync_validator')
+validate_library_sync = _sync_validator_module.validate_library_sync
+sync_library = _sync_validator_module.sync_library
+
 
 def import_pdfs(
     extract_covers: bool = True,
@@ -172,6 +177,103 @@ def extract_covers_only(
     print(f"Extraction complete: {success_count}/{total_count} covers extracted")
 
 
+def sync_library_command(
+    library_dir: Optional[Path] = None,
+    covers_dir: Optional[Path] = None,
+    extract_covers: bool = True,
+    dpi: int = 200,
+    remove_orphans: bool = True
+) -> None:
+    """
+    Validate and sync library (check PDFs, covers, database records).
+
+    Args:
+        library_dir: Custom library directory (uses default if None)
+        covers_dir: Custom covers directory (uses default if None)
+        extract_covers: If True, extract missing covers (default: True)
+        dpi: DPI for cover extraction
+        remove_orphans: If True, remove orphaned records and covers (default: True)
+    """
+    db = SessionLocal()
+    try:
+        # Check if library_documents table exists
+        inspector = sqlalchemy_inspect(db.bind)
+        existing_tables = inspector.get_table_names()
+
+        if "library_documents" not in existing_tables:
+            print("\n" + "=" * 80)
+            print("ERROR: Library tables do not exist in the database!")
+            print("=" * 80)
+            print("\nPlease run database migrations first:")
+            print("  python scripts/db/run_migrations.py")
+            print("=" * 80)
+            sys.exit(1)
+
+        print("Validating library sync...")
+        print()
+
+        # Validate sync
+        report = validate_library_sync(db, library_dir, covers_dir)
+
+        # Print report
+        print("=" * 80)
+        print("Sync Validation Report")
+        print("=" * 80)
+        print(f"PDFs without database records: {len(report.pdfs_without_db)}")
+        if report.pdfs_without_db:
+            for pdf in report.pdfs_without_db:
+                print(f"  - {pdf.name}")
+        print(f"Database records without PDFs: {len(report.db_records_without_pdf)}")
+        if report.db_records_without_pdf:
+            for doc in report.db_records_without_pdf:
+                print(f"  - {doc.title} (ID: {doc.id}, path: {doc.file_path})")
+        print(f"PDFs without cover images: {len(report.pdfs_without_cover)}")
+        if report.pdfs_without_cover:
+            for pdf, doc_id in report.pdfs_without_cover:
+                print(f"  - {pdf.name}" + (f" (doc ID: {doc_id})" if doc_id else ""))
+        print(f"Cover images without PDFs: {len(report.covers_without_pdf)}")
+        if report.covers_without_pdf:
+            for cover in report.covers_without_pdf:
+                print(f"  - {cover.name}")
+        print(f"Cover images without database records: {len(report.covers_without_db)}")
+        if report.covers_without_db:
+            for cover in report.covers_without_db:
+                print(f"  - {cover.name}")
+        print()
+
+        if report.is_synced:
+            print("✓ Library is in sync - all PDFs, covers, and database records match!")
+        else:
+            print("⚠ Library is out of sync - fixing issues...")
+            print()
+
+            # Sync library
+            results = sync_library(
+                db,
+                library_dir,
+                covers_dir,
+                extract_covers,
+                dpi,
+                remove_orphans
+            )
+
+            print("=" * 80)
+            print("Sync Results")
+            print("=" * 80)
+            print(f"Imported PDFs: {results['imported']}")
+            print(f"Extracted covers: {results['covers_extracted']}")
+            print(f"Removed orphaned records: {results['orphan_records_removed']}")
+            print(f"Removed orphaned covers: {results['orphan_covers_removed']}")
+            print("=" * 80)
+
+    except Exception as e:
+        print(f"\nError syncing library: {e}")
+        traceback.print_exc()
+        sys.exit(1)
+    finally:
+        db.close()
+
+
 def main() -> None:
     """Main entry point for command-line script."""
     parser = argparse.ArgumentParser(
@@ -193,6 +295,12 @@ Examples:
 
   # Extract covers with custom DPI
   python scripts/library_import.py extract-covers --dpi 300
+
+  # Validate and sync library (check PDFs, covers, database)
+  python scripts/library_import.py sync
+
+  # Sync without removing orphans
+  python scripts/library_import.py sync --no-remove-orphans
 
   # Import with custom directories
   python scripts/library_import.py import --library-dir /path/to/pdfs --covers-dir /path/to/covers
@@ -251,6 +359,40 @@ Examples:
         help='Custom covers directory (default: storage/library/covers)'
     )
 
+    # Sync command
+    sync_parser = subparsers.add_parser(
+        'sync',
+        help='Validate and sync library (check PDFs, covers, database records)'
+    )
+    sync_parser.add_argument(
+        '--no-extract-covers',
+        action='store_false',
+        dest='extract_covers',
+        help='Skip cover extraction during sync'
+    )
+    sync_parser.add_argument(
+        '--dpi',
+        type=int,
+        default=200,
+        help='DPI for cover extraction (default: 200)'
+    )
+    sync_parser.add_argument(
+        '--no-remove-orphans',
+        action='store_false',
+        dest='remove_orphans',
+        help='Do not remove orphaned records and covers'
+    )
+    sync_parser.add_argument(
+        '--library-dir',
+        type=Path,
+        help='Custom library directory (default: storage/library)'
+    )
+    sync_parser.add_argument(
+        '--covers-dir',
+        type=Path,
+        help='Custom covers directory (default: storage/library/covers)'
+    )
+
     args = parser.parse_args()
 
     if not args.command:
@@ -270,6 +412,14 @@ Examples:
                 dpi=args.dpi,
                 library_dir=args.library_dir,
                 covers_dir=args.covers_dir
+            )
+        elif args.command == 'sync':
+            sync_library_command(
+                library_dir=args.library_dir,
+                covers_dir=args.covers_dir,
+                extract_covers=getattr(args, 'extract_covers', True),
+                dpi=args.dpi,
+                remove_orphans=getattr(args, 'remove_orphans', True)
             )
         else:
             parser.print_help()

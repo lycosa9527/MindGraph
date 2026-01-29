@@ -103,8 +103,14 @@ def extract_pdf_cover_pymupdf(
         doc.close()
         return True
 
+    except FileNotFoundError:
+        logger.error("PDF file not found: %s", pdf_path)
+        return False
+    except PermissionError:
+        logger.error("Permission denied reading PDF: %s", pdf_path)
+        return False
     except Exception as e:
-        logger.error("Error extracting cover from %s: %s", pdf_path.name, e)
+        logger.error("Error extracting cover from %s: %s", pdf_path.name, e, exc_info=True)
         return False
 
 
@@ -165,8 +171,14 @@ def extract_pdf_cover_pdf2image(
         )
         return True
 
+    except FileNotFoundError:
+        logger.error("PDF file not found: %s", pdf_path)
+        return False
+    except PermissionError:
+        logger.error("Permission denied reading PDF: %s", pdf_path)
+        return False
     except Exception as e:
-        logger.error("Error extracting cover from %s: %s", pdf_path.name, e)
+        logger.error("Error extracting cover from %s: %s", pdf_path.name, e, exc_info=True)
         return False
 
 
