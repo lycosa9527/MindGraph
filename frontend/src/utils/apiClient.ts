@@ -92,6 +92,10 @@ export async function apiRequest(endpoint: string, options: RequestInit = {}): P
       return response
     }
 
+    const authStore = useAuthStore()
+    // Check if user was previously authenticated (before refresh attempt)
+    const hadUserBeforeRefresh = !!authStore.user || !!sessionStorage.getItem('auth_user')
+
     console.debug('[ApiClient] Got 401, attempting token refresh')
     const refreshed = await refreshAccessToken()
 
@@ -104,11 +108,17 @@ export async function apiRequest(endpoint: string, options: RequestInit = {}): P
         credentials: 'same-origin',
       })
     } else {
-      // Refresh failed - trigger session expired modal
-      console.debug('[ApiClient] Refresh failed, showing login modal')
-      const authStore = useAuthStore()
-      // Pass null to stay on current page (no redirect)
-      authStore.handleTokenExpired('Your session has expired. Please log in again.', undefined)
+      // Refresh failed - only show session expired modal if user was previously authenticated
+      // If user was never authenticated, just return the 401 response (for public endpoints)
+      if (hadUserBeforeRefresh) {
+        console.debug('[ApiClient] Refresh failed, showing login modal (session expired)')
+        // Pass null to stay on current page (no redirect)
+        authStore.handleTokenExpired('Your session has expired. Please log in again.', undefined)
+      } else {
+        console.debug('[ApiClient] Refresh failed, user was never authenticated - returning 401')
+        // User was never authenticated - return 401 without showing modal
+        // This allows public endpoints to handle 401 gracefully
+      }
     }
   }
 
@@ -620,17 +630,27 @@ export async function getBookmark(
   documentId: number,
   pageNumber: number
 ): Promise<LibraryBookmark | null> {
-  const response = await apiGet(`/api/library/documents/${documentId}/bookmarks/${pageNumber}`)
-  if (!response.ok) {
-    // 404 means bookmark doesn't exist or doesn't belong to user
-    if (response.status === 404) {
+  try {
+    const response = await apiGet(`/api/library/documents/${documentId}/bookmarks/${pageNumber}`)
+    if (!response.ok) {
+      // 404 means bookmark doesn't exist or doesn't belong to user - this is expected
+      if (response.status === 404) {
+        return null
+      }
+      const error = await response.json().catch(() => ({ detail: 'Failed to fetch bookmark' }))
+      throw new Error(error.detail || 'Failed to fetch bookmark')
+    }
+    const data = await response.json()
+    return data || null
+  } catch (error) {
+    // If it's a network error that might be a 404, return null instead of throwing
+    // This prevents console errors for expected missing bookmarks
+    if (error instanceof TypeError && error.message.includes('fetch')) {
+      // Network error - might be 404, return null to indicate no bookmark
       return null
     }
-    const error = await response.json().catch(() => ({ detail: 'Failed to fetch bookmark' }))
-    throw new Error(error.detail || 'Failed to fetch bookmark')
+    throw error
   }
-  const data = await response.json()
-  return data || null
 }
 
 /**

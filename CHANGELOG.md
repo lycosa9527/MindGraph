@@ -5,6 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.18.0] - 2026-01-31
+
+### Added
+- **Library Exception Handling**: New `exceptions.py` module with specific exception types (`DocumentNotFoundError`, `PageNotFoundError`, `PageImageNotFoundError`, etc.) for better error handling and clearer error messages.
+- **Library Redis Caching**: New `redis_cache.py` module providing Redis-backed caching for library operations (document metadata, danmaku lists) to reduce database load and improve performance in multi-server deployments. Uses cache-aside pattern with configurable TTLs.
+- **Endpoint Authentication Audit Scripts**: New `audit_endpoints_auth.py` and `audit_endpoints_simple.py` scripts for auditing API endpoints to identify authentication requirements and potential security issues.
+- **Library Page Renaming Script**: New `rename_library_pages.py` script for renaming library page image files to sequential numbering patterns while preserving book names. Includes preview mode (dry-run) support.
+- **Library Test Suite**: New `test_library.py` test file for library service testing.
+- **Optional Authentication Support**: Added `get_optional_user()` dependency function in library router to allow public access to certain endpoints (document listings, cover images) while maintaining authenticated features.
+- **Document Serialization Helper**: Added `serialize_document()` helper function to reduce code duplication across library endpoints.
+
+### Changed
+- **Library Router**: Major refactoring with improved error handling using specific exception types, optional authentication support for public endpoints, and better code organization. Added rate limiting support and improved response serialization.
+- **Library Service Mixins**: Refactored library service mixins (`library_document_mixin.py`, `library_danmaku_mixin.py`, `library_bookmark_mixin.py`, `library_page_mixin.py`) with improved error handling, Redis caching integration, and better exception handling.
+- **Image Viewer Component**: Simplified page navigation logic by removing complex missing page detection and skipping mechanisms. Now relies on standard error handling for missing pages.
+- **Library Viewer Page**: Added authentication checks throughout the component. Bookmark operations now require authentication and show login modal for unauthenticated users. Improved error handling for bookmark status checks.
+- **Login Modal Component**: Improved UI with better z-index handling (changed from z-[9999] to z-[1000]), removed backdrop blur, and improved close button positioning with better z-index.
+- **Diagram Template Input**: Added authentication check to prevent submission when user is not authenticated. Submit button is disabled for unauthenticated users.
+- **Mindmate Input Component**: Added authentication check to disable send button when user is not authenticated. Improved disabled state handling with computed property.
+- **API Client**: Updated with improved error handling and type definitions for library operations.
+- **Server Launcher**: Enhanced server launcher with improved process management and error handling.
+
+### Fixed
+- **Library Authentication**: Fixed issue where library features were accessible without authentication. Now properly checks authentication status before allowing bookmark operations and other user-specific features.
+- **Login Modal Z-Index**: Fixed z-index conflict by reducing from z-[9999] to z-[1000] and improving close button positioning.
+- **Image Viewer Complexity**: Simplified image viewer by removing overly complex page skipping logic that could cause navigation issues. Now uses standard error handling.
+- **Error Logging**: Improved error logging throughout library services to use appropriate log levels and provide better context.
+
 ## [5.17.0] - 2026-01-30
 
 ### Added

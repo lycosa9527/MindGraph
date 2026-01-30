@@ -9,13 +9,14 @@ import { Paperclip, Send } from 'lucide-vue-next'
 
 import { useLanguage } from '@/composables'
 import type { MindMateFile } from '@/composables/useMindMate'
+import { useAuthStore } from '@/stores/auth'
 
 import SuggestionBubbles from '../../common/SuggestionBubbles.vue'
 
 const props = withDefaults(
   defineProps<{
     mode?: 'panel' | 'fullpage'
-    inputText: string
+    inputText?: string
     isLoading?: boolean
     isStreaming?: boolean
     isUploading?: boolean
@@ -43,8 +44,18 @@ const emit = defineEmits<{
 }>()
 
 const { isZh } = useLanguage()
+const authStore = useAuthStore()
 const isFullpageMode = computed(() => props.mode === 'fullpage')
 const fileInputRef = ref<HTMLInputElement | null>(null)
+
+// Computed for send button disabled state
+const isSendDisabled = computed(() => {
+  return (
+    (!props.inputText.trim() && props.pendingFiles.length === 0) ||
+    props.isLoading ||
+    !authStore.isAuthenticated
+  )
+})
 
 // Get file icon based on type
 function getFileIcon(type: string): string {
@@ -118,7 +129,7 @@ function handleSuggestionSelect(suggestion: string) {
 </script>
 
 <template>
-  <div class="flex-shrink-0">
+  <div class="shrink-0">
     <!-- Suggestion Bubbles - Above Input (Fullpage Mode) -->
     <div
       v-if="showSuggestions && isFullpageMode"
@@ -230,7 +241,7 @@ function handleSuggestionSelect(suggestion: string) {
             v-else
             type="primary"
             class="send-btn-fullpage"
-            :disabled="(!inputText.trim() && pendingFiles.length === 0) || isLoading"
+            :disabled="isSendDisabled"
             @click="emit('send')"
           >
             <Send :size="18" />
@@ -331,7 +342,7 @@ function handleSuggestionSelect(suggestion: string) {
         <button
           v-else
           class="send-btn"
-          :disabled="(!inputText.trim() && pendingFiles.length === 0) || isLoading"
+          :disabled="isSendDisabled"
           @click="emit('send')"
         >
           <ElIcon><Promotion /></ElIcon>

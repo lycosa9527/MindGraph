@@ -8,10 +8,11 @@ import { useRouter } from 'vue-router'
 
 import { ArrowRight, ChevronDown, X } from 'lucide-vue-next'
 
-import { DIAGRAM_TEMPLATES, useUIStore } from '@/stores'
+import { DIAGRAM_TEMPLATES, useAuthStore, useUIStore } from '@/stores'
 import type { DiagramType } from '@/types'
 
 const uiStore = useUIStore()
+const authStore = useAuthStore()
 const router = useRouter()
 
 // Map Chinese diagram type names to DiagramType for URL
@@ -90,7 +91,7 @@ function handleSlotBlur(e: FocusEvent) {
 }
 
 function handleSubmit() {
-  if (!uiStore.hasValidSlots()) return
+  if (!uiStore.hasValidSlots() || !authStore.isAuthenticated) return
 
   const requestText = uiStore.getTemplateText()
   // Store diagram type and prompt, then navigate with type in URL for refresh persistence
@@ -223,11 +224,11 @@ const templateParts = computed(() => {
       <button
         class="p-2.5 rounded-full text-white transition-colors"
         :class="
-          uiStore.hasValidSlots()
+          uiStore.hasValidSlots() && authStore.isAuthenticated
             ? 'bg-blue-600 hover:bg-blue-700'
             : 'bg-gray-300 cursor-not-allowed'
         "
-        :disabled="!uiStore.hasValidSlots()"
+        :disabled="!uiStore.hasValidSlots() || !authStore.isAuthenticated"
         @click="handleSubmit"
       >
         <ArrowRight class="w-4 h-4" />

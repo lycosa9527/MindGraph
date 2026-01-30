@@ -9,7 +9,9 @@ import { useRoute, useRouter, onBeforeRouteLeave } from 'vue-router'
 import { ElButton, ElIcon } from 'element-plus'
 import { ArrowLeft } from 'lucide-vue-next'
 
+import { LoginModal } from '@/components/auth'
 import { useLibraryStore } from '@/stores/library'
+import { useAuthStore } from '@/stores/auth'
 import { useNotifications, useLanguage } from '@/composables'
 
 import ImageViewer from '@/components/library/ImageViewer.vue'
@@ -20,9 +22,11 @@ import CommentPanel from '@/components/library/CommentPanel.vue'
 const route = useRoute()
 const router = useRouter()
 const libraryStore = useLibraryStore()
+const authStore = useAuthStore()
 const notify = useNotifications()
 const { isZh } = useLanguage()
 
+const showLoginModal = ref(false)
 const imageViewerRef = ref<InstanceType<typeof ImageViewer> | null>(null)
 
 const documentId = computed(() => parseInt(route.params.id as string))
@@ -66,16 +70,25 @@ const currentPageDanmaku = computed(() => {
 const isBookmarked = ref(false)
 const bookmarkId = ref<number | null>(null)
 
-// Check bookmark status when page changes
+// Check bookmark status when page changes (only if authenticated)
 watch(currentPage, async () => {
-  if (documentId.value && currentPage.value) {
+  if (authStore.isAuthenticated && documentId.value && currentPage.value) {
     await checkBookmarkStatus()
   }
 })
 
 // Check bookmark status
 async function checkBookmarkStatus() {
-  if (!documentId.value || !currentPage.value) return
+  if (!authStore.isAuthenticated || !documentId.value || !currentPage.value) return
+  
+  // Don't check bookmarks for pages we know don't exist
+  if (false) {
+    // Page doesn't exist - don't check for bookmark
+    isBookmarked.value = false
+    bookmarkId.value = null
+    return
+  }
+  
   try {
     const bookmark = await libraryStore.getBookmark(documentId.value, currentPage.value)
     if (bookmark) {
@@ -86,13 +99,14 @@ async function checkBookmarkStatus() {
       bookmarkId.value = null
     }
   } catch (error) {
-    // 404 means bookmark doesn't exist - this is fine, just mark as not bookmarked
-    if (error instanceof Error && error.message.includes('404')) {
-      // Bookmark doesn't exist - expected, don't log as error
+    // 404 means bookmark doesn't exist - this is expected and fine
+    // Don't log as error since this is normal behavior
+    if (error instanceof Error && (error.message.includes('404') || error.message.includes('Failed to fetch'))) {
+      // Bookmark doesn't exist - expected, silently handle
       isBookmarked.value = false
       bookmarkId.value = null
     } else {
-      // Other errors - log but don't show error to user for status check
+      // Other errors - log at debug level but don't show error to user
       console.debug('[LibraryViewerPage] Bookmark check failed (non-404):', error)
       isBookmarked.value = false
       bookmarkId.value = null
@@ -102,6 +116,11 @@ async function checkBookmarkStatus() {
 
 // Handle bookmark toggle
 async function handleToggleBookmark() {
+  if (!authStore.isAuthenticated) {
+    openLoginModal()
+    return
+  }
+
   console.log('[LibraryViewerPage] handleToggleBookmark called', {
     documentId: documentId.value,
     currentPage: currentPage.value,
@@ -209,8 +228,12 @@ async function navigateToPageFromQuery() {
   await checkBookmarkStatus()
 }
 
-// Fetch document on mount
+// Fetch document on mount (only if authenticated)
 onMounted(async () => {
+  if (!authStore.isAuthenticated) {
+    return
+  }
+
   try {
     await libraryStore.fetchDocument(documentId.value)
 
@@ -253,6 +276,29 @@ onMounted(async () => {
     }
   }
 })
+
+// Watch for authentication changes and fetch document when user logs in
+watch(
+  () => authStore.isAuthenticated,
+  async (isAuthenticated) => {
+    if (isAuthenticated && !libraryStore.currentDocument) {
+      try {
+        await libraryStore.fetchDocument(documentId.value)
+        if (route.query.page) {
+          await nextTick()
+          setTimeout(async () => {
+            await navigateToPageFromQuery()
+            await checkBookmarkStatus()
+          }, 600)
+        } else {
+          await checkBookmarkStatus()
+        }
+      } catch (error) {
+        console.error('[LibraryViewerPage] Failed to load document after login:', error)
+      }
+    }
+  }
+)
 
 // Watch for route query changes (e.g., when clicking bookmark)
 watch(
@@ -328,10 +374,37 @@ watch(
 
 // Handle page change from image viewer
 function handlePageChange(pageNumber: number) {
-  libraryStore.fetchDanmaku(pageNumber)
+  if (authStore.isAuthenticated) {
+    libraryStore.fetchDanmaku(pageNumber)
+  }
   // Clear selected pin when page changes
   selectedDanmakuId.value = null
   pinPlacementPosition.value = null
+}
+
+// Open login modal
+function openLoginModal() {
+  showLoginModal.value = true
+}
+
+// Handle successful login
+function handleLoginSuccess() {
+  showLoginModal.value = false
+  // Fetch document after login
+  if (authStore.isAuthenticated && documentId.value) {
+    libraryStore.fetchDocument(documentId.value).then(() => {
+      if (route.query.page) {
+        nextTick().then(() => {
+          setTimeout(async () => {
+            await navigateToPageFromQuery()
+            await checkBookmarkStatus()
+          }, 600)
+        })
+      } else {
+        checkBookmarkStatus()
+      }
+    })
+  }
 }
 
 // Handle pin placement (user clicks on page to place a pin)
@@ -349,25 +422,15 @@ function handlePinClick(danmakuId: number) {
 
 // Toolbar event handlers
 function handlePreviousPage() {
-  // Use goToPreviousPage which already handles skipping missing pages
   viewerRef.value?.goToPreviousPage()
 }
 
 function handleNextPage() {
-  // Use goToNextPage which already handles skipping missing pages
   viewerRef.value?.goToNextPage()
 }
 
 function handleGoToPage(page: number) {
-  // Detect if this is sequential navigation (increment/decrement from current page)
-  const isSequential = Math.abs(page - currentPage.value) === 1
-  if (isSequential) {
-    // For sequential navigation, proactively skip missing pages
-    viewerRef.value?.goToPage(page, true)
-  } else {
-    // For direct page selection, check page existence but don't proactively skip
-    viewerRef.value?.goToPage(page, false)
-  }
+  viewerRef.value?.goToPage(page)
 }
 
 function handleZoomIn() {
@@ -476,7 +539,10 @@ watch(
     />
 
     <!-- Main content area -->
-    <div class="library-viewer-content flex-1 flex overflow-hidden">
+    <div
+      class="library-viewer-content flex-1 flex overflow-hidden relative"
+      :class="{ 'blurred': !authStore.isAuthenticated }"
+    >
       <!-- Viewer with Danmaku Overlay -->
       <div class="flex-1 relative overflow-hidden" style="padding-bottom: 30px;">
         <!-- Image Viewer -->
@@ -508,12 +574,25 @@ watch(
         @close="handleCloseCommentPanel"
       />
     </div>
+
+    <!-- Login Modal -->
+    <LoginModal
+      v-model:visible="showLoginModal"
+      @success="handleLoginSuccess"
+    />
   </div>
 </template>
 
 <style scoped>
 .library-viewer-page {
   min-height: 0;
+  position: relative;
+}
+
+.library-viewer-content.blurred {
+  filter: blur(8px);
+  pointer-events: none;
+  user-select: none;
 }
 
 /* Back button - Match MindMate style */

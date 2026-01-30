@@ -57,12 +57,6 @@ const isRendering = ref(false)
 // Pre-loading state
 const preloadedPages = ref<Set<number>>(new Set())
 
-// Track pages we've tried to skip (to prevent infinite loops)
-const skippedPages = ref<Set<number>>(new Set())
-
-// Cache of pages we know don't exist (populated from backend hints)
-const missingPages = ref<Set<number>>(new Set())
-
 // Navigation state
 const canGoPrevious = computed(() => currentPage.value > 1)
 const canGoNext = computed(() => currentPage.value < props.totalPages)
@@ -556,15 +550,15 @@ function preloadPages(pageNumbers: number[]) {
 }
 
 // Load and render current page image
-async function renderPage(pageNum: number, skipCheck: boolean = false) {
+async function renderPage(pageNum: number) {
   if (pageNum < 1 || pageNum > props.totalPages) return
 
   if (isUnmounted.value) {
     return
   }
 
-  // Prevent duplicate renders (unless we're skipping to a new page)
-  if (!skipCheck && isRendering.value && currentPage.value === pageNum) {
+  // Prevent duplicate renders
+  if (isRendering.value && currentPage.value === pageNum) {
     return
   }
 
@@ -596,45 +590,7 @@ async function renderPage(pageNum: number, skipCheck: boolean = false) {
       }
 
       imageRef.value.onload = () => resolve()
-      imageRef.value.onerror = async () => {
-        // Image failed to load - check if it's a 404 and get backend hint
-        // This is a fallback for cases where goToPage() didn't catch it proactively
-        try {
-          const response = await fetch(imageUrl, { method: 'HEAD' })
-          if (response.status === 404) {
-            const nextPageHeader = response.headers.get('X-Next-Available-Page')
-            if (nextPageHeader) {
-              const nextPage = parseInt(nextPageHeader, 10)
-              if (
-                !isNaN(nextPage) &&
-                nextPage >= 1 &&
-                nextPage <= props.totalPages &&
-                !skippedPages.value.has(nextPage) &&
-                !skippedPages.value.has(pageNum)
-              ) {
-                // Cache the missing page
-                missingPages.value.add(pageNum)
-                skippedPages.value.add(pageNum)
-                console.debug(
-                  `[ImageViewer] Page ${pageNum} not found (fallback), skipping to page ${nextPage}`
-                )
-                // Navigate to next page using goToPage (which handles skipping properly)
-                try {
-                  await goToPage(nextPage, false)
-                  resolve()
-                  return
-                } catch {
-                  // Next page also failed - fall through to reject
-                }
-              }
-            }
-            // Cache missing page even if no next page hint
-            missingPages.value.add(pageNum)
-          }
-        } catch {
-          // Fetch failed - fall through to reject
-        }
-        // No next page available or skip failed - reject
+      imageRef.value.onerror = () => {
         reject(new Error('Failed to load image'))
       }
     })
@@ -644,7 +600,7 @@ async function renderPage(pageNum: number, skipCheck: boolean = false) {
       return
     }
 
-    // Update current page (only if it changed to prevent watcher loops)
+    // Update current page
     if (currentPage.value !== pageNum) {
       currentPage.value = pageNum
       emit('pageChange', pageNum)
@@ -694,23 +650,9 @@ async function renderPage(pageNum: number, skipCheck: boolean = false) {
   } catch (error) {
     if (!isUnmounted.value) {
       // Check if this is a 404 error (page doesn't exist)
-      const is404 =
-        error instanceof Error &&
-        (error.message.includes('404') ||
-          error.message.includes('not found') ||
-          error.message.includes('Failed to load image'))
-
-      if (is404) {
-        // Page doesn't exist - log at debug level
-        // The onerror handler already tried to skip, so this is just logging
-        console.debug(
-          `[ImageViewer] Page ${pageNum} not found (no next page available or skip already attempted)`
-        )
-      } else {
-        // Other errors - log and notify user
-        console.error(`[ImageViewer] Failed to render page ${pageNum}:`, error)
-        notify.error(`Failed to load page ${pageNum}`)
-      }
+      // Log and notify user
+      console.error(`[ImageViewer] Failed to render page ${pageNum}:`, error)
+      notify.error(`Failed to load page ${pageNum}`)
     }
   } finally {
     if (!isUnmounted.value) {
@@ -720,189 +662,11 @@ async function renderPage(pageNum: number, skipCheck: boolean = false) {
   }
 }
 
-// Helper function to check if a page exists
-async function checkPageExists(pageNum: number): Promise<{ exists: boolean; nextPage?: number }> {
-  if (pageNum < 1 || pageNum > props.totalPages) {
-    return { exists: false }
-  }
-
-  try {
-    const imageUrl = getLibraryDocumentPageImageUrl(props.documentId, pageNum)
-    const response = await fetch(imageUrl, { method: 'HEAD' })
-    
-    if (response.status === 404) {
-      const nextPageHeader = response.headers.get('X-Next-Available-Page')
-      if (nextPageHeader) {
-        const nextPage = parseInt(nextPageHeader, 10)
-        if (!isNaN(nextPage) && nextPage >= 1 && nextPage <= props.totalPages) {
-          return { exists: false, nextPage }
-        }
-      }
-      return { exists: false }
-    }
-    
-    return { exists: response.ok }
-  } catch {
-    // On error, assume page might exist and let renderPage handle it
-    return { exists: true }
-  }
-}
-
-// Helper function to find next available page
-// Optimized for small gaps (1-2 missing pages): checks max 3 sequential pages
-async function findNextAvailablePage(startPage: number): Promise<number | null> {
-  if (startPage >= props.totalPages) {
-    return null
-  }
-
-  // Check if pages are in missing cache (skip known missing pages)
-  // For small gaps (1-2 missing pages), check max 3 sequential pages
-  const maxCheck = Math.min(startPage + 3, props.totalPages)
-  for (let page = startPage + 1; page <= maxCheck; page++) {
-    // Skip pages we know are missing
-    if (missingPages.value.has(page)) {
-      continue
-    }
-    
-    const check = await checkPageExists(page)
-    if (check.exists) {
-      return page
-    }
-    
-    // If page doesn't exist and we got a backend hint, use it directly
-    if (check.nextPage && check.nextPage > page) {
-      // Cache the missing page
-      missingPages.value.add(page)
-      // Trust backend hint - it's already optimized
-      return check.nextPage
-    }
-    
-    // Cache missing page
-    if (!check.exists) {
-      missingPages.value.add(page)
-    }
-  }
-
-  return null
-}
-
-// Helper function to find previous available page
-// Optimized for small gaps (1-2 missing pages): checks max 3 sequential pages backwards
-async function findPreviousAvailablePage(startPage: number): Promise<number | null> {
-  if (startPage <= 1) {
-    return null
-  }
-
-  // For small gaps (1-2 missing pages), check max 3 sequential pages backwards
-  const minCheck = Math.max(startPage - 3, 1)
-  for (let page = startPage - 1; page >= minCheck; page--) {
-    // Skip pages we know are missing
-    if (missingPages.value.has(page)) {
-      continue
-    }
-    
-    const check = await checkPageExists(page)
-    if (check.exists) {
-      return page
-    }
-    
-    // Cache missing page
-    if (!check.exists) {
-      missingPages.value.add(page)
-    }
-  }
-
-  return null
-}
-
 // Navigation functions
-async function goToPage(pageNum: number, skipMissing: boolean = false) {
+async function goToPage(pageNum: number) {
   if (pageNum < 1 || pageNum > props.totalPages) {
     return
   }
-
-  // If this is sequential navigation (increment/decrement), proactively find next/previous available page
-  if (skipMissing) {
-    const isIncrement = pageNum > currentPage.value
-    const isDecrement = pageNum < currentPage.value
-    
-    if (isIncrement) {
-      // Going forward - find next available page from current position
-      // findNextAvailablePage() already checks cache and trusts backend hints
-      const nextPage = await findNextAvailablePage(currentPage.value)
-      if (nextPage && nextPage !== pageNum) {
-        // Next available page is different from requested - skip missing pages
-        console.debug(`[ImageViewer] Skipping missing pages, navigating from ${currentPage.value} to ${nextPage} (requested ${pageNum})`)
-        await goToPage(nextPage, false) // Don't skip again to avoid infinite loop
-        return
-      }
-      // If nextPage matches pageNum or is null, proceed normally
-    } else if (isDecrement) {
-      // Going backward - find previous available page from current position
-      // findPreviousAvailablePage() already checks cache
-      const prevPage = await findPreviousAvailablePage(currentPage.value)
-      if (prevPage && prevPage !== pageNum) {
-        // Previous available page is different from requested - skip missing pages
-        console.debug(`[ImageViewer] Skipping missing pages, navigating from ${currentPage.value} to ${prevPage} (requested ${pageNum})`)
-        await goToPage(prevPage, false) // Don't skip again to avoid infinite loop
-        return
-      }
-      // If prevPage matches pageNum or is null, proceed normally
-    }
-  }
-
-  // For direct page selection (typing page number), check cache first
-  if (missingPages.value.has(pageNum)) {
-    // Page is known to be missing - find next available
-    const check = await checkPageExists(pageNum)
-    let targetPage: number | null = null
-    
-    if (check.nextPage) {
-      // Use backend hint directly
-      targetPage = check.nextPage
-    } else {
-      // Fallback to finding next available
-      targetPage = await findNextAvailablePage(pageNum)
-    }
-    
-    if (targetPage && targetPage !== pageNum) {
-      console.debug(`[ImageViewer] Page ${pageNum} is missing (cached), navigating to page ${targetPage}`)
-      skippedPages.value.add(pageNum)
-      await goToPage(targetPage, false)
-      return
-    }
-  }
-
-  // Check if page exists before navigating (only for direct selection, not sequential)
-  if (!skipMissing) {
-    const check = await checkPageExists(pageNum)
-    if (!check.exists) {
-      // Page doesn't exist - use backend hint if available
-      let targetPage: number | null = null
-      
-      if (check.nextPage) {
-        // Trust backend hint - it's already optimized
-        targetPage = check.nextPage
-        missingPages.value.add(pageNum) // Cache the missing page
-      } else {
-        // No hint - try to find next available (will check cache)
-        targetPage = await findNextAvailablePage(pageNum)
-      }
-      
-      if (targetPage && targetPage !== pageNum) {
-        console.debug(`[ImageViewer] Page ${pageNum} not found, navigating to page ${targetPage}`)
-        skippedPages.value.add(pageNum)
-        await goToPage(targetPage, false)
-        return
-      }
-      // No available pages found - still try to render (might be a transient error)
-      console.debug(`[ImageViewer] Page ${pageNum} not found and no next page available, attempting render anyway`)
-    }
-  }
-
-  // Clear skipped pages when user manually navigates to a valid page
-  // (they might want to retry pages that were previously skipped)
-  skippedPages.value.clear()
   renderPage(pageNum)
 }
 
@@ -910,30 +674,14 @@ async function goToPreviousPage() {
   if (currentPage.value <= 1) {
     return
   }
-
-  // Find previous available page
-  const prevPage = await findPreviousAvailablePage(currentPage.value)
-  if (prevPage) {
-    await goToPage(prevPage)
-  } else {
-    // Fallback to sequential navigation (renderPage will handle missing pages)
-    await goToPage(currentPage.value - 1)
-  }
+  await goToPage(currentPage.value - 1)
 }
 
 async function goToNextPage() {
   if (currentPage.value >= props.totalPages) {
     return
   }
-
-  // Find next available page
-  const nextPage = await findNextAvailablePage(currentPage.value)
-  if (nextPage) {
-    await goToPage(nextPage)
-  } else {
-    // Fallback to sequential navigation (renderPage will handle missing pages)
-    await goToPage(currentPage.value + 1)
-  }
+  await goToPage(currentPage.value + 1)
 }
 
 // Zoom functions
@@ -1206,14 +954,6 @@ watch(
   }
 )
 
-// Watch for documentId changes to reset skipped pages and missing pages cache
-watch(
-  () => props.documentId,
-  () => {
-    skippedPages.value.clear()
-    missingPages.value.clear() // Clear cache when document changes
-  }
-)
 
 // Watch for documentId or totalPages changes to pre-load initial pages
 watch(
@@ -1331,7 +1071,7 @@ defineExpose({
   totalPages: () => props.totalPages,
   zoom,
   pinMode,
-  goToPage: (page: number, skipMissing?: boolean) => goToPage(page, skipMissing),
+  goToPage: (page: number) => goToPage(page),
   goToPreviousPage: () => goToPreviousPage(),
   goToNextPage: () => goToNextPage(),
   zoomIn: () => adjustZoom(0.1),

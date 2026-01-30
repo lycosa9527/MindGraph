@@ -9,9 +9,11 @@ Proprietary License
 """
 
 import logging
+import threading
 from pathlib import Path
-from typing import Optional, Dict, Any, TYPE_CHECKING
+from typing import Optional, Dict, Any
 from datetime import datetime
+import time
 
 from PIL import Image
 from sqlalchemy import or_
@@ -28,6 +30,13 @@ from services.library.image_path_resolver import (
 
 logger = logging.getLogger(__name__)
 
+# In-memory cache for document metadata (for high-concurrency image serving)
+# Cache structure: {document_id: {"data": {...}, "cached_at": timestamp}}
+_document_metadata_cache: Dict[int, Dict[str, Any]] = {}
+_cache_lock = threading.Lock()  # Thread-safe cache operations
+CACHE_TTL_SECONDS = 600  # 10 minutes TTL
+CACHE_MAX_SIZE = 1000  # Maximum number of cached documents
+
 
 class LibraryDocumentMixin:
     """Mixin for document management operations."""
@@ -40,10 +49,6 @@ class LibraryDocumentMixin:
     covers_dir: Path
     storage_dir: Path
 
-    if TYPE_CHECKING:
-        def invalidate_page_cache(self, document_id: int) -> None:
-            """Invalidate cached available pages - provided by LibraryPageMixin."""
-            ...
 
     def get_documents(
         self,
@@ -106,20 +111,180 @@ class LibraryDocumentMixin:
             "page_size": page_size
         }
 
-    def get_document(self, document_id: int) -> Optional[LibraryDocument]:
+    def get_document(self, document_id: int, use_cache: bool = True) -> Optional[LibraryDocument]:
         """
-        Get a single library document.
+        Get a single library document with optional caching.
+
+        Uses multi-layer caching:
+        1. Redis cache (shared across servers)
+        2. In-memory cache (per-process)
+        3. Database query (fallback)
+
+        Args:
+            document_id: Document ID
+            use_cache: If True, use caching layers (default: True)
+
+        Returns:
+            LibraryDocument instance or None
+        """
+        if not use_cache:
+            # Skip cache, query database directly
+            return self.db.query(LibraryDocument).filter(
+                LibraryDocument.id == document_id,
+                LibraryDocument.is_active
+            ).first()
+
+        # Try Redis cache first (shared across servers)
+        try:
+            from services.library.redis_cache import LibraryRedisCache
+            redis_cache = LibraryRedisCache()
+            cached_metadata = redis_cache.get_document_metadata(document_id)
+            
+            if cached_metadata:
+                # Cache hit - reconstruct minimal document object for compatibility
+                # Note: This avoids DB query but returns limited object
+                # For full document object, still need DB query
+                logger.debug("[Library] Redis cache hit for document %s", document_id)
+        except Exception as e:
+            logger.debug("[Library] Redis cache check failed: %s", e)
+            cached_metadata = None
+
+        # Try in-memory cache (per-process)
+        if not cached_metadata:
+            with _cache_lock:
+                cached = _document_metadata_cache.get(document_id)
+                if cached:
+                    cache_age = time.time() - cached["cached_at"]
+                    if cache_age < CACHE_TTL_SECONDS:
+                        cached_metadata = cached["data"]
+                    else:
+                        # Cache expired, remove it
+                        _document_metadata_cache.pop(document_id, None)
+
+        # Query database (always needed for full object, or if cache miss)
+        document = self.db.query(LibraryDocument).filter(
+            LibraryDocument.id == document_id,
+            LibraryDocument.is_active
+        ).first()
+
+        # Cache metadata if document found and caching enabled
+        if document and use_cache:
+            # Cache in both Redis and in-memory
+            try:
+                from services.library.redis_cache import LibraryRedisCache
+                redis_cache = LibraryRedisCache()
+                metadata = {
+                    "id": document.id,
+                    "pages_dir_path": document.pages_dir_path,
+                    "total_pages": document.total_pages,
+                    "use_images": document.use_images,
+                    "is_active": document.is_active,
+                    "title": document.title,
+                }
+                redis_cache.cache_document_metadata(document_id, metadata)
+            except Exception as e:
+                logger.debug("[Library] Redis cache write failed: %s", e)
+            
+            # Also cache in-memory
+            self._cache_document_metadata(document_id, document)
+
+        return document
+
+    def _cache_document_metadata(self, document_id: int, document: LibraryDocument) -> None:
+        """
+        Cache document metadata for fast image serving.
+
+        Args:
+            document_id: Document ID
+            document: LibraryDocument instance
+        """
+        with _cache_lock:
+            # Evict oldest entries if cache exceeds max size (LRU-like eviction)
+            if len(_document_metadata_cache) >= CACHE_MAX_SIZE:
+                # Remove oldest entries (by cached_at timestamp)
+                sorted_items = sorted(
+                    _document_metadata_cache.items(),
+                    key=lambda x: x[1].get("cached_at", 0)
+                )
+                # Remove oldest 10% of entries
+                evict_count = max(1, CACHE_MAX_SIZE // 10)
+                for doc_id, _ in sorted_items[:evict_count]:
+                    _document_metadata_cache.pop(doc_id, None)
+                logger.debug(
+                    "[Library] Cache evicted %s entries (size: %s, max: %s)",
+                    evict_count, len(_document_metadata_cache), CACHE_MAX_SIZE
+                )
+
+            _document_metadata_cache[document_id] = {
+                "data": {
+                    "id": document.id,
+                    "pages_dir_path": document.pages_dir_path,
+                    "total_pages": document.total_pages,
+                    "use_images": document.use_images,
+                    "is_active": document.is_active,
+                    "title": document.title,
+                },
+                "cached_at": time.time()
+            }
+
+    def get_cached_document_metadata(self, document_id: int) -> Optional[Dict[str, Any]]:
+        """
+        Get cached document metadata without DB query.
+
+        Checks Redis cache first (shared), then in-memory cache (per-process).
 
         Args:
             document_id: Document ID
 
         Returns:
-            LibraryDocument instance or None
+            Cached metadata dict or None if not cached or expired
         """
-        return self.db.query(LibraryDocument).filter(
-            LibraryDocument.id == document_id,
-            LibraryDocument.is_active
-        ).first()
+        # Try Redis cache first (shared across servers)
+        try:
+            from services.library.redis_cache import LibraryRedisCache
+            redis_cache = LibraryRedisCache()
+            cached = redis_cache.get_document_metadata(document_id)
+            if cached:
+                logger.debug("[Library] Redis cache hit for document metadata %s", document_id)
+                return cached
+        except Exception as e:
+            logger.debug("[Library] Redis cache check failed: %s", e)
+
+        # Fallback to in-memory cache
+        with _cache_lock:
+            cached = _document_metadata_cache.get(document_id)
+            if not cached:
+                return None
+
+            cache_age = time.time() - cached["cached_at"]
+            if cache_age >= CACHE_TTL_SECONDS:
+                # Cache expired, remove it
+                _document_metadata_cache.pop(document_id, None)
+                return None
+
+            return cached["data"]
+
+    def invalidate_document_cache(self, document_id: int) -> None:
+        """
+        Invalidate cached document metadata.
+
+        Invalidates both Redis cache (shared) and in-memory cache (per-process).
+
+        Args:
+            document_id: Document ID
+        """
+        # Invalidate Redis cache
+        try:
+            from services.library.redis_cache import LibraryRedisCache
+            redis_cache = LibraryRedisCache()
+            redis_cache.invalidate_document(document_id)
+        except Exception as e:
+            logger.debug("[Library] Redis cache invalidation failed: %s", e)
+        
+        # Invalidate in-memory cache
+        with _cache_lock:
+            _document_metadata_cache.pop(document_id, None)
+        logger.debug("Invalidated cache for document %s", document_id)
 
     def increment_views(self, document_id: int) -> None:
         """
@@ -128,10 +293,21 @@ class LibraryDocumentMixin:
         Args:
             document_id: Document ID
         """
-        document = self.get_document(document_id)
-        if document:
-            document.views_count += 1
-            self.db.commit()
+        try:
+            document = self.get_document(document_id)
+            if document:
+                document.views_count += 1
+                self.db.commit()
+                logger.debug(
+                    "[Library] Document view incremented",
+                    extra={
+                        "document_id": document_id,
+                        "views_count": document.views_count
+                    }
+                )
+        except Exception:
+            self.db.rollback()
+            raise
 
     def _process_cover_image(self, source_image_path: Path, document_id: int) -> Optional[str]:
         """
@@ -278,8 +454,6 @@ class LibraryDocumentMixin:
             existing_doc.use_images = True
             existing_doc.total_pages = page_count
             existing_doc.pages_dir_path = pages_dir_path
-            # Invalidate cache since pages may have changed
-            self.invalidate_page_cache(existing_doc.id)
             if title:
                 existing_doc.title = title
             elif not existing_doc.title or existing_doc.title == 'Untitled':
@@ -307,14 +481,22 @@ class LibraryDocumentMixin:
                         existing_doc.cover_image_path = cover_image_path
 
             existing_doc.updated_at = datetime.utcnow()
-            self.db.commit()
-            self.db.refresh(existing_doc)
+            try:
+                self.db.commit()
+                self.db.refresh(existing_doc)
+            except Exception:
+                self.db.rollback()
+                raise
+            # Invalidate cache since document metadata changed
+            self.invalidate_document_cache(existing_doc.id)
             logger.info(
-                "[Library] Updated book folder: %s (ID: %s, Pages: %s, Cover: %s)",
-                folder_path.name,
-                existing_doc.id,
-                page_count,
-                existing_doc.cover_image_path or "none"
+                "[Library] Book folder updated",
+                extra={
+                    "document_id": existing_doc.id,
+                    "folder_name": folder_path.name,
+                    "page_count": page_count,
+                    "has_cover": bool(existing_doc.cover_image_path)
+                }
             )
             return existing_doc
 
@@ -347,8 +529,12 @@ class LibraryDocumentMixin:
         )
 
         self.db.add(new_doc)
-        self.db.commit()
-        self.db.refresh(new_doc)
+        try:
+            self.db.commit()
+            self.db.refresh(new_doc)
+        except Exception:
+            self.db.rollback()
+            raise
         # Cache will be populated on first access, no need to invalidate new document
 
         # Process cover image now that we have document ID
@@ -357,15 +543,22 @@ class LibraryDocumentMixin:
             cover_image_path = self._process_cover_image(first_page_image_path, new_doc.id)
             if cover_image_path:
                 new_doc.cover_image_path = cover_image_path
-                self.db.commit()
-                self.db.refresh(new_doc)
+                try:
+                    self.db.commit()
+                    self.db.refresh(new_doc)
+                except Exception:
+                    self.db.rollback()
+                    raise
 
         logger.info(
-            "[Library] Registered book folder: %s (ID: %s, Pages: %s, Cover: %s)",
-            folder_path.name,
-            new_doc.id,
-            page_count,
-            cover_image_path or "none"
+            "[Library] Book folder registered",
+            extra={
+                "document_id": new_doc.id,
+                "folder_name": folder_path.name,
+                "page_count": page_count,
+                "has_cover": bool(cover_image_path),
+                "title": new_doc.title
+            }
         )
         return new_doc
 
@@ -400,8 +593,15 @@ class LibraryDocumentMixin:
             document.cover_image_path = cover_image_path
 
         document.updated_at = datetime.utcnow()
-        self.db.commit()
-        self.db.refresh(document)
+        try:
+            self.db.commit()
+            self.db.refresh(document)
+        except Exception:
+            self.db.rollback()
+            raise
+
+        # Invalidate cache since metadata changed
+        self.invalidate_document_cache(document_id)
 
         return document
 
@@ -421,7 +621,20 @@ class LibraryDocumentMixin:
 
         document.is_active = False
         document.updated_at = datetime.utcnow()
-        self.db.commit()
+        try:
+            self.db.commit()
+        except Exception:
+            self.db.rollback()
+            raise
 
-        logger.info("[Library] Deleted document %s", document_id)
+        # Invalidate cache since document is deleted
+        self.invalidate_document_cache(document_id)
+
+        logger.info(
+            "[Library] Document deleted",
+            extra={
+                "document_id": document_id,
+                "title": document.title
+            }
+        )
         return True

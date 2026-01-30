@@ -9,6 +9,7 @@ Proprietary License
 """
 
 import logging
+import re
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 
@@ -59,20 +60,32 @@ class LibraryBookmarkMixin:
 
         if existing:
             # Update existing bookmark
-            existing.note = note
+            sanitized_note = self._sanitize_content(note) if note else None
+            existing.note = sanitized_note
             existing.updated_at = datetime.utcnow()
-            self.db.commit()
+            try:
+                self.db.commit()
+            except Exception:
+                self.db.rollback()
+                raise
             return existing
+
+        # Sanitize user content to prevent XSS
+        sanitized_note = self._sanitize_content(note) if note else None
 
         bookmark = LibraryBookmark(
             document_id=document_id,
             user_id=self.user_id,
             page_number=page_number,
-            note=note
+            note=sanitized_note
         )
         self.db.add(bookmark)
-        self.db.commit()
-        self.db.refresh(bookmark)
+        try:
+            self.db.commit()
+            self.db.refresh(bookmark)
+        except Exception:
+            self.db.rollback()
+            raise
         return bookmark
 
     def delete_bookmark(self, bookmark_id: int) -> bool:
@@ -97,7 +110,11 @@ class LibraryBookmarkMixin:
             return False
 
         self.db.delete(bookmark)
-        self.db.commit()
+        try:
+            self.db.commit()
+        except Exception:
+            self.db.rollback()
+            raise
         return True
 
     def get_bookmark(self, document_id: int, page_number: int) -> Optional[LibraryBookmark]:
@@ -178,3 +195,30 @@ class LibraryBookmarkMixin:
             LibraryBookmark.uuid == bookmark_uuid,
             LibraryBookmark.user_id == self.user_id
         ).first()
+
+    def _sanitize_content(self, content: Optional[str]) -> Optional[str]:
+        """
+        Sanitize user content to prevent XSS attacks.
+
+        Removes HTML tags and script content while preserving text.
+        Args:
+            content: User-provided content to sanitize
+        Returns:
+            Sanitized content or None if input was None
+        """
+        if not content:
+            return None
+
+        # Remove HTML tags
+        content = re.sub(r'<[^>]+>', '', content)
+        # Remove script tags and content
+        content = re.sub(r'<script[^>]*>.*?</script>', '', content, flags=re.IGNORECASE | re.DOTALL)
+        # Remove javascript: protocol
+        content = re.sub(r'javascript:', '', content, flags=re.IGNORECASE)
+        # Remove on* event handlers
+        content = re.sub(r'on\w+\s*=', '', content, flags=re.IGNORECASE)
+        # Remove control characters
+        content = re.sub(r'[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]', '', content)
+        # Normalize whitespace
+        content = re.sub(r'\s+', ' ', content)
+        return content.strip()

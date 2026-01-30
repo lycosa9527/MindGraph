@@ -70,6 +70,7 @@ class LibraryDocument(Base):
     __table_args__ = (
         Index('ix_library_documents_created', 'created_at'),
         Index('ix_library_documents_active', 'is_active'),
+        Index('ix_library_documents_pages_dir', 'pages_dir_path'),
     )
     
     def __repr__(self):
@@ -123,6 +124,7 @@ class LibraryDanmaku(Base):
     __table_args__ = (
         Index('ix_library_danmaku_document_page', 'document_id', 'page_number'),
         Index('ix_library_danmaku_created', 'created_at'),
+        Index('ix_library_danmaku_selected_text', 'selected_text'),
     )
     
     def __repr__(self):
@@ -225,7 +227,7 @@ class LibraryBookmark(Base):
     __table_args__ = (
         UniqueConstraint('document_id', 'user_id', 'page_number', name='uq_library_bookmark_doc_user_page'),
         Index('ix_library_bookmarks_user_created', 'user_id', 'created_at'),
-        Index('ix_library_bookmarks_document_page', 'document_id', 'page_number'),
+        Index('ix_library_bookmark_doc_page', 'document_id', 'page_number'),
         # Removed Index('ix_library_bookmarks_uuid', 'uuid') - redundant with unique=True on uuid column
     )
     

@@ -9,6 +9,7 @@ import { useRouter } from 'vue-router'
 
 import { BookOpen } from 'lucide-vue-next'
 
+import { LoginModal } from '@/components/auth'
 import { useNotifications } from '@/composables'
 import { useLibraryStore } from '@/stores/library'
 import { useAuthStore } from '@/stores/auth'
@@ -19,6 +20,8 @@ const router = useRouter()
 const libraryStore = useLibraryStore()
 const authStore = useAuthStore()
 const notify = useNotifications()
+
+const showLoginModal = ref(false)
 
 // Track which cover images have loaded successfully
 const coverImageLoaded = ref<Record<number, boolean>>({})
@@ -45,18 +48,44 @@ const otherBooks = computed(() => {
   })
 })
 
-// Fetch documents on mount
+// Fetch documents on mount (always fetch, even if not authenticated)
 onMounted(async () => {
-  await libraryStore.fetchDocuments(1, 20)
+  try {
+    await libraryStore.fetchDocuments(1, 20)
+  } catch (error) {
+    // Silently handle auth errors - user will see blurred empty state
+    // Don't show error notification for unauthenticated users
+    if (authStore.isAuthenticated) {
+      const errorMessage = error instanceof Error ? error.message : '加载文档列表失败'
+      notify.error(errorMessage)
+    }
+  }
 })
 
-// Watch for errors and show notifications
+// Watch for errors and show notifications (only if authenticated)
 watch(
   () => libraryStore.documentsError,
   (error) => {
-    if (error) {
+    if (error && authStore.isAuthenticated) {
       const errorMessage = error.message || '加载文档列表失败'
       notify.error(errorMessage)
+    }
+  }
+)
+
+// Watch for authentication changes and refresh documents when user logs in
+watch(
+  () => authStore.isAuthenticated,
+  async (isAuthenticated) => {
+    if (isAuthenticated) {
+      // Refresh documents after login
+      try {
+        await libraryStore.fetchDocuments(1, 20)
+      } catch (error) {
+        // Handle error silently or show notification
+        const errorMessage = error instanceof Error ? error.message : '加载文档列表失败'
+        notify.error(errorMessage)
+      }
     }
   }
 )
@@ -92,15 +121,24 @@ function handleCoverLoad(event: Event) {
 // Navigate to PDF viewer
 function openDocument(documentId: number) {
   if (!authStore.isAuthenticated) {
-    router.push({ name: 'Login', query: { redirect: `/library/${documentId}` } })
+    // Don't open modal, just prevent navigation
     return
   }
   router.push(`/library/${documentId}`)
 }
 
-// Navigate to login page
-function goToLogin() {
-  router.push({ name: 'Login', query: { redirect: '/library' } })
+// Open login modal
+function openLoginModal() {
+  showLoginModal.value = true
+}
+
+// Handle successful login
+function handleLoginSuccess() {
+  showLoginModal.value = false
+  // Fetch documents after login
+  if (authStore.isAuthenticated) {
+    libraryStore.fetchDocuments(1, 20)
+  }
 }
 </script>
 
@@ -227,23 +265,11 @@ function goToLogin() {
       </div>
     </div>
 
-    <!-- Login Overlay -->
-    <div
-      v-if="!authStore.isAuthenticated"
-      class="login-overlay absolute inset-0 flex items-center justify-center bg-stone-900/40 backdrop-blur-sm"
-    >
-      <div class="login-prompt bg-white rounded-lg p-8 shadow-xl max-w-md mx-4 text-center">
-        <BookOpen class="w-16 h-16 mx-auto mb-4 text-stone-400" />
-        <h2 class="text-xl font-semibold text-stone-900 mb-2">请先登录</h2>
-        <p class="text-stone-600 mb-6">登录后即可访问图书馆</p>
-        <button
-          class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium"
-          @click="goToLogin"
-        >
-          前往登录
-        </button>
-      </div>
-    </div>
+    <!-- Login Modal -->
+    <LoginModal
+      v-model:visible="showLoginModal"
+      @success="handleLoginSuccess"
+    />
   </div>
 </template>
 
@@ -254,34 +280,8 @@ function goToLogin() {
 }
 
 .library-content.blurred {
-  filter: blur(8px);
   pointer-events: none;
   user-select: none;
-}
-
-.login-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  /* Ensure notifications (z-index 3000+) render above this overlay */
-  z-index: 5;
-}
-
-.login-prompt {
-  animation: fadeIn 0.3s ease-in-out;
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
 }
 
 .book-card {

@@ -13,7 +13,7 @@ Proprietary License
 import logging
 import os
 from pathlib import Path
-from typing import Optional, Dict, List, Tuple
+from typing import Optional
 
 from sqlalchemy.orm import Session
 
@@ -39,13 +39,6 @@ class LibraryService(
     Documents are image-based (pages exported as images).
     """
 
-    # In-memory cache for available pages (per document)
-    # Key: document_id, Value: (page_numbers_list, cache_timestamp)
-    # Limited to 100 documents to prevent unbounded memory growth
-    _available_pages_cache: Dict[int, Tuple[List[int], float]] = {}
-    _cache_ttl = 300.0  # 5 minutes cache TTL
-    _max_cache_size = 100  # Maximum number of documents to cache
-
     def __init__(self, db: Session, user_id: Optional[int] = None):
         """
         Initialize service.
@@ -61,6 +54,13 @@ class LibraryService(
         storage_dir_env = os.getenv("LIBRARY_STORAGE_DIR", "./storage/library")
         self.storage_dir = Path(storage_dir_env).resolve()
         self.covers_dir = self.storage_dir / "covers"
+        
+        # Health check: Ensure storage directories exist and are writable
+        if not self.storage_dir.exists():
+            raise RuntimeError(f"Library storage directory does not exist: {self.storage_dir}")
+        if not os.access(self.storage_dir, os.W_OK):
+            raise RuntimeError(f"Library storage directory is not writable: {self.storage_dir}")
+        
         self.storage_dir.mkdir(parents=True, exist_ok=True)
         self.covers_dir.mkdir(parents=True, exist_ok=True)
         self.max_file_size = int(os.getenv("LIBRARY_MAX_FILE_SIZE", "104857600"))  # 100MB default

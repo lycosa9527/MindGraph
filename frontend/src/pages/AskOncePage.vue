@@ -12,24 +12,29 @@ import { ElButton, ElDialog, ElIcon, ElInput, ElOption, ElSelect } from 'element
 
 import { Plus } from '@element-plus/icons-vue'
 
-import { Send, Settings } from 'lucide-vue-next'
+import { BookOpen, Send, Settings } from 'lucide-vue-next'
 
 import { AskOncePanel } from '@/components/askonce'
 import { useLanguage } from '@/composables/useLanguage'
+import { useAuthStore } from '@/stores/auth'
 import { ASKONCE_PROMPT_TEMPLATES } from '@/config/askOncePrompts'
 import { type ModelId, useAskOnceStore } from '@/stores/askonce'
+import { useRouter } from 'vue-router'
 
 // ============================================================================
 // i18n
 // ============================================================================
 
 const { t, isZh } = useLanguage()
+const router = useRouter()
 
 // ============================================================================
 // Store
 // ============================================================================
 
 const store = useAskOnceStore()
+const authStore = useAuthStore()
+const showLoginModal = ref(false)
 
 // ============================================================================
 // State
@@ -77,6 +82,11 @@ async function streamFromModel(
   modelId: ModelId,
   messages: { role: string; content: string }[]
 ): Promise<string> {
+  if (!authStore.isAuthenticated) {
+    store.updateModelResponse(modelId, { status: 'error', error: 'Authentication required' })
+    return ''
+  }
+
   const controller = new AbortController()
   store.setAbortController(modelId, controller)
   store.updateModelResponse(modelId, { status: 'streaming', content: '', thinking: '' })
@@ -171,6 +181,11 @@ function processSSELines(modelId: ModelId, lines: string[]) {
 // ============================================================================
 
 async function sendToAllModels() {
+  if (!authStore.isAuthenticated) {
+    openLoginModal()
+    return
+  }
+
   const prompt = promptInput.value.trim()
   if (!prompt) return
 
@@ -250,13 +265,21 @@ function clearPromptDraft() {
   selectedTemplate.value = ''
 }
 
+function openLoginModal() {
+  showLoginModal.value = true
+}
+
+function handleLoginSuccess() {
+  showLoginModal.value = false
+}
+
 onUnmounted(() => {
   store.abortAllStreams()
 })
 </script>
 
 <template>
-  <div class="flex flex-col h-full bg-gray-50">
+  <div class="flex flex-col h-full bg-gray-50 relative">
     <!-- Header -->
     <header class="h-14 px-4 flex items-center justify-between bg-white border-b border-gray-200">
       <div class="flex items-center gap-3">
@@ -282,7 +305,10 @@ onUnmounted(() => {
     </header>
 
     <!-- Input Area -->
-    <section class="px-6 py-4 bg-white border-b border-gray-200">
+    <section
+      class="px-6 py-4 bg-white border-b border-gray-200"
+      :class="{ 'blurred': !authStore.isAuthenticated }"
+    >
       <div class="max-w-5xl mx-auto">
         <ElInput
           v-model="promptInput"
@@ -323,7 +349,10 @@ onUnmounted(() => {
     </section>
 
     <!-- Response Panels -->
-    <main class="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-4 p-4 pb-10 overflow-hidden min-h-0">
+    <main
+      class="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-4 p-4 pb-10 overflow-hidden min-h-0"
+      :class="{ 'blurred': !authStore.isAuthenticated }"
+    >
       <AskOncePanel
         v-for="modelId in MODEL_IDS"
         :key="modelId"
@@ -382,6 +411,12 @@ onUnmounted(() => {
         </div>
       </template>
     </ElDialog>
+
+    <!-- Login Modal -->
+    <LoginModal
+      v-model:visible="showLoginModal"
+      @success="handleLoginSuccess"
+    />
   </div>
 </template>
 
@@ -397,5 +432,11 @@ onUnmounted(() => {
   --el-button-text-color: #1c1917;
   font-weight: 500;
   border-radius: 9999px;
+}
+
+.blurred {
+  filter: blur(8px);
+  pointer-events: none;
+  user-select: none;
 }
 </style>

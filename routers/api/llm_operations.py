@@ -25,7 +25,7 @@ from agents.core.workflow import agent_graph_workflow_with_styles
 from models import GenerateRequest, LLMHealthResponse, Messages, get_request_language
 from models.domain.auth import User
 from services.llm import llm_service
-from utils.auth import get_current_user_or_api_key
+from utils.auth import get_current_user, get_current_user_or_api_key
 
 
 logger = logging.getLogger(__name__)
@@ -34,9 +34,14 @@ router = APIRouter(tags=["api"])
 
 
 @router.get('/llm/metrics')
-async def get_llm_metrics(model: Optional[str] = None):
+async def get_llm_metrics(
+    model: Optional[str] = None,
+    _current_user: User = Depends(get_current_user)
+):
     """
     Get performance metrics for LLM models.
+
+    Requires authentication to prevent information leakage about system internals.
 
     Query Parameters:
         model (optional): Specific model name to get metrics for
@@ -73,9 +78,13 @@ async def get_llm_metrics(model: Optional[str] = None):
 
 
 @router.get('/llm/health', response_model=LLMHealthResponse)
-async def llm_health_check():
+async def llm_health_check(
+    _current_user: User = Depends(get_current_user)
+):
     """
     Health check for LLM service.
+
+    Requires authentication to prevent information leakage about system internals.
 
     Returns:
         JSON with service health status including:

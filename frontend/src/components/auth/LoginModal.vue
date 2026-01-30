@@ -493,31 +493,31 @@ function handleBackdropClick(event: MouseEvent) {
     <Transition name="modal">
       <div
         v-if="isVisible"
-        class="fixed inset-0 z-[9999] flex items-center justify-center p-4"
+        class="fixed inset-0 z-[1000] flex items-center justify-center p-4"
         :class="{ 'pointer-events-auto': authStore.showSessionExpiredModal }"
         @click="handleBackdropClick"
       >
-        <!-- Backdrop with stronger blur for session expired -->
+        <!-- Backdrop -->
         <div
-          class="absolute inset-0 bg-stone-900/70 backdrop-blur-md"
+          class="absolute inset-0 bg-stone-900/70"
           :class="{ 'pointer-events-auto': authStore.showSessionExpiredModal }"
         />
 
         <!-- Modal -->
         <div class="relative w-full max-w-sm">
           <!-- Card -->
-          <div class="bg-white rounded-xl shadow-2xl overflow-hidden">
+          <div class="bg-white rounded-xl shadow-2xl overflow-hidden relative">
+            <!-- Close button (hidden for session expired modal) -->
+            <el-button
+              v-if="!authStore.showSessionExpiredModal"
+              class="close-btn"
+              :icon="Close"
+              circle
+              text
+              @click="closeModal"
+            />
             <!-- Header -->
-            <div class="px-8 pt-8 pb-4 text-center border-b border-stone-100 relative">
-              <!-- Close button (hidden for session expired modal) -->
-              <el-button
-                v-if="!authStore.showSessionExpiredModal"
-                class="close-btn"
-                :icon="Close"
-                circle
-                text
-                @click="closeModal"
-              />
+            <div class="px-8 pt-8 pb-4 text-center border-b border-stone-100">
               <div
                 class="w-12 h-12 bg-stone-900 rounded-lg mx-auto mb-4 flex items-center justify-center"
               >
@@ -1266,8 +1266,9 @@ function handleBackdropClick(event: MouseEvent) {
 /* Close button positioning and styling */
 .close-btn {
   position: absolute;
-  top: 16px;
-  right: 16px;
+  top: 12px;
+  right: 12px;
+  z-index: 10;
   --el-button-text-color: #a8a29e;
   --el-button-hover-text-color: #57534e;
   --el-button-hover-bg-color: #f5f5f4;

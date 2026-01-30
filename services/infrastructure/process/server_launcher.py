@@ -40,7 +40,7 @@ from services.infrastructure.utils.dependency_checker import (
     check_redis_installed,
     check_celery_installed,
     check_qdrant_installed,
-    check_postgresql_installed
+    check_postgresql_installed,
 )
 from services.infrastructure.process.process_manager import (
     start_redis_server,
@@ -50,7 +50,7 @@ from services.infrastructure.process.process_manager import (
     stop_celery_worker,
     stop_qdrant_server,
     stop_postgresql_server,
-    setup_signal_handlers
+    setup_signal_handlers,
 )
 from services.infrastructure.utils.port_manager import ShutdownErrorFilter
 
@@ -68,7 +68,9 @@ def run_server() -> None:
     4. Handle graceful shutdown
     """
     if uvicorn is None:
-        print("[ERROR] Uvicorn not installed. Install with: pip install uvicorn[standard]>=0.24.0")
+        print(
+            "[ERROR] Uvicorn not installed. Install with: pip install uvicorn[standard]>=0.24.0"
+        )
         sys.exit(1)
 
     if config is None:
@@ -78,7 +80,9 @@ def run_server() -> None:
     setup_signal_handlers()
 
     try:
-        script_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+        script_dir = os.path.dirname(
+            os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        )
         os.chdir(script_dir)
 
         os.makedirs("logs", exist_ok=True)
@@ -88,11 +92,13 @@ def run_server() -> None:
         debug = config.debug
         log_level = config.log_level.lower()
 
-        environment = 'development' if debug else 'production'
+        environment = "development" if debug else "production"
         reload = debug
 
-        default_workers = 1 if sys.platform == 'win32' else min(multiprocessing.cpu_count(), 4)
-        workers_str = os.getenv('UVICORN_WORKERS')
+        default_workers = (
+            1 if sys.platform == "win32" else min(multiprocessing.cpu_count(), 4)
+        )
+        workers_str = os.getenv("UVICORN_WORKERS")
         workers = int(workers_str) if workers_str else default_workers
 
         # Banner is now printed in setup_early_configuration() before logging
@@ -110,7 +116,9 @@ def run_server() -> None:
         print()
         print("Frontend (Vue SPA):")
         print("  Development: Run 'npm run dev' in frontend/ → http://localhost:3000")
-        print(f"  Production:  Run 'npm run build' in frontend/ → http://localhost:{port}")
+        print(
+            f"  Production:  Run 'npm run build' in frontend/ → http://localhost:{port}"
+        )
         print("=" * 80)
         print("Press Ctrl+C to stop the server")
         print()
@@ -138,8 +146,8 @@ def run_server() -> None:
         print()
 
         # 2. PostgreSQL (REQUIRED if DATABASE_URL contains postgresql)
-        db_url = os.getenv('DATABASE_URL', '')
-        using_postgresql = 'postgresql' in db_url.lower()
+        db_url = os.getenv("DATABASE_URL", "")
+        using_postgresql = "postgresql" in db_url.lower()
 
         if using_postgresql:
             print("[POSTGRESQL] Checking PostgreSQL installation...")
@@ -151,11 +159,15 @@ def run_server() -> None:
                 sys.exit(1)
             print(f"[POSTGRESQL] {message}")
             print("[POSTGRESQL] Starting PostgreSQL server...")
-            postgresql_server = start_postgresql_server()  # Verifies PostgreSQL is running (exits if not ready)
+            postgresql_server = (
+                start_postgresql_server()
+            )  # Verifies PostgreSQL is running (exits if not ready)
             if postgresql_server:
                 print("[POSTGRESQL] ✓ PostgreSQL server started as subprocess")
             else:
-                print("[POSTGRESQL] ✓ PostgreSQL server is running (external or systemd service)")
+                print(
+                    "[POSTGRESQL] ✓ PostgreSQL server is running (external or systemd service)"
+                )
             print()
 
             # Run data migration from SQLite to PostgreSQL if needed
@@ -163,24 +175,34 @@ def run_server() -> None:
             try:
                 if migrate_sqlite_to_postgresql is None:
                     print("[ERROR] Migration module not available")
-                    print("        Application cannot start without successful migration check.")
+                    print(
+                        "        Application cannot start without successful migration check."
+                    )
                     sys.exit(1)
                 success, error, stats = migrate_sqlite_to_postgresql()
                 if not success:
                     if error:
                         print(f"[ERROR] Migration failed: {error}")
-                        print("        Application cannot start without successful migration.")
+                        print(
+                            "        Application cannot start without successful migration."
+                        )
                         sys.exit(1)
                 elif stats:
                     print("[Migration] Migration completed successfully")
-                    print(f"[Migration] Tables migrated: {stats.get('tables_migrated', 0)}")
+                    print(
+                        f"[Migration] Tables migrated: {stats.get('tables_migrated', 0)}"
+                    )
                     print(f"[Migration] Total records: {stats.get('total_records', 0)}")
                 else:
-                    print("[Migration] No migration needed (already migrated or no SQLite database)")
+                    print(
+                        "[Migration] No migration needed (already migrated or no SQLite database)"
+                    )
             except Exception as e:
                 print(f"[ERROR] Migration check failed: {e}")
                 traceback.print_exc()
-                print("        Application cannot start without successful migration check.")
+                print(
+                    "        Application cannot start without successful migration check."
+                )
                 sys.exit(1)
             print()
 
@@ -190,17 +212,25 @@ def run_server() -> None:
             print("[QDRANT] Checking Qdrant installation...")
             is_installed, message = check_qdrant_installed()
             if not is_installed:
-                print("[ERROR] Qdrant is REQUIRED for Knowledge Space feature but not installed.")
+                print(
+                    "[ERROR] Qdrant is REQUIRED for Knowledge Space feature but not installed."
+                )
                 print(f"        {message}")
-                print("        Application cannot start without Qdrant when FEATURE_KNOWLEDGE_SPACE is enabled.")
+                print(
+                    "        Application cannot start without Qdrant when FEATURE_KNOWLEDGE_SPACE is enabled."
+                )
                 sys.exit(1)
             print(f"[QDRANT] {message}")
             print("[QDRANT] Starting Qdrant server...")
-            qdrant_server = start_qdrant_server()  # Verifies Qdrant is running (exits if not ready)
+            qdrant_server = (
+                start_qdrant_server()
+            )  # Verifies Qdrant is running (exits if not ready)
             if qdrant_server:
                 print("[QDRANT] ✓ Qdrant server started as subprocess")
             else:
-                print("[QDRANT] ✓ Qdrant server is running (external or systemd service)")
+                print(
+                    "[QDRANT] ✓ Qdrant server is running (external or systemd service)"
+                )
             print()
         else:
             print("[QDRANT] Skipping Qdrant (Knowledge Space feature is disabled)")
@@ -212,13 +242,19 @@ def run_server() -> None:
             print("[CELERY] Checking Celery installation...")
             is_installed, message = check_celery_installed()
             if not is_installed:
-                print("[ERROR] Celery is REQUIRED for Knowledge Space feature but not installed or dependencies are missing.")
+                print(
+                    "[ERROR] Celery is REQUIRED for Knowledge Space feature but not installed or dependencies are missing."
+                )
                 print(f"        {message}")
-                print("        Application cannot start without Celery when FEATURE_KNOWLEDGE_SPACE is enabled.")
+                print(
+                    "        Application cannot start without Celery when FEATURE_KNOWLEDGE_SPACE is enabled."
+                )
                 sys.exit(1)
             print(f"[CELERY] {message}")
             print("[CELERY] Starting Celery worker...")
-            celery_worker = start_celery_worker()  # Verifies Celery is running (exits if not ready)
+            celery_worker = (
+                start_celery_worker()
+            )  # Verifies Celery is running (exits if not ready)
             if celery_worker:
                 print("[CELERY] ✓ Celery worker started successfully")
             else:
@@ -254,7 +290,9 @@ def run_server() -> None:
                 except (ValueError, OSError):
                     pass
             else:
-                print("[DEBUG] main module not available at import time (will be imported by uvicorn)")
+                print(
+                    "[DEBUG] main module not available at import time (will be imported by uvicorn)"
+                )
 
             # Setup stderr filtering AFTER logging is configured
             # This ensures logging handlers are created before we wrap sys.stderr
@@ -274,7 +312,9 @@ def run_server() -> None:
             sys.stdout.flush()
 
             worker_count = 1 if reload else workers
-            print(f"[DEBUG] Uvicorn configuration: host={host}, port={port}, workers={worker_count}, reload={reload}")
+            print(
+                f"[DEBUG] Uvicorn configuration: host={host}, port={port}, workers={worker_count}, reload={reload}"
+            )
             sys.stdout.flush()
 
             uvicorn.run(
@@ -292,12 +332,16 @@ def run_server() -> None:
                 limit_concurrency=1000 if not reload else None,
             )
         except OSError as e:
-            if e.errno == 98 or "Address already in use" in str(e) or "address is already in use" in str(e).lower():
+            if (
+                e.errno == 98
+                or "Address already in use" in str(e)
+                or "address is already in use" in str(e).lower()
+            ):
                 print(f"\n[ERROR] Port {port} is already in use!")
                 print(f"        Another process is using port {port}.")
                 print("\n        Solutions:")
                 print(f"        1. Stop the process using port {port}:")
-                if sys.platform == 'win32':
+                if sys.platform == "win32":
                     print(f"           netstat -ano | findstr :{port}")
                     print("           taskkill /PID <PID> /F")
                 else:
