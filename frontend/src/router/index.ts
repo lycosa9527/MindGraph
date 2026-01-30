@@ -121,6 +121,12 @@ const routes: RouteRecordRaw[] = [
     meta: { layout: 'main' },
   },
   {
+    path: '/library/bookmark/:uuid',
+    name: 'LibraryBookmark',
+    component: () => import('@/pages/LibraryBookmarkPage.vue'),
+    meta: { layout: 'main', requiresAuth: true },
+  },
+  {
     path: '/dashboard',
     name: 'PublicDashboard',
     component: () => import('@/pages/PublicDashboardPage.vue'),

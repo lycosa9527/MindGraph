@@ -38,6 +38,7 @@ const replyContent = ref('')
 const creatingComment = ref(false)
 const creatingReply = ref<Record<number, boolean>>({})
 const deletingDanmaku = ref<Record<number, boolean>>({})
+const deletingReply = ref<Record<number, boolean>>({})
 
 // Get danmaku for current context
 const displayedDanmaku = computed(() => {
@@ -144,13 +145,13 @@ function cancelReply() {
   replyingTo.value = null
 }
 
-// Delete danmaku (only allowed for comment creator)
+// Delete danmaku (only allowed for comment creator or admin)
 async function deleteDanmaku(danmakuId: number) {
   if (deletingDanmaku.value[danmakuId]) return
   
-  // Double-check ownership before attempting deletion
+  // Double-check permission before attempting deletion
   const danmaku = displayedDanmaku.value.find((d) => d.id === danmakuId)
-  if (!danmaku || !isOwnDanmaku(danmaku)) {
+  if (!danmaku || !canDeleteDanmaku(danmaku)) {
     notify.error('只能删除自己的评论')
     return
   }
@@ -185,6 +186,54 @@ async function deleteDanmaku(danmakuId: number) {
 function isOwnDanmaku(danmaku: { user_id: number }) {
   if (!authStore.user?.id) return false
   return Number(authStore.user.id) === danmaku.user_id
+}
+
+// Check if current user can delete danmaku (owner or admin)
+function canDeleteDanmaku(danmaku: { user_id: number }) {
+  if (!authStore.user?.id) return false
+  const userId = Number(authStore.user.id)
+  const isOwner = userId === danmaku.user_id
+  const isAdmin = authStore.isAdmin
+  return isOwner || isAdmin
+}
+
+// Check if current user can delete reply (owner or admin)
+function canDeleteReply(reply: { user_id: number }) {
+  if (!authStore.user?.id) return false
+  const userId = Number(authStore.user.id)
+  const isOwner = userId === reply.user_id
+  const isAdmin = authStore.isAdmin
+  return isOwner || isAdmin
+}
+
+// Delete reply (only allowed for reply creator or admin)
+async function deleteReply(replyId: number, danmakuId: number) {
+  if (deletingReply.value[replyId]) return
+  
+  // Get reply to check permission
+  const replies = libraryStore.replies[danmakuId] || []
+  const reply = replies.find((r) => r.id === replyId)
+  if (!reply || !canDeleteReply(reply)) {
+    notify.error('只能删除自己的回复')
+    return
+  }
+  
+  deletingReply.value[replyId] = true
+  try {
+    await libraryStore.removeReply(replyId, danmakuId)
+    notify.success('回复已删除')
+    // Replies are automatically removed from store by removeReply
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : '删除回复失败'
+    if (errorMessage.includes('permission') || errorMessage.includes('权限') || errorMessage.includes('don\'t have permission')) {
+      notify.error('只能删除自己的回复')
+    } else {
+      notify.error(errorMessage)
+    }
+    console.error('[CommentPanel] Failed to delete reply:', error)
+  } finally {
+    deletingReply.value[replyId] = false
+  }
 }
 
 // Close panel
@@ -264,7 +313,7 @@ function closePanel() {
                 <span>回复</span>
               </ElButton>
               <ElButton
-                v-if="isOwnDanmaku(danmaku)"
+                v-if="canDeleteDanmaku(danmaku)"
                 text
                 size="small"
                 type="danger"
@@ -286,10 +335,22 @@ function closePanel() {
           <div
             v-for="reply in libraryStore.replies[danmaku.id]"
             :key="reply.id"
-            class="text-xs text-stone-600"
+            class="flex items-start gap-2 text-xs text-stone-600"
           >
-            <span class="font-medium">{{ reply.user.name || '匿名' }}:</span>
-            <span class="ml-1">{{ reply.content }}</span>
+            <div class="flex-1">
+              <span class="font-medium">{{ reply.user.name || '匿名' }}:</span>
+              <span class="ml-1">{{ reply.content }}</span>
+            </div>
+            <ElButton
+              v-if="canDeleteReply(reply)"
+              text
+              size="small"
+              type="danger"
+              :loading="deletingReply[reply.id]"
+              @click="deleteReply(reply.id, danmaku.id)"
+            >
+              <Trash2 class="w-3 h-3" />
+            </ElButton>
           </div>
         </div>
 

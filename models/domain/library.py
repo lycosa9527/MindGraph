@@ -25,10 +25,11 @@ def generate_uuid():
 
 class LibraryDocument(Base):
     """
-    Library PDF document model.
+    Library document model.
 
-    Represents a PDF document in the public library.
-    PDFs are managed manually (uploaded to storage/library/).
+    Represents a document in the public library.
+    Can be either a PDF document or an image-based document (pages exported as images).
+    Documents are managed manually (uploaded to storage/library/).
     """
     __tablename__ = "library_documents"
 
@@ -37,9 +38,14 @@ class LibraryDocument(Base):
     # Document info
     title = Column(String(200), nullable=False)
     description = Column(Text, nullable=True)
-    file_path = Column(String(500), nullable=False)  # Storage path
-    file_size = Column(Integer, nullable=False)  # Bytes
+    file_path = Column(String(500), nullable=False)  # Storage path (legacy/placeholder, not used for image-based docs)
+    file_size = Column(Integer, nullable=False)  # Bytes (legacy, not used for image-based docs)
     cover_image_path = Column(String(500), nullable=True)  # Cover image path
+    
+    # Image-based document support
+    use_images = Column(Boolean, default=False, nullable=False)  # Flag indicating if document uses images instead of PDF
+    pages_dir_path = Column(String(500), nullable=True)  # Path to directory containing page images
+    total_pages = Column(Integer, nullable=True)  # Total number of pages (for image-based docs)
     
     # Uploader info
     uploader_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)

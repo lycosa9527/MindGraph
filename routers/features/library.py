@@ -1,6 +1,6 @@
 """Library Router.
 
-API endpoints for public library feature with PDF viewing and danmaku comments.
+API endpoints for public library feature with image-based viewing and danmaku comments.
 
 Author: lycosa9527
 Made by: MindSpring Team
@@ -13,18 +13,16 @@ from typing import Optional, List
 from pathlib import Path
 import logging
 import os
-import tempfile
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status, UploadFile, File, Form, Request
-from fastapi.responses import FileResponse, Response
+from fastapi import APIRouter, Depends, HTTPException, Query, status, File, UploadFile
+from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from config.database import get_db
 from models.domain.auth import User
 from services.library import LibraryService
-from services.library.pdf_utils import resolve_library_path, validate_pdf_file
-from services.library.pdf_optimizer import should_optimize_pdf, optimize_pdf
+from services.library.library_path_utils import resolve_library_path
 from utils.auth import get_current_user
 from utils.auth.roles import is_admin
 
@@ -54,6 +52,9 @@ class DocumentResponse(BaseModel):
     title: str
     description: Optional[str]
     cover_image_path: Optional[str]
+    use_images: bool = False
+    pages_dir_path: Optional[str] = None
+    total_pages: Optional[int] = None
     views_count: int
     likes_count: int
     comments_count: int
@@ -125,7 +126,7 @@ async def list_documents(
     """
     List all library documents (public).
 
-    Returns paginated list of PDFs.
+    Returns paginated list of documents (image-based).
     """
     service = LibraryService(db)
     result = service.get_documents(page=page, page_size=page_size, search=search)
@@ -154,6 +155,9 @@ async def get_document(
         "title": document.title,
         "description": document.description,
         "cover_image_path": document.cover_image_path,
+        "use_images": document.use_images or False,
+        "pages_dir_path": document.pages_dir_path,
+        "total_pages": document.total_pages,
         "views_count": document.views_count,
         "likes_count": document.likes_count,
         "comments_count": document.comments_count,
@@ -165,21 +169,19 @@ async def get_document(
     }
 
 
-@router.get("/documents/{document_id}/file")
-@router.head("/documents/{document_id}/file")
-async def get_document_file(
+# PDF file serving endpoint removed - no longer needed for image-based viewing
+# Documents are now served as images via /documents/{id}/pages/{page} endpoint
+
+@router.get("/documents/{document_id}/pages/{page_number}")
+async def get_document_page_image(
     document_id: int,
-    request: Request,
+    page_number: int,
     db: Session = Depends(get_db)
 ):
     """
-    Serve PDF file (public).
-
-    Supports both GET and HEAD methods.
-    - GET: Returns the PDF file and increments view count
-    - HEAD: Returns headers only (for checking file accessibility)
+    Serve page image for image-based documents (public).
     
-    Supports range requests for PDF.js streaming.
+    Returns the image file for the specified page number.
     """
     service = LibraryService(db)
     document = service.get_document(document_id)
@@ -190,202 +192,219 @@ async def get_document_file(
             detail="Document not found"
         )
 
-    # Resolve file path using normalized path resolution
-    file_path = resolve_library_path(
-        document.file_path,
-        service.storage_dir,
-        Path.cwd()
-    )
+    if not document.use_images:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Document does not use images"
+        )
 
-    if not file_path or not file_path.exists():
-        logger.error("[Library] PDF file not found for document %s (ID: %s)",
-                    document.title, document_id)
-        logger.error("[Library] Stored file_path: %s", document.file_path)
-        logger.error("[Library] Storage dir: %s", service.storage_dir)
-
-        # List files in storage_dir for debugging
-        if service.storage_dir.exists():
-            files_in_storage = list(service.storage_dir.glob("*.pdf"))
-            logger.error("[Library] PDF files in storage_dir: %s",
-                        [f.name for f in files_in_storage])
-
+    # Get page image path
+    image_path = service.get_page_image_path(document_id, page_number)
+    if not image_path or not image_path.exists():
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"PDF file not found for document {document_id}"
+            detail=f"Page {page_number} image not found"
         )
 
-    # Get file size for logging and range request handling
-    file_size = file_path.stat().st_size
+    # Determine content type from file extension
+    content_type = "image/jpeg"
+    if image_path.suffix.lower() == ".png":
+        content_type = "image/png"
 
-    # Log request details for debugging
-    range_header = request.headers.get('Range', 'none')
-    method = request.method
-    # Use INFO level for Range requests to help debug server issues
-    log_level = logger.info if range_header != 'none' else logger.debug
-    log_level("[Library] Serving PDF file: %s (ID: %s, Size: %s bytes, Method: %s, Range: %s)",
-              document.title, document_id, file_size, method, range_header)
+    logger.info(
+        "[Library] Serving page image: Document %s, Page %s, File: %s",
+        document_id,
+        page_number,
+        image_path.name
+    )
 
-    # Only increment views for GET requests, not HEAD requests
-    if method == "GET":
-        service.increment_views(document_id)
-
-    # Handle HEAD requests - return headers only
-    if method == "HEAD":
-        return Response(
-            status_code=status.HTTP_200_OK,
-            headers={
-                'Accept-Ranges': 'bytes',
-                'Content-Length': str(file_size),
-                'Content-Type': 'application/pdf',
-                'Cache-Control': 'public, max-age=3600',
-            }
-        )
-
-    # Handle range requests manually to ensure proper support
-    # FileResponse should handle this, but we'll ensure it works correctly
-    # by checking Range header and responding appropriately
-    if range_header and range_header != 'none':
-        # Parse Range header: "bytes=start-end" or "bytes=start-"
-        try:
-            range_match = range_header.replace('bytes=', '').split('-')
-            start = int(range_match[0]) if range_match[0] else None
-            end = int(range_match[1]) if range_match[1] and range_match[1] else file_size - 1
-
-            if start is None:
-                # Suffix range: "bytes=-suffix_length"
-                start = file_size - end
-                end = file_size - 1
-
-            # Validate range
-            if start < 0 or end >= file_size or start > end:
-                return Response(
-                    status_code=status.HTTP_416_REQUESTED_RANGE_NOT_SATISFIABLE,
-                    headers={
-                        'Content-Range': f'bytes */{file_size}',
-                        'Accept-Ranges': 'bytes',
-                    }
-                )
-
-            # Calculate content length for range
-            content_length = end - start + 1
-
-            # Read the requested range from file
-            # Using synchronous I/O is fine here - range reads are fast
-            with open(file_path, 'rb') as f:
-                f.seek(start)
-                content = f.read(content_length)
-
-            logger.info("[Library] ✅ Range request handled: bytes=%s-%s/%s (length=%s, status=206)",
-                       start, end, file_size, content_length)
-
-            return Response(
-                content=content,
-                status_code=status.HTTP_206_PARTIAL_CONTENT,
-                headers={
-                    'Content-Range': f'bytes {start}-{end}/{file_size}',
-                    'Content-Length': str(content_length),
-                    'Content-Type': 'application/pdf',
-                    'Accept-Ranges': 'bytes',
-                    'Cache-Control': 'public, max-age=3600',
-                }
-            )
-        except (ValueError, IndexError) as e:
-            logger.warning("[Library] Invalid Range header '%s': %s", range_header, e)
-            # Fall through to full file response
-
-    # Full file request (no Range header) - use FileResponse
-    # FileResponse automatically handles range requests, but we've already
-    # handled them above for better control
     return FileResponse(
-        path=str(file_path),
-        media_type="application/pdf",
-        filename=document.title + ".pdf",
+        path=str(image_path),
+        media_type=content_type,
+        filename=f"{document.title}_page_{page_number}{image_path.suffix}",
         headers={
-            'Accept-Ranges': 'bytes',
             'Cache-Control': 'public, max-age=3600',
         }
     )
 
 
-@router.post("/documents")
-async def upload_document(
-    file: UploadFile = File(...),
-    title: str = Form(...),
-    description: Optional[str] = Form(None),
+# PDF upload endpoint removed - no longer needed for image-based viewing
+# Documents are now registered via register_image_folders.py script
+# Users manually export PDFs to images and place folders in storage/library/
+
+class BookRegisterRequest(BaseModel):
+    """Request model for registering a book folder"""
+    folder_path: str = Field(
+        ...,
+        description="Path to folder containing page images (relative to storage/library or absolute)"
+    )
+    title: Optional[str] = Field(
+        None,
+        min_length=1,
+        max_length=200,
+        description="Book title (defaults to folder name)"
+    )
+    description: Optional[str] = Field(None, max_length=2000, description="Book description")
+
+
+class BookRegisterBatchRequest(BaseModel):
+    """Request model for batch registering book folders"""
+    folder_paths: List[str] = Field(..., description="List of folder paths to register")
+
+
+@router.post("/books/register", response_model=DocumentResponse)
+async def register_book(
+    data: BookRegisterRequest,
     current_user: User = Depends(require_admin),
     db: Session = Depends(get_db)
 ):
     """
-    Upload a PDF document (admin only, for future admin panel).
+    Register a book folder as a library document (admin only).
+
+    The folder should contain page images with naming patterns like:
+    - page_001.jpg, page_002.jpg, ...
+    - 001.jpg, 002.jpg, ...
+    - page1.jpg, page2.jpg, ...
+    - 1.jpg, 2.jpg, ...
+
+    The folder can be:
+    - A relative path from storage/library/ (e.g., "my_book")
+    - An absolute path to a folder
     """
     service = LibraryService(db, user_id=current_user.id)
 
+    # Resolve folder path
+    folder_path = Path(data.folder_path)
+
+    # If relative path, try resolving from storage/library
+    if not folder_path.is_absolute():
+        # Try relative to storage/library
+        potential_path = service.storage_dir / folder_path
+        if potential_path.exists() and potential_path.is_dir():
+            folder_path = potential_path
+        else:
+            # Try relative to current working directory
+            potential_path = Path.cwd() / folder_path
+            if potential_path.exists() and potential_path.is_dir():
+                folder_path = potential_path
+            else:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=f"Folder not found: {data.folder_path}"
+                )
+    else:
+        # Absolute path - verify it exists
+        if not folder_path.exists() or not folder_path.is_dir():
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Folder not found: {data.folder_path}"
+            )
+
     try:
-        with tempfile.NamedTemporaryFile(delete=False) as tmp_file:
-            content = await file.read()
-            tmp_file.write(content)
-            tmp_path = tmp_file.name
-
-        if not file.filename.lower().endswith('.pdf'):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Only PDF files are supported"
-            )
-
-        # Validate PDF file (magic bytes check)
-        is_valid, error_msg = validate_pdf_file(Path(tmp_path))
-        if not is_valid:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Invalid PDF file: {error_msg}"
-            )
-
-        # Check and optimize PDF if xref is at end
-        pdf_path = Path(tmp_path)
-        should_opt, reason, _ = should_optimize_pdf(pdf_path)
-        if should_opt:
-            logger.info(
-                "[Library] Optimizing uploaded PDF %s: %s",
-                file.filename,
-                reason
-            )
-            success, error, stats = optimize_pdf(pdf_path, backup=False)
-            if success and stats['was_optimized']:
-                logger.info(
-                    "[Library] Optimized %s: %s -> %s bytes",
-                    file.filename,
-                    f"{stats['original_size']:,}",
-                    f"{stats['new_size']:,}"
-                )
-            elif not success:
-                logger.warning(
-                    "[Library] Failed to optimize uploaded PDF %s: %s",
-                    file.filename,
-                    error
-                )
-
-        # Get file size after potential optimization
-        file_size = pdf_path.stat().st_size
-
-        document = service.upload_document(
-            file_name=file.filename,
-            file_path=tmp_path,
-            file_size=file_size,
-            title=title,
-            description=description
+        document = service.register_book_folder(
+            folder_path=folder_path,
+            title=data.title,
+            description=data.description
         )
 
         return {
             "id": document.id,
             "title": document.title,
-            "message": "Document uploaded successfully"
+            "description": document.description,
+            "cover_image_path": document.cover_image_path,
+            "use_images": document.use_images or False,
+            "pages_dir_path": document.pages_dir_path,
+            "total_pages": document.total_pages,
+            "views_count": document.views_count,
+            "likes_count": document.likes_count,
+            "comments_count": document.comments_count,
+            "created_at": document.created_at.isoformat() if document.created_at else "",
+            "uploader": {
+                "id": document.uploader_id,
+                "name": document.uploader.name if document.uploader else None,
+            }
         }
 
     except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e
-    except Exception as e:
-        logger.error("[Library] Upload failed: %s", e)
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Upload failed") from e
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        ) from e
+
+
+@router.post("/books/register-batch")
+async def register_books_batch(
+    data: BookRegisterBatchRequest,
+    current_user: User = Depends(require_admin),
+    db: Session = Depends(get_db)
+):
+    """
+    Register multiple book folders at once (admin only).
+
+    Accepts a list of folder paths and registers each one.
+    Returns a summary of successful and failed registrations.
+    """
+    service = LibraryService(db, user_id=current_user.id)
+
+    results = {
+        "successful": [],
+        "failed": []
+    }
+
+    for folder_path_str in data.folder_paths:
+        try:
+            # Resolve folder path
+            folder_path = Path(folder_path_str)
+
+            # If relative path, try resolving from storage/library
+            if not folder_path.is_absolute():
+                potential_path = service.storage_dir / folder_path
+                if potential_path.exists() and potential_path.is_dir():
+                    folder_path = potential_path
+                else:
+                    potential_path = Path.cwd() / folder_path
+                    if potential_path.exists() and potential_path.is_dir():
+                        folder_path = potential_path
+                    else:
+                        results["failed"].append({
+                            "folder_path": folder_path_str,
+                            "error": f"Folder not found: {folder_path_str}"
+                        })
+                        continue
+            else:
+                if not folder_path.exists() or not folder_path.is_dir():
+                    results["failed"].append({
+                        "folder_path": folder_path_str,
+                        "error": f"Folder not found: {folder_path_str}"
+                    })
+                    continue
+
+            document = service.register_book_folder(folder_path=folder_path)
+            results["successful"].append({
+                "folder_path": folder_path_str,
+                "document_id": document.id,
+                "title": document.title,
+                "total_pages": document.total_pages
+            })
+
+        except ValueError as e:
+            results["failed"].append({
+                "folder_path": folder_path_str,
+                "error": str(e)
+            })
+        except Exception as e:
+            logger.error("[Library] Error registering folder %s: %s", folder_path_str, e, exc_info=True)
+            results["failed"].append({
+                "folder_path": folder_path_str,
+                "error": f"Unexpected error: {str(e)}"
+            })
+
+    return {
+        "total": len(data.folder_paths),
+        "successful_count": len(results["successful"]),
+        "failed_count": len(results["failed"]),
+        "results": results
+    }
 
 
 @router.put("/documents/{document_id}")
@@ -485,9 +504,8 @@ async def get_cover_image(
     """
     Serve cover image (public).
     
-    Supports both naming patterns:
-    - {document_id}_cover.{ext} (from API upload)
-    - {pdf_name}_cover.png (from extraction script)
+    Supports naming pattern:
+    - {document_id}_cover.{ext} (from API upload or manual placement)
     """
     service = LibraryService(db)
     document = service.get_document(document_id)
@@ -517,16 +535,12 @@ async def get_cover_image(
                 cover_path = potential_path
                 break
 
-    # If still not found, try pdf_name pattern (for extracted covers)
+    # If still not found, try document title pattern (for manually added covers)
     if not cover_path:
-        pdf_path_resolved = resolve_library_path(
-            document.file_path,
-            service.storage_dir,
-            Path.cwd()
-        )
-        if pdf_path_resolved:
-            pdf_name = pdf_path_resolved.stem
-            potential_path = service.covers_dir / f"{pdf_name}_cover.png"
+        # Use document title as fallback pattern
+        doc_title_safe = "".join(c for c in document.title if c.isalnum() or c in (' ', '-', '_')).strip()
+        if doc_title_safe:
+            potential_path = service.covers_dir / f"{doc_title_safe}_cover.png"
             if potential_path.exists():
                 cover_path = potential_path
 
@@ -766,10 +780,12 @@ async def delete_danmaku(
     db: Session = Depends(get_db)
 ):
     """
-    Delete own danmaku.
+    Delete danmaku.
+    
+    Only the creator or admin can delete.
     """
     service = LibraryService(db, user_id=current_user.id)
-    deleted = service.delete_danmaku(danmaku_id)
+    deleted = service.delete_danmaku(danmaku_id, is_admin=is_admin(current_user))
 
     if not deleted:
         raise HTTPException(
@@ -787,10 +803,15 @@ async def delete_reply(
     db: Session = Depends(get_db)
 ):
     """
+    Delete reply.
+    
+    Only the creator or admin can delete.
+    """
+    """
     Delete own reply.
     """
     service = LibraryService(db, user_id=current_user.id)
-    deleted = service.delete_reply(reply_id)
+    deleted = service.delete_reply(reply_id, is_admin=is_admin(current_user))
 
     if not deleted:
         raise HTTPException(
@@ -815,6 +836,12 @@ async def create_bookmark(
     """
     Create or update a bookmark for a document page.
     """
+    logger.info(
+        "Creating bookmark: document_id=%s, page_number=%s, user_id=%s",
+        document_id,
+        data.page_number,
+        current_user.id
+    )
     service = LibraryService(db, user_id=current_user.id)
 
     try:
@@ -822,6 +849,11 @@ async def create_bookmark(
             document_id=document_id,
             page_number=data.page_number,
             note=data.note
+        )
+        logger.info(
+            "Bookmark created successfully: id=%s, uuid=%s",
+            bookmark.id,
+            bookmark.uuid
         )
 
         return {
@@ -837,6 +869,7 @@ async def create_bookmark(
             }
         }
     except ValueError as e:
+        logger.error("Failed to create bookmark: %s", e)
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e
 
 
@@ -868,14 +901,16 @@ async def get_bookmark(
     """
     Get bookmark for a specific document page.
 
-    Returns null if bookmark doesn't exist (200 OK, not 404).
-    This is a valid state, not an error condition.
+    Returns 404 if bookmark doesn't exist or doesn't belong to the user.
     """
     service = LibraryService(db, user_id=current_user.id)
     bookmark = service.get_bookmark(document_id, page_number)
 
     if not bookmark:
-        return None
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Bookmark not found"
+        )
 
     return {
         "id": bookmark.id,

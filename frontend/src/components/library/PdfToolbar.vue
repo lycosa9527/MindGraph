@@ -6,11 +6,8 @@ import { computed } from 'vue'
 import {
   ZoomIn,
   ZoomOut,
-  ArrowLeftRight,
-  Maximize,
   Printer,
   RotateCw,
-  Search,
   Bookmark,
   MapPin,
 } from 'lucide-vue-next'
@@ -32,11 +29,8 @@ interface Emits {
   (e: 'go-to-page', page: number): void
   (e: 'zoom-in'): void
   (e: 'zoom-out'): void
-  (e: 'fit-width'): void
-  (e: 'fit-page'): void
   (e: 'rotate'): void
   (e: 'print'): void
-  (e: 'search'): void
   (e: 'toggle-bookmark'): void
   (e: 'toggle-pin-mode'): void
 }
@@ -101,28 +95,6 @@ function handlePageInput(cur: number | undefined, prev: number | undefined) {
       </ElButton>
     </div>
 
-    <!-- Fit Controls -->
-    <div class="flex items-center gap-1 border-l border-stone-200 pl-2 ml-2">
-      <ElButton
-        text
-        size="small"
-        class="toolbar-button"
-        title="适应宽度"
-        @click="emit('fit-width')"
-      >
-        <ArrowLeftRight class="w-4 h-4" />
-      </ElButton>
-      <ElButton
-        text
-        size="small"
-        class="toolbar-button"
-        title="适应页面"
-        @click="emit('fit-page')"
-      >
-        <Maximize class="w-4 h-4" />
-      </ElButton>
-    </div>
-
     <!-- Action Controls -->
     <div class="flex items-center gap-1 border-l border-stone-200 pl-2 ml-2">
       <ElButton
@@ -155,15 +127,6 @@ function handlePageInput(cur: number | undefined, prev: number | undefined) {
         @click="emit('rotate')"
       >
         <RotateCw class="w-4 h-4" />
-      </ElButton>
-      <ElButton
-        text
-        size="small"
-        class="toolbar-button"
-        title="搜索"
-        @click="emit('search')"
-      >
-        <Search class="w-4 h-4" />
       </ElButton>
       <ElButton
         text

@@ -5,6 +5,45 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.17.0] - 2026-01-30
+
+### Added
+- **Image Viewer Component**: New `ImageViewer.vue` component for displaying pre-rendered page images with zoom, navigation, rotation, and pin-based comment overlay support. Supports lazy loading and preloading of adjacent pages.
+- **Image Path Resolution Service**: New `image_path_resolver.py` module for resolving page image paths from folder paths and page numbers. Supports multiple naming patterns (page_001.jpg, 001.jpg, page1.jpg, etc.).
+- **Library Path Utilities**: New `library_path_utils.py` module for path normalization and cross-platform compatibility utilities.
+- **Image Folder Registration Script**: New `register_image_folders.py` script for scanning and registering existing image folders as library documents with preview mode (dry-run) support.
+- **Library Table Management Script**: New `clear_library_tables.py` script for clearing library tables in PostgreSQL development environment.
+- **PostgreSQL Configuration Modules**: New PostgreSQL management modules (`_postgresql_config.py`, `_postgresql_helpers.py`, `_postgresql_init.py`, `_postgresql_paths.py`) for improved database lifecycle management.
+- **Library Bookmark Page**: New `LibraryBookmarkPage.vue` page component for bookmark management.
+- **Image-Based Document Support**: Added support for image-based documents in library system with `use_images`, `pages_dir_path`, and `total_pages` fields in `LibraryDocument` model.
+- **Page Image API Endpoint**: New `GET /api/library/documents/{id}/pages/{page}` endpoint for serving page images.
+
+### Changed
+- **Library Viewer Page**: Updated `LibraryViewerPage.vue` to support both PDF and image viewing modes with automatic mode detection based on document `use_images` flag.
+- **Library Service**: Refactored `library_service.py` to support image-based document management, including image folder registration and page counting.
+- **Library Router**: Updated library router endpoints to support image-based documents, including page image serving and document metadata updates.
+- **Library Store**: Enhanced `library.ts` store with image-related functionality and improved document management.
+- **API Client**: Updated `apiClient.ts` with image URL helpers (`getLibraryDocumentPageImageUrl`) and updated type definitions for image-based documents.
+- **Comment Panel**: Updated `CommentPanel.vue` component to work seamlessly with both PDF and image viewers.
+- **Danmaku Overlay**: Updated `DanmakuOverlay.vue` component to support image viewer coordinate system.
+- **PostgreSQL Manager**: Refactored `_postgresql_manager.py` into modular components for better maintainability and separation of concerns.
+- **Application Lifespan**: Updated application lifecycle management to remove PDF auto-import scheduler dependencies.
+- **Library Module**: Updated `services/library/__init__.py` to export new image-related services and utilities.
+
+### Removed
+- **PDF Viewer Component**: Removed `PdfViewer.vue` component in favor of image-based viewing system.
+- **PDF Import Services**: Removed PDF-related services including `pdf_importer.py`, `pdf_optimizer.py`, `pdf_cover_extractor.py`, and `pdf_utils.py`.
+- **PDF Analysis Scripts**: Removed PDF analysis and testing scripts (`analyze_pdf_structure.py`, `analyze_pdf_structure_simple.py`, `compare_pdf_environments.py`, `diagnose_pdf_xref.py`, `fix_pdf_xref_issues.py`, `test_pdf_js_behavior.py`, `test_pdf_optimizer.py`, `test_pdf_text_extraction.py`, `test_range_requests.py`).
+- **PDF Import Scripts**: Removed `library_import.py` and `linearize_pdfs.py` scripts.
+- **Auto Import Scheduler**: Removed `auto_import_scheduler.py` service for automatic PDF import.
+- **Sync Validator**: Removed `sync_validator.py` service for PDF sync validation.
+- **WSL Documentation**: Removed `README_WSL.md` documentation file.
+- **PDF Toolbar**: Removed `PdfToolbar.vue` component (functionality integrated into viewer components).
+
+### Fixed
+- **Library Comments History**: Fixed and improved `LibraryCommentsHistory.vue` component functionality.
+- **Cross-Platform Path Handling**: Improved path normalization for better cross-platform compatibility.
+
 ## [5.16.0] - 2026-01-30
 
 ### Added

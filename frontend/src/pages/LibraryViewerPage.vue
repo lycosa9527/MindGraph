@@ -1,19 +1,18 @@
 <script setup lang="ts">
 /**
- * LibraryViewerPage - PDF viewer with danmaku and comments
- * Combines PdfViewer, DanmakuOverlay, and CommentPanel components
+ * LibraryViewerPage - Image viewer with danmaku and comments
+ * Combines ImageViewer, DanmakuOverlay, and CommentPanel components
  */
-import { onMounted, onUnmounted, computed, watch, ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { onMounted, onUnmounted, computed, watch, ref, nextTick } from 'vue'
+import { useRoute, useRouter, onBeforeRouteLeave } from 'vue-router'
 
 import { ElButton, ElIcon } from 'element-plus'
 import { ArrowLeft } from 'lucide-vue-next'
 
 import { useLibraryStore } from '@/stores/library'
 import { useNotifications, useLanguage } from '@/composables'
-import { getLibraryDocumentFileUrl, createBookmark, getBookmark, deleteBookmark, type CreateBookmarkData } from '@/utils/apiClient'
 
-import PdfViewer from '@/components/library/PdfViewer.vue'
+import ImageViewer from '@/components/library/ImageViewer.vue'
 import PdfToolbar from '@/components/library/PdfToolbar.vue'
 import DanmakuOverlay from '@/components/library/DanmakuOverlay.vue'
 import CommentPanel from '@/components/library/CommentPanel.vue'
@@ -24,18 +23,33 @@ const libraryStore = useLibraryStore()
 const notify = useNotifications()
 const { isZh } = useLanguage()
 
-const pdfViewerRef = ref<InstanceType<typeof PdfViewer> | null>(null)
+const imageViewerRef = ref<InstanceType<typeof ImageViewer> | null>(null)
 
 const documentId = computed(() => parseInt(route.params.id as string))
-const pdfUrl = computed(() => {
-  if (!libraryStore.currentDocument) return ''
-  return getLibraryDocumentFileUrl(libraryStore.currentDocument.id)
+
+// Get initial page from query parameter
+const initialPageFromQuery = computed(() => {
+  const pageParam = route.query.page
+  if (pageParam) {
+    const pageNum = parseInt(pageParam as string, 10)
+    if (!isNaN(pageNum) && pageNum >= 1) {
+      return pageNum
+    }
+  }
+  return 1
 })
 
-const currentPage = computed(() => pdfViewerRef.value?.currentPage || 1)
-const totalPages = computed(() => pdfViewerRef.value?.totalPages || 0)
-const zoom = computed(() => pdfViewerRef.value?.zoom || 1.0)
-const pinMode = computed(() => pdfViewerRef.value?.pinMode ?? false)
+// Check if document uses images (should always be true now)
+const useImages = computed(() => libraryStore.currentDocument?.use_images ?? false)
+const totalPagesFromDoc = computed(() => libraryStore.currentDocument?.total_pages ?? 0)
+
+// Get viewer ref (ImageViewer only)
+const viewerRef = computed(() => imageViewerRef.value)
+
+const currentPage = computed(() => viewerRef.value?.currentPage || 1)
+const totalPages = computed(() => totalPagesFromDoc.value || 0)
+const zoom = computed(() => viewerRef.value?.zoom || 1.0)
+const pinMode = computed(() => viewerRef.value?.pinMode ?? false)
 const canGoPrevious = computed(() => currentPage.value > 1)
 const canGoNext = computed(() => currentPage.value < totalPages.value)
 
@@ -63,7 +77,7 @@ watch(currentPage, async () => {
 async function checkBookmarkStatus() {
   if (!documentId.value || !currentPage.value) return
   try {
-    const bookmark = await getBookmark(documentId.value, currentPage.value)
+    const bookmark = await libraryStore.getBookmark(documentId.value, currentPage.value)
     if (bookmark) {
       isBookmarked.value = true
       bookmarkId.value = bookmark.id
@@ -71,57 +85,232 @@ async function checkBookmarkStatus() {
       isBookmarked.value = false
       bookmarkId.value = null
     }
-  } catch {
-    isBookmarked.value = false
-    bookmarkId.value = null
+  } catch (error) {
+    // 404 means bookmark doesn't exist - this is fine, just mark as not bookmarked
+    if (error instanceof Error && error.message.includes('404')) {
+      isBookmarked.value = false
+      bookmarkId.value = null
+    } else {
+      // Other errors - log but don't show error to user for status check
+      console.error('[LibraryViewerPage] Failed to check bookmark status:', error)
+      isBookmarked.value = false
+      bookmarkId.value = null
+    }
   }
 }
 
 // Handle bookmark toggle
 async function handleToggleBookmark() {
-  if (!documentId.value || !currentPage.value) return
-  
+  console.log('[LibraryViewerPage] handleToggleBookmark called', {
+    documentId: documentId.value,
+    currentPage: currentPage.value,
+    isBookmarked: isBookmarked.value,
+    bookmarkId: bookmarkId.value,
+  })
+
+  if (!documentId.value || !currentPage.value) {
+    console.warn('[LibraryViewerPage] Cannot toggle bookmark: missing documentId or currentPage')
+    return
+  }
+
   try {
     if (isBookmarked.value && bookmarkId.value) {
       // Delete bookmark
-      await deleteBookmark(bookmarkId.value)
+      console.log('[LibraryViewerPage] Deleting bookmark:', bookmarkId.value)
+      await libraryStore.deleteBookmark(bookmarkId.value)
       isBookmarked.value = false
       bookmarkId.value = null
       notify.success(isZh.value ? '书签已删除' : 'Bookmark removed')
     } else {
       // Create bookmark
-      const data: CreateBookmarkData = {
+      const data = {
         page_number: currentPage.value,
       }
-      const result = await createBookmark(documentId.value, data)
+      console.log('[LibraryViewerPage] Creating bookmark:', data)
+      const bookmark = await libraryStore.createBookmark(documentId.value, data)
+      console.log('[LibraryViewerPage] Bookmark created:', bookmark)
       isBookmarked.value = true
-      bookmarkId.value = result.bookmark.id
+      bookmarkId.value = bookmark.id
       notify.success(isZh.value ? '书签已添加' : 'Bookmark added')
     }
   } catch (error) {
     console.error('[LibraryViewerPage] Failed to toggle bookmark:', error)
-    notify.error(isZh.value ? '操作失败' : 'Operation failed')
+    if (error instanceof Error) {
+      notify.error(error.message || (isZh.value ? '操作失败' : 'Operation failed'))
+    } else {
+      notify.error(isZh.value ? '操作失败' : 'Operation failed')
+    }
   }
+}
+
+// Track if we've already navigated to avoid duplicate navigation
+const hasNavigatedToPage = ref(false)
+
+// Navigate to page from query parameter
+async function navigateToPageFromQuery() {
+  const pageParam = route.query.page
+  if (!pageParam) {
+    hasNavigatedToPage.value = false
+    return
+  }
+
+  const pageNum = parseInt(pageParam as string, 10)
+  if (isNaN(pageNum) || pageNum < 1) return
+
+  // Wait for document to be loaded and totalPages to be available
+  if (!libraryStore.currentDocument || totalPages.value === 0) {
+    console.log('[LibraryViewerPage] Waiting for document to load...')
+    return
+  }
+
+  // Check if page is valid
+  if (pageNum > totalPages.value) {
+    console.warn(`[LibraryViewerPage] Page ${pageNum} exceeds total pages ${totalPages.value}`)
+    return
+  }
+
+  // Wait for viewer to be ready
+  await nextTick()
+  let retries = 0
+  while (!viewerRef.value && retries < 30) {
+    await new Promise((resolve) => setTimeout(resolve, 100))
+    retries++
+  }
+
+  if (!viewerRef.value) {
+    console.error('[LibraryViewerPage] Viewer not ready after waiting')
+    return
+  }
+
+  // Check if we're already on the correct page
+  if (currentPage.value === pageNum) {
+    console.log(`[LibraryViewerPage] Already on page ${pageNum}`)
+    return
+  }
+
+  // If we've already navigated and we're on the wrong page, don't navigate again
+  // (this prevents multiple navigation calls from different watchers)
+  if (hasNavigatedToPage.value && currentPage.value !== pageNum) {
+    console.log(`[LibraryViewerPage] Navigation already attempted, waiting...`)
+    return
+  }
+
+  // Wait a bit more for ImageViewer to finish initializing
+  await new Promise((resolve) => setTimeout(resolve, 200))
+
+  // Navigate to the specified page
+  console.log(`[LibraryViewerPage] Navigating to page ${pageNum} from query parameter`)
+  hasNavigatedToPage.value = true
+  viewerRef.value.goToPage(pageNum)
+  
+  // Check bookmark status after navigating
+  await nextTick()
+  await checkBookmarkStatus()
 }
 
 // Fetch document on mount
 onMounted(async () => {
-  await libraryStore.fetchDocument(documentId.value)
-  await checkBookmarkStatus()
+  try {
+    await libraryStore.fetchDocument(documentId.value)
+
+    // Check if document was loaded successfully
+    if (!libraryStore.currentDocument) {
+      console.error('[LibraryViewerPage] Document not found:', documentId.value)
+      router.replace({ name: 'NotFound' })
+      return
+    }
+
+    // Wait for viewer to mount and initialize with initialPage prop
+    // The ImageViewer will use the initialPage prop to load the correct page
+    // We don't need to call navigateToPageFromQuery here since initialPage prop handles it
+    // But we'll check bookmark status after a short delay
+    if (route.query.page) {
+      // Wait for viewer to initialize with initialPage prop
+      await nextTick()
+      setTimeout(async () => {
+        // Verify we're on the correct page, navigate if needed
+        await navigateToPageFromQuery()
+        await checkBookmarkStatus()
+      }, 600)
+    } else {
+      // No page param - check bookmark status for current page
+      await checkBookmarkStatus()
+    }
+  } catch (error) {
+    console.error('[LibraryViewerPage] Failed to load document:', error)
+    // Check if document error indicates 404
+    if (libraryStore.currentDocumentError) {
+      const errorMsg = libraryStore.currentDocumentError.message.toLowerCase()
+      if (errorMsg.includes('404') || errorMsg.includes('not found')) {
+        router.replace({ name: 'NotFound' })
+        return
+      }
+    }
+    // If document doesn't exist, navigate to 404
+    if (error instanceof Error && (error.message.includes('404') || error.message.includes('not found'))) {
+      router.replace({ name: 'NotFound' })
+    }
+  }
 })
+
+// Watch for route query changes (e.g., when clicking bookmark)
+watch(
+  () => route.query.page,
+  async (newPage, oldPage) => {
+    // Reset navigation flag when page query changes
+    if (newPage !== oldPage) {
+      hasNavigatedToPage.value = false
+    }
+    if (newPage && libraryStore.currentDocument && viewerRef.value) {
+      await navigateToPageFromQuery()
+    }
+  }
+)
+
+// Watch for document changes to handle navigation when document loads
+watch(
+  () => libraryStore.currentDocument,
+  async (newDoc) => {
+    if (newDoc && route.query.page && viewerRef.value && !hasNavigatedToPage.value) {
+      // Wait for viewer to initialize with initialPage prop
+      await nextTick()
+      setTimeout(async () => {
+        await navigateToPageFromQuery()
+      }, 500)
+    }
+  }
+)
+
+// Watch for viewer to become available and navigate if needed
+watch(
+  () => viewerRef.value,
+  async (newViewer) => {
+    if (newViewer && route.query.page && libraryStore.currentDocument && !hasNavigatedToPage.value) {
+      // Wait a bit for ImageViewer to finish initializing with initialPage prop
+      setTimeout(async () => {
+        await navigateToPageFromQuery()
+      }, 300)
+    }
+  }
+)
 
 // Cleanup on unmount
 onUnmounted(() => {
   libraryStore.clearCurrentDocument()
 })
 
-// Watch for errors and show notifications
+// Watch for errors and show notifications or navigate to 404
 watch(
   () => libraryStore.currentDocumentError,
   (error) => {
     if (error) {
       const errorMessage = error.message || '加载文档失败'
-      notify.error(errorMessage)
+      // Check if it's a 404 error
+      if (errorMessage.includes('404') || errorMessage.includes('not found')) {
+        router.replace({ name: 'NotFound' })
+      } else {
+        notify.error(errorMessage)
+      }
     }
   }
 )
@@ -136,7 +325,7 @@ watch(
   }
 )
 
-// Handle page change from PDF viewer
+// Handle page change from image viewer
 function handlePageChange(pageNumber: number) {
   libraryStore.fetchDanmaku(pageNumber)
   // Clear selected pin when page changes
@@ -148,7 +337,7 @@ function handlePageChange(pageNumber: number) {
 function handlePinPlace(x: number, y: number, pageNumber: number) {
   pinPlacementPosition.value = { x, y, pageNumber }
   selectedDanmakuId.value = null // Clear any selected pin
-  // Note: Temporary pin is shown in PdfViewer, will be cleared when comment is created
+  // Note: Temporary pin is shown in ImageViewer, will be cleared when comment is created
 }
 
 // Handle pin click (user clicks on existing pin to see comments)
@@ -159,48 +348,35 @@ function handlePinClick(danmakuId: number) {
 
 // Toolbar event handlers
 function handlePreviousPage() {
-  pdfViewerRef.value?.goToPage(currentPage.value - 1)
+  viewerRef.value?.goToPage(currentPage.value - 1)
 }
 
 function handleNextPage() {
-  pdfViewerRef.value?.goToPage(currentPage.value + 1)
+  viewerRef.value?.goToPage(currentPage.value + 1)
 }
 
 function handleGoToPage(page: number) {
-  pdfViewerRef.value?.goToPage(page)
+  viewerRef.value?.goToPage(page)
 }
 
 function handleZoomIn() {
-  pdfViewerRef.value?.zoomIn()
+  viewerRef.value?.zoomIn()
 }
 
 function handleZoomOut() {
-  pdfViewerRef.value?.zoomOut()
-}
-
-function handleFitWidth() {
-  pdfViewerRef.value?.fitWidth()
-}
-
-function handleFitPage() {
-  pdfViewerRef.value?.fitPage()
+  viewerRef.value?.zoomOut()
 }
 
 function handleRotate() {
-  pdfViewerRef.value?.rotate()
+  viewerRef.value?.rotate()
 }
 
 function handlePrint() {
-  pdfViewerRef.value?.print()
-}
-
-function handleSearch() {
-  // TODO: Implement search functionality
-  notify.info('搜索功能即将推出')
+  viewerRef.value?.print()
 }
 
 function handleTogglePinMode() {
-  pdfViewerRef.value?.togglePinMode()
+  viewerRef.value?.togglePinMode()
 }
 
 // Close comment panel
@@ -208,22 +384,43 @@ function handleCloseCommentPanel() {
   selectedDanmakuId.value = null
   pinPlacementPosition.value = null
   // Clear temporary pin in viewer
-  if (pdfViewerRef.value) {
-    pdfViewerRef.value.clearTemporaryPin()
+  if (viewerRef.value) {
+    viewerRef.value.clearTemporaryPin()
   }
   // Disable pin mode when closing panel
-  if (pdfViewerRef.value?.pinMode) {
-    pdfViewerRef.value.togglePinMode()
+  if (viewerRef.value?.pinMode) {
+    viewerRef.value.togglePinMode()
   }
 }
 
 // Watch for pin placement position changes to clear temporary pin when comment is created
 watch(pinPlacementPosition, (newVal) => {
   // When pinPlacementPosition is cleared (after comment creation), clear temporary pin
-  if (!newVal && pdfViewerRef.value) {
-    pdfViewerRef.value.clearTemporaryPin()
+  if (!newVal && viewerRef.value) {
+    viewerRef.value.clearTemporaryPin()
   }
 })
+
+// Watch for comment panel open/close to re-render pins when layout changes
+watch(
+  [() => selectedDanmakuId.value, () => pinPlacementPosition.value],
+  () => {
+    // When comment panel opens or closes, the layout changes and image resizes
+    // Wait for layout to settle, then re-render pins
+    nextTick(() => {
+      setTimeout(() => {
+        if (viewerRef.value && imageViewerRef.value) {
+          // Trigger re-render by calling renderPins through the component
+          // We'll expose a method or trigger it via a watcher
+          const viewer = imageViewerRef.value as any
+          if (viewer.renderPins) {
+            viewer.renderPins()
+          }
+        }
+      }, 150)
+    })
+  }
+)
 </script>
 
 <template>
@@ -261,28 +458,27 @@ watch(pinPlacementPosition, (newVal) => {
       @go-to-page="handleGoToPage"
       @zoom-in="handleZoomIn"
       @zoom-out="handleZoomOut"
-      @fit-width="handleFitWidth"
-      @fit-page="handleFitPage"
       @rotate="handleRotate"
       @print="handlePrint"
-      @search="handleSearch"
       @toggle-pin-mode="handleTogglePinMode"
       @toggle-bookmark="handleToggleBookmark"
     />
 
     <!-- Main content area -->
     <div class="library-viewer-content flex-1 flex overflow-hidden">
-      <!-- PDF Viewer with Danmaku Overlay -->
-      <div class="flex-1 relative overflow-hidden pb-4">
-        <PdfViewer
-          ref="pdfViewerRef"
-          v-if="libraryStore.currentDocument && pdfUrl"
-          :pdf-url="pdfUrl"
+      <!-- Viewer with Danmaku Overlay -->
+      <div class="flex-1 relative overflow-hidden" style="padding-bottom: 30px;">
+        <!-- Image Viewer -->
+        <ImageViewer
+          v-if="libraryStore.currentDocument && totalPages > 0"
+          ref="imageViewerRef"
           :document-id="documentId"
+          :total-pages="totalPages"
           :danmaku="currentPageDanmaku"
-          @page-change="handlePageChange"
-          @pin-place="handlePinPlace"
-          @pin-click="handlePinClick"
+          :initial-page="initialPageFromQuery"
+          @pageChange="handlePageChange"
+          @pinPlace="handlePinPlace"
+          @pinClick="handlePinClick"
         />
         <DanmakuOverlay
           v-if="libraryStore.currentDocument"

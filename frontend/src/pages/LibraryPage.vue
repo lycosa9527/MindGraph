@@ -2,22 +2,48 @@
 /**
  * LibraryPage - Simple Swiss design with 4 cover images in grid
  * Clean, minimal design with book names underneath covers
+ * Organized into groups: 精品案例集 and 其他
  */
-import { onMounted, watch, ref } from 'vue'
+import { onMounted, watch, ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { BookOpen } from 'lucide-vue-next'
 
 import { useNotifications } from '@/composables'
 import { useLibraryStore } from '@/stores/library'
+import { useAuthStore } from '@/stores/auth'
 import { getLibraryDocumentCoverUrl } from '@/utils/apiClient'
+import type { LibraryDocument } from '@/utils/apiClient'
 
 const router = useRouter()
 const libraryStore = useLibraryStore()
+const authStore = useAuthStore()
 const notify = useNotifications()
 
 // Track which cover images have loaded successfully
 const coverImageLoaded = ref<Record<number, boolean>>({})
+
+// Hardcoded book titles for 精品案例集 group
+// These 4 books will be uploaded to the server
+const PREMIUM_BOOK_TITLES = [
+  '思维发展型课堂的理论与实践第一辑',
+  '思维发展型课堂的理论与实践第二辑',
+  '思维发展型课堂的理论与实践第三辑',
+  '思维发展型课堂的理论与实践第四辑',
+]
+
+// Group books into categories
+const premiumBooks = computed(() => {
+  return libraryStore.documents.filter((doc) => {
+    return PREMIUM_BOOK_TITLES.includes(doc.title)
+  })
+})
+
+const otherBooks = computed(() => {
+  return libraryStore.documents.filter((doc) => {
+    return !PREMIUM_BOOK_TITLES.includes(doc.title)
+  })
+})
 
 // Fetch documents on mount
 onMounted(async () => {
@@ -65,7 +91,16 @@ function handleCoverLoad(event: Event) {
 
 // Navigate to PDF viewer
 function openDocument(documentId: number) {
+  if (!authStore.isAuthenticated) {
+    router.push({ name: 'Login', query: { redirect: `/library/${documentId}` } })
+    return
+  }
   router.push(`/library/${documentId}`)
+}
+
+// Navigate to login page
+function goToLogin() {
+  router.push({ name: 'Login', query: { redirect: '/library' } })
 }
 </script>
 
@@ -77,7 +112,10 @@ function openDocument(documentId: number) {
     </div>
 
     <!-- Content -->
-    <div class="library-content flex-1 overflow-y-auto p-6">
+    <div
+      class="library-content flex-1 overflow-y-auto px-6 pt-4 pb-6"
+      :class="{ 'blurred': !authStore.isAuthenticated }"
+    >
       <div
         v-if="libraryStore.documentsLoading"
         class="flex items-center justify-center h-full"
@@ -94,43 +132,86 @@ function openDocument(documentId: number) {
         <p class="text-sm">{{ libraryStore.documentsError.message }}</p>
       </div>
 
-      <!-- Grid of cover images -->
+      <!-- Books organized by groups -->
       <div
         v-else-if="libraryStore.documents.length > 0"
-        class="max-w-4xl mx-auto"
+        class="max-w-4xl mx-auto space-y-6"
       >
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
-          <div
-            v-for="document in libraryStore.documents"
-            :key="document.id"
-            class="book-card cursor-pointer group"
-            @click="openDocument(document.id)"
-          >
-            <!-- Cover Image -->
+        <!-- 精品案例集 Group -->
+        <div v-if="premiumBooks.length > 0">
+          <h2 class="text-lg font-semibold text-stone-900 mb-3">精品案例集</h2>
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
             <div
-              class="aspect-3/4 rounded-lg overflow-hidden mb-3 bg-stone-200 relative border border-stone-300"
+              v-for="document in premiumBooks"
+              :key="document.id"
+              class="book-card cursor-pointer group"
+              @click="openDocument(document.id)"
             >
-              <img
-                :src="getCoverUrl(document.id)"
-                :alt="document.title"
-                class="w-full h-full object-cover transition-transform duration-200 group-hover:scale-105"
-                @error="handleCoverError"
-                @load="handleCoverLoad"
-              />
+              <!-- Cover Image -->
               <div
-                v-show="!coverImageLoaded[document.id]"
-                class="w-full h-full flex items-center justify-center bg-linear-to-br from-stone-200 to-stone-300 absolute inset-0"
+                class="aspect-3/4 rounded-lg overflow-hidden mb-3 bg-stone-200 relative border border-stone-300"
               >
-                <BookOpen class="w-12 h-12 text-stone-400" />
+                <img
+                  :src="getCoverUrl(document.id)"
+                  :alt="document.title"
+                  class="w-full h-full object-cover transition-transform duration-200 group-hover:scale-105"
+                  @error="handleCoverError"
+                  @load="handleCoverLoad"
+                />
+                <div
+                  v-show="!coverImageLoaded[document.id]"
+                  class="w-full h-full flex items-center justify-center bg-linear-to-br from-stone-200 to-stone-300 absolute inset-0"
+                >
+                  <BookOpen class="w-12 h-12 text-stone-400" />
+                </div>
               </div>
-            </div>
 
-            <!-- Book Title -->
-            <h3
-              class="text-sm font-medium text-stone-800 text-center line-clamp-2 group-hover:text-indigo-600 transition-colors"
+              <!-- Book Title -->
+              <h3
+                class="text-sm font-medium text-stone-800 text-center line-clamp-2 group-hover:text-indigo-600 transition-colors"
+              >
+                {{ document.title }}
+              </h3>
+            </div>
+          </div>
+        </div>
+
+        <!-- 其他 Group -->
+        <div v-if="otherBooks.length > 0">
+          <h2 class="text-lg font-semibold text-stone-900 mb-3">其他</h2>
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+            <div
+              v-for="document in otherBooks"
+              :key="document.id"
+              class="book-card cursor-pointer group"
+              @click="openDocument(document.id)"
             >
-              {{ document.title }}
-            </h3>
+              <!-- Cover Image -->
+              <div
+                class="aspect-3/4 rounded-lg overflow-hidden mb-3 bg-stone-200 relative border border-stone-300"
+              >
+                <img
+                  :src="getCoverUrl(document.id)"
+                  :alt="document.title"
+                  class="w-full h-full object-cover transition-transform duration-200 group-hover:scale-105"
+                  @error="handleCoverError"
+                  @load="handleCoverLoad"
+                />
+                <div
+                  v-show="!coverImageLoaded[document.id]"
+                  class="w-full h-full flex items-center justify-center bg-linear-to-br from-stone-200 to-stone-300 absolute inset-0"
+                >
+                  <BookOpen class="w-12 h-12 text-stone-400" />
+                </div>
+              </div>
+
+              <!-- Book Title -->
+              <h3
+                class="text-sm font-medium text-stone-800 text-center line-clamp-2 group-hover:text-indigo-600 transition-colors"
+              >
+                {{ document.title }}
+              </h3>
+            </div>
           </div>
         </div>
       </div>
@@ -145,12 +226,62 @@ function openDocument(documentId: number) {
         <p class="text-sm">图书馆中还没有PDF文档</p>
       </div>
     </div>
+
+    <!-- Login Overlay -->
+    <div
+      v-if="!authStore.isAuthenticated"
+      class="login-overlay absolute inset-0 flex items-center justify-center bg-stone-900/40 backdrop-blur-sm"
+    >
+      <div class="login-prompt bg-white rounded-lg p-8 shadow-xl max-w-md mx-4 text-center">
+        <BookOpen class="w-16 h-16 mx-auto mb-4 text-stone-400" />
+        <h2 class="text-xl font-semibold text-stone-900 mb-2">请先登录</h2>
+        <p class="text-stone-600 mb-6">登录后即可访问图书馆</p>
+        <button
+          class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium"
+          @click="goToLogin"
+        >
+          前往登录
+        </button>
+      </div>
+    </div>
   </div>
 </template>
 
 <style scoped>
 .library-page {
   min-height: 0;
+  position: relative;
+}
+
+.library-content.blurred {
+  filter: blur(8px);
+  pointer-events: none;
+  user-select: none;
+}
+
+.login-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  /* Ensure notifications (z-index 3000+) render above this overlay */
+  z-index: 5;
+}
+
+.login-prompt {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .book-card {

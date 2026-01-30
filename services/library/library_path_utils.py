@@ -1,7 +1,8 @@
 """
-PDF Utility Functions for Library
+Library Path Utility Functions
 
-Provides PDF validation and path normalization utilities.
+Provides path normalization and resolution utilities for library files.
+Used for images, covers, and other library assets.
 
 Author: lycosa9527
 Made by: MindSpring Team
@@ -12,64 +13,25 @@ Proprietary License
 """
 import logging
 from pathlib import Path
-from typing import Tuple, Optional
+from typing import Optional
 
 logger = logging.getLogger(__name__)
-
-# PDF magic bytes signature
-PDF_MAGIC_BYTES = b'%PDF'
-
-
-def validate_pdf_file(pdf_path: Path) -> Tuple[bool, Optional[str]]:
-    """
-    Validate that a file is actually a PDF by checking magic bytes.
-
-    Args:
-        pdf_path: Path to the file to validate
-
-    Returns:
-        Tuple of (is_valid, error_message)
-        - is_valid: True if file is a valid PDF, False otherwise
-        - error_message: Error message if validation failed, None if valid
-    """
-    if not pdf_path.exists():
-        return False, f"File does not exist: {pdf_path}"
-
-    if not pdf_path.is_file():
-        return False, f"Path is not a file: {pdf_path}"
-
-    try:
-        with open(pdf_path, 'rb') as f:
-            header = f.read(len(PDF_MAGIC_BYTES))
-
-        if not header:
-            return False, f"File is empty: {pdf_path}"
-
-        if header.startswith(PDF_MAGIC_BYTES):
-            return True, None
-
-        return False, f"File does not have PDF magic bytes (found: {header[:10]})"
-
-    except PermissionError:
-        return False, f"Permission denied reading file: {pdf_path}"
-    except Exception as e:
-        return False, f"Error reading file: {e}"
 
 
 def normalize_library_path(file_path: Path, storage_dir: Path, project_root: Optional[Path] = None) -> str:
     """
     Normalize library file path to consistent relative format.
 
-    Stores paths as relative paths from project root in format: storage/library/filename.pdf
+    Stores paths as relative paths from project root in format: storage/library/filename
     Works across WSL/Ubuntu/Windows by normalizing separators and using relative paths.
 
     Args:
-        file_path: Path to the PDF file (can be absolute or relative)
+        file_path: Path to the file (can be absolute or relative)
         storage_dir: Storage directory (e.g., storage/library)
         project_root: Project root directory (default: current working directory)
 
     Returns:
-        Normalized relative path string (e.g., "storage/library/filename.pdf")
+        Normalized relative path string (e.g., "storage/library/filename")
     """
     if project_root is None:
         project_root = Path.cwd()
@@ -84,7 +46,7 @@ def normalize_library_path(file_path: Path, storage_dir: Path, project_root: Opt
         if file_path_resolved.is_relative_to(storage_dir_resolved):
             # File is in storage_dir, get relative path from storage_dir
             relative_from_storage = file_path_resolved.relative_to(storage_dir_resolved)
-            # Construct path: storage/library/filename.pdf
+            # Construct path: storage/library/filename
             normalized = storage_dir_resolved.relative_to(project_root_resolved) / relative_from_storage
             # Convert to string and normalize separators (always use /)
             return str(normalized).replace('\\', '/')
@@ -113,8 +75,8 @@ def resolve_library_path(stored_path: str, storage_dir: Path, project_root: Opti
     Resolve a stored library path back to an actual file path.
 
     Handles multiple path formats:
-    - Relative paths: storage/library/filename.pdf
-    - Filename only: filename.pdf
+    - Relative paths: storage/library/filename
+    - Filename only: filename
     - Absolute paths (legacy)
 
     Args:

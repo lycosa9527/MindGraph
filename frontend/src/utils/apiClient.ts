@@ -227,6 +227,9 @@ export async function apiUpload(
 // =============================================================================
 
 export interface LibraryDocument {
+  use_images?: boolean
+  pages_dir_path?: string | null
+  total_pages?: number | null
   id: number
   title: string
   description: string | null
@@ -349,23 +352,31 @@ export async function getLibraryDocuments(
 export async function getLibraryDocument(documentId: number): Promise<LibraryDocument> {
   const response = await apiGet(`/api/library/documents/${documentId}`)
   if (!response.ok) {
-    throw new Error('Failed to fetch library document')
+    if (response.status === 404) {
+      const error = await response.json().catch(() => ({ detail: 'Document not found' }))
+      throw new Error(`404: ${error.detail || 'Document not found'}`)
+    }
+    const error = await response.json().catch(() => ({ detail: 'Failed to fetch library document' }))
+    throw new Error(error.detail || 'Failed to fetch library document')
   }
   return response.json()
 }
 
-/**
- * Get PDF file URL (for viewing)
- */
-export function getLibraryDocumentFileUrl(documentId: number): string {
-  return `/api/library/documents/${documentId}/file`
-}
+// PDF file URL function removed - PDF viewing no longer supported
+// Use getLibraryDocumentPageImageUrl() for image-based documents instead
 
 /**
  * Get cover image URL
  */
 export function getLibraryDocumentCoverUrl(documentId: number): string {
   return `/api/library/documents/${documentId}/cover`
+}
+
+/**
+ * Get URL for a page image (for image-based documents)
+ */
+export function getLibraryDocumentPageImageUrl(documentId: number, pageNumber: number): string {
+  return `/api/library/documents/${documentId}/pages/${pageNumber}`
 }
 
 /**
@@ -568,12 +579,23 @@ export async function createBookmark(
   documentId: number,
   data: CreateBookmarkData
 ): Promise<{ id: number; message: string; bookmark: LibraryBookmark }> {
-  const response = await apiPost(`/api/library/documents/${documentId}/bookmarks`, data)
+  console.log('[apiClient] createBookmark called:', { documentId, data })
+  const url = `/api/library/documents/${documentId}/bookmarks`
+  console.log('[apiClient] POST to:', url)
+  const response = await apiPost(url, data)
+  console.log('[apiClient] createBookmark response:', {
+    ok: response.ok,
+    status: response.status,
+    statusText: response.statusText,
+  })
   if (!response.ok) {
     const error = await response.json().catch(() => ({ detail: 'Failed to create bookmark' }))
+    console.error('[apiClient] createBookmark error:', error)
     throw new Error(error.detail || 'Failed to create bookmark')
   }
-  return response.json()
+  const result = await response.json()
+  console.log('[apiClient] createBookmark result:', result)
+  return result
 }
 
 /**
@@ -591,7 +613,8 @@ export async function getRecentBookmarks(
 
 /**
  * Get bookmark for a specific document page
- * Returns null if bookmark doesn't exist
+ * Returns null if bookmark doesn't exist (404)
+ * Throws error for other failures
  */
 export async function getBookmark(
   documentId: number,
@@ -599,11 +622,12 @@ export async function getBookmark(
 ): Promise<LibraryBookmark | null> {
   const response = await apiGet(`/api/library/documents/${documentId}/bookmarks/${pageNumber}`)
   if (!response.ok) {
-    // 404 means no bookmark exists, which is valid - return null
+    // 404 means bookmark doesn't exist or doesn't belong to user
     if (response.status === 404) {
       return null
     }
-    throw new Error('Failed to fetch bookmark')
+    const error = await response.json().catch(() => ({ detail: 'Failed to fetch bookmark' }))
+    throw new Error(error.detail || 'Failed to fetch bookmark')
   }
   const data = await response.json()
   return data || null
@@ -611,11 +635,17 @@ export async function getBookmark(
 
 /**
  * Get bookmark by UUID
+ * Throws error with 404 message if bookmark doesn't exist or doesn't belong to user
  */
 export async function getBookmarkByUuid(bookmarkUuid: string): Promise<LibraryBookmark> {
   const response = await apiGet(`/api/library/bookmarks/${bookmarkUuid}`)
   if (!response.ok) {
-    throw new Error('Failed to fetch bookmark')
+    if (response.status === 404) {
+      const error = await response.json().catch(() => ({ detail: 'Bookmark not found' }))
+      throw new Error(`404: ${error.detail || 'Bookmark not found'}`)
+    }
+    const error = await response.json().catch(() => ({ detail: 'Failed to fetch bookmark' }))
+    throw new Error(error.detail || 'Failed to fetch bookmark')
   }
   return response.json()
 }

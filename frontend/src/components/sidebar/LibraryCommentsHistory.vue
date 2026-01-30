@@ -7,13 +7,14 @@
 import { computed, ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 
-import { ElDropdown, ElDropdownItem, ElDropdownMenu, ElScrollbar } from 'element-plus'
+import { ElScrollbar } from 'element-plus'
 
-import { Bookmark, MoreHorizontal, Trash2, FileText } from 'lucide-vue-next'
+import { Bookmark, Trash2, FileText } from 'lucide-vue-next'
 
 import { useLanguage } from '@/composables'
-import { type LibraryBookmark, getRecentBookmarks, deleteBookmark } from '@/utils/apiClient'
+import { type LibraryBookmark } from '@/utils/apiClient'
 import { useNotifications } from '@/composables'
+import { useLibraryStore } from '@/stores/library'
 
 defineProps<{
   isBlurred?: boolean
@@ -22,27 +23,19 @@ defineProps<{
 const { isZh } = useLanguage()
 const router = useRouter()
 const notify = useNotifications()
+const libraryStore = useLibraryStore()
 
 // Show all or just 10
 const showAll = ref(false)
 const INITIAL_LIMIT = 10
 
-// State
-const bookmarks = ref<LibraryBookmark[]>([])
-const loading = ref(false)
+// Use bookmarks from store
+const bookmarks = computed(() => libraryStore.bookmarks)
+const loading = computed(() => libraryStore.bookmarksLoading)
 
 // Fetch recent bookmarks
 async function fetchRecentBookmarks() {
-  loading.value = true
-  try {
-    const result = await getRecentBookmarks()
-    bookmarks.value = result.bookmarks
-  } catch (error) {
-    console.error('[LibraryCommentsHistory] Failed to fetch recent bookmarks:', error)
-    bookmarks.value = []
-  } finally {
-    loading.value = false
-  }
+  await libraryStore.fetchRecentBookmarks()
 }
 
 onMounted(() => {
@@ -103,19 +96,36 @@ const groupLabels = computed(() => ({
 }))
 
 // Handle bookmark click - navigate to document and page
-function handleBookmarkClick(bookmark: LibraryBookmark): void {
-  router.push({
-    path: `/library/viewer/${bookmark.document_id}`,
-    query: { page: bookmark.page_number.toString() },
-  })
+// If bookmark doesn't exist or doesn't belong to user, navigate to 404 page
+async function handleBookmarkClick(bookmark: LibraryBookmark): Promise<void> {
+  try {
+    // Verify bookmark still exists and belongs to user before navigating
+    // This will throw 404 if bookmark was deleted or doesn't belong to user
+    const { getBookmark } = await import('@/utils/apiClient')
+    await getBookmark(bookmark.document_id, bookmark.page_number)
+    
+    // Bookmark exists - navigate to it
+    router.push({
+      name: 'LibraryViewer',
+      params: { id: bookmark.document_id.toString() },
+      query: { page: bookmark.page_number.toString() },
+    })
+  } catch (error) {
+    // Bookmark doesn't exist or doesn't belong to user - navigate to 404 page
+    console.error('[LibraryCommentsHistory] Bookmark not found:', error)
+    // Refresh bookmark list to remove stale bookmark
+    await libraryStore.fetchRecentBookmarks()
+    // Navigate to 404 page
+    router.push({ name: 'NotFound' })
+  }
 }
 
 // Handle delete bookmark
 async function handleDeleteBookmark(bookmark: LibraryBookmark, event: Event): Promise<void> {
   event.stopPropagation()
   try {
-    await deleteBookmark(bookmark.id)
-    await fetchRecentBookmarks()
+    await libraryStore.deleteBookmark(bookmark.id)
+    // Store automatically updates bookmarks list
     notify.success(isZh.value ? '书签已删除' : 'Bookmark deleted')
   } catch (error) {
     console.error('[LibraryCommentsHistory] Failed to delete bookmark:', error)
@@ -174,9 +184,11 @@ function toggleShowAll(): void {
               v-for="bookmark in groupedBookmarks.today"
               :key="bookmark.id"
               class="comment-item"
-              @click="handleBookmarkClick(bookmark)"
             >
-              <div class="comment-content">
+              <div
+                class="comment-content"
+                @click="handleBookmarkClick(bookmark)"
+              >
                 <div class="comment-text">
                   {{ bookmark.document?.title || (isZh ? '未知文档' : 'Unknown Document') }}
                 </div>
@@ -187,30 +199,13 @@ function toggleShowAll(): void {
                   </span>
                 </div>
               </div>
-              <ElDropdown
-                trigger="click"
-                class="more-dropdown"
-                @click.stop
+              <button
+                class="delete-btn"
+                @click.stop="handleDeleteBookmark(bookmark, $event)"
+                :title="isZh ? '删除书签' : 'Delete bookmark'"
               >
-                <button
-                  class="more-btn"
-                  @click.stop
-                >
-                  <MoreHorizontal class="w-4 h-4" />
-                </button>
-                <template #dropdown>
-                  <ElDropdownMenu>
-                    <ElDropdownItem
-                      @click="handleDeleteBookmark(bookmark, $event)"
-                    >
-                      <span class="delete-option">
-                        <Trash2 class="w-4 h-4 mr-2" />
-                        {{ isZh ? '删除' : 'Delete' }}
-                      </span>
-                    </ElDropdownItem>
-                  </ElDropdownMenu>
-                </template>
-              </ElDropdown>
+                <Trash2 class="w-4 h-4" />
+              </button>
             </div>
           </div>
 
@@ -224,9 +219,11 @@ function toggleShowAll(): void {
               v-for="bookmark in groupedBookmarks.yesterday"
               :key="bookmark.id"
               class="comment-item"
-              @click="handleBookmarkClick(bookmark)"
             >
-              <div class="comment-content">
+              <div
+                class="comment-content"
+                @click="handleBookmarkClick(bookmark)"
+              >
                 <div class="comment-text">
                   {{ bookmark.document?.title || (isZh ? '未知文档' : 'Unknown Document') }}
                 </div>
@@ -237,30 +234,13 @@ function toggleShowAll(): void {
                   </span>
                 </div>
               </div>
-              <ElDropdown
-                trigger="click"
-                class="more-dropdown"
-                @click.stop
+              <button
+                class="delete-btn"
+                @click.stop="handleDeleteBookmark(bookmark, $event)"
+                :title="isZh ? '删除书签' : 'Delete bookmark'"
               >
-                <button
-                  class="more-btn"
-                  @click.stop
-                >
-                  <MoreHorizontal class="w-4 h-4" />
-                </button>
-                <template #dropdown>
-                  <ElDropdownMenu>
-                    <ElDropdownItem
-                      @click="handleDeleteBookmark(bookmark, $event)"
-                    >
-                      <span class="delete-option">
-                        <Trash2 class="w-4 h-4 mr-2" />
-                        {{ isZh ? '删除' : 'Delete' }}
-                      </span>
-                    </ElDropdownItem>
-                  </ElDropdownMenu>
-                </template>
-              </ElDropdown>
+                <Trash2 class="w-4 h-4" />
+              </button>
             </div>
           </div>
 
@@ -274,9 +254,11 @@ function toggleShowAll(): void {
               v-for="bookmark in groupedBookmarks.week"
               :key="bookmark.id"
               class="comment-item"
-              @click="handleBookmarkClick(bookmark)"
             >
-              <div class="comment-content">
+              <div
+                class="comment-content"
+                @click="handleBookmarkClick(bookmark)"
+              >
                 <div class="comment-text">
                   {{ bookmark.document?.title || (isZh ? '未知文档' : 'Unknown Document') }}
                 </div>
@@ -287,30 +269,13 @@ function toggleShowAll(): void {
                   </span>
                 </div>
               </div>
-              <ElDropdown
-                trigger="click"
-                class="more-dropdown"
-                @click.stop
+              <button
+                class="delete-btn"
+                @click.stop="handleDeleteBookmark(bookmark, $event)"
+                :title="isZh ? '删除书签' : 'Delete bookmark'"
               >
-                <button
-                  class="more-btn"
-                  @click.stop
-                >
-                  <MoreHorizontal class="w-4 h-4" />
-                </button>
-                <template #dropdown>
-                  <ElDropdownMenu>
-                    <ElDropdownItem
-                      @click="handleDeleteBookmark(bookmark, $event)"
-                    >
-                      <span class="delete-option">
-                        <Trash2 class="w-4 h-4 mr-2" />
-                        {{ isZh ? '删除' : 'Delete' }}
-                      </span>
-                    </ElDropdownItem>
-                  </ElDropdownMenu>
-                </template>
-              </ElDropdown>
+                <Trash2 class="w-4 h-4" />
+              </button>
             </div>
           </div>
 
@@ -324,9 +289,11 @@ function toggleShowAll(): void {
               v-for="bookmark in groupedBookmarks.month"
               :key="bookmark.id"
               class="comment-item"
-              @click="handleBookmarkClick(bookmark)"
             >
-              <div class="comment-content">
+              <div
+                class="comment-content"
+                @click="handleBookmarkClick(bookmark)"
+              >
                 <div class="comment-text">
                   {{ bookmark.document?.title || (isZh ? '未知文档' : 'Unknown Document') }}
                 </div>
@@ -337,30 +304,13 @@ function toggleShowAll(): void {
                   </span>
                 </div>
               </div>
-              <ElDropdown
-                trigger="click"
-                class="more-dropdown"
-                @click.stop
+              <button
+                class="delete-btn"
+                @click.stop="handleDeleteBookmark(bookmark, $event)"
+                :title="isZh ? '删除书签' : 'Delete bookmark'"
               >
-                <button
-                  class="more-btn"
-                  @click.stop
-                >
-                  <MoreHorizontal class="w-4 h-4" />
-                </button>
-                <template #dropdown>
-                  <ElDropdownMenu>
-                    <ElDropdownItem
-                      @click="handleDeleteBookmark(bookmark, $event)"
-                    >
-                      <span class="delete-option">
-                        <Trash2 class="w-4 h-4 mr-2" />
-                        {{ isZh ? '删除' : 'Delete' }}
-                      </span>
-                    </ElDropdownItem>
-                  </ElDropdownMenu>
-                </template>
-              </ElDropdown>
+                <Trash2 class="w-4 h-4" />
+              </button>
             </div>
           </div>
 
@@ -468,55 +418,35 @@ function toggleShowAll(): void {
   color: #78716c;
 }
 
-.more-btn {
+.delete-btn {
   flex-shrink: 0;
-  width: 24px;
-  height: 24px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 4px;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  margin-left: 8px;
   opacity: 0;
-  color: #78716c;
+  color: #dc2626;
   transition: all 0.15s ease;
   background: transparent;
   border: none;
   cursor: pointer;
+  border-radius: 4px;
 }
 
-.comment-item:hover .more-btn {
+.comment-item:hover .delete-btn {
   opacity: 1;
 }
 
-.more-btn:hover {
-  background-color: #e7e5e4;
-  color: #1c1917;
+.delete-btn:hover {
+  background-color: #fee2e2;
+  color: #991b1b;
 }
 
-.more-dropdown :deep(.el-dropdown-menu) {
-  padding: 4px;
-  border-radius: 8px;
-  min-width: 140px;
-}
-
-.more-dropdown :deep(.el-dropdown-menu__item) {
-  display: flex;
-  align-items: center;
-  padding: 8px 12px;
-  font-size: 13px;
-  border-radius: 4px;
-  color: #57534e;
-}
-
-.more-dropdown :deep(.el-dropdown-menu__item:hover) {
-  background-color: #f5f5f4;
-  color: #1c1917;
-}
-
-.delete-option {
-  display: flex;
-  align-items: center;
-  color: #dc2626;
+.delete-btn:active {
+  background-color: #fecaca;
 }
 
 .show-more-btn {

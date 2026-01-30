@@ -128,14 +128,20 @@ function updateCanvasSize() {
   highlightCanvasRef.value.height = container.clientHeight
 }
 
+let danmakuWatcher: (() => void) | null = null
+
 onMounted(() => {
   updateCanvasSize()
   window.addEventListener('resize', updateCanvasSize)
-  watch(() => libraryStore.danmaku, renderHighlights, { deep: true })
+  danmakuWatcher = watch(() => libraryStore.danmaku, renderHighlights, { deep: true })
 })
 
 onUnmounted(() => {
   window.removeEventListener('resize', updateCanvasSize)
+  if (danmakuWatcher) {
+    danmakuWatcher()
+    danmakuWatcher = null
+  }
 })
 </script>
 
