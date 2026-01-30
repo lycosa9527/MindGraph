@@ -349,15 +349,25 @@ function handlePinClick(danmakuId: number) {
 
 // Toolbar event handlers
 function handlePreviousPage() {
-  viewerRef.value?.goToPage(currentPage.value - 1)
+  // Use goToPreviousPage which already handles skipping missing pages
+  viewerRef.value?.goToPreviousPage()
 }
 
 function handleNextPage() {
-  viewerRef.value?.goToPage(currentPage.value + 1)
+  // Use goToNextPage which already handles skipping missing pages
+  viewerRef.value?.goToNextPage()
 }
 
 function handleGoToPage(page: number) {
-  viewerRef.value?.goToPage(page)
+  // Detect if this is sequential navigation (increment/decrement from current page)
+  const isSequential = Math.abs(page - currentPage.value) === 1
+  if (isSequential) {
+    // For sequential navigation, proactively skip missing pages
+    viewerRef.value?.goToPage(page, true)
+  } else {
+    // For direct page selection, check page existence but don't proactively skip
+    viewerRef.value?.goToPage(page, false)
+  }
 }
 
 function handleZoomIn() {
