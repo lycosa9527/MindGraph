@@ -8,8 +8,9 @@ All Rights Reserved.
 """
 
 import logging
+import os
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse, HTMLResponse
 
 from services.infrastructure.utils.spa_handler import VUE_DIST_DIR
@@ -23,18 +24,12 @@ router = APIRouter(tags=["Vue SPA"])
 @router.get("/_diagnostic/static-files")
 async def diagnostic_static_files():
     """Diagnostic endpoint to check static file serving configuration."""
-    import os
-    
-    worker_path = VUE_DIST_DIR / "pdfjs" / "pdf.worker.min.js"
     index_path = VUE_DIST_DIR / "index.html"
-    
+
     return {
         "vue_dist_dir": str(VUE_DIST_DIR),
         "vue_dist_dir_exists": VUE_DIST_DIR.exists(),
         "vue_dist_dir_absolute": str(VUE_DIST_DIR.resolve()),
-        "pdf_worker_path": str(worker_path),
-        "pdf_worker_exists": worker_path.exists() if worker_path.parent.exists() else False,
-        "pdfjs_dir_exists": (VUE_DIST_DIR / "pdfjs").exists(),
         "index_html_exists": index_path.exists(),
         "current_working_directory": os.getcwd(),
     }
@@ -215,8 +210,6 @@ async def vue_catch_all(path: str):
         path.startswith("api/")
         or path.startswith("static/")
         or path.startswith("assets/")
-        or path.startswith("cmaps/")
-        or path.startswith("pdfjs/")
         or path.startswith("gallery/")
         or path.startswith("ws")
         or path in ["health", "healthz", "ready", "docs", "redoc", "openapi.json"]

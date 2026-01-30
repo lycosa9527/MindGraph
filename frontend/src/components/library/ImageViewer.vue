@@ -57,6 +57,9 @@ const isRendering = ref(false)
 // Pre-loading state
 const preloadedPages = ref<Set<number>>(new Set())
 
+// Track pages we've tried to skip (to prevent infinite loops)
+const skippedPages = ref<Set<number>>(new Set())
+
 // Navigation state
 const canGoPrevious = computed(() => currentPage.value > 1)
 const canGoNext = computed(() => currentPage.value < props.totalPages)
@@ -172,7 +175,7 @@ function handlePinDragStart(
   // This is what we set in renderPins: left and top in pixels
   const currentLeft = parseFloat(pinElement.style.left) || 0
   const currentTop = parseFloat(pinElement.style.top) || 0
-  
+
   // Get mouse position relative to pins layer
   const pinsLayerRect = pinsLayerRef.value.getBoundingClientRect()
   const startX = e.clientX - pinsLayerRect.left
@@ -221,7 +224,7 @@ function handlePinDragEnd(_e: MouseEvent) {
   if (!draggingPin.value || !imageRef.value || !pinsLayerRef.value) return
 
   const pinElement = draggingPin.value.element
-  
+
   // Get the pin's current CSS position (relative to pins layer)
   // Note: pin has transform: translate(-50%, -50%), so left/top represent the CENTER of the pin
   const pinCenterX = parseFloat(pinElement.style.left) || 0
@@ -230,12 +233,12 @@ function handlePinDragEnd(_e: MouseEvent) {
   // Get image and pins layer bounding rects
   const imageRect = imageRef.value.getBoundingClientRect()
   const pinsLayerRect = pinsLayerRef.value.getBoundingClientRect()
-  
+
   // Calculate offset between pins layer top-left and image top-left
   // The pins layer covers the wrapper (100% width/height), but image might be smaller and centered
   const offsetX = imageRect.left - pinsLayerRect.left
   const offsetY = imageRect.top - pinsLayerRect.top
-  
+
   // Calculate pin center position relative to image's top-left corner
   // pinCenterX/pinCenterY are relative to pins layer, so subtract the offset to get position relative to image
   const pinCenterXRelativeToImage = pinCenterX - offsetX
@@ -389,7 +392,6 @@ function createPinIconElement(
 
   // Track if we're dragging to prevent click events
   let isDragging = false
-  let dragStartTime = 0
 
   // Add click handler directly to pin element
   if (danmakuId) {
@@ -423,8 +425,7 @@ function createPinIconElement(
         e.preventDefault()
         e.stopPropagation()
         isDragging = false
-        dragStartTime = Date.now()
-        
+
         const pinDanmaku = danmaku || (props.danmaku || []).find((d) => d.id === danmakuId)
         if (pinDanmaku) {
           handlePinDragStart(e, danmakuId, pinDiv, pinDanmaku)
@@ -552,15 +553,15 @@ function preloadPages(pageNumbers: number[]) {
 }
 
 // Load and render current page image
-async function renderPage(pageNum: number) {
+async function renderPage(pageNum: number, skipCheck: boolean = false) {
   if (pageNum < 1 || pageNum > props.totalPages) return
 
   if (isUnmounted.value) {
     return
   }
 
-  // Prevent duplicate renders
-  if (isRendering.value && currentPage.value === pageNum) {
+  // Prevent duplicate renders (unless we're skipping to a new page)
+  if (!skipCheck && isRendering.value && currentPage.value === pageNum) {
     return
   }
 
@@ -592,7 +593,43 @@ async function renderPage(pageNum: number) {
       }
 
       imageRef.value.onload = () => resolve()
-      imageRef.value.onerror = () => reject(new Error('Failed to load image'))
+      imageRef.value.onerror = async () => {
+        // Image failed to load - check if we should skip to next page
+        // Make HEAD request to get 404 response headers (backend includes X-Next-Available-Page)
+        try {
+          const response = await fetch(imageUrl, { method: 'HEAD' })
+          if (response.status === 404) {
+            const nextPageHeader = response.headers.get('X-Next-Available-Page')
+            if (nextPageHeader) {
+              const nextPage = parseInt(nextPageHeader, 10)
+              if (
+                !isNaN(nextPage) &&
+                !skippedPages.value.has(nextPage) &&
+                !skippedPages.value.has(pageNum)
+              ) {
+                skippedPages.value.add(pageNum)
+                console.debug(
+                  `[ImageViewer] Page ${pageNum} not found, skipping to page ${nextPage}`
+                )
+                // Try loading the next page (skip duplicate check since we're intentionally changing pages)
+                try {
+                  await renderPage(nextPage, true)
+                  // Successfully skipped to next page - resolve current promise
+                  // (The next page has its own loading promise)
+                  resolve()
+                  return
+                } catch {
+                  // Next page also failed - fall through to reject
+                }
+              }
+            }
+          }
+        } catch {
+          // Fetch failed - fall through to reject
+        }
+        // No next page available or skip failed - reject
+        reject(new Error('Failed to load image'))
+      }
     })
 
     // Check again after image loads
@@ -649,8 +686,24 @@ async function renderPage(pageNum: number) {
     updateCursor()
   } catch (error) {
     if (!isUnmounted.value) {
-      console.error(`[ImageViewer] Failed to render page ${pageNum}:`, error)
-      notify.error(`Failed to load page ${pageNum}`)
+      // Check if this is a 404 error (page doesn't exist)
+      const is404 =
+        error instanceof Error &&
+        (error.message.includes('404') ||
+          error.message.includes('not found') ||
+          error.message.includes('Failed to load image'))
+
+      if (is404) {
+        // Page doesn't exist - log at debug level
+        // The onerror handler already tried to skip, so this is just logging
+        console.debug(
+          `[ImageViewer] Page ${pageNum} not found (no next page available or skip already attempted)`
+        )
+      } else {
+        // Other errors - log and notify user
+        console.error(`[ImageViewer] Failed to render page ${pageNum}:`, error)
+        notify.error(`Failed to load page ${pageNum}`)
+      }
     }
   } finally {
     if (!isUnmounted.value) {
@@ -663,6 +716,8 @@ async function renderPage(pageNum: number) {
 // Navigation functions
 function goToPage(pageNum: number) {
   if (pageNum >= 1 && pageNum <= props.totalPages) {
+    // Clear skipped pages when user manually navigates (they might want to retry)
+    skippedPages.value.clear()
     renderPage(pageNum)
   }
 }
@@ -949,6 +1004,14 @@ watch(
   }
 )
 
+// Watch for documentId changes to reset skipped pages
+watch(
+  () => props.documentId,
+  () => {
+    skippedPages.value.clear()
+  }
+)
+
 // Watch for documentId or totalPages changes to pre-load initial pages
 watch(
   [() => props.documentId, () => props.totalPages],
@@ -1074,6 +1137,7 @@ defineExpose({
   togglePinMode: () => togglePinMode(),
   clearTemporaryPin: () => clearTemporaryPin(),
   renderPins: () => renderPins(),
+  fitToPage: () => fitToPage(),
 })
 </script>
 

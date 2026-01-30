@@ -198,12 +198,33 @@ async def get_document_page_image(
             detail="Document does not use images"
         )
 
+    # Validate page number against total_pages
+    if document.total_pages and page_number > document.total_pages:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Page {page_number} exceeds total pages ({document.total_pages})"
+        )
+
     # Get page image path
     image_path = service.get_page_image_path(document_id, page_number)
     if not image_path or not image_path.exists():
+        # Page doesn't exist - find next available page (only scan directory on 404)
+        # This is the only time we scan, and we cache the result
+        next_page = service.get_next_available_page(document_id, page_number)
+        
+        error_detail = f"Page {page_number} image not found"
+        if next_page:
+            error_detail += f". Next available page: {next_page}"
+        
+        # Include next available page info in response headers for frontend
+        headers = {}
+        if next_page:
+            headers["X-Next-Available-Page"] = str(next_page)
+        
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Page {page_number} image not found"
+            detail=error_detail,
+            headers=headers
         )
 
     # Determine content type from file extension

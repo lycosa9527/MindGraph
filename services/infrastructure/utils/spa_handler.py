@@ -126,18 +126,6 @@ def setup_vue_spa(app: FastAPI) -> bool:
         app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
         logger.debug("Mounted /static for runtime uploads")
 
-    # Mount cmaps directory for PDF.js character maps
-    cmaps_dir = VUE_DIST_DIR / "cmaps"
-    if cmaps_dir.exists():
-        app.mount("/cmaps", StaticFiles(directory=str(cmaps_dir)), name="pdf-cmaps")
-        logger.debug("Mounted /cmaps for PDF.js character maps")
-
-    # Mount pdfjs directory for PDF.js worker (same approach as /assets/, /cmaps/, etc.)
-    pdfjs_dir = VUE_DIST_DIR / "pdfjs"
-    if pdfjs_dir.exists():
-        app.mount("/pdfjs", StaticFiles(directory=str(pdfjs_dir)), name="pdfjs-worker")
-        logger.debug("Mounted /pdfjs for PDF.js worker")
-
     return True
 
 

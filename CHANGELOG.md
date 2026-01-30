@@ -20,8 +20,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - **Library Viewer Page**: Updated `LibraryViewerPage.vue` to support both PDF and image viewing modes with automatic mode detection based on document `use_images` flag.
-- **Library Service**: Refactored `library_service.py` to support image-based document management, including image folder registration and page counting.
-- **Library Router**: Updated library router endpoints to support image-based documents, including page image serving and document metadata updates.
+- **Library Service**: Refactored `library_service.py` to support image-based document management, including image folder registration and page counting. Added in-memory page caching with LRU eviction to optimize directory scans and next available page detection.
+- **Library Router**: Updated library router endpoints to support image-based documents, including page image serving and document metadata updates. Added `X-Next-Available-Page` header in 404 responses to help frontend automatically skip missing pages.
 - **Library Store**: Enhanced `library.ts` store with image-related functionality and improved document management.
 - **API Client**: Updated `apiClient.ts` with image URL helpers (`getLibraryDocumentPageImageUrl`) and updated type definitions for image-based documents.
 - **Comment Panel**: Updated `CommentPanel.vue` component to work seamlessly with both PDF and image viewers.
@@ -29,6 +29,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **PostgreSQL Manager**: Refactored `_postgresql_manager.py` into modular components for better maintainability and separation of concerns.
 - **Application Lifespan**: Updated application lifecycle management to remove PDF auto-import scheduler dependencies.
 - **Library Module**: Updated `services/library/__init__.py` to export new image-related services and utilities.
+- **Image Viewer Component**: Enhanced `ImageViewer.vue` with automatic page skipping when pages don't exist (404 handling). Automatically detects and navigates to next available page using `X-Next-Available-Page` header from backend.
+- **Vite Configuration**: Simplified `vite.config.ts` by removing PDF.js worker and cmaps copying plugins (no longer needed for image-based system).
+- **SPA Handler**: Removed PDF.js related static file mounts (`/pdfjs/` and `/cmaps/`) from SPA handler.
+- **Exception Handlers**: Improved HTTP exception handling to log expected 404s (missing pages, bookmark checks) at DEBUG level instead of WARNING to reduce log noise.
 
 ### Removed
 - **PDF Viewer Component**: Removed `PdfViewer.vue` component in favor of image-based viewing system.
@@ -39,10 +43,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Sync Validator**: Removed `sync_validator.py` service for PDF sync validation.
 - **WSL Documentation**: Removed `README_WSL.md` documentation file.
 - **PDF Toolbar**: Removed `PdfToolbar.vue` component (functionality integrated into viewer components).
+- **PDF.js Dependencies**: Removed `pdfjs-dist` npm package and `verify-pdf-worker.js` script from frontend build process.
+- **PDF.js Build Plugins**: Removed PDF.js worker and cmaps copying plugins from Vite configuration.
 
 ### Fixed
 - **Library Comments History**: Fixed and improved `LibraryCommentsHistory.vue` component functionality.
 - **Cross-Platform Path Handling**: Improved path normalization for better cross-platform compatibility.
+- **Image Viewer Page Navigation**: Fixed issue where image viewer would fail when encountering missing pages. Now automatically skips to next available page using backend-provided `X-Next-Available-Page` header.
+- **Library Service Performance**: Optimized page availability checks with in-memory caching (5-minute TTL, LRU eviction) to avoid repeated directory scans when checking for missing pages.
+- **Error Logging**: Fixed excessive warning logs for expected 404 errors (missing pages, bookmark checks) by logging them at DEBUG level instead.
 
 ## [5.16.0] - 2026-01-30
 

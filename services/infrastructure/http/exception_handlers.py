@@ -69,6 +69,8 @@ async def http_exception_handler(request: Request, exc: HTTPException):
     # 2. Token expiration checks (401 with "Invalid or expired token")
     #    Frontend periodically checks authentication status via /api/auth/me
     # 3. Request validation errors (400) - these are client errors, log at DEBUG
+    # 4. Missing library pages/bookmarks (404) - expected when pages don't exist or bookmarks aren't created
+    #    Frontend checks for bookmarks and may request pages that don't exist if total_pages is incorrect
     if exc.status_code == 403 and path.startswith("/api/auth/admin/"):
         logger.debug("HTTP %s: %s (expected admin check)", exc.status_code, exc.detail)
     elif exc.status_code == 401 and "Invalid or expired token" in detail:
@@ -77,6 +79,17 @@ async def http_exception_handler(request: Request, exc: HTTPException):
         # 400 Bad Request - usually client errors (invalid parameters, malformed requests)
         # Log at DEBUG level to reduce noise (these are expected client errors)
         logger.debug("HTTP %s on %s: %s", exc.status_code, path, exc.detail)
+    elif exc.status_code == 404:
+        # 404 Not Found - check if it's an expected case
+        if path.startswith("/api/library/documents/") and "/pages/" in path:
+            # Missing page image - may happen if total_pages is incorrect or file is missing
+            logger.debug("HTTP %s: %s (page may not exist)", exc.status_code, exc.detail)
+        elif path.startswith("/api/library/documents/") and "/bookmarks/" in path:
+            # Missing bookmark - expected when checking if bookmark exists
+            logger.debug("HTTP %s: %s (bookmark check)", exc.status_code, exc.detail)
+        else:
+            # Other 404s - log at warning level
+            logger.warning("HTTP %s: %s", exc.status_code, exc.detail)
     else:
         logger.warning("HTTP %s: %s", exc.status_code, exc.detail)
     return JSONResponse(

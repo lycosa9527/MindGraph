@@ -88,11 +88,12 @@ async function checkBookmarkStatus() {
   } catch (error) {
     // 404 means bookmark doesn't exist - this is fine, just mark as not bookmarked
     if (error instanceof Error && error.message.includes('404')) {
+      // Bookmark doesn't exist - expected, don't log as error
       isBookmarked.value = false
       bookmarkId.value = null
     } else {
       // Other errors - log but don't show error to user for status check
-      console.error('[LibraryViewerPage] Failed to check bookmark status:', error)
+      console.debug('[LibraryViewerPage] Bookmark check failed (non-404):', error)
       isBookmarked.value = false
       bookmarkId.value = null
     }
