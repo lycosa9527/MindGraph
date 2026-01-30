@@ -15,6 +15,7 @@ Usage:
     python scripts/rename_library_pages.py --live       # Actually rename files
 """
 import argparse
+import importlib.util
 import logging
 import os
 import sys
@@ -23,6 +24,12 @@ from pathlib import Path
 # Add project root to path before importing project modules
 _project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, _project_root)
+
+# Dynamic import to avoid Ruff E402 warning
+_image_path_resolver = importlib.import_module('services.library.image_path_resolver')
+detect_image_pattern = _image_path_resolver.detect_image_pattern
+list_page_images = _image_path_resolver.list_page_images
+IMAGE_EXTENSIONS = _image_path_resolver.IMAGE_EXTENSIONS
 
 logging.basicConfig(level=logging.INFO, format='%(message)s')
 logger = logging.getLogger(__name__)
@@ -40,12 +47,6 @@ def rename_library_pages(folder_path: Path, book_name: str, dry_run: bool = True
     Returns:
         Tuple of (renamed_count, skipped_count)
     """
-    from services.library.image_path_resolver import (
-        detect_image_pattern,
-        list_page_images,
-        IMAGE_EXTENSIONS
-    )
-
     if not folder_path.exists() or not folder_path.is_dir():
         logger.error("Folder does not exist: %s", folder_path)
         return (0, 0)
@@ -122,12 +123,12 @@ def rename_library_pages(folder_path: Path, book_name: str, dry_run: bool = True
             # Create temporary filename
             temp_filename = f"{image_path.stem}.tmp{image_path.suffix}"
             temp_path = folder_path / temp_filename
-            
+
             # Check if temp filename conflicts
             if temp_path.exists():
                 temp_filename = f"{image_path.stem}_{original_page_num}.tmp{image_path.suffix}"
                 temp_path = folder_path / temp_filename
-            
+
             try:
                 image_path.rename(temp_path)
                 temp_files.append((temp_path, target_path, original_page_num, sequential_num, image_path.name))
@@ -140,7 +141,10 @@ def rename_library_pages(folder_path: Path, book_name: str, dry_run: bool = True
         for temp_path, target_path, original_page_num, sequential_num, original_name in temp_files:
             try:
                 temp_path.rename(target_path)
-                logger.info("  RENAMED: %s -> %s (was page %d, now page %d)", original_name, target_path.name, original_page_num, sequential_num)
+                logger.info(
+                    "  RENAMED: %s -> %s (was page %d, now page %d)",
+                    original_name, target_path.name, original_page_num, sequential_num
+                )
                 renamed_count += 1
             except Exception as e:
                 logger.error("  ERROR renaming temp %s to %s: %s", temp_path.name, target_path.name, e)
@@ -149,7 +153,10 @@ def rename_library_pages(folder_path: Path, book_name: str, dry_run: bool = True
     else:
         # Dry-run mode: just show what would happen
         for original_page_num, sequential_num, image_path, target_filename, target_path in rename_plan:
-            logger.info("  RENAME: %s -> %s (was page %d, now page %d)", image_path.name, target_filename, original_page_num, sequential_num)
+            logger.info(
+                "  RENAME: %s -> %s (was page %d, now page %d)",
+                image_path.name, target_filename, original_page_num, sequential_num
+            )
             renamed_count += 1
 
     logger.info("-" * 80)

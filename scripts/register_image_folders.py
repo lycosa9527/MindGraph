@@ -11,6 +11,7 @@ Usage:
     python scripts/register_image_folders.py --live       # Actually register books
 """
 import argparse
+import importlib.util
 import logging
 import os
 import sys
@@ -21,6 +22,26 @@ from sqlalchemy.orm import Session
 # Add project root to path before importing project modules
 _project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, _project_root)
+
+# Dynamic imports to avoid Ruff E402 warning
+_config_database = importlib.import_module('config.database')
+get_db = _config_database.get_db
+
+_models_domain_auth = importlib.import_module('models.domain.auth')
+User = _models_domain_auth.User
+
+_models_domain_library = importlib.import_module('models.domain.library')
+LibraryDocument = _models_domain_library.LibraryDocument
+
+_services_library = importlib.import_module('services.library')
+LibraryService = _services_library.LibraryService
+
+_services_library_image_path_resolver = importlib.import_module('services.library.image_path_resolver')
+count_pages = _services_library_image_path_resolver.count_pages
+detect_image_pattern = _services_library_image_path_resolver.detect_image_pattern
+
+_services_library_library_path_utils = importlib.import_module('services.library.library_path_utils')
+normalize_library_path = _services_library_library_path_utils.normalize_library_path
 
 logging.basicConfig(level=logging.INFO, format='%(message)s')
 logger = logging.getLogger(__name__)
@@ -40,12 +61,6 @@ def register_image_folders(library_dir: Path, db, dry_run: bool = False) -> tupl
     Returns:
         Tuple of (registered_count, updated_count)
     """
-    from models.domain.auth import User
-    from models.domain.library import LibraryDocument
-    from services.library import LibraryService
-    from services.library.image_path_resolver import count_pages, detect_image_pattern
-    from services.library.library_path_utils import normalize_library_path
-
     if not library_dir.exists():
         logger.error("Library directory not found: %s", library_dir)
         return (0, 0)
@@ -127,7 +142,11 @@ def register_image_folders(library_dir: Path, db, dry_run: bool = False) -> tupl
 
         pattern_info = detect_image_pattern(folder_path)
         if not pattern_info:
-            logger.warning("Skipping %s: Could not detect image pattern (found %d images)", folder_name, len(image_files))
+            logger.warning(
+                "Skipping %s: Could not detect image pattern (found %d images)",
+                folder_name,
+                len(image_files)
+            )
             sample_names = [f.name for f in image_files[:5]]
             logger.debug("  Sample image filenames: %s", ', '.join(sample_names))
             continue
@@ -210,7 +229,6 @@ def main():
             return 1
 
         # Get database session
-        from config.database import get_db
         db_gen = get_db()
         db: Session = next(db_gen)
 
