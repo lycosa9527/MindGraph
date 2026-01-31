@@ -7,9 +7,11 @@
 import { computed, ref } from 'vue'
 
 import { Handle, Position } from '@vue-flow/core'
+import { X } from 'lucide-vue-next'
 
 import { eventBus } from '@/composables/useEventBus'
 import { useTheme } from '@/composables/useTheme'
+import { useDiagramStore } from '@/stores'
 import type { MindGraphNodeProps } from '@/types'
 
 import InlineEditableText from './InlineEditableText.vue'
@@ -45,6 +47,11 @@ const nodeStyle = computed(() => ({
 // Inline editing state
 const isEditing = ref(false)
 
+// Hover state for delete button (only for multi-flow map)
+const isHovering = ref(false)
+
+const diagramStore = useDiagramStore()
+
 function handleTextSave(newText: string) {
   isEditing.value = false
   eventBus.emit('node:text_updated', {
@@ -56,14 +63,35 @@ function handleTextSave(newText: string) {
 function handleEditCancel() {
   isEditing.value = false
 }
+
+function handleDeleteClick(event: MouseEvent) {
+  event.stopPropagation() // Prevent node selection/dragging
+  if (diagramStore.removeNode(props.id)) {
+    diagramStore.pushHistory('删除节点')
+  }
+}
 </script>
 
 <template>
   <div
-    class="flow-node flex items-center justify-center px-5 py-3 border-solid cursor-grab select-none"
-    :class="{ 'pill-shape': isPillShape }"
+    class="flow-node flex items-center justify-center px-5 py-3 border-solid cursor-grab select-none relative"
+    :class="{ 'pill-shape': isPillShape, 'multi-flow-map-node': isMultiFlowMap }"
     :style="nodeStyle"
+    @mouseenter="isHovering = true"
+    @mouseleave="isHovering = false"
   >
+    <!-- Delete button - positioned using Vue Flow handle positioning system (Top + Right) -->
+    <!-- Positioned at top-right corner using same absolute positioning as handles -->
+    <button
+      v-if="isMultiFlowMap && isHovering"
+      class="delete-button"
+      :class="{ 'pointer-events-none': isEditing }"
+      @click="handleDeleteClick"
+      @mousedown.stop
+    >
+      <X class="w-4 h-4" />
+    </button>
+
     <InlineEditableText
       :text="data.label || ''"
       :node-id="id"
@@ -124,7 +152,7 @@ function handleEditCancel() {
 .flow-node {
   width: 140px;
   height: 50px;
-  overflow: hidden;
+  overflow: visible; /* Changed from hidden to visible so delete button isn't clipped */
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   transition:
     box-shadow 0.2s ease,
@@ -152,5 +180,38 @@ function handleEditCancel() {
   opacity: 0;
   border: none;
   background: transparent;
+}
+
+/* Delete button - positioned using Vue Flow handle positioning system */
+/* Vue Flow handles use absolute positioning relative to node container */
+/* For top-right: position at top: 0, right: 0, then offset by half button size */
+.delete-button {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background-color: #ef4444;
+  color: white;
+  border: none;
+  cursor: pointer;
+  opacity: 0.8;
+  transition: opacity 0.2s ease, transform 0.15s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  z-index: 10;
+}
+
+.delete-button:hover {
+  background-color: #dc2626;
+  opacity: 1;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+.delete-button:active {
+  transform: scale(0.95);
 }
 </style>

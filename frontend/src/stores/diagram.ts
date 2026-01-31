@@ -35,6 +35,7 @@ import {
   getDefaultTemplate,
   loadSpecForDiagramType,
   recalculateCircleMapLayout,
+  recalculateMultiFlowMapLayout,
 } from './specLoader'
 
 // Event types for diagram store events
@@ -204,20 +205,19 @@ export const useDiagramStore = defineStore('diagram', () => {
       return recalculatedNodes.map((node) => diagramNodeToVueFlowNode(node, diagramType))
     }
 
-    // For multi-flow maps, add causeCount and effectCount to event node for handle generation
+    // For multi-flow maps, recalculate layout to ensure positions and IDs are correct
+    // This makes the layout adaptive when nodes are added/deleted
     if (diagramType === 'multi_flow_map') {
-      return data.value.nodes.map((node) => {
+      const recalculatedNodes = recalculateMultiFlowMapLayout(data.value.nodes)
+      const causeNodes = recalculatedNodes.filter((n) => n.id.startsWith('cause-'))
+      const effectNodes = recalculatedNodes.filter((n) => n.id.startsWith('effect-'))
+      
+      return recalculatedNodes.map((node) => {
         const vueFlowNode = diagramNodeToVueFlowNode(node, diagramType)
-        // If this is the event node, count causes and effects connecting to it
-        if (node.id === 'event' && data.value?.connections && vueFlowNode.data) {
-          const causeCount = data.value.connections.filter(
-            (conn) => conn.target === 'event' && conn.source?.startsWith('cause-')
-          ).length
-          const effectCount = data.value.connections.filter(
-            (conn) => conn.source === 'event' && conn.target?.startsWith('effect-')
-          ).length
-          vueFlowNode.data.causeCount = causeCount || 4 // Default to 4 if no connections found
-          vueFlowNode.data.effectCount = effectCount || 4 // Default to 4 if no connections found
+        // Set causeCount and effectCount for handle generation
+        if (node.id === 'event' && vueFlowNode.data) {
+          vueFlowNode.data.causeCount = causeNodes.length
+          vueFlowNode.data.effectCount = effectNodes.length
         }
         return vueFlowNode
       })
@@ -394,7 +394,72 @@ export const useDiagramStore = defineStore('diagram', () => {
     if (!data.value) {
       data.value = { type: type.value || 'mindmap', nodes: [], connections: [] }
     }
-    data.value.nodes.push(node)
+
+    // For multi-flow maps, determine if adding cause or effect based on node data or selection
+    if (type.value === 'multi_flow_map') {
+      // Check if node has category info (from voice agent or context menu)
+      const category = (node as unknown as { category?: string }).category
+      const isCause = category === 'causes' || node.id?.startsWith('cause-')
+      const isEffect = category === 'effects' || node.id?.startsWith('effect-')
+      
+      // Determine category from selected node if not specified
+      let targetCategory: 'causes' | 'effects' | null = null
+      if (!category && selectedNodes.value.length > 0) {
+        const selectedId = selectedNodes.value[0]
+        if (selectedId.startsWith('cause-')) {
+          targetCategory = 'causes'
+        } else if (selectedId.startsWith('effect-')) {
+          targetCategory = 'effects'
+        }
+      }
+      
+      // Ensure node has text
+      if (!node.text) {
+        if (isCause || targetCategory === 'causes') {
+          node.text = 'New Cause'
+        } else if (isEffect || targetCategory === 'effects') {
+          node.text = 'New Effect'
+        } else {
+          node.text = 'New Cause' // Default
+        }
+      }
+      
+      // Add the node temporarily to get proper ID from recalculation
+      data.value.nodes.push(node)
+      
+      // Recalculate layout to update positions and rebuild connections
+      const recalculatedNodes = recalculateMultiFlowMapLayout(data.value.nodes)
+      const recalculatedConnections: Connection[] = []
+      const causeNodes = recalculatedNodes.filter((n) => n.id.startsWith('cause-'))
+      const effectNodes = recalculatedNodes.filter((n) => n.id.startsWith('effect-'))
+      
+      causeNodes.forEach((causeNode, causeIndex) => {
+        recalculatedConnections.push({
+          id: `edge-cause-${causeIndex}`,
+          source: causeNode.id,
+          target: 'event',
+          sourceHandle: 'right',
+          targetHandle: `left-${causeIndex}`,
+        })
+      })
+      
+      effectNodes.forEach((effectNode, effectIndex) => {
+        recalculatedConnections.push({
+          id: `edge-effect-${effectIndex}`,
+          source: 'event',
+          target: effectNode.id,
+          sourceHandle: `right-${effectIndex}`,
+          targetHandle: 'left',
+        })
+      })
+      
+      // Update nodes and connections
+      data.value.nodes = recalculatedNodes
+      data.value.connections = recalculatedConnections
+    } else {
+      // Standard add for other diagram types
+      data.value.nodes.push(node)
+    }
 
     emitEvent('diagram:node_added', { node })
   }
@@ -413,13 +478,50 @@ export const useDiagramStore = defineStore('diagram', () => {
       return false
     }
 
-    data.value.nodes.splice(index, 1)
+    // For multi-flow maps, rebuild layout after deletion to re-index IDs
+    if (type.value === 'multi_flow_map') {
+      // Remove the node first
+      data.value.nodes.splice(index, 1)
+      
+      // Recalculate layout to re-index IDs and rebuild connections
+      const recalculatedNodes = recalculateMultiFlowMapLayout(data.value.nodes)
+      const recalculatedConnections: Connection[] = []
+      const causeNodes = recalculatedNodes.filter((n) => n.id.startsWith('cause-'))
+      const effectNodes = recalculatedNodes.filter((n) => n.id.startsWith('effect-'))
+      
+      causeNodes.forEach((causeNode, causeIndex) => {
+        recalculatedConnections.push({
+          id: `edge-cause-${causeIndex}`,
+          source: causeNode.id,
+          target: 'event',
+          sourceHandle: 'right',
+          targetHandle: `left-${causeIndex}`,
+        })
+      })
+      
+      effectNodes.forEach((effectNode, effectIndex) => {
+        recalculatedConnections.push({
+          id: `edge-effect-${effectIndex}`,
+          source: 'event',
+          target: effectNode.id,
+          sourceHandle: `right-${effectIndex}`,
+          targetHandle: 'left',
+        })
+      })
+      
+      // Update nodes and connections
+      data.value.nodes = recalculatedNodes
+      data.value.connections = recalculatedConnections
+    } else {
+      // Standard deletion for other diagram types
+      data.value.nodes.splice(index, 1)
 
-    // Also remove connections involving this node
-    if (data.value.connections) {
-      data.value.connections = data.value.connections.filter(
-        (c) => c.source !== nodeId && c.target !== nodeId
-      )
+      // Also remove connections involving this node
+      if (data.value.connections) {
+        data.value.connections = data.value.connections.filter(
+          (c) => c.source !== nodeId && c.target !== nodeId
+        )
+      }
     }
 
     // Clean up custom positions and styles for deleted node

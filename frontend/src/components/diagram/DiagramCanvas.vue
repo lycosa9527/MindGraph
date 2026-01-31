@@ -23,6 +23,7 @@ import type { MindGraphNode } from '@/types'
 
 import BraceOverlay from './BraceOverlay.vue'
 import BridgeOverlay from './BridgeOverlay.vue'
+import ContextMenu from './ContextMenu.vue'
 import BraceEdge from './edges/BraceEdge.vue'
 // Import custom edge components
 import CurvedEdge from './edges/CurvedEdge.vue'
@@ -87,11 +88,21 @@ const {
   getViewport,
 } = useVueFlow()
 
+// Vue Flow wrapper reference for context menu
+const vueFlowWrapper = ref<HTMLElement | null>(null)
+
 // Track if current fit was done with panel space reserved
 const isFittedForPanel = ref(false)
 
 // Canvas container reference for size calculations
 const canvasContainer = ref<HTMLElement | null>(null)
+
+// Context menu state
+const contextMenuVisible = ref(false)
+const contextMenuX = ref(0)
+const contextMenuY = ref(0)
+const contextMenuNode = ref<MindGraphNode | null>(null)
+const contextMenuTarget = ref<'node' | 'pane'>('pane')
 
 // Custom node types registration
 // Use markRaw to prevent Vue from making components reactive (performance optimization)
@@ -167,6 +178,63 @@ onNodeDragStop(({ node }) => {
 function handlePaneClick() {
   diagramStore.clearSelection()
   emit('paneClick')
+}
+
+// Handle pane context menu (right-click on empty canvas)
+function handlePaneContextMenu(event: MouseEvent) {
+  event.preventDefault()
+  contextMenuX.value = event.clientX
+  contextMenuY.value = event.clientY
+  contextMenuNode.value = null
+  contextMenuTarget.value = 'pane'
+  contextMenuVisible.value = true
+}
+
+// Handle node context menu (right-click on node)
+function handleNodeContextMenu(event: MouseEvent, node: MindGraphNode) {
+  event.preventDefault()
+  contextMenuX.value = event.clientX
+  contextMenuY.value = event.clientY
+  contextMenuNode.value = node
+  contextMenuTarget.value = 'node'
+  contextMenuVisible.value = true
+}
+
+// Set up context menu listeners on mount
+onMounted(() => {
+  // Use nextTick to ensure Vue Flow is rendered
+  setTimeout(() => {
+    const vueFlowElement = vueFlowWrapper.value?.querySelector('.vue-flow')
+    if (vueFlowElement) {
+      // Listen for contextmenu events on Vue Flow pane
+      vueFlowElement.addEventListener('contextmenu', (event: Event) => {
+        const mouseEvent = event as MouseEvent
+        const target = mouseEvent.target as HTMLElement
+        
+        // Check if clicking on a node
+        const nodeElement = target.closest('.vue-flow__node')
+        if (nodeElement) {
+          const nodeId = nodeElement.getAttribute('data-id')
+          if (nodeId) {
+            const node = getNodes.value.find((n) => n.id === nodeId)
+            if (node) {
+              handleNodeContextMenu(mouseEvent, node as unknown as MindGraphNode)
+              return
+            }
+          }
+        }
+        
+        // Otherwise, it's a pane click
+        handlePaneContextMenu(mouseEvent)
+      })
+    }
+  }, 100)
+})
+
+// Close context menu
+function closeContextMenu() {
+  contextMenuVisible.value = false
+  contextMenuNode.value = null
 }
 
 // Handle nodes initialized - flow maps now use fixed dimensions, no recalculation needed
@@ -388,6 +456,16 @@ watch(
 const unsubscribers: (() => void)[] = []
 
 onMounted(() => {
+  // Listen for node edit requests from context menu
+  unsubscribers.push(
+    eventBus.on('node:edit_requested', ({ nodeId }) => {
+      const node = getNodes.value.find((n) => n.id === nodeId)
+      if (node) {
+        emit('nodeDoubleClick', node as unknown as MindGraphNode)
+      }
+    })
+  )
+
   // Listen for fit requests from other components
   unsubscribers.push(
     eventBus.on('view:fit_to_window_requested', (data) => {
@@ -463,7 +541,11 @@ const gridConfig = {
     ref="canvasContainer"
     class="diagram-canvas w-full h-full"
   >
-    <VueFlow
+    <div
+      ref="vueFlowWrapper"
+      class="vue-flow-wrapper w-full h-full"
+    >
+      <VueFlow
       :nodes="nodes"
       :edges="edges"
       :node-types="nodeTypes"
@@ -515,7 +597,18 @@ const gridConfig = {
 
       <!-- Bridge overlay for bridge maps (draws vertical lines, triangles, and dimension label) -->
       <BridgeOverlay />
-    </VueFlow>
+      </VueFlow>
+    </div>
+
+    <!-- Custom context menu -->
+    <ContextMenu
+      :visible="contextMenuVisible"
+      :x="contextMenuX"
+      :y="contextMenuY"
+      :node="contextMenuNode"
+      :target="contextMenuTarget"
+      @close="closeContextMenu"
+    />
   </div>
 </template>
 
@@ -728,5 +821,26 @@ const gridConfig = {
 .vue-flow__node-boundary.selected {
   box-shadow: none !important;
   filter: none !important;
+}
+
+/* Multi-flow map node selection - matches circle map approach */
+/* Use :has() selector to target wrapper when it contains multi-flow-map-node component */
+/* This is the SAME approach as circle map - target by node type classes */
+.vue-flow__node-flow.selected:has(.multi-flow-map-node),
+.vue-flow__node-topic.selected:has(.multi-flow-map-node) {
+  box-shadow: none !important;
+  filter: drop-shadow(0 0 8px rgba(102, 126, 234, 0.6))
+    drop-shadow(0 0 4px rgba(102, 126, 234, 0.4)) !important;
+  animation: pulseGlow 2s ease-in-out infinite !important;
+}
+
+/* Fallback: Target by ID patterns if :has() not supported (older browsers) */
+.vue-flow__node-flow[id^="cause-"].selected,
+.vue-flow__node-flow[id^="effect-"].selected,
+.vue-flow__node-topic[id="event"].selected {
+  box-shadow: none !important;
+  filter: drop-shadow(0 0 8px rgba(102, 126, 234, 0.6))
+    drop-shadow(0 0 4px rgba(102, 126, 234, 0.4)) !important;
+  animation: pulseGlow 2s ease-in-out infinite !important;
 }
 </style>

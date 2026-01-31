@@ -28,6 +28,7 @@ import {
 import { useNotifications } from '@/composables'
 import { useAutoComplete, useLanguage } from '@/composables'
 import { useDiagramStore } from '@/stores'
+import type { DiagramNode } from '@/types'
 
 const notify = useNotifications()
 
@@ -35,6 +36,9 @@ const { isZh } = useLanguage()
 const { isGenerating: isAIGenerating, autoComplete, validateForAutoComplete } = useAutoComplete()
 
 const diagramStore = useDiagramStore()
+
+// Computed property to check if current diagram is multi-flow map
+const isMultiFlowMap = computed(() => diagramStore.type === 'multi_flow_map')
 
 // Dropdown visibility (prefixed with _ to indicate intentionally unused - reserved for future)
 const _showStyleDropdown = ref(false)
@@ -130,6 +134,56 @@ function handleAddNode() {
 
   // For other diagram types, show under development message
   notify.info('增加节点功能开发中')
+}
+
+function handleAddCause() {
+  const diagramType = diagramStore.type
+
+  if (!diagramStore.data?.nodes) {
+    notify.warning('请先创建图示')
+    return
+  }
+
+  if (diagramType !== 'multi_flow_map') {
+    return
+  }
+
+  // Add new cause node (layout will be recalculated automatically)
+  diagramStore.addNode({
+    id: 'cause-temp', // Temporary ID, will be re-indexed
+    text: '新原因',
+    type: 'flow',
+    position: { x: 0, y: 0 }, // Will be recalculated
+    category: 'causes', // Pass category to addNode
+  } as DiagramNode & { category?: string })
+
+  diagramStore.pushHistory('添加原因')
+  notify.success('已添加原因节点')
+}
+
+function handleAddEffect() {
+  const diagramType = diagramStore.type
+
+  if (!diagramStore.data?.nodes) {
+    notify.warning('请先创建图示')
+    return
+  }
+
+  if (diagramType !== 'multi_flow_map') {
+    return
+  }
+
+  // Add new effect node (layout will be recalculated automatically)
+  diagramStore.addNode({
+    id: 'effect-temp', // Temporary ID, will be re-indexed
+    text: '新结果',
+    type: 'flow',
+    position: { x: 0, y: 0 }, // Will be recalculated
+    category: 'effects', // Pass category to addNode
+  } as DiagramNode & { category?: string })
+
+  diagramStore.pushHistory('添加结果')
+  notify.success('已添加结果节点')
 }
 
 function handleDeleteNode() {
@@ -255,7 +309,39 @@ function handleToggleOrientation() {
         <div class="divider" />
 
         <!-- Add/Delete node -->
+        <!-- For multi-flow maps, show two separate buttons: Add Cause and Add Effect -->
+        <template v-if="isMultiFlowMap">
+          <ElTooltip
+            :content="isZh ? '添加原因' : 'Add Cause'"
+            placement="bottom"
+          >
+            <ElButton
+              text
+              size="small"
+              @click="handleAddCause"
+            >
+              <Plus class="w-4 h-4" />
+              <span>{{ isZh ? '添加原因' : 'Add Cause' }}</span>
+            </ElButton>
+          </ElTooltip>
+          <ElTooltip
+            :content="isZh ? '添加结果' : 'Add Effect'"
+            placement="bottom"
+          >
+            <ElButton
+              text
+              size="small"
+              @click="handleAddEffect"
+            >
+              <Plus class="w-4 h-4" />
+              <span>{{ isZh ? '添加结果' : 'Add Effect' }}</span>
+            </ElButton>
+          </ElTooltip>
+        </template>
+        
+        <!-- For other diagram types, show simple button -->
         <ElTooltip
+          v-else
           :content="isZh ? '增加节点' : 'Add Node'"
           placement="bottom"
         >

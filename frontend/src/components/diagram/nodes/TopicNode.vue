@@ -174,7 +174,7 @@ function handleEditCancel() {
 <template>
   <div
     class="topic-node flex items-center justify-center px-6 py-4 border-solid cursor-default select-none"
-    :class="{ 'pill-shape': isPillShape, 'rounded-rectangle': isRoundedRectangle }"
+    :class="{ 'pill-shape': isPillShape, 'rounded-rectangle': isRoundedRectangle, 'multi-flow-map-node': isMultiFlowMap }"
     :style="nodeStyle"
   >
     <InlineEditableText

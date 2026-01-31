@@ -16,12 +16,13 @@ import { loadDoubleBubbleMapSpec } from './doubleBubbleMap'
 import { loadFlowMapSpec } from './flowMap'
 import { loadGenericSpec } from './generic'
 import { loadMindMapSpec } from './mindMap'
-import { loadMultiFlowMapSpec } from './multiFlowMap'
+import { loadMultiFlowMapSpec, recalculateMultiFlowMapLayout } from './multiFlowMap'
 import { loadTreeMapSpec } from './treeMap'
 import type { SpecLoaderResult } from './types'
 
 // Re-export public APIs
 export { recalculateCircleMapLayout } from './circleMap'
+export { recalculateMultiFlowMapLayout } from './multiFlowMap'
 export type { SpecLoaderResult } from './types'
 
 /**
