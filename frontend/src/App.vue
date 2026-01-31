@@ -52,16 +52,26 @@ function handleSessionExpiredLoginSuccess() {
   // Close the session expired modal
   authStore.closeSessionExpiredModal()
   
-  // Clear any pending redirect - we want to stay on the current page
-  authStore.getAndClearPendingRedirect()
+  // Check for pending redirect (set when user tries to access protected route)
+  const redirectPath = authStore.getAndClearPendingRedirect()
   
-  // Refresh the current route to reload data with new auth state
-  // Use router.currentRoute to ensure we get the current route reactively
-  const currentPath = router.currentRoute.value.fullPath
-  router.replace(currentPath).catch(() => {
-    // If replace fails, just reload the page to ensure fresh state
-    window.location.reload()
-  })
+  if (redirectPath) {
+    // User was trying to access a protected route - navigate to it
+    router.push(redirectPath).catch(() => {
+      // If push fails, try replace
+      router.replace(redirectPath).catch(() => {
+        // If replace also fails, reload the page
+        window.location.href = redirectPath
+      })
+    })
+  } else {
+    // No redirect - stay on current page and refresh to reload data with new auth state
+    const currentPath = router.currentRoute.value.fullPath
+    router.replace(currentPath).catch(() => {
+      // If replace fails, just reload the page to ensure fresh state
+      window.location.reload()
+    })
+  }
   
   // Note: notification is already shown in LoginModal.vue, no need to duplicate here
 }

@@ -25,7 +25,7 @@ os.environ.setdefault('PYTHONPATH', str(project_root))
 try:
     from sqlalchemy import text
     from config.database import engine
-    from utils.migration.db_migration import run_migrations
+    from utils.migration.postgresql.schema_migration import run_migrations
 except ImportError as e:
     print(f"Error importing dependencies: {e}")
     print("\nPlease run this script from the project root with the correct Python environment.")

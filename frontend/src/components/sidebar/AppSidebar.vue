@@ -162,6 +162,10 @@ function startNewChat() {
 
 // Start new AskOnce conversation
 function startNewAskOnce() {
+  if (!isAuthenticated.value) {
+    openLoginModal()
+    return
+  }
   askOnceStore.startNewConversation()
   // Navigate to AskOnce if not already there
   if (currentMode.value !== 'askonce') {

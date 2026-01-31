@@ -101,7 +101,7 @@ def cleanup_orphaned_records(db_path: Path, dry_run: bool = True) -> dict:
     conn = sqlite3.connect(str(db_path))
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
-    
+
     print("=" * 80)
     print("Orphaned Records Cleanup")
     print("=" * 80)
@@ -120,7 +120,7 @@ def cleanup_orphaned_records(db_path: Path, dry_run: bool = True) -> dict:
 
     if orphaned_count > 0:
         print(f"  Found {orphaned_count:,} orphaned records (user_id references deleted users)")
-        
+
         if not dry_run:
             cursor.execute("""
                 DELETE FROM token_usage
@@ -189,7 +189,7 @@ def cleanup_orphaned_records(db_path: Path, dry_run: bool = True) -> dict:
             if orphaned_count > 0:
                 print(f"\n  {table_name}.{fk_col}:")
                 print(f"    Found {orphaned_count:,} orphaned records")
-                
+
                 if not dry_run:
                     cursor.execute(f"""
                         DELETE FROM {table_name}
@@ -216,7 +216,7 @@ def cleanup_orphaned_records(db_path: Path, dry_run: bool = True) -> dict:
 def main():
     """Main function."""
     db_path = get_sqlite_db_path()
-    
+
     if not db_path or not db_path.exists():
         print("[ERROR] SQLite database not found!")
         return
@@ -226,7 +226,7 @@ def main():
 
     # Check for --live flag
     dry_run = '--live' not in sys.argv
-    
+
     if dry_run:
         print("[INFO] Running in DRY RUN mode. Use --live to actually delete records.\n")
     else:
@@ -251,7 +251,7 @@ def main():
 
     # Run cleanup
     stats = cleanup_orphaned_records(db_path, dry_run=dry_run)
-    
+
     # Summary
     print("\n" + "=" * 80)
     print("Summary")
@@ -270,7 +270,7 @@ def main():
             print("\n[OK] Cleanup completed!")
     else:
         print("\n[OK] No orphaned records found. Database is clean!")
-    
+
     print("\n" + "=" * 80)
 
 

@@ -14,6 +14,7 @@ import { Bookmark, Trash2, FileText } from 'lucide-vue-next'
 import { useLanguage } from '@/composables'
 import { type LibraryBookmark } from '@/utils/apiClient'
 import { useNotifications } from '@/composables'
+import { useAuthStore } from '@/stores/auth'
 import { useLibraryStore } from '@/stores/library'
 
 defineProps<{
@@ -23,6 +24,7 @@ defineProps<{
 const { isZh } = useLanguage()
 const router = useRouter()
 const notify = useNotifications()
+const authStore = useAuthStore()
 const libraryStore = useLibraryStore()
 
 // Show all or just 10
@@ -35,6 +37,10 @@ const loading = computed(() => libraryStore.bookmarksLoading)
 
 // Fetch recent bookmarks
 async function fetchRecentBookmarks() {
+  // Only fetch if user is authenticated
+  if (!authStore.isAuthenticated) {
+    return
+  }
   await libraryStore.fetchRecentBookmarks()
 }
 

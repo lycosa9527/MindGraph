@@ -61,11 +61,21 @@ function clearType() {
 }
 
 function handleFreeInputChange(e: Event) {
+  if (!authStore.isAuthenticated) {
+    e.preventDefault()
+    authStore.handleTokenExpired(undefined, undefined)
+    return
+  }
   const target = e.target as HTMLElement
   uiStore.setFreeInputValue(target.textContent || '')
 }
 
 function handleSlotInput(slotName: string, e: Event) {
+  if (!authStore.isAuthenticated) {
+    e.preventDefault()
+    authStore.handleTokenExpired(undefined, undefined)
+    return
+  }
   const target = e.target as HTMLElement
   const placeholder = target.getAttribute('data-placeholder')
   const value = target.textContent === placeholder ? '' : target.textContent?.trim() || ''
@@ -73,6 +83,11 @@ function handleSlotInput(slotName: string, e: Event) {
 }
 
 function handleSlotFocus(e: FocusEvent) {
+  if (!authStore.isAuthenticated) {
+    e.preventDefault()
+    authStore.handleTokenExpired(undefined, undefined)
+    return
+  }
   const target = e.target as HTMLElement
   const placeholder = target.getAttribute('data-placeholder')
   if (placeholder && target.textContent === placeholder) {
@@ -91,7 +106,12 @@ function handleSlotBlur(e: FocusEvent) {
 }
 
 function handleSubmit() {
-  if (!uiStore.hasValidSlots() || !authStore.isAuthenticated) return
+  if (!uiStore.hasValidSlots()) return
+  
+  if (!authStore.isAuthenticated) {
+    authStore.handleTokenExpired(undefined, undefined)
+    return
+  }
 
   const requestText = uiStore.getTemplateText()
   // Store diagram type and prompt, then navigate with type in URL for refresh persistence
@@ -146,9 +166,11 @@ const templateParts = computed(() => {
         v-if="selectedType === '选择图示'"
         id="mindgraph-free-input"
         class="w-full min-h-[40px] p-3 text-gray-800 focus:outline-none"
-        contenteditable="true"
+        :contenteditable="authStore.isAuthenticated"
+        :style="{ cursor: authStore.isAuthenticated ? 'text' : 'not-allowed', opacity: authStore.isAuthenticated ? 1 : 0.6 }"
         data-placeholder="请输入绘图要求..."
         @input="handleFreeInputChange"
+        @focus="!authStore.isAuthenticated && authStore.handleTokenExpired(undefined, undefined)"
       />
 
       <!-- Template mode -->
@@ -183,10 +205,14 @@ const templateParts = computed(() => {
             <span
               v-else
               class="inline-block border border-blue-200 rounded px-2 py-1 min-w-[60px] text-center cursor-text"
-              contenteditable="true"
+              :contenteditable="authStore.isAuthenticated"
               :data-slot="part.name"
               :data-placeholder="part.name"
-              :style="{ color: templateSlots[part.name] ? '#000' : '#9CA3AF' }"
+              :style="{ 
+                color: templateSlots[part.name] ? '#000' : '#9CA3AF',
+                cursor: authStore.isAuthenticated ? 'text' : 'not-allowed',
+                opacity: authStore.isAuthenticated ? 1 : 0.6
+              }"
               @input="handleSlotInput(part.name, $event)"
               @focus="handleSlotFocus"
               @blur="handleSlotBlur"
@@ -204,8 +230,10 @@ const templateParts = computed(() => {
       <div class="relative w-1/4">
         <select
           :value="selectedType"
-          class="w-full appearance-none bg-white border border-blue-500 rounded-md py-2 pl-3 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+          :disabled="!authStore.isAuthenticated"
+          class="w-full appearance-none bg-white border border-blue-500 rounded-md py-2 pl-3 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
           @change="handleTypeChange(($event.target as HTMLSelectElement).value)"
+          @focus="!authStore.isAuthenticated && authStore.handleTokenExpired(undefined, undefined)"
         >
           <option
             v-for="type in chartTypes"

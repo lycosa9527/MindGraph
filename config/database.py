@@ -34,7 +34,7 @@ except ImportError:
     CriticalAlertService = None
 
 # Import migration utility (auth import is lazy to avoid circular dependency)
-from utils.migration.db_migration import run_migrations
+from utils.migration.postgresql.schema_migration import run_migrations
 from models.domain.auth import (
     Base, Organization, User, APIKey,
     UpdateNotification, UpdateNotificationDismissed

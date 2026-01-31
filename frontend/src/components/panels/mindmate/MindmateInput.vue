@@ -82,11 +82,23 @@ function formatFileSize(bytes: number): string {
 
 // Trigger file input
 function triggerFileUpload() {
+  if (!authStore.isAuthenticated) {
+    authStore.handleTokenExpired(undefined, undefined)
+    return
+  }
   fileInputRef.value?.click()
 }
 
 // Handle file selection - only images allowed
 function handleFileSelect(event: Event) {
+  // Check authentication before allowing file upload
+  if (!authStore.isAuthenticated) {
+    const input = event.target as HTMLInputElement
+    input.value = ''
+    authStore.handleTokenExpired(undefined, undefined)
+    return
+  }
+
   const input = event.target as HTMLInputElement
   const files = input.files
   if (!files || files.length === 0) return
@@ -115,10 +127,33 @@ function handleKeydown(event: Event | KeyboardEvent) {
   // Type guard for KeyboardEvent
   if (!('key' in event)) return
 
+  // Check authentication before allowing input
+  if (!authStore.isAuthenticated) {
+    event.preventDefault()
+    authStore.handleTokenExpired(undefined, undefined)
+    return
+  }
+
   if (event.key === 'Enter' && !event.shiftKey) {
     event.preventDefault()
-    emit('send')
+    handleSend()
   }
+}
+
+// Handle input focus - show login modal if not authenticated
+function handleInputFocus() {
+  if (!authStore.isAuthenticated) {
+    authStore.handleTokenExpired(undefined, undefined)
+  }
+}
+
+// Handle send button click
+function handleSend() {
+  if (!authStore.isAuthenticated) {
+    authStore.handleTokenExpired(undefined, undefined)
+    return
+  }
+  emit('send')
 }
 
 // Handle suggestion bubble click
@@ -200,10 +235,11 @@ function handleSuggestionSelect(suggestion: string) {
             type="textarea"
             :autosize="{ minRows: 1, maxRows: 4 }"
             :placeholder="isZh ? '输入你的问题...' : 'Type your question...'"
-            :disabled="isLoading"
+            :disabled="isLoading || !authStore.isAuthenticated"
             class="fullpage-textarea"
             @update:model-value="emit('update:inputText', $event)"
             @keydown="handleKeydown"
+            @focus="handleInputFocus"
           />
         </div>
 
@@ -214,7 +250,7 @@ function handleSuggestionSelect(suggestion: string) {
             <ElButton
               text
               class="attach-btn-fullpage"
-              :disabled="isLoading || isUploading"
+              :disabled="isLoading || isUploading || !authStore.isAuthenticated"
               @click="triggerFileUpload"
             >
               <Paperclip
@@ -242,7 +278,7 @@ function handleSuggestionSelect(suggestion: string) {
             type="primary"
             class="send-btn-fullpage"
             :disabled="isSendDisabled"
-            @click="emit('send')"
+            @click="handleSend"
           >
             <Send :size="18" />
           </ElButton>
@@ -302,7 +338,7 @@ function handleSuggestionSelect(suggestion: string) {
         <!-- Attach Button -->
         <button
           class="attach-btn"
-          :disabled="isLoading || isUploading"
+          :disabled="isLoading || isUploading || !authStore.isAuthenticated"
           :class="{ 'is-loading': isUploading }"
           @click="triggerFileUpload"
         >
@@ -324,10 +360,11 @@ function handleSuggestionSelect(suggestion: string) {
                 ? '提问、分析图表、或请求修改...'
                 : 'Ask questions, analyze diagrams, or request changes...'
             "
-            :disabled="isLoading"
+            :disabled="isLoading || !authStore.isAuthenticated"
             class="swiss-textarea"
             @update:model-value="emit('update:inputText', $event)"
             @keydown="handleKeydown"
+            @focus="handleInputFocus"
           />
         </div>
 
@@ -343,7 +380,7 @@ function handleSuggestionSelect(suggestion: string) {
           v-else
           class="send-btn"
           :disabled="isSendDisabled"
-          @click="emit('send')"
+          @click="handleSend"
         >
           <ElIcon><Promotion /></ElIcon>
         </button>

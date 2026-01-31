@@ -187,8 +187,10 @@ router.beforeEach(async (to, _from, next) => {
         return next(false)
       }
       
-      // User was never authenticated - redirect to login page
-      return next({ name: 'Login', query: { redirect: to.fullPath } })
+      // User was never authenticated - show login modal with redirect path
+      authStore.handleTokenExpired(undefined, to.fullPath)
+      // Prevent navigation - user must login first
+      return next(false)
     }
   }
 

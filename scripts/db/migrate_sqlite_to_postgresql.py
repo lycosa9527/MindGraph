@@ -111,14 +111,14 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 try:
-    from utils.migration.sqlite_data_migration import migrate_sqlite_to_postgresql
-    from utils.migration.sqlite_migration_utils import (
+    from utils.migration.sqlite_to_postgresql.data_migration import migrate_sqlite_to_postgresql
+    from utils.migration.sqlite.migration_utils import (
         get_sqlite_db_path,
         is_migration_completed,
         is_postgresql_empty,
         MIGRATION_MARKER_FILE
     )
-    from utils.migration.sqlite_migration_tables import verify_migration
+    from utils.migration.sqlite.migration_tables import verify_migration
 except ImportError as e:
     print(f"[ERROR] Failed to import migration module: {e}")
     print("\nRequired dependencies:")

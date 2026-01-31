@@ -99,18 +99,17 @@ const pageHeaderTitle = computed(() => {
 
 // Close modal
 function closeModal() {
-  // Prevent closing if this is a session expired modal (user must login)
-  if (authStore.showSessionExpiredModal) {
-    return
-  }
-
+  // Close the modal
   isVisible.value = false
   resetAllForms()
   currentView.value = 'login'
   activeTab.value = 'login'
-  // Clear session expired state when modal closes
-  if (authStore.sessionExpiredMessage) {
+  
+  // Clear session expired state and pending redirect when modal closes
+  if (authStore.showSessionExpiredModal) {
     authStore.closeSessionExpiredModal()
+    // Clear pending redirect since user chose to close instead of logging in
+    authStore.getAndClearPendingRedirect()
   }
 }
 
@@ -477,11 +476,6 @@ async function handleResetPassword() {
 
 // Handle backdrop click
 function handleBackdropClick(event: MouseEvent) {
-  // Prevent closing session expired modal by clicking backdrop
-  if (authStore.showSessionExpiredModal) {
-    return
-  }
-
   if (event.target === event.currentTarget) {
     closeModal()
   }
@@ -493,7 +487,7 @@ function handleBackdropClick(event: MouseEvent) {
     <Transition name="modal">
       <div
         v-if="isVisible"
-        class="fixed inset-0 z-[1000] flex items-center justify-center p-4"
+        class="fixed inset-0 z-1000 flex items-center justify-center p-4"
         :class="{ 'pointer-events-auto': authStore.showSessionExpiredModal }"
         @click="handleBackdropClick"
       >
@@ -507,9 +501,8 @@ function handleBackdropClick(event: MouseEvent) {
         <div class="relative w-full max-w-sm">
           <!-- Card -->
           <div class="bg-white rounded-xl shadow-2xl overflow-hidden relative">
-            <!-- Close button (hidden for session expired modal) -->
+            <!-- Close button -->
             <el-button
-              v-if="!authStore.showSessionExpiredModal"
               class="close-btn"
               :icon="Close"
               circle

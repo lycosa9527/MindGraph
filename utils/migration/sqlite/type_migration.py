@@ -1,4 +1,4 @@
-"""Database Type Migration Handler.
+"""SQLite Type Migration Handler.
 
 Handles column type mismatches for SQLite databases.
 SQLite doesn't support ALTER COLUMN, so table recreation is required.

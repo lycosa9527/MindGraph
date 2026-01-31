@@ -13,11 +13,13 @@ const props = withDefaults(
     mode?: 'panel' | 'fullpage'
     title?: string
     isTyping?: boolean
+    isAuthenticated?: boolean
   }>(),
   {
     mode: 'panel',
     title: 'MindMate',
     isTyping: false,
+    isAuthenticated: true,
   }
 )
 
@@ -33,7 +35,7 @@ const isFullpageMode = computed(() => props.mode === 'fullpage')
 
 <template>
   <div
-    class="panel-header h-14 px-4 flex items-center justify-between border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex-shrink-0"
+    class="panel-header h-14 px-4 flex items-center justify-between border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shrink-0"
   >
     <div class="flex items-center gap-2 min-w-0 flex-1">
       <!-- History button only in panel mode -->
@@ -45,7 +47,7 @@ const isFullpageMode = computed(() => props.mode === 'fullpage')
           text
           circle
           size="small"
-          class="flex-shrink-0"
+          class="shrink-0"
           @click="emit('toggleHistory')"
         >
           <ElIcon><Menu /></ElIcon>
@@ -57,7 +59,7 @@ const isFullpageMode = computed(() => props.mode === 'fullpage')
         :src="mindmateAvatarMd"
         alt="MindMate"
         :size="40"
-        class="mindmate-avatar flex-shrink-0"
+        class="mindmate-avatar shrink-0"
       />
       <h1
         class="text-sm font-semibold text-gray-800 dark:text-white truncate"
@@ -66,11 +68,12 @@ const isFullpageMode = computed(() => props.mode === 'fullpage')
         {{ title }}
       </h1>
     </div>
-    <div class="flex items-center gap-2 flex-shrink-0">
+    <div class="flex items-center gap-2 shrink-0">
       <!-- New Conversation button -->
       <ElButton
         class="new-chat-btn"
         size="small"
+        :disabled="!props.isAuthenticated"
         @click="emit('newConversation')"
       >
         <ElIcon class="mr-1"><Plus /></ElIcon>

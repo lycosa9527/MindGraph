@@ -121,6 +121,10 @@ function toggleHistorySidebar() {
 
 // Start a new conversation
 function startNewConversation() {
+  if (!authStore.isAuthenticated) {
+    authStore.handleTokenExpired(undefined, undefined)
+    return
+  }
   mindMate.startNewConversation()
   displayTitle.value = 'MindMate'
 }
@@ -287,6 +291,7 @@ function isLastAssistantMessage(messageId: string): boolean {
       :mode="mode"
       :title="displayTitle"
       :is-typing="isTypingTitle"
+      :is-authenticated="authStore.isAuthenticated"
       @toggle-history="toggleHistorySidebar"
       @new-conversation="startNewConversation"
       @close="emit('close')"

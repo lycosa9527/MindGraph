@@ -25,127 +25,151 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-def check_status(engine, Base):
+
+def ensure_models_registered(base):
+    """
+    Ensure all models are imported and registered with Base.metadata.
+
+    This is important because config.database imports models, but we want
+    to ensure they're all registered before checking database status.
+
+    Args:
+        base: SQLAlchemy Base metadata object
+
+    Returns:
+        bool: True if models are registered, False otherwise
+    """
+    logger.info("Ensuring all models are registered with Base.metadata...")
+    
+    try:
+        registered_tables = set(base.metadata.tables.keys())
+        logger.info(
+            "✓ Models registered: %d table(s) in Base.metadata",
+            len(registered_tables)
+        )
+        logger.debug("Registered tables: %s", ', '.join(sorted(registered_tables)))
+        return True
+    except Exception as e:
+        logger.error("Failed to check model registration: %s", e)
+        return False
+
+
+def check_status(engine, base):
     """
     Check current database status using module function.
-    
+
     Returns:
         tuple: (expected_tables, existing_tables, missing_tables)
     """
-    from utils.migration.db_migration import check_database_status
-    
+    from utils.migration.postgresql.schema_migration import check_database_status
+
     logger.info("=" * 60)
     logger.info("STEP 1: CHECK - Current Database Status")
     logger.info("=" * 60)
-    
-    # Import all models to ensure they're registered
-    logger.info("Importing models to register with Base.metadata...")
-    try:
-        from models.domain.library import (
-            LibraryDocument, LibraryDanmaku, LibraryDanmakuLike,
-            LibraryDanmakuReply, LibraryBookmark
-        )
-        logger.info("✓ Library models imported")
-        logger.debug(f"  - LibraryBookmark table: {LibraryBookmark.__tablename__}")
-    except Exception as e:
-        logger.warning(f"Could not import library models: {e}")
-    
+
     # Use module function to check status
-    status = check_database_status(engine, Base)
+    status = check_database_status(engine, base)
     expected_tables = status['expected_tables']
     existing_tables = status['existing_tables']
     missing_tables = status['missing_tables']
     missing_columns = status['missing_columns']
-    
+
     # Log status
-    logger.info(f"\nExpected tables in Base.metadata ({len(expected_tables)}):")
+    logger.info("\nExpected tables in Base.metadata (%d):", len(expected_tables))
     for table_name in sorted(expected_tables):
-        logger.info(f"  - {table_name}")
-    
-    logger.info(f"\nExisting tables in database ({len(existing_tables)}):")
+        logger.info("  - %s", table_name)
+
+    logger.info("\nExisting tables in database (%d):", len(existing_tables))
     for table_name in sorted(existing_tables):
-        logger.info(f"  - {table_name}")
-    
+        logger.info("  - %s", table_name)
+
     if missing_tables:
-        logger.warning(f"\n⚠ Found {len(missing_tables)} missing table(s):")
+        logger.warning("\n⚠ Found %d missing table(s):", len(missing_tables))
         for table_name in sorted(missing_tables):
-            logger.warning(f"  - {table_name}")
+            logger.warning("  - %s", table_name)
     else:
         logger.info("\n✓ All expected tables exist in database")
-    
+
     if missing_columns:
         missing_columns_count = sum(len(cols) for cols in missing_columns.values())
-        logger.warning(f"\n⚠ Found {missing_columns_count} missing column(s) across tables:")
+        logger.warning("\n⚠ Found %d missing column(s) across tables:", missing_columns_count)
         for table_name, missing_cols in missing_columns.items():
             logger.warning(
-                f"  - Table '{table_name}': {len(missing_cols)} missing column(s): {', '.join(sorted(missing_cols))}"
+                "  - Table '%s': %d missing column(s): %s",
+                table_name, len(missing_cols), ', '.join(sorted(missing_cols))
             )
     else:
         logger.info("\n✓ All tables have all expected columns")
-    
+
     return expected_tables, existing_tables, missing_tables
 
 
-def verify_results(engine, Base, expected_tables):
+def verify_results(engine, base, expected_tables):
     """
     Verify migration results using module function.
-    
+
     Returns:
         bool: True if verification passed, False otherwise
     """
-    from utils.migration.db_migration import verify_migration_results
-    
+    from utils.migration.postgresql.schema_migration import verify_migration_results
+
     logger.info("\n" + "=" * 60)
     logger.info("STEP 3: VERIFY - Migration Results")
     logger.info("=" * 60)
-    
+
     verification_passed, verification_details = verify_migration_results(
-        engine, Base, expected_tables
+        engine, base, expected_tables
     )
-    
+
     # Log verification results
     if verification_details['tables_missing']:
-        logger.error(f"\n✗ VERIFICATION FAILED: {len(verification_details['tables_missing'])} table(s) still missing:")
+        logger.error(
+            "\n✗ VERIFICATION FAILED: %d table(s) still missing:",
+            len(verification_details['tables_missing'])
+        )
         for table_name in sorted(verification_details['tables_missing']):
-            logger.error(f"  - {table_name}")
+            logger.error("  - %s", table_name)
         return False
     else:
-        logger.info(f"\n✓ All {len(expected_tables)} expected tables exist in database")
-    
+        logger.info("\n✓ All %d expected tables exist in database", len(expected_tables))
+
     if verification_details['columns_missing']:
         logger.error("\n✗ VERIFICATION FAILED: Some columns are still missing:")
         for table_name, missing_cols in verification_details['columns_missing'].items():
             logger.error(
-                f"  ✗ Table '{table_name}': Missing columns: {', '.join(sorted(missing_cols))}"
+                "  ✗ Table '%s': Missing columns: %s",
+                table_name, ', '.join(sorted(missing_cols))
             )
         return False
     else:
         logger.info("✓ All tables have all expected columns")
-    
+
     if verification_details['sequences_missing']:
         logger.error("\n✗ VERIFICATION FAILED: Some sequences are still missing:")
         for table_name, missing_seqs in verification_details['sequences_missing'].items():
             logger.error(
-                f"  ✗ Table '{table_name}': Missing sequences: {', '.join(sorted(missing_seqs))}"
+                "  ✗ Table '%s': Missing sequences: %s",
+                table_name, ', '.join(sorted(missing_seqs))
             )
         return False
     else:
         logger.info("✓ All required sequences exist")
-    
+
     if verification_details['indexes_missing']:
         logger.error("\n✗ VERIFICATION FAILED: Some indexes are still missing:")
         for table_name, missing_idxs in verification_details['indexes_missing'].items():
             logger.error(
-                f"  ✗ Table '{table_name}': Missing indexes: {', '.join(sorted(missing_idxs))}"
+                "  ✗ Table '%s': Missing indexes: %s",
+                table_name, ', '.join(sorted(missing_idxs))
             )
         return False
     else:
         logger.info("✓ All tables have all expected indexes")
-    
+
     logger.info("\n" + "=" * 60)
     logger.info("✓ VERIFICATION PASSED - All migrations applied successfully")
     logger.info("=" * 60)
-    return True
+    return verification_passed
 
 
 def main():
@@ -154,41 +178,68 @@ def main():
         logger.info("=" * 60)
         logger.info("Database Migration Script")
         logger.info("=" * 60)
-        
+
         # Import database configuration
         logger.info("Importing database configuration...")
         from config.database import engine, Base
-        
+
+        # Ensure all models are registered before proceeding
+        if not ensure_models_registered(Base):
+            logger.error("Failed to verify model registration - cannot proceed")
+            return 1
+
         # STEP 1: CHECK - Current status
-        expected_tables, existing_tables, missing_tables = check_status(engine, Base)
-        
+        expected_tables, _, _ = check_status(engine, Base)
+
         # STEP 2: ACT - Run migrations
         logger.info("\n" + "=" * 60)
         logger.info("STEP 2: ACT - Running Migrations")
         logger.info("=" * 60)
-        
-        from utils.migration.db_migration import run_migrations
+
+        from utils.migration.postgresql.schema_migration import run_migrations
         result = run_migrations()
-        
+
         if not result:
             logger.error("\n✗ Migrations encountered errors")
-            return 1
-        
+            logger.error(
+                "The run_migrations() function returned False, indicating "
+                "that some migrations failed. Check the logs above for details."
+            )
+            # Still run verification to see what's missing
+            logger.info(
+                "\nRunning verification anyway to see current state..."
+            )
+        else:
+            logger.info("\n✓ Migrations completed successfully")
+
         # STEP 3: VERIFY - Confirm results
-        verification_passed = verify_results(engine, Base, expected_tables)
+        # Refresh expected_tables from Base.metadata (shouldn't change, but be safe)
+        expected_tables_after = set(Base.metadata.tables.keys())
         
-        if verification_passed:
+        verification_passed = verify_results(engine, Base, expected_tables_after)
+
+        if verification_passed and result:
+            logger.info("\n" + "=" * 60)
+            logger.info("✓ ALL CHECKS PASSED - Migration completed successfully")
+            logger.info("=" * 60)
             return 0
         else:
+            logger.error("\n" + "=" * 60)
+            logger.error("✗ MIGRATION FAILED OR VERIFICATION FAILED")
+            logger.error("=" * 60)
+            if not result:
+                logger.error("Migration function returned False")
+            if not verification_passed:
+                logger.error("Verification failed - see details above")
             return 1
-            
+
     except ImportError as e:
-        logger.error(f"Import error: {e}", exc_info=True)
+        logger.error("Import error: %s", e, exc_info=True)
         logger.error("\nMake sure you're running this from the project root")
         logger.error("and that all dependencies are installed.")
         return 1
     except Exception as e:
-        logger.error(f"Unexpected error: {e}", exc_info=True)
+        logger.error("Unexpected error: %s", e, exc_info=True)
         return 1
 
 if __name__ == "__main__":

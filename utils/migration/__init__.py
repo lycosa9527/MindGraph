@@ -4,18 +4,19 @@ Database Migration Utilities
 This package contains utilities for database migrations, including SQLite to PostgreSQL migration tools.
 """
 
-from .db_migration import run_migrations
-from .sqlite_data_migration import migrate_sqlite_to_postgresql
-from .sqlite_migration_backup import (
+# Re-export from subfolders for backward compatibility
+from .postgresql import (
+    run_migrations,
+    check_database_status,
+    verify_migration_results
+)
+from .sqlite_to_postgresql import migrate_sqlite_to_postgresql
+from .sqlite import (
     backup_sqlite_database,
-    move_sqlite_database_to_backup
-)
-from .sqlite_migration_progress import MigrationProgressTracker
-from .sqlite_migration_tables import (
+    move_sqlite_database_to_backup,
+    MigrationProgressTracker,
     get_table_migration_order,
-    verify_migration
-)
-from .sqlite_migration_utils import (
+    verify_migration,
     get_sqlite_db_path,
     is_migration_completed,
     is_postgresql_empty,
@@ -26,6 +27,8 @@ from .sqlite_migration_utils import (
 
 __all__ = [
     "run_migrations",
+    "check_database_status",
+    "verify_migration_results",
     "migrate_sqlite_to_postgresql",
     "backup_sqlite_database",
     "move_sqlite_database_to_backup",

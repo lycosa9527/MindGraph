@@ -15,6 +15,7 @@ import { Plus } from '@element-plus/icons-vue'
 import { BookOpen, Send, Settings } from 'lucide-vue-next'
 
 import { AskOncePanel } from '@/components/askonce'
+import { LoginModal } from '@/components/auth'
 import { useLanguage } from '@/composables/useLanguage'
 import { useAuthStore } from '@/stores/auth'
 import { ASKONCE_PROMPT_TEMPLATES } from '@/config/askOncePrompts'
@@ -59,7 +60,7 @@ const MODEL_CONFIG: Record<ModelId, { modelName: string }> = {
 
 const charCount = computed(() => promptInput.value.length)
 
-const canSend = computed(() => promptInput.value.trim().length > 0 && !store.isStreaming)
+const canSend = computed(() => promptInput.value.trim().length > 0 && !store.isStreaming && authStore.isAuthenticated)
 
 const placeholderText = computed(() =>
   isZh.value
@@ -228,12 +229,20 @@ async function sendToAllModels() {
 }
 
 function clearAll() {
+  if (!authStore.isAuthenticated) {
+    openLoginModal()
+    return
+  }
   store.abortAllStreams()
   store.startNewConversation()
   promptInput.value = ''
 }
 
 function openSystemModal() {
+  if (!authStore.isAuthenticated) {
+    openLoginModal()
+    return
+  }
   systemPromptDraft.value = store.systemPrompt
   selectedTemplate.value = ''
   showSystemModal.value = true
@@ -252,12 +261,35 @@ function loadTemplate(templateId: string) {
 
 function handleKeydown(e: Event | KeyboardEvent) {
   if (!('key' in e)) return
+  
+  // Check authentication before allowing input
+  if (!authStore.isAuthenticated) {
+    e.preventDefault()
+    openLoginModal()
+    return
+  }
+  
   if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
     e.preventDefault()
     if (canSend.value) {
       sendToAllModels()
     }
   }
+}
+
+// Handle input focus - show login modal if not authenticated
+function handleInputFocus() {
+  if (!authStore.isAuthenticated) {
+    openLoginModal()
+  }
+}
+
+// Handle input change - prevent updates when not authenticated
+function handleInputChange(value: string) {
+  if (!authStore.isAuthenticated) {
+    return
+  }
+  promptInput.value = value
 }
 
 function clearPromptDraft() {
@@ -296,6 +328,7 @@ onUnmounted(() => {
         <ElButton
           class="new-chat-btn"
           size="small"
+          :disabled="!authStore.isAuthenticated"
           @click="clearAll"
         >
           <ElIcon class="mr-1"><Plus /></ElIcon>
@@ -305,18 +338,18 @@ onUnmounted(() => {
     </header>
 
     <!-- Input Area -->
-    <section
-      class="px-6 py-4 bg-white border-b border-gray-200"
-      :class="{ 'blurred': !authStore.isAuthenticated }"
-    >
+    <section class="px-6 py-4 bg-white border-b border-gray-200">
       <div class="max-w-5xl mx-auto">
         <ElInput
-          v-model="promptInput"
+          :model-value="promptInput"
           type="textarea"
           :rows="3"
           :placeholder="placeholderText"
+          :disabled="!authStore.isAuthenticated"
           resize="vertical"
+          @update:model-value="handleInputChange"
           @keydown="handleKeydown"
+          @focus="handleInputFocus"
         />
         <div class="flex items-center justify-between mt-3">
           <div class="flex items-center gap-4 text-sm text-gray-500">
@@ -331,6 +364,7 @@ onUnmounted(() => {
           <div class="flex items-center gap-2">
             <ElButton
               :icon="Settings"
+              :disabled="!authStore.isAuthenticated"
               @click="openSystemModal"
             >
               {{ isZh ? '提示词模板' : 'Templates' }}
@@ -338,7 +372,7 @@ onUnmounted(() => {
             <ElButton
               type="primary"
               :icon="Send"
-              :disabled="!canSend"
+              :disabled="!canSend || !authStore.isAuthenticated"
               @click="sendToAllModels"
             >
               {{ isZh ? '发送' : 'Send' }}
@@ -349,10 +383,7 @@ onUnmounted(() => {
     </section>
 
     <!-- Response Panels -->
-    <main
-      class="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-4 p-4 pb-10 overflow-hidden min-h-0"
-      :class="{ 'blurred': !authStore.isAuthenticated }"
-    >
+    <main class="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-4 p-4 pb-10 overflow-hidden min-h-0">
       <AskOncePanel
         v-for="modelId in MODEL_IDS"
         :key="modelId"
@@ -434,9 +465,4 @@ onUnmounted(() => {
   border-radius: 9999px;
 }
 
-.blurred {
-  filter: blur(8px);
-  pointer-events: none;
-  user-select: none;
-}
 </style>

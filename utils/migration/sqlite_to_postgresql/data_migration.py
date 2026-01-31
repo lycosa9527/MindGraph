@@ -18,11 +18,10 @@ import os
 import sqlite3
 import logging
 import importlib.util
-from typing import Optional, Dict, Any, Tuple, Set
+from typing import Optional, Dict, Any, Tuple
 
-from sqlalchemy import create_engine, inspect, text
+from sqlalchemy import create_engine, inspect
 from sqlalchemy.exc import OperationalError, ProgrammingError
-from sqlalchemy.dialects import postgresql
 
 # Import Base directly from models to avoid circular import with config.database
 from models.domain.auth import Base
@@ -68,7 +67,7 @@ try:
 except ImportError:
     pass
 
-from utils.migration.sqlite_migration_utils import (
+from utils.migration.sqlite.migration_utils import (
     get_sqlite_db_path,
     is_migration_completed,
     load_migration_progress,
@@ -79,18 +78,18 @@ from utils.migration.sqlite_migration_utils import (
     is_postgresql_empty,
     check_table_completeness
 )
-from utils.migration.sqlite_migration_backup import (
+from utils.migration.sqlite.migration_backup import (
     backup_sqlite_database,
     move_sqlite_database_to_backup
 )
-from utils.migration.sqlite_migration_tables import (
+from utils.migration.sqlite.migration_tables import (
     get_table_migration_order,
     migrate_table,
     verify_migration,
     create_migration_marker,
     reset_postgresql_sequences
 )
-from utils.migration.sqlite_migration_progress import (
+from utils.migration.sqlite.migration_progress import (
     MigrationProgressTracker,
     STAGE_PREREQUISITES,
     STAGE_LOCK,
@@ -104,292 +103,27 @@ from utils.migration.sqlite_migration_progress import (
     STAGE_CREATE_MARKER,
     STAGE_COMPLETE
 )
+from utils.migration.sqlite_to_postgresql.table_creation import (
+    create_enum_types,
+    create_table_without_indexes,
+    create_table_indexes
+)
 
 logger = logging.getLogger(__name__)
 
 PSYCOPG2_AVAILABLE = importlib.util.find_spec('psycopg2') is not None
 
-
-def _create_enum_types(pg_engine: Any) -> None:
-    """
-    Create PostgreSQL ENUM types before creating tables.
-    
-    Args:
-        pg_engine: PostgreSQL SQLAlchemy engine
-    """
-    try:
-        # Collect all ENUM types from Base.metadata
-        enum_types = {}
-
-        for table in Base.metadata.tables.values():
-            for column in table.columns:
-                # Check if column type is an Enum
-                col_type = column.type
-                if hasattr(col_type, 'name') and hasattr(col_type, 'enums'):
-                    enum_name = col_type.name
-                    enum_values = col_type.enums
-                    if enum_name and enum_values:
-                        # Convert enum values to strings (they might be Enum objects)
-                        enum_values_str = [str(val) if not isinstance(val, str) else val for val in enum_values]
-                        enum_types[enum_name] = enum_values_str
-
-        if not enum_types:
-            logger.debug("[Migration] No ENUM types found in schema")
-            return
-
-        logger.info("[Migration] Creating %d ENUM type(s): %s", len(enum_types), ', '.join(enum_types.keys()))
-        
-        with pg_engine.connect() as conn:
-            for enum_name, enum_values in enum_types.items():
-                try:
-                    # Check if ENUM type already exists
-                    check_sql = text("""
-                        SELECT EXISTS (
-                            SELECT 1 FROM pg_type WHERE typname = :enum_name
-                        )
-                    """)
-                    result = conn.execute(check_sql, {"enum_name": enum_name})
-                    exists = result.scalar()
-
-                    if exists:
-                        logger.debug("[Migration] ENUM type %s already exists", enum_name)
-                        continue
-
-                    # Create ENUM type
-                    # Escape single quotes in enum values
-                    escaped_values = [f"'{val.replace("'", "''")}'" for val in enum_values]
-                    create_sql = f'CREATE TYPE "{enum_name}" AS ENUM ({", ".join(escaped_values)})'
-                    conn.execute(text(create_sql))
-                    conn.commit()
-                    logger.info("[Migration] Created ENUM type: %s", enum_name)
-                except Exception as enum_error:
-                    error_msg = str(enum_error).lower()
-                    if "already exists" in error_msg or "duplicate" in error_msg:
-                        logger.debug("[Migration] ENUM type %s already exists (race condition)", enum_name)
-                    else:
-                        logger.warning("[Migration] Failed to create ENUM type %s: %s", enum_name, enum_error)
-    except Exception as e:
-        logger.warning("[Migration] Error creating ENUM types: %s", e)
+# Lazy import to avoid circular dependency with config.database
+_INIT_DB_FUNC = None
 
 
-def _create_table_without_indexes(
-    pg_engine: Any,
-    table_name: str,
-    table: Any,
-    existing_tables: Optional[Set[str]] = None
-) -> bool:
-    """
-    Create a PostgreSQL table without indexes to avoid index creation failures.
-
-    Args:
-        pg_engine: PostgreSQL SQLAlchemy engine
-        table_name: Name of the table to create
-        table: SQLAlchemy Table object
-        existing_tables: Optional set of existing table names (for performance)
-
-    Returns:
-        True if table was created or already exists, False on error
-    """
-    try:
-        # Check if table already exists
-        if existing_tables is None:
-            inspector = inspect(pg_engine)
-            existing_tables = set(inspector.get_table_names())
-
-        if table_name in existing_tables:
-            return True
-
-        # Check if parent tables exist for foreign keys
-        for fk in table.foreign_keys:
-            parent_table = fk.column.table.name
-            if parent_table not in existing_tables and parent_table != table_name:
-                logger.debug(
-                    "[Migration] Cannot create table %s: parent table %s doesn't exist",
-                    table_name, parent_table
-                )
-                return False
-
-        # Build CREATE TABLE statement without indexes
-        # Get column definitions
-        column_defs = []
-        constraints = []
-
-        for column in table.columns:
-            col_type = str(column.type.compile(dialect=postgresql.dialect()))
-            col_def = f'"{column.name}" {col_type}'
-
-            # Add NOT NULL if needed
-            if not column.nullable and not column.primary_key:
-                col_def += ' NOT NULL'
-
-            # Add DEFAULT if needed
-            if column.default is not None:
-                if hasattr(column.default, 'arg'):
-                    default_val = column.default.arg
-                    if isinstance(default_val, (int, float)):
-                        col_def += f' DEFAULT {default_val}'
-                    elif isinstance(default_val, bool):
-                        col_def += f' DEFAULT {str(default_val).upper()}'
-                    elif isinstance(default_val, str):
-                        # Escape single quotes in default string
-                        escaped = default_val.replace("'", "''")
-                        col_def += f" DEFAULT '{escaped}'"
-                    elif callable(default_val):
-                        # Skip callable defaults (e.g., datetime.utcnow)
-                        pass
-
-            column_defs.append(col_def)
-
-            # Collect primary key columns
-            if column.primary_key:
-                constraints.append(f'PRIMARY KEY ("{column.name}")')
-        
-        # Add foreign key constraints
-        for fk in table.foreign_keys:
-            parent_table = fk.column.table.name
-            parent_col = fk.column.name
-            child_col = fk.parent.name
-            
-            # Get ON DELETE action
-            on_delete = 'CASCADE'  # Default
-            if fk.ondelete:
-                on_delete = fk.ondelete.upper()
-
-            constraints.append(
-                f'FOREIGN KEY ("{child_col}") REFERENCES "{parent_table}" ("{parent_col}") '
-                f'ON DELETE {on_delete}'
-            )
-
-        # Add constraints from table.constraints (UniqueConstraint, CheckConstraint from __table_args__)
-        # SQLAlchemy stores constraints in table.constraints set
-        # Skip PrimaryKeyConstraint (already handled above) and ForeignKeyConstraint (handled above)
-        for constraint in table.constraints:
-            constraint_type = type(constraint).__name__
-
-            # Skip constraints already handled
-            if constraint_type in ('PrimaryKeyConstraint', 'ForeignKeyConstraint'):
-                continue
-
-            if constraint_type == 'UniqueConstraint':
-                # Handle UniqueConstraint
-                if hasattr(constraint, 'columns'):
-                    unique_cols = [f'"{col.name}"' for col in constraint.columns]
-                    if unique_cols:
-                        constraint_name = getattr(constraint, 'name', None)
-                        if constraint_name:
-                            constraints.append(
-                                f'CONSTRAINT "{constraint_name}" UNIQUE ({", ".join(unique_cols)})'
-                            )
-                        else:
-                            constraints.append(f'UNIQUE ({", ".join(unique_cols)})')
-
-            elif constraint_type == 'CheckConstraint':
-                # Handle CheckConstraint
-                if hasattr(constraint, 'sqltext'):
-                    check_expr = str(constraint.sqltext)
-                    constraint_name = getattr(constraint, 'name', None)
-                    if constraint_name:
-                        constraints.append(f'CONSTRAINT "{constraint_name}" CHECK ({check_expr})')
-                    else:
-                        constraints.append(f'CHECK ({check_expr})')
-
-        # Combine all parts
-        all_parts = column_defs + constraints
-        create_sql = f'CREATE TABLE IF NOT EXISTS "{table_name}" ({", ".join(all_parts)})'
-        
-        # Execute CREATE TABLE
-        with pg_engine.connect() as conn:
-            conn.execute(text(create_sql))
-            conn.commit()
-        
-        # Verify table was created
-        inspector = inspect(pg_engine)
-        if table_name in inspector.get_table_names():
-            logger.debug("[Migration] Created table %s without indexes", table_name)
-            return True
-        else:
-            logger.error("[Migration] Table %s creation reported success but table doesn't exist", table_name)
-            return False
-            
-    except Exception as e:
-        error_msg = str(e).lower()
-        # Check if table already exists
-        if "already exists" in error_msg or "duplicate" in error_msg:
-            inspector = inspect(pg_engine)
-            if table_name in inspector.get_table_names():
-                return True
-        logger.error("[Migration] Failed to create table %s: %s", table_name, e)
-        return False
-
-
-def _create_table_indexes(pg_engine: Any, table_name: str, table: Any) -> None:
-    """
-    Create indexes for a table separately (after table creation).
-
-    Args:
-        pg_engine: PostgreSQL SQLAlchemy engine
-        table_name: Name of the table
-        table: SQLAlchemy Table object
-    """
-    try:
-        inspector = inspect(pg_engine)
-        existing_indexes = {idx['name'] for idx in inspector.get_indexes(table_name)}
-
-        with pg_engine.connect() as conn:
-            # Create indexes from table.indexes
-            for index in table.indexes:
-                if index.name in existing_indexes:
-                    logger.debug("[Migration] Index %s already exists on table %s", index.name, table_name)
-                    continue
-
-                # Build index columns
-                index_cols = [f'"{col.name}"' for col in index.columns]
-                index_sql = (
-                    f'CREATE INDEX IF NOT EXISTS "{index.name}" '
-                    f'ON "{table_name}" ({", ".join(index_cols)})'
-                )
-
-                try:
-                    conn.execute(text(index_sql))
-                    conn.commit()
-                    logger.debug("[Migration] Created index %s on table %s", index.name, table_name)
-                except Exception as idx_error:
-                    error_msg = str(idx_error).lower()
-                    if "already exists" in error_msg or "duplicate" in error_msg:
-                        logger.debug("[Migration] Index %s already exists (race condition)", index.name)
-                    else:
-                        logger.warning(
-                            "[Migration] Failed to create index %s on table %s: %s",
-                            index.name, table_name, idx_error
-                        )
-
-            # Create indexes from column.index=True
-            for column in table.columns:
-                if getattr(column, 'index', False) and not isinstance(column.index, bool):
-                    # Index object already handled above
-                    continue
-                elif getattr(column, 'index', False):
-                    # Implicit index from index=True
-                    index_name = f"ix_{table_name}_{column.name}"
-                    if index_name in existing_indexes:
-                        continue
-
-                    index_sql = f'CREATE INDEX IF NOT EXISTS "{index_name}" ON "{table_name}" ("{column.name}")'
-                    try:
-                        conn.execute(text(index_sql))
-                        conn.commit()
-                        logger.debug("[Migration] Created implicit index %s on table %s", index_name, table_name)
-                    except Exception as idx_error:
-                        error_msg = str(idx_error).lower()
-                        if "already exists" in error_msg or "duplicate" in error_msg:
-                            logger.debug("[Migration] Index %s already exists (race condition)", index_name)
-                        else:
-                            logger.warning(
-                                "[Migration] Failed to create implicit index %s: %s",
-                                index_name, idx_error
-                            )
-    except Exception as e:
-        logger.warning("[Migration] Error creating indexes for table %s: %s", table_name, e)
+def _get_init_db_func():
+    """Get init_db function, importing lazily to avoid circular dependency."""
+    global _INIT_DB_FUNC
+    if _INIT_DB_FUNC is None:
+        from config.database import init_db
+        _INIT_DB_FUNC = init_db
+    return _INIT_DB_FUNC
 
 
 def migrate_sqlite_to_postgresql(force: bool = False) -> Tuple[bool, Optional[str], Optional[Dict[str, Any]]]:
@@ -515,13 +249,13 @@ def migrate_sqlite_to_postgresql(force: bool = False) -> Tuple[bool, Optional[st
             progress_tracker.update_stage(STAGE_CREATE_TABLES, "Creating PostgreSQL tables...")
 
             # Create ENUM types first (required before table creation)
-            _create_enum_types(pg_engine)
+            create_enum_types(pg_engine)
 
             # First, try init_db() which creates tables using SQLAlchemy models
             # This ensures tables match the expected schema
             # Lazy import to avoid circular dependency with config.database
             try:
-                from config.database import init_db as init_db_func
+                init_db_func = _get_init_db_func()
                 init_db_func()
                 logger.debug("[Migration] init_db() completed")
             except Exception as init_error:
@@ -573,9 +307,11 @@ def migrate_sqlite_to_postgresql(force: bool = False) -> Tuple[bool, Optional[st
 
                         # Create table without indexes first to avoid index creation failures
                         # This ensures table is created even if indexes already exist
-                        if _create_table_without_indexes(pg_engine, table_name, table, existing_tables_set):
+                        if create_table_without_indexes(
+                            pg_engine, table_name, table, existing_tables_set
+                        ):
                             # Table created successfully, now add indexes separately
-                            _create_table_indexes(pg_engine, table_name, table)
+                            create_table_indexes(pg_engine, table_name, table)
                             
                             inspector = inspect(pg_engine)
                             if table_name in inspector.get_table_names():
@@ -643,7 +379,6 @@ def migrate_sqlite_to_postgresql(force: bool = False) -> Tuple[bool, Optional[st
                     existing_tables = set(inspector.get_table_names())
 
                     retry_failed = []
-                    tables_created_this_pass = []  # Track tables created in this pass
                     for table_name in tables_failed:
                         # Check if table was created by another process/retry
                         if table_name in existing_tables:
@@ -680,18 +415,22 @@ def migrate_sqlite_to_postgresql(force: bool = False) -> Tuple[bool, Optional[st
                                 continue
 
                             # Try to create table without indexes first
-                            if _create_table_without_indexes(
+                            if create_table_without_indexes(
                                 pg_engine, table_name, table, existing_tables
                             ):
                                 # Table created, add indexes separately
-                                _create_table_indexes(pg_engine, table_name, table)
+                                create_table_indexes(pg_engine, table_name, table)
 
                                 # Verify table was actually created
                                 inspector = inspect(pg_engine)
                                 if table_name in inspector.get_table_names():
                                     tables_created += 1
-                                    logger.info("[Migration] ✓ Created table (retry %d): %s", retry_pass + 1, table_name)
-                                    # Refresh existing_tables and inspector so subsequent tables in this pass can see the new table
+                                    logger.info(
+                                        "[Migration] ✓ Created table (retry %d): %s",
+                                        retry_pass + 1, table_name
+                                    )
+                                    # Refresh existing_tables and inspector so subsequent
+                                    # tables in this pass can see the new table
                                     inspector = inspect(pg_engine)  # Create fresh inspector
                                     existing_tables = set(inspector.get_table_names())
                                 else:
@@ -948,7 +687,10 @@ def migrate_sqlite_to_postgresql(force: bool = False) -> Tuple[bool, Optional[st
             if not is_valid:
                 error_msg = f"Migration verification failed: {verify_stats.get('mismatches', [])}"
                 logger.error("[Migration] %s", error_msg)
-                logger.error("[Migration] Migration failed verification - PostgreSQL may be in inconsistent state")
+                logger.error(
+                    "[Migration] Migration failed verification - "
+                    "PostgreSQL may be in inconsistent state"
+                )
                 logger.error("[Migration] Backup available at: %s", backup_path)
                 progress_tracker.add_error(error_msg)
                 # Clear progress file on verification failure to allow full retry

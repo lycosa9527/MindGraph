@@ -26,7 +26,7 @@ except ImportError:
     LOGGING_CONFIG = None
 
 try:
-    from utils.migration.sqlite_data_migration import migrate_sqlite_to_postgresql
+    from utils.migration.sqlite_to_postgresql.data_migration import migrate_sqlite_to_postgresql
 except ImportError:
     migrate_sqlite_to_postgresql = None
 

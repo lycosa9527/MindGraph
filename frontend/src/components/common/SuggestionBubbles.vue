@@ -7,6 +7,7 @@
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 
 import { useLanguage } from '@/composables'
+import { useAuthStore } from '@/stores'
 
 const props = withDefaults(
   defineProps<{
@@ -22,6 +23,7 @@ const emit = defineEmits<{
 }>()
 
 const { isZh } = useLanguage()
+const authStore = useAuthStore()
 
 // Default suggestions if none provided
 const defaultSuggestions = computed(() => {
@@ -67,6 +69,11 @@ const isHovering = ref(false)
 let scrollInterval: ReturnType<typeof setInterval> | null = null
 
 const handleClick = (suggestion: string) => {
+  // Check authentication before allowing click
+  if (!authStore.isAuthenticated) {
+    authStore.handleTokenExpired(undefined, undefined)
+    return
+  }
   emit('select', suggestion)
 }
 
@@ -106,6 +113,8 @@ onUnmounted(() => {
 })
 
 const labelText = computed(() => (isZh.value ? '可以试着问我：' : 'Try asking me:'))
+
+const isAuthenticated = computed(() => authStore.isAuthenticated)
 </script>
 
 <template>
@@ -121,6 +130,7 @@ const labelText = computed(() => (isZh.value ? '可以试着问我：' : 'Try as
         v-for="(suggestion, index) in displaySuggestions"
         :key="index"
         class="suggestion-bubble"
+        :disabled="!isAuthenticated"
         @click="handleClick(suggestion)"
       >
         {{ suggestion }}
@@ -179,6 +189,11 @@ const labelText = computed(() => (isZh.value ? '可以试着问我：' : 'Try as
   cursor: pointer;
   transition: all 0.2s ease;
   flex-shrink: 0;
+}
+
+.suggestion-bubble:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .suggestion-bubble:hover {
