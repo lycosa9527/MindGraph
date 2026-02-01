@@ -104,34 +104,109 @@ class AsyncGeweClient(
         Raises:
             GeweAPIError: If API request fails
         """
+        import json as json_lib
         url = f"{self.base_url}{endpoint}"
         headers = {
             'X-GEWE-TOKEN': self.token,
             'Content-Type': 'application/json'
         }
 
+        # Log request details
+        logger.info("🚀 [GeweAPI] Request: %s %s", method, url)
+        if json_data:
+            request_payload_str = json_lib.dumps(json_data, ensure_ascii=False, indent=2)
+            if len(request_payload_str) > 2000:
+                logger.info(
+                    "📤 [GeweAPI] Request payload (truncated):\n%s\n... (truncated, total length: %d chars)",
+                    request_payload_str[:2000], len(request_payload_str)
+                )
+            else:
+                logger.info("📤 [GeweAPI] Request payload:\n%s", request_payload_str)
+        else:
+            logger.info("📤 [GeweAPI] Request payload: (empty)")
+
+        # Log request headers (mask token)
+        headers_log = dict(headers)
+        if 'X-GEWE-TOKEN' in headers_log:
+            token_value = headers_log['X-GEWE-TOKEN']
+            if len(token_value) > 8:
+                headers_log['X-GEWE-TOKEN'] = f"{token_value[:4]}...{token_value[-4:]}"
+            else:
+                headers_log['X-GEWE-TOKEN'] = '*' * len(token_value)
+        logger.debug("📋 [GeweAPI] Request headers: %s", headers_log)
+
         session = await self._get_session()
 
         try:
             async with session.request(method, url, headers=headers, json=json_data) as response:
-                response_data = await response.json()
+                # Log response status and headers
+                logger.info(
+                    "📥 [GeweAPI] Response: %s %s - Status: %d",
+                    method, endpoint, response.status
+                )
+                logger.debug("📋 [GeweAPI] Response headers: %s", dict(response.headers))
+
+                # Get response data
+                try:
+                    response_data = await response.json()
+                except Exception as json_error:
+                    # If JSON parsing fails, try to get text
+                    response_text = await response.text()
+                    logger.error(
+                        "❌ [GeweAPI] Failed to parse JSON response: %s. Raw response: %s",
+                        json_error, response_text[:500]
+                    )
+                    raise GeweAPIError(
+                        f"Invalid JSON response: {str(json_error)}",
+                        status_code=response.status
+                    ) from json_error
+
+                # Log full response structure
+                response_str = json_lib.dumps(response_data, ensure_ascii=False, indent=2)
+                if len(response_str) > 2000:
+                    logger.info(
+                        "📦 [GeweAPI] Response payload (truncated):\n%s\n... (truncated, total length: %d chars)",
+                        response_str[:2000], len(response_str)
+                    )
+                else:
+                    logger.info("📦 [GeweAPI] Response payload:\n%s", response_str)
+
+                # Log response structure details
+                logger.info("🔍 [GeweAPI] Response structure analysis:")
+                logger.info("   - Top-level keys: %s", list(response_data.keys()))
+                if 'ret' in response_data:
+                    logger.info("   - ret (return code): %s", response_data.get('ret'))
+                if 'msg' in response_data:
+                    logger.info("   - msg (message): %s", response_data.get('msg'))
+                if 'data' in response_data:
+                    data = response_data.get('data')
+                    if isinstance(data, dict):
+                        logger.info("   - data keys: %s", list(data.keys()))
+                    elif isinstance(data, list):
+                        logger.info("   - data type: list (length: %d)", len(data))
+                    else:
+                        logger.info("   - data type: %s", type(data).__name__)
 
                 if response.status != 200:
                     error_msg = response_data.get('msg', f'API request failed with status {response.status}')
-                    logger.error("Gewe API error: %s - %s", response.status, error_msg)
+                    logger.error("❌ [GeweAPI] HTTP error: %s - %s", response.status, error_msg)
                     raise GeweAPIError(error_msg, status_code=response.status)
 
                 ret_code = response_data.get('ret')
                 if ret_code != 200:
                     error_msg = response_data.get('msg', f'API returned error code {ret_code}')
-                    logger.error("Gewe API error: ret=%s - %s", ret_code, error_msg)
+                    logger.error("❌ [GeweAPI] API error: ret=%s - %s", ret_code, error_msg)
                     raise GeweAPIError(error_msg, status_code=ret_code, error_code=str(ret_code))
 
+                logger.info("✅ [GeweAPI] Request successful: %s %s", method, endpoint)
                 return response_data
 
         except aiohttp.ClientError as e:
-            logger.error("Gewe API connection error: %s", e)
+            logger.error("❌ [GeweAPI] Connection error: %s", e, exc_info=True)
             raise GeweAPIError(f"Connection error: {str(e)}") from e
+        except GeweAPIError:
+            # Re-raise GeweAPIError as-is
+            raise
         except Exception as e:
-            logger.error("Gewe API error: %s", e)
+            logger.error("❌ [GeweAPI] Unexpected error: %s", e, exc_info=True)
             raise GeweAPIError(f"Unexpected error: {str(e)}") from e
