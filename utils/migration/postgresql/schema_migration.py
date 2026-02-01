@@ -243,6 +243,7 @@ def run_migrations() -> bool:
         columns_added = 0
         sequences_fixed = 0
         indexes_created_total = 0
+        tables_with_changes = set()  # Track tables that had changes
 
         # =====================================================================
         # STEP 2: ACT - Create missing tables
@@ -252,6 +253,7 @@ def run_migrations() -> bool:
                 create_missing_tables(db_engine, base, missing_tables)
             )
             indexes_created_total += indexes_from_tables
+            tables_with_changes.update(missing_tables)  # New tables need checks
             if not success:
                 migration_success = False
 
@@ -268,11 +270,19 @@ def run_migrations() -> bool:
         tables_to_migrate = existing_tables & expected_tables
 
         if tables_to_migrate:
-            logger.info(
-                "[DBMigration] Step 3: Migrating existing tables "
-                "(%d tables to check)...",
-                len(tables_to_migrate)
-            )
+            if tables_with_changes:
+                logger.info(
+                    "[DBMigration] Step 3: Migrating existing tables "
+                    "(%d tables to check, %d with changes)...",
+                    len(tables_to_migrate),
+                    len(tables_with_changes)
+                )
+            else:
+                logger.info(
+                    "[DBMigration] Step 3: Checking existing tables "
+                    "(%d tables, skipping sequence/index checks - no changes)...",
+                    len(tables_to_migrate)
+                )
 
             with db_engine.connect() as conn:
                 for table_name in tables_to_migrate:
@@ -308,6 +318,7 @@ def run_migrations() -> bool:
 
                                 if success:
                                     columns_added += 1
+                                    tables_with_changes.add(table_name)
                                 else:
                                     migration_success = False
                                     logger.error(
@@ -317,28 +328,31 @@ def run_migrations() -> bool:
                                         table_name
                                     )
 
-                        # Fix PostgreSQL sequences for primary key columns
-                        # with autoincrement
-                        for column in table.columns:
-                            if column.primary_key:
-                                sequence_fixed = fix_postgresql_sequence(
-                                    conn, table_name, column
-                                )
-                                if sequence_fixed:
-                                    sequences_fixed += 1
+                        # Only check sequences and indexes for tables with changes
+                        # or newly created tables (to avoid unnecessary checks)
+                        if table_name in tables_with_changes:
+                            # Fix PostgreSQL sequences for primary key columns
+                            # with autoincrement
+                            for column in table.columns:
+                                if column.primary_key:
+                                    sequence_fixed = fix_postgresql_sequence(
+                                        conn, table_name, column
+                                    )
+                                    if sequence_fixed:
+                                        sequences_fixed += 1
 
-                        # Create missing indexes for this table
-                        indexes_created = create_table_indexes(
-                            conn, table_name, table
-                        )
-                        indexes_created_total += indexes_created
-                        if indexes_created > 0:
-                            logger.info(
-                                "[DBMigration] Created %d missing index(es) "
-                                "for table '%s'",
-                                indexes_created,
-                                table_name
+                            # Create missing indexes for this table
+                            indexes_created = create_table_indexes(
+                                conn, table_name, table
                             )
+                            indexes_created_total += indexes_created
+                            if indexes_created > 0:
+                                logger.info(
+                                    "[DBMigration] Created %d missing index(es) "
+                                    "for table '%s'",
+                                    indexes_created,
+                                    table_name
+                                )
 
                     except Exception as e:
                         logger.error(
@@ -361,33 +375,6 @@ def run_migrations() -> bool:
                 logger.info(
                     "[DBMigration] No tables to migrate (all tables exist "
                     "and are up to date)"
-                )
-
-        # Ensure all tables have their indexes created
-        # This handles cases where tables existed but indexes were missing
-        inspector = inspect(db_engine)
-        existing_tables = set(inspector.get_table_names())
-        tables_to_check_indexes = existing_tables & expected_tables
-
-        if tables_to_check_indexes:
-            logger.info(
-                "[DBMigration] Ensuring all tables have required indexes "
-                "(%d tables to check)...",
-                len(tables_to_check_indexes)
-            )
-            with db_engine.connect() as conn:
-                for table_name in tables_to_check_indexes:
-                    table = base.metadata.tables[table_name]
-                    indexes_created = create_table_indexes(
-                        conn, table_name, table
-                    )
-                    indexes_created_total += indexes_created
-
-            if indexes_created_total > 0:
-                logger.info(
-                    "[DBMigration] Created %d missing index(es) across all "
-                    "tables",
-                    indexes_created_total
                 )
 
         # =====================================================================

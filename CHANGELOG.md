@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.20.0] - 2026-02-02
+
+### Added
+- **Gewe Collection/Favorites Module**: Added collection/favorites management with sync, get content, and delete operations. Includes client mixin (`clients/gewe/collection.py`) and service mixin (`services/gewe/collection.py`) for managing WeChat favorites/collections with pagination support via syncKey.
+- **Gewe Tag Management Module**: Added friend tag management system with add, delete, list, and modify friend tags operations. Includes client mixin (`clients/gewe/tag.py`) and service mixin (`services/gewe/tag.py`) for comprehensive tag management including batch operations and friend tag assignment.
+- **Gewe Video Channel Module**: Comprehensive video channel (视频号) integration with 30+ operations including follow, comment, browse, publish, like, favorite, search, QR code operations, private messaging, CDN upload, and channel management. Includes client mixin (`clients/gewe/video_channel.py`) and service mixin (`services/gewe/video_channel.py`) for full video channel functionality.
+- **Gewe SNS/Moments Service**: Added Moments (朋友圈) service module (`services/gewe/sns.py`) with operations for liking, deleting, sending (text/image/video/link), forwarding, uploading media, and managing privacy settings. Supports visibility controls, tag-based filtering, and contact-based access control.
+- **Gewe Response Models**: Added comprehensive Pydantic response models (`models/domain/gewe_responses.py`) for type-safe API responses including login, messages, contacts, groups, webhooks, and all new module responses with proper field aliasing and validation.
+
+### Changed
+- **Gewe Client Modules**: Enhanced existing Gewe client modules (`account.py`, `base.py`, `contact.py`, `download.py`, `enterprise.py`, `group.py`, `message.py`, `personal.py`, `sns.py`) with improved error handling, type safety, and code organization.
+- **Gewe Service Modules**: Updated Gewe service modules (`base.py`, `contact.py`, `message.py`, `personal.py`, `protocols.py`) with better integration patterns and consistent error handling.
+- **Gewe Router**: Enhanced Gewe router (`routers/features/gewe.py`) with improved endpoint organization and response handling.
+- **Infrastructure Middleware**: Updated HTTP middleware (`services/infrastructure/http/middleware.py`) with improved request handling and logging.
+- **Application Lifecycle**: Enhanced application lifespan (`services/infrastructure/lifecycle/lifespan.py`) and startup (`services/infrastructure/lifecycle/startup.py`) with better initialization and error handling.
+- **Logging Configuration**: Improved logging configuration (`services/infrastructure/utils/logging_config.py`) with better log levels and formatting.
+- **Database Migration**: Enhanced PostgreSQL schema migration utilities (`utils/migration/postgresql/schema_migration.py`) with improved error handling and validation.
+- **TikToken Cache**: Updated tiktoken cache utility (`utils/tiktoken_cache.py`) with improved caching strategies.
+- **Frontend Package**: Updated frontend dependencies (`frontend/package.json`) with latest package versions.
+- **Ask Once Page**: Enhanced AskOncePage component (`frontend/src/pages/AskOncePage.vue`) with improved UI and functionality.
+
 ## [5.19.0] - 2026-02-02
 
 ### Added

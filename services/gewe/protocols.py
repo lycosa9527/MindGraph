@@ -33,19 +33,15 @@ class GeweServiceBase(ABC):
     @abstractmethod
     def _get_gewe_client(self) -> AsyncGeweClient:
         """Get or create Gewe client"""
-        pass
 
     @abstractmethod
     def _get_dify_client(self) -> AsyncDifyClient:
         """Get or create Dify client"""
-        pass
 
     @abstractmethod
     def _save_login_info(self, app_id: str, wxid: str) -> None:
         """Save login info to JSON file"""
-        pass
 
     @abstractmethod
     def _load_login_info(self) -> Optional[dict]:
         """Load login info from JSON file"""
-        pass

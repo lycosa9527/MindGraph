@@ -9,14 +9,26 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, Protocol
+
+
+class _GeweClientProtocol(Protocol):
+    """Protocol defining the interface expected by MessageMixin"""
+    async def _request(
+        self,
+        method: str,
+        endpoint: str,
+        json_data: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
+        """Make HTTP request to Gewe API"""
+        raise NotImplementedError
 
 
 class MessageMixin:
     """Mixin for message sending APIs"""
 
     async def post_text(
-        self,
+        self: "_GeweClientProtocol",
         app_id: str,
         to_wxid: str,
         content: str,
@@ -33,7 +45,7 @@ class MessageMixin:
         return await self._request("POST", "/gewe/v2/api/message/postText", json_data=payload)
 
     async def post_file(
-        self,
+        self: "_GeweClientProtocol",
         app_id: str,
         to_wxid: str,
         file_url: str,
@@ -49,7 +61,7 @@ class MessageMixin:
         return await self._request("POST", "/gewe/v2/api/message/postFile", json_data=payload)
 
     async def post_image(
-        self,
+        self: "_GeweClientProtocol",
         app_id: str,
         to_wxid: str,
         img_url: str
@@ -63,7 +75,7 @@ class MessageMixin:
         return await self._request("POST", "/gewe/v2/api/message/postImage", json_data=payload)
 
     async def post_voice(
-        self,
+        self: "_GeweClientProtocol",
         app_id: str,
         to_wxid: str,
         voice_url: str,
@@ -79,7 +91,7 @@ class MessageMixin:
         return await self._request("POST", "/gewe/v2/api/message/postVoice", json_data=payload)
 
     async def post_video(
-        self,
+        self: "_GeweClientProtocol",
         app_id: str,
         to_wxid: str,
         video_url: str,
@@ -97,7 +109,7 @@ class MessageMixin:
         return await self._request("POST", "/gewe/v2/api/message/postVideo", json_data=payload)
 
     async def post_link(
-        self,
+        self: "_GeweClientProtocol",
         app_id: str,
         to_wxid: str,
         title: str,
@@ -117,7 +129,7 @@ class MessageMixin:
         return await self._request("POST", "/gewe/v2/api/message/postLink", json_data=payload)
 
     async def post_name_card(
-        self,
+        self: "_GeweClientProtocol",
         app_id: str,
         to_wxid: str,
         nick_name: str,
@@ -133,7 +145,7 @@ class MessageMixin:
         return await self._request("POST", "/gewe/v2/api/message/postNameCard", json_data=payload)
 
     async def post_emoji(
-        self,
+        self: "_GeweClientProtocol",
         app_id: str,
         to_wxid: str,
         emoji_md5: str,
@@ -149,7 +161,7 @@ class MessageMixin:
         return await self._request("POST", "/gewe/v2/api/message/postEmoji", json_data=payload)
 
     async def post_app_msg(
-        self,
+        self: "_GeweClientProtocol",
         app_id: str,
         to_wxid: str,
         appmsg: str
@@ -163,7 +175,7 @@ class MessageMixin:
         return await self._request("POST", "/gewe/v2/api/message/postAppMsg", json_data=payload)
 
     async def forward_file(
-        self,
+        self: "_GeweClientProtocol",
         app_id: str,
         to_wxid: str,
         xml: str
@@ -177,7 +189,7 @@ class MessageMixin:
         return await self._request("POST", "/gewe/v2/api/message/forwardFile", json_data=payload)
 
     async def forward_image(
-        self,
+        self: "_GeweClientProtocol",
         app_id: str,
         to_wxid: str,
         xml: str
@@ -189,3 +201,69 @@ class MessageMixin:
             "xml": xml
         }
         return await self._request("POST", "/gewe/v2/api/message/forwardImage", json_data=payload)
+
+    async def forward_video(
+        self: "_GeweClientProtocol",
+        app_id: str,
+        to_wxid: str,
+        xml: str
+    ) -> Dict[str, Any]:
+        """Forward video message using CDN info."""
+        payload = {
+            "appId": app_id,
+            "toWxid": to_wxid,
+            "xml": xml
+        }
+        return await self._request("POST", "/gewe/v2/api/message/forwardVideo", json_data=payload)
+
+    async def forward_link(
+        self: "_GeweClientProtocol",
+        app_id: str,
+        to_wxid: str,
+        xml: str
+    ) -> Dict[str, Any]:
+        """Forward link message using CDN info."""
+        payload = {
+            "appId": app_id,
+            "toWxid": to_wxid,
+            "xml": xml
+        }
+        return await self._request("POST", "/gewe/v2/api/message/forwardUrl", json_data=payload)
+
+    async def forward_mini_program(
+        self: "_GeweClientProtocol",
+        app_id: str,
+        to_wxid: str,
+        xml: str,
+        cover_img_url: str
+    ) -> Dict[str, Any]:
+        """Forward mini-program message using CDN info."""
+        payload = {
+            "appId": app_id,
+            "toWxid": to_wxid,
+            "xml": xml,
+            "coverImgUrl": cover_img_url
+        }
+        return await self._request("POST", "/gewe/v2/api/message/forwardMiniApp", json_data=payload)
+
+    async def revoke_message(
+        self: "_GeweClientProtocol",
+        app_id: str,
+        to_wxid: str,
+        msg_id: str,
+        new_msg_id: str,
+        create_time: str
+    ) -> Dict[str, Any]:
+        """
+        Revoke (recall) a sent message.
+        
+        Requires msgId, newMsgId, and createTime from the original send response.
+        """
+        payload = {
+            "appId": app_id,
+            "toWxid": to_wxid,
+            "msgId": msg_id,
+            "newMsgId": new_msg_id,
+            "createTime": create_time
+        }
+        return await self._request("POST", "/gewe/v2/api/message/revokeMsg", json_data=payload)

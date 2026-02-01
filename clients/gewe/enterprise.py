@@ -9,14 +9,26 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
-from typing import Dict, Any
+from typing import Dict, Any, Optional, Protocol
+
+
+class _GeweClientProtocol(Protocol):
+    """Protocol defining the interface expected by EnterpriseMixin"""
+    async def _request(
+        self,
+        method: str,
+        endpoint: str,
+        json_data: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
+        """Make HTTP request to Gewe API"""
+        raise NotImplementedError
 
 
 class EnterpriseMixin:
     """Mixin for enterprise WeChat APIs"""
 
     async def search_enterprise_wechat(
-        self,
+        self: "_GeweClientProtocol",
         app_id: str,
         keyword: str
     ) -> Dict[str, Any]:
@@ -28,7 +40,7 @@ class EnterpriseMixin:
         return await self._request("POST", "/gewe/v2/api/enterprise/searchEnterpriseWechat", json_data=payload)
 
     async def add_enterprise_wechat_friend(
-        self,
+        self: "_GeweClientProtocol",
         app_id: str,
         wxid: str,
         content: str
@@ -42,7 +54,7 @@ class EnterpriseMixin:
         return await self._request("POST", "/gewe/v2/api/enterprise/addEnterpriseWechatFriend", json_data=payload)
 
     async def sync_enterprise_wechat_friends(
-        self,
+        self: "_GeweClientProtocol",
         app_id: str
     ) -> Dict[str, Any]:
         """Sync enterprise WeChat friends."""
@@ -50,7 +62,7 @@ class EnterpriseMixin:
         return await self._request("POST", "/gewe/v2/api/enterprise/syncEnterpriseWechatFriends", json_data=payload)
 
     async def get_enterprise_wechat_friend_detail(
-        self,
+        self: "_GeweClientProtocol",
         app_id: str,
         wxid: str
     ) -> Dict[str, Any]:

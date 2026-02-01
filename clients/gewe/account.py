@@ -9,14 +9,28 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, Protocol
+
+
+class _GeweClientProtocol(Protocol):
+    """Protocol defining the interface expected by AccountMixin"""
+    token: str
+
+    async def _request(
+        self,
+        method: str,
+        endpoint: str,
+        json_data: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
+        """Make HTTP request to Gewe API"""
+        raise NotImplementedError
 
 
 class AccountMixin:
     """Mixin for account management APIs"""
 
     async def get_login_qr_code(
-        self,
+        self: "_GeweClientProtocol",
         app_id: str = "",
         region_id: str = "320000",
         device_type: str = "mac",
@@ -53,7 +67,7 @@ class AccountMixin:
         return await self._request("POST", "/gewe/v2/api/login/getLoginQrCode", json_data=payload)
 
     async def check_login(
-        self,
+        self: "_GeweClientProtocol",
         app_id: str,
         uuid: str,
         auto_sliding: bool = False,
@@ -86,7 +100,7 @@ class AccountMixin:
         return await self._request("POST", "/gewe/v2/api/login/checkLogin", json_data=payload)
 
     async def dialog_login(
-        self,
+        self: "_GeweClientProtocol",
         app_id: str,
         region_id: str = "320000",
         proxy_ip: Optional[str] = None,
@@ -116,7 +130,7 @@ class AccountMixin:
         return await self._request("POST", "/gewe/v2/api/login/dialogLogin", json_data=payload)
 
     async def set_callback(
-        self,
+        self: "_GeweClientProtocol",
         callback_url: str
     ) -> Dict[str, Any]:
         """
@@ -135,7 +149,7 @@ class AccountMixin:
         return await self._request("POST", "/gewe/v2/api/login/setCallback", json_data=payload)
 
     async def reconnection(
-        self,
+        self: "_GeweClientProtocol",
         app_id: str
     ) -> Dict[str, Any]:
         """
@@ -151,7 +165,7 @@ class AccountMixin:
         return await self._request("POST", "/gewe/v2/api/login/reconnection", json_data=payload)
 
     async def login_by_account(
-        self,
+        self: "_GeweClientProtocol",
         app_id: str,
         account: str,
         password: str,
@@ -189,7 +203,7 @@ class AccountMixin:
         return await self._request("POST", "/gewe/v2/api/login/loginByAccount", json_data=payload)
 
     async def check_online(
-        self,
+        self: "_GeweClientProtocol",
         app_id: str
     ) -> Dict[str, Any]:
         """
@@ -205,7 +219,7 @@ class AccountMixin:
         return await self._request("POST", "/gewe/v2/api/login/checkOnline", json_data=payload)
 
     async def logout(
-        self,
+        self: "_GeweClientProtocol",
         app_id: str
     ) -> Dict[str, Any]:
         """

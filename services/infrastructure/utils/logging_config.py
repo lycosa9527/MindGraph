@@ -79,6 +79,9 @@ class TimestampedRotatingFileHandler(BaseRotatingHandler):
 
     def should_rollover(self, record):
         """Check if we should rollover to a new file."""
+        # Record parameter is required by parent class interface but not used
+        # We check time-based rotation instead of record-based
+        del record  # Explicitly mark as intentionally unused
         now = datetime.now()
         return now >= self.next_rotation_time
 
@@ -557,10 +560,15 @@ def setup_logging():
     # Add filter to main logger
     logger.addFilter(CancelledErrorFilter())
 
-    # For verbose logging, set external libraries to DEBUG as well
-    # (You can change these back to WARNING if they're too noisy)
-    logging.getLogger('httpx').setLevel(logging.DEBUG)
-    logging.getLogger('httpcore').setLevel(logging.DEBUG)
+    # Set external HTTP libraries to INFO level to reduce verbosity
+    # Only show DEBUG logs when explicitly enabled via HTTP_DEBUG env var
+    http_debug_enabled = os.getenv('HTTP_DEBUG', '').lower() in ('1', 'true', 'yes')
+    http_level = logging.DEBUG if http_debug_enabled else logging.INFO
+    
+    logging.getLogger('httpx').setLevel(http_level)
+    logging.getLogger('httpcore').setLevel(http_level)
+    
+    # Other external libraries can remain at DEBUG for troubleshooting
     logging.getLogger('qcloud_cos').setLevel(logging.DEBUG)
     logging.getLogger('qcloud_cos.cos_client').setLevel(logging.DEBUG)
     logging.getLogger('qcloud_cos.cos_auth').setLevel(logging.DEBUG)

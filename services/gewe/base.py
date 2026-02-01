@@ -25,6 +25,10 @@ from services.gewe.download import DownloadServiceMixin
 from services.gewe.group import GroupServiceMixin
 from services.gewe.contact import ContactServiceMixin
 from services.gewe.personal import PersonalServiceMixin
+from services.gewe.tag import TagServiceMixin
+from services.gewe.collection import CollectionServiceMixin
+from services.gewe.sns import SNSServiceMixin
+from services.gewe.video_channel import VideoChannelServiceMixin
 from services.gewe.message_db import GeweMessageDB
 from services.gewe.contact_db import GeweContactDB
 from services.gewe.group_member_db import GeweGroupMemberDB
@@ -42,7 +46,11 @@ class GeweService(
     DownloadServiceMixin,
     GroupServiceMixin,
     ContactServiceMixin,
-    PersonalServiceMixin
+    PersonalServiceMixin,
+    TagServiceMixin,
+    CollectionServiceMixin,
+    SNSServiceMixin,
+    VideoChannelServiceMixin
 ):
     """Service for managing Gewe WeChat integration"""
 

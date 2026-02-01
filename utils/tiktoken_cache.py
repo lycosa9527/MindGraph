@@ -181,10 +181,7 @@ def ensure_tiktoken_cache():
     # Check if another worker is already checking/updating cache
     # This avoids unnecessary lock acquisition attempts
     if _is_tiktoken_cache_check_in_progress():
-        try:
-            logger.debug("[TiktokenCache] Cache check already in progress, skipping")
-        except Exception:  # pylint: disable=broad-except
-            pass  # Logging not initialized yet
+        # Another worker is checking - silently skip (no logging to reduce noise)
         # Still set TIKTOKEN_CACHE_DIR so this worker can use the cache
         project_root = Path(__file__).parent.parent
         cache_dir = project_root / DEFAULT_CACHE_DIR
@@ -194,7 +191,7 @@ def ensure_tiktoken_cache():
 
     # Try to acquire lock - only one worker should check/update cache
     if not _acquire_tiktoken_cache_lock():
-        # Another worker is checking cache, skip
+        # Another worker acquired the lock - silently skip (no logging to reduce noise)
         # Still set TIKTOKEN_CACHE_DIR so this worker can use the cache
         project_root = Path(__file__).parent.parent
         cache_dir = project_root / DEFAULT_CACHE_DIR
@@ -231,12 +228,14 @@ def ensure_tiktoken_cache():
                         needs_update = _check_if_update_needed(url, metadata_file)
 
                         if not needs_update:
-                            # Use print for early startup (logging may not be initialized)
+                            # File is up-to-date - no logging needed to reduce startup noise
+                            # Only log if HTTP_DEBUG is enabled
                             try:
-                                logger.debug(
-                                    "Tiktoken encoding %s already cached and up-to-date at %s",
-                                    encoding_name, encoding_file
-                                )
+                                if os.getenv('HTTP_DEBUG', '').lower() in ('1', 'true', 'yes'):
+                                    logger.debug(
+                                        "Tiktoken encoding %s already cached and up-to-date at %s",
+                                        encoding_name, encoding_file
+                                    )
                             except Exception:  # pylint: disable=broad-except
                                 pass  # Logging not initialized yet, skip
                             continue

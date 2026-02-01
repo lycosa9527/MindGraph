@@ -9,14 +9,26 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
-from typing import Dict, Any
+from typing import Dict, Any, Optional, Protocol
+
+
+class _GeweClientProtocol(Protocol):
+    """Protocol defining the interface expected by DownloadMixin"""
+    async def _request(
+        self,
+        method: str,
+        endpoint: str,
+        json_data: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
+        """Make HTTP request to Gewe API"""
+        raise NotImplementedError
 
 
 class DownloadMixin:
     """Mixin for message download APIs"""
 
     async def download_file(
-        self,
+        self: "_GeweClientProtocol",
         app_id: str,
         xml: str
     ) -> Dict[str, Any]:
@@ -28,7 +40,7 @@ class DownloadMixin:
         return await self._request("POST", "/gewe/v2/api/message/downloadFile", json_data=payload)
 
     async def download_image(
-        self,
+        self: "_GeweClientProtocol",
         app_id: str,
         xml: str,
         image_type: int = 2
@@ -42,7 +54,7 @@ class DownloadMixin:
         return await self._request("POST", "/gewe/v2/api/message/downloadImage", json_data=payload)
 
     async def download_voice(
-        self,
+        self: "_GeweClientProtocol",
         app_id: str,
         xml: str,
         msg_id: int
@@ -56,7 +68,7 @@ class DownloadMixin:
         return await self._request("POST", "/gewe/v2/api/message/downloadVoice", json_data=payload)
 
     async def download_video(
-        self,
+        self: "_GeweClientProtocol",
         app_id: str,
         xml: str
     ) -> Dict[str, Any]:
@@ -68,7 +80,7 @@ class DownloadMixin:
         return await self._request("POST", "/gewe/v2/api/message/downloadVideo", json_data=payload)
 
     async def download_emoji_md5(
-        self,
+        self: "_GeweClientProtocol",
         app_id: str,
         emoji_md5: str
     ) -> Dict[str, Any]:
@@ -80,7 +92,7 @@ class DownloadMixin:
         return await self._request("POST", "/gewe/v2/api/message/downloadEmojiMd5", json_data=payload)
 
     async def download_cdn(
-        self,
+        self: "_GeweClientProtocol",
         app_id: str,
         aes_key: str,
         file_id: str,

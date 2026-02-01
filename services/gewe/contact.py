@@ -151,3 +151,15 @@ class ContactServiceMixin(GeweServiceBase):
             app_id=app_id,
             wxid=wxid
         )
+
+    async def check_friend_relationship(
+        self,
+        app_id: str,
+        wxids: list
+    ) -> Dict[str, Any]:
+        """Check friend relationship."""
+        client = self._get_gewe_client()
+        return await client.check_friend_relationship(
+            app_id=app_id,
+            wxids=wxids
+        )

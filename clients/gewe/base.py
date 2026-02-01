@@ -21,6 +21,9 @@ from clients.gewe.contact import ContactMixin
 from clients.gewe.enterprise import EnterpriseMixin
 from clients.gewe.sns import SNSMixin
 from clients.gewe.personal import PersonalMixin
+from clients.gewe.tag import TagMixin
+from clients.gewe.collection import CollectionMixin
+from clients.gewe.video_channel import VideoChannelMixin
 
 
 logger = logging.getLogger(__name__)
@@ -43,7 +46,10 @@ class AsyncGeweClient(
     ContactMixin,
     EnterpriseMixin,
     SNSMixin,
-    PersonalMixin
+    PersonalMixin,
+    TagMixin,
+    CollectionMixin,
+    VideoChannelMixin
 ):
     """Async client for interacting with Gewe WeChat API using aiohttp"""
 

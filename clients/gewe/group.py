@@ -9,14 +9,26 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
-from typing import Dict, Any
+from typing import Dict, Any, Optional, Protocol
+
+
+class _GeweClientProtocol(Protocol):
+    """Protocol defining the interface expected by GroupMixin"""
+    async def _request(
+        self,
+        method: str,
+        endpoint: str,
+        json_data: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
+        """Make HTTP request to Gewe API"""
+        raise NotImplementedError
 
 
 class GroupMixin:
     """Mixin for group management APIs"""
 
     async def create_chatroom(
-        self,
+        self: "_GeweClientProtocol",
         app_id: str,
         wxids: list
     ) -> Dict[str, Any]:
@@ -28,7 +40,7 @@ class GroupMixin:
         return await self._request("POST", "/gewe/v2/api/group/createChatroom", json_data=payload)
 
     async def modify_chatroom_name(
-        self,
+        self: "_GeweClientProtocol",
         app_id: str,
         chatroom_id: str,
         chatroom_name: str
@@ -42,7 +54,7 @@ class GroupMixin:
         return await self._request("POST", "/gewe/v2/api/group/modifyChatroomName", json_data=payload)
 
     async def modify_chatroom_remark(
-        self,
+        self: "_GeweClientProtocol",
         app_id: str,
         chatroom_id: str,
         chatroom_remark: str
@@ -56,7 +68,7 @@ class GroupMixin:
         return await self._request("POST", "/gewe/v2/api/group/modifyChatroomRemark", json_data=payload)
 
     async def modify_chatroom_nick_name_for_self(
-        self,
+        self: "_GeweClientProtocol",
         app_id: str,
         chatroom_id: str,
         nick_name: str
@@ -70,7 +82,7 @@ class GroupMixin:
         return await self._request("POST", "/gewe/v2/api/group/modifyChatroomNickNameForSelf", json_data=payload)
 
     async def invite_member(
-        self,
+        self: "_GeweClientProtocol",
         app_id: str,
         chatroom_id: str,
         wxids: str,
@@ -86,7 +98,7 @@ class GroupMixin:
         return await self._request("POST", "/gewe/v2/api/group/inviteMember", json_data=payload)
 
     async def remove_member(
-        self,
+        self: "_GeweClientProtocol",
         app_id: str,
         chatroom_id: str,
         wxids: str
@@ -100,7 +112,7 @@ class GroupMixin:
         return await self._request("POST", "/gewe/v2/api/group/removeMember", json_data=payload)
 
     async def quit_chatroom(
-        self,
+        self: "_GeweClientProtocol",
         app_id: str,
         chatroom_id: str
     ) -> Dict[str, Any]:
@@ -112,7 +124,7 @@ class GroupMixin:
         return await self._request("POST", "/gewe/v2/api/group/quitChatroom", json_data=payload)
 
     async def disband_chatroom(
-        self,
+        self: "_GeweClientProtocol",
         app_id: str,
         chatroom_id: str
     ) -> Dict[str, Any]:
@@ -124,7 +136,7 @@ class GroupMixin:
         return await self._request("POST", "/gewe/v2/api/group/disbandChatroom", json_data=payload)
 
     async def get_chatroom_info(
-        self,
+        self: "_GeweClientProtocol",
         app_id: str,
         chatroom_id: str
     ) -> Dict[str, Any]:
@@ -136,7 +148,7 @@ class GroupMixin:
         return await self._request("POST", "/gewe/v2/api/group/getChatroomInfo", json_data=payload)
 
     async def get_chatroom_member_list(
-        self,
+        self: "_GeweClientProtocol",
         app_id: str,
         chatroom_id: str
     ) -> Dict[str, Any]:
@@ -148,7 +160,7 @@ class GroupMixin:
         return await self._request("POST", "/gewe/v2/api/group/getChatroomMemberList", json_data=payload)
 
     async def get_chatroom_member_detail(
-        self,
+        self: "_GeweClientProtocol",
         app_id: str,
         chatroom_id: str,
         wxid: str
@@ -162,7 +174,7 @@ class GroupMixin:
         return await self._request("POST", "/gewe/v2/api/group/getChatroomMemberDetail", json_data=payload)
 
     async def get_chatroom_announcement(
-        self,
+        self: "_GeweClientProtocol",
         app_id: str,
         chatroom_id: str
     ) -> Dict[str, Any]:
@@ -174,7 +186,7 @@ class GroupMixin:
         return await self._request("POST", "/gewe/v2/api/group/getChatroomAnnouncement", json_data=payload)
 
     async def set_chatroom_announcement(
-        self,
+        self: "_GeweClientProtocol",
         app_id: str,
         chatroom_id: str,
         content: str
@@ -188,7 +200,7 @@ class GroupMixin:
         return await self._request("POST", "/gewe/v2/api/group/setChatroomAnnouncement", json_data=payload)
 
     async def agree_join_room(
-        self,
+        self: "_GeweClientProtocol",
         app_id: str,
         url: str
     ) -> Dict[str, Any]:
@@ -200,7 +212,7 @@ class GroupMixin:
         return await self._request("POST", "/gewe/v2/api/group/agreeJoinRoom", json_data=payload)
 
     async def add_group_member_as_friend(
-        self,
+        self: "_GeweClientProtocol",
         app_id: str,
         chatroom_id: str,
         member_wxid: str,
@@ -216,7 +228,7 @@ class GroupMixin:
         return await self._request("POST", "/gewe/v2/api/group/addGroupMemberAsFriend", json_data=payload)
 
     async def get_chatroom_qr_code(
-        self,
+        self: "_GeweClientProtocol",
         app_id: str,
         chatroom_id: str
     ) -> Dict[str, Any]:
@@ -228,7 +240,7 @@ class GroupMixin:
         return await self._request("POST", "/gewe/v2/api/group/getChatroomQrCode", json_data=payload)
 
     async def save_to_contacts(
-        self,
+        self: "_GeweClientProtocol",
         app_id: str,
         chatroom_id: str,
         oper_type: int
@@ -242,7 +254,7 @@ class GroupMixin:
         return await self._request("POST", "/gewe/v2/api/group/saveContractList", json_data=payload)
 
     async def admin_operate(
-        self,
+        self: "_GeweClientProtocol",
         app_id: str,
         chatroom_id: str,
         oper_type: int,
@@ -258,7 +270,7 @@ class GroupMixin:
         return await self._request("POST", "/gewe/v2/api/group/adminOperate", json_data=payload)
 
     async def pin_chat(
-        self,
+        self: "_GeweClientProtocol",
         app_id: str,
         chatroom_id: str,
         top: bool
@@ -272,7 +284,7 @@ class GroupMixin:
         return await self._request("POST", "/gewe/v2/api/group/pinChat", json_data=payload)
 
     async def set_msg_silence(
-        self,
+        self: "_GeweClientProtocol",
         app_id: str,
         chatroom_id: str,
         silence: bool
@@ -286,7 +298,7 @@ class GroupMixin:
         return await self._request("POST", "/gewe/v2/api/group/setMsgSilence", json_data=payload)
 
     async def join_room_using_qr_code(
-        self,
+        self: "_GeweClientProtocol",
         app_id: str,
         qr_url: str
     ) -> Dict[str, Any]:
@@ -298,7 +310,7 @@ class GroupMixin:
         return await self._request("POST", "/gewe/v2/api/group/joinRoomUsingQRCode", json_data=payload)
 
     async def room_access_apply_check_approve(
-        self,
+        self: "_GeweClientProtocol",
         app_id: str,
         chatroom_id: str,
         new_msg_id: str,

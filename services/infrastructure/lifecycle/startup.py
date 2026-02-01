@@ -317,7 +317,13 @@ def setup_early_configuration():
     - Signal handler registration
     - Logs directory creation
     """
-    # Print banner
+    # Only print startup messages from main process (not reloader, not workers)
+    # Check if we should skip startup messages
+    worker_id = os.getenv('UVICORN_WORKER_ID')
+    is_reloader = _is_uvicorn_reloader_process()
+    should_log_startup = not is_reloader and worker_id is None
+    
+    # Print banner (handles its own worker detection)
     _print_startup_banner()
 
     # Fix for Windows: Set event loop policy to support subprocesses (required for Playwright)
@@ -327,14 +333,17 @@ def setup_early_configuration():
             current_policy = asyncio.get_event_loop_policy()
             if not isinstance(current_policy, asyncio.WindowsProactorEventLoopPolicy):
                 asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
-                logging.info("Windows: Set event loop policy to WindowsProactorEventLoopPolicy for Playwright support")
+                if should_log_startup:
+                    logging.info("Windows: Set event loop policy to WindowsProactorEventLoopPolicy for Playwright support")
         except Exception:  # pylint: disable=broad-except
             # If we can't check/set, try to set it anyway
             try:
                 asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
-                logging.info("Windows: Set event loop policy to WindowsProactorEventLoopPolicy (unconditional)")
+                if should_log_startup:
+                    logging.info("Windows: Set event loop policy to WindowsProactorEventLoopPolicy (unconditional)")
             except Exception as e2:  # pylint: disable=broad-except
-                logging.warning("Windows: Could not set event loop policy: %s", e2)
+                if should_log_startup:
+                    logging.warning("Windows: Could not set event loop policy: %s", e2)
 
     # Ensure .env file is UTF-8 encoded before loading
     ensure_utf8_env_file()
@@ -344,25 +353,28 @@ def setup_early_configuration():
     env_file_exists = os.path.exists(env_file_path)
     load_dotenv()
 
-    # Diagnostic: Log CHUNKING_ENGINE value at startup (before logger setup)
-    chunking_engine_startup = os.getenv("CHUNKING_ENGINE", "not set (default: semchunk)")
-    print(f"[Startup] .env file exists: {env_file_exists} at {env_file_path}")
-    print(f"[Startup] CHUNKING_ENGINE environment variable: {chunking_engine_startup}")
-    if chunking_engine_startup.lower() == "mindchunk":
-        print("[Startup] ✓ MindChunk is ENABLED - LLM-based chunking will be used")
-    else:
-        print(f"[Startup] Using chunking engine: {chunking_engine_startup}")
+    # Diagnostic: Log CHUNKING_ENGINE value at startup (only from main process)
+    if should_log_startup:
+        chunking_engine_startup = os.getenv("CHUNKING_ENGINE", "not set (default: semchunk)")
+        print(f"[Startup] .env file exists: {env_file_exists} at {env_file_path}")
+        print(f"[Startup] CHUNKING_ENGINE environment variable: {chunking_engine_startup}")
+        if chunking_engine_startup.lower() == "mindchunk":
+            print("[Startup] ✓ MindChunk is ENABLED - LLM-based chunking will be used")
+        else:
+            print(f"[Startup] Using chunking engine: {chunking_engine_startup}")
 
     # Create logs directory
     os.makedirs("logs", exist_ok=True)
 
     # Setup tiktoken encoding file cache (must be before any tiktoken imports)
     # This downloads encoding files locally to avoid repeated downloads
+    # Uses Redis lock internally to ensure only one worker checks/updates cache
     try:
         ensure_tiktoken_cache()
     except Exception as e:  # pylint: disable=broad-except
         # Non-critical: tiktoken will download files automatically if cache fails
-        print(f"[Startup] Warning: Could not setup tiktoken cache: {e}")
+        if should_log_startup:
+            print(f"[Startup] Warning: Could not setup tiktoken cache: {e}")
 
     # Register signal handlers for graceful shutdown
     signal.signal(signal.SIGINT, _handle_shutdown_signal)

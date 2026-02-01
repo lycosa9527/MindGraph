@@ -59,8 +59,9 @@ async def lifespan(fastapi_app: FastAPI):
     Lifespan context manager for startup and shutdown events.
     Handles application initialization and cleanup.
     """
-    # Startup
-    fastapi_app.state.start_time = time.time()
+    # Startup timing
+    startup_start = time.time()
+    fastapi_app.state.start_time = startup_start
     fastapi_app.state.is_shutting_down = False
 
     # Register signal handlers for graceful shutdown
@@ -503,6 +504,7 @@ async def lifespan(fastapi_app: FastAPI):
 
     # Print completion messages after all startup activities are complete
     if is_main_worker:
+        startup_duration = time.time() - startup_start
         logger.info("[LIFESPAN] Startup complete, yielding to application...")
         # Print prominent launch completion notification
         # This appears after all startup activities including monitor initialization
@@ -510,7 +512,8 @@ async def lifespan(fastapi_app: FastAPI):
         print("=" * 80)
         print("✓ APPLICATION LAUNCH COMPLETE")
         print("=" * 80)
-        print("All services initialized and ready to accept requests.")
+        print(f"All services initialized and ready to accept requests.")
+        print(f"Startup time: {startup_duration:.2f}s")
         print("=" * 80)
         print()
 
