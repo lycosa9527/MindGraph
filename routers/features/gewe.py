@@ -29,7 +29,6 @@ from models.domain.gewe_responses import (
     GeweCallbackResponse
 )
 from services.gewe import GeweService
-from services.redis.rate_limiting.redis_rate_limiter import RedisRateLimiter
 from utils.auth import get_current_user
 from utils.auth.roles import is_admin
 
@@ -37,9 +36,6 @@ from utils.auth.roles import is_admin
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/gewe", tags=["Gewe WeChat"])
-
-# Rate limiter for webhook endpoint
-_webhook_rate_limiter = RedisRateLimiter()
 
 
 def require_admin(current_user: User = Depends(get_current_user)) -> User:
@@ -561,30 +557,11 @@ async def gewe_webhook(
     For private chats, responds to all messages.
 
     Security: Token verification is mandatory - verifies token from header or body matches GEWE_TOKEN.
-    Rate limiting: 100 requests/minute per IP to prevent abuse.
     
     Request body follows GeweWebhookMessage structure.
     """
-    # Extract client IP for rate limiting
+    # Extract client IP for logging
     client_ip = _extract_client_ip(request)
-
-    # Rate limiting: 100 requests per minute per IP
-    is_allowed, count, error_msg = _webhook_rate_limiter.check_and_record(
-        category="gewe_webhook",
-        identifier=client_ip,
-        max_attempts=100,
-        window_seconds=60
-    )
-    if not is_allowed:
-        logger.warning(
-            "Webhook rate limit exceeded from IP: %s, count: %s, error: %s",
-            client_ip, count, error_msg
-        )
-        raise HTTPException(
-            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail=f"Rate limit exceeded: {error_msg}"
-        )
-    logger.debug("Rate limit check passed for IP %s (count: %s/100 per minute)", client_ip, count)
 
     # Parse request body
     try:
@@ -629,7 +606,13 @@ async def gewe_webhook(
         logger.info("🔄 [Webhook] Processing Gewe webhook message")
 
         # Process message and get Dify response
-        response_text, image_urls, to_wxid, sender_wxid, quoted_message = await service.process_incoming_message(message_data)
+        (
+            response_text,
+            image_urls,
+            to_wxid,
+            sender_wxid,
+            quoted_message
+        ) = await service.process_incoming_message(message_data)
         logger.info(
             "💬 [Webhook] Message processing result - Response length: %d, Images: %d, To: %s, Quoted: %s",
             len(response_text) if response_text else 0,

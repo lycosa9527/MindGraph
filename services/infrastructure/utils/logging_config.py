@@ -564,10 +564,10 @@ def setup_logging():
     # Only show DEBUG logs when explicitly enabled via HTTP_DEBUG env var
     http_debug_enabled = os.getenv('HTTP_DEBUG', '').lower() in ('1', 'true', 'yes')
     http_level = logging.DEBUG if http_debug_enabled else logging.INFO
-    
+
     logging.getLogger('httpx').setLevel(http_level)
     logging.getLogger('httpcore').setLevel(http_level)
-    
+
     # Other external libraries can remain at DEBUG for troubleshooting
     logging.getLogger('qcloud_cos').setLevel(logging.DEBUG)
     logging.getLogger('qcloud_cos.cos_client').setLevel(logging.DEBUG)

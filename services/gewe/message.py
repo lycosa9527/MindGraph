@@ -337,7 +337,9 @@ class MessageServiceMixin(GeweServiceBase):
                                     if quoted_msg:
                                         quoted_content = quoted_msg.get('content', '')
                                         if quoted_content:
-                                            return f"{title} [回复: {quoted_content}]" if title else f"[回复: {quoted_content}]"
+                                            if title:
+                                                return f"{title} [回复: {quoted_content}]"
+                                            return f"[回复: {quoted_content}]"
                                     return title if title else "[引用消息]"
                                 elif app_type == '2000':
                                     return "[转账消息]"
@@ -417,14 +419,22 @@ class MessageServiceMixin(GeweServiceBase):
             if refermsg is None:
                 return None
 
+            type_elem = refermsg.find('type')
+            svrid_elem = refermsg.find('svrid')
+            fromusr_elem = refermsg.find('fromusr')
+            chatusr_elem = refermsg.find('chatusr')
+            displayname_elem = refermsg.find('displayname')
+            content_elem = refermsg.find('content')
+            createtime_elem = refermsg.find('createtime')
+
             quoted_msg = {
-                'msg_type': int(refermsg.find('type').text) if refermsg.find('type') is not None else 0,
-                'msg_id': refermsg.find('svrid').text if refermsg.find('svrid') is not None else '',
-                'from_wxid': refermsg.find('fromusr').text if refermsg.find('fromusr') is not None else '',
-                'chat_wxid': refermsg.find('chatusr').text if refermsg.find('chatusr') is not None else '',
-                'nickname': refermsg.find('displayname').text if refermsg.find('displayname') is not None else '',
-                'content': refermsg.find('content').text if refermsg.find('content') is not None else '',
-                'create_time': refermsg.find('createtime').text if refermsg.find('createtime') is not None else '',
+                'msg_type': int(type_elem.text) if type_elem is not None and type_elem.text is not None else 0,
+                'msg_id': svrid_elem.text if svrid_elem is not None and svrid_elem.text is not None else '',
+                'from_wxid': fromusr_elem.text if fromusr_elem is not None and fromusr_elem.text is not None else '',
+                'chat_wxid': chatusr_elem.text if chatusr_elem is not None and chatusr_elem.text is not None else '',
+                'nickname': displayname_elem.text if displayname_elem is not None and displayname_elem.text is not None else '',
+                'content': content_elem.text if content_elem is not None and content_elem.text is not None else '',
+                'create_time': createtime_elem.text if createtime_elem is not None and createtime_elem.text is not None else '',
             }
 
             return quoted_msg

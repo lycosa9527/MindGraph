@@ -17,6 +17,13 @@ import httpx
 
 logger = logging.getLogger(__name__)
 
+# Lazy import for Redis services (may not be available)
+try:
+    from services.redis.redis_client import get_redis, is_redis_available
+except ImportError:
+    get_redis = None
+    is_redis_available = None
+
 # Tiktoken encoding files to cache
 TIKTOKEN_ENCODINGS = {
     "cl100k_base": "https://openaipublic.blob.core.windows.net/encodings/cl100k_base.tiktoken",
@@ -64,11 +71,13 @@ def _is_tiktoken_cache_check_in_progress() -> bool:
         True if lock exists (another worker is checking), False otherwise
     """
     try:
-        from services.redis.redis_client import get_redis, is_redis_available
-
+        if not is_redis_available or not callable(is_redis_available):
+            return False
         if not is_redis_available():
             return False
 
+        if not get_redis or not callable(get_redis):
+            return False
         redis = get_redis()
         if not redis:
             return False
@@ -91,12 +100,15 @@ def _acquire_tiktoken_cache_lock() -> bool:
         False if lock held by another worker
     """
     try:
-        from services.redis.redis_client import get_redis, is_redis_available
-
+        if not is_redis_available or not callable(is_redis_available):
+            # No Redis = single worker mode, proceed
+            return True
         if not is_redis_available():
             # No Redis = single worker mode, proceed
             return True
 
+        if not get_redis or not callable(get_redis):
+            return True  # Fallback to single worker mode
         redis = get_redis()
         if not redis:
             return True  # Fallback to single worker mode
@@ -115,7 +127,10 @@ def _acquire_tiktoken_cache_lock() -> bool:
 
         if acquired:
             try:
-                logger.debug("[TiktokenCache] Lock acquired for cache check (id=%s)", worker_lock_id)
+                logger.debug(
+                    "[TiktokenCache] Lock acquired for cache check (id=%s)",
+                    worker_lock_id
+                )
             except Exception:  # pylint: disable=broad-except
                 pass  # Logging not initialized yet
             return True
@@ -135,11 +150,13 @@ def _acquire_tiktoken_cache_lock() -> bool:
 def _release_tiktoken_cache_lock() -> None:
     """Release the tiktoken cache lock if held by this worker."""
     try:
-        from services.redis.redis_client import get_redis, is_redis_available
-
+        if not is_redis_available or not callable(is_redis_available):
+            return
         if not is_redis_available():
             return
 
+        if not get_redis or not callable(get_redis):
+            return
         redis = get_redis()
         if not redis:
             return
@@ -244,10 +261,14 @@ def ensure_tiktoken_cache():
                         print(f"[Startup] New version of tiktoken encoding {encoding_name} available, updating...")
                     except Exception as network_error:  # pylint: disable=broad-except
                         # Network check failed - use existing file (conservative approach)
-                        print(f"[Startup] Network check failed for {encoding_name}, using existing cache: {network_error}")
+                        print(
+                            f"[Startup] Network check failed for {encoding_name}, "
+                            f"using existing cache: {network_error}"
+                        )
                         try:
                             logger.debug(
-                                "Network check failed for tiktoken encoding %s, using existing cache: %s",
+                                "Network check failed for tiktoken encoding %s, "
+                                "using existing cache: %s",
                                 encoding_name, network_error
                             )
                         except Exception:  # pylint: disable=broad-except
@@ -259,9 +280,15 @@ def ensure_tiktoken_cache():
 
                 _download_encoding_file(url, encoding_file, metadata_file)
                 file_size_mb = encoding_file.stat().st_size / (1024 * 1024)
-                print(f"[Startup] OK Cached tiktoken encoding {encoding_name} ({file_size_mb:.2f} MB) at {encoding_file}")
+                print(
+                    f"[Startup] OK Cached tiktoken encoding {encoding_name} "
+                    f"({file_size_mb:.2f} MB) at {encoding_file}"
+                )
                 try:
-                    logger.info("Successfully cached tiktoken encoding %s at %s", encoding_name, encoding_file)
+                    logger.info(
+                        "Successfully cached tiktoken encoding %s at %s",
+                        encoding_name, encoding_file
+                    )
                 except Exception:  # pylint: disable=broad-except
                     pass  # Logging not initialized yet, skip
             except Exception as e:  # pylint: disable=broad-except
@@ -298,45 +325,40 @@ def _check_if_update_needed(url: str, metadata_file: Path) -> bool:
     if not metadata_file.exists():
         return True
 
-    try:
-        # Load cached metadata
-        with open(metadata_file, 'r', encoding='utf-8') as f:
-            cached_metadata = json.load(f)
+    # Load cached metadata
+    with open(metadata_file, 'r', encoding='utf-8') as f:
+        cached_metadata = json.load(f)
 
-        cached_etag = cached_metadata.get('etag')
-        cached_last_modified = cached_metadata.get('last_modified')
+    cached_etag = cached_metadata.get('etag')
+    cached_last_modified = cached_metadata.get('last_modified')
 
-        # Make HEAD request to check current version with shorter timeout
-        # Use 5 seconds timeout to avoid hanging during startup
-        timeout_config = httpx.Timeout(5.0, connect=5.0, read=5.0, write=5.0, pool=5.0)
-        with httpx.Client(timeout=timeout_config) as client:
-            response = client.head(url, follow_redirects=True)
-            response.raise_for_status()
+    # Make HEAD request to check current version with shorter timeout
+    # Use 5 seconds timeout to avoid hanging during startup
+    timeout_config = httpx.Timeout(5.0, connect=5.0, read=5.0, write=5.0, pool=5.0)
+    with httpx.Client(timeout=timeout_config) as client:
+        response = client.head(url, follow_redirects=True)
+        response.raise_for_status()
 
-            server_etag = response.headers.get('ETag')
-            server_last_modified = response.headers.get('Last-Modified')
+        server_etag = response.headers.get('ETag')
+        server_last_modified = response.headers.get('Last-Modified')
 
-            # If server provides ETag, use it for comparison (most reliable)
-            if server_etag and cached_etag:
-                return server_etag != cached_etag
+        # If server provides ETag, use it for comparison (most reliable)
+        if server_etag and cached_etag:
+            return server_etag != cached_etag
 
-            # Fall back to Last-Modified comparison
-            if server_last_modified and cached_last_modified:
-                try:
-                    server_time = parsedate_to_datetime(server_last_modified)
-                    cached_time = parsedate_to_datetime(cached_last_modified)
-                    if server_time and cached_time:
-                        return server_time > cached_time
-                except (ValueError, TypeError, AttributeError):
-                    # If parsing fails, assume update needed
-                    return True
+        # Fall back to Last-Modified comparison
+        if server_last_modified and cached_last_modified:
+            try:
+                server_time = parsedate_to_datetime(server_last_modified)
+                cached_time = parsedate_to_datetime(cached_last_modified)
+                if server_time and cached_time:
+                    return server_time > cached_time
+            except (ValueError, TypeError, AttributeError):
+                # If parsing fails, assume update needed
+                return True
 
-            # If no headers available, assume no update needed (conservative)
-            return False
-    except Exception:  # pylint: disable=broad-except
-        # Re-raise exception so caller can handle it gracefully
-        # This allows the caller to use existing cache if network fails
-        raise
+        # If no headers available, assume no update needed (conservative)
+        return False
 
 
 def _download_encoding_file(url: str, output_path: Path, metadata_file: Path) -> None:

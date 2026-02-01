@@ -21,7 +21,7 @@ from fastapi import FastAPI
 
 from clients.llm import close_httpx_clients
 from config.celery import CeleryStartupError, init_celery_worker_check
-from config.database import SessionLocal, close_db, init_db
+from config.database import close_db, init_db
 from config.settings import config
 from services.auth.ip_geolocation import get_geolocation_service
 from services.auth.sms_middleware import get_sms_middleware, shutdown_sms_service
@@ -512,7 +512,7 @@ async def lifespan(fastapi_app: FastAPI):
         print("=" * 80)
         print("✓ APPLICATION LAUNCH COMPLETE")
         print("=" * 80)
-        print(f"All services initialized and ready to accept requests.")
+        print("All services initialized and ready to accept requests.")
         print(f"Startup time: {startup_duration:.2f}s")
         print("=" * 80)
         print()
