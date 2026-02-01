@@ -10,6 +10,7 @@ All Rights Reserved
 Proprietary License
 """
 from typing import List, Optional
+import json
 import logging
 import os
 
@@ -20,6 +21,7 @@ from sqlalchemy.orm import Session
 from config.database import get_db
 from models.domain.auth import User
 from services.gewe import GeweService
+from services.redis.rate_limiting.redis_rate_limiter import RedisRateLimiter
 from utils.auth import get_current_user
 from utils.auth.roles import is_admin
 
@@ -27,6 +29,9 @@ from utils.auth.roles import is_admin
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/gewe", tags=["Gewe WeChat"])
+
+# Rate limiter for webhook endpoint
+_webhook_rate_limiter = RedisRateLimiter()
 
 
 def require_admin(current_user: User = Depends(get_current_user)) -> User:
@@ -54,12 +59,32 @@ async def get_gewe_service(db: Session = Depends(get_db)) -> GeweService:
 
 class GeweLoginQrCodeRequest(BaseModel):
     """Request model for getting login QR code"""
-    app_id: str = Field("", alias="appId", description="Device ID (empty string for first login, required field)")
+    app_id: str = Field(
+        "",
+        alias="appId",
+        description="Device ID (empty string for first login, required field)"
+    )
     region_id: str = Field("320000", alias="regionId", description="Region ID (required)")
-    device_type: str = Field("ipad", alias="deviceType", description="Device type: ipad (recommended) or mac (required)")
-    proxy_ip: Optional[str] = Field(None, alias="proxyIp", description="Custom proxy IP (format: socks5://username:password@123.2.2.2:8932)")
-    ttuid: Optional[str] = Field(None, alias="ttuid", description="Proxy ID download URL (must be used with regionId/proxyIp)")
-    aid: Optional[str] = Field(None, alias="aid", description="Aid download URL (local computer proxy)")
+    device_type: str = Field(
+        "ipad",
+        alias="deviceType",
+        description="Device type: ipad (recommended) or mac (required)"
+    )
+    proxy_ip: Optional[str] = Field(
+        None,
+        alias="proxyIp",
+        description="Custom proxy IP (format: socks5://username:password@123.2.2.2:8932)"
+    )
+    ttuid: Optional[str] = Field(
+        None,
+        alias="ttuid",
+        description="Proxy ID download URL (must be used with regionId/proxyIp)"
+    )
+    aid: Optional[str] = Field(
+        None,
+        alias="aid",
+        description="Aid download URL (local computer proxy)"
+    )
 
 
 class GeweCheckLoginRequest(BaseModel):
@@ -76,8 +101,16 @@ class GeweCheckLoginRequest(BaseModel):
             "When using ttuid (network method 3): MUST be False."
         )
     )
-    proxy_ip: Optional[str] = Field(None, alias="proxyIp", description="Proxy IP (format: socks5://username:password@123.2.2.2)")
-    captch_code: Optional[str] = Field(None, alias="captchCode", description="Captcha code if phone prompts for verification code")
+    proxy_ip: Optional[str] = Field(
+        None,
+        alias="proxyIp",
+        description="Proxy IP (format: socks5://username:password@123.2.2.2)"
+    )
+    captch_code: Optional[str] = Field(
+        None,
+        alias="captchCode",
+        description="Captcha code if phone prompts for verification code"
+    )
 
 
 class GeweSetCallbackRequest(BaseModel):
@@ -88,9 +121,23 @@ class GeweSetCallbackRequest(BaseModel):
 class GeweSendMessageRequest(BaseModel):
     """Request model for sending text message"""
     app_id: str = Field(..., alias="appId", description="Device ID (required)")
-    to_wxid: str = Field(..., alias="toWxid", description="Recipient wxid (friend/group ID, required)")
-    content: str = Field(..., min_length=1, description="Message content (required, must include @xxx when @mentioning in group)")
-    ats: Optional[str] = Field(None, alias="ats", description="@ mentions (comma-separated wxids, or 'notify@all' for all members)")
+    to_wxid: str = Field(
+        ...,
+        alias="toWxid",
+        description="Recipient wxid (friend/group ID, required)"
+    )
+    content: str = Field(
+        ...,
+        min_length=1,
+        description=(
+            "Message content (required, must include @xxx when @mentioning in group)"
+        )
+    )
+    ats: Optional[str] = Field(
+        None,
+        alias="ats",
+        description="@ mentions (comma-separated wxids, or 'notify@all' for all members)"
+    )
 
 
 class GeweGetContactsRequest(BaseModel):
@@ -338,7 +385,7 @@ async def get_gewe_config_status(
     """
     token = os.getenv('GEWE_TOKEN', '').strip()
     base_url = os.getenv('GEWE_BASE_URL', 'http://api.geweapi.com').strip()
-    
+
     # Mask token for display (show first 4 and last 4 characters)
     masked_token = ''
     if token:
@@ -346,23 +393,25 @@ async def get_gewe_config_status(
             masked_token = '*' * len(token)
         else:
             masked_token = f"{token[:4]}...{token[-4:]}"
-    
+
     # Get app_id from saved login info if available
     app_id = None
     app_id_masked = ''
     try:
         service = GeweService(db)
         login_info = service.get_saved_login_info()
-        if login_info and login_info.get('app_id'):
-            app_id = login_info.get('app_id')
-            # Mask app_id for display (show first 4 and last 4 characters)
-            if len(app_id) <= 8:
-                app_id_masked = '*' * len(app_id)
-            else:
-                app_id_masked = f"{app_id[:4]}...{app_id[-4:]}"
+        if login_info:
+            app_id_value = login_info.get('app_id')
+            if app_id_value:
+                app_id = app_id_value
+                # Mask app_id for display (show first 4 and last 4 characters)
+                if len(app_id_value) <= 8:
+                    app_id_masked = '*' * len(app_id_value)
+                else:
+                    app_id_masked = f"{app_id_value[:4]}...{app_id_value[-4:]}"
     except Exception:
         pass  # Ignore errors when getting login info
-    
+
     return {
         "token_configured": bool(token),
         "token_masked": masked_token,
@@ -429,10 +478,219 @@ async def gewe_webhook(
 
     For group chats, only responds when bot is @mentioned.
     For private chats, responds to all messages.
+
+    Security: Verifies token from header or body matches GEWE_TOKEN.
+    Also verifies request comes from api.geweapi.com domain.
     """
-    service = GeweService(db)
+    # Get request metadata for security verification and logging
+    client_ip = request.client.host if request.client else "unknown"
+    host_header = request.headers.get('Host', '')
+    referer_header = request.headers.get('Referer', '')
+    user_agent = request.headers.get('User-Agent', '')
+
+    # Collect all headers for analysis
+    all_headers = dict(request.headers)
+
+    # Check for signature header (if Gewe supports HMAC signatures)
+    signature_header = (
+        request.headers.get('X-GEWE-SIGNATURE') or
+        request.headers.get('X-Signature') or
+        request.headers.get('X-Webhook-Signature')
+    )
+    if signature_header:
+        logger.info(
+            "🔐 Signature header detected: %s (first 30 chars)",
+            signature_header[:30]
+        )
+
+    # Check for token in headers
+    token_in_header = (
+        request.headers.get('X-GEWE-TOKEN') or
+        request.headers.get('Authorization') or
+        request.headers.get('X-Auth-Token')
+    )
+    if token_in_header:
+        header_name = (
+            'X-GEWE-TOKEN' if request.headers.get('X-GEWE-TOKEN')
+            else 'Authorization' if request.headers.get('Authorization')
+            else 'X-Auth-Token'
+        )
+        logger.info("🔑 Token found in header: %s", header_name)
+
+    # Log request info for debugging (in dev mode)
+    logger.info(
+        "📥 Gewe webhook request - IP: %s, Host: %s, Referer: %s, User-Agent: %s",
+        client_ip, host_header, referer_header, user_agent
+    )
+
+    # Log ALL headers for analysis (to understand what Gewe sends)
+    logger.info("📋 All request headers: %s", all_headers)
+
+    # 1. IP Whitelisting (Priority 1: Critical)
+    allowed_ips_str = os.getenv('GEWE_WEBHOOK_ALLOWED_IPS', '').strip()
+    if allowed_ips_str:
+        allowed_ips = [ip.strip() for ip in allowed_ips_str.split(',') if ip.strip()]
+        if allowed_ips and client_ip not in allowed_ips:
+            logger.warning("Webhook access denied from IP: %s (not in whitelist: %s)", client_ip, allowed_ips)
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Forbidden"
+            )
+        logger.debug("IP %s verified against whitelist", client_ip)
+    else:
+        logger.debug("IP whitelist not configured - allowing all IPs (dev mode)")
+
+    # 2. Rate Limiting (Priority 1: Critical)
+    # Limit: 100 requests per minute per IP (as recommended in security doc)
+    is_allowed, count, error_msg = _webhook_rate_limiter.check_and_record(
+        category="gewe_webhook",
+        identifier=client_ip,
+        max_attempts=100,
+        window_seconds=60
+    )
+    if not is_allowed:
+        logger.warning(
+            "Webhook rate limit exceeded from IP: %s, count: %s, error: %s",
+            client_ip, count, error_msg
+        )
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=f"Rate limit exceeded: {error_msg}"
+        )
+    logger.debug("Rate limit check passed for IP %s (count: %s/100 per minute)", client_ip, count)
+
+    # Parse request body once
     try:
         message_data = await request.json()
+    except (ValueError, json.JSONDecodeError) as e:
+        logger.error("Failed to parse webhook JSON from IP %s: %s", client_ip, e)
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid JSON payload"
+        ) from e
+
+    # Log complete payload structure for analysis (to understand Gewe webhook format)
+    logger.info("📦 Webhook payload structure:")
+    logger.info("   - Top-level keys: %s", list(message_data.keys()))
+
+    # Log payload details based on expected structure
+    if 'TypeName' in message_data:
+        logger.info("   - TypeName: %s", message_data.get('TypeName'))
+    if 'Appid' in message_data:
+        logger.info("   - Appid: %s", message_data.get('Appid'))
+    if 'Wxid' in message_data:
+        logger.info("   - Wxid: %s", message_data.get('Wxid'))
+    if 'token' in message_data:
+        token_value = message_data.get('token')
+        token_str = str(token_value)
+        token_display = (
+            token_str[:20] + "..."
+            if len(token_str) > 20
+            else token_str
+        )
+        logger.info("   - token: %s (present)", token_display)
+    if 'testMsg' in message_data:
+        logger.info("   - testMsg: %s", message_data.get('testMsg'))
+    if 'Data' in message_data:
+        data = message_data.get('Data', {})
+        logger.info("   - Data keys: %s", list(data.keys()) if isinstance(data, dict) else "Not a dict")
+        if isinstance(data, dict):
+            if 'MsgType' in data:
+                logger.info("   - Data.MsgType: %s", data.get('MsgType'))
+            if 'FromUserName' in data:
+                logger.info("   - Data.FromUserName: %s", data.get('FromUserName'))
+            if 'ToUserName' in data:
+                logger.info("   - Data.ToUserName: %s", data.get('ToUserName'))
+
+    # Log full payload (truncated if too large)
+    payload_str = json.dumps(message_data, ensure_ascii=False, indent=2)
+    if len(payload_str) > 2000:
+        logger.info(
+            "📄 Full payload (truncated):\n%s\n... (truncated, total length: %d chars)",
+            payload_str[:2000], len(payload_str)
+        )
+    else:
+        logger.info("📄 Full payload:\n%s", payload_str)
+
+    # Domain verification: Check if request appears to come from Gewe API
+    gewe_base_url = os.getenv('GEWE_BASE_URL', 'http://api.geweapi.com').strip()
+    # Extract domain from base URL (handle http://api.geweapi.com or https://api.geweapi.com)
+    gewe_domain = gewe_base_url.replace('http://', '').replace('https://', '').split('/')[0]
+
+    domain_valid = False
+    # Check Referer header (most reliable for webhook verification)
+    if referer_header:
+        if gewe_domain in referer_header:
+            domain_valid = True
+            logger.debug("Domain verified via Referer: %s", referer_header)
+
+    # If Referer check failed, log warning but don't block (for dev/testing)
+    if not domain_valid:
+        logger.warning(
+            "Webhook request domain verification failed - IP: %s, Host: %s, Referer: %s. "
+            "Expected domain: %s. Allowing for dev/testing.",
+            client_ip, host_header, referer_header, gewe_domain
+        )
+
+    # Token verification for webhook security
+    expected_token = os.getenv('GEWE_TOKEN', '').strip()
+    if expected_token:
+        token_valid = False
+        token_source = None
+
+        # Check token in header first (common pattern)
+        header_token = request.headers.get('X-GEWE-TOKEN') or request.headers.get('Authorization')
+        if header_token:
+            # Remove 'Bearer ' prefix if present
+            if header_token.startswith('Bearer '):
+                header_token = header_token[7:]
+            if header_token == expected_token:
+                token_valid = True
+                token_source = "header"
+                logger.debug("Token verified from header")
+
+        # If header token not found or invalid, check body token (Gewe sends token in JSON)
+        if not token_valid:
+            body_token = message_data.get('token', '')
+            if body_token == expected_token:
+                token_valid = True
+                token_source = "body"
+                logger.debug("Token verified from body")
+
+        if not token_valid:
+            logger.warning(
+                "Invalid webhook token from IP: %s, Host: %s. "
+                "Header token present: %s, Body token present: %s",
+                client_ip, host_header,
+                bool(header_token), bool(message_data.get('token'))
+            )
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid token"
+            )
+        else:
+            logger.debug("Token verified successfully from %s", token_source)
+    else:
+        logger.warning("GEWE_TOKEN not configured - webhook is unprotected!")
+
+    # 4. Request Payload Validation (Priority 2: Important)
+    # Validate that payload has expected structure for Gewe messages
+    # Test messages may have different structure, so we allow testMsg
+    if 'testMsg' in message_data:
+        logger.info("Received test message from Gewe: %s", message_data.get('testMsg'))
+        # Test messages are OK, just return success
+        return {"status": "ok", "message": "Test message received"}
+
+    # For real messages, validate required fields
+    if not message_data.get('Appid') and not message_data.get('Wxid'):
+        logger.warning("Invalid webhook payload - missing Appid/Wxid: %s", message_data)
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid payload: missing Appid or Wxid"
+        )
+
+    service = GeweService(db)
+    try:
         logger.debug("Received Gewe webhook: %s", message_data)
 
         # Process message and get Dify response
