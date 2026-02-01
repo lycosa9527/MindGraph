@@ -1,5 +1,5 @@
 """
-Clear library-related tables in PostgreSQL (dev environment only).
+Clear library-related tables in SQLite or PostgreSQL (dev environment only).
 
 This script clears all library-related tables to allow a fresh start
 with the new schema that includes image-based document support.
@@ -17,12 +17,12 @@ Usage:
     python scripts/clear_library_tables.py --dry-run  # Preview only
 """
 import argparse
-import importlib.util
+import importlib
 import logging
 import sys
 from pathlib import Path
 
-from sqlalchemy import text
+from sqlalchemy import text, inspect
 from sqlalchemy.orm import Session
 
 # Add project root to path before importing project modules
@@ -32,12 +32,59 @@ sys.path.insert(0, str(_project_root))
 # Dynamic imports to avoid Ruff E402 warning
 _config_database = importlib.import_module('config.database')
 get_db = _config_database.get_db
+engine = _config_database.engine
 
 logging.basicConfig(level=logging.INFO, format='%(message)s')
 logger = logging.getLogger(__name__)
 
 
-def clear_library_tables(db, dry_run: bool = False) -> tuple[int, dict]:
+def is_sqlite_database() -> bool:
+    """
+    Check if the current database is SQLite.
+
+    Returns:
+        True if SQLite, False otherwise
+    """
+    return engine.dialect.name == 'sqlite'
+
+
+def table_exists(_db: Session, table_name: str) -> bool:
+    """
+    Check if a table exists in the database.
+
+    Args:
+        _db: Database session (unused, kept for API consistency)
+        table_name: Name of the table to check
+
+    Returns:
+        True if table exists, False otherwise
+    """
+    inspector = inspect(engine)
+    return table_name in inspector.get_table_names()
+
+
+def get_table_count(db: Session, table_name: str) -> int:
+    """
+    Get the count of records in a table, returning 0 if table doesn't exist.
+
+    Args:
+        db: Database session
+        table_name: Name of the table
+
+    Returns:
+        Count of records, or 0 if table doesn't exist
+    """
+    if not table_exists(db, table_name):
+        return 0
+    try:
+        result = db.execute(text(f"SELECT COUNT(*) FROM {table_name}"))
+        return result.scalar() or 0
+    except Exception as e:
+        logger.warning("Error counting records in %s: %s", table_name, e)
+        return 0
+
+
+def clear_library_tables(db: Session, dry_run: bool = False) -> tuple[int, dict]:
     """
     Clear all library-related tables.
 
@@ -48,15 +95,21 @@ def clear_library_tables(db, dry_run: bool = False) -> tuple[int, dict]:
     Returns:
         Tuple of (total_deleted, counts_dict)
     """
+    # Enable foreign keys for SQLite (required for CASCADE deletes)
+    if is_sqlite_database():
+        db.execute(text("PRAGMA foreign_keys = ON"))
+        db.commit()
+
     counts = {}
 
     # Get counts before deletion using raw SQL to avoid model column issues
     # This works even if new columns haven't been added yet
-    counts['danmaku_replies'] = db.execute(text("SELECT COUNT(*) FROM library_danmaku_replies")).scalar() or 0
-    counts['danmaku_likes'] = db.execute(text("SELECT COUNT(*) FROM library_danmaku_likes")).scalar() or 0
-    counts['danmaku'] = db.execute(text("SELECT COUNT(*) FROM library_danmaku")).scalar() or 0
-    counts['bookmarks'] = db.execute(text("SELECT COUNT(*) FROM library_bookmarks")).scalar() or 0
-    counts['documents'] = db.execute(text("SELECT COUNT(*) FROM library_documents")).scalar() or 0
+    # Check table existence first to avoid errors
+    counts['danmaku_replies'] = get_table_count(db, 'library_danmaku_replies')
+    counts['danmaku_likes'] = get_table_count(db, 'library_danmaku_likes')
+    counts['danmaku'] = get_table_count(db, 'library_danmaku')
+    counts['bookmarks'] = get_table_count(db, 'library_bookmarks')
+    counts['documents'] = get_table_count(db, 'library_documents')
 
     total = sum(counts.values())
 
@@ -72,25 +125,36 @@ def clear_library_tables(db, dry_run: bool = False) -> tuple[int, dict]:
 
     # Delete in order (respecting foreign key constraints) using raw SQL
     # This avoids issues with model columns that might not exist yet
-    deleted_replies = db.execute(text("DELETE FROM library_danmaku_replies")).rowcount
-    db.commit()
-    logger.info("Deleted %s danmaku replies", deleted_replies)
+    deleted_replies = 0
+    deleted_likes = 0
+    deleted_danmaku = 0
+    deleted_bookmarks = 0
+    deleted_documents = 0
 
-    deleted_likes = db.execute(text("DELETE FROM library_danmaku_likes")).rowcount
-    db.commit()
-    logger.info("Deleted %s danmaku likes", deleted_likes)
+    if table_exists(db, 'library_danmaku_replies'):
+        deleted_replies = db.execute(text("DELETE FROM library_danmaku_replies")).rowcount
+        db.commit()
+        logger.info("Deleted %s danmaku replies", deleted_replies)
 
-    deleted_danmaku = db.execute(text("DELETE FROM library_danmaku")).rowcount
-    db.commit()
-    logger.info("Deleted %s danmaku", deleted_danmaku)
+    if table_exists(db, 'library_danmaku_likes'):
+        deleted_likes = db.execute(text("DELETE FROM library_danmaku_likes")).rowcount
+        db.commit()
+        logger.info("Deleted %s danmaku likes", deleted_likes)
 
-    deleted_bookmarks = db.execute(text("DELETE FROM library_bookmarks")).rowcount
-    db.commit()
-    logger.info("Deleted %s bookmarks", deleted_bookmarks)
+    if table_exists(db, 'library_danmaku'):
+        deleted_danmaku = db.execute(text("DELETE FROM library_danmaku")).rowcount
+        db.commit()
+        logger.info("Deleted %s danmaku", deleted_danmaku)
 
-    deleted_documents = db.execute(text("DELETE FROM library_documents")).rowcount
-    db.commit()
-    logger.info("Deleted %s documents", deleted_documents)
+    if table_exists(db, 'library_bookmarks'):
+        deleted_bookmarks = db.execute(text("DELETE FROM library_bookmarks")).rowcount
+        db.commit()
+        logger.info("Deleted %s bookmarks", deleted_bookmarks)
+
+    if table_exists(db, 'library_documents'):
+        deleted_documents = db.execute(text("DELETE FROM library_documents")).rowcount
+        db.commit()
+        logger.info("Deleted %s documents", deleted_documents)
 
     total_deleted = deleted_replies + deleted_likes + deleted_danmaku + deleted_bookmarks + deleted_documents
 
@@ -104,7 +168,7 @@ def main():
     Parses command line arguments and executes the table clearing operation.
     """
     parser = argparse.ArgumentParser(
-        description="Clear library-related tables in PostgreSQL (dev environment)"
+        description="Clear library-related tables in SQLite or PostgreSQL (dev environment)"
     )
     parser.add_argument(
         '--yes',
@@ -123,6 +187,11 @@ def main():
         logger.info("=" * 80)
         logger.info("CLEAR LIBRARY TABLES (Dev Environment)")
         logger.info("=" * 80)
+        logger.info("")
+
+        # Detect database type
+        db_type = "SQLite" if is_sqlite_database() else "PostgreSQL"
+        logger.info("Database type: %s", db_type)
         logger.info("")
 
         # Get database session

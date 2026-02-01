@@ -74,6 +74,7 @@ const emit = defineEmits<{
   (e: 'save', newText: string): void
   (e: 'cancel'): void
   (e: 'editStart'): void
+  (e: 'widthChange', width: number): void
 }>()
 
 // Local editing state
@@ -84,6 +85,7 @@ const inputRef = ref<HTMLInputElement | HTMLTextAreaElement | null>(null)
 const displayRef = ref<HTMLSpanElement | null>(null)
 const wrapperRef = ref<HTMLDivElement | null>(null)
 const inputWidth = ref<string | undefined>(undefined)
+const measureRef = ref<HTMLSpanElement | null>(null) // Hidden span for measuring text width
 
 // IME Autocomplete (only initialize if enabled)
 const imeAutocomplete = props.enableIME
@@ -125,8 +127,42 @@ watch(
     if (localIsEditing.value && imeAutocomplete) {
       imeAutocomplete.updateInput(newText)
     }
+    // Dynamically adjust input width as user types
+    if (localIsEditing.value) {
+      updateInputWidth()
+    }
   }
 )
+
+/**
+ * Update input width based on current text content
+ */
+function updateInputWidth(): void {
+  if (!measureRef.value || !localIsEditing.value) return
+
+  // Use nextTick to ensure DOM is updated
+  nextTick(() => {
+    if (!measureRef.value) return
+
+    // Measure the text width
+    const textWidth = measureRef.value.offsetWidth || measureRef.value.scrollWidth
+    
+    // Get maxWidth constraint
+    const maxWidthPx = parseInt(props.maxWidth) || 200
+    
+    // Calculate width: use measured width, but respect maxWidth
+    // Add some padding (8px) to prevent text from touching edges
+    const calculatedWidth = Math.min(textWidth + 8, maxWidthPx)
+    
+    // Ensure minimum width
+    const finalWidth = Math.max(calculatedWidth, 40)
+    
+    inputWidth.value = `${finalWidth}px`
+    
+    // Emit width change so parent node can adapt its width
+    emit('widthChange', finalWidth)
+  })
+}
 
 /**
  * Count Chinese characters in text
@@ -239,6 +275,8 @@ function startEditing(): void {
     if (imeAutocomplete && editText.value.trim()) {
       imeAutocomplete.updateInput(editText.value)
     }
+    // Initial width update
+    updateInputWidth()
   })
 }
 
@@ -420,6 +458,28 @@ onUnmounted(() => {
     @dblclick="handleDoubleClick"
     @mousedown="handleMouseDown"
   >
+    <!-- Hidden span for measuring text width -->
+    <span
+      v-if="localIsEditing"
+      ref="measureRef"
+      class="inline-edit-measure"
+      :style="{
+        fontSize: 'inherit',
+        fontFamily: 'inherit',
+        fontWeight: 'inherit',
+        fontStyle: 'inherit',
+        letterSpacing: 'inherit',
+        visibility: 'hidden',
+        position: 'absolute',
+        whiteSpace: 'pre',
+        top: '-9999px',
+        left: '-9999px',
+        padding: '2px 4px',
+      }"
+    >
+      {{ editText || 'M' }}
+    </span>
+
     <!-- Edit mode: show input with ghost text -->
     <div
       v-if="localIsEditing"

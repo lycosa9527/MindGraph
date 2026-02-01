@@ -332,6 +332,7 @@ export type EventTypes = {
   'node:selected': { nodeId: string; nodeData?: unknown }
   'node:text_updated': { nodeId: string; text: string }
   'node:resized': { nodeId?: string }
+  'node:edit_requested': { nodeId: string }
 
   // Canvas Events
   'canvas:fitted_with_panel': { panelWidth: number }
@@ -407,6 +408,10 @@ export type EventTypes = {
 
   // Diagram Orientation
   'diagram:orientation_changed': { orientation: string }
+
+  // Multi-Flow Map Events
+  'multi_flow_map:topic_width_changed': { nodeId: string; width: number | null }
+  'multi_flow_map:node_width_changed': { nodeId: string; width: number | null }
 
   // Wildcard for any event (for debugging)
   '*': { event: string; data: unknown }

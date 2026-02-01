@@ -1,24 +1,4 @@
-from typing import Dict, Any, Optional
-import json
-import logging
-import os
-import time
-
-from fastapi import APIRouter, HTTPException, Depends, Request
-from fastapi.responses import StreamingResponse
-
-import traceback
-
-from clients.dify import AsyncDifyClient, DifyFile
-from models import AIAssistantRequest, Messages, get_request_language
-from models.domain.auth import User
-from services.redis.redis_activity_tracker import get_activity_tracker
-from services.redis.redis_token_buffer import get_token_tracker
-from utils.auth import get_current_user_or_api_key
-
-"""
-SSE Streaming API Router
-========================
+"""SSE Streaming API Router.
 
 API endpoint for Server-Sent Events streaming:
 - /api/ai_assistant/stream: Stream AI assistant responses using Dify API
@@ -27,6 +7,22 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+from typing import Dict, Any, Optional
+import json
+import logging
+import os
+import time
+import traceback
+
+from fastapi import APIRouter, HTTPException, Depends, Request
+from fastapi.responses import StreamingResponse
+
+from clients.dify import AsyncDifyClient, DifyFile
+from models import AIAssistantRequest, Messages, get_request_language
+from models.domain.auth import User
+from services.redis.redis_activity_tracker import get_activity_tracker
+from services.redis.redis_token_buffer import get_token_tracker
+from utils.auth import get_current_user_or_api_key
 
 
 logger = logging.getLogger(__name__)
@@ -77,7 +73,7 @@ async def ai_assistant_stream(
 
     # Get Dify configuration from environment
     api_key = os.getenv('DIFY_API_KEY')
-    api_url = os.getenv('DIFY_API_URL', 'http://101.42.231.179/v1')
+    api_url = os.getenv('DIFY_API_URL', 'https://api.dify.ai/v1')
     timeout = int(os.getenv('DIFY_TIMEOUT', '30'))
 
     has_api_key = bool(api_key)
@@ -228,4 +224,3 @@ async def ai_assistant_stream(
             'Connection': 'keep-alive'
         }
     )
-

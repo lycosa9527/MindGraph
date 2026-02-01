@@ -44,7 +44,8 @@ class BridgeMapAgent(BaseAgent):
         # Bridge map auto-complete: existing pairs to preserve
         existing_analogies: Optional[List[Dict[str, str]]] = None,
         # Bridge map auto-complete: fixed dimension/relationship that user has already specified
-        fixed_dimension: Optional[str] = None
+        fixed_dimension: Optional[str] = None,
+        **kwargs: Any
     ) -> Dict[str, Any]:
         """
         Generate a bridge map from a prompt.
@@ -57,9 +58,13 @@ class BridgeMapAgent(BaseAgent):
             organization_id: Organization ID for token tracking
             request_type: Request type for token tracking
             endpoint_path: Endpoint path for token tracking
-            existing_analogies: For auto-complete mode - existing pairs to preserve [{left, right}, ...]
-                               When provided, LLM only identifies the relationship pattern, doesn't generate new pairs
-            fixed_dimension: For auto-complete mode - user-specified relationship pattern that should NOT be changed by LLM
+            existing_analogies: For auto-complete mode - existing pairs to preserve
+                               [{left, right}, ...]
+                               When provided, LLM only identifies the relationship pattern,
+                               doesn't generate new pairs
+            fixed_dimension: For auto-complete mode - user-specified relationship pattern
+                            that should NOT be changed by LLM
+            **kwargs: Additional parameters (for compatibility with base class)
 
         Returns:
             Dict containing success status and generated spec
@@ -76,7 +81,8 @@ class BridgeMapAgent(BaseAgent):
                 # Case 1 & 2: Has existing pairs
                 if fixed_dimension:
                     logger.debug(
-                        "BridgeMapAgent: Mode 2 - Pairs + Relationship provided, FIXED dimension '%s' - preserving %s pairs",
+                        "BridgeMapAgent: Mode 2 - Pairs + Relationship provided, "
+                        "FIXED dimension '%s' - preserving %s pairs",
                         fixed_dimension, len(existing_analogies)
                     )
                 else:
@@ -85,7 +91,8 @@ class BridgeMapAgent(BaseAgent):
                         "will identify relationship pattern from %s pairs",
                         len(existing_analogies)
                     )
-                spec = await self._identify_relationship_pattern(                    existing_analogies,
+                spec = await self._identify_relationship_pattern(
+                    existing_analogies,
                     language,
                     user_id=user_id,
                     organization_id=organization_id,
@@ -110,7 +117,7 @@ class BridgeMapAgent(BaseAgent):
             else:
                 # Case 4: Full generation mode - no pairs, no fixed dimension
                 spec = await self._generate_bridge_map_spec(
-                    prompt,
+                    user_prompt,
                     language,
                     dimension_preference,
                     user_id=user_id,
@@ -192,7 +199,7 @@ class BridgeMapAgent(BaseAgent):
 
             # Check if we have at least 5 analogies (skip in auto-complete mode)
             if not skip_min_count and len(analogies) < 5:
-                return False, "Insufficient analogies: %s, need at least 5" % len(analogies)
+                return False, f"Insufficient analogies: {len(analogies)}, need at least 5"
 
             # In auto-complete mode, just ensure at least 1 analogy exists
             if skip_min_count and len(analogies) < 1:
@@ -438,13 +445,25 @@ class BridgeMapAgent(BaseAgent):
                         system_prompt = """分析以下类比对，识别关系模式，并生成更多遵循相同模式的新对。
 返回JSON：{"dimension": "模式名", "analogies": [{"left": "X", "right": "Y"}...], "alternative_dimensions": [...]}"""
                     else:
-                        system_prompt = """Analyze these pairs, identify the pattern, and generate more pairs following the same pattern.
-Return JSON: {"dimension": "pattern", "analogies": [{"left": "X", "right": "Y"}...], "alternative_dimensions": [...]}"""
+                        system_prompt = (
+                            "Analyze these pairs, identify the pattern, "
+                            "and generate more pairs following the same pattern.\n"
+                            'Return JSON: {"dimension": "pattern", '
+                            '"analogies": [{"left": "X", "right": "Y"}...], '
+                            '"alternative_dimensions": [...]}'
+                        )
 
                 if language == "zh":
-                    user_prompt = f"用户已创建的类比对：\n{pairs_text}\n\n请识别关系模式，并生成5-6个新的类比对（不要重复上面的对）。"
+                    user_prompt = (
+                        f"用户已创建的类比对：\n{pairs_text}\n\n"
+                        f"请识别关系模式，并生成5-6个新的类比对（不要重复上面的对）。"
+                    )
                 else:
-                    user_prompt = f"User's existing pairs:\n{pairs_text}\n\nIdentify the pattern and generate 5-6 NEW pairs (do not duplicate the above)."
+                    user_prompt = (
+                        f"User's existing pairs:\n{pairs_text}\n\n"
+                        f"Identify the pattern and generate 5-6 NEW pairs "
+                        f"(do not duplicate the above)."
+                    )
 
             logger.debug("User prompt: %s", user_prompt)
 
@@ -598,14 +617,23 @@ Return JSON: {"dimension": "pattern", "analogies": [{"left": "X", "right": "Y"}.
             system_prompt = get_prompt("bridge_map_agent", language, "relationship_only")
 
             if not system_prompt:
-                logger.warning("BridgeMapAgent: No relationship_only prompt found, using generation prompt as fallback")
+                logger.warning(
+                    "BridgeMapAgent: No relationship_only prompt found, "
+                    "using generation prompt as fallback"
+                )
                 system_prompt = get_prompt("bridge_map_agent", language, "generation")
 
             # Build user prompt with the relationship
             if language == "zh":
-                user_prompt = f"用户指定的关系模式：{relationship}\n\n请根据这个关系模式生成6个类比对。"
+                user_prompt = (
+                    f"用户指定的关系模式：{relationship}\n\n"
+                    f"请根据这个关系模式生成6个类比对。"
+                )
             else:
-                user_prompt = f"User's specified relationship pattern: {relationship}\n\nGenerate 6 analogy pairs following this relationship pattern."
+                user_prompt = (
+                    f"User's specified relationship pattern: {relationship}\n\n"
+                    f"Generate 6 analogy pairs following this relationship pattern."
+                )
 
             logger.debug("User prompt: %s", user_prompt)
 
@@ -678,13 +706,19 @@ Return JSON: {"dimension": "pattern", "analogies": [{"left": "X", "right": "Y"}.
 
             if 'alternative_dimensions' in spec:
                 enhanced_spec['alternative_dimensions'] = spec['alternative_dimensions']
-                logger.debug("BridgeMapAgent: Preserving %s alternative dimensions", len(spec['alternative_dimensions']))
+                logger.debug(
+                    "BridgeMapAgent: Preserving %s alternative dimensions",
+                    len(spec['alternative_dimensions'])
+                )
             else:
                 logger.warning("BridgeMapAgent: No alternative_dimensions field in spec - LLM did not provide it")
 
             # Ensure we have exactly 5 analogies (renderer expects this)
             if 'analogies' in enhanced_spec and len(enhanced_spec['analogies']) > 5:
-                logger.debug("BridgeMapAgent: Truncating %s analogies to 5 for renderer", len(enhanced_spec['analogies']))
+                logger.debug(
+                    "BridgeMapAgent: Truncating %s analogies to 5 for renderer",
+                    len(enhanced_spec['analogies'])
+                )
                 enhanced_spec['analogies'] = enhanced_spec['analogies'][:5]
 
             # Add layout information
@@ -758,8 +792,5 @@ Return JSON: {"dimension": "pattern", "analogies": [{"left": "X", "right": "Y"}.
             logger.error("BridgeMapAgent: Error enhancing spec: %s", e)
             return {
                 'success': False,
-                'error': 'Enhancement failed: %s' % str(e)
+                'error': f'Enhancement failed: {str(e)}'
             }
-
-
-

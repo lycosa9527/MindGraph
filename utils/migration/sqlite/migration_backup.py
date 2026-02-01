@@ -21,8 +21,13 @@ from typing import Optional, Any
 
 logger = logging.getLogger(__name__)
 
+# Calculate project root
+# File structure: MindGraph/utils/migration/sqlite/migration_backup.py
+# So: __file__.parent.parent.parent.parent = MindGraph/ (project root)
+_project_root = Path(__file__).parent.parent.parent.parent
+
 # Migration configuration constants
-BACKUP_DIR = Path("backup")
+BACKUP_DIR = _project_root / "backup"  # Backup folder at project root: MindGraph/backup/
 MOVE_RETRY_MAX_ATTEMPTS = 3  # Maximum retry attempts for moving SQLite database
 MOVE_RETRY_INITIAL_DELAY = 0.5  # Initial delay before retry (seconds)
 

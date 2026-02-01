@@ -49,6 +49,9 @@ from .library import (
 )
 from .pinned_conversations import PinnedConversation
 from .env_settings import EnvSetting
+from .gewe_message import GeweMessage
+from .gewe_contact import GeweContact
+from .gewe_group_member import GeweGroupMember
 
 __all__ = [
     # Base
@@ -100,4 +103,10 @@ __all__ = [
     "PinnedConversation",
     # Env Settings
     "EnvSetting",
+    # Gewe Messages
+    "GeweMessage",
+    # Gewe Contacts
+    "GeweContact",
+    # Gewe Group Members
+    "GeweGroupMember",
 ]

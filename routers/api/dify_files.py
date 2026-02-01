@@ -53,7 +53,7 @@ async def upload_file_to_dify(
 
     # Get Dify configuration
     api_key = os.getenv('DIFY_API_KEY')
-    api_url = os.getenv('DIFY_API_URL', 'http://101.42.231.179/v1')
+    api_url = os.getenv('DIFY_API_URL', 'https://api.dify.ai/v1')
 
     if not api_key:
         logger.error("DIFY_API_KEY not configured")
@@ -149,7 +149,7 @@ async def get_dify_parameters(
     lang = get_request_language(x_language)
 
     api_key = os.getenv('DIFY_API_KEY')
-    api_url = os.getenv('DIFY_API_URL', 'http://101.42.231.179/v1')
+    api_url = os.getenv('DIFY_API_URL', 'https://api.dify.ai/v1')
 
     if not api_key:
         raise HTTPException(status_code=500, detail=Messages.error("ai_not_configured", lang))

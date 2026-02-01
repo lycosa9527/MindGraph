@@ -42,6 +42,7 @@ export interface NodeStyle {
   width?: number
   height?: number
   size?: number // Uniform size for perfect circles (diameter)
+  minWidth?: number // Minimum width (for multi-flow map visual balance)
 }
 
 export interface Position {

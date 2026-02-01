@@ -5,6 +5,38 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.19.0] - 2026-02-02
+
+### Added
+- **Gewe WeChat Integration**: Complete WeChat integration system with message handling, contact management, and group member tracking. Includes backend services (`services/gewe/`), API client (`clients/gewe/`), database models (`GeweMessage`, `GeweContact`, `GeweGroupMember`), router endpoints (`/api/gewe/webhook`), and admin frontend page (`GewePage.vue`). Supports webhook callbacks for receiving WeChat messages and events.
+- **Gewe Configuration**: Added Gewe integration configuration options in `env.example` including `GEWE_TOKEN`, `GEWE_BASE_URL`, and `GEWE_TIMEOUT` settings with documentation for webhook callback URLs.
+- **Multi-Flow Map Node Deletion**: Added node deletion functionality for multi-flow maps in Canvas Toolbar, allowing users to delete selected cause/effect nodes.
+- **Migration Table Helpers**: New `migration_table_helpers.py` utility module for SQLite migration table operations.
+
+### Changed
+- **Bridge Map Agent**: Improved code formatting and PEP8 compliance. Enhanced docstring formatting, fixed line length issues, and improved string formatting using f-strings. Added `**kwargs` parameter for better compatibility with base class.
+- **AI Model Selector UI**: Major visual improvements with glassmorphism design, model-specific color themes (Qwen: indigo, DeepSeek: green, Doubao: orange), improved hover effects, and enhanced dark mode support. Removed checkmark icon in favor of color-coded idle states.
+- **Canvas Toolbar**: Enhanced with multi-flow map node deletion functionality, allowing users to delete selected cause/effect nodes with proper validation and user feedback.
+- **Diagram Components**: Improved FlowNode, TopicNode, LabelNode, and InlineEditableText components with better event handling and user interaction.
+- **Multi-Flow Map Store**: Enhanced multi-flow map store with improved node deletion logic and better state management.
+- **Bridge Map Store**: Improved bridge map store with better spec loading and error handling.
+- **Library Router**: Significant code refactoring and reduction (1254 lines removed) with improved code organization and maintainability.
+- **Migration Utilities**: Improved SQLite migration utilities (`migration_backup.py`, `migration_tables.py`, `migration_utils.py`) with better error handling and code organization. Enhanced PostgreSQL data migration utilities.
+- **Database Model Registration**: Added Gewe model registration in `config/database.py` for automatic database migration support.
+- **Dify API Configuration**: Updated default Dify API URL from custom server (`http://101.42.231.179/v1`) to official API (`https://api.dify.ai/v1`) in `env.example`.
+- **SSE Streaming**: Improved Server-Sent Events streaming implementation with better error handling.
+- **Admin Page**: Enhanced admin page with Gewe integration access and improved navigation.
+- **Router Registration**: Updated router registration to include Gewe feature routes.
+- **Clear Library Tables Script**: Improved script with better error handling and user feedback.
+
+### Fixed
+- **Code Formatting**: Fixed PEP8 compliance issues throughout codebase, including line length, string formatting, and import organization.
+- **Bridge Map Agent**: Fixed variable name inconsistency (`prompt` vs `user_prompt`) in full generation mode.
+- **Diagram Canvas**: Improved edge rendering and node interaction handling.
+- **Straight Edge Component**: Enhanced edge visualization and interaction.
+- **Event Bus**: Improved event handling and type safety.
+
+
 ## [5.18.0] - 2026-01-31
 
 ### Added

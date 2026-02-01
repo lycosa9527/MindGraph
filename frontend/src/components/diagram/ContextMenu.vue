@@ -10,9 +10,9 @@ import { useDiagramStore } from '@/stores'
 import type { DiagramNode, MindGraphNode } from '@/types'
 
 interface MenuItem {
-  label: string
+  label?: string
   icon?: string
-  action: () => void
+  action?: () => void
   disabled?: boolean
   divider?: boolean
 }
@@ -41,7 +41,7 @@ const menuItems = computed<MenuItem[]>(() => {
   if (props.target === 'node' && props.node) {
     const node = props.node
     const nodeData = node.data
-    const isTopicNode = nodeData?.nodeType === 'topic' || nodeData?.nodeType === 'center'
+    const isTopicNode = nodeData?.nodeType === 'topic'
     const isBoundaryNode = nodeData?.nodeType === 'boundary'
 
     // Edit action
@@ -255,7 +255,7 @@ function preventDefault(event: Event) {
 }
 
 function handleItemClick(item: MenuItem) {
-  if (!item.disabled && !item.divider) {
+  if (!item.disabled && !item.divider && item.action) {
     item.action()
   }
 }
@@ -278,7 +278,7 @@ function handleItemClick(item: MenuItem) {
           :class="{ disabled: item.disabled, divider: item.divider }"
           @click="handleItemClick(item)"
         >
-          <span v-if="!item.divider" class="context-menu-label">{{ item.label }}</span>
+          <span v-if="!item.divider && item.label" class="context-menu-label">{{ item.label }}</span>
         </div>
       </div>
     </Transition>

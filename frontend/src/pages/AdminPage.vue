@@ -7,15 +7,18 @@
  * - Manager: Access to their organization's data only
  */
 import { computed, onMounted, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 
 import { useLanguage, useNotifications } from '@/composables'
 import { useAuthStore } from '@/stores'
+import GeweLoginComponent from '@/components/admin/GeweLoginComponent.vue'
 
+const route = useRoute()
 const authStore = useAuthStore()
 const { isZh } = useLanguage()
 const notify = useNotifications()
 
-const activeTab = ref('dashboard')
+const activeTab = ref((route.query.tab as string) || 'dashboard')
 const isLoading = ref(false)
 const isLoadingTokens = ref(false)
 
@@ -67,6 +70,7 @@ const allTabs = [
   { name: 'schools', label: 'Schools', icon: 'School', adminOnly: true },
   { name: 'tokens', label: 'Tokens', icon: 'Ticket', adminOnly: true },
   { name: 'apikeys', label: 'API Keys', icon: 'Key', adminOnly: true },
+  { name: 'gewe', label: 'Gewe WeChat', icon: 'ChatLineRound', adminOnly: true },
   { name: 'logs', label: 'Logs', icon: 'Document', adminOnly: false },
   { name: 'announcements', label: 'Announcements', icon: 'Bell', adminOnly: true },
 ]
@@ -139,6 +143,13 @@ function formatNumber(num: number): string {
 watch(activeTab, (newTab) => {
   if (newTab === 'tokens' && !tokenStats.value) {
     loadTokenStats()
+  }
+})
+
+// Watch for route query changes to update active tab
+watch(() => route.query.tab, (tab) => {
+  if (tab && typeof tab === 'string') {
+    activeTab.value = tab
   }
 })
 
@@ -635,6 +646,11 @@ onMounted(() => {
             Load Statistics
           </el-button>
         </div>
+      </template>
+
+      <!-- Gewe WeChat Tab -->
+      <template v-else-if="activeTab === 'gewe'">
+        <GeweLoginComponent />
       </template>
 
       <!-- Other tabs placeholder -->

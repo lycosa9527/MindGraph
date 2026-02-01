@@ -73,6 +73,7 @@ const currentMode = computed(() => {
   if (path.startsWith('/course')) return 'course'
   if (path.startsWith('/community')) return 'community'
   if (path.startsWith('/library')) return 'library'
+  if (path.startsWith('/gewe')) return 'gewe'
   return 'mindmate' // Default
 })
 
@@ -128,6 +129,8 @@ function setMode(index: string) {
     router.push('/community')
   } else if (index === 'library') {
     router.push('/library')
+  } else if (index === 'gewe') {
+    router.push('/gewe')
   }
 }
 
@@ -302,6 +305,13 @@ async function handleDiagramSelect(diagram: SavedDiagram) {
       >
         <el-icon><Reading /></el-icon>
         <template #title>图书馆</template>
+      </el-menu-item>
+      <el-menu-item
+        v-if="isAdminOrManager"
+        index="gewe"
+      >
+        <el-icon><ChatDotRound /></el-icon>
+        <template #title>Gewe</template>
       </el-menu-item>
     </el-menu>
 

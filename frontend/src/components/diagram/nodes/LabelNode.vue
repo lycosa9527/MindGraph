@@ -40,10 +40,20 @@ async function recalculatePosition() {
   const maxWidth = 180 // Max width from CSS (max-width: 180px)
   // Measure actual height (changes when text wraps)
   const actualHeight = labelElement.offsetHeight || 40 // Fallback to estimate
+  // Measure actual width instead of using maxWidth for overlap detection
+  const actualWidth = labelElement.offsetWidth || maxWidth
   
-  // For overlap detection, always use maxWidth since wrapped text can still use full width
+  // For overlap detection, use actual width if available, otherwise maxWidth
   const labelX = labelNode.position.x
-  const labelRightEdge = labelX + maxWidth
+  const labelRightEdge = labelX + actualWidth
+
+  console.log('[LabelNode-recalculatePosition] Starting recalculation:', {
+    labelX,
+    labelRightEdge,
+    actualWidth,
+    maxWidth,
+    actualHeight,
+  })
 
   // Get all bridge map nodes (excluding the label itself)
   const bridgeNodes = nodes.filter(
@@ -53,7 +63,10 @@ async function recalculatePosition() {
       node.data?.pairIndex !== undefined
   )
 
-  if (bridgeNodes.length === 0) return
+  if (bridgeNodes.length === 0) {
+    console.log('[LabelNode-recalculatePosition] No bridge nodes found, skipping')
+    return
+  }
 
   // Find the leftmost node
   const leftmostNode = bridgeNodes.reduce((leftmost, node) => {
@@ -62,7 +75,19 @@ async function recalculatePosition() {
   }, bridgeNodes[0])
 
   const leftmostX = leftmostNode.position.x
-  const gap = 8 // Same gap as in bridgeMap.ts
+  // Gap from label's right edge to node's left edge (should be 10px)
+  const gapFromLabelRight = 10
+
+  console.log('[LabelNode-recalculatePosition] Node positions:', {
+    leftmostX,
+    leftmostNodeId: leftmostNode.id,
+    gapFromLabelRight,
+    labelRightEdge,
+    actualWidth,
+    labelLeftEdge: labelX,
+    currentGapFromLabelRight: leftmostX - labelRightEdge,
+    targetGap: gapFromLabelRight,
+  })
 
   // Calculate center Y of bridge line (average of all node centers)
   // Use Vue Flow's measured dimensions if available
@@ -90,24 +115,65 @@ async function recalculatePosition() {
   const newLabelY = centerY - actualHeight / 2
 
   // Check if label overlaps with nodes (accounting for gap)
+  // Gap is measured from label's right edge to node's left edge
   // Always use maxWidth for calculation to account for worst-case scenario (wrapped text)
   let adjustedX = labelX
   let needsXUpdate = false
   
-  if (labelRightEdge + gap > leftmostX) {
-    // Calculate new position: move label left so its right edge is gap pixels from leftmost node
-    const newLabelX = leftmostX - gap - maxWidth
-    // Allow label to go slightly negative if needed to prevent overlap
+  // Maintain gap from label's right edge to horizontal bridge line start (leftmost node's left edge)
+  // The horizontal bridge line starts at the leftmost node position (minX)
+  // Target: label right edge + gapFromLabelRight = horizontal line start (leftmost node left edge)
+  // So: label right edge = leftmost node left edge - gapFromLabelRight
+  // Therefore: label left edge = leftmost node left edge - gapFromLabelRight - actualWidth
+  const currentGapFromLabelRight = leftmostX - labelRightEdge
+  const targetLabelRightEdge = leftmostX - gapFromLabelRight
+  const targetLabelX = targetLabelRightEdge - actualWidth
+  
+  // Only adjust if the gap is significantly different from target (more than 1px difference)
+  if (Math.abs(currentGapFromLabelRight - gapFromLabelRight) > 1) {
+    // Calculate new position: move label so its right edge is gapFromLabelRight pixels from node's left edge
+    adjustedX = targetLabelX
+    // Allow label to go slightly negative if needed, but prefer to keep it at DEFAULT_PADDING minimum
     const minX = -50 // Allow going slightly negative (up to 50px off-canvas)
-    adjustedX = Math.max(newLabelX, minX)
+    adjustedX = Math.max(adjustedX, minX)
     needsXUpdate = Math.abs(adjustedX - labelX) > 1
+    
+    console.log('[LabelNode-recalculatePosition] Adjusting to maintain gap:', {
+      originalX: labelX,
+      originalGap: currentGapFromLabelRight,
+      targetGap: gapFromLabelRight,
+      targetLabelX,
+      adjustedX,
+      needsXUpdate,
+      reason: 'Gap from label right edge to horizontal line start (leftmost node left edge) should be 10px',
+    })
+  } else {
+    console.log('[LabelNode-recalculatePosition] Gap is correct, keeping original position:', {
+      labelX,
+      labelRightEdge,
+      leftmostX,
+      currentGapFromLabelRight,
+      targetGap: gapFromLabelRight,
+    })
   }
 
   // Check if Y position needs update (when height changes due to wrapping)
   const needsYUpdate = Math.abs(newLabelY - labelNode.position.y) > 1
 
+  console.log('[LabelNode-recalculatePosition] Final decision:', {
+    adjustedX,
+    newLabelY,
+    needsXUpdate,
+    needsYUpdate,
+    willUpdate: updateNode !== undefined && (needsXUpdate || needsYUpdate),
+  })
+
   // Update node position if needed
   if (updateNode && (needsXUpdate || needsYUpdate)) {
+    console.log('[LabelNode-recalculatePosition] Updating position:', {
+      from: { x: labelNode.position.x, y: labelNode.position.y },
+      to: { x: adjustedX, y: newLabelY },
+    })
     updateNode(props.id, (node) => ({
       ...node,
       position: { x: adjustedX, y: newLabelY },

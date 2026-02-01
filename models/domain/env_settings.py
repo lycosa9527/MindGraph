@@ -291,7 +291,7 @@ class DifySettings(BaseModel):
         description="Dify API key (optional)"
     )
     DIFY_API_URL: str = Field(
-        default="http://101.42.231.179/v1",
+        default="https://api.dify.ai/v1",
         description="Dify API URL"
     )
     DIFY_TIMEOUT: int = Field(

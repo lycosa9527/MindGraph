@@ -231,8 +231,49 @@ function handleDeleteNode() {
     return
   }
 
-  // For other diagram types, show under development message
-  notify.info('删除节点功能开发中')
+  // For multi-flow maps, delete selected cause/effect nodes
+  if (diagramType === 'multi_flow_map') {
+    let deletedCount = 0
+    const selectedNodes = [...diagramStore.selectedNodes]
+
+    // Delete each selected node (skip event/topic node)
+    for (const nodeId of selectedNodes) {
+      // Protect event node from deletion
+      if (nodeId === 'event') {
+        continue
+      }
+      if (diagramStore.removeNode(nodeId)) {
+        deletedCount++
+      }
+    }
+
+    if (deletedCount > 0) {
+      diagramStore.clearSelection()
+      diagramStore.pushHistory('删除节点')
+      notify.success(`已删除 ${deletedCount} 个节点`)
+    } else {
+      notify.warning('无法删除事件节点')
+    }
+    return
+  }
+
+  // For other diagram types, delete selected nodes
+  let deletedCount = 0
+  const selectedNodes = [...diagramStore.selectedNodes]
+
+  for (const nodeId of selectedNodes) {
+    if (diagramStore.removeNode(nodeId)) {
+      deletedCount++
+    }
+  }
+
+  if (deletedCount > 0) {
+    diagramStore.clearSelection()
+    diagramStore.pushHistory('删除节点')
+    notify.success(`已删除 ${deletedCount} 个节点`)
+  } else {
+    notify.warning('无法删除选中的节点')
+  }
 }
 
 function handleFormatBrush() {
@@ -338,7 +379,7 @@ function handleToggleOrientation() {
             </ElButton>
           </ElTooltip>
         </template>
-        
+
         <!-- For other diagram types, show simple button -->
         <ElTooltip
           v-else
@@ -424,7 +465,7 @@ function handleToggleOrientation() {
                   <ElDropdownItem
                     v-for="preset in stylePresets"
                     :key="preset.name"
-                    class="!p-2 rounded border text-xs text-center"
+                    class="p-2! rounded border text-xs text-center"
                     :class="[preset.bgClass, preset.borderClass]"
                   >
                     {{ preset.name }}
@@ -662,7 +703,7 @@ function handleToggleOrientation() {
               >
                 <div class="flex items-start py-1">
                   <div
-                    class="rounded-full p-2 mr-3 flex-shrink-0"
+                    class="rounded-full p-2 mr-3 shrink-0"
                     :class="app.iconBg"
                   >
                     <component

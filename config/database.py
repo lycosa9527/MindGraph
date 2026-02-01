@@ -140,6 +140,33 @@ except ImportError as e:
 except Exception as e:
     logger.warning("[Database] Error registering library models: %s", e, exc_info=True)
 
+try:
+    from models.domain.gewe_message import GeweMessage
+    _ = GeweMessage.__tablename__
+    logger.debug("[Database] Gewe message models imported and registered for migrations")
+except ImportError as e:
+    logger.debug("[Database] Could not import gewe message models: %s", e)
+except Exception as e:
+    logger.debug("[Database] Error registering gewe message models: %s", e)
+
+try:
+    from models.domain.gewe_contact import GeweContact
+    _ = GeweContact.__tablename__
+    logger.debug("[Database] Gewe contact models imported and registered for migrations")
+except ImportError as e:
+    logger.debug("[Database] Could not import gewe contact models: %s", e)
+except Exception as e:
+    logger.debug("[Database] Error registering gewe contact models: %s", e)
+
+try:
+    from models.domain.gewe_group_member import GeweGroupMember
+    _ = GeweGroupMember.__tablename__
+    logger.debug("[Database] Gewe group member models imported and registered for migrations")
+except ImportError as e:
+    logger.debug("[Database] Could not import gewe group member models: %s", e)
+except Exception as e:
+    logger.debug("[Database] Error registering gewe group member models: %s", e)
+
 # Ensure data directory exists for database files
 DATA_DIR = Path("data")
 DATA_DIR.mkdir(exist_ok=True)

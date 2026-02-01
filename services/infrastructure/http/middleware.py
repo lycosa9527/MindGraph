@@ -16,12 +16,10 @@ import json
 import secrets
 import logging
 from urllib.parse import urlparse
-from typing import Callable
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.middleware.gzip import GZipMiddleware
-from starlette.types import ASGIApp, Message, Receive, Scope, Send
+from starlette.types import ASGIApp, Receive, Scope, Send
 from starlette.middleware.gzip import GZipResponder
 from config.settings import config
 from services.auth.security_logger import security_log
@@ -103,6 +101,7 @@ async def csrf_protection(request: Request, call_next):
             '/api/auth/demo/verify',
             '/api/frontend_log',
             '/api/frontend_log_batch',
+            '/api/gewe/webhook',
             '/health',
             '/health/',
             '/docs',
@@ -282,12 +281,12 @@ class SelectiveGZipMiddleware:
     2. Compression breaks HTTP range requests needed for lazy loading
     3. Range requests require byte-level accuracy which is lost with compression
     """
-    
+
     def __init__(self, app: ASGIApp, minimum_size: int = 1000, compresslevel: int = 9):
         self.app = app
         self.minimum_size = minimum_size
         self.compresslevel = compresslevel
-    
+
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         if scope["type"] == "http":
             path = scope.get("path", "")
@@ -295,7 +294,7 @@ class SelectiveGZipMiddleware:
             is_pdf_endpoint = (
                 path.startswith("/api/library/documents/") and "/file" in path
             )
-            
+
             if is_pdf_endpoint:
                 # Skip compression for PDF files - pass through directly
                 # This preserves range request support
@@ -321,11 +320,11 @@ async def ensure_pdf_range_support(request: Request, call_next):
     doesn't catch all cases.
     """
     response = await call_next(request)
-    
+
     # Check if this is a PDF file response
     content_type = response.headers.get('Content-Type', '')
     path = request.url.path
-    
+
     if content_type == 'application/pdf' or (
         path.startswith('/api/library/documents/') and '/file' in path
     ):
@@ -342,7 +341,7 @@ async def ensure_pdf_range_support(request: Request, call_next):
                     encoding, path
                 )
                 del response.headers['Content-Encoding']
-    
+
     return response
 
 

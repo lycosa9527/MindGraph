@@ -4,7 +4,7 @@
  * Used as the main/central node in bubble maps, mind maps, etc.
  * Supports inline text editing on double-click
  */
-import { computed, ref } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 
 import { Handle, Position } from '@vue-flow/core'
 
@@ -137,42 +137,103 @@ const mindMapHandlePositions = computed(() => {
   }
 })
 
-const nodeStyle = computed(() => ({
-  backgroundColor:
-    props.data.style?.backgroundColor || defaultStyle.value.backgroundColor || '#1976d2',
-  borderColor: props.data.style?.borderColor || defaultStyle.value.borderColor || '#0d47a1',
-  color: props.data.style?.textColor || defaultStyle.value.textColor || '#ffffff',
-  fontSize: `${props.data.style?.fontSize || defaultStyle.value.fontSize || 18}px`,
-  fontWeight: props.data.style?.fontWeight || defaultStyle.value.fontWeight || 'bold',
-  borderWidth: `${props.data.style?.borderWidth || defaultStyle.value.borderWidth || 3}px`,
-  // Pill shape for tree map (9999px creates fully rounded ends)
-  // Rounded rectangle for multi-flow map, circle for others
-  borderRadius: isPillShape.value
-    ? '9999px'
-    : isRoundedRectangle.value
-      ? `${props.data.style?.borderRadius || 8}px`
-      : `${props.data.style?.borderRadius || 50}%`,
-}))
+const nodeStyle = computed(() => {
+  const baseStyle = {
+    backgroundColor:
+      props.data.style?.backgroundColor || defaultStyle.value.backgroundColor || '#1976d2',
+    borderColor: props.data.style?.borderColor || defaultStyle.value.borderColor || '#0d47a1',
+    color: props.data.style?.textColor || defaultStyle.value.textColor || '#ffffff',
+    fontSize: `${props.data.style?.fontSize || defaultStyle.value.fontSize || 18}px`,
+    fontWeight: props.data.style?.fontWeight || defaultStyle.value.fontWeight || 'bold',
+    borderWidth: `${props.data.style?.borderWidth || defaultStyle.value.borderWidth || 3}px`,
+    // Pill shape for tree map (9999px creates fully rounded ends)
+    // Rounded rectangle for multi-flow map, circle for others
+    borderRadius: isPillShape.value
+      ? '9999px'
+      : isRoundedRectangle.value
+        ? `${props.data.style?.borderRadius || 8}px`
+        : `${props.data.style?.borderRadius || 50}%`,
+  }
+  
+  // Add dynamic width when editing (only for multi-flow map)
+  if (isMultiFlowMap.value && dynamicWidth.value !== null) {
+    return {
+      ...baseStyle,
+      width: `${dynamicWidth.value}px`,
+      minWidth: `${dynamicWidth.value}px`,
+      transition: 'width 0.2s ease',
+    }
+  }
+  
+  // Set default width for multi-flow map topic nodes (optimized for "事件")
+  if (isMultiFlowMap.value && dynamicWidth.value === null) {
+    return {
+      ...baseStyle,
+      width: '90px',
+      minWidth: '90px',
+    }
+  }
+  
+  return baseStyle
+})
 
 // Inline editing state
 const isEditing = ref(false)
 
+// Dynamic width for editing (only for multi-flow map)
+const dynamicWidth = ref<number | null>(null)
+const topicNodeRef = ref<HTMLDivElement | null>(null)
+
 function handleTextSave(newText: string) {
   isEditing.value = false
+  dynamicWidth.value = null // Reset width after saving
   // Emit event to update the node text in the store
   eventBus.emit('node:text_updated', {
     nodeId: props.id,
     text: newText,
   })
+  // Trigger layout recalculation for multi-flow map
+  if (isMultiFlowMap.value) {
+    nextTick(() => {
+      eventBus.emit('multi_flow_map:topic_width_changed', {
+        nodeId: props.id,
+        width: topicNodeRef.value?.offsetWidth || null,
+      })
+    })
+  }
 }
 
 function handleEditCancel() {
   isEditing.value = false
+  dynamicWidth.value = null // Reset width after canceling
+}
+
+function handleWidthChange(width: number) {
+  // Update node width dynamically as user types (only for multi-flow map)
+  if (isMultiFlowMap.value) {
+    // Add padding to account for node padding (px-6 = 24px on each side = 48px total)
+    dynamicWidth.value = width + 48
+    
+    // Emit width change event to trigger layout recalculation (both causes and effects reposition)
+    // Use nextTick + setTimeout to ensure DOM has fully updated before measuring
+    nextTick(() => {
+      setTimeout(() => {
+        if (topicNodeRef.value) {
+          const actualWidth = topicNodeRef.value.offsetWidth
+          eventBus.emit('multi_flow_map:topic_width_changed', {
+            nodeId: props.id,
+            width: actualWidth,
+          })
+        }
+      }, 100)
+    })
+  }
 }
 </script>
 
 <template>
   <div
+    ref="topicNodeRef"
     class="topic-node flex items-center justify-center px-6 py-4 border-solid cursor-default select-none"
     :class="{ 'pill-shape': isPillShape, 'rounded-rectangle': isRoundedRectangle, 'multi-flow-map-node': isMultiFlowMap }"
     :style="nodeStyle"
@@ -181,11 +242,12 @@ function handleEditCancel() {
       :text="data.label || ''"
       :node-id="id"
       :is-editing="isEditing"
-      max-width="200px"
+      max-width="300px"
       text-align="center"
       @save="handleTextSave"
       @cancel="handleEditCancel"
       @edit-start="isEditing = true"
+      @width-change="handleWidthChange"
     />
 
     <!-- Connection handles for horizontal layouts (bubble maps, etc.) -->

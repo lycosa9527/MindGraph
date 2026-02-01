@@ -14,7 +14,6 @@ Proprietary License
 import sqlite3
 import json
 import logging
-import re
 from pathlib import Path
 from datetime import datetime
 from typing import Optional, Dict, List, Tuple, Any
@@ -30,6 +29,13 @@ from sqlalchemy.exc import OperationalError, ProgrammingError
 
 # Import Base directly from models to avoid circular import with config.database
 from models.domain.auth import Base
+
+# Import helper functions
+from utils.migration.sqlite.migration_table_helpers import (
+    build_insert_sql,
+    convert_row_data,
+    handle_foreign_key_violations
+)
 
 logger = logging.getLogger(__name__)
 
@@ -275,51 +281,20 @@ def migrate_table(
 
         # Build INSERT statement with ON CONFLICT handling for primary keys
         # Note: execute_values() expects "VALUES %s" (single placeholder), not "VALUES (%s, %s, ...)"
-        columns_str = ", ".join([f'"{col}"' for col in common_columns])
-
         # Use ON CONFLICT DO UPDATE for idempotent migrations
         # This allows re-running migration safely and updates existing records
         # Falls back to DO NOTHING if no primary key is found
-        if pk_column_names:
-            # Only include PK columns that exist in common_columns
-            conflict_columns = [col for col in pk_column_names if col in common_columns]
-            if conflict_columns:
-                # Build UPDATE clause: update all non-PK columns
-                update_columns = [col for col in common_columns if col not in conflict_columns]
-                if update_columns:
-                    # Use DO UPDATE to update non-PK columns on conflict
-                    # This makes migration idempotent and handles schema changes
-                    update_clause = ", ".join([f'"{col}" = EXCLUDED."{col}"' for col in update_columns])
-                    conflict_target = ", ".join([f'"{col}"' for col in conflict_columns])
-                    insert_sql = (
-                        f'INSERT INTO "{table_name}" ({columns_str}) '
-                        f"VALUES %s "
-                        f"ON CONFLICT ({conflict_target}) "
-                        f"DO UPDATE SET {update_clause}"
-                    )
-                else:
-                    # All columns are PK columns, use DO NOTHING
-                    conflict_target = ", ".join([f'"{col}"' for col in conflict_columns])
-                    insert_sql = (
-                        f'INSERT INTO "{table_name}" ({columns_str}) '
-                        f"VALUES %s "
-                        f"ON CONFLICT ({conflict_target}) DO NOTHING"
-                    )
-            else:
-                # PK columns not in common columns, use DO NOTHING
-                insert_sql = (
-                    f'INSERT INTO "{table_name}" ({columns_str}) '
-                    f"VALUES %s "
-                    f"ON CONFLICT DO NOTHING"
-                )
-        else:
-            # No primary key found, use DO NOTHING
-            # This handles tables without explicit PKs
-            insert_sql = (
-                f'INSERT INTO "{table_name}" ({columns_str}) '
-                f"VALUES %s "
-                f"ON CONFLICT DO NOTHING"
-            )
+        # CRITICAL: Use timestamp-aware updates to prevent overwriting newer PostgreSQL data
+        conflict_columns = (
+            [col for col in pk_column_names if col in common_columns]
+            if pk_column_names else []
+        )
+        insert_sql = build_insert_sql(
+            table_name,
+            common_columns,
+            pk_column_names or [],
+            conflict_columns
+        )
 
         # Migrate data using psycopg2 for better performance
         # Use batch processing to avoid loading entire table into memory
@@ -408,44 +383,12 @@ def migrate_table(
 
                     # Prepare batch data: only include columns that exist in both databases
                     # Convert data types as needed (SQLite INTEGER booleans -> PostgreSQL BOOLEAN)
-                    batch_data = []
-                    for row in batch:
-                        row_dict = dict(zip(columns, row))
-                        filtered_row = []
-                        for col in common_columns:
-                            value = row_dict.get(col)
-
-                            # Convert SQLite INTEGER booleans (0/1) to PostgreSQL BOOLEAN
-                            pg_type = pg_column_types.get(col, '')
-                            if 'BOOLEAN' in pg_type:
-                                # PostgreSQL expects boolean, SQLite stores as INTEGER
-                                if value is not None:
-                                    # Convert 0/1 to False/True
-                                    if isinstance(value, (int, float)):
-                                        value = bool(value)
-                                    elif isinstance(value, str):
-                                        # Handle string "0"/"1" or "true"/"false"
-                                        value = value.lower() in ('1', 'true', 'yes', 'on')
-                                    elif not isinstance(value, bool):
-                                        value = bool(value)
-
-                            # Handle VARCHAR length limits (truncate if too long)
-                            elif 'VARCHAR' in pg_type or 'CHARACTER VARYING' in pg_type:
-                                if value is not None and isinstance(value, str):
-                                    # Extract length from type string (e.g., "VARCHAR(20)")
-                                    match = re.search(r'\((\d+)\)', pg_type)
-                                    if match:
-                                        max_length = int(match.group(1))
-                                        if len(value) > max_length:
-                                            logger.warning(
-                                                "[Migration] Truncating value in column %s.%s: "
-                                                "length %d exceeds VARCHAR(%d)",
-                                                table_name, col, len(value), max_length
-                                            )
-                                            value = value[:max_length]
-
-                            filtered_row.append(value)
-                        batch_data.append(filtered_row)
+                    batch_data = [
+                        convert_row_data(
+                            row, columns, common_columns, pg_column_types, table_name
+                        )
+                        for row in batch
+                    ]
 
                     # Insert batch into PostgreSQL
                     execute_values(
@@ -544,7 +487,6 @@ def migrate_table(
 
                             if is_fk_violation:
                                 # Try to handle FK violations by inserting records individually
-                                # For nullable FK columns, set them to NULL instead of skipping
                                 logger.info(
                                     "[Migration] Batch %d for table %s has FK violations. "
                                     "Attempting individual record insertion with NULL FK "
@@ -552,214 +494,34 @@ def migrate_table(
                                     batch_num, table_name
                                 )
 
-                                # Build single-row INSERT statement
-                                # insert_sql uses "VALUES %s" for execute_values,
-                                # we need "VALUES (%s, %s, ...)"
-                                num_placeholders = len(common_columns)
-                                placeholders = ", ".join(["%s"] * num_placeholders)
-                                # Replace "VALUES %s" with "VALUES (%s, %s, ...)"
-                                single_insert_sql = insert_sql.replace(
-                                    "VALUES %s", f"VALUES ({placeholders})"
+                                (
+                                    batch_success_count,
+                                    batch_nullified_count,
+                                    batch_skipped_count,
+                                    fk_failed_batches,
+                                    fk_batch_errors
+                                ) = handle_foreign_key_violations(
+                                    pg_cursor,
+                                    pg_conn,
+                                    batch_data,
+                                    batch_num,
+                                    table_name,
+                                    common_columns,
+                                    insert_sql,
+                                    fk_columns,
+                                    fk_parent_info,
+                                    savepoint_name,
+                                    progress_tracker
                                 )
 
-                                # Try inserting records one by one
-                                # Create a new savepoint for individual record insertion
-                                individual_sp_name = f"{savepoint_name}_individual"
-                                batch_success_count = 0
-                                batch_nullified_count = 0
-                                # Track records that couldn't be inserted
-                                batch_skipped_count = 0
-                                nullified_fks = {}  # Track which FK columns were nullified
-
-                                for row_idx, row_data in enumerate(batch_data):
-                                    row_inserted = False
-                                    # Try original, then with NULL FK, then with placeholder
-                                    max_retries = 3
-
-                                    for retry_attempt in range(max_retries):
-                                        try:
-                                            pg_cursor.execute(
-                                                f"SAVEPOINT {individual_sp_name}"
-                                            )
-
-                                            # On retry, set nullable FK columns to NULL
-                                            if retry_attempt > 0:
-                                                modified_row_data = list(row_data)
-                                                # Find and nullify nullable FK columns
-                                                # We nullify all nullable FK columns since we
-                                                # don't know which one failed
-                                                # (could be multiple FK violations in same record)
-                                                for fk_col_name, is_nullable in fk_columns.items():
-                                                    if is_nullable:
-                                                        try:
-                                                            fk_col_idx = common_columns.index(
-                                                                fk_col_name
-                                                            )
-                                                            if modified_row_data[fk_col_idx] is not None:
-                                                                modified_row_data[fk_col_idx] = None
-                                                                nullified_fks[fk_col_name] = (
-                                                                    nullified_fks.get(
-                                                                        fk_col_name, 0
-                                                                    ) + 1
-                                                                )
-                                                        except (ValueError, IndexError):
-                                                            pass
-                                                row_data_to_use = modified_row_data
-                                            else:
-                                                row_data_to_use = row_data
-
-                                            pg_cursor.execute(
-                                                single_insert_sql, row_data_to_use
-                                            )
-                                            pg_cursor.execute(
-                                                f"RELEASE SAVEPOINT {individual_sp_name}"
-                                            )
-                                            batch_success_count += 1
-                                            row_inserted = True
-
-                                            if retry_attempt > 0:
-                                                batch_nullified_count += 1
-
-                                            break  # Success, exit retry loop
-
-                                        except Exception as row_error:
-                                            # Rollback to savepoint to undo this record
-                                            try:
-                                                pg_cursor.execute(
-                                                    f"ROLLBACK TO SAVEPOINT "
-                                                    f"{individual_sp_name}"
-                                                )
-                                            except Exception:
-                                                # Savepoint might not exist if error occurred before it
-                                                pass
-
-                                            row_error_msg = str(row_error)
-                                            row_error_msg_lower = row_error_msg.lower()
-                                            if "violates foreign key constraint" in row_error_msg_lower:
-                                                # Parse PostgreSQL FK violation error to identify
-                                                # the specific FK column
-                                                # Format: "Key (column_name)=(value) is not present..."
-                                                fk_column_name = None
-                                                fk_value = None
-
-                                                # Try to extract FK column name from error message
-                                                # Pattern: "Key (column_name)=(value)"
-                                                key_match = re.search(
-                                                    r'Key\s+\(([^)]+)\)\s*=\s*\(([^)]+)\)',
-                                                    row_error_msg,
-                                                    re.IGNORECASE
-                                                )
-                                                if key_match:
-                                                    fk_column_name = (
-                                                        key_match.group(1).strip().strip('"')
-                                                    )
-                                                    fk_value = key_match.group(2).strip()
-
-                                                # Orphaned FK reference - parent record doesn't exist
-                                                # Skip this record (don't migrate orphaned data)
-                                                if fk_column_name:
-                                                    parent_info = fk_parent_info.get(
-                                                        fk_column_name,
-                                                        ('unknown', 'unknown')
-                                                    )
-                                                    logger.info(
-                                                        "[Migration] Skipping orphaned record %d "
-                                                        "in batch %d: %s.%s=%s references "
-                                                        "non-existent %s.%s",
-                                                        row_idx + 1,
-                                                        batch_num,
-                                                        table_name,
-                                                        fk_column_name,
-                                                        fk_value,
-                                                        parent_info[0],
-                                                        parent_info[1]
-                                                    )
-                                                else:
-                                                    logger.info(
-                                                        "[Migration] Skipping orphaned record %d "
-                                                        "in batch %d: FK violation (parent record "
-                                                        "doesn't exist)",
-                                                        row_idx + 1,
-                                                        batch_num
-                                                    )
-                                                # Skip this record - don't migrate orphaned data
-                                                break  # Exit retry loop, record will be skipped
-                                            else:
-                                                # Other error - try one more time, then log critical
-                                                if retry_attempt < max_retries - 1:
-                                                    logger.debug(
-                                                        "[Migration] Record %d in batch %d failed "
-                                                        "with non-FK error, retrying: %s",
-                                                        row_idx + 1, batch_num, row_error
-                                                    )
-                                                    continue  # Retry
-
-                                                # Final attempt failed - this is a critical error
-                                                logger.error(
-                                                    "[Migration] CRITICAL: Record %d in batch %d "
-                                                    "cannot be migrated after %d retries: %s",
-                                                    row_idx + 1, batch_num, max_retries, row_error
-                                                )
-                                                # Exit retry loop - record tracked in skipped count
-                                                break
-
-                                    if not row_inserted:
-                                        # Record failed after all retries - track as failed
-                                        batch_skipped_count += 1
-                                        logger.error(
-                                            "[Migration] CRITICAL: Could not insert record %d in "
-                                            "batch %d after %d retries. This record will be lost.",
-                                            row_idx + 1, batch_num, max_retries
-                                        )
+                                failed_batches.extend(fk_failed_batches)
+                                batch_errors.extend(fk_batch_errors)
+                                rows_inserted += batch_success_count
 
                                 if batch_success_count > 0:
-                                    pg_conn.commit()
-                                    rows_inserted += batch_success_count
-                                    if progress_tracker is not None:
-                                        progress_tracker.update_table_records(rows_inserted)
-
-                                    if batch_nullified_count > 0:
-                                        logger.info(
-                                            "[Migration] Batch %d for table %s: inserted %d "
-                                            "records, nullified FK columns in %d records to "
-                                            "preserve data. FK columns nullified: %s",
-                                            batch_num, table_name, batch_success_count,
-                                            batch_nullified_count,
-                                            dict(nullified_fks)
-                                        )
-
-                                    if batch_skipped_count > 0:
-                                        logger.error(
-                                            "[Migration] CRITICAL: Batch %d for table %s: %d "
-                                            "records could not be migrated after all retry "
-                                            "attempts. These records will be lost unless FK "
-                                            "constraints are disabled or parent records are "
-                                            "created manually.",
-                                            batch_num, table_name, batch_skipped_count
-                                        )
-                                        # Track as failed batch if any records were skipped
-                                        failed_batches.append(batch_num)
-                                        batch_errors.append(
-                                            f"Batch {batch_num}: {batch_skipped_count} records "
-                                            f"could not be migrated (FK violations or other errors)"
-                                        )
-
                                     continue  # Successfully handled FK violations (partial)
                                 else:
-                                    # All records failed
-                                    failed_batches.append(batch_num)
-                                    batch_errors.append(
-                                        f"Batch {batch_num}: All {len(batch_data)} records had "
-                                        f"FK violations or errors that could not be resolved"
-                                    )
-                                    logger.error(
-                                        "[Migration] CRITICAL: Batch %d failed for table %s: "
-                                        "all %d records had unresolvable FK violations or errors. "
-                                        "These records will be lost unless FK constraints are "
-                                        "disabled.",
-                                        batch_num, table_name, len(batch_data)
-                                    )
-                                    continue
+                                    continue  # All records failed, already logged
 
                             # Non-FK error or FK handling failed
                             failed_batches.append(batch_num)
@@ -1012,7 +774,10 @@ def verify_migration(sqlite_path: Path, pg_url: str) -> Tuple[bool, Dict[str, An
                         "table": table_name,
                         "sqlite_count": sqlite_count,
                         "postgresql_count": pg_count,
-                        "error": f"PostgreSQL has {pg_count} rows, SQLite has {sqlite_count} rows (missing {sqlite_count - pg_count} rows)"
+                        "error": (
+                            f"PostgreSQL has {pg_count} rows, SQLite has {sqlite_count} rows "
+                            f"(missing {sqlite_count - pg_count} rows)"
+                        )
                     })
                     logger.error(
                         "[Migration] CRITICAL: Table %s incomplete in PostgreSQL: "

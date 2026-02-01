@@ -39,8 +39,10 @@ from sqlalchemy import create_engine, inspect, text
 
 logger = logging.getLogger(__name__)
 
-# Calculate project root (utils/migration/ is 3 levels down from project root)
-_project_root = Path(__file__).parent.parent.parent
+# Calculate project root
+# File structure: MindGraph/utils/migration/sqlite/migration_utils.py
+# So: __file__.parent.parent.parent.parent = MindGraph/ (project root)
+_project_root = Path(__file__).parent.parent.parent.parent
 
 # Migration marker file (relative to project root)
 MIGRATION_MARKER_FILE = _project_root / "backup" / ".migration_completed"
@@ -60,8 +62,11 @@ def get_sqlite_db_path() -> Optional[Path]:
     sqlite_path_override = os.getenv('SQLITE_DB_PATH')
     if sqlite_path_override:
         db_path = Path(sqlite_path_override)
-        if db_path.exists():
-            return db_path.resolve()
+        try:
+            if db_path.exists():
+                return db_path.resolve()
+        except PermissionError:
+            logger.debug("[Migration] Permission denied checking SQLITE_DB_PATH: %s", db_path)
         return None
 
     db_url = os.getenv('DATABASE_URL', '')
@@ -85,8 +90,11 @@ def get_sqlite_db_path() -> Optional[Path]:
         else:
             db_path = Path(db_url.replace("sqlite:///", ""))
 
-        if db_path.exists():
-            return db_path.resolve()
+        try:
+            if db_path.exists():
+                return db_path.resolve()
+        except PermissionError:
+            logger.debug("[Migration] Permission denied checking DATABASE_URL path: %s", db_path)
 
     # If DATABASE_URL is PostgreSQL or not SQLite, check common default locations
     # This allows migration even when DATABASE_URL is already set to PostgreSQL
@@ -118,9 +126,16 @@ def get_sqlite_db_path() -> Optional[Path]:
             pass
 
     for db_path in common_locations:
-        if db_path.exists():
-            logger.debug("[Migration] Found SQLite database at common location: %s", db_path)
-            return db_path.resolve()
+        try:
+            if db_path.exists():
+                logger.debug("[Migration] Found SQLite database at common location: %s", db_path)
+                return db_path.resolve()
+        except PermissionError:
+            logger.debug("[Migration] Permission denied checking path: %s (skipping)", db_path)
+            continue
+        except Exception as e:
+            logger.debug("[Migration] Error checking path %s: %s (skipping)", db_path, e)
+            continue
 
     return None
 
@@ -369,7 +384,7 @@ def check_table_completeness(
                 else:
                     inspector = inspect(pg_engine)
                     table_exists = table_name in inspector.get_table_names()
-                
+
                 if table_exists:
                     result = conn.execute(text(f'SELECT COUNT(*) FROM "{table_name}"'))
                     postgresql_count = result.scalar()
@@ -399,7 +414,11 @@ def check_table_completeness(
     return is_complete, sqlite_count, postgresql_count
 
 
-def is_postgresql_empty(pg_url: str, force: bool = False, sqlite_path: Optional[Path] = None) -> Tuple[bool, Optional[str]]:
+def is_postgresql_empty(
+    pg_url: str,
+    force: bool = False,
+    sqlite_path: Optional[Path] = None
+) -> Tuple[bool, Optional[str]]:
     """
     Check if PostgreSQL database is empty or has incomplete data.
 
@@ -424,8 +443,38 @@ def is_postgresql_empty(pg_url: str, force: bool = False, sqlite_path: Optional[
             return True, None
 
         # Check if migration already completed
+        # BUT: If SQLite still exists in original location, allow migration to sync and move it
         if is_migration_completed():
-            return False, "Migration already completed (marker file exists)"
+            # Check if SQLite was actually moved to backup
+            sqlite_path_for_check = sqlite_path if sqlite_path else get_sqlite_db_path()
+
+            # If SQLite still exists in original location, allow migration to sync and move it
+            # This handles cases where migration completed but move failed, or SQLite was restored
+            if sqlite_path_for_check:
+                try:
+                    if sqlite_path_for_check.exists():
+                        # SQLite exists in original location - allow migration to sync and move
+                        logger.warning(
+                            "[Migration] Marker file exists but SQLite database still in original location: %s. "
+                            "Allowing migration to sync data and move SQLite to backup.",
+                            sqlite_path_for_check
+                        )
+                        # Don't return False - allow migration to proceed
+                    else:
+                        # SQLite doesn't exist in original location - migration truly complete
+                        return False, "Migration already completed (marker file exists, SQLite moved)"
+                except Exception:
+                    # If we can't check, be conservative but still allow if SQLite path was provided
+                    if sqlite_path:
+                        logger.warning(
+                            "[Migration] Marker file exists but cannot verify SQLite location. "
+                            "Allowing migration to proceed (SQLite path provided)."
+                        )
+                    else:
+                        return False, "Migration already completed (marker file exists)"
+            else:
+                # No SQLite path - migration truly complete
+                return False, "Migration already completed (marker file exists)"
 
         if force:
             # In force mode, allow migration even if tables exist (for resume)
@@ -443,7 +492,7 @@ def is_postgresql_empty(pg_url: str, force: bool = False, sqlite_path: Optional[
         # Compare with SQLite to determine if data migration is needed
         try:
             user_tables = [t for t in tables if not (t.startswith('pg_') or t.startswith('sql_'))]
-            
+
             if not user_tables:
                 # Only system tables exist
                 return True, None
@@ -466,7 +515,7 @@ def is_postgresql_empty(pg_url: str, force: bool = False, sqlite_path: Optional[
                             result = conn.execute(text(f'SELECT COUNT(*) FROM "{table_name}"'))
                             row_count = result.scalar()
                             total_rows += row_count if row_count else 0
-                        
+
                         if total_rows == 0:
                             # PostgreSQL is empty - allow migration
                             logger.info(
@@ -495,11 +544,13 @@ def is_postgresql_empty(pg_url: str, force: bool = False, sqlite_path: Optional[
                     )
 
             # VERIFY completeness of each table by comparing with SQLite
+            # Note: We allow incremental migration - if SQLite exists (even if backup has moved files),
+            # we compare and migrate only missing data
             logger.info(
                 "[Migration] Verifying completeness of %d existing table(s) by comparing with SQLite...",
                 len(user_tables)
             )
-            
+
             incomplete_tables = []
             complete_tables = []
             empty_tables = []
@@ -571,18 +622,20 @@ def is_postgresql_empty(pg_url: str, force: bool = False, sqlite_path: Optional[
                         )
                     return True, None
 
-                # All tables that exist in SQLite have complete data
+                # All tables that exist in SQLite have complete data (by row count)
+                # However, SQLite might have newer data (updated records) even if row counts match
+                # Since we use timestamp-aware updates, it's safe to allow migration
+                # The migration will only update records if SQLite has newer timestamps
                 if complete_tables:
                     logger.info(
-                        "[Migration] Verification complete: All %d table(s) have complete data "
-                        "(PostgreSQL=%d rows, SQLite=%d rows)",
+                        "[Migration] Verification complete: All %d table(s) have matching row counts "
+                        "(PostgreSQL=%d rows, SQLite=%d rows). "
+                        "However, SQLite may have newer data. Migration will proceed with timestamp-aware updates.",
                         len(complete_tables), total_pg_rows, total_sqlite_rows
                     )
-                    return False, (
-                        f"PostgreSQL database has complete data "
-                        f"({len(complete_tables)} tables verified, {total_pg_rows} rows match SQLite). "
-                        f"Migration appears complete. Use --force flag to re-migrate."
-                    )
+                    # Allow migration to proceed - timestamp-aware updates will handle data freshness
+                    # This ensures PostgreSQL gets the newest data even if row counts match
+                    return True, None
 
                 # All tables are empty
                 if total_pg_rows == 0:

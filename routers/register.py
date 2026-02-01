@@ -16,7 +16,7 @@ from routers.admin import env_router as admin_env, logs_router as admin_logs, re
 from routers.core import pages, cache, update_notification
 from routers.core.vue_spa import router as vue_spa
 from routers.core.health import router as health_router
-from routers.features import voice, tab_mode, school_zone, askonce
+from routers.features import voice, tab_mode, school_zone, askonce, gewe
 
 logger = logging.getLogger(__name__)
 
@@ -81,6 +81,9 @@ def register_routers(app: FastAPI) -> None:
         else:
             logger.debug("[RouterRegistration] Library feature disabled via FEATURE_LIBRARY flag")
 
+    # Gewe WeChat integration (admin only) - must be before vue_spa
+    app.include_router(gewe)
+
     # Vue SPA handles all page routes (v5.0.0+) - MUST be registered AFTER API routes
     app.include_router(vue_spa)
 
@@ -95,7 +98,7 @@ def register_routers(app: FastAPI) -> None:
     app.include_router(public_dashboard.router, prefix="/api/public", tags=["Public Dashboard"])
     app.include_router(school_zone)  # School Zone (organization-scoped sharing)
     app.include_router(askonce)  # AskOnce (多应) - Multi-LLM streaming chat
-    
+
     # DebateVerse (论境) - US-style debate system
     if DEBATEVERSE_MODULE is not None:
         app.include_router(DEBATEVERSE_MODULE)

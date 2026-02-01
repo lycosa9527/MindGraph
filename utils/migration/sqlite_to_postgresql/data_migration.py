@@ -76,7 +76,8 @@ from utils.migration.sqlite.migration_utils import (
     acquire_migration_lock,
     release_migration_lock,
     is_postgresql_empty,
-    check_table_completeness
+    check_table_completeness,
+    BACKUP_DIR as MIGRATION_BACKUP_DIR
 )
 from utils.migration.sqlite.migration_backup import (
     backup_sqlite_database,
@@ -114,16 +115,12 @@ logger = logging.getLogger(__name__)
 PSYCOPG2_AVAILABLE = importlib.util.find_spec('psycopg2') is not None
 
 # Lazy import to avoid circular dependency with config.database
-_INIT_DB_FUNC = None
-
-
+# Use importlib to import at module level while deferring execution
 def _get_init_db_func():
     """Get init_db function, importing lazily to avoid circular dependency."""
-    global _INIT_DB_FUNC
-    if _INIT_DB_FUNC is None:
-        from config.database import init_db
-        _INIT_DB_FUNC = init_db
-    return _INIT_DB_FUNC
+    if not hasattr(_get_init_db_func, '_cached_module'):
+        _get_init_db_func._cached_module = importlib.import_module('config.database')
+    return _get_init_db_func._cached_module.init_db
 
 
 def migrate_sqlite_to_postgresql(force: bool = False) -> Tuple[bool, Optional[str], Optional[Dict[str, Any]]]:
@@ -151,16 +148,87 @@ def migrate_sqlite_to_postgresql(force: bool = False) -> Tuple[bool, Optional[st
     if not PSYCOPG2_AVAILABLE:
         return False, "psycopg2 not installed. Install with: pip install psycopg2-binary", None
 
-    # Check if migration already completed
+    # Get SQLite database path first (before checking marker)
+    sqlite_path = get_sqlite_db_path()
+
+    # Check if migration already completed (marker file exists)
+    # BUT: If SQLite still exists in original location, we should sync and move it
     if is_migration_completed():
-        logger.info("[Migration] Migration already completed, skipping")
+        # Check if SQLite was actually moved to backup
+        backup_dir = MIGRATION_BACKUP_DIR
+        moved_files = []
+        if backup_dir.exists():
+            moved_files = list(backup_dir.glob("mindgraph.db.migrated.*.sqlite"))
+
+        # If SQLite exists in original location but wasn't moved, allow migration
+        # This handles cases where migration completed but move failed
+        if sqlite_path and sqlite_path.exists():
+            try:
+                if not moved_files:
+                    logger.warning(
+                        "[Migration] Marker file exists but SQLite database still in original location: %s. "
+                        "Migration will proceed to sync data and move SQLite to backup.",
+                        sqlite_path
+                    )
+                    # Don't return - continue with migration
+                else:
+                    logger.info(
+                        "[Migration] Migration already completed (marker file exists) "
+                        "and SQLite moved to backup: %s. Skipping.",
+                        moved_files[0].name
+                    )
+                    return True, None, None
+            except Exception:
+                # If we can't check, be safe and skip
+                logger.info(
+                    "[Migration] Migration already completed (marker file exists), skipping"
+                )
+                return True, None, None
+        else:
+            # No SQLite in original location - migration truly complete
+            logger.info(
+                "[Migration] Migration already completed (marker file exists, SQLite moved), skipping"
+            )
+            return True, None, None
+
+    # Get SQLite database path (if not already retrieved above)
+    if not sqlite_path:
+        sqlite_path = get_sqlite_db_path()
+        if not sqlite_path:
+            logger.info("[Migration] No SQLite database found, skipping migration")
+            return True, None, None
+
+    # Check if path exists and is accessible
+    try:
+        if not sqlite_path.exists():
+            logger.info("[Migration] SQLite database path does not exist: %s", sqlite_path)
+            return True, None, None
+    except PermissionError:
+        logger.warning(
+            "[Migration] Permission denied accessing SQLite database path: %s. Skipping migration.",
+            sqlite_path
+        )
+        return True, None, None
+    except Exception as e:
+        logger.warning(
+            "[Migration] Error checking SQLite database path %s: %s. Skipping migration.",
+            sqlite_path, e
+        )
         return True, None, None
 
-    # Get SQLite database path
-    sqlite_path = get_sqlite_db_path()
-    if not sqlite_path or not sqlite_path.exists():
-        logger.info("[Migration] No SQLite database found, skipping migration")
-        return True, None, None
+    # Note: We allow migration to proceed even if backup has moved files
+    # The migration will compare SQLite with PostgreSQL and only migrate missing data
+    # This handles cases where SQLite was restored or has new data
+    backup_dir = MIGRATION_BACKUP_DIR
+    if backup_dir.exists():
+        moved_files = list(backup_dir.glob("mindgraph.db.migrated.*.sqlite"))
+        if moved_files:
+            logger.info(
+                "[Migration] Note: SQLite database exists at %s and backup file exists: %s. "
+                "Migration will proceed with incremental update - comparing SQLite with PostgreSQL "
+                "and migrating only missing data.",
+                sqlite_path, moved_files[0].name
+            )
 
     # Get PostgreSQL URL - use defaults from env.example if not set
     pg_url = os.getenv('DATABASE_URL', '')
@@ -312,7 +380,7 @@ def migrate_sqlite_to_postgresql(force: bool = False) -> Tuple[bool, Optional[st
                         ):
                             # Table created successfully, now add indexes separately
                             create_table_indexes(pg_engine, table_name, table)
-                            
+
                             inspector = inspect(pg_engine)
                             if table_name in inspector.get_table_names():
                                 tables_created += 1
@@ -480,7 +548,7 @@ def migrate_sqlite_to_postgresql(force: bool = False) -> Tuple[bool, Optional[st
                                 retry_pass + 1, table_name, table_error
                             )
                             retry_failed.append(table_name)
-                    
+
                     tables_failed = retry_failed
 
                 # Verify all tables were created
@@ -700,15 +768,34 @@ def migrate_sqlite_to_postgresql(force: bool = False) -> Tuple[bool, Optional[st
                 return False, error_msg, migration_stats
 
             # STEP 7: Move SQLite database to backup (only after successful migration)
+            # This is critical to avoid confusion - SQLite should not remain in original location
             progress_tracker.update_stage(STAGE_MOVE_SQLITE, "Moving SQLite to backup...")
             move_success = move_sqlite_database_to_backup(sqlite_path, sqlite_conn)
             if not move_success:
-                logger.error("[Migration] CRITICAL: Failed to move SQLite database after successful migration")
-                logger.error("[Migration] Original SQLite database still exists at: %s", sqlite_path)
-                logger.error("[Migration] Please manually move the database to prevent accidental reuse")
+                logger.error(
+                    "[Migration] CRITICAL: Failed to move SQLite database after successful migration"
+                )
+                logger.error(
+                    "[Migration] Original SQLite database still exists at: %s", sqlite_path
+                )
+                logger.error(
+                    "[Migration] This may cause confusion - SQLite should be moved to backup folder"
+                )
+                logger.error(
+                    "[Migration] Please manually move the database to backup folder "
+                    "to prevent accidental reuse"
+                )
+                logger.error(
+                    "[Migration] Suggested command: mv %s backup/mindgraph.db.migrated.manual.sqlite",
+                    sqlite_path
+                )
+                # Don't fail migration - data is already migrated successfully
+                # But log clearly that manual intervention is needed
 
             # STEP 8: Create migration marker
-            progress_tracker.update_stage(STAGE_CREATE_MARKER, "Creating migration marker...")
+            progress_tracker.update_stage(
+                STAGE_CREATE_MARKER, "Creating migration marker..."
+            )
             final_stats = {
                 **migration_stats,
                 "verification": verify_stats,

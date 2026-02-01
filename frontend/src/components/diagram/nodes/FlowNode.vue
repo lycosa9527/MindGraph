@@ -4,7 +4,7 @@
  * Represents sequential steps in a process flow
  * Supports inline text editing on double-click
  */
-import { computed, ref } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 
 import { Handle, Position } from '@vue-flow/core'
 import { X } from 'lucide-vue-next'
@@ -32,17 +32,30 @@ const isMultiFlowMap = computed(() => props.data.diagramType === 'multi_flow_map
 const isCause = computed(() => isMultiFlowMap.value && props.id.startsWith('cause-'))
 const isEffect = computed(() => isMultiFlowMap.value && props.id.startsWith('effect-'))
 
-const nodeStyle = computed(() => ({
-  backgroundColor:
-    props.data.style?.backgroundColor || defaultStyle.value.backgroundColor || '#ffffff',
-  borderColor: props.data.style?.borderColor || defaultStyle.value.borderColor || '#409eff',
-  color: props.data.style?.textColor || defaultStyle.value.textColor || '#303133',
-  fontSize: `${props.data.style?.fontSize || defaultStyle.value.fontSize || 13}px`,
-  fontWeight: props.data.style?.fontWeight || defaultStyle.value.fontWeight || 'normal',
-  borderWidth: `${props.data.style?.borderWidth || defaultStyle.value.borderWidth || 2}px`,
-  // Pill shape for multi-flow map (9999px creates fully rounded ends), default rounded rectangle for others
-  borderRadius: isPillShape.value ? '9999px' : `${props.data.style?.borderRadius || 6}px`,
-}))
+const nodeStyle = computed(() => {
+  const baseStyle = {
+    backgroundColor:
+      props.data.style?.backgroundColor || defaultStyle.value.backgroundColor || '#ffffff',
+    borderColor: props.data.style?.borderColor || defaultStyle.value.borderColor || '#409eff',
+    color: props.data.style?.textColor || defaultStyle.value.textColor || '#303133',
+    fontSize: `${props.data.style?.fontSize || defaultStyle.value.fontSize || 13}px`,
+    fontWeight: props.data.style?.fontWeight || defaultStyle.value.fontWeight || 'normal',
+    borderWidth: `${props.data.style?.borderWidth || defaultStyle.value.borderWidth || 2}px`,
+    // Pill shape for multi-flow map (9999px creates fully rounded ends), default rounded rectangle for others
+    borderRadius: isPillShape.value ? '9999px' : `${props.data.style?.borderRadius || 6}px`,
+  }
+  
+  // Add dynamic width when editing
+  if (dynamicWidth.value !== null) {
+    return {
+      ...baseStyle,
+      width: `${dynamicWidth.value}px`,
+      minWidth: `${dynamicWidth.value}px`,
+    }
+  }
+  
+  return baseStyle
+})
 
 // Inline editing state
 const isEditing = ref(false)
@@ -50,18 +63,46 @@ const isEditing = ref(false)
 // Hover state for delete button (only for multi-flow map)
 const isHovering = ref(false)
 
+// Dynamic width for editing
+const dynamicWidth = ref<number | null>(null)
+
 const diagramStore = useDiagramStore()
 
 function handleTextSave(newText: string) {
   isEditing.value = false
+  const savedWidth = dynamicWidth.value
+  dynamicWidth.value = null // Reset width after saving
+  
+  // Store the width for visual balance calculation
+  if (isMultiFlowMap.value && savedWidth !== null) {
+    diagramStore.setNodeWidth(props.id, savedWidth)
+  }
+  
   eventBus.emit('node:text_updated', {
     nodeId: props.id,
     text: newText,
   })
+  
+  // Trigger layout recalculation for multi-flow map to update visual balance
+  if (isMultiFlowMap.value) {
+    nextTick(() => {
+      eventBus.emit('multi_flow_map:node_width_changed', {
+        nodeId: props.id,
+        width: savedWidth,
+      })
+    })
+  }
 }
 
 function handleEditCancel() {
   isEditing.value = false
+  dynamicWidth.value = null // Reset width after canceling
+}
+
+function handleWidthChange(width: number) {
+  // Update node width dynamically as user types
+  // Add padding to account for node padding (px-5 = 20px on each side = 40px total)
+  dynamicWidth.value = width + 40
 }
 
 function handleDeleteClick(event: MouseEvent) {
@@ -96,12 +137,13 @@ function handleDeleteClick(event: MouseEvent) {
       :text="data.label || ''"
       :node-id="id"
       :is-editing="isEditing"
-      max-width="120px"
+      max-width="200px"
       text-align="center"
       truncate
       @save="handleTextSave"
       @cancel="handleEditCancel"
       @edit-start="isEditing = true"
+      @width-change="handleWidthChange"
     />
 
     <!-- Connection handles for vertical flow (top-to-bottom between steps) -->
@@ -151,12 +193,14 @@ function handleDeleteClick(event: MouseEvent) {
 <style scoped>
 .flow-node {
   width: 140px;
+  min-width: 140px; /* Minimum width */
   height: 50px;
   overflow: visible; /* Changed from hidden to visible so delete button isn't clipped */
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   transition:
     box-shadow 0.2s ease,
-    transform 0.15s ease;
+    transform 0.15s ease,
+    width 0.2s ease; /* Smooth width transition */
 }
 
 .flow-node:hover {

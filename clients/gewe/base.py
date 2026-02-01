@@ -1,0 +1,137 @@
+"""Base Gewe Client.
+
+Provides core HTTP client functionality and base classes.
+
+@author lycosa9527
+@made_by MindSpring Team
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
+"""
+from typing import Dict, Any, Optional
+import logging
+import aiohttp
+
+from clients.gewe.account import AccountMixin
+from clients.gewe.message import MessageMixin
+from clients.gewe.download import DownloadMixin
+from clients.gewe.group import GroupMixin
+from clients.gewe.contact import ContactMixin
+from clients.gewe.enterprise import EnterpriseMixin
+from clients.gewe.sns import SNSMixin
+from clients.gewe.personal import PersonalMixin
+
+
+logger = logging.getLogger(__name__)
+
+
+class GeweAPIError(Exception):
+    """Base Gewe API error"""
+    def __init__(self, message: str, status_code: Optional[int] = None, error_code: Optional[str] = None):
+        self.message = message
+        self.status_code = status_code
+        self.error_code = error_code
+        super().__init__(self.message)
+
+
+class AsyncGeweClient(
+    AccountMixin,
+    MessageMixin,
+    DownloadMixin,
+    GroupMixin,
+    ContactMixin,
+    EnterpriseMixin,
+    SNSMixin,
+    PersonalMixin
+):
+    """Async client for interacting with Gewe WeChat API using aiohttp"""
+
+    def __init__(self, token: str, base_url: str = "http://api.geweapi.com", timeout: int = 30):
+        """
+        Initialize Gewe client.
+
+        Args:
+            token: Gewe API token (X-GEWE-TOKEN)
+            base_url: Base URL for Gewe API (default: http://api.geweapi.com)
+            timeout: Request timeout in seconds (default: 30)
+        """
+        self.token = token
+        self.base_url = base_url.rstrip('/')
+        self.timeout = aiohttp.ClientTimeout(total=timeout)
+        self._session: Optional[aiohttp.ClientSession] = None
+
+    async def _get_session(self) -> aiohttp.ClientSession:
+        """Get or create aiohttp session"""
+        if self._session is None or self._session.closed:
+            self._session = aiohttp.ClientSession(
+                timeout=self.timeout,
+                connector=aiohttp.TCPConnector(limit=10)
+            )
+        return self._session
+
+    async def close(self):
+        """Close aiohttp session"""
+        if self._session and not self._session.closed:
+            await self._session.close()
+            self._session = None
+
+    async def __aenter__(self):
+        """Async context manager entry"""
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        """Async context manager exit - cleanup session"""
+        await self.close()
+
+    async def _request(
+        self,
+        method: str,
+        endpoint: str,
+        json_data: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
+        """
+        Make a non-streaming HTTP request to Gewe API.
+
+        Args:
+            method: HTTP method (GET, POST, etc.)
+            endpoint: API endpoint (e.g., "/gewe/v2/api/login/getLoginQrCode")
+            json_data: JSON payload for POST requests
+
+        Returns:
+            Response JSON as dictionary
+
+        Raises:
+            GeweAPIError: If API request fails
+        """
+        url = f"{self.base_url}{endpoint}"
+        headers = {
+            'X-GEWE-TOKEN': self.token,
+            'Content-Type': 'application/json'
+        }
+
+        session = await self._get_session()
+
+        try:
+            async with session.request(method, url, headers=headers, json=json_data) as response:
+                response_data = await response.json()
+
+                if response.status != 200:
+                    error_msg = response_data.get('msg', f'API request failed with status {response.status}')
+                    logger.error("Gewe API error: %s - %s", response.status, error_msg)
+                    raise GeweAPIError(error_msg, status_code=response.status)
+
+                ret_code = response_data.get('ret')
+                if ret_code != 200:
+                    error_msg = response_data.get('msg', f'API returned error code {ret_code}')
+                    logger.error("Gewe API error: ret=%s - %s", ret_code, error_msg)
+                    raise GeweAPIError(error_msg, status_code=ret_code, error_code=str(ret_code))
+
+                return response_data
+
+        except aiohttp.ClientError as e:
+            logger.error("Gewe API connection error: %s", e)
+            raise GeweAPIError(f"Connection error: {str(e)}") from e
+        except Exception as e:
+            logger.error("Gewe API error: %s", e)
+            raise GeweAPIError(f"Unexpected error: {str(e)}") from e

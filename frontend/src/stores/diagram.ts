@@ -15,6 +15,7 @@ import { defineStore } from 'pinia'
 
 import { eventBus } from '@/composables/useEventBus'
 import type {
+  Connection,
   DiagramData,
   DiagramNode,
   DiagramType,
@@ -30,6 +31,7 @@ import {
   diagramNodeToVueFlowNode,
   vueFlowNodeToDiagramNode,
 } from '@/types/vueflow'
+import { MULTI_FLOW_MAP_TOPIC_WIDTH } from '@/composables/diagrams/layoutConfig'
 
 import {
   getDefaultTemplate,
@@ -182,6 +184,16 @@ export const useDiagramStore = defineStore('diagram', () => {
   // Title management state
   const title = ref<string>('')
   const isUserEditedTitle = ref<boolean>(false)
+  
+  // Store topic node width for multi-flow map layout recalculation
+  const topicNodeWidth = ref<number | null>(null)
+  
+  // Store node widths for multi-flow map visual balance
+  // Maps nodeId -> width in pixels
+  const nodeWidths = ref<Record<string, number>>({})
+  
+  // Force recalculation trigger for multi-flow map (increment to trigger reactive update)
+  const multiFlowMapRecalcTrigger = ref(0)
 
   // Getters
   const canUndo = computed(() => historyIndex.value > 0)
@@ -207,8 +219,16 @@ export const useDiagramStore = defineStore('diagram', () => {
 
     // For multi-flow maps, recalculate layout to ensure positions and IDs are correct
     // This makes the layout adaptive when nodes are added/deleted
+    // Also recalculates when topic width or node widths change (via multiFlowMapRecalcTrigger)
     if (diagramType === 'multi_flow_map') {
-      const recalculatedNodes = recalculateMultiFlowMapLayout(data.value.nodes)
+      // Access trigger to make this computed reactive to width changes
+      void multiFlowMapRecalcTrigger.value
+      
+      const recalculatedNodes = recalculateMultiFlowMapLayout(
+        data.value.nodes,
+        topicNodeWidth.value,
+        nodeWidths.value
+      )
       const causeNodes = recalculatedNodes.filter((n) => n.id.startsWith('cause-'))
       const effectNodes = recalculatedNodes.filter((n) => n.id.startsWith('effect-'))
       
@@ -218,6 +238,14 @@ export const useDiagramStore = defineStore('diagram', () => {
         if (node.id === 'event' && vueFlowNode.data) {
           vueFlowNode.data.causeCount = causeNodes.length
           vueFlowNode.data.effectCount = effectNodes.length
+        }
+        // Apply uniform width for visual balance (causes and effects)
+        if ((node.id.startsWith('cause-') || node.id.startsWith('effect-')) && node.style) {
+          vueFlowNode.style = {
+            ...vueFlowNode.style,
+            width: node.style.width,
+            minWidth: node.style.width,
+          }
         }
         return vueFlowNode
       })
@@ -480,11 +508,50 @@ export const useDiagramStore = defineStore('diagram', () => {
 
     // For multi-flow maps, rebuild layout after deletion to re-index IDs
     if (type.value === 'multi_flow_map') {
+      // Clear the deleted node's width from nodeWidths
+      setNodeWidth(nodeId, null)
+      
       // Remove the node first
       data.value.nodes.splice(index, 1)
       
+      // Rebuild nodeWidths mapping to match new sequential IDs after re-indexing
+      // Map old nodes to their widths before recalculation
+      const oldCauseNodes = data.value.nodes.filter((n) => n.id.startsWith('cause-')).sort((a, b) => {
+        const aIndex = parseInt(a.id.replace('cause-', ''), 10)
+        const bIndex = parseInt(b.id.replace('cause-', ''), 10)
+        return aIndex - bIndex
+      })
+      const oldEffectNodes = data.value.nodes.filter((n) => n.id.startsWith('effect-')).sort((a, b) => {
+        const aIndex = parseInt(a.id.replace('effect-', ''), 10)
+        const bIndex = parseInt(b.id.replace('effect-', ''), 10)
+        return aIndex - bIndex
+      })
+      
+      // Build new nodeWidths mapping with sequential IDs
+      const newNodeWidths: Record<string, number> = {}
+      oldCauseNodes.forEach((oldNode, newIndex) => {
+        const oldWidth = nodeWidths.value[oldNode.id]
+        if (oldWidth) {
+          newNodeWidths[`cause-${newIndex}`] = oldWidth
+        }
+      })
+      oldEffectNodes.forEach((oldNode, newIndex) => {
+        const oldWidth = nodeWidths.value[oldNode.id]
+        if (oldWidth) {
+          newNodeWidths[`effect-${newIndex}`] = oldWidth
+        }
+      })
+      
+      // Update nodeWidths with re-indexed mapping
+      nodeWidths.value = newNodeWidths
+      
       // Recalculate layout to re-index IDs and rebuild connections
-      const recalculatedNodes = recalculateMultiFlowMapLayout(data.value.nodes)
+      // Pass topicNodeWidth and updated nodeWidths for proper layout
+      const recalculatedNodes = recalculateMultiFlowMapLayout(
+        data.value.nodes,
+        topicNodeWidth.value,
+        nodeWidths.value
+      )
       const recalculatedConnections: Connection[] = []
       const causeNodes = recalculatedNodes.filter((n) => n.id.startsWith('cause-'))
       const effectNodes = recalculatedNodes.filter((n) => n.id.startsWith('effect-'))
@@ -512,6 +579,9 @@ export const useDiagramStore = defineStore('diagram', () => {
       // Update nodes and connections
       data.value.nodes = recalculatedNodes
       data.value.connections = recalculatedConnections
+      
+      // Trigger layout recalculation
+      multiFlowMapRecalcTrigger.value++
     } else {
       // Standard deletion for other diagram types
       data.value.nodes.splice(index, 1)
@@ -723,6 +793,11 @@ export const useDiagramStore = defineStore('diagram', () => {
     // Use spec loader for diagram-type-specific conversion
     const result = loadSpecForDiagramType(spec, diagramTypeValue)
 
+    // Initialize multi-flow map topic width if needed
+    if (diagramTypeValue === 'multi_flow_map') {
+      topicNodeWidth.value = MULTI_FLOW_MAP_TOPIC_WIDTH
+    }
+
     // Create diagram data
     data.value = {
       type: diagramTypeValue,
@@ -898,6 +973,32 @@ export const useDiagramStore = defineStore('diagram', () => {
     return !isUserEditedTitle.value
   }
 
+  /**
+   * Set topic node width for multi-flow map layout recalculation
+   */
+  function setTopicNodeWidth(width: number | null): void {
+    topicNodeWidth.value = width
+    // Trigger recalculation by incrementing trigger
+    if (type.value === 'multi_flow_map') {
+      multiFlowMapRecalcTrigger.value++
+    }
+  }
+
+  /**
+   * Set node width for multi-flow map visual balance
+   */
+  function setNodeWidth(nodeId: string, width: number | null): void {
+    if (width === null) {
+      delete nodeWidths.value[nodeId]
+    } else {
+      nodeWidths.value[nodeId] = width
+    }
+    // Trigger recalculation for visual balance
+    if (type.value === 'multi_flow_map') {
+      multiFlowMapRecalcTrigger.value++
+    }
+  }
+
   return {
     // State
     type,
@@ -968,5 +1069,7 @@ export const useDiagramStore = defineStore('diagram', () => {
     initTitle,
     resetTitle,
     shouldAutoUpdateTitle,
+    setTopicNodeWidth,
+    setNodeWidth,
   }
 })

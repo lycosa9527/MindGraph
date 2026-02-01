@@ -8,6 +8,7 @@ import {
   DEFAULT_NODE_WIDTH,
   DEFAULT_SIDE_SPACING,
   DEFAULT_VERTICAL_SPACING,
+  MULTI_FLOW_MAP_TOPIC_WIDTH,
 } from '@/composables/diagrams/layoutConfig'
 import type { Connection, DiagramNode } from '@/types'
 
@@ -19,9 +20,15 @@ import type { SpecLoaderResult } from './types'
  * Preserves node text content
  *
  * @param nodes - Current diagram nodes
+ * @param topicNodeWidth - Optional actual width of topic node (for dynamic width adjustment)
+ * @param nodeWidths - Optional map of nodeId -> width for visual balance
  * @returns Recalculated nodes with updated positions and sequential IDs
  */
-export function recalculateMultiFlowMapLayout(nodes: DiagramNode[]): DiagramNode[] {
+export function recalculateMultiFlowMapLayout(
+  nodes: DiagramNode[],
+  topicNodeWidth: number | null = null,
+  nodeWidths: Record<string, number> = {}
+): DiagramNode[] {
   if (!Array.isArray(nodes) || nodes.length === 0) {
     return []
   }
@@ -55,6 +62,48 @@ export function recalculateMultiFlowMapLayout(nodes: DiagramNode[]): DiagramNode
   const nodeWidth = DEFAULT_NODE_WIDTH
   const nodeHeight = DEFAULT_NODE_HEIGHT
 
+  // Use actual topic node width if provided, otherwise use multi-flow map specific default
+  const actualTopicWidth = topicNodeWidth || MULTI_FLOW_MAP_TOPIC_WIDTH
+
+  // Calculate uniform width for visual balance
+  // Find max width among all cause and effect nodes
+  let maxCauseWidth = nodeWidth
+  let maxEffectWidth = nodeWidth
+  
+  causeNodes.forEach((node, index) => {
+    const storedWidth = nodeWidths[`cause-${index}`] || nodeWidths[node.id || '']
+    if (storedWidth) {
+      maxCauseWidth = Math.max(maxCauseWidth, storedWidth)
+    }
+  })
+  
+  effectNodes.forEach((node, index) => {
+    const storedWidth = nodeWidths[`effect-${index}`] || nodeWidths[node.id || '']
+    if (storedWidth) {
+      maxEffectWidth = Math.max(maxEffectWidth, storedWidth)
+    }
+  })
+  
+  // Use the maximum of both columns for visual balance
+  const uniformColumnWidth = Math.max(maxCauseWidth, maxEffectWidth)
+
+  // Calculate five columns for visual balance:
+  // 1. Cause column width: uniformColumnWidth
+  // 2. Left arrow column (spacing): leftArrowSpacing
+  // 3. Topic column width: actualTopicWidth
+  // 4. Right arrow column (spacing): rightArrowSpacing
+  // 5. Effect column width: uniformColumnWidth
+  
+  // Balance the arrow columns (left and right) to be visually equal
+  // User measured: right arrow appears ~1cm (38px) longer, so reduce right spacing
+  // Reduced by 30%: left 200px -> 140px, right 162px -> 113px (maintaining compensation)
+  const leftArrowSpacing = sideSpacing * 0.7
+  const rightArrowSpacing = (sideSpacing - 38) * 0.7 // Compensate for visual difference (1cm ≈ 38px at 96 DPI)
+  
+  // Calculate edges based on balanced columns
+  const topicLeftEdge = centerX - actualTopicWidth / 2
+  const topicRightEdge = centerX + actualTopicWidth / 2
+
   const result: DiagramNode[] = []
 
   // Event node
@@ -62,10 +111,15 @@ export function recalculateMultiFlowMapLayout(nodes: DiagramNode[]): DiagramNode
     id: 'event',
     text: event,
     type: 'topic',
-    position: { x: centerX - nodeWidth / 2, y: centerY - nodeHeight / 2 },
+    position: { x: topicLeftEdge, y: centerY - nodeHeight / 2 },
   })
 
   // Causes - re-index with sequential IDs (cause-0, cause-1, etc.)
+  // Causes are positioned to the left of topic node
+  // Position: arrow column width is `leftArrowSpacing` (edge-to-edge)
+  // So: cause right edge = topic left edge - leftArrowSpacing
+  //     cause left edge = cause right edge - uniformColumnWidth
+  //     cause x = topicLeftEdge - leftArrowSpacing - uniformColumnWidth
   const causeStartY = centerY - ((causes.length - 1) * verticalSpacing) / 2
   causes.forEach((cause, index) => {
     result.push({
@@ -73,13 +127,22 @@ export function recalculateMultiFlowMapLayout(nodes: DiagramNode[]): DiagramNode
       text: cause,
       type: 'flow',
       position: {
-        x: centerX - sideSpacing - nodeWidth / 2,
+        x: topicLeftEdge - leftArrowSpacing - uniformColumnWidth,
         y: causeStartY + index * verticalSpacing - nodeHeight / 2,
+      },
+      style: {
+        width: uniformColumnWidth,
+        minWidth: uniformColumnWidth,
       },
     })
   })
 
   // Effects - re-index with sequential IDs (effect-0, effect-1, etc.)
+  // Effects are positioned to the right of topic node
+  // Position: arrow column width is `rightArrowSpacing` (edge-to-edge)
+  // So: effect left edge = topic right edge + rightArrowSpacing
+  //     effect x = topicRightEdge + rightArrowSpacing
+  // Apply uniform width for visual balance (same as causes)
   const effectStartY = centerY - ((effects.length - 1) * verticalSpacing) / 2
   effects.forEach((effect, index) => {
     result.push({
@@ -87,8 +150,12 @@ export function recalculateMultiFlowMapLayout(nodes: DiagramNode[]): DiagramNode
       text: effect,
       type: 'flow',
       position: {
-        x: centerX + sideSpacing - nodeWidth / 2,
+        x: topicRightEdge + rightArrowSpacing,
         y: effectStartY + index * verticalSpacing - nodeHeight / 2,
+      },
+      style: {
+        width: uniformColumnWidth,
+        minWidth: uniformColumnWidth,
       },
     })
   })
@@ -114,16 +181,17 @@ export function loadMultiFlowMapSpec(spec: Record<string, unknown>): SpecLoaderR
   const verticalSpacing = DEFAULT_VERTICAL_SPACING + 10 // 70px
   const nodeWidth = DEFAULT_NODE_WIDTH
   const nodeHeight = DEFAULT_NODE_HEIGHT
+  const topicWidth = MULTI_FLOW_MAP_TOPIC_WIDTH
 
   const nodes: DiagramNode[] = []
   const connections: Connection[] = []
 
-  // Event node
+  // Event node - use multi-flow map specific width
   nodes.push({
     id: 'event',
     text: event,
     type: 'topic',
-    position: { x: centerX - nodeWidth / 2, y: centerY - nodeHeight / 2 },
+    position: { x: centerX - topicWidth / 2, y: centerY - nodeHeight / 2 },
   })
 
   // Causes

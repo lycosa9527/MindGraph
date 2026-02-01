@@ -502,6 +502,33 @@ onMounted(() => {
       // Flow maps use fixed dimensions with text truncation, no layout recalculation needed
     })
   )
+
+  // Listen for topic node width changes in multi-flow maps
+  // When topic node becomes wider, store the width and trigger layout recalculation
+  unsubscribers.push(
+    eventBus.on('multi_flow_map:topic_width_changed', ({ nodeId, width }) => {
+      if (diagramStore.type !== 'multi_flow_map' || nodeId !== 'event' || width === null) {
+        return
+      }
+
+      // Store the topic node width in the diagram store
+      // This will trigger the vueFlowNodes computed to recalculate with the new width
+      diagramStore.setTopicNodeWidth(width)
+    })
+  )
+
+  // Listen for node width changes in multi-flow maps
+  // Store widths for visual balance calculation
+  unsubscribers.push(
+    eventBus.on('multi_flow_map:node_width_changed', ({ nodeId, width }) => {
+      if (diagramStore.type !== 'multi_flow_map' || !nodeId || width === null) {
+        return
+      }
+
+      // Store the node width for visual balance
+      diagramStore.setNodeWidth(nodeId, width)
+    })
+  )
 })
 
 onUnmounted(() => {

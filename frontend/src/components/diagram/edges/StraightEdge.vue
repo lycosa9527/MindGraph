@@ -11,6 +11,19 @@ import type { MindGraphEdgeData } from '@/types'
 
 const props = defineProps<EdgeProps<MindGraphEdgeData>>()
 
+// Check if this is a multi-flow map edge (causes/effects connecting to event)
+const isMultiFlowMapEdge = computed(() => {
+  const sourceId = props.source
+  const targetId = props.target
+  return (
+    (sourceId?.startsWith('cause-') || sourceId?.startsWith('effect-')) &&
+    targetId === 'event'
+  ) || (
+    sourceId === 'event' &&
+    (targetId?.startsWith('cause-') || targetId?.startsWith('effect-'))
+  )
+})
+
 // Calculate straight path with offset to prevent line from sticking through arrowhead
 const path = computed(() => {
   // Calculate distance and angle from source to target
@@ -18,10 +31,9 @@ const path = computed(() => {
   const dy = props.targetY - props.sourceY
   const distance = Math.sqrt(dx * dx + dy * dy)
 
-  // Offset distance to pull back from target
-  // With userSpaceOnUse, refX=12 means arrowhead attaches 12px from end
-  // Reduced offset to make arrows stick closer to topic nodes
-  const arrowOffset = 10
+  // For multi-flow maps, use smaller offset to minimize gap while preventing overlap
+  // For other diagrams, use standard offset
+  const arrowOffset = isMultiFlowMapEdge.value ? 7 : 10
 
   // Only apply offset if the path is long enough
   if (distance > arrowOffset) {
@@ -65,7 +77,7 @@ const markerId = computed(() => `arrow-${props.id}`)
       :id="markerId"
       markerWidth="20"
       markerHeight="20"
-      refX="12"
+      :refX="isMultiFlowMapEdge ? 10 : 12"
       refY="5"
       orient="auto"
       markerUnits="userSpaceOnUse"

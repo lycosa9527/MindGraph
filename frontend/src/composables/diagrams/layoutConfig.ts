@@ -48,6 +48,9 @@ export const DEFAULT_NODE_WIDTH = 120
 /** Default node height for rectangular nodes */
 export const DEFAULT_NODE_HEIGHT = 50
 
+/** Default topic node width for multi-flow maps (optimized for "事件" - 2 Chinese characters) */
+export const MULTI_FLOW_MAP_TOPIC_WIDTH = 90
+
 // ============================================================================
 // Node Type-Specific Dimensions
 // ============================================================================

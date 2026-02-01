@@ -127,6 +127,12 @@ const routes: RouteRecordRaw[] = [
     meta: { layout: 'main', requiresAuth: true },
   },
   {
+    path: '/gewe',
+    name: 'Gewe',
+    component: () => import('@/pages/GewePage.vue'),
+    meta: { layout: 'main', requiresAuth: true, requiresAdmin: true },
+  },
+  {
     path: '/dashboard',
     name: 'PublicDashboard',
     component: () => import('@/pages/PublicDashboardPage.vue'),
