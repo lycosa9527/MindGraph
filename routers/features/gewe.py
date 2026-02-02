@@ -28,6 +28,7 @@ from models.domain.gewe_responses import (
     GeweContactInfoResponse,
     GeweCallbackResponse
 )
+from clients.gewe.base import GeweAPIError
 from services.gewe import GeweService
 from utils.auth import get_current_user
 from utils.auth.roles import is_admin
@@ -229,13 +230,19 @@ async def get_gewe_login_qrcode(
     """
     Get login QR code for WeChat (admin only).
     
+    If the provided app_id doesn't exist on Gewe's side, automatically retries
+    with empty app_id to create a new device.
+    
     Returns:
         Response containing QR code image (base64) and UUID for login checking.
     """
     service = GeweService(db)
+    app_id = data.app_id or ""
+
     try:
+        # Try with provided app_id first
         result = await service.get_login_qr_code(
-            app_id=data.app_id or "",
+            app_id=app_id,
             region_id=data.region_id,
             device_type=data.device_type,
             proxy_ip=data.proxy_ip,
@@ -243,6 +250,57 @@ async def get_gewe_login_qrcode(
             aid=data.aid
         )
         return GeweLoginQrCodeResponse(**result)
+    except GeweAPIError as e:
+        # Check if error indicates device doesn't exist
+        error_msg = str(e.message).lower()
+        # Also check response_data for detailed error message
+        detailed_msg = ""
+        if e.response_data:
+            data = e.response_data.get('data', {})
+            if isinstance(data, dict):
+                detailed_msg = str(data.get('msg', '')).lower()
+
+        is_device_not_found = (
+            "设备不存在" in error_msg or
+            "device does not exist" in error_msg or
+            "设备不存在" in detailed_msg or
+            "设备不存在" in str(e).lower()
+        )
+
+        # If device doesn't exist and we had an app_id, retry with empty app_id
+        if is_device_not_found and app_id:
+            logger.info(
+                "Device %s not found on Gewe, retrying with empty app_id to create new device",
+                app_id
+            )
+            try:
+                # Clear saved login info since device doesn't exist
+                service.reset_device_id()
+
+                # Retry with empty app_id
+                result = await service.get_login_qr_code(
+                    app_id="",
+                    region_id=data.region_id,
+                    device_type=data.device_type,
+                    proxy_ip=data.proxy_ip,
+                    ttuid=data.ttuid,
+                    aid=data.aid
+                )
+                logger.info("Successfully created new device with empty app_id")
+                return GeweLoginQrCodeResponse(**result)
+            except Exception as retry_error:
+                logger.error("Error retrying with empty app_id: %s", retry_error, exc_info=True)
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail=f"Failed to create new device: {str(retry_error)}"
+                ) from retry_error
+        else:
+            # Re-raise the original error
+            logger.error("Gewe API error: %s", e, exc_info=True)
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=str(e.message) or "Failed to get login QR code"
+            ) from e
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

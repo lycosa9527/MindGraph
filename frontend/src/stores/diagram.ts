@@ -933,7 +933,7 @@ export const useDiagramStore = defineStore('diagram', () => {
           } as DiagramNode
         } else {
           // Add new node
-          data.value.nodes.push(updatedNode as DiagramNode)
+          data.value.nodes.push(updatedNode as unknown as DiagramNode)
         }
       }
     }
@@ -965,7 +965,7 @@ export const useDiagramStore = defineStore('diagram', () => {
           if (!data.value.connections) {
             data.value.connections = []
           }
-          data.value.connections.push(updatedConn as Connection)
+          data.value.connections.push(updatedConn as unknown as Connection)
         }
       }
     }

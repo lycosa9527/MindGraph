@@ -151,8 +151,6 @@ const dropdownParticipants = computed(() => {
 })
 
 // Watch for workshop code changes
-let workshopCodeWatcher: (() => void) | null = null
-
 watch(
   () => workshopCode.value,
   (code) => {
@@ -167,9 +165,6 @@ watch(
 
 // Cleanup watcher on unmount
 onUnmounted(() => {
-  if (workshopCodeWatcher) {
-    workshopCodeWatcher()
-  }
   disconnect()
 })
 

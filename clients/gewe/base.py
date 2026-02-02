@@ -31,10 +31,17 @@ logger = logging.getLogger(__name__)
 
 class GeweAPIError(Exception):
     """Base Gewe API error"""
-    def __init__(self, message: str, status_code: Optional[int] = None, error_code: Optional[str] = None):
+    def __init__(
+        self,
+        message: str,
+        status_code: Optional[int] = None,
+        error_code: Optional[str] = None,
+        response_data: Optional[Dict[str, Any]] = None
+    ):
         self.message = message
         self.status_code = status_code
         self.error_code = error_code
+        self.response_data = response_data
         super().__init__(self.message)
 
 
@@ -201,8 +208,19 @@ class AsyncGeweClient(
                 ret_code = response_data.get('ret')
                 if ret_code != 200:
                     error_msg = response_data.get('msg', f'API returned error code {ret_code}')
+                    # Check if there's a more detailed error message in data.msg
+                    data = response_data.get('data', {})
+                    if isinstance(data, dict) and data.get('msg'):
+                        detailed_msg = data.get('msg', '')
+                        if detailed_msg:
+                            error_msg = f"{error_msg} {detailed_msg}"
                     logger.error("❌ [GeweAPI] API error: ret=%s - %s", ret_code, error_msg)
-                    raise GeweAPIError(error_msg, status_code=ret_code, error_code=str(ret_code))
+                    raise GeweAPIError(
+                        error_msg,
+                        status_code=ret_code,
+                        error_code=str(ret_code),
+                        response_data=response_data
+                    )
 
                 logger.debug("✅ [GeweAPI] Request successful: %s %s", method, endpoint)
                 return response_data

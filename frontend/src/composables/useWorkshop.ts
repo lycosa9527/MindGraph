@@ -134,7 +134,7 @@ export function useWorkshop(
                   activeEditors.value.set(message.node_id, editor)
                   
                   // Show notification if not current user
-                  if (message.user_id !== authStore.user?.id) {
+                  if (message.user_id !== undefined && String(message.user_id) !== authStore.user?.id) {
                     notify.info(
                       isZh.value
                         ? `${editor.username} ${editor.emoji} 正在编辑此节点`
