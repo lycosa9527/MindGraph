@@ -68,6 +68,7 @@ aiofiles>=25.1.0
 playwright>=1.57.0
 Pillow>=12.1.0  # Image processing (also used for OCR in Personal Knowledge Space)
 PyMuPDF>=1.24.0  # PDF rendering for library cover extraction (fitz module)
+qrcode[pil]>=8.2  # QR code generation (requires Pillow)
 
 # ============================================================================
 # SYSTEM MONITORING & UTILITIES

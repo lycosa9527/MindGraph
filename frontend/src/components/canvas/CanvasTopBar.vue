@@ -98,7 +98,18 @@ const showSlotFullModal = ref(false)
 
 // Workshop state
 const showWorkshopModal = ref(false)
-const currentDiagramId = computed(() => savedDiagramsStore.activeDiagramId)
+const currentDiagramId = computed(() => {
+  // Priority 1: Use activeDiagramId from store (set when diagram is saved)
+  if (savedDiagramsStore.activeDiagramId) {
+    return savedDiagramsStore.activeDiagramId
+  }
+  // Priority 2: Check route query parameter (for saved diagrams loaded from URL)
+  const diagramIdFromRoute = route.query.diagramId
+  if (diagramIdFromRoute && typeof diagramIdFromRoute === 'string') {
+    return diagramIdFromRoute
+  }
+  return null
+})
 const workshopCode = ref<string | null>(null)
 
 // Workshop composable for participant tracking

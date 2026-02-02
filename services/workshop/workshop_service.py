@@ -22,7 +22,7 @@ Proprietary License
 import logging
 import random
 import string
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional, List, Tuple
 from datetime import datetime
 
 from services.redis.redis_client import get_redis
@@ -86,7 +86,7 @@ class WorkshopService:
 
     async def start_workshop(
         self, diagram_id: str, user_id: int
-    ) -> Optional[str]:
+    ) -> Tuple[Optional[str], Optional[str]]:
         """
         Start a workshop session for a diagram.
 
@@ -95,7 +95,7 @@ class WorkshopService:
             user_id: User ID of the owner
 
         Returns:
-            Workshop code if successful, None otherwise
+            Tuple of (workshop code if successful, error message if failed)
         """
         # Verify diagram exists and user owns it
         db = SessionLocal()
@@ -107,24 +107,23 @@ class WorkshopService:
             ).first()
 
             if not diagram:
-                logger.warning(
-                    "[WorkshopService] Diagram %s not found or not owned by user %s",
-                    diagram_id,
-                    user_id,
-                )
-                return None
+                error_msg = f"Diagram {diagram_id} not found or not owned by user {user_id}"
+                logger.warning(f"[WorkshopService] {error_msg}")
+                return None, error_msg
 
             # Generate unique workshop code
             max_attempts = 10
             code = None
             redis = get_redis()
             if not redis:
-                logger.error("[WorkshopService] Redis client not available")
-                return None
+                error_msg = "Redis client not available. Workshop feature requires Redis."
+                logger.error(f"[WorkshopService] {error_msg}")
+                return None, error_msg
 
             for _ in range(max_attempts):
                 candidate = generate_workshop_code()
-                existing = await redis.get(
+                # Use synchronous Redis operations (no await)
+                existing = redis.get(
                     self._get_code_to_diagram_key(candidate)
                 )
                 if not existing:
@@ -132,10 +131,9 @@ class WorkshopService:
                     break
 
             if not code:
-                logger.error(
-                    "[WorkshopService] Failed to generate unique workshop code"
-                )
-                return None
+                error_msg = "Failed to generate unique workshop code after multiple attempts"
+                logger.error(f"[WorkshopService] {error_msg}")
+                return None, error_msg
 
             # Update diagram with workshop code
             diagram.workshop_code = code
@@ -144,21 +142,23 @@ class WorkshopService:
             # Store workshop session in Redis (Redis is required)
             redis = get_redis()
             if not redis:
-                logger.error("[WorkshopService] Redis client not available")
+                error_msg = "Redis client not available. Workshop feature requires Redis."
+                logger.error(f"[WorkshopService] {error_msg}")
                 db.rollback()
-                return None
+                return None, error_msg
 
             session_data = {
                 "diagram_id": diagram_id,
                 "owner_id": str(user_id),
                 "created_at": datetime.utcnow().isoformat(),
             }
-            await redis.setex(
+            # Use synchronous Redis operations (no await)
+            redis.setex(
                 self._get_session_key(code),
                 WORKSHOP_SESSION_TTL,
                 str(session_data),
             )
-            await redis.setex(
+            redis.setex(
                 self._get_code_to_diagram_key(code),
                 WORKSHOP_SESSION_TTL,
                 diagram_id,
@@ -170,16 +170,16 @@ class WorkshopService:
                 diagram_id,
                 user_id,
             )
-            return code
+            return code, None
 
         except Exception as e:
+            error_msg = f"Error starting workshop: {str(e)}"
             logger.error(
-                "[WorkshopService] Error starting workshop: %s",
-                e,
+                f"[WorkshopService] {error_msg}",
                 exc_info=True,
             )
             db.rollback()
-            return None
+            return None, error_msg
         finally:
             db.close()
 
@@ -259,11 +259,13 @@ class WorkshopService:
             redis = get_redis()
             diagram_id = None
             if redis:
-                diagram_id_raw = await redis.get(
+                # Use synchronous Redis operations (no await)
+                diagram_id_raw = redis.get(
                     self._get_code_to_diagram_key(code)
                 )
                 if diagram_id_raw:
-                    diagram_id = diagram_id_raw.decode("utf-8")
+                    # Redis client returns strings (decode_responses=True), no need to decode
+                    diagram_id = diagram_id_raw if isinstance(diagram_id_raw, str) else diagram_id_raw.decode("utf-8")
 
             # Fallback to database (edge case: Redis TTL expired but code still in DB)
             # This allows joining even if Redis key expired but workshop is still active
@@ -276,7 +278,8 @@ class WorkshopService:
                     diagram_id = diagram.id
                     # Restore Redis key if found in database
                     if redis:
-                        await redis.setex(
+                        # Use synchronous Redis operations (no await)
+                        redis.setex(
                             self._get_code_to_diagram_key(code),
                             WORKSHOP_SESSION_TTL,
                             diagram_id,
@@ -305,17 +308,18 @@ class WorkshopService:
                 return None
 
             participant_key = self._get_participants_key(code)
-            await redis.sadd(
+            # Use synchronous Redis operations (no await)
+            redis.sadd(
                 participant_key,
                 str(user_id),
             )
-            await redis.expire(
+            redis.expire(
                 participant_key,
                 WORKSHOP_PARTICIPANTS_TTL,
             )
             # Track last activity timestamp for inactivity timeout
             activity_key = f"workshop:activity:{code}:{user_id}"
-            await redis.setex(
+            redis.setex(
                 activity_key,
                 WORKSHOP_INACTIVITY_TIMEOUT,
                 datetime.utcnow().isoformat(),
@@ -412,13 +416,15 @@ class WorkshopService:
             return []
 
         try:
-            participants = await redis.smembers(
+            # Use synchronous Redis operations (no await)
+            participants = redis.smembers(
                 self._get_participants_key(code)
             )
             if not participants:
                 return []
 
-            return [int(pid.decode("utf-8")) for pid in participants]
+            # Redis client returns strings (decode_responses=True), no need to decode
+            return [int(pid) if isinstance(pid, str) else int(pid.decode("utf-8")) for pid in participants]
         except Exception as e:
             logger.error(
                 "[WorkshopService] Error getting participants: %s",
@@ -444,12 +450,13 @@ class WorkshopService:
         try:
             participant_key = self._get_participants_key(code)
             # Check if user is in the set before refreshing
-            is_member = await redis.sismember(participant_key, str(user_id))
+            # Use synchronous Redis operations (no await)
+            is_member = redis.sismember(participant_key, str(user_id))
             if is_member:
-                await redis.expire(participant_key, WORKSHOP_PARTICIPANTS_TTL)
+                redis.expire(participant_key, WORKSHOP_PARTICIPANTS_TTL)
                 # Update activity timestamp for inactivity timeout
                 activity_key = f"workshop:activity:{code}:{user_id}"
-                await redis.setex(
+                redis.setex(
                     activity_key,
                     WORKSHOP_INACTIVITY_TIMEOUT,
                     datetime.utcnow().isoformat(),
@@ -480,13 +487,14 @@ class WorkshopService:
             return
 
         try:
-            await redis.srem(
+            # Use synchronous Redis operations (no await)
+            redis.srem(
                 self._get_participants_key(code),
                 str(user_id),
             )
             # Remove activity tracking key
             activity_key = f"workshop:activity:{code}:{user_id}"
-            await redis.delete(activity_key)
+            redis.delete(activity_key)
             logger.debug(
                 "[WorkshopService] Removed participant %s from workshop %s",
                 user_id,
@@ -517,7 +525,8 @@ class WorkshopService:
 
         try:
             activity_key = f"workshop:activity:{code}:{user_id}"
-            exists = await redis.exists(activity_key)
+            # Use synchronous Redis operations (no await)
+            exists = redis.exists(activity_key)
             return not exists  # If key expired, user is inactive
         except Exception as e:
             logger.error(

@@ -83,6 +83,7 @@ class AccountServiceMixin(GeweServiceBase):
         """Get saved login info."""
         return self._load_login_info()
 
+
     async def set_callback(
         self,
         callback_url: str

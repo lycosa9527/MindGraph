@@ -11,7 +11,7 @@
  */
 import { ref, watch, onMounted, onUnmounted } from 'vue'
 
-import { ChatLineRound, CircleCheck, CircleClose, Loading } from '@element-plus/icons-vue'
+import { ChatLineRound, CircleCheck, CircleClose, Loading, RefreshLeft } from '@element-plus/icons-vue'
 
 import { useNotifications } from '@/composables'
 import apiClient from '@/utils/apiClient'
@@ -77,6 +77,7 @@ const checkInterval = ref<number | null>(null)
 const expiredTime = ref<number>(0) // Remaining seconds from API
 const countdownInterval = ref<number | null>(null)
 const countdownSeconds = ref<number>(0) // Display countdown
+const isResettingDeviceId = ref(false)
 
 // Helper function to mask a value
 function maskValue(value: string, showChars: number = 4): string {
@@ -422,6 +423,35 @@ watch([selectedRegionId, selectedDeviceType], () => {
   }, 500)
 }, { deep: true })
 
+// Reset device ID
+async function resetDeviceId() {
+  isResettingDeviceId.value = true
+  try {
+    const response = await apiClient.post('/api/gewe/device/reset')
+    if (response.ok) {
+      // Clear local state
+      appId.value = ''
+      appIdMasked.value = ''
+      loginInfo.value = null
+      loginInfoMasked.value = null
+      isLoggedIn.value = false
+      // Clear localStorage
+      localStorage.removeItem('gewe_app_id')
+      // Reload config status to refresh display
+      await loadConfigStatus()
+      notify.success('设备ID已重置，已保存的 app_id 和 wxid 已清除。下次登录时将生成新的 app_id 和 wxid')
+    } else {
+      const error = await response.json().catch(() => ({ detail: '重置设备ID失败' }))
+      throw new Error(error.detail || error.msg || '重置设备ID失败')
+    }
+  } catch (error: any) {
+    console.error('Failed to reset device ID:', error)
+    notify.error(error.message || '重置设备ID失败')
+  } finally {
+    isResettingDeviceId.value = false
+  }
+}
+
 // Load saved info on mount
 onMounted(async () => {
   await loadSavedConfig()
@@ -487,20 +517,32 @@ onMounted(async () => {
           </el-form-item>
 
           <el-form-item label="App ID (设备ID)">
-            <el-input
-              v-model="appIdMasked"
-              :placeholder="appIdMasked || '由后端自动管理（首次登录留空）'"
-              readonly
-              disabled
-            >
-              <template #prefix>
-                <el-icon><CircleCheck /></el-icon>
-              </template>
-            </el-input>
+            <div class="flex gap-2">
+              <el-input
+                v-model="appIdMasked"
+                :placeholder="appIdMasked || '由后端自动管理（首次登录留空）'"
+                readonly
+                disabled
+                style="flex: 1"
+              >
+                <template #prefix>
+                  <el-icon><CircleCheck /></el-icon>
+                </template>
+              </el-input>
+              <el-button
+                :loading="isResettingDeviceId"
+                :disabled="!appId && !appIdMasked"
+                @click="resetDeviceId"
+              >
+                <el-icon><RefreshLeft /></el-icon>
+                <span class="ml-1">重置</span>
+              </el-button>
+            </div>
             <div class="text-xs text-gray-500 mt-1 space-y-1">
               <div>• 由后端管理 - 自动从登录响应中设置</div>
               <div>• 首次登录：留空，系统会自动创建设备</div>
               <div>• 重新登录：使用上次登录返回的 appId（避免重复创建设备触发风控）</div>
+              <div>• 重置设备ID：清除已保存的设备ID，下次登录将创建新设备</div>
             </div>
           </el-form-item>
 

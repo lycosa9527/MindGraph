@@ -135,6 +135,23 @@ class GeweService(
             logger.error("Error loading gewe login info: %s", e, exc_info=True)
             return None
 
+    def reset_device_id(self) -> None:
+        """
+        Reset device ID by deleting the login info file.
+        
+        This clears the saved app_id and wxid. On next login (QR code scan),
+        the Gewe API will generate new app_id and wxid automatically.
+        """
+        try:
+            if GEWE_LOGIN_INFO_PATH.exists():
+                GEWE_LOGIN_INFO_PATH.unlink()
+                logger.info("Reset device ID: deleted login info file (app_id and wxid cleared)")
+            else:
+                logger.info("Reset device ID: login info file does not exist")
+        except Exception as e:
+            logger.error("Error resetting device ID: %s", e, exc_info=True)
+            raise
+
     def save_preferences(self, region_id: str, device_type: str) -> None:
         """Save user preferences (region_id and device_type) to JSON file."""
         try:

@@ -18,9 +18,13 @@ Proprietary License
 """
 
 from datetime import datetime
+import io
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi.responses import Response
+import qrcode
+from PIL import Image
 
 from models.domain.auth import User
 from models.requests.requests_diagram import DiagramCreateRequest, DiagramUpdateRequest
@@ -411,11 +415,11 @@ async def start_workshop(
         "workshop", identifier, max_requests=10, window_seconds=60
     )
 
-    code = await workshop_service.start_workshop(diagram_id, current_user.id)
+    code, error_msg = await workshop_service.start_workshop(diagram_id, current_user.id)
 
     if not code:
         raise HTTPException(
-            status_code=400, detail="Failed to start workshop session"
+            status_code=400, detail=error_msg or "Failed to start workshop session"
         )
 
     logger.info(
@@ -527,3 +531,49 @@ async def join_workshop(
         "success": True,
         "workshop": workshop_info,
     }
+
+
+@router.get("/qrcode")
+async def generate_qrcode(
+    data: str = Query(..., description="Data to encode in QR code"),
+    size: int = Query(150, ge=50, le=500, description="QR code size in pixels"),
+):
+    """
+    Generate a QR code image from text data.
+    
+    Returns PNG image of the QR code.
+    No authentication required - QR codes are public data.
+    """
+    try:
+        # Create QR code instance
+        qr = qrcode.QRCode(
+            version=1,
+            error_correction=qrcode.constants.ERROR_CORRECT_L,
+            box_size=10,
+            border=4,
+        )
+        qr.add_data(data)
+        qr.make(fit=True)
+
+        # Create image
+        img = qr.make_image(fill_color="black", back_color="white")
+        
+        # Resize to requested size
+        if size != 150:  # Default size is 150x150
+            img = img.resize((size, size), resample=Image.LANCZOS)
+
+        # Convert to bytes
+        img_bytes = io.BytesIO()
+        img.save(img_bytes, format="PNG")
+        img_bytes.seek(0)
+
+        return Response(
+            content=img_bytes.getvalue(),
+            media_type="image/png",
+            headers={
+                "Cache-Control": "public, max-age=3600",  # Cache for 1 hour
+            },
+        )
+    except Exception as e:
+        logger.error("[Diagrams] Error generating QR code: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to generate QR code")

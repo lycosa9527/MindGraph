@@ -17,6 +17,7 @@ import { defineStore } from 'pinia'
 
 import { useAuthStore } from './auth'
 import { getDefaultTemplate, loadSpecForDiagramType } from './specLoader'
+import { authFetch } from '@/utils/api'
 import type { DiagramType } from '@/types'
 
 // Security constants - must match backend limits
@@ -162,9 +163,7 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
 
     try {
       // Use credentials (token in httpOnly cookie)
-      const response = await fetch(`/api/diagrams?page=${page}&page_size=${pageSize}`, {
-        credentials: 'same-origin',
-      })
+      const response = await authFetch(`/api/diagrams?page=${page}&page_size=${pageSize}`)
 
       if (!response.ok) {
         if (response.status === 401) {
@@ -192,9 +191,7 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
     if (!authStore.isAuthenticated) return null
 
     try {
-      const response = await fetch(`/api/diagrams/${diagramId}`, {
-        credentials: 'same-origin',
-      })
+      const response = await authFetch(`/api/diagrams/${diagramId}`)
 
       if (!response.ok) {
         if (response.status === 401) {
@@ -238,9 +235,8 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
     }
 
     try {
-      const response = await fetch('/api/diagrams', {
+      const response = await authFetch('/api/diagrams', {
         method: 'POST',
-        credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title,
@@ -311,9 +307,8 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
     }
 
     try {
-      const response = await fetch(`/api/diagrams/${diagramId}`, {
+      const response = await authFetch(`/api/diagrams/${diagramId}`, {
         method: 'PUT',
-        credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updates),
       })
@@ -352,9 +347,8 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
     if (!authStore.isAuthenticated) return false
 
     try {
-      const response = await fetch(`/api/diagrams/${diagramId}`, {
+      const response = await authFetch(`/api/diagrams/${diagramId}`, {
         method: 'DELETE',
-        credentials: 'same-origin',
       })
 
       if (!response.ok) {
@@ -405,9 +399,8 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
     if (!authStore.isAuthenticated) return null
 
     try {
-      const response = await fetch(`/api/diagrams/${diagramId}/duplicate`, {
+      const response = await authFetch(`/api/diagrams/${diagramId}/duplicate`, {
         method: 'POST',
-        credentials: 'same-origin',
       })
 
       if (!response.ok) {
@@ -446,9 +439,8 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
     if (!authStore.isAuthenticated) return false
 
     try {
-      const response = await fetch(`/api/diagrams/${diagramId}/pin?pinned=${pinned}`, {
+      const response = await authFetch(`/api/diagrams/${diagramId}/pin?pinned=${pinned}`, {
         method: 'POST',
-        credentials: 'same-origin',
       })
 
       if (!response.ok) {

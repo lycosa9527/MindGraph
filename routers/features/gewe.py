@@ -542,6 +542,29 @@ async def get_gewe_preferences(
         await service.cleanup()
 
 
+@router.post("/device/reset")
+async def reset_gewe_device_id(
+    _current_user: User = Depends(require_admin),
+    db: Session = Depends(get_db)
+):
+    """
+    Reset device ID by clearing saved login info (admin only).
+    This will allow creating a new device on next login.
+    """
+    service = GeweService(db)
+    try:
+        service.reset_device_id()
+        return {"status": "success", "message": "Device ID reset successfully"}
+    except Exception as e:
+        logger.error("Error resetting device ID: %s", e, exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to reset device ID"
+        ) from e
+    finally:
+        await service.cleanup()
+
+
 @router.post("/webhook", response_model=dict)
 async def gewe_webhook(
     request: Request,
