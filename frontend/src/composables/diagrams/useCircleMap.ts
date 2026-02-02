@@ -1,15 +1,12 @@
 /**
  * useCircleMap - Composable for Circle Map layout and data management
- * Circle maps define concepts in context with a central topic and context ring
- *
- * Layout logic matches the original D3 implementation from bubble-map-renderer.js
+ * Fixed font; circles from text; topic and context noWrap.
  */
 import { computed, ref } from 'vue'
 
 import type { Connection, DiagramNode, MindGraphEdge, MindGraphNode } from '@/types'
-import { calculateAdaptiveCircleSize } from '@/stores/specLoader/utils'
-
-import { DEFAULT_BUBBLE_RADIUS, DEFAULT_PADDING, DEFAULT_TOPIC_RADIUS } from './layoutConfig'
+import { calculateCircleMapLayout } from '@/stores/specLoader/utils'
+import { CONTEXT_FONT_SIZE, TOPIC_FONT_SIZE } from '@/stores/specLoader/textMeasurement'
 
 interface CircleMapData {
   topic: string
@@ -32,84 +29,19 @@ interface CircleMapOptions {
   padding?: number
 }
 
-/**
- * Calculate circle map layout based on node count and context texts
- * Uses adaptive sizing for context nodes based on text length
- * Uses the same formulas as the original D3 renderer, but accounts for variable node sizes
- */
-function calculateLayout(
-  nodeCount: number,
-  padding: number = DEFAULT_PADDING,
-  contextTexts: string[] = []
-): CircleMapLayout {
-  // Node size constants (matching VueFlow node components)
-  // TopicNode: min-width 120px, so radius ~60px
-  const topicR = DEFAULT_TOPIC_RADIUS // 60px
-
-  // Calculate adaptive sizes for context nodes and find maximum radius
-  // Default minimum radius for layout calculations
-  const defaultContextR = DEFAULT_BUBBLE_RADIUS - 5 // 35px
-  let maxContextR = defaultContextR
-
-  if (contextTexts.length > 0) {
-    // Calculate adaptive size for each context node and find maximum radius
-    contextTexts.forEach((text) => {
-      const adaptiveSize = calculateAdaptiveCircleSize(text, false)
-      const adaptiveRadius = adaptiveSize / 2
-      maxContextR = Math.max(maxContextR, adaptiveRadius)
-    })
-  }
-
-  // Use maxContextR for layout calculations to ensure all nodes fit
-  const uniformContextR = maxContextR
-
-  // Calculate childrenRadius using both constraints (matching original D3 logic)
-  // 1. Radial constraint: minimum distance from center
-  const targetRadialDistance = topicR + topicR * 0.5 + uniformContextR + 5
-
-  // 2. Circumferential constraint: spacing around circle
-  // Dynamic spacing multiplier based on node count
-  const spacingMultiplier = nodeCount <= 3 ? 2.0 : nodeCount <= 6 ? 2.05 : 2.1
-  const circumferentialMinRadius =
-    nodeCount > 0 ? (uniformContextR * nodeCount * spacingMultiplier) / (2 * Math.PI) : 0
-
-  // Use the larger of both constraints (minimum 100px)
-  const childrenRadius = Math.max(targetRadialDistance, circumferentialMinRadius, 100)
-
-  // Outer circle radius for boundary
-  const outerCircleR = childrenRadius + uniformContextR + 10
-
-  // Dynamic canvas center based on calculated sizes
-  const centerX = outerCircleR + padding
-  const centerY = outerCircleR + padding
-
-  // Donut boundary constraints
-  const innerRadius = topicR + uniformContextR + 5
-  const outerRadius = outerCircleR - uniformContextR - 5
-
-  return {
-    centerX,
-    centerY,
-    topicR,
-    uniformContextR,
-    childrenRadius,
-    outerCircleR,
-    innerRadius,
-    outerRadius,
-  }
-}
-
-export function useCircleMap(options: CircleMapOptions = {}) {
-  const { padding = 40 } = options
-
+export function useCircleMap(_options: CircleMapOptions = {}) {
   const data = ref<CircleMapData | null>(null)
 
-  // Calculate layout based on current data
-  // Pass context texts to calculate adaptive sizes for layout
   const layout = computed<CircleMapLayout>(() => {
     const nodeCount = data.value?.context.length || 0
-    const contextTexts = data.value?.context || []
-    return calculateLayout(nodeCount, padding, contextTexts)
+    const topic = data.value?.topic ?? ''
+    const context = data.value?.context ?? []
+    const l = calculateCircleMapLayout(nodeCount, context, topic)
+    return {
+      ...l,
+      innerRadius: l.topicR + l.uniformContextR + 5,
+      outerRadius: l.outerCircleR - l.uniformContextR - 5,
+    }
   })
 
   // Convert circle map data to Vue Flow nodes
@@ -141,78 +73,62 @@ export function useCircleMap(options: CircleMapOptions = {}) {
       selectable: false,
     })
 
-    // Central topic node - centered, non-draggable, perfect circle with adaptive sizing
-    const topicSize = calculateAdaptiveCircleSize(data.value.topic, true)
-    const topicRadius = topicSize / 2
+    const uniformContextDiameter = l.uniformContextR * 2
+    const topicSize = l.topicR * 2
+
     result.push({
       id: 'topic',
-      type: 'circle', // Use CircleNode for perfect circle rendering
-      position: { x: l.centerX - topicRadius, y: l.centerY - topicRadius },
+      type: 'circle',
+      position: { x: l.centerX - l.topicR, y: l.centerY - l.topicR },
       data: {
         label: data.value.topic,
         nodeType: 'topic',
         diagramType: 'circle_map',
         isDraggable: false,
         isSelectable: true,
-        style: {
-          size: topicSize, // Adaptive diameter based on text length
-        },
+        style: { size: topicSize, fontSize: TOPIC_FONT_SIZE, noWrap: true },
       },
       draggable: false,
     })
 
-    // Check if all nodes have custom positions
-    // If new nodes added (some without positions), recalculate all evenly
     let nodesWithCustomPositions = 0
     for (let i = 0; i < nodeCount; i++) {
-      const nodeId = `context-${i}`
-      if (customPositions[nodeId]) {
-        nodesWithCustomPositions++
-      }
+      if (customPositions[`context-${i}`]) nodesWithCustomPositions++
     }
-    const hasNewNodesWithoutPositions =
+    const hasNewWithoutPositions =
       Object.keys(customPositions).length > 0 && nodesWithCustomPositions < nodeCount
-    const shouldRecalculateEvenly = hasNewNodesWithoutPositions
+    const useAutoLayout = hasNewWithoutPositions
 
-    // Context nodes positioned around the circle
-    // Start from top (-90 degrees) with even angle distribution
-    // Context nodes use adaptive size based on text length
     data.value.context.forEach((ctx, index) => {
       const nodeId = `context-${index}`
-      
-      // Calculate adaptive size for each context node based on text length
-      const contextSize = calculateAdaptiveCircleSize(ctx, false)
-      const contextRadius = contextSize / 2
-      
+      const contextRadius = l.uniformContextR
       let x: number
       let y: number
 
-      if (customPositions[nodeId] && !shouldRecalculateEvenly) {
-        // Use custom position (user-dragged position)
+      if (customPositions[nodeId] && !useAutoLayout) {
         x = customPositions[nodeId].x
         y = customPositions[nodeId].y
       } else {
-        // Calculate even angle distribution around the circle
-        const angleDeg = (index * 360) / nodeCount - 90 // Start from top
+        const angleDeg = (index * 360) / nodeCount - 90
         const angleRad = (angleDeg * Math.PI) / 180
-
-        // Position at childrenRadius from center
-        x = l.centerX + l.childrenRadius * Math.cos(angleRad) - contextRadius
-        y = l.centerY + l.childrenRadius * Math.sin(angleRad) - contextRadius
+        x = Math.round(l.centerX + l.childrenRadius * Math.cos(angleRad) - contextRadius)
+        y = Math.round(l.centerY + l.childrenRadius * Math.sin(angleRad) - contextRadius)
       }
 
       result.push({
         id: nodeId,
-        type: 'circle', // Use CircleNode for perfect circle rendering
+        type: 'circle',
         position: { x, y },
         data: {
           label: ctx,
-          nodeType: 'circle', // circle map context node
+          nodeType: 'circle',
           diagramType: 'circle_map',
           isDraggable: true,
           isSelectable: true,
           style: {
-            size: contextSize, // Adaptive diameter based on text length
+            size: uniformContextDiameter,
+            fontSize: CONTEXT_FONT_SIZE,
+            noWrap: true,
           },
         },
         draggable: true,

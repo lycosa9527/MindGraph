@@ -156,7 +156,7 @@ watch(
 )
 
 // Watch for workshop code changes from CanvasTopBar
-// Note: CanvasTopBar manages the workshop modal and emits workshop-code-changed
+// Note: CanvasTopBar manages the workshop modal and emits workshopCodeChanged
 // We need to sync the code here for useWorkshop
 eventBus.onWithOwner(
   'workshop:code-changed',

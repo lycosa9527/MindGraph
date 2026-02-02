@@ -77,17 +77,28 @@ class AsyncGeweClient(
     async def _get_session(self) -> aiohttp.ClientSession:
         """Get or create aiohttp session"""
         if self._session is None or self._session.closed:
+            connector = aiohttp.TCPConnector(
+                limit=10,
+                limit_per_host=5,
+                ttl_dns_cache=300,
+                force_close=False,
+                enable_cleanup_closed=True
+            )
             self._session = aiohttp.ClientSession(
                 timeout=self.timeout,
-                connector=aiohttp.TCPConnector(limit=10)
+                connector=connector
             )
         return self._session
 
     async def close(self):
-        """Close aiohttp session"""
+        """Close aiohttp session and cleanup connections"""
         if self._session and not self._session.closed:
-            await self._session.close()
-            self._session = None
+            try:
+                await self._session.close()
+            except Exception as e:
+                logger.warning("Error closing Gewe client session: %s", e, exc_info=True)
+            finally:
+                self._session = None
 
     async def __aenter__(self):
         """Async context manager entry"""

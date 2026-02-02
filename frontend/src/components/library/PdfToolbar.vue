@@ -11,7 +11,7 @@ import {
   Bookmark,
   MapPin,
 } from 'lucide-vue-next'
-import { ElButton, ElInputNumber } from 'element-plus'
+import { ElButton, ElInputNumber, ElSelect, ElOption } from 'element-plus'
 
 interface Props {
   currentPage: number
@@ -29,6 +29,7 @@ interface Emits {
   (e: 'go-to-page', page: number): void
   (e: 'zoom-in'): void
   (e: 'zoom-out'): void
+  (e: 'zoom-change', zoom: number): void
   (e: 'rotate'): void
   (e: 'print'): void
   (e: 'toggle-bookmark'): void
@@ -51,6 +52,54 @@ function handlePageInput(cur: number | undefined, prev: number | undefined) {
   if (cur !== undefined && cur !== null && cur >= 1 && cur <= props.totalPages) {
     emit('go-to-page', cur)
   }
+}
+
+const baseZoomOptions = [
+  { label: '50%', value: 50 },
+  { label: '75%', value: 75 },
+  { label: '100%', value: 100 },
+  { label: '125%', value: 125 },
+  { label: '150%', value: 150 },
+  { label: '200%', value: 200 },
+  { label: '300%', value: 300 },
+]
+
+function zoomToPercentage(zoom: number): number {
+  return Math.round(zoom * 100)
+}
+
+function percentageToZoom(percentage: number): number {
+  return percentage / 100
+}
+
+const zoomOptions = computed(() => {
+  const currentPercentage = zoomToPercentage(props.zoom)
+  const hasExactMatch = baseZoomOptions.some((opt) => opt.value === currentPercentage)
+  
+  const options = [...baseZoomOptions]
+  
+  if (!hasExactMatch && currentPercentage >= 50 && currentPercentage <= 300) {
+    options.push({
+      label: `${currentPercentage}%`,
+      value: currentPercentage,
+    })
+  }
+  
+  return options
+})
+
+const zoomSelectValue = computed({
+  get: () => {
+    return zoomToPercentage(props.zoom)
+  },
+  set: (value: number) => {
+    emit('zoom-change', percentageToZoom(value))
+  },
+})
+
+
+function handleZoomSelectChange(value: number) {
+  emit('zoom-change', value)
 }
 </script>
 
@@ -82,9 +131,20 @@ function handlePageInput(cur: number | undefined, prev: number | undefined) {
       >
         <ZoomOut class="w-4 h-4" />
       </ElButton>
-      <span class="text-xs text-stone-600 min-w-12 text-center">
-        {{ Math.round(zoom * 100) }}%
-      </span>
+      <ElSelect
+        v-model="zoomSelectValue"
+        size="small"
+        class="zoom-select"
+        :teleported="false"
+        @change="handleZoomSelectChange"
+      >
+        <ElOption
+          v-for="option in zoomOptions"
+          :key="`zoom-${option.value}`"
+          :label="option.label"
+          :value="option.value"
+        />
+      </ElSelect>
       <ElButton
         text
         size="small"
@@ -179,5 +239,25 @@ function handlePageInput(cur: number | undefined, prev: number | undefined) {
 :deep(.el-input-number__increase) {
   width: 24px;
   height: 24px;
+}
+
+.zoom-select {
+  width: 80px;
+}
+
+:deep(.zoom-select .el-input__wrapper) {
+  padding: 0 8px;
+  box-shadow: none;
+  border: 1px solid #d6d3d1;
+  border-radius: 4px;
+}
+
+:deep(.zoom-select .el-input__wrapper:hover) {
+  border-color: #a8a29e;
+}
+
+:deep(.zoom-select.is-focus .el-input__wrapper) {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 1px #3b82f6;
 }
 </style>

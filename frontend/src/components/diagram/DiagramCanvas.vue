@@ -155,9 +155,33 @@ onNodesChange((changes) => {
   })
 })
 
+// Helper function to get timestamp for logging
+function getTimestamp(): string {
+  return new Date().toISOString()
+}
+
 // Handle node click
-onNodeClick(({ node }) => {
+onNodeClick(({ node, event }) => {
+  console.log(`[DiagramCanvas] [${getTimestamp()}] ========== NODE CLICKED ==========`)
+  console.log(`[DiagramCanvas] [${getTimestamp()}] Node clicked:`, {
+    nodeId: node.id,
+    nodeType: node.type,
+    diagramType: node.data?.diagramType,
+    pairIndex: node.data?.pairIndex,
+    position: node.data?.position,
+    text: node.data?.label || node.data?.text,
+    nodePosition: node.position,
+    clickEvent: {
+      type: event?.type,
+      button: (event as MouseEvent)?.button,
+      clientX: (event as MouseEvent)?.clientX,
+      clientY: (event as MouseEvent)?.clientY,
+    },
+  })
+  console.log(`[DiagramCanvas] [${getTimestamp()}] Currently selected nodes:`, [...diagramStore.selectedNodes])
   diagramStore.selectNodes(node.id)
+  console.log(`[DiagramCanvas] [${getTimestamp()}] After selection, selected nodes:`, [...diagramStore.selectedNodes])
+  console.log(`[DiagramCanvas] [${getTimestamp()}] ====================================`)
   emit('nodeClick', node as unknown as MindGraphNode)
 })
 

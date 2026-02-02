@@ -3,9 +3,10 @@
  * CanvasToolbar - Floating toolbar for canvas editing
  * Migrated from prototype MindGraphCanvasPage toolbar
  */
-import { computed, ref } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 
 import { ElButton, ElDropdown, ElDropdownItem, ElDropdownMenu, ElTooltip } from 'element-plus'
+import { useVueFlow } from '@vue-flow/core'
 
 import {
   ArrowDownUp,
@@ -27,6 +28,12 @@ import {
 
 import { useNotifications } from '@/composables'
 import { useAutoComplete, useLanguage } from '@/composables'
+import {
+  BRANCH_NODE_HEIGHT,
+  DEFAULT_CENTER_Y,
+  DEFAULT_NODE_WIDTH,
+  DEFAULT_PADDING,
+} from '@/composables/diagrams/layoutConfig'
 import { useDiagramStore } from '@/stores'
 import type { DiagramNode } from '@/types'
 
@@ -36,9 +43,18 @@ const { isZh } = useLanguage()
 const { isGenerating: isAIGenerating, autoComplete, validateForAutoComplete } = useAutoComplete()
 
 const diagramStore = useDiagramStore()
+const { updateNode: updateVueFlowNode } = useVueFlow()
+
+// Helper function to get timestamp for logging
+function getTimestamp(): string {
+  return new Date().toISOString()
+}
 
 // Computed property to check if current diagram is multi-flow map
 const isMultiFlowMap = computed(() => diagramStore.type === 'multi_flow_map')
+
+// Computed property to check if current diagram is bridge map
+const isBridgeMap = computed(() => diagramStore.type === 'bridge_map')
 
 // Dropdown visibility (prefixed with _ to indicate intentionally unused - reserved for future)
 const _showStyleDropdown = ref(false)
@@ -132,6 +148,92 @@ function handleAddNode() {
     return
   }
 
+  // For bridge maps, add a new analogy pair (left and right nodes)
+  if (diagramType === 'bridge_map') {
+    // Find all existing bridge map pair nodes (exclude dimension label)
+    const pairNodes = diagramStore.data.nodes.filter(
+      (n) =>
+        n.data?.diagramType === 'bridge_map' &&
+        n.data?.pairIndex !== undefined &&
+        !n.data?.isDimensionLabel
+    )
+
+    // Find the highest pairIndex
+    let maxPairIndex = -1
+    pairNodes.forEach((node) => {
+      const pairIndex = node.data?.pairIndex
+      if (typeof pairIndex === 'number' && pairIndex > maxPairIndex) {
+        maxPairIndex = pairIndex
+      }
+    })
+
+    const newPairIndex = maxPairIndex + 1
+
+    // Calculate position for new pair (following bridgeMap.ts loader logic)
+    const centerY = DEFAULT_CENTER_Y
+    const gapBetweenPairs = 50
+    const verticalGap = 5
+    const nodeWidth = DEFAULT_NODE_WIDTH
+    const nodeHeight = BRANCH_NODE_HEIGHT
+    const gapFromLabelRight = 10
+    const estimatedLabelWidth = 100
+    const startX = DEFAULT_PADDING + estimatedLabelWidth + gapFromLabelRight
+
+    // Find the rightmost existing pair node to calculate next X position
+    let nextX = startX
+    if (pairNodes.length > 0) {
+      // Find the rightmost node
+      const rightmostNode = pairNodes.reduce((rightmost, node) => {
+        if (!rightmost) return node
+        const rightmostX = rightmost.position?.x || 0
+        const nodeX = node.position?.x || 0
+        return nodeX > rightmostX ? node : rightmost
+      })
+
+      // Calculate next X: rightmost node's X + node width + gap
+      const rightmostX = rightmostNode.position?.x || startX
+      nextX = rightmostX + nodeWidth + gapBetweenPairs
+    }
+
+    // Calculate Y positions (same as bridgeMap.ts loader)
+    const leftNodeY = centerY - verticalGap - nodeHeight
+    const rightNodeY = centerY + verticalGap
+
+    // Create left node
+    const leftNode: DiagramNode = {
+      id: `pair-${newPairIndex}-left`,
+      text: isZh.value ? '新事物A' : 'New Item A',
+      type: 'branch',
+      position: { x: nextX, y: leftNodeY },
+      data: {
+        pairIndex: newPairIndex,
+        position: 'left',
+        diagramType: 'bridge_map',
+      },
+    }
+
+    // Create right node
+    const rightNode: DiagramNode = {
+      id: `pair-${newPairIndex}-right`,
+      text: isZh.value ? '新事物B' : 'New Item B',
+      type: 'branch',
+      position: { x: nextX, y: rightNodeY },
+      data: {
+        pairIndex: newPairIndex,
+        position: 'right',
+        diagramType: 'bridge_map',
+      },
+    }
+
+    // Add both nodes
+    diagramStore.addNode(leftNode)
+    diagramStore.addNode(rightNode)
+
+    diagramStore.pushHistory(isZh.value ? '添加类比对' : 'Add Analogy Pair')
+    notify.success(isZh.value ? '已添加类比对' : 'Analogy pair added')
+    return
+  }
+
   // For other diagram types, show under development message
   notify.info('增加节点功能开发中')
 }
@@ -186,7 +288,83 @@ function handleAddEffect() {
   notify.success('已添加结果节点')
 }
 
-function handleDeleteNode() {
+function repositionBridgeMapPairs() {
+  const startTime = getTimestamp()
+  console.debug(`[CanvasToolbar] [${startTime}] repositionBridgeMapPairs() called`)
+  
+  const pairs = new Map<number, { left: DiagramNode; right: DiagramNode }>()
+  
+  for (const node of diagramStore.data.nodes) {
+    if (
+      node.data?.diagramType !== 'bridge_map' ||
+      node.data?.pairIndex === undefined ||
+      node.data?.isDimensionLabel
+    ) {
+      continue
+    }
+
+    const pairIndex = node.data.pairIndex as number
+    const position = node.data.position as 'left' | 'right'
+    
+    if (!pairs.has(pairIndex)) {
+      pairs.set(pairIndex, { left: null!, right: null! })
+    }
+    
+    const pair = pairs.get(pairIndex)!
+    if (position === 'left') {
+      pair.left = node
+    } else {
+      pair.right = node
+    }
+  }
+
+  const sortedPairs = Array.from(pairs.entries())
+    .filter(([, pair]) => pair.left && pair.right)
+    .sort(([a], [b]) => a - b)
+
+  const gapBetweenPairs = 50
+  const gapFromLabelRight = 10
+  const estimatedLabelWidth = 100
+  const startX = DEFAULT_PADDING + estimatedLabelWidth + gapFromLabelRight
+  const verticalGap = 5
+  const nodeHeight = BRANCH_NODE_HEIGHT
+  const nodeWidth = DEFAULT_NODE_WIDTH
+  const centerY = DEFAULT_CENTER_Y
+
+  console.debug(`[CanvasToolbar] [${getTimestamp()}] Repositioning ${sortedPairs.length} pairs`)
+  
+  let currentX = startX
+  for (const [, pair] of sortedPairs) {
+    const leftNodeY = centerY - verticalGap - nodeHeight
+    const rightNodeY = centerY + verticalGap
+
+    console.debug(`[CanvasToolbar] [${getTimestamp()}] Updating pair ${pair.left.data?.pairIndex}:`, {
+      leftNodeId: pair.left.id,
+      rightNodeId: pair.right.id,
+      newX: currentX,
+      leftNodeY,
+      rightNodeY,
+    })
+
+    updateVueFlowNode(pair.left.id, (node) => ({
+      ...node,
+      position: { x: currentX, y: leftNodeY },
+    }))
+    updateVueFlowNode(pair.right.id, (node) => ({
+      ...node,
+      position: { x: currentX, y: rightNodeY },
+    }))
+
+    diagramStore.updateNodePosition(pair.left.id, { x: currentX, y: leftNodeY }, false)
+    diagramStore.updateNodePosition(pair.right.id, { x: currentX, y: rightNodeY }, false)
+
+    currentX += nodeWidth + gapBetweenPairs
+  }
+  
+  console.debug(`[CanvasToolbar] [${getTimestamp()}] repositionBridgeMapPairs() complete`)
+}
+
+async function handleDeleteNode() {
   const diagramType = diagramStore.type
 
   if (!diagramStore.data?.nodes) {
@@ -195,10 +373,28 @@ function handleDeleteNode() {
   }
 
   // Check if any nodes are selected
-  if (diagramStore.selectedNodes.length === 0) {
+  const selectedNodesArray = [...diagramStore.selectedNodes]
+  if (selectedNodesArray.length === 0) {
+    console.debug(`[CanvasToolbar] [${getTimestamp()}] No nodes selected:`, {
+      selectedNodes: diagramStore.selectedNodes,
+      selectedNodesArray,
+      selectedNodesLength: diagramStore.selectedNodes.length,
+      diagramType: diagramStore.type,
+      totalNodes: diagramStore.data?.nodes?.length || 0,
+    })
     notify.warning('请先选择要删除的节点')
     return
   }
+  
+  console.log(`[CanvasToolbar] [${getTimestamp()}] ========== DELETE REQUESTED ==========`)
+  console.log(`[CanvasToolbar] [${getTimestamp()}] Delete nodes:`, {
+    selectedNodes: [...diagramStore.selectedNodes],
+    selectedNodesArray: [...diagramStore.selectedNodes],
+    selectedNodesLength: diagramStore.selectedNodes.length,
+    diagramType: diagramStore.type,
+    totalNodesInDiagram: diagramStore.data?.nodes?.length || 0,
+  })
+  console.log(`[CanvasToolbar] [${getTimestamp()}] ======================================`)
 
   // For circle maps, delete selected context nodes
   if (diagramType === 'circle_map') {
@@ -253,6 +449,112 @@ function handleDeleteNode() {
       notify.success(`已删除 ${deletedCount} 个节点`)
     } else {
       notify.warning('无法删除事件节点')
+    }
+    return
+  }
+
+  // For bridge maps, delete entire analogy pairs
+  if (diagramType === 'bridge_map') {
+    if (!diagramStore.data?.nodes) {
+      return
+    }
+
+    // Collect pair indices from selected nodes
+    const pairIndicesToDelete = new Set<number>()
+    const selectedNodes = [...diagramStore.selectedNodes]
+    
+    console.debug(`[CanvasToolbar] [${getTimestamp()}] Bridge map delete - Selected nodes:`, {
+      selectedNodeIds: selectedNodes,
+      selectedNodesCount: selectedNodes.length,
+      allNodes: diagramStore.data.nodes.map((n) => ({
+        id: n.id,
+        text: n.text,
+        pairIndex: n.data?.pairIndex,
+        position: n.data?.position,
+      })),
+    })
+
+    for (const nodeId of selectedNodes) {
+      // Protect dimension label from deletion
+      if (nodeId === 'dimension-label') {
+        console.debug(`[CanvasToolbar] [${getTimestamp()}] Skipping dimension-label deletion`)
+        continue
+      }
+
+      // Find the node and get its pairIndex
+      const node = diagramStore.data.nodes.find((n) => n.id === nodeId)
+      console.debug(`[CanvasToolbar] [${getTimestamp()}] Processing node for deletion:`, {
+        nodeId,
+        nodeFound: !!node,
+        pairIndex: node?.data?.pairIndex,
+        position: node?.data?.position,
+        nodeText: node?.text,
+      })
+      
+      if (node && node.data?.pairIndex !== undefined) {
+        const pairIndex = node.data.pairIndex
+        if (typeof pairIndex === 'number') {
+          pairIndicesToDelete.add(pairIndex)
+          console.debug(`[CanvasToolbar] [${getTimestamp()}] Added pair to delete:`, {
+            pairIndex,
+            willDelete: [`pair-${pairIndex}-left`, `pair-${pairIndex}-right`],
+          })
+        }
+      }
+    }
+    
+    console.debug(`[CanvasToolbar] [${getTimestamp()}] Pairs to delete:`, {
+      pairIndices: Array.from(pairIndicesToDelete),
+      totalPairs: pairIndicesToDelete.size,
+    })
+
+    // Delete both left and right nodes for each pair index
+    let deletedCount = 0
+    const deleteStartTime = getTimestamp()
+    console.debug(`[CanvasToolbar] [${deleteStartTime}] Starting deletion of ${pairIndicesToDelete.size} pair(s)`)
+    
+    for (const pairIndex of pairIndicesToDelete) {
+      const leftNodeId = `pair-${pairIndex}-left`
+      const rightNodeId = `pair-${pairIndex}-right`
+
+      console.debug(`[CanvasToolbar] [${getTimestamp()}] Removing nodes:`, {
+        pairIndex,
+        leftNodeId,
+        rightNodeId,
+      })
+
+      if (diagramStore.removeNode(leftNodeId)) {
+        deletedCount++
+        console.debug(`[CanvasToolbar] [${getTimestamp()}] Removed left node: ${leftNodeId}`)
+      }
+      if (diagramStore.removeNode(rightNodeId)) {
+        deletedCount++
+        console.debug(`[CanvasToolbar] [${getTimestamp()}] Removed right node: ${rightNodeId}`)
+      }
+    }
+
+    console.debug(`[CanvasToolbar] [${getTimestamp()}] Deletion complete. Deleted ${deletedCount} nodes. Waiting for nextTick...`)
+
+    if (deletedCount > 0) {
+      await nextTick()
+      const repositionStartTime = getTimestamp()
+      console.debug(`[CanvasToolbar] [${repositionStartTime}] Starting repositioning after nextTick`)
+      repositionBridgeMapPairs()
+      console.debug(`[CanvasToolbar] [${getTimestamp()}] Repositioning complete`)
+      diagramStore.clearSelection()
+      const pairCount = pairIndicesToDelete.size
+      diagramStore.pushHistory(
+        isZh.value ? '删除类比对' : 'Delete Analogy Pair'
+      )
+      notify.success(
+        isZh.value
+          ? `已删除 ${pairCount} 个类比对`
+          : `Deleted ${pairCount} analogy pair${pairCount > 1 ? 's' : ''}`
+      )
+    } else {
+      notify.warning(
+        isZh.value ? '无法删除维度标签' : 'Cannot delete dimension label'
+      )
     }
     return
   }
@@ -376,6 +678,23 @@ function handleToggleOrientation() {
             >
               <Plus class="w-4 h-4" />
               <span>{{ isZh ? '添加结果' : 'Add Effect' }}</span>
+            </ElButton>
+          </ElTooltip>
+        </template>
+
+        <!-- For bridge maps, show "Add Analogy Pair" button -->
+        <template v-else-if="isBridgeMap">
+          <ElTooltip
+            :content="isZh ? '添加类比对' : 'Add Analogy Pair'"
+            placement="bottom"
+          >
+            <ElButton
+              text
+              size="small"
+              @click="handleAddNode"
+            >
+              <Plus class="w-4 h-4" />
+              <span>{{ isZh ? '添加类比对' : 'Add Pair' }}</span>
             </ElButton>
           </ElTooltip>
         </template>

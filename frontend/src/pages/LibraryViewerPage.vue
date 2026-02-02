@@ -441,6 +441,10 @@ function handleZoomOut() {
   viewerRef.value?.zoomOut()
 }
 
+function handleZoomChange(zoomValue: number) {
+  viewerRef.value?.setZoom(zoomValue)
+}
+
 function handleRotate() {
   viewerRef.value?.rotate()
 }
@@ -532,6 +536,7 @@ watch(
       @go-to-page="handleGoToPage"
       @zoom-in="handleZoomIn"
       @zoom-out="handleZoomOut"
+      @zoom-change="handleZoomChange"
       @rotate="handleRotate"
       @print="handlePrint"
       @toggle-pin-mode="handleTogglePinMode"

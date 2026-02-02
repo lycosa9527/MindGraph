@@ -3,10 +3,17 @@
  * Contains common layout calculations and type definitions
  */
 import {
+  DEFAULT_CENTER_X,
+  DEFAULT_CENTER_Y,
   DEFAULT_CONTEXT_RADIUS,
-  DEFAULT_PADDING,
   DEFAULT_TOPIC_RADIUS,
 } from '@/composables/diagrams/layoutConfig'
+
+import {
+  computeMinDiameterForNoWrap,
+  computeTopicRadiusForCircleMap,
+  CONTEXT_FONT_SIZE,
+} from './textMeasurement'
 
 /**
  * Circle map layout calculation result
@@ -70,48 +77,67 @@ export function calculateAdaptiveCircleSize(text: string, isTopic: boolean = fal
   }
 }
 
+/** Gap between topic and context ring (px). Larger = more space between center and middle layer. */
+const CIRCLE_MAP_TOPIC_CONTEXT_GAP = 65
+/** Extra edge-to-edge gap between adjacent context circles (px). Second-layer spacing. */
+const CIRCLE_MAP_CONTEXT_GAP = 8
+/** Margin outside context ring for outer boundary (px). Keeps boundary clear of context circles. */
+const CIRCLE_MAP_OUTER_MARGIN = 18
+/** Minimum childrenRadius (px). */
+const CIRCLE_MAP_MIN_CHILDREN_RADIUS = 130
+
 /**
- * Calculate circle map layout based on node count and context texts
- * Uses adaptive sizing for context nodes based on text length
- * Shared by both loadCircleMapSpec and recalculateCircleMapLayout
+ * Calculate circle map layout: fixed font, circles from text, ring no-overlap.
+ * Center = canvas center; context nodes evenly spaced on a ring (360/n deg).
+ * Order: topic first → uniformContextR from texts → childrenRadius → outer circle.
+ * Shared by loadCircleMapSpec and recalculateCircleMapLayout.
  *
  * @param nodeCount - Number of context nodes
  * @param contextTexts - Array of context node texts for adaptive sizing
+ * @param topicText - Topic text for radius calculation
  * @returns Layout calculation result with positions and radii
  */
 export function calculateCircleMapLayout(
   nodeCount: number,
-  contextTexts: string[] = []
+  contextTexts: string[] = [],
+  topicText: string = ''
 ): CircleMapLayoutResult {
-  const topicR = DEFAULT_TOPIC_RADIUS
-  const padding = DEFAULT_PADDING
+  const centerX = DEFAULT_CENTER_X
+  const centerY = DEFAULT_CENTER_Y
 
-  // Calculate adaptive sizes for context nodes and find maximum radius
-  // Default minimum radius for layout calculations
-  const defaultContextR = DEFAULT_CONTEXT_RADIUS
-  let maxContextR = defaultContextR
+  // (g) Topic: text-adaptive radius = text bounding box diagonal/2 + inner padding, min only (no max)
+  const topicRFromText = computeTopicRadiusForCircleMap(topicText || ' ')
+  const topicR = Math.max(DEFAULT_TOPIC_RADIUS, topicRFromText)
 
-  if (contextTexts.length > 0) {
-    // Calculate adaptive size for each context node and find maximum radius
-    contextTexts.forEach((text) => {
-      const adaptiveSize = calculateAdaptiveCircleSize(text, false)
-      const adaptiveRadius = adaptiveSize / 2
-      maxContextR = Math.max(maxContextR, adaptiveRadius)
-    })
+  // (b) Uniform context R: fixed CONTEXT_FONT_SIZE → min diameter per text → max → radius
+  let uniformContextR: number
+  if (contextTexts.length === 0) {
+    uniformContextR = DEFAULT_CONTEXT_RADIUS
+  } else {
+    let maxRadius = DEFAULT_CONTEXT_RADIUS
+    for (const t of contextTexts) {
+      const d = computeMinDiameterForNoWrap(t || ' ', CONTEXT_FONT_SIZE, false)
+      maxRadius = Math.max(maxRadius, d / 2)
+    }
+    uniformContextR = maxRadius
   }
 
-  // Use maxContextR for layout calculations to ensure all nodes fit
-  const uniformContextR = maxContextR
+  // (c) Ring radius: no-overlap context–context (with small gap), no-overlap context–topic, minimum.
+  // All layers share the same center (centerX, centerY). Slightly lengthen childrenRadius so
+  // adjacent second-layer circles have a small edge-to-edge gap.
+  const noOverlapContext =
+    nodeCount > 0
+      ? (uniformContextR + CIRCLE_MAP_CONTEXT_GAP / 2) / Math.sin(Math.PI / nodeCount)
+      : 0
+  const noOverlapTopic = topicR + uniformContextR + CIRCLE_MAP_TOPIC_CONTEXT_GAP
+  const childrenRadius = Math.max(
+    noOverlapContext,
+    noOverlapTopic,
+    CIRCLE_MAP_MIN_CHILDREN_RADIUS
+  )
 
-  // Calculate childrenRadius using both constraints (matching original D3 logic)
-  const targetRadialDistance = topicR + topicR * 0.5 + uniformContextR + 5
-  const spacingMultiplier = nodeCount <= 3 ? 2.0 : nodeCount <= 6 ? 2.05 : 2.1
-  const circumferentialMinRadius =
-    nodeCount > 0 ? (uniformContextR * nodeCount * spacingMultiplier) / (2 * Math.PI) : 0
-  const childrenRadius = Math.max(targetRadialDistance, circumferentialMinRadius, 100)
-  const outerCircleR = childrenRadius + uniformContextR + 10
-  const centerX = outerCircleR + padding
-  const centerY = outerCircleR + padding
+  // (d) Outer circle: just enclose context ring; margin avoids overlap with boundary stroke
+  const outerCircleR = childrenRadius + uniformContextR + CIRCLE_MAP_OUTER_MARGIN
 
   return { centerX, centerY, topicR, uniformContextR, childrenRadius, outerCircleR }
 }

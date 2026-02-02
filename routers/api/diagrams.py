@@ -24,6 +24,7 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import Response
 import qrcode
+from qrcode import constants as qrcode_constants
 from PIL import Image
 
 from models.domain.auth import User
@@ -548,7 +549,7 @@ async def generate_qrcode(
         # Create QR code instance
         qr = qrcode.QRCode(
             version=1,
-            error_correction=qrcode.constants.ERROR_CORRECT_L,
+            error_correction=qrcode_constants.ERROR_CORRECT_L,
             box_size=10,
             border=4,
         )
@@ -556,15 +557,21 @@ async def generate_qrcode(
         qr.make(fit=True)
 
         # Create image
-        img = qr.make_image(fill_color="black", back_color="white")
-        
+        qr_img = qr.make_image(fill_color="black", back_color="white")
+
+        # Convert to bytes first, then reload as PIL Image for proper type handling
+        temp_bytes = io.BytesIO()
+        qr_img.save(temp_bytes, "PNG")
+        temp_bytes.seek(0)
+        img = Image.open(temp_bytes)
+
         # Resize to requested size
         if size != 150:  # Default size is 150x150
-            img = img.resize((size, size), resample=Image.LANCZOS)
+            img = img.resize((size, size), resample=Image.Resampling.LANCZOS)
 
         # Convert to bytes
         img_bytes = io.BytesIO()
-        img.save(img_bytes, format="PNG")
+        img.save(img_bytes, "PNG")
         img_bytes.seek(0)
 
         return Response(
@@ -576,4 +583,4 @@ async def generate_qrcode(
         )
     except Exception as e:
         logger.error("[Diagrams] Error generating QR code: %s", e, exc_info=True)
-        raise HTTPException(status_code=500, detail="Failed to generate QR code")
+        raise HTTPException(status_code=500, detail="Failed to generate QR code") from e

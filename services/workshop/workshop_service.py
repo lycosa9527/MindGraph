@@ -108,7 +108,7 @@ class WorkshopService:
 
             if not diagram:
                 error_msg = f"Diagram {diagram_id} not found or not owned by user {user_id}"
-                logger.warning(f"[WorkshopService] {error_msg}")
+                logger.warning("[WorkshopService] %s", error_msg)
                 return None, error_msg
 
             # Generate unique workshop code
@@ -117,7 +117,7 @@ class WorkshopService:
             redis = get_redis()
             if not redis:
                 error_msg = "Redis client not available. Workshop feature requires Redis."
-                logger.error(f"[WorkshopService] {error_msg}")
+                logger.error("[WorkshopService] %s", error_msg)
                 return None, error_msg
 
             for _ in range(max_attempts):
@@ -132,7 +132,7 @@ class WorkshopService:
 
             if not code:
                 error_msg = "Failed to generate unique workshop code after multiple attempts"
-                logger.error(f"[WorkshopService] {error_msg}")
+                logger.error("[WorkshopService] %s", error_msg)
                 return None, error_msg
 
             # Update diagram with workshop code
@@ -143,7 +143,7 @@ class WorkshopService:
             redis = get_redis()
             if not redis:
                 error_msg = "Redis client not available. Workshop feature requires Redis."
-                logger.error(f"[WorkshopService] {error_msg}")
+                logger.error("[WorkshopService] %s", error_msg)
                 db.rollback()
                 return None, error_msg
 
@@ -175,7 +175,8 @@ class WorkshopService:
         except Exception as e:
             error_msg = f"Error starting workshop: {str(e)}"
             logger.error(
-                f"[WorkshopService] {error_msg}",
+                "[WorkshopService] %s",
+                error_msg,
                 exc_info=True,
             )
             db.rollback()

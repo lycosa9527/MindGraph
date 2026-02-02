@@ -14,9 +14,13 @@
 import { computed, ref } from 'vue'
 
 import { useLanguage } from '@/composables/useLanguage'
+import {
+  doubleBubbleDiffRequiredRadius,
+  doubleBubbleRequiredRadius,
+} from '@/stores/specLoader/textMeasurement'
 import type { Connection, DiagramNode, MindGraphEdge, MindGraphNode } from '@/types'
 
-import { DEFAULT_BUBBLE_RADIUS, DEFAULT_PADDING, DEFAULT_TOPIC_RADIUS } from './layoutConfig'
+import { DEFAULT_PADDING, DOUBLE_BUBBLE_MAX_CAPSULE_HEIGHT } from './layoutConfig'
 
 interface DoubleBubbleMapData {
   left: string
@@ -48,49 +52,55 @@ interface DoubleBubbleMapOptions {
   padding?: number
 }
 
+/** Capsule: 长度随 radius，高度有上限；与 CircleNode / doubleBubbleMap 一致 */
+function capsuleFromRadius(radius: number): { width: number; height: number; diameter: number } {
+  const diameter = radius * 2
+  const height = Math.min(
+    Math.round(diameter * 0.56),
+    DOUBLE_BUBBLE_MAX_CAPSULE_HEIGHT
+  )
+  return {
+    width: Math.round(diameter * 1.22),
+    height,
+    diameter,
+  }
+}
+
 /**
- * Calculate double bubble map layout based on node counts
- * Uses column-based layout matching the original D3 renderer:
- * [leftDiff] - [leftTopic] - [similarities] - [rightTopic] - [rightDiff]
+ * Layout from unified radii (per-type). Symmetry line = similarity column midline (centerX).
  */
-function calculateLayout(
+function computeLayoutFromRadii(
   simCount: number,
   leftDiffCount: number,
   rightDiffCount: number,
-  padding: number = DEFAULT_PADDING
+  padding: number,
+  topicR: number,
+  simR: number,
+  diffR: number
 ): DoubleBubbleMapLayout {
-  const topicR = DEFAULT_TOPIC_RADIUS // 60px
-  const simR = DEFAULT_BUBBLE_RADIUS // 40px for similarities
-  const diffR = DEFAULT_BUBBLE_RADIUS - 10 // 30px for differences (smaller)
-
-  // Vertical spacing between nodes in each column
-  const simVerticalSpacing = simR * 2 + 12 // diameter + gap
-  const diffVerticalSpacing = diffR * 2 + 10 // diameter + gap
-
-  // Column spacing (50px matching original)
   const columnSpacing = 50
+  const diffCap = capsuleFromRadius(diffR)
+  const maxLeftW = diffCap.width
+  const maxRightW = diffCap.width
+  const simCap = capsuleFromRadius(simR)
+  const simVerticalSpacing = simCap.height + 12
+  const diffVerticalSpacing = diffCap.height + 10
 
-  // Calculate X positions from left to right
-  const leftDiffX = padding + diffR
-  const leftTopicX = leftDiffX + diffR + columnSpacing + topicR
-  const simX = leftTopicX + topicR + columnSpacing + simR
-  const rightTopicX = simX + simR + columnSpacing + topicR
-  const rightDiffX = rightTopicX + topicR + columnSpacing + diffR
-
-  // Calculate required width
-  const requiredWidth = rightDiffX + diffR + padding
-
-  // Calculate column heights (differences are paired, so use max count)
-  const simColHeight = simCount > 0 ? (simCount - 1) * simVerticalSpacing + simR * 2 : 0
-  const maxDiffCount = Math.max(leftDiffCount, rightDiffCount)
-  const diffColHeight = maxDiffCount > 0 ? (maxDiffCount - 1) * diffVerticalSpacing + diffR * 2 : 0
-  const maxColHeight = Math.max(simColHeight, diffColHeight, topicR * 2)
-
-  // Calculate required height
-  const requiredHeight = maxColHeight + padding * 2
-
-  // Center positions
+  const D = simR + 2 * columnSpacing + 2 * topicR
+  const requiredWidth = 2 * D + maxLeftW + maxRightW + padding * 2
   const centerX = requiredWidth / 2
+  const simX = centerX
+  const leftTopicX = centerX - simR - columnSpacing - topicR
+  const rightTopicX = centerX + simR + columnSpacing + topicR
+  const leftDiffX = centerX - D
+  const rightDiffX = centerX + D + maxRightW
+
+  const simColHeight = simCount > 0 ? (simCount - 1) * simVerticalSpacing + simCap.height : 0
+  const maxDiffCount = Math.max(leftDiffCount, rightDiffCount)
+  const diffColHeight =
+    maxDiffCount > 0 ? (maxDiffCount - 1) * diffVerticalSpacing + diffCap.height : 0
+  const maxColHeight = Math.max(simColHeight, diffColHeight, topicR * 2)
+  const requiredHeight = maxColHeight + padding * 2
   const centerY = requiredHeight / 2
 
   return {
@@ -115,12 +125,29 @@ export function useDoubleBubbleMap(options: DoubleBubbleMapOptions = {}) {
   const { t } = useLanguage()
   const data = ref<DoubleBubbleMapData | null>(null)
 
-  // Calculate layout based on current data
+  // Per-type unified radius; 不同点左右统一半径，任一侧变化时两侧同步
   const layout = computed<DoubleBubbleMapLayout>(() => {
-    const simCount = data.value?.similarities.length || 0
-    const leftDiffCount = data.value?.leftDifferences.length || 0
-    const rightDiffCount = data.value?.rightDifferences.length || 0
-    return calculateLayout(simCount, leftDiffCount, rightDiffCount, padding)
+    const d = data.value
+    if (!d) return computeLayoutFromRadii(0, 0, 0, padding, 60, 40, 30)
+    const topicLeftR = doubleBubbleRequiredRadius(d.left, { isTopic: true })
+    const topicRightR = doubleBubbleRequiredRadius(d.right, { isTopic: true })
+    const topicR = Math.max(topicLeftR, topicRightR)
+    const simRadii = d.similarities.map((t) => doubleBubbleRequiredRadius(t, { isTopic: false }))
+    const simR = simRadii.length > 0 ? Math.max(...simRadii) : 30
+    const leftDiffRadii = d.leftDifferences.map((t) => doubleBubbleDiffRequiredRadius(t))
+    const rightDiffRadii = d.rightDifferences.map((t) => doubleBubbleDiffRequiredRadius(t))
+    const leftDiffR = leftDiffRadii.length > 0 ? Math.max(...leftDiffRadii) : 30
+    const rightDiffR = rightDiffRadii.length > 0 ? Math.max(...rightDiffRadii) : 30
+    const diffR = Math.max(leftDiffR, rightDiffR)
+    return computeLayoutFromRadii(
+      d.similarities.length,
+      d.leftDifferences.length,
+      d.rightDifferences.length,
+      padding,
+      topicR,
+      simR,
+      diffR
+    )
   })
 
   // Convert double bubble map data to Vue Flow nodes
@@ -166,74 +193,70 @@ export function useDoubleBubbleMap(options: DoubleBubbleMapOptions = {}) {
       draggable: false,
     })
 
-    // Similarities (center column 3, stacked vertically)
     const simCount = data.value.similarities.length
-    const simColHeight = simCount > 0 ? (simCount - 1) * l.simVerticalSpacing + l.simR * 2 : 0
-    const simStartY = l.centerY - simColHeight / 2 + l.simR
+    const simCap = capsuleFromRadius(l.simR)
+    const simColHeight = simCount > 0 ? (simCount - 1) * l.simVerticalSpacing + simCap.height : 0
+    const simStartY = l.centerY - simColHeight / 2 + simCap.height / 2
     data.value.similarities.forEach((sim, index) => {
+      const cy = simStartY + index * l.simVerticalSpacing
       result.push({
         id: `similarity-${index}`,
         type: 'bubble',
-        position: {
-          x: l.simX - l.simR,
-          y: simStartY + index * l.simVerticalSpacing - l.simR,
-        },
+        position: { x: l.simX - simCap.width / 2, y: cy - simCap.height / 2 },
         data: {
           label: sim,
           nodeType: 'bubble',
           diagramType: 'double_bubble_map',
-          isDraggable: true,
+          isDraggable: false,
           isSelectable: true,
+          style: { size: l.simR * 2 },
         },
-        draggable: true,
+        draggable: false,
       })
     })
 
-    // Left and Right differences are PAIRED - they share the same Y positions
     const leftDiffCount = data.value.leftDifferences.length
     const rightDiffCount = data.value.rightDifferences.length
     const maxDiffCount = Math.max(leftDiffCount, rightDiffCount)
+    const diffCap = capsuleFromRadius(l.diffR)
+    const maxLeftW = diffCap.width
     const diffColHeight =
-      maxDiffCount > 0 ? (maxDiffCount - 1) * l.diffVerticalSpacing + l.diffR * 2 : 0
-    const diffStartY = l.centerY - diffColHeight / 2 + l.diffR
+      maxDiffCount > 0 ? (maxDiffCount - 1) * l.diffVerticalSpacing + diffCap.height : 0
+    const diffStartY = l.centerY - diffColHeight / 2 + diffCap.height / 2
 
-    // Left differences (column 1)
     data.value.leftDifferences.forEach((diff, index) => {
+      const cy = diffStartY + index * l.diffVerticalSpacing
       result.push({
         id: `left-diff-${index}`,
         type: 'bubble',
-        position: {
-          x: l.leftDiffX - l.diffR,
-          y: diffStartY + index * l.diffVerticalSpacing - l.diffR,
-        },
+        position: { x: l.leftDiffX - maxLeftW, y: cy - diffCap.height / 2 },
         data: {
           label: diff,
           nodeType: 'bubble',
           diagramType: 'double_bubble_map',
-          isDraggable: true,
+          isDraggable: false,
           isSelectable: true,
+          style: { size: l.diffR * 2 },
         },
-        draggable: true,
+        draggable: false,
       })
     })
 
-    // Right differences (column 5) - same Y positions as left differences
     data.value.rightDifferences.forEach((diff, index) => {
+      const cy = diffStartY + index * l.diffVerticalSpacing
       result.push({
         id: `right-diff-${index}`,
         type: 'bubble',
-        position: {
-          x: l.rightDiffX - l.diffR,
-          y: diffStartY + index * l.diffVerticalSpacing - l.diffR,
-        },
+        position: { x: l.rightDiffX - diffCap.width, y: cy - diffCap.height / 2 },
         data: {
           label: diff,
           nodeType: 'bubble',
           diagramType: 'double_bubble_map',
-          isDraggable: true,
+          isDraggable: false,
           isSelectable: true,
+          style: { size: l.diffR * 2 },
         },
-        draggable: true,
+        draggable: false,
       })
     })
 

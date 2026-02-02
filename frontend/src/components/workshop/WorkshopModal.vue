@@ -5,19 +5,13 @@
  */
 import { computed, ref, watch } from 'vue'
 
-import {
-  ElButton,
-  ElDialog,
-  ElInput,
-  ElMessage,
-  ElTag,
-} from 'element-plus'
+import { ElButton, ElDialog, ElMessage, ElTag } from 'element-plus'
 
-import { Copy, Users, X } from 'lucide-vue-next'
+import { Copy, Users } from 'lucide-vue-next'
 
-import { authFetch } from '@/utils/api'
 import { useLanguage, useNotifications } from '@/composables'
-import { useAuthStore, useDiagramStore, useSavedDiagramsStore } from '@/stores'
+import { useDiagramStore, useSavedDiagramsStore } from '@/stores'
+import { authFetch } from '@/utils/api'
 
 // QR Code generation using backend endpoint (offline, no CDN)
 function generateQRCodeUrl(text: string): string {
@@ -34,9 +28,9 @@ interface Props {
 
 interface Emits {
   (e: 'update:visible', value: boolean): void
-  (e: 'workshop-started', code: string): void
-  (e: 'workshop-stopped'): void
-  (e: 'workshop-code-changed', code: string | null): void
+  (e: 'workshopStarted', code: string): void
+  (e: 'workshopStopped'): void
+  (e: 'workshopCodeChanged', code: string | null): void
 }
 
 const props = defineProps<Props>()
@@ -44,7 +38,6 @@ const emit = defineEmits<Emits>()
 
 const { isZh } = useLanguage()
 const notify = useNotifications()
-const authStore = useAuthStore()
 const diagramStore = useDiagramStore()
 const savedDiagramsStore = useSavedDiagramsStore()
 
@@ -105,17 +98,13 @@ async function ensureDiagramSaved(): Promise<string | null> {
 
   // Need to save the diagram first
   if (!diagramStore.type || !diagramStore.data) {
-    notify.warning(
-      isZh.value ? '没有可保存的图示' : 'No diagram to save'
-    )
+    notify.warning(isZh.value ? '没有可保存的图示' : 'No diagram to save')
     return null
   }
 
   const spec = getDiagramSpec()
   if (!spec) {
-    notify.warning(
-      isZh.value ? '图示数据无效' : 'Invalid diagram data'
-    )
+    notify.warning(isZh.value ? '图示数据无效' : 'Invalid diagram data')
     return null
   }
 
@@ -146,16 +135,12 @@ async function ensureDiagramSaved(): Promise<string | null> {
       )
       return null
     } else {
-      notify.error(
-        result.error || (isZh.value ? '保存失败' : 'Failed to save diagram')
-      )
+      notify.error(result.error || (isZh.value ? '保存失败' : 'Failed to save diagram'))
       return null
     }
   } catch (error) {
     console.error('Failed to save diagram:', error)
-    notify.error(
-      isZh.value ? '网络错误，保存失败' : 'Network error, failed to save'
-    )
+    notify.error(isZh.value ? '网络错误，保存失败' : 'Network error, failed to save')
     return null
   } finally {
     isLoading.value = false
@@ -169,7 +154,7 @@ watch(
     if (visible) {
       // Ensure diagram is saved before starting workshop
       const diagramId = await ensureDiagramSaved()
-      
+
       if (diagramId) {
         // Check if code already exists, otherwise generate one
         // Note: We need to check status with the saved diagramId
@@ -180,7 +165,7 @@ watch(
         }
         // Emit code change
         if (workshopCode.value) {
-          emit('workshop-code-changed', workshopCode.value)
+          emit('workshopCodeChanged', workshopCode.value)
         }
       }
     } else {
@@ -189,7 +174,7 @@ watch(
       isActive.value = false
       participantCount.value = 0
       joinCode.value = ''
-      emit('workshop-code-changed', null)
+      emit('workshopCodeChanged', null)
     }
   }
 )
@@ -198,24 +183,16 @@ watch(
 watch(
   () => workshopCode.value,
   (code) => {
-    emit('workshop-code-changed', code)
+    emit('workshopCodeChanged', code)
   }
 )
-
-// Check workshop status
-async function checkWorkshopStatus() {
-  if (!props.diagramId) return
-  await checkWorkshopStatusWithId(props.diagramId)
-}
 
 // Check workshop status with specific diagram ID
 async function checkWorkshopStatusWithId(diagramId: string) {
   if (!diagramId) return
 
   try {
-    const response = await authFetch(
-      `/api/diagrams/${diagramId}/workshop/status`
-    )
+    const response = await authFetch(`/api/diagrams/${diagramId}/workshop/status`)
 
     if (response.ok) {
       const data = await response.json()
@@ -233,16 +210,10 @@ async function checkWorkshopStatusWithId(diagramId: string) {
   }
 }
 
-// Start workshop
-async function startWorkshop() {
-  if (!props.diagramId) return
-  await startWorkshopWithId(props.diagramId)
-}
-
 // Start workshop with specific diagram ID
 async function startWorkshopWithId(diagramId: string) {
   if (!diagramId) return
-  
+
   // Prevent multiple simultaneous calls
   if (isLoading.value) {
     console.warn('[WorkshopModal] Workshop start already in progress, skipping')
@@ -251,19 +222,16 @@ async function startWorkshopWithId(diagramId: string) {
 
   isLoading.value = true
   try {
-    const response = await authFetch(
-      `/api/diagrams/${diagramId}/workshop/start`,
-      {
-        method: 'POST',
-      }
-    )
+    const response = await authFetch(`/api/diagrams/${diagramId}/workshop/start`, {
+      method: 'POST',
+    })
 
     if (response.ok) {
       const data = await response.json()
       workshopCode.value = data.code
       isActive.value = true
       participantCount.value = 1 // Owner is first participant
-      emit('workshop-started', data.code)
+      emit('workshopStarted', data.code)
       // Note: Workshop code is also available via props/emits for parent component
       notify.success(
         isZh.value
@@ -284,109 +252,12 @@ async function startWorkshopWithId(diagramId: string) {
       console.error('[WorkshopModal] Full error response:', error)
       // Use the error message from backend (now includes specific details)
       notify.error(
-        isZh.value
-          ? `启动工作坊失败: ${errorMessage}`
-          : `Failed to start workshop: ${errorMessage}`
+        isZh.value ? `启动工作坊失败: ${errorMessage}` : `Failed to start workshop: ${errorMessage}`
       )
     }
   } catch (error) {
     console.error('Failed to start workshop:', error)
-    notify.error(
-      isZh.value ? '网络错误，启动失败' : 'Network error, failed to start'
-    )
-  } finally {
-    isLoading.value = false
-  }
-}
-
-// Stop workshop
-async function stopWorkshop() {
-  // Use saved diagram ID if props.diagramId is null
-  const diagramId = props.diagramId || savedDiagramsStore.activeDiagramId
-  if (!diagramId) return
-
-  isLoading.value = true
-  try {
-    const response = await authFetch(
-      `/api/diagrams/${diagramId}/workshop/stop`,
-      {
-        method: 'POST',
-      }
-    )
-
-    if (response.ok) {
-      workshopCode.value = null
-      isActive.value = false
-      participantCount.value = 0
-      emit('workshop-stopped')
-      notify.success(
-        isZh.value ? '工作坊已停止' : 'Workshop stopped'
-      )
-    } else {
-      const error = await response.json().catch(() => ({}))
-      notify.error(
-        error.detail ||
-          (isZh.value ? '停止工作坊失败' : 'Failed to stop workshop')
-      )
-    }
-  } catch (error) {
-    console.error('Failed to stop workshop:', error)
-    notify.error(
-      isZh.value ? '网络错误，停止失败' : 'Network error, failed to stop'
-    )
-  } finally {
-    isLoading.value = false
-  }
-}
-
-// Join workshop
-async function joinWorkshop() {
-  const code = joinCode.value.trim()
-
-  if (!code) {
-    notify.warning(
-      isZh.value ? '请输入工作坊代码' : 'Please enter a workshop code'
-    )
-    return
-  }
-
-  // Validate format (xxx-xxx)
-  if (!/^\d{3}-\d{3}$/.test(code)) {
-    notify.warning(
-      isZh.value
-        ? '工作坊代码格式不正确（应为 xxx-xxx）'
-        : 'Invalid workshop code format (should be xxx-xxx)'
-    )
-    return
-  }
-
-  isLoading.value = true
-  try {
-    const response = await authFetch(`/api/workshop/join?code=${code}`, {
-      method: 'POST',
-    })
-
-    if (response.ok) {
-      const data = await response.json()
-      notify.success(
-        isZh.value
-          ? `已加入工作坊：${data.workshop.title}`
-          : `Joined workshop: ${data.workshop.title}`
-      )
-      // Navigate to the diagram
-      window.location.href = `/canvas?diagram_id=${data.workshop.diagram_id}`
-    } else {
-      const error = await response.json().catch(() => ({}))
-      notify.error(
-        error.detail ||
-          (isZh.value ? '加入工作坊失败' : 'Failed to join workshop')
-      )
-    }
-  } catch (error) {
-    console.error('Failed to join workshop:', error)
-    notify.error(
-      isZh.value ? '网络错误，加入失败' : 'Network error, failed to join'
-    )
+    notify.error(isZh.value ? '网络错误，启动失败' : 'Network error, failed to start')
   } finally {
     isLoading.value = false
   }
@@ -400,7 +271,7 @@ async function handleGenerateCode() {
     await startWorkshopWithId(diagramId)
     // Emit code change after starting
     if (workshopCode.value) {
-      emit('workshop-code-changed', workshopCode.value)
+      emit('workshopCodeChanged', workshopCode.value)
     }
   }
 }
@@ -411,14 +282,10 @@ async function copyCode() {
 
   try {
     await navigator.clipboard.writeText(workshopCode.value)
-    ElMessage.success(
-      isZh.value ? '代码已复制到剪贴板' : 'Code copied to clipboard'
-    )
+    ElMessage.success(isZh.value ? '代码已复制到剪贴板' : 'Code copied to clipboard')
   } catch (error) {
     console.error('Failed to copy:', error)
-    ElMessage.error(
-      isZh.value ? '复制失败' : 'Failed to copy'
-    )
+    ElMessage.error(isZh.value ? '复制失败' : 'Failed to copy')
   }
 }
 </script>

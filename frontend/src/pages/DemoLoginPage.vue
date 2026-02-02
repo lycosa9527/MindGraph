@@ -62,7 +62,7 @@ function goToLogin() {
     <!-- Logo -->
     <div class="text-center mb-8">
       <div
-        class="w-16 h-16 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl mx-auto mb-4 flex items-center justify-center shadow-lg"
+        class="w-16 h-16 bg-linear-to-br from-indigo-500 to-purple-600 rounded-2xl mx-auto mb-4 flex items-center justify-center shadow-lg"
       >
         <span class="text-white font-bold text-2xl">MG</span>
       </div>
@@ -99,7 +99,7 @@ function goToLogin() {
     <div class="text-center mt-6">
       <el-button
         link
-        class="!text-white/60 hover:!text-white"
+        class="text-white/60! hover:text-white!"
         @click="goToLogin"
       >
         Back to Login

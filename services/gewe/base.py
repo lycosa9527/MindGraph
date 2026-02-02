@@ -93,8 +93,12 @@ class GeweService(
     async def cleanup(self):
         """Cleanup resources (close HTTP sessions)"""
         if self._gewe_client:
-            await self._gewe_client.close()
-            self._gewe_client = None
+            try:
+                await self._gewe_client.close()
+            except Exception as e:
+                logger.warning("Error during Gewe client cleanup: %s", e, exc_info=True)
+            finally:
+                self._gewe_client = None
         if self._dify_client:
             pass
 

@@ -694,6 +694,15 @@ function adjustZoom(delta: number) {
   })
 }
 
+function setZoom(value: number) {
+  zoom.value = Math.max(0.5, Math.min(3.0, value))
+  emit('zoomChange', zoom.value)
+  // Re-render pins after zoom
+  nextTick(() => {
+    renderPins()
+  })
+}
+
 function fitToWidth() {
   if (!containerRef.value || !imageRef.value) return
 
@@ -1076,6 +1085,7 @@ defineExpose({
   goToNextPage: () => goToNextPage(),
   zoomIn: () => adjustZoom(0.1),
   zoomOut: () => adjustZoom(-0.1),
+  setZoom: (value: number) => setZoom(value),
   rotate: () => rotate(),
   download: () => downloadImage(),
   print: () => printImage(),

@@ -257,7 +257,7 @@ function goToDemo() {
     <!-- Demo Login -->
     <el-button
       size="large"
-      class="w-full !bg-white/10 !border-white/20 !text-white hover:!bg-white/20"
+      class="w-full bg-white/10! border-white/20! text-white! hover:bg-white/20!"
       @click="goToDemo"
     >
       Try Demo

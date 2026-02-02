@@ -107,6 +107,9 @@ export const DEFAULT_CONTEXT_RADIUS = 35
 /** Difference bubble radius for double bubble maps */
 export const DEFAULT_DIFF_RADIUS = 30
 
+/** 双气泡图胶囊形状高度上限（px），超过后高度不再增大，长度仍随文字变化 */
+export const DOUBLE_BUBBLE_MAX_CAPSULE_HEIGHT = 65
+
 // ============================================================================
 // Node Min Dimensions (for NodeResizer constraints)
 // ============================================================================

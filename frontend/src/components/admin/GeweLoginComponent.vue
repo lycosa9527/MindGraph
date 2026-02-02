@@ -302,9 +302,18 @@ async function checkLoginStatus() {
       const data = result.data
 
       // Update expiredTime from API response
-      if (typeof data.expiredTime === 'number' && data.expiredTime > 0) {
+      if (typeof data.expiredTime === 'number') {
         expiredTime.value = data.expiredTime
-        // Update countdown value (will sync with timer)
+        // If QR code expired (expiredTime <= 0), stop polling
+        if (data.expiredTime <= 0) {
+          stopPollingLoginStatus()
+          stopCountdown()
+          qrCodeBase64.value = ''
+          countdownSeconds.value = 0
+          notify.warning('二维码已过期，请重新生成')
+          return
+        }
+        // Sync countdown value with API response (this ensures countdown stays accurate)
         countdownSeconds.value = data.expiredTime
         // Start countdown if not already running
         if (countdownInterval.value === null && qrCodeBase64.value) {
@@ -389,6 +398,9 @@ function startCountdown() {
       countdownSeconds.value--
     } else {
       stopCountdown()
+      stopPollingLoginStatus()
+      qrCodeBase64.value = ''
+      notify.warning('二维码已过期，请重新生成')
     }
   }, 1000)
 }

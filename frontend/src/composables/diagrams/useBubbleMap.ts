@@ -111,16 +111,19 @@ export function useBubbleMap(options: BubbleMapOptions = {}) {
 
       result.push({
         id: `bubble-${index}`,
-        type: 'bubble',
+        type: 'circle', // Use CircleNode for perfect circle rendering
         position: { x, y },
         data: {
           label: attr,
           nodeType: 'bubble',
           diagramType: 'bubble_map',
-          isDraggable: true,
+          isDraggable: false,
           isSelectable: true,
+          style: {
+            size: l.uniformAttributeR * 2, // Diameter for perfect circle
+          },
         },
-        draggable: true,
+        draggable: false,
       })
     })
 
