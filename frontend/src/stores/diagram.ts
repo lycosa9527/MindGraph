@@ -906,6 +906,73 @@ export const useDiagramStore = defineStore('diagram', () => {
     return loadFromSpec(template, diagramTypeValue)
   }
 
+  /**
+   * Merge granular updates (only changed nodes/connections) into existing diagram.
+   * Used for workshop collaboration to avoid overwriting concurrent edits.
+   */
+  function mergeGranularUpdate(
+    updatedNodes?: Array<Record<string, unknown>>,
+    updatedConnections?: Array<Record<string, unknown>>
+  ): boolean {
+    if (!data.value) return false
+
+    // Merge updated nodes
+    if (updatedNodes && updatedNodes.length > 0) {
+      const nodeMap = new Map(data.value.nodes.map((n) => [n.id, n]))
+      
+      for (const updatedNode of updatedNodes) {
+        const nodeId = updatedNode.id as string
+        if (!nodeId) continue
+
+        const existingIndex = data.value.nodes.findIndex((n) => n.id === nodeId)
+        if (existingIndex >= 0) {
+          // Update existing node (merge properties)
+          data.value.nodes[existingIndex] = {
+            ...data.value.nodes[existingIndex],
+            ...updatedNode,
+          } as DiagramNode
+        } else {
+          // Add new node
+          data.value.nodes.push(updatedNode as DiagramNode)
+        }
+      }
+    }
+
+    // Merge updated connections
+    if (updatedConnections && updatedConnections.length > 0) {
+      const connMap = new Map(
+        (data.value.connections || []).map((c) => [`${c.source}-${c.target}`, c])
+      )
+
+      for (const updatedConn of updatedConnections) {
+        const source = updatedConn.source as string
+        const target = updatedConn.target as string
+        if (!source || !target) continue
+
+        const key = `${source}-${target}`
+        const existingIndex = (data.value.connections || []).findIndex(
+          (c) => c.source === source && c.target === target
+        )
+
+        if (existingIndex >= 0) {
+          // Update existing connection
+          data.value.connections![existingIndex] = {
+            ...data.value.connections![existingIndex],
+            ...updatedConn,
+          } as Connection
+        } else {
+          // Add new connection
+          if (!data.value.connections) {
+            data.value.connections = []
+          }
+          data.value.connections.push(updatedConn as Connection)
+        }
+      }
+    }
+
+    return true
+  }
+
   // ===== Title Management =====
 
   /**
@@ -1059,6 +1126,7 @@ export const useDiagramStore = defineStore('diagram', () => {
     // Spec loading
     loadFromSpec,
     loadDefaultTemplate,
+    mergeGranularUpdate,
 
     // Flow map orientation
     toggleFlowMapOrientation,

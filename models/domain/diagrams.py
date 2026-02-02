@@ -56,6 +56,9 @@ class Diagram(Base):
     # Pin support - pinned diagrams appear at top
     is_pinned = Column(Boolean, default=False, index=True)
 
+    # Workshop support - shareable code for collaborative editing
+    workshop_code = Column(String(20), nullable=True, index=True)
+
     # Timestamps
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

@@ -200,8 +200,8 @@ router.beforeEach(async (to, _from, next) => {
     }
   }
 
-  // Check admin/manager access
-  if (to.meta.requiresAdmin && !authStore.isAdminOrManager) {
+  // Check admin access (admin-only, not managers)
+  if (to.meta.requiresAdmin && !authStore.isAdmin) {
     return next({ name: 'MindMate' })
   }
 

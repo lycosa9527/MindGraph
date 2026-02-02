@@ -33,6 +33,8 @@ export { useInlineEdit } from './useInlineEdit'
 export type { InlineEditOptions } from './useInlineEdit'
 export { useAutoComplete, isPlaceholderText } from './useAutoComplete'
 export { useIMEAutocomplete } from './useIMEAutocomplete'
+export { useWorkshop } from './useWorkshop'
+export type { WorkshopUpdate } from './useWorkshop'
 export type {
   IMESuggestion,
   IMEAutocompleteOptions,

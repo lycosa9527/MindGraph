@@ -84,6 +84,7 @@ const hasOrganization = computed(() => {
 
 const isAuthenticated = computed(() => authStore.isAuthenticated)
 const isAdminOrManager = computed(() => authStore.isAdminOrManager)
+const isAdmin = computed(() => authStore.isAdmin)
 
 // User info
 const userName = computed(() => authStore.user?.username || '')
@@ -307,7 +308,7 @@ async function handleDiagramSelect(diagram: SavedDiagram) {
         <template #title>图书馆</template>
       </el-menu-item>
       <el-menu-item
-        v-if="isAdminOrManager"
+        v-if="isAdmin"
         index="gewe"
       >
         <el-icon><ChatDotRound /></el-icon>

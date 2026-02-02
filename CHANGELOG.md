@@ -5,6 +5,36 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.21.0] - 2026-02-02
+
+### Added
+- **Workshop Collaborative Editing System**: Complete real-time collaborative diagram editing system allowing multiple users to edit diagrams simultaneously. Includes workshop code generation (xxx-xxx format), participant tracking, and real-time synchronization via WebSocket.
+- **Workshop Service**: New `services/workshop/workshop_service.py` module for managing workshop sessions with Redis-backed session management, participant tracking with TTL-based expiration, and automatic cleanup of inactive sessions. Supports workshop code generation, session validation, and participant management.
+- **Workshop WebSocket Router**: New `routers/api/workshop_ws.py` WebSocket endpoint (`/api/ws/workshop/{code}`) for real-time collaboration with features including:
+  - Real-time diagram updates broadcast to all participants
+  - User presence tracking and notifications
+  - Node-level editing indicators with color-coded visual feedback
+  - Granular update support (nodes/connections only) for efficient synchronization
+  - Conflict resolution using last-write-wins with timestamps
+  - Authentication and session validation via Redis
+  - Heartbeat/ping-pong mechanism for connection health monitoring
+- **Workshop API Endpoints**: New REST endpoints in `routers/api/diagrams.py`:
+  - `POST /api/diagrams/{diagram_id}/workshop/start` - Start a workshop session
+  - `POST /api/diagrams/{diagram_id}/workshop/stop` - Stop a workshop session
+  - `GET /api/diagrams/{diagram_id}/workshop/status` - Get workshop status
+  - `POST /api/workshop/join` - Join a workshop using a code
+- **Workshop Frontend Components**: New Vue components and composables:
+  - `frontend/src/components/workshop/WorkshopModal.vue` - Modal for managing workshop sessions with QR code generation, code sharing, and participant display
+  - `frontend/src/composables/useWorkshop.ts` - Composable for WebSocket connection management, participant tracking, active editor indicators, and automatic reconnection with exponential backoff
+- **Workshop Cleanup Service**: New `services/workshop/workshop_cleanup.py` module for background cleanup of expired workshop sessions and inactive participants.
+- **Canvas Workshop Integration**: Enhanced `frontend/src/components/canvas/CanvasTopBar.vue` with workshop button, participant bar displaying active collaborators with usernames, and real-time editing indicators showing which users are editing specific nodes.
+
+### Changed
+- **Diagram Canvas**: Enhanced `frontend/src/components/diagram/DiagramCanvas.vue` with workshop integration for real-time collaborative updates and node editing notifications.
+- **Diagram Store**: Updated `frontend/src/stores/diagram.ts` to support workshop code management and collaborative state synchronization.
+- **Event Bus**: Enhanced `frontend/src/composables/useEventBus.ts` with workshop-related events for code changes and participant updates.
+- **Diagram Router**: Enhanced `routers/api/diagrams.py` with workshop endpoints and improved rate limiting for workshop operations.
+
 ## [5.20.0] - 2026-02-02
 
 ### Added

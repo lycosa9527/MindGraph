@@ -306,6 +306,9 @@ function saveEdit(): void {
   editText.value = finalText
   localIsEditing.value = false
 
+  // Emit event for workshop tracking (editing stopped)
+  eventBus.emit('node_editor:closed', { nodeId: props.nodeId })
+
   // Only emit save if text actually changed
   if (finalText !== originalText.value) {
     emit('save', finalText)
@@ -325,6 +328,10 @@ function cancelEdit(): void {
 
   editText.value = originalText.value
   localIsEditing.value = false
+  
+  // Emit event for workshop tracking (editing stopped)
+  eventBus.emit('node_editor:closed', { nodeId: props.nodeId })
+  
   emit('cancel')
 }
 

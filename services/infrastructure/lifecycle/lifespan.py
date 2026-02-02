@@ -42,6 +42,7 @@ from services.redis.cache.redis_diagram_cache import get_diagram_cache
 from services.redis.redis_token_buffer import get_token_tracker
 from services.utils.backup_scheduler import start_backup_scheduler
 from services.utils.temp_image_cleaner import start_cleanup_scheduler
+from services.workshop import start_workshop_cleanup_scheduler
 # PDF auto-import removed - no longer needed for image-based viewing
 from services.utils.update_notifier import update_notifier
 from utils.auth import AUTH_MODE, display_demo_info
@@ -381,6 +382,18 @@ async def lifespan(fastapi_app: FastAPI):
         if is_main_worker:
             logger.warning("Failed to start cleanup scheduler: %s", e)
 
+    # Start workshop cleanup scheduler (removes expired workshop codes from database)
+    workshop_cleanup_task = None
+    try:
+        workshop_cleanup_task = asyncio.create_task(
+            start_workshop_cleanup_scheduler(interval_hours=6)
+        )
+        if is_main_worker:
+            logger.info("Workshop cleanup scheduler started")
+    except Exception as e:  # pylint: disable=broad-except
+        if is_main_worker:
+            logger.warning("Failed to start workshop cleanup scheduler: %s", e)
+
     # Start database backup scheduler (daily automatic backups)
     # Backs up database daily, keeps configurable retention (default: 2 backups)
     # Uses Redis distributed lock to ensure only ONE worker runs backups across all workers
@@ -536,6 +549,16 @@ async def lifespan(fastapi_app: FastAPI):
                 pass
             if is_main_worker:
                 logger.info("Temp image cleanup scheduler stopped")
+
+        # Stop workshop cleanup scheduler
+        if workshop_cleanup_task:
+            workshop_cleanup_task.cancel()
+            try:
+                await workshop_cleanup_task
+            except asyncio.CancelledError:
+                pass
+            if is_main_worker:
+                logger.info("Workshop cleanup scheduler stopped")
 
         # Stop backup scheduler (runs on all workers, but only lock holder executes)
         if backup_scheduler_task:

@@ -8,7 +8,7 @@
  * - Saves diagram to user's library
  * - Shows slot management modal when library is full
  */
-import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import {
@@ -26,7 +26,6 @@ import {
   Check,
   ClipboardCopy,
   ClipboardPaste,
-  Download,
   Eye,
   FileImage,
   FileJson,
@@ -45,10 +44,16 @@ import {
   ZoomOut,
 } from 'lucide-vue-next'
 
+import {
+  Download,
+  Connection,
+} from '@element-plus/icons-vue'
+
 import { DiagramSlotFullModal } from '@/components/canvas'
-import { useNotifications } from '@/composables'
+import { WorkshopModal } from '@/components/workshop'
+import { eventBus, useNotifications, useWorkshop } from '@/composables'
 import { useLanguage } from '@/composables'
-import { useDiagramStore, useSavedDiagramsStore } from '@/stores'
+import { useAuthStore, useDiagramStore, useSavedDiagramsStore } from '@/stores'
 
 const notify = useNotifications()
 
@@ -57,6 +62,7 @@ const router = useRouter()
 const { isZh } = useLanguage()
 const diagramStore = useDiagramStore()
 const savedDiagramsStore = useSavedDiagramsStore()
+const authStore = useAuthStore()
 
 // Get chart type from route query
 const chartType = computed(() => (route.query.type as string) || '复流程图')
@@ -89,6 +95,72 @@ const fileName = computed({
 // Save to gallery state
 const isSaving = ref(false)
 const showSlotFullModal = ref(false)
+
+// Workshop state
+const showWorkshopModal = ref(false)
+const currentDiagramId = computed(() => savedDiagramsStore.activeDiagramId)
+const workshopCode = ref<string | null>(null)
+
+// Workshop composable for participant tracking
+const { participantsWithNames, activeEditors, connect, disconnect, watchCode } = useWorkshop(
+  workshopCode,
+  currentDiagramId
+)
+
+// User colors and emojis (must match backend)
+const USER_COLORS = [
+  '#FF6B6B', // Red
+  '#4ECDC4', // Teal
+  '#45B7D1', // Blue
+  '#FFA07A', // Light Salmon
+  '#98D8C8', // Mint
+  '#F7DC6F', // Yellow
+  '#BB8FCE', // Purple
+  '#85C1E2', // Sky Blue
+]
+
+const USER_EMOJIS = ['✏️', '🖊️', '✒️', '🖋️', '📝', '✍️', '🖍️', '🖌️']
+
+// Get user emoji and color
+function getUserEmoji(userId: number): string {
+  return USER_EMOJIS[userId % USER_EMOJIS.length]
+}
+
+function getUserColor(userId: number): string {
+  return USER_COLORS[userId % USER_COLORS.length]
+}
+
+// Computed: visible participants (first 10) and dropdown (rest)
+const visibleParticipants = computed(() => {
+  return participantsWithNames.value.slice(0, 10)
+})
+
+const dropdownParticipants = computed(() => {
+  return participantsWithNames.value.slice(10)
+})
+
+// Watch for workshop code changes
+let workshopCodeWatcher: (() => void) | null = null
+
+watch(
+  () => workshopCode.value,
+  (code) => {
+    if (code) {
+      watchCode()
+    } else {
+      disconnect()
+    }
+  },
+  { immediate: false }
+)
+
+// Cleanup watcher on unmount
+onUnmounted(() => {
+  if (workshopCodeWatcher) {
+    workshopCodeWatcher()
+  }
+  disconnect()
+})
 
 // Computed for save button state
 const isAlreadySaved = computed(() => savedDiagramsStore.isActiveDiagramSaved)
@@ -502,19 +574,84 @@ function handleExportCommand(command: string) {
       </div>
     </div>
 
-    <!-- Right section: Export button -->
+    <!-- Right section: Participants + Workshop + Export buttons -->
     <div class="flex items-center gap-2">
+      <!-- Participant bar (only show when workshop is active) -->
+      <div
+        v-if="workshopCode && participantsWithNames && participantsWithNames.length > 0"
+        class="flex items-center gap-1 px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded-md border border-gray-200 dark:border-gray-700"
+      >
+        <!-- Visible participants (first 10) -->
+        <template v-for="participant in visibleParticipants" :key="participant.user_id">
+          <ElTooltip
+            :content="participant.username"
+            placement="bottom"
+          >
+            <div
+              class="participant-emoji"
+              :style="{ backgroundColor: getUserColor(participant.user_id) }"
+            >
+              {{ getUserEmoji(participant.user_id) }}
+            </div>
+          </ElTooltip>
+        </template>
+
+        <!-- Dropdown for additional participants -->
+        <ElDropdown
+          v-if="dropdownParticipants.length > 0"
+          trigger="hover"
+          placement="bottom-end"
+        >
+          <div class="participant-more">
+            +{{ dropdownParticipants.length }}
+          </div>
+          <template #dropdown>
+            <ElDropdownMenu>
+              <ElDropdownItem
+                v-for="participant in dropdownParticipants"
+                :key="participant.user_id"
+                disabled
+              >
+                <div class="flex items-center gap-2">
+                  <div
+                    class="participant-emoji-small"
+                    :style="{ backgroundColor: getUserColor(participant.user_id) }"
+                  >
+                    {{ getUserEmoji(participant.user_id) }}
+                  </div>
+                  <span>{{ participant.username }}</span>
+                </div>
+              </ElDropdownItem>
+            </ElDropdownMenu>
+          </template>
+        </ElDropdown>
+      </div>
+
+      <!-- Workshop button -->
+      <ElTooltip
+        :content="isZh ? '工作坊协作' : 'Workshop Collaboration'"
+        placement="bottom"
+      >
+        <ElButton
+          class="workshop-button"
+          size="small"
+          :icon="Connection"
+          @click="showWorkshopModal = true"
+        >
+          {{ isZh ? '工作坊' : 'Workshop' }}
+        </ElButton>
+      </ElTooltip>
+
       <!-- Export dropdown -->
       <ElDropdown
         trigger="click"
         @command="handleExportCommand"
       >
         <ElButton
-          size="small"
-          type="primary"
           class="export-button"
+          size="small"
+          :icon="Download"
         >
-          <Download class="w-4 h-4 mr-1" />
           {{ isZh ? '导出' : 'Export' }}
         </ElButton>
         <template #dropdown>
@@ -553,12 +690,70 @@ function handleExportCommand(command: string) {
       @success="handleSlotModalSuccess"
       @cancel="handleSlotModalCancel"
     />
+
+    <!-- Workshop modal -->
+    <WorkshopModal
+      v-model:visible="showWorkshopModal"
+      :diagram-id="currentDiagramId"
+      @workshop-code-changed="(code) => { 
+        workshopCode = code
+        // Emit event for CanvasPage to sync
+        eventBus.emit('workshop:code-changed', { code })
+      }"
+    />
   </div>
 </template>
 
 <style scoped>
 .canvas-top-bar {
   z-index: 100;
+}
+
+.participant-emoji {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  cursor: pointer;
+  transition: transform 0.2s;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+}
+
+.participant-emoji:hover {
+  transform: scale(1.1);
+}
+
+.participant-emoji-small {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.participant-more {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 600;
+  background-color: rgba(0, 0, 0, 0.1);
+  color: #666;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.participant-more:hover {
+  background-color: rgba(0, 0, 0, 0.2);
 }
 
 .menu-button {
@@ -597,16 +792,28 @@ function handleExportCommand(command: string) {
   min-width: 180px;
 }
 
-/* Export button with gradient */
-.export-button {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border: none;
+/* Workshop and Export buttons - Swiss Design style (matching MindMate) */
+.workshop-button {
+  --el-button-bg-color: #dbeafe;
+  --el-button-border-color: #93c5fd;
+  --el-button-hover-bg-color: #bfdbfe;
+  --el-button-hover-border-color: #60a5fa;
+  --el-button-active-bg-color: #93c5fd;
+  --el-button-active-border-color: #3b82f6;
+  --el-button-text-color: #1e40af;
   font-weight: 500;
+  border-radius: 9999px;
 }
 
-.export-button:hover {
-  background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+.export-button {
+  --el-button-bg-color: #e7e5e4;
+  --el-button-border-color: #d6d3d1;
+  --el-button-hover-bg-color: #d6d3d1;
+  --el-button-hover-border-color: #a8a29e;
+  --el-button-active-bg-color: #a8a29e;
+  --el-button-active-border-color: #78716c;
+  --el-button-text-color: #1c1917;
+  font-weight: 500;
+  border-radius: 9999px;
 }
 </style>

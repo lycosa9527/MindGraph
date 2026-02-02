@@ -207,6 +207,10 @@ export type EventTypes = {
   'interaction:select_node_requested': { nodeId?: string; nodeIndex?: number }
   'interaction:edit_text_requested': { nodeId: string }
   'node_editor:opening': { nodeId: string }
+  'node_editor:closed': { nodeId: string }
+
+  // Workshop Events
+  'workshop:code-changed': { code: string | null }
 
   // Selection Events
   'selection:changed': { selectedNodes: unknown[] }

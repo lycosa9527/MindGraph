@@ -26,6 +26,7 @@ from models.domain.auth import User
 from models.requests.requests_diagram import DiagramCreateRequest, DiagramUpdateRequest
 from models.responses import DiagramListItem, DiagramListResponse, DiagramResponse
 from services.redis.cache.redis_diagram_cache import get_diagram_cache
+from services.workshop import workshop_service
 from utils.auth import get_current_user
 
 from .helpers import check_endpoint_rate_limit, get_rate_limit_identifier
@@ -388,4 +389,141 @@ async def pin_diagram(
         "success": True,
         "message": f"Diagram {action.lower()}",
         "is_pinned": pinned,
+    }
+
+
+@router.post("/diagrams/{diagram_id}/workshop/start")
+async def start_workshop(
+    diagram_id: str,
+    request: Request,
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Start a workshop session for a diagram.
+
+    Generates a shareable code (xxx-xxx format) that others can use to join
+    and edit the diagram collaboratively.
+
+    Rate limited: 10 requests per minute per user.
+    """
+    identifier = get_rate_limit_identifier(current_user, request)
+    await check_endpoint_rate_limit(
+        "workshop", identifier, max_requests=10, window_seconds=60
+    )
+
+    code = await workshop_service.start_workshop(diagram_id, current_user.id)
+
+    if not code:
+        raise HTTPException(
+            status_code=400, detail="Failed to start workshop session"
+        )
+
+    logger.info(
+        "[Diagrams] Started workshop %s for diagram %s (user %s)",
+        code,
+        diagram_id,
+        current_user.id,
+    )
+
+    return {
+        "success": True,
+        "code": code,
+        "message": "Workshop session started",
+    }
+
+
+@router.post("/diagrams/{diagram_id}/workshop/stop")
+async def stop_workshop(
+    diagram_id: str,
+    request: Request,
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Stop a workshop session for a diagram.
+
+    Only the diagram owner can stop the workshop.
+
+    Rate limited: 10 requests per minute per user.
+    """
+    identifier = get_rate_limit_identifier(current_user, request)
+    await check_endpoint_rate_limit(
+        "workshop", identifier, max_requests=10, window_seconds=60
+    )
+
+    success = await workshop_service.stop_workshop(diagram_id, current_user.id)
+
+    if not success:
+        raise HTTPException(
+            status_code=404, detail="Workshop session not found or not authorized"
+        )
+
+    logger.info(
+        "[Diagrams] Stopped workshop for diagram %s (user %s)",
+        diagram_id,
+        current_user.id,
+    )
+
+    return {
+        "success": True,
+        "message": "Workshop session stopped",
+    }
+
+
+@router.get("/diagrams/{diagram_id}/workshop/status")
+async def get_workshop_status(
+    diagram_id: str,
+    request: Request,
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Get workshop status for a diagram.
+
+    Rate limited: 30 requests per minute per user.
+    """
+    identifier = get_rate_limit_identifier(current_user, request)
+    await check_endpoint_rate_limit(
+        "workshop", identifier, max_requests=30, window_seconds=60
+    )
+
+    status = await workshop_service.get_workshop_status(
+        diagram_id
+    )
+
+    if not status:
+        raise HTTPException(status_code=404, detail="Diagram not found")
+
+    return status
+
+
+@router.post("/workshop/join")
+async def join_workshop(
+    code: str = Query(..., description="Workshop code (xxx-xxx format)"),
+    request: Request = None,
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Join a workshop session using a workshop code.
+
+    Rate limited: 20 requests per minute per user.
+    """
+    identifier = get_rate_limit_identifier(current_user, request)
+    await check_endpoint_rate_limit(
+        "workshop", identifier, max_requests=20, window_seconds=60
+    )
+
+    workshop_info = await workshop_service.join_workshop(code, current_user.id)
+
+    if not workshop_info:
+        raise HTTPException(status_code=404, detail="Invalid workshop code")
+
+    logger.info(
+        "[Diagrams] User %s joined workshop %s (diagram %s)",
+        current_user.id,
+        code,
+        workshop_info["diagram_id"],
+    )
+
+    return {
+        "success": True,
+        "workshop": workshop_info,
     }

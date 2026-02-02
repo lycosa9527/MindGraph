@@ -118,18 +118,18 @@ class AsyncGeweClient(
         }
 
         # Log request details
-        logger.info("🚀 [GeweAPI] Request: %s %s", method, url)
+        logger.debug("🚀 [GeweAPI] Request: %s %s", method, url)
         if json_data:
             request_payload_str = json_lib.dumps(json_data, ensure_ascii=False, indent=2)
             if len(request_payload_str) > 2000:
-                logger.info(
+                logger.debug(
                     "📤 [GeweAPI] Request payload (truncated):\n%s\n... (truncated, total length: %d chars)",
                     request_payload_str[:2000], len(request_payload_str)
                 )
             else:
-                logger.info("📤 [GeweAPI] Request payload:\n%s", request_payload_str)
+                logger.debug("📤 [GeweAPI] Request payload:\n%s", request_payload_str)
         else:
-            logger.info("📤 [GeweAPI] Request payload: (empty)")
+            logger.debug("📤 [GeweAPI] Request payload: (empty)")
 
         # Log request headers (mask token)
         headers_log = dict(headers)
@@ -146,7 +146,7 @@ class AsyncGeweClient(
         try:
             async with session.request(method, url, headers=headers, json=json_data) as response:
                 # Log response status and headers
-                logger.info(
+                logger.debug(
                     "📥 [GeweAPI] Response: %s %s - Status: %d",
                     method, endpoint, response.status
                 )
@@ -170,28 +170,28 @@ class AsyncGeweClient(
                 # Log full response structure
                 response_str = json_lib.dumps(response_data, ensure_ascii=False, indent=2)
                 if len(response_str) > 2000:
-                    logger.info(
+                    logger.debug(
                         "📦 [GeweAPI] Response payload (truncated):\n%s\n... (truncated, total length: %d chars)",
                         response_str[:2000], len(response_str)
                     )
                 else:
-                    logger.info("📦 [GeweAPI] Response payload:\n%s", response_str)
+                    logger.debug("📦 [GeweAPI] Response payload:\n%s", response_str)
 
                 # Log response structure details
-                logger.info("🔍 [GeweAPI] Response structure analysis:")
-                logger.info("   - Top-level keys: %s", list(response_data.keys()))
+                logger.debug("🔍 [GeweAPI] Response structure analysis:")
+                logger.debug("   - Top-level keys: %s", list(response_data.keys()))
                 if 'ret' in response_data:
-                    logger.info("   - ret (return code): %s", response_data.get('ret'))
+                    logger.debug("   - ret (return code): %s", response_data.get('ret'))
                 if 'msg' in response_data:
-                    logger.info("   - msg (message): %s", response_data.get('msg'))
+                    logger.debug("   - msg (message): %s", response_data.get('msg'))
                 if 'data' in response_data:
                     data = response_data.get('data')
                     if isinstance(data, dict):
-                        logger.info("   - data keys: %s", list(data.keys()))
+                        logger.debug("   - data keys: %s", list(data.keys()))
                     elif isinstance(data, list):
-                        logger.info("   - data type: list (length: %d)", len(data))
+                        logger.debug("   - data type: list (length: %d)", len(data))
                     else:
-                        logger.info("   - data type: %s", type(data).__name__)
+                        logger.debug("   - data type: %s", type(data).__name__)
 
                 if response.status != 200:
                     error_msg = response_data.get('msg', f'API request failed with status {response.status}')
@@ -204,7 +204,7 @@ class AsyncGeweClient(
                     logger.error("❌ [GeweAPI] API error: ret=%s - %s", ret_code, error_msg)
                     raise GeweAPIError(error_msg, status_code=ret_code, error_code=str(ret_code))
 
-                logger.info("✅ [GeweAPI] Request successful: %s %s", method, endpoint)
+                logger.debug("✅ [GeweAPI] Request successful: %s %s", method, endpoint)
                 return response_data
 
         except aiohttp.ClientError as e:

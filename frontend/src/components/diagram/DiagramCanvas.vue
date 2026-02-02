@@ -865,6 +865,128 @@ const gridConfig = {
 .vue-flow__node-flow[id^="cause-"].selected,
 .vue-flow__node-flow[id^="effect-"].selected,
 .vue-flow__node-topic[id="event"].selected {
+  border: 2px solid var(--primary-color, #3b82f6);
+}
+
+/* Workshop editing indicators */
+.vue-flow__node.workshop-editing {
+  position: relative;
+  border: 3px solid var(--editor-color, #FF6B6B) !important;
+  box-shadow: 0 0 8px rgba(255, 107, 107, 0.4);
+  animation: workshop-pulse 2s ease-in-out infinite;
+}
+
+.vue-flow__node.workshop-editing::before {
+  content: attr(data-editor-emoji);
+  position: absolute;
+  top: -12px;
+  right: -12px;
+  width: 24px;
+  height: 24px;
+  background: var(--editor-color, #FF6B6B);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  z-index: 1000;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  border: 2px solid white;
+}
+
+.vue-flow__node.workshop-editing::after {
+  content: attr(data-editor-username) ' ' attr(data-editor-emoji) ' editing';
+  position: absolute;
+  top: -40px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--editor-color, #FF6B6B);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  white-space: nowrap;
+  z-index: 1000;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.vue-flow__node.workshop-editing:hover::after {
+  opacity: 1;
+}
+
+@keyframes workshop-pulse {
+  0%, 100% {
+    box-shadow: 0 0 8px rgba(255, 107, 107, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 16px rgba(255, 107, 107, 0.6);
+  }
+}
+
+/* Workshop editing indicators */
+.vue-flow__node.workshop-editing {
+  position: relative;
+  border: 3px solid var(--editor-color, #FF6B6B) !important;
+  box-shadow: 0 0 8px rgba(255, 107, 107, 0.4);
+  animation: workshop-pulse 2s ease-in-out infinite;
+}
+
+.vue-flow__node.workshop-editing::before {
+  content: attr(data-editor-emoji);
+  position: absolute;
+  top: -12px;
+  right: -12px;
+  width: 24px;
+  height: 24px;
+  background: var(--editor-color, #FF6B6B);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  z-index: 1000;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  border: 2px solid white;
+}
+
+.vue-flow__node.workshop-editing::after {
+  content: attr(data-editor-username) ' ' attr(data-editor-emoji) ' editing';
+  position: absolute;
+  top: -40px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--editor-color, #FF6B6B);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  white-space: nowrap;
+  z-index: 1000;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.vue-flow__node.workshop-editing:hover::after {
+  opacity: 1;
+}
+
+@keyframes workshop-pulse {
+  0%, 100% {
+    box-shadow: 0 0 8px rgba(255, 107, 107, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 16px rgba(255, 107, 107, 0.6);
+  }
+}
+
+.vue-flow__node-flow[id^="cause-"].selected,
+.vue-flow__node-flow[id^="effect-"].selected,
+.vue-flow__node-topic[id="event"].selected {
   box-shadow: none !important;
   filter: drop-shadow(0 0 8px rgba(102, 126, 234, 0.6))
     drop-shadow(0 0 4px rgba(102, 126, 234, 0.4)) !important;

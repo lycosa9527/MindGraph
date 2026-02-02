@@ -9,7 +9,7 @@
  * 4. Poll for login status
  * 5. Show login status
  */
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, watch, onMounted, onUnmounted } from 'vue'
 
 import { ChatLineRound, CircleCheck, CircleClose, Loading } from '@element-plus/icons-vue'
 
@@ -74,6 +74,9 @@ const isLoggedIn = ref(false)
 const loginInfo = ref<{ app_id: string; wxid: string } | null>(null)
 const loginInfoMasked = ref<{ app_id: string; wxid: string } | null>(null)
 const checkInterval = ref<number | null>(null)
+const expiredTime = ref<number>(0) // Remaining seconds from API
+const countdownInterval = ref<number | null>(null)
+const countdownSeconds = ref<number>(0) // Display countdown
 
 // Helper function to mask a value
 function maskValue(value: string, showChars: number = 4): string {
@@ -123,8 +126,8 @@ async function loadSavedConfig() {
   }
 }
 
-// Save configuration to backend
-async function saveConfig() {
+// Save configuration to backend (called automatically on change)
+async function saveConfig(silent = true) {
   try {
     const response = await apiClient.post('/api/gewe/preferences/save', {
       regionId: selectedRegionId.value,
@@ -144,10 +147,14 @@ async function saveConfig() {
       localStorage.setItem('gewe_device_type', selectedDeviceType.value)
     }
 
-    notify.success('配置已保存')
+    if (!silent) {
+      notify.success('配置已保存')
+    }
   } catch (error: any) {
     console.error('Failed to save config:', error)
-    notify.error(error.message || '保存配置失败')
+    if (!silent) {
+      notify.error(error.message || '保存配置失败')
+    }
   }
 }
 
@@ -225,6 +232,9 @@ async function generateQrCode() {
   qrCodeBase64.value = ''
   uuid.value = ''
   isLoggedIn.value = false
+  stopCountdown()
+  expiredTime.value = 0
+  countdownSeconds.value = 0
 
   try {
     const response = await apiClient.post('/api/gewe/login/qrcode', {
@@ -290,6 +300,17 @@ async function checkLoginStatus() {
     if (result.ret === 200 && result.data) {
       const data = result.data
 
+      // Update expiredTime from API response
+      if (typeof data.expiredTime === 'number' && data.expiredTime > 0) {
+        expiredTime.value = data.expiredTime
+        // Update countdown value (will sync with timer)
+        countdownSeconds.value = data.expiredTime
+        // Start countdown if not already running
+        if (countdownInterval.value === null && qrCodeBase64.value) {
+          startCountdown()
+        }
+      }
+
       // status: 0=未扫码, 1=已扫码未登录, 2=登录成功
       if (data.status === 2) {
         // Login successful
@@ -312,6 +333,7 @@ async function checkLoginStatus() {
           appIdMasked.value = maskValue(finalAppId)
           saveAppId(finalAppId)
           qrCodeBase64.value = '' // Clear QR code after successful login
+          stopCountdown()
           notify.success('登录成功！')
         }
       } else if (data.status === 1) {
@@ -355,10 +377,50 @@ function stopPollingLoginStatus() {
   }
 }
 
+// Start countdown timer
+function startCountdown() {
+  // Clear existing countdown
+  stopCountdown()
+
+  // Update countdown every second
+  countdownInterval.value = window.setInterval(() => {
+    if (countdownSeconds.value > 0) {
+      countdownSeconds.value--
+    } else {
+      stopCountdown()
+    }
+  }, 1000)
+}
+
+// Stop countdown timer
+function stopCountdown() {
+  if (countdownInterval.value !== null) {
+    clearInterval(countdownInterval.value)
+    countdownInterval.value = null
+  }
+}
+
 // Cleanup on unmount
 onUnmounted(() => {
   stopPollingLoginStatus()
+  stopCountdown()
+  if (saveTimeout) {
+    clearTimeout(saveTimeout)
+  }
 })
+
+// Auto-save preferences when they change (debounced)
+let saveTimeout: ReturnType<typeof setTimeout> | null = null
+watch([selectedRegionId, selectedDeviceType], () => {
+  // Clear existing timeout
+  if (saveTimeout) {
+    clearTimeout(saveTimeout)
+  }
+  // Debounce: only save after user stops changing for 500ms
+  saveTimeout = setTimeout(() => {
+    saveConfig(true) // Silent save
+  }, 500)
+}, { deep: true })
 
 // Load saved info on mount
 onMounted(async () => {
@@ -480,15 +542,6 @@ onMounted(async () => {
               </div>
             </div>
           </el-form-item>
-
-          <el-form-item>
-            <el-button
-              type="primary"
-              @click="saveConfig"
-            >
-              保存配置
-            </el-button>
-          </el-form-item>
         </el-form>
       </div>
 
@@ -533,6 +586,14 @@ onMounted(async () => {
             v-else
             class="text-gray-400"
           >暂无二维码</span>
+        </div>
+        <!-- Countdown Display -->
+        <div
+          v-if="qrCodeBase64 && countdownSeconds > 0"
+          class="mt-4 text-lg font-medium"
+          :class="countdownSeconds <= 30 ? 'text-red-500' : 'text-gray-600 dark:text-gray-300'"
+        >
+          倒计时 {{ countdownSeconds }} 秒
         </div>
       </div>
 

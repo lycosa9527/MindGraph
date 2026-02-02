@@ -15,12 +15,12 @@
  * - Auto-saves new diagrams if slots available
  * - Silently skips if slots full (user must manually save via File menu)
  */
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { AIModelSelector, CanvasToolbar, CanvasTopBar, ZoomControls } from '@/components/canvas'
 import DiagramCanvas from '@/components/diagram/DiagramCanvas.vue'
-import { eventBus, useLanguage, useNotifications } from '@/composables'
+import { eventBus, useLanguage, useNotifications, useWorkshop } from '@/composables'
 import { useAuthStore, useDiagramStore, useSavedDiagramsStore, useUIStore } from '@/stores'
 import type { DiagramType } from '@/types'
 import { authFetch } from '@/utils/api'
@@ -41,6 +41,156 @@ const customPrompt = ref<string | null>(null)
 // Auto-save debounce timer
 let autoSaveTimer: ReturnType<typeof setTimeout> | null = null
 const AUTO_SAVE_DELAY = 2000 // 2 seconds debounce
+
+// Workshop integration
+const workshopCode = ref<string | null>(null)
+const currentDiagramId = computed(() => savedDiagramsStore.activeDiagramId)
+
+// Track previous diagram state for granular updates
+let previousNodes: Array<Record<string, unknown>> = []
+let previousConnections: Array<Record<string, unknown>> = []
+
+// Calculate diff between two arrays of objects (by id)
+function calculateDiff<T extends { id: string }>(oldArray: T[], newArray: T[]): T[] {
+  const oldMap = new Map(oldArray.map((item) => [item.id, item]))
+  const changed: T[] = []
+
+  for (const newItem of newArray) {
+    const oldItem = oldMap.get(newItem.id)
+    if (!oldItem || JSON.stringify(oldItem) !== JSON.stringify(newItem)) {
+      changed.push(newItem)
+    }
+  }
+
+  return changed
+}
+
+// Workshop composable with granular update callbacks
+const {
+  sendUpdate,
+  notifyNodeEditing,
+  activeEditors,
+  watchCode: watchWorkshopCode,
+} = useWorkshop(
+  workshopCode,
+  currentDiagramId,
+  undefined, // onUpdate (full spec - backward compat, not used)
+  (nodes, connections) => {
+    // Granular update handler: merge incoming changes
+    if (nodes || connections) {
+      diagramStore.mergeGranularUpdate(nodes, connections)
+    }
+  },
+  (nodeId, editor) => {
+    // Node editing handler: apply visual indicators
+    // Visual indicators will be applied via CSS classes on node elements
+    // This callback can be used to update node styles if needed
+    if (editor) {
+      console.log(`[Workshop] User ${editor.username} ${editor.emoji} editing node ${nodeId}`)
+      // Apply visual indicator via CSS class
+      applyNodeEditingIndicator(nodeId, editor)
+    } else {
+      console.log(`[Workshop] Node ${nodeId} editing stopped`)
+      // Remove visual indicator
+      removeNodeEditingIndicator(nodeId)
+    }
+  }
+)
+
+// Start watching for workshop code changes
+watchWorkshopCode()
+
+// Apply visual indicator to node (add CSS class and data attributes)
+function applyNodeEditingIndicator(
+  nodeId: string,
+  editor: { color: string; emoji: string; username: string }
+): void {
+  nextTick(() => {
+    // Vue Flow nodes use id attribute, not data-id
+    const nodeElement = document.querySelector(`#${nodeId}`) as HTMLElement
+    if (nodeElement) {
+      nodeElement.classList.add('workshop-editing')
+      nodeElement.style.setProperty('--editor-color', editor.color)
+      nodeElement.setAttribute('data-editor-emoji', editor.emoji)
+      nodeElement.setAttribute('data-editor-username', editor.username)
+    }
+  })
+}
+
+// Remove visual indicator from node
+function removeNodeEditingIndicator(nodeId: string): void {
+  nextTick(() => {
+    const nodeElement = document.querySelector(`#${nodeId}`) as HTMLElement
+    if (nodeElement) {
+      nodeElement.classList.remove('workshop-editing')
+      nodeElement.style.removeProperty('--editor-color')
+      nodeElement.removeAttribute('data-editor-emoji')
+      nodeElement.removeAttribute('data-editor-username')
+    }
+  })
+}
+
+// Watch activeEditors to apply/remove indicators
+watch(
+  () => activeEditors.value,
+  (newEditors, oldEditors) => {
+    // Remove indicators for nodes no longer being edited
+    if (oldEditors) {
+      for (const [nodeId] of oldEditors) {
+        if (!newEditors.has(nodeId)) {
+          removeNodeEditingIndicator(nodeId)
+        }
+      }
+    }
+
+    // Apply indicators for newly edited nodes
+    if (newEditors) {
+      for (const [nodeId, editor] of newEditors) {
+        if (!oldEditors?.has(nodeId)) {
+          applyNodeEditingIndicator(nodeId, editor)
+        }
+      }
+    }
+  },
+  { deep: true }
+)
+
+// Watch for workshop code changes from CanvasTopBar
+// Note: CanvasTopBar manages the workshop modal and emits workshop-code-changed
+// We need to sync the code here for useWorkshop
+eventBus.onWithOwner(
+  'workshop:code-changed',
+  (data) => {
+    if (data.code !== undefined) {
+      workshopCode.value = data.code as string | null
+    }
+  },
+  'CanvasPage'
+)
+
+// Track node editing via eventBus
+eventBus.onWithOwner(
+  'node_editor:opening',
+  (data) => {
+    const nodeId = (data as { nodeId: string }).nodeId
+    if (nodeId && workshopCode.value) {
+      notifyNodeEditing(nodeId, true)
+    }
+  },
+  'CanvasPage'
+)
+
+// Track node editing stop via blur events (handled via InlineEditableText component)
+eventBus.onWithOwner(
+  'node_editor:closed',
+  (data) => {
+    const nodeId = (data as { nodeId: string }).nodeId
+    if (nodeId && workshopCode.value) {
+      notifyNodeEditing(nodeId, false)
+    }
+  },
+  'CanvasPage'
+)
 
 // Map Chinese diagram type names to DiagramType
 const diagramTypeMap: Record<string, DiagramType> = {
@@ -339,13 +489,38 @@ function triggerAutoSave(): void {
   autoSaveTimer = setTimeout(performAutoSave, AUTO_SAVE_DELAY)
 }
 
-// Watch for diagram data changes to trigger auto-save
+// Watch for diagram data changes to trigger auto-save and send granular updates
 watch(
   () => diagramStore.data,
   (newData, oldData) => {
     // Only auto-save if we have data and it's changed
     if (newData && oldData) {
       triggerAutoSave()
+
+      // Send granular updates to workshop if active
+      if (workshopCode.value && newData.nodes && newData.connections) {
+        const changedNodes = calculateDiff(
+          previousNodes as Array<{ id: string }>,
+          newData.nodes as Array<{ id: string }>
+        )
+        const changedConnections = calculateDiff(
+          previousConnections as Array<{ id: string }>,
+          (newData.connections || []) as Array<{ id: string }>
+        )
+
+        // Only send if there are changes
+        if (changedNodes.length > 0 || changedConnections.length > 0) {
+          sendUpdate(undefined, changedNodes, changedConnections)
+        }
+
+        // Update previous state
+        previousNodes = JSON.parse(JSON.stringify(newData.nodes))
+        previousConnections = JSON.parse(JSON.stringify(newData.connections || []))
+      } else if (newData.nodes && newData.connections) {
+        // Initialize previous state
+        previousNodes = JSON.parse(JSON.stringify(newData.nodes))
+        previousConnections = JSON.parse(JSON.stringify(newData.connections || []))
+      }
     }
   },
   { deep: true }
@@ -417,10 +592,19 @@ onUnmounted(() => {
   }
 
   unsubPrompt()
+
+  // Clean up workshop connection when leaving canvas
+  // Note: Workshop cleanup is handled by useWorkshop composable's onUnmounted
+  // But we should also clear workshop code from CanvasTopBar if needed
+
   // Clean up state when leaving canvas - matches old JS behavior
   diagramStore.reset()
   savedDiagramsStore.clearActiveDiagram()
   uiStore.setSelectedChartType('选择图示')
+
+  // Reset previous state tracking
+  previousNodes = []
+  previousConnections = []
 })
 </script>
 
