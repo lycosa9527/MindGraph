@@ -110,3 +110,5 @@ __all__ = [
     # Gewe Group Members
     "GeweGroupMember",
 ]
+
+from models.domain.device import Device

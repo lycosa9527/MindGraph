@@ -21,6 +21,7 @@ import {
 } from '@element-plus/icons-vue'
 
 import { ChevronDown, KeyRound, LogIn, LogOut, Menu, Settings, UserRound } from 'lucide-vue-next'
+import { Watch } from 'lucide-vue-next'
 
 import { AccountInfoModal, ChangePasswordModal, LoginModal } from '@/components/auth'
 import { useLanguage } from '@/composables/useLanguage'
@@ -74,6 +75,7 @@ const currentMode = computed(() => {
   if (path.startsWith('/community')) return 'community'
   if (path.startsWith('/library')) return 'library'
   if (path.startsWith('/gewe')) return 'gewe'
+  if (path.startsWith('/smart-response')) return 'smart-response'
   return 'mindmate' // Default
 })
 
@@ -131,6 +133,8 @@ function setMode(index: string) {
   } else if (index === 'library') {
     router.push('/library')
   } else if (index === 'gewe') {
+  } else if (index === 'smart-response') {
+    router.push('/smart-response')
     router.push('/gewe')
   }
 }
@@ -313,6 +317,13 @@ async function handleDiagramSelect(diagram: SavedDiagram) {
       >
         <el-icon><ChatDotRound /></el-icon>
         <template #title>Gewe</template>
+      </el-menu-item>
+      <el-menu-item
+        v-if="isAdminOrManager"
+        index="smart-response"
+      >
+        <el-icon><Watch /></el-icon>
+        <template #title>Smart Response 智回</template>
       </el-menu-item>
     </el-menu>
 

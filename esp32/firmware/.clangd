@@ -1,0 +1,28 @@
+CompileFlags:
+  Add:
+    - -std=c++17
+    - -I.
+    - -Imain
+    - -Icomponents
+    - -I.pio/libdeps/waveshare-esp32-s3-touch-amoled
+    - -I.pio/libdeps/waveshare-esp32-s3-touch-amoled/lvgl
+    - -I.pio/libdeps/waveshare-esp32-s3-touch-amoled/lvgl/src
+    - -DLV_CONF_INCLUDE_SIMPLE
+    - -x
+    - c++
+  Remove:
+    - -mfix-esp32-psram-cache-issue
+    - -mlongcalls
+    - -fstrict-volatile-bitfields
+    - -fno-tree-switch-conversion
+  CompilationDatabase: .
+
+Diagnostics:
+  UnusedIncludes: Relaxed
+  MissingIncludes: Relaxed
+  ClangTidy:
+    Add:
+      - readability-*
+    Remove:
+      - readability-identifier-length
+      - readability-magic-numbers

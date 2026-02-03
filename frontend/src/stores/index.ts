@@ -24,3 +24,4 @@ export { useAskOnceStore, type AskOnceMessage, type ModelResponse, type ModelId 
 export { useKnowledgeSpaceStore, type KnowledgeDocument } from './knowledgeSpace'
 export { useFeatureFlagsStore } from './featureFlags'
 export { useLibraryStore } from './library'
+export { useSmartResponseStore, type Watch, type SmartResponseSession } from './smartResponse'
