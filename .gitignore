@@ -250,3 +250,18 @@ esp32/brookesia-waveshare/
 
 # ESP32 assets (if generated, uncomment if needed)
 # esp32/firmware/assets/
+
+# Font files (binary fonts should not be tracked)
+*.ttf
+*.otf
+*.woff
+*.woff2
+*.eot
+*.fnt
+esp32/fonts/
+esp32/firmware/**/fonts/*.ttf
+esp32/firmware/**/fonts/*.otf
+esp32/firmware/**/fonts/*.woff
+esp32/firmware/**/fonts/*.woff2
+esp32/firmware/**/fonts/*.eot
+esp32/firmware/**/fonts/*.fnt
