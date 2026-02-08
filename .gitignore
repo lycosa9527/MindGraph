@@ -244,5 +244,9 @@ esp32/.clangd
 esp32/firmware/.cache/
 esp32/firmware/**/.cache/
 
+# ESP32 reference folders (brookesia - for reference only)
+esp32/brookesia-esp/
+esp32/brookesia-waveshare/
+
 # ESP32 assets (if generated, uncomment if needed)
 # esp32/firmware/assets/

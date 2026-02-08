@@ -1,0 +1,67 @@
+CompileFlags:
+  Add:
+    - -std=c++17
+    - -I.
+    - -Imain
+    - -Icomponents
+    - -IC:/Espressif/frameworks/esp-idf-v5.5.2/components
+    - -IC:/Espressif/frameworks/esp-idf-v5.5.2/components/newlib/platform_include
+    - -IC:/Espressif/frameworks/esp-idf-v5.5.2/components/newlib/include
+    - -IC:/Espressif/tools/xtensa-esp-elf/esp-14.2.0_20251107/xtensa-esp-elf/xtensa-esp-elf/include
+    - -IC:/Espressif/frameworks/esp-idf-v5.5.2/components/freertos/FreeRTOS-Kernel/include
+    - -IC:/Espressif/frameworks/esp-idf-v5.5.2/components/freertos/FreeRTOS-Kernel/portable/xtensa/include
+    - -IC:/Espressif/frameworks/esp-idf-v5.5.2/components/esp_common/include
+    - -IC:/Espressif/frameworks/esp-idf-v5.5.2/components/esp_hw_support/include
+    - -IC:/Espressif/frameworks/esp-idf-v5.5.2/components/esp_system/include
+    - -IC:/Espressif/frameworks/esp-idf-v5.5.2/components/lwip/lwip/src/include
+    - -IC:/Espressif/frameworks/esp-idf-v5.5.2/components/lwip/port/esp32/include
+    - -IC:/Espressif/frameworks/esp-idf-v5.5.2/components/esp_timer/include
+    - -IC:/Espressif/frameworks/esp-idf-v5.5.2/components/log/include
+    - -IC:/Espressif/frameworks/esp-idf-v5.5.2/components/soc/include
+    - -IC:/Espressif/frameworks/esp-idf-v5.5.2/components/soc/esp32s3/include
+    - -IC:/Espressif/frameworks/esp-idf-v5.5.2/components/hal/include
+    - -IC:/Espressif/frameworks/esp-idf-v5.5.2/components/hal/esp32s3/include
+    - -IC:/Espressif/frameworks/esp-idf-v5.5.2/components/driver/include
+    - -IC:/Espressif/frameworks/esp-idf-v5.5.2/components/esp_wifi/include
+    - -IC:/Espressif/frameworks/esp-idf-v5.5.2/components/esp_netif/include
+    - -IC:/Espressif/frameworks/esp-idf-v5.5.2/components/esp_event/include
+    - -IC:/Espressif/frameworks/esp-idf-v5.5.2/components/nvs_flash/include
+    - -IC:/Espressif/frameworks/esp-idf-v5.5.2/components/spi_flash/include
+    - -IC:/Espressif/frameworks/esp-idf-v5.5.2/components/fatfs/vfs/include
+    - -IC:/Espressif/frameworks/esp-idf-v5.5.2/components/spiffs/include
+    - -IC:/Espressif/frameworks/esp-idf-v5.5.2/components/mbedtls/mbedtls/include
+    - -IC:/Espressif/frameworks/esp-idf-v5.5.2/components/mbedtls/port/include
+    - -IC:/Espressif/frameworks/esp-idf-v5.5.2/components/esp_http_client/include
+    - -IC:/Espressif/frameworks/esp-idf-v5.5.2/components/esp_https_ota/include
+    - -IC:/Espressif/frameworks/esp-idf-v5.5.2/components/json/include
+    - -IC:/Espressif/frameworks/esp-idf-v5.5.2/components/esp_tinyusb/include
+    - -DLV_CONF_INCLUDE_SIMPLE
+    - -DESP_PLATFORM
+    - -DIDF_VER=\"v5.5.2\"
+    - -D_GNU_SOURCE
+    - -x
+    - c++
+  Remove:
+    - -mfix-esp32-psram-cache-issue
+    - -mlongcalls
+    - -fstrict-volatile-bitfields
+    - -fno-tree-switch-conversion
+    - -mdisable-hardware-atomics
+    - -fno-shrink-wrap
+  CompilationDatabase: build
+  
+# Index extra files for better IntelliSense
+Index:
+  Background: Build
+
+Diagnostics:
+  UnusedIncludes: Relaxed
+  MissingIncludes: Relaxed
+  Suppress:
+    - drv_unknown_argument
+  ClangTidy:
+    Add:
+      - readability-*
+    Remove:
+      - readability-identifier-length
+      - readability-magic-numbers

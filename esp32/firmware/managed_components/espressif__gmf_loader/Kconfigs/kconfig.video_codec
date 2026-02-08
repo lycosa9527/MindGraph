@@ -1,0 +1,6 @@
+menu "GMF Video Codec"
+
+    rsource "kconfig.video_codec.dec"
+    rsource "kconfig.video_codec.enc"
+
+endmenu

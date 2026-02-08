@@ -1,0 +1,82 @@
+menu "GMF IO Reader"
+    config GMF_IO_INIT_CODEC_DEV_RX
+        bool "Initialize GMF CODEC Device Reader"
+        default y
+        help
+            Initialize GMF codec device reader
+    config GMF_IO_INIT_FILE_READER
+        bool "Initialize GMF File Reader"
+        default y
+        help
+            Initialize GMF File Reader
+
+        menu "IO File Configuration"
+            depends on GMF_IO_INIT_FILE_READER
+
+            config GMF_IO_FILE_READ_CACHE_SIZE
+                int "IO File Read Cache Size"
+                default 2048
+                range 0 65536
+                help
+                    Configure the buffer size for the GMF IO File Reader.
+                    This setting affects the performance of file reading operations.
+                    Larger buffer sizes may improve read performance but consume more memory.
+                    If the SOC does not have the SOC_SDMMC_PSRAM_DMA_CAPABLE capability, internal memory will be used.
+        endmenu
+
+    config GMF_IO_INIT_HTTP_READER
+        bool "Initialize GMF HTTP Reader"
+        default y
+        help
+            Initialize GMF HTTP Reader
+
+        menu "HTTP Reader Configuration"
+            depends on GMF_IO_INIT_HTTP_READER
+
+            config GMF_IO_HTTP_READER_TASK_STACK
+                int "HTTP Reader Task Stack Size"
+                default 3072
+                range 1024 16384
+                help
+                    Configure the task stack size for the GMF HTTP Reader.
+
+            config GMF_IO_HTTP_READER_TASK_CORE
+                int "HTTP Reader Task Core"
+                default 0
+                range 0 1
+                help
+                    Configure the core on which the GMF HTTP Reader task will run.
+
+            config GMF_IO_HTTP_READER_TASK_PRIORITY
+                int "HTTP Reader Task Priority"
+                default 5
+                range 1 10
+                help
+                    Configure the task priority for the GMF HTTP Reader.
+
+            config GMF_IO_HTTP_READER_STACK_IN_EXT
+                bool "HTTP Reader Stack in External Memory"
+                default n
+                help
+                    Enable this option to allocate the HTTP Reader stack in external memory.
+
+            config GMF_IO_HTTP_READER_OUT_BUF_SIZE
+                int "HTTP Reader Output Buffer Size"
+                default 8192
+                range 1024 131072
+                help
+                    Configure the size of the output buffer for the GMF HTTP Reader.
+
+            config GMF_IO_HTTP_READER_CERT_PEM
+                string "HTTP Reader SSL Certificate (PEM)"
+                default ""
+                help
+                    Provide the SSL server certificate in PEM format for the GMF HTTP Reader.
+        endmenu
+
+    config GMF_IO_INIT_FLASH_READER
+        bool "Initialize GMF Flash Reader"
+        default y
+        help
+            Initialize GMF Flash Reader
+endmenu

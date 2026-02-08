@@ -1,7 +1,6 @@
 #if LV_BUILD_TEST
 #include "../lvgl.h"
 #include "../../lvgl_private.h"
-#include "lv_test_indev.h"
 #include "unity/unity.h"
 
 static lv_obj_t * active_screen = NULL;
@@ -25,7 +24,7 @@ void tearDown(void)
 
 void test_button_matrix_creation(void)
 {
-    const char ** map;
+    const char * const * map;
 
     /* Verify the default map. */
     map = lv_buttonmatrix_get_map(btnm);
@@ -39,7 +38,7 @@ void test_button_matrix_creation(void)
 
 void test_button_matrix_set_map_works(void)
 {
-    const char ** ret_map;
+    const char * const * ret_map;
     static const char * exp_map[] = {"A", "B", "\n", "C", "D", ""};
 
     lv_buttonmatrix_set_map(btnm, exp_map);
@@ -393,7 +392,7 @@ void test_button_matrix_pressing_event_works(void)
      * This is done to increase code coverage. */
     btnmObj->btn_id_sel = 3;
     /* Send a dummy lv_indev_t object as param to avoid crashing during build. */
-    lv_obj_send_event(btnm, LV_EVENT_PRESSING, lv_test_mouse_indev);
+    lv_obj_send_event(btnm, LV_EVENT_PRESSING, lv_test_indev_get_indev(LV_INDEV_TYPE_POINTER));
     TEST_ASSERT_TRUE(event_triggered);
 }
 

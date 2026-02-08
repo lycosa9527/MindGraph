@@ -1,0 +1,640 @@
+config GMF_AUDIO_CODEC_INIT_ENCODER
+        bool "Initialize GMF CODEC Encoder"
+        default y
+        help
+            Initialize GMF codec encoder
+    choice
+        prompt "Select Default GMF CODEC Encoder Type"
+        default GMF_AUDIO_CODEC_ENCODER_TYPE_AAC
+        depends on GMF_AUDIO_CODEC_INIT_ENCODER
+
+        config GMF_AUDIO_CODEC_ENCODER_TYPE_AAC
+            bool "AAC Encoder"
+        config GMF_AUDIO_CODEC_ENCODER_TYPE_AMRNB
+            bool "AMR-NB Encoder"
+        config GMF_AUDIO_CODEC_ENCODER_TYPE_AMRWB
+            bool "AMR-WB Encoder"
+        config GMF_AUDIO_CODEC_ENCODER_TYPE_G711A
+            bool "G711A Encoder"
+        config GMF_AUDIO_CODEC_ENCODER_TYPE_G711U
+            bool "G711U Encoder"
+        config GMF_AUDIO_CODEC_ENCODER_TYPE_OPUS
+            bool "Opus Encoder"
+        config GMF_AUDIO_CODEC_ENCODER_TYPE_ADPCM
+            bool "ADPCM Encoder"
+        config GMF_AUDIO_CODEC_ENCODER_TYPE_PCM
+            bool "PCM Encoder"
+        config GMF_AUDIO_CODEC_ENCODER_TYPE_ALAC
+            bool "ALAC Encoder"
+        config GMF_AUDIO_CODEC_ENCODER_TYPE_SBC
+            bool "SBC Encoder"
+        config GMF_AUDIO_CODEC_ENCODER_TYPE_LC3
+            bool "LC3 Encoder"
+    endchoice
+
+    menu "AMR-NB Encoder Configuration"
+        depends on GMF_AUDIO_CODEC_ENCODER_TYPE_AMRNB
+
+        config GMF_AUDIO_CODEC_ENC_AMRNB_DTX_ENABLE
+            bool "AMR-NB Encoder DTX Enable"
+            default n
+            help
+                Use DTX technology or not. Set to true to enable DTX.
+
+        choice
+            prompt "AMR-NB Encoder Bitrate Mode"
+            default GMF_AUDIO_CODEC_ENC_AMRNB_BITRATE_MR122
+            help
+                Configure the bitrate mode for the AMR-NB encoder.
+
+            config GMF_AUDIO_CODEC_ENC_AMRNB_BITRATE_MR475
+                bool "4.75 Kbps"
+            config GMF_AUDIO_CODEC_ENC_AMRNB_BITRATE_MR515
+                bool "5.15 Kbps"
+            config GMF_AUDIO_CODEC_ENC_AMRNB_BITRATE_MR59
+                bool "5.90 Kbps"
+            config GMF_AUDIO_CODEC_ENC_AMRNB_BITRATE_MR67
+                bool "6.70 Kbps"
+            config GMF_AUDIO_CODEC_ENC_AMRNB_BITRATE_MR74
+                bool "7.40 Kbps"
+            config GMF_AUDIO_CODEC_ENC_AMRNB_BITRATE_MR795
+                bool "7.95 Kbps"
+            config GMF_AUDIO_CODEC_ENC_AMRNB_BITRATE_MR102
+                bool "10.2 Kbps"
+            config GMF_AUDIO_CODEC_ENC_AMRNB_BITRATE_MR122
+                bool "12.2 Kbps"
+        endchoice
+
+        config GMF_AUDIO_CODEC_ENC_AMRNB_BITRATE_MODE
+            int
+            default 4750 if GMF_AUDIO_CODEC_ENC_AMRNB_BITRATE_MR475
+            default 5150 if GMF_AUDIO_CODEC_ENC_AMRNB_BITRATE_MR515
+            default 5900 if GMF_AUDIO_CODEC_ENC_AMRNB_BITRATE_MR59
+            default 6700 if GMF_AUDIO_CODEC_ENC_AMRNB_BITRATE_MR67
+            default 7400 if GMF_AUDIO_CODEC_ENC_AMRNB_BITRATE_MR74
+            default 7950 if GMF_AUDIO_CODEC_ENC_AMRNB_BITRATE_MR795
+            default 10200 if GMF_AUDIO_CODEC_ENC_AMRNB_BITRATE_MR102
+            default 12200 if GMF_AUDIO_CODEC_ENC_AMRNB_BITRATE_MR122
+
+        config GMF_AUDIO_CODEC_ENC_AMRNB_NO_FILE_HEADER
+            bool "AMR-NB Encoder No File Header"
+            default n
+            help
+                Do not add AMR-NB file header before the first frame. Set to true to disable the header.
+    endmenu
+
+    menu "AMR-WB Encoder Configuration"
+        depends on GMF_AUDIO_CODEC_ENCODER_TYPE_AMRWB
+
+        config GMF_AUDIO_CODEC_ENC_AMRWB_DTX_ENABLE
+            bool "AMR-WB Encoder DTX Enable"
+            default n
+            help
+                Use DTX technology or not. Set to true to enable DTX.
+
+        choice
+            prompt "AMR-WB Encoder Bitrate Mode"
+            default GMF_AUDIO_CODEC_ENC_AMRWB_BITRATE_MD885
+            help
+                Configure the bitrate mode for the AMR-WB encoder.
+
+            config GMF_AUDIO_CODEC_ENC_AMRWB_BITRATE_MD66
+                bool "6.60 Kbps"
+            config GMF_AUDIO_CODEC_ENC_AMRWB_BITRATE_MD885
+                bool "8.85 Kbps"
+            config GMF_AUDIO_CODEC_ENC_AMRWB_BITRATE_MD1265
+                bool "12.65 Kbps"
+            config GMF_AUDIO_CODEC_ENC_AMRWB_BITRATE_MD1425
+                bool "14.25 Kbps"
+            config GMF_AUDIO_CODEC_ENC_AMRWB_BITRATE_MD1585
+                bool "15.85 Kbps"
+            config GMF_AUDIO_CODEC_ENC_AMRWB_BITRATE_MD1825
+                bool "18.25 Kbps"
+            config GMF_AUDIO_CODEC_ENC_AMRWB_BITRATE_MD1985
+                bool "19.85 Kbps"
+            config GMF_AUDIO_CODEC_ENC_AMRWB_BITRATE_MD2305
+                bool "23.05 Kbps"
+            config GMF_AUDIO_CODEC_ENC_AMRWB_BITRATE_MD2385
+                bool "23.85 Kbps"
+        endchoice
+
+        config GMF_AUDIO_CODEC_ENC_AMRWB_BITRATE_MODE
+            int
+            default 6600 if GMF_AUDIO_CODEC_ENC_AMRWB_BITRATE_MD66
+            default 8850 if GMF_AUDIO_CODEC_ENC_AMRWB_BITRATE_MD885
+            default 12650 if GMF_AUDIO_CODEC_ENC_AMRWB_BITRATE_MD1265
+            default 14250 if GMF_AUDIO_CODEC_ENC_AMRWB_BITRATE_MD1425
+            default 15850 if GMF_AUDIO_CODEC_ENC_AMRWB_BITRATE_MD1585
+            default 18250 if GMF_AUDIO_CODEC_ENC_AMRWB_BITRATE_MD1825
+            default 19850 if GMF_AUDIO_CODEC_ENC_AMRWB_BITRATE_MD1985
+            default 23050 if GMF_AUDIO_CODEC_ENC_AMRWB_BITRATE_MD2305
+            default 23850 if GMF_AUDIO_CODEC_ENC_AMRWB_BITRATE_MD2385
+
+        config GMF_AUDIO_CODEC_ENC_AMRWB_NO_FILE_HEADER
+            bool "AMR-WB Encoder No File Header"
+            default n
+            help
+                Do not add AMR-WB file header before the first frame. Set to true to disable the header.
+    endmenu
+
+    menu "AAC Encoder Configuration"
+        depends on GMF_AUDIO_CODEC_ENCODER_TYPE_AAC
+
+        config GMF_AUDIO_CODEC_ENC_AAC_BITRATE
+            int "AAC Encoder Bitrate (bps)"
+            default 90000
+            range 12000 160000
+            help
+                Support bitrate (bps) range for mono stream:
+                | Sample Rate (Hz) | Bitrate Range (bps) |
+                |------------------|---------------------|
+                | 8000             | 12000 - 48000       |
+                | 11025            | 18000 - 66000       |
+                | 12000            | 20000 - 72000       |
+                | 16000            | 22000 - 96000       |
+                | 22050            | 25000 - 132000      |
+                | 24000            | 31000 - 144000      |
+                | 32000            | 33000 - 160000      |
+                | 44100            | 57000 - 160000      |
+                | 48000            | 59000 - 160000      |
+                | 64000            | 65000 - 160000      |
+                | 88200            | 67000 - 160000      |
+                | 96000            | 70000 - 160000      |
+                Note: The bitrate range for dual stream is twice that of mono.
+
+        config GMF_AUDIO_CODEC_ENC_AAC_ADTS_USED
+            bool "AAC Encoder ADTS Header"
+            default y
+            help
+                Whether to write ADTS header: true - add ADTS header, false - raw AAC data only.
+    endmenu
+
+    menu "ALAC Encoder Configuration"
+        depends on GMF_AUDIO_CODEC_ENCODER_TYPE_ALAC
+
+        config GMF_AUDIO_CODEC_ENC_ALAC_FAST_MODE
+            bool "ALAC Encoder Fast Mode"
+            default n
+            help
+                When enabled: improved speed while lower compression ratios.
+
+        config GMF_AUDIO_CODEC_ENC_ALAC_FRAME_SAMPLES
+            int "ALAC Encoder Frame Samples"
+            default 4096
+            range 0 65536
+            help
+                Samples per frame, if set to 0 will use the default value of 4096.
+    endmenu
+
+    menu "OPUS Encoder Configuration"
+        depends on GMF_AUDIO_CODEC_ENCODER_TYPE_OPUS
+
+        choice
+            prompt "OPUS Encoder Sample Rate"
+            default GMF_AUDIO_CODEC_ENC_OPUS_SAMPLE_RATE_8K
+            help
+                Configure the sample rate for the OPUS encoder.
+                This must be one of 8000, 12000, 16000, 24000, or 48000.
+
+            config GMF_AUDIO_CODEC_ENC_OPUS_SAMPLE_RATE_8K
+                bool "8 kHz"
+
+            config GMF_AUDIO_CODEC_ENC_OPUS_SAMPLE_RATE_12K
+                bool "12 kHz"
+
+            config GMF_AUDIO_CODEC_ENC_OPUS_SAMPLE_RATE_16K
+                bool "16 kHz"
+
+            config GMF_AUDIO_CODEC_ENC_OPUS_SAMPLE_RATE_24K
+                bool "24 kHz"
+
+            config GMF_AUDIO_CODEC_ENC_OPUS_SAMPLE_RATE_48K
+                bool "48 kHz"
+        endchoice
+
+        config GMF_AUDIO_CODEC_ENC_OPUS_SAMPLE_RATE
+            int
+            default 8000  if GMF_AUDIO_CODEC_ENC_OPUS_SAMPLE_RATE_8K
+            default 12000 if GMF_AUDIO_CODEC_ENC_OPUS_SAMPLE_RATE_12K
+            default 16000 if GMF_AUDIO_CODEC_ENC_OPUS_SAMPLE_RATE_16K
+            default 24000 if GMF_AUDIO_CODEC_ENC_OPUS_SAMPLE_RATE_24K
+            default 48000 if GMF_AUDIO_CODEC_ENC_OPUS_SAMPLE_RATE_48K
+
+        config GMF_AUDIO_CODEC_ENC_OPUS_CHANNEL
+            int "OPUS Encoder Channel"
+            default 2
+            range 1 2
+            help
+                Configure the number of audio channels for the OPUS encoder.
+                This must be mono (1) or dual (2).
+
+        config GMF_AUDIO_CODEC_ENC_OPUS_BITRATE
+            int "OPUS Encoder Bitrate (bps)"
+            default 90000
+            range 60000 510000
+            help
+                Suggest bitrate(Kbps) range on mono stream:
+                | frame_duration(ms)|    2.5    |     5     |    10    |    20    |    40    |    60    |    80    |   100    |   120    |
+                |   samplerate(Hz)  |           |           |          |          |          |          |          |          |          |
+                |       8000        | 30 - 128  | 20 - 128  |  6 - 128 |  6 - 128 |  6 - 128 |  6 - 128 |  6 - 128 |  6 - 128 |  6 - 128 |
+                |       12000       | 30 - 192  | 20 - 192  |  6 - 192 |  6 - 192 |  6 - 192 |  6 - 192 |  6 - 192 |  6 - 192 |  6 - 192 |
+                |       16000       | 30 - 256  | 20 - 256  |  6 - 256 |  6 - 256 |  6 - 256 |  6 - 256 |  6 - 256 |  6 - 256 |  6 - 256 |
+                |       24000       | 50 - 384  | 40 - 384  | 40 - 384 | 40 - 384 | 40 - 384 | 40 - 384 | 40 - 384 | 40 - 384 | 40 - 384 |
+                |       48000       | 40 - 510  | 30 - 510  | 30 - 510 | 30 - 510 | 30 - 510 | 30 - 510 | 30 - 510 | 30 - 510 | 30 - 510 |
+                Note: The bitrate range of dual stream is the same that of mono.
+
+        choice
+            prompt "OPUS Encoder Frame Duration"
+            default GMF_AUDIO_CODEC_ENC_OPUS_FRAME_DURATION_20_MS
+            help
+                The duration of one frame in milliseconds.
+
+            config GMF_AUDIO_CODEC_ENC_OPUS_FRAME_DURATION_2_5_MS
+                bool "2.5 ms"
+
+            config GMF_AUDIO_CODEC_ENC_OPUS_FRAME_DURATION_5_MS
+                bool "5 ms"
+
+            config GMF_AUDIO_CODEC_ENC_OPUS_FRAME_DURATION_10_MS
+                bool "10 ms"
+
+            config GMF_AUDIO_CODEC_ENC_OPUS_FRAME_DURATION_20_MS
+                bool "20 ms"
+
+            config GMF_AUDIO_CODEC_ENC_OPUS_FRAME_DURATION_40_MS
+                bool "40 ms"
+
+            config GMF_AUDIO_CODEC_ENC_OPUS_FRAME_DURATION_60_MS
+                bool "60 ms"
+
+            config GMF_AUDIO_CODEC_ENC_OPUS_FRAME_DURATION_80_MS
+                bool "80 ms"
+
+            config GMF_AUDIO_CODEC_ENC_OPUS_FRAME_DURATION_100_MS
+                bool "100 ms"
+
+            config GMF_AUDIO_CODEC_ENC_OPUS_FRAME_DURATION_120_MS
+                bool "120 ms"
+        endchoice
+
+        config GMF_AUDIO_CODEC_ENC_OPUS_FRAME_DURATION
+            int
+            default 0 if GMF_AUDIO_CODEC_ENC_OPUS_FRAME_DURATION_2_5_MS
+            default 1 if GMF_AUDIO_CODEC_ENC_OPUS_FRAME_DURATION_5_MS
+            default 2 if GMF_AUDIO_CODEC_ENC_OPUS_FRAME_DURATION_10_MS
+            default 3 if GMF_AUDIO_CODEC_ENC_OPUS_FRAME_DURATION_20_MS
+            default 4 if GMF_AUDIO_CODEC_ENC_OPUS_FRAME_DURATION_40_MS
+            default 5 if GMF_AUDIO_CODEC_ENC_OPUS_FRAME_DURATION_60_MS
+            default 6 if GMF_AUDIO_CODEC_ENC_OPUS_FRAME_DURATION_80_MS
+            default 7 if GMF_AUDIO_CODEC_ENC_OPUS_FRAME_DURATION_100_MS
+            default 8 if GMF_AUDIO_CODEC_ENC_OPUS_FRAME_DURATION_120_MS
+
+        choice
+            prompt "OPUS Encoder Application Mode"
+            default GMF_AUDIO_CODEC_ENC_OPUS_APPLICATION_MODE_VOIP
+            help
+                The application mode for OPUS encoding.
+
+            config GMF_AUDIO_CODEC_ENC_OPUS_APPLICATION_MODE_VOIP
+                bool "VOIP"
+                help
+                    Best for most VoIP/videoconference applications where listening quality and intelligibility matter most.
+
+            config GMF_AUDIO_CODEC_ENC_OPUS_APPLICATION_MODE_AUDIO
+                bool "Audio"
+                help
+                    Best for broadcast/high-fidelity application where the decoded audio should be as close as possible to the input.
+
+            config GMF_AUDIO_CODEC_ENC_OPUS_APPLICATION_MODE_LOWDELAY
+                bool "Low Delay"
+                help
+                    Only use when lowest-achievable latency is what matters most.
+        endchoice
+
+        config GMF_AUDIO_CODEC_ENC_OPUS_APPLICATION_MODE
+            int
+            default 0 if GMF_AUDIO_CODEC_ENC_OPUS_APPLICATION_MODE_VOIP
+            default 1 if GMF_AUDIO_CODEC_ENC_OPUS_APPLICATION_MODE_AUDIO
+            default 2 if GMF_AUDIO_CODEC_ENC_OPUS_APPLICATION_MODE_LOWDELAY
+
+        config GMF_AUDIO_CODEC_ENC_OPUS_COMPLEXITY
+            int "OPUS Encoder Complexity"
+            default 0
+            range 0 10
+            help
+                Indicates the complexity of OPUS encoding. 0 is lowest, 10 is highest.
+
+        config GMF_AUDIO_CODEC_ENC_OPUS_ENABLE_FEC
+            bool "Enable OPUS Encoder FEC"
+            default n
+            help
+                Configures the encoder's use of inband forward error correction (FEC).
+
+        config GMF_AUDIO_CODEC_ENC_OPUS_ENABLE_DTX
+            bool "Enable OPUS Encoder DTX"
+            depends on GMF_AUDIO_CODEC_ENC_OPUS_APPLICATION_MODE_VOIP
+            default n
+            help
+                Configures the encoder's use of discontinuous transmission (DTX). DTX activation conditions:
+                1) The sample_rate must be 8000, 12000, or 16000 Hz.
+                2) The application_mode must be set to `ESP_OPUS_ENC_APPLICATION_VOIP`.
+                3) The frame_duration must be greater than 5 ms.
+
+        config GMF_AUDIO_CODEC_ENC_OPUS_ENABLE_VBR
+            bool "Enable OPUS Encoder VBR"
+            default n
+            help
+                Configures to enable or disable variable bitrate mode.
+    endmenu
+
+    menu "SBC Encoder Configuration"
+        depends on GMF_AUDIO_CODEC_ENCODER_TYPE_SBC
+
+        choice
+            prompt "SBC Encoder Mode"
+            default GMF_AUDIO_CODEC_ENC_SBC_MODE_STD
+            help
+                Configure the mode for the SBC encoder.
+
+            config GMF_AUDIO_CODEC_ENC_SBC_MODE_STD
+                bool "Standard SBC Mode"
+
+            config GMF_AUDIO_CODEC_ENC_SBC_MODE_MSBC
+                bool "mSBC Mode"
+        endchoice
+
+        config GMF_AUDIO_CODEC_ENC_SBC_MODE
+            int
+            default 0 if GMF_AUDIO_CODEC_ENC_SBC_MODE_STD
+            default 1 if GMF_AUDIO_CODEC_ENC_SBC_MODE_MSBC
+
+        choice
+            prompt "SBC Encoder Channel Mode"
+            default GMF_AUDIO_CODEC_ENC_SBC_CH_MODE_DUAL
+            depends on GMF_AUDIO_CODEC_ENC_SBC_MODE_STD
+            help
+                Configure the channel mode for the SBC encoder.
+
+            config GMF_AUDIO_CODEC_ENC_SBC_CH_MODE_MONO
+                bool "Mono"
+                help
+                    Single audio channel.
+
+            config GMF_AUDIO_CODEC_ENC_SBC_CH_MODE_DUAL
+                bool "Dual"
+                help
+                    Two audio channels, independent encoding for left and right channels.
+                    Each channel is processed as a separate mono channel:
+                        - Complete separation of left and right channels.
+                        - No shared encoding parameters or joint encoding.
+                        - Each channel has its own framing, quantization, and bit allocation.
+                        - Best for channels with different content (e.g., bilingual broadcasts,
+                          different character audio tracks in games).
+
+            config GMF_AUDIO_CODEC_ENC_SBC_CH_MODE_STEREO
+                bool "Stereo"
+                help
+                    Two audio channels, separate encoding for left and right channels.
+                    In stereo mode:
+                        - Left and right channels are encoded independently.
+                        - Encoder can share parameters (e.g., subband allocation, bit allocation).
+                        - No inter-channel redundancy is utilized.
+                        - Best for regular stereo audio where channels differ but not significantly.
+
+            config GMF_AUDIO_CODEC_ENC_SBC_CH_MODE_JOINT_STEREO
+                bool "Joint Stereo"
+                help
+                    Two audio channels, use Mid/Side (MS) coding to improve compression efficiency.
+                    In joint stereo mode:
+                        - Uses correlation between channels for compression.
+                        - Mid = (L + R) / 2, Side = (L - R) / 2.
+                        - Better compression than stereo mode by utilizing channel redundancy.
+                        - Preserves original stereo image after decoding.
+                        - Best for stereo music and highly correlated channels at high compression.
+        endchoice
+
+        config GMF_AUDIO_CODEC_ENC_SBC_CH_MODE
+            int
+            depends on GMF_AUDIO_CODEC_ENC_SBC_MODE_STD
+            default 0 if GMF_AUDIO_CODEC_ENC_SBC_CH_MODE_MONO
+            default 1 if GMF_AUDIO_CODEC_ENC_SBC_CH_MODE_DUAL
+            default 2 if GMF_AUDIO_CODEC_ENC_SBC_CH_MODE_STEREO
+            default 3 if GMF_AUDIO_CODEC_ENC_SBC_CH_MODE_JOINT_STEREO
+
+        choice
+            prompt "SBC Encoder Sample Rate"
+            default GMF_AUDIO_CODEC_ENC_SBC_SAMPLE_RATE_48K
+            depends on GMF_AUDIO_CODEC_ENC_SBC_MODE_STD
+            help
+                Configure the sample rate for the SBC encoder.
+
+            config GMF_AUDIO_CODEC_ENC_SBC_SAMPLE_RATE_16K
+                bool "16 kHz"
+
+            config GMF_AUDIO_CODEC_ENC_SBC_SAMPLE_RATE_32K
+                bool "32 kHz"
+
+            config GMF_AUDIO_CODEC_ENC_SBC_SAMPLE_RATE_44_1K
+                bool "44.1 kHz"
+
+            config GMF_AUDIO_CODEC_ENC_SBC_SAMPLE_RATE_48K
+                bool "48 kHz"
+        endchoice
+
+        config GMF_AUDIO_CODEC_ENC_SBC_SAMPLE_RATE
+            int
+            depends on GMF_AUDIO_CODEC_ENC_SBC_MODE_STD
+            default 16000 if GMF_AUDIO_CODEC_ENC_SBC_SAMPLE_RATE_16K
+            default 32000 if GMF_AUDIO_CODEC_ENC_SBC_SAMPLE_RATE_32K
+            default 44100 if GMF_AUDIO_CODEC_ENC_SBC_SAMPLE_RATE_44_1K
+            default 48000 if GMF_AUDIO_CODEC_ENC_SBC_SAMPLE_RATE_48K
+
+        choice
+            prompt "SBC Encoder Block Length"
+            default GMF_AUDIO_CODEC_ENC_SBC_BLOCK_LENGTH_16
+            depends on GMF_AUDIO_CODEC_ENC_SBC_MODE_STD
+            help
+                Configure the block length for the SBC encoder.
+
+            config GMF_AUDIO_CODEC_ENC_SBC_BLOCK_LENGTH_4
+                bool "4 blocks"
+
+            config GMF_AUDIO_CODEC_ENC_SBC_BLOCK_LENGTH_8
+                bool "8 blocks"
+
+            config GMF_AUDIO_CODEC_ENC_SBC_BLOCK_LENGTH_12
+                bool "12 blocks"
+
+            config GMF_AUDIO_CODEC_ENC_SBC_BLOCK_LENGTH_16
+                bool "16 blocks"
+        endchoice
+
+        config GMF_AUDIO_CODEC_ENC_SBC_BLOCK_LENGTH
+            int
+            depends on GMF_AUDIO_CODEC_ENC_SBC_MODE_STD
+            default 4 if GMF_AUDIO_CODEC_ENC_SBC_BLOCK_LENGTH_4
+            default 8 if GMF_AUDIO_CODEC_ENC_SBC_BLOCK_LENGTH_8
+            default 12 if GMF_AUDIO_CODEC_ENC_SBC_BLOCK_LENGTH_12
+            default 16 if GMF_AUDIO_CODEC_ENC_SBC_BLOCK_LENGTH_16
+
+        choice
+            prompt "SBC Encoder Subbands"
+            default GMF_AUDIO_CODEC_ENC_SBC_SUBBANDS_8
+            depends on GMF_AUDIO_CODEC_ENC_SBC_MODE_STD
+            help
+                Configure the number of subbands for the SBC encoder.
+
+            config GMF_AUDIO_CODEC_ENC_SBC_SUBBANDS_4
+                bool "4 subbands"
+
+            config GMF_AUDIO_CODEC_ENC_SBC_SUBBANDS_8
+                bool "8 subbands"
+        endchoice
+
+        config GMF_AUDIO_CODEC_ENC_SBC_SUBBANDS
+            int
+            depends on GMF_AUDIO_CODEC_ENC_SBC_MODE_STD
+            default 4 if GMF_AUDIO_CODEC_ENC_SBC_SUBBANDS_4
+            default 8 if GMF_AUDIO_CODEC_ENC_SBC_SUBBANDS_8
+
+        choice
+            prompt "SBC Encoder Allocation Method"
+            default GMF_AUDIO_CODEC_ENC_SBC_ALLOC_LOUDNESS
+            depends on GMF_AUDIO_CODEC_ENC_SBC_MODE_STD
+            help
+                Configure the bit allocation method for the SBC encoder.
+
+            config GMF_AUDIO_CODEC_ENC_SBC_ALLOC_LOUDNESS
+                bool "Loudness"
+                help
+                    Prioritizes human-audible frequency ranges for better perceived quality.
+
+            config GMF_AUDIO_CODEC_ENC_SBC_ALLOC_SNR
+                bool "SNR"
+                help
+                    Maximizes SNR for each frequency band, improving technical accuracy.
+        endchoice
+
+        config GMF_AUDIO_CODEC_ENC_SBC_ALLOC_METHOD
+            int
+            depends on GMF_AUDIO_CODEC_ENC_SBC_MODE_STD
+            default 0 if GMF_AUDIO_CODEC_ENC_SBC_ALLOC_LOUDNESS
+            default 1 if GMF_AUDIO_CODEC_ENC_SBC_ALLOC_SNR
+
+        config GMF_AUDIO_CODEC_ENC_SBC_BITPOOL
+            int "SBC Encoder Bitpool"
+            default 64
+            range 2 250
+            depends on GMF_AUDIO_CODEC_ENC_SBC_MODE_STD
+            help
+                Configure the bitpool value for the SBC encoder.
+                Higher values result in lower compression rates.
+    endmenu
+
+    menu "LC3 Encoder Configuration"
+        depends on GMF_AUDIO_CODEC_ENCODER_TYPE_LC3
+
+        choice
+            prompt "LC3 Encoder Sample Rate"
+            default GMF_AUDIO_CODEC_ENC_LC3_SAMPLE_RATE_48K
+            help
+                Configure the sample rate for the LC3 encoder.
+                This must be one of 8000, 16000, 24000, 32000, 44100 or 48000.
+
+            config GMF_AUDIO_CODEC_ENC_LC3_SAMPLE_RATE_8K
+                bool "8 kHz"
+
+            config GMF_AUDIO_CODEC_ENC_LC3_SAMPLE_RATE_16K
+                bool "16 kHz"
+
+            config GMF_AUDIO_CODEC_ENC_LC3_SAMPLE_RATE_24K
+                bool "24 kHz"
+
+            config GMF_AUDIO_CODEC_ENC_LC3_SAMPLE_RATE_32K
+                bool "32 kHz"
+
+            config GMF_AUDIO_CODEC_ENC_LC3_SAMPLE_RATE_44_1K
+                bool "44.1 kHz"
+
+            config GMF_AUDIO_CODEC_ENC_LC3_SAMPLE_RATE_48K
+                bool "48 kHz"
+        endchoice
+
+        config GMF_AUDIO_CODEC_ENC_LC3_SAMPLE_RATE
+            int
+            default 8000  if GMF_AUDIO_CODEC_ENC_LC3_SAMPLE_RATE_8K
+            default 16000 if GMF_AUDIO_CODEC_ENC_LC3_SAMPLE_RATE_16K
+            default 24000 if GMF_AUDIO_CODEC_ENC_LC3_SAMPLE_RATE_24K
+            default 32000 if GMF_AUDIO_CODEC_ENC_LC3_SAMPLE_RATE_32K
+            default 44100 if GMF_AUDIO_CODEC_ENC_LC3_SAMPLE_RATE_44_1K
+            default 48000 if GMF_AUDIO_CODEC_ENC_LC3_SAMPLE_RATE_48K
+
+        config GMF_AUDIO_CODEC_ENC_LC3_CHANNEL
+            int "LC3 Encoder Channel"
+            default 1
+            range 1 2
+            help
+                Configure the number of audio channels for the LC3 encoder.
+
+        choice
+            prompt "LC3 Encoder Bits Per Sample"
+            default GMF_AUDIO_CODEC_ENC_LC3_BITS_16
+            help
+                Configure the bits per sample for the LC3 encoder.
+
+            config GMF_AUDIO_CODEC_ENC_LC3_BITS_16
+                bool "16 bits"
+
+            config GMF_AUDIO_CODEC_ENC_LC3_BITS_24
+                bool "24 bits"
+
+            config GMF_AUDIO_CODEC_ENC_LC3_BITS_32
+                bool "32 bits"
+        endchoice
+
+        config GMF_AUDIO_CODEC_ENC_LC3_BITS_PER_SAMPLE
+            int
+            default 16 if GMF_AUDIO_CODEC_ENC_LC3_BITS_16
+            default 24 if GMF_AUDIO_CODEC_ENC_LC3_BITS_24
+            default 32 if GMF_AUDIO_CODEC_ENC_LC3_BITS_32
+
+        choice
+            prompt "LC3 Encoder Frame Duration"
+            default GMF_AUDIO_CODEC_ENC_LC3_FRAME_DURATION_100
+            help
+                Configure the frame duration for the LC3 encoder (in decimilliseconds).
+
+            config GMF_AUDIO_CODEC_ENC_LC3_FRAME_DURATION_75
+                bool "7.5 ms"
+
+            config GMF_AUDIO_CODEC_ENC_LC3_FRAME_DURATION_100
+                bool "10 ms"
+        endchoice
+
+        config GMF_AUDIO_CODEC_ENC_LC3_FRAME_DURATION
+            int
+            default 75 if GMF_AUDIO_CODEC_ENC_LC3_FRAME_DURATION_75
+            default 100 if GMF_AUDIO_CODEC_ENC_LC3_FRAME_DURATION_100
+
+        config GMF_AUDIO_CODEC_ENC_LC3_BYTES_PER_FRAME
+            int "LC3 Bytes Per Frame"
+            default 120
+            range 20 400
+            help
+                Configure the number of bytes per channel in a frame for the LC3 encoder.
+                The conversion relationship between bitrate and nbyte is as follows:
+                1) Sample rate is 44100 Hz
+                   nbyte = bitrate * frame_dms / 73500
+                2) Sample rate is 8000, 16000, 24000, 32000 or 48000 Hz
+                   nbyte = bitrate * frame_dms / 80000
+
+        config GMF_AUDIO_CODEC_ENC_LC3_LEN_PREFIXED
+            bool "LC3 Length Prefixed"
+            default n
+            help
+                Enable this option if the LC3 encoded data is prefixed with a 2-byte frame length.
+                If set to true, a frame size of two bytes (not including this two bytes) will be added
+                at the beginning of each frame with using big end storage.
+    endmenu
+
+

@@ -1,0 +1,160 @@
+# FourCC Values Definition
+#
+# This file defines all FourCC format codes used in video effects
+# Values are derived from esp_fourcc.h
+
+#####################################################################
+#                         Video Codec FourCC                          #
+#####################################################################
+config FOURCC_H263
+    hex
+    default 0x48323633     # H263: H263
+
+config FOURCC_H264
+    hex
+    default 0x48323634     # H264: H264 with start code
+
+config FOURCC_AVC1
+    hex
+    default 0x41564331     # AVC1: H264 without start code
+
+config FOURCC_H265
+    hex
+    default 0x48323635     # H265: HEVC
+
+config FOURCC_VP8
+    hex
+    default 0x56503820     # VP8: VP8
+
+config FOURCC_MJPG
+    hex
+    default 0x4D4A5047     # MJPG: Motion-JPEG
+
+#####################################################################
+#                         RGB Pixel Formats                           #
+#####################################################################
+config FOURCC_RGB16
+    hex
+    default 0x4C424752     # RGBL: RGB565 little endian
+
+config FOURCC_BGR16
+    hex
+    default 0x4C524742     # BGRL: BGR565 little endian
+
+config FOURCC_RGB16_BE
+    hex
+    default 0x42424752     # RGBB: RGB565 big endian
+
+config FOURCC_BGR16_BE
+    hex
+    default 0x42524742     # BGRB: BGR565 big endian
+
+config FOURCC_RGB24
+    hex
+    default 0x33424752     # RGB3: RGB888 24-bit
+
+config FOURCC_BGR24
+    hex
+    default 0x33524742     # BGR3: BGR888 24-bit
+
+config FOURCC_ARGB32
+    hex
+    default 0x34324241     # AB24: ARGB888 32-bit
+
+config FOURCC_ABGR32
+    hex
+    default 0x34325241     # AR24: ABGR888 32-bit
+
+#####################################################################
+#                         Grey Pixel Formats                          #
+#####################################################################
+config FOURCC_GREY
+    hex
+    default 0x59455247     # GREY: 8-bit Greyscale
+
+config FOURCC_Y16
+    hex
+    default 0x4C363159     # Y16L: 16-bit Greyscale little endian
+
+config FOURCC_Y16_BE
+    hex
+    default 0x42363159     # Y16B: 16-bit Greyscale big endian
+
+#####################################################################
+#                      YUV Packed Formats                            #
+#####################################################################
+config FOURCC_YUYV
+    hex
+    default 0x56595559     # YUYV: YUV 4:2:2 packed
+
+config FOURCC_UYVY
+    hex
+    default 0x59565955     # UYVY: YUV 4:2:2 packed
+
+config FOURCC_YUV
+    hex
+    default 0x38303356     # V308: YUV 4:4:4 packed
+
+config FOURCC_OUYY_EVYY
+    hex
+    default 0x5645554F     # OUEV: Espressif YUV 4:2:0
+
+#####################################################################
+#                      YUV Semi-Planar Formats                       #
+#####################################################################
+config FOURCC_NV12
+    hex
+    default 0x3231564E     # NV12: YUV 4:2:0 semi-planar
+
+config FOURCC_NV21
+    hex
+    default 0x3132564E     # NV21: YVU 4:2:0 semi-planar
+
+#####################################################################
+#                        YUV Planar Formats                          #
+#####################################################################
+config FOURCC_YUV420P
+    hex
+    default 0x32315559     # YU12: YUV 4:2:0 planar
+
+config FOURCC_YVU420P
+    hex
+    default 0x32315659     # YV12: YVU 4:2:0 planar
+
+config FOURCC_YUV444P
+    hex
+    default 0x50343434     # 444P: YUV 4:4:4 planar
+
+#####################################################################
+#                        Multi-Planar Formats                        #
+#####################################################################
+config FOURCC_YUV420M
+    hex
+    default 0x32314D59     # YM12: YUV 4:2:0 multi-planar
+
+config FOURCC_YVU420M
+    hex
+    default 0x31324D59     # YM21: YVU 4:2:0 multi-planar
+
+config FOURCC_YUV444M
+    hex
+    default 0x34324D59     # YM24: YUV 4:4:4 multi-planar
+
+#####################################################################
+#                           RAW Formats                              #
+#####################################################################
+config FOURCC_RAW8
+    hex
+    default 0x38574152     # RAW8: 8-bit raw
+
+config FOURCC_RAW10
+    hex
+    default 0x41574152     # RAWA: 10-bit raw
+
+config FOURCC_RAW12
+    hex
+    default 0x43574152     # RAWC: 12-bit raw
+
+config FOURCC_RAW16
+    hex
+    default 0x47574152     # RAWG: 16-bit raw

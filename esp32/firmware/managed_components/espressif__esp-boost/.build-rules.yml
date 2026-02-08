@@ -1,0 +1,50 @@
+# Note: All operators are binary operators. For more than two operands, you may use the nested parentheses trick.
+# For example:
+#    *  A == 1 or (B == 2 and C in [1,2,3])
+#    *  (A == 1 and B == 2) or (C not in ["3", "4", 5])
+
+# Test apps
+# signals2
+test_apps/signals2:
+  enable:
+    - if: INCLUDE_DEFAULT == 1
+
+# thread
+test_apps/thread:
+  enable:
+    - if: INCLUDE_DEFAULT == 1
+
+# graph
+test_apps/graph:
+  enable:
+    - if: INCLUDE_DEFAULT == 1
+
+# array
+test_apps/array:
+  enable:
+    - if: INCLUDE_DEFAULT == 1
+
+# align
+test_apps/align:
+  enable:
+    - if: INCLUDE_DEFAULT == 1
+
+# format
+test_apps/format:
+  enable:
+    - if: INCLUDE_DEFAULT == 1
+
+# algorithm
+test_apps/algorithm:
+  enable:
+    - if: INCLUDE_DEFAULT == 1
+
+# assign
+test_apps/assign:
+  enable:
+    - if: INCLUDE_DEFAULT == 1
+
+# bimap
+test_apps/bimap:
+  enable:
+    - if: INCLUDE_DEFAULT == 1

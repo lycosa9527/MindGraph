@@ -1,0 +1,174 @@
+rsource "kconfig.fourcc"
+
+config GMF_VIDEO_EFFECTS_INIT_COLOR_CONVERT
+    bool "Initialize Video Color Convert"
+    default n
+    help
+        Initialize the video color convert element
+        This element converts between different color formats and spaces
+        Features:
+            - Support multiple input/output pixel formats
+            - Support different color space standards (BT.601/709/2020)
+            - Hardware accelerated conversion
+        Common use cases:
+            - Convert RGB to YUV for video encoding
+            - Convert YUV to RGB for display
+            - Change color space for different display standards
+
+menu "Video Effects Color Convert Configuration"
+    depends on GMF_VIDEO_EFFECTS_INIT_COLOR_CONVERT
+
+    config GMF_VIDEO_EFFECTS_CC_INPUT_WIDTH
+        int "Width of the Input Frame"
+        default 320
+        range 1 65536
+        help
+            The width resolution of the input frame for color conversion
+
+    config GMF_VIDEO_EFFECTS_CC_INPUT_HEIGHT
+        int "Height of the Input Frame"
+        default 240
+        range 1 65536
+        help
+            The height resolution of the input frame for color conversion
+
+    choice
+        prompt "Input Pixel Format"
+        default GMF_VIDEO_EFFECTS_CC_INPUT_FMT_YUYV
+        help
+            Select input pixel format for color conversion
+
+        config GMF_VIDEO_EFFECTS_CC_INPUT_FMT_GREY
+            bool "GREY"
+        config GMF_VIDEO_EFFECTS_CC_INPUT_FMT_I420
+            bool "YUV420 (I420)"
+        config GMF_VIDEO_EFFECTS_CC_INPUT_FMT_O_UYY_E_VYY
+            bool "OUEV"
+        config GMF_VIDEO_EFFECTS_CC_INPUT_FMT_RGB565_LE
+            bool "RGB565 Little Endian"
+        config GMF_VIDEO_EFFECTS_CC_INPUT_FMT_BGR565_LE
+            bool "BGR565 Little Endian"
+        config GMF_VIDEO_EFFECTS_CC_INPUT_FMT_RGB565_BE
+            bool "RGB565 Big Endian"
+        config GMF_VIDEO_EFFECTS_CC_INPUT_FMT_BGR565_BE
+            bool "BGR565 Big Endian"
+        config GMF_VIDEO_EFFECTS_CC_INPUT_FMT_YUYV
+            bool "YUV422(order as YUYV)"
+        config GMF_VIDEO_EFFECTS_CC_INPUT_FMT_UYVY
+            bool "YUV422(order as UYVY)"
+        config GMF_VIDEO_EFFECTS_CC_INPUT_FMT_RGB888
+            bool "RGB888"
+        config GMF_VIDEO_EFFECTS_CC_INPUT_FMT_BGR888
+            bool "BGR888"
+        config GMF_VIDEO_EFFECTS_CC_INPUT_FMT_YUV_PLANNER
+            bool "YUV444 Planner (444P)"
+        config GMF_VIDEO_EFFECTS_CC_INPUT_FMT_YUV_PACKET
+            bool "YUV Packet (V308)"
+        config GMF_VIDEO_EFFECTS_CC_INPUT_FMT_ARGB888
+            bool "ARGB888 (AB24)"
+        config GMF_VIDEO_EFFECTS_CC_INPUT_FMT_ABGR888
+            bool "ABGR888 (AR24)"
+    endchoice
+
+    config GMF_VIDEO_EFFECTS_CC_INPUT_PIXEL_FORMAT
+        hex
+        help
+            FourCC pixel format codes for input format
+        default FOURCC_GREY     if GMF_VIDEO_EFFECTS_CC_INPUT_FMT_GREY
+        default FOURCC_YUV420P  if GMF_VIDEO_EFFECTS_CC_INPUT_FMT_I420
+        default FOURCC_OUYY_EVYY if GMF_VIDEO_EFFECTS_CC_INPUT_FMT_O_UYY_E_VYY
+        default FOURCC_RGB16    if GMF_VIDEO_EFFECTS_CC_INPUT_FMT_RGB565_LE
+        default FOURCC_BGR16    if GMF_VIDEO_EFFECTS_CC_INPUT_FMT_BGR565_LE
+        default FOURCC_RGB16_BE if GMF_VIDEO_EFFECTS_CC_INPUT_FMT_RGB565_BE
+        default FOURCC_BGR16_BE if GMF_VIDEO_EFFECTS_CC_INPUT_FMT_BGR565_BE
+        default FOURCC_YUYV     if GMF_VIDEO_EFFECTS_CC_INPUT_FMT_YUYV
+        default FOURCC_UYVY     if GMF_VIDEO_EFFECTS_CC_INPUT_FMT_UYVY
+        default FOURCC_RGB24    if GMF_VIDEO_EFFECTS_CC_INPUT_FMT_RGB888
+        default FOURCC_BGR24    if GMF_VIDEO_EFFECTS_CC_INPUT_FMT_BGR888
+        default FOURCC_YUV444P  if GMF_VIDEO_EFFECTS_CC_INPUT_FMT_YUV_PLANNER
+        default FOURCC_YUV      if GMF_VIDEO_EFFECTS_CC_INPUT_FMT_YUV_PACKET
+        default FOURCC_ARGB32   if GMF_VIDEO_EFFECTS_CC_INPUT_FMT_ARGB888
+        default FOURCC_ABGR32   if GMF_VIDEO_EFFECTS_CC_INPUT_FMT_ABGR888
+
+    choice
+        prompt "Output Pixel Format"
+        default GMF_VIDEO_EFFECTS_CC_OUTPUT_FMT_RGB565_LE
+        help
+            Select output pixel format for color conversion
+            Below table shows supported input and output format combinations:
+            | Input Format                 | Supported Output Formats                                  |
+            |----------------------------  |-----------------------------------------------------------|
+            | RGB/BGR565_LE/BE  RGB/BGR888 | RGB565_LE/BGR/RGB565_LE/BE RGB/BGR888 YUV_PLANAR/PACKET YUYV/UYVY  O_UYY_E_VYY/I420   |                                               
+            | ARGB/BGR888                  | RGB565_LE/BGR/RGB565_LE/BE RGB/BGR888 YUV_PLANAR O_UYY_E_VYY/I420    |
+            | YUV_PACKET/UYVY/YUYV         | RGB565_LE/BGR/RGB565_LE/BE RGB/BGR888 O_UYY_E_VYY/I420     |
+            | O_UYY_E_VYY/I420             | RGB565_LE/BGR/RGB565_LE/BE RGB/BGR888 O_UYY_E_VYY     |
+
+        config GMF_VIDEO_EFFECTS_CC_OUTPUT_FMT_GREY
+            bool "GREY"
+        config GMF_VIDEO_EFFECTS_CC_OUTPUT_FMT_I420
+            bool "YUV420 (I420)"
+        config GMF_VIDEO_EFFECTS_CC_OUTPUT_FMT_O_UYY_E_VYY
+            bool "OUEV"
+        config GMF_VIDEO_EFFECTS_CC_OUTPUT_FMT_RGB565_LE
+            bool "RGB565 Little Endian"
+        config GMF_VIDEO_EFFECTS_CC_OUTPUT_FMT_BGR565_LE
+            bool "BGR565 Little Endian"
+        config GMF_VIDEO_EFFECTS_CC_OUTPUT_FMT_RGB565_BE
+            bool "RGB565 Big Endian"
+        config GMF_VIDEO_EFFECTS_CC_OUTPUT_FMT_BGR565_BE
+            bool "BGR565 Big Endian"
+        config GMF_VIDEO_EFFECTS_CC_OUTPUT_FMT_YUYV
+            bool "YUV422(order as YUYV)"
+        config GMF_VIDEO_EFFECTS_CC_OUTPUT_FMT_UYVY
+            bool "YUV422(order as UYVY)"
+        config GMF_VIDEO_EFFECTS_CC_OUTPUT_FMT_RGB888
+            bool "RGB888"
+        config GMF_VIDEO_EFFECTS_CC_OUTPUT_FMT_BGR888
+            bool "BGR888"
+        config GMF_VIDEO_EFFECTS_CC_OUTPUT_FMT_YUV_PLANNER
+            bool "YUV444 Planner (444P)"
+        config GMF_VIDEO_EFFECTS_CC_OUTPUT_FMT_YUV_PACKET
+            bool "YUV Packet (V308)"
+    endchoice
+
+    config GMF_VIDEO_EFFECTS_CC_OUTPUT_PIXEL_FORMAT
+        hex
+        default FOURCC_GREY     if GMF_VIDEO_EFFECTS_CC_OUTPUT_FMT_GREY
+        default FOURCC_YUV420P  if GMF_VIDEO_EFFECTS_CC_OUTPUT_FMT_I420
+        default FOURCC_OUYY_EVYY if GMF_VIDEO_EFFECTS_CC_OUTPUT_FMT_O_UYY_E_VYY
+        default FOURCC_RGB16    if GMF_VIDEO_EFFECTS_CC_OUTPUT_FMT_RGB565_LE
+        default FOURCC_BGR16    if GMF_VIDEO_EFFECTS_CC_OUTPUT_FMT_BGR565_LE
+        default FOURCC_RGB16_BE if GMF_VIDEO_EFFECTS_CC_OUTPUT_FMT_RGB565_BE
+        default FOURCC_BGR16_BE if GMF_VIDEO_EFFECTS_CC_OUTPUT_FMT_BGR565_BE
+        default FOURCC_YUYV     if GMF_VIDEO_EFFECTS_CC_OUTPUT_FMT_YUYV
+        default FOURCC_UYVY     if GMF_VIDEO_EFFECTS_CC_OUTPUT_FMT_UYVY
+        default FOURCC_RGB24    if GMF_VIDEO_EFFECTS_CC_OUTPUT_FMT_RGB888
+        default FOURCC_BGR24    if GMF_VIDEO_EFFECTS_CC_OUTPUT_FMT_BGR888
+        default FOURCC_YUV444P  if GMF_VIDEO_EFFECTS_CC_OUTPUT_FMT_YUV_PLANNER
+        default FOURCC_YUV      if GMF_VIDEO_EFFECTS_CC_OUTPUT_FMT_YUV_PACKET
+
+    choice
+        prompt "Color Space Standard"
+        default GMF_VIDEO_EFFECTS_CC_COLOR_SPACE_BT601
+        help
+            Select color space standard for conversion
+                - BT.601: Standard for SDTV (Standard Definition TV)
+                - BT.709: Standard for HDTV (High Definition TV)
+                - BT.2020: Standard for UHDTV (Ultra High Definition TV)
+
+        config GMF_VIDEO_EFFECTS_CC_COLOR_SPACE_BT601
+            bool "BT.601 (SDTV)"
+        config GMF_VIDEO_EFFECTS_CC_COLOR_SPACE_BT709
+            bool "BT.709 (HDTV)"
+        config GMF_VIDEO_EFFECTS_CC_COLOR_SPACE_BT2020
+            bool "BT.2020 (UHDTV)"
+
+    endchoice
+
+    config GMF_VIDEO_EFFECTS_CC_COLOR_SPACE
+        int
+        default 0 if GMF_VIDEO_EFFECTS_CC_COLOR_SPACE_BT601    # ESP_IMGFX_COLOR_SPACE_STD_BT601
+        default 1 if GMF_VIDEO_EFFECTS_CC_COLOR_SPACE_BT709    # ESP_IMGFX_COLOR_SPACE_STD_BT709
+        default 2 if GMF_VIDEO_EFFECTS_CC_COLOR_SPACE_BT2020   # ESP_IMGFX_COLOR_SPACE_STD_BT2020
+
+endmenu

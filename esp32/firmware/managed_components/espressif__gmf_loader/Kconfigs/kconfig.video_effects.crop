@@ -1,0 +1,148 @@
+rsource "kconfig.fourcc"
+
+config GMF_VIDEO_EFFECTS_INIT_CROP
+    bool "Initialize Video Cropper"
+    default n
+    help
+        Initialize the video cropper element
+        This element extracts a region of interest from video frames
+        Features:
+            - Adjustable crop position (X,Y)
+            - Flexible output dimensions
+            - Multiple pixel format support
+        Common use cases:
+            - Region of interest extraction
+            - Aspect ratio adjustment
+            - Remove unwanted frame areas
+        Supported pixel formats: GREY(Y), RGB565(LE/BE), BGR565(LE/BE), RGB888, BGR888, YUV_PACKET
+
+menu "Video Effects Crop Configuration"
+    depends on GMF_VIDEO_EFFECTS_INIT_CROP
+
+    config GMF_VIDEO_EFFECTS_CROP_INPUT_WIDTH
+        int "Width of the Input Frame"
+        default 320
+        range 1 65536
+        help
+            The width resolution of the input frame for cropping
+            This should match your input video source resolution
+            Common resolutions:
+                - 320x240 (QVGA)
+                - 640x480 (VGA)
+                - 1280x720 (720p)
+
+    config GMF_VIDEO_EFFECTS_CROP_INPUT_HEIGHT
+        int "Height of the Input Frame"
+        default 240
+        range 1 65536
+        help
+            The height resolution of the input frame for cropping
+            This should match your input video source resolution
+            Common resolutions:
+                - 320x240 (QVGA)
+                - 640x480 (VGA)
+                - 1280x720 (720p)
+
+    choice
+        prompt "Input Pixel Format"
+        default GMF_VIDEO_EFFECTS_CROP_INPUT_FMT_RGB565_LE
+        help
+            Select input pixel format for cropping
+            Supported formats: GREY(Y), RGB565(LE/BE), BGR565(LE/BE), RGB888, BGR888, YUV_PACKET
+
+            Format details:
+                - GREY(Y): 8-bit grayscale
+                - RGB/BGR565: 16-bit color (5-bit R, 6-bit G, 5-bit B)
+                - RGB/BGR888: 24-bit true color
+                - YUV_PACKET: Packed YUV format
+
+        config GMF_VIDEO_EFFECTS_CROP_INPUT_FMT_GREY
+            bool "GREY (Y)"
+        config GMF_VIDEO_EFFECTS_CROP_INPUT_FMT_RGB565_LE
+            bool "RGB565 Little Endian"
+        config GMF_VIDEO_EFFECTS_CROP_INPUT_FMT_BGR565_LE
+            bool "BGR565 Little Endian"
+        config GMF_VIDEO_EFFECTS_CROP_INPUT_FMT_RGB565_BE
+            bool "RGB565 Big Endian"
+        config GMF_VIDEO_EFFECTS_CROP_INPUT_FMT_BGR565_BE
+            bool "BGR565 Big Endian"
+        config GMF_VIDEO_EFFECTS_CROP_INPUT_FMT_RGB888
+            bool "RGB888"
+        config GMF_VIDEO_EFFECTS_CROP_INPUT_FMT_BGR888
+            bool "BGR888"
+        config GMF_VIDEO_EFFECTS_CROP_INPUT_FMT_YUV_PACKET
+            bool "YUV Packet"
+    endchoice
+
+    config GMF_VIDEO_EFFECTS_CROP_INPUT_PIXEL_FORMAT
+        hex
+        default FOURCC_GREY     if GMF_VIDEO_EFFECTS_CROP_INPUT_FMT_GREY
+        default FOURCC_RGB16    if GMF_VIDEO_EFFECTS_CROP_INPUT_FMT_RGB565_LE
+        default FOURCC_BGR16    if GMF_VIDEO_EFFECTS_CROP_INPUT_FMT_BGR565_LE
+        default FOURCC_RGB16_BE if GMF_VIDEO_EFFECTS_CROP_INPUT_FMT_RGB565_BE
+        default FOURCC_BGR16_BE if GMF_VIDEO_EFFECTS_CROP_INPUT_FMT_BGR565_BE
+        default FOURCC_RGB24    if GMF_VIDEO_EFFECTS_CROP_INPUT_FMT_RGB888
+        default FOURCC_BGR24    if GMF_VIDEO_EFFECTS_CROP_INPUT_FMT_BGR888
+        default FOURCC_YUV      if GMF_VIDEO_EFFECTS_CROP_INPUT_FMT_YUV_PACKET
+
+    config GMF_VIDEO_EFFECTS_CROP_X_POS
+        int "X Position for Cropping"
+        default 0
+        range 0 GMF_VIDEO_EFFECTS_CROP_INPUT_WIDTH
+        help
+            The horizontal start position (in pixels) for cropping
+            Must ensure that X position + output width <= input width
+            Example:
+                - Input width: 320
+                - X position: 80
+                - Output width: 160
+            This will crop from pixel 80 to 240 horizontally
+
+    config GMF_VIDEO_EFFECTS_CROP_Y_POS
+        int "Y Position for Cropping"
+        default 0
+        range 0 GMF_VIDEO_EFFECTS_CROP_INPUT_HEIGHT
+        help
+            The vertical start position (in pixels) for cropping
+            Must ensure that Y position + output height <= input height
+            Example:
+                - Input height: 240
+                - Y position: 60
+                - Output height: 120
+            This will crop from pixel 60 to 180 vertically.
+
+    config GMF_VIDEO_EFFECTS_CROP_OUTPUT_WIDTH
+        int "Width of the Cropped Frame"
+        default 160
+        range 1 GMF_VIDEO_EFFECTS_CROP_INPUT_WIDTH
+        help
+            The width resolution of the output frame after cropping
+            Must be less than or equal to (input width - X position)
+            Example configurations:
+            1. Center crop:
+               - Input: 320x240
+               - Position: (80,60)
+               - Output: 160x120
+            2. Edge crop:
+               - Input: 320x240
+               - Position: (0,0)
+               - Output: 240x240
+
+    config GMF_VIDEO_EFFECTS_CROP_OUTPUT_HEIGHT
+        int "Height of the Cropped Frame"
+        default 120
+        range 1 GMF_VIDEO_EFFECTS_CROP_INPUT_HEIGHT
+        help
+            The height resolution of the output frame after cropping
+            Must be less than or equal to (input height - Y position)
+            Example configurations:
+            1. Center crop:
+               - Input: 320x240
+               - Position: (80,60)
+               - Output: 160x120
+            2. Edge crop:
+               - Input: 320x240
+               - Position: (0,0)
+               - Output: 320x180
+
+endmenu

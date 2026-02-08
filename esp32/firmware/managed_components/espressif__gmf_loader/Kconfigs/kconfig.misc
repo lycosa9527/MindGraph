@@ -1,0 +1,12 @@
+menu "GMF Miscellaneous"
+
+    config GMF_MISC_INIT_COPIER
+        bool "Initialize Miscellaneous Copier"
+        default n
+        help
+            The copier element provides data transfer capabilities between GMF elements:
+            - One-to-one: Direct data transfer between two elements
+            - One-to-many: Data distribution from one source to multiple destinations
+            - Support for both zero-copy and buffered transfer modes
+
+endmenu

@@ -1,0 +1,6 @@
+menu "GMF Video Configurations"
+
+    rsource "kconfig.video_codec"
+    rsource "kconfig.video_effects"
+
+endmenu

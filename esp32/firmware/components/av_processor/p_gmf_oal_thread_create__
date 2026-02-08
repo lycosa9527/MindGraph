@@ -1,0 +1,1357 @@
+[1mdiff --git a/CHANGELOG.md b/CHANGELOG.md[m
+[1mindex c0200f7..1f68d33 100644[m
+[1m--- a/CHANGELOG.md[m
+[1m+++ b/CHANGELOG.md[m
+[36m@@ -1,5 +1,18 @@[m
+ # Changelog[m
+ [m
+[32m+[m[32m## v0.5.5[m
+[32m+[m
+[32m+[m[32m### Feature[m
+[32m+[m
+[32m+[m[32m- Support esp_board_manager version greater than or equal to 0.5[m
+[32m+[m[32m- Add `video_capture_fetch_frame_acquire` and `video_capture_fetch_frame_release` APIs to support video capture stream and fetch modes.[m
+[32m+[m
+[32m+[m[32m## v0.5.4[m
+[32m+[m
+[32m+[m[32m### Bugfix[m
+[32m+[m
+[32m+[m[32m- Fix API redefintion issue[m
+[32m+[m
+ ## v0.5.3[m
+ [m
+ ### Feature[m
+[1mdiff --git a/examples/audio_echo/main/main.c b/examples/audio_echo/main/main.c[m
+[1mindex 27591eb..63caa45 100644[m
+[1m--- a/examples/audio_echo/main/main.c[m
+[1m+++ b/examples/audio_echo/main/main.c[m
+[36m@@ -26,6 +26,7 @@[m [mstatic esp_err_t audio_passthru_init(void)[m
+ {[m
+     esp_board_manager_adapter_info_t bsp_info = {0};[m
+     esp_board_manager_adapter_config_t bsp_config = ESP_BOARD_MANAGER_ADAPTER_CONFIG_DEFAULT();[m
+[32m+[m[32m    bsp_config.enable_sdcard = true;[m
+     av_processor_afe_config_t afe_config = DEFAULT_AV_PROCESSOR_AFE_CONFIG();[m
+     audio_manager_config_t config = DEFAULT_AUDIO_MANAGER_CONFIG();[m
+ [m
+[36m@@ -37,6 +38,7 @@[m [mstatic esp_err_t audio_passthru_init(void)[m
+     config.board_bits = bsp_info.sample_bits;[m
+     config.board_channels = bsp_info.channels;[m
+     audio_manager_init(&config);[m
+[32m+[m[41m    [m
+ [m
+     esp_codec_dev_set_out_vol(config.play_dev, 60);[m
+     esp_codec_dev_set_in_gain(config.rec_dev, 26.0);[m
+[36m@@ -74,6 +76,9 @@[m [mstatic esp_err_t audio_passthru_init(void)[m
+     return ESP_OK;[m
+ }[m
+ [m
+[32m+[m[32mextern int media_dump_feed(const char *filename, const uint8_t *data, size_t size);[m
+[32m+[m
+[32m+[m
+ int app_main(void)[m
+ {[m
+     audio_passthru_init();[m
+[36m@@ -84,10 +89,10 @@[m [mint app_main(void)[m
+         return ESP_FAIL;[m
+     }[m
+     while (1) {[m
+[31m-        int ret = audio_recorder_read_data(audio_data, AUDIO_BUFFER_SIZE);[m
+[31m-        if (ret > 0) {[m
+[31m-            audio_feeder_feed_data(audio_data, ret);[m
+[31m-        }[m
+[32m+[m[32m        // int ret = audio_recorder_read_data(audio_data, AUDIO_BUFFER_SIZE);[m
+[32m+[m[32m        // if (ret > 0) {[m
+[32m+[m[32m        //     audio_feeder_feed_data(audio_data, ret);[m
+[32m+[m[32m        // }[m
+     }[m
+     return 0;[m
+ }[m
+[1mdiff --git a/examples/common/esp_board_manager_adapter/esp_board_manager_adapter.c b/examples/common/esp_board_manager_adapter/esp_board_manager_adapter.c[m
+[1mindex 1c54be2..bfc113c 100644[m
+[1m--- a/examples/common/esp_board_manager_adapter/esp_board_manager_adapter.c[m
+[1m+++ b/examples/common/esp_board_manager_adapter/esp_board_manager_adapter.c[m
+[36m@@ -4,344 +4,370 @@[m
+  * SPDX-License-Identifier: Apache-2.0[m
+  */[m
+ [m
+[31m-#include <string.h>[m
+[31m-#include <stdbool.h>[m
+[31m-#include <stdint.h>[m
+[31m-#include "esp_log.h"[m
+[31m-#include "esp_err.h"[m
+[31m-#include "esp_codec_dev.h"[m
+[31m-#include "esp_board_manager_includes.h"[m
+[31m-#include "dev_audio_codec.h"[m
+[31m-#include "esp_lvgl_port.h"[m
+[31m-#include "esp_board_manager_adapter.h"[m
+[31m-#include "esp_lcd_touch.h"[m
+[31m-#if CONFIG_ESP_BOARD_DEV_LCD_TOUCH_I2C_SUPPORT[m
+[31m-#include "dev_lcd_touch_i2c.h"[m
+[31m-#endif  /* CONFIG_ESP_BOARD_DEV_LCD_TOUCH_I2C_SUPPORT */[m
+[31m-[m
+[31m-// LVGL configuration[m
+[31m-#define LVGL_TICK_PERIOD_MS    5[m
+[31m-#define LVGL_TASK_MAX_SLEEP_MS 500[m
+[31m-#define LVGL_TASK_MIN_SLEEP_MS 5[m
+[31m-#define LVGL_TASK_STACK_SIZE   (10 * 1024)[m
+[31m-#define LVGL_TASK_PRIORITY     5[m
+[31m-[m
+[31m-#define DEFAULT_PLAY_VOLUME      30[m
+[31m-#define DEFAULT_REC_GAIN         32.0[m
+[31m-#define DEFAULT_REC_CHANNEL_GAIN 32.0[m
+[31m-#define REC_CHANNEL_MASK         BIT(2)[m
+[31m-[m
+[31m-static const char *TAG = "ESP_BOARD_MANAGER_ADAPTER";[m
+[31m-[m
+[31m-typedef struct {[m
+[31m-#if CONFIG_ESP_BOARD_DEV_DISPLAY_LCD_SPI_SUPPORT[m
+[31m-    dev_display_lcd_spi_handles_t     *lcd_handles;[m
+[31m-#endif  /* CONFIG_ESP_BOARD_DEV_DISPLAY_LCD_SPI_SUPPORT */[m
+[31m-#if CONFIG_ESP_BOARD_DEV_AUDIO_CODEC_SUPPORT[m
+[31m-    dev_audio_codec_handles_t         *play_dev_handles;[m
+[31m-    dev_audio_codec_handles_t         *rec_dev_handles;[m
+[31m-#endif  /* CONFIG_ESP_BOARD_DEV_AUDIO_CODEC_SUPPORT */[m
+[31m-    esp_board_manager_adapter_config_t config;[m
+[31m-} esp_board_manager_adapter_basic_t;[m
+[31m-[m
+[31m-static esp_board_manager_adapter_basic_t basic_info;[m
+[31m-[m
+[31m-static esp_err_t esp_board_manager_adapter_init_lvgl_display(void)[m
+[31m-{[m
+[31m-    esp_err_t ret = ESP_OK;[m
+[31m-[m
+[31m-    // Check if LCD handles are available[m
+[31m-    if (basic_info.lcd_handles == NULL) {[m
+[31m-        ESP_LOGE(TAG, "LCD handles not available");[m
+[31m-        return ESP_ERR_INVALID_STATE;[m
+[31m-    }[m
+[31m-[m
+[31m-    // Initialize LVGL port[m
+[31m-    ESP_LOGI(TAG, "Initializing LVGL port...");[m
+[31m-    const lvgl_port_cfg_t lvgl_cfg = {[m
+[31m-        .task_priority = LVGL_TASK_PRIORITY,[m
+[31m-        .task_stack = LVGL_TASK_STACK_SIZE,[m
+[31m-        .task_affinity = 1,[m
+[31m-        .task_max_sleep_ms = LVGL_TASK_MAX_SLEEP_MS,[m
+[31m-        .timer_period_ms = LVGL_TICK_PERIOD_MS,[m
+[31m-    };[m
+[31m-[m
+[31m-    ret = lvgl_port_init(&lvgl_cfg);[m
+[31m-    if (ret != ESP_OK) {[m
+[31m-        ESP_LOGE(TAG, "Failed to initialize LVGL port: %s", esp_err_to_name(ret));[m
+[31m-        return ESP_FAIL;[m
+[31m-    }[m
+[31m-[m
+[31m-    // Get LCD configuration[m
+[31m-    dev_display_lcd_spi_config_t *lcd_cfg = NULL;[m
+[31m-    ret = esp_board_manager_get_device_config("display_lcd", (void **)&lcd_cfg);[m
+[31m-    if (ret != ESP_OK || lcd_cfg == NULL) {[m
+[31m-        ESP_LOGE(TAG, "Failed to get LCD configuration: %s", esp_err_to_name(ret));[m
+[31m-        return ESP_FAIL;[m
+[31m-    }[m
+[31m-[m
+[31m-    // Configure and add display[m
+[31m-    const lvgl_port_display_cfg_t disp_cfg = {[m
+[31m-        .io_handle = basic_info.lcd_handles->io_handle,[m
+[31m-        .panel_handle = basic_info.lcd_handles->panel_handle,[m
+[31m-        .buffer_size = lcd_cfg->x_max * lcd_cfg->y_max,[m
+[31m-        .double_buffer = true,[m
+[31m-        .hres = lcd_cfg->x_max,[m
+[31m-        .vres = lcd_cfg->y_max,[m
+[31m-        .monochrome = false,[m
+[31m-        .rotation = {[m
+[31m-            .swap_xy = lcd_cfg->swap_xy,[m
+[31m-            .mirror_x = lcd_cfg->mirror_x,[m
+[31m-            .mirror_y = lcd_cfg->mirror_y,[m
+[31m-        },[m
+[31m-        .flags = {[m
+[31m-            .buff_spiram = true,[m
+[31m-#if LVGL_VERSION_MAJOR >= 9[m
+[31m-            .swap_bytes = true,[m
+[31m-#endif  /* LVGL_VERSION_MAJOR >= 9 */[m
+[31m-        }};[m
+[31m-[m
+[31m-    lv_display_t *disp = lvgl_port_add_disp(&disp_cfg);[m
+[31m-    if (disp == NULL) {[m
+[31m-        ESP_LOGE(TAG, "Failed to add LCD display");[m
+[31m-        return ESP_FAIL;[m
+[31m-    }[m
+[31m-    ESP_LOGI(TAG, "LCD display initialized successfully");[m
+[31m-[m
+[31m-#if CONFIG_ESP_BOARD_DEV_LCD_TOUCH_I2C_SUPPORT[m
+[31m-    if (basic_info.config.enable_touch) {[m
+[31m-        void *touch_device_handle = NULL;[m
+[31m-        ret = esp_board_manager_get_device_handle("lcd_touch", &touch_device_handle);[m
+[31m-        if (ret == ESP_OK && touch_device_handle != NULL) {[m
+[31m-            dev_lcd_touch_i2c_handles_t *touch_handles = (dev_lcd_touch_i2c_handles_t *)touch_device_handle;[m
+[31m-[m
+[31m-            if (touch_handles->touch_handle != NULL) {[m
+[31m-                const lvgl_port_touch_cfg_t touch_cfg = {[m
+[31m-                    .disp = disp,[m
+[31m-                    .handle = touch_handles->touch_handle,[m
+[31m-                };[m
+[31m-[m
+[31m-                lv_indev_t *touch_indev = lvgl_port_add_touch(&touch_cfg);[m
+[31m-                if (touch_indev != NULL) {[m
+[31m-                    ESP_LOGI(TAG, "Touch input initialized successfully");[m
+[31m-                } else {[m
+[31m-                    ESP_LOGW(TAG, "Failed to add touch input device (continuing without touch)");[m
+[31m-                }[m
+[31m-            } else {[m
+[31m-                ESP_LOGW(TAG, "Touch handle is NULL (continuing without touch)");[m
+[31m-            }[m
+[31m-        } else {[m
+[31m-            ESP_LOGW(TAG, "Touch device not available: %s (continuing without touch)", esp_err_to_name(ret));[m
+[31m-        }[m
+[31m-    }[m
+[31m-#endif  /* CONFIG_ESP_BOARD_DEV_LCD_TOUCH_I2C_SUPPORT */[m
+[31m-[m
+[31m-    return ESP_OK;[m
+[31m-}[m
+[31m-[m
+[31m-static esp_err_t calculate_adc_audio_info(esp_board_manager_adapter_info_t *info)[m
+[31m-{[m
+[31m-    dev_audio_codec_config_t *adc_cfg = NULL;[m
+[31m-    int ret = esp_board_manager_get_device_config("audio_adc", (void **)&adc_cfg);[m
+[31m-    if (ret != ESP_OK) {[m
+[31m-        ESP_LOGE(TAG, "Failed to get audio_adc config: %s", esp_err_to_name(ret));[m
+[31m-        return ret;[m
+[31m-    }[m
+[31m-    if (adc_cfg->adc_channel_mask == 0b0111) {[m
+[31m-        memcpy(info->mic_layout, "RMNM", 4);[m
+[31m-        info->sample_rate = 16000;[m
+[31m-        info->sample_bits = 16;[m
+[31m-        info->channels = 2;[m
+[31m-    } else if (adc_cfg->adc_channel_mask == 0b1000) {[m
+[31m-        memcpy(info->mic_layout, "MR", 2);[m
+[31m-        info->sample_rate = 16000;[m
+[31m-        info->sample_bits = 16;[m
+[31m-        info->channels = 2;[m
+[31m-    } else {[m
+[31m-        ESP_LOGE(TAG, "Unsupported adc channel mask: %lx", adc_cfg->adc_channel_mask);[m
+[31m-        return ESP_ERR_NOT_SUPPORTED;[m
+[31m-    }[m
+[31m-    return ESP_OK;[m
+[31m-}[m
+[31m-[m
+[31m-esp_err_t esp_board_manager_adapter_init(const esp_board_manager_adapter_config_t *config, esp_board_manager_adapter_info_t *info)[m
+[31m-{[m
+[31m-    esp_err_t ret = ESP_OK;[m
+[31m-[m
+[31m-    if (info == NULL || config == NULL) {[m
+[31m-        ESP_LOGE(TAG, "Invalid parameter: info or config is NULL");[m
+[31m-        return ESP_ERR_INVALID_ARG;[m
+[31m-    }[m
+[31m-    memset(info, 0, sizeof(esp_board_manager_adapter_info_t));[m
+[31m-    basic_info.config = *config;[m
+[31m-[m
+[31m-    ret = esp_board_manager_init();[m
+[31m-    if (ret != ESP_OK) {[m
+[31m-        ESP_LOGE(TAG, "Failed to initialize board manager: %s", esp_err_to_name(ret));[m
+[31m-        return ret;[m
+[31m-    }[m
+[31m-[m
+[31m-#if CONFIG_ESP_BOARD_DEV_AUDIO_CODEC_SUPPORT[m
+[31m-    if (config->enable_audio) {[m
+[31m-        ret = esp_board_manager_get_device_handle("audio_dac", (void **)&basic_info.play_dev_handles);[m
+[31m-        if (ret != ESP_OK) {[m
+[31m-            ESP_LOGE(TAG, "Failed to get audio_dac handle: %s", esp_err_to_name(ret));[m
+[31m-            return ret;[m
+[31m-        }[m
+[31m-        info->play_dev = basic_info.play_dev_handles ? basic_info.play_dev_handles->codec_dev : NULL;[m
+[31m-        if (info->play_dev) {[m
+[31m-            ret = esp_codec_dev_set_out_vol(info->play_dev, DEFAULT_PLAY_VOLUME);[m
+[31m-            if (ret != ESP_OK) {[m
+[31m-                ESP_LOGE(TAG, "Failed to set playback volume: %s", esp_err_to_name(ret));[m
+[31m-                return ret;[m
+[31m-            }[m
+[31m-            ESP_LOGI(TAG, "Playback device configured with volume: %d", DEFAULT_PLAY_VOLUME);[m
+[31m-        }[m
+[31m-[m
+[31m-        ret = esp_board_manager_get_device_handle("audio_adc", (void **)&basic_info.rec_dev_handles);[m
+[31m-        if (ret != ESP_OK) {[m
+[31m-            ESP_LOGE(TAG, "Failed to get audio_adc handle: %s", esp_err_to_name(ret));[m
+[31m-            return ret;[m
+[31m-        }[m
+[31m-        info->rec_dev = basic_info.rec_dev_handles ? basic_info.rec_dev_handles->codec_dev : NULL;[m
+[31m-        if (info->rec_dev) {[m
+[31m-            ret = esp_codec_dev_set_in_gain(info->rec_dev, DEFAULT_REC_GAIN);[m
+[31m-            if (ret != ESP_OK) {[m
+[31m-                ESP_LOGE(TAG, "Failed to set recording gain: %s", esp_err_to_name(ret));[m
+[31m-                return ret;[m
+[31m-            }[m
+[31m-            ESP_LOGI(TAG, "Recording device configured with gain: %.1f", DEFAULT_REC_GAIN);[m
+[31m-        }[m
+[31m-[m
+[31m-        ret = calculate_adc_audio_info(info);[m
+[31m-        if (ret != ESP_OK) {[m
+[31m-            ESP_LOGE(TAG, "Failed to calculate ADC audio info: %s", esp_err_to_name(ret));[m
+[31m-            return ret;[m
+[31m-        }[m
+[31m-        ESP_LOGI(TAG, "Mic layout: %.*s", 8, (char *)info->mic_layout);[m
+[31m-        ESP_LOGI(TAG, "Sample rate: %d Hz", info->sample_rate);[m
+[31m-        ESP_LOGI(TAG, "Sample bits: %d", info->sample_bits);[m
+[31m-        ESP_LOGI(TAG, "Channels: %d", info->channels);[m
+[31m-    } else {[m
+[31m-        info->rec_dev = NULL;[m
+[31m-        info->play_dev = NULL;[m
+[31m-    }[m
+[31m-#else[m
+[31m-    info->play_dev = NULL;[m
+[31m-    info->rec_dev = NULL;[m
+[31m-#endif  /* CONFIG_ESP_BOARD_DEV_AUDIO_CODEC_SUPPORT */[m
+[31m-[m
+[31m-#if CONFIG_ESP_BOARD_DEV_DISPLAY_LCD_SPI_SUPPORT[m
+[31m-    if (config->enable_lcd) {[m
+[31m-        void *lcd_handle = NULL;[m
+[31m-        ret = esp_board_manager_get_device_handle("display_lcd", &lcd_handle);[m
+[31m-        if (ret == ESP_OK && lcd_handle) {[m
+[31m-            basic_info.lcd_handles = (dev_display_lcd_spi_handles_t *)lcd_handle;[m
+[31m-            info->lcd_panel = basic_info.lcd_handles->panel_handle;[m
+[31m-            ESP_LOGI(TAG, "LCD panel handle: %p", info->lcd_panel);[m
+[31m-        } else {[m
+[31m-            ESP_LOGW(TAG, "LCD device not available: %s", esp_err_to_name(ret));[m
+[31m-            info->lcd_panel = NULL;[m
+[31m-        }[m
+[31m-    } else {[m
+[31m-        info->lcd_panel = NULL;[m
+[31m-    }[m
+[31m-#else[m
+[31m-    info->lcd_panel = NULL;[m
+[31m-#endif  /* CONFIG_ESP_BOARD_DEV_DISPLAY_LCD_SPI_SUPPORT */[m
+[31m-[m
+[31m-#if CONFIG_ESP_BOARD_DEV_FATFS_SDCARD_SUPPORT[m
+[31m-    if (config->enable_sdcard) {[m
+[31m-        ret = esp_board_manager_get_device_handle("fs_sdcard", &info->sdcard_handle);[m
+[31m-        if (ret != ESP_OK) {[m
+[31m-            ESP_LOGW(TAG, "SD card device not available: %s", esp_err_to_name(ret));[m
+[31m-            info->sdcard_handle = NULL;[m
+[31m-        } else {[m
+[31m-            ESP_LOGI(TAG, "SD card handle: %p", info->sdcard_handle);[m
+[31m-        }[m
+[31m-    } else {[m
+[31m-        info->sdcard_handle = NULL;[m
+[31m-    }[m
+[31m-#else[m
+[31m-    info->sdcard_handle = NULL;[m
+[31m-#endif  /* CONFIG_ESP_BOARD_DEV_FATFS_SDCARD_SUPPORT */[m
+[31m-[m
+[31m-    ESP_LOGI(TAG, "Board: %s", g_esp_board_info.name);[m
+[31m-    ESP_LOGI(TAG, "BSP Manager initialization completed successfully");[m
+[31m-[m
+[31m-#if CONFIG_ESP_BOARD_DEV_LEDC_CTRL_SUPPORT[m
+[31m-    if (config->enable_lcd_backlight) {[m
+[31m-        esp_board_manager_adapter_set_lcd_backlight(100);[m
+[31m-    }[m
+[31m-#endif  /* CONFIG_ESP_BOARD_DEV_LEDC_CTRL_SUPPORT */[m
+[31m-[m
+[31m-#if CONFIG_ESP_BOARD_DEV_DISPLAY_LCD_SPI_SUPPORT[m
+[31m-    if (config->enable_lvgl) {[m
+[31m-        ret = esp_board_manager_adapter_init_lvgl_display();[m
+[31m-        if (ret != ESP_OK) {[m
+[31m-            ESP_LOGE(TAG, "Failed to initialize LVGL display: %s", esp_err_to_name(ret));[m
+[31m-            return ret;[m
+[31m-        }[m
+[31m-    }[m
+[31m-#endif  /* CONFIG_ESP_BOARD_DEV_DISPLAY_LCD_SPI_SUPPORT */[m
+[31m-[m
+[31m-    return ESP_OK;[m
+[31m-}[m
+[31m-[m
+[31m-esp_err_t esp_board_manager_adapter_deinit(void)[m
+[31m-{[m
+[31m-    esp_err_t ret = esp_board_manager_deinit();[m
+[31m-    if (ret != ESP_OK) {[m
+[31m-        ESP_LOGE(TAG, "Failed to deinitialize board manager: %s", esp_err_to_name(ret));[m
+[31m-        return ret;[m
+[31m-    }[m
+[31m-#if CONFIG_ESP_BOARD_DEV_DISPLAY_LCD_SPI_SUPPORT[m
+[31m-    if (basic_info.config.enable_lvgl) {[m
+[31m-        ret = lvgl_port_deinit();[m
+[31m-        if (ret != ESP_OK) {[m
+[31m-            ESP_LOGE(TAG, "Failed to deinitialize LVGL port: %s", esp_err_to_name(ret));[m
+[31m-            return ret;[m
+[31m-        }[m
+[31m-    }[m
+[31m-#endif  /* CONFIG_ESP_BOARD_DEV_DISPLAY_LCD_SPI_SUPPORT */[m
+[31m-    return ESP_OK;[m
+[31m-}[m
+[31m-[m
+[31m-esp_err_t esp_board_manager_adapter_set_lcd_backlight(int brightness_percent)[m
+[31m-{[m
+[31m-#if CONFIG_ESP_BOARD_DEV_LEDC_CTRL_SUPPORT[m
+[31m-    if (!basic_info.config.enable_lcd_backlight) {[m
+[31m-        ESP_LOGE(TAG, "LCD backlight control not enabled");[m
+[31m-        return ESP_ERR_NOT_SUPPORTED;[m
+[31m-    }[m
+[31m-    if (brightness_percent > 100) {[m
+[31m-        brightness_percent = 100;[m
+[31m-    }[m
+[31m-    if (brightness_percent < 0) {[m
+[31m-        brightness_percent = 0;[m
+[31m-    }[m
+[31m-[m
+[31m-    ESP_LOGI(TAG, "Setting LCD backlight: %d%%,", brightness_percent);[m
+[31m-    static periph_ledc_handle_t *ledc_handle = NULL;[m
+[31m-    if (ledc_handle == NULL) {[m
+[31m-        ESP_BOARD_RETURN_ON_ERROR(esp_board_manager_get_device_handle("lcd_brightness", (void **)&ledc_handle), TAG, "Get LEDC control device handle failed");[m
+[31m-    }[m
+[31m-    dev_ledc_ctrl_config_t *dev_ledc_cfg = NULL;[m
+[31m-    esp_err_t config_ret = esp_board_manager_get_device_config("lcd_brightness", (void *)&dev_ledc_cfg);[m
+[31m-    if (config_ret != ESP_OK) {[m
+[31m-        ESP_LOGE(TAG, "Failed to get LEDC peripheral config '%s': %s", "lcd_brightness", esp_err_to_name(config_ret));[m
+[31m-        return ESP_FAIL;[m
+[31m-    }[m
+[31m-    ESP_LOGI(TAG, "dev_ledc_cfg.ledc_name: %s, name: %s, type: %s", dev_ledc_cfg->ledc_name, dev_ledc_cfg->name, dev_ledc_cfg->type);[m
+[31m-    periph_ledc_config_t *ledc_config = NULL;[m
+[31m-    esp_board_manager_get_periph_config(dev_ledc_cfg->ledc_name, (void **)&ledc_config);[m
+[31m-    uint32_t duty = (brightness_percent * ((1 << (uint32_t)ledc_config->duty_resolution) - 1)) / 100;[m
+[31m-    ESP_LOGI(TAG, "duty_cycle: %" PRIu32 ", speed_mode: %d, channel: %d, duty_resolution: %d", duty, ledc_handle->speed_mode, ledc_handle->channel, ledc_config->duty_resolution);[m
+[31m-    ESP_BOARD_RETURN_ON_ERROR(ledc_set_duty(ledc_handle->speed_mode, ledc_handle->channel, duty), TAG, "LEDC set duty failed");[m
+[31m-    ESP_BOARD_RETURN_ON_ERROR(ledc_update_duty(ledc_handle->speed_mode, ledc_handle->channel), TAG, "LEDC update duty failed");[m
+[31m-    return ESP_OK;[m
+[31m-#else[m
+[31m-    ESP_LOGE(TAG, "LCD backlight control not supported");[m
+[31m-    return ESP_ERR_NOT_SUPPORTED;[m
+[31m-#endif  /* CONFIG_ESP_BOARD_DEV_LEDC_CTRL_SUPPORT */[m
+[31m-}[m
+\ No newline at end of file[m
+[32m+[m[32m #include <string.h>[m
+[32m+[m[32m #include <stdbool.h>[m
+[32m+[m[32m #include <stdint.h>[m
+[32m+[m[32m #include "esp_log.h"[m
+[32m+[m[32m #include "esp_err.h"[m
+[32m+[m[32m #include "esp_codec_dev.h"[m
+[32m+[m[32m #include "esp_board_manager_includes.h"[m
+[32m+[m[32m #include "dev_audio_codec.h"[m
+[32m+[m[32m #include "esp_lvgl_port.h"[m
+[32m+[m[32m #include "esp_board_manager_adapter.h"[m
+[32m+[m[32m #include "esp_lcd_touch.h"[m
+[32m+[m[32m #include "esp_lcd_types.h"[m
+[32m+[m[32m #if CONFIG_ESP_BOARD_DEV_LCD_TOUCH_I2C_SUPPORT[m
+[32m+[m[32m #include "dev_lcd_touch_i2c.h"[m
+[32m+[m[32m #endif  /* CONFIG_ESP_BOARD_DEV_LCD_TOUCH_I2C_SUPPORT */[m
+[32m+[m[41m [m
+[32m+[m[32m // LVGL configuration[m
+[32m+[m[32m #define LVGL_TICK_PERIOD_MS    5[m
+[32m+[m[32m #define LVGL_TASK_MAX_SLEEP_MS 500[m
+[32m+[m[32m #define LVGL_TASK_MIN_SLEEP_MS 5[m
+[32m+[m[32m #define LVGL_TASK_STACK_SIZE   (10 * 1024)[m
+[32m+[m[32m #define LVGL_TASK_PRIORITY     5[m
+[32m+[m[41m [m
+[32m+[m[32m #define DEFAULT_PLAY_VOLUME      30[m
+[32m+[m[32m #define DEFAULT_REC_GAIN         32.0[m
+[32m+[m[32m #define DEFAULT_REC_CHANNEL_GAIN 32.0[m
+[32m+[m[32m #define REC_CHANNEL_MASK         BIT(2)[m
+[32m+[m[41m [m
+[32m+[m[32m static const char *TAG = "ESP_BOARD_MANAGER_ADAPTER";[m
+[32m+[m[41m [m
+[32m+[m[32m typedef struct {[m
+[32m+[m[32m     void     *lcd_handles;[m
+[32m+[m[32m #if CONFIG_ESP_BOARD_DEV_AUDIO_CODEC_SUPPORT[m
+[32m+[m[32m     dev_audio_codec_handles_t         *play_dev_handles;[m
+[32m+[m[32m     dev_audio_codec_handles_t         *rec_dev_handles;[m
+[32m+[m[32m #endif  /* CONFIG_ESP_BOARD_DEV_AUDIO_CODEC_SUPPORT */[m
+[32m+[m[32m     esp_board_manager_adapter_config_t config;[m
+[32m+[m[32m } esp_board_manager_adapter_basic_t;[m
+[32m+[m[41m [m
+[32m+[m[32m static esp_board_manager_adapter_basic_t basic_info;[m
+[32m+[m[41m [m
+[32m+[m[32m static esp_err_t esp_board_manager_adapter_init_lvgl_display(void)[m
+[32m+[m[32m {[m
+[32m+[m[32m     esp_err_t ret = ESP_OK;[m
+[32m+[m[41m [m
+[32m+[m[32m     // Check if LCD handles are available[m
+[32m+[m[32m     if (basic_info.lcd_handles == NULL) {[m
+[32m+[m[32m         ESP_LOGE(TAG, "LCD handles not available");[m
+[32m+[m[32m         return ESP_ERR_INVALID_STATE;[m
+[32m+[m[32m     }[m
+[32m+[m[41m [m
+[32m+[m[32m     // Initialize LVGL port[m
+[32m+[m[32m     ESP_LOGI(TAG, "Initializing LVGL port...");[m
+[32m+[m[32m     const lvgl_port_cfg_t lvgl_cfg = {[m
+[32m+[m[32m         .task_priority = LVGL_TASK_PRIORITY,[m
+[32m+[m[32m         .task_stack = LVGL_TASK_STACK_SIZE,[m
+[32m+[m[32m         .task_affinity = 1,[m
+[32m+[m[32m         .task_max_sleep_ms = LVGL_TASK_MAX_SLEEP_MS,[m
+[32m+[m[32m         .timer_period_ms = LVGL_TICK_PERIOD_MS,[m
+[32m+[m[32m     };[m
+[32m+[m[41m [m
+[32m+[m[32m     ret = lvgl_port_init(&lvgl_cfg);[m
+[32m+[m[32m     if (ret != ESP_OK) {[m
+[32m+[m[32m         ESP_LOGE(TAG, "Failed to initialize LVGL port: %s", esp_err_to_name(ret));[m
+[32m+[m[32m         return ESP_FAIL;[m
+[32m+[m[32m     }[m
+[32m+[m[41m [m
+[32m+[m[32m     // Get LCD configuration[m
+[32m+[m[32m     dev_display_lcd_config_t *lcd_cfg = NULL;[m
+[32m+[m[32m     ret = esp_board_manager_get_device_config("display_lcd", (void **)&lcd_cfg);[m
+[32m+[m[32m     if (ret != ESP_OK || lcd_cfg == NULL) {[m
+[32m+[m[32m         ESP_LOGE(TAG, "Failed to get LCD configuration: %s", esp_err_to_name(ret));[m
+[32m+[m[32m         return ESP_FAIL;[m
+[32m+[m[32m     }[m
+[32m+[m[41m [m
+[32m+[m[32m     // Configure and add display[m
+[32m+[m[32m     dev_display_lcd_handles_t *lcd_handles = (dev_display_lcd_handles_t *)basic_info.lcd_handles;[m
+[32m+[m[32m     const lvgl_port_display_cfg_t disp_cfg = {[m
+[32m+[m[32m         .io_handle = (void *)lcd_handles->io_handle,[m
+[32m+[m[32m         .panel_handle = (void *)lcd_handles->panel_handle,[m
+[32m+[m[32m         .buffer_size = lcd_cfg->lcd_width * lcd_cfg->lcd_width,[m
+[32m+[m[32m         .double_buffer = true,[m
+[32m+[m[32m         .hres = lcd_cfg->lcd_width,[m
+[32m+[m[32m         .vres = lcd_cfg->lcd_width,[m
+[32m+[m[32m         .monochrome = false,[m
+[32m+[m[32m         .rotation = {[m
+[32m+[m[32m             .swap_xy = lcd_cfg->swap_xy,[m
+[32m+[m[32m             .mirror_x = lcd_cfg->mirror_x,[m
+[32m+[m[32m             .mirror_y = lcd_cfg->mirror_y,[m
+[32m+[m[32m         },[m
+[32m+[m[32m         .flags = {[m
+[32m+[m[32m             .buff_spiram = true,[m
+[32m+[m[32m #if LVGL_VERSION_MAJOR >= 9[m
+[32m+[m[32m             .swap_bytes = true,[m
+[32m+[m[32m #endif  /* LVGL_VERSION_MAJOR >= 9 */[m
+[32m+[m[32m         }};[m
+[32m+[m[41m [m
+[32m+[m[32m     lv_display_t *disp = lvgl_port_add_disp(&disp_cfg);[m
+[32m+[m[32m     if (disp == NULL) {[m
+[32m+[m[32m         ESP_LOGE(TAG, "Failed to add LCD display");[m
+[32m+[m[32m         return ESP_FAIL;[m
+[32m+[m[32m     }[m
+[32m+[m[32m     ESP_LOGI(TAG, "LCD display initialized successfully");[m
+[32m+[m[41m [m
+[32m+[m[32m #if CONFIG_ESP_BOARD_DEV_LCD_TOUCH_I2C_SUPPORT[m
+[32m+[m[32m     if (basic_info.config.enable_touch) {[m
+[32m+[m[32m         void *touch_device_handle = NULL;[m
+[32m+[m[32m         ret = esp_board_manager_get_device_handle("lcd_touch", &touch_device_handle);[m
+[32m+[m[32m         if (ret == ESP_OK && touch_device_handle != NULL) {[m
+[32m+[m[32m             dev_lcd_touch_i2c_handles_t *touch_handles = (dev_lcd_touch_i2c_handles_t *)touch_device_handle;[m
+[32m+[m[41m [m
+[32m+[m[32m             if (touch_handles->touch_handle != NULL) {[m
+[32m+[m[32m                 const lvgl_port_touch_cfg_t touch_cfg = {[m
+[32m+[m[32m                     .disp = disp,[m
+[32m+[m[32m                     .handle = touch_handles->touch_handle,[m
+[32m+[m[32m                 };[m
+[32m+[m[41m [m
+[32m+[m[32m                 lv_indev_t *touch_indev = lvgl_port_add_touch(&touch_cfg);[m
+[32m+[m[32m                 if (touch_indev != NULL) {[m
+[32m+[m[32m                     ESP_LOGI(TAG, "Touch input initialized successfully");[m
+[32m+[m[32m                 } else {[m
+[32m+[m[32m                     ESP_LOGW(TAG, "Failed to add touch input device (continuing without touch)");[m
+[32m+[m[32m                 }[m
+[32m+[m[32m             } else {[m
+[32m+[m[32m                 ESP_LOGW(TAG, "Touch handle is NULL (continuing without touch)");[m
+[32m+[m[32m             }[m
+[32m+[m[32m         } else {[m
+[32m+[m[32m             ESP_LOGW(TAG, "Touch device not available: %s (continuing without touch)", esp_err_to_name(ret));[m
+[32m+[m[32m         }[m
+[32m+[m[32m     }[m
+[32m+[m[32m #endif  /* CONFIG_ESP_BOARD_DEV_LCD_TOUCH_I2C_SUPPORT */[m
+[32m+[m[41m [m
+[32m+[m[32m     return ESP_OK;[m
+[32m+[m[32m }[m
+[32m+[m[41m [m
+[32m+[m[32m static esp_err_t calculate_adc_audio_info(esp_board_manager_adapter_info_t *info)[m
+[32m+[m[32m {[m
+[32m+[m[32m     dev_audio_codec_config_t *adc_cfg = NULL;[m
+[32m+[m[32m     int ret = esp_board_manager_get_device_config("audio_adc", (void **)&adc_cfg);[m
+[32m+[m[32m     if (ret != ESP_OK) {[m
+[32m+[m[32m         ESP_LOGE(TAG, "Failed to get audio_adc config: %s", esp_err_to_name(ret));[m
+[32m+[m[32m         return ret;[m
+[32m+[m[32m     }[m
+[32m+[m[32m     if (adc_cfg->adc_channel_mask == 0b0111) {[m
+[32m+[m[32m         memcpy(info->mic_layout, "RMNM", 4);[m
+[32m+[m[32m         info->sample_rate = 16000;[m
+[32m+[m[32m         info->sample_bits = 32;[m
+[32m+[m[32m         info->channels = 2;[m
+[32m+[m[32m     } else if (adc_cfg->adc_channel_mask == 0b1000) {[m
+[32m+[m[32m         memcpy(info->mic_layout, "MR", 2);[m
+[32m+[m[32m         info->sample_rate = 16000;[m
+[32m+[m[32m         info->sample_bits = 16;[m
+[32m+[m[32m         info->channels = 2;[m
+[32m+[m[32m     } else {[m
+[32m+[m[32m         ESP_LOGE(TAG, "Unsupported adc channel mask: %lx", adc_cfg->adc_channel_mask);[m
+[32m+[m[32m         return ESP_ERR_NOT_SUPPORTED;[m
+[32m+[m[32m     }[m
+[32m+[m[32m     return ESP_OK;[m
+[32m+[m[32m }[m
+[32m+[m[41m [m
+[32m+[m[32m esp_err_t esp_board_manager_adapter_init(const esp_board_manager_adapter_config_t *config, esp_board_manager_adapter_info_t *info)[m
+[32m+[m[32m {[m
+[32m+[m[32m     esp_err_t ret = ESP_OK;[m
+[32m+[m[41m [m
+[32m+[m[32m     if (info == NULL || config == NULL) {[m
+[32m+[m[32m         ESP_LOGE(TAG, "Invalid parameter: info or config is NULL");[m
+[32m+[m[32m         return ESP_ERR_INVALID_ARG;[m
+[32m+[m[32m     }[m
+[32m+[m[32m     memset(info, 0, sizeof(esp_board_manager_adapter_info_t));[m
+[32m+[m[32m     basic_info.config = *config;[m
+[32m+[m[41m [m
+[32m+[m[32m     ret = esp_board_manager_init();[m
+[32m+[m[32m     if (ret != ESP_OK) {[m
+[32m+[m[32m         ESP_LOGE(TAG, "Failed to initialize board manager: %s", esp_err_to_name(ret));[m
+[32m+[m[32m         return ret;[m
+[32m+[m[32m     }[m
+[32m+[m[41m [m
+[32m+[m[32m #if CONFIG_ESP_BOARD_DEV_AUDIO_CODEC_SUPPORT[m
+[32m+[m[32m     if (config->enable_audio) {[m
+[32m+[m[32m         ret = esp_board_manager_get_device_handle("audio_dac", (void **)&basic_info.play_dev_handles);[m
+[32m+[m[32m         if (ret != ESP_OK) {[m
+[32m+[m[32m             ESP_LOGE(TAG, "Failed to get audio_dac handle: %s", esp_err_to_name(ret));[m
+[32m+[m[32m             return ret;[m
+[32m+[m[32m         }[m
+[32m+[m[32m         info->play_dev = basic_info.play_dev_handles ? basic_info.play_dev_handles->codec_dev : NULL;[m
+[32m+[m[32m         if (info->play_dev) {[m
+[32m+[m[32m             ret = esp_codec_dev_set_out_vol(info->play_dev, DEFAULT_PLAY_VOLUME);[m
+[32m+[m[32m             if (ret != ESP_OK) {[m
+[32m+[m[32m                 ESP_LOGE(TAG, "Failed to set playback volume: %s", esp_err_to_name(ret));[m
+[32m+[m[32m                 return ret;[m
+[32m+[m[32m             }[m
+[32m+[m[32m             ESP_LOGI(TAG, "Playback device configured with volume: %d", DEFAULT_PLAY_VOLUME);[m
+[32m+[m[32m         }[m
+[32m+[m[41m [m
+[32m+[m[32m         ret = esp_board_manager_get_device_handle("audio_adc", (void **)&basic_info.rec_dev_handles);[m
+[32m+[m[32m         if (ret != ESP_OK) {[m
+[32m+[m[32m             ESP_LOGE(TAG, "Failed to get audio_adc handle: %s", esp_err_to_name(ret));[m
+[32m+[m[32m             return ret;[m
+[32m+[m[32m         }[m
+[32m+[m[32m         info->rec_dev = basic_info.rec_dev_handles ? basic_info.rec_dev_handles->codec_dev : NULL;[m
+[32m+[m[32m         if (info->rec_dev) {[m
+[32m+[m[32m             ret = esp_codec_dev_set_in_gain(info->rec_dev, DEFAULT_REC_GAIN);[m
+[32m+[m[32m             if (ret != ESP_OK) {[m
+[32m+[m[32m                 ESP_LOGE(TAG, "Failed to set recording gain: %s", esp_err_to_name(ret));[m
+[32m+[m[32m                 return ret;[m
+[32m+[m[32m             }[m
+[32m+[m[32m             ESP_LOGI(TAG, "Recording device configured with gain: %.1f", DEFAULT_REC_GAIN);[m
+[32m+[m[32m         }[m
+[32m+[m[41m [m
+[32m+[m[32m         ret = calculate_adc_audio_info(info);[m
+[32m+[m[32m         if (ret != ESP_OK) {[m
+[32m+[m[32m             ESP_LOGE(TAG, "Failed to calculate ADC audio info: %s", esp_err_to_name(ret));[m
+[32m+[m[32m             return ret;[m
+[32m+[m[32m         }[m
+[32m+[m[32m         ESP_LOGI(TAG, "Mic layout: %.*s", 8, (char *)info->mic_layout);[m
+[32m+[m[32m         ESP_LOGI(TAG, "Sample rate: %d Hz", info->sample_rate);[m
+[32m+[m[32m         ESP_LOGI(TAG, "Sample bits: %d", info->sample_bits);[m
+[32m+[m[32m         ESP_LOGI(TAG, "Channels: %d", info->channels);[m
+[32m+[m[32m     } else {[m
+[32m+[m[32m         info->rec_dev = NULL;[m
+[32m+[m[32m         info->play_dev = NULL;[m
+[32m+[m[32m     }[m
+[32m+[m[32m #else[m
+[32m+[m[32m     info->play_dev = NULL;[m
+[32m+[m[32m     info->rec_dev = NULL;[m
+[32m+[m[32m #endif  /* CONFIG_ESP_BOARD_DEV_AUDIO_CODEC_SUPPORT */[m
+[32m+[m[41m [m
+[32m+[m[32m #if 1//CONFIG_ESP_BOARD_DEV_DISPLAY_LCD_SPI_SUPPORT[m
+[32m+[m[32m     if (config->enable_lcd) {[m
+[32m+[m[32m         void *lcd_handle = NULL;[m
+[32m+[m[32m         ret = esp_board_manager_get_device_handle(ESP_BOARD_DEVICE_NAME_DISPLAY_LCD, &lcd_handle);[m
+[32m+[m[32m         if (ret == ESP_OK && lcd_handle) {[m
+[32m+[m[32m            dev_display_lcd_handles_t *__lcd_handles = (dev_display_lcd_handles_t *)lcd_handle;[m
+[32m+[m[32m            info->lcd_panel = __lcd_handles->panel_handle;[m
+[32m+[m[32m            basic_info.lcd_handles = __lcd_handles;[m
+[32m+[m[32m            //  basic_info.lcd_handles = (dev_display_lcd_handles_t *)lcd_handle;[m
+[32m+[m[32m            //  info->lcd_panel = basic_info.lcd_handles->panel_handle;[m
+[32m+[m[32m             ESP_LOGI(TAG, "LCD panel handle: %p", info->lcd_panel);[m
+[32m+[m[32m         } else {[m
+[32m+[m[32m             ESP_LOGW(TAG, "LCD device not available: %s", esp_err_to_name(ret));[m
+[32m+[m[32m             info->lcd_panel = NULL;[m
+[32m+[m[32m         }[m
+[32m+[m[32m     } else {[m
+[32m+[m[32m         info->lcd_panel = NULL;[m
+[32m+[m[32m     }[m
+[32m+[m[32m #else[m
+[32m+[m[32m     info->lcd_panel = NULL;[m
+[32m+[m[32m #endif  /* CONFIG_ESP_BOARD_DEV_DISPLAY_LCD_SPI_SUPPORT */[m
+[32m+[m[41m [m
+[32m+[m[32m #if CONFIG_ESP_BOARD_DEV_FATFS_SDCARD_SUPPORT[m
+[32m+[m[32m     if (config->enable_sdcard) {[m
+[32m+[m[32m         ret = esp_board_manager_get_device_handle("fs_sdcard", &info->sdcard_handle);[m
+[32m+[m[32m         if (ret != ESP_OK) {[m
+[32m+[m[32m             ESP_LOGW(TAG, "SD card device not available: %s", esp_err_to_name(ret));[m
+[32m+[m[32m             info->sdcard_handle = NULL;[m
+[32m+[m[32m         } else {[m
+[32m+[m[32m             ESP_LOGI(TAG, "SD card handle: %p", info->sdcard_handle);[m
+[32m+[m[32m         }[m
+[32m+[m[32m     } else {[m
+[32m+[m[32m         info->sdcard_handle = NULL;[m
+[32m+[m[32m     }[m
+[32m+[m[32m #else[m
+[32m+[m[32m     info->sdcard_handle = NULL;[m
+[32m+[m[32m #endif  /* CONFIG_ESP_BOARD_DEV_FATFS_SDCARD_SUPPORT */[m
+[32m+[m[41m [m
+[32m+[m[32m     ESP_LOGI(TAG, "Board: %s", g_esp_board_info.name);[m
+[32m+[m[32m     ESP_LOGI(TAG, "BSP Manager initialization completed successfully");[m
+[32m+[m[41m [m
+[32m+[m[32m #if CONFIG_ESP_BOARD_DEV_LEDC_CTRL_SUPPORT[m
+[32m+[m[32m     if (config->enable_lcd_backlight) {[m
+[32m+[m[32m         esp_board_manager_adapter_set_lcd_backlight(100);[m
+[32m+[m[32m     }[m
+[32m+[m[32m #endif  /* CONFIG_ESP_BOARD_DEV_LEDC_CTRL_SUPPORT */[m
+[32m+[m[41m [m
+[32m+[m[32m #if 1//CONFIG_ESP_BOARD_DEV_DISPLAY_LCD_SPI_SUPPORT[m
+[32m+[m[32m     if (config->enable_lvgl) {[m
+[32m+[m[32m         ret = esp_board_manager_adapter_init_lvgl_display();[m
+[32m+[m[32m         if (ret != ESP_OK) {[m
+[32m+[m[32m             ESP_LOGE(TAG, "Failed to initialize LVGL display: %s", esp_err_to_name(ret));[m
+[32m+[m[32m             return ret;[m
+[32m+[m[32m         }[m
+[32m+[m[32m     }[m
+[32m+[m[32m #endif  /* CONFIG_ESP_BOARD_DEV_DISPLAY_LCD_SPI_SUPPORT */[m
+[32m+[m[41m [m
+[32m+[m[32m     return ESP_OK;[m
+[32m+[m[32m }[m
+[32m+[m[41m [m
+[32m+[m[32m esp_err_t esp_board_manager_adapter_deinit(void)[m
+[32m+[m[32m {[m
+[32m+[m[32m     esp_err_t ret = esp_board_manager_deinit();[m
+[32m+[m[32m     if (ret != ESP_OK) {[m
+[32m+[m[32m         ESP_LOGE(TAG, "Failed to deinitialize board manager: %s", esp_err_to_name(ret));[m
+[32m+[m[32m         return ret;[m
+[32m+[m[32m     }[m
+[32m+[m[32m #if CONFIG_ESP_BOARD_DEV_DISPLAY_LCD_SPI_SUPPORT[m
+[32m+[m[32m     if (basic_info.config.enable_lvgl) {[m
+[32m+[m[32m         ret = lvgl_port_deinit();[m
+[32m+[m[32m         if (ret != ESP_OK) {[m
+[32m+[m[32m             ESP_LOGE(TAG, "Failed to deinitialize LVGL port: %s", esp_err_to_name(ret));[m
+[32m+[m[32m             return ret;[m
+[32m+[m[32m         }[m
+[32m+[m[32m     }[m
+[32m+[m[32m #endif  /* CONFIG_ESP_BOARD_DEV_DISPLAY_LCD_SPI_SUPPORT */[m
+[32m+[m[32m     return ESP_OK;[m
+[32m+[m[32m }[m
+[32m+[m[41m [m
+[32m+[m[32m esp_err_t esp_board_manager_adapter_set_lcd_backlight(int brightness_percent)[m
+[32m+[m[32m {[m
+[32m+[m[32m #if CONFIG_ESP_BOARD_DEV_LEDC_CTRL_SUPPORT[m
+[32m+[m[32m     if (!basic_info.config.enable_lcd_backlight) {[m
+[32m+[m[32m         ESP_LOGE(TAG, "LCD backlight control not enabled");[m
+[32m+[m[32m         return ESP_ERR_NOT_SUPPORTED;[m
+[32m+[m[32m     }[m
+[32m+[m[32m     if (brightness_percent > 100) {[m
+[32m+[m[32m         brightness_percent = 100;[m
+[32m+[m[32m     }[m
+[32m+[m[32m     if (brightness_percent < 0) {[m
+[32m+[m[32m         brightness_percent = 0;[m
+[32m+[m[32m     }[m
+[32m+[m[41m [m
+[32m+[m[32m     ESP_LOGI(TAG, "Setting LCD backlight: %d%%,", brightness_percent);[m
+[32m+[m[32m     static periph_ledc_handle_t *ledc_handle = NULL;[m
+[32m+[m[32m     if (ledc_handle == NULL) {[m
+[32m+[m[32m         ESP_BOARD_RETURN_ON_ERROR(esp_board_manager_get_device_handle("lcd_brightness", (void **)&ledc_handle), TAG, "Get LEDC control device handle failed");[m
+[32m+[m[32m     }[m
+[32m+[m[32m     dev_ledc_ctrl_config_t *dev_ledc_cfg = NULL;[m
+[32m+[m[32m     esp_err_t config_ret = esp_board_manager_get_device_config("lcd_brightness", (void *)&dev_ledc_cfg);[m
+[32m+[m[32m     if (config_ret != ESP_OK) {[m
+[32m+[m[32m         ESP_LOGE(TAG, "Failed to get LEDC peripheral config '%s': %s", "lcd_brightness", esp_err_to_name(config_ret));[m
+[32m+[m[32m         return ESP_FAIL;[m
+[32m+[m[32m     }[m
+[32m+[m[32m     ESP_LOGI(TAG, "dev_ledc_cfg.ledc_name: %s, name: %s, type: %s", dev_ledc_cfg->ledc_name, dev_ledc_cfg->name, dev_ledc_cfg->type);[m
+[32m+[m[32m     periph_ledc_config_t *ledc_config = NULL;[m
+[32m+[m[32m     esp_board_manager_get_periph_config(dev_ledc_cfg->ledc_name, (void **)&ledc_config);[m
+[32m+[m[32m     uint32_t duty = (brightness_percent * ((1 << (uint32_t)ledc_config->duty_resolution) - 1)) / 100;[m
+[32m+[m[32m     ESP_LOGI(TAG, "duty_cycle: %" PRIu32 ", speed_mode: %d, channel: %d, duty_resolution: %d", duty, ledc_handle->speed_mode, ledc_handle->channel, ledc_config->duty_resolution);[m
+[32m+[m[32m     ESP_BOARD_RETURN_ON_ERROR(ledc_set_duty(ledc_handle->speed_mode, ledc_handle->channel, duty), TAG, "LEDC set duty failed");[m
+[32m+[m[32m     ESP_BOARD_RETURN_ON_ERROR(ledc_update_duty(ledc_handle->speed_mode, ledc_handle->channel), TAG, "LEDC update duty failed");[m
+[32m+[m[32m     return ESP_OK;[m
+[32m+[m[32m #else[m
+[32m+[m[32m     ESP_LOGE(TAG, "LCD backlight control not supported");[m
+[32m+[m[32m     return ESP_ERR_NOT_SUPPORTED;[m
+[32m+[m[32m #endif  /* CONFIG_ESP_BOARD_DEV_LEDC_CTRL_SUPPORT */[m
+[32m+[m[32m }[m
+[32m+[m[41m [m
+[32m+[m[32m esp_err_t esp_board_manager_adapter_get_lcd_resolution(int *width, int *height)[m
+[32m+[m[32m {[m
+[32m+[m[32m #if CONFIG_ESP_BOARD_DEV_DISPLAY_LCD_SPI_SUPPORT[m
+[32m+[m[32m     if (!basic_info.config.enable_lcd) {[m
+[32m+[m[32m         ESP_LOGE(TAG, "LCD not enabled");[m
+[32m+[m[32m         return ESP_ERR_NOT_SUPPORTED;[m
+[32m+[m[32m     }[m
+[32m+[m[32m     if (width == NULL || height == NULL) {[m
+[32m+[m[32m         ESP_LOGE(TAG, "Invalid parameter: width or height is NULL");[m
+[32m+[m[32m         return ESP_ERR_INVALID_ARG;[m
+[32m+[m[32m     }[m
+[32m+[m[32m     dev_display_lcd_spi_config_t *lcd_cfg = NULL;[m
+[32m+[m[32m     esp_board_manager_get_device_config("display_lcd", (void **)&lcd_cfg);[m
+[32m+[m[32m     *width = lcd_cfg->x_max;[m
+[32m+[m[32m     *height = lcd_cfg->y_max;[m
+[32m+[m[32m     ESP_LOGI(TAG, "LCD resolution: %d x %d", *width, *height);[m
+[32m+[m[32m     return ESP_OK;[m
+[32m+[m[32m #else[m
+[32m+[m[32m     ESP_LOGE(TAG, "LCD not supported");[m
+[32m+[m[32m     return ESP_ERR_NOT_SUPPORTED;[m
+[32m+[m[32m #endif  /* CONFIG_ESP_BOARD_DEV_DISPLAY_LCD_SPI_SUPPORT */[m
+[32m+[m[32m }[m
+\ No newline at end of file[m
+[1mdiff --git a/examples/common/esp_board_manager_adapter/idf_component.yml b/examples/common/esp_board_manager_adapter/idf_component.yml[m
+[1mindex 9c3e3f8..111288a 100644[m
+[1m--- a/examples/common/esp_board_manager_adapter/idf_component.yml[m
+[1m+++ b/examples/common/esp_board_manager_adapter/idf_component.yml[m
+[36m@@ -1,4 +1,7 @@[m
+[32m+[m[32mversion: 0.5.3[m
+[32m+[m[32mdescription: Board support package manager for Espressif SOC[m
+[32m+[m
+ dependencies:[m
+[31m-  espressif/esp_board_manager: ^0.4.8[m
+[32m+[m[32m  espressif/esp_board_manager: ^0.5.0[m
+   espressif/esp_lcd_touch: ^1.1.2[m
+   espressif/esp_lvgl_port: '*'[m
+\ No newline at end of file[m
+[1mdiff --git a/examples/common/esp_board_manager_adapter/include/esp_board_manager_adapter.h b/examples/common/esp_board_manager_adapter/include/esp_board_manager_adapter.h[m
+[1mindex c8c6860..6e07dc2 100644[m
+[1m--- a/examples/common/esp_board_manager_adapter/include/esp_board_manager_adapter.h[m
+[1m+++ b/examples/common/esp_board_manager_adapter/include/esp_board_manager_adapter.h[m
+[36m@@ -81,6 +81,16 @@[m [mesp_err_t esp_board_manager_adapter_deinit(void);[m
+  */[m
+ esp_err_t esp_board_manager_adapter_set_lcd_backlight(int brightness_percent);[m
+ [m
+[32m+[m[32m/**[m
+[32m+[m[32m * @brief Get LCD resolution[m
+[32m+[m[32m *[m
+[32m+[m[32m *       This function gets the LCD resolution.[m
+[32m+[m[32m *[m
+[32m+[m[32m * @param[out] width  Width[m
+[32m+[m[32m * @param[out] height  Height[m
+[32m+[m[32m */[m
+[32m+[m[32mesp_err_t esp_board_manager_adapter_get_lcd_resolution(int *width, int *height);[m
+[32m+[m
+ #ifdef __cplusplus[m
+ }[m
+ #endif  /* __cplusplus */[m
+[1mdiff --git a/examples/video_preview/main/idf_component.yml b/examples/video_preview/main/idf_component.yml[m
+[1mindex 18309e4..0cf7459 100644[m
+[1m--- a/examples/video_preview/main/idf_component.yml[m
+[1m+++ b/examples/video_preview/main/idf_component.yml[m
+[36m@@ -1,5 +1,4 @@[m
+ dependencies:[m
+[31m-  espressif/esp_board_manager: ^0.4.0[m
+   av_processor:[m
+     path: ../../../../av_processor[m
+   esp_board_manager_adapter:[m
+[1mdiff --git a/examples/video_preview/main/main.c b/examples/video_preview/main/main.c[m
+[1mindex 88b2af7..13f0f5b 100644[m
+[1m--- a/examples/video_preview/main/main.c[m
+[1m+++ b/examples/video_preview/main/main.c[m
+[36m@@ -8,6 +8,10 @@[m
+ #include "esp_lcd_panel_ops.h"[m
+ #include "esp_capture_defaults.h"[m
+ #include "esp_video_dec_mjpeg.h"[m
+[32m+[m[32m#include "driver/i2c_master.h"[m
+[32m+[m[32m#if CONFIG_IDF_TARGET_ESP32P4[m
+[32m+[m[32m#include "esp_video_init.h"[m
+[32m+[m[32m#endif  /* CONFIG_IDF_TARGET_ESP32P4 */[m
+ [m
+ #include "esp_log.h"[m
+ #include "sdkconfig.h"[m
+[36m@@ -30,10 +34,17 @@[m
+ #define CAMERA_PIN_XCLK      40[m
+ #define CAMERA_PIN_XCLK_FREQ 20000000[m
+ [m
+[32m+[m[32m#if CONFIG_IDF_TARGET_ESP32P4[m
+[32m+[m[32m#define LCD_WIDTH  1024[m
+[32m+[m[32m#define LCD_HEIGHT 600[m
+[32m+[m[32m#else[m
+ #define LCD_WIDTH  320[m
+ #define LCD_HEIGHT 240[m
+[32m+[m[32m#endif  /* CONFIG_IDF_TARGET_ESP32P4 */[m
+ [m
+[31m-static const char *TAG = "video_passthru";[m
+[32m+[m[32m#define STREAM_MODE true[m
+[32m+[m
+[32m+[m[32mstatic const char *TAG = "video_preview";[m
+ [m
+ static esp_lcd_panel_handle_t panel_handle   = NULL;[m
+ static video_render_handle_t  render_handle  = NULL;[m
+[36m@@ -44,9 +55,14 @@[m [mstatic void video_render_decode_callback(void *ctx, const uint8_t *data, size_t[m
+     esp_lcd_panel_draw_bitmap(panel_handle, 0, 0, LCD_WIDTH, LCD_HEIGHT, data);[m
+ }[m
+ [m
+[31m-static void video_capture_decode_callback(void *ctx, int index, video_frame_t *vid_frame)[m
+[32m+[m[32mstatic void video_capture_encode_callback(void *ctx, int index, esp_capture_stream_frame_t *vid_frame)[m
+ {[m
+[31m-    video_render_feed_frame(render_handle, vid_frame);[m
+[32m+[m[32m    ESP_LOGI(TAG, "video_capture_encode_callback: index: %d, size: %zu", index, vid_frame->size);[m
+[32m+[m[32m    video_frame_t frame = {[m
+[32m+[m[32m        .data = vid_frame->data,[m
+[32m+[m[32m        .size = vid_frame->size,[m
+[32m+[m[32m    };[m
+[32m+[m[32m    video_render_feed_frame(render_handle, &frame);[m
+ }[m
+ [m
+ static esp_err_t video_passthru_init(void)[m
+[36m@@ -64,9 +80,7 @@[m [mstatic esp_err_t video_passthru_init(void)[m
+             .height = LCD_HEIGHT,[m
+         },[m
+         .decode_cfg = {[m
+[31m-            .codec_type = ESP_VIDEO_CODEC_TYPE_MJPEG,[m
+[31m-            .out_fmt = ESP_VIDEO_CODEC_PIXEL_FMT_RGB565_LE,[m
+[31m-            .codec_cc = ESP_VIDEO_DEC_SW_MJPEG_TAG,[m
+[32m+[m[32m            .codec_type = ESP_VIDEO_CODEC_TYPE_MJPEG, .out_fmt = ESP_VIDEO_CODEC_PIXEL_FMT_RGB565_LE, .codec_cc = ESP_VIDEO_DEC_SW_MJPEG_TAG,[m
+         },[m
+     };[m
+ [m
+[36m@@ -78,7 +92,7 @@[m [mstatic esp_err_t video_passthru_init(void)[m
+     video_render_start(render_handle);[m
+ [m
+     video_capture_config_t capture_cfg = {[m
+[31m-        .capture_frame_cb = video_capture_decode_callback,[m
+[32m+[m[32m        .capture_frame_cb = video_capture_encode_callback,[m
+         .capture_frame_cb_ctx = NULL,[m
+         .sink_num = 1,[m
+         .sink_cfg = {[m
+[36m@@ -87,11 +101,30 @@[m [mstatic esp_err_t video_passthru_init(void)[m
+                     .format_id = ESP_CAPTURE_FMT_ID_MJPEG,[m
+                     .width = LCD_WIDTH,[m
+                     .height = LCD_HEIGHT,[m
+[31m-                    .fps = 10,[m
+[32m+[m[32m                    .fps = 1,[m
+                 },[m
+             }},[m
+[32m+[m[32m        .stream_mode = STREAM_MODE,[m
+     };[m
+ [m
+[32m+[m[32m#if CONFIG_IDF_TARGET_ESP32P4[m
+[32m+[m[32m    i2c_master_bus_handle_t i2c_master_handle;[m
+[32m+[m[32m    esp_err_t ret = i2c_master_get_bus_handle(0, &i2c_master_handle);[m
+[32m+[m[32m    if (ret != ESP_OK) {[m
+[32m+[m[32m        ESP_LOGE(TAG, "Failed to get I2C bus handle");[m
+[32m+[m[32m        return ESP_FAIL;[m
+[32m+[m[32m    }[m
+[32m+[m[32m    const esp_video_init_csi_config_t base_csi_config = {[m
+[32m+[m[32m        .sccb_config = {[m
+[32m+[m[32m            .init_sccb = false,[m
+[32m+[m[32m            .i2c_handle = i2c_master_handle,[m
+[32m+[m[32m            .freq = 400000,[m
+[32m+[m[32m        },[m
+[32m+[m[32m        .reset_pin = -1,[m
+[32m+[m[32m        .pwdn_pin = -1,[m
+[32m+[m[32m    };[m
+[32m+[m[32m    capture_cfg.camera_config = (void *)&base_csi_config;[m
+[32m+[m[32m#else[m
+     esp_capture_video_dvp_src_cfg_t dvp_config = {0};[m
+     dvp_config.buf_count = 2;[m
+     dvp_config.reset_pin = CAMERA_PIN_RESET;[m
+[36m@@ -110,6 +143,7 @@[m [mstatic esp_err_t video_passthru_init(void)[m
+     dvp_config.xclk_pin = CAMERA_PIN_XCLK;[m
+     dvp_config.xclk_freq = CAMERA_PIN_XCLK_FREQ;[m
+     capture_cfg.camera_config = &dvp_config;[m
+[32m+[m[32m#endif  /* CONFIG_IDF_TARGET_ESP32P4 */[m
+ [m
+     capture_handle = video_capture_open(&capture_cfg);[m
+     if (!capture_handle) {[m
+[36m@@ -117,6 +151,25 @@[m [mstatic esp_err_t video_passthru_init(void)[m
+         return ESP_FAIL;[m
+     }[m
+     video_capture_start(capture_handle);[m
+[32m+[m
+[32m+[m[32m    if (STREAM_MODE) {[m
+[32m+[m[32m        while (1) {[m
+[32m+[m[32m            static int frame_count = 0;[m
+[32m+[m[32m            esp_capture_stream_frame_t frame = {0};[m
+[32m+[m[32m            frame.stream_type = ESP_CAPTURE_STREAM_TYPE_VIDEO;[m
+[32m+[m[32m            video_capture_fetch_frame_acquire(capture_handle, 0, &frame);[m
+[32m+[m[32m            video_frame_t frame_data = {[m
+[32m+[m[32m                .data = frame.data,[m
+[32m+[m[32m                .size = frame.size,[m
+[32m+[m[32m            };[m
+[32m+[m[32m            ESP_LOGI(TAG, "video_passthru_init: frame_data: %p, size: %zu", frame_data.data, frame_data.size);[m
+[32m+[m[32m            video_render_feed_frame(render_handle, &frame_data);[m
+[32m+[m[32m            video_capture_fetch_frame_release(capture_handle, 0, &frame);[m
+[32m+[m[32m            frame_count++;[m
+[32m+[m[32m            ESP_LOGI(TAG, "video_passthru_init: frame_count: %d", frame_count);[m
+[32m+[m[32m            vTaskDelay(pdMS_TO_TICKS(5000));[m
+[32m+[m[32m        }[m
+[32m+[m[32m    }[m
+     return ESP_OK;[m
+ }[m
+ [m
+[1mdiff --git a/examples/video_preview/sdkconfig.defaults b/examples/video_preview/sdkconfig.defaults[m
+[1mindex 9d102b3..5061a1e 100644[m
+[1m--- a/examples/video_preview/sdkconfig.defaults[m
+[1m+++ b/examples/video_preview/sdkconfig.defaults[m
+[36m@@ -1,9 +1,45 @@[m
+[31m-# This file was generated using idf.py save-defconfig. It can be edited manually.[m
+[31m-# Espressif IoT Development Framework (ESP-IDF) 5.5.1 Project Minimal Configuration[m
+[32m+[m[32mCONFIG_FREERTOS_ENABLE_BACKWARD_COMPATIBILITY=y[m
+[32m+[m
+ #[m
+[31m-CONFIG_IDF_TARGET="esp32s3"[m
+[32m+[m[32m# Serial flasher config[m
+[32m+[m[32m#[m
+[32m+[m[32mCONFIG_ESPTOOLPY_BEFORE_RESET=y[m
+ CONFIG_ESPTOOLPY_FLASHSIZE_4MB=y[m
+[32m+[m[32mCONFIG_ESPTOOLPY_FLASHFREQ_80M=y[m
+[32m+[m[32m# end of Serial flasher config[m
+[32m+[m
+[32m+[m[32m#[m
+[32m+[m[32m# Partition Table[m
+[32m+[m[32m#[m
+[32m+[m[32mCONFIG_PARTITION_TABLE_SINGLE_APP=y[m
+ CONFIG_PARTITION_TABLE_CUSTOM=y[m
+[32m+[m[32mCONFIG_PARTITION_TABLE_CUSTOM_FILENAME="partitions.csv"[m
+[32m+[m[32mCONFIG_PARTITION_TABLE_FILENAME="partitions.csv"[m
+[32m+[m[32mCONFIG_PARTITION_TABLE_OFFSET=0x8000[m
+[32m+[m[32mCONFIG_PARTITION_TABLE_MD5=y[m
+[32m+[m[32m# end of Partition Table[m
+[32m+[m
+[32m+[m[32mCONFIG_COMPILER_OPTIMIZATION_PERF=y[m
+[32m+[m
+[32m+[m[32mCONFIG_FREERTOS_HZ=1000[m
+[32m+[m
+ CONFIG_SPIRAM=y[m
+[31m-CONFIG_SPIRAM_MODE_OCT=y[m
+ CONFIG_SPIRAM_SPEED_80M=y[m
+[32m+[m[32mCONFIG_SPIRAM_ALLOW_STACK_EXTERNAL_MEMORY=y[m
+[32m+[m[32mCONFIG_SPIRAM_MALLOC_ALWAYSINTERNAL=1024[m
+[32m+[m[32mCONFIG_SPIRAM_TYPE_AUTO=y[m
+[32m+[m
+[32m+[m[32m#[m
+[32m+[m[32m# FAT Filesystem support[m
+[32m+[m[32m#[m
+[32m+[m[32mCONFIG_FATFS_VOLUME_COUNT=2[m
+[32m+[m[32mCONFIG_FATFS_LFN_HEAP=y[m
+[32m+[m[32mCONFIG_FATFS_SECTOR_4096=y[m
+[32m+[m[32mCONFIG_FATFS_CODEPAGE_936=y[m
+[32m+[m[32mCONFIG_FATFS_CODEPAGE=936[m
+[32m+[m[32mCONFIG_FATFS_MAX_LFN=255[m
+[32m+[m[32mCONFIG_FATFS_API_ENCODING_UTF_8=y[m
+[32m+[m[32mCONFIG_FATFS_FS_LOCK=5[m
+[32m+[m[32mCONFIG_FATFS_TIMEOUT_MS=10000[m
+[32m+[m[32mCONFIG_FATFS_PER_FILE_CACHE=y[m
+[32m+[m[32mCONFIG_FATFS_VFS_FSTAT_BLKSIZE=0[m
+[1mdiff --git a/idf_component.yml b/idf_component.yml[m
+[1mindex 3bba496..2e46ae3 100644[m
+[1m--- a/idf_component.yml[m
+[1m+++ b/idf_component.yml[m
+[36m@@ -1,4 +1,4 @@[m
+[31m-version: 0.5.3[m
+[32m+[m[32mversion: 0.5.5[m
+ description: Audio/Video Processor module for ESP-GMF[m
+ documentation: https://github.com/espressif/esp-adf/blob/master/components/av_processor/README.md[m
+ issues: https://github.com/espressif/esp-adf/issues[m
+[1mdiff --git a/include/av_processor_type.h b/include/av_processor_type.h[m
+[1mindex 89e5eda..1de023b 100644[m
+[1m--- a/include/av_processor_type.h[m
+[1m+++ b/include/av_processor_type.h[m
+[36m@@ -51,6 +51,7 @@[m [mtypedef enum {[m
+     AV_PROCESSOR_FORMAT_ID_G711U = AV_PROCESSOR_FOURCC('U', 'L', 'A', 'W'),  /*!< G.711 μ-law encoder */[m
+     AV_PROCESSOR_FORMAT_ID_OPUS  = AV_PROCESSOR_FOURCC('O', 'P', 'U', 'S'),  /*!< OPUS encoder */[m
+     AV_PROCESSOR_FORMAT_ID_AAC   = AV_PROCESSOR_FOURCC('A', 'A', 'C', ' '),  /*!< AAC encoder */[m
+[32m+[m[32m    AV_PROCESSOR_FORMAT_ID_MP3   = AV_PROCESSOR_FOURCC('M', 'P', '3', ' '),  /*!< MP3 encoder */[m
+ } av_processor_format_id_t;[m
+ [m
+ typedef struct {[m
+[1mdiff --git a/include/video_processor.h b/include/video_processor.h[m
+[1mindex a0bf444..ba68dcc 100644[m
+[1m--- a/include/video_processor.h[m
+[1m+++ b/include/video_processor.h[m
+[36m@@ -54,7 +54,7 @@[m [mtypedef void (*video_render_decode_callback_t)(void *ctx, const uint8_t *data, s[m
+  * @param[in]  index      Frame index[m
+  * @param[in]  vid_frame  Captured video frame[m
+  */[m
+[31m-typedef void (*video_capture_frame_callback_t)(void *ctx, int sink_idx, video_frame_t *vid_frame);[m
+[32m+[m[32mtypedef void (*video_capture_frame_callback_t)(void *ctx, int sink_idx, esp_capture_stream_frame_t *vid_frame);[m
+ [m
+ /**[m
+  * @brief  Video render configuration structure[m
+[36m@@ -73,8 +73,10 @@[m [mtypedef struct {[m
+     void                           *camera_config;                   /*!< Camera configuration */[m
+     uint8_t                         sink_num;                        /*!< Number of sinks */[m
+     esp_capture_sink_cfg_t          sink_cfg[DEFAULT_VID_MAX_PATH];  /*!< Sink configurations */[m
+[31m-    video_capture_frame_callback_t  capture_frame_cb;                /*!< Capture frame callback function */[m
+[31m-    void                           *capture_frame_cb_ctx;            /*!< Capture frame callback context */[m
+[32m+[m[32m    video_capture_frame_callback_t  capture_frame_cb;                /*!< Capture frame callback function, this is valid only when stream_mode is true */[m
+[32m+[m[32m    void                           *capture_frame_cb_ctx;            /*!< Capture frame callback context, this is only valid when stream_mode is true */[m
+[32m+[m[32m    bool                            stream_mode;                     /*!< Stream mode, When stream_mode is true, the capture frame will be captured from capture_frame_cb,[m
+[32m+[m[32m                                                                        otherwise, we need called video_capture_fetch_frame_acquire and video_capture_fetch_frame_release to get the frame manually */[m
+ } video_capture_config_t;[m
+ [m
+ /**[m
+[36m@@ -117,6 +119,34 @@[m [mesp_err_t video_capture_start(video_capture_handle_t handle);[m
+  */[m
+ esp_err_t video_capture_stop(video_capture_handle_t handle);[m
+ [m
+[32m+[m[32m/**[m
+[32m+[m[32m * @brief  Fetches a video frame from the capture pipeline[m
+[32m+[m[32m *         This function is only valid when stream_mode is false[m[41m [m
+[32m+[m[32m *[m
+[32m+[m[32m * @param[in]  handle  Video capture handle[m
+[32m+[m[32m * @param[in]  sink_idx  Sink index[m
+[32m+[m[32m * @param[out] frame   Video frame to fetch[m
+[32m+[m[32m *[m
+[32m+[m[32m * @return[m
+[32m+[m[32m *       - ESP_OK  On success[m
+[32m+[m[32m *       - Other   Appropriate esp_err_t error code on failure[m
+[32m+[m[32m */[m
+[32m+[m[32mesp_err_t video_capture_fetch_frame_acquire(video_capture_handle_t handle, int sink_idx, esp_capture_stream_frame_t *frame);[m
+[32m+[m
+[32m+[m[32m/**[m
+[32m+[m[32m * @brief  Releases a video frame from the capture pipeline[m
+[32m+[m[32m *         This function is only valid when stream_mode is false[m[41m [m
+[32m+[m[32m *[m
+[32m+[m[32m * @param[in]  handle  Video capture handle[m
+[32m+[m[32m * @param[in]  sink_idx  Sink index[m
+[32m+[m[32m * @param[in]  frame   Video frame to release[m
+[32m+[m[32m *[m
+[32m+[m[32m * @return[m
+[32m+[m[32m *       - ESP_OK  On success[m
+[32m+[m[32m *       - Other   Appropriate esp_err_t error code on failure[m
+[32m+[m[32m */[m
+[32m+[m[32mesp_err_t video_capture_fetch_frame_release(video_capture_handle_t handle, int sink_idx, esp_capture_stream_frame_t *frame);[m
+[32m+[m
+ /**[m
+  * @brief  Opens a video render session[m
+  *[m
+[1mdiff --git a/src/audio_processor.c b/src/audio_processor.c[m
+[1mindex 115df28..870a97d 100644[m
+[1m--- a/src/audio_processor.c[m
+[1m+++ b/src/audio_processor.c[m
+[36m@@ -668,9 +668,6 @@[m [mstatic int feeder_outport_acquire_write(void *handle, esp_gmf_data_bus_block_t *[m
+ [m
+ static int feeder_outport_release_write(void *handle, esp_gmf_data_bus_block_t *blk, int block_ticks)[m
+ {[m
+[31m-    if (audio_playback.state == AUDIO_RUN_STATE_PLAYING) {[m
+[31m-        return blk->valid_size;[m
+[31m-    }[m
+     if (audio_manager.enable_mixer) {[m
+         esp_audio_render_stream_write(audio_manager.stream[AUDIO_RENDER_STREAM_FEEDER], blk->buf, blk->valid_size);[m
+     } else {[m
+[36m@@ -951,11 +948,11 @@[m [mesp_err_t audio_playback_play(const char *url)[m
+         ESP_LOGW(TAG, "Audio playback is already playing, stopping current playback");[m
+         esp_audio_simple_player_stop(audio_playback.player);[m
+     }[m
+[32m+[m[32m    audio_playback.state = AUDIO_RUN_STATE_PLAYING;[m
+     ESP_LOGI(TAG, "Starting playback: %s, state: %d", url, audio_playback.state);[m
+     esp_err_t err = esp_audio_simple_player_run(audio_playback.player, url, NULL);[m
+[31m-    ESP_GMF_RET_ON_NOT_OK(TAG, err, {return ESP_FAIL;}, "Failed to start playback");[m
+[32m+[m[32m    ESP_GMF_RET_ON_NOT_OK(TAG, err, {audio_playback.state = AUDIO_RUN_STATE_IDLE; return ESP_FAIL;}, "Failed to start playback");[m
+ [m
+[31m-    audio_playback.state = AUDIO_RUN_STATE_PLAYING;[m
+     return ESP_OK;[m
+ }[m
+ [m
+[1mdiff --git a/src/video_processor.c b/src/video_processor.c[m
+[1mindex 92bba87..9a7b6e1 100644[m
+[1m--- a/src/video_processor.c[m
+[1m+++ b/src/video_processor.c[m
+[36m@@ -25,6 +25,9 @@[m
+ #include "esp_video_codec_types.h"[m
+ #include "esp_capture.h"[m
+ #include "esp_capture_defaults.h"[m
+[32m+[m[32m#if CONFIG_IDF_TARGET_ESP32P4[m
+[32m+[m[32m#include "esp_video_init.h"[m
+[32m+[m[32m#endif  /* CONFIG_IDF_TARGET_ESP32P4 */[m
+ [m
+ #include "video_processor.h"[m
+ [m
+[36m@@ -88,11 +91,24 @@[m [mstatic esp_capture_video_src_if_t *create_video_source(void *cam_config)[m
+ #if CONFIG_IDF_TARGET_ESP32S3[m
+     return esp_capture_new_video_dvp_src((esp_capture_video_dvp_src_cfg_t *)cam_config);[m
+ #else[m
+[31m-    ESP_LOGE(TAG, "Video source not supported for this target");[m
+[31m-    return NULL;[m
+[32m+[m[32m    esp_video_init_config_t init_config = {0};[m
+[32m+[m[32m    static bool v4l2_inited = false;[m
+[32m+[m[32m    if (v4l2_inited == false) {[m
+[32m+[m[32m        esp_err_t ret = esp_video_init(&init_config);[m
+[32m+[m[32m        if (ret != ESP_OK) {[m
+[32m+[m[32m            ESP_LOGE(TAG, "Camera init failed with error 0x%x", ret);[m
+[32m+[m[32m            v4l2_inited = false;  // Reset on failure[m
+[32m+[m[32m            return NULL;[m
+[32m+[m[32m        }[m
+[32m+[m[32m        v4l2_inited = true;[m
+[32m+[m[32m    }[m
+[32m+[m[32m    esp_capture_video_v4l2_src_cfg_t v4l2_cfg = {[m
+[32m+[m[32m        .dev_name = "/dev/video0",[m
+[32m+[m[32m        .buf_count = 2,[m
+[32m+[m[32m    };[m
+[32m+[m[32m    return esp_capture_new_video_v4l2_src(&v4l2_cfg);[m
+ #endif  /* CONFIG_IDF_TARGET_ESP32S3 */[m
+ }[m
+[31m-[m
+ static void decoder_worker_thread(void *arg)[m
+ {[m
+     video_render_t *render = (video_render_t *)arg;[m
+[36m@@ -191,11 +207,11 @@[m [mstatic void capture_worker_thread(void *arg)[m
+             }[m
+             if (frame.stream_type == ESP_CAPTURE_STREAM_TYPE_VIDEO && frame.data && frame.size > 0) {[m
+                 if (capture->config.capture_frame_cb) {[m
+[31m-                    video_frame_t vid_frame = {[m
+[31m-                        .data = frame.data,[m
+[31m-                        .size = frame.size,[m
+[31m-                    };[m
+[31m-                    capture->config.capture_frame_cb(capture->config.capture_frame_cb_ctx, i, &vid_frame);[m
+[32m+[m[32m                    // video_frame_t vid_frame = {[m
+[32m+[m[32m                    //     .data = frame.data,[m
+[32m+[m[32m                    //     .size = frame.size,[m
+[32m+[m[32m                    // };[m
+[32m+[m[32m                    capture->config.capture_frame_cb(capture->config.capture_frame_cb_ctx, i, &frame);[m
+                 }[m
+             }[m
+             esp_capture_sink_release_frame(capture->sink[i], &frame);[m
+[36m@@ -291,7 +307,7 @@[m [mesp_err_t video_render_feed_frame(video_render_handle_t handle, video_frame_t *v[m
+         return ESP_ERR_INVALID_ARG;[m
+     }[m
+     if (!vid_frame || !vid_frame->data || vid_frame->size == 0) {[m
+[31m-        ESP_LOGE(TAG, "Invalid frame data");[m
+[32m+[m[32m        ESP_LOGE(TAG, "Invalid frame data, data: %p, size: %zu", vid_frame->data, vid_frame->size);[m
+         return ESP_ERR_INVALID_ARG;[m
+     }[m
+     video_processor_event_t evt_frame = {0};[m
+[36m@@ -375,14 +391,16 @@[m [mvideo_capture_handle_t video_capture_open(video_capture_config_t *config)[m
+         return NULL;[m
+     }[m
+     capture->config = *config;[m
+[31m-    capture->frame_queue = xQueueCreate(2, sizeof(video_processor_event_t));[m
+[31m-    if (!capture->frame_queue) {[m
+[31m-        ESP_LOGE(TAG, "Failed to create frame queue");[m
+[31m-        goto __exit;[m
+[31m-    }[m
+[31m-    capture->event_group = xEventGroupCreate();[m
+[31m-    if (!capture->event_group) {[m
+[31m-        goto __exit;[m
+[32m+[m[32m    if (capture->config.stream_mode) {[m
+[32m+[m[32m        capture->frame_queue = xQueueCreate(2, sizeof(video_processor_event_t));[m
+[32m+[m[32m        if (!capture->frame_queue) {[m
+[32m+[m[32m            ESP_LOGE(TAG, "Failed to create frame queue");[m
+[32m+[m[32m            goto __exit;[m
+[32m+[m[32m        }[m
+[32m+[m[32m        capture->event_group = xEventGroupCreate();[m
+[32m+[m[32m        if (!capture->event_group) {[m
+[32m+[m[32m            goto __exit;[m
+[32m+[m[32m        }[m
+     }[m
+     esp_video_enc_register_default();[m
+     return capture;[m
+[36m@@ -415,16 +433,19 @@[m [mesp_err_t video_capture_start(video_capture_handle_t handle)[m
+         ESP_LOGE(TAG, "Failed to create video source or not support");[m
+         return ESP_ERR_NO_MEM;[m
+     }[m
+[31m-    for (int i = 0; i < capture->config.sink_num; i++) {[m
+[31m-        // TODO: support other format[m
+[31m-        esp_capture_video_info_t fixed_caps = {[m
+[31m-            .format_id = ESP_CAPTURE_FMT_ID_RGB565_BE,[m
+[31m-            .width = capture->config.sink_cfg[i].video_info.width,[m
+[31m-            .height = capture->config.sink_cfg[i].video_info.height,[m
+[31m-            .fps = capture->config.sink_cfg[i].video_info.fps,[m
+[31m-        };[m
+[31m-        capture->vid_src->set_fixed_caps(capture->vid_src, &fixed_caps);[m
+[32m+[m[32m    if (capture->config.sink_num > 1) {[m
+[32m+[m[32m        for (int i = 0; i < capture->config.sink_num; i++) {[m
+[32m+[m[32m            // TODO: support other format[m
+[32m+[m[32m            esp_capture_video_info_t fixed_caps = {[m
+[32m+[m[32m                .format_id = ESP_CAPTURE_FMT_ID_RGB565_BE,[m
+[32m+[m[32m                .width = capture->config.sink_cfg[i].video_info.width,[m
+[32m+[m[32m                .height = capture->config.sink_cfg[i].video_info.height,[m
+[32m+[m[32m                .fps = capture->config.sink_cfg[i].video_info.fps,[m
+[32m+[m[32m            };[m
+[32m+[m[32m            capture->vid_src->set_fixed_caps(capture->vid_src, &fixed_caps);[m
+[32m+[m[32m        }[m
+     }[m
+[32m+[m
+     esp_capture_cfg_t capture_cfg = {[m
+         .video_src = capture->vid_src,[m
+     };[m
+[36m@@ -436,13 +457,24 @@[m [mesp_err_t video_capture_start(video_capture_handle_t handle)[m
+     for (int i = 0; i < capture->config.sink_num; i++) {[m
+         esp_capture_sink_cfg_t sink_cfg = capture->config.sink_cfg[i];[m
+         esp_capture_sink_setup(capture->capture, i, &sink_cfg, &capture->sink[i]);[m
+[31m-        esp_capture_sink_enable(capture->sink[i], ESP_CAPTURE_RUN_MODE_ALWAYS);[m
+[31m-    }[m
+[32m+[m[32m        // esp_capture_sink_enable(capture->sink[i], ESP_CAPTURE_RUN_MODE_ALWAYS);[m
+[32m+[m[32m    }[m
+[32m+[m[32m    // if (capture->config.stream_mode) {[m
+[32m+[m[32m    //     for (int i = 0; i < capture->config.sink_num; i++) {[m
+[32m+[m[32m    //         esp_capture_sink_enable(capture->sink[i], ESP_CAPTURE_RUN_MODE_ALWAYS);[m
+[32m+[m[32m    //     }[m
+[32m+[m[32m    // } else {[m
+[32m+[m[32m    //     for (int i = 0; i < capture->config.sink_num; i++) {[m
+[32m+[m[32m    //         esp_capture_sink_enable(capture->sink[i], ESP_CAPTURE_RUN_MODE_ONESHOT);[m
+[32m+[m[32m    //     }[m
+[32m+[m[32m    // }[m
+     esp_capture_start(capture->capture);[m
+ [m
+[31m-    esp_gmf_oal_thread_create(&capture->capture_thread, VIDEO_CAPTURE_WORKER_TASK_NAME, capture_worker_thread,[m
+[31m-                              (void *)capture, VIDEO_CAPTURE_WORKER_TASK_STACK_SIZE, VIDEO_CAPTURE_WORKER_TASK_PRIORITY,[m
+[31m-                              true, VIDEO_CAPTURE_WORKER_TASK_CORE);[m
+[32m+[m[32m    if (capture->config.stream_mode) {[m
+[32m+[m[32m        esp_gmf_oal_thread_create(&capture->capture_thread, VIDEO_CAPTURE_WORKER_TASK_NAME, capture_worker_thread,[m
+[32m+[m[32m                                  (void *)capture, VIDEO_CAPTURE_WORKER_TASK_STACK_SIZE, VIDEO_CAPTURE_WORKER_TASK_PRIORITY,[m
+[32m+[m[32m                                  true, VIDEO_CAPTURE_WORKER_TASK_CORE);[m
+[32m+[m[32m    }[m
+ [m
+     return ESP_OK;[m
+ }[m
+[36m@@ -459,12 +491,69 @@[m [mvoid video_capture_close(video_capture_handle_t handle)[m
+         esp_capture_close(capture->capture);[m
+     }[m
+     capture->is_running = false;[m
+[31m-    xEventGroupWaitBits(capture->event_group, _EVENT_GROUP_STOP_BIT, pdTRUE, pdFALSE, portMAX_DELAY);[m
+[32m+[m[32m    if (capture->config.stream_mode) {[m
+[32m+[m[32m        xEventGroupWaitBits(capture->event_group, _EVENT_GROUP_STOP_BIT, pdTRUE, pdFALSE, portMAX_DELAY);[m
+[32m+[m[32m    }[m
+     if (capture->vid_src) {[m
+         capture->vid_src = NULL;[m
+     }[m
+[31m-    if (capture->frame_queue) {[m
+[32m+[m[32m    if (capture->config.stream_mode && capture->frame_queue) {[m
+         vQueueDelete(capture->frame_queue);[m
+[32m+[m[32m        capture->frame_queue = NULL;[m
+[32m+[m[32m    }[m
+[32m+[m[32m    if (capture->config.stream_mode && capture->event_group) {[m
+[32m+[m[32m        vEventGroupDelete(capture->event_group);[m
+[32m+[m[32m        capture->event_group = NULL;[m
+     }[m
+     esp_gmf_oal_free(capture);[m
+ }[m
+[32m+[m
+[32m+[m[32mesp_err_t video_capture_fetch_frame_acquire(video_capture_handle_t handle, int sink_idx, esp_capture_stream_frame_t *frame)[m
+[32m+[m[32m{[m
+[32m+[m[32m    video_capture_t *capture = (video_capture_t *)handle;[m
+[32m+[m[32m    if (!capture) {[m
+[32m+[m[32m        ESP_LOGE(TAG, "Invalid capture handle");[m
+[32m+[m[32m        return ESP_ERR_INVALID_ARG;[m
+[32m+[m[32m    }[m
+[32m+[m[32m    if (capture->config.stream_mode) {[m
+[32m+[m[32m        ESP_LOGE(TAG, "Capture is in stream mode");[m
+[32m+[m[32m        return ESP_ERR_INVALID_STATE;[m
+[32m+[m[32m    }[m
+[32m+[m[32m    if (capture->config.sink_num <= sink_idx) {[m
+[32m+[m[32m        ESP_LOGE(TAG, "Invalid sink index: %d", sink_idx);[m
+[32m+[m[32m        return ESP_ERR_INVALID_ARG;[m
+[32m+[m[32m    }[m
+[32m+[m[32m    esp_err_t ret = ESP_OK;[m
+[32m+[m[32m    esp_capture_sink_enable(capture->sink[sink_idx], ESP_CAPTURE_RUN_MODE_ONESHOT);[m
+[32m+[m[32m    frame->stream_type = ESP_CAPTURE_STREAM_TYPE_VIDEO;[m
+[32m+[m[32m    ret = esp_capture_sink_acquire_frame(capture->sink[sink_idx], frame, false);[m
+[32m+[m[32m    if (ret != ESP_CAPTURE_ERR_OK) {[m
+[32m+[m[32m        ESP_LOGE(TAG, "Failed to acquire frame from sink %d, ret: %x", sink_idx, ret);[m
+[32m+[m[32m        return ret;[m
+[32m+[m[32m    }[m
+[32m+[m[32m    ESP_LOGD(TAG, "Acquired frame from sink %d, data: %p, size: %zu", sink_idx, frame->data, frame->size);[m
+[32m+[m[32m    return ret;[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32mesp_err_t video_capture_fetch_frame_release(video_capture_handle_t handle, int sink_idx, esp_capture_stream_frame_t *frame)[m
+[32m+[m[32m{[m
+[32m+[m[32m    video_capture_t *capture = (video_capture_t *)handle;[m
+[32m+[m[32m    if (!capture) {[m
+[32m+[m[32m        ESP_LOGE(TAG, "Invalid capture handle");[m
+[32m+[m[32m        return ESP_ERR_INVALID_ARG;[m
+[32m+[m[32m    }[m
+[32m+[m[32m    if (capture->config.stream_mode) {[m
+[32m+[m[32m        ESP_LOGE(TAG, "Capture is not in stream mode");[m
+[32m+[m[32m        return ESP_ERR_INVALID_STATE;[m
+[32m+[m[32m    }[m
+[32m+[m[32m    if (capture->config.sink_num <= sink_idx) {[m
+[32m+[m[32m        ESP_LOGE(TAG, "Invalid sink index: %d", sink_idx);[m
+[32m+[m[32m        return ESP_ERR_INVALID_ARG;[m
+[32m+[m[32m    }[m
+[32m+[m[32m    esp_err_t ret = esp_capture_sink_release_frame(capture->sink[sink_idx], frame);[m
+[32m+[m[32m    if (ret != ESP_CAPTURE_ERR_OK) {[m
+[32m+[m[32m        ESP_LOGE(TAG, "Failed to release frame from sink %d", sink_idx);[m
+[32m+[m[32m        return ret;[m
+[32m+[m[32m    }[m
+[32m+[m[32m    return ESP_OK;[m
+[32m+[m[32m}[m

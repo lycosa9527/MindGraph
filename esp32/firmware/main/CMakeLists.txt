@@ -1,45 +1,33 @@
 idf_component_register(
-    SRCS 
-        "main.cpp"
-        "audio_handler.cpp"
-        "battery_manager.cpp"
-        "button_handler.cpp"
-        "config_manager.cpp"
-        "echo_cancellation.cpp"
-        "font_manager.cpp"
-        "asset_manager.cpp"
-        "i2c_bus_manager.cpp"
-        "launcher.cpp"
-        "loading_screen.cpp"
-        "motion_sensor.cpp"
-        "rtc_manager.cpp"
-        "sd_storage.cpp"
-        "standby_screen.cpp"
-        "ui_manager.cpp"
-        "ui_icons.cpp"
-        "wallpaper_manager.cpp"
-        "qrcode_generator.cpp"
-        "websocket_client.cpp"
-        "wifi_manager.cpp"
-        "apps/smart_response_app.cpp"
-        "apps/dify_app.cpp"
-        "fonts/chinese_font_16.c"
-    INCLUDE_DIRS 
-        "."
-        "apps"
-        "../components"
-    PRIV_REQUIRES 
-        nvs_flash
-        esp_wifi
-        esp_http_client
-        esp_https_ota
-        mbedtls
-        driver
-        esp_driver_i2c
-        esp_timer
-        spi_flash
-        spiffs
-        fatfs
-        lvgl__lvgl
-        json
+    SRCS "main.cpp"
+    INCLUDE_DIRS ".")
+
+target_compile_options(${COMPONENT_LIB} PUBLIC -Wno-missing-field-initializers)
+
+# Function to get component library
+function(get_component_library component_name output_var)
+    # Get the exact component name
+    idf_build_get_property(build_components BUILD_COMPONENTS)
+    set(TARGET_COMPONENT "")
+    foreach(COMPONENT ${build_components})
+        if(COMPONENT MATCHES "${component_name}" OR COMPONENT MATCHES "espressif__${component_name}")
+            set(TARGET_COMPONENT ${COMPONENT})
+            break()
+        endif()
+    endforeach()
+
+    # Get the component library
+    if(TARGET_COMPONENT STREQUAL "")
+        message(FATAL_ERROR "Component '${component_name}' not found.")
+    else()
+        idf_component_get_property(COMPONENT_LIB ${TARGET_COMPONENT} COMPONENT_LIB)
+        set(${output_var} ${COMPONENT_LIB} PARENT_SCOPE)
+    endif()
+endfunction()
+
+get_component_library("lvgl" LVGL_LIB)
+target_compile_options(
+    ${LVGL_LIB}
+    PUBLIC
+        "-Wno-attributes"
 )

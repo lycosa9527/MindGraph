@@ -1,0 +1,42 @@
+rsource "kconfig.fourcc"
+
+config GMF_VIDEO_CODEC_INIT_DECODER
+    bool "Initialize Video Decoder"
+    default n
+    help
+        Initialize the video decoder element.
+
+choice
+    depends on GMF_VIDEO_CODEC_INIT_DECODER
+    prompt "Video Decoder Configuration"
+    default GMF_VIDEO_DEC_CODEC_TYPE_AUTO
+    help
+        Select the video decoder codec type.
+
+    config GMF_VIDEO_DEC_CODEC_TYPE_AUTO
+        bool "Auto"
+        help
+            Auto select the video decoder codec type.
+
+    config GMF_VIDEO_DEC_CODEC_TYPE_SW_H264
+        bool "Software H264"
+        help
+            Software H264 video decoder.
+
+    config GMF_VIDEO_DEC_CODEC_TYPE_SW_MJPEG
+        bool "Software MJPEG"
+        help
+            Software MJPEG video decoder.
+
+    config GMF_VIDEO_DEC_CODEC_TYPE_HW_MJPEG
+        bool "Hardware MJPEG"
+        help
+            Hardware MJPEG video decoder.
+endchoice
+
+config GMF_VIDEO_DEC_CODEC_TYPE
+    hex
+    default 0x00000000 if GMF_VIDEO_DEC_CODEC_TYPE_AUTO
+    default FOURCC_H264 if GMF_VIDEO_DEC_CODEC_TYPE_SW_H264
+    default FOURCC_MJPG if GMF_VIDEO_DEC_CODEC_TYPE_SW_MJPEG
+    default FOURCC_MJPG if GMF_VIDEO_DEC_CODEC_TYPE_HW_MJPEG

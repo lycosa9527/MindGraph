@@ -1,0 +1,113 @@
+rsource "kconfig.fourcc"
+
+config GMF_VIDEO_EFFECTS_INIT_SCALE
+    bool "Initialize Video Scaler"
+    default n
+    help
+        Initialize the video scaler element
+        This element resizes video frames using different algorithms
+        Features:
+            - Support both upscaling and downscaling
+            - Two scaling algorithms:
+              * Fast downsampling for reduced quality
+              * High-quality bilinear interpolation
+        Common use cases:
+            - Resize for different display resolutions
+            - Thumbnail generation
+            - Picture-in-Picture Effects
+        Supported pixel formats: RGB565(LE/BE), BGR565(LE/BE), RGB888, BGR888, YUV_PACKET
+
+menu "Video Effects Scale Configuration"
+    depends on GMF_VIDEO_EFFECTS_INIT_SCALE
+
+    config GMF_VIDEO_EFFECTS_SCALE_INPUT_WIDTH
+        int "Width of the Input Frame"
+        default 320
+        range 1 65536
+        help
+            The width resolution of the input frame for scaling
+
+    config GMF_VIDEO_EFFECTS_SCALE_INPUT_HEIGHT
+        int "Height of the Input Frame"
+        default 240
+        range 1 65536
+        help
+            The height resolution of the input frame for scaling
+
+    choice
+        prompt "Input Pixel Format"
+        default GMF_VIDEO_EFFECTS_SCALE_INPUT_FMT_RGB565_LE
+        help
+            Select input pixel format for scaling
+            Supported formats: RGB565(LE/BE), BGR565(LE/BE), RGB888, BGR888, YUV_PACKET
+
+        config GMF_VIDEO_EFFECTS_SCALE_INPUT_FMT_RGB565_LE
+            bool "RGB565 Little Endian"
+        config GMF_VIDEO_EFFECTS_SCALE_INPUT_FMT_BGR565_LE
+            bool "BGR565 Little Endian"
+        config GMF_VIDEO_EFFECTS_SCALE_INPUT_FMT_RGB565_BE
+            bool "RGB565 Big Endian"
+        config GMF_VIDEO_EFFECTS_SCALE_INPUT_FMT_BGR565_BE
+            bool "BGR565 Big Endian"
+        config GMF_VIDEO_EFFECTS_SCALE_INPUT_FMT_RGB888
+            bool "RGB888"
+        config GMF_VIDEO_EFFECTS_SCALE_INPUT_FMT_BGR888
+            bool "BGR888"
+        config GMF_VIDEO_EFFECTS_SCALE_INPUT_FMT_YUV_PACKET
+            bool "YUV Packet"
+    endchoice
+
+    config GMF_VIDEO_EFFECTS_SCALE_INPUT_PIXEL_FORMAT
+        hex
+        default FOURCC_RGB16    if GMF_VIDEO_EFFECTS_SCALE_INPUT_FMT_RGB565_LE
+        default FOURCC_BGR16    if GMF_VIDEO_EFFECTS_SCALE_INPUT_FMT_BGR565_LE
+        default FOURCC_RGB16_BE if GMF_VIDEO_EFFECTS_SCALE_INPUT_FMT_RGB565_BE
+        default FOURCC_BGR16_BE if GMF_VIDEO_EFFECTS_SCALE_INPUT_FMT_BGR565_BE
+        default FOURCC_RGB24    if GMF_VIDEO_EFFECTS_SCALE_INPUT_FMT_RGB888
+        default FOURCC_BGR24    if GMF_VIDEO_EFFECTS_SCALE_INPUT_FMT_BGR888
+        default FOURCC_YUV      if GMF_VIDEO_EFFECTS_SCALE_INPUT_FMT_YUV_PACKET
+
+    config GMF_VIDEO_EFFECTS_SCALE_OUTPUT_WIDTH
+        int "Width of the Output Frame"
+        default 160
+        range 1 65536
+        help
+            The width resolution of the output frame after scaling
+
+    config GMF_VIDEO_EFFECTS_SCALE_OUTPUT_HEIGHT
+        int "Height of the Output Frame"
+        default 120
+        range 1 65536
+        help
+            The height resolution of the output frame after scaling
+
+    choice
+        prompt "Scale Filter Type"
+        default GMF_VIDEO_EFFECTS_SCALE_FILTER_DOWN_RESAMPLE
+        help
+            Select the scaling algorithm to use
+                - Down Resample: Optimized for downscaling, faster but lower quality
+                - Bilinear: Supports both up/down scaling, higher quality but more complex
+
+        config GMF_VIDEO_EFFECTS_SCALE_FILTER_DOWN_RESAMPLE
+            bool "Down Resample (Fast Downscaling)"
+            help
+                Optimized downsampling algorithm:
+                    - Exclusive to scale-down operations
+                    - Faster computation
+                    - Lower output quality compared to bilinear
+
+        config GMF_VIDEO_EFFECTS_SCALE_FILTER_BILINEAR
+            bool "Bilinear Interpolation"
+            help
+                Bilinear interpolation algorithm:
+                    - Supports both scale-up and scale-down
+                    - Higher quality output
+                    - Higher computational complexity
+    endchoice
+
+    config GMF_VIDEO_EFFECTS_SCALE_FILTER_TYPE
+        int
+        default 0 if GMF_VIDEO_EFFECTS_SCALE_FILTER_DOWN_RESAMPLE
+        default 1 if GMF_VIDEO_EFFECTS_SCALE_FILTER_BILINEAR
+endmenu

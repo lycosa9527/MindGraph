@@ -1,0 +1,370 @@
+config GMF_AUDIO_CODEC_INIT_DECODER
+        bool "Initialize GMF Audio Codec Decoder"
+        default y
+        help
+            Initialize GMF audio codec decoder
+    choice
+        prompt "Select Default GMF Audio Codec Decoder Type"
+        default GMF_AUDIO_CODEC_DECODER_TYPE_AAC
+        depends on GMF_AUDIO_CODEC_INIT_DECODER
+
+        config GMF_AUDIO_CODEC_DECODER_TYPE_AAC
+            bool "AAC Decoder"
+        config GMF_AUDIO_CODEC_DECODER_TYPE_MP3
+            bool "MP3 Decoder"
+        config GMF_AUDIO_CODEC_DECODER_TYPE_AMRNB
+            bool "AMR-NB Decoder"
+        config GMF_AUDIO_CODEC_DECODER_TYPE_AMRWB
+            bool "AMR-WB Decoder"
+        config GMF_AUDIO_CODEC_DECODER_TYPE_FLAC
+            bool "FLAC Decoder"
+        config GMF_AUDIO_CODEC_DECODER_TYPE_WAV
+            bool "WAV Decoder"
+        config GMF_AUDIO_CODEC_DECODER_TYPE_M4A
+            bool "M4A Decoder"
+        config GMF_AUDIO_CODEC_DECODER_TYPE_TS
+            bool "TS Decoder"
+        config GMF_AUDIO_CODEC_DECODER_TYPE_RAW_OPUS
+            bool "Raw Opus Decoder"
+        config GMF_AUDIO_CODEC_DECODER_TYPE_G711A
+            bool "G711A Decoder"
+        config GMF_AUDIO_CODEC_DECODER_TYPE_G711U
+            bool "G711U Decoder"
+        config GMF_AUDIO_CODEC_DECODER_TYPE_PCM
+            bool "PCM Decoder"
+        config GMF_AUDIO_CODEC_DECODER_TYPE_ADPCM
+            bool "ADPCM Decoder"
+        config GMF_AUDIO_CODEC_DECODER_TYPE_SBC
+            bool "SBC Decoder"
+        config GMF_AUDIO_CODEC_DECODER_TYPE_LC3
+            bool "LC3 Decoder"
+    endchoice
+
+    menu "AAC Decoder Configuration"
+        depends on GMF_AUDIO_CODEC_DECODER_TYPE_AAC
+
+        config GMF_AUDIO_CODEC_DEC_AAC_NO_ADTS_HEADER
+            bool "AAC Decoder No ADTS Header"
+            default n
+            help
+                Set this option if the AAC frame data does not contain an ADTS header.
+
+        config GMF_AUDIO_CODEC_DEC_AAC_PLUS_ENABLE
+            bool "Enable AAC-Plus Support"
+            default n
+            help
+                Enable this option if AAC-Plus support is required.
+    endmenu
+
+    menu "OPUS Decoder Configuration"
+        depends on GMF_AUDIO_CODEC_DECODER_TYPE_RAW_OPUS
+
+        choice
+            prompt "OPUS Decoder Output Sample Rate"
+            default GMF_AUDIO_CODEC_DEC_OPUS_SAMPLE_RATE_8K
+            help
+                Configure the sample rate for the OPUS decoder.
+
+        config GMF_AUDIO_CODEC_DEC_OPUS_SAMPLE_RATE_8K
+            bool "8 kHz"
+
+        config GMF_AUDIO_CODEC_DEC_OPUS_SAMPLE_RATE_12K
+            bool "12 kHz"
+
+        config GMF_AUDIO_CODEC_DEC_OPUS_SAMPLE_RATE_16K
+            bool "16 kHz"
+
+        config GMF_AUDIO_CODEC_DEC_OPUS_SAMPLE_RATE_24K
+            bool "24 kHz"
+
+        config GMF_AUDIO_CODEC_DEC_OPUS_SAMPLE_RATE_48K
+            bool "48 kHz"
+        endchoice
+
+        config GMF_AUDIO_CODEC_DEC_OPUS_SAMPLE_RATE
+        int
+        default 8000  if GMF_AUDIO_CODEC_DEC_OPUS_SAMPLE_RATE_8K
+        default 12000 if GMF_AUDIO_CODEC_DEC_OPUS_SAMPLE_RATE_12K
+        default 16000 if GMF_AUDIO_CODEC_DEC_OPUS_SAMPLE_RATE_16K
+        default 24000 if GMF_AUDIO_CODEC_DEC_OPUS_SAMPLE_RATE_24K
+        default 48000 if GMF_AUDIO_CODEC_DEC_OPUS_SAMPLE_RATE_48K
+
+        config GMF_AUDIO_CODEC_DEC_OPUS_CHANNEL
+            int "OPUS Decoder Output Channel"
+            default 2
+            range 1 2
+            help
+                Configure the number of audio channels for the OPUS decoder.
+
+        choice
+            prompt "OPUS Decoder Frame Duration"
+            default GMF_AUDIO_CODEC_DEC_OPUS_FRAME_DURATION_60_MS
+            help
+                Configure the frame duration for the OPUS decoder. If set to 60 ms, the output PCM size is counted as a 60 ms frame.
+
+            config GMF_AUDIO_CODEC_DEC_OPUS_FRAME_DURATION_2_5_MS
+                bool "2.5 ms"
+
+            config GMF_AUDIO_CODEC_DEC_OPUS_FRAME_DURATION_5_MS
+                bool "5 ms"
+
+            config GMF_AUDIO_CODEC_DEC_OPUS_FRAME_DURATION_10_MS
+                bool "10 ms"
+
+            config GMF_AUDIO_CODEC_DEC_OPUS_FRAME_DURATION_20_MS
+                bool "20 ms"
+
+            config GMF_AUDIO_CODEC_DEC_OPUS_FRAME_DURATION_40_MS
+                bool "40 ms"
+
+            config GMF_AUDIO_CODEC_DEC_OPUS_FRAME_DURATION_60_MS
+                bool "60 ms"
+
+            config GMF_AUDIO_CODEC_DEC_OPUS_FRAME_DURATION_80_MS
+                bool "80 ms"
+
+            config GMF_AUDIO_CODEC_DEC_OPUS_FRAME_DURATION_100_MS
+                bool "100 ms"
+
+            config GMF_AUDIO_CODEC_DEC_OPUS_FRAME_DURATION_120_MS
+                bool "120 ms"
+        endchoice
+
+        config GMF_AUDIO_CODEC_DEC_OPUS_FRAME_DURATION
+            int
+            default 0 if GMF_AUDIO_CODEC_DEC_OPUS_FRAME_DURATION_2_5_MS
+            default 1 if GMF_AUDIO_CODEC_DEC_OPUS_FRAME_DURATION_5_MS
+            default 2 if GMF_AUDIO_CODEC_DEC_OPUS_FRAME_DURATION_10_MS
+            default 3 if GMF_AUDIO_CODEC_DEC_OPUS_FRAME_DURATION_20_MS
+            default 4 if GMF_AUDIO_CODEC_DEC_OPUS_FRAME_DURATION_40_MS
+            default 5 if GMF_AUDIO_CODEC_DEC_OPUS_FRAME_DURATION_60_MS
+            default 6 if GMF_AUDIO_CODEC_DEC_OPUS_FRAME_DURATION_80_MS
+            default 7 if GMF_AUDIO_CODEC_DEC_OPUS_FRAME_DURATION_100_MS
+            default 8 if GMF_AUDIO_CODEC_DEC_OPUS_FRAME_DURATION_120_MS
+
+        config GMF_AUDIO_CODEC_DEC_OPUS_SELF_DELIMITED
+            bool "OPUS Decoder Self-Delimited Packet"
+            default n
+            help
+                Enable this option if the OPUS decoder uses self-delimited packets.
+                Self-delimited packets require an extra 1 or 2 bytes for packet size.
+                Set to false if encapsulated in OGG.
+    endmenu
+
+    menu "PCM Decoder Configuration"
+        depends on GMF_AUDIO_CODEC_DECODER_TYPE_PCM
+
+        config GMF_AUDIO_CODEC_DEC_PCM_SAMPLE_RATE
+            int "PCM Decoder Sample Rate"
+            default 44100
+            help
+                Configure the sample rate for the PCM decoder.
+
+        config GMF_AUDIO_CODEC_DEC_PCM_CHANNEL
+            int "PCM Decoder Channel"
+            default 2
+            range 1 8
+            help
+                Configure the number of audio channels for the PCM decoder.
+
+        config GMF_AUDIO_CODEC_DEC_PCM_BITS_PER_SAMPLE
+            int "PCM Decoder Bits Per Sample"
+            default 16
+            range 8 32
+            help
+                Configure the bits per sample for the PCM decoder.
+    endmenu
+
+    menu "G711 Decoder Configuration"
+        depends on GMF_AUDIO_CODEC_DECODER_TYPE_G711A || GMF_AUDIO_CODEC_DECODER_TYPE_G711U
+
+        config GMF_AUDIO_CODEC_DEC_G711_CHANNEL
+            int "G711 Decoder Channel"
+            default 1
+            range 1 2
+            help
+                Configure the number of audio channels for the G711 decoder.
+                This setting applies to both G711 A-law and u-law decoders.
+    endmenu
+
+    menu "ADPCM Decoder Configuration"
+        depends on GMF_AUDIO_CODEC_DECODER_TYPE_ADPCM
+
+        config GMF_AUDIO_CODEC_DEC_ADPCM_SAMPLE_RATE
+            int "ADPCM Decoder Sample Rate"
+            default 44100
+            help
+                Configure the sample rate for the ADPCM decoder.
+
+        config GMF_AUDIO_CODEC_DEC_ADPCM_CHANNEL
+            int "ADPCM Decoder Channel"
+            default 1
+            range 1 2
+            help
+                Configure the number of audio channels for the ADPCM decoder.
+
+    endmenu
+
+    menu "SBC Decoder Configuration"
+        depends on GMF_AUDIO_CODEC_DECODER_TYPE_SBC
+
+        choice
+            prompt "SBC Decoder Mode"
+            default GMF_AUDIO_CODEC_DEC_SBC_MODE_STD
+            help
+                Configure the mode for the SBC decoder.
+
+            config GMF_AUDIO_CODEC_DEC_SBC_MODE_STD
+                bool "Standard SBC Mode"
+                help
+                Enable decoding in Standard SBC mode.
+                This mode is typically used in A2DP (Advanced Audio Distribution Profile)
+                for Bluetooth audio streaming.
+            config GMF_AUDIO_CODEC_DEC_SBC_MODE_MSBC
+                bool "mSBC Mode"
+                help
+                Enable decoding in Modified SBC mode.
+                This mode is optimized for voice transmission over Bluetooth,
+                commonly used in HFP (Hands-Free Profile) for narrow-band and wide-band speech.
+        endchoice
+
+        config GMF_AUDIO_CODEC_DEC_SBC_MODE
+            int
+            default 0 if GMF_AUDIO_CODEC_DEC_SBC_MODE_STD
+            default 1 if GMF_AUDIO_CODEC_DEC_SBC_MODE_MSBC
+
+        config GMF_AUDIO_CODEC_DEC_SBC_CHANNEL
+            int "SBC Decoder Channel"
+            depends on GMF_AUDIO_CODEC_DEC_SBC_MODE_STD
+            default 2
+            range 1 2
+            help
+                Configure the number of audio channels for the SBC decoder.
+                This configuration is only available in Standard SBC mode.
+                Note:
+                1) If ch_num is equal to the original channel number,
+                   the output channel will be equal to the original channel number.
+                2) If ch_num = 2 but the original channel number is 1,
+                   the output will be 2 channels with identical data interleaved for left and right channels.
+                3) If ch_num = 1 but the original channel number is 2,
+                   this case is not supported and will return error in decoding.
+
+        config GMF_AUDIO_CODEC_DEC_SBC_ENABLE_PLC
+            bool "Enable SBC Packet Loss Concealment"
+            default y
+            depends on GMF_AUDIO_CODEC_DEC_SBC_MODE_MSBC
+            help
+                Enable Packet Loss Concealment (PLC) for the SBC decoder.
+                This option is only available in mSBC mode for voice applications.
+    endmenu
+
+    menu "LC3 Decoder Configuration"
+        depends on GMF_AUDIO_CODEC_DECODER_TYPE_LC3
+
+        choice
+            prompt "LC3 Decoder Sample Rate"
+            default GMF_AUDIO_CODEC_DEC_LC3_SAMPLE_RATE_48K
+            help
+                Configure the sample rate for the LC3 decoder.
+                This must be one of 8000, 16000, 24000, 32000, 44100 or 48000.
+
+            config GMF_AUDIO_CODEC_DEC_LC3_SAMPLE_RATE_8K
+                bool "8 kHz"
+
+            config GMF_AUDIO_CODEC_DEC_LC3_SAMPLE_RATE_16K
+                bool "16 kHz"
+
+            config GMF_AUDIO_CODEC_DEC_LC3_SAMPLE_RATE_24K
+                bool "24 kHz"
+
+            config GMF_AUDIO_CODEC_DEC_LC3_SAMPLE_RATE_32K
+                bool "32 kHz"
+
+            config GMF_AUDIO_CODEC_DEC_LC3_SAMPLE_RATE_44_1K
+                bool "44.1 kHz"
+
+            config GMF_AUDIO_CODEC_DEC_LC3_SAMPLE_RATE_48K
+                bool "48 kHz"
+        endchoice
+
+        config GMF_AUDIO_CODEC_DEC_LC3_SAMPLE_RATE
+            int
+            default 8000  if GMF_AUDIO_CODEC_DEC_LC3_SAMPLE_RATE_8K
+            default 16000 if GMF_AUDIO_CODEC_DEC_LC3_SAMPLE_RATE_16K
+            default 24000 if GMF_AUDIO_CODEC_DEC_LC3_SAMPLE_RATE_24K
+            default 32000 if GMF_AUDIO_CODEC_DEC_LC3_SAMPLE_RATE_32K
+            default 44100 if GMF_AUDIO_CODEC_DEC_LC3_SAMPLE_RATE_44_1K
+            default 48000 if GMF_AUDIO_CODEC_DEC_LC3_SAMPLE_RATE_48K
+
+        config GMF_AUDIO_CODEC_DEC_LC3_CHANNEL
+            int "LC3 Decoder Channel"
+            default 1
+            range 1 2
+            help
+                Configure the number of audio channels for the LC3 decoder.
+
+        choice
+            prompt "LC3 Decoder Bits Per Sample"
+            default GMF_AUDIO_CODEC_DEC_LC3_BITS_16
+            help
+                Configure the bits per sample for the LC3 decoder.
+
+            config GMF_AUDIO_CODEC_DEC_LC3_BITS_16
+                bool "16 bits"
+
+            config GMF_AUDIO_CODEC_DEC_LC3_BITS_24
+                bool "24 bits"
+
+            config GMF_AUDIO_CODEC_DEC_LC3_BITS_32
+                bool "32 bits"
+        endchoice
+
+        config GMF_AUDIO_CODEC_DEC_LC3_BITS_PER_SAMPLE
+            int
+            default 16 if GMF_AUDIO_CODEC_DEC_LC3_BITS_16
+            default 24 if GMF_AUDIO_CODEC_DEC_LC3_BITS_24
+            default 32 if GMF_AUDIO_CODEC_DEC_LC3_BITS_32
+
+        choice
+            prompt "LC3 Decoder Frame Duration"
+            default GMF_AUDIO_CODEC_DEC_LC3_FRAME_DURATION_100
+            help
+                Configure the frame duration for the LC3 decoder (in decimilliseconds).
+
+            config GMF_AUDIO_CODEC_DEC_LC3_FRAME_DURATION_75
+                bool "7.5 ms"
+
+            config GMF_AUDIO_CODEC_DEC_LC3_FRAME_DURATION_100
+                bool "10 ms"
+        endchoice
+
+        config GMF_AUDIO_CODEC_DEC_LC3_FRAME_DURATION
+            int
+            default 75 if GMF_AUDIO_CODEC_DEC_LC3_FRAME_DURATION_75
+            default 100 if GMF_AUDIO_CODEC_DEC_LC3_FRAME_DURATION_100
+
+        config GMF_AUDIO_CODEC_DEC_LC3_BYTES_PER_FRAME
+            int "LC3 Bytes Per Frame"
+            default 120
+            range 20 400
+            help
+                Configure the number of bytes per channel in a frame for the LC3 decoder.
+
+        config GMF_AUDIO_CODEC_DEC_LC3_IS_CBR
+            bool "LC3 Constant Bitrate"
+            default y
+            help
+                Enable this option if the LC3 audio is constant bitrate (CBR).
+
+        config GMF_AUDIO_CODEC_DEC_LC3_LEN_PREFIXED
+            bool "LC3 Length Prefixed"
+            default n
+            help
+                Enable this option when LC3-encoded data includes a 2-byte prefix indicating the frame length.
+
+        config GMF_AUDIO_CODEC_DEC_LC3_ENABLE_PLC
+            bool "Enable LC3 Packet Loss Concealment"
+            default y
+            help
+                Enable Packet Loss Concealment (PLC) for the LC3 decoder.
+    endmenu

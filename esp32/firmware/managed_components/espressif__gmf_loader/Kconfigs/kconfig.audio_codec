@@ -1,0 +1,6 @@
+menu "GMF Audio Codec"
+
+    rsource "kconfig.audio_codec.dec"
+    rsource "kconfig.audio_codec.enc"
+
+endmenu

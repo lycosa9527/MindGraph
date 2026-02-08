@@ -1,0 +1,260 @@
+menu "GMF AI Audio"
+    config GMF_AI_AUDIO_INIT_AEC
+        bool "Initialize GMF AI Audio AEC"
+        depends on (IDF_TARGET="esp32" || IDF_TARGET="esp32s3" || IDF_TARGET="esp32p4")
+        default y
+        help
+            Enable initialization of the GMF AEC (Automatic Echo Cancellation) element and its insertion into the user pool
+
+    menu "Acoustic Echo Cancellation (AEC) Configuration"
+        depends on GMF_AI_AUDIO_INIT_AEC
+
+        choice
+            prompt "AEC Input Sampling Rate"
+            default GMF_AI_AUDIO_AEC_INPUT_SAMPLING_RATE_16K
+            help
+                Input sampling rate for the GMF AEC element
+
+            config GMF_AI_AUDIO_AEC_INPUT_SAMPLING_RATE_8K
+                bool "8K"
+                help
+                   Input sampling rate for the GMF AEC element to 8K
+
+            config GMF_AI_AUDIO_AEC_INPUT_SAMPLING_RATE_16K
+                bool "16K"
+                help
+                    Input sampling rate for the GMF AEC element to 16K
+        endchoice
+
+        config GMF_AI_AUDIO_AEC_TYPE
+            int
+            default 2 if GMF_AI_AUDIO_AEC_INPUT_SAMPLING_RATE_8K
+            default 1 if GMF_AI_AUDIO_AEC_INPUT_SAMPLING_RATE_16K
+
+        choice
+            prompt "AEC Working Mode"
+            default GMF_AI_AUDIO_AEC_MODE_HIGH_PERFORMANCE
+            help
+                Working mode for the GMF AEC element
+
+            config GMF_AI_AUDIO_AEC_MODE_LOW_COST
+                bool "Low Cost"
+                help
+                    Working mode for the GMF AEC element to Low Cost
+
+            config GMF_AI_AUDIO_AEC_MODE_HIGH_PERFORMANCE
+                bool "High Performance"
+                help
+                    Working mode for the GMF AEC element to High Performance
+        endchoice
+
+        config GMF_AI_AUDIO_AEC_MODE
+            int
+            default 0 if GMF_AI_AUDIO_AEC_MODE_LOW_COST
+            default 1 if GMF_AI_AUDIO_AEC_MODE_HIGH_PERFORMANCE
+
+        config GMF_AI_AUDIO_AEC_FILTER_LEN
+            int
+            default 4 if IDF_TARGET="esp32s3" || IDF_TARGET="esp32p4"
+            default 2
+            help
+                Filter length for the GMF AEC element, determined by the IDF target
+
+        config GMF_AI_AUDIO_AEC_CH_ALLOCATION
+            string "AEC Channel Allocation"
+            default "RMNM"
+            help
+                Format string of the channel Allocation:
+                `M` to represent the microphone channel,
+                `R` to represent the playback reference channel,
+                `N` to represent an unknown or unused channel
+    endmenu
+
+    config GMF_AI_AUDIO_INIT_WN
+        bool "Initialize GMF AI Audio Wakenet"
+        default n
+        help
+            Enable initialization of the GMF WN (Wake Word) element and its insertion into the user pool
+
+    menu "Wakenet(WN) Configuration"
+        depends on GMF_AI_AUDIO_INIT_WN
+
+        config GMF_AI_AUDIO_WN_CH_ALLOCATION
+            string "WN Channel Allocation"
+            default "RMNM"
+            help
+                Format string of the channel Allocation:
+                `M` to represent the microphone channel,
+                `R` to represent the playback reference channel,
+                `N` to represent an unknown or unused channel
+
+        choice
+            prompt "WN Detection Mode"
+            default GMF_AI_AUDIO_WN_DET_MODE_90
+
+            config GMF_AI_AUDIO_WN_DET_MODE_90
+                bool "Normal (90)"
+                help
+                    Normal detection mode with lower false alarm rate
+
+            config GMF_AI_AUDIO_WN_DET_MODE_95
+                bool "Aggressive (95)"
+                help
+                    Aggressive detection mode with higher detection rate but also higher false alarm rate
+
+            config GMF_AI_AUDIO_WN_DET_MODE_2CH_90
+                bool "2-Channel Normal (90)"
+                help
+                    Normal detection mode for 2-channel audio
+
+            config GMF_AI_AUDIO_WN_DET_MODE_2CH_95
+                bool "2-Channel Aggressive (95)"
+                help
+                    Aggressive detection mode for 2-channel audio
+
+            config GMF_AI_AUDIO_WN_DET_MODE_3CH_90
+                bool "3-Channel Normal (90)"
+                help
+                    Normal detection mode for 3-channel audio
+
+            config GMF_AI_AUDIO_WN_DET_MODE_3CH_95
+                bool "3-Channel Aggressive (95)"
+                help
+                    Aggressive detection mode for 3-channel audio
+        endchoice
+
+        config GMF_AI_AUDIO_WN_DET_MODE
+            int
+            default 0 if GMF_AI_AUDIO_WN_DET_MODE_90
+            default 1 if GMF_AI_AUDIO_WN_DET_MODE_95
+            default 2 if GMF_AI_AUDIO_WN_DET_MODE_2CH_90
+            default 3 if GMF_AI_AUDIO_WN_DET_MODE_2CH_95
+            default 4 if GMF_AI_AUDIO_WN_DET_MODE_3CH_90
+            default 5 if GMF_AI_AUDIO_WN_DET_MODE_3CH_95
+    endmenu
+
+    config GMF_AI_AUDIO_INIT_AFE
+        bool "Initialize GMF AI Audio AFE"
+        depends on (IDF_TARGET="esp32" || IDF_TARGET="esp32s3" || IDF_TARGET="esp32p4")
+        default n
+        help
+            Enable initialization of the GMF AFE (Automatic Front-End) element and its insertion into the user pool
+
+    menu "Audio Front-End (AFE) Configuration"
+        depends on GMF_AI_AUDIO_INIT_AFE
+
+        menu "Feed Task Setting"
+            config GMF_AI_AUDIO_FEED_TASK_CORE_ID
+                int "Feed Task Core ID"
+                default 0
+                range 0 1
+                help
+                    Specifies which CPU core (0 or 1) the FEED task will run on
+
+            config GMF_AI_AUDIO_FEED_TASK_PRIORITY
+                int "Feed Task Priority"
+                default 5
+                range 0 23
+                help
+                    Sets the FreeRTOS task priority for the FEED task
+
+            config GMF_AI_AUDIO_FEED_TASK_STACK_SIZE
+                int "Feed Task Stack Size"
+                default 3072
+                range 1024 16384
+                help
+                    Defines the stack size in bytes for the FEED task
+        endmenu
+
+        menu "Fetch Task Setting"
+            config GMF_AI_AUDIO_FETCH_TASK_CORE_ID
+                int "Fetch Task Core ID"
+                default 1
+                range 0 1
+                help
+                    Specifies which CPU core (0 or 1) the FETCH task will run on
+
+            config GMF_AI_AUDIO_FETCH_TASK_PRIORITY
+                int "Fetch Task Priority"
+                default 5
+                range 0 23
+                help
+                    Sets the FreeRTOS task priority for the FETCH task
+
+            config GMF_AI_AUDIO_FETCH_TASK_STACK_SIZE
+                int "Fetch Task Stack Size"
+                default 3072
+                range 1024 16384
+                help
+                    Defines the stack size in bytes for the FETCH task
+        endmenu
+
+        config GMF_AI_AUDIO_AFE_CH_ALLOCATION
+            string "AFE Channel Allocation"
+            default "RMNM"
+            help
+                Format string of the channel Allocation:
+                `M` to represent the microphone channel,
+                `R` to represent the playback reference channel,
+                `N` to represent an unknown or unused channel
+
+        config GMF_AI_AUDIO_AFE_VAD_ENABLE
+            bool "VAD Detection Enable"
+            default y
+            help
+                Enables Voice Activity Detection (VAD) in the AFE pipeline
+
+        config GMF_AI_AUDIO_VAD_MODE
+            int "VAD mode"
+            depends on GMF_AI_AUDIO_AFE_VAD_ENABLE
+            default 3 if IDF_TARGET="esp32s3"
+            default 3 if IDF_TARGET="esp32p4"
+            default 2
+            range 0 4
+            help
+                Sets the VAD detection mode (0-4)
+
+        config GMF_AI_AUDIO_VAD_MIN_SPEECH
+            int "Minimum Duration of Speech (ms)"
+            depends on GMF_AI_AUDIO_AFE_VAD_ENABLE
+            default 128
+            range 32 1000
+            help
+                Minimum duration in milliseconds that audio must be classified as speech
+                before triggering a speech event
+
+        config GMF_AI_AUDIO_VAD_MIN_NOISE
+            int "Minimum Duration of Noise (ms)"
+            depends on GMF_AI_AUDIO_AFE_VAD_ENABLE
+            default 1000
+            range 64 10000
+            help
+                Minimum duration in milliseconds that audio must be classified as noise
+                before triggering a noise event
+
+        config GMF_AI_AUDIO_AFE_AEC_ENABLE
+            bool "AFE Internal AEC Enable"
+            default n
+            help
+                Enables the internal AEC in the AFE pipeline
+
+        config GMF_AI_AUDIO_WAKEUP_ENABLE
+            bool "Wakeup Detection Enable"
+            default n
+            help
+                Enables wake word detection functionality in the AFE pipeline
+
+        config GMF_AI_AUDIO_VOICE_COMMAND_ENABLE
+            bool "Voice Command Detection Enable"
+            default n
+            help
+                Enables voice command detection functionality in the AFE pipeline
+    endmenu
+
+    config GMF_AI_AUDIO_MODEL_PARTITION
+        string "Model Partition Name"
+        depends on GMF_AI_AUDIO_INIT_WN || GMF_AI_AUDIO_INIT_AFE
+        default "model"
+        help
+            Specifies the name of the partition where the AI model is stored
+endmenu

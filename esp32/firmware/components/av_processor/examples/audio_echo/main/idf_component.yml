@@ -1,0 +1,5 @@
+dependencies:
+  av_processor:
+    path: ../../../../av_processor
+  esp_board_manager_adapter:
+    path: ../../common/esp_board_manager_adapter

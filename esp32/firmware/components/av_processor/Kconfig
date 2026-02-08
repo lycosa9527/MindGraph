@@ -1,0 +1,84 @@
+menu "Audio/Video Processor Configuration"
+
+    config MEDIA_DUMP_ENABLE
+        bool "Enable Media Dump"
+        default n
+        help
+            Enable or disable the media dump feature.
+            When disabled, all related options are hidden.
+
+    choice MEDIA_DUMP_AUDIO_POINT
+        prompt "Audio Save Mode (AEC Point)"
+        depends on MEDIA_DUMP_ENABLE
+        default MEDIA_DUMP_AUDIO_NONE
+
+        config MEDIA_DUMP_AUDIO_BEFORE_AEC
+            bool "Save Before AEC"
+            help
+                Save media data captured before AEC processing.
+
+        config MEDIA_DUMP_AUDIO_AFTER_AEC
+            bool "Save After AEC"
+            help
+                Save media data after AEC processing.
+
+        config MEDIA_DUMP_AUDIO_NONE
+            bool "None"
+            help
+                Do not save any media data.
+
+    endchoice
+
+    config MEDIA_DUMP_DURATION_SEC
+        int "Dump Duration (seconds)"
+        depends on MEDIA_DUMP_ENABLE
+        default 20
+        range 1 3600
+        help
+            Maximum duration to capture media dump in seconds.
+
+    choice MEDIA_DUMP_SINK
+        prompt "Media Dump Output Method"
+        depends on MEDIA_DUMP_ENABLE
+        default MEDIA_DUMP_SINK_SDCARD
+
+        config MEDIA_DUMP_SINK_UDP
+            bool "UDP"
+            help
+                Send media dump output through UDP.
+
+        config MEDIA_DUMP_SINK_SDCARD
+            bool "SD Card File"
+            help
+                Save media dump output to persistent storage on the SD card.
+
+    endchoice
+
+    if MEDIA_DUMP_SINK_UDP
+
+        config MEDIA_DUMP_UDP_IP
+            string "UDP Destination IP"
+            default "192.168.1.100"
+            help
+                Specify the destination IPv4 address for UDP output.
+
+        config MEDIA_DUMP_UDP_PORT
+            int "UDP Destination Port"
+            default 5000
+            range 1 65535
+            help
+                Specify the destination UDP port number.
+
+    endif
+
+    if MEDIA_DUMP_SINK_SDCARD
+
+        config MEDIA_DUMP_SDCARD_FILENAME
+            string "SD Card File Name"
+            default "/sdcard/media_dump.bin"
+            help
+                Specify the file path used to store media dump output.
+
+    endif
+
+endmenu

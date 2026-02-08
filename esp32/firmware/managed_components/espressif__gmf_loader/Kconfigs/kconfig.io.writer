@@ -1,0 +1,77 @@
+menu "GMF IO Writer"
+    config GMF_IO_INIT_CODEC_DEV_TX
+        bool "Initialize GMF CODEC Device Writer"
+        default y
+        help
+            Initialize GMF codec device writer
+
+    config GMF_IO_INIT_FILE_WRITER
+        bool "Initialize GMF File Writer"
+        default y
+        help
+            Initialize GMF file writer
+
+        menu "IO File Configuration"
+            depends on GMF_IO_INIT_FILE_WRITER
+
+            config GMF_IO_FILE_WRITE_CACHE_SIZE
+                int "IO File Write Cache Size"
+                default 4096
+                range 0 65536
+                help
+                    Configure the buffer size for the GMF IO File Writer.
+                    This setting affects the performance of file writing operations.
+                    Larger buffer sizes may improve write performance but consume more memory.
+                    If the SOC does not have the SOC_SDMMC_PSRAM_DMA_CAPABLE capability, internal memory will be used.
+        endmenu
+
+    config GMF_IO_INIT_HTTP_WRITER
+        bool "Initialize GMF HTTP Writer"
+        default n
+        help
+            Initialize GMF HTTP Writer
+
+        menu "HTTP Writer Configuration"
+            depends on GMF_IO_INIT_HTTP_WRITER
+
+            config GMF_IO_HTTP_WRITER_TASK_STACK
+                int "HTTP Writer Task Stack Size"
+                default 3072
+                range 1024 16384
+                help
+                    Configure the task stack size for the GMF HTTP Writer.
+
+            config GMF_IO_HTTP_WRITER_TASK_CORE
+                int "HTTP Writer Task Core"
+                default 0
+                range 0 1
+                help
+                    Configure the core on which the GMF HTTP Writer task will run.
+
+            config GMF_IO_HTTP_WRITER_TASK_PRIORITY
+                int "HTTP Writer Task Priority"
+                default 5
+                range 1 10
+                help
+                    Configure the task priority for the GMF HTTP Writer.
+
+            config GMF_IO_HTTP_WRITER_STACK_IN_EXT
+                bool "HTTP Writer Stack in External Memory"
+                default n
+                help
+                    Enable this option to allocate the HTTP Writer stack in external memory.
+
+            config GMF_IO_HTTP_WRITER_OUT_BUF_SIZE
+                int "HTTP Writer Output Buffer Size"
+                default 8192
+                range 1024 131072
+                help
+                    Configure the size of the output buffer for the GMF HTTP Writer.
+
+            config GMF_IO_HTTP_WRITER_CERT_PEM
+                string "HTTP Writer SSL Certificate (PEM)"
+                default ""
+                help
+                    Provide the SSL server certificate in PEM format for the GMF HTTP Writer.
+        endmenu
+endmenu

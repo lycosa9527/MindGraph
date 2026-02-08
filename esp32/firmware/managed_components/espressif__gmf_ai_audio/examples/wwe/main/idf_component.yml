@@ -1,0 +1,11 @@
+dependencies:
+  espressif/gmf_ai_audio: {}
+  espressif/gmf_app_utils:
+    version: ^0.7
+  espressif/gmf_audio: {}
+  espressif/gmf_core: {}
+  espressif/gmf_io: {}
+  espressif/gmf_loader:
+    version: ^0.7
+  espressif/gmf_misc: {}
+  espressif/gmf_video: {}

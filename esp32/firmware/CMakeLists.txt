@@ -1,10 +1,7 @@
-cmake_minimum_required(VERSION 3.16)
-
-# Set project name
-set(PROJECT_NAME "mindgraph_esp32")
-
-# Set target to ESP32-S3 BEFORE including project.cmake
-set(IDF_TARGET esp32s3)
-
+# For more information about build system see
+# https://docs.espressif.com/projects/esp-idf/en/latest/api-guides/build-system.html
+# The following five lines of boilerplate have to be in your project's
+# CMakeLists in this exact order for cmake to work correctly
+cmake_minimum_required(VERSION 3.5)
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
-project(${PROJECT_NAME})
+project(mindgraph-firmware)

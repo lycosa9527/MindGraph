@@ -1,0 +1,369 @@
+variables:
+  DOCKER_TARGET_TEST_v5_1_ENV_IMAGE: "$CI_DOCKER_REGISTRY/target-test-env-v5.1:1"
+
+.idf_target_version_matrix: &idf_target_version_matrix
+  - IDF_TARGET: esp32s3
+    IDF_VERSION: "5.3"
+    ENV_TAG: "generic"
+  - IDF_TARGET: esp32s3
+    IDF_VERSION: "5.4"
+    ENV_TAG: "generic"
+  - IDF_TARGET: esp32s3
+    IDF_VERSION: "5.5"
+    ENV_TAG: "generic"
+  # Not supported yet
+  # - IDF_TARGET: esp32p4
+  #   IDF_VERSION: "5.4"
+
+.test_template: &test_template
+  image: DOCKER_TARGET_TEST_v5_1_ENV_IMAGE
+  stage: target_test
+  timeout: 4 hour
+  variables:
+    GIT_DEPTH: 1
+    SUBMODULES_TO_FETCH: "none"
+  cache:
+    # Usually do not need submodule-cache in target_test
+    - key: pip-cache
+      paths:
+        - .cache/pip
+      policy: pull
+
+.pytest_template:
+  <<: *test_template
+  artifacts:
+    when: always
+    paths:
+      - XUNIT_RESULT.xml
+      - pytest_embedded_log/
+    reports:
+      junit: XUNIT_RESULT.xml
+    expire_in: 4 days
+  variables:
+    TEST_TARGET: 'esp32s3'
+    TEST_FOLDER: '.'
+    TEST_ENV: 'generic'
+  script:
+    - pip install -r .gitlab/requirements/requirement.pytest.txt
+    - pytest ${TEST_FOLDER} --target ${TEST_TARGET} --env ${TEST_ENV} --junitxml=XUNIT_RESULT.xml
+
+#
+# Test apps: signals2
+#
+# example
+components_test_signals2_example:
+  extends:
+    - .pytest_template
+    - .rules:build:test_apps_signals2_example
+  needs:
+    - job: "build_test_apps_signals2_example"
+      artifacts: true
+      optional: true
+  parallel:
+    matrix: *idf_target_version_matrix
+  tags:
+    - ${IDF_TARGET}
+    - ${ENV_TAG}
+  image: $DOCKER_TARGET_TEST_v5_1_ENV_IMAGE
+  variables:
+    TEST_TARGET: ${IDF_TARGET}
+    TEST_FOLDER: test_apps/signals2/example
+    TEST_ENV: ${ENV_TAG}
+# test
+components_test_signals2_test:
+  extends:
+    - .pytest_template
+    - .rules:build:test_apps_signals2_test
+  needs:
+    - job: "build_test_apps_signals2_test"
+      artifacts: true
+      optional: true
+  parallel:
+    matrix: *idf_target_version_matrix
+  tags:
+    - ${IDF_TARGET}
+    - ${ENV_TAG}
+  image: $DOCKER_TARGET_TEST_v5_1_ENV_IMAGE
+  variables:
+    TEST_TARGET: ${IDF_TARGET}
+    TEST_FOLDER: test_apps/signals2/test
+    TEST_ENV: ${ENV_TAG}
+
+#
+# Test apps: thread
+#
+# example
+components_test_thread_example:
+  extends:
+    - .pytest_template
+    - .rules:build:test_apps_thread_example
+  needs:
+    - job: "build_test_apps_thread_example"
+      artifacts: true
+      optional: true
+  parallel:
+    matrix: *idf_target_version_matrix
+  tags:
+    - ${IDF_TARGET}
+    - ${ENV_TAG}
+  image: $DOCKER_TARGET_TEST_v5_1_ENV_IMAGE
+  variables:
+    TEST_TARGET: ${IDF_TARGET}
+    TEST_FOLDER: test_apps/thread/example
+    TEST_ENV: ${ENV_TAG}
+# test_common
+components_test_thread_test_common:
+  extends:
+    - .pytest_template
+    - .rules:build:test_apps_thread_test_common
+  needs:
+    - job: "build_test_apps_thread_test_common"
+      artifacts: true
+      optional: true
+  parallel:
+    matrix: *idf_target_version_matrix
+  tags:
+    - ${IDF_TARGET}
+    - ${ENV_TAG}
+  image: $DOCKER_TARGET_TEST_v5_1_ENV_IMAGE
+  variables:
+    TEST_TARGET: ${IDF_TARGET}
+    TEST_FOLDER: test_apps/thread/test_common
+    TEST_ENV: ${ENV_TAG}
+# test_more
+components_test_thread_test_more:
+  extends:
+    - .pytest_template
+    - .rules:build:test_apps_thread_test_more
+  needs:
+    - job: "build_test_apps_thread_test_more"
+      artifacts: true
+      optional: true
+  parallel:
+    matrix: *idf_target_version_matrix
+  tags:
+    - ${IDF_TARGET}
+    - ${ENV_TAG}
+  image: $DOCKER_TARGET_TEST_v5_1_ENV_IMAGE
+  variables:
+    TEST_TARGET: ${IDF_TARGET}
+    TEST_FOLDER: test_apps/thread/test_more
+    TEST_ENV: ${ENV_TAG}
+
+#
+# Test apps: graph
+#
+# example
+components_test_graph_example:
+  extends:
+    - .pytest_template
+    - .rules:build:test_apps_graph_example
+  needs:
+    - job: "build_test_apps_graph_example"
+      artifacts: true
+      optional: true
+  parallel:
+    matrix: *idf_target_version_matrix
+  tags:
+    - ${IDF_TARGET}
+    - ${ENV_TAG}
+  image: $DOCKER_TARGET_TEST_v5_1_ENV_IMAGE
+  variables:
+    TEST_TARGET: ${IDF_TARGET}
+    TEST_FOLDER: test_apps/graph/example
+    TEST_ENV: ${ENV_TAG}
+
+#
+# Test apps: array
+#
+# test
+components_test_array_test:
+  extends:
+    - .pytest_template
+    - .rules:build:test_apps_array_test
+  needs:
+    - job: "build_test_apps_array_test"
+      artifacts: true
+      optional: true
+  parallel:
+    matrix: *idf_target_version_matrix
+  tags:
+    - ${IDF_TARGET}
+    - ${ENV_TAG}
+  image: $DOCKER_TARGET_TEST_v5_1_ENV_IMAGE
+  variables:
+    TEST_TARGET: ${IDF_TARGET}
+    TEST_FOLDER: test_apps/array/test
+    TEST_ENV: ${ENV_TAG}
+
+#
+# Test apps: align
+#
+# test
+components_test_align_test:
+  extends:
+    - .pytest_template
+    - .rules:build:test_apps_align_test
+  needs:
+    - job: "build_test_apps_align_test"
+      artifacts: true
+      optional: true
+  parallel:
+    matrix: *idf_target_version_matrix
+  tags:
+    - ${IDF_TARGET}
+    - ${ENV_TAG}
+  image: $DOCKER_TARGET_TEST_v5_1_ENV_IMAGE
+  variables:
+    TEST_TARGET: ${IDF_TARGET}
+    TEST_FOLDER: test_apps/align/test
+    TEST_ENV: ${ENV_TAG}
+
+#
+# Test apps: format
+#
+# example
+components_test_format_example:
+  extends:
+    - .pytest_template
+    - .rules:build:test_apps_format_example
+  needs:
+    - job: "build_test_apps_format_example"
+      artifacts: true
+      optional: true
+  parallel:
+    matrix: *idf_target_version_matrix
+  tags:
+    - ${IDF_TARGET}
+    - ${ENV_TAG}
+  image: $DOCKER_TARGET_TEST_v5_1_ENV_IMAGE
+  variables:
+    TEST_TARGET: ${IDF_TARGET}
+    TEST_FOLDER: test_apps/format/example
+    TEST_ENV: ${ENV_TAG}
+# test
+components_test_format_test:
+  extends:
+    - .pytest_template
+    - .rules:build:test_apps_format_test
+  needs:
+    - job: "build_test_apps_format_test"
+      artifacts: true
+      optional: true
+  parallel:
+    matrix: *idf_target_version_matrix
+  tags:
+    - ${IDF_TARGET}
+    - ${ENV_TAG}
+  image: $DOCKER_TARGET_TEST_v5_1_ENV_IMAGE
+  variables:
+    TEST_TARGET: ${IDF_TARGET}
+    TEST_FOLDER: test_apps/format/test
+    TEST_ENV: ${ENV_TAG}
+
+#
+# Test apps: algorithm
+#
+# example
+components_test_algorithm_example:
+  extends:
+    - .pytest_template
+    - .rules:build:test_apps_algorithm_example
+  needs:
+    - job: "build_test_apps_algorithm_example"
+      artifacts: true
+      optional: true
+  parallel:
+    matrix: *idf_target_version_matrix
+  tags:
+    - ${IDF_TARGET}
+    - ${ENV_TAG}
+  image: $DOCKER_TARGET_TEST_v5_1_ENV_IMAGE
+  variables:
+    TEST_TARGET: ${IDF_TARGET}
+    TEST_FOLDER: test_apps/algorithm/example
+    TEST_ENV: ${ENV_TAG}
+# test
+components_test_algorithm_test:
+  extends:
+    - .pytest_template
+    - .rules:build:test_apps_algorithm_test
+  needs:
+    - job: "build_test_apps_algorithm_test"
+      artifacts: true
+      optional: true
+  parallel:
+    matrix: *idf_target_version_matrix
+  tags:
+    - ${IDF_TARGET}
+    - ${ENV_TAG}
+  image: $DOCKER_TARGET_TEST_v5_1_ENV_IMAGE
+  variables:
+    TEST_TARGET: ${IDF_TARGET}
+    TEST_FOLDER: test_apps/algorithm/test
+    TEST_ENV: ${ENV_TAG}
+
+#
+# Test apps: assign
+#
+# test
+components_test_assign_test:
+  extends:
+    - .pytest_template
+    - .rules:build:test_apps_assign_test
+  needs:
+    - job: "build_test_apps_assign_test"
+      artifacts: true
+      optional: true
+  parallel:
+    matrix: *idf_target_version_matrix
+  tags:
+    - ${IDF_TARGET}
+    - ${ENV_TAG}
+  image: $DOCKER_TARGET_TEST_v5_1_ENV_IMAGE
+  variables:
+    TEST_TARGET: ${IDF_TARGET}
+    TEST_FOLDER: test_apps/assign/test
+    TEST_ENV: ${ENV_TAG}
+
+#
+# Test apps: bimap
+#
+# example
+components_test_bimap_example:
+  extends:
+    - .pytest_template
+    - .rules:build:test_apps_bimap_example
+  needs:
+    - job: "build_test_apps_bimap_example"
+      artifacts: true
+      optional: true
+  parallel:
+    matrix: *idf_target_version_matrix
+  tags:
+    - ${IDF_TARGET}
+    - ${ENV_TAG}
+  image: $DOCKER_TARGET_TEST_v5_1_ENV_IMAGE
+  variables:
+    TEST_TARGET: ${IDF_TARGET}
+    TEST_FOLDER: test_apps/bimap/example
+    TEST_ENV: ${ENV_TAG}
+# test
+components_test_bimap_test:
+  extends:
+    - .pytest_template
+    - .rules:build:test_apps_bimap_test
+  needs:
+    - job: "build_test_apps_bimap_test"
+      artifacts: true
+      optional: true
+  parallel:
+    matrix: *idf_target_version_matrix
+  tags:
+    - ${IDF_TARGET}
+    - ${ENV_TAG}
+  image: $DOCKER_TARGET_TEST_v5_1_ENV_IMAGE
+  variables:
+    TEST_TARGET: ${IDF_TARGET}
+    TEST_FOLDER: test_apps/bimap/test
+    TEST_ENV: ${ENV_TAG}

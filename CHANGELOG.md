@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.22.0] - 2026-02-09
+
+### Changed
+- **ESP32 Firmware Architecture**: Major refactoring of ESP32 firmware codebase from monolithic structure to modular component-based architecture using Brookesia framework. Replaced single-file implementations with organized component modules for better maintainability and code organization.
+- **ESP32 Build System**: Updated CMakeLists.txt configuration to use standard ESP-IDF project structure with improved component management and build configuration.
+- **ESP32 Main Application**: Refactored main.cpp to use Brookesia framework with component-based initialization and improved system architecture.
+
+### Removed
+- **ESP32 Legacy Code**: Removed old monolithic firmware implementation files including:
+  - Application modules: `dify_app`, `smart_response_app`
+  - Manager modules: `asset_manager`, `audio_handler`, `battery_manager`, `button_handler`, `config_manager`, `echo_cancellation`, `font_manager`, `i2c_bus_manager`, `rtc_manager`, `sd_storage`, `ui_manager`, `wallpaper_manager`, `wifi_manager`
+  - UI modules: `launcher`, `loading_screen`, `standby_screen`, `ui_icons`
+  - Utility modules: `motion_sensor`, `qrcode_generator`, `websocket_client`
+- **ESP32 Legacy Configuration**: Removed `.clangd` configuration file and old build configurations.
+
+### Added
+- **ESP32 Component Architecture**: New modular component structure with separate components for:
+  - Core services: `brookesia_core`, `brookesia_service_manager`, `brookesia_service_audio`, `brookesia_service_wifi`, `brookesia_service_nvs`, `brookesia_service_helper`
+  - Agent integrations: `brookesia_agent_coze`, `brookesia_agent_helper`, `brookesia_agent_manager`, `brookesia_agent_openai`, `brookesia_agent_xiaozhi`
+  - Application modules: `brookesia_app_ai_profile`, `brookesia_app_calculator`, `brookesia_app_game_2048`, `brookesia_app_pos`, `brookesia_app_settings`, `brookesia_app_squareline_demo`, `brookesia_app_timer`, `brookesia_app_usbd_ncm`
+  - Utilities: `brookesia_lib_utils`, `av_processor`
+  - Hardware components: `waveshare__esp_lcd_sh8601`
+- **ESP32 Gitignore Updates**: Added gitignore entries for ESP32 reference folders (`brookesia-esp/`, `brookesia-waveshare/`).
+
 ## [5.21.0] - 2026-02-02
 
 ### Added

@@ -1,0 +1,21 @@
+# The following lines of boilerplate have to be in your project's CMakeLists
+# in this exact order for cmake to work correctly
+cmake_minimum_required(VERSION 3.16)
+include($ENV{IDF_PATH}/tools/cmake/project.cmake)
+set(EXTRA_COMPONENT_DIRS ../../common_components)
+project(graph_example)
+
+target_add_binary_data(graph_example.elf "main/makefile-dependencies.dat" TEXT)
+target_add_binary_data(graph_example.elf "main/makefile-target-names.dat" TEXT)
+# target_add_binary_data(graph_example.elf "main/scc.dot" TEXT)
+target_add_binary_data(graph_example.elf "main/data3.txt" TEXT)
+target_add_binary_data(graph_example.elf "main/max_flow.dat" TEXT)
+target_add_binary_data(graph_example.elf "main/target-compile-costs.dat" TEXT)
+target_add_binary_data(graph_example.elf "main/figs/ospf-graph.dot" TEXT)
+target_add_binary_data(graph_example.elf "main/kevin-bacon.dat" TEXT)
+target_add_binary_data(graph_example.elf "main/kevin-bacon2.dat" TEXT)
+target_add_binary_data(graph_example.elf "main/graphviz_example.dot" TEXT)
+target_add_binary_data(graph_example.elf "main/edge_iterator_constructor.dat" TEXT)
+target_add_binary_data(graph_example.elf "main/boost_web.dat" TEXT)
+target_add_binary_data(graph_example.elf "main/bcsstk01.rsa" TEXT)
+target_add_binary_data(graph_example.elf "main/bcsstk01" TEXT)

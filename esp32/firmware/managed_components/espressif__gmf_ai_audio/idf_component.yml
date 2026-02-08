@@ -1,0 +1,17 @@
+dependencies:
+  espressif/esp-sr:
+    version: 2.1.5
+  espressif/gmf_core:
+    require: public
+    version: ^0.7
+description: Espressif GMF AI Audio Elements Module
+documentation: https://github.com/espressif/esp-gmf/blob/main/elements/gmf_ai_audio/README.md
+issues: https://github.com/espressif/esp-gmf/issues
+repository: git://github.com/espressif/esp-gmf.git
+repository_info:
+  commit_sha: c63d4e3e8f96fb24bac4496f763ed85568e39074
+  path: ./elements/gmf_ai_audio
+tags:
+- gmf
+url: https://github.com/espressif/esp-gmf/tree/main/elements/gmf_ai_audio
+version: 0.7.5
