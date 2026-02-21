@@ -7,7 +7,7 @@
   >
     <el-form :model="form" label-width="100px">
       <el-form-item label="Watch ID">
-        <el-input v-model="watch?.watch_id" disabled />
+        <el-input :model-value="watchItem?.watch_id" disabled />
       </el-form-item>
       <el-form-item label="Student">
         <el-select
@@ -41,7 +41,7 @@ import type { Watch } from '@/stores/smartResponse'
 
 interface Props {
   modelValue: boolean
-  watch: Watch | null
+  watchItem: Watch | null
 }
 
 interface Emits {
@@ -61,7 +61,7 @@ watch(() => props.modelValue, (val) => {
   visible.value = val
 })
 
-watch(() => props.watch, () => {
+watch(() => props.watchItem, () => {
   form.value.student_id = null
 })
 
@@ -76,11 +76,11 @@ function handleClose() {
 }
 
 async function handleAssign() {
-  if (!props.watch || !form.value.student_id) return
-  
+  if (!props.watchItem || !form.value.student_id) return
+
   loading.value = true
   try {
-    emit('assigned', props.watch.watch_id, form.value.student_id)
+    emit('assigned', props.watchItem.watch_id, form.value.student_id)
   } finally {
     loading.value = false
   }

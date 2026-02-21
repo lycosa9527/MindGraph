@@ -43,6 +43,7 @@ export interface NodeStyle {
   height?: number
   size?: number // Uniform size for perfect circles (diameter)
   minWidth?: number // Minimum width (for multi-flow map visual balance)
+  noWrap?: boolean // Prevent text wrapping in circle/bubble nodes
 }
 
 export interface Position {

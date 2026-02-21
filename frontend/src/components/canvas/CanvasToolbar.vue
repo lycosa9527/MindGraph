@@ -291,9 +291,11 @@ function handleAddEffect() {
 function repositionBridgeMapPairs() {
   const startTime = getTimestamp()
   console.debug(`[CanvasToolbar] [${startTime}] repositionBridgeMapPairs() called`)
-  
+
+  if (!diagramStore.data) return
+
   const pairs = new Map<number, { left: DiagramNode; right: DiagramNode }>()
-  
+
   for (const node of diagramStore.data.nodes) {
     if (
       node.data?.diagramType !== 'bridge_map' ||

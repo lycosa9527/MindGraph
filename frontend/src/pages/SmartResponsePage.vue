@@ -71,7 +71,7 @@
 
     <WatchAssignmentModal
       v-model="showAssignDialog"
-      :watch="selectedWatch"
+      :watch-item="selectedWatch"
       @assigned="handleAssigned"
     />
   </div>

@@ -124,12 +124,15 @@ const bridgePairs = computed<BridgePair[]>(() => {
   // Vue Flow positions are more accurate after nodes are moved or layout is recalculated
   const nodes = storeNodes.map((storeNode) => {
     const vueFlowNode = vueFlowNodesMap.get(storeNode.id)
+    const vueFlowMeasured = vueFlowNode
+      ? (vueFlowNode as { measured?: { width?: number; height?: number } }).measured
+      : undefined
     return {
       ...storeNode,
       // Use Vue Flow's position if available (more accurate after moves/layout changes)
       position: vueFlowNode?.position || storeNode.position,
       // Merge Vue Flow's measured dimensions if available
-      measured: vueFlowNode?.measured,
+      measured: vueFlowMeasured,
       dimensions: vueFlowNode?.dimensions,
     }
   })
@@ -158,24 +161,34 @@ const bridgePairs = computed<BridgePair[]>(() => {
 
   nodes.forEach((node) => {
     // Check for pairIndex and position in node.data
-    const pairIndex = node.data?.pairIndex
+    const rawPairIndex = node.data?.pairIndex
     const position = node.data?.position // 'left' or 'right'
 
     // Debug: log nodes that don't have pairIndex/position
-    if (isBridgeMap.value && pairIndex === undefined && node.data?.diagramType === 'bridge_map') {
+    if (isBridgeMap.value && rawPairIndex === undefined && node.data?.diagramType === 'bridge_map') {
       console.debug(`[BridgeOverlay] [${getTimestamp()}] Node missing pairIndex:`, node.id, node.data)
     }
 
-    if (pairIndex === undefined || !position) return
+    if (
+      rawPairIndex === undefined ||
+      rawPairIndex === null ||
+      typeof rawPairIndex !== 'number' ||
+      !position
+    ) {
+      return
+    }
+
+    const pairIndex = rawPairIndex as number
+    const pos = node.position ?? { x: 0, y: 0 }
 
     const dims = getNodeDimensions(node)
     // Get text from node.text (DiagramNode) or node.data.label (Vue Flow node)
-    const nodeText = (node as { text?: string; data?: { label?: string } }).text || 
+    const nodeText = (node as { text?: string; data?: { label?: string } }).text ||
                      (node as { text?: string; data?: { label?: string } }).data?.label || ''
     const nodeInfo = {
       id: node.id,
-      x: node.position.x,
-      y: node.position.y,
+      x: pos.x,
+      y: pos.y,
       width: dims.width,
       height: dims.height,
       text: nodeText,
