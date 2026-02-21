@@ -1,528 +1,176 @@
 /**
  * Vue Router Configuration
  */
-import 
-  {
-    path: '/smart-response',
-    name: 'SmartResponse',
-    component: () => import('@/pages/SmartResponsePage.vue'),
-    meta: { requiresAuth: true, requiresAdmin: true, layout: 'main' },
-  },
- { type RouteRecordRaw, createRouter, createWebHistory } from 'vue-router'
+import {
+  type RouteRecordRaw,
+  createRouter,
+  createWebHistory,
+} from 'vue-router'
 
-import 
-  {
-    path: '/smart-response',
-    name: 'SmartResponse',
-    component: () => import('@/pages/SmartResponsePage.vue'),
-    meta: { requiresAuth: true, requiresAdmin: true, layout: 'main' },
-  },
- { useAuthStore } from '@/stores/auth'
-import 
-  {
-    path: '/smart-response',
-    name: 'SmartResponse',
-    component: () => import('@/pages/SmartResponsePage.vue'),
-    meta: { requiresAuth: true, requiresAdmin: true, layout: 'main' },
-  },
- { useFeatureFlagsStore } from '@/stores/featureFlags'
+import { useAuthStore } from '@/stores/auth'
+import { useFeatureFlagsStore } from '@/stores/featureFlags'
 
 const routes: RouteRecordRaw[] = [
-  
   {
     path: '/smart-response',
     name: 'SmartResponse',
     component: () => import('@/pages/SmartResponsePage.vue'),
     meta: { requiresAuth: true, requiresAdmin: true, layout: 'main' },
   },
-
   {
     path: '/',
     name: 'Main',
     redirect: '/mindmate',
   },
-  
-  {
-    path: '/smart-response',
-    name: 'SmartResponse',
-    component: () => import('@/pages/SmartResponsePage.vue'),
-    meta: { requiresAuth: true, requiresAdmin: true, layout: 'main' },
-  },
-
   {
     path: '/mindmate',
     name: 'MindMate',
     component: () => import('@/pages/MindMatePage.vue'),
-    meta: 
-  {
-    path: '/smart-response',
-    name: 'SmartResponse',
-    component: () => import('@/pages/SmartResponsePage.vue'),
-    meta: { requiresAuth: true, requiresAdmin: true, layout: 'main' },
+    meta: { layout: 'main' },
   },
- { layout: 'main' },
-  },
-  
-  {
-    path: '/smart-response',
-    name: 'SmartResponse',
-    component: () => import('@/pages/SmartResponsePage.vue'),
-    meta: { requiresAuth: true, requiresAdmin: true, layout: 'main' },
-  },
-
   {
     path: '/mindgraph',
     name: 'MindGraph',
     component: () => import('@/pages/MindGraphPage.vue'),
-    meta: 
-  {
-    path: '/smart-response',
-    name: 'SmartResponse',
-    component: () => import('@/pages/SmartResponsePage.vue'),
-    meta: { requiresAuth: true, requiresAdmin: true, layout: 'main' },
+    meta: { layout: 'main' },
   },
- { layout: 'main' },
-  },
-  
-  {
-    path: '/smart-response',
-    name: 'SmartResponse',
-    component: () => import('@/pages/SmartResponsePage.vue'),
-    meta: { requiresAuth: true, requiresAdmin: true, layout: 'main' },
-  },
-
   {
     path: '/canvas',
     name: 'Canvas',
     component: () => import('@/pages/CanvasPage.vue'),
-    meta: 
-  {
-    path: '/smart-response',
-    name: 'SmartResponse',
-    component: () => import('@/pages/SmartResponsePage.vue'),
-    meta: { requiresAuth: true, requiresAdmin: true, layout: 'main' },
+    meta: { requiresAuth: true, layout: 'canvas' },
   },
- { requiresAuth: true, layout: 'canvas' },
-  },
-  
-  {
-    path: '/smart-response',
-    name: 'SmartResponse',
-    component: () => import('@/pages/SmartResponsePage.vue'),
-    meta: { requiresAuth: true, requiresAdmin: true, layout: 'main' },
-  },
-
   {
     path: '/admin',
     name: 'Admin',
     component: () => import('@/pages/AdminPage.vue'),
-    meta: 
-  {
-    path: '/smart-response',
-    name: 'SmartResponse',
-    component: () => import('@/pages/SmartResponsePage.vue'),
-    meta: { requiresAuth: true, requiresAdmin: true, layout: 'main' },
+    meta: { requiresAuth: true, requiresAdmin: true, layout: 'admin' },
   },
- { requiresAuth: true, requiresAdmin: true, layout: 'admin' },
-  },
-  
-  {
-    path: '/smart-response',
-    name: 'SmartResponse',
-    component: () => import('@/pages/SmartResponsePage.vue'),
-    meta: { requiresAuth: true, requiresAdmin: true, layout: 'main' },
-  },
-
   {
     path: '/login',
     name: 'Login',
     component: () => import('@/pages/LoginPage.vue'),
-    meta: 
-  {
-    path: '/smart-response',
-    name: 'SmartResponse',
-    component: () => import('@/pages/SmartResponsePage.vue'),
-    meta: { requiresAuth: true, requiresAdmin: true, layout: 'main' },
+    meta: { layout: 'auth', guestOnly: true },
   },
- { layout: 'auth', guestOnly: true },
-  },
-  
-  {
-    path: '/smart-response',
-    name: 'SmartResponse',
-    component: () => import('@/pages/SmartResponsePage.vue'),
-    meta: { requiresAuth: true, requiresAdmin: true, layout: 'main' },
-  },
-
   {
     path: '/auth',
     name: 'Auth',
     component: () => import('@/pages/LoginPage.vue'),
-    meta: 
-  {
-    path: '/smart-response',
-    name: 'SmartResponse',
-    component: () => import('@/pages/SmartResponsePage.vue'),
-    meta: { requiresAuth: true, requiresAdmin: true, layout: 'main' },
+    meta: { layout: 'auth', guestOnly: true },
   },
- { layout: 'auth', guestOnly: true },
-  },
-  
-  {
-    path: '/smart-response',
-    name: 'SmartResponse',
-    component: () => import('@/pages/SmartResponsePage.vue'),
-    meta: { requiresAuth: true, requiresAdmin: true, layout: 'main' },
-  },
-
   {
     path: '/demo',
     name: 'DemoLogin',
     component: () => import('@/pages/DemoLoginPage.vue'),
-    meta: 
-  {
-    path: '/smart-response',
-    name: 'SmartResponse',
-    component: () => import('@/pages/SmartResponsePage.vue'),
-    meta: { requiresAuth: true, requiresAdmin: true, layout: 'main' },
+    meta: { layout: 'auth', guestOnly: true },
   },
- { layout: 'auth', guestOnly: true },
-  },
-  
-  {
-    path: '/smart-response',
-    name: 'SmartResponse',
-    component: () => import('@/pages/SmartResponsePage.vue'),
-    meta: { requiresAuth: true, requiresAdmin: true, layout: 'main' },
-  },
-
   {
     path: '/template',
     name: 'Template',
     component: () => import('@/pages/TemplatePage.vue'),
-    meta: 
-  {
-    path: '/smart-response',
-    name: 'SmartResponse',
-    component: () => import('@/pages/SmartResponsePage.vue'),
-    meta: { requiresAuth: true, requiresAdmin: true, layout: 'main' },
+    meta: { layout: 'main' },
   },
- { layout: 'main' },
-  },
-  
-  {
-    path: '/smart-response',
-    name: 'SmartResponse',
-    component: () => import('@/pages/SmartResponsePage.vue'),
-    meta: { requiresAuth: true, requiresAdmin: true, layout: 'main' },
-  },
-
   {
     path: '/course',
     name: 'Course',
     component: () => import('@/pages/CoursePage.vue'),
-    meta: 
-  {
-    path: '/smart-response',
-    name: 'SmartResponse',
-    component: () => import('@/pages/SmartResponsePage.vue'),
-    meta: { requiresAuth: true, requiresAdmin: true, layout: 'main' },
+    meta: { layout: 'main' },
   },
- { layout: 'main' },
-  },
-  
-  {
-    path: '/smart-response',
-    name: 'SmartResponse',
-    component: () => import('@/pages/SmartResponsePage.vue'),
-    meta: { requiresAuth: true, requiresAdmin: true, layout: 'main' },
-  },
-
   {
     path: '/community',
     name: 'Community',
     component: () => import('@/pages/CommunityPage.vue'),
-    meta: 
-  {
-    path: '/smart-response',
-    name: 'SmartResponse',
-    component: () => import('@/pages/SmartResponsePage.vue'),
-    meta: { requiresAuth: true, requiresAdmin: true, layout: 'main' },
+    meta: { layout: 'main' },
   },
- { layout: 'main' },
-  },
-  
-  {
-    path: '/smart-response',
-    name: 'SmartResponse',
-    component: () => import('@/pages/SmartResponsePage.vue'),
-    meta: { requiresAuth: true, requiresAdmin: true, layout: 'main' },
-  },
-
   {
     path: '/school-zone',
     name: 'SchoolZone',
     component: () => import('@/pages/SchoolZonePage.vue'),
-    meta: 
-  {
-    path: '/smart-response',
-    name: 'SmartResponse',
-    component: () => import('@/pages/SmartResponsePage.vue'),
-    meta: { requiresAuth: true, requiresAdmin: true, layout: 'main' },
+    meta: { requiresAuth: true, requiresOrganization: true, layout: 'main' },
   },
- { requiresAuth: true, requiresOrganization: true, layout: 'main' },
-  },
-  
-  {
-    path: '/smart-response',
-    name: 'SmartResponse',
-    component: () => import('@/pages/SmartResponsePage.vue'),
-    meta: { requiresAuth: true, requiresAdmin: true, layout: 'main' },
-  },
-
   {
     path: '/askonce',
     name: 'AskOnce',
     component: () => import('@/pages/AskOncePage.vue'),
-    meta: 
-  {
-    path: '/smart-response',
-    name: 'SmartResponse',
-    component: () => import('@/pages/SmartResponsePage.vue'),
-    meta: { requiresAuth: true, requiresAdmin: true, layout: 'main' },
+    meta: { layout: 'main' },
   },
- { layout: 'main' },
-  },
-  
-  {
-    path: '/smart-response',
-    name: 'SmartResponse',
-    component: () => import('@/pages/SmartResponsePage.vue'),
-    meta: { requiresAuth: true, requiresAdmin: true, layout: 'main' },
-  },
-
   {
     path: '/debateverse',
     name: 'DebateVerse',
     component: () => import('@/pages/DebateVersePage.vue'),
-    meta: 
-  {
-    path: '/smart-response',
-    name: 'SmartResponse',
-    component: () => import('@/pages/SmartResponsePage.vue'),
-    meta: { requiresAuth: true, requiresAdmin: true, layout: 'main' },
+    meta: { layout: 'main' },
   },
- { layout: 'main' },
-  },
-  
-  {
-    path: '/smart-response',
-    name: 'SmartResponse',
-    component: () => import('@/pages/SmartResponsePage.vue'),
-    meta: { requiresAuth: true, requiresAdmin: true, layout: 'main' },
-  },
-
   {
     path: '/knowledge-space',
     name: 'KnowledgeSpace',
     component: () => import('@/pages/KnowledgeSpacePage.vue'),
-    meta: 
-  {
-    path: '/smart-response',
-    name: 'SmartResponse',
-    component: () => import('@/pages/SmartResponsePage.vue'),
-    meta: { requiresAuth: true, requiresAdmin: true, layout: 'main' },
+    meta: { requiresAuth: true, layout: 'main' },
   },
- { requiresAuth: true, layout: 'main' },
-  },
-  
-  {
-    path: '/smart-response',
-    name: 'SmartResponse',
-    component: () => import('@/pages/SmartResponsePage.vue'),
-    meta: { requiresAuth: true, requiresAdmin: true, layout: 'main' },
-  },
-
   {
     path: '/chunk-test',
     name: 'ChunkTest',
     component: () => import('@/pages/ChunkTestPage.vue'),
-    meta: 
-  {
-    path: '/smart-response',
-    name: 'SmartResponse',
-    component: () => import('@/pages/SmartResponsePage.vue'),
-    meta: { requiresAuth: true, requiresAdmin: true, layout: 'main' },
+    meta: {
+      requiresAuth: true,
+      requiresFeatureFlag: 'ragChunkTest',
+      layout: 'main',
+    },
   },
- { requiresAuth: true, requiresFeatureFlag: 'ragChunkTest', layout: 'main' },
-  },
-  
-  {
-    path: '/smart-response',
-    name: 'SmartResponse',
-    component: () => import('@/pages/SmartResponsePage.vue'),
-    meta: { requiresAuth: true, requiresAdmin: true, layout: 'main' },
-  },
-
   {
     path: '/chunk-test/results/:testId',
     name: 'ChunkTestResults',
     component: () => import('@/pages/ChunkTestResultsPage.vue'),
-    meta: 
-  {
-    path: '/smart-response',
-    name: 'SmartResponse',
-    component: () => import('@/pages/SmartResponsePage.vue'),
-    meta: { requiresAuth: true, requiresAdmin: true, layout: 'main' },
+    meta: {
+      requiresAuth: true,
+      requiresFeatureFlag: 'ragChunkTest',
+      layout: 'main',
+    },
   },
- { requiresAuth: true, requiresFeatureFlag: 'ragChunkTest', layout: 'main' },
-  },
-  
-  {
-    path: '/smart-response',
-    name: 'SmartResponse',
-    component: () => import('@/pages/SmartResponsePage.vue'),
-    meta: { requiresAuth: true, requiresAdmin: true, layout: 'main' },
-  },
-
   {
     path: '/library',
     name: 'Library',
     component: () => import('@/pages/LibraryPage.vue'),
-    meta: 
-  {
-    path: '/smart-response',
-    name: 'SmartResponse',
-    component: () => import('@/pages/SmartResponsePage.vue'),
-    meta: { requiresAuth: true, requiresAdmin: true, layout: 'main' },
+    meta: { layout: 'main' },
   },
- { layout: 'main' },
-  },
-  
-  {
-    path: '/smart-response',
-    name: 'SmartResponse',
-    component: () => import('@/pages/SmartResponsePage.vue'),
-    meta: { requiresAuth: true, requiresAdmin: true, layout: 'main' },
-  },
-
   {
     path: '/library/:id',
     name: 'LibraryViewer',
     component: () => import('@/pages/LibraryViewerPage.vue'),
-    meta: 
-  {
-    path: '/smart-response',
-    name: 'SmartResponse',
-    component: () => import('@/pages/SmartResponsePage.vue'),
-    meta: { requiresAuth: true, requiresAdmin: true, layout: 'main' },
+    meta: { layout: 'main' },
   },
- { layout: 'main' },
-  },
-  
-  {
-    path: '/smart-response',
-    name: 'SmartResponse',
-    component: () => import('@/pages/SmartResponsePage.vue'),
-    meta: { requiresAuth: true, requiresAdmin: true, layout: 'main' },
-  },
-
   {
     path: '/library/bookmark/:uuid',
     name: 'LibraryBookmark',
     component: () => import('@/pages/LibraryBookmarkPage.vue'),
-    meta: 
-  {
-    path: '/smart-response',
-    name: 'SmartResponse',
-    component: () => import('@/pages/SmartResponsePage.vue'),
-    meta: { requiresAuth: true, requiresAdmin: true, layout: 'main' },
+    meta: { layout: 'main', requiresAuth: true },
   },
- { layout: 'main', requiresAuth: true },
-  },
-  
-  {
-    path: '/smart-response',
-    name: 'SmartResponse',
-    component: () => import('@/pages/SmartResponsePage.vue'),
-    meta: { requiresAuth: true, requiresAdmin: true, layout: 'main' },
-  },
-
   {
     path: '/gewe',
     name: 'Gewe',
     component: () => import('@/pages/GewePage.vue'),
-    meta: 
-  {
-    path: '/smart-response',
-    name: 'SmartResponse',
-    component: () => import('@/pages/SmartResponsePage.vue'),
-    meta: { requiresAuth: true, requiresAdmin: true, layout: 'main' },
+    meta: {
+      layout: 'main',
+      requiresAuth: true,
+      requiresAdmin: true,
+    },
   },
- { layout: 'main', requiresAuth: true, requiresAdmin: true },
-  },
-  
-  {
-    path: '/smart-response',
-    name: 'SmartResponse',
-    component: () => import('@/pages/SmartResponsePage.vue'),
-    meta: { requiresAuth: true, requiresAdmin: true, layout: 'main' },
-  },
-
   {
     path: '/dashboard',
     name: 'PublicDashboard',
     component: () => import('@/pages/PublicDashboardPage.vue'),
-    meta: 
-  {
-    path: '/smart-response',
-    name: 'SmartResponse',
-    component: () => import('@/pages/SmartResponsePage.vue'),
-    meta: { requiresAuth: true, requiresAdmin: true, layout: 'main' },
+    meta: { layout: 'default' },
   },
- { layout: 'default' },
-  },
-  
-  {
-    path: '/smart-response',
-    name: 'SmartResponse',
-    component: () => import('@/pages/SmartResponsePage.vue'),
-    meta: { requiresAuth: true, requiresAdmin: true, layout: 'main' },
-  },
-
   {
     path: '/dashboard/login',
     name: 'DashboardLogin',
     component: () => import('@/pages/DashboardLoginPage.vue'),
-    meta: 
-  {
-    path: '/smart-response',
-    name: 'SmartResponse',
-    component: () => import('@/pages/SmartResponsePage.vue'),
-    meta: { requiresAuth: true, requiresAdmin: true, layout: 'main' },
+    meta: { layout: 'auth' },
   },
- { layout: 'auth' },
-  },
-  
-  {
-    path: '/smart-response',
-    name: 'SmartResponse',
-    component: () => import('@/pages/SmartResponsePage.vue'),
-    meta: { requiresAuth: true, requiresAdmin: true, layout: 'main' },
-  },
-
   {
     path: '/:pathMatch(.*)*',
     name: 'NotFound',
     component: () => import('@/pages/NotFoundPage.vue'),
-    meta: 
-  {
-    path: '/smart-response',
-    name: 'SmartResponse',
-    component: () => import('@/pages/SmartResponsePage.vue'),
-    meta: { requiresAuth: true, requiresAdmin: true, layout: 'main' },
-  },
- { layout: 'default' },
+    meta: { layout: 'default' },
   },
 ]
 
@@ -532,76 +180,44 @@ const router = createRouter({
 })
 
 // Navigation guards
-router.beforeEach(async (to, _from, next) => 
-  {
-    path: '/smart-response',
-    name: 'SmartResponse',
-    component: () => import('@/pages/SmartResponsePage.vue'),
-    meta: { requiresAuth: true, requiresAdmin: true, layout: 'main' },
-  },
- {
+router.beforeEach(async (to, _from, next) => {
   const authStore = useAuthStore()
   const featureFlagsStore = useFeatureFlagsStore()
-  
+
   // Fetch feature flags if needed (for router guard - doesn't use vue-query)
   // Fetch flags for any route that might need feature flag checks
-  if (to.meta.requiresFeatureFlag ||
-      to.name === 'Course' ||
-      to.name === 'Template' ||
-      to.name === 'Community' ||
-      to.name === 'AskOnce' ||
-      to.name === 'DebateVerse' ||
-      to.name === 'SchoolZone' ||
-      to.name === 'KnowledgeSpace' ||
-      to.name === 'Library') 
-  {
-    path: '/smart-response',
-    name: 'SmartResponse',
-    component: () => import('@/pages/SmartResponsePage.vue'),
-    meta: { requiresAuth: true, requiresAdmin: true, layout: 'main' },
-  },
- {
+  if (
+    to.meta.requiresFeatureFlag ||
+    to.name === 'Course' ||
+    to.name === 'Template' ||
+    to.name === 'Community' ||
+    to.name === 'AskOnce' ||
+    to.name === 'DebateVerse' ||
+    to.name === 'SchoolZone' ||
+    to.name === 'KnowledgeSpace' ||
+    to.name === 'Library'
+  ) {
     await featureFlagsStore.fetchFlags()
   }
 
   // Check authentication status - only for protected routes
   // checkAuth() is smart: it uses cached user if available, only makes API call if needed
-  if (to.meta.requiresAuth) 
-  {
-    path: '/smart-response',
-    name: 'SmartResponse',
-    component: () => import('@/pages/SmartResponsePage.vue'),
-    meta: { requiresAuth: true, requiresAdmin: true, layout: 'main' },
-  },
- {
+  if (to.meta.requiresAuth) {
     // Check if user was previously authenticated (before checkAuth clears it)
-    const hadUserBeforeCheck = !!authStore.user || !!sessionStorage.getItem('auth_user')
-    
+    const hadUserBeforeCheck =
+      !!authStore.user || !!sessionStorage.getItem('auth_user')
+
     const isAuthenticated = await authStore.checkAuth()
-    if (!isAuthenticated) 
-  {
-    path: '/smart-response',
-    name: 'SmartResponse',
-    component: () => import('@/pages/SmartResponsePage.vue'),
-    meta: { requiresAuth: true, requiresAdmin: true, layout: 'main' },
-  },
- {
+    if (!isAuthenticated) {
       // If user existed before checkAuth but checkAuth failed, session expired
-      if (hadUserBeforeCheck && to.name !== 'Login') 
-  {
-    path: '/smart-response',
-    name: 'SmartResponse',
-    component: () => import('@/pages/SmartResponsePage.vue'),
-    meta: { requiresAuth: true, requiresAdmin: true, layout: 'main' },
-  },
- {
+      if (hadUserBeforeCheck && to.name !== 'Login') {
         // Session expired - show modal overlay and prevent navigation
         // Stay on current page (from) instead of navigating to protected route
         authStore.handleTokenExpired(undefined, undefined) // undefined = stay on current page
         // Prevent navigation - user must login first
         return next(false)
       }
-      
+
       // User was never authenticated - show login modal with redirect path
       authStore.handleTokenExpired(undefined, to.fullPath)
       // Prevent navigation - user must login first
@@ -610,130 +226,58 @@ router.beforeEach(async (to, _from, next) =>
   }
 
   // Check admin access (admin-only, not managers)
-  if (to.meta.requiresAdmin && !authStore.isAdmin) 
-  {
-    path: '/smart-response',
-    name: 'SmartResponse',
-    component: () => import('@/pages/SmartResponsePage.vue'),
-    meta: { requiresAuth: true, requiresAdmin: true, layout: 'main' },
-  },
- {
+  if (to.meta.requiresAdmin && !authStore.isAdmin) {
     return next({ name: 'MindMate' })
   }
 
   // Check organization membership for school zone
-  if (to.meta.requiresOrganization && !authStore.user?.schoolId) 
-  {
-    path: '/smart-response',
-    name: 'SmartResponse',
-    component: () => import('@/pages/SmartResponsePage.vue'),
-    meta: { requiresAuth: true, requiresAdmin: true, layout: 'main' },
-  },
- {
+  if (to.meta.requiresOrganization && !authStore.user?.schoolId) {
     return next({ name: 'MindMate' })
   }
 
   // Check feature flags
-  if (to.meta.requiresFeatureFlag === 'ragChunkTest' && !featureFlagsStore.getFeatureRagChunkTest()) 
-  {
-    path: '/smart-response',
-    name: 'SmartResponse',
-    component: () => import('@/pages/SmartResponsePage.vue'),
-    meta: { requiresAuth: true, requiresAdmin: true, layout: 'main' },
-  },
- {
+  if (
+    to.meta.requiresFeatureFlag === 'ragChunkTest' &&
+    !featureFlagsStore.getFeatureRagChunkTest()
+  ) {
     return next({ name: 'MindMate' })
   }
-  if (to.name === 'Course' && !featureFlagsStore.getFeatureCourse()) 
-  {
-    path: '/smart-response',
-    name: 'SmartResponse',
-    component: () => import('@/pages/SmartResponsePage.vue'),
-    meta: { requiresAuth: true, requiresAdmin: true, layout: 'main' },
-  },
- {
+  if (to.name === 'Course' && !featureFlagsStore.getFeatureCourse()) {
     return next({ name: 'MindMate' })
   }
-  if (to.name === 'Template' && !featureFlagsStore.getFeatureTemplate()) 
-  {
-    path: '/smart-response',
-    name: 'SmartResponse',
-    component: () => import('@/pages/SmartResponsePage.vue'),
-    meta: { requiresAuth: true, requiresAdmin: true, layout: 'main' },
-  },
- {
+  if (to.name === 'Template' && !featureFlagsStore.getFeatureTemplate()) {
     return next({ name: 'MindMate' })
   }
-  if (to.name === 'Community' && !featureFlagsStore.getFeatureCommunity()) 
-  {
-    path: '/smart-response',
-    name: 'SmartResponse',
-    component: () => import('@/pages/SmartResponsePage.vue'),
-    meta: { requiresAuth: true, requiresAdmin: true, layout: 'main' },
-  },
- {
+  if (to.name === 'Community' && !featureFlagsStore.getFeatureCommunity()) {
     return next({ name: 'MindMate' })
   }
-  if (to.name === 'AskOnce' && !featureFlagsStore.getFeatureAskOnce()) 
-  {
-    path: '/smart-response',
-    name: 'SmartResponse',
-    component: () => import('@/pages/SmartResponsePage.vue'),
-    meta: { requiresAuth: true, requiresAdmin: true, layout: 'main' },
-  },
- {
+  if (to.name === 'AskOnce' && !featureFlagsStore.getFeatureAskOnce()) {
     return next({ name: 'MindMate' })
   }
-  if (to.name === 'DebateVerse' && !featureFlagsStore.getFeatureDebateverse()) 
-  {
-    path: '/smart-response',
-    name: 'SmartResponse',
-    component: () => import('@/pages/SmartResponsePage.vue'),
-    meta: { requiresAuth: true, requiresAdmin: true, layout: 'main' },
-  },
- {
+  if (
+    to.name === 'DebateVerse' &&
+    !featureFlagsStore.getFeatureDebateverse()
+  ) {
     return next({ name: 'MindMate' })
   }
-  if (to.name === 'SchoolZone' && !featureFlagsStore.getFeatureSchoolZone()) 
-  {
-    path: '/smart-response',
-    name: 'SmartResponse',
-    component: () => import('@/pages/SmartResponsePage.vue'),
-    meta: { requiresAuth: true, requiresAdmin: true, layout: 'main' },
-  },
- {
+  if (
+    to.name === 'SchoolZone' &&
+    !featureFlagsStore.getFeatureSchoolZone()
+  ) {
     return next({ name: 'MindMate' })
   }
-  if (to.name === 'KnowledgeSpace' && !featureFlagsStore.getFeatureKnowledgeSpace()) 
-  {
-    path: '/smart-response',
-    name: 'SmartResponse',
-    component: () => import('@/pages/SmartResponsePage.vue'),
-    meta: { requiresAuth: true, requiresAdmin: true, layout: 'main' },
-  },
- {
+  if (
+    to.name === 'KnowledgeSpace' &&
+    !featureFlagsStore.getFeatureKnowledgeSpace()
+  ) {
     return next({ name: 'MindMate' })
   }
-  if (to.name === 'Library' && !featureFlagsStore.getFeatureLibrary()) 
-  {
-    path: '/smart-response',
-    name: 'SmartResponse',
-    component: () => import('@/pages/SmartResponsePage.vue'),
-    meta: { requiresAuth: true, requiresAdmin: true, layout: 'main' },
-  },
- {
+  if (to.name === 'Library' && !featureFlagsStore.getFeatureLibrary()) {
     return next({ name: 'MindMate' })
   }
 
   // Redirect authenticated users away from guest-only pages
-  if (to.meta.guestOnly && authStore.isAuthenticated) 
-  {
-    path: '/smart-response',
-    name: 'SmartResponse',
-    component: () => import('@/pages/SmartResponsePage.vue'),
-    meta: { requiresAuth: true, requiresAdmin: true, layout: 'main' },
-  },
- {
+  if (to.meta.guestOnly && authStore.isAuthenticated) {
     return next({ name: 'MindMate' })
   }
 

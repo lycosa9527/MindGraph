@@ -5,8 +5,20 @@
 Run the automated install script from your MindGraph project directory:
 
 ```bash
-bash scripts/install_qdrant.sh
+# Python entry point (recommended - works on Windows, WSL, Linux)
+# Use full path when using conda (sudo does not inherit conda PATH):
+sudo $(which python) scripts/setup/install_qdrant.py
+
+# Or use system python3:
+sudo python3 scripts/setup/install_qdrant.py
+
+# Or use the shell wrapper
+sudo bash scripts/setup/install_qdrant.sh
 ```
+
+**Conda users**: Run `sudo $(which python) scripts/setup/install_qdrant.py` so sudo finds your conda Python.
+
+**WSL / Windows users**: Use the Python entry point to avoid line-ending issues when the repo is on a Windows drive.
 
 ### What the script does:
 
@@ -59,7 +71,7 @@ Dashboard URL: http://localhost:6333/dashboard
 Restart MindGraph to enable background processing:
 
 ```bash
-python run_server.py
+python main.py
 ```
 
 You should see:
@@ -73,7 +85,7 @@ You should see:
 Simply run the script again - it will detect the existing installation and prompt you:
 
 ```bash
-bash scripts/install_qdrant.sh
+python scripts/setup/install_qdrant.py
 ```
 
 ---
@@ -194,7 +206,7 @@ QDRANT_HOST=localhost:6333
 **Step 8: Restart MindGraph**
 
 ```bash
-python run_server.py
+python main.py
 ```
 
 You should see:
@@ -281,7 +293,7 @@ Features:
 ### Using the install script (easiest)
 
 ```bash
-bash scripts/install_qdrant.sh
+python scripts/setup/install_qdrant.py
 ```
 
 The script detects existing installations and prompts to upgrade.
@@ -359,7 +371,7 @@ curl http://localhost:6333/collections
 # Check .env file has QDRANT_HOST
 grep QDRANT .env
 
-# Restart MindGraph after .env changes
+# Restart MindGraph after .env changes: python main.py
 ```
 
 ## Docker Alternative
