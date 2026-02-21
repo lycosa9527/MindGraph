@@ -24,8 +24,7 @@ from fastapi import FastAPI
 
 # First-party imports
 from config.settings import config
-from routers
-from esp32.backend.routers import smart_response_ws.register import register_routers
+from routers.register import register_routers
 from services.infrastructure.lifecycle.startup import setup_early_configuration
 from services.infrastructure.utils.logging_config import setup_logging
 from services.infrastructure.lifecycle.lifespan import lifespan

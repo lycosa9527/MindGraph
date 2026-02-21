@@ -10,8 +10,7 @@ exclude = [
     "**/*.toml",
     "pyproject.toml"
 ]
-venvPath = "."
-venv = "venv"
+# No venv - using system Python
 pythonVersion = "3.13"
 typeCheckingMode = "basic"
 reportMissingImports = false  # Suppress false positive import warnings for installed packages
@@ -19,13 +18,8 @@ reportMissingTypeStubs = false
 reportMissingModuleSource = false  # Suppress import resolution errors for known installed packages
 pythonPlatform = "Linux"
 extraPaths = [
-    "C:\\Users\\roywa\\AppData\\Roaming\\Python\\Python313\\site-packages",
-    "venv/Lib/site-packages",
-    "venv\\Lib\\site-packages"
+    "C:\\Users\\roywa\\AppData\\Roaming\\Python\\Python313\\site-packages"
 ]
-# Additional configuration to help with import resolution
-# stubPath is optional - only set if venv exists and contains type stubs
-# stubPath = "venv/Lib/site-packages"
 
 [tool.pytest.ini_options]
 # Pytest configuration for MindGraph
