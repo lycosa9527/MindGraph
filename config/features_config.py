@@ -180,6 +180,14 @@ class FeaturesConfigMixin:
         return self._get_cached_value('FEATURE_LIBRARY', 'False').lower() == 'true'
 
     @property
+    def FEATURE_SMART_RESPONSE(self):
+        """Enable Smart Response (智回) ESP32 watch teacher interface.
+        
+        Disabled by default. Set FEATURE_SMART_RESPONSE=True in .env to enable.
+        """
+        return self._get_cached_value('FEATURE_SMART_RESPONSE', 'False').lower() == 'true'
+
+    @property
     def AI_ASSISTANT_NAME(self):
         """AI Assistant display name (appears in toolbar button and panel header)."""
         return self._get_cached_value('AI_ASSISTANT_NAME', 'MindMate AI')

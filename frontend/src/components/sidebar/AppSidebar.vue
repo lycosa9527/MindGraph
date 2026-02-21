@@ -38,7 +38,7 @@ import DiagramHistory from './DiagramHistory.vue'
 import KnowledgeSpaceHistory from './KnowledgeSpaceHistory.vue'
 import LibraryCommentsHistory from './LibraryCommentsHistory.vue'
 
-const { t } = useLanguage()
+const { t, isZh } = useLanguage()
 
 const router = useRouter()
 const uiStore = useUIStore()
@@ -56,6 +56,7 @@ const {
   featureDebateverse,
   featureKnowledgeSpace,
   featureLibrary,
+  featureSmartResponse,
 } = useFeatureFlags()
 
 const isCollapsed = computed(() => uiStore.sidebarCollapsed)
@@ -319,11 +320,11 @@ async function handleDiagramSelect(diagram: SavedDiagram) {
         <template #title>Gewe</template>
       </el-menu-item>
       <el-menu-item
-        v-if="isAdminOrManager"
+        v-if="isAdminOrManager && featureSmartResponse"
         index="smart-response"
       >
         <el-icon><Watch /></el-icon>
-        <template #title>Smart Response 智回</template>
+        <template #title>{{ isZh ? 'Smart Response 智回' : 'Smart Response' }}</template>
       </el-menu-item>
     </el-menu>
 

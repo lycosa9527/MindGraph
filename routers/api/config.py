@@ -23,6 +23,7 @@ class FeatureFlagsResponse(BaseModel):
     feature_debateverse: bool
     feature_knowledge_space: bool
     feature_library: bool
+    feature_smart_response: bool
 
 
 @router.get("/features", response_model=FeatureFlagsResponse)
@@ -38,4 +39,5 @@ async def get_feature_flags():
         feature_debateverse=config.FEATURE_DEBATEVERSE,
         feature_knowledge_space=config.FEATURE_KNOWLEDGE_SPACE,
         feature_library=config.FEATURE_LIBRARY,
+        feature_smart_response=config.FEATURE_SMART_RESPONSE,
     )

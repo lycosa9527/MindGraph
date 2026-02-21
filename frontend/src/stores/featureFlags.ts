@@ -18,6 +18,7 @@ interface FeatureFlagsResponse {
   feature_debateverse: boolean
   feature_knowledge_space: boolean
   feature_library: boolean
+  feature_smart_response: boolean
 }
 
 export const useFeatureFlagsStore = defineStore('featureFlags', () => {
@@ -55,6 +56,7 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
           feature_debateverse: false,
           feature_knowledge_space: false,
           feature_library: false,
+          feature_smart_response: false,
         }
         flags.value = defaultFlags
         lastFetchTime.value = now
@@ -81,6 +83,7 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
         feature_debateverse: false,
         feature_knowledge_space: false,
         feature_library: false,
+        feature_smart_response: false,
       }
       flags.value = defaultFlags
       return defaultFlags
@@ -129,6 +132,10 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
     return flags.value?.feature_library ?? false
   }
 
+  function getFeatureSmartResponse(): boolean {
+    return flags.value?.feature_smart_response ?? false
+  }
+
   /**
    * Initialize flags (call this early in app lifecycle)
    */
@@ -151,6 +158,7 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
     getFeatureDebateverse,
     getFeatureKnowledgeSpace,
     getFeatureLibrary,
+    getFeatureSmartResponse,
     init,
   }
 })

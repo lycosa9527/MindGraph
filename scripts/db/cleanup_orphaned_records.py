@@ -246,7 +246,9 @@ def main():
     if not dry_run:
         backup_path = db_path.parent / f"{db_path.stem}.backup_before_cleanup{db_path.suffix}"
         print(f"\nCreating backup: {backup_path}")
-        shutil.copy2(db_path, backup_path)
+        # copyfile only copies content; avoids PermissionError on WSL/Windows mounts
+        # (copy2/copy fail on copystat/copymode for /mnt/c/...)
+        shutil.copyfile(db_path, backup_path)
         print("[OK] Backup created\n")
 
     # Run cleanup

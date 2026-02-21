@@ -100,7 +100,8 @@ def backup_sqlite_database(sqlite_path: Path, progress_tracker: Optional[Any] = 
                 # Continue with backup even if checkpoint fails - might be read-only or locked
 
         # STEP 2: Copy main database file (now contains all committed data after checkpoint)
-        shutil.copy2(sqlite_path, backup_path)
+        # Use copyfile (not copy2) - WSL/Windows mounts fail on copystat/copymode
+        shutil.copyfile(sqlite_path, backup_path)
         logger.debug("[Migration] Backed up main database file")
 
         # STEP 3: Also create a copy with .original.sqlite suffix for easy identification
@@ -113,7 +114,7 @@ def backup_sqlite_database(sqlite_path: Path, progress_tracker: Optional[Any] = 
                 if old_file.exists():
                     old_file.unlink()
 
-        shutil.copy2(sqlite_path, original_backup)
+        shutil.copyfile(sqlite_path, original_backup)
         logger.debug("[Migration] Created .original.sqlite backup")
 
         # NOTE: We do NOT backup WAL or SHM files because:

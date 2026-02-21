@@ -195,7 +195,8 @@ router.beforeEach(async (to, _from, next) => {
     to.name === 'DebateVerse' ||
     to.name === 'SchoolZone' ||
     to.name === 'KnowledgeSpace' ||
-    to.name === 'Library'
+    to.name === 'Library' ||
+    to.name === 'SmartResponse'
   ) {
     await featureFlagsStore.fetchFlags()
   }
@@ -273,6 +274,12 @@ router.beforeEach(async (to, _from, next) => {
     return next({ name: 'MindMate' })
   }
   if (to.name === 'Library' && !featureFlagsStore.getFeatureLibrary()) {
+    return next({ name: 'MindMate' })
+  }
+  if (
+    to.name === 'SmartResponse' &&
+    !featureFlagsStore.getFeatureSmartResponse()
+  ) {
     return next({ name: 'MindMate' })
   }
 

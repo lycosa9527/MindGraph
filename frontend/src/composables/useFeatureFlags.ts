@@ -30,6 +30,7 @@ export function useFeatureFlags() {
   const featureDebateverse = computed(() => data.value?.feature_debateverse ?? false)
   const featureKnowledgeSpace = computed(() => data.value?.feature_knowledge_space ?? false)
   const featureLibrary = computed(() => data.value?.feature_library ?? false)
+  const featureSmartResponse = computed(() => data.value?.feature_smart_response ?? false)
 
   return {
     featureRagChunkTest,
@@ -41,6 +42,7 @@ export function useFeatureFlags() {
     featureDebateverse,
     featureKnowledgeSpace,
     featureLibrary,
+    featureSmartResponse,
     isLoading,
     error,
   }
