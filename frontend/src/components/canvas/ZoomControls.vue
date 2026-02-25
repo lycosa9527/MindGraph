@@ -74,17 +74,11 @@ watch(
 )
 
 function handleZoomIn() {
-  const next = (props.zoom != null ? props.zoom * 100 : zoomLevel.value) + 10
-  const level = Math.min(Math.round(next), Math.round(ZOOM.MAX * 100))
-  zoomLevel.value = level
-  emit('zoom-change', level)
+  emit('zoom-in')
 }
 
 function handleZoomOut() {
-  const next = (props.zoom != null ? props.zoom * 100 : zoomLevel.value) - 10
-  const level = Math.max(Math.round(next), Math.round(ZOOM.MIN * 100))
-  zoomLevel.value = level
-  emit('zoom-change', level)
+  emit('zoom-out')
 }
 
 function handleZoomReset() {
@@ -102,6 +96,8 @@ function handlePresentation() {
 
 const emit = defineEmits<{
   (e: 'zoom-change', level: number): void
+  (e: 'zoom-in'): void
+  (e: 'zoom-out'): void
   (e: 'fit-to-screen'): void
   (e: 'hand-tool-toggle', active: boolean): void
   (e: 'start-presentation'): void

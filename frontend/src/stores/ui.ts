@@ -27,7 +27,7 @@ export const DIAGRAM_TEMPLATES: Record<string, DiagramTemplate> = {
   括号图: { template: '用括号图拆分【事物】。', slots: ['事物'] },
   流程图: { template: '梳理【过程】的步骤。', slots: ['过程'] },
   复流程图: { template: '分析【事件】的原因和结果。', slots: ['事件'] },
-  桥型图: { template: '绘制对应关系为【对应关系】的桥型图。', slots: ['对应关系'] },
+  桥形图: { template: '绘制对应关系为【对应关系】的桥形图。', slots: ['对应关系'] },
   思维导图: { template: '以【主题】为主题，绘制一幅思维导图。', slots: ['主题'] },
 }
 

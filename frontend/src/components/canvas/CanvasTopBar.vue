@@ -51,7 +51,7 @@ import {
 
 import { DiagramSlotFullModal } from '@/components/canvas'
 import { WorkshopModal } from '@/components/workshop'
-import { eventBus, useNotifications, useWorkshop } from '@/composables'
+import { eventBus, getDefaultDiagramName, useNotifications, useWorkshop } from '@/composables'
 import { useLanguage } from '@/composables'
 import { useAuthStore, useDiagramStore, useSavedDiagramsStore } from '@/stores'
 
@@ -64,15 +64,17 @@ const diagramStore = useDiagramStore()
 const savedDiagramsStore = useSavedDiagramsStore()
 const authStore = useAuthStore()
 
-// Get chart type from route query
-const chartType = computed(() => (route.query.type as string) || '复流程图')
+// Diagram type from store (when loaded) or route query (for new diagrams)
+const diagramTypeForName = computed(
+  () => (diagramStore.type as string) || (route.query.type as string) || null
+)
 
 /**
  * Generate default diagram name (simple, no timestamp)
  * Format: "新圆圈图" / "New Circle Map"
  */
 function generateDefaultName(): string {
-  return isZh.value ? `新${chartType.value}` : `New ${chartType.value}`
+  return getDefaultDiagramName(diagramTypeForName.value, isZh.value)
 }
 
 // File name editing state (UI only)

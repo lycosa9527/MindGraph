@@ -80,8 +80,8 @@ export const FIT_PADDING = {
   STANDARD: 0.15,
   /** Standard edge padding in pixels */
   STANDARD_PX: 40,
-  /** Top padding in pixels - clears CanvasToolbar (top-60px) and top bar area */
-  TOP_UI_HEIGHT_PX: 56,
+  /** Top padding in pixels - clears CanvasTopBar (48px) + CanvasToolbar (top-60px, height 48px) */
+  TOP_UI_HEIGHT_PX: 108,
   /** Bottom padding in pixels - ZoomControls + AIModelSelector (bottom-4 + bar ~56px + margin) */
   BOTTOM_UI_HEIGHT_PX: 100,
   /** Extra bottom ratio for fitWithPanel (adds ~13% to base) */
@@ -89,9 +89,10 @@ export const FIT_PADDING = {
   /**
    * Standard padding with extra top/bottom for overlay UI.
    * Vue Flow object format: { top, right, bottom, left } - supports "40px" or ratio
+   * top: must match TOP_UI_HEIGHT_PX (clears CanvasTopBar + CanvasToolbar)
    */
   STANDARD_WITH_BOTTOM_UI: {
-    top: '56px',
+    top: '108px',
     right: '40px',
     bottom: '100px',
     left: '40px',

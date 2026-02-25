@@ -638,7 +638,7 @@ function handleToggleOrientation() {
     ]"
   >
     <div
-      class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 border-t-0 rounded-b-xl shadow-lg p-1.5 flex items-center justify-center"
+      class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-1.5 flex items-center justify-center"
     >
       <div
         class="toolbar-content flex items-center bg-gray-50 dark:bg-gray-700/50 rounded-lg p-1 gap-0.5"

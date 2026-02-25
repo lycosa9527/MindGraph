@@ -110,9 +110,14 @@ watch(
 )
 
 // Listen for edit request from context menu (right-click → 编辑)
+// Reuse same handler as double-click so both paths share identical behavior.
+// Defer so the menu closes and DOM settles before focus/select (ensures selection animation shows).
+const CONTEXT_MENU_EDIT_DELAY_MS = 50
+
 function handleEditRequested(payload: { nodeId?: string }): void {
   if (payload?.nodeId === props.nodeId && !localIsEditing.value) {
-    startEditing()
+    const noopEvent = { preventDefault: () => {}, stopPropagation: () => {} } as MouseEvent
+    setTimeout(() => handleDoubleClick(noopEvent), CONTEXT_MENU_EDIT_DELAY_MS)
   }
 }
 

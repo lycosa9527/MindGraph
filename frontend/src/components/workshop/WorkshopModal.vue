@@ -9,7 +9,7 @@ import { ElButton, ElDialog, ElMessage, ElTag } from 'element-plus'
 
 import { Copy, Users } from 'lucide-vue-next'
 
-import { useLanguage, useNotifications } from '@/composables'
+import { getDefaultDiagramName, useLanguage, useNotifications } from '@/composables'
 import { useDiagramStore, useSavedDiagramsStore } from '@/stores'
 import { authFetch } from '@/utils/api'
 
@@ -81,7 +81,10 @@ function getDiagramTitle(): string {
   if (topicText) {
     return topicText
   }
-  return diagramStore.effectiveTitle || (isZh.value ? '新图示' : 'New Diagram')
+  if (diagramStore.effectiveTitle) {
+    return diagramStore.effectiveTitle
+  }
+  return getDefaultDiagramName(diagramStore.type, isZh.value)
 }
 
 // Auto-save diagram if needed before starting workshop

@@ -76,7 +76,7 @@ function getDiagramTypeName(type: string): string {
     brace_map: isZh.value ? '括号图' : 'Brace Map',
     flow_map: isZh.value ? '流程图' : 'Flow Map',
     multi_flow_map: isZh.value ? '复流程图' : 'Multi-Flow Map',
-    bridge_map: isZh.value ? '桥型图' : 'Bridge Map',
+    bridge_map: isZh.value ? '桥形图' : 'Bridge Map',
     mindmap: isZh.value ? '思维导图' : 'Mind Map',
     mind_map: isZh.value ? '思维导图' : 'Mind Map',
     concept_map: isZh.value ? '概念图' : 'Concept Map',

@@ -20,7 +20,13 @@ import { useRoute, useRouter } from 'vue-router'
 
 import { AIModelSelector, CanvasToolbar, CanvasTopBar, ZoomControls } from '@/components/canvas'
 import DiagramCanvas from '@/components/diagram/DiagramCanvas.vue'
-import { eventBus, useLanguage, useNotifications, useWorkshop } from '@/composables'
+import {
+  eventBus,
+  getDefaultDiagramName,
+  useLanguage,
+  useNotifications,
+  useWorkshop,
+} from '@/composables'
 import { ANIMATION } from '@/config/uiConfig'
 import { useAuthStore, useDiagramStore, useSavedDiagramsStore, useUIStore } from '@/stores'
 import type { DiagramType } from '@/types'
@@ -212,7 +218,7 @@ const diagramTypeMap: Record<string, DiagramType> = {
   括号图: 'brace_map',
   流程图: 'flow_map',
   复流程图: 'multi_flow_map',
-  桥型图: 'bridge_map',
+  桥形图: 'bridge_map',
   思维导图: 'mindmap',
   概念图: 'concept_map',
 }
@@ -226,7 +232,7 @@ const diagramTypeToChineseMap: Record<DiagramType, string> = {
   brace_map: '括号图',
   flow_map: '流程图',
   multi_flow_map: '复流程图',
-  bridge_map: '桥型图',
+  bridge_map: '桥形图',
   mindmap: '思维导图',
   mind_map: '思维导图',
   concept_map: '概念图',
@@ -254,6 +260,11 @@ const diagramType = computed<DiagramType | null>(() => {
   if (!chartType.value) return null
   return diagramTypeMap[chartType.value] || null
 })
+
+// Diagram type for default name: from store (when loaded) or route (for new diagrams)
+const diagramTypeForName = computed(
+  () => (diagramStore.type as string) || (route.query.type as string) || null
+)
 
 // Security constants - must match backend limits
 const MAX_PROMPT_LENGTH = 10000 // Backend limit from GenerateRequest
@@ -333,6 +344,14 @@ async function generateDiagram(prompt: string) {
 function handleZoomChange(level: number) {
   const zoom = Math.max(0.1, Math.min(4, level / 100))
   eventBus.emit('view:zoom_set_requested', { zoom })
+}
+
+function handleZoomIn() {
+  eventBus.emit('view:zoom_in_requested')
+}
+
+function handleZoomOut() {
+  eventBus.emit('view:zoom_out_requested')
 }
 
 function handleFitToScreen() {
@@ -449,7 +468,7 @@ watch(
  * Format: "新圆圈图" / "New Circle Map"
  */
 function generateDefaultName(): string {
-  return isZh.value ? `新${chartType.value}` : `New ${chartType.value}`
+  return getDefaultDiagramName(diagramTypeForName.value, isZh.value)
 }
 
 /**
@@ -687,19 +706,13 @@ onUnmounted(() => {
       @exit-presentation="handleStartPresentation"
     />
 
-    <!-- Main canvas area -->
-    <div
-      :class="[
-        'flex-1 relative overflow-hidden',
-        isPresentationMode ? 'pt-20' : 'pt-16',
-      ]"
-    >
+    <!-- Main canvas area - extends behind toolbar; zoom fit excludes toolbar via FIT_PADDING -->
+    <div class="flex-1 relative overflow-hidden">
       <!-- Vue Flow Canvas -->
       <DiagramCanvas
         v-if="diagramStore.data"
         class="w-full h-full"
         :show-background="true"
-        :show-controls="!isPresentationMode"
         :show-minimap="false"
         :fit-view-on-init="true"
         :hand-tool-active="handToolActive"
@@ -711,6 +724,8 @@ onUnmounted(() => {
       :zoom="canvasZoom"
       :is-presentation-mode="isPresentationMode"
       @zoom-change="handleZoomChange"
+      @zoom-in="handleZoomIn"
+      @zoom-out="handleZoomOut"
       @fit-to-screen="handleFitToScreen"
       @hand-tool-toggle="handleHandToolToggle"
       @start-presentation="handleStartPresentation"

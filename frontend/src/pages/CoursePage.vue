@@ -21,7 +21,7 @@ const diagramOptions = [
   '括号图',
   '流程图',
   '复流程图',
-  '桥型图',
+  '桥形图',
   '思维导图',
   '概念图',
 ] as const
@@ -126,11 +126,11 @@ const mockCourses: CourseResource[] = [
   },
   {
     id: '8',
-    title: '桥型图：类比推理训练',
+    title: '桥形图：类比推理训练',
     thumbnail: '',
     type: 'MindGraph',
     scene: '教学通用',
-    diagram: '桥型图',
+    diagram: '桥形图',
     duration: '28分钟',
     lessons: 7,
     views: 1789,

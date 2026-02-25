@@ -20,7 +20,7 @@ const diagramTypeMap: Record<string, DiagramType> = {
   括号图: 'brace_map',
   流程图: 'flow_map',
   复流程图: 'multi_flow_map',
-  桥型图: 'bridge_map',
+  桥形图: 'bridge_map',
   思维导图: 'mindmap',
   概念图: 'concept_map',
 }
@@ -34,7 +34,7 @@ const mainDiagramTypes = [
   { name: '括号图', icon: '📊', desc: '整体与部分' },
   { name: '流程图', icon: '➡️', desc: '顺序与步骤' },
   { name: '复流程图', icon: '🔄', desc: '因果分析' },
-  { name: '桥型图', icon: '🌉', desc: '类比推理' },
+  { name: '桥形图', icon: '🌉', desc: '类比推理' },
 ]
 
 // Extra diagram types

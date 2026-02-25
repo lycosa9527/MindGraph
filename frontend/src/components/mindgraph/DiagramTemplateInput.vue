@@ -24,7 +24,7 @@ const diagramTypeMap: Record<string, DiagramType> = {
   括号图: 'brace_map',
   流程图: 'flow_map',
   复流程图: 'multi_flow_map',
-  桥型图: 'bridge_map',
+  桥形图: 'bridge_map',
   思维导图: 'mindmap',
   概念图: 'concept_map',
 }
@@ -38,7 +38,7 @@ const chartTypes = [
   '括号图',
   '流程图',
   '复流程图',
-  '桥型图',
+  '桥形图',
   '思维导图',
 ]
 

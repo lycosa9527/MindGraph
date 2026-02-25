@@ -10,6 +10,7 @@ export type { Destroyable, SessionInfo, CleanupResult } from './useSessionLifecy
 export { useSSE, useFetchSSE } from './useSSE'
 export { useNotifications } from './useNotifications'
 export { useLanguage } from './useLanguage'
+export { getDiagramTypeDisplayName, getDefaultDiagramName } from './useDiagramLabels'
 
 // Keyboard and input
 export { useKeyboard, useEditorShortcuts, useVueFlowKeyboard } from './useKeyboard'

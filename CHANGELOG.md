@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.25.0] - 2026-02-25
+
+### Added
+- **useDiagramLabels Composable**: New `useDiagramLabels.ts` with `getDiagramTypeDisplayName()` and `getDefaultDiagramName()` for consistent diagram type labels (zh/en) and default names like "新圆圈图" / "New Circle Map" across CanvasTopBar, CanvasPage, WorkshopModal, and diagram templates.
+
+### Changed
+- **Diagram Default Names**: Replaced ad-hoc `新${chartType}` logic with `getDefaultDiagramName()` for proper display names (e.g. "新桥形图" instead of raw type). Diagram type now sourced from store when loaded or route query for new diagrams.
+- **Bridge Map Label**: Corrected "桥型图" → "桥形图" in CanvasPage, uiConfig templates, and stores.
+- **Zoom Controls**: ZoomControls now emits `zoom-in` and `zoom-out` events; CanvasPage handles zoom logic via eventBus. Removed inline zoom math from ZoomControls.
+- **DiagramCanvas Fit & Controls**: Removed Vue Flow Controls from DiagramCanvas; zoom/fit moved to ZoomControls overlay. Fit padding top updated to 108px to clear CanvasTopBar (48px) + CanvasToolbar (48px). Canvas area no longer uses pt-16/pt-20; fit excludes toolbar via FIT_PADDING.
+- **Context Menu Edit**: InlineEditableText context-menu edit now reuses double-click handler with 50ms defer so menu closes and selection animation shows correctly.
+
+### Removed
+- **DiagramCanvas showControls**: Removed Vue Flow Controls component and `show-controls` prop; zoom/fit handled by ZoomControls.
+
 ## [5.24.0] - 2026-02-25
 
 ### Added

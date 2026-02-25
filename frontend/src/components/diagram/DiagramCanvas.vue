@@ -11,7 +11,6 @@
 import { computed, markRaw, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import { Background } from '@vue-flow/background'
-import { Controls } from '@vue-flow/controls'
 import { VueFlow, useVueFlow } from '@vue-flow/core'
 import { MiniMap } from '@vue-flow/minimap'
 
@@ -46,7 +45,6 @@ import TopicNode from './nodes/TopicNode.vue'
 // Props
 interface Props {
   showBackground?: boolean
-  showControls?: boolean
   showMinimap?: boolean
   fitViewOnInit?: boolean
   /** When true, left-click drag pans canvas; nodes are not draggable */
@@ -55,7 +53,6 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
   showBackground: true,
-  showControls: true,
   showMinimap: false,
   fitViewOnInit: true,
   handToolActive: false,
@@ -391,9 +388,10 @@ function fitWithPanel(animate = true): void {
   const adjustedPadding = basePadding + panelPaddingRatio * 0.3
 
   // Use fitView with adjusted padding and extra bottom for ZoomControls + AIModelSelector
+  // Top uses pixel value to clear toolbar; never overlap CanvasTopBar + CanvasToolbar
   fitView({
     padding: {
-      top: basePadding,
+      top: `${FIT_PADDING.TOP_UI_HEIGHT_PX}px`,
       right: adjustedPadding,
       bottom: basePadding + FIT_PADDING.BOTTOM_UI_EXTRA,
       left: adjustedPadding,
@@ -670,16 +668,6 @@ const gridConfig = {
         pattern-color="#e5e7eb"
       />
 
-      <!-- Zoom/pan controls -->
-      <Controls
-        v-if="showControls"
-        :show-zoom="true"
-        :show-fit-view="true"
-        :show-interactive="false"
-        :fit-view-params="{ padding: FIT_PADDING.STANDARD_WITH_BOTTOM_UI }"
-        position="bottom-right"
-      />
-
       <!-- Minimap for overview -->
       <MiniMap
         v-if="showMinimap"
@@ -713,7 +701,6 @@ const gridConfig = {
 /* Vue Flow base styles */
 @import '@vue-flow/core/dist/style.css';
 @import '@vue-flow/core/dist/theme-default.css';
-@import '@vue-flow/controls/dist/style.css';
 @import '@vue-flow/minimap/dist/style.css';
 
 .diagram-canvas {
