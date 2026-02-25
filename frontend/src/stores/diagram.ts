@@ -195,11 +195,15 @@ export const useDiagramStore = defineStore('diagram', () => {
   // Force recalculation trigger for multi-flow map (increment to trigger reactive update)
   const multiFlowMapRecalcTrigger = ref(0)
 
+  // Clipboard for copy/paste
+  const copiedNodes = ref<DiagramNode[]>([])
+
   // Getters
   const canUndo = computed(() => historyIndex.value > 0)
   const canRedo = computed(() => historyIndex.value < history.value.length - 1)
   const nodeCount = computed(() => data.value?.nodes?.length ?? 0)
   const hasSelection = computed(() => selectedNodes.value.length > 0)
+  const canPaste = computed(() => copiedNodes.value.length > 0)
   const selectedNodeData = computed(() => {
     if (!data.value?.nodes || selectedNodes.value.length === 0) return []
     return data.value.nodes.filter((node) => selectedNodes.value.includes(node.id))
@@ -490,6 +494,32 @@ export const useDiagramStore = defineStore('diagram', () => {
     }
 
     emitEvent('diagram:node_added', { node })
+  }
+
+  function copySelectedNodes(): void {
+    if (!data.value?.nodes || selectedNodes.value.length === 0) return
+    const nodesToCopy = data.value.nodes.filter((n) => selectedNodes.value.includes(n.id))
+    copiedNodes.value = nodesToCopy.map((node) => ({
+      ...JSON.parse(JSON.stringify(node)),
+      id: `copy-${node.id}-${Date.now()}`,
+    }))
+  }
+
+  function pasteNodesAt(flowPosition: { x: number; y: number }): void {
+    if (copiedNodes.value.length === 0) return
+    const offset = 20
+    copiedNodes.value.forEach((node, index) => {
+      const newNode: DiagramNode = {
+        ...JSON.parse(JSON.stringify(node)),
+        id: `node-${Date.now()}-${index}`,
+        position: {
+          x: flowPosition.x + index * offset,
+          y: flowPosition.y + index * offset,
+        },
+      }
+      addNode(newNode)
+    })
+    pushHistory('粘贴节点')
   }
 
   function removeNode(nodeId: string): boolean {
@@ -1082,6 +1112,7 @@ export const useDiagramStore = defineStore('diagram', () => {
     canRedo,
     nodeCount,
     hasSelection,
+    canPaste,
     selectedNodeData,
     effectiveTitle,
 
@@ -1103,6 +1134,8 @@ export const useDiagramStore = defineStore('diagram', () => {
     updateNode,
     addNode,
     removeNode,
+    copySelectedNodes,
+    pasteNodesAt,
     reset,
 
     // Vue Flow actions

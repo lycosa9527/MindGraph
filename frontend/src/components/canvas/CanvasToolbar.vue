@@ -24,6 +24,7 @@ import {
   Trash2,
   Type,
   Wand2,
+  X,
 } from 'lucide-vue-next'
 
 import { useNotifications } from '@/composables'
@@ -41,6 +42,18 @@ const notify = useNotifications()
 
 const { isZh } = useLanguage()
 const { isGenerating: isAIGenerating, autoComplete, validateForAutoComplete } = useAutoComplete()
+
+const props = withDefaults(
+  defineProps<{
+    /** When true, show exit fullscreen button */
+    isPresentationMode?: boolean
+  }>(),
+  { isPresentationMode: false }
+)
+
+const emit = defineEmits<{
+  (e: 'exit-presentation'): void
+}>()
 
 const diagramStore = useDiagramStore()
 const { updateNode: updateVueFlowNode } = useVueFlow()
@@ -618,13 +631,37 @@ function handleToggleOrientation() {
 </script>
 
 <template>
-  <div class="canvas-toolbar absolute top-[60px] left-1/2 transform -translate-x-1/2 z-10">
+  <div
+    :class="[
+      'canvas-toolbar absolute left-1/2 transform -translate-x-1/2 z-10',
+      props.isPresentationMode ? 'top-4' : 'top-[60px]',
+    ]"
+  >
     <div
       class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 border-t-0 rounded-b-xl shadow-lg p-1.5 flex items-center justify-center"
     >
       <div
         class="toolbar-content flex items-center bg-gray-50 dark:bg-gray-700/50 rounded-lg p-1 gap-0.5"
       >
+        <!-- Exit fullscreen (presentation mode only) -->
+        <template v-if="props.isPresentationMode">
+          <ElTooltip
+            :content="isZh ? '退出全屏' : 'Exit Fullscreen'"
+            placement="bottom"
+          >
+            <ElButton
+              text
+              size="small"
+              class="text-red-600 hover:text-red-700 dark:text-red-400"
+              @click="emit('exit-presentation')"
+            >
+              <X class="w-4 h-4" />
+              <span>{{ isZh ? '退出' : 'Exit' }}</span>
+            </ElButton>
+          </ElTooltip>
+          <div class="divider" />
+        </template>
+
         <!-- Undo/Redo -->
         <ElTooltip
           :content="isZh ? '撤销' : 'Undo'"

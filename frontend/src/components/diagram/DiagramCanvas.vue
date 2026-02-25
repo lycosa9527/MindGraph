@@ -49,6 +49,8 @@ interface Props {
   showControls?: boolean
   showMinimap?: boolean
   fitViewOnInit?: boolean
+  /** When true, left-click drag pans canvas; nodes are not draggable */
+  handToolActive?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -56,6 +58,7 @@ const props = withDefaults(defineProps<Props>(), {
   showControls: true,
   showMinimap: false,
   fitViewOnInit: true,
+  handToolActive: false,
 })
 
 // Emits
@@ -86,6 +89,9 @@ const {
   getNodes,
   setViewport,
   getViewport,
+  zoomIn,
+  zoomOut,
+  screenToFlowCoordinate,
 } = useVueFlow()
 
 // Vue Flow wrapper reference for context menu
@@ -261,10 +267,19 @@ function closeContextMenu() {
   contextMenuNode.value = null
 }
 
-// Handle nodes initialized - flow maps now use fixed dimensions, no recalculation needed
+// Handle paste from context menu - convert screen coords to flow coords
+function handleContextMenuPaste(position: { x: number; y: number }) {
+  const flowPos = screenToFlowCoordinate({ x: position.x, y: position.y })
+  diagramStore.pasteNodesAt(flowPos)
+}
+
+// Handle nodes initialized - Vue Flow has placed nodes, viewport is ready
+// Use same flow as zoom fit button; delay to let layout fully settle
 function handleNodesInitialized() {
-  // Flow maps use fixed node dimensions, layout is deterministic from specLoader
-  // No runtime measurement or recalculation required
+  if (!props.fitViewOnInit || getNodes.value.length === 0) return
+  setTimeout(() => {
+    eventBus.emit('view:fit_to_canvas_requested', { animate: true })
+  }, ANIMATION.FIT_VIEWPORT_DELAY)
 }
 
 // ============================================================================
@@ -302,6 +317,16 @@ function isAnyPanelOpen(): boolean {
 }
 
 /**
+ * Emit zoom_changed when viewport changes (scroll zoom, fit, etc.) for ZoomControls sync
+ */
+function handleViewportChange(viewport: { x: number; y: number; zoom: number }): void {
+  eventBus.emit('view:zoom_changed', {
+    zoom: viewport.zoom,
+    zoomPercent: Math.round(viewport.zoom * 100),
+  })
+}
+
+/**
  * Fit diagram to full canvas (no panel space reserved)
  * Use when no panels are open or when you want the diagram centered on full screen
  */
@@ -310,9 +335,9 @@ function fitToFullCanvas(animate = true): void {
 
   isFittedForPanel.value = false
 
-  // Use Vue Flow's fitView with standard padding
+  // Use Vue Flow's fitView with extra bottom padding for ZoomControls + AIModelSelector
   fitView({
-    padding: FIT_PADDING.STANDARD,
+    padding: FIT_PADDING.STANDARD_WITH_BOTTOM_UI,
     duration: animate ? ANIMATION.DURATION_NORMAL : 0,
   })
 
@@ -345,7 +370,10 @@ function fitWithPanel(animate = true): void {
   const container = canvasContainer.value
   if (!container) {
     // Fallback to standard fitView if container not available
-    fitView({ padding: FIT_PADDING.STANDARD, duration: animate ? ANIMATION.DURATION_NORMAL : 0 })
+    fitView({
+      padding: FIT_PADDING.STANDARD_WITH_BOTTOM_UI,
+      duration: animate ? ANIMATION.DURATION_NORMAL : 0,
+    })
     return
   }
 
@@ -362,10 +390,14 @@ function fitWithPanel(animate = true): void {
   const panelPaddingRatio = totalPanelWidth / containerWidth
   const adjustedPadding = basePadding + panelPaddingRatio * 0.3
 
-  // Use fitView with adjusted padding
-  // The diagram will be slightly smaller to leave visual space for the panel
+  // Use fitView with adjusted padding and extra bottom for ZoomControls + AIModelSelector
   fitView({
-    padding: adjustedPadding,
+    padding: {
+      top: basePadding,
+      right: adjustedPadding,
+      bottom: basePadding + FIT_PADDING.BOTTOM_UI_EXTRA,
+      left: adjustedPadding,
+    },
     duration: animate ? ANIMATION.DURATION_NORMAL : 0,
   })
 
@@ -425,23 +457,16 @@ function fitForExport(): void {
 // Watchers and Event Handlers
 // ============================================================================
 
-// Fit view when nodes change (initial render)
+// Fit view when nodes are added/removed (not initial - that's handleNodesInitialized)
+// Skip first run (oldLength undefined) - nodes-initialized handles initial fit
 watch(
   () => nodes.value.length,
   (newLength, oldLength) => {
-    if (props.fitViewOnInit && newLength > 0) {
-      // On initial canvas entry (oldLength === 0), always fit to full canvas
-      // This gives the user a full view of the diagram first
-      // Panel-aware fit only triggers when panels actually open/close
-      const isInitialLoad = oldLength === 0
-      setTimeout(() => {
-        if (isInitialLoad) {
-          fitToFullCanvas(true)
-        } else {
-          fitDiagram(true)
-        }
-      }, ANIMATION.FIT_DELAY)
-    }
+    if (!props.fitViewOnInit || newLength === 0) return
+    if (oldLength === undefined) return
+    setTimeout(() => {
+      eventBus.emit('view:fit_to_canvas_requested', { animate: true })
+    }, ANIMATION.FIT_DELAY)
   }
 )
 
@@ -514,6 +539,25 @@ onMounted(() => {
   unsubscribers.push(
     eventBus.on('view:fit_for_export_requested', () => {
       fitForExport()
+    })
+  )
+
+  unsubscribers.push(
+    eventBus.on('view:zoom_in_requested', () => {
+      zoomIn()
+    })
+  )
+
+  unsubscribers.push(
+    eventBus.on('view:zoom_out_requested', () => {
+      zoomOut()
+    })
+  )
+
+  unsubscribers.push(
+    eventBus.on('view:zoom_set_requested', ({ zoom }) => {
+      const vp = getViewport()
+      setViewport({ x: vp.x, y: vp.y, zoom }, { duration: ANIMATION.DURATION_FAST })
     })
   )
 
@@ -606,17 +650,17 @@ const gridConfig = {
       :max-zoom="zoomConfig.max"
       :snap-to-grid="true"
       :snap-grid="gridConfig.snapSize"
-      :nodes-draggable="true"
+      :nodes-draggable="!props.handToolActive"
       :nodes-connectable="false"
-      :elements-selectable="true"
+      :elements-selectable="!props.handToolActive"
       :pan-on-scroll="false"
       :zoom-on-scroll="true"
-      :pan-on-drag="[1, 2]"
-      fit-view-on-init
+      :pan-on-drag="props.handToolActive ? [0, 1, 2] : [1, 2]"
       class="bg-gray-50 dark:bg-gray-900"
       :style="{ backgroundColor: backgroundColor }"
       @pane-click="handlePaneClick"
       @nodes-initialized="handleNodesInitialized"
+      @viewport-change="handleViewportChange"
     >
       <!-- Background pattern -->
       <Background
@@ -632,6 +676,7 @@ const gridConfig = {
         :show-zoom="true"
         :show-fit-view="true"
         :show-interactive="false"
+        :fit-view-params="{ padding: FIT_PADDING.STANDARD_WITH_BOTTOM_UI }"
         position="bottom-right"
       />
 
@@ -659,6 +704,7 @@ const gridConfig = {
       :node="contextMenuNode"
       :target="contextMenuTarget"
       @close="closeContextMenu"
+      @paste="handleContextMenuPaste"
     />
   </div>
 </template>

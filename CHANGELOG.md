@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.24.0] - 2026-02-25
+
+### Added
+- **Context Menu Copy/Paste**: Implemented copy and paste for diagram nodes. Copy stores selected nodes to clipboard; paste creates duplicates at right-click position. Supports all diagram types.
+- **Context Menu Add Node**: Pane right-click "添加节点" now works for circle_map (adds context node), bridge_map (adds analogy pair), and multi_flow_map (add cause/effect). Other types show "coming soon" message.
+- **Edit from Context Menu**: Right-click → 编辑 now enters edit mode with text focused and selected. InlineEditableText listens for `node:edit_requested` and triggers startEditing with selection highlight.
+
+### Changed
+- **Context Menu Click-Outside**: Fixed menu not closing when clicking elsewhere. Listeners now added/removed via watch on visibility (not just onMount). Uses mousedown capture phase so clicks on Vue Flow canvas close the menu.
+- **InlineEditableText Selection**: Added `user-select: text` to override parent nodes' `select-none`, and `::selection` styles for visible text highlight when editing.
+- **Diagram Store Clipboard**: Added `copiedNodes`, `copySelectedNodes()`, `pasteNodesAt()`, and `canPaste` computed for clipboard support.
+
 ## [5.23.0] - 2026-02-25
 
 ### Added

@@ -109,6 +109,13 @@ watch(
   }
 )
 
+// Listen for edit request from context menu (right-click → 编辑)
+function handleEditRequested(payload: { nodeId?: string }): void {
+  if (payload?.nodeId === props.nodeId && !localIsEditing.value) {
+    startEditing()
+  }
+}
+
 // Update text when prop changes (and not editing)
 watch(
   () => props.text,
@@ -451,8 +458,12 @@ function handleIMEClose(): void {
   }
 }
 
+// Subscribe to edit request from context menu
+const unsubEditRequested = eventBus.on('node:edit_requested', handleEditRequested)
+
 // Cleanup on unmount
 onUnmounted(() => {
+  unsubEditRequested()
   if (imeAutocomplete) {
     imeAutocomplete.reset()
   }
@@ -619,6 +630,13 @@ onUnmounted(() => {
   z-index: 2;
   box-sizing: border-box;
   overflow: visible; /* Allow text to be visible */
+  /* Override parent node's select-none so text can be selected when editing */
+  user-select: text;
+}
+
+.inline-edit-input::selection {
+  background: var(--mg-primary, #3b82f6);
+  color: white;
 }
 
 .inline-edit-input:focus {

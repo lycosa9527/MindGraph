@@ -73,12 +73,29 @@ export const ZOOM = {
 // ============================================================================
 
 /**
- * Padding ratios for fitView operations
- * These are percentages of the viewport size
+ * Fit view padding - Vue Flow accepts pixels ("40px") or ratios (0.15)
  */
 export const FIT_PADDING = {
-  /** Standard padding for normal fit view (15%) */
+  /** Standard padding ratio for normal fit view (15%) - used when mixing with panel calc */
   STANDARD: 0.15,
+  /** Standard edge padding in pixels */
+  STANDARD_PX: 40,
+  /** Top padding in pixels - clears CanvasToolbar (top-60px) and top bar area */
+  TOP_UI_HEIGHT_PX: 56,
+  /** Bottom padding in pixels - ZoomControls + AIModelSelector (bottom-4 + bar ~56px + margin) */
+  BOTTOM_UI_HEIGHT_PX: 100,
+  /** Extra bottom ratio for fitWithPanel (adds ~13% to base) */
+  BOTTOM_UI_EXTRA: 0.13,
+  /**
+   * Standard padding with extra top/bottom for overlay UI.
+   * Vue Flow object format: { top, right, bottom, left } - supports "40px" or ratio
+   */
+  STANDARD_WITH_BOTTOM_UI: {
+    top: '56px',
+    right: '40px',
+    bottom: '100px',
+    left: '40px',
+  } as const,
   /** Export padding for tight fit (5%) */
   EXPORT: 0.05,
   /** Minimal padding (2%) */

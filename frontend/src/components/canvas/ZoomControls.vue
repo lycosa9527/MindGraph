@@ -3,32 +3,91 @@
  * ZoomControls - Bottom right zoom and view controls
  * Improved with Element Plus components and better styling
  */
-import { ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 
-import { ElButton, ElTooltip } from 'element-plus'
+import { ElButton, ElOption, ElSelect, ElTooltip } from 'element-plus'
 
-import { Hand, Maximize2, Minus, Play, Plus } from 'lucide-vue-next'
+import { Hand, Maximize2, Minus, Play, Plus, Square } from 'lucide-vue-next'
 
+import { ZOOM } from '@/config/uiConfig'
 import { useLanguage } from '@/composables'
 
 const { isZh } = useLanguage()
 
+const ZOOM_OPTIONS = [
+  { label: '50%', value: 50 },
+  { label: '75%', value: 75 },
+  { label: '100%', value: 100 },
+  { label: '125%', value: 125 },
+] as const
+
+const props = withDefaults(
+  defineProps<{
+    /** Canvas zoom (0.1-4) - when provided, display syncs with canvas */
+    zoom?: number | null
+    /** When true, presentation button shows exit state */
+    isPresentationMode?: boolean
+  }>(),
+  { zoom: null, isPresentationMode: false }
+)
+
 const zoomLevel = ref(100)
 const isHandToolActive = ref(false)
 
+const displayZoom = computed(() =>
+  props.zoom != null ? Math.round(props.zoom * 100) : zoomLevel.value
+)
+
+const zoomOptions = computed(() => {
+  const current = displayZoom.value
+  const minPct = Math.round(ZOOM.MIN * 100)
+  const maxPct = Math.round(ZOOM.MAX * 100)
+  const hasExact = ZOOM_OPTIONS.some((opt) => opt.value === current)
+  const options = [...ZOOM_OPTIONS]
+  if (!hasExact && current >= minPct && current <= maxPct) {
+    options.push({ label: `${current}%`, value: current })
+    options.sort((a, b) => a.value - b.value)
+  }
+  return options
+})
+
+const zoomSelectValue = computed({
+  get: () => displayZoom.value,
+  set: (value: number) => {
+    zoomLevel.value = value
+    if (value === 100) {
+      emit('fit-to-screen')
+    } else {
+      emit('zoom-change', value)
+    }
+  },
+})
+
+watch(
+  () => props.zoom,
+  (z) => {
+    if (z != null) {
+      zoomLevel.value = Math.round(z * 100)
+    }
+  },
+  { immediate: true }
+)
+
 function handleZoomIn() {
-  zoomLevel.value = Math.min(zoomLevel.value + 10, 200)
-  emit('zoom-change', zoomLevel.value)
+  const next = (props.zoom != null ? props.zoom * 100 : zoomLevel.value) + 10
+  const level = Math.min(Math.round(next), Math.round(ZOOM.MAX * 100))
+  zoomLevel.value = level
+  emit('zoom-change', level)
 }
 
 function handleZoomOut() {
-  zoomLevel.value = Math.max(zoomLevel.value - 10, 50)
-  emit('zoom-change', zoomLevel.value)
+  const next = (props.zoom != null ? props.zoom * 100 : zoomLevel.value) - 10
+  const level = Math.max(Math.round(next), Math.round(ZOOM.MIN * 100))
+  zoomLevel.value = level
+  emit('zoom-change', level)
 }
 
 function handleZoomReset() {
-  zoomLevel.value = 100
-  emit('zoom-change', zoomLevel.value)
   emit('fit-to-screen')
 }
 
@@ -91,8 +150,20 @@ defineExpose({
         </ElButton>
       </ElTooltip>
 
-      <!-- Zoom level display -->
-      <div class="zoom-level">{{ zoomLevel }}%</div>
+      <!-- Zoom level dropdown -->
+      <ElSelect
+        v-model="zoomSelectValue"
+        size="small"
+        class="zoom-select"
+        :teleported="false"
+      >
+        <ElOption
+          v-for="opt in zoomOptions"
+          :key="`zoom-${opt.value}`"
+          :label="opt.label"
+          :value="opt.value"
+        />
+      </ElSelect>
 
       <!-- Zoom in -->
       <ElTooltip
@@ -128,18 +199,29 @@ defineExpose({
 
       <div class="divider" />
 
-      <!-- Presentation mode -->
+      <!-- Presentation mode / Exit fullscreen -->
       <ElTooltip
-        :content="isZh ? '演示模式' : 'Presentation'"
+        :content="
+          props.isPresentationMode
+            ? (isZh ? '退出全屏' : 'Exit Fullscreen')
+            : (isZh ? '演示模式' : 'Presentation')
+        "
         placement="top"
       >
         <ElButton
           text
           size="small"
-          class="zoom-btn presentation"
+          :class="['zoom-btn', 'presentation', { active: props.isPresentationMode }]"
           @click="handlePresentation"
         >
-          <Play class="w-4 h-4" />
+          <Square
+            v-if="props.isPresentationMode"
+            class="w-4 h-4"
+          />
+          <Play
+            v-else
+            class="w-4 h-4"
+          />
         </ElButton>
       </ElTooltip>
     </div>
@@ -155,15 +237,24 @@ defineExpose({
   margin: 0 4px;
 }
 
-/* Zoom level display */
-.zoom-level {
-  min-width: 48px;
-  text-align: center;
+/* Zoom level dropdown */
+.zoom-select {
+  min-width: 72px;
   font-size: 12px;
-  font-weight: 500;
-  color: #4b5563;
-  padding: 0 4px;
-  user-select: none;
+}
+
+:deep(.zoom-select .el-input__wrapper) {
+  padding: 4px 8px;
+  box-shadow: none;
+  background-color: transparent;
+}
+
+:deep(.zoom-select .el-input__wrapper:hover) {
+  background-color: #e5e7eb;
+}
+
+:deep(.zoom-select.is-focus .el-input__wrapper) {
+  background-color: #e5e7eb;
 }
 
 /* Button styling */
@@ -207,13 +298,23 @@ defineExpose({
   color: #047857 !important;
 }
 
+:deep(.zoom-btn.presentation.active) {
+  background-color: #d1fae5 !important;
+  color: #047857 !important;
+}
+
 /* Dark mode */
 :deep(.dark) .divider {
   background-color: #4b5563;
 }
 
-:deep(.dark) .zoom-level {
-  color: #d1d5db;
+:deep(.dark .zoom-select .el-input__wrapper) {
+  background-color: transparent;
+}
+
+:deep(.dark .zoom-select .el-input__wrapper:hover),
+:deep(.dark .zoom-select.is-focus .el-input__wrapper) {
+  background-color: #4b5563;
 }
 
 :deep(.dark .zoom-btn) {
@@ -239,6 +340,11 @@ defineExpose({
 }
 
 :deep(.dark .zoom-btn.presentation:hover) {
+  background-color: #064e3b !important;
+  color: #6ee7b7 !important;
+}
+
+:deep(.dark .zoom-btn.presentation.active) {
   background-color: #064e3b !important;
   color: #6ee7b7 !important;
 }

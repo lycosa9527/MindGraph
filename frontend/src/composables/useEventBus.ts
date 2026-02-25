@@ -165,6 +165,7 @@ export type EventTypes = {
   // View Events
   'view:zoom_in_requested': Record<string, never>
   'view:zoom_out_requested': Record<string, never>
+  'view:zoom_set_requested': { zoom: number }
   'view:fit_to_window_requested': { animate?: boolean }
   'view:fit_to_canvas_requested': { animate?: boolean }
   'view:fit_diagram_requested': Record<string, never>

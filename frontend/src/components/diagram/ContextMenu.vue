@@ -3,9 +3,16 @@
  * ContextMenu - Custom right-click context menu for diagram canvas
  * Replaces browser's default context menu with custom actions
  */
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, onUnmounted, ref, watch } from 'vue'
 
 import { eventBus } from '@/composables/useEventBus'
+import { useLanguage, useNotifications } from '@/composables'
+import {
+  BRANCH_NODE_HEIGHT,
+  DEFAULT_CENTER_Y,
+  DEFAULT_NODE_WIDTH,
+  DEFAULT_PADDING,
+} from '@/composables/diagrams/layoutConfig'
 import { useDiagramStore } from '@/stores'
 import type { DiagramNode, MindGraphNode } from '@/types'
 
@@ -29,9 +36,12 @@ const props = defineProps<Props>()
 
 const emit = defineEmits<{
   (e: 'close'): void
+  (e: 'paste', position: { x: number; y: number }): void
 }>()
 
 const diagramStore = useDiagramStore()
+const { isZh } = useLanguage()
+const notify = useNotifications()
 const menuRef = ref<HTMLElement | null>(null)
 
 // Build menu items based on context
@@ -111,19 +121,20 @@ const menuItems = computed<MenuItem[]>(() => {
     items.push({
       label: '复制',
       action: () => {
-        // TODO: Implement copy functionality
+        diagramStore.copySelectedNodes()
         emit('close')
       },
+      disabled: !diagramStore.hasSelection,
     })
 
     // Paste action
     items.push({
       label: '粘贴',
       action: () => {
-        // TODO: Implement paste functionality
+        emit('paste', { x: props.x, y: props.y })
         emit('close')
       },
-      disabled: true, // Disabled until copy is implemented
+      disabled: !diagramStore.canPaste,
     })
   } else if (props.target === 'pane') {
     // Pane context menu
@@ -160,11 +171,106 @@ const menuItems = computed<MenuItem[]>(() => {
           emit('close')
         },
       })
+    } else if (diagramType === 'circle_map') {
+      items.push({
+        label: '添加节点',
+        action: () => {
+          if (!diagramStore.data?.nodes) {
+            notify.warning(isZh.value ? '请先创建图示' : 'Please create a diagram first')
+            emit('close')
+            return
+          }
+          const contextNodes = diagramStore.data.nodes.filter(
+            (n) => n.type === 'bubble' && n.id.startsWith('context-')
+          )
+          const newIndex = contextNodes.length
+          diagramStore.addNode({
+            id: `context-${newIndex}`,
+            text: isZh.value ? '新联想' : 'New Idea',
+            type: 'bubble',
+            position: { x: 0, y: 0 },
+          })
+          diagramStore.pushHistory(isZh.value ? '添加节点' : 'Add node')
+          emit('close')
+        },
+      })
+    } else if (diagramType === 'bridge_map') {
+      items.push({
+        label: '添加节点',
+        action: () => {
+          if (!diagramStore.data?.nodes) {
+            notify.warning(isZh.value ? '请先创建图示' : 'Please create a diagram first')
+            emit('close')
+            return
+          }
+          const pairNodes = diagramStore.data.nodes.filter(
+            (n) =>
+              n.data?.diagramType === 'bridge_map' &&
+              n.data?.pairIndex !== undefined &&
+              !n.data?.isDimensionLabel
+          )
+          let maxPairIndex = -1
+          pairNodes.forEach((node) => {
+            const pairIndex = node.data?.pairIndex
+            if (typeof pairIndex === 'number' && pairIndex > maxPairIndex) {
+              maxPairIndex = pairIndex
+            }
+          })
+          const newPairIndex = maxPairIndex + 1
+          const centerY = DEFAULT_CENTER_Y
+          const gapBetweenPairs = 50
+          const verticalGap = 5
+          const nodeWidth = DEFAULT_NODE_WIDTH
+          const nodeHeight = BRANCH_NODE_HEIGHT
+          const gapFromLabelRight = 10
+          const estimatedLabelWidth = 100
+          const startX = DEFAULT_PADDING + estimatedLabelWidth + gapFromLabelRight
+          let nextX = startX
+          if (pairNodes.length > 0) {
+            const rightmostNode = pairNodes.reduce((rightmost, node) => {
+              if (!rightmost) return node
+              const rightmostX = rightmost.position?.x || 0
+              const nodeX = node.position?.x || 0
+              return nodeX > rightmostX ? node : rightmost
+            })
+            const rightmostX = rightmostNode.position?.x || startX
+            nextX = rightmostX + nodeWidth + gapBetweenPairs
+          }
+          const leftNodeY = centerY - verticalGap - nodeHeight
+          const rightNodeY = centerY + verticalGap
+          const leftNode: DiagramNode = {
+            id: `pair-${newPairIndex}-left`,
+            text: isZh.value ? '新事物A' : 'New Item A',
+            type: 'branch',
+            position: { x: nextX, y: leftNodeY },
+            data: {
+              pairIndex: newPairIndex,
+              position: 'left',
+              diagramType: 'bridge_map',
+            },
+          }
+          const rightNode: DiagramNode = {
+            id: `pair-${newPairIndex}-right`,
+            text: isZh.value ? '新事物B' : 'New Item B',
+            type: 'branch',
+            position: { x: nextX, y: rightNodeY },
+            data: {
+              pairIndex: newPairIndex,
+              position: 'right',
+              diagramType: 'bridge_map',
+            },
+          }
+          diagramStore.addNode(leftNode)
+          diagramStore.addNode(rightNode)
+          diagramStore.pushHistory(isZh.value ? '添加类比对' : 'Add Analogy Pair')
+          emit('close')
+        },
+      })
     } else {
       items.push({
         label: '添加节点',
         action: () => {
-          // TODO: Implement add node at position for other diagram types
+          notify.info(isZh.value ? '增加节点功能开发中' : 'Add node feature coming soon')
           emit('close')
         },
       })
@@ -175,10 +281,10 @@ const menuItems = computed<MenuItem[]>(() => {
     items.push({
       label: '粘贴',
       action: () => {
-        // TODO: Implement paste functionality
+        emit('paste', { x: props.x, y: props.y })
         emit('close')
       },
-      disabled: true, // Disabled until copy is implemented
+      disabled: !diagramStore.canPaste,
     })
   }
 
@@ -235,19 +341,33 @@ const menuStyle = computed(() => {
   }
 })
 
-onMounted(() => {
-  if (props.visible) {
-    document.addEventListener('mousedown', handleClickOutside)
-    document.addEventListener('keydown', handleKeyDown)
-    // Prevent default context menu
-    document.addEventListener('contextmenu', preventDefault)
-  }
-})
+function addOutsideListeners(): void {
+  document.addEventListener('mousedown', handleClickOutside, true)
+  document.addEventListener('keydown', handleKeyDown)
+  document.addEventListener('contextmenu', preventDefault)
+}
 
-onUnmounted(() => {
-  document.removeEventListener('mousedown', handleClickOutside)
+function removeOutsideListeners(): void {
+  document.removeEventListener('mousedown', handleClickOutside, true)
   document.removeEventListener('keydown', handleKeyDown)
   document.removeEventListener('contextmenu', preventDefault)
+}
+
+// Add/remove listeners when menu visibility changes (not just on mount)
+watch(
+  () => props.visible,
+  (visible) => {
+    if (visible) {
+      addOutsideListeners()
+    } else {
+      removeOutsideListeners()
+    }
+  },
+  { immediate: true }
+)
+
+onUnmounted(() => {
+  removeOutsideListeners()
 })
 
 function preventDefault(event: Event) {
