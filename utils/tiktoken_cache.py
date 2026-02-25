@@ -226,7 +226,7 @@ def ensure_tiktoken_cache():
         try:
             cache_dir.mkdir(parents=True, exist_ok=True)
         except Exception as e:  # pylint: disable=broad-except
-            print(f"[Startup] Warning: Could not create tiktoken cache directory: {e}")
+            logger.debug("[Startup] Could not create tiktoken cache directory: %s", e)
             return  # Lock will be released in finally block
 
         # Set environment variable for tiktoken to use this cache directory
@@ -258,12 +258,15 @@ def ensure_tiktoken_cache():
                             continue
 
                         # New version available, download it
-                        print(f"[Startup] New version of tiktoken encoding {encoding_name} available, updating...")
+                        logger.debug(
+                            "[Startup] New version of tiktoken encoding %s available, updating...",
+                            encoding_name
+                        )
                     except Exception as network_error:  # pylint: disable=broad-except
                         # Network check failed - use existing file (conservative approach)
-                        print(
-                            f"[Startup] Network check failed for {encoding_name}, "
-                            f"using existing cache: {network_error}"
+                        logger.debug(
+                            "[Startup] Network check failed for %s, using existing cache: %s",
+                            encoding_name, network_error
                         )
                         try:
                             logger.debug(
@@ -276,33 +279,20 @@ def ensure_tiktoken_cache():
                         continue
                 else:
                     # File doesn't exist, download it
-                    print(f"[Startup] Downloading tiktoken encoding {encoding_name}...")
+                    logger.debug("[Startup] Downloading tiktoken encoding %s...", encoding_name)
 
                 _download_encoding_file(url, encoding_file, metadata_file)
                 file_size_mb = encoding_file.stat().st_size / (1024 * 1024)
-                print(
-                    f"[Startup] OK Cached tiktoken encoding {encoding_name} "
-                    f"({file_size_mb:.2f} MB) at {encoding_file}"
+                logger.debug(
+                    "[Startup] OK Cached tiktoken encoding %s (%.2f MB) at %s",
+                    encoding_name, file_size_mb, encoding_file
                 )
-                try:
-                    logger.info(
-                        "Successfully cached tiktoken encoding %s at %s",
-                        encoding_name, encoding_file
-                    )
-                except Exception:  # pylint: disable=broad-except
-                    pass  # Logging not initialized yet, skip
             except Exception as e:  # pylint: disable=broad-except
-                # Use print for early startup warnings
-                print(f"[Startup] Warning: Failed to download tiktoken encoding {encoding_name}: {e}")
-                print("[Startup] Tiktoken will download it automatically on first use.")
-                try:
-                    logger.warning(
-                        "Failed to download tiktoken encoding %s: %s. "
-                        "Tiktoken will download it automatically on first use.",
-                        encoding_name, e
-                    )
-                except Exception:  # pylint: disable=broad-except
-                    pass  # Logging not initialized yet, skip
+                logger.warning(
+                    "[Startup] Failed to download tiktoken encoding %s: %s. "
+                    "Tiktoken will download it automatically on first use.",
+                    encoding_name, e
+                )
     finally:
         # Always release the lock when done
         _release_tiktoken_cache_lock()

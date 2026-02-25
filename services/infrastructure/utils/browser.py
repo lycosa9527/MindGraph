@@ -306,13 +306,13 @@ async def log_browser_diagnostics():
     is_main_process = worker_id is None or worker_id == '0'
 
     try:
-        logger.info("[Browser] Python executable: %s", sys.executable)
-        logger.info("[Browser] Python version: %s", sys.version.split('\n', maxsplit=1)[0])
+        logger.debug("[Browser] Python executable: %s", sys.executable)
+        logger.debug("[Browser] Python version: %s", sys.version.split('\n', maxsplit=1)[0])
 
         # Check if Playwright module is available
         try:
             playwright_path = playwright.__file__
-            logger.info("[Browser] Playwright module path: %s", playwright_path)
+            logger.debug("[Browser] Playwright module path: %s", playwright_path)
         except Exception as e:
             logger.error("[Browser] Cannot import playwright: %s", e)
             return
@@ -322,9 +322,9 @@ async def log_browser_diagnostics():
             playwright_instance = await async_playwright().start()
             try:
                 chromium_path = playwright_instance.chromium.executable_path
-                logger.info("[Browser] Chromium executable path: %s", chromium_path)
+                logger.debug("[Browser] Chromium executable path: %s", chromium_path)
                 if chromium_path and os.path.exists(chromium_path):
-                    logger.info("[Browser] Chromium executable exists: YES")
+                    logger.debug("[Browser] Chromium executable exists: YES")
                 else:
                     # Only log warning from main process to avoid spam in multi-worker setups
                     if is_main_process:

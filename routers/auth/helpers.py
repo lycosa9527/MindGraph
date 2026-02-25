@@ -25,7 +25,9 @@ from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 
 from models.domain.auth import User
+from models.domain.user_activity_log import UserActivityLog
 from services.redis.redis_activity_tracker import get_activity_tracker
+from services.teacher_usage_stats import compute_and_upsert_user_usage_stats
 from services.redis.session.redis_session_manager import get_session_manager
 from services.monitoring.city_flag_tracker import get_city_flag_tracker
 from services.auth.ip_geolocation import get_geolocation_service
@@ -91,7 +93,8 @@ def track_user_activity(
     user: User,
     activity_type: str,
     details: Optional[dict] = None,
-    request: Optional[Request] = None
+    request: Optional[Request] = None,
+    db: Optional[Session] = None,
 ):
     """
     Track user activity for real-time monitoring.
@@ -101,6 +104,7 @@ def track_user_activity(
         activity_type: Type of activity (login, diagram_generation, etc.)
         details: Optional activity details
         request: Optional request object for IP address
+        db: Optional DB session for persisting login to user_activity_log
     """
     try:
         tracker = get_activity_tracker()
@@ -118,6 +122,8 @@ def track_user_activity(
                 ip_address=ip_address,
                 reuse_existing=True  # Reuse existing session if user already has one
             )
+            if db and user.role == 'user':
+                _log_login_and_compute_stats(user.id, db)
         else:
             session_id = None  # Let record_activity find/create session
 
@@ -134,6 +140,25 @@ def track_user_activity(
     except Exception as e:
         # Don't fail the request if tracking fails
         logger.debug("Failed to track user activity: %s", e)
+
+
+def _log_login_and_compute_stats(user_id: int, db: Session) -> None:
+    """Persist login to user_activity_log and trigger stats compute (fire-and-forget)."""
+    try:
+        log_entry = UserActivityLog(
+            user_id=user_id,
+            activity_type='login',
+            created_at=datetime.utcnow(),
+        )
+        db.add(log_entry)
+        db.commit()
+        compute_and_upsert_user_usage_stats(user_id, db)
+    except Exception as e:
+        logger.debug("Failed to log login or compute stats: %s", e)
+        try:
+            db.rollback()
+        except Exception:
+            pass
 
 
 def _record_city_flag_async(ip_address: str):
@@ -373,4 +398,3 @@ def set_auth_cookies(
         samesite="lax",
         max_age=60 * 60  # 1 hour (should be cleared after showing notification)
     )
-

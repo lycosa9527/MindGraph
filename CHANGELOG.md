@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.23.0] - 2026-02-25
+
+### Added
+- **Teacher Usage Analytics Dashboard**: Admin-only analytics page for teacher engagement classification. 2-tier classification: unused, continuous, non-continuous (rejection, stopped, intermittent). Includes `TeacherUsagePage.vue` with ECharts visualizations, group stats, configurable thresholds, and recompute support.
+- **Teacher Usage Backend**: New `routers/auth/admin/teacher_usage.py` with endpoints: `GET /admin/teacher-usage`, `GET/PUT /admin/teacher-usage/config`, `POST /admin/teacher-usage/recompute`. Reads from pre-computed `user_usage_stats`.
+- **Teacher Usage Config Model**: New `TeacherUsageConfig` model for storing classification thresholds (continuous, rejection, stopped, intermittent). Scholars can tweak via UI.
+- **Teacher Usage Data Models**: New `UserActivityLog` and `UserUsageStats` models; `services/teacher_usage_stats.py` for computing and upserting stats.
+- **Teacher Usage Feature Flag**: `FEATURE_TEACHER_USAGE` in `config/features_config.py` (disabled by default). Frontend feature flags in `useFeatureFlags.ts` and `featureFlags.ts`.
+- **Admin Scripts**: `scripts/check_admin_status.py` for verifying admin access; `scripts/backfill_user_usage_stats.py` for one-time backfill of `user_usage_stats`; `scripts/db/dump_import_postgres.py` for PostgreSQL dump/import.
+
+### Changed
+- **App Sidebar & Main Layout**: Added Teacher Usage nav item (admin-only, behind feature flag). Updated `AppSidebar.vue`, `MainLayout.vue`, router.
+- **Database Config**: Registered `TeacherUsageConfig` in `config/database.py`.
+- **API Config Router**: Updated `routers/api/config.py` for feature flags.
+- **Infrastructure**: Updates to lifespan, startup, server launcher, recovery startup, browser, logging config.
+- **Schema Migration**: Enhanced `utils/migration/postgresql/schema_migration.py`.
+- **TikToken Cache**: Updated `utils/tiktoken_cache.py`.
+- **Auth Admin Init**: Registered teacher usage router in `routers/auth/admin/__init__.py`.
+- **Env Example**: Added `FEATURE_TEACHER_USAGE` and related env vars.
+
 ## [5.22.0] - 2026-02-09
 
 ### Changed

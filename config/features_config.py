@@ -22,7 +22,7 @@ class FeaturesConfigMixin:
     if TYPE_CHECKING:
         def _get_cached_value(self, _key: str, _default: Any = None) -> Any:
             """Type stub: method provided by BaseConfig."""
-            ...
+            pass
 
         @property
         def version(self) -> str:
@@ -188,6 +188,15 @@ class FeaturesConfigMixin:
         return self._get_cached_value('FEATURE_SMART_RESPONSE', 'False').lower() == 'true'
 
     @property
+    def FEATURE_TEACHER_USAGE(self):
+        """Enable Teacher Usage (教师使用度) admin analytics dashboard.
+        
+        Disabled by default. Set FEATURE_TEACHER_USAGE=True in .env to enable.
+        Admin-only feature for teacher engagement classification.
+        """
+        return self._get_cached_value('FEATURE_TEACHER_USAGE', 'False').lower() == 'true'
+
+    @property
     def AI_ASSISTANT_NAME(self):
         """AI Assistant display name (appears in toolbar button and panel header)."""
         return self._get_cached_value('AI_ASSISTANT_NAME', 'MindMate AI')
@@ -227,13 +236,13 @@ class FeaturesConfigMixin:
         - D3.js visualization settings
         - Theme and styling options
         """
-        logger.info("Configuration Summary:")
-        logger.info("   Version: %s", self.version)
-        logger.info("   FastAPI: %s:%s (Debug: %s)", self.host, self.port, self.debug)
-        logger.info("   Qwen: %s", self.QWEN_API_URL)
-        logger.info("     - Classification: %s", self.QWEN_MODEL_CLASSIFICATION)
-        logger.info("     - Generation: %s", self.QWEN_MODEL_GENERATION)
+        logger.debug("Configuration Summary:")
+        logger.debug("   Version: %s", self.version)
+        logger.debug("   FastAPI: %s:%s (Debug: %s)", self.host, self.port, self.debug)
+        logger.debug("   Qwen: %s", self.QWEN_API_URL)
+        logger.debug("     - Classification: %s", self.QWEN_MODEL_CLASSIFICATION)
+        logger.debug("     - Generation: %s", self.QWEN_MODEL_GENERATION)
 
-        logger.info("   Language: %s", self.GRAPH_LANGUAGE)
-        logger.info("   Theme: %s / %s / %s", self.D3_TOPIC_FILL, self.D3_SIM_FILL, self.D3_DIFF_FILL)
-        logger.info("   Dimensions: %sx%spx", self.D3_BASE_WIDTH, self.D3_BASE_HEIGHT)
+        logger.debug("   Language: %s", self.GRAPH_LANGUAGE)
+        logger.debug("   Theme: %s / %s / %s", self.D3_TOPIC_FILL, self.D3_SIM_FILL, self.D3_DIFF_FILL)
+        logger.debug("   Dimensions: %sx%spx", self.D3_BASE_WIDTH, self.D3_BASE_HEIGHT)

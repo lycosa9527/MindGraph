@@ -189,7 +189,7 @@ def run_migrations() -> bool:
     try:
         # Get database dialect
         dialect = db_engine.dialect.name
-        logger.info(
+        logger.debug(
             "[DBMigration] Starting database migrations for dialect: %s",
             dialect
         )
@@ -211,7 +211,7 @@ def run_migrations() -> bool:
         # =====================================================================
         # STEP 1: CHECK - Inspect current database status
         # =====================================================================
-        logger.info(
+        logger.debug(
             "[DBMigration] Step 1: Checking current database status..."
         )
 
@@ -223,7 +223,7 @@ def run_migrations() -> bool:
         missing_tables = expected_tables - existing_tables
 
         # Log status
-        logger.info(
+        logger.debug(
             "[DBMigration] Status check: %d expected tables, "
             "%d existing tables, %d missing",
             len(expected_tables),
@@ -232,7 +232,7 @@ def run_migrations() -> bool:
         )
 
         if missing_tables:
-            logger.info(
+            logger.debug(
                 "[DBMigration] Missing tables: %s",
                 ', '.join(sorted(missing_tables))
             )
@@ -271,16 +271,16 @@ def run_migrations() -> bool:
 
         if tables_to_migrate:
             if tables_with_changes:
-                logger.info(
+                logger.debug(
                     "[DBMigration] Step 3: Migrating existing tables "
                     "(%d tables to check, %d with changes)...",
                     len(tables_to_migrate),
                     len(tables_with_changes)
                 )
             else:
-                logger.info(
+                logger.debug(
                     "[DBMigration] Step 3: Checking existing tables "
-                    "(%d tables, skipping sequence/index checks - no changes)...",
+                    "(%d tables, verifying sequences)...",
                     len(tables_to_migrate)
                 )
 
@@ -302,7 +302,7 @@ def run_migrations() -> bool:
 
                         # Add missing columns
                         if missing_columns:
-                            logger.info(
+                            logger.debug(
                                 "[DBMigration] Table '%s' has %d missing "
                                 "column(s): %s",
                                 table_name,
@@ -328,26 +328,27 @@ def run_migrations() -> bool:
                                         table_name
                                     )
 
-                        # Only check sequences and indexes for tables with changes
-                        # or newly created tables (to avoid unnecessary checks)
-                        if table_name in tables_with_changes:
-                            # Fix PostgreSQL sequences for primary key columns
-                            # with autoincrement
-                            for column in table.columns:
-                                if column.primary_key:
-                                    sequence_fixed = fix_postgresql_sequence(
-                                        conn, table_name, column
-                                    )
-                                    if sequence_fixed:
-                                        sequences_fixed += 1
+                        # Always fix PostgreSQL sequences for primary key columns
+                        # with autoincrement (e.g. after SQLite migration, sequences
+                        # may be missing even when tables/columns exist)
+                        for column in table.columns:
+                            if column.primary_key:
+                                sequence_fixed = fix_postgresql_sequence(
+                                    conn, table_name, column
+                                )
+                                if sequence_fixed:
+                                    sequences_fixed += 1
 
-                            # Create missing indexes for this table
+                        # Create missing indexes only for tables with changes
+                        # (index creation is more expensive; sequences must
+                        # always be checked)
+                        if table_name in tables_with_changes:
                             indexes_created = create_table_indexes(
                                 conn, table_name, table
                             )
                             indexes_created_total += indexes_created
                             if indexes_created > 0:
-                                logger.info(
+                                logger.debug(
                                     "[DBMigration] Created %d missing index(es) "
                                     "for table '%s'",
                                     indexes_created,
@@ -366,13 +367,13 @@ def run_migrations() -> bool:
                         continue
         else:
             if tables_created > 0:
-                logger.info(
+                logger.debug(
                     "[DBMigration] Created %d table(s), no columns to "
                     "migrate",
                     tables_created
                 )
             else:
-                logger.info(
+                logger.debug(
                     "[DBMigration] No tables to migrate (all tables exist "
                     "and are up to date)"
                 )
@@ -380,7 +381,7 @@ def run_migrations() -> bool:
         # =====================================================================
         # STEP 4: VERIFY - Confirm all changes were applied
         # =====================================================================
-        logger.info(
+        logger.debug(
             "[DBMigration] Step 4: Verifying migration results..."
         )
 
@@ -398,7 +399,7 @@ def run_migrations() -> bool:
             )
             migration_success = False
         else:
-            logger.info(
+            logger.debug(
                 "[DBMigration] ✓ Verification passed: All %d expected "
                 "tables exist",
                 len(expected_tables)
@@ -418,7 +419,7 @@ def run_migrations() -> bool:
                 )
             migration_success = False
         else:
-            logger.info(
+            logger.debug(
                 "[DBMigration] ✓ All tables have all expected columns"
             )
 
@@ -436,7 +437,7 @@ def run_migrations() -> bool:
                 )
             migration_success = False
         else:
-            logger.info("[DBMigration] ✓ All required sequences exist")
+            logger.debug("[DBMigration] ✓ All required sequences exist")
 
         if verification_details['indexes_missing']:
             logger.error(
@@ -452,43 +453,43 @@ def run_migrations() -> bool:
                 )
             migration_success = False
         else:
-            logger.info(
+            logger.debug(
                 "[DBMigration] ✓ All tables have all expected indexes"
             )
 
         # Summary
-        logger.info("[DBMigration] Migration summary:")
+        logger.debug("[DBMigration] Migration summary:")
         if tables_created > 0:
-            logger.info(
+            logger.debug(
                 "[DBMigration]   - Created %d missing table(s)",
                 tables_created
             )
         if columns_added > 0:
-            logger.info(
+            logger.debug(
                 "[DBMigration]   - Added %d missing column(s) to existing "
                 "tables",
                 columns_added
             )
         if sequences_fixed > 0:
-            logger.info(
+            logger.debug(
                 "[DBMigration]   - Fixed %d PostgreSQL sequence(s) for "
                 "primary key columns",
                 sequences_fixed
             )
         if indexes_created_total > 0:
-            logger.info(
+            logger.debug(
                 "[DBMigration]   - Created %d missing index(es)",
                 indexes_created_total
             )
         if (tables_created == 0 and columns_added == 0 and
                 sequences_fixed == 0 and indexes_created_total == 0):
-            logger.info(
+            logger.debug(
                 "[DBMigration]   - No changes needed "
                 "(database is up to date)"
             )
 
         if migration_success:
-            logger.info("[DBMigration] ✓ Migration completed successfully")
+            logger.debug("[DBMigration] ✓ Migration completed successfully")
         else:
             logger.error("[DBMigration] ✗ Migration completed with errors")
 

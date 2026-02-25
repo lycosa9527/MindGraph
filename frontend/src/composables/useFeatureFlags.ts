@@ -31,6 +31,7 @@ export function useFeatureFlags() {
   const featureKnowledgeSpace = computed(() => data.value?.feature_knowledge_space ?? false)
   const featureLibrary = computed(() => data.value?.feature_library ?? false)
   const featureSmartResponse = computed(() => data.value?.feature_smart_response ?? false)
+  const featureTeacherUsage = computed(() => data.value?.feature_teacher_usage ?? false)
 
   return {
     featureRagChunkTest,
@@ -43,6 +44,7 @@ export function useFeatureFlags() {
     featureKnowledgeSpace,
     featureLibrary,
     featureSmartResponse,
+    featureTeacherUsage,
     isLoading,
     error,
   }

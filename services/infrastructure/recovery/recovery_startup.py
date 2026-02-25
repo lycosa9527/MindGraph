@@ -143,7 +143,7 @@ def check_database_on_startup() -> bool:
     """
     # First, recover from potential kill -9 scenarios
     # This clears stale locks and connections before integrity check
-    logger.info("[Recovery] Recovering from potential kill -9 scenario...")
+    logger.debug("[Recovery] Recovering from potential kill -9 scenario...")
     recovery_success = recover_from_kill_9()
     if not recovery_success:
         logger.warning(
@@ -153,7 +153,7 @@ def check_database_on_startup() -> bool:
 
     # Clean up incomplete chunk operations (Qdrant + database)
     # This abandons partial work and resets documents to 'pending' for retry
-    logger.info("[Recovery] Cleaning up incomplete chunk operations...")
+    logger.debug("[Recovery] Cleaning up incomplete chunk operations...")
     cleaned_count = cleanup_incomplete_chunk_operations()
     if cleaned_count > 0:
         logger.info(
@@ -163,9 +163,9 @@ def check_database_on_startup() -> bool:
 
     # Check if integrity check should be skipped (for development/testing)
     skip_check_env = os.getenv("SKIP_INTEGRITY_CHECK", "")
-    logger.info("[Recovery] SKIP_INTEGRITY_CHECK=%s", skip_check_env)
+    logger.debug("[Recovery] SKIP_INTEGRITY_CHECK=%s", skip_check_env)
     if skip_check_env.lower() in ("true", "yes"):
-        logger.info("[Recovery] Integrity check skipped (SKIP_INTEGRITY_CHECK=true)")
+        logger.debug("[Recovery] Integrity check skipped (SKIP_INTEGRITY_CHECK=true)")
         return True
 
     # Try to acquire lock - only one worker should check integrity

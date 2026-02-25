@@ -155,6 +155,12 @@ const routes: RouteRecordRaw[] = [
     },
   },
   {
+    path: '/teacher-usage',
+    name: 'TeacherUsage',
+    component: () => import('@/pages/TeacherUsagePage.vue'),
+    meta: { requiresAuth: true, requiresAdmin: true, layout: 'main' },
+  },
+  {
     path: '/dashboard',
     name: 'PublicDashboard',
     component: () => import('@/pages/PublicDashboardPage.vue'),
@@ -185,9 +191,10 @@ router.beforeEach(async (to, _from, next) => {
   const featureFlagsStore = useFeatureFlagsStore()
 
   // Fetch feature flags if needed (for router guard - doesn't use vue-query)
-  // Fetch flags for any route that might need feature flag checks
-  if (
+  // Fetch for: routes with feature flag checks, OR any main layout route (sidebar needs flags)
+  const needsFeatureFlags =
     to.meta.requiresFeatureFlag ||
+    to.meta.layout === 'main' ||
     to.name === 'Course' ||
     to.name === 'Template' ||
     to.name === 'Community' ||
@@ -196,8 +203,9 @@ router.beforeEach(async (to, _from, next) => {
     to.name === 'SchoolZone' ||
     to.name === 'KnowledgeSpace' ||
     to.name === 'Library' ||
-    to.name === 'SmartResponse'
-  ) {
+    to.name === 'SmartResponse' ||
+    to.name === 'TeacherUsage'
+  if (needsFeatureFlags) {
     await featureFlagsStore.fetchFlags()
   }
 
@@ -279,6 +287,12 @@ router.beforeEach(async (to, _from, next) => {
   if (
     to.name === 'SmartResponse' &&
     !featureFlagsStore.getFeatureSmartResponse()
+  ) {
+    return next({ name: 'MindMate' })
+  }
+  if (
+    to.name === 'TeacherUsage' &&
+    !featureFlagsStore.getFeatureTeacherUsage()
   ) {
     return next({ name: 'MindMate' })
   }

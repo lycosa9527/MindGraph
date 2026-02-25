@@ -1,3 +1,13 @@
+"""Redis token buffer module.
+
+Shared token usage buffer using Redis. Collects token usage records from all
+workers and flushes to database periodically. Features: shared buffer across
+all workers (no data loss on worker crash), atomic list operations for thread
+safety, periodic batch flush to database for persistence, graceful fallback
+to per-worker memory buffer. Key schema: tokens:buffer -> list of record_json,
+tokens:stats -> hash of total_written, total_dropped, batches.
+"""
+
 from datetime import datetime
 from typing import Optional, Dict, Any, List
 import asyncio
@@ -7,36 +17,12 @@ import os
 import threading
 import time
 
+from sqlalchemy import inspect as sa_inspect
+
 from services.redis.redis_client import is_redis_available, get_redis
 from config.database import SessionLocal, check_disk_space
 from models.domain.token_usage import TokenUsage
-
-"""
-Redis Token Buffer
-===================
-
-Shared token usage buffer using Redis.
-Collects token usage records from all workers and flushes to database periodically.
-
-Features:
-- Shared buffer across all workers (no data loss on worker crash)
-- Atomic list operations for thread safety
-- Periodic batch flush to database for persistence
-- Graceful fallback to per-worker memory buffer
-
-Key Schema:
-- tokens:buffer -> list[{record_json}]
-- tokens:stats -> hash{total_written, total_dropped, batches}
-
-Author: lycosa9527
-Made by: MindSpring Team
-
-Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
-All Rights Reserved
-Proprietary License
-"""
-
-
+from services.teacher_usage_stats import compute_and_upsert_user_usage_stats
 
 logger = logging.getLogger(__name__)
 
@@ -105,8 +91,8 @@ class RedisTokenBuffer:
 
         if self._enabled:
             logger.info(
-                f"[TokenBuffer] Initialized: batch_size={BATCH_SIZE}, "
-                f"interval={BATCH_INTERVAL}s, max_buffer={MAX_BUFFER_SIZE}"
+                "[TokenBuffer] Initialized: batch_size=%s, interval=%s s, max_buffer=%s",
+                BATCH_SIZE, BATCH_INTERVAL, MAX_BUFFER_SIZE
             )
         else:
             logger.info("[TokenBuffer] Disabled via TOKEN_TRACKER_ENABLED=false")
@@ -149,13 +135,13 @@ class RedisTokenBuffer:
 
                 if buffer_size >= MAX_BUFFER_SIZE:
                     should_flush = True
-                    flush_reason = f"max buffer ({buffer_size} >= {MAX_BUFFER_SIZE})"
+                    flush_reason = "max buffer (%s >= %s)" % (buffer_size, MAX_BUFFER_SIZE)
                 elif buffer_size >= BATCH_SIZE:
                     should_flush = True
-                    flush_reason = f"batch size ({buffer_size} >= {BATCH_SIZE})"
+                    flush_reason = "batch size (%s >= %s)" % (buffer_size, BATCH_SIZE)
                 elif time_since_flush >= BATCH_INTERVAL and buffer_size > 0:
                     should_flush = True
-                    flush_reason = f"interval ({time_since_flush:.0f}s >= {BATCH_INTERVAL}s)"
+                    flush_reason = "interval (%.0fs >= %ss)" % (time_since_flush, BATCH_INTERVAL)
 
                 if should_flush:
                     logger.debug("[TokenBuffer] Flush triggered: %s", flush_reason)
@@ -215,7 +201,7 @@ class RedisTokenBuffer:
             db = SessionLocal()
             try:
                 # Bulk insert
-                db.bulk_insert_mappings(TokenUsage, records)
+                db.bulk_insert_mappings(sa_inspect(TokenUsage), records)
                 db.commit()
 
                 write_time = time.time() - start_time
@@ -232,6 +218,20 @@ class RedisTokenBuffer:
                     "[TokenBuffer] Wrote %s records (%s tokens) in %.1fms | Total: %s",
                     record_count, total_tokens, write_time_ms, self._total_written
                 )
+
+                user_ids = {
+                    uid for r in records
+                    for uid in (r.get("user_id"),)
+                    if isinstance(uid, int)
+                }
+                for uid in user_ids:
+                    try:
+                        compute_and_upsert_user_usage_stats(uid, db)
+                    except Exception as stats_err:
+                        logger.debug(
+                            "[TokenBuffer] Stats compute failed for user %s: %s",
+                            uid, stats_err
+                        )
 
             except Exception as e:
                 db.rollback()
@@ -305,7 +305,7 @@ class RedisTokenBuffer:
         endpoint_path: Optional[str] = None,
         response_time: Optional[float] = None,
         success: bool = True,
-        **kwargs  # Accept extra args for compatibility
+        **kwargs: Any,
     ) -> bool:
         """
         Track token usage (non-blocking, batched).
@@ -341,6 +341,8 @@ class RedisTokenBuffer:
             model_name = self.MODEL_NAME_MAP.get(model_alias, model_alias)
 
             # Build record
+            if kwargs:
+                logger.debug("[TokenBuffer] Extra kwargs ignored: %s", list(kwargs.keys()))
             record = {
                 'user_id': user_id,
                 'organization_id': organization_id,
@@ -416,8 +418,8 @@ class RedisTokenBuffer:
             await self._flush_buffer()
 
         logger.info(
-            f"[TokenBuffer] Shutdown complete. "
-            f"Total written: {self._total_written}, dropped: {self._total_dropped}"
+            "[TokenBuffer] Shutdown complete. Total written: %s, dropped: %s",
+            self._total_written, self._total_dropped
         )
 
     @staticmethod
@@ -456,20 +458,20 @@ class RedisTokenBuffer:
         return stats
 
 
-# Global singleton
-_token_buffer: Optional[RedisTokenBuffer] = None
+class _TokenBufferHolder:
+    """Holder for singleton token buffer instance."""
+
+    _instance: Optional[RedisTokenBuffer] = None
 
 
 def get_token_buffer() -> RedisTokenBuffer:
     """Get or create global token buffer instance."""
-    global _token_buffer
-    if _token_buffer is None:
-        _token_buffer = RedisTokenBuffer()
-    return _token_buffer
+    if _TokenBufferHolder._instance is None:
+        _TokenBufferHolder._instance = RedisTokenBuffer()
+    return _TokenBufferHolder._instance
 
 
 # Alias for backwards compatibility
 def get_token_tracker() -> RedisTokenBuffer:
     """Alias for get_token_buffer (backwards compatibility)."""
     return get_token_buffer()
-

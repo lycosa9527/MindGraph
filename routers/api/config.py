@@ -24,6 +24,7 @@ class FeatureFlagsResponse(BaseModel):
     feature_knowledge_space: bool
     feature_library: bool
     feature_smart_response: bool
+    feature_teacher_usage: bool
 
 
 @router.get("/features", response_model=FeatureFlagsResponse)
@@ -40,4 +41,5 @@ async def get_feature_flags():
         feature_knowledge_space=config.FEATURE_KNOWLEDGE_SPACE,
         feature_library=config.FEATURE_LIBRARY,
         feature_smart_response=config.FEATURE_SMART_RESPONSE,
+        feature_teacher_usage=config.FEATURE_TEACHER_USAGE,
     )

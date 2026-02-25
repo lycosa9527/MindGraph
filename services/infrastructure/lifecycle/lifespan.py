@@ -74,20 +74,20 @@ async def lifespan(fastapi_app: FastAPI):
     is_main_worker = (worker_id == '0' or not worker_id)
 
     if is_main_worker:
-        logger.info("=" * 80)
-        logger.info("FastAPI Application Starting")
-        logger.info("=" * 80)
-        logger.info("[LIFESPAN] Starting lifespan initialization...")
-        logger.info("[LIFESPAN] Signal handlers registered")
+        logger.debug("=" * 80)
+        logger.debug("FastAPI Application Starting")
+        logger.debug("=" * 80)
+        logger.debug("[LIFESPAN] Starting lifespan initialization...")
+        logger.debug("[LIFESPAN] Signal handlers registered")
 
     # Initialize Redis (REQUIRED for caching, rate limiting, sessions)
     # Application will exit if Redis is not available
     if is_main_worker:
-        logger.info("[LIFESPAN] Initializing Redis...")
+        logger.debug("[LIFESPAN] Initializing Redis...")
     try:
         init_redis_sync()
         if is_main_worker:
-            logger.info("Redis initialized successfully")
+            logger.debug("Redis initialized successfully")
     except RedisStartupError as e:
         # Error message already logged by init_redis_sync with instructions
         # Send critical alert before exiting
@@ -109,11 +109,11 @@ async def lifespan(fastapi_app: FastAPI):
     knowledge_space_enabled = config.FEATURE_KNOWLEDGE_SPACE
     if knowledge_space_enabled:
         if is_main_worker:
-            logger.info("[LIFESPAN] Initializing Qdrant...")
+            logger.debug("[LIFESPAN] Initializing Qdrant...")
         try:
             init_qdrant_sync()
             if is_main_worker:
-                logger.info("Qdrant initialized successfully")
+                logger.debug("Qdrant initialized successfully")
         except QdrantStartupError as e:
             # Error message already logged by init_qdrant_sync with instructions
             # Send critical alert before exiting
@@ -137,11 +137,11 @@ async def lifespan(fastapi_app: FastAPI):
     # Check Celery worker availability (REQUIRED only if Knowledge Space feature is enabled)
     if knowledge_space_enabled:
         if is_main_worker:
-            logger.info("[LIFESPAN] Checking Celery worker availability...")
+            logger.debug("[LIFESPAN] Checking Celery worker availability...")
         try:
             init_celery_worker_check()
             if is_main_worker:
-                logger.info("Celery worker is available")
+                logger.debug("Celery worker is available")
         except CeleryStartupError as e:
             # Error message already logged by init_celery_worker_check with instructions
             # Send critical alert before exiting
@@ -165,14 +165,14 @@ async def lifespan(fastapi_app: FastAPI):
     # Check system dependencies for Knowledge Space feature (Tesseract OCR)
     # Application will exit if required dependencies are missing
     if is_main_worker:
-        logger.info("[LIFESPAN] Checking system dependencies...")
+        logger.debug("[LIFESPAN] Checking system dependencies...")
     try:
         if not check_system_dependencies(exit_on_error=True):
             # check_system_dependencies already exits, but this is a safety check
             logger.error("System dependency check failed. Exiting.")
             os._exit(1)  # pylint: disable=protected-access
         if is_main_worker:
-            logger.info("System dependencies check passed")
+            logger.debug("System dependencies check passed")
     except DependencyError as e:
         if is_main_worker:
             logger.error("Dependency check failed: %s", e)
@@ -200,13 +200,13 @@ async def lifespan(fastapi_app: FastAPI):
 
     # Initialize Database with corruption detection and recovery
     if is_main_worker:
-        logger.info("[LIFESPAN] Initializing database...")
+        logger.debug("[LIFESPAN] Initializing database...")
     try:
         # Check database integrity on startup (uses Redis lock to ensure only one worker checks)
         # Note: Removed worker_id check - Redis lock handles multi-worker coordination
         # If corruption is detected, interactive recovery wizard is triggered
         if is_main_worker:
-            logger.info("[LIFESPAN] Checking database integrity...")
+            logger.debug("[LIFESPAN] Checking database integrity...")
         if not check_database_on_startup():
             if is_main_worker:
                 logger.critical("Database recovery failed or was aborted. Shutting down.")
@@ -226,24 +226,22 @@ async def lifespan(fastapi_app: FastAPI):
         # Initialize database connection
         # Only log from first worker to avoid duplicate messages
         if is_main_worker:
-            logger.info("Database integrity verified")
-            logger.info("[LIFESPAN] Connecting to PostgreSQL database...")
-            logger.info("[LIFESPAN] Verifying PostgreSQL tables...")
-            logger.info("[LIFESPAN] Running database migrations...")
-        if is_main_worker:
-            logger.info("[LIFESPAN] Running database migrations...")
+            logger.debug("Database integrity verified")
+            logger.debug("[LIFESPAN] Connecting to PostgreSQL database...")
+            logger.debug("[LIFESPAN] Verifying PostgreSQL tables...")
+            logger.debug("[LIFESPAN] Running database migrations...")
 
         # init_db() handles connection, table creation, and migrations
         init_db()
         if is_main_worker:
-            logger.info("Database initialized successfully")
+            logger.debug("Database initialized successfully")
             # Display demo info if in demo mode
             display_demo_info()
 
         # Load cache from database and IP geolocation database in parallel
         # Note: Both use Redis lock/distributed coordination to ensure only one worker loads
         if is_main_worker:
-            logger.info("[LIFESPAN] Loading cache and IP database...")
+            logger.debug("[LIFESPAN] Loading cache and IP database...")
 
         # Check if user auth cache preloading is enabled
         preload_auth_cache = os.getenv("PRELOAD_USER_AUTH_CACHE", "true").lower() in ("1", "true", "yes")
@@ -343,16 +341,16 @@ async def lifespan(fastapi_app: FastAPI):
 
     # Initialize LLM Service
     if is_main_worker:
-        logger.info("[LIFESPAN] Initializing LLM clients...")
-        logger.info("[LIFESPAN] Loading LLM prompts...")
-        logger.info("[LIFESPAN] Configuring LLM rate limiters...")
-        logger.info("[LIFESPAN] Initializing LLM load balancer...")
+        logger.debug("[LIFESPAN] Initializing LLM clients...")
+        logger.debug("[LIFESPAN] Loading LLM prompts...")
+        logger.debug("[LIFESPAN] Configuring LLM rate limiters...")
+        logger.debug("[LIFESPAN] Initializing LLM load balancer...")
 
     try:
         # llm_service.initialize() handles all the above stages internally
         llm_service.initialize()
         if is_main_worker:
-            logger.info("LLM Service initialized")
+            logger.debug("LLM Service initialized")
     except Exception as e:  # pylint: disable=broad-except
         if is_main_worker:
             logger.warning("Failed to initialize LLM Service: %s", e)
@@ -377,7 +375,7 @@ async def lifespan(fastapi_app: FastAPI):
     try:
         cleanup_task = asyncio.create_task(start_cleanup_scheduler(interval_hours=1))
         if is_main_worker:
-            logger.info("Temp image cleanup scheduler started")
+            logger.debug("Temp image cleanup scheduler started")
     except Exception as e:  # pylint: disable=broad-except
         if is_main_worker:
             logger.warning("Failed to start cleanup scheduler: %s", e)
@@ -389,7 +387,7 @@ async def lifespan(fastapi_app: FastAPI):
             start_workshop_cleanup_scheduler(interval_hours=6)
         )
         if is_main_worker:
-            logger.info("Workshop cleanup scheduler started")
+            logger.debug("Workshop cleanup scheduler started")
     except Exception as e:  # pylint: disable=broad-except
         if is_main_worker:
             logger.warning("Failed to start workshop cleanup scheduler: %s", e)
@@ -418,7 +416,7 @@ async def lifespan(fastapi_app: FastAPI):
         process_monitor = get_process_monitor()
         process_monitor_task = asyncio.create_task(process_monitor.start())
         if is_main_worker:
-            logger.info("Process monitor started")
+            logger.debug("Process monitor started")
     except Exception as e:  # pylint: disable=broad-except
         if is_main_worker:
             logger.warning("Failed to start process monitor: %s", e)
@@ -432,7 +430,7 @@ async def lifespan(fastapi_app: FastAPI):
         health_monitor = get_health_monitor()
         health_monitor_task = asyncio.create_task(health_monitor.start())
         if is_main_worker:
-            logger.info("Health monitor started")
+            logger.debug("Health monitor started")
     except Exception as e:  # pylint: disable=broad-except
         if is_main_worker:
             logger.warning("Failed to start health monitor: %s", e)
@@ -445,7 +443,7 @@ async def lifespan(fastapi_app: FastAPI):
     try:
         diagram_cache = get_diagram_cache()
         if is_main_worker:
-            logger.info("Diagram cache initialized")
+            logger.debug("Diagram cache initialized")
     except Exception as e:  # pylint: disable=broad-except
         if is_main_worker:
             logger.warning("Failed to initialize diagram cache: %s", e)
@@ -518,7 +516,7 @@ async def lifespan(fastapi_app: FastAPI):
     # Print completion messages after all startup activities are complete
     if is_main_worker:
         startup_duration = time.time() - startup_start
-        logger.info("[LIFESPAN] Startup complete, yielding to application...")
+        logger.debug("[LIFESPAN] Startup complete, yielding to application...")
         # Print prominent launch completion notification
         # This appears after all startup activities including monitor initialization
         print()
@@ -548,7 +546,7 @@ async def lifespan(fastapi_app: FastAPI):
             except asyncio.CancelledError:
                 pass
             if is_main_worker:
-                logger.info("Temp image cleanup scheduler stopped")
+                logger.debug("Temp image cleanup scheduler stopped")
 
         # Stop workshop cleanup scheduler
         if workshop_cleanup_task:
@@ -558,7 +556,7 @@ async def lifespan(fastapi_app: FastAPI):
             except asyncio.CancelledError:
                 pass
             if is_main_worker:
-                logger.info("Workshop cleanup scheduler stopped")
+                logger.debug("Workshop cleanup scheduler stopped")
 
         # Stop backup scheduler (runs on all workers, but only lock holder executes)
         if backup_scheduler_task:

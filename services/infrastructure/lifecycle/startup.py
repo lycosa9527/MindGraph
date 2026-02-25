@@ -334,13 +334,19 @@ def setup_early_configuration():
             if not isinstance(current_policy, asyncio.WindowsProactorEventLoopPolicy):
                 asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
                 if should_log_startup:
-                    logging.info("Windows: Set event loop policy to WindowsProactorEventLoopPolicy for Playwright support")
+                    logging.debug(
+                        "Windows: Set event loop policy to "
+                        "WindowsProactorEventLoopPolicy for Playwright support"
+                    )
         except Exception:  # pylint: disable=broad-except
             # If we can't check/set, try to set it anyway
             try:
                 asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
                 if should_log_startup:
-                    logging.info("Windows: Set event loop policy to WindowsProactorEventLoopPolicy (unconditional)")
+                    logging.debug(
+                        "Windows: Set event loop policy to "
+                        "WindowsProactorEventLoopPolicy (unconditional)"
+                    )
             except Exception as e2:  # pylint: disable=broad-except
                 if should_log_startup:
                     logging.warning("Windows: Could not set event loop policy: %s", e2)
@@ -353,8 +359,13 @@ def setup_early_configuration():
     env_file_exists = os.path.exists(env_file_path)
     load_dotenv()
 
-    # Diagnostic: Log CHUNKING_ENGINE value at startup (only from main process)
-    if should_log_startup:
+    # Diagnostic: Log CHUNKING_ENGINE value at startup (DEBUG level only)
+    # Use print because logging is not configured yet (setup_logging runs after this)
+    _log_debug = (
+        os.getenv('LOG_LEVEL', 'INFO').upper() == 'DEBUG'
+        or os.getenv('DEBUG', '').lower() in ('1', 'true', 'yes')
+    )
+    if should_log_startup and _log_debug:
         chunking_engine_startup = os.getenv("CHUNKING_ENGINE", "not set (default: semchunk)")
         print(f"[Startup] .env file exists: {env_file_exists} at {env_file_path}")
         print(f"[Startup] CHUNKING_ENGINE environment variable: {chunking_engine_startup}")
@@ -374,7 +385,7 @@ def setup_early_configuration():
     except Exception as e:  # pylint: disable=broad-except
         # Non-critical: tiktoken will download files automatically if cache fails
         if should_log_startup:
-            print(f"[Startup] Warning: Could not setup tiktoken cache: {e}")
+            logging.warning("[Startup] Could not setup tiktoken cache: %s", e)
 
     # Register signal handlers for graceful shutdown
     signal.signal(signal.SIGINT, _handle_shutdown_signal)

@@ -19,6 +19,7 @@ interface FeatureFlagsResponse {
   feature_knowledge_space: boolean
   feature_library: boolean
   feature_smart_response: boolean
+  feature_teacher_usage: boolean
 }
 
 export const useFeatureFlagsStore = defineStore('featureFlags', () => {
@@ -57,6 +58,7 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
           feature_knowledge_space: false,
           feature_library: false,
           feature_smart_response: false,
+          feature_teacher_usage: false,
         }
         flags.value = defaultFlags
         lastFetchTime.value = now
@@ -84,6 +86,7 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
         feature_knowledge_space: false,
         feature_library: false,
         feature_smart_response: false,
+        feature_teacher_usage: false,
       }
       flags.value = defaultFlags
       return defaultFlags
@@ -136,6 +139,10 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
     return flags.value?.feature_smart_response ?? false
   }
 
+  function getFeatureTeacherUsage(): boolean {
+    return flags.value?.feature_teacher_usage ?? false
+  }
+
   /**
    * Initialize flags (call this early in app lifecycle)
    */
@@ -159,6 +166,7 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
     getFeatureKnowledgeSpace,
     getFeatureLibrary,
     getFeatureSmartResponse,
+    getFeatureTeacherUsage,
     init,
   }
 })

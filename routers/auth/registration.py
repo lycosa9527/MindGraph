@@ -553,7 +553,8 @@ async def register_with_sms(
     track_user_activity(
         new_user, 'login',
         {'method': 'sms', 'org': org_name, 'action': 'register'},
-        http_request
+        http_request,
+        db,
     )
 
     return {

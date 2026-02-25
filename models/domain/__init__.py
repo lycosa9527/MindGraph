@@ -31,6 +31,8 @@ from .knowledge_space import (
 from .messages import Messages, Language, get_request_language
 from .token_usage import TokenUsage
 from .dashboard_activity import DashboardActivity
+from .user_activity_log import UserActivityLog
+from .user_usage_stats import UserUsageStats
 from .debateverse import (
     DebateSession,
     DebateMessage,
@@ -86,6 +88,9 @@ __all__ = [
     "TokenUsage",
     # Dashboard
     "DashboardActivity",
+    # User Activity / Usage Stats
+    "UserActivityLog",
+    "UserUsageStats",
     # Debateverse
     "DebateSession",
     "DebateMessage",

@@ -491,18 +491,10 @@ def setup_logging():
     # Override with VERBOSE_LOGGING env var if set, otherwise default to DEBUG
     if hasattr(config, 'verbose_logging') and config.verbose_logging:
         log_level = logging.DEBUG
-        try:
-            print("[INIT] VERBOSE_LOGGING enabled - setting log level to DEBUG")
-        except (ValueError, OSError):
-            pass
     else:
         # Default to DEBUG for full verbose logging
         log_level_str = getattr(config, 'log_level', 'DEBUG')
         log_level = getattr(logging, log_level_str.upper(), logging.DEBUG)
-        try:
-            print(f"[INIT] Setting log level to {log_level_str.upper()} (DEBUG) for full verbose logging")
-        except (ValueError, OSError):
-            pass
 
     # Configure logging with available handlers
     # Use force=True to replace any existing configuration
@@ -560,10 +552,10 @@ def setup_logging():
     # Add filter to main logger
     logger.addFilter(CancelledErrorFilter())
 
-    # Set external HTTP libraries to INFO level to reduce verbosity
-    # Only show DEBUG logs when explicitly enabled via HTTP_DEBUG env var
+    # Set external HTTP libraries to WARNING by default to reduce verbosity
+    # Only show DEBUG/INFO logs when explicitly enabled via HTTP_DEBUG env var
     http_debug_enabled = os.getenv('HTTP_DEBUG', '').lower() in ('1', 'true', 'yes')
-    http_level = logging.DEBUG if http_debug_enabled else logging.INFO
+    http_level = logging.DEBUG if http_debug_enabled else logging.WARNING
 
     logging.getLogger('httpx').setLevel(http_level)
     logging.getLogger('httpcore').setLevel(http_level)

@@ -311,7 +311,7 @@ async def login(
 
     # Track user activity
     track_user_activity(
-        user, 'login', {'method': 'captcha', 'org': org_name}, http_request
+        user, 'login', {'method': 'captcha', 'org': org_name}, http_request, db
     )
 
     # Preload diagram list for instant library access (fire-and-forget)
@@ -459,7 +459,7 @@ async def login_with_sms(
 
     # Track user activity
     track_user_activity(
-        user, 'login', {'method': 'sms', 'org': org_name}, http_request
+        user, 'login', {'method': 'sms', 'org': org_name}, http_request, db
     )
 
     # Preload diagram list for instant library access (fire-and-forget)

@@ -132,46 +132,45 @@ def run_server() -> None:
         # ========================================================================
 
         # 1. Redis (REQUIRED - always checked)
-        print("[REDIS] Checking Redis installation...")
+        logger.debug("[REDIS] Checking Redis installation...")
         is_installed, message = check_redis_installed()
         if not is_installed:
             print("[ERROR] Redis is REQUIRED but not installed.")
             print(f"        {message}")
             print("        Application cannot start without Redis.")
             sys.exit(1)
-        print(f"[REDIS] {message}")
-        print("[REDIS] Starting Redis server...")
+        logger.debug("[REDIS] %s", message)
+        logger.debug("[REDIS] Starting Redis server...")
         start_redis_server()  # Verifies Redis is running (exits if not ready)
-        print("[REDIS] ✓ Redis is ready")
-        print()
+        logger.debug("[REDIS] ✓ Redis is ready")
 
         # 2. PostgreSQL (REQUIRED if DATABASE_URL contains postgresql)
         db_url = os.getenv("DATABASE_URL", "")
         using_postgresql = "postgresql" in db_url.lower()
 
         if using_postgresql:
-            print("[POSTGRESQL] Checking PostgreSQL installation...")
+            logger.debug("[POSTGRESQL] Checking PostgreSQL installation...")
             is_installed, message = check_postgresql_installed()
             if not is_installed:
                 print("[ERROR] PostgreSQL is REQUIRED but not installed.")
                 print(f"        {message}")
                 print("        Application cannot start without PostgreSQL.")
                 sys.exit(1)
-            print(f"[POSTGRESQL] {message}")
-            print("[POSTGRESQL] Starting PostgreSQL server...")
+            logger.debug("[POSTGRESQL] %s", message)
+            logger.debug("[POSTGRESQL] Starting PostgreSQL server...")
             postgresql_server = (
                 start_postgresql_server()
             )  # Verifies PostgreSQL is running (exits if not ready)
             if postgresql_server:
-                print("[POSTGRESQL] ✓ PostgreSQL server started as subprocess")
+                logger.debug("[POSTGRESQL] ✓ PostgreSQL server started as subprocess")
             else:
-                print(
-                    "[POSTGRESQL] ✓ PostgreSQL server is running (external or systemd service)"
+                logger.debug(
+                    "[POSTGRESQL] ✓ PostgreSQL server is running "
+                    "(external or systemd service)"
                 )
-            print()
 
             # Run data migration from SQLite to PostgreSQL if needed
-            print("[Migration] Checking for SQLite to PostgreSQL migration...")
+            logger.debug("[Migration] Checking for SQLite to PostgreSQL migration...")
             try:
                 if migrate_sqlite_to_postgresql is None:
                     print("[ERROR] Migration module not available")
@@ -188,14 +187,19 @@ def run_server() -> None:
                         )
                         sys.exit(1)
                 elif stats:
-                    print("[Migration] Migration completed successfully")
-                    print(
-                        f"[Migration] Tables migrated: {stats.get('tables_migrated', 0)}"
+                    logger.debug("[Migration] Migration completed successfully")
+                    logger.debug(
+                        "[Migration] Tables migrated: %s",
+                        stats.get('tables_migrated', 0)
                     )
-                    print(f"[Migration] Total records: {stats.get('total_records', 0)}")
+                    logger.debug(
+                        "[Migration] Total records: %s",
+                        stats.get('total_records', 0)
+                    )
                 else:
-                    print(
-                        "[Migration] No migration needed (already migrated or no SQLite database)"
+                    logger.debug(
+                        "[Migration] No migration needed "
+                        "(already migrated or no SQLite database)"
                     )
             except Exception as e:
                 print(f"[ERROR] Migration check failed: {e}")
@@ -204,12 +208,11 @@ def run_server() -> None:
                     "        Application cannot start without successful migration check."
                 )
                 sys.exit(1)
-            print()
 
         # 3. Qdrant (REQUIRED only if Knowledge Space feature is enabled)
         qdrant_server = None
         if config.FEATURE_KNOWLEDGE_SPACE:
-            print("[QDRANT] Checking Qdrant installation...")
+            logger.debug("[QDRANT] Checking Qdrant installation...")
             is_installed, message = check_qdrant_installed()
             if not is_installed:
                 print(
@@ -220,26 +223,25 @@ def run_server() -> None:
                     "        Application cannot start without Qdrant when FEATURE_KNOWLEDGE_SPACE is enabled."
                 )
                 sys.exit(1)
-            print(f"[QDRANT] {message}")
-            print("[QDRANT] Starting Qdrant server...")
+            logger.debug("[QDRANT] %s", message)
+            logger.debug("[QDRANT] Starting Qdrant server...")
             qdrant_server = (
                 start_qdrant_server()
             )  # Verifies Qdrant is running (exits if not ready)
             if qdrant_server:
-                print("[QDRANT] ✓ Qdrant server started as subprocess")
+                logger.debug("[QDRANT] ✓ Qdrant server started as subprocess")
             else:
-                print(
-                    "[QDRANT] ✓ Qdrant server is running (external or systemd service)"
+                logger.debug(
+                    "[QDRANT] ✓ Qdrant server is running "
+                    "(external or systemd service)"
                 )
-            print()
         else:
-            print("[QDRANT] Skipping Qdrant (Knowledge Space feature is disabled)")
-            print()
+            logger.debug("[QDRANT] Skipping Qdrant (Knowledge Space feature is disabled)")
 
         # 4. Celery (REQUIRED only if Knowledge Space feature is enabled)
         celery_worker = None
         if config.FEATURE_KNOWLEDGE_SPACE:
-            print("[CELERY] Checking Celery installation...")
+            logger.debug("[CELERY] Checking Celery installation...")
             is_installed, message = check_celery_installed()
             if not is_installed:
                 print(
@@ -250,31 +252,24 @@ def run_server() -> None:
                     "        Application cannot start without Celery when FEATURE_KNOWLEDGE_SPACE is enabled."
                 )
                 sys.exit(1)
-            print(f"[CELERY] {message}")
-            print("[CELERY] Starting Celery worker...")
+            logger.debug("[CELERY] %s", message)
+            logger.debug("[CELERY] Starting Celery worker...")
             celery_worker = (
                 start_celery_worker()
             )  # Verifies Celery is running (exits if not ready)
             if celery_worker:
-                print("[CELERY] ✓ Celery worker started successfully")
+                logger.debug("[CELERY] ✓ Celery worker started successfully")
             else:
-                print("[CELERY] ✓ Using existing Celery worker")
-            print()
+                logger.debug("[CELERY] ✓ Using existing Celery worker")
         else:
-            print("[CELERY] Skipping Celery (Knowledge Space feature is disabled)")
-            print()
+            logger.debug("[CELERY] Skipping Celery (Knowledge Space feature is disabled)")
 
         # All services verified and running - continue with application startup
-        print("=" * 80)
-        print("All required services are ready:")
-        print("  ✓ Redis")
-        if using_postgresql:
-            print("  ✓ PostgreSQL")
-        if config.FEATURE_KNOWLEDGE_SPACE:
-            print("  ✓ Qdrant")
-            print("  ✓ Celery")
-        print("=" * 80)
-        print()
+        logger.debug("=" * 80)
+        logger.debug("All required services are ready: Redis%s%s",
+                    ", PostgreSQL" if using_postgresql else "",
+                    ", Qdrant, Celery" if config.FEATURE_KNOWLEDGE_SPACE else "")
+        logger.debug("=" * 80)
 
         config.print_config_summary()
 
@@ -283,15 +278,16 @@ def run_server() -> None:
         original_excepthook = sys.excepthook
 
         try:
-            print("[DEBUG] Testing FastAPI app import...")
+            logger.debug("Testing FastAPI app import...")
             if main_module is not None:
                 try:
-                    print(f"[DEBUG] App imported successfully: {main_module.app}")
+                    logger.debug("App imported successfully: %s", main_module.app)
                 except (ValueError, OSError):
                     pass
             else:
-                print(
-                    "[DEBUG] main module not available at import time (will be imported by uvicorn)"
+                logger.debug(
+                    "main module not available at import time "
+                    "(will be imported by uvicorn)"
                 )
 
             # Setup stderr filtering AFTER logging is configured
@@ -308,14 +304,13 @@ def run_server() -> None:
 
             sys.excepthook = custom_excepthook
 
-            print("[DEBUG] Starting Uvicorn server...")
-            sys.stdout.flush()
+            logger.debug("Starting Uvicorn server...")
 
             worker_count = 1 if reload else workers
-            print(
-                f"[DEBUG] Uvicorn configuration: host={host}, port={port}, workers={worker_count}, reload={reload}"
+            logger.debug(
+                "Uvicorn configuration: host=%s, port=%s, workers=%s, reload=%s",
+                host, port, worker_count, reload
             )
-            sys.stdout.flush()
 
             uvicorn.run(
                 "main:app",

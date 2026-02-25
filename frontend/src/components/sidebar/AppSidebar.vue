@@ -16,6 +16,7 @@ import {
   OfficeBuilding,
   Share,
   Tools,
+  TrendCharts,
   VideoPlay,
   Reading,
 } from '@element-plus/icons-vue'
@@ -57,6 +58,7 @@ const {
   featureKnowledgeSpace,
   featureLibrary,
   featureSmartResponse,
+  featureTeacherUsage,
 } = useFeatureFlags()
 
 const isCollapsed = computed(() => uiStore.sidebarCollapsed)
@@ -77,6 +79,7 @@ const currentMode = computed(() => {
   if (path.startsWith('/library')) return 'library'
   if (path.startsWith('/gewe')) return 'gewe'
   if (path.startsWith('/smart-response')) return 'smart-response'
+  if (path.startsWith('/teacher-usage')) return 'teacher-usage'
   return 'mindmate' // Default
 })
 
@@ -134,9 +137,11 @@ function setMode(index: string) {
   } else if (index === 'library') {
     router.push('/library')
   } else if (index === 'gewe') {
+    router.push('/gewe')
   } else if (index === 'smart-response') {
     router.push('/smart-response')
-    router.push('/gewe')
+  } else if (index === 'teacher-usage') {
+    router.push('/teacher-usage')
   }
 }
 
@@ -325,6 +330,13 @@ async function handleDiagramSelect(diagram: SavedDiagram) {
       >
         <el-icon><Watch /></el-icon>
         <template #title>{{ isZh ? 'Smart Response 智回' : 'Smart Response' }}</template>
+      </el-menu-item>
+      <el-menu-item
+        v-if="isAdmin && featureTeacherUsage"
+        index="teacher-usage"
+      >
+        <el-icon><TrendCharts /></el-icon>
+        <template #title>{{ isZh ? '教师使用度' : 'Teacher Usage' }}</template>
       </el-menu-item>
     </el-menu>
 

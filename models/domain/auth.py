@@ -13,7 +13,7 @@ from datetime import datetime
 
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Boolean, UniqueConstraint
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 
 Base = declarative_base()
@@ -56,21 +56,23 @@ class User(Base):
     """
     __tablename__ = "users"
 
-    id = Column(Integer, primary_key=True, index=True)
-    phone = Column(String(20), unique=True, index=True, nullable=False)  # 11-digit Chinese mobile
-    password_hash = Column(String(255), nullable=False)  # bcrypt hashed password
-    name = Column(String(100), nullable=True)  # Teacher's name (optional)
-    organization_id = Column(Integer, ForeignKey("organizations.id"), nullable=True)
-    avatar = Column(String(50), nullable=True, default="🐈‍⬛")  # Avatar emoji
-    role = Column(String(20), nullable=False, default="user")  # user, manager, admin
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    phone: Mapped[str] = mapped_column(String(20), unique=True, index=True, nullable=False)
+    password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
+    name: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    organization_id: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey("organizations.id"), nullable=True
+    )
+    avatar: Mapped[str | None] = mapped_column(String(50), nullable=True, default="🐈‍⬛")
+    role: Mapped[str] = mapped_column(String(20), nullable=False, default="user")
 
     # Security fields
-    failed_login_attempts = Column(Integer, default=0)  # Track failed logins
-    locked_until = Column(DateTime, nullable=True)  # Account lockout timestamp
+    failed_login_attempts: Mapped[int] = mapped_column(Integer, default=0)
+    locked_until: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
     # Timestamps
-    created_at = Column(DateTime, default=datetime.utcnow)
-    last_login = Column(DateTime, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    last_login: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
     # Relationships
     organization = relationship("Organization", back_populates="users")

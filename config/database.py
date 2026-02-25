@@ -120,6 +120,19 @@ except Exception as e:
     logger.debug("[Database] Error registering dashboard activity models: %s", e)
 
 try:
+    from models.domain.user_activity_log import UserActivityLog
+    from models.domain.user_usage_stats import UserUsageStats
+    from models.domain.teacher_usage_config import TeacherUsageConfig
+    _ = UserActivityLog.__tablename__
+    _ = UserUsageStats.__tablename__
+    _ = TeacherUsageConfig.__tablename__
+    logger.debug("[Database] User activity/usage stats/config models imported and registered")
+except ImportError as e:
+    logger.debug("[Database] Could not import user activity/usage stats models: %s", e)
+except Exception as e:
+    logger.debug("[Database] Error registering user activity/usage stats models: %s", e)
+
+try:
     from models.domain.library import (
         LibraryDocument, LibraryDanmaku, LibraryDanmakuLike, LibraryDanmakuReply,
         LibraryBookmark
@@ -129,7 +142,7 @@ try:
     _ = LibraryDanmakuLike.__tablename__
     _ = LibraryDanmakuReply.__tablename__
     _ = LibraryBookmark.__tablename__
-    logger.info("[Database] Library models imported and registered for migrations")
+    logger.debug("[Database] Library models imported and registered for migrations")
     logger.debug(
         "[Database] LibraryBookmark table name: %s, registered: %s",
         LibraryBookmark.__tablename__,
@@ -293,12 +306,12 @@ def init_db():
         )
     
     # Log registered tables for debugging
-    logger.info(
+    logger.debug(
         "[Database] Expected tables in Base.metadata (%d): %s",
         len(expected_tables),
         ', '.join(sorted(expected_tables))
     )
-    logger.info(
+    logger.debug(
         "[Database] Existing tables in database (%d): %s",
         len(existing_tables),
         ', '.join(sorted(existing_tables))
@@ -309,7 +322,7 @@ def init_db():
 
     if missing_tables:
         missing_tables_sorted = ', '.join(sorted(missing_tables))
-        logger.info(
+        logger.debug(
             "Creating %d missing table(s): %s",
             len(missing_tables),
             missing_tables_sorted
@@ -320,7 +333,7 @@ def init_db():
             # before attempting to create it. This prevents "table already exists" errors
             # and ensures we never overwrite existing tables or data.
             Base.metadata.create_all(bind=engine, checkfirst=True)
-            logger.info("Database tables created/verified")
+            logger.debug("Database tables created/verified")
         except (OperationalError, ProgrammingError) as e:
             # Fallback: Handle edge cases where inspector and SQLAlchemy disagree
             # This can happen if table/index was created between inspector check and create_all call
@@ -338,7 +351,7 @@ def init_db():
             )
             if duplicate_conditions:
                 logger.debug("Table/index creation conflict resolved (already exists): %s", e)
-                logger.info("Database tables verified (already exist)")
+                logger.debug("Database tables verified (already exist)")
             else:
                 # Re-raise genuine errors (syntax, permissions, corruption, etc.)
                 # This ensures we don't silently ignore real database problems
@@ -361,13 +374,13 @@ def init_db():
                         logger.error("Failed to send database error alert: %s", alert_error)
                 raise
     else:
-        logger.info("All database tables already exist - skipping creation")
+        logger.debug("All database tables already exist - skipping creation")
 
     # Step 2: Run automatic migrations (add missing columns)
     try:
         migration_result = run_migrations()
         if migration_result:
-            logger.info("Database schema migration completed")
+            logger.debug("Database schema migration completed")
         else:
             logger.warning("Database schema migration encountered issues - check logs")
     except Exception as e:
@@ -521,7 +534,7 @@ def recover_from_kill_9():
         bool: True if recovery succeeded, False otherwise
     """
     try:
-        logger.info("[Database] Recovering from potential kill -9 scenario...")
+        logger.debug("[Database] Recovering from potential kill -9 scenario...")
 
         # Dispose of any existing connections in the pool
         # This clears stale connections from previous process
@@ -549,7 +562,7 @@ def recover_from_kill_9():
                 with engine.connect() as conn:
                     result = conn.execute(text("SELECT 1"))
                     result.fetchone()
-                    logger.info("[Database] Database connection verified after retry")
+                    logger.debug("[Database] Database connection verified after retry")
             except Exception as retry_error:
                 logger.error(
                     "[Database] Database recovery failed: %s",
@@ -557,7 +570,7 @@ def recover_from_kill_9():
                 )
                 return False
 
-        logger.info("[Database] Recovery from kill -9 scenario completed successfully")
+        logger.debug("[Database] Recovery from kill -9 scenario completed successfully")
         return True
 
     except Exception as e:
