@@ -51,8 +51,11 @@ const nodeStyle = computed(() => {
       ? props.data.style?.borderColor || defaultStyle.value.borderColor || '#4e79a7'
       : 'transparent',
     color: props.data.style?.textColor || defaultStyle.value.textColor || '#333333',
+    fontFamily: props.data.style?.fontFamily,
     fontSize: `${props.data.style?.fontSize || defaultStyle.value.fontSize || 16}px`,
     fontWeight: props.data.style?.fontWeight || defaultStyle.value.fontWeight || 'normal',
+    fontStyle: props.data.style?.fontStyle || 'normal',
+    textDecoration: props.data.style?.textDecoration || 'none',
     borderWidth: shouldHaveBorder
       ? `${props.data.style?.borderWidth || defaultStyle.value.borderWidth || 2}px`
       : '0px',

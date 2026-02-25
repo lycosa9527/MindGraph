@@ -11,19 +11,18 @@ Only processes two specific books:
 By default, runs in preview mode (dry-run). Use --live flag to actually rename files.
 
 Usage:
-    python scripts/rename_library_pages.py              # Preview only (default)
-    python scripts/rename_library_pages.py --live       # Actually rename files
+    python scripts/library/rename_library_pages.py              # Preview only (default)
+    python scripts/library/rename_library_pages.py --live       # Actually rename files
 """
 import argparse
 import importlib.util
 import logging
-import os
 import sys
 from pathlib import Path
 
 # Add project root to path before importing project modules
-_project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path.insert(0, _project_root)
+_project_root = Path(__file__).resolve().parent.parent.parent
+sys.path.insert(0, str(_project_root))
 
 # Dynamic import to avoid Ruff E402 warning
 _image_path_resolver = importlib.import_module('services.library.image_path_resolver')
@@ -184,9 +183,8 @@ def main():
         "思维发展型课堂的理论与实践第二辑"
     ]
 
-    # Resolve storage directory
-    project_root = Path(_project_root)
-    storage_dir = project_root / "storage" / "library"
+    # Resolve storage directory relative to project root
+    storage_dir = _project_root / "storage" / "library"
 
     if not storage_dir.exists():
         logger.error("Storage directory not found: %s", storage_dir)

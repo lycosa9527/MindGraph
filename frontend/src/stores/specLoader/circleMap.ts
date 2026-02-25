@@ -50,6 +50,12 @@ export function recalculateCircleMapLayout(nodes: DiagramNode[]): DiagramNode[] 
   })
 
   if (topicNode) {
+    const topicStyle = {
+      ...(topicNode.style || {}),
+      size: topicSize,
+      fontSize: TOPIC_FONT_SIZE,
+      noWrap: true,
+    }
     result.push({
       id: 'topic',
       text: topicNode.text,
@@ -58,7 +64,7 @@ export function recalculateCircleMapLayout(nodes: DiagramNode[]): DiagramNode[] 
         x: Math.round(layout.centerX - layout.topicR),
         y: Math.round(layout.centerY - layout.topicR),
       },
-      style: { size: topicSize, fontSize: TOPIC_FONT_SIZE, noWrap: true },
+      style: topicStyle,
     })
   }
 
@@ -74,16 +80,18 @@ export function recalculateCircleMapLayout(nodes: DiagramNode[]): DiagramNode[] 
         layout.centerY + layout.childrenRadius * Math.sin(angleRad) - contextRadius
       )
 
+      const contextStyle = {
+        ...(node.style || {}),
+        size: uniformContextDiameter,
+        fontSize: CONTEXT_FONT_SIZE,
+        noWrap: true,
+      }
       result.push({
         id: `context-${index}`,
         text: node.text,
         type: 'bubble',
         position: { x, y },
-        style: {
-          size: uniformContextDiameter,
-          fontSize: CONTEXT_FONT_SIZE,
-          noWrap: true,
-        },
+        style: contextStyle,
       })
     })
   }

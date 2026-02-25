@@ -232,11 +232,9 @@ onMounted(() => {
       </div>
     </ElDialog>
 
-    <!-- Spacer to push content down -->
-    <div class="flex-1" />
-
-    <!-- Input and grid area -->
-    <div class="p-5 w-[70%] mx-auto">
+    <!-- Scrollable content area -->
+    <div class="flex-1 min-h-0 overflow-y-auto">
+      <div class="p-5 w-[70%] mx-auto pb-8">
       <!-- Welcome header - above input -->
       <div class="flex flex-col items-center justify-center mb-8">
         <ElAvatar
@@ -264,6 +262,7 @@ onMounted(() => {
 
       <!-- Discovery gallery -->
       <DiscoveryGallery />
+      </div>
     </div>
   </div>
 </template>

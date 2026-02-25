@@ -86,6 +86,9 @@ const CIRCLE_MAP_OUTER_MARGIN = 18
 /** Minimum childrenRadius (px). */
 const CIRCLE_MAP_MIN_CHILDREN_RADIUS = 130
 
+/** Snap grid size (px) - must match Vue Flow snap grid so boundary position lands on grid. */
+const CIRCLE_MAP_SNAP_GRID = 10
+
 /**
  * Calculate circle map layout: fixed font, circles from text, ring no-overlap.
  * Center = canvas center; context nodes evenly spaced on a ring (360/n deg).
@@ -137,7 +140,11 @@ export function calculateCircleMapLayout(
   )
 
   // (d) Outer circle: just enclose context ring; margin avoids overlap with boundary stroke
-  const outerCircleR = childrenRadius + uniformContextR + CIRCLE_MAP_OUTER_MARGIN
+  // Round outerCircleR to snap grid so boundary position (centerX-R, centerY-R) lands on grid.
+  // This prevents Vue Flow snap-to-grid from shifting the outer circle off-center.
+  const rawOuterR = childrenRadius + uniformContextR + CIRCLE_MAP_OUTER_MARGIN
+  const outerCircleR =
+    Math.round(rawOuterR / CIRCLE_MAP_SNAP_GRID) * CIRCLE_MAP_SNAP_GRID
 
   return { centerX, centerY, topicR, uniformContextR, childrenRadius, outerCircleR }
 }

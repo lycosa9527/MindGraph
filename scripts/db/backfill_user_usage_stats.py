@@ -5,13 +5,18 @@ One-time script to compute and populate user_usage_stats for all teachers.
 Run after deploying the teacher usage feature.
 
 Usage (from project root):
-    python -m scripts.backfill_user_usage_stats
+    python scripts/db/backfill_user_usage_stats.py
 
 Uses DATABASE_URL from environment.
 Creates user_activity_log and user_usage_stats tables if they do not exist.
 """
-
+import sys
+from pathlib import Path
 from typing import cast
+
+# Add project root to path before importing project modules
+_project_root = Path(__file__).resolve().parent.parent.parent
+sys.path.insert(0, str(_project_root))
 
 from config.database import SessionLocal, engine
 from models.domain.auth import Base, User

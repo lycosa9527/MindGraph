@@ -27,14 +27,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-try:
-    from rich.progress import Progress, SpinnerColumn, BarColumn, TextColumn, TimeElapsedColumn
-    from rich.console import Console
-    RICH_AVAILABLE = True
-except ImportError:
-    RICH_AVAILABLE = False
-
-# Add project root to path
+# Add project root to path (required before config import)
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
@@ -52,9 +45,21 @@ try:
 except ImportError:
     psycopg2 = None
 
+try:
+    from rich.progress import Progress, SpinnerColumn, BarColumn, TextColumn, TimeElapsedColumn
+    from rich.console import Console
+    RICH_AVAILABLE = True
+except ImportError:
+    RICH_AVAILABLE = False
+
 from sqlalchemy import inspect, text
 
 from config.database import DATABASE_URL, engine
+
+try:
+    from utils.migration.sqlite.migration_tables import reset_postgresql_sequences
+except ImportError:
+    reset_postgresql_sequences = None
 
 logging.basicConfig(
     level=logging.INFO,
@@ -183,13 +188,13 @@ def find_pg_binary(name: str) -> Optional[str]:
     return None
 
 
-def get_table_row_counts(engine) -> Dict[str, int]:
+def get_table_row_counts(db_engine) -> Dict[str, int]:
     """Query row counts for each table. Returns {table: count}."""
     counts: Dict[str, int] = {}
-    inspector = inspect(engine)
+    inspector = inspect(db_engine)
     existing_tables = set(inspector.get_table_names())
 
-    with engine.connect() as conn:
+    with db_engine.connect() as conn:
         for table_name in existing_tables:
             try:
                 result = conn.execute(text(f'SELECT COUNT(*) FROM "{table_name}"'))
@@ -199,9 +204,9 @@ def get_table_row_counts(engine) -> Dict[str, int]:
     return counts
 
 
-def get_db_stats(engine) -> Tuple[int, int, int, Dict[str, int]]:
+def get_db_stats(db_engine) -> Tuple[int, int, int, Dict[str, int]]:
     """Get tables, columns, total records. Returns (tables, columns, records, counts)."""
-    inspector = inspect(engine)
+    inspector = inspect(db_engine)
     existing_tables = set(inspector.get_table_names())
     total_columns = 0
     for table_name in existing_tables:
@@ -211,7 +216,7 @@ def get_db_stats(engine) -> Tuple[int, int, int, Dict[str, int]]:
         except Exception:
             pass
 
-    counts = get_table_row_counts(engine)
+    counts = get_table_row_counts(db_engine)
     total_records = sum(counts.values())
     return len(existing_tables), total_columns, total_records, counts
 
@@ -502,7 +507,10 @@ def import_command(live: bool) -> int:
 
     if not live:
         logger.info("[DRY RUN] Would restore from %s", dump_path.name)
-        logger.info("[DRY RUN] Dump contains: %d tables, %d columns, %d records", manifest_tables, manifest_columns, manifest_records)
+        logger.info(
+            "[DRY RUN] Dump contains: %d tables, %d columns, %d records",
+            manifest_tables, manifest_columns, manifest_records
+        )
         logger.info("[DRY RUN] Would REPLACE all existing data")
         if ensure_postgresql_running(DATABASE_URL):
             try:
@@ -590,11 +598,11 @@ def import_command(live: bool) -> int:
         prog.update(2, "pg_restore done")
 
         try:
-            from utils.migration.sqlite.migration_tables import reset_postgresql_sequences
-            reset_postgresql_sequences(engine)
-            logger.info("PostgreSQL sequences reset")
-        except ImportError as e:
-            logger.warning("Could not reset sequences (optional): %s", e)
+            if reset_postgresql_sequences:
+                reset_postgresql_sequences(engine)
+                logger.info("PostgreSQL sequences reset")
+            else:
+                logger.warning("Could not reset sequences (optional module not available)")
         except Exception as e:
             logger.warning("Sequence reset had issues: %s", e)
         prog.update(3, "Sequences reset")

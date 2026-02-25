@@ -48,6 +48,8 @@ const nodeStyle = computed(() => ({
   fontWeight: isWholeNode.value
     ? 'bold'
     : props.data.style?.fontWeight || defaultStyle.value.fontWeight || 'normal',
+  fontStyle: props.data.style?.fontStyle || 'normal',
+  textDecoration: props.data.style?.textDecoration || 'none',
   borderWidth: `${props.data.style?.borderWidth || defaultStyle.value.borderWidth || (isWholeNode.value ? 3 : isSubpart.value ? 1 : 2)}px`,
   borderRadius: `${props.data.style?.borderRadius || 6}px`,
 }))

@@ -12,9 +12,9 @@ Tables cleared (in order due to foreign key constraints):
 - library_documents
 
 Usage:
-    python scripts/clear_library_tables.py
-    python scripts/clear_library_tables.py --yes  # Skip confirmation
-    python scripts/clear_library_tables.py --dry-run  # Preview only
+    python scripts/db/clear_library_tables.py
+    python scripts/db/clear_library_tables.py --yes  # Skip confirmation
+    python scripts/db/clear_library_tables.py --dry-run  # Preview only
 """
 import argparse
 import importlib
@@ -26,7 +26,7 @@ from sqlalchemy import text, inspect
 from sqlalchemy.orm import Session
 
 # Add project root to path before importing project modules
-_project_root = Path(__file__).parent.parent
+_project_root = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(_project_root))
 
 # Dynamic imports to avoid Ruff E402 warning
@@ -125,38 +125,33 @@ def clear_library_tables(db: Session, dry_run: bool = False) -> tuple[int, dict]
 
     # Delete in order (respecting foreign key constraints) using raw SQL
     # This avoids issues with model columns that might not exist yet
-    deleted_replies = 0
-    deleted_likes = 0
-    deleted_danmaku = 0
-    deleted_bookmarks = 0
-    deleted_documents = 0
-
+    # Use pre-computed counts for deleted totals (full table delete = count before)
     if table_exists(db, 'library_danmaku_replies'):
-        deleted_replies = db.execute(text("DELETE FROM library_danmaku_replies")).rowcount
+        db.execute(text("DELETE FROM library_danmaku_replies"))
         db.commit()
-        logger.info("Deleted %s danmaku replies", deleted_replies)
+        logger.info("Deleted %s danmaku replies", counts['danmaku_replies'])
 
     if table_exists(db, 'library_danmaku_likes'):
-        deleted_likes = db.execute(text("DELETE FROM library_danmaku_likes")).rowcount
+        db.execute(text("DELETE FROM library_danmaku_likes"))
         db.commit()
-        logger.info("Deleted %s danmaku likes", deleted_likes)
+        logger.info("Deleted %s danmaku likes", counts['danmaku_likes'])
 
     if table_exists(db, 'library_danmaku'):
-        deleted_danmaku = db.execute(text("DELETE FROM library_danmaku")).rowcount
+        db.execute(text("DELETE FROM library_danmaku"))
         db.commit()
-        logger.info("Deleted %s danmaku", deleted_danmaku)
+        logger.info("Deleted %s danmaku", counts['danmaku'])
 
     if table_exists(db, 'library_bookmarks'):
-        deleted_bookmarks = db.execute(text("DELETE FROM library_bookmarks")).rowcount
+        db.execute(text("DELETE FROM library_bookmarks"))
         db.commit()
-        logger.info("Deleted %s bookmarks", deleted_bookmarks)
+        logger.info("Deleted %s bookmarks", counts['bookmarks'])
 
     if table_exists(db, 'library_documents'):
-        deleted_documents = db.execute(text("DELETE FROM library_documents")).rowcount
+        db.execute(text("DELETE FROM library_documents"))
         db.commit()
-        logger.info("Deleted %s documents", deleted_documents)
+        logger.info("Deleted %s documents", counts['documents'])
 
-    total_deleted = deleted_replies + deleted_likes + deleted_danmaku + deleted_bookmarks + deleted_documents
+    total_deleted = sum(counts.values())
 
     return total_deleted, counts
 

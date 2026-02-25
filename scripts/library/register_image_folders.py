@@ -7,8 +7,8 @@ Image folders should be placed directly under storage/library/ and contain page 
 By default, runs in preview mode (dry-run). Use --live flag to actually register books.
 
 Usage:
-    python scripts/register_image_folders.py              # Preview only (default)
-    python scripts/register_image_folders.py --live       # Actually register books
+    python scripts/library/register_image_folders.py              # Preview only (default)
+    python scripts/library/register_image_folders.py --live       # Actually register books
 """
 import argparse
 import importlib.util
@@ -20,8 +20,8 @@ from pathlib import Path
 from sqlalchemy.orm import Session
 
 # Add project root to path before importing project modules
-_project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path.insert(0, _project_root)
+_project_root = Path(__file__).resolve().parent.parent.parent
+sys.path.insert(0, str(_project_root))
 
 # Dynamic imports to avoid Ruff E402 warning
 _config_database = importlib.import_module('config.database')
@@ -214,12 +214,12 @@ def main():
         logger.info("=" * 80)
         logger.info("")
 
-        # Get library directory
+        # Get library directory (resolve relative to project root)
         if args.library_dir:
             library_dir = Path(args.library_dir).resolve()
         else:
-            library_dir_env = os.getenv("LIBRARY_STORAGE_DIR", "./storage/library")
-            library_dir = Path(library_dir_env).resolve()
+            library_dir_env = os.getenv("LIBRARY_STORAGE_DIR", "storage/library")
+            library_dir = (_project_root / library_dir_env).resolve()
 
         logger.info("Library directory: %s", library_dir)
         logger.info("")

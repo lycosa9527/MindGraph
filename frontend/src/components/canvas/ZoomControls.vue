@@ -43,7 +43,7 @@ const zoomOptions = computed(() => {
   const minPct = Math.round(ZOOM.MIN * 100)
   const maxPct = Math.round(ZOOM.MAX * 100)
   const hasExact = ZOOM_OPTIONS.some((opt) => opt.value === current)
-  const options = [...ZOOM_OPTIONS]
+  const options: Array<{ label: string; value: number }> = [...ZOOM_OPTIONS]
   if (!hasExact && current >= minPct && current <= maxPct) {
     options.push({ label: `${current}%`, value: current })
     options.sort((a, b) => a.value - b.value)

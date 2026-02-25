@@ -40,6 +40,9 @@ export const useUIStore = defineStore('ui', () => {
 
   // New: App mode state (MindMate chat vs MindGraph diagram)
   const currentMode = ref<AppMode>('mindmate')
+
+  /** Wireframe mode: black & white / line sketch view for diagram canvas */
+  const wireframeMode = ref(false)
   const selectedChartType = ref<string>('选择图示')
   const templateSlots = ref<Record<string, string>>({})
   const freeInputValue = ref<string>('')
@@ -109,6 +112,10 @@ export const useUIStore = defineStore('ui', () => {
 
   function toggleSidebar(): void {
     sidebarCollapsed.value = !sidebarCollapsed.value
+  }
+
+  function toggleWireframe(): void {
+    wireframeMode.value = !wireframeMode.value
   }
 
   // Mode management
@@ -199,6 +206,7 @@ export const useUIStore = defineStore('ui', () => {
     language,
     isMobile,
     sidebarCollapsed,
+    wireframeMode,
     currentMode,
     selectedChartType,
     templateSlots,
@@ -217,6 +225,7 @@ export const useUIStore = defineStore('ui', () => {
     checkMobile,
     setSidebarCollapsed,
     toggleSidebar,
+    toggleWireframe,
     setCurrentMode,
     toggleMode,
     setSelectedChartType,

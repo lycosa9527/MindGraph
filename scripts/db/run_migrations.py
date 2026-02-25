@@ -17,6 +17,13 @@ from pathlib import Path
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
+from config.database import Base, engine
+from utils.migration.postgresql.schema_migration import (
+    check_database_status,
+    run_migrations,
+    verify_migration_results,
+)
+
 # Set up logging
 logging.basicConfig(
     level=logging.INFO,
@@ -40,7 +47,7 @@ def ensure_models_registered(base):
         bool: True if models are registered, False otherwise
     """
     logger.info("Ensuring all models are registered with Base.metadata...")
-    
+
     try:
         registered_tables = set(base.metadata.tables.keys())
         logger.info(
@@ -61,11 +68,9 @@ def check_status(engine, base):
     Returns:
         tuple: (expected_tables, existing_tables, missing_tables)
     """
-    from utils.migration.postgresql.schema_migration import check_database_status
-
-    logger.info("=" * 60)
+    logger.info("%s", "=" * 60)
     logger.info("STEP 1: CHECK - Current Database Status")
-    logger.info("=" * 60)
+    logger.info("%s", "=" * 60)
 
     # Use module function to check status
     status = check_database_status(engine, base)
@@ -111,11 +116,9 @@ def verify_results(engine, base, expected_tables):
     Returns:
         bool: True if verification passed, False otherwise
     """
-    from utils.migration.postgresql.schema_migration import verify_migration_results
-
-    logger.info("\n" + "=" * 60)
+    logger.info("\n%s", "=" * 60)
     logger.info("STEP 3: VERIFY - Migration Results")
-    logger.info("=" * 60)
+    logger.info("%s", "=" * 60)
 
     verification_passed, verification_details = verify_migration_results(
         engine, base, expected_tables
@@ -166,22 +169,20 @@ def verify_results(engine, base, expected_tables):
     else:
         logger.info("✓ All tables have all expected indexes")
 
-    logger.info("\n" + "=" * 60)
+    logger.info("\n%s", "=" * 60)
     logger.info("✓ VERIFICATION PASSED - All migrations applied successfully")
-    logger.info("=" * 60)
+    logger.info("%s", "=" * 60)
     return verification_passed
 
 
 def main():
     """Run database migrations."""
     try:
-        logger.info("=" * 60)
+        logger.info("%s", "=" * 60)
         logger.info("Database Migration Script")
-        logger.info("=" * 60)
+        logger.info("%s", "=" * 60)
 
-        # Import database configuration
         logger.info("Importing database configuration...")
-        from config.database import engine, Base
 
         # Ensure all models are registered before proceeding
         if not ensure_models_registered(Base):
@@ -189,14 +190,13 @@ def main():
             return 1
 
         # STEP 1: CHECK - Current status
-        expected_tables, _, _ = check_status(engine, Base)
+        _, _, _ = check_status(engine, Base)
 
         # STEP 2: ACT - Run migrations
-        logger.info("\n" + "=" * 60)
+        logger.info("\n%s", "=" * 60)
         logger.info("STEP 2: ACT - Running Migrations")
-        logger.info("=" * 60)
+        logger.info("%s", "=" * 60)
 
-        from utils.migration.postgresql.schema_migration import run_migrations
         result = run_migrations()
 
         if not result:
@@ -215,18 +215,18 @@ def main():
         # STEP 3: VERIFY - Confirm results
         # Refresh expected_tables from Base.metadata (shouldn't change, but be safe)
         expected_tables_after = set(Base.metadata.tables.keys())
-        
+
         verification_passed = verify_results(engine, Base, expected_tables_after)
 
         if verification_passed and result:
-            logger.info("\n" + "=" * 60)
+            logger.info("\n%s", "=" * 60)
             logger.info("✓ ALL CHECKS PASSED - Migration completed successfully")
-            logger.info("=" * 60)
+            logger.info("%s", "=" * 60)
             return 0
         else:
-            logger.error("\n" + "=" * 60)
+            logger.error("\n%s", "=" * 60)
             logger.error("✗ MIGRATION FAILED OR VERIFICATION FAILED")
-            logger.error("=" * 60)
+            logger.error("%s", "=" * 60)
             if not result:
                 logger.error("Migration function returned False")
             if not verification_passed:

@@ -23,6 +23,7 @@ import DiagramCanvas from '@/components/diagram/DiagramCanvas.vue'
 import {
   eventBus,
   getDefaultDiagramName,
+  useEditorShortcuts,
   useLanguage,
   useNotifications,
   useWorkshop,
@@ -347,11 +348,11 @@ function handleZoomChange(level: number) {
 }
 
 function handleZoomIn() {
-  eventBus.emit('view:zoom_in_requested')
+  eventBus.emit('view:zoom_in_requested', {})
 }
 
 function handleZoomOut() {
-  eventBus.emit('view:zoom_out_requested')
+  eventBus.emit('view:zoom_out_requested', {})
 }
 
 function handleFitToScreen() {
@@ -383,6 +384,61 @@ async function handleStartPresentation() {
 function emitFitToCanvas() {
   eventBus.emit('view:fit_to_canvas_requested', { animate: true })
 }
+
+function isTypingInInput(): boolean {
+  const active = document.activeElement as HTMLElement
+  return (
+    active?.tagName === 'INPUT' ||
+    active?.tagName === 'TEXTAREA' ||
+    !!active?.isContentEditable
+  )
+}
+
+function handleDeleteKey() {
+  if (isTypingInInput()) return
+  eventBus.emit('diagram:delete_selected_requested')
+}
+
+function handleAddNodeKey() {
+  if (isTypingInInput()) return
+  eventBus.emit('diagram:add_node_requested')
+}
+
+function handleClearNodeTextKey() {
+  if (isTypingInInput()) return
+  const selected = [...diagramStore.selectedNodes]
+  if (selected.length === 0) {
+    notify.warning(isZh.value ? '请先选择要清空的节点' : 'Please select a node to clear')
+    return
+  }
+  const protectedIds = ['topic', 'event', 'dimension-label', 'outer-boundary']
+  let clearedCount = 0
+  for (const nodeId of selected) {
+    if (protectedIds.includes(nodeId)) continue
+    const node = diagramStore.data?.nodes?.find((n) => n.id === nodeId)
+    if (node && node.type !== 'topic' && node.type !== 'center' && node.type !== 'boundary') {
+      if (diagramStore.updateNode(nodeId, { text: '' })) {
+        clearedCount++
+      }
+    }
+  }
+  if (clearedCount > 0) {
+    diagramStore.pushHistory(isZh.value ? '清空节点文字' : 'Clear node text')
+    notify.success(
+      isZh.value ? `已清空 ${clearedCount} 个节点` : `Cleared ${clearedCount} node(s)`
+    )
+  } else {
+    notify.warning(
+      isZh.value ? '无法清空主题或中心节点' : 'Cannot clear topic or center nodes'
+    )
+  }
+}
+
+useEditorShortcuts({
+  delete: handleDeleteKey,
+  addNode: handleAddNodeKey,
+  clearNodeText: handleClearNodeTextKey,
+})
 
 function handleFullscreenChange() {
   if (document.fullscreenElement) {

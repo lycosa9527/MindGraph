@@ -6,15 +6,15 @@ Verifies which users have admin access based on:
 1. role='admin' in database
 2. phone in ADMIN_PHONES env variable
 
-Run from project root: python scripts/check_admin_status.py
+Run from project root: python scripts/db/check_admin_status.py
 """
 import os
 import sys
 from pathlib import Path
 
 # Load .env before importing config
-project_root = Path(__file__).resolve().parent.parent
-env_path = project_root / ".env"
+_project_root = Path(__file__).resolve().parent.parent.parent
+env_path = _project_root / ".env"
 if env_path.exists():
     with open(env_path, encoding="utf-8") as f:
         for line in f:

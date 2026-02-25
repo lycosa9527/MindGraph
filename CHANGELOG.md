@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.26.0] - 2026-02-26
+
+### Added
+- **Diagram Export**: New `useDiagramExport.ts` composable for exporting diagrams as PNG, SVG, PDF (via html-to-image + jspdf), and JSON. Integrated into CanvasTopBar.
+- **DiagramPreviewSvg**: New `DiagramPreviewSvg.vue` component with SVG previews for each diagram type in gallery and diagram type grid.
+- **Color Palette Config**: New `colorPalette.ts` with WCAG AA contrast-compliant style presets (Simple, Creative, Business, Vibrant) from ColorHunt.
+- **Style Presets Apply**: CanvasToolbar style presets now apply to all nodes via `applyStylePreset()`.
+
+### Changed
+- **CanvasToolbar**: Enhanced text formatting (B/I/U/S), font family/size dropdowns, text color palette, background/border color pickers. Style presets now apply to diagram nodes. EventBus integration for delete/add node.
+- **Diagram Store**: Added `applyStylePreset()` for applying style presets to all nodes.
+- **DiagramTypeGrid & DiscoveryGallery**: Use DiagramPreviewSvg for diagram type previews.
+- **ImagePreviewModal**: Enhanced image preview modal.
+- **Scripts Reorganization**: Moved DB scripts from `scripts/` to `scripts/db/` (check_admin_status, backfill_user_usage_stats, check_diagram_counts, clear_library_tables). Moved setup scripts to `scripts/setup/` (find_esp_idf.ps1, mindgraph.service.template). Moved library scripts to `scripts/library/` (register_image_folders, rename_library_pages).
+- **Admin Scripts Paths**: Updated CHANGELOG v5.23.0 to reflect correct script paths (`scripts/db/`).
+
+### Removed
+- **Scripts Root**: Removed scripts from root `scripts/` in favor of organized subdirs (`scripts/db/`, `scripts/setup/`, `scripts/library/`).
+
 ## [5.25.0] - 2026-02-25
 
 ### Added
@@ -40,7 +59,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Teacher Usage Config Model**: New `TeacherUsageConfig` model for storing classification thresholds (continuous, rejection, stopped, intermittent). Scholars can tweak via UI.
 - **Teacher Usage Data Models**: New `UserActivityLog` and `UserUsageStats` models; `services/teacher_usage_stats.py` for computing and upserting stats.
 - **Teacher Usage Feature Flag**: `FEATURE_TEACHER_USAGE` in `config/features_config.py` (disabled by default). Frontend feature flags in `useFeatureFlags.ts` and `featureFlags.ts`.
-- **Admin Scripts**: `scripts/check_admin_status.py` for verifying admin access; `scripts/backfill_user_usage_stats.py` for one-time backfill of `user_usage_stats`; `scripts/db/dump_import_postgres.py` for PostgreSQL dump/import.
+- **Admin Scripts**: `scripts/db/check_admin_status.py` for verifying admin access; `scripts/db/backfill_user_usage_stats.py` for one-time backfill of `user_usage_stats`; `scripts/db/dump_import_postgres.py` for PostgreSQL dump/import.
 
 ### Changed
 - **App Sidebar & Main Layout**: Added Teacher Usage nav item (admin-only, behind feature flag). Updated `AppSidebar.vue`, `MainLayout.vue`, router.

@@ -99,6 +99,8 @@ const nodeStyle = computed(() => ({
     props.data.style?.fontWeight ||
     defaultStyle.value.fontWeight ||
     (isTopicNode.value ? 'bold' : 'normal'),
+  fontStyle: props.data.style?.fontStyle || 'normal',
+  textDecoration: props.data.style?.textDecoration || 'none',
   borderWidth: `${props.data.style?.borderWidth || defaultStyle.value.borderWidth || (isTopicNode.value ? 3 : 2)}px`,
 }))
 

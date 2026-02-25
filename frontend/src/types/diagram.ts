@@ -35,7 +35,10 @@ export interface NodeStyle {
   borderColor?: string
   textColor?: string
   fontSize?: number
+  fontFamily?: string
   fontWeight?: 'normal' | 'bold'
+  fontStyle?: 'normal' | 'italic'
+  textDecoration?: 'none' | 'underline' | 'line-through' | 'underline line-through'
   borderWidth?: number
   borderRadius?: number
   // Dimension overrides (for boundary nodes and circle nodes)

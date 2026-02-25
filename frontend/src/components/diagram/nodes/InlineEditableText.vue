@@ -586,7 +586,7 @@ onUnmounted(() => {
       :style="{ maxWidth: maxWidth, textAlign: textAlign }"
       :title="truncate ? text : undefined"
     >
-      {{ text || placeholder }}
+      {{ text }}
     </span>
   </div>
 </template>

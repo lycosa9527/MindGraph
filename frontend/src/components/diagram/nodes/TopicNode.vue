@@ -145,6 +145,8 @@ const nodeStyle = computed(() => {
     color: props.data.style?.textColor || defaultStyle.value.textColor || '#ffffff',
     fontSize: `${props.data.style?.fontSize || defaultStyle.value.fontSize || 18}px`,
     fontWeight: props.data.style?.fontWeight || defaultStyle.value.fontWeight || 'bold',
+    fontStyle: props.data.style?.fontStyle || 'normal',
+    textDecoration: props.data.style?.textDecoration || 'none',
     borderWidth: `${props.data.style?.borderWidth || defaultStyle.value.borderWidth || 3}px`,
     // Pill shape for tree map (9999px creates fully rounded ends)
     // Rounded rectangle for multi-flow map, circle for others

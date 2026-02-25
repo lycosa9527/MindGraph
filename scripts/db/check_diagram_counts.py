@@ -2,15 +2,17 @@
 """
 Diagnostic script to verify auto-complete counts for teacher usage.
 
-Run: python scripts/check_diagram_counts.py
+Run: python scripts/db/check_diagram_counts.py
 
 Shows 智能补全次数 (auto-complete count) per teacher for Teacher Usage page.
 """
-import os
 import sys
+from pathlib import Path
+from typing import Callable, cast
 
 # Add project root to path
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+_project_root = Path(__file__).resolve().parent.parent.parent
+sys.path.insert(0, str(_project_root))
 
 from sqlalchemy import func
 
@@ -18,8 +20,7 @@ from config.database import SessionLocal
 from models.domain.auth import User
 from models.domain.token_usage import TokenUsage
 
-# Use getattr to avoid Pylint E1102 (func.count not-callable) - SQLAlchemy func is dynamic
-_count = getattr(func, "count")
+_count: Callable = cast(Callable, getattr(func, "count"))
 
 
 def main() -> None:

@@ -8,16 +8,17 @@
  * - fitWithPanel(): Fits diagram with space reserved for right-side panels
  * - Automatically re-fits when panels open/close
  */
-import { computed, markRaw, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, markRaw, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import { Background } from '@vue-flow/background'
 import { VueFlow, useVueFlow } from '@vue-flow/core'
 import { MiniMap } from '@vue-flow/minimap'
 
 import { eventBus } from '@/composables/useEventBus'
+import { getDefaultDiagramName, useDiagramExport, useLanguage } from '@/composables'
 import { useTheme } from '@/composables/useTheme'
 import { ANIMATION, FIT_PADDING, GRID, PANEL, ZOOM } from '@/config/uiConfig'
-import { useDiagramStore, usePanelsStore } from '@/stores'
+import { useDiagramStore, usePanelsStore, useUIStore } from '@/stores'
 import type { MindGraphNode } from '@/types'
 
 import BraceOverlay from './BraceOverlay.vue'
@@ -70,10 +71,39 @@ const emit = defineEmits<{
 // Stores
 const diagramStore = useDiagramStore()
 const panelsStore = usePanelsStore()
+const uiStore = useUIStore()
 
 // Theme for background color
 const { backgroundColor } = useTheme({
   diagramType: computed(() => diagramStore.type),
+})
+
+// Language for export messages
+const { isZh } = useLanguage()
+
+// Export composable
+function getExportTitle(): string {
+  const topicText = diagramStore.getTopicNodeText()
+  if (topicText) return topicText
+  return diagramStore.effectiveTitle || getDefaultDiagramName(diagramStore.type, isZh.value)
+}
+
+function getExportSpec(): Record<string, unknown> | null {
+  if (!diagramStore.data) return null
+  return {
+    type: diagramStore.type,
+    nodes: diagramStore.data.nodes,
+    connections: diagramStore.data.connections,
+    _customPositions: diagramStore.data._customPositions,
+    _node_styles: diagramStore.data._node_styles,
+  }
+}
+
+const { exportByFormat } = useDiagramExport({
+  getContainer: () => vueFlowWrapper.value,
+  getDiagramSpec: getExportSpec,
+  getTitle: getExportTitle,
+  isZh: () => isZh.value,
 })
 
 // Vue Flow instance
@@ -541,6 +571,16 @@ onMounted(() => {
   )
 
   unsubscribers.push(
+    eventBus.on('toolbar:export_requested', async ({ format }) => {
+      const savedViewport = getViewport()
+      fitForExport()
+      await nextTick()
+      await exportByFormat(format)
+      setViewport(savedViewport, { duration: ANIMATION.DURATION_FAST })
+    })
+  )
+
+  unsubscribers.push(
     eventBus.on('view:zoom_in_requested', () => {
       zoomIn()
     })
@@ -637,6 +677,7 @@ const gridConfig = {
     <div
       ref="vueFlowWrapper"
       class="vue-flow-wrapper w-full h-full"
+      :class="{ 'wireframe-mode': uiStore.wireframeMode }"
     >
       <VueFlow
       :nodes="nodes"
@@ -654,7 +695,10 @@ const gridConfig = {
       :pan-on-scroll="false"
       :zoom-on-scroll="true"
       :pan-on-drag="props.handToolActive ? [0, 1, 2] : [1, 2]"
-      class="bg-gray-50 dark:bg-gray-900"
+      :class="[
+        'bg-gray-50 dark:bg-gray-900',
+        diagramStore.type === 'circle_map' ? 'circle-map-canvas' : '',
+      ]"
       :style="{ backgroundColor: backgroundColor }"
       @pane-click="handlePaneClick"
       @nodes-initialized="handleNodesInitialized"
@@ -707,9 +751,29 @@ const gridConfig = {
   position: relative;
 }
 
+.vue-flow-wrapper {
+  transition: filter 0.2s ease;
+}
+
+.vue-flow-wrapper.wireframe-mode {
+  filter: grayscale(1);
+}
+
 /* Default node selection styles (box-shadow for rectangular nodes) */
 .vue-flow__node.selected {
   box-shadow: 0 0 0 2px #3b82f6;
+}
+
+/* Circle map: hide Vue Flow's selection bounding box, use per-node pulse animation instead */
+.circle-map-canvas .vue-flow__nodesselection,
+.circle-map-canvas .vue-flow__nodesselection-rect {
+  display: none !important;
+}
+
+/* Circle nodes: circular wrapper so any outline follows circle shape; pulse animation when selected */
+.vue-flow__node-circle {
+  border-radius: 50% !important;
+  overflow: visible;
 }
 
 /* ============================================

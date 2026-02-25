@@ -3,7 +3,7 @@
  * CanvasToolbar - Floating toolbar for canvas editing
  * Migrated from prototype MindGraphCanvasPage toolbar
  */
-import { computed, nextTick, ref } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import { ElButton, ElDropdown, ElDropdownItem, ElDropdownMenu, ElTooltip } from 'element-plus'
 import { useVueFlow } from '@vue-flow/core'
@@ -27,15 +27,22 @@ import {
   X,
 } from 'lucide-vue-next'
 
-import { useNotifications } from '@/composables'
+import { eventBus, useNotifications } from '@/composables'
 import { useAutoComplete, useLanguage } from '@/composables'
+import {
+  PRESET_BUSINESS,
+  PRESET_CREATIVE,
+  PRESET_SIMPLE,
+  PRESET_VIBRANT,
+  type StylePresetColors,
+} from '@/config/colorPalette'
 import {
   BRANCH_NODE_HEIGHT,
   DEFAULT_CENTER_Y,
   DEFAULT_NODE_WIDTH,
   DEFAULT_PADDING,
 } from '@/composables/diagrams/layoutConfig'
-import { useDiagramStore } from '@/stores'
+import { useDiagramStore, useUIStore } from '@/stores'
 import type { DiagramNode } from '@/types'
 
 const notify = useNotifications()
@@ -56,6 +63,7 @@ const emit = defineEmits<{
 }>()
 
 const diagramStore = useDiagramStore()
+const uiStore = useUIStore()
 const { updateNode: updateVueFlowNode } = useVueFlow()
 
 // Helper function to get timestamp for logging
@@ -77,9 +85,36 @@ const _showBorderDropdown = ref(false)
 const _showMoreAppsDropdown = ref(false)
 
 // Text style state
-const fontFamily = ref('Arial')
+const fontFamily = ref('Inter')
 const fontSize = ref(16)
 const textColor = ref('#000000')
+const fontWeight = ref<'normal' | 'bold'>('normal')
+const fontStyle = ref<'normal' | 'italic'>('normal')
+const textDecoration = ref<'none' | 'underline' | 'line-through' | 'underline line-through'>('none')
+
+// Text color palette: grays first, then usual colors (red, blue, green, etc.)
+const textColorPalette = [
+  '#000000',
+  '#374151',
+  '#6b7280',
+  '#9ca3af',
+  '#4b5563',
+  '#1f2937',
+  '#dc2626',
+  '#ea580c',
+  '#ca8a04',
+  '#16a34a',
+  '#059669',
+  '#0d9488',
+  '#0284c7',
+  '#2563eb',
+  '#4f46e5',
+  '#7c3aed',
+  '#9333ea',
+  '#c026d3',
+  '#db2777',
+  '#e11d48',
+]
 
 // Background state
 const backgroundColors = ['#FFFFFF', '#F9FAFB', '#F3F4F6', '#E5E7EB', '#D1D5DB']
@@ -87,15 +122,53 @@ const backgroundOpacity = ref(100)
 
 // Border state
 const borderColor = ref('#000000')
+const borderColorPalette = [
+  '#000000',
+  '#374151',
+  '#6b7280',
+  '#9ca3af',
+  '#dc2626',
+  '#ea580c',
+  '#16a34a',
+  '#0284c7',
+  '#2563eb',
+  '#7c3aed',
+  '#9333ea',
+  '#db2777',
+]
 const borderWidth = ref(1)
 const borderStyle = ref('solid')
 
-// Style presets
-const stylePresets = [
-  { name: '简约风格', bgClass: 'bg-blue-50', borderClass: 'border-blue-200' },
-  { name: '创意风格', bgClass: 'bg-purple-50', borderClass: 'border-purple-200' },
-  { name: '商务风格', bgClass: 'bg-green-50', borderClass: 'border-green-200' },
-  { name: '活力风格', bgClass: 'bg-yellow-50', borderClass: 'border-yellow-200' },
+// Style presets: WCAG AA contrast-compliant palettes (bg + text + border)
+const stylePresets: Array<{
+  name: string
+  bgClass: string
+  borderClass: string
+} & StylePresetColors> = [
+  {
+    name: '简约风格',
+    bgClass: 'bg-blue-50',
+    borderClass: 'border-blue-600',
+    ...PRESET_SIMPLE,
+  },
+  {
+    name: '创意风格',
+    bgClass: 'bg-purple-50',
+    borderClass: 'border-purple-600',
+    ...PRESET_CREATIVE,
+  },
+  {
+    name: '商务风格',
+    bgClass: 'bg-green-50',
+    borderClass: 'border-green-600',
+    ...PRESET_BUSINESS,
+  },
+  {
+    name: '活力风格',
+    bgClass: 'bg-yellow-50',
+    borderClass: 'border-yellow-600',
+    ...PRESET_VIBRANT,
+  },
 ]
 
 // More apps items
@@ -123,6 +196,153 @@ const moreApps = [
     iconColor: 'text-green-600',
   },
 ]
+
+function handleApplyStylePreset(preset: StylePresetColors) {
+  if (!diagramStore.data?.nodes?.length) {
+    notify.warning(isZh.value ? '请先创建图示' : 'Please create a diagram first')
+    return
+  }
+  diagramStore.applyStylePreset(preset)
+  notify.success(isZh.value ? '已应用样式' : 'Style applied')
+}
+
+function applyTextStyleToSelected(updates: {
+  fontFamily?: string
+  fontSize?: number
+  textColor?: string
+  fontWeight?: 'normal' | 'bold'
+  fontStyle?: 'normal' | 'italic'
+  textDecoration?: 'none' | 'underline' | 'line-through' | 'underline line-through'
+}) {
+  const ids = diagramStore.selectedNodes
+  if (!ids.length) {
+    notify.warning(isZh.value ? '请先选择节点' : 'Please select node(s) first')
+    return
+  }
+  diagramStore.pushHistory(isZh.value ? '更新文本样式' : 'Update text style')
+  ids.forEach((nodeId) => {
+    const node = diagramStore.data?.nodes?.find((n) => n.id === nodeId)
+    if (node) {
+      const mergedStyle = { ...(node.style || {}), ...updates }
+      diagramStore.updateNode(nodeId, { style: mergedStyle })
+    }
+  })
+  notify.success(isZh.value ? '已应用' : 'Applied')
+}
+
+function applyBackgroundToSelected(color: string) {
+  const ids = diagramStore.selectedNodes
+  if (!ids.length) {
+    notify.warning(isZh.value ? '请先选择节点' : 'Please select node(s) first')
+    return
+  }
+  diagramStore.pushHistory(isZh.value ? '更新背景' : 'Update background')
+  ids.forEach((nodeId) => {
+    const node = diagramStore.data?.nodes?.find((n) => n.id === nodeId)
+    if (node) {
+      const mergedStyle = { ...(node.style || {}), backgroundColor: color }
+      diagramStore.updateNode(nodeId, { style: mergedStyle })
+    }
+  })
+  notify.success(isZh.value ? '已应用' : 'Applied')
+}
+
+function applyBorderToSelected(color: string) {
+  const ids = diagramStore.selectedNodes
+  if (!ids.length) {
+    notify.warning(isZh.value ? '请先选择节点' : 'Please select node(s) first')
+    return
+  }
+  borderColor.value = color
+  diagramStore.pushHistory(isZh.value ? '更新边框' : 'Update border')
+  ids.forEach((nodeId) => {
+    const node = diagramStore.data?.nodes?.find((n) => n.id === nodeId)
+    if (node) {
+      const mergedStyle = { ...(node.style || {}), borderColor: color }
+      diagramStore.updateNode(nodeId, { style: mergedStyle })
+    }
+  })
+  notify.success(isZh.value ? '已应用' : 'Applied')
+}
+
+function handleToggleBold() {
+  fontWeight.value = fontWeight.value === 'bold' ? 'normal' : 'bold'
+  applyTextStyleToSelected({ fontWeight: fontWeight.value })
+}
+
+function handleToggleItalic() {
+  fontStyle.value = fontStyle.value === 'italic' ? 'normal' : 'italic'
+  applyTextStyleToSelected({ fontStyle: fontStyle.value })
+}
+
+function toggleTextDecorationPart(
+  part: 'underline' | 'line-through'
+): 'none' | 'underline' | 'line-through' | 'underline line-through' {
+  const current = textDecoration.value || 'none'
+  const parts = current.split(' ').filter(Boolean)
+  const has = parts.includes(part)
+  if (has) {
+    const newParts = parts.filter((p) => p !== part)
+    return (newParts.length ? newParts.join(' ') : 'none') as
+      | 'none'
+      | 'underline'
+      | 'line-through'
+      | 'underline line-through'
+  }
+  return [...parts, part].filter(Boolean).join(' ') as
+    | 'none'
+    | 'underline'
+    | 'line-through'
+    | 'underline line-through'
+}
+
+function handleToggleUnderline() {
+  textDecoration.value = toggleTextDecorationPart('underline')
+  applyTextStyleToSelected({ textDecoration: textDecoration.value })
+}
+
+function handleToggleStrikethrough() {
+  textDecoration.value = toggleTextDecorationPart('line-through')
+  applyTextStyleToSelected({ textDecoration: textDecoration.value })
+}
+
+function handleFontFamilyChange(ev: Event) {
+  const val = (ev.target as HTMLSelectElement).value
+  fontFamily.value = val
+  applyTextStyleToSelected({ fontFamily: val })
+}
+
+function handleFontSizeInput(ev: Event) {
+  const v = parseInt((ev.target as HTMLInputElement).value, 10)
+  if (!Number.isNaN(v)) {
+    fontSize.value = v
+    applyTextStyleToSelected({ fontSize: v })
+  }
+}
+
+function handleTextColorPick(color: string) {
+  textColor.value = color
+  applyTextStyleToSelected({ textColor: color })
+}
+
+watch(
+  () => diagramStore.selectedNodeData,
+  (nodes) => {
+    if (nodes.length === 1) {
+      const s = nodes[0]?.style
+      if (s) {
+        if (s.fontFamily) fontFamily.value = s.fontFamily
+        if (s.fontSize) fontSize.value = s.fontSize
+        if (s.textColor) textColor.value = s.textColor
+        if (s.fontWeight) fontWeight.value = s.fontWeight
+        if (s.fontStyle) fontStyle.value = s.fontStyle
+        if (s.textDecoration) textDecoration.value = s.textDecoration
+        if (s.borderColor) borderColor.value = s.borderColor
+      }
+    }
+  },
+  { deep: true }
+)
 
 function handleUndo() {
   diagramStore.undo()
@@ -628,6 +848,16 @@ function handleToggleOrientation() {
   diagramStore.toggleFlowMapOrientation()
   notify.success(isZh.value ? '已切换布局方向' : 'Layout direction toggled')
 }
+
+onMounted(() => {
+  eventBus.on('diagram:delete_selected_requested', handleDeleteNode)
+  eventBus.on('diagram:add_node_requested', handleAddNode)
+})
+
+onUnmounted(() => {
+  eventBus.off('diagram:delete_selected_requested', handleDeleteNode)
+  eventBus.off('diagram:add_node_requested', handleAddNode)
+})
 </script>
 
 <template>
@@ -825,12 +1055,16 @@ function handleToggleOrientation() {
                     :key="preset.name"
                     class="p-2! rounded border text-xs text-center"
                     :class="[preset.bgClass, preset.borderClass]"
+                    @click="handleApplyStylePreset(preset)"
                   >
                     {{ preset.name }}
                   </ElDropdownItem>
                 </div>
                 <div class="border-t border-gray-200 my-2" />
-                <ElDropdownItem>
+                <ElDropdownItem
+                  :class="{ 'bg-blue-50': uiStore.wireframeMode }"
+                  @click="uiStore.toggleWireframe()"
+                >
                   <PenLine class="w-3 h-3 mr-2 text-gray-500" />
                   {{ isZh ? '线稿模式' : 'Wireframe' }}
                 </ElDropdownItem>
@@ -853,61 +1087,123 @@ function handleToggleOrientation() {
           </ElButton>
           <template #dropdown>
             <ElDropdownMenu>
-              <div class="p-3 w-56">
+              <div class="p-2.5 w-48 text-style-dropdown">
+                <!-- Format buttons: B I U S -->
                 <div class="mb-2">
-                  <label class="text-xs text-gray-500 block mb-1"
-                    >{{ isZh ? '字体' : 'Font' }}:</label
-                  >
-                  <select
-                    v-model="fontFamily"
-                    class="w-full border border-gray-300 rounded-md py-1.5 px-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
-                  >
-                    <option value="Arial">Arial</option>
-                    <option value="Microsoft YaHei">微软雅黑</option>
-                    <option value="SimSun">宋体</option>
-                    <option value="SimHei">黑体</option>
-                  </select>
+                  <div class="text-[10px] font-medium text-gray-500 uppercase tracking-wide mb-1.5">
+                    {{ isZh ? '格式' : 'Format' }}
+                  </div>
+                  <div class="grid grid-cols-4 gap-1.5">
+                    <button
+                      type="button"
+                      class="format-btn min-w-[1.75rem] h-7 rounded border text-sm font-bold transition-all"
+                      :class="[
+                        fontWeight === 'bold'
+                          ? 'border-blue-500 bg-blue-50 text-blue-700'
+                          : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300 hover:bg-gray-100',
+                      ]"
+                      @click="handleToggleBold"
+                    >
+                      B
+                    </button>
+                    <button
+                      type="button"
+                      class="format-btn min-w-[1.75rem] h-7 rounded border italic text-sm transition-all"
+                      :class="[
+                        fontStyle === 'italic'
+                          ? 'border-blue-500 bg-blue-50 text-blue-700'
+                          : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300 hover:bg-gray-100',
+                      ]"
+                      @click="handleToggleItalic"
+                    >
+                      I
+                    </button>
+                    <button
+                      type="button"
+                      class="format-btn min-w-[1.75rem] h-7 rounded border underline text-sm transition-all"
+                      :class="[
+                        textDecoration?.includes('underline')
+                          ? 'border-blue-500 bg-blue-50 text-blue-700'
+                          : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300 hover:bg-gray-100',
+                      ]"
+                      @click="handleToggleUnderline"
+                    >
+                      U
+                    </button>
+                    <button
+                      type="button"
+                      class="format-btn min-w-[1.75rem] h-7 rounded border line-through text-sm transition-all"
+                      :class="[
+                        textDecoration?.includes('line-through')
+                          ? 'border-blue-500 bg-blue-50 text-blue-700'
+                          : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300 hover:bg-gray-100',
+                      ]"
+                      @click="handleToggleStrikethrough"
+                    >
+                      S
+                    </button>
+                  </div>
                 </div>
+
+                <div class="border-t border-gray-100 my-2" />
+
+                <!-- Font & Size -->
                 <div class="mb-2">
-                  <label class="text-xs text-gray-500 block mb-1"
-                    >{{ isZh ? '字号' : 'Size' }}:</label
-                  >
-                  <input
-                    v-model.number="fontSize"
-                    type="number"
-                    class="w-full border border-gray-300 rounded-md py-1.5 px-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
-                  />
+                  <div class="text-[10px] font-medium text-gray-500 uppercase tracking-wide mb-1.5">
+                    {{ isZh ? '字体' : 'Font' }}
+                  </div>
+                  <div class="grid grid-cols-2 gap-1.5">
+                    <select
+                      :value="fontFamily"
+                      class="w-full border border-gray-200 rounded py-1.5 px-2 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-blue-500/40 focus:border-blue-400"
+                      @change="handleFontFamilyChange"
+                    >
+                      <optgroup :label="isZh ? '中文字体' : 'Chinese'">
+                        <option value="Microsoft YaHei">微软雅黑</option>
+                        <option value="SimSun">宋体</option>
+                        <option value="SimHei">黑体</option>
+                        <option value="KaiTi">楷体</option>
+                        <option value="FangSong">仿宋</option>
+                      </optgroup>
+                      <optgroup :label="isZh ? '英文字体' : 'English'">
+                        <option value="Arial">Arial</option>
+                        <option value="Inter">Inter</option>
+                        <option value="Georgia">Georgia</option>
+                        <option value="Courier New">Courier New</option>
+                      </optgroup>
+                    </select>
+                    <input
+                      :value="fontSize"
+                      type="number"
+                      min="8"
+                      max="72"
+                      class="w-full border border-gray-200 rounded py-1.5 px-2 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-blue-500/40 focus:border-blue-400"
+                      @input="handleFontSizeInput"
+                    />
+                  </div>
                 </div>
-                <div class="mb-2">
-                  <label class="text-xs text-gray-500 block mb-1"
-                    >{{ isZh ? '颜色' : 'Color' }}:</label
-                  >
-                  <div
-                    class="w-10 h-10 border border-gray-300 rounded-md cursor-pointer"
-                    :style="{ backgroundColor: textColor }"
-                  />
-                </div>
-                <div class="flex gap-2 mt-2">
-                  <button
-                    class="p-1.5 border border-gray-300 rounded text-gray-700 hover:bg-gray-100 font-bold"
-                  >
-                    B
-                  </button>
-                  <button
-                    class="p-1.5 border border-gray-300 rounded text-gray-700 hover:bg-gray-100 italic"
-                  >
-                    I
-                  </button>
-                  <button
-                    class="p-1.5 border border-gray-300 rounded text-gray-700 hover:bg-gray-100 underline"
-                  >
-                    U
-                  </button>
-                  <button
-                    class="p-1.5 border border-gray-300 rounded text-gray-700 hover:bg-gray-100 line-through"
-                  >
-                    S
-                  </button>
+
+                <div class="border-t border-gray-100 my-2" />
+
+                <!-- Color -->
+                <div>
+                  <div class="text-[10px] font-medium text-gray-500 uppercase tracking-wide mb-1.5">
+                    {{ isZh ? '颜色' : 'Color' }}
+                  </div>
+                  <div class="grid grid-cols-6 gap-1">
+                    <div
+                      v-for="color in textColorPalette"
+                      :key="color"
+                      class="w-5 h-5 rounded border cursor-pointer transition-all hover:scale-105"
+                      :class="[
+                        textColor === color
+                          ? 'border-blue-500 ring-1 ring-blue-200'
+                          : 'border-gray-200 hover:border-gray-300',
+                      ]"
+                      :style="{ backgroundColor: color }"
+                      @click="handleTextColorPick(color)"
+                    />
+                  </div>
                 </div>
               </div>
             </ElDropdownMenu>
@@ -937,8 +1233,9 @@ function handleToggleOrientation() {
                     <div
                       v-for="color in backgroundColors"
                       :key="color"
-                      class="w-6 h-6 rounded border border-gray-200 cursor-pointer hover:ring-2 hover:ring-blue-400"
+                      class="w-6 h-6 rounded border border-gray-200 cursor-pointer hover:ring-2 hover:ring-blue-400 shrink-0"
                       :style="{ backgroundColor: color }"
+                      @click="applyBackgroundToSelected(color)"
                     />
                   </div>
                 </div>
@@ -982,10 +1279,16 @@ function handleToggleOrientation() {
                   <label class="text-xs text-gray-500 block mb-1"
                     >{{ isZh ? '颜色' : 'Color' }}:</label
                   >
-                  <div
-                    class="w-10 h-10 border border-gray-300 rounded-md cursor-pointer"
-                    :style="{ backgroundColor: borderColor }"
-                  />
+                  <div class="grid grid-cols-5 gap-1">
+                    <div
+                      v-for="color in borderColorPalette"
+                      :key="color"
+                      class="w-6 h-6 rounded border border-gray-200 cursor-pointer hover:ring-2 hover:ring-blue-400 shrink-0"
+                      :class="{ 'ring-2 ring-blue-500': borderColor === color }"
+                      :style="{ backgroundColor: color }"
+                      @click="applyBorderToSelected(color)"
+                    />
+                  </div>
                 </div>
                 <div class="mb-2">
                   <label class="text-xs text-gray-500 block mb-1"
@@ -1222,5 +1525,12 @@ function handleToggleOrientation() {
   background: #374151 !important;
   border-color: #4b5563 !important;
   color: #e5e7eb !important;
+}
+
+/* Text style dropdown - format buttons */
+.text-style-dropdown .format-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 </style>

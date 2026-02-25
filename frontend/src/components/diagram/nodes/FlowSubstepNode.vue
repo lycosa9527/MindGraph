@@ -24,6 +24,8 @@ const nodeStyle = computed(() => ({
   color: props.data.style?.textColor || '#333333',
   fontSize: `${props.data.style?.fontSize || 12}px`,
   fontWeight: props.data.style?.fontWeight || 'normal',
+  fontStyle: props.data.style?.fontStyle || 'normal',
+  textDecoration: props.data.style?.textDecoration || 'none',
   borderWidth: `${props.data.style?.borderWidth || 1}px`,
   borderRadius: `${props.data.style?.borderRadius || 4}px`,
 }))

@@ -61,6 +61,8 @@ export function useEditorShortcuts(handlers: {
   copy?: () => void
   paste?: () => void
   escape?: () => void
+  addNode?: () => void
+  clearNodeText?: () => void
 }) {
   const shortcuts: KeyboardShortcut[] = []
 
@@ -96,6 +98,14 @@ export function useEditorShortcuts(handlers: {
 
   if (handlers.escape) {
     shortcuts.push({ key: 'Escape', handler: handlers.escape })
+  }
+
+  if (handlers.addNode) {
+    shortcuts.push({ key: '=', handler: handlers.addNode })
+  }
+
+  if (handlers.clearNodeText) {
+    shortcuts.push({ key: '-', handler: handlers.clearNodeText })
   }
 
   useKeyboard(shortcuts)

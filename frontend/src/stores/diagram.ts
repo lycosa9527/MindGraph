@@ -218,7 +218,11 @@ export const useDiagramStore = defineStore('diagram', () => {
     // This makes the layout adaptive when nodes are added/deleted
     if (diagramType === 'circle_map') {
       const recalculatedNodes = recalculateCircleMapLayout(data.value.nodes)
-      return recalculatedNodes.map((node) => diagramNodeToVueFlowNode(node, diagramType))
+      return recalculatedNodes.map((node) => {
+        const vf = diagramNodeToVueFlowNode(node, diagramType)
+        vf.selected = selectedNodes.value.includes(node.id)
+        return vf
+      })
     }
 
     // For multi-flow maps, recalculate layout to ensure positions and IDs are correct
@@ -238,6 +242,7 @@ export const useDiagramStore = defineStore('diagram', () => {
       
       return recalculatedNodes.map((node) => {
         const vueFlowNode = diagramNodeToVueFlowNode(node, diagramType)
+        vueFlowNode.selected = selectedNodes.value.includes(node.id)
         // Set causeCount and effectCount for handle generation
         if (node.id === 'event' && vueFlowNode.data) {
           vueFlowNode.data.causeCount = causeNodes.length
@@ -260,13 +265,18 @@ export const useDiagramStore = defineStore('diagram', () => {
     if (diagramType === 'mindmap' || diagramType === 'mind_map') {
       return data.value.nodes.map((node) => {
         const vueFlowNode = diagramNodeToVueFlowNode(node, diagramType)
+        vueFlowNode.selected = selectedNodes.value.includes(node.id)
         // Branch counts should already be in node.data from specLoader
         // This ensures they're preserved in vueFlowNode.data
         return vueFlowNode
       })
     }
 
-    return data.value.nodes.map((node) => diagramNodeToVueFlowNode(node, diagramType))
+    return data.value.nodes.map((node) => {
+      const vueFlowNode = diagramNodeToVueFlowNode(node, diagramType)
+      vueFlowNode.selected = selectedNodes.value.includes(node.id)
+      return vueFlowNode
+    })
   })
 
   const vueFlowEdges = computed<MindGraphEdge[]>(() => {
@@ -747,6 +757,46 @@ export const useDiagramStore = defineStore('diagram', () => {
     }
   }
 
+  /**
+   * Apply a style preset to all nodes.
+   * Topic/center nodes get accent colors; others get context colors.
+   * Skips boundary nodes. Merges with existing node styles.
+   */
+  function applyStylePreset(preset: {
+    backgroundColor: string
+    textColor: string
+    borderColor: string
+    topicBackgroundColor: string
+    topicTextColor: string
+    topicBorderColor: string
+  }): void {
+    if (!data.value?.nodes) return
+
+    const isTopic = (node: DiagramNode) =>
+      node.type === 'topic' || node.type === 'center'
+
+    data.value.nodes.forEach((node) => {
+      if (node.type === 'boundary') return
+
+      const useTopic = isTopic(node)
+      const mergedStyle: Partial<NodeStyle> = {
+        ...(node.style || {}),
+        backgroundColor: useTopic ? preset.topicBackgroundColor : preset.backgroundColor,
+        textColor: useTopic ? preset.topicTextColor : preset.textColor,
+        borderColor: useTopic ? preset.topicBorderColor : preset.borderColor,
+      }
+      const nodeIndex = data.value!.nodes.findIndex((n) => n.id === node.id)
+      if (nodeIndex !== -1) {
+        data.value!.nodes[nodeIndex] = {
+          ...data.value!.nodes[nodeIndex],
+          style: mergedStyle,
+        }
+      }
+    })
+    pushHistory('Apply style preset')
+    emitEvent('diagram:style_changed', { preset: true })
+  }
+
   // ===== Vue Flow integration actions =====
 
   /**
@@ -1155,6 +1205,7 @@ export const useDiagramStore = defineStore('diagram', () => {
     getNodeStyle,
     clearNodeStyle,
     clearAllNodeStyles,
+    applyStylePreset,
 
     // Spec loading
     loadFromSpec,

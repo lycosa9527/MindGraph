@@ -19,3 +19,9 @@ interface ImportMeta {
 // Build-time injected constants
 declare const __APP_VERSION__: string
 declare const __BUILD_TIME__: number
+
+declare module 'vue3-carousel-3d' {
+  import type { Component } from 'vue'
+  export const Carousel3d: Component
+  export const Slide: Component
+}

@@ -261,8 +261,9 @@ const nodeStyle = computed((): CSSProperties => {
     color: isPlaceholder.value ? '#1976d2' : (isBridgeDimension ? '#1976d2' : '#1976d2'),
     opacity: isPlaceholder.value ? 0.4 : (isBridgeDimension ? 1 : 0.8),
     fontSize: `${props.data.style?.fontSize || (isBridgeDimension ? 14 : 14)}px`,
-    fontStyle: isBridgeDimension ? 'normal' : 'italic',
+    fontStyle: props.data.style?.fontStyle || (isBridgeDimension ? 'normal' : 'italic'),
     fontWeight: props.data.style?.fontWeight || (isBridgeDimension ? 'bold' : 'normal'),
+    textDecoration: props.data.style?.textDecoration || 'none',
     textAlign: (isBridgeDimension ? 'right' : 'center') as 'left' | 'right' | 'center' | 'justify' | 'start' | 'end',
     padding: isBridgeDimension ? '4px 8px' : '4px 8px',
     whiteSpace: isBridgeDimension ? 'normal' : 'nowrap', // Allow natural wrapping for bridge maps

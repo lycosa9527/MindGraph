@@ -28,6 +28,8 @@ const nodeStyle = computed(() => ({
   color: props.data.style?.textColor || defaultStyle.value.textColor || '#333333',
   fontSize: `${props.data.style?.fontSize || defaultStyle.value.fontSize || 14}px`,
   fontWeight: props.data.style?.fontWeight || defaultStyle.value.fontWeight || 'normal',
+  fontStyle: props.data.style?.fontStyle || 'normal',
+  textDecoration: props.data.style?.textDecoration || 'none',
   borderWidth: `${props.data.style?.borderWidth || defaultStyle.value.borderWidth || 2}px`,
 }))
 

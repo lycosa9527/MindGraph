@@ -106,12 +106,14 @@ export function recalculateMultiFlowMapLayout(
 
   const result: DiagramNode[] = []
 
-  // Event node
+  // Event node - preserve style from original
+  const eventStyle = eventNode?.style ? { ...eventNode.style } : undefined
   result.push({
     id: 'event',
     text: event,
     type: 'topic',
     position: { x: topicLeftEdge, y: centerY - nodeHeight / 2 },
+    ...(eventStyle && { style: eventStyle }),
   })
 
   // Causes - re-index with sequential IDs (cause-0, cause-1, etc.)
@@ -121,19 +123,21 @@ export function recalculateMultiFlowMapLayout(
   //     cause left edge = cause right edge - uniformColumnWidth
   //     cause x = topicLeftEdge - leftArrowSpacing - uniformColumnWidth
   const causeStartY = centerY - ((causes.length - 1) * verticalSpacing) / 2
-  causes.forEach((cause, index) => {
+  causeNodes.forEach((node, index) => {
+    const causeStyle = {
+      ...(node.style || {}),
+      width: uniformColumnWidth,
+      minWidth: uniformColumnWidth,
+    }
     result.push({
       id: `cause-${index}`,
-      text: cause,
+      text: node.text,
       type: 'flow',
       position: {
         x: topicLeftEdge - leftArrowSpacing - uniformColumnWidth,
         y: causeStartY + index * verticalSpacing - nodeHeight / 2,
       },
-      style: {
-        width: uniformColumnWidth,
-        minWidth: uniformColumnWidth,
-      },
+      style: causeStyle,
     })
   })
 
@@ -144,19 +148,21 @@ export function recalculateMultiFlowMapLayout(
   //     effect x = topicRightEdge + rightArrowSpacing
   // Apply uniform width for visual balance (same as causes)
   const effectStartY = centerY - ((effects.length - 1) * verticalSpacing) / 2
-  effects.forEach((effect, index) => {
+  effectNodes.forEach((node, index) => {
+    const effectStyle = {
+      ...(node.style || {}),
+      width: uniformColumnWidth,
+      minWidth: uniformColumnWidth,
+    }
     result.push({
       id: `effect-${index}`,
-      text: effect,
+      text: node.text,
       type: 'flow',
       position: {
         x: topicRightEdge + rightArrowSpacing,
         y: effectStartY + index * verticalSpacing - nodeHeight / 2,
       },
-      style: {
-        width: uniformColumnWidth,
-        minWidth: uniformColumnWidth,
-      },
+      style: effectStyle,
     })
   })
 

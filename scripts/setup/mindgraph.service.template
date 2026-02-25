@@ -40,8 +40,3 @@ SyslogIdentifier=mindgraph
 
 [Install]
 WantedBy=multi-user.target
-
-
-
-
-

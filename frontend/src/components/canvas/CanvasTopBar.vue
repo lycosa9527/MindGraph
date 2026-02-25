@@ -366,22 +366,9 @@ function handleViewCommand(command: string) {
   }
 }
 
-// Export menu actions
+// Export menu actions - emit event for DiagramCanvas to handle
 function handleExportCommand(command: string) {
-  switch (command) {
-    case 'png':
-      notify.success(isZh.value ? 'PNG图片导出成功' : 'PNG exported successfully')
-      break
-    case 'svg':
-      notify.info(isZh.value ? 'SVG导出功能开发中' : 'SVG export in development')
-      break
-    case 'pdf':
-      notify.info(isZh.value ? 'PDF导出功能开发中' : 'PDF export in development')
-      break
-    case 'json':
-      notify.info(isZh.value ? 'JSON导出功能开发中' : 'JSON export in development')
-      break
-  }
+  eventBus.emit('toolbar:export_requested', { format: command })
 }
 </script>
 
