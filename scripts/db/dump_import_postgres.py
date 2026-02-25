@@ -20,12 +20,14 @@ Requires: psycopg2-binary, PostgreSQL client tools (pg_dump, pg_restore), rich (
 import json
 import logging
 import os
+import socket
 import subprocess
 import sys
 import time
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
+from urllib.parse import urlparse
 
 # Add project root to path (required before config import)
 project_root = Path(__file__).parent.parent.parent
@@ -74,6 +76,143 @@ DUMP_PREFIX = "mindgraph.postgresql"
 DUMP_EXT = ".dump"
 
 
+def _find_process_on_port(port: int) -> Optional[int]:
+    """
+    Find the PID of the process using the specified port.
+    Cross-platform: netstat on Windows, lsof on Linux/Mac.
+    """
+    try:
+        if sys.platform == 'win32':
+            result = subprocess.run(
+                ['netstat', '-ano'],
+                capture_output=True,
+                text=True,
+                timeout=5,
+                check=False
+            )
+            for line in result.stdout.split('\n'):
+                if f':{port}' in line and 'LISTENING' in line:
+                    parts = line.split()
+                    if len(parts) >= 5:
+                        return int(parts[-1])
+        else:
+            result = subprocess.run(
+                ['lsof', '-ti', f':{port}'],
+                capture_output=True,
+                text=True,
+                timeout=5,
+                check=False
+            )
+            if result.stdout.strip():
+                return int(result.stdout.strip())
+    except Exception:
+        pass
+    return None
+
+
+def _get_process_name(pid: int) -> Optional[str]:
+    """Get process name for a given PID. Cross-platform."""
+    try:
+        if sys.platform == 'win32':
+            result = subprocess.run(
+                ['tasklist', '/FI', f'PID eq {pid}', '/FO', 'CSV', '/NH'],
+                capture_output=True,
+                text=True,
+                timeout=2,
+                check=False
+            )
+            if result.stdout.strip():
+                parts = result.stdout.strip().split(',')
+                if parts:
+                    return parts[0].strip('"')
+        else:
+            result = subprocess.run(
+                ['ps', '-p', str(pid), '-o', 'comm=', '--no-headers'],
+                capture_output=True,
+                text=True,
+                timeout=2,
+                check=False
+            )
+            if result.stdout.strip():
+                return result.stdout.strip()
+    except Exception:
+        pass
+    return None
+
+
+def _parse_db_host(db_url: str) -> str:
+    """Parse host from PostgreSQL DATABASE_URL. Default localhost."""
+    try:
+        parsed = urlparse(db_url)
+        if parsed.hostname:
+            return parsed.hostname
+    except Exception:
+        pass
+    return "localhost"
+
+
+def _parse_db_port(db_url: str) -> int:
+    """Parse port from PostgreSQL DATABASE_URL. Default 5432."""
+    try:
+        parsed = urlparse(db_url)
+        if parsed.port is not None:
+            return parsed.port
+        if parsed.scheme and 'postgresql' in parsed.scheme.lower():
+            return 5432
+    except Exception:
+        pass
+    return 5432
+
+
+def _port_has_listener(host: str, port: int, timeout: float = 1.0) -> bool:
+    """Check if something is listening on the port (raw TCP)."""
+    try:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(timeout)
+        result = sock.connect_ex((host, port))
+        sock.close()
+        return result == 0
+    except Exception:
+        return False
+
+
+def _find_postgres_processes() -> List[str]:
+    """
+    Find PostgreSQL process PIDs by name. Used when port is in use but
+    lsof/netstat cannot find the process (e.g. different namespace, permissions).
+    """
+    pids: List[str] = []
+    try:
+        if sys.platform == 'win32':
+            result = subprocess.run(
+                ['tasklist', '/FI', 'IMAGENAME eq postgres.exe', '/FO', 'CSV', '/NH'],
+                capture_output=True,
+                text=True,
+                timeout=2,
+                check=False
+            )
+            for line in result.stdout.strip().split('\n'):
+                if line and 'postgres.exe' in line.lower():
+                    parts = line.split(',')
+                    if len(parts) >= 2:
+                        pid_str = parts[1].strip('"').strip()
+                        if pid_str.isdigit():
+                            pids.append(pid_str)
+        else:
+            result = subprocess.run(
+                ['pgrep', '-f', 'postgres.*-D'],
+                capture_output=True,
+                text=True,
+                timeout=2,
+                check=False
+            )
+            if result.stdout.strip():
+                pids = [p.strip() for p in result.stdout.strip().split('\n') if p.strip()]
+    except Exception:
+        pass
+    return pids
+
+
 def _can_connect_postgresql(db_url: str, timeout: int = 2) -> bool:
     """Try to connect to PostgreSQL. Returns True if successful."""
     if psycopg2 is None:
@@ -87,8 +226,37 @@ def _can_connect_postgresql(db_url: str, timeout: int = 2) -> bool:
         return False
 
 
+def _get_connection_error(db_url: str, timeout: int = 2) -> Optional[str]:
+    """Try to connect and return the error message for diagnostics."""
+    if psycopg2 is None:
+        return None
+    try:
+        psycopg2.connect(db_url, connect_timeout=timeout)
+        return None
+    except Exception as e:
+        return str(e)
+
+
 def _try_start_postgresql() -> bool:
-    """Attempt to start PostgreSQL. Returns True if start was attempted."""
+    """
+    Attempt to start PostgreSQL. Uses app's PostgreSQL starter (same as main app)
+    when available - starts managed subprocess or uses systemd per POSTGRESQL_MANAGED_BY_APP.
+    Falls back to systemctl/net start if app starter unavailable.
+    """
+    try:
+        from services.infrastructure.process.process_manager import start_postgresql_server
+        try:
+            process = start_postgresql_server()
+            if process:
+                logger.info("Started PostgreSQL server (PID: %s)", process.pid)
+            else:
+                logger.info("PostgreSQL already running")
+            return True
+        except SystemExit:
+            logger.warning("App PostgreSQL starter failed, trying system service...")
+    except ImportError:
+        logger.debug("App PostgreSQL starter not available, using system service")
+
     if sys.platform == "win32":
         service_names = [
             "postgresql-x64-18", "postgresql-x64-16", "postgresql-x64-15",
@@ -154,11 +322,62 @@ def ensure_postgresql_running(db_url: str) -> bool:
         if attempt < 2:
             time.sleep(2)
 
-    logger.error(
-        "PostgreSQL still unreachable. Start manually:\n"
-        "  Linux: sudo systemctl start postgresql\n"
-        "  Windows: net start postgresql-x64-XX"
-    )
+    host = _parse_db_host(db_url)
+    port = _parse_db_port(db_url)
+    pid = _find_process_on_port(port)
+    port_open = _port_has_listener(host, port)
+
+    if pid is not None:
+        proc_name = _get_process_name(pid)
+        proc_info = f" ({proc_name})" if proc_name else ""
+        is_postgres = proc_name and 'postgres' in (proc_name or '').lower()
+        if is_postgres:
+            conn_err = _get_connection_error(db_url)
+            logger.error(
+                "PostgreSQL is running (PID %d%s) but connection failed.\n"
+                "  This is authentication/config - do NOT kill PostgreSQL.\n"
+                "  Check: DATABASE_URL credentials, database exists, pg_hba.conf.\n"
+                "  Try: pg_isready -h %s -p %d",
+                pid, proc_info, host, port
+            )
+            if conn_err:
+                logger.error("  Connection error: %s", conn_err)
+        else:
+            logger.error(
+                "Port %d is in use by process PID %d%s (not PostgreSQL).\n"
+                "  To stop: Linux: kill -9 %d  |  Windows: taskkill /PID %d /F\n"
+                "  Or use a different port in DATABASE_URL",
+                port, pid, proc_info, pid, pid
+            )
+    elif port_open:
+        postgres_pids = _find_postgres_processes()
+        conn_err = _get_connection_error(db_url)
+        if postgres_pids:
+            logger.error(
+                "PostgreSQL is running (port %d, PIDs: %s) but connection failed.\n"
+                "  This is authentication/config - do NOT kill PostgreSQL.\n"
+                "  Check: DATABASE_URL credentials, database exists, pg_hba.conf.\n"
+                "  Try: pg_isready -h %s -p %d\n"
+                "  Create database: sudo -u postgres createdb mindgraph\n"
+                "  Create user: sudo -u postgres psql -c \"CREATE USER mindgraph_user WITH PASSWORD 'mindgraph_password';\"",
+                port, ', '.join(postgres_pids), host, port
+            )
+        else:
+            logger.error(
+                "PostgreSQL appears to be running (port %d has listener) but connection failed.\n"
+                "  Check: DATABASE_URL credentials, database exists, pg_hba.conf.\n"
+                "  Try: pg_isready -h %s -p %d",
+                port, host, port
+            )
+        if conn_err:
+            logger.error("  Connection error: %s", conn_err)
+    else:
+        logger.error(
+            "PostgreSQL still unreachable. Port %d is closed - PostgreSQL may not be running.\n"
+            "  Linux:   sudo systemctl start postgresql   then: systemctl status postgresql\n"
+            "  Windows: net start postgresql-x64-XX",
+            port
+        )
     return False
 
 
