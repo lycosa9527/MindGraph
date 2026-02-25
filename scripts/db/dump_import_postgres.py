@@ -12,6 +12,7 @@ Features:
     - Prompts for dry run or execute
     - Dump: exports to backup/, creates manifest with table row counts
     - Import: restores from backup/, verifies counts match manifest
+    - Timestamp comparison: prompts to overwrite when dump is older than last import
     - Self-contained ensure_postgresql_running (check, start if needed)
 
 Requires: psycopg2-binary, PostgreSQL client tools (pg_dump, pg_restore), rich (for progress bar)
@@ -29,11 +30,16 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 from urllib.parse import urlparse
 
-# Add project root to path (required before config import)
-project_root = Path(__file__).parent.parent.parent
-sys.path.insert(0, str(project_root))
 
-# Load .env before importing config
+def _setup_module_path() -> Path:
+    """Add project root to path before importing config. Returns project_root."""
+    root = Path(__file__).resolve().parent.parent.parent
+    sys.path.insert(0, str(root))
+    return root
+
+
+project_root = _setup_module_path()
+
 try:
     from dotenv import load_dotenv
     env_path = project_root / ".env"
@@ -53,6 +59,11 @@ try:
     RICH_AVAILABLE = True
 except ImportError:
     RICH_AVAILABLE = False
+
+try:
+    from services.infrastructure.process.process_manager import start_postgresql_server
+except ImportError:
+    start_postgresql_server = None
 
 from sqlalchemy import inspect, text
 
@@ -74,6 +85,7 @@ _backup_dir_env = os.getenv("BACKUP_DIR", "backup")
 BACKUP_DIR = Path(_backup_dir_env) if Path(_backup_dir_env).is_absolute() else project_root / _backup_dir_env
 DUMP_PREFIX = "mindgraph.postgresql"
 DUMP_EXT = ".dump"
+LAST_IMPORT_FILE = BACKUP_DIR / ".last_import_timestamp"
 
 
 def _find_process_on_port(port: int) -> Optional[int]:
@@ -243,8 +255,7 @@ def _try_start_postgresql() -> bool:
     when available - starts managed subprocess or uses systemd per POSTGRESQL_MANAGED_BY_APP.
     Falls back to systemctl/net start if app starter unavailable.
     """
-    try:
-        from services.infrastructure.process.process_manager import start_postgresql_server
+    if start_postgresql_server is not None:
         try:
             process = start_postgresql_server()
             if process:
@@ -254,8 +265,6 @@ def _try_start_postgresql() -> bool:
             return True
         except SystemExit:
             logger.warning("App PostgreSQL starter failed, trying system service...")
-    except ImportError:
-        logger.debug("App PostgreSQL starter not available, using system service")
 
     if sys.platform == "win32":
         service_names = [
@@ -353,14 +362,18 @@ def ensure_postgresql_running(db_url: str) -> bool:
         postgres_pids = _find_postgres_processes()
         conn_err = _get_connection_error(db_url)
         if postgres_pids:
+            create_user_hint = (
+                "sudo -u postgres psql -c \"CREATE USER mindgraph_user "
+                "WITH PASSWORD 'mindgraph_password';\""
+            )
             logger.error(
                 "PostgreSQL is running (port %d, PIDs: %s) but connection failed.\n"
                 "  This is authentication/config - do NOT kill PostgreSQL.\n"
                 "  Check: DATABASE_URL credentials, database exists, pg_hba.conf.\n"
                 "  Try: pg_isready -h %s -p %d\n"
                 "  Create database: sudo -u postgres createdb mindgraph\n"
-                "  Create user: sudo -u postgres psql -c \"CREATE USER mindgraph_user WITH PASSWORD 'mindgraph_password';\"",
-                port, ', '.join(postgres_pids), host, port
+                "  Create user: %s",
+                port, ', '.join(postgres_pids), host, port, create_user_hint
             )
         else:
             logger.error(
@@ -681,20 +694,74 @@ def dump_command(live: bool) -> int:
     return 0
 
 
-def _confirm_overwrite() -> bool:
-    """Ask user to confirm overwrite. Returns True to proceed. Full words only."""
+def _read_last_import_timestamp() -> Optional[str]:
+    """Read last import timestamp from backup dir. Returns ISO string or None."""
+    if not LAST_IMPORT_FILE.exists():
+        return None
     try:
-        reply = input(
+        return LAST_IMPORT_FILE.read_text(encoding="utf-8").strip() or None
+    except Exception:
+        return None
+
+
+def _write_last_import_timestamp(ts: str) -> None:
+    """Write last import timestamp after successful import."""
+    try:
+        BACKUP_DIR.mkdir(parents=True, exist_ok=True)
+        LAST_IMPORT_FILE.write_text(ts, encoding="utf-8")
+    except Exception as e:
+        logger.warning("Could not write last import timestamp: %s", e)
+
+
+def _format_timestamp(ts: str) -> str:
+    """Format ISO timestamp for display."""
+    try:
+        dt = datetime.fromisoformat(ts.replace("Z", "+00:00"))
+        return dt.strftime("%Y-%m-%d %H:%M:%S")
+    except Exception:
+        return ts
+
+
+def _confirm_overwrite(dump_ts: str, last_import_ts: Optional[str]) -> bool:
+    """
+    Ask user to confirm overwrite. Uses timestamp comparison for prompt message.
+    Returns True to proceed. Full words only.
+    """
+    dump_fmt = _format_timestamp(dump_ts)
+    if last_import_ts:
+        last_fmt = _format_timestamp(last_import_ts)
+        try:
+            dump_dt = datetime.fromisoformat(dump_ts.replace("Z", "+00:00"))
+            last_dt = datetime.fromisoformat(last_import_ts.replace("Z", "+00:00"))
+            if dump_dt < last_dt:
+                msg = (
+                    f"\nDump is from {dump_fmt}, last import was {last_fmt} (newer). "
+                    "Overwrite anyway? (yes/no): "
+                )
+            else:
+                msg = (
+                    "\nWARNING: This will REPLACE all data in the target database. "
+                    "Stop the application first. Continue? (yes/no): "
+                )
+        except Exception:
+            msg = (
+                "\nWARNING: This will REPLACE all data in the target database. "
+                "Stop the application first. Continue? (yes/no): "
+            )
+    else:
+        msg = (
             "\nWARNING: This will REPLACE all data in the target database. "
             "Stop the application first. Continue? (yes/no): "
-        ).strip().lower()
+        )
+    try:
+        reply = input(msg).strip().lower()
         return reply == "yes"
     except (EOFError, KeyboardInterrupt):
         return False
 
 
 def import_command(live: bool) -> int:
-    """Import flow. Returns exit code."""
+    """Import flow. Returns exit code. Uses timestamp comparison, prompts to overwrite."""
     if "postgresql" not in (DATABASE_URL or "").lower():
         logger.error("DATABASE_URL is not PostgreSQL")
         return 1
@@ -720,6 +787,8 @@ def import_command(live: bool) -> int:
         logger.error("Manifest has no table counts - cannot verify restore")
         return 1
 
+    dump_ts = manifest.get("timestamp", "")
+    last_import_ts = _read_last_import_timestamp()
     manifest_tables = manifest.get("total_tables", len(expected_counts))
     manifest_columns = manifest.get("total_columns", 0)
     manifest_records = manifest.get("total_records", sum(expected_counts.values()))
@@ -730,39 +799,20 @@ def import_command(live: bool) -> int:
             "[DRY RUN] Dump contains: %d tables, %d columns, %d records",
             manifest_tables, manifest_columns, manifest_records
         )
-        logger.info("[DRY RUN] Would REPLACE all existing data")
-        if ensure_postgresql_running(DATABASE_URL):
-            try:
-                current = get_table_row_counts(engine)
-            except Exception as e:
-                logger.warning("[DRY RUN] Could not check DB state: %s", e)
-                current = {}
-            refuse = [
-                t for t, exp in expected_counts.items()
-                if current.get(t, 0) > exp
-            ]
-            extra_with_data = [
-                t for t in set(current.keys()) - set(expected_counts.keys())
-                if current.get(t, 0) > 0
-            ]
-            if refuse or extra_with_data:
-                logger.info("[DRY RUN] Would REFUSE: dump older than DB")
-                if refuse:
-                    logger.info("[DRY RUN]   Tables with more rows in DB: %s", refuse[:5])
-                if extra_with_data:
-                    logger.info("[DRY RUN]   Extra tables with data: %s", extra_with_data[:5])
-            else:
-                logger.info("[DRY RUN] Would PROCEED (no data loss)")
+        if dump_ts:
+            logger.info("[DRY RUN] Dump timestamp: %s", _format_timestamp(dump_ts))
+        if last_import_ts:
+            logger.info("[DRY RUN] Last import: %s", _format_timestamp(last_import_ts))
+        logger.info("[DRY RUN] Would REPLACE all existing data (prompt on execute)")
         return 0
 
     if not ensure_postgresql_running(DATABASE_URL):
         return 1
 
     current_counts = get_table_row_counts(engine)
-
-    manifest_tables = set(expected_counts.keys())
+    manifest_tables_set = set(expected_counts.keys())
     current_tables = set(current_counts.keys())
-    dump_newer_tables = manifest_tables - current_tables
+    dump_newer_tables = manifest_tables_set - current_tables
     if dump_newer_tables:
         logger.info(
             "Dump has newer schema: %d table(s) not in DB - restore will create: %s",
@@ -771,33 +821,7 @@ def import_command(live: bool) -> int:
             + ("..." if len(dump_newer_tables) > 5 else "")
         )
 
-    refuse_reasons: List[str] = []
-    for table, expected in expected_counts.items():
-        current = current_counts.get(table, 0)
-        if current > expected:
-            refuse_reasons.append(
-                f"  {table}: DB has {current} rows, dump has {expected} - would lose data"
-            )
-
-    extra_tables_with_data = [
-        t for t in set(current_counts.keys()) - set(expected_counts.keys())
-        if current_counts.get(t, 0) > 0
-    ]
-    if extra_tables_with_data:
-        refuse_reasons.append(
-            f"  DB has tables not in dump with data (would be dropped): "
-            f"{', '.join(sorted(extra_tables_with_data)[:5])}"
-            + ("..." if len(extra_tables_with_data) > 5 else "")
-        )
-
-    if refuse_reasons:
-        logger.error(
-            "Refusing import: dump is older than DB, restore would lose data:\n%s",
-            "\n".join(refuse_reasons)
-        )
-        return 1
-
-    if not _confirm_overwrite():
+    if not _confirm_overwrite(dump_ts or "", last_import_ts):
         logger.info("Import cancelled")
         return 0
 
@@ -860,6 +884,8 @@ def import_command(live: bool) -> int:
     tables, columns, total_records, _ = get_db_stats(engine)
     log_db_summary(tables, columns, total_records)
     logger.info("Import complete. All table counts match manifest.")
+    if dump_ts:
+        _write_last_import_timestamp(dump_ts)
     return 0
 
 
