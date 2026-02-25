@@ -396,12 +396,12 @@ function isTypingInInput(): boolean {
 
 function handleDeleteKey() {
   if (isTypingInInput()) return
-  eventBus.emit('diagram:delete_selected_requested')
+  eventBus.emit('diagram:delete_selected_requested', {})
 }
 
 function handleAddNodeKey() {
   if (isTypingInInput()) return
-  eventBus.emit('diagram:add_node_requested')
+  eventBus.emit('diagram:add_node_requested', {})
 }
 
 function handleClearNodeTextKey() {

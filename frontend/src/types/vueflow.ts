@@ -50,7 +50,8 @@ export interface MindGraphNodeData {
 }
 
 // Vue Flow node with MindGraph data
-export type MindGraphNode = Node<MindGraphNodeData>
+// Extends Node with selected: Vue Flow's GraphNode adds this for selection state
+export type MindGraphNode = Node<MindGraphNodeData> & { selected?: boolean }
 
 // Edge data structure for Vue Flow
 export interface MindGraphEdgeData {

@@ -171,7 +171,7 @@ async function handleRenameDiagram(diagramId: string): Promise<void> {
   const currentName = diagram?.title || ''
 
   try {
-    const { value } = await ElMessageBox.prompt(
+    const result = await ElMessageBox.prompt(
       isZh.value ? '请输入新的图示名称' : 'Enter a new name for this diagram',
       isZh.value ? '重命名图示' : 'Rename Diagram',
       {
@@ -183,6 +183,10 @@ async function handleRenameDiagram(diagramId: string): Promise<void> {
       }
     )
 
+    const value =
+      typeof result === 'object' && result !== null && 'value' in result
+        ? (result as { value: string }).value
+        : undefined
     if (value && value.trim() !== currentName) {
       await savedDiagramsStore.updateDiagram(diagramId, { title: value.trim() })
     }

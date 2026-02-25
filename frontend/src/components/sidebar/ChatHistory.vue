@@ -159,7 +159,7 @@ async function handleRenameConversation(convId: string): Promise<void> {
   const currentName = conv?.name || ''
 
   try {
-    const { value } = await ElMessageBox.prompt(
+    const result = await ElMessageBox.prompt(
       isZh.value ? '请输入新的对话名称' : 'Enter a new name for this conversation',
       isZh.value ? '重命名对话' : 'Rename Conversation',
       {
@@ -171,6 +171,10 @@ async function handleRenameConversation(convId: string): Promise<void> {
       }
     )
 
+    const value =
+      typeof result === 'object' && result !== null && 'value' in result
+        ? (result as { value: string }).value
+        : undefined
     if (value && value.trim() !== currentName) {
       // Update store optimistically
       mindMateStore.renameConversation(convId, value.trim())
