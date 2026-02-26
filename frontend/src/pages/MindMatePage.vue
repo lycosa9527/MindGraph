@@ -3,7 +3,14 @@
  * MindMatePage - Full-page MindMate chat interface
  * Route: /mindmate
  */
+import { onUnmounted } from 'vue'
+
 import { MindmatePanel } from '@/components/panels'
+import { useVoiceStore } from '@/stores'
+
+onUnmounted(() => {
+  useVoiceStore().reset()
+})
 </script>
 
 <template>

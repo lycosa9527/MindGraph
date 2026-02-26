@@ -36,6 +36,7 @@ import { MULTI_FLOW_MAP_TOPIC_WIDTH } from '@/composables/diagrams/layoutConfig'
 import {
   getDefaultTemplate,
   loadSpecForDiagramType,
+  recalculateBubbleMapLayout,
   recalculateCircleMapLayout,
   recalculateMultiFlowMapLayout,
 } from './specLoader'
@@ -209,16 +210,24 @@ export const useDiagramStore = defineStore('diagram', () => {
     return data.value.nodes.filter((node) => selectedNodes.value.includes(node.id))
   })
 
+  // Circle map layout: computed only from node data (NOT selection).
+  // Prevents layout recalculation when selection changes (e.g. pane click),
+  // which was causing children nodes to shift when clicking filename then canvas.
+  const circleMapLayoutNodes = computed(() => {
+    if (type.value !== 'circle_map' || !data.value?.nodes) return []
+    return recalculateCircleMapLayout(data.value.nodes)
+  })
+
   // Vue Flow computed properties
   const vueFlowNodes = computed<MindGraphNode[]>(() => {
     const diagramType = type.value
     if (!data.value?.nodes || !diagramType) return []
 
-    // For circle maps, recalculate layout to ensure boundary and positions are correct
-    // This makes the layout adaptive when nodes are added/deleted
+    // For circle maps, use cached layout (depends only on nodes). Apply selection
+    // without re-running layout - prevents node shift on pane click / selection clear.
     if (diagramType === 'circle_map') {
-      const recalculatedNodes = recalculateCircleMapLayout(data.value.nodes)
-      return recalculatedNodes.map((node) => {
+      const layoutNodes = circleMapLayoutNodes.value
+      return layoutNodes.map((node) => {
         const vf = diagramNodeToVueFlowNode(node, diagramType)
         vf.selected = selectedNodes.value.includes(node.id)
         return vf
@@ -268,6 +277,28 @@ export const useDiagramStore = defineStore('diagram', () => {
         vueFlowNode.selected = selectedNodes.value.includes(node.id)
         // Branch counts should already be in node.data from specLoader
         // This ensures they're preserved in vueFlowNode.data
+        return vueFlowNode
+      })
+    }
+
+    // Bubble maps: recalculate layout (like circle map) for correct positions on every render.
+    // Fixes stale positions from saved diagrams or initial render timing.
+    if (diagramType === 'bubble_map') {
+      const layoutNodes = recalculateBubbleMapLayout(data.value.nodes)
+      return layoutNodes.map((node) => {
+        const vueFlowNode = diagramNodeToVueFlowNode(node, diagramType)
+        vueFlowNode.selected = selectedNodes.value.includes(node.id)
+        vueFlowNode.draggable = false
+        return vueFlowNode
+      })
+    }
+
+    // Double bubble map: use stored positions (no recalc for now)
+    if (diagramType === 'double_bubble_map') {
+      return data.value.nodes.map((node) => {
+        const vueFlowNode = diagramNodeToVueFlowNode(node, diagramType)
+        vueFlowNode.selected = selectedNodes.value.includes(node.id)
+        vueFlowNode.draggable = false
         return vueFlowNode
       })
     }
@@ -622,6 +653,21 @@ export const useDiagramStore = defineStore('diagram', () => {
       
       // Trigger layout recalculation
       multiFlowMapRecalcTrigger.value++
+    } else if (type.value === 'bubble_map' && nodeId.startsWith('bubble-')) {
+      // Bubble map: remove node, re-index remaining bubbles, rebuild connections
+      data.value.nodes.splice(index, 1)
+
+      const bubbleNodes = data.value.nodes.filter(
+        (n) => (n.type === 'bubble' || n.type === 'child') && n.id.startsWith('bubble-')
+      )
+      bubbleNodes.forEach((bubbleNode, i) => {
+        bubbleNode.id = `bubble-${i}`
+      })
+      data.value.connections = bubbleNodes.map((_, i) => ({
+        id: `edge-topic-bubble-${i}`,
+        source: 'topic',
+        target: `bubble-${i}`,
+      }))
     } else {
       // Standard deletion for other diagram types
       data.value.nodes.splice(index, 1)
@@ -643,6 +689,44 @@ export const useDiagramStore = defineStore('diagram', () => {
 
     emitEvent('diagram:nodes_deleted', { nodeIds: [nodeId] })
     return true
+  }
+
+  /**
+   * Remove multiple bubble map attribute nodes at once.
+   * Use for bulk delete to avoid re-indexing after each removal.
+   */
+  function removeBubbleMapNodes(nodeIds: string[]): number {
+    if (type.value !== 'bubble_map' || !data.value?.nodes) return 0
+
+    const idsToRemove = new Set(nodeIds.filter((id) => id.startsWith('bubble-')))
+    if (idsToRemove.size === 0) return 0
+
+    const deletedIds: string[] = []
+    data.value.nodes = data.value.nodes.filter((n) => {
+      if (idsToRemove.has(n.id)) {
+        deletedIds.push(n.id)
+        clearCustomPosition(n.id)
+        clearNodeStyle(n.id)
+        removeFromSelection(n.id)
+        return false
+      }
+      return true
+    })
+
+    const bubbleNodes = data.value.nodes.filter(
+      (n) => (n.type === 'bubble' || n.type === 'child') && n.id.startsWith('bubble-')
+    )
+    bubbleNodes.forEach((bubbleNode, i) => {
+      bubbleNode.id = `bubble-${i}`
+    })
+    data.value.connections = bubbleNodes.map((_, i) => ({
+      id: `edge-topic-bubble-${i}`,
+      source: 'topic',
+      target: `bubble-${i}`,
+    }))
+
+    emitEvent('diagram:nodes_deleted', { nodeIds: deletedIds })
+    return deletedIds.length
   }
 
   function reset(): void {
@@ -873,6 +957,13 @@ export const useDiagramStore = defineStore('diagram', () => {
     // Use spec loader for diagram-type-specific conversion
     const result = loadSpecForDiagramType(spec, diagramTypeValue)
 
+    // Always recalculate bubble map positions on load (default template and saved).
+    // Ensures stored positions match our layout logic; fixes wrong initial positions.
+    let nodesToStore = result.nodes
+    if (diagramTypeValue === 'bubble_map' && result.nodes.length > 0) {
+      nodesToStore = recalculateBubbleMapLayout(result.nodes)
+    }
+
     // Initialize multi-flow map topic width if needed
     if (diagramTypeValue === 'multi_flow_map') {
       topicNodeWidth.value = MULTI_FLOW_MAP_TOPIC_WIDTH
@@ -881,7 +972,7 @@ export const useDiagramStore = defineStore('diagram', () => {
     // Create diagram data
     data.value = {
       type: diagramTypeValue,
-      nodes: result.nodes,
+      nodes: nodesToStore,
       connections: result.connections,
       // Preserve spec metadata (for custom positions, styles, etc.)
       ...Object.fromEntries(
@@ -917,6 +1008,25 @@ export const useDiagramStore = defineStore('diagram', () => {
     }
 
     return true
+  }
+
+  /**
+   * Get diagram spec for saving (library, export).
+   * For bubble_map, recalculates positions so saved spec has correct layout.
+   */
+  function getSpecForSave(): Record<string, unknown> | null {
+    if (!data.value) return null
+    let nodes = data.value.nodes
+    if (type.value === 'bubble_map' && nodes.length > 0) {
+      nodes = recalculateBubbleMapLayout(nodes)
+    }
+    return {
+      type: type.value,
+      nodes,
+      connections: data.value.connections,
+      _customPositions: data.value._customPositions,
+      _node_styles: data.value._node_styles,
+    }
   }
 
   /**
@@ -1184,6 +1294,7 @@ export const useDiagramStore = defineStore('diagram', () => {
     updateNode,
     addNode,
     removeNode,
+    removeBubbleMapNodes,
     copySelectedNodes,
     pasteNodesAt,
     reset,
@@ -1211,6 +1322,7 @@ export const useDiagramStore = defineStore('diagram', () => {
     loadFromSpec,
     loadDefaultTemplate,
     mergeGranularUpdate,
+    getSpecForSave,
 
     // Flow map orientation
     toggleFlowMapOrientation,

@@ -23,25 +23,10 @@ import {
 // Using Lucide icons for a more modern, cute look
 import {
   ArrowLeft,
-  Check,
-  ClipboardCopy,
-  ClipboardPaste,
-  Eye,
   FileImage,
   FileJson,
-  FilePlus2,
   FileText,
-  FolderHeart,
   ImageDown,
-  Loader2,
-  Maximize,
-  Redo2,
-  Save,
-  Trash2,
-  Undo2,
-  Upload,
-  ZoomIn,
-  ZoomOut,
 } from 'lucide-vue-next'
 
 import {
@@ -237,17 +222,9 @@ function handleFileNameKeyPress(e: KeyboardEvent) {
   }
 }
 
-// Get current diagram spec for saving
+/** Get diagram spec for saving (uses recalculated positions for bubble map) */
 function getDiagramSpec(): Record<string, unknown> | null {
-  if (!diagramStore.data) return null
-
-  return {
-    type: diagramStore.type,
-    nodes: diagramStore.data.nodes,
-    connections: diagramStore.data.connections,
-    _customPositions: diagramStore.data._customPositions,
-    _node_styles: diagramStore.data._node_styles,
-  }
+  return diagramStore.getSpecForSave()
 }
 
 // Save to gallery
@@ -309,63 +286,6 @@ function handleSlotModalCancel(): void {
   showSlotFullModal.value = false
 }
 
-// File menu actions
-function handleFileCommand(command: string) {
-  switch (command) {
-    case 'new':
-      notify.info(isZh.value ? '新建画布功能开发中' : 'New canvas feature in development')
-      break
-    case 'save-as':
-      notify.info(isZh.value ? '另存为功能开发中' : 'Save as feature in development')
-      break
-    case 'save-gallery':
-      saveToGallery()
-      break
-    case 'import':
-      notify.info(isZh.value ? '从文件中导入功能开发中' : 'Import from file feature in development')
-      break
-  }
-}
-
-// Edit menu actions
-function handleEditCommand(command: string) {
-  switch (command) {
-    case 'undo':
-      notify.info(isZh.value ? '撤销' : 'Undo')
-      break
-    case 'redo':
-      notify.info(isZh.value ? '重做' : 'Redo')
-      break
-    case 'copy':
-      notify.info(isZh.value ? '复制功能开发中' : 'Copy feature in development')
-      break
-    case 'paste':
-      notify.info(isZh.value ? '粘贴功能开发中' : 'Paste feature in development')
-      break
-    case 'delete':
-      notify.info(isZh.value ? '删除功能开发中' : 'Delete feature in development')
-      break
-  }
-}
-
-// View menu actions
-function handleViewCommand(command: string) {
-  switch (command) {
-    case 'zoom-in':
-      notify.info(isZh.value ? '放大' : 'Zoom In')
-      break
-    case 'zoom-out':
-      notify.info(isZh.value ? '缩小' : 'Zoom Out')
-      break
-    case 'fit-view':
-      notify.info(isZh.value ? '适应画布' : 'Fit to View')
-      break
-    case 'fullscreen':
-      notify.info(isZh.value ? '全屏功能开发中' : 'Fullscreen feature in development')
-      break
-  }
-}
-
 // Export menu actions - emit event for DiagramCanvas to handle
 function handleExportCommand(command: string) {
   eventBus.emit('toolbar:export_requested', { format: command })
@@ -392,154 +312,6 @@ function handleExportCommand(command: string) {
           <ArrowLeft class="w-[18px] h-[18px]" />
         </ElButton>
       </ElTooltip>
-
-      <div class="h-5 border-r border-gray-200 dark:border-gray-600 mx-1" />
-
-      <!-- File menu -->
-      <ElDropdown
-        trigger="click"
-        @command="handleFileCommand"
-      >
-        <ElButton
-          text
-          size="small"
-          class="menu-button"
-        >
-          {{ isZh ? '文件' : 'File' }}
-        </ElButton>
-        <template #dropdown>
-          <ElDropdownMenu>
-            <ElDropdownItem command="new">
-              <FilePlus2 class="w-4 h-4 mr-2 text-blue-500" />
-              {{ isZh ? '新建画布' : 'New Canvas' }}
-            </ElDropdownItem>
-            <ElDropdownItem command="save-as">
-              <Save class="w-4 h-4 mr-2 text-green-500" />
-              {{ isZh ? '另存为' : 'Save As' }}
-            </ElDropdownItem>
-            <ElDropdownItem command="save-gallery">
-              <Loader2
-                v-if="isSaving"
-                class="w-4 h-4 mr-2 text-pink-500 animate-spin"
-              />
-              <Check
-                v-else-if="isAlreadySaved"
-                class="w-4 h-4 mr-2 text-green-500"
-              />
-              <FolderHeart
-                v-else
-                class="w-4 h-4 mr-2 text-pink-500"
-              />
-              {{
-                isAlreadySaved
-                  ? isZh
-                    ? '已保存到图库'
-                    : 'Saved to Gallery'
-                  : isZh
-                    ? '保存到我的图库'
-                    : 'Save to Gallery'
-              }}
-            </ElDropdownItem>
-            <ElDropdownItem
-              divided
-              command="import"
-            >
-              <Upload class="w-4 h-4 mr-2 text-purple-500" />
-              {{ isZh ? '从文件中导入' : 'Import from File' }}
-            </ElDropdownItem>
-          </ElDropdownMenu>
-        </template>
-      </ElDropdown>
-
-      <!-- Edit menu -->
-      <ElDropdown
-        trigger="click"
-        @command="handleEditCommand"
-      >
-        <ElButton
-          text
-          size="small"
-          class="menu-button"
-        >
-          {{ isZh ? '编辑' : 'Edit' }}
-        </ElButton>
-        <template #dropdown>
-          <ElDropdownMenu>
-            <ElDropdownItem command="undo">
-              <Undo2 class="w-4 h-4 mr-2 text-orange-500" />
-              {{ isZh ? '撤销' : 'Undo' }}
-              <span class="shortcut">Ctrl+Z</span>
-            </ElDropdownItem>
-            <ElDropdownItem command="redo">
-              <Redo2 class="w-4 h-4 mr-2 text-orange-500" />
-              {{ isZh ? '重做' : 'Redo' }}
-              <span class="shortcut">Ctrl+Y</span>
-            </ElDropdownItem>
-            <ElDropdownItem
-              divided
-              command="copy"
-            >
-              <ClipboardCopy class="w-4 h-4 mr-2 text-cyan-500" />
-              {{ isZh ? '复制' : 'Copy' }}
-              <span class="shortcut">Ctrl+C</span>
-            </ElDropdownItem>
-            <ElDropdownItem command="paste">
-              <ClipboardPaste class="w-4 h-4 mr-2 text-cyan-500" />
-              {{ isZh ? '粘贴' : 'Paste' }}
-              <span class="shortcut">Ctrl+V</span>
-            </ElDropdownItem>
-            <ElDropdownItem
-              divided
-              command="delete"
-            >
-              <Trash2 class="w-4 h-4 mr-2 text-red-400" />
-              {{ isZh ? '删除' : 'Delete' }}
-              <span class="shortcut">Del</span>
-            </ElDropdownItem>
-          </ElDropdownMenu>
-        </template>
-      </ElDropdown>
-
-      <!-- View menu -->
-      <ElDropdown
-        trigger="click"
-        @command="handleViewCommand"
-      >
-        <ElButton
-          text
-          size="small"
-          class="menu-button"
-        >
-          {{ isZh ? '视图' : 'View' }}
-        </ElButton>
-        <template #dropdown>
-          <ElDropdownMenu>
-            <ElDropdownItem command="zoom-in">
-              <ZoomIn class="w-4 h-4 mr-2 text-indigo-500" />
-              {{ isZh ? '放大' : 'Zoom In' }}
-              <span class="shortcut">Ctrl++</span>
-            </ElDropdownItem>
-            <ElDropdownItem command="zoom-out">
-              <ZoomOut class="w-4 h-4 mr-2 text-indigo-500" />
-              {{ isZh ? '缩小' : 'Zoom Out' }}
-              <span class="shortcut">Ctrl+-</span>
-            </ElDropdownItem>
-            <ElDropdownItem command="fit-view">
-              <Eye class="w-4 h-4 mr-2 text-teal-500" />
-              {{ isZh ? '适应画布' : 'Fit to View' }}
-              <span class="shortcut">Ctrl+0</span>
-            </ElDropdownItem>
-            <ElDropdownItem
-              divided
-              command="fullscreen"
-            >
-              <Maximize class="w-4 h-4 mr-2 text-gray-500" />
-              {{ isZh ? '全屏' : 'Fullscreen' }}
-              <span class="shortcut">F11</span>
-            </ElDropdownItem>
-          </ElDropdownMenu>
-        </template>
-      </ElDropdown>
 
       <div class="h-5 border-r border-gray-200 dark:border-gray-600 mx-1" />
 

@@ -12,8 +12,6 @@ import logging
 import time
 from typing import TYPE_CHECKING, cast
 
-from prompts import get_prompt
-from services.llm import llm_service
 from services.llm.rag_service import RAGService
 
 from agents.concept_maps.concept_map_agent import ConceptMapAgent
@@ -120,42 +118,42 @@ async def _generate_spec_with_agent(
                     "Bridge map Mode 1: Only pairs - will identify relationship "
                     "from %d pairs", len(existing_analogies)
                 )
-            bridge_kwargs = {
-                'user_id': user_id,
-                'organization_id': organization_id,
-                'request_type': request_type,
-                'endpoint_path': endpoint_path,
-                'existing_analogies': existing_analogies,
-                'fixed_dimension': fixed_dimension
-            }
-            if dimension_preference:
-                bridge_kwargs['dimension_preference'] = dimension_preference
-            result = await agent.generate_graph(user_prompt, language, **bridge_kwargs)
+            bridge_agent = cast(BridgeMapAgent, agent)
+            result = await bridge_agent.generate_graph(
+                user_prompt,
+                language,
+                user_id=user_id,
+                organization_id=organization_id,
+                request_type=request_type,
+                endpoint_path=endpoint_path,
+                existing_analogies=existing_analogies,
+                fixed_dimension=fixed_dimension,
+                dimension_preference=dimension_preference
+            )
         # Bridge map Mode 3: Relationship-only mode (no pairs, but has fixed dimension)
         elif diagram_type == 'bridge_map' and fixed_dimension and not existing_analogies:
             logger.debug(
                 "Bridge map Mode 3: Relationship-only - generating pairs for '%s'",
                 fixed_dimension
             )
-            bridge_kwargs = {
-                'user_id': user_id,
-                'organization_id': organization_id,
-                'request_type': request_type,
-                'endpoint_path': endpoint_path,
-                'existing_analogies': None,
-                'fixed_dimension': fixed_dimension
-            }
-            if dimension_preference:
-                bridge_kwargs['dimension_preference'] = dimension_preference
-            result = await agent.generate_graph(user_prompt, language, **bridge_kwargs)
+            bridge_agent = cast(BridgeMapAgent, agent)
+            result = await bridge_agent.generate_graph(
+                user_prompt,
+                language,
+                user_id=user_id,
+                organization_id=organization_id,
+                request_type=request_type,
+                endpoint_path=endpoint_path,
+                existing_analogies=None,
+                fixed_dimension=fixed_dimension,
+                dimension_preference=dimension_preference
+            )
         # Tree map and brace map: Three-scenario system (similar to bridge_map)
         # Scenario 1: Topic only → handled by standard generation below
         # Scenario 2: Topic + dimension → fixed_dimension mode (topic exists)
         # Scenario 3: Dimension only (no topic) → dimension_only_mode
         elif (diagram_type == 'tree_map' or diagram_type == 'brace_map') and fixed_dimension:
-            # At this point, agent is definitely TreeMapAgent or BraceMapAgent
-            # Both accept dimension_preference and fixed_dimension parameters
-            # Use explicit type annotation to help Pylint understand
+            # Create agent in branch so Pylint infers concrete type (avoids E1123)
             if dimension_only_mode:
                 # Scenario 3: Dimension-only mode - user has dimension but no topic
                 logger.debug(
@@ -163,21 +161,31 @@ async def _generate_spec_with_agent(
                     "dimension '%s'", diagram_type, fixed_dimension
                 )
                 if diagram_type == 'tree_map':
-                    typed_agent = cast(TreeMapAgent, agent)
+                    tree_agent = TreeMapAgent(model=model)
+                    result = await tree_agent.generate_graph(
+                        user_prompt,
+                        language,
+                        dimension_preference=fixed_dimension,
+                        user_id=user_id,
+                        organization_id=organization_id,
+                        request_type=request_type,
+                        endpoint_path=endpoint_path,
+                        fixed_dimension=fixed_dimension,
+                        dimension_only_mode=True
+                    )
                 else:
-                    typed_agent = cast(BraceMapAgent, agent)
-                tree_brace_kwargs = {
-                    'dimension_preference': fixed_dimension,
-                    'user_id': user_id,
-                    'organization_id': organization_id,
-                    'request_type': request_type,
-                    'endpoint_path': endpoint_path,
-                    'fixed_dimension': fixed_dimension,
-                    'dimension_only_mode': True
-                }
-                result = await typed_agent.generate_graph(
-                    user_prompt, language, **tree_brace_kwargs
-                )
+                    brace_agent = BraceMapAgent(model=model)
+                    result = await brace_agent.generate_graph(
+                        user_prompt,
+                        language,
+                        dimension_preference=fixed_dimension,
+                        user_id=user_id,
+                        organization_id=organization_id,
+                        request_type=request_type,
+                        endpoint_path=endpoint_path,
+                        fixed_dimension=fixed_dimension,
+                        dimension_only_mode=True
+                    )
             else:
                 # Scenario 2: Topic + dimension mode
                 logger.debug(
@@ -185,52 +193,78 @@ async def _generate_spec_with_agent(
                     diagram_type, fixed_dimension
                 )
                 if diagram_type == 'tree_map':
-                    typed_agent = cast(TreeMapAgent, agent)
+                    tree_agent = TreeMapAgent(model=model)
+                    result = await tree_agent.generate_graph(
+                        user_prompt,
+                        language,
+                        dimension_preference=fixed_dimension,
+                        user_id=user_id,
+                        organization_id=organization_id,
+                        request_type=request_type,
+                        endpoint_path=endpoint_path,
+                        fixed_dimension=fixed_dimension
+                    )
                 else:
-                    typed_agent = cast(BraceMapAgent, agent)
-                tree_brace_kwargs = {
-                    'dimension_preference': fixed_dimension,
-                    'user_id': user_id,
-                    'organization_id': organization_id,
-                    'request_type': request_type,
-                    'endpoint_path': endpoint_path,
-                    'fixed_dimension': fixed_dimension
-                }
-                result = await typed_agent.generate_graph(
-                    user_prompt, language, **tree_brace_kwargs
-                )
+                    brace_agent = BraceMapAgent(model=model)
+                    result = await brace_agent.generate_graph(
+                        user_prompt,
+                        language,
+                        dimension_preference=fixed_dimension,
+                        user_id=user_id,
+                        organization_id=organization_id,
+                        request_type=request_type,
+                        endpoint_path=endpoint_path,
+                        fixed_dimension=fixed_dimension
+                    )
         # For brace maps, tree maps, and bridge maps (without fixed dimension), pass dimension_preference if available
         elif (diagram_type == 'brace_map' or diagram_type == 'tree_map' or
               diagram_type == 'bridge_map') and dimension_preference:
-            # At this point, agent is TreeMapAgent, BraceMapAgent, or BridgeMapAgent
-            # All accept dimension_preference parameter
-            # Use explicit type annotation to help Pylint
+            # Create agent in branch so Pylint infers concrete type (avoids E1123)
             if diagram_type == 'brace_map':
-                typed_agent = cast(BraceMapAgent, agent)
                 logger.debug(
                     "Passing decomposition dimension preference to brace map agent: %s",
                     dimension_preference
                 )
+                brace_agent = BraceMapAgent(model=model)
+                result = await brace_agent.generate_graph(
+                    user_prompt,
+                    language,
+                    dimension_preference=dimension_preference,
+                    user_id=user_id,
+                    organization_id=organization_id,
+                    request_type=request_type,
+                    endpoint_path=endpoint_path
+                )
             elif diagram_type == 'tree_map':
-                typed_agent = cast(TreeMapAgent, agent)
                 logger.debug(
                     "Passing classification dimension preference to tree map agent: %s",
                     dimension_preference
                 )
+                tree_agent = TreeMapAgent(model=model)
+                result = await tree_agent.generate_graph(
+                    user_prompt,
+                    language,
+                    dimension_preference=dimension_preference,
+                    user_id=user_id,
+                    organization_id=organization_id,
+                    request_type=request_type,
+                    endpoint_path=endpoint_path
+                )
             else:  # bridge_map
-                typed_agent = cast(BridgeMapAgent, agent)
                 logger.debug(
                     "Passing analogy relationship pattern preference to bridge map agent: %s",
                     dimension_preference
                 )
-            tree_brace_kwargs = {
-                'dimension_preference': dimension_preference,
-                'user_id': user_id,
-                'organization_id': organization_id,
-                'request_type': request_type,
-                'endpoint_path': endpoint_path
-            }
-            result = await typed_agent.generate_graph(user_prompt, language, **tree_brace_kwargs)
+                bridge_agent = BridgeMapAgent(model=model)
+                result = await bridge_agent.generate_graph(
+                    user_prompt,
+                    language,
+                    dimension_preference=dimension_preference,
+                    user_id=user_id,
+                    organization_id=organization_id,
+                    request_type=request_type,
+                    endpoint_path=endpoint_path
+                )
         else:
             # For agents that don't support dimension_preference or other special parameters
             basic_kwargs = {
@@ -364,98 +398,7 @@ auto-complete - user has dimension but no topic (generate topic and children)
                     'show_guidance': True
                 }
 
-        # Extract main topic from prompt using LLM (only if not forced diagram type)
-        if not forced_diagram_type:
-            # Prompt-based generation: just extract topic, let frontend use default template
-
-            # RAG Integration: Retrieve relevant context for topic extraction if enabled
-            rag_context_for_topic = None
-            if use_rag and user_id:
-                try:
-                    rag_service = RAGService()
-                    db = SessionLocal()
-                    try:
-                        if rag_service.has_knowledge_base(db, user_id):
-                            rag_context_chunks = rag_service.retrieve_context(
-                                db=db,
-                                user_id=user_id,
-                                query=user_prompt,
-                                method='hybrid',
-                                top_k=rag_top_k,
-                                score_threshold=0.3,
-                                source='diagram_generation',
-                                source_context={
-                                    'stage': 'topic_extraction',
-                                    'diagram_type': (
-                                        diagram_type if 'diagram_type' in locals() else None
-                                    )
-                                }
-                            )
-
-                            if rag_context_chunks:
-                                rag_context_for_topic = "\n\n".join([
-                                    f"[知识库参考 {i+1}]: {chunk}"
-                                    for i, chunk in enumerate(rag_context_chunks)
-                                ]) if language == 'zh' else "\n\n".join([
-                                    f"[Knowledge Base Reference {i+1}]: {chunk}"
-                                    for i, chunk in enumerate(rag_context_chunks)
-                                ])
-                                logger.debug(
-                                    "[RAG] Retrieved %d context chunks for topic extraction",
-                                    len(rag_context_chunks)
-                                )
-                    finally:
-                        db.close()
-                except Exception as e:  # pylint: disable=broad-except
-                    logger.debug(
-                        "[RAG] Failed to retrieve context for topic extraction: %s", e
-                    )
-
-            # Use centralized topic extraction prompt
-            topic_extraction_prompt = get_prompt("topic_extraction", language, "generation")
-
-            # Enhance prompt with RAG context if available
-            if rag_context_for_topic:
-                if language == 'zh':
-                    enhanced_user_prompt = f"{user_prompt}\n\n相关背景知识：\n{rag_context_for_topic}"
-                else:
-                    enhanced_user_prompt = f"{user_prompt}\n\nRelevant Context:\n{rag_context_for_topic}"
-            else:
-                enhanced_user_prompt = user_prompt
-
-            topic_extraction_prompt = topic_extraction_prompt.format(user_prompt=enhanced_user_prompt)
-
-            topic_start = time.time()
-            main_topic = await llm_service.chat(
-                prompt=topic_extraction_prompt,
-                model=model,
-                max_tokens=50,
-                temperature=0.1,  # Lower temperature for more deterministic extraction
-                # Token tracking parameters
-                user_id=user_id,
-                organization_id=organization_id,
-                request_type=request_type,
-                endpoint_path=endpoint_path
-            )
-            topic_time = time.time() - topic_start
-            main_topic = main_topic.strip().strip('"\'')
-            logger.info("Topic extraction completed in %.2fs: '%s'", topic_time, main_topic)
-
-            # Return just the topic and diagram type - frontend will load default template
-            total_time = time.time() - workflow_start_time
-            logger.info(
-                "Prompt-based workflow completed in %.2fs (detection=%.2fs, topic=%.2fs)",
-                total_time, detection_time, topic_time
-            )
-            return {
-                'success': True,
-                'diagram_type': diagram_type,
-                'extracted_topic': main_topic,  # Just the topic, no spec
-                'language': language,
-                'use_default_template': True  # Signal to frontend to use default template + trigger auto-complete
-            }
-
-        # For forced diagram type (manual generation), use full agent workflow
+        # Continue to full spec generation for both free-form and forced diagram type
         # Add learning sheet detection
         is_learning_sheet = _detect_learning_sheet_from_prompt(user_prompt, language)
         logger.debug("Learning sheet detected: %s", is_learning_sheet)

@@ -18,6 +18,11 @@ Features:
 Requires: psycopg2-binary, PostgreSQL client tools (pg_dump, pg_restore), rich (for progress bar)
 """
 
+try:
+    from _path_setup import project_root
+except ModuleNotFoundError:
+    from scripts.db._path_setup import project_root
+
 import json
 import logging
 import os
@@ -30,15 +35,9 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 from urllib.parse import urlparse
 
+from sqlalchemy import inspect, text
 
-def _setup_module_path() -> Path:
-    """Add project root to path before importing config. Returns project_root."""
-    root = Path(__file__).resolve().parent.parent.parent
-    sys.path.insert(0, str(root))
-    return root
-
-
-project_root = _setup_module_path()
+from config.database import DATABASE_URL, engine
 
 try:
     from dotenv import load_dotenv
@@ -64,10 +63,6 @@ try:
     from services.infrastructure.process.process_manager import start_postgresql_server
 except ImportError:
     start_postgresql_server = None
-
-from sqlalchemy import inspect, text
-
-from config.database import DATABASE_URL, engine
 
 try:
     from utils.migration.sqlite.migration_tables import reset_postgresql_sequences

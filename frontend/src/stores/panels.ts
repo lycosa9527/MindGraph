@@ -3,6 +3,10 @@
  * Migrated from StateManager.panels
  *
  * Enhanced with State-to-Event bridge for EventBus integration
+ *
+ * Lifecycle: reset() is called on canvas exit (CanvasPage onUnmounted) to clear
+ * nodePalette suggestions, property nodeData, and mindmate panel state, avoiding
+ * memory leaks from canvas-specific data.
  */
 import { computed, ref } from 'vue'
 
@@ -233,6 +237,9 @@ export const usePanelsStore = defineStore('panels', () => {
     eventBus.emit('panel:all_closed', {})
   }
 
+  /**
+   * Reset all panel state. Called on canvas exit to avoid memory leaks.
+   */
   function reset(): void {
     mindmate.value = {
       open: false,

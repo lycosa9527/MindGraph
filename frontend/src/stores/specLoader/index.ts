@@ -10,7 +10,7 @@ import type { DiagramType } from '@/types'
 
 import { loadBraceMapSpec } from './braceMap'
 import { loadBridgeMapSpec } from './bridgeMap'
-import { loadBubbleMapSpec } from './bubbleMap'
+import { loadBubbleMapSpec, recalculateBubbleMapLayout } from './bubbleMap'
 import { loadCircleMapSpec } from './circleMap'
 import { loadDoubleBubbleMapSpec } from './doubleBubbleMap'
 import { loadFlowMapSpec } from './flowMap'
@@ -22,6 +22,7 @@ import type { SpecLoaderResult } from './types'
 
 // Re-export public APIs
 export { recalculateCircleMapLayout } from './circleMap'
+export { recalculateBubbleMapLayout } from './bubbleMap'
 export { recalculateMultiFlowMapLayout } from './multiFlowMap'
 export type { SpecLoaderResult } from './types'
 
@@ -93,11 +94,13 @@ const DEFAULT_TEMPLATES: Record<string, Record<string, unknown>> = {
     left: '主题A',
     right: '主题B',
     similarities: ['相似点1', '相似点2'],
-    left_differences: ['不同点A1', '不同点A2'],
-    right_differences: ['不同点B1', '不同点B2'],
+    left_differences: ['不同点A1', '不同点A2', '不同点A3'],
+    right_differences: ['不同点B1', '不同点B2', '不同点B3'],
   },
   tree_map: {
     topic: '根主题',
+    dimension: '',
+    alternative_dimensions: [],
     children: [
       {
         text: '类别1',

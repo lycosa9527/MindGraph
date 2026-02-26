@@ -171,6 +171,34 @@ const menuItems = computed<MenuItem[]>(() => {
           emit('close')
         },
       })
+    } else if (diagramType === 'bubble_map') {
+      items.push({
+        label: '添加属性',
+        action: () => {
+          if (!diagramStore.data?.nodes) {
+            notify.warning(isZh.value ? '请先创建图示' : 'Please create a diagram first')
+            emit('close')
+            return
+          }
+          const bubbleNodes = diagramStore.data.nodes.filter(
+            (n) => (n.type === 'bubble' || n.type === 'child') && n.id.startsWith('bubble-')
+          )
+          const newIndex = bubbleNodes.length
+          diagramStore.addNode({
+            id: `bubble-${newIndex}`,
+            text: isZh.value ? '新属性' : 'New Attribute',
+            type: 'bubble',
+            position: { x: 0, y: 0 },
+          })
+          diagramStore.data.connections.push({
+            id: `edge-topic-bubble-${newIndex}`,
+            source: 'topic',
+            target: `bubble-${newIndex}`,
+          })
+          diagramStore.pushHistory(isZh.value ? '添加属性' : 'Add Attribute')
+          emit('close')
+        },
+      })
     } else if (diagramType === 'circle_map') {
       items.push({
         label: '添加节点',

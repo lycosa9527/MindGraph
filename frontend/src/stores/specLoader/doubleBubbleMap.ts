@@ -3,8 +3,8 @@
  */
 import {
   DEFAULT_BUBBLE_RADIUS,
-  DEFAULT_COLUMN_SPACING,
   DEFAULT_DIFF_RADIUS,
+  DEFAULT_DIFF_TO_TOPIC_SPACING,
   DEFAULT_PADDING,
   DEFAULT_TOPIC_RADIUS,
 } from '@/composables/diagrams/layoutConfig'
@@ -38,63 +38,69 @@ export function loadDoubleBubbleMapSpec(spec: Record<string, unknown>): SpecLoad
   const topicR = DEFAULT_TOPIC_RADIUS
   const simR = DEFAULT_BUBBLE_RADIUS
   const diffR = DEFAULT_DIFF_RADIUS
-  const columnSpacing = DEFAULT_COLUMN_SPACING
+  // Use same spacing for topic-to-similarity and topic-to-difference (both sides equal)
+  const topicSpacing = DEFAULT_DIFF_TO_TOPIC_SPACING
 
-  // Vertical spacing
-  const simVerticalSpacing = simR * 2 + 12
-  const diffVerticalSpacing = diffR * 2 + 10
+  // Unified row spacing for all columns (diff, sim) - same vertical positions
+  const rowSpacing = Math.max(simR * 2 + 12, diffR * 2 + 10)
 
   // Calculate X positions (column-based layout from left to right)
   const leftDiffX = padding + diffR
-  const leftTopicX = leftDiffX + diffR + columnSpacing + topicR
-  const simX = leftTopicX + topicR + columnSpacing + simR
-  const rightTopicX = simX + simR + columnSpacing + topicR
-  const rightDiffX = rightTopicX + topicR + columnSpacing + diffR
+  const leftTopicX = leftDiffX + diffR + topicSpacing + topicR
+  const simX = leftTopicX + topicR + topicSpacing + simR
+  const rightTopicX = simX + simR + topicSpacing + topicR
+  const rightDiffX = rightTopicX + topicR + topicSpacing + diffR
 
-  // Calculate heights
   const simCount = similarities.length
   const leftDiffCount = leftDifferences.length
   const rightDiffCount = rightDifferences.length
-
-  // Calculate column heights (differences are paired, so use max count)
-  const simColHeight = simCount > 0 ? (simCount - 1) * simVerticalSpacing + simR * 2 : 0
   const maxDiffCount = Math.max(leftDiffCount, rightDiffCount)
-  const diffColHeight = maxDiffCount > 0 ? (maxDiffCount - 1) * diffVerticalSpacing + diffR * 2 : 0
-  const maxColHeight = Math.max(simColHeight, diffColHeight, topicR * 2)
+  const rowCount = Math.max(maxDiffCount, simCount, 1)
 
-  const requiredHeight = maxColHeight + padding * 2
+  const requiredHeight =
+    (rowCount - 1) * rowSpacing + Math.max(simR * 2, diffR * 2, topicR * 2) + padding * 2
   const centerY = requiredHeight / 2
+
+  // Row Y positions: center-aligned so middle row = centerY (topics align with middle diff row)
+  const rowY = (rowIndex: number) => centerY + (rowIndex - (rowCount - 1) / 2) * rowSpacing
 
   const nodes: DiagramNode[] = []
   const connections: Connection[] = []
 
-  // Left topic (column 2) - perfect circle
+  // Topics at centerY (aligned with middle row of diff/sim nodes)
+  const topicY = centerY
+
+  // Left topic (column 2)
   nodes.push({
     id: 'left-topic',
     text: left,
     type: 'topic',
-    position: { x: leftTopicX - topicR, y: centerY - topicR },
+    position: { x: leftTopicX - topicR, y: topicY - topicR },
   })
 
-  // Right topic (column 4) - perfect circle
+  // Right topic (column 4)
   nodes.push({
     id: 'right-topic',
     text: right,
     type: 'topic',
-    position: { x: rightTopicX - topicR, y: centerY - topicR },
+    position: { x: rightTopicX - topicR, y: topicY - topicR },
   })
 
-  // Similarities (column 3, center)
-  const simStartY = centerY - simColHeight / 2 + simR
+  // Similarities: center them in available rows (e.g. 2 sims in 3 rows → rows 0 and 2)
+  const simRowIndices =
+    simCount <= 1
+      ? [0]
+      : Array.from({ length: simCount }, (_, i) =>
+          simCount === rowCount ? i : Math.round((i * (rowCount - 1)) / (simCount - 1))
+        )
+
   similarities.forEach((sim, index) => {
+    const y = rowY(simRowIndices[index])
     nodes.push({
       id: `similarity-${index}`,
       text: sim,
       type: 'bubble',
-      position: {
-        x: simX - simR,
-        y: simStartY + index * simVerticalSpacing - simR,
-      },
+      position: { x: simX - simR, y: y - simR },
     })
     connections.push(
       { id: `edge-left-sim-${index}`, source: 'left-topic', target: `similarity-${index}` },
@@ -102,19 +108,14 @@ export function loadDoubleBubbleMapSpec(spec: Record<string, unknown>): SpecLoad
     )
   })
 
-  // Left and Right differences are PAIRED - they share the same Y positions
-  const diffStartY = centerY - diffColHeight / 2 + diffR
-
-  // Left differences (column 1, far left)
+  // Left and right differences: same row positions, center-aligned with topics
   leftDifferences.forEach((diff, index) => {
+    const y = rowY(index)
     nodes.push({
       id: `left-diff-${index}`,
       text: diff,
       type: 'bubble',
-      position: {
-        x: leftDiffX - diffR,
-        y: diffStartY + index * diffVerticalSpacing - diffR,
-      },
+      position: { x: leftDiffX - diffR, y: y - diffR },
     })
     connections.push({
       id: `edge-left-diff-${index}`,
@@ -123,16 +124,13 @@ export function loadDoubleBubbleMapSpec(spec: Record<string, unknown>): SpecLoad
     })
   })
 
-  // Right differences (column 5, far right) - same Y positions as left
   rightDifferences.forEach((diff, index) => {
+    const y = rowY(index)
     nodes.push({
       id: `right-diff-${index}`,
       text: diff,
       type: 'bubble',
-      position: {
-        x: rightDiffX - diffR,
-        y: diffStartY + index * diffVerticalSpacing - diffR,
-      },
+      position: { x: rightDiffX - diffR, y: y - diffR },
     })
     connections.push({
       id: `edge-right-diff-${index}`,

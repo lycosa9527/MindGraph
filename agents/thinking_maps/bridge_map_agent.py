@@ -45,6 +45,8 @@ class BridgeMapAgent(BaseAgent):
         existing_analogies: Optional[List[Dict[str, str]]] = None,
         # Bridge map auto-complete: fixed dimension/relationship that user has already specified
         fixed_dimension: Optional[str] = None,
+        # Dimension-only mode (for compatibility with base class; not used by bridge map)
+        dimension_only_mode: Optional[bool] = None,
         **kwargs: Any
     ) -> Dict[str, Any]:
         """

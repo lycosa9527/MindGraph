@@ -49,8 +49,7 @@ const path = computed(() => {
   const nx = dx / distance
   const ny = dy / distance
 
-  // Calculate edge of circles (for circular nodes)
-  // Source is typically the topic (larger circle)
+  // Calculate edge of circles (center-to-edge for both source and target)
   const sourceRadius = Math.min(sourceWidth, sourceHeight) / 2
   const targetRadius = Math.min(targetWidth, targetHeight) / 2
 

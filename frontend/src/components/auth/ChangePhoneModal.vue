@@ -10,7 +10,7 @@
  * 3. User enters SMS verification code
  * 4. Phone number is updated
  */
-import { computed, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 
 import { ElButton, ElInput } from 'element-plus'
 
@@ -89,6 +89,13 @@ function resetForm() {
 function closeModal() {
   isVisible.value = false
 }
+
+onBeforeUnmount(() => {
+  if (countdownTimer) {
+    clearInterval(countdownTimer)
+    countdownTimer = null
+  }
+})
 
 async function fetchCaptcha() {
   captchaLoading.value = true

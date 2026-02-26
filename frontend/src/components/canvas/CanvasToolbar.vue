@@ -360,6 +360,31 @@ function handleAddNode() {
     return
   }
 
+  // For bubble maps, add a new attribute node
+  if (diagramType === 'bubble_map') {
+    const bubbleNodes = diagramStore.data.nodes.filter(
+      (n) => (n.type === 'bubble' || n.type === 'child') && n.id.startsWith('bubble-')
+    )
+    const newIndex = bubbleNodes.length
+
+    diagramStore.addNode({
+      id: `bubble-${newIndex}`,
+      text: isZh.value ? '新属性' : 'New Attribute',
+      type: 'bubble',
+      position: { x: 0, y: 0 },
+    })
+
+    diagramStore.data.connections.push({
+      id: `edge-topic-bubble-${newIndex}`,
+      source: 'topic',
+      target: `bubble-${newIndex}`,
+    })
+
+    diagramStore.pushHistory(isZh.value ? '添加属性' : 'Add Attribute')
+    notify.success(isZh.value ? '已添加新属性' : 'Attribute added')
+    return
+  }
+
   // For circle maps, add a new context node
   if (diagramType === 'circle_map') {
     // Find existing context nodes to determine next index
@@ -630,6 +655,23 @@ async function handleDeleteNode() {
     totalNodesInDiagram: diagramStore.data?.nodes?.length || 0,
   })
   console.log(`[CanvasToolbar] [${getTimestamp()}] ======================================`)
+
+  // For bubble maps, delete selected attribute nodes (bulk remove + re-index)
+  if (diagramType === 'bubble_map') {
+    const selectedNodes = [...diagramStore.selectedNodes]
+    const deletedCount = diagramStore.removeBubbleMapNodes(selectedNodes)
+
+    if (deletedCount > 0) {
+      diagramStore.clearSelection()
+      diagramStore.pushHistory(isZh.value ? '删除属性' : 'Delete Attribute')
+      notify.success(
+        isZh.value ? `已删除 ${deletedCount} 个属性` : `Deleted ${deletedCount} attribute(s)`
+      )
+    } else {
+      notify.warning(isZh.value ? '无法删除主题节点' : 'Cannot delete topic node')
+    }
+    return
+  }
 
   // For circle maps, delete selected context nodes
   if (diagramType === 'circle_map') {

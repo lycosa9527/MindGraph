@@ -1,20 +1,106 @@
 /**
  * Bubble Map Loader
+ *
+ * Layout: first child at 0° (top, above topic); even distribution via polar positions.
+ * Uses no-overlap formula for circumferential spacing.
+ * Circles are text-adaptive (like old D3 bubble-map-renderer): min diameter from text measurement.
  */
 import {
-  DEFAULT_BUBBLE_RADIUS,
   DEFAULT_PADDING,
   DEFAULT_TOPIC_RADIUS,
+  DEFAULT_CONTEXT_RADIUS,
 } from '@/composables/diagrams/layoutConfig'
+import {
+  bubbleMapChildrenRadius,
+  polarToPosition,
+} from '@/composables/diagrams/useRadialLayout'
 import type { Connection, DiagramNode } from '@/types'
 
 import type { SpecLoaderResult } from './types'
+import {
+  computeMinDiameterForNoWrap,
+  CONTEXT_FONT_SIZE,
+} from './textMeasurement'
 
 /**
- * Load bubble map spec into diagram nodes and connections
- *
- * @param spec - Bubble map spec with topic and attributes array
- * @returns SpecLoaderResult with nodes and connections
+ * Compute radius for each attribute from text (min diameter for no-wrap fit).
+ * Matches old D3 bubble-map-renderer: circles grow to fit text.
+ */
+function radiusFromText(text: string): number {
+  const diameter = computeMinDiameterForNoWrap(text || ' ', CONTEXT_FONT_SIZE, false)
+  return Math.max(DEFAULT_CONTEXT_RADIUS, diameter / 2)
+}
+
+/**
+ * Recalculate bubble map layout from existing nodes.
+ * Uses text-adaptive circle sizes; ring radius from max radius for no-overlap.
+ */
+export function recalculateBubbleMapLayout(nodes: DiagramNode[]): DiagramNode[] {
+  if (!Array.isArray(nodes) || nodes.length === 0) return []
+
+  const topicNode = nodes.find((n) => n.type === 'topic' || n.type === 'center')
+  const bubbleNodes = nodes
+    .filter((n) => n.type === 'bubble' || n.type === 'child')
+    .sort((a, b) => {
+      const i = parseInt(a.id.replace(/^bubble-/, ''), 10)
+      const j = parseInt(b.id.replace(/^bubble-/, ''), 10)
+      if (Number.isNaN(i) || Number.isNaN(j)) return 0
+      return i - j
+    })
+  const nodeCount = bubbleNodes.length
+  const topicR = DEFAULT_TOPIC_RADIUS
+  const padding = DEFAULT_PADDING
+
+  const radii = bubbleNodes.map((n) => radiusFromText(n.text))
+  const uniformRadius = Math.max(DEFAULT_CONTEXT_RADIUS, ...radii)
+
+  const childrenRadius = bubbleMapChildrenRadius(
+    nodeCount,
+    topicR,
+    uniformRadius,
+    uniformRadius
+  )
+  const centerX = childrenRadius + uniformRadius + padding
+  const centerY = childrenRadius + uniformRadius + padding
+
+  const result: DiagramNode[] = []
+
+  if (topicNode) {
+    result.push({
+      ...topicNode,
+      position: { x: centerX - topicR, y: centerY - topicR },
+    })
+  }
+
+  bubbleNodes.forEach((node, index) => {
+    const { x, y } = polarToPosition(
+      index,
+      nodeCount,
+      centerX,
+      centerY,
+      childrenRadius,
+      uniformRadius,
+      uniformRadius
+    )
+    const pos = { x: Math.round(x), y: Math.round(y) }
+    result.push({
+      ...node,
+      position: pos,
+      style: {
+        ...node.style,
+        size: uniformRadius * 2,
+        fontSize: CONTEXT_FONT_SIZE,
+        noWrap: true,
+      },
+    })
+  })
+
+  return result
+}
+
+/**
+ * Load bubble map spec into diagram nodes and connections.
+ * Circles are text-adaptive: each circle size from computeMinDiameterForNoWrap.
  */
 export function loadBubbleMapSpec(spec: Record<string, unknown>): SpecLoaderResult {
   if (!spec || typeof spec !== 'object') {
@@ -24,31 +110,26 @@ export function loadBubbleMapSpec(spec: Record<string, unknown>): SpecLoaderResu
   const topic = (spec.topic as string) || ''
   const attributes = Array.isArray(spec.attributes) ? (spec.attributes as string[]) : []
 
-  // Layout constants from layoutConfig
-  const uniformAttributeR = DEFAULT_BUBBLE_RADIUS
   const topicR = DEFAULT_TOPIC_RADIUS
   const padding = DEFAULT_PADDING
-
-  // Dynamic layout calculation (matching old JS: topicR + uniformAttributeR + 50)
   const nodeCount = attributes.length
-  const targetDistance = topicR + uniformAttributeR + 50
 
-  // Circumferential constraint for many nodes
-  const spacingMultiplier = nodeCount <= 3 ? 2.0 : nodeCount <= 6 ? 2.05 : 2.1
-  const circumferentialMinRadius =
-    nodeCount > 0 ? (uniformAttributeR * nodeCount * spacingMultiplier) / (2 * Math.PI) : 0
+  const radii = attributes.map((attr) => radiusFromText(attr))
+  const uniformRadius =
+    nodeCount > 0 ? Math.max(DEFAULT_CONTEXT_RADIUS, ...radii) : DEFAULT_CONTEXT_RADIUS
 
-  // Use the larger of both constraints (minimum 100px)
-  const childrenRadius = Math.max(targetDistance, circumferentialMinRadius, 100)
-
-  // Dynamic canvas center
-  const centerX = childrenRadius + uniformAttributeR + padding
-  const centerY = childrenRadius + uniformAttributeR + padding
+  const childrenRadius = bubbleMapChildrenRadius(
+    nodeCount,
+    topicR,
+    uniformRadius,
+    uniformRadius
+  )
+  const centerX = childrenRadius + uniformRadius + padding
+  const centerY = childrenRadius + uniformRadius + padding
 
   const nodes: DiagramNode[] = []
   const connections: Connection[] = []
 
-  // Topic node - perfect circle (uses CircleNode)
   nodes.push({
     id: 'topic',
     text: topic,
@@ -56,23 +137,28 @@ export function loadBubbleMapSpec(spec: Record<string, unknown>): SpecLoaderResu
     position: { x: centerX - topicR, y: centerY - topicR },
   })
 
-  // Attribute bubbles arranged in a circle
-  // Start from top (-90 degrees) with even angle distribution
-  // Handle division by zero case
   if (nodeCount > 0) {
+    const uniformDiameter = uniformRadius * 2
     attributes.forEach((attr, index) => {
-      const angleDeg = (index * 360) / nodeCount - 90 // Start from top
-      const angleRad = (angleDeg * Math.PI) / 180
-
-      // Position at childrenRadius from center
-      const x = centerX + childrenRadius * Math.cos(angleRad) - uniformAttributeR
-      const y = centerY + childrenRadius * Math.sin(angleRad) - uniformAttributeR
-
+      const { x, y } = polarToPosition(
+        index,
+        nodeCount,
+        centerX,
+        centerY,
+        childrenRadius,
+        uniformRadius,
+        uniformRadius
+      )
       nodes.push({
         id: `bubble-${index}`,
         text: attr,
         type: 'bubble',
-        position: { x, y },
+        position: { x: Math.round(x), y: Math.round(y) },
+        style: {
+          size: uniformDiameter,
+          fontSize: CONTEXT_FONT_SIZE,
+          noWrap: true,
+        },
       })
 
       connections.push({

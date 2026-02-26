@@ -45,7 +45,7 @@ class TreeMapAgent(BaseAgent):
         self,
         prompt: str,
         language: str = "en",
-        dimension_preference: str = None,
+        dimension_preference: Optional[str] = None,
         # Token tracking parameters
         user_id: Optional[int] = None,
         organization_id: Optional[int] = None,

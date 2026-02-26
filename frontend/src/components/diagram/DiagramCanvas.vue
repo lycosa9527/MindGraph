@@ -89,14 +89,7 @@ function getExportTitle(): string {
 }
 
 function getExportSpec(): Record<string, unknown> | null {
-  if (!diagramStore.data) return null
-  return {
-    type: diagramStore.type,
-    nodes: diagramStore.data.nodes,
-    connections: diagramStore.data.connections,
-    _customPositions: diagramStore.data._customPositions,
-    _node_styles: diagramStore.data._node_styles,
-  }
+  return diagramStore.getSpecForSave()
 }
 
 const { exportByFormat } = useDiagramExport({
@@ -126,6 +119,18 @@ const vueFlowWrapper = ref<HTMLElement | null>(null)
 
 // Track if current fit was done with panel space reserved
 const isFittedForPanel = ref(false)
+
+// Track if we've done initial fit for current diagram - prevents fitView on pane click
+// (nodes-initialized can re-fire when vueFlowNodes returns new refs on selection clear)
+const hasInitialFitDoneForDiagram = ref(false)
+
+// Reset initial-fit flag when diagram changes (new load, type switch)
+watch(
+  () => [diagramStore.type, diagramStore.data] as const,
+  () => {
+    hasInitialFitDoneForDiagram.value = false
+  }
+)
 
 // Canvas container reference for size calculations
 const canvasContainer = ref<HTMLElement | null>(null)
@@ -257,33 +262,39 @@ function handleNodeContextMenu(event: MouseEvent, node: MindGraphNode) {
   contextMenuVisible.value = true
 }
 
+// Context menu setup - stored for cleanup on unmount
+let contextMenuSetupTimeoutId: ReturnType<typeof setTimeout> | null = null
+let contextMenuElement: HTMLElement | null = null
+let contextMenuHandler: ((event: Event) => void) | null = null
+
+function handleContextMenuEvent(event: Event) {
+  const mouseEvent = event as MouseEvent
+  const target = mouseEvent.target as HTMLElement
+
+  const nodeElement = target.closest('.vue-flow__node')
+  if (nodeElement) {
+    const nodeId = nodeElement.getAttribute('data-id')
+    if (nodeId) {
+      const node = getNodes.value.find((n) => n.id === nodeId)
+      if (node) {
+        handleNodeContextMenu(mouseEvent, node as unknown as MindGraphNode)
+        return
+      }
+    }
+  }
+
+  handlePaneContextMenu(mouseEvent)
+}
+
 // Set up context menu listeners on mount
 onMounted(() => {
-  // Use nextTick to ensure Vue Flow is rendered
-  setTimeout(() => {
-    const vueFlowElement = vueFlowWrapper.value?.querySelector('.vue-flow')
+  contextMenuSetupTimeoutId = setTimeout(() => {
+    contextMenuSetupTimeoutId = null
+    const vueFlowElement = vueFlowWrapper.value?.querySelector('.vue-flow') as HTMLElement | null
     if (vueFlowElement) {
-      // Listen for contextmenu events on Vue Flow pane
-      vueFlowElement.addEventListener('contextmenu', (event: Event) => {
-        const mouseEvent = event as MouseEvent
-        const target = mouseEvent.target as HTMLElement
-        
-        // Check if clicking on a node
-        const nodeElement = target.closest('.vue-flow__node')
-        if (nodeElement) {
-          const nodeId = nodeElement.getAttribute('data-id')
-          if (nodeId) {
-            const node = getNodes.value.find((n) => n.id === nodeId)
-            if (node) {
-              handleNodeContextMenu(mouseEvent, node as unknown as MindGraphNode)
-              return
-            }
-          }
-        }
-        
-        // Otherwise, it's a pane click
-        handlePaneContextMenu(mouseEvent)
-      })
+      contextMenuElement = vueFlowElement
+      contextMenuHandler = handleContextMenuEvent
+      vueFlowElement.addEventListener('contextmenu', contextMenuHandler)
     }
   }, 100)
 })
@@ -302,8 +313,13 @@ function handleContextMenuPaste(position: { x: number; y: number }) {
 
 // Handle nodes initialized - Vue Flow has placed nodes, viewport is ready
 // Use same flow as zoom fit button; delay to let layout fully settle
+// Only fit on first init for current diagram - nodes-initialized re-fires when
+// vueFlowNodes returns new refs (e.g. on pane click/selection clear), which would
+// otherwise trigger unwanted fitView and the "re-compute" feeling
 function handleNodesInitialized() {
   if (!props.fitViewOnInit || getNodes.value.length === 0) return
+  if (hasInitialFitDoneForDiagram.value) return
+  hasInitialFitDoneForDiagram.value = true
   setTimeout(() => {
     eventBus.emit('view:fit_to_canvas_requested', { animate: true })
   }, ANIMATION.FIT_VIEWPORT_DELAY)
@@ -638,6 +654,17 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  // Clear context menu setup timeout if still pending
+  if (contextMenuSetupTimeoutId) {
+    clearTimeout(contextMenuSetupTimeoutId)
+    contextMenuSetupTimeoutId = null
+  }
+  // Remove context menu listener
+  if (contextMenuElement && contextMenuHandler) {
+    contextMenuElement.removeEventListener('contextmenu', contextMenuHandler)
+    contextMenuElement = null
+    contextMenuHandler = null
+  }
   // Clean up all subscriptions
   unsubscribers.forEach((unsub) => unsub())
   unsubscribers.length = 0
@@ -697,7 +724,10 @@ const gridConfig = {
       :pan-on-drag="props.handToolActive ? [0, 1, 2] : [1, 2]"
       :class="[
         'bg-gray-50 dark:bg-gray-900',
-        diagramStore.type === 'circle_map' ? 'circle-map-canvas' : '',
+        diagramStore.type !== null &&
+        ['circle_map', 'bubble_map', 'double_bubble_map'].includes(diagramStore.type)
+          ? 'circle-map-canvas'
+          : '',
       ]"
       :style="{ backgroundColor: backgroundColor }"
       @pane-click="handlePaneClick"
@@ -764,10 +794,16 @@ const gridConfig = {
   box-shadow: 0 0 0 2px #3b82f6;
 }
 
-/* Circle map: hide Vue Flow's selection bounding box, use per-node pulse animation instead */
+/* Circle map & bubble maps: hide Vue Flow's selection bounding box, use per-node pulse animation instead */
 .circle-map-canvas .vue-flow__nodesselection,
 .circle-map-canvas .vue-flow__nodesselection-rect {
   display: none !important;
+}
+
+/* Bubble map attribute nodes (pill shape): pulse glow when selected, same as circle map */
+.circle-map-canvas .vue-flow__node-bubble.selected {
+  box-shadow: none !important;
+  animation: pulseGlow 2s ease-in-out infinite;
 }
 
 /* Circle nodes: circular wrapper so any outline follows circle shape; pulse animation when selected */

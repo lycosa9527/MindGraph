@@ -20,8 +20,8 @@ export interface DiagramTemplate {
 }
 
 export const DIAGRAM_TEMPLATES: Record<string, DiagramTemplate> = {
-  圆圈图: { template: '用气泡图联想【中心词】。', slots: ['中心词'] },
-  气泡图: { template: '用圆圈图描述【中心词】。', slots: ['中心词'] },
+  圆圈图: { template: '用圆圈图联想【中心词】。', slots: ['中心词'] },
+  气泡图: { template: '用气泡图描述【中心词】。', slots: ['中心词'] },
   双气泡图: { template: '对比【事物A】和【事物B】。', slots: ['事物A', '事物B'] },
   树形图: { template: '按照【分类标准】对【事物】分类。', slots: ['分类标准', '事物'] },
   括号图: { template: '用括号图拆分【事物】。', slots: ['事物'] },
@@ -43,7 +43,7 @@ export const useUIStore = defineStore('ui', () => {
 
   /** Wireframe mode: black & white / line sketch view for diagram canvas */
   const wireframeMode = ref(false)
-  const selectedChartType = ref<string>('选择图示')
+  const selectedChartType = ref<string>('选择具体图示')
   const templateSlots = ref<Record<string, string>>({})
   const freeInputValue = ref<string>('')
 
@@ -57,7 +57,22 @@ export const useUIStore = defineStore('ui', () => {
 
   const isDark = computed(() => effectiveTheme.value === 'dark')
 
+  // Stored for cleanup on reset (avoids leak if reset called in full-teardown)
+  let mediaQuery: MediaQueryList | null = null
+  let mediaQueryHandler: (() => void) | null = null
+
   // Actions
+  function setupMediaQueryListener(): void {
+    if (typeof window === 'undefined' || mediaQuery) return
+    mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
+    mediaQueryHandler = () => {
+      if (theme.value === 'system') {
+        applyTheme()
+      }
+    }
+    mediaQuery.addEventListener('change', mediaQueryHandler)
+  }
+
   function initFromStorage(): void {
     const storedTheme = localStorage.getItem(THEME_KEY) as Theme
     const storedLanguage = localStorage.getItem(LANGUAGE_KEY) as Language
@@ -71,6 +86,16 @@ export const useUIStore = defineStore('ui', () => {
 
     // Apply theme
     applyTheme()
+    setupMediaQueryListener()
+  }
+
+  function removeListeners(): void {
+    window.removeEventListener('resize', checkMobile)
+    if (mediaQuery && mediaQueryHandler) {
+      mediaQuery.removeEventListener('change', mediaQueryHandler)
+      mediaQuery = null
+      mediaQueryHandler = null
+    }
   }
 
   function setTheme(newTheme: Theme): void {
@@ -131,13 +156,13 @@ export const useUIStore = defineStore('ui', () => {
   function setSelectedChartType(type: string): void {
     selectedChartType.value = type
     templateSlots.value = {}
-    if (type !== '选择图示') {
+    if (type !== '选择具体图示') {
       freeInputValue.value = ''
     }
   }
 
   function setTemplateSlot(slotName: string, value: string): void {
-    templateSlots.value[slotName] = value
+    templateSlots.value = { ...templateSlots.value, [slotName]: value }
   }
 
   function clearTemplateSlots(): void {
@@ -149,7 +174,7 @@ export const useUIStore = defineStore('ui', () => {
   }
 
   function hasValidSlots(): boolean {
-    if (selectedChartType.value === '选择图示') {
+    if (selectedChartType.value === '选择具体图示') {
       return freeInputValue.value.trim() !== ''
     }
     const template = DIAGRAM_TEMPLATES[selectedChartType.value]
@@ -160,7 +185,7 @@ export const useUIStore = defineStore('ui', () => {
   }
 
   function getTemplateText(): string {
-    if (selectedChartType.value === '选择图示') {
+    if (selectedChartType.value === '选择具体图示') {
       return freeInputValue.value.trim()
     }
     const template = DIAGRAM_TEMPLATES[selectedChartType.value]
@@ -168,33 +193,65 @@ export const useUIStore = defineStore('ui', () => {
 
     let text = template.template
     for (const slot of template.slots) {
-      text = text.replace(`【${slot}】`, templateSlots.value[slot] || slot)
+      const value = templateSlots.value[slot]?.trim() ?? ''
+      text = text.replace(`【${slot}】`, value)
     }
     return text
   }
 
+  /**
+   * Get topic-only prompt when a specific diagram is selected.
+   * Returns user's slot values as the topic (no template wrapper).
+   * Used when diagram_type is forced - topic is fixed from user input.
+   */
+  function getTemplateTopic(): string {
+    if (selectedChartType.value === '选择具体图示') {
+      return freeInputValue.value.trim()
+    }
+    const template = DIAGRAM_TEMPLATES[selectedChartType.value]
+    if (!template) return ''
+
+    const slots = template.slots
+    const values = slots.map((s) => templateSlots.value[s]?.trim() || '').filter(Boolean)
+    if (values.length === 0) return ''
+    if (values.length === 1) return values[0]
+    return values.join(' 和 ')
+  }
+
+  /**
+   * Get dimension_preference for tree/brace map when specific diagram selected.
+   */
+  function getTemplateDimensionPreference(): string | null {
+    if (selectedChartType.value !== '树形图' && selectedChartType.value !== '括号图') {
+      return null
+    }
+    const v = templateSlots.value['分类标准']?.trim()
+    return v || null
+  }
+
+  /**
+   * Get fixed_dimension for bridge map when specific diagram selected.
+   */
+  function getTemplateFixedDimension(): string | null {
+    if (selectedChartType.value !== '桥形图') return null
+    const v = templateSlots.value['对应关系']?.trim()
+    return v || null
+  }
+
   function reset(): void {
+    removeListeners()
     theme.value = 'light'
     language.value = 'zh'
     isMobile.value = false
     sidebarCollapsed.value = false
     currentMode.value = 'mindmate'
-    selectedChartType.value = '选择图示'
+    selectedChartType.value = '选择具体图示'
     templateSlots.value = {}
     freeInputValue.value = ''
     localStorage.removeItem(THEME_KEY)
     localStorage.removeItem(LANGUAGE_KEY)
     applyTheme()
-  }
-
-  // Watch for system theme changes
-  if (typeof window !== 'undefined') {
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
-    mediaQuery.addEventListener('change', () => {
-      if (theme.value === 'system') {
-        applyTheme()
-      }
-    })
+    initFromStorage()
   }
 
   // Initialize
@@ -234,6 +291,9 @@ export const useUIStore = defineStore('ui', () => {
     setFreeInputValue,
     hasValidSlots,
     getTemplateText,
+    getTemplateTopic,
+    getTemplateDimensionPreference,
+    getTemplateFixedDimension,
     reset,
   }
 })

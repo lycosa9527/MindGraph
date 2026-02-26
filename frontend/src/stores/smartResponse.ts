@@ -90,6 +90,13 @@ export const useSmartResponseStore = defineStore('smartResponse', () => {
     }
   }
 
+  function reset(): void {
+    watches.value = []
+    currentSession.value = null
+    isLoading.value = false
+    error.value = null
+  }
+
   return {
     watches,
     currentSession,
@@ -101,5 +108,6 @@ export const useSmartResponseStore = defineStore('smartResponse', () => {
     fetchWatches,
     assignWatch,
     startLearningMode,
+    reset,
   }
 })

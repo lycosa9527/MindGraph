@@ -38,6 +38,9 @@ class BaseAgent(ABC):
         self,
         user_prompt: str,
         language: str = 'zh',
+        dimension_preference: str | None = None,
+        fixed_dimension: str | None = None,
+        dimension_only_mode: bool | None = None,
         **kwargs: Any
     ) -> Dict[str, Any]:
         """
@@ -46,10 +49,10 @@ class BaseAgent(ABC):
         Args:
             user_prompt: User's input prompt
             language: Language for processing ('zh' or 'en')
+            dimension_preference: Preferred dimension for tree/brace maps
+            fixed_dimension: Fixed dimension that should not change
+            dimension_only_mode: Generate topic from dimension only
             **kwargs: Additional parameters for specific agent types
-                - dimension_preference: Preferred dimension for tree/brace maps
-                - fixed_dimension: Fixed dimension that should not change
-                - dimension_only_mode: Generate topic from dimension only
                 - user_id: User ID for token tracking
                 - organization_id: Organization ID for token tracking
                 - request_type: Request type for token tracking

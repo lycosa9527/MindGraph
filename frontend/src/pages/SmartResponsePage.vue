@@ -78,7 +78,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useSmartResponseStore } from '@/stores/smartResponse'
 import WatchAssignmentModal from '@/components/smart-response/WatchAssignmentModal.vue'
 
@@ -94,6 +94,10 @@ const selectedWatch = ref(null)
 onMounted(async () => {
   await store.fetchWatches()
   // TODO: Load diagrams
+})
+
+onUnmounted(() => {
+  store.reset()
 })
 
 function getStatusType(status: string) {

@@ -144,8 +144,11 @@ export const DEFAULT_LEVEL_HEIGHT = 100
 /** Default level width for horizontal tree structures (brace maps) */
 export const DEFAULT_LEVEL_WIDTH = 200
 
-/** Default column spacing for double bubble maps */
+/** Default column spacing for double bubble maps (topic-to-similarity, similarity-to-topic) */
 export const DEFAULT_COLUMN_SPACING = 50
+
+/** Spacing between difference nodes and their topic in double bubble maps (left diff ↔ topic A, topic B ↔ right diff) */
+export const DEFAULT_DIFF_TO_TOPIC_SPACING = 80
 
 /** Default category spacing for tree maps */
 export const DEFAULT_CATEGORY_SPACING = 160

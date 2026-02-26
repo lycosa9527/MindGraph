@@ -269,11 +269,13 @@ export function useInteraction(options: InteractionOptions = {}) {
   // =========================================================================
 
   function destroy(): void {
-    // Clear any pending timeout
+    // Clear any pending timeout and reset click tracker state
     if (clickTracker.value.singleClickTimeout) {
       clearTimeout(clickTracker.value.singleClickTimeout)
       clickTracker.value.singleClickTimeout = null
     }
+    clickTracker.value.lastClickTime = 0
+    clickTracker.value.lastClickNodeId = null
 
     // Unsubscribe from EventBus
     unsubSelectNode()

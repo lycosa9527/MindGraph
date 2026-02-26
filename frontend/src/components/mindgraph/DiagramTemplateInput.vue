@@ -3,17 +3,42 @@
  * DiagramTemplateInput - Template-based input with fill-in slots
  * Migrated from prototype MindMateChatPage template system
  */
-import { computed } from 'vue'
+import { computed, onUnmounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
-import { ArrowRight, ChevronDown, X } from 'lucide-vue-next'
+import { ElButton, ElIcon, ElInput } from 'element-plus'
 
-import { DIAGRAM_TEMPLATES, useAuthStore, useUIStore } from '@/stores'
+import { Close, Loading, Promotion } from '@element-plus/icons-vue'
+
+import { ChevronDown } from 'lucide-vue-next'
+
+import { useLanguage, useNotifications } from '@/composables'
+import {
+  DIAGRAM_TEMPLATES,
+  useAuthStore,
+  useDiagramStore,
+  useLLMResultsStore,
+  useUIStore,
+} from '@/stores'
 import type { DiagramType } from '@/types'
+import { authFetch } from '@/utils/api'
+
+const MAX_PROMPT_LENGTH = 10000
+
+// LLMs to use for parallel generation (first-success-wins)
+const LANDING_LLM_MODELS = ['qwen', 'deepseek', 'kimi', 'doubao'] as const
 
 const uiStore = useUIStore()
 const authStore = useAuthStore()
+const diagramStore = useDiagramStore()
 const router = useRouter()
+const { isZh } = useLanguage()
+const notify = useNotifications()
+
+const isGenerating = ref(false)
+
+// AbortControllers for in-flight generation; aborted on unmount to avoid leaks
+const landingAbortControllers = ref<AbortController[]>([])
 
 // Map Chinese diagram type names to DiagramType for URL
 const diagramTypeMap: Record<string, DiagramType> = {
@@ -30,7 +55,7 @@ const diagramTypeMap: Record<string, DiagramType> = {
 }
 
 const chartTypes = [
-  '选择图示',
+  '选择具体图示',
   '圆圈图',
   '气泡图',
   '双气泡图',
@@ -44,11 +69,11 @@ const chartTypes = [
 
 const selectedType = computed(() => uiStore.selectedChartType)
 const templateSlots = computed(() => uiStore.templateSlots)
-// freeInputValue reserved for v-model binding in future
-const _freeInputValue = computed(() => uiStore.freeInputValue)
+
+const canSubmit = computed(() => uiStore.hasValidSlots() && authStore.isAuthenticated)
 
 const currentTemplate = computed(() => {
-  if (selectedType.value === '选择图示') return null
+  if (selectedType.value === '选择具体图示') return null
   return DIAGRAM_TEMPLATES[selectedType.value] || null
 })
 
@@ -57,74 +82,115 @@ function handleTypeChange(type: string) {
 }
 
 function clearType() {
-  uiStore.setSelectedChartType('选择图示')
+  uiStore.setSelectedChartType('选择具体图示')
 }
 
-function handleFreeInputChange(e: Event) {
+function handleFreeInputFocus() {
   if (!authStore.isAuthenticated) {
-    e.preventDefault()
     authStore.handleTokenExpired(undefined, undefined)
+  }
+}
+
+async function generateFromLanding() {
+  const isSpecificDiagram = selectedType.value !== '选择具体图示'
+  const diagramTypeParam = isSpecificDiagram ? diagramTypeMap[selectedType.value] : null
+
+  const requestText = uiStore.getTemplateText().trim()
+  if (!requestText) return
+
+  if (requestText.length > MAX_PROMPT_LENGTH) {
+    notify.error(
+      isZh.value
+        ? `输入内容过长（${requestText.length}字符）。最大允许${MAX_PROMPT_LENGTH}字符。`
+        : `Prompt too long (${requestText.length} chars). Maximum is ${MAX_PROMPT_LENGTH} chars.`
+    )
     return
   }
-  const target = e.target as HTMLElement
-  uiStore.setFreeInputValue(target.textContent || '')
+
+  const requestBody: Record<string, unknown> = {
+    prompt: requestText,
+    diagram_type: diagramTypeParam,
+    language: isZh.value ? 'zh' : 'en',
+  }
+
+  if (isSpecificDiagram) {
+    const dimPref = uiStore.getTemplateDimensionPreference()
+    if (dimPref) requestBody.dimension_preference = dimPref
+    const fixedDim = uiStore.getTemplateFixedDimension()
+    if (fixedDim) requestBody.fixed_dimension = fixedDim
+  }
+
+  landingAbortControllers.value = LANDING_LLM_MODELS.map(() => new AbortController())
+
+  async function fetchWithModel(model: string, index: number) {
+    const response = await authFetch('/api/generate_graph', {
+      method: 'POST',
+      body: JSON.stringify({ ...requestBody, llm: model }),
+      signal: landingAbortControllers.value[index].signal,
+    })
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({ detail: 'Request failed' }))
+      throw new Error(err.detail || `HTTP ${response.status}`)
+    }
+
+    const result = await response.json()
+    if (result.success && result.spec) {
+      landingAbortControllers.value.forEach((c, j) => j !== index && c.abort())
+      return { model, result }
+    }
+    throw new Error(result.error || 'Generation failed')
+  }
+
+  isGenerating.value = true
+  try {
+    const promises = LANDING_LLM_MODELS.map((model, i) => fetchWithModel(model, i))
+
+    const { model: winningModel, result } = await Promise.any(promises)
+    const finalDiagramType = (result.diagram_type as DiagramType) || diagramTypeParam
+    if (!finalDiagramType) {
+      throw new Error('No diagram type specified')
+    }
+
+    const loaded = diagramStore.loadFromSpec(result.spec, finalDiagramType)
+    if (loaded) {
+      useLLMResultsStore().reset()
+      notify.success(
+        isZh.value ? `图表生成成功 (${winningModel})` : `Diagram generated (${winningModel})`
+      )
+      router.push({ path: '/canvas' })
+    } else {
+      throw new Error('Failed to load diagram data')
+    }
+  } catch (error) {
+    if (error instanceof Error && error.name === 'AggregateError') {
+      const msg = isZh.value ? '所有模型均生成失败，请重试' : 'All models failed, please try again'
+      notify.error(msg)
+    } else {
+      console.error('Generate from landing failed:', error)
+      const errorMessage =
+        error instanceof Error ? error.message : isZh.value ? '生成失败' : 'Generation failed'
+      notify.error(errorMessage)
+    }
+  } finally {
+    isGenerating.value = false
+  }
 }
 
-function handleSlotInput(slotName: string, e: Event) {
-  if (!authStore.isAuthenticated) {
-    e.preventDefault()
-    authStore.handleTokenExpired(undefined, undefined)
-    return
-  }
-  const target = e.target as HTMLElement
-  const placeholder = target.getAttribute('data-placeholder')
-  const value = target.textContent === placeholder ? '' : target.textContent?.trim() || ''
-  uiStore.setTemplateSlot(slotName, value)
-}
+onUnmounted(() => {
+  landingAbortControllers.value.forEach((c) => c.abort())
+  landingAbortControllers.value = []
+})
 
-function handleSlotFocus(e: FocusEvent) {
-  if (!authStore.isAuthenticated) {
-    e.preventDefault()
-    authStore.handleTokenExpired(undefined, undefined)
-    return
-  }
-  const target = e.target as HTMLElement
-  const placeholder = target.getAttribute('data-placeholder')
-  if (placeholder && target.textContent === placeholder) {
-    target.textContent = ''
-    target.style.color = '#000'
-  }
-}
-
-function handleSlotBlur(e: FocusEvent) {
-  const target = e.target as HTMLElement
-  const placeholder = target.getAttribute('data-placeholder')
-  if (placeholder && !target.textContent?.trim()) {
-    target.textContent = placeholder
-    target.style.color = '#9CA3AF'
-  }
-}
-
-function handleSubmit() {
+async function handleSubmit() {
   if (!uiStore.hasValidSlots()) return
-  
+
   if (!authStore.isAuthenticated) {
     authStore.handleTokenExpired(undefined, undefined)
     return
   }
 
-  const requestText = uiStore.getTemplateText()
-  // Store diagram type and prompt, then navigate with type in URL for refresh persistence
-  uiStore.setSelectedChartType(selectedType.value)
-  // Emit event that canvas can listen to for auto-generation
-  import('@/composables/useEventBus').then(({ eventBus }) => {
-    eventBus.emit('canvas:generate_with_prompt', { prompt: requestText })
-  })
-  const diagramType = diagramTypeMap[selectedType.value]
-  router.push({
-    path: '/canvas',
-    query: diagramType ? { type: diagramType } : undefined,
-  })
+  await generateFromLanding()
 }
 
 // Parse template into parts with slots
@@ -158,19 +224,30 @@ const templateParts = computed(() => {
 </script>
 
 <template>
-  <div class="diagram-template-input rounded-xl border border-gray-200 p-5 bg-white shadow-sm">
+  <div
+    class="diagram-template-input rounded-xl border border-gray-200 p-5 bg-white shadow-sm"
+    :class="{ 'prompt-box-rainbow': selectedType === '选择具体图示' && isGenerating }"
+  >
     <!-- Input area -->
     <div class="mb-4">
-      <!-- Free input mode -->
-      <div
-        v-if="selectedType === '选择图示'"
-        id="mindgraph-free-input"
-        class="w-full min-h-[40px] p-3 text-gray-800 focus:outline-none"
-        :contenteditable="authStore.isAuthenticated"
-        :style="{ cursor: authStore.isAuthenticated ? 'text' : 'not-allowed', opacity: authStore.isAuthenticated ? 1 : 0.6 }"
-        data-placeholder="请输入绘图要求..."
-        @input="handleFreeInputChange"
-        @focus="!authStore.isAuthenticated && authStore.handleTokenExpired(undefined, undefined)"
+      <!-- Free input mode: Element Plus input with blinking cursor and placeholder -->
+      <ElInput
+        v-if="selectedType === '选择具体图示'"
+        :model-value="uiStore.freeInputValue"
+        type="textarea"
+        :rows="2"
+        size="large"
+        :maxlength="50"
+        show-word-limit
+        :placeholder="
+          isZh
+            ? '描述你的图示，或从下方选择具体图示模板...'
+            : 'Describe your diagram, or select a template below...'
+        "
+        :disabled="!authStore.isAuthenticated"
+        class="mindgraph-free-input"
+        @update:model-value="uiStore.setFreeInputValue"
+        @focus="handleFreeInputFocus"
       />
 
       <!-- Template mode -->
@@ -178,47 +255,43 @@ const templateParts = computed(() => {
         v-else
         class="flex items-center rounded-lg p-2"
       >
-        <!-- Chart type tag -->
-        <div class="relative mr-2">
-          <span class="bg-blue-50 text-blue-600 px-2 py-1 rounded text-sm">
+        <!-- Chart type tag with close icon on top right -->
+        <div class="relative mr-2 inline-block">
+          <span
+            class="diagram-type-tag bg-blue-50 text-blue-600 px-3 py-1.5 pr-7 rounded-md font-medium"
+          >
             {{ selectedType }}
           </span>
-          <button
-            class="absolute -top-1 -right-1 w-4 h-4 bg-red-100 rounded-full flex items-center justify-center text-red-500 text-xs hover:bg-red-200 transition-colors"
+          <ElButton
+            :icon="Close"
+            circle
+            size="small"
+            class="clear-type-btn"
             @click.stop="clearType"
-          >
-            <X class="w-2.5 h-2.5" />
-          </button>
+          />
         </div>
 
-        <!-- Template with slots -->
-        <div class="flex-1 flex flex-wrap items-center gap-1">
+        <!-- Template with slots: Element Plus inputs -->
+        <div class="flex-1 flex flex-wrap items-center gap-2">
           <template
             v-for="(part, index) in templateParts"
             :key="index"
           >
             <span
               v-if="part.type === 'text'"
-              class="text-gray-800"
+              class="template-text text-gray-800"
               >{{ part.content }}</span
             >
-            <span
+            <ElInput
               v-else
-              class="inline-block border border-blue-200 rounded px-2 py-1 min-w-[60px] text-center cursor-text"
-              :contenteditable="authStore.isAuthenticated"
-              :data-slot="part.name"
-              :data-placeholder="part.name"
-              :style="{ 
-                color: templateSlots[part.name] ? '#000' : '#9CA3AF',
-                cursor: authStore.isAuthenticated ? 'text' : 'not-allowed',
-                opacity: authStore.isAuthenticated ? 1 : 0.6
-              }"
-              @input="handleSlotInput(part.name, $event)"
-              @focus="handleSlotFocus"
-              @blur="handleSlotBlur"
-            >
-              {{ templateSlots[part.name] || part.name }}
-            </span>
+              :model-value="templateSlots[part.name] || ''"
+              :placeholder="part.name"
+              size="small"
+              class="template-slot-input"
+              :disabled="!authStore.isAuthenticated"
+              @update:model-value="(v: string) => uiStore.setTemplateSlot(part.name, v)"
+              @focus="handleFreeInputFocus"
+            />
           </template>
         </div>
       </div>
@@ -231,7 +304,7 @@ const templateParts = computed(() => {
         <select
           :value="selectedType"
           :disabled="!authStore.isAuthenticated"
-          class="w-full appearance-none bg-white border border-blue-500 rounded-md py-2 pl-3 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+          class="diagram-type-select w-full appearance-none bg-white border border-blue-500 rounded-md py-2 pl-3 pr-10 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
           @change="handleTypeChange(($event.target as HTMLSelectElement).value)"
           @focus="!authStore.isAuthenticated && authStore.handleTokenExpired(undefined, undefined)"
         >
@@ -248,40 +321,131 @@ const templateParts = computed(() => {
         </div>
       </div>
 
-      <!-- Submit button -->
-      <button
-        class="p-2.5 rounded-full text-white transition-colors"
-        :class="
-          uiStore.hasValidSlots() && authStore.isAuthenticated
-            ? 'bg-blue-600 hover:bg-blue-700'
-            : 'bg-gray-300 cursor-not-allowed'
-        "
-        :disabled="!uiStore.hasValidSlots() || !authStore.isAuthenticated"
+      <!-- Submit button: Element Plus primary when enabled, grey when empty -->
+      <ElButton
+        :type="canSubmit ? 'primary' : 'default'"
+        :loading="isGenerating"
+        :loading-icon="Loading"
+        :disabled="!canSubmit || isGenerating"
+        circle
+        class="submit-btn"
         @click="handleSubmit"
       >
-        <ArrowRight class="w-4 h-4" />
-      </button>
+        <ElIcon v-if="!isGenerating">
+          <Promotion />
+        </ElIcon>
+      </ElButton>
     </div>
   </div>
 </template>
 
 <style scoped>
-[data-placeholder]:empty:before {
-  content: attr(data-placeholder);
+.mindgraph-free-input :deep(.el-textarea__inner) {
+  box-shadow: none;
+  border: 1px solid #e5e7eb;
+  resize: none;
+  font-size: 18px;
+}
+
+.mindgraph-free-input :deep(.el-textarea__inner::placeholder) {
+  font-size: 18px;
   color: #9ca3af;
+}
+
+.mindgraph-free-input :deep(.el-textarea__inner:focus) {
+  border-color: #60a5fa;
+  box-shadow: 0 0 0 1px #60a5fa;
+}
+
+.mindgraph-free-input :deep(.el-input__count) {
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+.template-slot-input {
+  min-width: 80px;
+  max-width: 140px;
+}
+
+.template-slot-input :deep(.el-input__inner) {
+  font-size: 18px;
+}
+
+.template-slot-input :deep(.el-input__inner::placeholder) {
+  font-size: 18px;
+}
+
+.template-slot-input :deep(.el-input__wrapper) {
+  box-shadow: 0 0 0 1px #e5e7eb;
+}
+
+.template-slot-input :deep(.el-input__wrapper:hover),
+.template-slot-input :deep(.el-input.is-focus .el-input__wrapper) {
+  box-shadow: 0 0 0 1px #60a5fa;
+}
+
+.clear-type-btn {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 22px;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+}
+
+.diagram-type-tag {
+  font-size: 16px;
+}
+
+.diagram-type-select {
+  font-size: 16px;
+}
+
+.template-text {
+  font-size: 18px;
+}
+
+/* Rainbow glowing border when free-form + generating */
+.prompt-box-rainbow {
+  position: relative;
+  overflow: visible;
+}
+
+.prompt-box-rainbow::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 3px;
+  background: conic-gradient(from 0deg, red, orange, yellow, green, cyan, blue, violet, red);
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: rainbowRotate 2s linear infinite;
+  z-index: 0;
   pointer-events: none;
 }
 
-[data-slot]:focus,
-#mindgraph-free-input:focus {
-  outline: 2px solid #60a5fa;
-  outline-offset: 1px;
-  color: #000 !important;
+.prompt-box-rainbow > * {
+  position: relative;
+  z-index: 1;
 }
 
-#mindgraph-free-input:empty:before {
-  content: attr(data-placeholder);
-  color: #9ca3af;
-  pointer-events: none;
+@keyframes rainbowRotate {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.submit-btn {
+  min-width: 40px;
+  height: 40px;
+  padding: 0;
 }
 </style>

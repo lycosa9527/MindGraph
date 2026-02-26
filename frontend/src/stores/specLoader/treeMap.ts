@@ -12,6 +12,7 @@ import {
   DEFAULT_NODE_WIDTH,
   DEFAULT_PADDING,
   DEFAULT_TOPIC_TO_CATEGORY_GAP,
+  NODE_MIN_DIMENSIONS,
 } from '@/composables/diagrams/layoutConfig'
 import { calculateDagreLayout } from '@/composables/diagrams/useDagreLayout'
 import type { Connection, DiagramNode } from '@/types'
@@ -190,16 +191,19 @@ export function loadTreeMapSpec(spec: Record<string, unknown>): SpecLoaderResult
     })
 
     // Add dimension label node if dimension field exists
-    // Position it below the topic node
+    // Position it right below the topic node, center-aligned under the topic
     if (dimension !== undefined) {
-      const topicPosition = layoutResult.positions.get(rootId)
-      const labelY = topicPosition ? topicPosition.y + NODE_HEIGHT + 20 : 60 + NODE_HEIGHT + 20
-      const labelX = topicPosition ? topicPosition.x : DEFAULT_CENTER_X - NODE_WIDTH / 2
+      const topicPos = nodes.find((n) => n.id === rootId)?.position
+      const topicCenterX = (topicPos?.x ?? DEFAULT_CENTER_X - NODE_WIDTH / 2) + NODE_WIDTH / 2
+      const labelWidth = NODE_MIN_DIMENSIONS.label.minWidth
       nodes.push({
         id: 'dimension-label',
         text: dimension || '',
         type: 'label',
-        position: { x: labelX, y: labelY },
+        position: {
+          x: topicCenterX - labelWidth / 2,
+          y: (topicPos?.y ?? 60) + NODE_HEIGHT + 20,
+        },
       })
     }
   }

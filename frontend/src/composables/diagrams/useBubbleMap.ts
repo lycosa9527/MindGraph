@@ -2,14 +2,27 @@
  * useBubbleMap - Composable for Bubble Map layout and data management
  * Bubble maps describe qualities and attributes around a central topic
  *
- * Layout logic matches the original D3 implementation from bubble-map-renderer.js
+ * Layout: first child at 0° (top, above topic); even distribution via polar positions.
+ * Uses no-overlap formula (like circle map) for circumferential spacing.
  */
 import { computed, ref } from 'vue'
 
 import { useLanguage } from '@/composables/useLanguage'
 import type { Connection, DiagramNode, MindGraphEdge, MindGraphNode } from '@/types'
 
-import { DEFAULT_BUBBLE_RADIUS, DEFAULT_PADDING, DEFAULT_TOPIC_RADIUS } from './layoutConfig'
+import {
+  DEFAULT_PADDING,
+  DEFAULT_TOPIC_RADIUS,
+  DEFAULT_CONTEXT_RADIUS,
+} from './layoutConfig'
+import {
+  computeMinDiameterForNoWrap,
+  CONTEXT_FONT_SIZE,
+} from '@/stores/specLoader/textMeasurement'
+import {
+  bubbleMapChildrenRadius,
+  polarToPosition,
+} from './useRadialLayout'
 
 interface BubbleMapData {
   topic: string
@@ -29,35 +42,45 @@ interface BubbleMapOptions {
 }
 
 /**
- * Calculate bubble map layout based on node count
- * Uses the same formulas as the original D3 renderer
+ * Calculate bubble map layout based on node count.
+ * Ring radius uses no-overlap formula for even circumferential spacing.
  */
-function calculateLayout(nodeCount: number, padding: number = DEFAULT_PADDING): BubbleMapLayout {
-  const uniformAttributeR = DEFAULT_BUBBLE_RADIUS // 40px
-  const topicR = DEFAULT_TOPIC_RADIUS // 60px
+function calculateLayout(
+  nodeCount: number,
+  attributeTexts: string[],
+  padding: number = DEFAULT_PADDING
+): BubbleMapLayout & { radii: number[] } {
+  const topicR = DEFAULT_TOPIC_RADIUS
 
-  // Target distance from center (matching old JS: topicR + uniformAttributeR + 50)
-  const targetDistance = topicR + uniformAttributeR + 50
+  const radii =
+    attributeTexts.length > 0
+      ? attributeTexts.map((t) =>
+          Math.max(
+            DEFAULT_CONTEXT_RADIUS,
+            computeMinDiameterForNoWrap(t || ' ', CONTEXT_FONT_SIZE, false) / 2
+          )
+        )
+      : []
+  const uniformRadius =
+    radii.length > 0 ? Math.max(DEFAULT_CONTEXT_RADIUS, ...radii) : DEFAULT_CONTEXT_RADIUS
 
-  // Circumferential constraint for many nodes
-  // Dynamic spacing multiplier based on node count
-  const spacingMultiplier = nodeCount <= 3 ? 2.0 : nodeCount <= 6 ? 2.05 : 2.1
-  const circumferentialMinRadius =
-    nodeCount > 0 ? (uniformAttributeR * nodeCount * spacingMultiplier) / (2 * Math.PI) : 0
+  const childrenRadius = bubbleMapChildrenRadius(
+    nodeCount,
+    topicR,
+    uniformRadius,
+    uniformRadius
+  )
 
-  // Use the larger of both constraints (minimum 100px)
-  const childrenRadius = Math.max(targetDistance, circumferentialMinRadius, 100)
-
-  // Dynamic canvas center based on calculated sizes
-  const centerX = childrenRadius + uniformAttributeR + padding
-  const centerY = childrenRadius + uniformAttributeR + padding
+  const centerX = childrenRadius + uniformRadius + padding
+  const centerY = childrenRadius + uniformRadius + padding
 
   return {
     centerX,
     centerY,
     topicR,
-    uniformAttributeR,
+    uniformAttributeR: uniformRadius,
     childrenRadius,
+    radii: radii.map(() => uniformRadius),
   }
 }
 
@@ -67,10 +90,10 @@ export function useBubbleMap(options: BubbleMapOptions = {}) {
   const { t } = useLanguage()
   const data = ref<BubbleMapData | null>(null)
 
-  // Calculate layout based on current data
-  const layout = computed<BubbleMapLayout>(() => {
-    const nodeCount = data.value?.attributes.length || 0
-    return calculateLayout(nodeCount, padding)
+  // Calculate layout based on current data (text-adaptive)
+  const layout = computed(() => {
+    const attributes = data.value?.attributes || []
+    return calculateLayout(attributes.length, attributes, padding)
   })
 
   // Convert bubble map data to Vue Flow nodes
@@ -99,20 +122,23 @@ export function useBubbleMap(options: BubbleMapOptions = {}) {
       draggable: false,
     })
 
-    // Attribute bubble nodes arranged in a circle
-    // Start from top (-90 degrees) with even angle distribution
+    // Attribute nodes (circles): uniform size from max text
+    const uniformR = l.uniformAttributeR
     data.value.attributes.forEach((attr, index) => {
-      const angleDeg = (index * 360) / nodeCount - 90 // Start from top
-      const angleRad = (angleDeg * Math.PI) / 180
-
-      // Position at childrenRadius from center
-      const x = l.centerX + l.childrenRadius * Math.cos(angleRad) - l.uniformAttributeR
-      const y = l.centerY + l.childrenRadius * Math.sin(angleRad) - l.uniformAttributeR
+      const { x, y } = polarToPosition(
+        index,
+        nodeCount,
+        l.centerX,
+        l.centerY,
+        l.childrenRadius,
+        uniformR,
+        uniformR
+      )
 
       result.push({
         id: `bubble-${index}`,
-        type: 'circle', // Use CircleNode for perfect circle rendering
-        position: { x, y },
+        type: 'circle',
+        position: { x: Math.round(x), y: Math.round(y) },
         data: {
           label: attr,
           nodeType: 'bubble',
@@ -120,7 +146,9 @@ export function useBubbleMap(options: BubbleMapOptions = {}) {
           isDraggable: false,
           isSelectable: true,
           style: {
-            size: l.uniformAttributeR * 2, // Diameter for perfect circle
+            size: uniformR * 2,
+            fontSize: CONTEXT_FONT_SIZE,
+            noWrap: true,
           },
         },
         draggable: false,

@@ -79,6 +79,7 @@ const captchaLoading = ref(false)
 // SMS state
 const smsSending = ref(false)
 const smsCountdown = ref(0)
+const smsCountdownTimer = ref<ReturnType<typeof setInterval> | null>(null)
 const smsSent = ref(false)
 
 // Loading states
@@ -123,6 +124,10 @@ function resetAllForms() {
   showConfirmPassword.value = false
   smsSent.value = false
   smsCountdown.value = 0
+  if (smsCountdownTimer.value) {
+    clearInterval(smsCountdownTimer.value)
+    smsCountdownTimer.value = null
+  }
 }
 
 // Handle tab change from el-tabs
@@ -148,6 +153,10 @@ function backToLogin() {
   currentView.value = 'login'
   smsSent.value = false
   smsCountdown.value = 0
+  if (smsCountdownTimer.value) {
+    clearInterval(smsCountdownTimer.value)
+    smsCountdownTimer.value = null
+  }
   refreshCaptcha()
 }
 
@@ -199,9 +208,13 @@ watch(
   }
 )
 
-// Cleanup: restore body scroll on unmount
+// Cleanup: restore body scroll and clear SMS countdown timer on unmount
 onBeforeUnmount(() => {
   document.body.style.overflow = ''
+  if (smsCountdownTimer.value) {
+    clearInterval(smsCountdownTimer.value)
+    smsCountdownTimer.value = null
+  }
 })
 
 // Handle login
@@ -371,10 +384,17 @@ async function sendSmsCode(type: 'login' | 'reset') {
 // Start SMS countdown
 function startCountdown() {
   smsCountdown.value = 60
-  const timer = setInterval(() => {
+  if (smsCountdownTimer.value) {
+    clearInterval(smsCountdownTimer.value)
+    smsCountdownTimer.value = null
+  }
+  smsCountdownTimer.value = setInterval(() => {
     smsCountdown.value--
     if (smsCountdown.value <= 0) {
-      clearInterval(timer)
+      if (smsCountdownTimer.value) {
+        clearInterval(smsCountdownTimer.value)
+        smsCountdownTimer.value = null
+      }
     }
   }, 1000)
 }

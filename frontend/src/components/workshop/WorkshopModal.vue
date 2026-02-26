@@ -62,17 +62,9 @@ const showDialog = computed({
   set: (value) => emit('update:visible', value),
 })
 
-// Get diagram spec for saving
+/** Get diagram spec for saving (uses recalculated positions for bubble map) */
 function getDiagramSpec(): Record<string, unknown> | null {
-  if (!diagramStore.data) return null
-
-  return {
-    type: diagramStore.type,
-    nodes: diagramStore.data.nodes,
-    connections: diagramStore.data.connections,
-    _customPositions: diagramStore.data._customPositions,
-    _node_styles: diagramStore.data._node_styles,
-  }
+  return diagramStore.getSpecForSave()
 }
 
 // Get diagram title for saving

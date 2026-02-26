@@ -96,7 +96,7 @@ export function diagramNodeToVueFlowNode(
     topic: useCircleForTopic ? 'circle' : 'topic',
     center: useCircleForTopic ? 'circle' : 'topic',
     child: 'branch',
-    bubble: isCircleMap ? 'circle' : 'bubble', // bubble_map keeps BubbleNode for attributes
+    bubble: isCircleMap || isBubbleMap ? 'circle' : 'bubble', // bubble_map uses circles like circle_map
     branch: 'branch',
     left: 'branch',
     right: 'branch',
