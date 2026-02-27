@@ -34,6 +34,9 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+# Max length for concept names in relationship-only requests (avoid prompt bloat)
+CONCEPT_MAX_LENGTH = 100
+
 
 async def _generate_spec_with_agent(
     user_prompt: str,
@@ -315,6 +318,11 @@ async def agent_graph_workflow_with_styles(
     fixed_dimension=None,
     # Tree map and brace map: dimension-only mode (user has dimension but no topic)
     dimension_only_mode=None,
+    # Concept map: relationship-only mode (generate label for link between two concepts)
+    concept_map_relationship_only=None,
+    concept_a=None,
+    concept_b=None,
+    concept_map_topic=None,
     # RAG integration: use knowledge space context
     use_rag=False,
     rag_top_k=5
@@ -351,6 +359,32 @@ auto-complete - user has dimension but no topic (generate topic and children)
     generation_time = 0.0
 
     try:
+        # Concept map relationship-only: early return (skip full workflow)
+        rel_only = concept_map_relationship_only
+        ca = (concept_a or "").strip()[:CONCEPT_MAX_LENGTH] if concept_a else ""
+        cb = (concept_b or "").strip()[:CONCEPT_MAX_LENGTH] if concept_b else ""
+        if rel_only and ca and cb:
+            topic = (concept_map_topic or "").strip()[:CONCEPT_MAX_LENGTH]
+            agent = ConceptMapAgent(model=model)
+            result = await agent.generate_graph(
+                user_prompt,
+                language,
+                relationship_only=True,
+                concept_a=ca,
+                concept_b=cb,
+                concept_map_topic=topic,
+                user_id=user_id,
+                organization_id=organization_id,
+                request_type=request_type or 'autocomplete',
+                endpoint_path=endpoint_path
+            )
+            if isinstance(result, dict) and 'relationship_label' in result:
+                return result
+            return {
+                'success': False,
+                'error': result.get('error', 'Failed to generate relationship label')
+            }
+
         # Validate inputs
         validate_inputs(user_prompt, language)
 

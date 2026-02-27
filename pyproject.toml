@@ -42,6 +42,8 @@ markers = [
 ]
 
 [tool.pylint.main]
+# Ensure project root is in path for import resolution (fixes E1123 on agent_graph_workflow_with_styles)
+init-hook = 'import sys; import os; sys.path.insert(0, os.getcwd())'
 # Exclude patterns
 ignore-patterns = [
     "^venv/",

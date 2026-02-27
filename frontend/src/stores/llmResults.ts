@@ -170,6 +170,11 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
     selectedModel.value = null
   }
 
+  // Set selected model (for pre-selection, e.g. concept map relationship)
+  function setSelectedModel(model: string | null): void {
+    selectedModel.value = model
+  }
+
   // Cancel all active requests
   function cancelAllRequests(): void {
     abortControllers.value.forEach((controller) => {
@@ -311,6 +316,7 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
     setModelState,
     setAllModelsState,
     switchToModel,
+    setSelectedModel,
     clearCache,
     cancelAllRequests,
     startGeneration,

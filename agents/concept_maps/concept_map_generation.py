@@ -1,8 +1,9 @@
 """
 Concept map generation methods.
 
-This module provides various methods for generating concept maps using LLM,
-including two-stage, unified, and enhanced 30-concept generation.
+DEPRECATED: Multi-stage concept map generation has been removed. Concept maps
+now use real-time relationship generation only (when user creates links).
+This module is kept for reference but is no longer used.
 
 Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved
@@ -15,6 +16,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from prompts import get_prompt
 
+from agents.concept_maps.concept_map_agent import ConceptMapAgent
 from agents.core.llm_clients import llm_generation
 from agents.core.topic_extraction import extract_central_topic_llm
 from agents.core.utils import _parse_strict_json
@@ -51,7 +53,6 @@ def generate_concept_map_two_stage(user_prompt: str, language: str) -> dict:
 
     # Use improved parsing for better error handling
     try:
-        from agents.concept_maps.concept_map_agent import ConceptMapAgent
         agent = ConceptMapAgent()
         keys_obj = agent.parse_json_response(raw_keys)
         logger.debug("Used ConceptMapAgent improved parsing for keys generation")
@@ -96,7 +97,6 @@ def generate_concept_map_two_stage(user_prompt: str, language: str) -> dict:
 
             # Use improved parsing for better error handling
             try:
-                from agents.concept_maps.concept_map_agent import ConceptMapAgent
                 agent = ConceptMapAgent()
                 obj = agent.parse_json_response(raw)
                 logger.debug("Used ConceptMapAgent improved parsing for parts of key '%s'", k)
@@ -189,7 +189,6 @@ def generate_concept_map_unified(user_prompt: str, language: str) -> dict:
 
     # Use the improved ConceptMapAgent parsing for better error handling
     try:
-        from agents.concept_maps.concept_map_agent import ConceptMapAgent
         agent = ConceptMapAgent()
         obj = agent.parse_json_response(raw)
         logger.debug("Used ConceptMapAgent improved parsing for unified generation")
@@ -346,7 +345,6 @@ def generate_concept_map_enhanced_30(user_prompt: str, language: str) -> dict:
             concepts_data = json.loads(concepts_response.strip())
         except json.JSONDecodeError:
             try:
-                from agents.concept_maps.concept_map_agent import ConceptMapAgent
                 agent = ConceptMapAgent()
                 concepts_data = agent.parse_json_response(concepts_response)
                 logger.debug("Used ConceptMapAgent improved parsing for concepts")
@@ -451,7 +449,6 @@ Requirements:
             rel_data = json.loads(relationships_response.strip())
         except json.JSONDecodeError:
             try:
-                from agents.concept_maps.concept_map_agent import ConceptMapAgent
                 agent = ConceptMapAgent()
                 rel_data = agent.parse_json_response(relationships_response)
                 logger.debug("Used ConceptMapAgent improved parsing for relationships")
@@ -519,15 +516,12 @@ def generate_concept_map_robust(user_prompt: str, language: str, method: str = '
                 logger.debug(
                     "Attempting fallback with simplified two-stage generation..."
                 )
-                from agents.concept_maps.concept_map_agent import ConceptMapAgent
-                agent = ConceptMapAgent()
-                result = agent.generate_simplified_two_stage(
-                    user_prompt, llm_generation, language
-                )
-                if isinstance(result, dict) and result.get('success'):
-                    return result.get('spec', {})
+                result = generate_concept_map_two_stage(user_prompt, language)
+                if isinstance(result, dict) and result.get('topic'):
+                    return result
                 logger.warning(
-                    "Simplified two-stage generation failed: %s", result.get('error')
+                    "Simplified two-stage generation failed: %s",
+                    result.get('error', 'unknown')
                 )
                 raise ValueError(
                     "All concept map generation methods failed"

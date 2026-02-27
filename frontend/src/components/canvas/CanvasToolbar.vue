@@ -77,6 +77,9 @@ const isMultiFlowMap = computed(() => diagramStore.type === 'multi_flow_map')
 // Computed property to check if current diagram is bridge map
 const isBridgeMap = computed(() => diagramStore.type === 'bridge_map')
 
+// Concept map uses real-time relationship generation only (no multi-stage AI Generate)
+const isConceptMap = computed(() => diagramStore.type === 'concept_map')
+
 // Dropdown visibility (prefixed with _ to indicate intentionally unused - reserved for future)
 const _showStyleDropdown = ref(false)
 const _showTextDropdown = ref(false)
@@ -1360,30 +1363,31 @@ onUnmounted(() => {
           </template>
         </ElDropdown>
 
-        <div class="divider" />
-
-        <!-- AI Generate button -->
-        <ElButton
-          type="primary"
-          size="small"
-          class="ai-btn"
-          :loading="isAIGenerating"
-          @click="handleAIGenerate"
-        >
-          <Wand2
-            v-if="!isAIGenerating"
-            class="w-4 h-4"
-          />
-          <span>{{
-            isAIGenerating
-              ? isZh
-                ? '生成中...'
-                : 'Generating...'
-              : isZh
-                ? 'AI生成图示'
-                : 'AI Generate'
-          }}</span>
-        </ElButton>
+        <template v-if="!isConceptMap">
+          <div class="divider" />
+          <!-- AI Generate button (hidden for concept_map - uses real-time relationship generation) -->
+          <ElButton
+            type="primary"
+            size="small"
+            class="ai-btn"
+            :loading="isAIGenerating"
+            @click="handleAIGenerate"
+          >
+            <Wand2
+              v-if="!isAIGenerating"
+              class="w-4 h-4"
+            />
+            <span>{{
+              isAIGenerating
+                ? isZh
+                  ? '生成中...'
+                  : 'Generating...'
+                : isZh
+                  ? 'AI生成图示'
+                  : 'AI Generate'
+            }}</span>
+          </ElButton>
+        </template>
 
         <!-- More apps dropdown -->
         <ElDropdown

@@ -24,13 +24,27 @@ from collections import defaultdict, deque
 
 from langchain_core.prompts import PromptTemplate
 
-from ..core.base_agent import BaseAgent
-from .concept_map_generation import generate_concept_map_robust, _invoke_llm_prompt
 from prompts.concept_maps import CONCEPT_MAP_PROMPTS
+from services.llm import llm_service
+
+from ..core.base_agent import BaseAgent
 
 
 
 logger = logging.getLogger(__name__)
+
+
+def _strip_parenthetical(text: str) -> str:
+    """Remove parenthetical notes (Chinese （） or English ())."""
+    if not text:
+        return text
+    # Take part before first （ or (
+    for sep in ("（", "("):
+        idx = text.find(sep)
+        if idx >= 0:
+            text = text[:idx]
+    return text.strip()
+
 
 # Configuration constants
 NODE_SPACING = 1.2
@@ -204,7 +218,52 @@ class ConceptMapAgent(BaseAgent):
         except Exception as exc:
             return {"success": False, "error": f"ConceptMapAgent failed: {exc}"}
 
-    async def generate_graph(self, user_prompt: str, language: str = "en") -> Dict[str, Any]:
+    async def _generate_relationship_only(
+        self,
+        concept_a: str,
+        concept_b: str,
+        language: str,
+        concept_map_topic: str = "",
+        **kwargs: Any
+    ) -> Dict[str, Any]:
+        """Generate only the relationship label between two concepts."""
+        topic = (concept_map_topic or "").strip() or "—"
+        prompt_key = f"concept_map_relationship_only_{language}"
+        prompt_template = self._get_prompt(
+            prompt_key,
+            concept_a=concept_a,
+            concept_b=concept_b,
+            topic=topic,
+        )
+        if not prompt_template:
+            return {"success": False, "error": f"Prompt not found: {prompt_key}"}
+
+        try:
+            response = await llm_service.chat(
+                prompt=prompt_template,
+                model=self.model,
+                timeout=15.0
+            )
+            raw = (response or "").strip()
+            first_line = raw.split("\n")[0].strip() if raw else ""
+            # Strip parenthetical notes (e.g. "姐妹或妯娌（注：...）" -> "姐妹或妯娌")
+            label = _strip_parenthetical(first_line)
+            if not label:
+                return {"success": False, "error": "Empty response from LLM"}
+            return {"success": True, "relationship_label": label}
+        except Exception as e:
+            logger.error("ConceptMapAgent: Relationship-only generation failed: %s", e)
+            return {"success": False, "error": str(e)}
+
+    async def generate_graph(
+        self,
+        user_prompt: str,
+        language: str = "en",
+        dimension_preference: str | None = None,
+        fixed_dimension: str | None = None,
+        dimension_only_mode: bool | None = None,
+        **kwargs: Any
+    ) -> Dict[str, Any]:
         """
         Generate a concept map graph specification from user prompt.
 
@@ -214,253 +273,49 @@ class ConceptMapAgent(BaseAgent):
         Args:
             user_prompt: User's input prompt
             language: Language for processing ('zh' or 'en')
+            dimension_preference: Unused for concept maps (BaseAgent interface)
+            fixed_dimension: Unused for concept maps (BaseAgent interface)
+            dimension_only_mode: Unused for concept maps (BaseAgent interface)
+            **kwargs: relationship_only, concept_a, concept_b, user_id, etc.
 
         Returns:
-            dict: Graph specification with styling and metadata
+            dict: Graph specification or {success, relationship_label} for relationship_only
         """
+        relationship_only = kwargs.get('relationship_only', False)
+        concept_a = kwargs.get('concept_a')
+        concept_b = kwargs.get('concept_b')
+        concept_map_topic = kwargs.get('concept_map_topic') or ""
         try:
-            logger.info("ConceptMapAgent: Starting concept map generation for prompt")
+            if relationship_only and concept_a and concept_b:
+                return await self._generate_relationship_only(
+                    concept_a, concept_b, language, concept_map_topic=concept_map_topic
+                )
 
-            # Use the robust generation method with auto-detection
-            spec = generate_concept_map_robust(user_prompt, language, method='auto')
-
-            if not spec or isinstance(spec, dict) and spec.get('error'):
-                logger.error("ConceptMapAgent: Generation failed")
-                return {"error": "Failed to generate concept map specification"}
-
-            # Enhance the specification using this agent's enhancement capabilities
-            enhanced_result = await self.enhance_spec(spec)
-
+            logger.info(
+                "ConceptMapAgent: Returning minimal spec (multi-stage removed, "
+                "use real-time relationship generation)"
+            )
+            # Multi-stage generation removed. Return minimal spec for user to build
+            # manually with real-time relationship suggestions on link creation.
+            topic = (user_prompt or "").strip() or "Topic"
+            minimal_spec = {
+                "topic": topic,
+                "concepts": [],
+                "relationships": [],
+            }
+            enhanced_result = await self.enhance_spec(minimal_spec)
             if not enhanced_result.get('success'):
-                logger.warning("ConceptMapAgent: Enhancement failed: %s", enhanced_result.get('error'))
-                # Return original spec if enhancement fails
-                return spec
-
-            # Return the enhanced specification
-            return enhanced_result.get('spec', spec)
+                logger.warning(
+                    "ConceptMapAgent: Enhancement failed: %s",
+                    enhanced_result.get('error')
+                )
+                return minimal_spec
+            return enhanced_result.get('spec', minimal_spec)
 
         except Exception as e:
             logger.error("ConceptMapAgent: Generation error: %s", e)
             return {"error": f"ConceptMapAgent generation failed: {str(e)}"}
 
-    def generate_simplified_two_stage(self, user_prompt: str, llm_client, language: str = "en") -> Dict:
-        """
-        Generate concept map using simplified two-stage approach.
-
-        Stage 1: Generate concepts
-        Stage 2: Generate relationships
-
-        This approach is much more reliable than the complex unified generation.
-        """
-        try:
-            # Stage 1: Generate concepts using enhanced prompts
-            stage1_prompt_key = f"concept_map_enhanced_stage1_{language}"
-            stage1_prompt = self._get_prompt(stage1_prompt_key, user_prompt=user_prompt)
-
-            # Fallback to original prompts if enhanced not found
-            if not stage1_prompt:
-                stage1_prompt_key = f"concept_map_stage1_concepts_{language}"
-                stage1_prompt = self._get_prompt(stage1_prompt_key, user_prompt=user_prompt)
-
-            if not stage1_prompt:
-                return {"success": False, "error": f"Prompt not found: {stage1_prompt_key}"}
-
-            # Get concepts from LLM
-            concepts_response = self._get_llm_response(llm_client, stage1_prompt)
-            if not concepts_response:
-                return {"success": False, "error": "No response from LLM for concepts generation"}
-
-            # Parse concepts response
-            try:
-                concepts_data = self.parse_json_response(concepts_response)
-                if not concepts_data:
-                    return {"success": False, "error": "Failed to parse concepts response"}
-
-                topic = concepts_data.get("topic", "")
-                concepts = concepts_data.get("concepts", [])
-
-                if not topic or not concepts:
-                    return {"success": False, "error": "Missing topic or concepts in response"}
-
-            except Exception as e:
-                return {"success": False, "error": f"Failed to parse concepts: {str(e)}"}
-
-            # Stage 2: Generate relationships using enhanced prompts
-            stage2_prompt_key = f"concept_map_enhanced_stage2_{language}"
-            stage2_prompt = self._get_prompt(stage2_prompt_key, topic=topic, concepts=concepts)
-
-            # Fallback to original prompts if enhanced not found
-            if not stage2_prompt:
-                stage2_prompt_key = f"concept_map_stage2_relationships_{language}"
-                stage2_prompt = self._get_prompt(stage2_prompt_key, topic=topic, concepts=concepts)
-
-            if not stage2_prompt:
-                return {"success": False, "error": f"Prompt not found: {stage2_prompt_key}"}
-
-            # Get relationships from LLM
-            relationships_response = self._get_llm_response(llm_client, stage2_prompt)
-            if not relationships_response:
-                return {"success": False, "error": "No response from LLM for relationships generation"}
-
-            # Parse relationships response
-            try:
-                relationships_data = self.parse_json_response(relationships_response)
-                if not relationships_data:
-                    return {"success": False, "error": "Failed to parse relationships response"}
-
-                relationships = relationships_data.get("relationships", [])
-
-                if not relationships:
-                    return {"success": False, "error": "No relationships generated"}
-
-            except Exception as e:
-                return {"success": False, "error": f"Failed to parse relationships: {str(e)}"}
-
-            # Combine and enhance
-            combined_spec = {
-                "topic": topic,
-                "concepts": concepts,
-                "relationships": relationships
-            }
-
-            # Enhance the specification
-            enhanced_spec = asyncio.run(self.enhance_spec(combined_spec))
-            if not enhanced_spec.get("success", False):
-                return enhanced_spec
-
-            return enhanced_spec
-
-        except Exception as e:
-            return {"success": False, "error": f"Two-stage generation failed: {str(e)}"}
-
-    def generate_three_stage(self, user_prompt: str, language: str = "en") -> Dict:
-        """
-        Generate concept map using streamlined 2-stage approach.
-
-        Uses existing topic extraction from main agent, then:
-        Stage 1: Generate exactly 30 key concepts based on user prompt
-        Stage 2: Generate relationships between topic and all concepts
-
-        This approach integrates with existing workflow: [existing topic extraction] → 30 concepts → relationships.
-        """
-        try:
-            # Use the existing LLM calling pattern from concept_map_generation
-
-            # Stage 1: Generate exactly 30 concepts based on user prompt
-            concepts_prompt_key = f"concept_map_30_concepts_{language}"
-            concepts_prompt = self._get_prompt(concepts_prompt_key, central_topic=user_prompt)
-
-            if not concepts_prompt:
-                return {"success": False, "error": f"30 concepts prompt not found: {concepts_prompt_key}"}
-
-            # Get concepts using the existing LLM pattern
-            concepts_response = _invoke_llm_prompt(concepts_prompt, {})
-            if not concepts_response:
-                return {"success": False, "error": "No response from LLM for concepts generation"}
-
-            # Parse concepts response
-            try:
-                concepts_data = self.parse_json_response(concepts_response)
-                if not concepts_data:
-                    return {"success": False, "error": "Failed to parse concepts response"}
-
-                concepts = concepts_data.get("concepts", [])
-                if not concepts:
-                    return {"success": False, "error": "No concepts generated"}
-
-                # Validate we have exactly 30 concepts
-                if len(concepts) != 30:
-                    # Try to adjust to exactly 30
-                    if len(concepts) > 30:
-                        concepts = concepts[:30]  # Take first 30
-                    else:
-                        # Pad with generic concepts if less than 30
-                        while len(concepts) < 30:
-                            concepts.append(f"Related concept {len(concepts) + 1}")
-
-            except Exception as e:  # pylint: disable=broad-except
-                return {"success": False, "error": f"Failed to parse concepts: {str(e)}"}
-
-            # Extract topic from user prompt for relationships
-            # Use a simple extraction method instead of full LLM call
-            central_topic = self._extract_simple_topic(user_prompt)
-
-            # Stage 2: Generate relationships
-            relationships_prompt_key = f"concept_map_3_stage_relationships_{language}"
-            relationships_prompt = self._get_prompt(
-                relationships_prompt_key,
-                central_topic=central_topic,
-                concepts=concepts
-            )
-
-            if not relationships_prompt:
-                return {
-                    "success": False,
-                    "error": f"3-stage relationships prompt not found: {relationships_prompt_key}"
-                }
-
-            # Get relationships using the existing LLM pattern
-            relationships_response = _invoke_llm_prompt(relationships_prompt, {})
-            if not relationships_response:
-                return {"success": False, "error": "No response from LLM for relationships generation"}
-
-            # Parse relationships response
-            try:
-                relationships_data = self.parse_json_response(relationships_response)
-                if not relationships_data:
-                    return {"success": False, "error": "Failed to parse relationships response"}
-
-                relationships = relationships_data.get("relationships", [])
-
-                if not relationships:
-                    return {"success": False, "error": "No relationships generated"}
-
-            except Exception as e:  # pylint: disable=broad-except
-                return {"success": False, "error": f"Failed to parse relationships: {str(e)}"}
-
-            # Combine into concept map spec
-            concept_map_spec = {
-                "topic": central_topic,  # Use extracted central topic
-                "concepts": concepts,    # Exactly 30 concepts
-                "relationships": relationships,
-                "_method": "three_stage",  # Mark for identification
-                "_stage_info": {
-                    "original_prompt": user_prompt,
-                    "extracted_topic": central_topic,
-                    "concept_count": len(concepts),
-                    "relationship_count": len(relationships)
-                }
-            }
-
-            # Enhance the spec using existing method
-            enhanced_spec = asyncio.run(self.enhance_spec(concept_map_spec))
-            return enhanced_spec
-
-        except Exception as e:
-            return {"success": False, "error": f"Three-stage concept map generation failed: {str(e)}"}
-
-    def _extract_simple_topic(self, user_prompt: str) -> str:
-        """Extract a simple topic from user prompt using basic text processing."""
-        # Clean and extract key phrases
-        prompt = user_prompt.lower().strip()
-
-        # Remove common phrases
-        prompt = re.sub(r'\b(i want to|help me|create|generate|make|build|understand|learn about|about)\b', '', prompt)
-        prompt = re.sub(r'\b(concept map|mind map|diagram|graph|visualization)\b', '', prompt)
-
-        # Extract the main subject
-        words = prompt.split()
-        # Filter out common words and take meaningful terms
-        meaningful_words = [w for w in words if len(w) > 2 and w not in
-                          {'the', 'and', 'for', 'with', 'how', 'what', 'why', 'when', 'where'}]
-
-        if meaningful_words:
-            # Take first 2-3 meaningful words as topic
-            topic = ' '.join(meaningful_words[:3])
-            return topic.title()
-        else:
-            # Fallback to first few words
-            return ' '.join(user_prompt.split()[:3]).title()
 
     def _get_prompt(self, prompt_key: str, **kwargs) -> Optional[str]:
         """Get prompt from the prompts module."""

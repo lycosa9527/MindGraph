@@ -45,13 +45,13 @@ export function useNotifications() {
 
   function showNotification(options: NotificationOptions): void {
     ElNotification({
+      ...NOTIFICATION_OPTIONS,
       title: options.title,
       message: options.message,
       type: options.type || 'info',
       duration: options.duration ?? 4000,
       showClose: options.showClose ?? true,
       onClick: options.onClick,
-      ...NOTIFICATION_OPTIONS,
     })
   }
 
@@ -77,6 +77,7 @@ export function useNotifications() {
   ): Promise<boolean> {
     return new Promise((resolve) => {
       ElNotification({
+        ...NOTIFICATION_OPTIONS,
         title,
         message,
         type,
@@ -84,7 +85,6 @@ export function useNotifications() {
         showClose: true,
         onClose: () => resolve(false),
         onClick: () => resolve(true),
-        ...NOTIFICATION_OPTIONS,
         icon: h(AlertTriangle, { size: 20 }),
       })
     })

@@ -91,6 +91,11 @@ export type EventTypes = {
   'diagram:positions_cleared': { diagramType?: string }
   'diagram:loaded': { diagramType: string; spec?: unknown }
   'concept_map:link_drop': { sourceId: string; targetId: string }
+  'concept_map:label_cleared': {
+    connectionId: string
+    sourceId: string
+    targetId: string
+  }
   'diagram:update_requested': {
     updates?: unknown
     source?: string

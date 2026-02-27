@@ -51,6 +51,10 @@ class GenerateResponse(BaseModel):
         description="Whether to use default template (prompt-based generation)"
     )
     extracted_topic: Optional[str] = Field(None, description="Extracted topic from prompt")
+    relationship_label: Optional[str] = Field(
+        None,
+        description="Generated relationship label (concept_map relationship-only mode)"
+    )
 
     class Config:
         """Configuration for GenerateResponse JSON schema"""

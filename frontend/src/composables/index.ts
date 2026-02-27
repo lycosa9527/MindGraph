@@ -36,6 +36,10 @@ export type { UseDiagramExportOptions } from './useDiagramExport'
 export { useInlineEdit } from './useInlineEdit'
 export type { InlineEditOptions } from './useInlineEdit'
 export { useAutoComplete, isPlaceholderText } from './useAutoComplete'
+export {
+  useConceptMapRelationship,
+  CONCEPT_MAP_GENERATING_KEY,
+} from './useConceptMapRelationship'
 export { useIMEAutocomplete } from './useIMEAutocomplete'
 export { useWorkshop } from './useWorkshop'
 export type { WorkshopUpdate } from './useWorkshop'

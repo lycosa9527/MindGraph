@@ -18,11 +18,14 @@ import { ElTooltip } from 'element-plus'
 import { Loader2, Sparkles, X } from 'lucide-vue-next'
 
 import { useAutoComplete, useLanguage } from '@/composables'
-import { useLLMResultsStore } from '@/stores'
+import { useDiagramStore, useLLMResultsStore } from '@/stores'
 
 const { isZh } = useLanguage()
 const { switchToModel } = useAutoComplete()
+const diagramStore = useDiagramStore()
 const llmResultsStore = useLLMResultsStore()
+
+const isConceptMap = computed(() => diagramStore.type === 'concept_map')
 
 // Model display names
 const modelDisplayNames: Record<string, string> = {
@@ -52,8 +55,16 @@ function handleModelClick(modelKey: string) {
   const state = getModelState(modelKey)
 
   if (state === 'ready') {
-    // Switch to this model's result
     switchToModel(modelKey)
+    return
+  }
+
+  if (state === 'idle' && isConceptMap.value) {
+    if (isSelectedModel(modelKey)) {
+      llmResultsStore.setSelectedModel(null)
+    } else {
+      llmResultsStore.setSelectedModel(modelKey)
+    }
   }
 }
 
@@ -77,6 +88,11 @@ function getTooltipContent(modelKey: string): string {
     case 'error':
       return isZh.value ? `${displayName} 生成失败` : `${displayName} generation failed`
     default:
+      if (isConceptMap.value && isSelectedModel(modelKey)) {
+        return isZh.value
+          ? `点击取消选择 ${displayName}`
+          : `Click to deselect ${displayName}`
+      }
       return isZh.value ? `${displayName} 模型` : `${displayName} model`
   }
 }
@@ -114,6 +130,8 @@ function getButtonClass(modelKey: string): string {
     }
   } else if (state === 'error') {
     classes.push('error')
+  } else if (state === 'idle' && isConceptMap.value && isSelectedModel(modelKey)) {
+    classes.push('selected', 'blink-selected')
   }
 
   return classes.join(' ')
@@ -164,9 +182,17 @@ watch(
       class="glass-container rounded-xl shadow-lg px-3 py-2 flex items-center gap-3"
     >
       <!-- Label with icon -->
-      <div class="flex items-center gap-1.5 text-sm font-medium text-gray-600 dark:text-gray-300">
-        <Sparkles class="w-4 h-4 text-purple-500" />
-        <span>{{ isZh ? 'AI模型' : 'AI Model' }}</span>
+      <div class="flex flex-col gap-0.5">
+        <div class="flex items-center gap-1.5 text-sm font-medium text-gray-600 dark:text-gray-300">
+          <Sparkles class="w-4 h-4 text-purple-500" />
+          <span>{{ isZh ? 'AI模型' : 'AI Model' }}</span>
+        </div>
+        <span
+          v-if="isConceptMap && !llmResultsStore.selectedModel"
+          class="text-xs text-gray-500 dark:text-gray-400"
+        >
+          {{ isZh ? '选择模型以启用关系建议' : 'Select a model to enable relationship suggestions' }}
+        </span>
       </div>
 
       <!-- Model buttons -->
@@ -330,6 +356,22 @@ watch(
   box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3), 0 4px 12px rgba(59, 130, 246, 0.2);
 }
 
+/* Blinking effect when selected for concept map relationship generation */
+.model-btn.blink-selected {
+  animation: blink-selected 1.5s ease-in-out infinite;
+}
+
+@keyframes blink-selected {
+  0%, 100% {
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3), 0 4px 12px rgba(59, 130, 246, 0.2);
+    opacity: 1;
+  }
+  50% {
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.5), 0 0 20px rgba(59, 130, 246, 0.4);
+    opacity: 0.95;
+  }
+}
+
 /* Error state */
 .model-btn.error {
   border-color: #ef4444;
@@ -400,6 +442,21 @@ watch(
   background-color: #1e3a5f;
   color: #93c5fd;
   box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.3);
+}
+
+.dark .model-btn.blink-selected {
+  animation: blink-selected-dark 1.5s ease-in-out infinite;
+}
+
+@keyframes blink-selected-dark {
+  0%, 100% {
+    box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.3);
+    opacity: 1;
+  }
+  50% {
+    box-shadow: 0 0 0 4px rgba(96, 165, 250, 0.5), 0 0 20px rgba(96, 165, 250, 0.35);
+    opacity: 0.95;
+  }
 }
 
 .dark .model-btn.error {

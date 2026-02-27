@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.28.0] - 2026-02-28
+
+### Added
+- **Concept Map Relationship Generation**: When user creates a link between two concepts or clears the label, the API generates the relationship label using the selected LLM. New `concept_map_relationship_only` mode with `concept_a`, `concept_b`, `concept_map_topic` request fields and `relationship_label` response.
+- **useConceptMapRelationship Composable**: New composable for AI-generated relationship labels. Label agent: when a concept node's text changes, only regenerates edges with empty labels—avoids overwriting user-edited or AI-generated labels.
+- **concept_map:label_cleared Event**: New EventBus event emitted when user clears a relationship label, triggering AI regeneration.
+
+### Changed
+- **CurvedEdge**: Shows "AI..." loading state when generating relationship label; emits `concept_map:label_cleared` when label cleared; injects `generatingConnectionIds` for per-edge loading feedback.
+- **Concept Map Topic Node**: Topic node is now draggable in concept maps (vueflow.ts).
+- **prompts/concept_maps.py**: Major simplification (~1769 lines removed).
+- **Concept Map Agent & Workflow**: Refactored for relationship-only mode; workflow passes `concept_map_relationship_only`, `concept_a`, `concept_b`, `concept_map_topic` to agent.
+- **useNotifications**: Unified notification options—`NOTIFICATION_OPTIONS` spread first for consistent defaults.
+- **Pylint**: Added init-hook for project root path (fixes E1123 on `agent_graph_workflow_with_styles`).
+- **AIModelSelector, CanvasToolbar, ImagePreviewModal, DiagramCanvas**: Minor updates and improvements.
+
+### Removed
+- **Plan File**: Removed `.cursor/plans/free-form_prompt_ux_enhancements_23e97284.plan.md`.
+
 ## [5.27.0] - 2026-02-27
 
 ### Added

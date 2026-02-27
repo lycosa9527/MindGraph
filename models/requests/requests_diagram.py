@@ -87,6 +87,23 @@ class GenerateRequest(BaseModel):
             "dimension)"
         )
     )
+    # Concept map: relationship-only mode (generate label for link between two concepts)
+    concept_map_relationship_only: Optional[bool] = Field(
+        None,
+        description="Generate only the relationship label between two concepts"
+    )
+    concept_a: Optional[str] = Field(
+        None,
+        description="First concept text for relationship-only mode"
+    )
+    concept_b: Optional[str] = Field(
+        None,
+        description="Second concept text for relationship-only mode"
+    )
+    concept_map_topic: Optional[str] = Field(
+        None,
+        description="Topic of the concept map (main concept) for focused relationship generation"
+    )
 
     @field_validator('diagram_type', mode='before')
     @classmethod

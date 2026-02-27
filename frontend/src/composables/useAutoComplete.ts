@@ -255,6 +255,15 @@ export function useAutoComplete() {
       return { valid: false, error: isZh.value ? '没有图表数据' : 'No diagram data' }
     }
 
+    // Concept map uses real-time relationship generation only (no multi-stage AI Generate)
+    if (diagramStore.type === 'concept_map') {
+      return {
+        valid: false,
+        error: isZh.value
+          ? '概念图使用实时关系建议，请通过创建链接来生成关系' : 'Concept maps use real-time relationship suggestions; create links to generate',
+      }
+    }
+
     // Bridge map can work with dimension only (no topic needed)
     if (diagramStore.type === 'bridge_map') {
       const analogies = extractBridgeMapAnalogies()

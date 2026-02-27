@@ -68,10 +68,10 @@ export function useConceptMap(options: ConceptMapOptions = {}) {
           label: data.value.topic,
           nodeType: 'topic',
           diagramType: 'concept_map',
-          isDraggable: false,
+          isDraggable: true,
           isSelectable: true,
         },
-        draggable: false,
+        draggable: true,
       })
     }
 

@@ -102,10 +102,12 @@ function goNext() {
         <el-icon :size="28"><ArrowLeft /></el-icon>
       </button>
 
-      <!-- Image -->
-      <div class="flex-1 overflow-auto p-4 flex items-center justify-center bg-gray-50 min-h-[400px]">
+      <!-- Image: key on wrapper forces full re-render when navigating to avoid stale display -->
+      <div
+        :key="currentImage.imageUrl"
+        class="flex-1 overflow-auto p-4 flex items-center justify-center bg-gray-50 min-h-[400px]"
+      >
         <img
-          :key="currentIndex"
           :src="currentImage.imageUrl"
           :alt="currentImage.title"
           class="max-w-full max-h-[70vh] object-contain"
@@ -127,10 +129,10 @@ function goNext() {
 
     <!-- Counter for gallery mode -->
     <div
-      v-if="hasNavigation && images"
+      v-if="hasNavigation && props.images"
       class="text-center text-sm text-gray-500 py-2"
     >
-      {{ currentIndex + 1 }} / {{ images.length }}
+      {{ currentIndex + 1 }} / {{ props.images.length }}
     </div>
   </el-dialog>
 </template>

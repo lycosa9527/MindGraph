@@ -4,10 +4,12 @@
  * Uses bezier curves for smooth connections
  * Concept map: relationship labels are editable on double-click
  */
-import { computed, nextTick, ref, watch } from 'vue'
+import { computed, inject, nextTick, ref, watch } from 'vue'
 
 import { EdgeLabelRenderer, type EdgeProps, getBezierPath } from '@vue-flow/core'
 
+import { CONCEPT_MAP_GENERATING_KEY } from '@/composables/useConceptMapRelationship'
+import { eventBus } from '@/composables/useEventBus'
 import { useLanguage } from '@/composables/useLanguage'
 import { useTheme } from '@/composables/useTheme'
 import { useDiagramStore } from '@/stores'
@@ -15,8 +17,14 @@ import type { DiagramType, MindGraphEdgeData } from '@/types'
 
 const props = defineProps<EdgeProps<MindGraphEdgeData>>()
 
+const generatingConnectionIds = inject<{ value: Set<string> }>(
+  CONCEPT_MAP_GENERATING_KEY,
+  ref(new Set<string>())
+)
+
 const diagramStore = useDiagramStore()
 const { t } = useLanguage()
+
 
 const relationshipPlaceholder = computed(() =>
   t('diagram.relationshipPlaceholder', '输入关系...')
@@ -61,6 +69,13 @@ function saveLabel() {
   if (trimmed !== (props.data?.label || '')) {
     diagramStore.updateConnectionLabel(props.id, trimmed)
     diagramStore.pushHistory('Update relationship')
+    if (trimmed === '') {
+      eventBus.emit('concept_map:label_cleared', {
+        connectionId: props.id,
+        sourceId: props.source,
+        targetId: props.target,
+      })
+    }
   }
 }
 
@@ -93,6 +108,10 @@ const edgeStyle = computed(() => ({
   strokeWidth: props.data?.style?.strokeWidth || 2,
   strokeDasharray: props.data?.style?.strokeDasharray || 'none',
 }))
+
+const isGenerating = computed(() =>
+  isConceptMap.value && generatingConnectionIds.value.has(props.id)
+)
 </script>
 
 <template>
@@ -134,9 +153,15 @@ const edgeStyle = computed(() => ({
       />
       <span
         v-else
-        :class="{ 'edge-label-placeholder': isConceptMap && !(data?.label?.trim()) }"
+        :class="{ 'edge-label-placeholder': isConceptMap && !(data?.label?.trim()) && !isGenerating }"
       >
-        {{ isConceptMap && !(data?.label?.trim()) ? relationshipPlaceholder : (data?.label || '') }}
+        {{
+          isGenerating
+            ? (t('diagram.aiGenerating', 'AI...') as string)
+            : isConceptMap && !(data?.label?.trim())
+              ? relationshipPlaceholder
+              : (data?.label || '')
+        }}
       </span>
     </div>
   </EdgeLabelRenderer>

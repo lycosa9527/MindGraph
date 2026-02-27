@@ -8,17 +8,21 @@
  * - fitWithPanel(): Fits diagram with space reserved for right-side panels
  * - Automatically re-fits when panels open/close
  */
-import { computed, markRaw, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, markRaw, nextTick, onMounted, onUnmounted, provide, ref, watch } from 'vue'
 
 import { Background } from '@vue-flow/background'
 import { VueFlow, useVueFlow } from '@vue-flow/core'
 import { MiniMap } from '@vue-flow/minimap'
 
+import {
+  CONCEPT_MAP_GENERATING_KEY,
+  useConceptMapRelationship,
+} from '@/composables/useConceptMapRelationship'
 import { eventBus } from '@/composables/useEventBus'
 import { getDefaultDiagramName, useDiagramExport, useLanguage } from '@/composables'
 import { useTheme } from '@/composables/useTheme'
 import { ANIMATION, FIT_PADDING, GRID, PANEL, ZOOM } from '@/config/uiConfig'
-import { useDiagramStore, usePanelsStore, useUIStore } from '@/stores'
+import { useDiagramStore, useLLMResultsStore, usePanelsStore, useUIStore } from '@/stores'
 import type { MindGraphNode } from '@/types'
 
 import BraceOverlay from './BraceOverlay.vue'
@@ -71,8 +75,17 @@ const emit = defineEmits<{
 
 // Stores
 const diagramStore = useDiagramStore()
+const llmResultsStore = useLLMResultsStore()
 const panelsStore = usePanelsStore()
 const uiStore = useUIStore()
+
+// Concept map AI relationship (provide for CurvedEdge)
+const {
+  generateRelationship,
+  generatingConnectionIds,
+  regenerateForNodeIfNeeded,
+} = useConceptMapRelationship()
+provide(CONCEPT_MAP_GENERATING_KEY, generatingConnectionIds)
 
 // Theme for background color
 const { backgroundColor } = useTheme({
@@ -136,8 +149,25 @@ watch(
 // Concept map: handle link drop on node (create connection only)
 function handleConceptMapLinkDrop(payload: { sourceId: string; targetId: string }) {
   if (diagramStore.type !== 'concept_map') return
-  diagramStore.addConnection(payload.sourceId, payload.targetId, '')
+  const connId = diagramStore.addConnection(payload.sourceId, payload.targetId, '')
   diagramStore.pushHistory('Add link')
+  if (connId && llmResultsStore.selectedModel) {
+    generateRelationship(connId, payload.sourceId, payload.targetId)
+  }
+}
+
+function handleConceptMapLabelCleared(payload: {
+  connectionId: string
+  sourceId: string
+  targetId: string
+}) {
+  if (diagramStore.type !== 'concept_map') return
+  if (!llmResultsStore.selectedModel) return
+  generateRelationship(
+    payload.connectionId,
+    payload.sourceId,
+    payload.targetId
+  )
 }
 
 // Canvas container reference for size calculations
@@ -380,6 +410,7 @@ function handleContextMenuEvent(event: Event) {
 // Set up context menu listeners and concept map link drop on mount
 onMounted(() => {
   eventBus.on('concept_map:link_drop', handleConceptMapLinkDrop)
+  eventBus.on('concept_map:label_cleared', handleConceptMapLabelCleared)
   contextMenuSetupTimeoutId = setTimeout(() => {
     contextMenuSetupTimeoutId = null
     const vueFlowElement = vueFlowWrapper.value?.querySelector('.vue-flow') as HTMLElement | null
@@ -725,6 +756,10 @@ onMounted(() => {
       // Update the node text in the diagram store
       diagramStore.pushHistory('Edit node text')
       diagramStore.updateNode(nodeId, { text })
+      // Concept map label agent: regenerate only edges with empty labels (when AI on)
+      if (diagramStore.type === 'concept_map') {
+        regenerateForNodeIfNeeded(nodeId)
+      }
       // Flow maps use fixed dimensions with text truncation, no layout recalculation needed
     })
   )
@@ -759,6 +794,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   eventBus.off('concept_map:link_drop', handleConceptMapLinkDrop)
+  eventBus.off('concept_map:label_cleared', handleConceptMapLabelCleared)
   // Clear context menu setup timeout if still pending
   if (contextMenuSetupTimeoutId) {
     clearTimeout(contextMenuSetupTimeoutId)

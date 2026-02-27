@@ -131,6 +131,16 @@ async def generate_graph(
         fixed_dimension = req.fixed_dimension if hasattr(req, 'fixed_dimension') else None
         # Tree map and brace map: dimension-only mode flag
         dimension_only_mode = req.dimension_only_mode if hasattr(req, 'dimension_only_mode') else None
+        # Concept map: relationship-only mode
+        concept_map_relationship_only = (
+            req.concept_map_relationship_only if hasattr(req, 'concept_map_relationship_only')
+            else None
+        )
+        concept_a = req.concept_a if hasattr(req, 'concept_a') else None
+        concept_b = req.concept_b if hasattr(req, 'concept_b') else None
+        concept_map_topic = (
+            req.concept_map_topic if hasattr(req, 'concept_map_topic') else None
+        )
 
         result = await agent_graph_workflow_with_styles(
             prompt,
@@ -148,6 +158,11 @@ async def generate_graph(
             fixed_dimension=fixed_dimension,
             # Tree map and brace map: dimension-only mode
             dimension_only_mode=dimension_only_mode,
+            # Concept map: relationship-only mode
+            concept_map_relationship_only=concept_map_relationship_only,
+            concept_a=concept_a,
+            concept_b=concept_b,
+            concept_map_topic=concept_map_topic,
             # RAG integration
             use_rag=req.use_rag if req.use_rag else False,
             rag_top_k=req.rag_top_k if req.rag_top_k else 5
@@ -221,4 +236,3 @@ async def generate_graph(
             status_code=500,
             detail=Messages.error("generation_failed", lang, str(e))
         ) from e
-

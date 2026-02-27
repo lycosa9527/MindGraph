@@ -110,8 +110,11 @@ export function diagramNodeToVueFlowNode(
   }
 
   const mappedType = nodeTypeMap[node.type] || 'branch'
-  // Topic, center, and boundary nodes are not draggable
-  const isDraggable = !['topic', 'center', 'boundary'].includes(node.type)
+  // Topic, center, and boundary nodes are not draggable (except concept_map topic)
+  const isDraggable =
+    isConceptMap && node.type === 'topic'
+      ? true
+      : !['topic', 'center', 'boundary'].includes(node.type)
   // Boundary nodes are not selectable
   const isSelectable = node.type !== 'boundary'
 

@@ -283,9 +283,14 @@ export function useDragConstraints(options: UseDragConstraintsOptions = {}) {
 
   // Check if node can be dragged (some nodes may be locked)
   function canDrag(node: MindGraphNode): boolean {
-    // Topic/center/boundary nodes are not draggable
-    if (node.data?.nodeType === 'topic' || node.data?.nodeType === 'boundary') {
+    // Boundary nodes are not draggable
+    if (node.data?.nodeType === 'boundary') {
       return false
+    }
+
+    // Topic nodes are not draggable except in concept_map
+    if (node.data?.nodeType === 'topic') {
+      return node.data?.diagramType === 'concept_map'
     }
 
     // Check the node's draggable property
