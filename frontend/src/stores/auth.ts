@@ -9,15 +9,13 @@
  * - Refresh tokens (7 days) stored in httpOnly cookie with restricted path
  * - User data stored in sessionStorage (cleared on browser close)
  */
-import { computed, h, ref } from 'vue'
+import { computed, ref } from 'vue'
 
 import { defineStore } from 'pinia'
 
-import { ElNotification } from 'element-plus'
-
 import { useQueryClient } from '@tanstack/vue-query'
-import { AlertTriangle } from 'lucide-vue-next'
 
+import { notify } from '@/composables/notifications'
 import { difyKeys } from '@/composables/queries/difyKeys'
 import { translations } from '@/composables/useLanguage'
 import { useUIStore } from '@/stores/ui'
@@ -536,17 +534,7 @@ export const useAuthStore = defineStore('auth', () => {
       setPendingRedirect(redirectPath)
     }
 
-    // Show notification at top of screen
-    ElNotification({
-      message: message || getTranslatedMessage('auth.sessionExpired'),
-      type: 'warning',
-      duration: 5000,
-      showClose: true,
-      icon: h(AlertTriangle, { size: 20 }),
-      customClass: 'dark-alert-notification',
-      position: 'top-right',
-      offset: 16,
-    })
+    notify.warning(message || getTranslatedMessage('auth.sessionExpired'), 4000)
 
     // Show login modal
     showSessionExpiredModal.value = true

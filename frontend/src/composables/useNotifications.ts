@@ -1,21 +1,19 @@
 /**
- * Notifications Composable - Alert-style notifications at top of screen
- *
- * Features:
- * - Uses Element Plus ElNotification styled like el-alert
- * - Dark theme styling
- * - Type-specific icons
- * - Configurable durations per type
- * - Shows at top-right of screen
+ * useNotifications - Composable for unified top-right notifications
+ * All notifications use ElNotification with dark-alert-notification style
+ * (same as AI content notifications)
  */
 import { h, ref } from 'vue'
 
-import { ElMessage, ElNotification } from 'element-plus'
+import { ElNotification } from 'element-plus'
 import type { MessageHandler } from 'element-plus'
 
-import { AlertTriangle, Check, CircleX, Info } from 'lucide-vue-next'
+import { AlertTriangle } from 'lucide-vue-next'
 
-export type NotificationType = 'success' | 'warning' | 'info' | 'error'
+import { notify, showLoading as showLoadingImpl } from './notifications'
+import type { NotificationType } from './notifications'
+
+export type { NotificationType } from './notifications'
 
 export interface NotificationOptions {
   title?: string
@@ -26,62 +24,23 @@ export interface NotificationOptions {
   onClick?: () => void
 }
 
-// Icon mapping for each notification type
-const iconMap = {
-  success: Check,
-  error: CircleX,
-  warning: AlertTriangle,
-  info: Info,
+const NOTIFICATION_OPTIONS = {
+  customClass: 'dark-alert-notification',
+  position: 'top-right' as const,
+  offset: 16,
+  showClose: true,
 }
 
 export function useNotifications() {
   const loading = ref<MessageHandler | null>(null)
 
-  function showAlert(message: string, type: NotificationType = 'info', duration = 3000): void {
-    const IconComponent = iconMap[type]
-    ElNotification({
-      message,
-      type,
-      duration,
-      showClose: true,
-      icon: h(IconComponent, { size: 20 }),
-      customClass: 'dark-alert-notification',
-      position: 'top-right',
-      offset: 16,
-    })
-  }
-
-  function success(message: string, duration = 3000): void {
-    showAlert(message, 'success', duration)
-  }
-
-  function error(message: string, duration = 5000): void {
-    showAlert(message, 'error', duration)
-  }
-
-  function warning(message: string, duration = 5000): void {
-    showAlert(message, 'warning', duration)
-  }
-
-  function info(message: string, duration = 3000): void {
-    showAlert(message, 'info', duration)
-  }
-
-  // Legacy ElMessage for backward compatibility
   function showMessage(
     message: string,
     type: NotificationType = 'info',
-    duration = 3000
+    duration = 4000
   ): MessageHandler {
-    const IconComponent = iconMap[type]
-    return ElMessage({
-      message,
-      type,
-      duration,
-      showClose: true,
-      icon: h(IconComponent, { size: 18 }),
-      customClass: 'dark-message',
-    })
+    notify[type](message, duration)
+    return { close: () => {} } as MessageHandler
   }
 
   function showNotification(options: NotificationOptions): void {
@@ -89,9 +48,10 @@ export function useNotifications() {
       title: options.title,
       message: options.message,
       type: options.type || 'info',
-      duration: options.duration ?? 4500,
+      duration: options.duration ?? 4000,
       showClose: options.showClose ?? true,
       onClick: options.onClick,
+      ...NOTIFICATION_OPTIONS,
     })
   }
 
@@ -99,12 +59,7 @@ export function useNotifications() {
     if (loading.value) {
       loading.value.close()
     }
-    loading.value = ElMessage({
-      message,
-      type: 'info',
-      duration: 0,
-      showClose: false,
-    })
+    loading.value = showLoadingImpl(message)
     return loading.value
   }
 
@@ -129,16 +84,18 @@ export function useNotifications() {
         showClose: true,
         onClose: () => resolve(false),
         onClick: () => resolve(true),
+        ...NOTIFICATION_OPTIONS,
+        icon: h(AlertTriangle, { size: 20 }),
       })
     })
   }
 
   return {
+    success: notify.success,
+    error: notify.error,
+    warning: notify.warning,
+    info: notify.info,
     showMessage,
-    success,
-    error,
-    warning,
-    info,
     showNotification,
     showLoading,
     hideLoading,

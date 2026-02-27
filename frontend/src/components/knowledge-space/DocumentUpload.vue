@@ -3,9 +3,10 @@
  * DocumentUpload - Modal/drawer for document upload with drag and drop
  */
 import { ref } from 'vue'
-import { ElDrawer, ElUpload, ElMessage, ElProgress } from 'element-plus'
+import { ElDrawer, ElProgress, ElUpload } from 'element-plus'
 import { Upload } from '@element-plus/icons-vue'
 import type { UploadFile } from 'element-plus'
+import { notify } from '@/composables/notifications'
 import { useLanguage } from '@/composables/useLanguage'
 
 const props = defineProps<{
@@ -28,7 +29,7 @@ const handleFileChange = (file: UploadFile) => {
     // Validate file size (10MB)
     const maxSize = 10 * 1024 * 1024
     if (file.raw.size > maxSize) {
-      ElMessage.error(isZh ? '文件大小不能超过10MB' : 'File size cannot exceed 10MB')
+      notify.error(isZh ? '文件大小不能超过10MB' : 'File size cannot exceed 10MB')
       uploadRef.value?.clearFiles()
       return false
     }
@@ -49,7 +50,7 @@ const handleFileChange = (file: UploadFile) => {
     const allowedExts = ['pdf', 'docx', 'txt', 'md', 'jpg', 'jpeg', 'png']
     
     if (!allowedTypes.includes(file.raw.type) && !allowedExts.includes(ext || '')) {
-      ElMessage.error(isZh ? '不支持的文件类型' : 'Unsupported file type')
+      notify.error(isZh ? '不支持的文件类型' : 'Unsupported file type')
       uploadRef.value?.clearFiles()
       return false
     }

@@ -37,6 +37,7 @@ const props = defineProps<Props>()
 const emit = defineEmits<{
   (e: 'close'): void
   (e: 'paste', position: { x: number; y: number }): void
+  (e: 'addConcept', position: { x: number; y: number }): void
 }>()
 
 const diagramStore = useDiagramStore()
@@ -222,6 +223,14 @@ const menuItems = computed<MenuItem[]>(() => {
           emit('close')
         },
       })
+    } else if (diagramType === 'concept_map') {
+      items.push({
+        label: isZh.value ? '添加概念' : 'Add Concept',
+        action: () => {
+          emit('addConcept', { x: props.x, y: props.y })
+          emit('close')
+        },
+      })
     } else if (diagramType === 'bridge_map') {
       items.push({
         label: '添加节点',
@@ -296,7 +305,7 @@ const menuItems = computed<MenuItem[]>(() => {
       })
     } else {
       items.push({
-        label: '添加节点',
+        label: isZh.value ? '添加节点' : 'Add node',
         action: () => {
           notify.info(isZh.value ? '增加节点功能开发中' : 'Add node feature coming soon')
           emit('close')

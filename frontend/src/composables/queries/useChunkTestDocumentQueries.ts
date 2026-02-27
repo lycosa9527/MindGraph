@@ -3,10 +3,11 @@
  *
  * Vue Query composables for managing chunk test documents (separate from knowledge space).
  */
-import { useQuery, useMutation, useQueryClient } from '@tanstack/vue-query'
-import { apiRequest, apiUpload } from '@/utils/apiClient'
-import { ElMessage } from 'element-plus'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
+
+import { notify } from '@/composables/notifications'
 import { useLanguage } from '@/composables/useLanguage'
+import { apiRequest, apiUpload } from '@/utils/apiClient'
 
 // ============================================================================
 // Types
@@ -159,11 +160,11 @@ export function useUploadChunkTestDocument() {
     mutationFn: (file: File) => uploadChunkTestDocumentAPI(file),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: chunkTestDocumentKeys.list() })
-      ElMessage.success(isZh.value ? '文档上传成功' : 'Document uploaded successfully')
+      notify.success(isZh.value ? '文档上传成功' : 'Document uploaded successfully')
     },
     onError: (error: Error) => {
       console.error('Upload failed:', error)
-      ElMessage.error(error.message || (isZh.value ? '文档上传失败' : 'Document upload failed'))
+      notify.error(error.message || (isZh.value ? '文档上传失败' : 'Document upload failed'))
     },
   })
 }
@@ -181,11 +182,11 @@ export function useDeleteChunkTestDocument() {
     mutationFn: (documentId: number) => deleteChunkTestDocumentAPI(documentId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: chunkTestDocumentKeys.list() })
-      ElMessage.success(isZh.value ? '文档已删除' : 'Document deleted')
+      notify.success(isZh.value ? '文档已删除' : 'Document deleted')
     },
     onError: (error: Error) => {
       console.error('Delete failed:', error)
-      ElMessage.error(error.message || (isZh.value ? '删除失败' : 'Delete failed'))
+      notify.error(error.message || (isZh.value ? '删除失败' : 'Delete failed'))
     },
   })
 }
@@ -204,9 +205,9 @@ export function useStartProcessingChunkTestDocuments() {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: chunkTestDocumentKeys.list() })
       if (data.processed_count === 0) {
-        ElMessage.info(isZh.value ? '没有待处理的文档' : 'No documents to process')
+        notify.info(isZh.value ? '没有待处理的文档' : 'No documents to process')
       } else {
-        ElMessage.success(
+        notify.success(
           isZh.value
             ? `已开始处理 ${data.processed_count} 个文档`
             : `Started processing ${data.processed_count} documents`
@@ -215,7 +216,7 @@ export function useStartProcessingChunkTestDocuments() {
     },
     onError: (error: Error) => {
       console.error('Start processing failed:', error)
-      ElMessage.error(error.message || (isZh.value ? '启动处理失败' : 'Failed to start processing'))
+      notify.error(error.message || (isZh.value ? '启动处理失败' : 'Failed to start processing'))
     },
   })
 }
@@ -234,9 +235,9 @@ export function useProcessSelectedChunkTestDocuments() {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: chunkTestDocumentKeys.list() })
       if (data.processed_count === 0) {
-        ElMessage.info(isZh.value ? '没有待处理的文档' : 'No documents to process')
+        notify.info(isZh.value ? '没有待处理的文档' : 'No documents to process')
       } else {
-        ElMessage.success(
+        notify.success(
           isZh.value
             ? `已开始处理 ${data.processed_count} 个文档`
             : `Started processing ${data.processed_count} documents`
@@ -245,7 +246,7 @@ export function useProcessSelectedChunkTestDocuments() {
     },
     onError: (error: Error) => {
       console.error('Process selected failed:', error)
-      ElMessage.error(error.message || (isZh.value ? '启动处理失败' : 'Failed to start processing'))
+      notify.error(error.message || (isZh.value ? '启动处理失败' : 'Failed to start processing'))
     },
   })
 }

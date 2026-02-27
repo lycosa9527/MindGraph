@@ -8,7 +8,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
-import { ElButton, ElIcon, ElMessage } from 'element-plus'
+import { ElButton, ElIcon } from 'element-plus'
 
 import { RefreshRight } from '@element-plus/icons-vue'
 
@@ -27,6 +27,7 @@ import {
   useTestUserDocuments,
   useUpdateDatasets,
 } from '@/composables/queries/useChunkTestQueries'
+import { notify } from '@/composables/notifications'
 import { useChunkTestDocumentsComposable } from '@/composables/useChunkTestDocuments'
 import { useLanguage } from '@/composables/useLanguage'
 
@@ -112,7 +113,7 @@ const handleTestUserDocuments = async () => {
   )
 
   if (completedDocs.length === 0) {
-    ElMessage.warning(isZh ? '没有可测试的文档' : 'No completed documents available for testing')
+    notify.warning(isZh ? '没有可测试的文档' : 'No completed documents available for testing')
     return
   }
 
@@ -124,7 +125,7 @@ const handleTestUserDocuments = async () => {
       : completedDocs.map((doc: ChunkTestDocument) => doc.id)
 
   if (docIdsToTest.length === 0) {
-    ElMessage.warning(
+    notify.warning(
       isZh ? '请选择已完成的文档进行测试' : 'Please select completed documents for testing'
     )
     return
@@ -143,7 +144,7 @@ const handleTestUserDocuments = async () => {
         ]
 
   try {
-    ElMessage.info(isZh ? '开始测试上传文档...' : 'Starting test for uploaded documents...')
+    notify.info(isZh ? '开始测试上传文档...' : 'Starting test for uploaded documents...')
     const result = await testUserDocumentsMutation.mutateAsync({
       document_ids: docIdsToTest,
       queries,
@@ -152,19 +153,19 @@ const handleTestUserDocuments = async () => {
     if (result && result.test_id) {
       await router.push(`/chunk-test/results/${result.test_id}`)
     } else {
-      ElMessage.error(
+      notify.error(
         isZh ? '测试启动失败：未收到测试ID' : 'Test failed to start: No test ID received'
       )
     }
   } catch (error) {
     console.error('Failed to start test:', error)
-    ElMessage.error(error instanceof Error ? error.message : isZh ? '测试失败' : 'Test failed')
+    notify.error(error instanceof Error ? error.message : isZh ? '测试失败' : 'Test failed')
   }
 }
 
 const handleTestAllDatasets = async () => {
   if (datasets.value.length === 0) {
-    ElMessage.warning(isZh ? '没有可用的数据集' : 'No datasets available')
+    notify.warning(isZh ? '没有可用的数据集' : 'No datasets available')
     return
   }
 
@@ -172,7 +173,7 @@ const handleTestAllDatasets = async () => {
   const dataset = datasets.value[0]
 
   try {
-    ElMessage.info(
+    notify.info(
       isZh ? `开始测试数据集: ${dataset.name}...` : `Starting test for dataset: ${dataset.name}...`
     )
     const result = await testBenchmarkAsyncMutation.mutateAsync({
@@ -182,22 +183,22 @@ const handleTestAllDatasets = async () => {
     if (result && result.test_id) {
       await router.push(`/chunk-test/results/${result.test_id}`)
     } else {
-      ElMessage.error(
+      notify.error(
         isZh ? '测试启动失败：未收到测试ID' : 'Test failed to start: No test ID received'
       )
     }
   } catch (error) {
     console.error('Failed to start test:', error)
-    ElMessage.error(error instanceof Error ? error.message : isZh ? '测试失败' : 'Test failed')
+    notify.error(error instanceof Error ? error.message : isZh ? '测试失败' : 'Test failed')
   }
 }
 
 const handleUpdateDatasets = async () => {
   try {
     await updateDatasetsMutation.mutateAsync()
-    ElMessage.success(isZh ? '数据集更新成功' : 'Datasets updated successfully')
+    notify.success(isZh ? '数据集更新成功' : 'Datasets updated successfully')
   } catch (error) {
-    ElMessage.error(
+    notify.error(
       error instanceof Error ? error.message : isZh ? '数据集更新失败' : 'Failed to update datasets'
     )
   }

@@ -6,10 +6,11 @@
  */
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ElProgress, ElTable, ElTableColumn, ElTag, ElIcon, ElButton, ElMessage, ElCard, ElMessageBox } from 'element-plus'
+import { ElButton, ElCard, ElIcon, ElMessageBox, ElProgress, ElTable, ElTableColumn, ElTag } from 'element-plus'
 import { Loading, Check, CircleCheck, CircleClose, View } from '@element-plus/icons-vue'
 import { Sparkles } from 'lucide-vue-next'
 import { useChunkTestProgress, useChunkTestResult, useChunkTestChunks, useCancelChunkTest } from '@/composables/queries/useChunkTestQueries'
+import { notify } from '@/composables/notifications'
 import { useLanguage } from '@/composables/useLanguage'
 
 const route = useRoute()
@@ -167,12 +168,12 @@ const handleCancelTest = async () => {
     )
 
     await cancelTestMutation.mutateAsync(testId.value)
-    ElMessage.success(
+    notify.success(
       isZh.value ? '测试取消请求已发送' : 'Test cancellation requested'
     )
   } catch (error) {
     if (error instanceof Error && error.message !== 'cancel') {
-      ElMessage.error(
+      notify.error(
         error.message || (isZh.value ? '取消失败' : 'Failed to cancel test')
       )
     }

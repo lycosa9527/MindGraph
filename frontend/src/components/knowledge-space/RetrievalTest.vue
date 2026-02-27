@@ -6,7 +6,7 @@
 import { ref, watch } from 'vue'
 import { ElDrawer, ElForm, ElFormItem, ElInput, ElSelect, ElButton, ElTable, ElTableColumn, ElCard, ElDivider } from 'element-plus'
 import { Search } from '@element-plus/icons-vue'
-import { ElMessage } from 'element-plus'
+import { notify } from '@/composables/notifications'
 import { useLanguage } from '@/composables/useLanguage'
 import { useRetrievalTest, type RetrievalTestResponse } from '@/composables/queries'
 
@@ -61,7 +61,7 @@ watch(
 
 function testRetrieval() {
   if (!query.value.trim()) {
-    ElMessage.warning(isZh.value ? '请输入测试查询' : 'Please enter a test query')
+    notify.warning(isZh.value ? '请输入测试查询' : 'Please enter a test query')
     return
   }
 

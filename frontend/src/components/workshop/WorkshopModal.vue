@@ -5,7 +5,7 @@
  */
 import { computed, ref, watch } from 'vue'
 
-import { ElButton, ElDialog, ElMessage, ElTag } from 'element-plus'
+import { ElButton, ElDialog, ElTag } from 'element-plus'
 
 import { Copy, Users } from 'lucide-vue-next'
 
@@ -277,10 +277,10 @@ async function copyCode() {
 
   try {
     await navigator.clipboard.writeText(workshopCode.value)
-    ElMessage.success(isZh.value ? '代码已复制到剪贴板' : 'Code copied to clipboard')
+    notify.success(isZh.value ? '代码已复制到剪贴板' : 'Code copied to clipboard')
   } catch (error) {
     console.error('Failed to copy:', error)
-    ElMessage.error(isZh.value ? '复制失败' : 'Failed to copy')
+    notify.error(isZh.value ? '复制失败' : 'Failed to copy')
   }
 }
 </script>

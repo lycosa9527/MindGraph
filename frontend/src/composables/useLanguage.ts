@@ -57,6 +57,7 @@ export const translations: Record<Language, Record<string, string>> = {
     'diagram.newSubstep': 'New Substep',
     'diagram.newPart': 'New Part',
     'diagram.newChild': 'New Child',
+    'diagram.relationshipPlaceholder': 'Enter relationship...',
 
     // Panels
     'panel.mindmate': 'MindMate AI',
@@ -123,6 +124,7 @@ export const translations: Record<Language, Record<string, string>> = {
     'diagram.newSubstep': '新子步骤',
     'diagram.newPart': '新部分',
     'diagram.newChild': '新子项',
+    'diagram.relationshipPlaceholder': '输入关系...',
 
     // Panels
     'panel.mindmate': 'MindMate AI 助手',

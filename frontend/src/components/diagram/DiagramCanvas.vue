@@ -35,6 +35,7 @@ import TreeEdge from './edges/TreeEdge.vue'
 import BoundaryNode from './nodes/BoundaryNode.vue'
 import BraceNode from './nodes/BraceNode.vue'
 import BranchNode from './nodes/BranchNode.vue'
+import ConceptNode from './nodes/ConceptNode.vue'
 import BubbleNode from './nodes/BubbleNode.vue'
 import CircleNode from './nodes/CircleNode.vue'
 import FlowNode from './nodes/FlowNode.vue'
@@ -132,6 +133,13 @@ watch(
   }
 )
 
+// Concept map: handle link drop on node (create connection only)
+function handleConceptMapLinkDrop(payload: { sourceId: string; targetId: string }) {
+  if (diagramStore.type !== 'concept_map') return
+  diagramStore.addConnection(payload.sourceId, payload.targetId, '')
+  diagramStore.pushHistory('Add link')
+}
+
 // Canvas container reference for size calculations
 const canvasContainer = ref<HTMLElement | null>(null)
 
@@ -154,6 +162,7 @@ const nodeTypes = {
   boundary: markRaw(BoundaryNode),
   label: markRaw(LabelNode),
   circle: markRaw(CircleNode), // Perfect circular nodes for circle maps
+  concept: markRaw(ConceptNode), // Concept map nodes with link icon
   // Default fallbacks
   tree: markRaw(BranchNode),
   bridge: markRaw(BranchNode),
@@ -236,9 +245,91 @@ onNodeDragStop(({ node }) => {
   emit('nodeDragStop', node as unknown as MindGraphNode)
 })
 
-// Handle pane click (deselect)
-function handlePaneClick() {
-  diagramStore.clearSelection()
+// Concept map link drag state
+const CONCEPT_LINK_DATA_TYPE = 'application/mindgraph-concept-link'
+
+function handleConceptMapDragOver(event: DragEvent) {
+  if (diagramStore.type !== 'concept_map') return
+  const hasLinkData = event.dataTransfer?.types.includes(CONCEPT_LINK_DATA_TYPE)
+  if (hasLinkData) {
+    event.preventDefault()
+    event.dataTransfer!.dropEffect = 'copy'
+  }
+}
+
+function handleConceptMapDrop(event: DragEvent) {
+  if (diagramStore.type !== 'concept_map') return
+  const sourceId = event.dataTransfer?.getData(CONCEPT_LINK_DATA_TYPE)
+  if (!sourceId) return
+
+  const target = event.target as HTMLElement
+  const nodeElement = target.closest('.vue-flow__node')
+  if (nodeElement) {
+    return
+  }
+
+  event.preventDefault()
+  const flowPos = screenToFlowCoordinate({
+    x: event.clientX,
+    y: event.clientY,
+  })
+  diagramStore.addNode({
+    id: '',
+    text: '新概念',
+    type: 'branch',
+    position: { x: flowPos.x - 50, y: flowPos.y - 18 },
+  })
+  const nodes = diagramStore.data?.nodes ?? []
+  const newId = nodes[nodes.length - 1]?.id
+  if (newId) {
+    diagramStore.addConnection(sourceId, newId, '')
+  }
+  diagramStore.pushHistory('Add concept and link')
+}
+
+// Double-click detection for concept map (create node on empty canvas)
+const lastPaneClickTime = ref(0)
+const lastPaneClickPosition = ref<{ x: number; y: number } | null>(null)
+const DOUBLE_CLICK_THRESHOLD_MS = 300
+const DOUBLE_CLICK_POSITION_THRESHOLD = 10
+
+// Handle pane click (deselect) and double-click for concept map
+function handlePaneClick(event?: MouseEvent) {
+  const now = Date.now()
+  const isDoubleClick =
+    diagramStore.type === 'concept_map' &&
+    event &&
+    now - lastPaneClickTime.value < DOUBLE_CLICK_THRESHOLD_MS &&
+    lastPaneClickPosition.value &&
+    Math.abs(event.clientX - lastPaneClickPosition.value.x) <
+      DOUBLE_CLICK_POSITION_THRESHOLD &&
+    Math.abs(event.clientY - lastPaneClickPosition.value.y) <
+      DOUBLE_CLICK_POSITION_THRESHOLD
+
+  if (isDoubleClick && event) {
+    const flowPos = screenToFlowCoordinate({
+      x: event.clientX,
+      y: event.clientY,
+    })
+    diagramStore.addNode({
+      id: '',
+      text: '新概念',
+      type: 'branch',
+      position: { x: flowPos.x - 50, y: flowPos.y - 18 },
+    })
+    diagramStore.pushHistory('Add concept')
+    lastPaneClickTime.value = 0
+    lastPaneClickPosition.value = null
+  } else {
+    if (event) {
+      lastPaneClickTime.value = now
+      lastPaneClickPosition.value = {
+        x: event.clientX,
+        y: event.clientY,
+      }
+    }
+    diagramStore.clearSelection()
+  }
   emit('paneClick')
 }
 
@@ -286,8 +377,9 @@ function handleContextMenuEvent(event: Event) {
   handlePaneContextMenu(mouseEvent)
 }
 
-// Set up context menu listeners on mount
+// Set up context menu listeners and concept map link drop on mount
 onMounted(() => {
+  eventBus.on('concept_map:link_drop', handleConceptMapLinkDrop)
   contextMenuSetupTimeoutId = setTimeout(() => {
     contextMenuSetupTimeoutId = null
     const vueFlowElement = vueFlowWrapper.value?.querySelector('.vue-flow') as HTMLElement | null
@@ -309,6 +401,18 @@ function closeContextMenu() {
 function handleContextMenuPaste(position: { x: number; y: number }) {
   const flowPos = screenToFlowCoordinate({ x: position.x, y: position.y })
   diagramStore.pasteNodesAt(flowPos)
+}
+
+// Handle add concept from context menu (concept_map)
+function handleContextMenuAddConcept(position: { x: number; y: number }) {
+  const flowPos = screenToFlowCoordinate({ x: position.x, y: position.y })
+  diagramStore.addNode({
+    id: '',
+    text: '新概念',
+    type: 'branch',
+    position: { x: flowPos.x - 50, y: flowPos.y - 18 },
+  })
+  diagramStore.pushHistory('Add concept')
 }
 
 // Handle nodes initialized - Vue Flow has placed nodes, viewport is ready
@@ -654,6 +758,7 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  eventBus.off('concept_map:link_drop', handleConceptMapLinkDrop)
   // Clear context menu setup timeout if still pending
   if (contextMenuSetupTimeoutId) {
     clearTimeout(contextMenuSetupTimeoutId)
@@ -705,6 +810,8 @@ const gridConfig = {
       ref="vueFlowWrapper"
       class="vue-flow-wrapper w-full h-full"
       :class="{ 'wireframe-mode': uiStore.wireframeMode }"
+      @dragover="handleConceptMapDragOver"
+      @drop="handleConceptMapDrop"
     >
       <VueFlow
       :nodes="nodes"
@@ -721,6 +828,7 @@ const gridConfig = {
       :elements-selectable="!props.handToolActive"
       :pan-on-scroll="false"
       :zoom-on-scroll="true"
+      :zoom-on-double-click="false"
       :pan-on-drag="props.handToolActive ? [0, 1, 2] : [1, 2]"
       :class="[
         'bg-gray-50 dark:bg-gray-900',
@@ -728,6 +836,7 @@ const gridConfig = {
         ['circle_map', 'bubble_map', 'double_bubble_map'].includes(diagramStore.type)
           ? 'circle-map-canvas'
           : '',
+        diagramStore.type === 'concept_map' ? 'concept-map-canvas' : '',
       ]"
       :style="{ backgroundColor: backgroundColor }"
       @pane-click="handlePaneClick"
@@ -767,6 +876,7 @@ const gridConfig = {
       :target="contextMenuTarget"
       @close="closeContextMenu"
       @paste="handleContextMenuPaste"
+      @add-concept="handleContextMenuAddConcept"
     />
   </div>
 </template>
@@ -798,6 +908,17 @@ const gridConfig = {
 .circle-map-canvas .vue-flow__nodesselection,
 .circle-map-canvas .vue-flow__nodesselection-rect {
   display: none !important;
+}
+
+/* Concept map: hide Vue Flow's blue selection box, use pulse glow animation instead */
+.concept-map-canvas .vue-flow__nodesselection,
+.concept-map-canvas .vue-flow__nodesselection-rect {
+  display: none !important;
+}
+
+.concept-map-canvas .vue-flow__node-concept.selected {
+  box-shadow: none !important;
+  animation: pulseGlow 2s ease-in-out infinite;
 }
 
 /* Bubble map attribute nodes (pill shape): pulse glow when selected, same as circle map */

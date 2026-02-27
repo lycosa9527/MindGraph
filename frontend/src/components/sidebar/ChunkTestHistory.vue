@@ -12,7 +12,6 @@ import {
   ElDropdownItem,
   ElDropdownMenu,
   ElIcon,
-  ElMessage,
   ElMessageBox,
   ElScrollbar,
   ElTag,
@@ -22,7 +21,7 @@ import { Loading } from '@element-plus/icons-vue'
 
 import { Lock, MoreHorizontal, TestTube, Trash2 } from 'lucide-vue-next'
 
-import { useLanguage } from '@/composables'
+import { notify, useLanguage } from '@/composables'
 import { useChunkTestHistory, useDeleteChunkTest, type ChunkTestHistoryItem } from '@/composables/queries/useChunkTestQueries'
 
 const props = defineProps<{
@@ -147,12 +146,12 @@ async function handleDeleteTest(testId: number): Promise<void> {
     )
 
     await deleteTestMutation.mutateAsync(testId)
-    ElMessage.success(
+    notify.success(
       isZh.value ? '测试记录已删除' : 'Test deleted successfully'
     )
   } catch (error) {
     if (error instanceof Error && error.message !== 'cancel') {
-      ElMessage.error(
+      notify.error(
         error.message || (isZh.value ? '删除失败' : 'Failed to delete test')
       )
     }

@@ -12,6 +12,7 @@ import { loadBraceMapSpec } from './braceMap'
 import { loadBridgeMapSpec } from './bridgeMap'
 import { loadBubbleMapSpec, recalculateBubbleMapLayout } from './bubbleMap'
 import { loadCircleMapSpec } from './circleMap'
+import { loadConceptMapSpec } from './conceptMap'
 import { loadDoubleBubbleMapSpec } from './doubleBubbleMap'
 import { loadFlowMapSpec } from './flowMap'
 import { loadGenericSpec } from './generic'
@@ -69,7 +70,7 @@ const SPEC_LOADERS: Partial<
   multi_flow_map: loadMultiFlowMapSpec,
   brace_map: loadBraceMapSpec,
   bridge_map: loadBridgeMapSpec,
-  // concept_map: handled by teammate
+  concept_map: loadConceptMapSpec,
   mindmap: loadMindMapSpec,
   mind_map: loadMindMapSpec,
 }

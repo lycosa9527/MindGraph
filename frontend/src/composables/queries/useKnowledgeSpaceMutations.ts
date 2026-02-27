@@ -4,9 +4,11 @@
  * Vue Query mutations for knowledge space operations with automatic cache invalidation.
  */
 import { useMutation, useQueryClient } from '@tanstack/vue-query'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessageBox } from 'element-plus'
+
+import { notify } from '@/composables/notifications'
 import { useLanguage } from '@/composables/useLanguage'
-import { apiUpload, apiRequest, apiDelete } from '@/utils/apiClient'
+import { apiDelete, apiRequest, apiUpload } from '@/utils/apiClient'
 import { knowledgeSpaceKeys } from './knowledgeSpaceKeys'
 import type { KnowledgeDocument } from '@/stores/knowledgeSpace'
 
@@ -130,7 +132,7 @@ export function useUploadDocument() {
     onSuccess: (data) => {
       // Invalidate to refetch with real data
       queryClient.invalidateQueries({ queryKey: knowledgeSpaceKeys.documents() })
-      ElMessage.success(isZh.value ? '文档上传成功，正在处理中...' : 'Document uploaded successfully, processing...')
+      notify.success(isZh.value ? '文档上传成功，正在处理中...' : 'Document uploaded successfully, processing...')
     },
     onError: (error: Error, _file, context) => {
       // Rollback optimistic update
@@ -138,7 +140,7 @@ export function useUploadDocument() {
         queryClient.setQueryData(knowledgeSpaceKeys.documents(), context.previousData)
       }
       console.error('Upload failed:', error)
-      ElMessage.error(error.message || (isZh.value ? '文档上传失败' : 'Document upload failed'))
+      notify.error(error.message || (isZh.value ? '文档上传失败' : 'Document upload failed'))
     },
   })
 }
@@ -178,7 +180,7 @@ export function useDeleteDocument() {
     onSuccess: () => {
       // Invalidate to ensure consistency
       queryClient.invalidateQueries({ queryKey: knowledgeSpaceKeys.documents() })
-      ElMessage.success(isZh.value ? '文档已删除' : 'Document deleted')
+      notify.success(isZh.value ? '文档已删除' : 'Document deleted')
     },
     onError: (error: Error, _documentId, context) => {
       // Rollback optimistic update
@@ -186,7 +188,7 @@ export function useDeleteDocument() {
         queryClient.setQueryData(knowledgeSpaceKeys.documents(), context.previousData)
       }
       console.error('Delete failed:', error)
-      ElMessage.error(error.message || (isZh.value ? '删除失败' : 'Delete failed'))
+      notify.error(error.message || (isZh.value ? '删除失败' : 'Delete failed'))
     },
   })
 }
@@ -206,9 +208,9 @@ export function useStartProcessing() {
       // Invalidate documents to refresh status
       queryClient.invalidateQueries({ queryKey: knowledgeSpaceKeys.documents() })
       if (data.processed_count === 0) {
-        ElMessage.info(isZh.value ? '没有待处理的文档' : 'No documents to process')
+        notify.info(isZh.value ? '没有待处理的文档' : 'No documents to process')
       } else {
-        ElMessage.success(
+        notify.success(
           isZh.value
             ? `已开始处理 ${data.processed_count} 个文档`
             : `Started processing ${data.processed_count} documents`
@@ -217,7 +219,7 @@ export function useStartProcessing() {
     },
     onError: (error: Error) => {
       console.error('Start processing failed:', error)
-      ElMessage.error(error.message || (isZh.value ? '启动处理失败' : 'Failed to start processing'))
+      notify.error(error.message || (isZh.value ? '启动处理失败' : 'Failed to start processing'))
     },
   })
 }
@@ -237,9 +239,9 @@ export function useProcessSelected() {
       // Invalidate documents to refresh status
       queryClient.invalidateQueries({ queryKey: knowledgeSpaceKeys.documents() })
       if (data.processed_count === 0) {
-        ElMessage.info(isZh.value ? '没有待处理的文档' : 'No documents to process')
+        notify.info(isZh.value ? '没有待处理的文档' : 'No documents to process')
       } else {
-        ElMessage.success(
+        notify.success(
           isZh.value
             ? `已开始处理 ${data.processed_count} 个文档`
             : `Started processing ${data.processed_count} documents`
@@ -248,7 +250,7 @@ export function useProcessSelected() {
     },
     onError: (error: Error) => {
       console.error('Process selected failed:', error)
-      ElMessage.error(error.message || (isZh.value ? '启动处理失败' : 'Failed to start processing'))
+      notify.error(error.message || (isZh.value ? '启动处理失败' : 'Failed to start processing'))
     },
   })
 }

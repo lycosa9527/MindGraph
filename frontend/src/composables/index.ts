@@ -9,6 +9,7 @@ export { useSessionLifecycle, sessionLifecycle } from './useSessionLifecycle'
 export type { Destroyable, SessionInfo, CleanupResult } from './useSessionLifecycle'
 export { useSSE, useFetchSSE } from './useSSE'
 export { useNotifications } from './useNotifications'
+export { notify } from './notifications'
 export { useLanguage } from './useLanguage'
 export { getDiagramTypeDisplayName, getDefaultDiagramName } from './useDiagramLabels'
 

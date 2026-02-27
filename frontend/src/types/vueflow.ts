@@ -9,6 +9,7 @@ import type { Connection, DiagramNode, DiagramType, NodeStyle } from './diagram'
 // Custom node types for different diagram components
 export type MindGraphNodeType =
   | 'topic' // Central topic node (non-draggable)
+  | 'concept' // Concept map concept node (with link icon)
   | 'bubble' // Circular attribute node
   | 'branch' // Mind map branch node
   | 'flow' // Flow map step node
@@ -92,12 +93,13 @@ export function diagramNodeToVueFlowNode(
   const isDoubleBubbleMap = diagramType === 'double_bubble_map'
   const useCircleForTopic = isCircleMap || isBubbleMap || isDoubleBubbleMap
 
+  const isConceptMap = diagramType === 'concept_map'
   const nodeTypeMap: Record<string, MindGraphNodeType> = {
-    topic: useCircleForTopic ? 'circle' : 'topic',
-    center: useCircleForTopic ? 'circle' : 'topic',
+    topic: isConceptMap ? 'concept' : useCircleForTopic ? 'circle' : 'topic',
+    center: isConceptMap ? 'concept' : useCircleForTopic ? 'circle' : 'topic',
     child: 'branch',
     bubble: isCircleMap || isBubbleMap ? 'circle' : 'bubble', // bubble_map uses circles like circle_map
-    branch: 'branch',
+    branch: isConceptMap ? 'concept' : 'branch', // concept_map uses ConceptNode for concept nodes
     left: 'branch',
     right: 'branch',
     boundary: 'boundary',
@@ -113,10 +115,13 @@ export function diagramNodeToVueFlowNode(
   // Boundary nodes are not selectable
   const isSelectable = node.type !== 'boundary'
 
-  // Determine nodeType for data (used by CircleNode to differentiate topic vs context)
+  // Determine nodeType for data (used by CircleNode/ConceptNode to differentiate topic vs context)
   let dataNodeType: MindGraphNodeType = mappedType
   if (useCircleForTopic && (node.type === 'topic' || node.type === 'center')) {
     dataNodeType = 'topic' // Keep 'topic' in data for CircleNode styling
+  }
+  if (isConceptMap && (node.type === 'topic' || node.type === 'center')) {
+    dataNodeType = 'topic' // Keep 'topic' in data for ConceptNode topic styling
   }
 
   // Boundary nodes should render behind other nodes
@@ -181,6 +186,7 @@ export function connectionToVueFlowEdge(
 export function vueFlowNodeToDiagramNode(node: MindGraphNode): DiagramNode {
   const typeMap: Record<MindGraphNodeType, string> = {
     topic: 'topic',
+    concept: 'branch',
     bubble: 'bubble',
     branch: 'child',
     flow: 'flow',

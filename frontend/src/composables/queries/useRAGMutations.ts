@@ -4,7 +4,8 @@
  * Vue Query mutations for RAG operations with automatic cache invalidation.
  */
 import { useMutation, useQueryClient } from '@tanstack/vue-query'
-import { ElMessage } from 'element-plus'
+
+import { notify } from '@/composables/notifications'
 import { useLanguage } from '@/composables/useLanguage'
 import { apiPost } from '@/utils/apiClient'
 import { ragKeys } from './ragKeys'
@@ -80,11 +81,11 @@ export function useRetrievalTest() {
     onSuccess: () => {
       // Invalidate retrieval test history to refresh the list
       queryClient.invalidateQueries({ queryKey: ragKeys.retrievalTestHistory() })
-      ElMessage.success(isZh.value ? '检索测试完成' : 'Retrieval test completed')
+      notify.success(isZh.value ? '检索测试完成' : 'Retrieval test completed')
     },
     onError: (error: Error) => {
       console.error('Retrieval test failed:', error)
-      ElMessage.error(error.message || (isZh.value ? '检索测试失败' : 'Retrieval test failed'))
+      notify.error(error.message || (isZh.value ? '检索测试失败' : 'Retrieval test failed'))
     },
   })
 }

@@ -33,6 +33,7 @@ import {
 } from '@/types/vueflow'
 import { MULTI_FLOW_MAP_TOPIC_WIDTH } from '@/composables/diagrams/layoutConfig'
 
+import { augmentConnectionWithOptimalHandles } from '@/composables/diagrams/conceptMapHandles'
 import {
   getDefaultTemplate,
   loadSpecForDiagramType,
@@ -316,10 +317,21 @@ export const useDiagramStore = defineStore('diagram', () => {
 
     if (!data.value?.connections) return []
     const defaultEdgeType = getEdgeTypeForDiagram(type.value)
+    const diagramType = type.value
+    const nodes = data.value.nodes ?? []
+
     return data.value.connections.map((conn) => {
-      // Use connection's edgeType if specified, otherwise use diagram default
-      const edgeType = (conn.edgeType as MindGraphEdgeType) || defaultEdgeType
-      return connectionToVueFlowEdge(conn, edgeType)
+      const effectiveConn =
+        diagramType === 'concept_map'
+          ? augmentConnectionWithOptimalHandles(conn, nodes)
+          : conn
+
+      const edgeType = (effectiveConn.edgeType as MindGraphEdgeType) || defaultEdgeType
+      const edge = connectionToVueFlowEdge(effectiveConn, edgeType)
+      if (diagramType && edge.data) {
+        edge.data = { ...edge.data, diagramType }
+      }
+      return edge
     })
   })
 
@@ -529,12 +541,55 @@ export const useDiagramStore = defineStore('diagram', () => {
       // Update nodes and connections
       data.value.nodes = recalculatedNodes
       data.value.connections = recalculatedConnections
+    } else if (type.value === 'concept_map') {
+      // Concept map: ensure concept nodes have proper id and type
+      const conceptNode: DiagramNode = {
+        ...node,
+        id: node.id || `concept-${Date.now()}-${data.value.nodes.length}`,
+        type: (node.type === 'topic' || node.type === 'center') ? node.type : 'branch',
+        text: node.text || '新概念',
+      }
+      data.value.nodes.push(conceptNode)
+      emitEvent('diagram:node_added', { node: conceptNode })
+      return
     } else {
       // Standard add for other diagram types
       data.value.nodes.push(node)
     }
 
     emitEvent('diagram:node_added', { node })
+  }
+
+  function addConnection(sourceId: string, targetId: string, label?: string): string | null {
+    if (!data.value?.nodes || !data.value.connections) return null
+
+    const sourceExists = data.value.nodes.some((n) => n.id === sourceId)
+    const targetExists = data.value.nodes.some((n) => n.id === targetId)
+    if (!sourceExists || !targetExists) return null
+
+    const duplicate = data.value.connections.some(
+      (c) => c.source === sourceId && c.target === targetId
+    )
+    if (duplicate) return null
+
+    const connId = `conn-${Date.now()}`
+    data.value.connections.push({
+      id: connId,
+      source: sourceId,
+      target: targetId,
+      label: label || '',
+    })
+    return connId
+  }
+
+  function updateConnectionLabel(connectionId: string, label: string): boolean {
+    if (!data.value?.connections) return false
+
+    const conn = data.value.connections.find((c) => c.id === connectionId)
+    if (!conn) return false
+
+    conn.label = label
+    return true
   }
 
   function copySelectedNodes(): void {
@@ -1293,6 +1348,8 @@ export const useDiagramStore = defineStore('diagram', () => {
     redo,
     updateNode,
     addNode,
+    addConnection,
+    updateConnectionLabel,
     removeNode,
     removeBubbleMapNodes,
     copySelectedNodes,

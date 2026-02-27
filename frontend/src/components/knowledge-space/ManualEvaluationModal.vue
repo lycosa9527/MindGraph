@@ -4,9 +4,10 @@
  * Allows users to evaluate chunks with custom queries and optional ground truth answers
  */
 import { ref, computed, watch } from 'vue'
-import { ElDialog, ElButton, ElInput, ElSelect, ElOption, ElMessage, ElIcon, ElCard, ElTag, ElDivider } from 'element-plus'
+import { ElButton, ElCard, ElDialog, ElDivider, ElIcon, ElInput, ElOption, ElSelect, ElTag } from 'element-plus'
 import { Loading } from '@element-plus/icons-vue'
 import { Sparkles } from 'lucide-vue-next'
+import { notify } from '@/composables/notifications'
 import { useLanguage } from '@/composables/useLanguage'
 import { useManualEvaluation, useChunkTestChunks, type ChunkTestChunk } from '@/composables/queries/useChunkTestQueries'
 
@@ -67,7 +68,7 @@ const chunks = computed(() => chunksData.value?.chunks || [])
 
 const handleEvaluate = async () => {
   if (!query.value.trim()) {
-    ElMessage.warning(isZh.value ? '请输入查询问题' : 'Please enter a query')
+    notify.warning(isZh.value ? '请输入查询问题' : 'Please enter a query')
     return
   }
 
@@ -84,9 +85,9 @@ const handleEvaluate = async () => {
     })
 
     evaluationResults.value = result
-    ElMessage.success(isZh.value ? '评估完成' : 'Evaluation completed')
+    notify.success(isZh.value ? '评估完成' : 'Evaluation completed')
   } catch (error) {
-    ElMessage.error(
+    notify.error(
       error instanceof Error
         ? error.message
         : isZh.value ? '评估失败' : 'Evaluation failed'
