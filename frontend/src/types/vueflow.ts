@@ -46,6 +46,10 @@ export interface MindGraphNodeData {
   stepNumber?: number // For flow maps
   pairIndex?: number // For bridge maps
   position?: 'top' | 'bottom' // For bridge maps
+  /** Concept map: unified arrowhead state. Cycle: none → clicked-side → other-side → both → none */
+  arrowheadDirection?: 'none' | 'source' | 'target' | 'both'
+  /** Concept map: when multiple edges share target handle, only one draws arrowhead */
+  drawTargetArrowhead?: boolean
   // Allow additional custom properties
   [key: string]: unknown
 }
@@ -182,6 +186,7 @@ export function connectionToVueFlowEdge(
       label: connection.label,
       edgeType,
       style: connection.style,
+      arrowheadDirection: connection.arrowheadDirection,
     },
   }
 }

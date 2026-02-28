@@ -36,8 +36,8 @@
       <el-button @click="handleClose">Cancel</el-button>
       <el-button
         type="primary"
-        @click="handleAssign"
         :loading="loading"
+        @click="handleAssign"
       >
         Assign
       </el-button>

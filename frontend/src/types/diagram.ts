@@ -93,6 +93,8 @@ export interface Connection {
     strokeWidth?: number
     strokeDasharray?: string
   }
+  /** Concept map: unified arrowhead state. Cycle: none → clicked-side → other-side → both → none */
+  arrowheadDirection?: 'none' | 'source' | 'target' | 'both'
 }
 
 export interface DiagramData {

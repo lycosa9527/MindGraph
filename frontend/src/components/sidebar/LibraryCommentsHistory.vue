@@ -209,8 +209,8 @@ function toggleShowAll(): void {
               </div>
               <button
                 class="delete-btn"
-                @click.stop="handleDeleteBookmark(bookmark, $event)"
                 :title="isZh ? '删除书签' : 'Delete bookmark'"
+                @click.stop="handleDeleteBookmark(bookmark, $event)"
               >
                 <Trash2 class="w-4 h-4" />
               </button>
@@ -244,8 +244,8 @@ function toggleShowAll(): void {
               </div>
               <button
                 class="delete-btn"
-                @click.stop="handleDeleteBookmark(bookmark, $event)"
                 :title="isZh ? '删除书签' : 'Delete bookmark'"
+                @click.stop="handleDeleteBookmark(bookmark, $event)"
               >
                 <Trash2 class="w-4 h-4" />
               </button>
@@ -279,8 +279,8 @@ function toggleShowAll(): void {
               </div>
               <button
                 class="delete-btn"
-                @click.stop="handleDeleteBookmark(bookmark, $event)"
                 :title="isZh ? '删除书签' : 'Delete bookmark'"
+                @click.stop="handleDeleteBookmark(bookmark, $event)"
               >
                 <Trash2 class="w-4 h-4" />
               </button>
@@ -314,8 +314,8 @@ function toggleShowAll(): void {
               </div>
               <button
                 class="delete-btn"
-                @click.stop="handleDeleteBookmark(bookmark, $event)"
                 :title="isZh ? '删除书签' : 'Delete bookmark'"
+                @click.stop="handleDeleteBookmark(bookmark, $event)"
               >
                 <Trash2 class="w-4 h-4" />
               </button>

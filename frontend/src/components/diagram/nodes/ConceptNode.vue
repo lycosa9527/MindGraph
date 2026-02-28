@@ -130,43 +130,43 @@ function handleLinkDrop(event: DragEvent) {
     >
       <!-- Handles for smart connection routing (edges pick closest side) -->
       <Handle
-        type="source"
         id="source-left"
+        type="source"
         :position="Position.Left"
       />
       <Handle
-        type="target"
         id="target-left"
+        type="target"
         :position="Position.Left"
       />
       <Handle
-        type="source"
         id="source-right"
+        type="source"
         :position="Position.Right"
       />
       <Handle
-        type="target"
         id="target-right"
+        type="target"
         :position="Position.Right"
       />
       <Handle
-        type="source"
         id="source-top"
-        :position="Position.Top"
-      />
-      <Handle
-        type="target"
-        id="target-top"
-        :position="Position.Top"
-      />
-      <Handle
         type="source"
+        :position="Position.Top"
+      />
+      <Handle
+        id="target-top"
+        type="target"
+        :position="Position.Top"
+      />
+      <Handle
         id="source-bottom"
+        type="source"
         :position="Position.Bottom"
       />
       <Handle
-        type="target"
         id="target-bottom"
+        type="target"
         :position="Position.Bottom"
       />
       <InlineEditableText

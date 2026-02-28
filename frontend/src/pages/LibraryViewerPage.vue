@@ -571,9 +571,9 @@ watch([() => selectedDanmakuId.value, () => pinPlacementPosition.value], () => {
           :total-pages="totalPages"
           :danmaku="currentPageDanmaku"
           :initial-page="initialPageFromQuery"
-          @pageChange="handlePageChange"
-          @pinPlace="handlePinPlace"
-          @pinClick="handlePinClick"
+          @page-change="handlePageChange"
+          @pin-place="handlePinPlace"
+          @pin-click="handlePinClick"
         />
         <DanmakuOverlay
           v-if="libraryStore.currentDocument"

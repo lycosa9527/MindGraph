@@ -85,10 +85,10 @@ const handleSave = () => {
             style="width: 100%"
           >
             <el-option
-              :label="i"
-              :value="i"
               v-for="i in [1, 3, 5, 10, 20]"
               :key="i"
+              :label="i"
+              :value="i"
             />
           </ElSelect>
         </ElFormItem>

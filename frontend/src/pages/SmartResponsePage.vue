@@ -6,8 +6,8 @@
           <h2>Smart Response 智回</h2>
           <el-button
             type="primary"
-            @click="handleStartLearningMode"
             :disabled="!selectedDiagramId"
+            @click="handleStartLearningMode"
           >
             Start Learning Mode
           </el-button>
@@ -47,8 +47,8 @@
             </template>
 
             <el-table
-              :data="watches"
               v-loading="isLoading"
+              :data="watches"
             >
               <el-table-column
                 prop="watch_id"

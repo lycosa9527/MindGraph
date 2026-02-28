@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.28.3] - 2026-03-01
+
+### Added
+- **Concept Map Arrowheads**: Click connection lines to toggle directional arrowheads. Each connection cycles through: none → arrow on clicked side → arrow on other side → both sides → none. Both segments (source→midpoint, midpoint→target) are clickable.
+- **Bidirectional Markers**: Forward (right-pointing) and backward (left-pointing) arrow markers for concept map edges.
+- **Shared-Handle Merge**: When multiple connections share the same target handle and all have arrowheads, they combine into one shared arrowhead.
+- **bezierSplit Utility**: New `utils/bezierSplit.ts` for splitting cubic bezier paths at midpoint (De Casteljau) for segment rendering.
+- **Larger Hit Area**: Concept map connection lines use a 16px invisible stroke for easier clicking while keeping the 2px visual line.
+
+### Changed
+- **CurvedEdge**: Concept maps now render two path segments per edge with click handlers, conditional markers, and hit-area paths.
+- **Connection Data Model**: Added `arrowheadDirection?: 'none' | 'source' | 'target' | 'both'` to Connection for unified arrowhead state.
+- **Diagram Store**: Added `toggleConnectionArrowhead()`, merge logic for shared target handles, and `arrowheadDirection` persistence in syncFromVueFlow.
+
 ## [5.28.2] - 2026-02-28
 
 ### Changed

@@ -220,8 +220,8 @@ const handleCancelTest = async () => {
           v-if="isProcessing"
           size="small"
           type="warning"
-          @click="handleCancelTest"
           :loading="cancelTestMutation.isPending.value"
+          @click="handleCancelTest"
         >
           {{ isZh ? '取消测试' : 'Cancel Test' }}
         </ElButton>

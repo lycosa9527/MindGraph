@@ -454,7 +454,7 @@ function handleExportCommand(command: string) {
     <WorkshopModal
       v-model:visible="showWorkshopModal"
       :diagram-id="currentDiagramId"
-      @workshopCodeChanged="
+      @workshop-code-changed="
         (code) => {
           workshopCode = code
           // Emit event for CanvasPage to sync

@@ -72,7 +72,7 @@ function handleSelect(index: number) {
       v-if="isLoading && suggestions.length === 0"
       class="ime-loading"
     >
-      <span class="ime-spinner"></span>
+      <span class="ime-spinner" />
       <span>{{ labels.loading }}</span>
     </div>
 
@@ -109,7 +109,7 @@ function handleSelect(index: number) {
           v-if="isLoading"
           class="ime-loading-inline"
         >
-          <span class="ime-spinner-small"></span>
+          <span class="ime-spinner-small" />
         </span>
       </div>
     </template>

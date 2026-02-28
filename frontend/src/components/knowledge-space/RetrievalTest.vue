@@ -135,10 +135,10 @@ function testRetrieval() {
             style="width: 120px"
           >
             <el-option
-              :label="i"
-              :value="i"
               v-for="i in [1, 3, 5, 10]"
               :key="i"
+              :label="i"
+              :value="i"
             />
           </ElSelect>
         </ElFormItem>

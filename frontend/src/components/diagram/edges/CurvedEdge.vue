@@ -2,7 +2,7 @@
 /**
  * CurvedEdge - Curved connection edge for mind maps, tree maps, and concept maps
  * Uses bezier curves for smooth connections
- * Concept map: relationship labels are editable on double-click
+ * Concept map: relationship labels editable on double-click; click segments to toggle arrowheads
  */
 import { computed, inject, nextTick, ref, watch } from 'vue'
 
@@ -14,6 +14,7 @@ import { useLanguage } from '@/composables/useLanguage'
 import { useTheme } from '@/composables/useTheme'
 import { useDiagramStore } from '@/stores'
 import type { DiagramType, MindGraphEdgeData } from '@/types'
+import { splitBezierPathAtMidpoint } from '@/utils/bezierSplit'
 
 const props = defineProps<EdgeProps<MindGraphEdgeData>>()
 
@@ -104,13 +105,158 @@ const edgeStyle = computed(() => ({
   strokeDasharray: props.data?.style?.strokeDasharray || 'none',
 }))
 
+const HIT_AREA_STROKE = 16
+const hitAreaStyle = computed(() => ({
+  stroke: 'transparent',
+  strokeWidth: HIT_AREA_STROKE,
+  fill: 'none',
+}))
+
 const isGenerating = computed(
   () => isConceptMap.value && generatingConnectionIds.value.has(props.id)
+)
+
+// Concept map: split path into two segments for clickable arrowhead toggles
+const pathSegments = computed(() => {
+  if (!isConceptMap.value) return null
+  const result = splitBezierPathAtMidpoint(path.value.edgePath)
+  return result
+})
+
+type ArrowheadDirection = 'none' | 'source' | 'target' | 'both'
+function normalizeDirection(val: unknown): ArrowheadDirection {
+  if (val === 'source' || val === 'target' || val === 'both') return val
+  if (val === true) return 'target'
+  const raw = val as Record<string, unknown> | undefined
+  if (!raw) return 'none'
+  const hasTarget =
+    raw.targetSegment === true ||
+    raw.targetSegment === 'forward' ||
+    raw.targetSegment === 'backward'
+  const hasSource =
+    raw.sourceSegment === true ||
+    raw.sourceSegment === 'forward' ||
+    raw.sourceSegment === 'backward'
+  if (hasSource && hasTarget) return 'both'
+  if (hasTarget) return 'target'
+  if (hasSource) return 'source'
+  return 'none'
+}
+const arrowheadDirection = computed<ArrowheadDirection>(() => {
+  const raw = props.data?.arrowheadDirection ?? props.data?.arrowheadSegments
+  return normalizeDirection(raw)
+})
+const drawTargetArrowhead = computed(
+  () => (props.data as { drawTargetArrowhead?: boolean })?.drawTargetArrowhead ?? true
+)
+
+const conceptMapMarkerId = computed(() => `arrow-concept-${props.id}`)
+const conceptMapMarkerBackwardId = computed(() => `arrow-concept-backward-${props.id}`)
+
+function handleSegmentClick(segment: 'sourceSegment' | 'targetSegment') {
+  if (!isConceptMap.value) return
+  diagramStore.toggleConnectionArrowhead(props.id, segment)
+}
+
+function handleSegment1Click() {
+  handleSegmentClick('sourceSegment')
+}
+
+function handleSegment2Click() {
+  handleSegmentClick('targetSegment')
+}
+
+const showSourceArrow = computed(
+  () => arrowheadDirection.value === 'source' || arrowheadDirection.value === 'both'
+)
+const showTargetArrow = computed(
+  () =>
+    (arrowheadDirection.value === 'target' || arrowheadDirection.value === 'both') &&
+    drawTargetArrowhead.value
+)
+const sourceMarkerStart = computed(() =>
+  showSourceArrow.value ? `url(#${conceptMapMarkerBackwardId.value})` : undefined
+)
+const targetMarkerEnd = computed(() =>
+  showTargetArrow.value ? `url(#${conceptMapMarkerId.value})` : undefined
 )
 </script>
 
 <template>
+  <!-- Concept map: two segments with clickable arrowhead toggles -->
+  <template v-if="isConceptMap && pathSegments">
+    <defs>
+      <!-- Forward: right-pointing triangle, path connects at refX=10 (1 unit closer to node) -->
+      <marker
+        :id="conceptMapMarkerId"
+        markerWidth="10"
+        markerHeight="10"
+        refX="8"
+        refY="5"
+        orient="auto"
+        markerUnits="userSpaceOnUse"
+      >
+        <path
+          d="M0,0 L0,10 L10,5 z"
+          :fill="edgeStyle.stroke"
+        />
+      </marker>
+      <!-- Backward: left-pointing mirror, path connects at refX=2 (2 units closer to node) -->
+      <marker
+        :id="conceptMapMarkerBackwardId"
+        markerWidth="10"
+        markerHeight="10"
+        refX="2"
+        refY="5"
+        orient="auto"
+        markerUnits="userSpaceOnUse"
+      >
+        <path
+          d="M10,0 L10,10 L0,5 z"
+          :fill="edgeStyle.stroke"
+        />
+      </marker>
+    </defs>
+    <!-- Hit area: invisible wider stroke for easier clicking -->
+    <path
+      :id="`${id}-segment1-hit`"
+      class="curved-edge-segment-hit"
+      :d="pathSegments.segment1"
+      :style="hitAreaStyle"
+      pointer-events="stroke"
+      cursor="pointer"
+      @click.stop="handleSegment1Click"
+    />
+    <path
+      :id="`${id}-segment1`"
+      class="vue-flow__edge-path curved-edge curved-edge-segment"
+      :d="pathSegments.segment1"
+      :style="edgeStyle"
+      :marker-start="sourceMarkerStart"
+      pointer-events="none"
+    />
+    <path
+      :id="`${id}-segment2-hit`"
+      class="curved-edge-segment-hit"
+      :d="pathSegments.segment2"
+      :style="hitAreaStyle"
+      pointer-events="stroke"
+      cursor="pointer"
+      @click.stop="handleSegment2Click"
+    />
+    <path
+      :id="`${id}-segment2`"
+      class="vue-flow__edge-path curved-edge curved-edge-segment"
+      :d="pathSegments.segment2"
+      :style="edgeStyle"
+      :marker-end="targetMarkerEnd"
+      pointer-events="none"
+    />
+  </template>
+
+  <!-- Non-concept map: single path -->
   <path
+    v-else
     :id="id"
     class="vue-flow__edge-path curved-edge"
     :d="path.edgePath"
@@ -170,6 +316,15 @@ const isGenerating = computed(
 
 .curved-edge:hover {
   stroke: #64748b;
+}
+
+.curved-edge-segment:hover {
+  stroke: #64748b;
+}
+
+.curved-edge-segment-hit {
+  fill: none;
+  transition: none;
 }
 
 .edge-label {

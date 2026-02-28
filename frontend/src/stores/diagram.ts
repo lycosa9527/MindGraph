@@ -320,7 +320,7 @@ export const useDiagramStore = defineStore('diagram', () => {
     const diagramType = type.value
     const nodes = data.value.nodes ?? []
 
-    return data.value.connections.map((conn) => {
+    const edges = data.value.connections.map((conn) => {
       const effectiveConn =
         diagramType === 'concept_map' ? augmentConnectionWithOptimalHandles(conn, nodes) : conn
 
@@ -331,6 +331,40 @@ export const useDiagramStore = defineStore('diagram', () => {
       }
       return edge
     })
+
+    if (diagramType === 'concept_map' && edges.length > 0) {
+      const groups = new Map<string, MindGraphEdge[]>()
+      for (const edge of edges) {
+        const key = `${edge.target}:${edge.targetHandle ?? ''}`
+        if (!groups.has(key)) groups.set(key, [])
+        groups.get(key)!.push(edge)
+      }
+      for (const group of groups.values()) {
+        const allHaveTarget = group.every(
+          (e) =>
+            (e.data?.arrowheadDirection === 'target' ||
+              e.data?.arrowheadDirection === 'both')
+        )
+        group.forEach((edge, i) => {
+          if (!edge.data) return
+          const dir = edge.data.arrowheadDirection
+          const hasTarget = dir === 'target' || dir === 'both'
+          if (allHaveTarget) {
+            edge.data = {
+              ...edge.data,
+              drawTargetArrowhead: i === 0,
+            }
+          } else {
+            edge.data = {
+              ...edge.data,
+              drawTargetArrowhead: hasTarget,
+            }
+          }
+        })
+      }
+    }
+
+    return edges
   })
 
   // Actions
@@ -587,6 +621,32 @@ export const useDiagramStore = defineStore('diagram', () => {
     if (!conn) return false
 
     conn.label = label
+    return true
+  }
+
+  function toggleConnectionArrowhead(
+    connectionId: string,
+    segment: 'sourceSegment' | 'targetSegment'
+  ): boolean {
+    if (!data.value?.connections) return false
+
+    const conn = data.value.connections.find((c) => c.id === connectionId)
+    if (!conn) return false
+
+    const current = conn.arrowheadDirection ?? 'none'
+    const clickedSource = segment === 'sourceSegment'
+    const next: 'none' | 'source' | 'target' | 'both' =
+      current === 'none'
+        ? clickedSource
+          ? 'source'
+          : 'target'
+        : current === 'source'
+          ? 'target'
+          : current === 'target'
+            ? 'both'
+            : 'none'
+    conn.arrowheadDirection = next
+    pushHistory('Toggle arrowhead')
     return true
   }
 
@@ -989,14 +1049,26 @@ export const useDiagramStore = defineStore('diagram', () => {
     // Update nodes
     data.value.nodes = nodes.map((vfNode) => vueFlowNodeToDiagramNode(vfNode))
 
-    // Update connections
-    data.value.connections = edges.map((edge) => ({
-      id: edge.id,
-      source: edge.source,
-      target: edge.target,
-      label: edge.data?.label,
-      style: edge.data?.style,
-    }))
+    // Update connections (preserve arrowheadSegments for concept maps)
+    data.value.connections = edges.map((edge) => {
+      const existing = data.value?.connections?.find((c) => c.id === edge.id)
+      const conn: Connection = {
+        id: edge.id,
+        source: edge.source,
+        target: edge.target,
+        label: edge.data?.label,
+        style: edge.data?.style,
+        sourceHandle: edge.sourceHandle ?? undefined,
+        targetHandle: edge.targetHandle ?? undefined,
+        sourcePosition: edge.sourcePosition,
+        targetPosition: edge.targetPosition,
+        arrowheadDirection: ((): Connection['arrowheadDirection'] => {
+          const d = edge.data?.arrowheadDirection ?? existing?.arrowheadDirection
+          return d === 'source' || d === 'target' || d === 'both' ? d : undefined
+        })(),
+      }
+      return conn
+    })
   }
 
   /**
@@ -1351,6 +1423,7 @@ export const useDiagramStore = defineStore('diagram', () => {
     addNode,
     addConnection,
     updateConnectionLabel,
+    toggleConnectionArrowhead,
     removeNode,
     removeBubbleMapNodes,
     copySelectedNodes,
