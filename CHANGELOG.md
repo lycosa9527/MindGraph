@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.28.1] - 2026-02-28
+
+### Changed
+- **Concept Map Fit View**: Fit view now only triggers when user enters the canvas, not when creating links via the menu icon. Prevents unwanted view re-fit when adding connections between concepts.
+
 ## [5.28.0] - 2026-02-28
 
 ### Added

@@ -14,12 +14,12 @@ import { Background } from '@vue-flow/background'
 import { VueFlow, useVueFlow } from '@vue-flow/core'
 import { MiniMap } from '@vue-flow/minimap'
 
+import { getDefaultDiagramName, useDiagramExport, useLanguage } from '@/composables'
 import {
   CONCEPT_MAP_GENERATING_KEY,
   useConceptMapRelationship,
 } from '@/composables/useConceptMapRelationship'
 import { eventBus } from '@/composables/useEventBus'
-import { getDefaultDiagramName, useDiagramExport, useLanguage } from '@/composables'
 import { useTheme } from '@/composables/useTheme'
 import { ANIMATION, FIT_PADDING, GRID, PANEL, ZOOM } from '@/config/uiConfig'
 import { useDiagramStore, useLLMResultsStore, usePanelsStore, useUIStore } from '@/stores'
@@ -39,9 +39,9 @@ import TreeEdge from './edges/TreeEdge.vue'
 import BoundaryNode from './nodes/BoundaryNode.vue'
 import BraceNode from './nodes/BraceNode.vue'
 import BranchNode from './nodes/BranchNode.vue'
-import ConceptNode from './nodes/ConceptNode.vue'
 import BubbleNode from './nodes/BubbleNode.vue'
 import CircleNode from './nodes/CircleNode.vue'
+import ConceptNode from './nodes/ConceptNode.vue'
 import FlowNode from './nodes/FlowNode.vue'
 import FlowSubstepNode from './nodes/FlowSubstepNode.vue'
 import LabelNode from './nodes/LabelNode.vue'
@@ -80,11 +80,8 @@ const panelsStore = usePanelsStore()
 const uiStore = useUIStore()
 
 // Concept map AI relationship (provide for CurvedEdge)
-const {
-  generateRelationship,
-  generatingConnectionIds,
-  regenerateForNodeIfNeeded,
-} = useConceptMapRelationship()
+const { generateRelationship, generatingConnectionIds, regenerateForNodeIfNeeded } =
+  useConceptMapRelationship()
 provide(CONCEPT_MAP_GENERATING_KEY, generatingConnectionIds)
 
 // Theme for background color
@@ -163,11 +160,7 @@ function handleConceptMapLabelCleared(payload: {
 }) {
   if (diagramStore.type !== 'concept_map') return
   if (!llmResultsStore.selectedModel) return
-  generateRelationship(
-    payload.connectionId,
-    payload.sourceId,
-    payload.targetId
-  )
+  generateRelationship(payload.connectionId, payload.sourceId, payload.targetId)
 }
 
 // Canvas container reference for size calculations
@@ -255,9 +248,13 @@ onNodeClick(({ node, event }) => {
       clientY: (event as MouseEvent)?.clientY,
     },
   })
-  console.log(`[DiagramCanvas] [${getTimestamp()}] Currently selected nodes:`, [...diagramStore.selectedNodes])
+  console.log(`[DiagramCanvas] [${getTimestamp()}] Currently selected nodes:`, [
+    ...diagramStore.selectedNodes,
+  ])
   diagramStore.selectNodes(node.id)
-  console.log(`[DiagramCanvas] [${getTimestamp()}] After selection, selected nodes:`, [...diagramStore.selectedNodes])
+  console.log(`[DiagramCanvas] [${getTimestamp()}] After selection, selected nodes:`, [
+    ...diagramStore.selectedNodes,
+  ])
   console.log(`[DiagramCanvas] [${getTimestamp()}] ====================================`)
   emit('nodeClick', node as unknown as MindGraphNode)
 })
@@ -281,9 +278,9 @@ const CONCEPT_LINK_DATA_TYPE = 'application/mindgraph-concept-link'
 function handleConceptMapDragOver(event: DragEvent) {
   if (diagramStore.type !== 'concept_map') return
   const hasLinkData = event.dataTransfer?.types.includes(CONCEPT_LINK_DATA_TYPE)
-  if (hasLinkData) {
+  if (hasLinkData && event.dataTransfer) {
     event.preventDefault()
-    event.dataTransfer!.dropEffect = 'copy'
+    event.dataTransfer.dropEffect = 'copy'
   }
 }
 
@@ -331,10 +328,8 @@ function handlePaneClick(event?: MouseEvent) {
     event &&
     now - lastPaneClickTime.value < DOUBLE_CLICK_THRESHOLD_MS &&
     lastPaneClickPosition.value &&
-    Math.abs(event.clientX - lastPaneClickPosition.value.x) <
-      DOUBLE_CLICK_POSITION_THRESHOLD &&
-    Math.abs(event.clientY - lastPaneClickPosition.value.y) <
-      DOUBLE_CLICK_POSITION_THRESHOLD
+    Math.abs(event.clientX - lastPaneClickPosition.value.x) < DOUBLE_CLICK_POSITION_THRESHOLD &&
+    Math.abs(event.clientY - lastPaneClickPosition.value.y) < DOUBLE_CLICK_POSITION_THRESHOLD
 
   if (isDoubleClick && event) {
     const flowPos = screenToFlowCoordinate({
@@ -638,11 +633,13 @@ function fitForExport(): void {
 
 // Fit view when nodes are added/removed (not initial - that's handleNodesInitialized)
 // Skip first run (oldLength undefined) - nodes-initialized handles initial fit
+// Concept map: only fit on canvas entry, not when adding nodes/links (avoids fit on menu-icon link creation)
 watch(
   () => nodes.value.length,
   (newLength, oldLength) => {
     if (!props.fitViewOnInit || newLength === 0) return
     if (oldLength === undefined) return
+    if (diagramStore.type === 'concept_map') return
     setTimeout(() => {
       eventBus.emit('view:fit_to_canvas_requested', { animate: true })
     }, ANIMATION.FIT_DELAY)
@@ -850,56 +847,56 @@ const gridConfig = {
       @drop="handleConceptMapDrop"
     >
       <VueFlow
-      :nodes="nodes"
-      :edges="edges"
-      :node-types="nodeTypes"
-      :edge-types="edgeTypes"
-      :default-viewport="{ x: 0, y: 0, zoom: zoomConfig.default }"
-      :min-zoom="zoomConfig.min"
-      :max-zoom="zoomConfig.max"
-      :snap-to-grid="true"
-      :snap-grid="gridConfig.snapSize"
-      :nodes-draggable="!props.handToolActive"
-      :nodes-connectable="false"
-      :elements-selectable="!props.handToolActive"
-      :pan-on-scroll="false"
-      :zoom-on-scroll="true"
-      :zoom-on-double-click="false"
-      :pan-on-drag="props.handToolActive ? [0, 1, 2] : [1, 2]"
-      :class="[
-        'bg-gray-50 dark:bg-gray-900',
-        diagramStore.type !== null &&
-        ['circle_map', 'bubble_map', 'double_bubble_map'].includes(diagramStore.type)
-          ? 'circle-map-canvas'
-          : '',
-        diagramStore.type === 'concept_map' ? 'concept-map-canvas' : '',
-      ]"
-      :style="{ backgroundColor: backgroundColor }"
-      @pane-click="handlePaneClick"
-      @nodes-initialized="handleNodesInitialized"
-      @viewport-change="handleViewportChange"
-    >
-      <!-- Background pattern -->
-      <Background
-        v-if="showBackground"
-        :gap="gridConfig.backgroundGap"
-        :size="gridConfig.backgroundDotSize"
-        pattern-color="#e5e7eb"
-      />
+        :nodes="nodes"
+        :edges="edges"
+        :node-types="nodeTypes"
+        :edge-types="edgeTypes"
+        :default-viewport="{ x: 0, y: 0, zoom: zoomConfig.default }"
+        :min-zoom="zoomConfig.min"
+        :max-zoom="zoomConfig.max"
+        :snap-to-grid="true"
+        :snap-grid="gridConfig.snapSize"
+        :nodes-draggable="!props.handToolActive"
+        :nodes-connectable="false"
+        :elements-selectable="!props.handToolActive"
+        :pan-on-scroll="false"
+        :zoom-on-scroll="true"
+        :zoom-on-double-click="false"
+        :pan-on-drag="props.handToolActive ? [0, 1, 2] : [1, 2]"
+        :class="[
+          'bg-gray-50 dark:bg-gray-900',
+          diagramStore.type !== null &&
+          ['circle_map', 'bubble_map', 'double_bubble_map'].includes(diagramStore.type)
+            ? 'circle-map-canvas'
+            : '',
+          diagramStore.type === 'concept_map' ? 'concept-map-canvas' : '',
+        ]"
+        :style="{ backgroundColor: backgroundColor }"
+        @pane-click="handlePaneClick"
+        @nodes-initialized="handleNodesInitialized"
+        @viewport-change="handleViewportChange"
+      >
+        <!-- Background pattern -->
+        <Background
+          v-if="showBackground"
+          :gap="gridConfig.backgroundGap"
+          :size="gridConfig.backgroundDotSize"
+          pattern-color="#e5e7eb"
+        />
 
-      <!-- Minimap for overview -->
-      <MiniMap
-        v-if="showMinimap"
-        position="bottom-left"
-        :pannable="true"
-        :zoomable="true"
-      />
+        <!-- Minimap for overview -->
+        <MiniMap
+          v-if="showMinimap"
+          position="bottom-left"
+          :pannable="true"
+          :zoomable="true"
+        />
 
-      <!-- Brace overlay for brace maps (draws unified curly braces) -->
-      <BraceOverlay />
+        <!-- Brace overlay for brace maps (draws unified curly braces) -->
+        <BraceOverlay />
 
-      <!-- Bridge overlay for bridge maps (draws vertical lines, triangles, and dimension label) -->
-      <BridgeOverlay />
+        <!-- Bridge overlay for bridge maps (draws vertical lines, triangles, and dimension label) -->
+        <BridgeOverlay />
       </VueFlow>
     </div>
 
@@ -979,7 +976,8 @@ const gridConfig = {
 /* OPTION 1: Pulsing Glow (Animated) - Smooth pulsing effect */
 /* Creates a breathing/pulsing animation that draws attention */
 @keyframes pulseGlow {
-  0%, 100% {
+  0%,
+  100% {
     filter: drop-shadow(0 0 8px rgba(102, 126, 234, 0.6))
       drop-shadow(0 0 4px rgba(102, 126, 234, 0.4));
   }
@@ -1176,16 +1174,16 @@ const gridConfig = {
 }
 
 /* Fallback: Target by ID patterns if :has() not supported (older browsers) */
-.vue-flow__node-flow[id^="cause-"].selected,
-.vue-flow__node-flow[id^="effect-"].selected,
-.vue-flow__node-topic[id="event"].selected {
+.vue-flow__node-flow[id^='cause-'].selected,
+.vue-flow__node-flow[id^='effect-'].selected,
+.vue-flow__node-topic[id='event'].selected {
   border: 2px solid var(--primary-color, #3b82f6);
 }
 
 /* Workshop editing indicators */
 .vue-flow__node.workshop-editing {
   position: relative;
-  border: 3px solid var(--editor-color, #FF6B6B) !important;
+  border: 3px solid var(--editor-color, #ff6b6b) !important;
   box-shadow: 0 0 8px rgba(255, 107, 107, 0.4);
   animation: workshop-pulse 2s ease-in-out infinite;
 }
@@ -1197,7 +1195,7 @@ const gridConfig = {
   right: -12px;
   width: 24px;
   height: 24px;
-  background: var(--editor-color, #FF6B6B);
+  background: var(--editor-color, #ff6b6b);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -1214,7 +1212,7 @@ const gridConfig = {
   top: -40px;
   left: 50%;
   transform: translateX(-50%);
-  background: var(--editor-color, #FF6B6B);
+  background: var(--editor-color, #ff6b6b);
   color: white;
   padding: 4px 8px;
   border-radius: 4px;
@@ -1232,7 +1230,8 @@ const gridConfig = {
 }
 
 @keyframes workshop-pulse {
-  0%, 100% {
+  0%,
+  100% {
     box-shadow: 0 0 8px rgba(255, 107, 107, 0.4);
   }
   50% {
@@ -1243,7 +1242,7 @@ const gridConfig = {
 /* Workshop editing indicators */
 .vue-flow__node.workshop-editing {
   position: relative;
-  border: 3px solid var(--editor-color, #FF6B6B) !important;
+  border: 3px solid var(--editor-color, #ff6b6b) !important;
   box-shadow: 0 0 8px rgba(255, 107, 107, 0.4);
   animation: workshop-pulse 2s ease-in-out infinite;
 }
@@ -1255,7 +1254,7 @@ const gridConfig = {
   right: -12px;
   width: 24px;
   height: 24px;
-  background: var(--editor-color, #FF6B6B);
+  background: var(--editor-color, #ff6b6b);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -1272,7 +1271,7 @@ const gridConfig = {
   top: -40px;
   left: 50%;
   transform: translateX(-50%);
-  background: var(--editor-color, #FF6B6B);
+  background: var(--editor-color, #ff6b6b);
   color: white;
   padding: 4px 8px;
   border-radius: 4px;
@@ -1290,7 +1289,8 @@ const gridConfig = {
 }
 
 @keyframes workshop-pulse {
-  0%, 100% {
+  0%,
+  100% {
     box-shadow: 0 0 8px rgba(255, 107, 107, 0.4);
   }
   50% {
@@ -1298,9 +1298,9 @@ const gridConfig = {
   }
 }
 
-.vue-flow__node-flow[id^="cause-"].selected,
-.vue-flow__node-flow[id^="effect-"].selected,
-.vue-flow__node-topic[id="event"].selected {
+.vue-flow__node-flow[id^='cause-'].selected,
+.vue-flow__node-flow[id^='effect-'].selected,
+.vue-flow__node-topic[id='event'].selected {
   box-shadow: none !important;
   filter: drop-shadow(0 0 8px rgba(102, 126, 234, 0.6))
     drop-shadow(0 0 4px rgba(102, 126, 234, 0.4)) !important;
