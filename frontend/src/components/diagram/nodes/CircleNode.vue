@@ -38,7 +38,7 @@ const circleSize = computed(() => {
   if (props.data.style?.size) {
     return props.data.style.size
   }
-  
+
   // Calculate adaptive size based on text length for both topic and context nodes
   const text = props.data.label || ''
   return calculateAdaptiveCircleSize(text, isTopicNode.value)

@@ -4,18 +4,18 @@
  * Design: Clean minimalist grouped by time periods
  * Shows max 10 items initially with "Show more" option
  */
-import { computed, ref, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { ElScrollbar } from 'element-plus'
 
-import { Bookmark, Trash2, FileText } from 'lucide-vue-next'
+import { Bookmark, FileText, Trash2 } from 'lucide-vue-next'
 
 import { useLanguage } from '@/composables'
-import { type LibraryBookmark } from '@/utils/apiClient'
 import { useNotifications } from '@/composables'
 import { useAuthStore } from '@/stores/auth'
 import { useLibraryStore } from '@/stores/library'
+import { type LibraryBookmark } from '@/utils/apiClient'
 
 defineProps<{
   isBlurred?: boolean
@@ -109,7 +109,7 @@ async function handleBookmarkClick(bookmark: LibraryBookmark): Promise<void> {
     // This will throw 404 if bookmark was deleted or doesn't belong to user
     const { getBookmark } = await import('@/utils/apiClient')
     await getBookmark(bookmark.document_id, bookmark.page_number)
-    
+
     // Bookmark exists - navigate to it
     router.push({
       name: 'LibraryViewer',
@@ -146,7 +146,9 @@ function toggleShowAll(): void {
 </script>
 
 <template>
-  <div class="library-comments-history flex flex-col border-t border-stone-200 relative overflow-hidden">
+  <div
+    class="library-comments-history flex flex-col border-t border-stone-200 relative overflow-hidden"
+  >
     <!-- Header -->
     <div class="px-4 py-3">
       <div class="text-xs font-medium text-stone-400 uppercase tracking-wider">

@@ -3,15 +3,10 @@
  * PdfToolbar - Complete PDF viewer toolbar with navigation and controls
  */
 import { computed } from 'vue'
-import {
-  ZoomIn,
-  ZoomOut,
-  Printer,
-  RotateCw,
-  Bookmark,
-  MapPin,
-} from 'lucide-vue-next'
-import { ElButton, ElInputNumber, ElSelect, ElOption } from 'element-plus'
+
+import { ElButton, ElInputNumber, ElOption, ElSelect } from 'element-plus'
+
+import { Bookmark, MapPin, Printer, RotateCw, ZoomIn, ZoomOut } from 'lucide-vue-next'
 
 interface Props {
   currentPage: number
@@ -75,16 +70,16 @@ function percentageToZoom(percentage: number): number {
 const zoomOptions = computed(() => {
   const currentPercentage = zoomToPercentage(props.zoom)
   const hasExactMatch = baseZoomOptions.some((opt) => opt.value === currentPercentage)
-  
+
   const options = [...baseZoomOptions]
-  
+
   if (!hasExactMatch && currentPercentage >= 50 && currentPercentage <= 300) {
     options.push({
       label: `${currentPercentage}%`,
       value: currentPercentage,
     })
   }
-  
+
   return options
 })
 
@@ -96,7 +91,6 @@ const zoomSelectValue = computed({
     emit('zoom-change', percentageToZoom(value))
   },
 })
-
 
 function handleZoomSelectChange(value: number) {
   emit('zoom-change', value)
@@ -164,9 +158,7 @@ function handleZoomSelectChange(value: number) {
         title="添加评论"
         @click="emit('toggle-pin-mode')"
       >
-        <MapPin
-          :class="['w-4 h-4', { 'fill-current': pinMode }]"
-        />
+        <MapPin :class="['w-4 h-4', { 'fill-current': pinMode }]" />
       </ElButton>
       <ElButton
         text
@@ -175,9 +167,7 @@ function handleZoomSelectChange(value: number) {
         title="书签"
         @click="emit('toggle-bookmark')"
       >
-        <Bookmark
-          :class="['w-4 h-4', { 'fill-current': isBookmarked }]"
-        />
+        <Bookmark :class="['w-4 h-4', { 'fill-current': isBookmarked }]" />
       </ElButton>
       <ElButton
         text

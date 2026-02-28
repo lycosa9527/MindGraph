@@ -3,13 +3,31 @@
  * ManualEvaluationModal - Manual chunk evaluation using DashScope models
  * Allows users to evaluate chunks with custom queries and optional ground truth answers
  */
-import { ref, computed, watch } from 'vue'
-import { ElButton, ElCard, ElDialog, ElDivider, ElIcon, ElInput, ElOption, ElSelect, ElTag } from 'element-plus'
+import { computed, ref, watch } from 'vue'
+
+import {
+  ElButton,
+  ElCard,
+  ElDialog,
+  ElDivider,
+  ElIcon,
+  ElInput,
+  ElOption,
+  ElSelect,
+  ElTag,
+} from 'element-plus'
+
 import { Loading } from '@element-plus/icons-vue'
+
 import { Sparkles } from 'lucide-vue-next'
+
 import { notify } from '@/composables/notifications'
+import {
+  type ChunkTestChunk,
+  useChunkTestChunks,
+  useManualEvaluation,
+} from '@/composables/queries/useChunkTestQueries'
 import { useLanguage } from '@/composables/useLanguage'
-import { useManualEvaluation, useChunkTestChunks, type ChunkTestChunk } from '@/composables/queries/useChunkTestQueries'
 
 interface Props {
   visible: boolean
@@ -26,7 +44,7 @@ const { isZh } = useLanguage()
 
 const dialogVisible = computed({
   get: () => props.visible,
-  set: (value) => emit('update:visible', value)
+  set: (value) => emit('update:visible', value),
 })
 
 // Form state
@@ -88,9 +106,7 @@ const handleEvaluate = async () => {
     notify.success(isZh.value ? '评估完成' : 'Evaluation completed')
   } catch (error) {
     notify.error(
-      error instanceof Error
-        ? error.message
-        : isZh.value ? '评估失败' : 'Evaluation failed'
+      error instanceof Error ? error.message : isZh.value ? '评估失败' : 'Evaluation failed'
     )
   }
 }
@@ -121,20 +137,27 @@ const handleClose = () => {
 }
 
 // Reset when dialog opens
-watch(() => props.visible, (newValue) => {
-  if (newValue) {
-    query.value = ''
-    answer.value = ''
-    selectedChunkIds.value = []
-    evaluationResults.value = null
+watch(
+  () => props.visible,
+  (newValue) => {
+    if (newValue) {
+      query.value = ''
+      answer.value = ''
+      selectedChunkIds.value = []
+      evaluationResults.value = null
+    }
   }
-})
+)
 </script>
 
 <template>
   <ElDialog
     v-model="dialogVisible"
-    :title="isZh ? `手动评估 - ${methodLabels[method] || method}` : `Manual Evaluation - ${methodLabels[method] || method}`"
+    :title="
+      isZh
+        ? `手动评估 - ${methodLabels[method] || method}`
+        : `Manual Evaluation - ${methodLabels[method] || method}`
+    "
     width="900px"
     :close-on-click-modal="false"
     class="manual-evaluation-modal"
@@ -165,7 +188,11 @@ watch(() => props.visible, (newValue) => {
             v-model="answer"
             type="textarea"
             :rows="2"
-            :placeholder="isZh ? '输入标准答案以评估答案相关性...' : 'Enter ground truth answer for answer relevance evaluation...'"
+            :placeholder="
+              isZh
+                ? '输入标准答案以评估答案相关性...'
+                : 'Enter ground truth answer for answer relevance evaluation...'
+            "
           />
         </div>
 
@@ -173,7 +200,10 @@ watch(() => props.visible, (newValue) => {
           <label class="block text-sm font-medium text-stone-700 mb-2">
             {{ isZh ? '模型' : 'Model' }}
           </label>
-          <ElSelect v-model="model" class="w-full">
+          <ElSelect
+            v-model="model"
+            class="w-full"
+          >
             <ElOption
               v-for="m in availableModels"
               :key="m.value"
@@ -186,14 +216,26 @@ watch(() => props.visible, (newValue) => {
         <div class="mb-4">
           <div class="flex items-center justify-between mb-2">
             <label class="block text-sm font-medium text-stone-700">
-              {{ isZh ? '选择要评估的分块（留空则评估所有）' : 'Select Chunks to Evaluate (leave empty to evaluate all)' }}
+              {{
+                isZh
+                  ? '选择要评估的分块（留空则评估所有）'
+                  : 'Select Chunks to Evaluate (leave empty to evaluate all)'
+              }}
             </label>
             <ElButton
               size="small"
               text
               @click="selectAllChunks"
             >
-              {{ selectedChunkIds.length === chunks.length ? (isZh ? '取消全选' : 'Deselect All') : (isZh ? '全选' : 'Select All') }}
+              {{
+                selectedChunkIds.length === chunks.length
+                  ? isZh
+                    ? '取消全选'
+                    : 'Deselect All'
+                  : isZh
+                    ? '全选'
+                    : 'Select All'
+              }}
             </ElButton>
           </div>
           <div
@@ -240,7 +282,11 @@ watch(() => props.visible, (newValue) => {
               v-if="chunks.length > 20"
               class="text-xs text-stone-500 text-center py-2"
             >
-              {{ isZh ? `显示前 20 个，共 ${chunks.length} 个分块` : `Showing first 20 of ${chunks.length} chunks` }}
+              {{
+                isZh
+                  ? `显示前 20 个，共 ${chunks.length} 个分块`
+                  : `Showing first 20 of ${chunks.length} chunks`
+              }}
             </div>
           </div>
         </div>
@@ -280,8 +326,12 @@ watch(() => props.visible, (newValue) => {
                 <div class="font-semibold text-stone-900">
                   {{
                     result.type === 'answer_relevance'
-                      ? (isZh ? '答案相关性评估' : 'Answer Relevance Evaluation')
-                      : (isZh ? '分块质量评估' : 'Chunk Quality Evaluation')
+                      ? isZh
+                        ? '答案相关性评估'
+                        : 'Answer Relevance Evaluation'
+                      : isZh
+                        ? '分块质量评估'
+                        : 'Chunk Quality Evaluation'
                   }}
                 </div>
               </template>
@@ -298,12 +348,33 @@ watch(() => props.visible, (newValue) => {
                     class="score-item"
                   >
                     <div class="text-xs text-stone-500 mb-1">
-                      {{ key === 'answer_coverage' ? (isZh ? '答案覆盖率' : 'Answer Coverage') :
-                          key === 'answer_faithfulness' ? (isZh ? '答案忠实度' : 'Answer Faithfulness') :
-                          key === 'context_utilization' ? (isZh ? '上下文利用度' : 'Context Utilization') :
-                          key === 'information_completeness' ? (isZh ? '信息完整性' : 'Information Completeness') :
-                          key === 'overall_score' ? (isZh ? '总体评分' : 'Overall Score') :
-                          key === 'reasoning' ? (isZh ? '评估理由' : 'Reasoning') : key }}
+                      {{
+                        key === 'answer_coverage'
+                          ? isZh
+                            ? '答案覆盖率'
+                            : 'Answer Coverage'
+                          : key === 'answer_faithfulness'
+                            ? isZh
+                              ? '答案忠实度'
+                              : 'Answer Faithfulness'
+                            : key === 'context_utilization'
+                              ? isZh
+                                ? '上下文利用度'
+                                : 'Context Utilization'
+                              : key === 'information_completeness'
+                                ? isZh
+                                  ? '信息完整性'
+                                  : 'Information Completeness'
+                                : key === 'overall_score'
+                                  ? isZh
+                                    ? '总体评分'
+                                    : 'Overall Score'
+                                  : key === 'reasoning'
+                                    ? isZh
+                                      ? '评估理由'
+                                      : 'Reasoning'
+                                    : key
+                      }}
                     </div>
                     <div
                       v-if="key === 'reasoning'"
@@ -314,7 +385,13 @@ watch(() => props.visible, (newValue) => {
                     <div
                       v-else-if="typeof score === 'number'"
                       class="text-lg font-semibold"
-                      :class="score >= 0.8 ? 'text-green-600' : score >= 0.6 ? 'text-yellow-600' : 'text-red-600'"
+                      :class="
+                        score >= 0.8
+                          ? 'text-green-600'
+                          : score >= 0.6
+                            ? 'text-yellow-600'
+                            : 'text-red-600'
+                      "
                     >
                       {{ score.toFixed(3) }}
                     </div>
@@ -333,7 +410,11 @@ watch(() => props.visible, (newValue) => {
                   class="chunk-eval-item mb-4 pb-4 border-b border-stone-200 last:border-0"
                 >
                   <div class="font-medium text-stone-900 mb-2">
-                    {{ isZh ? `分块 #${eval_item.chunk_index + 1}` : `Chunk #${eval_item.chunk_index + 1}` }}
+                    {{
+                      isZh
+                        ? `分块 #${eval_item.chunk_index + 1}`
+                        : `Chunk #${eval_item.chunk_index + 1}`
+                    }}
                   </div>
                   <div class="grid grid-cols-3 gap-3">
                     <div
@@ -342,12 +423,33 @@ watch(() => props.visible, (newValue) => {
                       class="score-item"
                     >
                       <div class="text-xs text-stone-500 mb-1">
-                        {{ key === 'relevance' ? (isZh ? '相关性' : 'Relevance') :
-                            key === 'completeness' ? (isZh ? '完整性' : 'Completeness') :
-                            key === 'clarity' ? (isZh ? '清晰度' : 'Clarity') :
-                            key === 'information_density' ? (isZh ? '信息密度' : 'Information Density') :
-                            key === 'overall_score' ? (isZh ? '总体评分' : 'Overall Score') :
-                            key === 'reasoning' ? (isZh ? '评估理由' : 'Reasoning') : key }}
+                        {{
+                          key === 'relevance'
+                            ? isZh
+                              ? '相关性'
+                              : 'Relevance'
+                            : key === 'completeness'
+                              ? isZh
+                                ? '完整性'
+                                : 'Completeness'
+                              : key === 'clarity'
+                                ? isZh
+                                  ? '清晰度'
+                                  : 'Clarity'
+                                : key === 'information_density'
+                                  ? isZh
+                                    ? '信息密度'
+                                    : 'Information Density'
+                                  : key === 'overall_score'
+                                    ? isZh
+                                      ? '总体评分'
+                                      : 'Overall Score'
+                                    : key === 'reasoning'
+                                      ? isZh
+                                        ? '评估理由'
+                                        : 'Reasoning'
+                                      : key
+                        }}
                       </div>
                       <div
                         v-if="key === 'reasoning'"
@@ -358,7 +460,13 @@ watch(() => props.visible, (newValue) => {
                       <div
                         v-else-if="typeof score === 'number'"
                         class="text-base font-semibold"
-                        :class="score >= 0.8 ? 'text-green-600' : score >= 0.6 ? 'text-yellow-600' : 'text-red-600'"
+                        :class="
+                          score >= 0.8
+                            ? 'text-green-600'
+                            : score >= 0.6
+                              ? 'text-yellow-600'
+                              : 'text-red-600'
+                        "
                       >
                         {{ score.toFixed(3) }}
                       </div>

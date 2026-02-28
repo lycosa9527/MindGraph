@@ -14,19 +14,19 @@ import {
   Files,
   MagicStick,
   OfficeBuilding,
+  Reading,
   Share,
   Tools,
   TrendCharts,
   VideoPlay,
-  Reading,
 } from '@element-plus/icons-vue'
 
 import { ChevronDown, KeyRound, LogIn, LogOut, Menu, Settings, UserRound } from 'lucide-vue-next'
 import { Watch } from 'lucide-vue-next'
 
 import { AccountInfoModal, ChangePasswordModal, LoginModal } from '@/components/auth'
-import { useLanguage } from '@/composables/useLanguage'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { useLanguage } from '@/composables/useLanguage'
 import { useAuthStore, useMindMateStore, useUIStore } from '@/stores'
 import { useAskOnceStore } from '@/stores/askonce'
 import { type SavedDiagram, useSavedDiagramsStore } from '@/stores/savedDiagrams'
@@ -388,7 +388,14 @@ async function handleDiagramSelect(diagram: SavedDiagram) {
     <div
       v-if="
         isCollapsed ||
-        !(currentMode === 'mindmate' || currentMode === 'mindgraph' || (featureKnowledgeSpace && currentMode === 'knowledge-space') || (featureRagChunkTest && currentMode === 'chunk-test') || (featureAskOnce && currentMode === 'askonce') || (featureDebateverse && currentMode === 'debateverse'))
+        !(
+          currentMode === 'mindmate' ||
+          currentMode === 'mindgraph' ||
+          (featureKnowledgeSpace && currentMode === 'knowledge-space') ||
+          (featureRagChunkTest && currentMode === 'chunk-test') ||
+          (featureAskOnce && currentMode === 'askonce') ||
+          (featureDebateverse && currentMode === 'debateverse')
+        )
       "
       class="flex-1"
     />

@@ -4,7 +4,8 @@
  * Supports wrap (CJK) and no-wrap (English/numbers); no-wrap fits by width.
  */
 
-const FONT_FAMILY = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif"
+const FONT_FAMILY =
+  "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif"
 const MIN_FONT_SIZE = 6
 const TOPIC_DEFAULT_FONT_SIZE = 20
 const CONTEXT_DEFAULT_FONT_SIZE = 14
@@ -82,7 +83,11 @@ export function measureTextFitsInCircle(
   if (typeof document === 'undefined') {
     return { fits: true, height: 0 }
   }
-  const { diameterPx, isTopic, fontSize = isTopic ? TOPIC_DEFAULT_FONT_SIZE : CONTEXT_DEFAULT_FONT_SIZE } = options
+  const {
+    diameterPx,
+    isTopic,
+    fontSize = isTopic ? TOPIC_DEFAULT_FONT_SIZE : CONTEXT_DEFAULT_FONT_SIZE,
+  } = options
   const border = isTopic ? BORDER_TOPIC : BORDER_CONTEXT
   const effectiveHeight = diameterPx - 2 * border
   const maxW = Math.max(1, diameterPx - MAX_WIDTH_OFFSET - 2 * border)
@@ -280,11 +285,11 @@ function measureTextWithSVG(
   el.style.lineHeight = '1.4'
   el.style.boxSizing = 'content-box'
   el.textContent = text.trim()
-  
+
   // Measure width and height
   const width = el.offsetWidth || 0
   const height = el.offsetHeight || fontSize * 1.4
-  
+
   return {
     width,
     height,
@@ -295,9 +300,9 @@ function measureTextWithSVG(
  * Calculate bubble map node radius based on text length
  * Uses SVG getBBox() for accurate measurement and diagonal calculation
  * as per BUBBLE_MAP_TEXT_ADAPTATION.md and BUBBLE_MAP_SIZE_CALCULATION.md
- * 
+ *
  * Formula: radius = sqrt(width² + height²) / 2 + padding
- * 
+ *
  * @param text - Text content
  * @param fontSize - Font size to use for measurement
  * @param padding - Padding around text (default: 10 for attributes, 20 for topic)
@@ -393,7 +398,10 @@ export function computeTopicRadiusForCircleMap(text: string): number {
     const approxW = len * TOPIC_FONT_SIZE * 0.6
     const approxH = TOPIC_FONT_SIZE * 1.4
     const diagonal = Math.sqrt(approxW * approxW + approxH * approxH)
-    return Math.max(MIN_TOPIC_RADIUS_CIRCLE_MAP, Math.ceil(diagonal / 2 + TOPIC_CIRCLE_INNER_PADDING))
+    return Math.max(
+      MIN_TOPIC_RADIUS_CIRCLE_MAP,
+      Math.ceil(diagonal / 2 + TOPIC_CIRCLE_INNER_PADDING)
+    )
   }
   const { width, height } = measureTextWithSVG(t, TOPIC_FONT_SIZE, true)
   const w = width || t.length * TOPIC_FONT_SIZE * 0.6

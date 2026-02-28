@@ -3,8 +3,11 @@
  * DocumentList - List of uploaded documents
  */
 import { computed } from 'vue'
+
 import { ElCard, ElEmpty, ElSkeleton } from 'element-plus'
+
 import type { KnowledgeDocument } from '@/stores/knowledgeSpace'
+
 import DocumentCard from './DocumentCard.vue'
 
 const props = defineProps<{
@@ -27,11 +30,21 @@ const sortedDocuments = computed(() => {
 
 <template>
   <div class="document-list">
-    <ElSkeleton v-if="loading" :rows="3" animated />
-    <div v-else-if="sortedDocuments.length === 0" class="empty-state">
+    <ElSkeleton
+      v-if="loading"
+      :rows="3"
+      animated
+    />
+    <div
+      v-else-if="sortedDocuments.length === 0"
+      class="empty-state"
+    >
       <ElEmpty description="暂无文档" />
     </div>
-    <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    <div
+      v-else
+      class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+    >
       <DocumentCard
         v-for="document in sortedDocuments"
         :key="document.id"

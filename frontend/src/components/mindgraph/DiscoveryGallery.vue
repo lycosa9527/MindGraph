@@ -4,7 +4,6 @@
  * Uses vue3-carousel-3d for Apple iPod Cover Flow effect
  */
 import { ref } from 'vue'
-
 import { Carousel3d, Slide } from 'vue3-carousel-3d'
 import 'vue3-carousel-3d/dist/index.css'
 
@@ -66,7 +65,9 @@ const galleryImages = galleryItems.map((item) => ({
 <template>
   <div class="discovery-gallery">
     <!-- Section title - Swiss design -->
-    <div class="mt-8 text-left text-sm font-semibold text-stone-500 leading-none pb-0 mb-0">发现精彩图示</div>
+    <div class="mt-8 text-left text-sm font-semibold text-stone-500 leading-none pb-0 mb-0">
+      发现精彩图示
+    </div>
 
     <!-- Cover Flow style 3D carousel -->
     <div class="mt-[2px] cover-flow-wrapper">
@@ -95,7 +96,7 @@ const galleryImages = galleryItems.map((item) => ({
               :src="item.thumbnailUrl"
               :alt="item.title"
               class="cover-flow-image"
-            >
+            />
             <div class="cover-flow-title">{{ item.title }}</div>
           </div>
         </Slide>
@@ -139,7 +140,9 @@ const galleryImages = galleryItems.map((item) => ({
   overflow: hidden;
   background: #fafaf9;
   border: 1px solid #e7e5e4;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
 }
 
 .cover-flow-slide:hover {

@@ -7,20 +7,18 @@ import { computed, ref } from 'vue'
 import { ElButton } from 'element-plus'
 
 import { ChevronDown, ChevronUp } from 'lucide-vue-next'
-
 import MarkdownIt from 'markdown-it'
 
+import deepseekAvatar from '@/assets/deepseek-avatar.png'
+import doubaoAvatar from '@/assets/doubao-avatar.png'
+import judgeAvatar from '@/assets/judge-avatar.png'
+import kimiAvatar from '@/assets/kimi-avatar.png'
+// Import avatar images
+import qwenAvatar from '@/assets/qwen-avatar.png'
+import userAvatar from '@/assets/user-avatar.png'
 import { useLanguage } from '@/composables/useLanguage'
 import type { DebateMessage as DebateMessageType } from '@/stores/debateverse'
 import { useDebateVerseStore } from '@/stores/debateverse'
-
-// Import avatar images
-import qwenAvatar from '@/assets/qwen-avatar.png'
-import deepseekAvatar from '@/assets/deepseek-avatar.png'
-import doubaoAvatar from '@/assets/doubao-avatar.png'
-import kimiAvatar from '@/assets/kimi-avatar.png'
-import judgeAvatar from '@/assets/judge-avatar.png'
-import userAvatar from '@/assets/user-avatar.png'
 
 const props = defineProps<{
   message: DebateMessageType
@@ -45,7 +43,7 @@ const participant = computed(() =>
 
 const avatarImage = computed(() => {
   if (!participant.value) return userAvatar
-  
+
   // User avatar (when not AI)
   if (!participant.value.is_ai) {
     return userAvatar
@@ -73,25 +71,25 @@ const modelDisplayName = computed(() => {
     qwen: 'Qwen',
     doubao: 'Doubao',
     deepseek: 'DeepSeek',
-    kimi: 'Kimi'
+    kimi: 'Kimi',
   }
   return names[participant.value.model_id] || participant.value.model_id
 })
 
 const roleDisplayName = computed(() => {
   if (!participant.value?.role) return ''
-  
+
   if (participant.value.role === 'judge') {
     return isZh.value ? '裁判' : 'Judge'
   }
-  
+
   const roleTranslations: Record<string, { zh: string; en: string }> = {
     affirmative_1: { zh: '正方一辩', en: 'Affirmative 1st' },
     affirmative_2: { zh: '正方二辩', en: 'Affirmative 2nd' },
     negative_1: { zh: '反方一辩', en: 'Negative 1st' },
     negative_2: { zh: '反方二辩', en: 'Negative 2nd' },
   }
-  
+
   const translation = roleTranslations[participant.value.role]
   return translation ? (isZh.value ? translation.zh : translation.en) : participant.value.role
 })
@@ -117,7 +115,7 @@ const isJudge = computed(() => participant.value?.role === 'judge' || !participa
 </script>
 
 <template>
-  <div 
+  <div
     class="debate-message flex gap-4 items-start py-4 px-4 hover:bg-gray-50 transition-colors w-full"
     :class="{
       'flex-row justify-start': isAffirmative || isJudge,
@@ -125,7 +123,7 @@ const isJudge = computed(() => participant.value?.role === 'judge' || !participa
     }"
   >
     <!-- Avatar Section -->
-    <div 
+    <div
       class="flex-shrink-0 flex flex-col items-center gap-1"
       :class="{ 'order-2': isNegative, 'order-1': isAffirmative || isJudge }"
     >
@@ -135,24 +133,30 @@ const isJudge = computed(() => participant.value?.role === 'judge' || !participa
         class="w-8 h-8 rounded-lg object-cover"
       />
       <div class="text-xs text-center max-w-[60px]">
-        <div v-if="participant?.is_ai && modelDisplayName" class="font-semibold text-blue-600">
+        <div
+          v-if="participant?.is_ai && modelDisplayName"
+          class="font-semibold text-blue-600"
+        >
           {{ modelDisplayName }}
         </div>
-        <div v-if="roleDisplayName" class="text-gray-600 mt-0.5">
+        <div
+          v-if="roleDisplayName"
+          class="text-gray-600 mt-0.5"
+        >
           {{ roleDisplayName }}
         </div>
       </div>
     </div>
 
     <!-- Message Content Section -->
-    <div 
+    <div
       class="flex-1 min-w-0 flex"
-      :class="{ 
-        'order-1 justify-end items-end': isNegative, 
-        'order-2 justify-start': isAffirmative || isJudge 
+      :class="{
+        'order-1 justify-end items-end': isNegative,
+        'order-2 justify-start': isAffirmative || isJudge,
       }"
     >
-      <div 
+      <div
         class="message-box rounded-lg px-4 py-3 max-w-[80%] shadow-sm"
         :class="{
           'bg-green-50 border border-green-200': isAffirmative,
@@ -191,7 +195,15 @@ const isJudge = computed(() => participant.value?.role === 'judge' || !participa
               :is="thinkingCollapsed ? ChevronDown : ChevronUp"
               class="w-4 h-4 mr-1"
             />
-            {{ thinkingCollapsed ? (isZh ? '显示思考过程' : 'Show thinking') : (isZh ? '隐藏思考过程' : 'Hide thinking') }}
+            {{
+              thinkingCollapsed
+                ? isZh
+                  ? '显示思考过程'
+                  : 'Show thinking'
+                : isZh
+                  ? '隐藏思考过程'
+                  : 'Hide thinking'
+            }}
           </ElButton>
           <div
             v-if="!thinkingCollapsed"
@@ -226,7 +238,8 @@ const isJudge = computed(() => participant.value?.role === 'judge' || !participa
   font-weight: 600;
 }
 
-.prose :deep(ul), .prose :deep(ol) {
+.prose :deep(ul),
+.prose :deep(ol) {
   margin: 0.5em 0;
   padding-left: 1.5em;
 }

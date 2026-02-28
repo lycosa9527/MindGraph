@@ -366,7 +366,9 @@ export async function getLibraryDocument(documentId: number): Promise<LibraryDoc
       const error = await response.json().catch(() => ({ detail: 'Document not found' }))
       throw new Error(`404: ${error.detail || 'Document not found'}`)
     }
-    const error = await response.json().catch(() => ({ detail: 'Failed to fetch library document' }))
+    const error = await response
+      .json()
+      .catch(() => ({ detail: 'Failed to fetch library document' }))
     throw new Error(error.detail || 'Failed to fetch library document')
   }
   return response.json()
@@ -478,9 +480,7 @@ export async function getDanmaku(
 /**
  * Get recent danmaku across all documents
  */
-export async function getRecentDanmaku(
-  limit: number = 50
-): Promise<{ danmaku: LibraryDanmaku[] }> {
+export async function getRecentDanmaku(limit: number = 50): Promise<{ danmaku: LibraryDanmaku[] }> {
   const response = await apiGet(`/api/library/danmaku/recent?limit=${limit}`)
   if (!response.ok) {
     throw new Error('Failed to fetch recent danmaku')
@@ -506,7 +506,9 @@ export async function createDanmaku(
 /**
  * Toggle like on danmaku
  */
-export async function likeDanmaku(danmakuId: number): Promise<{ is_liked: boolean; likes_count: number }> {
+export async function likeDanmaku(
+  danmakuId: number
+): Promise<{ is_liked: boolean; likes_count: number }> {
   const response = await apiPost(`/api/library/danmaku/${danmakuId}/like`)
   if (!response.ok) {
     throw new Error('Failed to toggle like')
@@ -517,7 +519,9 @@ export async function likeDanmaku(danmakuId: number): Promise<{ is_liked: boolea
 /**
  * Get replies to a danmaku
  */
-export async function getDanmakuReplies(danmakuId: number): Promise<{ replies: LibraryDanmakuReply[] }> {
+export async function getDanmakuReplies(
+  danmakuId: number
+): Promise<{ replies: LibraryDanmakuReply[] }> {
   const response = await apiGet(`/api/library/danmaku/${danmakuId}/replies`)
   if (!response.ok) {
     throw new Error('Failed to fetch replies')
@@ -555,7 +559,9 @@ export async function updateDanmakuPosition(
 ): Promise<void> {
   const response = await apiPatch(`/api/library/danmaku/${danmakuId}`, data)
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ detail: 'Failed to update danmaku position' }))
+    const error = await response
+      .json()
+      .catch(() => ({ detail: 'Failed to update danmaku position' }))
     throw new Error(error.detail || '只能移动自己的评论')
   }
 }

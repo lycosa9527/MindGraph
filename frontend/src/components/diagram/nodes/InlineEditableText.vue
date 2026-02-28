@@ -158,19 +158,19 @@ function updateInputWidth(): void {
 
     // Measure the text width
     const textWidth = measureRef.value.offsetWidth || measureRef.value.scrollWidth
-    
+
     // Get maxWidth constraint
     const maxWidthPx = parseInt(props.maxWidth) || 200
-    
+
     // Calculate width: use measured width, but respect maxWidth
     // Add some padding (8px) to prevent text from touching edges
     const calculatedWidth = Math.min(textWidth + 8, maxWidthPx)
-    
+
     // Ensure minimum width
     const finalWidth = Math.max(calculatedWidth, 40)
-    
+
     inputWidth.value = `${finalWidth}px`
-    
+
     // Emit width change so parent node can adapt its width
     emit('widthChange', finalWidth)
   })
@@ -245,13 +245,13 @@ function startEditing(): void {
   if (displayRef.value) {
     const textWidth = displayRef.value.offsetWidth
     const parentElement = displayRef.value.parentElement
-    
+
     if (props.textAlign === 'right') {
       // For right-aligned text, use parent container width if available, otherwise maxWidth
       // This prevents empty space on the left and allows text to expand properly
       const maxWidthPx = parseInt(props.maxWidth) || 180
       let calculatedWidth = maxWidthPx
-      
+
       if (parentElement) {
         // Get parent container width (accounting for padding)
         const parentWidth = parentElement.offsetWidth || parentElement.clientWidth
@@ -262,7 +262,7 @@ function startEditing(): void {
         // Fallback: use maxWidth, but ensure it's at least text width
         calculatedWidth = Math.max(maxWidthPx, textWidth)
       }
-      
+
       inputWidth.value = `${calculatedWidth}px`
     } else {
       // For left/center aligned, use measured text width
@@ -340,10 +340,10 @@ function cancelEdit(): void {
 
   editText.value = originalText.value
   localIsEditing.value = false
-  
+
   // Emit event for workshop tracking (editing stopped)
   eventBus.emit('node_editor:closed', { nodeId: props.nodeId })
-  
+
   emit('cancel')
 }
 

@@ -7,6 +7,7 @@
 import { computed, nextTick, ref } from 'vue'
 
 import { Handle, Position } from '@vue-flow/core'
+
 import { X } from 'lucide-vue-next'
 
 import { eventBus } from '@/composables/useEventBus'
@@ -47,7 +48,7 @@ const nodeStyle = computed(() => {
     // Pill shape for multi-flow map (9999px creates fully rounded ends), default rounded rectangle for others
     borderRadius: isPillShape.value ? '9999px' : `${props.data.style?.borderRadius || 6}px`,
   }
-  
+
   // Add dynamic width when editing
   if (dynamicWidth.value !== null) {
     return {
@@ -56,7 +57,7 @@ const nodeStyle = computed(() => {
       minWidth: `${dynamicWidth.value}px`,
     }
   }
-  
+
   return baseStyle
 })
 
@@ -75,17 +76,17 @@ function handleTextSave(newText: string) {
   isEditing.value = false
   const savedWidth = dynamicWidth.value
   dynamicWidth.value = null // Reset width after saving
-  
+
   // Store the width for visual balance calculation
   if (isMultiFlowMap.value && savedWidth !== null) {
     diagramStore.setNodeWidth(props.id, savedWidth)
   }
-  
+
   eventBus.emit('node:text_updated', {
     nodeId: props.id,
     text: newText,
   })
-  
+
   // Trigger layout recalculation for multi-flow map to update visual balance
   if (isMultiFlowMap.value) {
     nextTick(() => {
@@ -247,7 +248,9 @@ function handleDeleteClick(event: MouseEvent) {
   border: none;
   cursor: pointer;
   opacity: 0.8;
-  transition: opacity 0.2s ease, transform 0.15s ease;
+  transition:
+    opacity 0.2s ease,
+    transform 0.15s ease;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
   z-index: 10;
 }

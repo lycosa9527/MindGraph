@@ -18,7 +18,7 @@ import {
   DEFAULT_PADDING,
   DEFAULT_VERTICAL_SPACING,
 } from './layoutConfig'
-import { calculateDagreLayout, type DagreEdgeInput, type DagreNodeInput } from './useDagreLayout'
+import { type DagreEdgeInput, type DagreNodeInput, calculateDagreLayout } from './useDagreLayout'
 
 interface BraceNode {
   id: string
@@ -117,9 +117,7 @@ export function useBraceMap(options: BraceMapOptions = {}) {
     // Calculate adjusted Y positions by centering each parent relative to its children
     // Process from deepest level to shallowest (bottom-up)
     const adjustedY = new Map<string, number>()
-    const maxDepth = Math.max(
-      ...Array.from(nodeInfos.values()).map((info) => info.depth)
-    )
+    const maxDepth = Math.max(...Array.from(nodeInfos.values()).map((info) => info.depth))
 
     // Initialize with original positions
     dagreNodes.forEach((node) => {

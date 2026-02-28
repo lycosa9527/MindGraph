@@ -15,10 +15,11 @@ import { computed, ref } from 'vue'
 
 import { defineStore } from 'pinia'
 
+import type { DiagramType } from '@/types'
+import { authFetch } from '@/utils/api'
+
 import { useAuthStore } from './auth'
 import { getDefaultTemplate, loadSpecForDiagramType } from './specLoader'
-import { authFetch } from '@/utils/api'
-import type { DiagramType } from '@/types'
 
 // Security constants - must match backend limits
 const MAX_SPEC_SIZE_KB = 500 // Backend limit from DIAGRAM_MAX_SPEC_SIZE_KB
@@ -26,12 +27,12 @@ const MAX_THUMBNAIL_SIZE = 150000 // Max base64 chars (~100KB decoded)
 
 /**
  * Check if a diagram spec is empty/unmodified (still matches default template)
- * 
+ *
  * This function compares the current diagram against the default template by:
  * 1. Loading the default template for the diagram type
  * 2. Converting it to nodes using the same loader function
  * 3. Comparing node texts (normalized and sorted) to detect if diagram is unchanged
- * 
+ *
  * This approach is more accurate than regex patterns because:
  * - Uses actual template data (single source of truth)
  * - Automatically adapts if templates change
@@ -359,7 +360,9 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
         // If diagram doesn't exist (404), still remove from local list
         // This handles race conditions where diagram was already deleted
         if (response.status === 404) {
-          console.warn(`[SavedDiagrams] Diagram ${diagramId} not found (404), removing from local list`)
+          console.warn(
+            `[SavedDiagrams] Diagram ${diagramId} not found (404), removing from local list`
+          )
           diagrams.value = diagrams.value.filter((d) => d.id !== diagramId)
           total.value--
           if (currentDiagramId.value === diagramId) {

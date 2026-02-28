@@ -4,9 +4,11 @@
  * Vue Query composables for fetching knowledge space data with automatic caching.
  */
 import { useQuery } from '@tanstack/vue-query'
-import { apiRequest } from '@/utils/apiClient'
-import { knowledgeSpaceKeys } from './knowledgeSpaceKeys'
+
 import type { KnowledgeDocument } from '@/stores/knowledgeSpace'
+import { apiRequest } from '@/utils/apiClient'
+
+import { knowledgeSpaceKeys } from './knowledgeSpaceKeys'
 
 // ============================================================================
 // Types
@@ -62,8 +64,11 @@ async function fetchDocumentStatus(documentId: number): Promise<DocumentStatus> 
  * Stale time: 30 seconds (documents change frequently)
  * Refetch interval: 5 seconds for processing documents (handled by refetchInterval)
  */
-export function useDocuments(options?: { 
-  refetchInterval?: number | false | ((query: { state: { data: DocumentListResponse | undefined } }) => number | false) 
+export function useDocuments(options?: {
+  refetchInterval?:
+    | number
+    | false
+    | ((query: { state: { data: DocumentListResponse | undefined } }) => number | false)
 }) {
   return useQuery({
     queryKey: knowledgeSpaceKeys.documents(),

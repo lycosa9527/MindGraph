@@ -18,7 +18,13 @@ defineProps<{
       viewBox="0 0 200 150"
       class="diagram-svg"
     >
-      <circle class="anim-node" cx="100" cy="75" r="25" fill="#e91e63" />
+      <circle
+        class="anim-node"
+        cx="100"
+        cy="75"
+        r="25"
+        fill="#e91e63"
+      />
       <circle
         class="anim-line"
         cx="100"
@@ -28,11 +34,41 @@ defineProps<{
         stroke="#f48fb1"
         stroke-width="2"
       />
-      <circle class="anim-node" cx="100" cy="23" r="13" fill="#f48fb1" />
-      <circle class="anim-node" cx="150" cy="59" r="13" fill="#f48fb1" />
-      <circle class="anim-node" cx="131" cy="117" r="13" fill="#f48fb1" />
-      <circle class="anim-node" cx="69" cy="117" r="13" fill="#f48fb1" />
-      <circle class="anim-node" cx="50" cy="59" r="13" fill="#f48fb1" />
+      <circle
+        class="anim-node"
+        cx="100"
+        cy="23"
+        r="13"
+        fill="#f48fb1"
+      />
+      <circle
+        class="anim-node"
+        cx="150"
+        cy="59"
+        r="13"
+        fill="#f48fb1"
+      />
+      <circle
+        class="anim-node"
+        cx="131"
+        cy="117"
+        r="13"
+        fill="#f48fb1"
+      />
+      <circle
+        class="anim-node"
+        cx="69"
+        cy="117"
+        r="13"
+        fill="#f48fb1"
+      />
+      <circle
+        class="anim-node"
+        cx="50"
+        cy="59"
+        r="13"
+        fill="#f48fb1"
+      />
     </svg>
 
     <!-- Bubble Map -->
@@ -86,12 +122,48 @@ defineProps<{
         stroke="#81c784"
         stroke-width="2"
       />
-      <circle class="anim-node" cx="100" cy="80" r="25" fill="#4caf50" />
-      <circle class="anim-node" cx="100" cy="25" r="14" fill="#81c784" />
-      <circle class="anim-node" cx="152" cy="63" r="14" fill="#81c784" />
-      <circle class="anim-node" cx="132" cy="125" r="14" fill="#81c784" />
-      <circle class="anim-node" cx="68" cy="125" r="14" fill="#81c784" />
-      <circle class="anim-node" cx="48" cy="63" r="14" fill="#81c784" />
+      <circle
+        class="anim-node"
+        cx="100"
+        cy="80"
+        r="25"
+        fill="#4caf50"
+      />
+      <circle
+        class="anim-node"
+        cx="100"
+        cy="25"
+        r="14"
+        fill="#81c784"
+      />
+      <circle
+        class="anim-node"
+        cx="152"
+        cy="63"
+        r="14"
+        fill="#81c784"
+      />
+      <circle
+        class="anim-node"
+        cx="132"
+        cy="125"
+        r="14"
+        fill="#81c784"
+      />
+      <circle
+        class="anim-node"
+        cx="68"
+        cy="125"
+        r="14"
+        fill="#81c784"
+      />
+      <circle
+        class="anim-node"
+        cx="48"
+        cy="63"
+        r="14"
+        fill="#81c784"
+      />
     </svg>
 
     <!-- Double Bubble Map -->
@@ -172,14 +244,62 @@ defineProps<{
         stroke="#64b5f6"
         stroke-width="2"
       />
-      <circle class="anim-node" cx="60" cy="75" r="22" fill="#2196f3" />
-      <circle class="anim-node" cx="140" cy="75" r="22" fill="#2196f3" />
-      <circle class="anim-node" cx="20" cy="50" r="12" fill="#64b5f6" />
-      <circle class="anim-node" cx="20" cy="100" r="12" fill="#64b5f6" />
-      <circle class="anim-node" cx="180" cy="50" r="12" fill="#64b5f6" />
-      <circle class="anim-node" cx="180" cy="100" r="12" fill="#64b5f6" />
-      <circle class="anim-node" cx="100" cy="50" r="12" fill="#90caf9" />
-      <circle class="anim-node" cx="100" cy="100" r="12" fill="#90caf9" />
+      <circle
+        class="anim-node"
+        cx="60"
+        cy="75"
+        r="22"
+        fill="#2196f3"
+      />
+      <circle
+        class="anim-node"
+        cx="140"
+        cy="75"
+        r="22"
+        fill="#2196f3"
+      />
+      <circle
+        class="anim-node"
+        cx="20"
+        cy="50"
+        r="12"
+        fill="#64b5f6"
+      />
+      <circle
+        class="anim-node"
+        cx="20"
+        cy="100"
+        r="12"
+        fill="#64b5f6"
+      />
+      <circle
+        class="anim-node"
+        cx="180"
+        cy="50"
+        r="12"
+        fill="#64b5f6"
+      />
+      <circle
+        class="anim-node"
+        cx="180"
+        cy="100"
+        r="12"
+        fill="#64b5f6"
+      />
+      <circle
+        class="anim-node"
+        cx="100"
+        cy="50"
+        r="12"
+        fill="#90caf9"
+      />
+      <circle
+        class="anim-node"
+        cx="100"
+        cy="100"
+        r="12"
+        fill="#90caf9"
+      />
     </svg>
 
     <!-- Tree Map -->
@@ -301,7 +421,11 @@ defineProps<{
         stroke="#ffb74d"
         stroke-width="4"
       />
-      <polygon class="anim-node" points="65,68 80,75 65,82" fill="#ffb74d" />
+      <polygon
+        class="anim-node"
+        points="65,68 80,75 65,82"
+        fill="#ffb74d"
+      />
       <line
         class="anim-line"
         x1="120"
@@ -311,7 +435,11 @@ defineProps<{
         stroke="#ffb74d"
         stroke-width="4"
       />
-      <polygon class="anim-node" points="135,68 150,75 135,82" fill="#ffb74d" />
+      <polygon
+        class="anim-node"
+        points="135,68 150,75 135,82"
+        fill="#ffb74d"
+      />
       <rect
         class="anim-node"
         x="5"
@@ -445,7 +573,11 @@ defineProps<{
         stroke="#666"
         stroke-width="3"
       />
-      <path class="anim-node" d="M 92 75 L 100 67 L 108 75 Z" fill="#666" />
+      <path
+        class="anim-node"
+        d="M 92 75 L 100 67 L 108 75 Z"
+        fill="#666"
+      />
       <rect
         class="anim-node"
         x="30"
@@ -518,7 +650,13 @@ defineProps<{
         stroke-width="3"
         fill="none"
       />
-      <circle class="anim-node" cx="100" cy="75" r="18" fill="#1976d2" />
+      <circle
+        class="anim-node"
+        cx="100"
+        cy="75"
+        r="18"
+        fill="#1976d2"
+      />
       <rect
         class="anim-node"
         x="10"
@@ -591,9 +729,27 @@ defineProps<{
         stroke-width="2"
         stroke-dasharray="5,5"
       />
-      <circle class="anim-node" cx="100" cy="40" r="22" fill="#f44336" />
-      <circle class="anim-node" cx="50" cy="100" r="18" fill="#ef5350" />
-      <circle class="anim-node" cx="150" cy="100" r="18" fill="#ef5350" />
+      <circle
+        class="anim-node"
+        cx="100"
+        cy="40"
+        r="22"
+        fill="#f44336"
+      />
+      <circle
+        class="anim-node"
+        cx="50"
+        cy="100"
+        r="18"
+        fill="#ef5350"
+      />
+      <circle
+        class="anim-node"
+        cx="150"
+        cy="100"
+        r="18"
+        fill="#ef5350"
+      />
     </svg>
   </div>
 </template>

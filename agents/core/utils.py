@@ -89,15 +89,14 @@ def _salvage_json_string(raw: str) -> str:
             elif ch == '"':
                 in_str = False
             continue
-        else:
-            if ch == '"':
-                in_str = True
-            elif ch == '{':
-                depth += 1
-            elif ch == '}':
-                depth -= 1
-                if depth == 0:
-                    break
+        if ch == '"':
+            in_str = True
+        elif ch == '{':
+            depth += 1
+        elif ch == '}':
+            depth -= 1
+            if depth == 0:
+                break
     candidate = ''.join(buf)
     while depth > 0:
         candidate += '}'

@@ -4,7 +4,9 @@
  * Vue Query composables for fetching RAG-related data with automatic caching.
  */
 import { useQuery } from '@tanstack/vue-query'
+
 import { apiRequest } from '@/utils/apiClient'
+
 import { ragKeys } from './ragKeys'
 
 // ============================================================================

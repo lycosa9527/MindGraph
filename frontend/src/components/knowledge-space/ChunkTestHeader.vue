@@ -4,8 +4,11 @@
  * Swiss design style matching KnowledgeSpaceHeader
  */
 import { computed } from 'vue'
+
 import { ElButton, ElIcon, ElTooltip } from 'element-plus'
-import { Upload, VideoPlay, RefreshRight } from '@element-plus/icons-vue'
+
+import { RefreshRight, Upload, VideoPlay } from '@element-plus/icons-vue'
+
 import { useLanguage } from '@/composables/useLanguage'
 
 const props = defineProps<{
@@ -56,7 +59,11 @@ const { isZh } = useLanguage()
       </ElTooltip>
       <!-- Test Upload Documents Button -->
       <ElTooltip
-        :content="isZh ? '请等待文档处理完成后再进行测试' : 'Please wait for documents to finish processing before testing'"
+        :content="
+          isZh
+            ? '请等待文档处理完成后再进行测试'
+            : 'Please wait for documents to finish processing before testing'
+        "
         :disabled="hasDocuments"
         placement="bottom"
       >

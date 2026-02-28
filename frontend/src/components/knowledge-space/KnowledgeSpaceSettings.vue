@@ -4,7 +4,9 @@
  * Swiss design styling
  */
 import { ref } from 'vue'
-import { ElDrawer, ElForm, ElFormItem, ElSelect, ElInput, ElButton, ElDivider } from 'element-plus'
+
+import { ElButton, ElDivider, ElDrawer, ElForm, ElFormItem, ElInput, ElSelect } from 'element-plus'
+
 import { useLanguage } from '@/composables/useLanguage'
 
 const props = defineProps<{
@@ -46,7 +48,11 @@ const handleSave = () => {
     @close="handleClose"
   >
     <div class="settings-content p-4">
-      <ElForm :model="formData" label-width="140px" label-position="left">
+      <ElForm
+        :model="formData"
+        label-width="140px"
+        label-position="left"
+      >
         <ElDivider content-position="left">
           <span class="text-sm font-semibold text-stone-700">
             {{ isZh ? '检索设置' : 'Retrieval Settings' }}
@@ -54,7 +60,10 @@ const handleSave = () => {
         </ElDivider>
 
         <ElFormItem :label="isZh ? '默认检索方法' : 'Default Retrieval Method'">
-          <ElSelect v-model="formData.defaultRetrievalMethod" style="width: 100%">
+          <ElSelect
+            v-model="formData.defaultRetrievalMethod"
+            style="width: 100%"
+          >
             <el-option
               :label="isZh ? '混合检索' : 'Hybrid Search'"
               value="hybrid"
@@ -71,8 +80,16 @@ const handleSave = () => {
         </ElFormItem>
 
         <ElFormItem :label="isZh ? '默认返回数量' : 'Default Top K'">
-          <ElSelect v-model="formData.defaultTopK" style="width: 100%">
-            <el-option :label="i" :value="i" v-for="i in [1, 3, 5, 10, 20]" :key="i" />
+          <ElSelect
+            v-model="formData.defaultTopK"
+            style="width: 100%"
+          >
+            <el-option
+              :label="i"
+              :value="i"
+              v-for="i in [1, 3, 5, 10, 20]"
+              :key="i"
+            />
           </ElSelect>
         </ElFormItem>
 
@@ -94,7 +111,10 @@ const handleSave = () => {
         </ElDivider>
 
         <ElFormItem :label="isZh ? '分块大小' : 'Chunk Size'">
-          <div class="flex items-center gap-2" style="width: 100%">
+          <div
+            class="flex items-center gap-2"
+            style="width: 100%"
+          >
             <ElInput
               v-model.number="formData.chunkSize"
               type="number"
@@ -110,7 +130,10 @@ const handleSave = () => {
         </ElFormItem>
 
         <ElFormItem :label="isZh ? '分块重叠' : 'Chunk Overlap'">
-          <div class="flex items-center gap-2" style="width: 100%">
+          <div
+            class="flex items-center gap-2"
+            style="width: 100%"
+          >
             <ElInput
               v-model.number="formData.chunkOverlap"
               type="number"

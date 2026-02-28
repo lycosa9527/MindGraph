@@ -105,7 +105,7 @@ function closeModal() {
   resetAllForms()
   currentView.value = 'login'
   activeTab.value = 'login'
-  
+
   // Clear session expired state and pending redirect when modal closes
   if (authStore.showSessionExpiredModal) {
     authStore.closeSessionExpiredModal()

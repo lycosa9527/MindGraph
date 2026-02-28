@@ -14,7 +14,7 @@
  *
  * Migrated from archive/static/js/managers/editor/view-manager.js
  */
-import { computed, onMounted, onUnmounted, ref, watch, type Ref } from 'vue'
+import { type Ref, computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import { useDebounceFn, useElementSize } from '@vueuse/core'
 
@@ -417,19 +417,16 @@ export function useViewManager(options: UseViewManagerOptions = {}) {
   // When using VueUse's useElementSize (containerRef provided), watch for size changes
   // and refit diagram automatically
   if (containerRef) {
-    watch(
-      [containerWidth, containerHeight],
-      ([newWidth, newHeight], [oldWidth, oldHeight]) => {
-        // Only refit if size actually changed significantly (avoid initial 0 -> value triggers)
-        if (
-          oldWidth > 0 &&
-          oldHeight > 0 &&
-          (Math.abs(newWidth - oldWidth) > 10 || Math.abs(newHeight - oldHeight) > 10)
-        ) {
-          fitDiagram(false)
-        }
+    watch([containerWidth, containerHeight], ([newWidth, newHeight], [oldWidth, oldHeight]) => {
+      // Only refit if size actually changed significantly (avoid initial 0 -> value triggers)
+      if (
+        oldWidth > 0 &&
+        oldHeight > 0 &&
+        (Math.abs(newWidth - oldWidth) > 10 || Math.abs(newHeight - oldHeight) > 10)
+      ) {
+        fitDiagram(false)
       }
-    )
+    })
   }
 
   // =========================================================================

@@ -22,7 +22,7 @@ import {
   DEFAULT_PADDING,
   DEFAULT_TOPIC_TO_CATEGORY_GAP,
 } from './layoutConfig'
-import { calculateDagreLayout, type DagreEdgeInput, type DagreNodeInput } from './useDagreLayout'
+import { type DagreEdgeInput, type DagreNodeInput, calculateDagreLayout } from './useDagreLayout'
 
 interface TreeNode {
   id: string
@@ -124,11 +124,12 @@ export function useTreeMap(options: TreeMapOptions = {}) {
 
     // Create topic node with Dagre position, centered above categories
     const topicPos = layoutResult.positions.get(rootId)
-    const topicX = categories.length > 0 && categoryCenterX > 0
-      ? categoryCenterX - nodeWidth / 2
-      : topicPos
-        ? topicPos.x
-        : 0
+    const topicX =
+      categories.length > 0 && categoryCenterX > 0
+        ? categoryCenterX - nodeWidth / 2
+        : topicPos
+          ? topicPos.x
+          : 0
     nodes.push({
       id: rootId,
       type: 'topic',

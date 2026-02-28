@@ -3,9 +3,12 @@
  * ChunkPreviewModal - View document chunks
  * Shows paginated list of chunks with text preview
  */
-import { ref, watch, computed } from 'vue'
-import { ElDialog, ElPagination, ElEmpty, ElIcon, ElTag } from 'element-plus'
+import { computed, ref, watch } from 'vue'
+
+import { ElDialog, ElEmpty, ElIcon, ElPagination, ElTag } from 'element-plus'
+
 import { Document, Loading } from '@element-plus/icons-vue'
+
 import { useLanguage } from '@/composables/useLanguage'
 import { apiRequest } from '@/utils/apiClient'
 
@@ -31,7 +34,7 @@ const props = defineProps<{
   visible: boolean
   documentId: number | null
   fileName: string
-  isChunkTest?: boolean  // If true, use chunk test endpoints
+  isChunkTest?: boolean // If true, use chunk test endpoints
 }>()
 
 const emit = defineEmits<{
@@ -48,23 +51,23 @@ const pageSize = ref(20)
 
 const dialogVisible = computed({
   get: () => props.visible,
-  set: (value) => emit('update:visible', value)
+  set: (value) => emit('update:visible', value),
 })
 
 async function fetchChunks() {
   if (!props.documentId) return
-  
+
   loading.value = true
   try {
     // Use chunk test endpoint if isChunkTest is true
     const endpoint = props.isChunkTest
       ? `/api/knowledge-space/chunk-test/documents/${props.documentId}/chunks`
       : `/api/knowledge-space/documents/${props.documentId}/chunks`
-    
+
     const response = await apiRequest(
       `${endpoint}?page=${currentPage.value}&page_size=${pageSize.value}`
     )
-    
+
     if (response.ok) {
       const data: ChunksResponse = await response.json()
       chunks.value = data.chunks
@@ -88,12 +91,15 @@ function truncateText(text: string, maxLength: number = 300): string {
 }
 
 // Fetch chunks when dialog opens
-watch(() => props.visible, (newValue) => {
-  if (newValue && props.documentId) {
-    currentPage.value = 1
-    fetchChunks()
+watch(
+  () => props.visible,
+  (newValue) => {
+    if (newValue && props.documentId) {
+      currentPage.value = 1
+      fetchChunks()
+    }
   }
-})
+)
 </script>
 
 <template>
@@ -104,21 +110,30 @@ watch(() => props.visible, (newValue) => {
     :close-on-click-modal="false"
     class="chunk-preview-modal"
   >
-    <div v-if="loading" class="flex items-center justify-center py-12">
+    <div
+      v-if="loading"
+      class="flex items-center justify-center py-12"
+    >
       <ElIcon class="animate-spin text-3xl text-stone-400">
         <Loading />
       </ElIcon>
     </div>
-    
-    <div v-else-if="chunks.length === 0" class="py-8">
+
+    <div
+      v-else-if="chunks.length === 0"
+      class="py-8"
+    >
       <ElEmpty :description="isZh ? '暂无分块数据' : 'No chunks found'" />
     </div>
-    
-    <div v-else class="chunk-list">
+
+    <div
+      v-else
+      class="chunk-list"
+    >
       <div class="mb-4 text-sm text-stone-500">
         {{ isZh ? `共 ${total} 个分块` : `Total ${total} chunks` }}
       </div>
-      
+
       <div class="space-y-4 max-h-[500px] overflow-y-auto pr-2">
         <div
           v-for="chunk in chunks"
@@ -132,11 +147,19 @@ watch(() => props.visible, (newValue) => {
             <span class="text-sm font-medium text-stone-700">
               {{ isZh ? `分块 #${chunk.chunk_index + 1}` : `Chunk #${chunk.chunk_index + 1}` }}
             </span>
-            <ElTag size="small" type="info">
+            <ElTag
+              size="small"
+              type="info"
+            >
               {{ chunk.text.length }} {{ isZh ? '字符' : 'chars' }}
             </ElTag>
-            <ElTag v-if="chunk.metadata?.page_number" size="small">
-              {{ isZh ? `第${chunk.metadata.page_number}页` : `Page ${chunk.metadata.page_number}` }}
+            <ElTag
+              v-if="chunk.metadata?.page_number"
+              size="small"
+            >
+              {{
+                isZh ? `第${chunk.metadata.page_number}页` : `Page ${chunk.metadata.page_number}`
+              }}
             </ElTag>
           </div>
           <div class="text-sm text-stone-600 leading-relaxed whitespace-pre-wrap">
@@ -144,8 +167,11 @@ watch(() => props.visible, (newValue) => {
           </div>
         </div>
       </div>
-      
-      <div v-if="total > pageSize" class="mt-4 flex justify-center">
+
+      <div
+        v-if="total > pageSize"
+        class="mt-4 flex justify-center"
+      >
         <ElPagination
           v-model:current-page="currentPage"
           :page-size="pageSize"

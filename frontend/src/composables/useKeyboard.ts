@@ -154,8 +154,13 @@ export function useVueFlowKeyboard(options: UseVueFlowKeyboardOptions = {}): voi
   } = options
 
   // VueFlow instance
-  const { removeNodes, removeEdges, getSelectedNodes, getSelectedEdges, nodes: allNodes } =
-    useVueFlow()
+  const {
+    removeNodes,
+    removeEdges,
+    getSelectedNodes,
+    getSelectedEdges,
+    nodes: allNodes,
+  } = useVueFlow()
 
   // VueUse magic keys - reactive keyboard state
   const keys = useMagicKeys({
@@ -172,9 +177,7 @@ export function useVueFlowKeyboard(options: UseVueFlowKeyboardOptions = {}): voi
         // Don't prevent default if user is typing in an input
         const target = e.target as HTMLElement
         const isInput =
-          target.tagName === 'INPUT' ||
-          target.tagName === 'TEXTAREA' ||
-          target.isContentEditable
+          target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable
 
         if (isInput) return
 
@@ -249,7 +252,8 @@ export function useVueFlowKeyboard(options: UseVueFlowKeyboardOptions = {}): voi
 
     // Ctrl+Shift+Z or Ctrl+Y - Redo
     watch(
-      () => keys.ctrl_shift_z.value || keys.cmd_shift_z.value || keys.ctrl_y.value || keys.cmd_y.value,
+      () =>
+        keys.ctrl_shift_z.value || keys.cmd_shift_z.value || keys.ctrl_y.value || keys.cmd_y.value,
       (pressed) => {
         if (!pressed) return
 

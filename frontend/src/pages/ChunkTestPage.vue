@@ -18,6 +18,7 @@ import DatasetTable from '@/components/knowledge-space/DatasetTable.vue'
 import DocumentTable from '@/components/knowledge-space/DocumentTable.vue'
 import DocumentUpload from '@/components/knowledge-space/DocumentUpload.vue'
 import ProcessingProgressBar from '@/components/knowledge-space/ProcessingProgressBar.vue'
+import { notify } from '@/composables/notifications'
 import type { ChunkTestDocument } from '@/composables/queries/useChunkTestDocumentQueries'
 import {
   useBenchmarks,
@@ -27,7 +28,6 @@ import {
   useTestUserDocuments,
   useUpdateDatasets,
 } from '@/composables/queries/useChunkTestQueries'
-import { notify } from '@/composables/notifications'
 import { useChunkTestDocumentsComposable } from '@/composables/useChunkTestDocuments'
 import { useLanguage } from '@/composables/useLanguage'
 

@@ -3,8 +3,11 @@
  * DocumentCard - Individual document card component
  */
 import { computed } from 'vue'
-import { ElCard, ElBadge, ElButton, ElIcon } from 'element-plus'
-import { Delete, Document, Loading, Check, Close } from '@element-plus/icons-vue'
+
+import { ElBadge, ElButton, ElCard, ElIcon } from 'element-plus'
+
+import { Check, Close, Delete, Document, Loading } from '@element-plus/icons-vue'
+
 import type { KnowledgeDocument } from '@/stores/knowledgeSpace'
 
 const props = defineProps<{
@@ -20,7 +23,7 @@ const statusConfig = computed(() => {
   let type: BadgeType = 'info'
   let text = '未知'
   let icon = Document
-  
+
   switch (props.document.status) {
     case 'pending':
       text = '等待处理'
@@ -43,7 +46,7 @@ const statusConfig = computed(() => {
       icon = Close
       break
   }
-  
+
   return { text, type, icon }
 })
 
@@ -65,7 +68,10 @@ const formatDate = (dateString: string) => {
 </script>
 
 <template>
-  <ElCard class="document-card" shadow="hover">
+  <ElCard
+    class="document-card"
+    shadow="hover"
+  >
     <template #header>
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-2 flex-1 min-w-0">
@@ -76,7 +82,10 @@ const formatDate = (dateString: string) => {
             {{ document.file_name }}
           </span>
         </div>
-        <ElBadge :type="statusConfig.type" :value="statusConfig.text" />
+        <ElBadge
+          :type="statusConfig.type"
+          :value="statusConfig.text"
+        />
       </div>
     </template>
 
@@ -85,10 +94,11 @@ const formatDate = (dateString: string) => {
         <div>文件类型: {{ document.file_type }}</div>
         <div>文件大小: {{ fileSize }}</div>
         <div>上传时间: {{ formatDate(document.created_at) }}</div>
-        <div v-if="document.status === 'completed'">
-          分块数量: {{ document.chunk_count }}
-        </div>
-        <div v-if="document.status === 'failed' && document.error_message" class="text-red-600 mt-2">
+        <div v-if="document.status === 'completed'">分块数量: {{ document.chunk_count }}</div>
+        <div
+          v-if="document.status === 'failed' && document.error_message"
+          class="text-red-600 mt-2"
+        >
           错误: {{ document.error_message }}
         </div>
       </div>

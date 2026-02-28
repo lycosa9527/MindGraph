@@ -1,10 +1,12 @@
 /**
  * Chunk Test Query Composables
- * 
+ *
  * Vue Query composables for chunk test functionality
  */
-import { computed, type ComputedRef, type Ref, unref } from 'vue'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/vue-query'
+import { type ComputedRef, type Ref, computed, unref } from 'vue'
+
+import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
+
 import { apiRequest } from '@/utils/apiClient'
 
 export interface Benchmark {
@@ -93,7 +95,7 @@ export function useBenchmarks() {
  */
 export function useUpdateDatasets() {
   const queryClient = useQueryClient()
-  
+
   return useMutation({
     mutationFn: async () => {
       const response = await apiRequest('/api/knowledge-space/chunk-test/update-datasets', {
@@ -130,7 +132,9 @@ export function useTestUserDocuments() {
         }),
       })
       if (!response.ok) {
-        const error = await response.json().catch(() => ({ detail: 'Failed to test user documents' }))
+        const error = await response
+          .json()
+          .catch(() => ({ detail: 'Failed to test user documents' }))
         throw new Error(error.detail || 'Failed to test user documents')
       }
       return response.json()
@@ -156,7 +160,9 @@ export function useTestBenchmarkDataset() {
         }),
       })
       if (!response.ok) {
-        const error = await response.json().catch(() => ({ detail: 'Failed to test benchmark dataset' }))
+        const error = await response
+          .json()
+          .catch(() => ({ detail: 'Failed to test benchmark dataset' }))
         throw new Error(error.detail || 'Failed to test benchmark dataset')
       }
       return response.json()
@@ -182,7 +188,9 @@ export function useTestBenchmarkDatasetAsync() {
         }),
       })
       if (!response.ok) {
-        const error = await response.json().catch(() => ({ detail: 'Failed to start benchmark test' }))
+        const error = await response
+          .json()
+          .catch(() => ({ detail: 'Failed to start benchmark test' }))
         throw new Error(error.detail || 'Failed to start benchmark test')
       }
       return response.json()
@@ -202,7 +210,9 @@ export function useTestQueries(datasetName?: string, count: number = 20) {
         params.append('dataset_name', datasetName)
       }
       params.append('count', count.toString())
-      const response = await apiRequest(`/api/knowledge-space/chunk-test/test-queries?${params.toString()}`)
+      const response = await apiRequest(
+        `/api/knowledge-space/chunk-test/test-queries?${params.toString()}`
+      )
       if (!response.ok) {
         throw new Error('Failed to fetch test queries')
       }
@@ -265,7 +275,9 @@ export function useChunkTestHistory(limit: number = 20) {
     queryFn: async () => {
       const params = new URLSearchParams()
       params.append('limit', limit.toString())
-      const response = await apiRequest(`/api/knowledge-space/chunk-test/results?${params.toString()}`)
+      const response = await apiRequest(
+        `/api/knowledge-space/chunk-test/results?${params.toString()}`
+      )
       if (!response.ok) {
         throw new Error('Failed to fetch chunk test history')
       }
@@ -314,7 +326,10 @@ export interface ManualEvaluationResult {
 /**
  * Get chunks for a test and method (on-demand generation)
  */
-export function useChunkTestChunks(testId: Ref<number> | ComputedRef<number>, method: Ref<string> | ComputedRef<string>) {
+export function useChunkTestChunks(
+  testId: Ref<number> | ComputedRef<number>,
+  method: Ref<string> | ComputedRef<string>
+) {
   return useQuery<ChunkTestChunksResponse>({
     queryKey: computed(() => ['chunk-test', 'chunks', unref(testId), unref(method)]),
     queryFn: async () => {
@@ -337,7 +352,11 @@ export function useChunkTestChunks(testId: Ref<number> | ComputedRef<number>, me
  * Manual evaluation mutation using DashScope models
  */
 export function useManualEvaluation() {
-  return useMutation<ManualEvaluationResult, Error, { testId: number; request: ManualEvaluationRequest }>({
+  return useMutation<
+    ManualEvaluationResult,
+    Error,
+    { testId: number; request: ManualEvaluationRequest }
+  >({
     mutationFn: async ({ testId, request }) => {
       const response = await apiRequest(`/api/knowledge-space/chunk-test/${testId}/evaluate`, {
         method: 'POST',
@@ -360,7 +379,7 @@ export function useManualEvaluation() {
  */
 export function useDeleteChunkTest() {
   const queryClient = useQueryClient()
-  
+
   return useMutation<void, Error, number>({
     mutationFn: async (testId: number) => {
       const response = await apiRequest(`/api/knowledge-space/chunk-test/results/${testId}`, {
@@ -383,7 +402,7 @@ export function useDeleteChunkTest() {
  */
 export function useCancelChunkTest() {
   const queryClient = useQueryClient()
-  
+
   return useMutation<{ success: boolean; message: string }, Error, number>({
     mutationFn: async (testId: number) => {
       const response = await apiRequest(`/api/knowledge-space/chunk-test/${testId}/cancel`, {

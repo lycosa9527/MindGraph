@@ -6,9 +6,9 @@
  */
 import type { Connection, DiagramNode } from '@/types'
 
+import { CONTEXT_FONT_SIZE, TOPIC_FONT_SIZE } from './textMeasurement'
 import type { SpecLoaderResult } from './types'
 import { calculateCircleMapLayout } from './utils'
-import { CONTEXT_FONT_SIZE, TOPIC_FONT_SIZE } from './textMeasurement'
 
 /**
  * Recalculate circle map layout from existing nodes.

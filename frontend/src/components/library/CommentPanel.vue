@@ -3,13 +3,15 @@
  * CommentPanel - Side panel for managing danmaku comments
  * Pin-based comment system
  */
-import { ref, computed, watch } from 'vue'
-import { Heart, MessageSquare, Send, Loader2, X, Trash2 } from 'lucide-vue-next'
+import { computed, ref, watch } from 'vue'
+
 import { ElButton, ElInput } from 'element-plus'
 
-import { useLibraryStore } from '@/stores/library'
-import { useAuthStore } from '@/stores/auth'
+import { Heart, Loader2, MessageSquare, Send, Trash2, X } from 'lucide-vue-next'
+
 import { useNotifications } from '@/composables'
+import { useAuthStore } from '@/stores/auth'
+import { useLibraryStore } from '@/stores/library'
 import type { CreateDanmakuData, CreateReplyData } from '@/utils/apiClient'
 
 interface Props {
@@ -148,14 +150,14 @@ function cancelReply() {
 // Delete danmaku (only allowed for comment creator or admin)
 async function deleteDanmaku(danmakuId: number) {
   if (deletingDanmaku.value[danmakuId]) return
-  
+
   // Double-check permission before attempting deletion
   const danmaku = displayedDanmaku.value.find((d) => d.id === danmakuId)
   if (!danmaku || !canDeleteDanmaku(danmaku)) {
     notify.error('只能删除自己的评论')
     return
   }
-  
+
   deletingDanmaku.value[danmakuId] = true
   try {
     await libraryStore.removeDanmaku(danmakuId)
@@ -171,7 +173,11 @@ async function deleteDanmaku(danmakuId: number) {
   } catch (error) {
     // Handle permission errors specifically
     const errorMessage = error instanceof Error ? error.message : '删除评论失败'
-    if (errorMessage.includes('permission') || errorMessage.includes('权限') || errorMessage.includes('don\'t have permission')) {
+    if (
+      errorMessage.includes('permission') ||
+      errorMessage.includes('权限') ||
+      errorMessage.includes("don't have permission")
+    ) {
       notify.error('只能删除自己的评论')
     } else {
       notify.error(errorMessage)
@@ -209,7 +215,7 @@ function canDeleteReply(reply: { user_id: number }) {
 // Delete reply (only allowed for reply creator or admin)
 async function deleteReply(replyId: number, danmakuId: number) {
   if (deletingReply.value[replyId]) return
-  
+
   // Get reply to check permission
   const replies = libraryStore.replies[danmakuId] || []
   const reply = replies.find((r) => r.id === replyId)
@@ -217,7 +223,7 @@ async function deleteReply(replyId: number, danmakuId: number) {
     notify.error('只能删除自己的回复')
     return
   }
-  
+
   deletingReply.value[replyId] = true
   try {
     await libraryStore.removeReply(replyId, danmakuId)
@@ -225,7 +231,11 @@ async function deleteReply(replyId: number, danmakuId: number) {
     // Replies are automatically removed from store by removeReply
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : '删除回复失败'
-    if (errorMessage.includes('permission') || errorMessage.includes('权限') || errorMessage.includes('don\'t have permission')) {
+    if (
+      errorMessage.includes('permission') ||
+      errorMessage.includes('权限') ||
+      errorMessage.includes("don't have permission")
+    ) {
       notify.error('只能删除自己的回复')
     } else {
       notify.error(errorMessage)
@@ -299,9 +309,7 @@ function closePanel() {
                 :class="{ 'text-red-500': danmaku.is_liked }"
                 @click="toggleLike(danmaku.id)"
               >
-                <Heart
-                  :class="['w-4 h-4 mr-1', danmaku.is_liked ? 'fill-current' : '']"
-                />
+                <Heart :class="['w-4 h-4 mr-1', danmaku.is_liked ? 'fill-current' : '']" />
                 <span>{{ danmaku.likes_count }}</span>
               </ElButton>
               <ElButton

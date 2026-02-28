@@ -2,7 +2,7 @@
 /**
  * CoinTossDisplay - Coin toss animation and result
  */
-import { ref, computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 
 import { ElButton } from 'element-plus'
 
@@ -28,8 +28,12 @@ const result = computed(() => store.currentSession?.session.coin_toss_result)
 const resultText = computed(() => {
   if (!result.value) return ''
   return result.value === 'affirmative_first'
-    ? (isZh ? '正方先发言' : 'Affirmative speaks first')
-    : (isZh ? '反方先发言' : 'Negative speaks first')
+    ? isZh
+      ? '正方先发言'
+      : 'Affirmative speaks first'
+    : isZh
+      ? '反方先发言'
+      : 'Negative speaks first'
 })
 
 // ============================================================================
@@ -44,7 +48,7 @@ async function executeCoinToss() {
 
   try {
     await store.coinToss()
-    
+
     // Show result after animation
     setTimeout(() => {
       showResult.value = true
@@ -68,7 +72,7 @@ async function executeCoinToss() {
       <div class="mb-8">
         <div
           class="coin w-32 h-32 mx-auto rounded-full bg-gradient-to-br from-yellow-400 to-yellow-600 shadow-lg flex items-center justify-center text-white text-4xl font-bold"
-          :class="{ 'flipping': isFlipping }"
+          :class="{ flipping: isFlipping }"
         >
           <span v-if="!isFlipping && !showResult">?</span>
           <span v-else-if="isFlipping">🪙</span>

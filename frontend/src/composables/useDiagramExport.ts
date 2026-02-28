@@ -164,22 +164,22 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
   }
 
   async function exportByFormat(format: string): Promise<void> {
-      switch (format) {
-        case 'png':
-          await exportAsPng()
-          break
-        case 'svg':
-          await exportAsSvg()
-          break
-        case 'pdf':
-          await exportAsPdf()
-          break
-        case 'json':
-          await exportAsJson()
-          break
-        default:
-          notify.warning(isZh() ? `未知导出格式: ${format}` : `Unknown export format: ${format}`)
-      }
+    switch (format) {
+      case 'png':
+        await exportAsPng()
+        break
+      case 'svg':
+        await exportAsSvg()
+        break
+      case 'pdf':
+        await exportAsPdf()
+        break
+      case 'json':
+        await exportAsJson()
+        break
+      default:
+        notify.warning(isZh() ? `未知导出格式: ${format}` : `Unknown export format: ${format}`)
+    }
   }
 
   return {

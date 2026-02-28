@@ -5,7 +5,6 @@
  */
 import { computed, onUnmounted, ref, watch } from 'vue'
 
-import { eventBus } from '@/composables/useEventBus'
 import { useLanguage, useNotifications } from '@/composables'
 import {
   BRANCH_NODE_HEIGHT,
@@ -13,6 +12,7 @@ import {
   DEFAULT_NODE_WIDTH,
   DEFAULT_PADDING,
 } from '@/composables/diagrams/layoutConfig'
+import { eventBus } from '@/composables/useEventBus'
 import { useDiagramStore } from '@/stores'
 import type { DiagramNode, MindGraphNode } from '@/types'
 
@@ -114,7 +114,7 @@ const menuItems = computed<MenuItem[]>(() => {
           },
         })
       }
-      
+
       items.push({ divider: true })
     }
 
@@ -156,7 +156,7 @@ const menuItems = computed<MenuItem[]>(() => {
           emit('close')
         },
       })
-      
+
       // Add effect option
       items.push({
         label: '添加结果',
@@ -435,7 +435,11 @@ function handleItemClick(item: MenuItem) {
           :class="{ disabled: item.disabled, divider: item.divider }"
           @click="handleItemClick(item)"
         >
-          <span v-if="!item.divider && item.label" class="context-menu-label">{{ item.label }}</span>
+          <span
+            v-if="!item.divider && item.label"
+            class="context-menu-label"
+            >{{ item.label }}</span
+          >
         </div>
       </div>
     </Transition>
@@ -505,7 +509,9 @@ function handleItemClick(item: MenuItem) {
 /* Transition animations */
 .context-menu-enter-active,
 .context-menu-leave-active {
-  transition: opacity 0.15s ease, transform 0.15s ease;
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease;
 }
 
 .context-menu-enter-from {

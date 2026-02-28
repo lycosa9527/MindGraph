@@ -3,21 +3,21 @@
  * LibraryViewerPage - Image viewer with danmaku and comments
  * Combines ImageViewer, DanmakuOverlay, and CommentPanel components
  */
-import { onMounted, onUnmounted, computed, watch, ref, nextTick } from 'vue'
-import { useRoute, useRouter, onBeforeRouteLeave } from 'vue-router'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
+import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
 
 import { ElButton, ElIcon } from 'element-plus'
+
 import { ArrowLeft } from 'lucide-vue-next'
 
 import { LoginModal } from '@/components/auth'
-import { useLibraryStore } from '@/stores/library'
-import { useAuthStore } from '@/stores/auth'
-import { useNotifications, useLanguage } from '@/composables'
-
+import CommentPanel from '@/components/library/CommentPanel.vue'
+import DanmakuOverlay from '@/components/library/DanmakuOverlay.vue'
 import ImageViewer from '@/components/library/ImageViewer.vue'
 import PdfToolbar from '@/components/library/PdfToolbar.vue'
-import DanmakuOverlay from '@/components/library/DanmakuOverlay.vue'
-import CommentPanel from '@/components/library/CommentPanel.vue'
+import { useLanguage, useNotifications } from '@/composables'
+import { useAuthStore } from '@/stores/auth'
+import { useLibraryStore } from '@/stores/library'
 
 const route = useRoute()
 const router = useRouter()
@@ -80,7 +80,7 @@ watch(currentPage, async () => {
 // Check bookmark status
 async function checkBookmarkStatus() {
   if (!authStore.isAuthenticated || !documentId.value || !currentPage.value) return
-  
+
   // Don't check bookmarks for pages we know don't exist
   if (false) {
     // Page doesn't exist - don't check for bookmark
@@ -88,7 +88,7 @@ async function checkBookmarkStatus() {
     bookmarkId.value = null
     return
   }
-  
+
   try {
     const bookmark = await libraryStore.getBookmark(documentId.value, currentPage.value)
     if (bookmark) {
@@ -101,7 +101,10 @@ async function checkBookmarkStatus() {
   } catch (error) {
     // 404 means bookmark doesn't exist - this is expected and fine
     // Don't log as error since this is normal behavior
-    if (error instanceof Error && (error.message.includes('404') || error.message.includes('Failed to fetch'))) {
+    if (
+      error instanceof Error &&
+      (error.message.includes('404') || error.message.includes('Failed to fetch'))
+    ) {
       // Bookmark doesn't exist - expected, silently handle
       isBookmarked.value = false
       bookmarkId.value = null
@@ -222,7 +225,7 @@ async function navigateToPageFromQuery() {
   console.log(`[LibraryViewerPage] Navigating to page ${pageNum} from query parameter`)
   hasNavigatedToPage.value = true
   viewerRef.value.goToPage(pageNum)
-  
+
   // Check bookmark status after navigating
   await nextTick()
   await checkBookmarkStatus()
@@ -271,7 +274,10 @@ onMounted(async () => {
       }
     }
     // If document doesn't exist, navigate to 404
-    if (error instanceof Error && (error.message.includes('404') || error.message.includes('not found'))) {
+    if (
+      error instanceof Error &&
+      (error.message.includes('404') || error.message.includes('not found'))
+    ) {
       router.replace({ name: 'NotFound' })
     }
   }
@@ -332,7 +338,12 @@ watch(
 watch(
   () => viewerRef.value,
   async (newViewer) => {
-    if (newViewer && route.query.page && libraryStore.currentDocument && !hasNavigatedToPage.value) {
+    if (
+      newViewer &&
+      route.query.page &&
+      libraryStore.currentDocument &&
+      !hasNavigatedToPage.value
+    ) {
       // Wait a bit for ImageViewer to finish initializing with initialPage prop
       setTimeout(async () => {
         await navigateToPageFromQuery()
@@ -480,31 +491,30 @@ watch(pinPlacementPosition, (newVal) => {
 })
 
 // Watch for comment panel open/close to re-render pins when layout changes
-watch(
-  [() => selectedDanmakuId.value, () => pinPlacementPosition.value],
-  () => {
-    // When comment panel opens or closes, the layout changes and image resizes
-    // Wait for layout to settle, then re-render pins
-    nextTick(() => {
-      setTimeout(() => {
-        if (viewerRef.value && imageViewerRef.value) {
-          // Trigger re-render by calling renderPins through the component
-          // We'll expose a method or trigger it via a watcher
-          const viewer = imageViewerRef.value as any
-          if (viewer.renderPins) {
-            viewer.renderPins()
-          }
+watch([() => selectedDanmakuId.value, () => pinPlacementPosition.value], () => {
+  // When comment panel opens or closes, the layout changes and image resizes
+  // Wait for layout to settle, then re-render pins
+  nextTick(() => {
+    setTimeout(() => {
+      if (viewerRef.value && imageViewerRef.value) {
+        // Trigger re-render by calling renderPins through the component
+        // We'll expose a method or trigger it via a watcher
+        const viewer = imageViewerRef.value as any
+        if (viewer.renderPins) {
+          viewer.renderPins()
         }
-      }, 150)
-    })
-  }
-)
+      }
+    }, 150)
+  })
+})
 </script>
 
 <template>
   <div class="library-viewer-page flex-1 flex flex-col bg-stone-50 overflow-hidden">
     <!-- Header -->
-    <div class="library-viewer-header px-4 h-14 bg-white border-b border-stone-200 flex items-center justify-between">
+    <div
+      class="library-viewer-header px-4 h-14 bg-white border-b border-stone-200 flex items-center justify-between"
+    >
       <div class="flex items-center gap-2 min-w-0 flex-1">
         <ElButton
           text
@@ -546,10 +556,13 @@ watch(
     <!-- Main content area -->
     <div
       class="library-viewer-content flex-1 flex overflow-hidden relative"
-      :class="{ 'blurred': !authStore.isAuthenticated }"
+      :class="{ blurred: !authStore.isAuthenticated }"
     >
       <!-- Viewer with Danmaku Overlay -->
-      <div class="flex-1 relative overflow-hidden" style="padding-bottom: 30px;">
+      <div
+        class="flex-1 relative overflow-hidden"
+        style="padding-bottom: 30px"
+      >
         <!-- Image Viewer -->
         <ImageViewer
           v-if="libraryStore.currentDocument && totalPages > 0"

@@ -3,8 +3,11 @@
  * KnowledgeSpaceHistory - Sidebar history component for knowledge space documents
  */
 import { computed, onMounted } from 'vue'
-import { ElScrollbar, ElEmpty } from 'element-plus'
+
+import { ElEmpty, ElScrollbar } from 'element-plus'
+
 import { Document } from '@element-plus/icons-vue'
+
 import { useKnowledgeSpace } from '@/composables/useKnowledgeSpace'
 
 const { documents: allDocuments, fetchDocuments } = useKnowledgeSpace()
@@ -38,17 +41,23 @@ function getStatusColor(status: string) {
 </script>
 
 <template>
-  <div class="knowledge-space-history flex flex-col h-full border-t border-stone-200 relative overflow-hidden">
+  <div
+    class="knowledge-space-history flex flex-col h-full border-t border-stone-200 relative overflow-hidden"
+  >
     <!-- Header -->
     <div class="px-4 py-3">
-      <div class="text-xs font-medium text-stone-400 uppercase tracking-wider">
-        知识库文档
-      </div>
+      <div class="text-xs font-medium text-stone-400 uppercase tracking-wider">知识库文档</div>
     </div>
 
     <ElScrollbar class="flex-1 px-4 pb-4">
-      <div v-if="documents.length === 0" class="text-center py-8">
-        <ElEmpty description="暂无文档" :image-size="60" />
+      <div
+        v-if="documents.length === 0"
+        class="text-center py-8"
+      >
+        <ElEmpty
+          description="暂无文档"
+          :image-size="60"
+        />
       </div>
       <div v-else>
         <div
@@ -67,7 +76,15 @@ function getStatusColor(status: string) {
               <div class="doc-meta flex items-center gap-2">
                 <span>{{ formatDate(doc.created_at) }}</span>
                 <span :class="getStatusColor(doc.status)">
-                  {{ doc.status === 'completed' ? '已完成' : doc.status === 'processing' ? '处理中' : doc.status === 'failed' ? '失败' : '等待' }}
+                  {{
+                    doc.status === 'completed'
+                      ? '已完成'
+                      : doc.status === 'processing'
+                        ? '处理中'
+                        : doc.status === 'failed'
+                          ? '失败'
+                          : '等待'
+                  }}
                 </span>
               </div>
             </div>

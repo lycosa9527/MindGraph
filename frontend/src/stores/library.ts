@@ -4,32 +4,33 @@
  * Pinia store for library PDF management and danmaku operations.
  * Includes localStorage caching to reduce server load.
  */
-import { ref, computed } from 'vue'
+import { computed, ref } from 'vue'
+
 import { defineStore } from 'pinia'
 
 import {
-  type LibraryDocument,
-  type LibraryDanmaku,
-  type LibraryDanmakuReply,
-  type LibraryBookmark,
+  type CreateBookmarkData,
   type CreateDanmakuData,
   type CreateReplyData,
-  type CreateBookmarkData,
-  getLibraryDocuments,
-  getLibraryDocument,
-  getDanmaku,
+  type LibraryBookmark,
+  type LibraryDanmaku,
+  type LibraryDanmakuReply,
+  type LibraryDocument,
+  type UpdateDanmakuPositionData,
+  createBookmark,
   createDanmaku,
-  likeDanmaku,
-  getDanmakuReplies,
-  replyToDanmaku,
+  deleteBookmark,
   deleteDanmaku,
   deleteDanmakuReply,
-  updateDanmakuPosition,
-  type UpdateDanmakuPositionData,
-  getRecentBookmarks,
-  createBookmark,
-  deleteBookmark,
   getBookmark,
+  getDanmaku,
+  getDanmakuReplies,
+  getLibraryDocument,
+  getLibraryDocuments,
+  getRecentBookmarks,
+  likeDanmaku,
+  replyToDanmaku,
+  updateDanmakuPosition,
 } from '@/utils/apiClient'
 
 // localStorage cache entry with TTL
@@ -305,11 +306,7 @@ export const useLibraryStore = defineStore('library', () => {
     selectedText.value = textSelection || null
 
     try {
-      const result = await getDanmaku(
-        currentDocument.value.id,
-        pageNumber,
-        textSelection
-      )
+      const result = await getDanmaku(currentDocument.value.id, pageNumber, textSelection)
       danmaku.value = result.danmaku
     } catch (error) {
       danmakuError.value = error as Error
@@ -425,10 +422,7 @@ export const useLibraryStore = defineStore('library', () => {
       danmaku.value = danmaku.value.filter((d) => d.id !== danmakuId)
       // Update document comments count
       if (currentDocument.value) {
-        currentDocument.value.comments_count = Math.max(
-          0,
-          currentDocument.value.comments_count - 1
-        )
+        currentDocument.value.comments_count = Math.max(0, currentDocument.value.comments_count - 1)
         // Update cache
         saveDocumentToCache(currentDocument.value)
       }
@@ -481,9 +475,7 @@ export const useLibraryStore = defineStore('library', () => {
    */
   const danmakuForText = computed(() => {
     return (text: string) => {
-      return danmaku.value.filter(
-        (d) => d.selected_text === text && d.text_bbox !== null
-      )
+      return danmaku.value.filter((d) => d.selected_text === text && d.text_bbox !== null)
     }
   })
 
@@ -536,7 +528,10 @@ export const useLibraryStore = defineStore('library', () => {
   /**
    * Get bookmark for a specific document page
    */
-  async function getBookmarkAction(documentId: number, pageNumber: number): Promise<LibraryBookmark | null> {
+  async function getBookmarkAction(
+    documentId: number,
+    pageNumber: number
+  ): Promise<LibraryBookmark | null> {
     try {
       return await getBookmark(documentId, pageNumber)
     } catch (error) {

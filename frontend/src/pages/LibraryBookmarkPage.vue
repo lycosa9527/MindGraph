@@ -6,8 +6,8 @@
 import { onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
-import { getBookmarkByUuid } from '@/utils/apiClient'
 import { useNotifications } from '@/composables'
+import { getBookmarkByUuid } from '@/utils/apiClient'
 
 const route = useRoute()
 const router = useRouter()

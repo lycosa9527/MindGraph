@@ -5,10 +5,13 @@
  * Enhanced to show method-specific progress for chunk tests
  */
 import { computed, ref, watch } from 'vue'
-import { ElProgress, ElIcon, ElTable, ElTableColumn } from 'element-plus'
-import { Loading, Check, Minus } from '@element-plus/icons-vue'
-import type { KnowledgeDocument } from '@/stores/knowledgeSpace'
+
+import { ElIcon, ElProgress, ElTable, ElTableColumn } from 'element-plus'
+
+import { Check, Loading, Minus } from '@element-plus/icons-vue'
+
 import { useLanguage } from '@/composables/useLanguage'
+import type { KnowledgeDocument } from '@/stores/knowledgeSpace'
 
 const props = defineProps<{
   documents: KnowledgeDocument[]
@@ -16,16 +19,22 @@ const props = defineProps<{
 
 const { isZh } = useLanguage()
 
-const processingDocuments = computed(() => 
-  props.documents.filter(d => d.status === 'processing')
-)
+const processingDocuments = computed(() => props.documents.filter((d) => d.status === 'processing'))
 
 // Method states tracking for chunk test documents
-const methodStates = ref<Record<number, Record<string, {
-  chunk: 'pending' | 'processing' | 'completed'
-  embed: 'pending' | 'processing' | 'completed'
-  index: 'pending' | 'processing' | 'completed'
-}>>>({})
+const methodStates = ref<
+  Record<
+    number,
+    Record<
+      string,
+      {
+        chunk: 'pending' | 'processing' | 'completed'
+        embed: 'pending' | 'processing' | 'completed'
+        index: 'pending' | 'processing' | 'completed'
+      }
+    >
+  >
+>({})
 
 // Initialize method states for each document
 const initializeMethodStates = (docId: number) => {
@@ -41,47 +50,53 @@ const initializeMethodStates = (docId: number) => {
 }
 
 // Parse progress string to extract method and stage
-const parseProgress = (progress: string | null | undefined): { stage: string; method: string | null } => {
+const parseProgress = (
+  progress: string | null | undefined
+): { stage: string; method: string | null } => {
   if (!progress) return { stage: '', method: null }
-  
+
   // Match format: "stage (method)" e.g., "chunking (semchunk)"
   const match = progress.match(/^(\w+)\s*\((\w+)\)$/)
   if (match) {
     return { stage: match[1], method: match[2] }
   }
-  
+
   // Fallback: simple stage name
   return { stage: progress, method: null }
 }
 
 // Update method states based on progress
-watch(() => props.documents, (docs) => {
-  docs.forEach(doc => {
-    if (doc.status === 'processing' && doc.processing_progress) {
-      initializeMethodStates(doc.id)
-      const { stage, method } = parseProgress(doc.processing_progress)
-      
-      if (method && methodStates.value[doc.id] && methodStates.value[doc.id][method]) {
-        const methodState = methodStates.value[doc.id][method]
-        
-        // Update state based on stage
-        if (stage === 'chunking') {
-          methodState.chunk = 'processing'
-        } else if (stage === 'embedding') {
-          methodState.chunk = 'completed'
-          methodState.embed = 'processing'
-        } else if (stage === 'indexing') {
-          methodState.embed = 'completed'
-          methodState.index = 'processing'
-        } else if (stage === 'completed') {
-          methodState.chunk = 'completed'
-          methodState.embed = 'completed'
-          methodState.index = 'completed'
+watch(
+  () => props.documents,
+  (docs) => {
+    docs.forEach((doc) => {
+      if (doc.status === 'processing' && doc.processing_progress) {
+        initializeMethodStates(doc.id)
+        const { stage, method } = parseProgress(doc.processing_progress)
+
+        if (method && methodStates.value[doc.id] && methodStates.value[doc.id][method]) {
+          const methodState = methodStates.value[doc.id][method]
+
+          // Update state based on stage
+          if (stage === 'chunking') {
+            methodState.chunk = 'processing'
+          } else if (stage === 'embedding') {
+            methodState.chunk = 'completed'
+            methodState.embed = 'processing'
+          } else if (stage === 'indexing') {
+            methodState.embed = 'completed'
+            methodState.index = 'processing'
+          } else if (stage === 'completed') {
+            methodState.chunk = 'completed'
+            methodState.embed = 'completed'
+            methodState.index = 'completed'
+          }
         }
       }
-    }
-  })
-}, { immediate: true, deep: true })
+    })
+  },
+  { immediate: true, deep: true }
+)
 
 const progressLabels = computed<Record<string, string>>(() => ({
   queued: isZh.value ? '排队中' : 'Queued',
@@ -123,7 +138,7 @@ const getMethodDisplayName = (method: string): string => {
 const getStageIcon = (state: 'pending' | 'processing' | 'completed') => {
   if (state === 'completed') return Check
   if (state === 'processing') return Loading
-  return Minus  // Use Minus icon for pending state
+  return Minus // Use Minus icon for pending state
 }
 
 // Get stage color
@@ -135,10 +150,10 @@ const getStageColor = (state: 'pending' | 'processing' | 'completed'): string =>
 
 const getProgressColor = (progress: string | null | undefined): string => {
   if (!progress) return '#3b82f6'
-  
+
   // Parse progress to get stage
   const { stage } = parseProgress(progress)
-  
+
   switch (stage) {
     case 'queued':
       return '#6b7280'
@@ -181,14 +196,15 @@ const getProgressColor = (progress: string | null | undefined): string => {
           <span
             v-if="doc.processing_progress"
             class="text-xs text-stone-600 px-2 py-0.5 rounded"
-            :style="{ backgroundColor: getProgressColor(doc.processing_progress) + '15', color: getProgressColor(doc.processing_progress) }"
+            :style="{
+              backgroundColor: getProgressColor(doc.processing_progress) + '15',
+              color: getProgressColor(doc.processing_progress),
+            }"
           >
             {{ getProgressLabel(doc.processing_progress) }}
           </span>
         </div>
-        <span class="text-xs text-stone-500">
-          {{ doc.processing_progress_percent || 0 }}%
-        </span>
+        <span class="text-xs text-stone-500"> {{ doc.processing_progress_percent || 0 }}% </span>
       </div>
 
       <!-- Overall progress bar -->
@@ -201,12 +217,17 @@ const getProgressColor = (progress: string | null | undefined): string => {
       />
 
       <!-- Method-specific progress grid for chunk tests -->
-      <div v-if="isChunkTest(doc) && methodStates[doc.id]" class="method-progress-grid mt-3">
+      <div
+        v-if="isChunkTest(doc) && methodStates[doc.id]"
+        class="method-progress-grid mt-3"
+      >
         <div class="text-xs font-medium text-stone-700 mb-2">
           {{ isZh ? '方法处理进度' : 'Method Progress' }}
         </div>
         <ElTable
-          :data="Object.entries(methodStates[doc.id]).map(([method, states]) => ({ method, ...states }))"
+          :data="
+            Object.entries(methodStates[doc.id]).map(([method, states]) => ({ method, ...states }))
+          "
           size="small"
           :show-header="true"
           class="method-table"

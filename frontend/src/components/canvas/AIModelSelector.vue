@@ -89,9 +89,7 @@ function getTooltipContent(modelKey: string): string {
       return isZh.value ? `${displayName} 生成失败` : `${displayName} generation failed`
     default:
       if (isConceptMap.value && isSelectedModel(modelKey)) {
-        return isZh.value
-          ? `点击取消选择 ${displayName}`
-          : `Click to deselect ${displayName}`
+        return isZh.value ? `点击取消选择 ${displayName}` : `Click to deselect ${displayName}`
       }
       return isZh.value ? `${displayName} 模型` : `${displayName} model`
   }
@@ -141,7 +139,7 @@ function getButtonClass(modelKey: string): string {
 function getButtonStyle(modelKey: string) {
   const colors = modelColors[modelKey]
   if (!colors) return {}
-  
+
   const state = getModelState(modelKey)
   if (state === 'idle') {
     return {
@@ -178,9 +176,7 @@ watch(
 
 <template>
   <div class="ai-model-selector absolute left-1/2 bottom-4 transform -translate-x-1/2 z-20">
-    <div
-      class="glass-container rounded-xl shadow-lg px-3 py-2 flex items-center gap-3"
-    >
+    <div class="glass-container rounded-xl shadow-lg px-3 py-2 flex items-center gap-3">
       <!-- Label with icon -->
       <div class="flex flex-col gap-0.5">
         <div class="flex items-center gap-1.5 text-sm font-medium text-gray-600 dark:text-gray-300">
@@ -191,7 +187,9 @@ watch(
           v-if="isConceptMap && !llmResultsStore.selectedModel"
           class="text-xs text-gray-500 dark:text-gray-400"
         >
-          {{ isZh ? '选择模型以启用关系建议' : 'Select a model to enable relationship suggestions' }}
+          {{
+            isZh ? '选择模型以启用关系建议' : 'Select a model to enable relationship suggestions'
+          }}
         </span>
       </div>
 
@@ -328,7 +326,8 @@ watch(
 }
 
 @keyframes pulse {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
   }
   50% {
@@ -353,7 +352,9 @@ watch(
   backdrop-filter: blur(8px);
   color: #1d4ed8;
   animation: none;
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3), 0 4px 12px rgba(59, 130, 246, 0.2);
+  box-shadow:
+    0 0 0 2px rgba(59, 130, 246, 0.3),
+    0 4px 12px rgba(59, 130, 246, 0.2);
 }
 
 /* Blinking effect when selected for concept map relationship generation */
@@ -362,12 +363,17 @@ watch(
 }
 
 @keyframes blink-selected {
-  0%, 100% {
-    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3), 0 4px 12px rgba(59, 130, 246, 0.2);
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 2px rgba(59, 130, 246, 0.3),
+      0 4px 12px rgba(59, 130, 246, 0.2);
     opacity: 1;
   }
   50% {
-    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.5), 0 0 20px rgba(59, 130, 246, 0.4);
+    box-shadow:
+      0 0 0 4px rgba(59, 130, 246, 0.5),
+      0 0 20px rgba(59, 130, 246, 0.4);
     opacity: 0.95;
   }
 }
@@ -449,12 +455,15 @@ watch(
 }
 
 @keyframes blink-selected-dark {
-  0%, 100% {
+  0%,
+  100% {
     box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.3);
     opacity: 1;
   }
   50% {
-    box-shadow: 0 0 0 4px rgba(96, 165, 250, 0.5), 0 0 20px rgba(96, 165, 250, 0.35);
+    box-shadow:
+      0 0 0 4px rgba(96, 165, 250, 0.5),
+      0 0 20px rgba(96, 165, 250, 0.35);
     opacity: 0.95;
   }
 }

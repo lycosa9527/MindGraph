@@ -156,7 +156,7 @@ const nodeStyle = computed(() => {
         ? `${props.data.style?.borderRadius || 8}px`
         : `${props.data.style?.borderRadius || 50}%`,
   }
-  
+
   // Add dynamic width when editing (only for multi-flow map)
   if (isMultiFlowMap.value && dynamicWidth.value !== null) {
     return {
@@ -166,7 +166,7 @@ const nodeStyle = computed(() => {
       transition: 'width 0.2s ease',
     }
   }
-  
+
   // Set default width for multi-flow map topic nodes (optimized for "事件")
   if (isMultiFlowMap.value && dynamicWidth.value === null) {
     return {
@@ -175,7 +175,7 @@ const nodeStyle = computed(() => {
       minWidth: '90px',
     }
   }
-  
+
   return baseStyle
 })
 
@@ -215,7 +215,7 @@ function handleWidthChange(width: number) {
   if (isMultiFlowMap.value) {
     // Add padding to account for node padding (px-6 = 24px on each side = 48px total)
     dynamicWidth.value = width + 48
-    
+
     // Emit width change event to trigger layout recalculation (both causes and effects reposition)
     // Use nextTick + setTimeout to ensure DOM has fully updated before measuring
     nextTick(() => {
@@ -237,7 +237,11 @@ function handleWidthChange(width: number) {
   <div
     ref="topicNodeRef"
     class="topic-node flex items-center justify-center px-6 py-4 border-solid cursor-default select-none"
-    :class="{ 'pill-shape': isPillShape, 'rounded-rectangle': isRoundedRectangle, 'multi-flow-map-node': isMultiFlowMap }"
+    :class="{
+      'pill-shape': isPillShape,
+      'rounded-rectangle': isRoundedRectangle,
+      'multi-flow-map-node': isMultiFlowMap,
+    }"
     :style="nodeStyle"
   >
     <InlineEditableText

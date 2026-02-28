@@ -103,23 +103,23 @@ const bridgePairs = computed<BridgePair[]>(() => {
 
   // Force dependency on node count to ensure recalculation when nodes are added/removed
   const nodeCount = bridgeMapNodeCount.value
-  
+
   // Also depend on the actual nodes array length to ensure reactivity
   const nodesLength = diagramStore.data?.nodes?.length || 0
 
   // Use store's nodes for immediate reactivity, Vue Flow's getNodes for dimensions
   // This ensures the computed updates immediately when nodes are added/removed
   const storeNodes = diagramStore.data?.nodes || []
-  
+
   // Force dependency on store nodes array to ensure reactivity
   // Create a string key from node IDs to force recalculation when nodes change
   const nodesKey = storeNodes.map((n) => n.id).join(',')
-  
+
   const vueFlowNodes = getNodes.value
-  
+
   // Create a map of Vue Flow nodes by ID for dimension lookup
   const vueFlowNodesMap = new Map(vueFlowNodes.map((node) => [node.id, node]))
-  
+
   // Use store nodes as the source of truth, but get dimensions and positions from Vue Flow
   // Vue Flow positions are more accurate after nodes are moved or layout is recalculated
   const nodes = storeNodes.map((storeNode) => {
@@ -136,7 +136,7 @@ const bridgePairs = computed<BridgePair[]>(() => {
       dimensions: vueFlowNode?.dimensions,
     }
   })
-  
+
   // Debug: log when nodes change
   if (isBridgeMap.value && nodesKey) {
     console.debug(`[BridgeOverlay] [${getTimestamp()}] bridgePairs recalculating:`, {
@@ -149,10 +149,8 @@ const bridgePairs = computed<BridgePair[]>(() => {
 
   // Helper to get node dimensions
   const getNodeDimensions = (node: (typeof nodes)[0] & NodeWithDimensions) => {
-    const width =
-      node.dimensions?.width ?? node.measured?.width ?? DEFAULT_NODE_WIDTH
-    const height =
-      node.dimensions?.height ?? node.measured?.height ?? DEFAULT_NODE_HEIGHT
+    const width = node.dimensions?.width ?? node.measured?.width ?? DEFAULT_NODE_WIDTH
+    const height = node.dimensions?.height ?? node.measured?.height ?? DEFAULT_NODE_HEIGHT
     return { width, height }
   }
 
@@ -165,8 +163,16 @@ const bridgePairs = computed<BridgePair[]>(() => {
     const position = node.data?.position // 'left' or 'right'
 
     // Debug: log nodes that don't have pairIndex/position
-    if (isBridgeMap.value && rawPairIndex === undefined && node.data?.diagramType === 'bridge_map') {
-      console.debug(`[BridgeOverlay] [${getTimestamp()}] Node missing pairIndex:`, node.id, node.data)
+    if (
+      isBridgeMap.value &&
+      rawPairIndex === undefined &&
+      node.data?.diagramType === 'bridge_map'
+    ) {
+      console.debug(
+        `[BridgeOverlay] [${getTimestamp()}] Node missing pairIndex:`,
+        node.id,
+        node.data
+      )
     }
 
     if (
@@ -183,8 +189,10 @@ const bridgePairs = computed<BridgePair[]>(() => {
 
     const dims = getNodeDimensions(node)
     // Get text from node.text (DiagramNode) or node.data.label (Vue Flow node)
-    const nodeText = (node as { text?: string; data?: { label?: string } }).text ||
-                     (node as { text?: string; data?: { label?: string } }).data?.label || ''
+    const nodeText =
+      (node as { text?: string; data?: { label?: string } }).text ||
+      (node as { text?: string; data?: { label?: string } }).data?.label ||
+      ''
     const nodeInfo = {
       id: node.id,
       x: pos.x,
@@ -246,14 +254,14 @@ const bridgePairs = computed<BridgePair[]>(() => {
  */
 const dimensionLabel = computed(() => {
   if (!isBridgeMap.value) return ''
-  
+
   // First check if there's a dimension label node
   const nodes = getNodes.value
   const labelNode = nodes.find((node) => node.id === 'dimension-label')
   if (labelNode?.data?.label) {
     return labelNode.data.label
   }
-  
+
   // Fallback: Try to get dimension from diagram data (spec metadata is preserved there)
   const diagramData = diagramStore.data
   if (diagramData && typeof diagramData === 'object') {
@@ -264,7 +272,7 @@ const dimensionLabel = computed(() => {
         return dim
       }
     }
-    
+
     // Fallback to relating_factor if dimension is not available
     if ('relating_factor' in diagramData) {
       const rf = diagramData.relating_factor
@@ -273,7 +281,7 @@ const dimensionLabel = computed(() => {
       }
     }
   }
-  
+
   return ''
 })
 
@@ -290,12 +298,18 @@ const horizontalBridgeLine = computed(() => {
   const lastPairWidth = Math.max(lastPair.leftNode.width, lastPair.rightNode.width)
   const x2 = lastPair.leftNode.x + lastPairWidth
 
-  const centerY = bridgePairs.value.reduce((sum, pair) => {
-    return sum + (pair.leftNode.y + pair.leftNode.height / 2) + (pair.rightNode.y + pair.rightNode.height / 2)
-  }, 0) / (bridgePairs.value.length * 2)
+  const centerY =
+    bridgePairs.value.reduce((sum, pair) => {
+      return (
+        sum +
+        (pair.leftNode.y + pair.leftNode.height / 2) +
+        (pair.rightNode.y + pair.rightNode.height / 2)
+      )
+    }, 0) /
+    (bridgePairs.value.length * 2)
 
   const result = { x1, y1: centerY, x2, y2: centerY }
-  
+
   if (isBridgeMap.value) {
     console.debug(`[BridgeOverlay] [${getTimestamp()}] horizontalBridgeLine calculated:`, {
       pairsCount: bridgePairs.value.length,
@@ -370,7 +384,7 @@ const hasChineseContent = computed(() => {
  */
 const alternativeDimensions = computed(() => {
   if (!isBridgeMap.value) return []
-  
+
   const diagramData = diagramStore.data
   if (diagramData && typeof diagramData === 'object' && 'alternative_dimensions' in diagramData) {
     const altDims = diagramData.alternative_dimensions
@@ -378,7 +392,7 @@ const alternativeDimensions = computed(() => {
       return altDims.filter((dim) => typeof dim === 'string' && dim.trim())
     }
   }
-  
+
   return []
 })
 
@@ -416,11 +430,11 @@ const alternativeDimensionsPosition = computed(() => {
 const alternativeDimensionChips = computed(() => {
   const dims = alternativeDimensions.value
   if (dims.length === 0) return []
-  
+
   if (!alternativeDimensionsPosition.value) return []
 
   const { centerX, chipsY } = alternativeDimensionsPosition.value
-  
+
   // Estimate chip widths (rough approximation)
   const chipWidths = dims.map((dim) => {
     // Approximate: 8px padding * 2 + text width (rough estimate: 8px per character)
@@ -428,13 +442,14 @@ const alternativeDimensionChips = computed(() => {
   })
 
   // Calculate total width and starting X
-  const totalWidth = chipWidths.reduce((sum, w) => sum + w, 0) + ALTERNATIVE_CHIP_SPACING * (dims.length - 1)
+  const totalWidth =
+    chipWidths.reduce((sum, w) => sum + w, 0) + ALTERNATIVE_CHIP_SPACING * (dims.length - 1)
   let currentX = centerX - totalWidth / 2
 
   return dims.map((dim, index) => {
     const chipX = currentX + chipWidths[index] / 2
     currentX += chipWidths[index] + ALTERNATIVE_CHIP_SPACING
-    
+
     return {
       text: dim,
       x: chipX,
@@ -451,16 +466,14 @@ const alternativeDimensionChips = computed(() => {
 const dimensionLabelPosition = computed(() => {
   // First try to get position from dimension label node
   const nodes = getNodes.value
-  
+
   // Helper to get node dimensions (redefined here for use in this computed)
   const getNodeDimensions = (node: (typeof nodes)[0] & NodeWithDimensions) => {
-    const width =
-      node.dimensions?.width ?? node.measured?.width ?? DEFAULT_NODE_WIDTH
-    const height =
-      node.dimensions?.height ?? node.measured?.height ?? DEFAULT_NODE_HEIGHT
+    const width = node.dimensions?.width ?? node.measured?.width ?? DEFAULT_NODE_WIDTH
+    const height = node.dimensions?.height ?? node.measured?.height ?? DEFAULT_NODE_HEIGHT
     return { width, height }
   }
-  
+
   const labelNode = nodes.find((node) => node.id === 'dimension-label')
   if (labelNode) {
     const dims = getNodeDimensions(labelNode as (typeof nodes)[0] & NodeWithDimensions)
@@ -546,7 +559,6 @@ const pairDeleteButtons = computed(() => {
   })
 })
 
-
 /**
  * Handle pair hover leave with delay to prevent flickering
  */
@@ -609,7 +621,9 @@ function attachNodeListeners() {
         !node.data?.isDimensionLabel
     )
 
-    console.debug(`[BridgeOverlay] Attaching listeners to ${bridgeMapNodes.length} bridge map nodes`)
+    console.debug(
+      `[BridgeOverlay] Attaching listeners to ${bridgeMapNodes.length} bridge map nodes`
+    )
 
     bridgeMapNodes.forEach((node) => {
       // Find the DOM element for this node
@@ -677,7 +691,7 @@ onUnmounted(() => {
     }
   })
   nodeEventHandlers.clear()
-  
+
   // Clear any pending timeout
   if (hoverLeaveTimeout) {
     clearTimeout(hoverLeaveTimeout)
@@ -804,7 +818,11 @@ onUnmounted(() => {
           dominant-baseline="middle"
           class="alternative-placeholder"
         >
-          {{ hasChineseContent ? '[替代关系将在此显示]' : '[Alternative relationships will be displayed here]' }}
+          {{
+            hasChineseContent
+              ? '[替代关系将在此显示]'
+              : '[Alternative relationships will be displayed here]'
+          }}
         </text>
       </g>
 
@@ -884,7 +902,9 @@ onUnmounted(() => {
 }
 
 .delete-button-bg {
-  transition: opacity 0.2s ease, transform 0.15s ease;
+  transition:
+    opacity 0.2s ease,
+    transform 0.15s ease;
   cursor: pointer;
 }
 

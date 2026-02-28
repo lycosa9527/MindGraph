@@ -1,6 +1,7 @@
-import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
+import { computed, ref } from 'vue'
 import type { Ref } from 'vue'
+
+import { defineStore } from 'pinia'
 
 export interface Watch {
   id: string
@@ -25,16 +26,14 @@ export const useSmartResponseStore = defineStore('smartResponse', () => {
   const isLoading = ref(false)
   const error = ref<string | null>(null)
 
-  const unassignedWatches = computed(() => 
-    watches.value.filter(w => w.status === 'unassigned')
+  const unassignedWatches = computed(() => watches.value.filter((w) => w.status === 'unassigned'))
+
+  const assignedWatches = computed(() =>
+    watches.value.filter((w) => w.status === 'assigned' || w.status === 'connected')
   )
 
-  const assignedWatches = computed(() => 
-    watches.value.filter(w => w.status === 'assigned' || w.status === 'connected')
-  )
-
-  const connectedWatches = computed(() => 
-    watches.value.filter(w => w.status === 'connected' || w.status === 'learning_mode')
+  const connectedWatches = computed(() =>
+    watches.value.filter((w) => w.status === 'connected' || w.status === 'learning_mode')
   )
 
   async function fetchWatches() {

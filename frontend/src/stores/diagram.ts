@@ -13,6 +13,8 @@ import { computed, ref } from 'vue'
 
 import { defineStore } from 'pinia'
 
+import { augmentConnectionWithOptimalHandles } from '@/composables/diagrams/conceptMapHandles'
+import { MULTI_FLOW_MAP_TOPIC_WIDTH } from '@/composables/diagrams/layoutConfig'
 import { eventBus } from '@/composables/useEventBus'
 import type {
   Connection,
@@ -31,9 +33,7 @@ import {
   diagramNodeToVueFlowNode,
   vueFlowNodeToDiagramNode,
 } from '@/types/vueflow'
-import { MULTI_FLOW_MAP_TOPIC_WIDTH } from '@/composables/diagrams/layoutConfig'
 
-import { augmentConnectionWithOptimalHandles } from '@/composables/diagrams/conceptMapHandles'
 import {
   getDefaultTemplate,
   loadSpecForDiagramType,
@@ -186,14 +186,14 @@ export const useDiagramStore = defineStore('diagram', () => {
   // Title management state
   const title = ref<string>('')
   const isUserEditedTitle = ref<boolean>(false)
-  
+
   // Store topic node width for multi-flow map layout recalculation
   const topicNodeWidth = ref<number | null>(null)
-  
+
   // Store node widths for multi-flow map visual balance
   // Maps nodeId -> width in pixels
   const nodeWidths = ref<Record<string, number>>({})
-  
+
   // Force recalculation trigger for multi-flow map (increment to trigger reactive update)
   const multiFlowMapRecalcTrigger = ref(0)
 
@@ -241,7 +241,7 @@ export const useDiagramStore = defineStore('diagram', () => {
     if (diagramType === 'multi_flow_map') {
       // Access trigger to make this computed reactive to width changes
       void multiFlowMapRecalcTrigger.value
-      
+
       const recalculatedNodes = recalculateMultiFlowMapLayout(
         data.value.nodes,
         topicNodeWidth.value,
@@ -249,7 +249,7 @@ export const useDiagramStore = defineStore('diagram', () => {
       )
       const causeNodes = recalculatedNodes.filter((n) => n.id.startsWith('cause-'))
       const effectNodes = recalculatedNodes.filter((n) => n.id.startsWith('effect-'))
-      
+
       return recalculatedNodes.map((node) => {
         const vueFlowNode = diagramNodeToVueFlowNode(node, diagramType)
         vueFlowNode.selected = selectedNodes.value.includes(node.id)
@@ -322,9 +322,7 @@ export const useDiagramStore = defineStore('diagram', () => {
 
     return data.value.connections.map((conn) => {
       const effectiveConn =
-        diagramType === 'concept_map'
-          ? augmentConnectionWithOptimalHandles(conn, nodes)
-          : conn
+        diagramType === 'concept_map' ? augmentConnectionWithOptimalHandles(conn, nodes) : conn
 
       const edgeType = (effectiveConn.edgeType as MindGraphEdgeType) || defaultEdgeType
       const edge = connectionToVueFlowEdge(effectiveConn, edgeType)
@@ -486,7 +484,7 @@ export const useDiagramStore = defineStore('diagram', () => {
       const category = (node as unknown as { category?: string }).category
       const isCause = category === 'causes' || node.id?.startsWith('cause-')
       const isEffect = category === 'effects' || node.id?.startsWith('effect-')
-      
+
       // Determine category from selected node if not specified
       let targetCategory: 'causes' | 'effects' | null = null
       if (!category && selectedNodes.value.length > 0) {
@@ -497,7 +495,7 @@ export const useDiagramStore = defineStore('diagram', () => {
           targetCategory = 'effects'
         }
       }
-      
+
       // Ensure node has text
       if (!node.text) {
         if (isCause || targetCategory === 'causes') {
@@ -508,16 +506,16 @@ export const useDiagramStore = defineStore('diagram', () => {
           node.text = 'New Cause' // Default
         }
       }
-      
+
       // Add the node temporarily to get proper ID from recalculation
       data.value.nodes.push(node)
-      
+
       // Recalculate layout to update positions and rebuild connections
       const recalculatedNodes = recalculateMultiFlowMapLayout(data.value.nodes)
       const recalculatedConnections: Connection[] = []
       const causeNodes = recalculatedNodes.filter((n) => n.id.startsWith('cause-'))
       const effectNodes = recalculatedNodes.filter((n) => n.id.startsWith('effect-'))
-      
+
       causeNodes.forEach((causeNode, causeIndex) => {
         recalculatedConnections.push({
           id: `edge-cause-${causeIndex}`,
@@ -527,7 +525,7 @@ export const useDiagramStore = defineStore('diagram', () => {
           targetHandle: `left-${causeIndex}`,
         })
       })
-      
+
       effectNodes.forEach((effectNode, effectIndex) => {
         recalculatedConnections.push({
           id: `edge-effect-${effectIndex}`,
@@ -537,7 +535,7 @@ export const useDiagramStore = defineStore('diagram', () => {
           targetHandle: 'left',
         })
       })
-      
+
       // Update nodes and connections
       data.value.nodes = recalculatedNodes
       data.value.connections = recalculatedConnections
@@ -546,7 +544,7 @@ export const useDiagramStore = defineStore('diagram', () => {
       const conceptNode: DiagramNode = {
         ...node,
         id: node.id || `concept-${Date.now()}-${data.value.nodes.length}`,
-        type: (node.type === 'topic' || node.type === 'center') ? node.type : 'branch',
+        type: node.type === 'topic' || node.type === 'center' ? node.type : 'branch',
         text: node.text || '新概念',
       }
       data.value.nodes.push(conceptNode)
@@ -636,23 +634,27 @@ export const useDiagramStore = defineStore('diagram', () => {
     if (type.value === 'multi_flow_map') {
       // Clear the deleted node's width from nodeWidths
       setNodeWidth(nodeId, null)
-      
+
       // Remove the node first
       data.value.nodes.splice(index, 1)
-      
+
       // Rebuild nodeWidths mapping to match new sequential IDs after re-indexing
       // Map old nodes to their widths before recalculation
-      const oldCauseNodes = data.value.nodes.filter((n) => n.id.startsWith('cause-')).sort((a, b) => {
-        const aIndex = parseInt(a.id.replace('cause-', ''), 10)
-        const bIndex = parseInt(b.id.replace('cause-', ''), 10)
-        return aIndex - bIndex
-      })
-      const oldEffectNodes = data.value.nodes.filter((n) => n.id.startsWith('effect-')).sort((a, b) => {
-        const aIndex = parseInt(a.id.replace('effect-', ''), 10)
-        const bIndex = parseInt(b.id.replace('effect-', ''), 10)
-        return aIndex - bIndex
-      })
-      
+      const oldCauseNodes = data.value.nodes
+        .filter((n) => n.id.startsWith('cause-'))
+        .sort((a, b) => {
+          const aIndex = parseInt(a.id.replace('cause-', ''), 10)
+          const bIndex = parseInt(b.id.replace('cause-', ''), 10)
+          return aIndex - bIndex
+        })
+      const oldEffectNodes = data.value.nodes
+        .filter((n) => n.id.startsWith('effect-'))
+        .sort((a, b) => {
+          const aIndex = parseInt(a.id.replace('effect-', ''), 10)
+          const bIndex = parseInt(b.id.replace('effect-', ''), 10)
+          return aIndex - bIndex
+        })
+
       // Build new nodeWidths mapping with sequential IDs
       const newNodeWidths: Record<string, number> = {}
       oldCauseNodes.forEach((oldNode, newIndex) => {
@@ -667,10 +669,10 @@ export const useDiagramStore = defineStore('diagram', () => {
           newNodeWidths[`effect-${newIndex}`] = oldWidth
         }
       })
-      
+
       // Update nodeWidths with re-indexed mapping
       nodeWidths.value = newNodeWidths
-      
+
       // Recalculate layout to re-index IDs and rebuild connections
       // Pass topicNodeWidth and updated nodeWidths for proper layout
       const recalculatedNodes = recalculateMultiFlowMapLayout(
@@ -681,7 +683,7 @@ export const useDiagramStore = defineStore('diagram', () => {
       const recalculatedConnections: Connection[] = []
       const causeNodes = recalculatedNodes.filter((n) => n.id.startsWith('cause-'))
       const effectNodes = recalculatedNodes.filter((n) => n.id.startsWith('effect-'))
-      
+
       causeNodes.forEach((causeNode, causeIndex) => {
         recalculatedConnections.push({
           id: `edge-cause-${causeIndex}`,
@@ -691,7 +693,7 @@ export const useDiagramStore = defineStore('diagram', () => {
           targetHandle: `left-${causeIndex}`,
         })
       })
-      
+
       effectNodes.forEach((effectNode, effectIndex) => {
         recalculatedConnections.push({
           id: `edge-effect-${effectIndex}`,
@@ -701,11 +703,11 @@ export const useDiagramStore = defineStore('diagram', () => {
           targetHandle: 'left',
         })
       })
-      
+
       // Update nodes and connections
       data.value.nodes = recalculatedNodes
       data.value.connections = recalculatedConnections
-      
+
       // Trigger layout recalculation
       multiFlowMapRecalcTrigger.value++
     } else if (type.value === 'bubble_map' && nodeId.startsWith('bubble-')) {
@@ -911,8 +913,7 @@ export const useDiagramStore = defineStore('diagram', () => {
   }): void {
     if (!data.value?.nodes) return
 
-    const isTopic = (node: DiagramNode) =>
-      node.type === 'topic' || node.type === 'center'
+    const isTopic = (node: DiagramNode) => node.type === 'topic' || node.type === 'center'
 
     data.value.nodes.forEach((node) => {
       if (node.type === 'boundary') return
@@ -1164,7 +1165,7 @@ export const useDiagramStore = defineStore('diagram', () => {
     // Merge updated nodes
     if (updatedNodes && updatedNodes.length > 0) {
       const nodeMap = new Map(data.value.nodes.map((n) => [n.id, n]))
-      
+
       for (const updatedNode of updatedNodes) {
         const nodeId = updatedNode.id as string
         if (!nodeId) continue

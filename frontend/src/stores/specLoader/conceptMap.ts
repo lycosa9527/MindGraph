@@ -27,8 +27,7 @@ interface ConceptMapRelationship {
 
 function isConceptMapSpec(spec: Record<string, unknown>): boolean {
   return (
-    (typeof spec.topic === 'string' || spec.topic === undefined) &&
-    Array.isArray(spec.concepts)
+    (typeof spec.topic === 'string' || spec.topic === undefined) && Array.isArray(spec.concepts)
   )
 }
 

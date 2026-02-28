@@ -291,8 +291,8 @@ class LibraryDanmakuMixin:
             raise ValueError(f"Document {document_id} not found")
 
         # Sanitize user content to prevent XSS
-        sanitized_content = self._sanitize_content(content)
-        sanitized_selected_text = self._sanitize_content(selected_text) if selected_text else None
+        sanitized_content = self.sanitize_content(content)
+        sanitized_selected_text = self.sanitize_content(selected_text) if selected_text else None
 
         danmaku = LibraryDanmaku(
             document_id=document_id,
@@ -443,7 +443,7 @@ class LibraryDanmakuMixin:
             raise ValueError(f"Danmaku {danmaku_id} not found")
 
         # Sanitize user content to prevent XSS
-        sanitized_content = self._sanitize_content(content)
+        sanitized_content = self.sanitize_content(content)
 
         reply = LibraryDanmakuReply(
             danmaku_id=danmaku_id,
@@ -580,7 +580,7 @@ class LibraryDanmakuMixin:
         )
         return True
 
-    def _sanitize_content(self, content: Optional[str]) -> Optional[str]:
+    def sanitize_content(self, content: Optional[str]) -> Optional[str]:
         """
         Sanitize user content to prevent XSS attacks.
 

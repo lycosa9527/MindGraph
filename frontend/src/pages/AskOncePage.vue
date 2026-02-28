@@ -7,6 +7,7 @@
  * English name: AskOnce
  */
 import { computed, onUnmounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
 
 import { ElButton, ElDialog, ElIcon, ElInput, ElOption, ElSelect } from 'element-plus'
 
@@ -17,10 +18,9 @@ import { BookOpen, Send, Settings } from 'lucide-vue-next'
 import { AskOncePanel } from '@/components/askonce'
 import { LoginModal } from '@/components/auth'
 import { useLanguage } from '@/composables/useLanguage'
-import { useAuthStore } from '@/stores/auth'
 import { ASKONCE_PROMPT_TEMPLATES } from '@/config/askOncePrompts'
 import { type ModelId, useAskOnceStore } from '@/stores/askonce'
-import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 
 // ============================================================================
 // i18n
@@ -60,7 +60,9 @@ const MODEL_CONFIG: Record<ModelId, { modelName: string }> = {
 
 const charCount = computed(() => promptInput.value.length)
 
-const canSend = computed(() => promptInput.value.trim().length > 0 && !store.isStreaming && authStore.isAuthenticated)
+const canSend = computed(
+  () => promptInput.value.trim().length > 0 && !store.isStreaming && authStore.isAuthenticated
+)
 
 const placeholderText = computed(() =>
   isZh.value
@@ -261,14 +263,14 @@ function loadTemplate(templateId: string) {
 
 function handleKeydown(e: Event | KeyboardEvent) {
   if (!('key' in e)) return
-  
+
   // Check authentication before allowing input
   if (!authStore.isAuthenticated) {
     e.preventDefault()
     openLoginModal()
     return
   }
-  
+
   if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
     e.preventDefault()
     if (canSend.value) {
@@ -464,5 +466,4 @@ onUnmounted(() => {
   font-weight: 500;
   border-radius: 9999px;
 }
-
 </style>

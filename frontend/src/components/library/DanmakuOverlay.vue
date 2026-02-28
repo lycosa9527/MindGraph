@@ -3,7 +3,8 @@
  * DanmakuOverlay - Overlay component for displaying danmaku and highlights
  * Uses vue-danmaku for animations and renders highlights on canvas
  */
-import { ref, watch, onMounted, onUnmounted } from 'vue'
+import { onMounted, onUnmounted, ref, watch } from 'vue'
+
 import { useLibraryStore } from '@/stores/library'
 
 interface Props {
@@ -105,12 +106,7 @@ function handleCanvasClick(event: MouseEvent) {
   const clickedDanmaku = pageDanmaku.find((d) => {
     if (!d.text_bbox) return false
     const bbox = d.text_bbox
-    return (
-      x >= bbox.x &&
-      x <= bbox.x + bbox.width &&
-      y >= bbox.y &&
-      y <= bbox.y + bbox.height
-    )
+    return x >= bbox.x && x <= bbox.x + bbox.width && y >= bbox.y && y <= bbox.y + bbox.height
   })
 
   if (clickedDanmaku && clickedDanmaku.selected_text) {

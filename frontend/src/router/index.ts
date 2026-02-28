@@ -1,11 +1,7 @@
 /**
  * Vue Router Configuration
  */
-import {
-  type RouteRecordRaw,
-  createRouter,
-  createWebHistory,
-} from 'vue-router'
+import { type RouteRecordRaw, createRouter, createWebHistory } from 'vue-router'
 
 import { useAuthStore } from '@/stores/auth'
 import { useFeatureFlagsStore } from '@/stores/featureFlags'
@@ -213,8 +209,7 @@ router.beforeEach(async (to, _from, next) => {
   // checkAuth() is smart: it uses cached user if available, only makes API call if needed
   if (to.meta.requiresAuth) {
     // Check if user was previously authenticated (before checkAuth clears it)
-    const hadUserBeforeCheck =
-      !!authStore.user || !!sessionStorage.getItem('auth_user')
+    const hadUserBeforeCheck = !!authStore.user || !!sessionStorage.getItem('auth_user')
 
     const isAuthenticated = await authStore.checkAuth()
     if (!isAuthenticated) {
@@ -263,37 +258,22 @@ router.beforeEach(async (to, _from, next) => {
   if (to.name === 'AskOnce' && !featureFlagsStore.getFeatureAskOnce()) {
     return next({ name: 'MindMate' })
   }
-  if (
-    to.name === 'DebateVerse' &&
-    !featureFlagsStore.getFeatureDebateverse()
-  ) {
+  if (to.name === 'DebateVerse' && !featureFlagsStore.getFeatureDebateverse()) {
     return next({ name: 'MindMate' })
   }
-  if (
-    to.name === 'SchoolZone' &&
-    !featureFlagsStore.getFeatureSchoolZone()
-  ) {
+  if (to.name === 'SchoolZone' && !featureFlagsStore.getFeatureSchoolZone()) {
     return next({ name: 'MindMate' })
   }
-  if (
-    to.name === 'KnowledgeSpace' &&
-    !featureFlagsStore.getFeatureKnowledgeSpace()
-  ) {
+  if (to.name === 'KnowledgeSpace' && !featureFlagsStore.getFeatureKnowledgeSpace()) {
     return next({ name: 'MindMate' })
   }
   if (to.name === 'Library' && !featureFlagsStore.getFeatureLibrary()) {
     return next({ name: 'MindMate' })
   }
-  if (
-    to.name === 'SmartResponse' &&
-    !featureFlagsStore.getFeatureSmartResponse()
-  ) {
+  if (to.name === 'SmartResponse' && !featureFlagsStore.getFeatureSmartResponse()) {
     return next({ name: 'MindMate' })
   }
-  if (
-    to.name === 'TeacherUsage' &&
-    !featureFlagsStore.getFeatureTeacherUsage()
-  ) {
+  if (to.name === 'TeacherUsage' && !featureFlagsStore.getFeatureTeacherUsage()) {
     return next({ name: 'MindMate' })
   }
 

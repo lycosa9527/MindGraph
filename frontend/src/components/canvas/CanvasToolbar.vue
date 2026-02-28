@@ -5,8 +5,9 @@
  */
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 
-import { ElButton, ElDropdown, ElDropdownItem, ElDropdownMenu, ElTooltip } from 'element-plus'
 import { useVueFlow } from '@vue-flow/core'
+
+import { ElButton, ElDropdown, ElDropdownItem, ElDropdownMenu, ElTooltip } from 'element-plus'
 
 import {
   ArrowDownUp,
@@ -30,18 +31,18 @@ import {
 import { eventBus, useNotifications } from '@/composables'
 import { useAutoComplete, useLanguage } from '@/composables'
 import {
+  BRANCH_NODE_HEIGHT,
+  DEFAULT_CENTER_Y,
+  DEFAULT_NODE_WIDTH,
+  DEFAULT_PADDING,
+} from '@/composables/diagrams/layoutConfig'
+import {
   PRESET_BUSINESS,
   PRESET_CREATIVE,
   PRESET_SIMPLE,
   PRESET_VIBRANT,
   type StylePresetColors,
 } from '@/config/colorPalette'
-import {
-  BRANCH_NODE_HEIGHT,
-  DEFAULT_CENTER_Y,
-  DEFAULT_NODE_WIDTH,
-  DEFAULT_PADDING,
-} from '@/composables/diagrams/layoutConfig'
 import { useDiagramStore, useUIStore } from '@/stores'
 import type { DiagramNode } from '@/types'
 
@@ -143,11 +144,13 @@ const borderWidth = ref(1)
 const borderStyle = ref('solid')
 
 // Style presets: WCAG AA contrast-compliant palettes (bg + text + border)
-const stylePresets: Array<{
-  name: string
-  bgClass: string
-  borderClass: string
-} & StylePresetColors> = [
+const stylePresets: Array<
+  {
+    name: string
+    bgClass: string
+    borderClass: string
+  } & StylePresetColors
+> = [
   {
     name: '简约风格',
     bgClass: 'bg-blue-50',
@@ -568,11 +571,11 @@ function repositionBridgeMapPairs() {
 
     const pairIndex = node.data.pairIndex as number
     const position = node.data.position as 'left' | 'right'
-    
+
     if (!pairs.has(pairIndex)) {
       pairs.set(pairIndex, { left: null!, right: null! })
     }
-    
+
     const pair = pairs.get(pairIndex)!
     if (position === 'left') {
       pair.left = node
@@ -595,19 +598,22 @@ function repositionBridgeMapPairs() {
   const centerY = DEFAULT_CENTER_Y
 
   console.debug(`[CanvasToolbar] [${getTimestamp()}] Repositioning ${sortedPairs.length} pairs`)
-  
+
   let currentX = startX
   for (const [, pair] of sortedPairs) {
     const leftNodeY = centerY - verticalGap - nodeHeight
     const rightNodeY = centerY + verticalGap
 
-    console.debug(`[CanvasToolbar] [${getTimestamp()}] Updating pair ${pair.left.data?.pairIndex}:`, {
-      leftNodeId: pair.left.id,
-      rightNodeId: pair.right.id,
-      newX: currentX,
-      leftNodeY,
-      rightNodeY,
-    })
+    console.debug(
+      `[CanvasToolbar] [${getTimestamp()}] Updating pair ${pair.left.data?.pairIndex}:`,
+      {
+        leftNodeId: pair.left.id,
+        rightNodeId: pair.right.id,
+        newX: currentX,
+        leftNodeY,
+        rightNodeY,
+      }
+    )
 
     updateVueFlowNode(pair.left.id, (node) => ({
       ...node,
@@ -623,7 +629,7 @@ function repositionBridgeMapPairs() {
 
     currentX += nodeWidth + gapBetweenPairs
   }
-  
+
   console.debug(`[CanvasToolbar] [${getTimestamp()}] repositionBridgeMapPairs() complete`)
 }
 
@@ -648,7 +654,7 @@ async function handleDeleteNode() {
     notify.warning('请先选择要删除的节点')
     return
   }
-  
+
   console.log(`[CanvasToolbar] [${getTimestamp()}] ========== DELETE REQUESTED ==========`)
   console.log(`[CanvasToolbar] [${getTimestamp()}] Delete nodes:`, {
     selectedNodes: [...diagramStore.selectedNodes],
@@ -742,7 +748,7 @@ async function handleDeleteNode() {
     // Collect pair indices from selected nodes
     const pairIndicesToDelete = new Set<number>()
     const selectedNodes = [...diagramStore.selectedNodes]
-    
+
     console.debug(`[CanvasToolbar] [${getTimestamp()}] Bridge map delete - Selected nodes:`, {
       selectedNodeIds: selectedNodes,
       selectedNodesCount: selectedNodes.length,
@@ -770,7 +776,7 @@ async function handleDeleteNode() {
         position: node?.data?.position,
         nodeText: node?.text,
       })
-      
+
       if (node && node.data?.pairIndex !== undefined) {
         const pairIndex = node.data.pairIndex
         if (typeof pairIndex === 'number') {
@@ -782,7 +788,7 @@ async function handleDeleteNode() {
         }
       }
     }
-    
+
     console.debug(`[CanvasToolbar] [${getTimestamp()}] Pairs to delete:`, {
       pairIndices: Array.from(pairIndicesToDelete),
       totalPairs: pairIndicesToDelete.size,
@@ -791,8 +797,10 @@ async function handleDeleteNode() {
     // Delete both left and right nodes for each pair index
     let deletedCount = 0
     const deleteStartTime = getTimestamp()
-    console.debug(`[CanvasToolbar] [${deleteStartTime}] Starting deletion of ${pairIndicesToDelete.size} pair(s)`)
-    
+    console.debug(
+      `[CanvasToolbar] [${deleteStartTime}] Starting deletion of ${pairIndicesToDelete.size} pair(s)`
+    )
+
     for (const pairIndex of pairIndicesToDelete) {
       const leftNodeId = `pair-${pairIndex}-left`
       const rightNodeId = `pair-${pairIndex}-right`
@@ -813,28 +821,28 @@ async function handleDeleteNode() {
       }
     }
 
-    console.debug(`[CanvasToolbar] [${getTimestamp()}] Deletion complete. Deleted ${deletedCount} nodes. Waiting for nextTick...`)
+    console.debug(
+      `[CanvasToolbar] [${getTimestamp()}] Deletion complete. Deleted ${deletedCount} nodes. Waiting for nextTick...`
+    )
 
     if (deletedCount > 0) {
       await nextTick()
       const repositionStartTime = getTimestamp()
-      console.debug(`[CanvasToolbar] [${repositionStartTime}] Starting repositioning after nextTick`)
+      console.debug(
+        `[CanvasToolbar] [${repositionStartTime}] Starting repositioning after nextTick`
+      )
       repositionBridgeMapPairs()
       console.debug(`[CanvasToolbar] [${getTimestamp()}] Repositioning complete`)
       diagramStore.clearSelection()
       const pairCount = pairIndicesToDelete.size
-      diagramStore.pushHistory(
-        isZh.value ? '删除类比对' : 'Delete Analogy Pair'
-      )
+      diagramStore.pushHistory(isZh.value ? '删除类比对' : 'Delete Analogy Pair')
       notify.success(
         isZh.value
           ? `已删除 ${pairCount} 个类比对`
           : `Deleted ${pairCount} analogy pair${pairCount > 1 ? 's' : ''}`
       )
     } else {
-      notify.warning(
-        isZh.value ? '无法删除维度标签' : 'Cannot delete dimension label'
-      )
+      notify.warning(isZh.value ? '无法删除维度标签' : 'Cannot delete dimension label')
     }
     return
   }

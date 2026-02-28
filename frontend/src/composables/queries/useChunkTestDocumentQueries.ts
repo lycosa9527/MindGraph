@@ -87,7 +87,10 @@ async function deleteChunkTestDocumentAPI(documentId: number): Promise<void> {
   }
 }
 
-async function startProcessingChunkTestDocumentsAPI(): Promise<{ message: string; processed_count: number }> {
+async function startProcessingChunkTestDocumentsAPI(): Promise<{
+  message: string
+  processed_count: number
+}> {
   const response = await apiRequest('/api/knowledge-space/chunk-test/documents/start-processing', {
     method: 'POST',
   })
@@ -100,7 +103,9 @@ async function startProcessingChunkTestDocumentsAPI(): Promise<{ message: string
   return await response.json()
 }
 
-async function processSelectedChunkTestDocumentsAPI(documentIds: number[]): Promise<{ message: string; processed_count: number }> {
+async function processSelectedChunkTestDocumentsAPI(
+  documentIds: number[]
+): Promise<{ message: string; processed_count: number }> {
   const response = await apiRequest('/api/knowledge-space/chunk-test/documents/process-selected', {
     method: 'POST',
     headers: {
@@ -125,20 +130,29 @@ async function processSelectedChunkTestDocumentsAPI(documentIds: number[]): Prom
  * Fetch all chunk test documents
  * Auto-refetches every 5 seconds if there are processing documents
  */
-export function useChunkTestDocuments(options?: { 
-  refetchInterval?: number | false | ((query: { state: { data: ChunkTestDocumentListResponse | undefined } }) => number | false) 
+export function useChunkTestDocuments(options?: {
+  refetchInterval?:
+    | number
+    | false
+    | ((query: { state: { data: ChunkTestDocumentListResponse | undefined } }) => number | false)
 }) {
   return useQuery({
     queryKey: chunkTestDocumentKeys.list(),
     queryFn: fetchChunkTestDocuments,
     staleTime: 30 * 1000, // 30 seconds
-    refetchInterval: options?.refetchInterval ?? ((query) => {
-      const data = query.state.data
-      if (data?.documents.some((d: ChunkTestDocument) => d.status === 'processing' || d.status === 'pending')) {
-        return 5000 // Refetch every 5 seconds
-      }
-      return false // Stop refetching when no processing documents
-    }),
+    refetchInterval:
+      options?.refetchInterval ??
+      ((query) => {
+        const data = query.state.data
+        if (
+          data?.documents.some(
+            (d: ChunkTestDocument) => d.status === 'processing' || d.status === 'pending'
+          )
+        ) {
+          return 5000 // Refetch every 5 seconds
+        }
+        return false // Stop refetching when no processing documents
+      }),
     retry: 1,
   })
 }

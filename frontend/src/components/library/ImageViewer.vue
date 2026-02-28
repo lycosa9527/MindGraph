@@ -963,7 +963,6 @@ watch(
   }
 )
 
-
 // Watch for documentId or totalPages changes to pre-load initial pages
 watch(
   [() => props.documentId, () => props.totalPages],

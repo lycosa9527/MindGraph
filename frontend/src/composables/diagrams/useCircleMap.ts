@@ -4,9 +4,9 @@
  */
 import { computed, ref } from 'vue'
 
-import type { Connection, DiagramNode, MindGraphEdge, MindGraphNode } from '@/types'
-import { calculateCircleMapLayout } from '@/stores/specLoader/utils'
 import { CONTEXT_FONT_SIZE, TOPIC_FONT_SIZE } from '@/stores/specLoader/textMeasurement'
+import { calculateCircleMapLayout } from '@/stores/specLoader/utils'
+import type { Connection, DiagramNode, MindGraphEdge, MindGraphNode } from '@/types'
 
 interface CircleMapData {
   topic: string

@@ -10,9 +10,9 @@ import {
 } from '@/composables/diagrams/layoutConfig'
 
 import {
+  CONTEXT_FONT_SIZE,
   computeMinDiameterForNoWrap,
   computeTopicRadiusForCircleMap,
-  CONTEXT_FONT_SIZE,
 } from './textMeasurement'
 
 /**
@@ -133,18 +133,13 @@ export function calculateCircleMapLayout(
       ? (uniformContextR + CIRCLE_MAP_CONTEXT_GAP / 2) / Math.sin(Math.PI / nodeCount)
       : 0
   const noOverlapTopic = topicR + uniformContextR + CIRCLE_MAP_TOPIC_CONTEXT_GAP
-  const childrenRadius = Math.max(
-    noOverlapContext,
-    noOverlapTopic,
-    CIRCLE_MAP_MIN_CHILDREN_RADIUS
-  )
+  const childrenRadius = Math.max(noOverlapContext, noOverlapTopic, CIRCLE_MAP_MIN_CHILDREN_RADIUS)
 
   // (d) Outer circle: just enclose context ring; margin avoids overlap with boundary stroke
   // Round outerCircleR to snap grid so boundary position (centerX-R, centerY-R) lands on grid.
   // This prevents Vue Flow snap-to-grid from shifting the outer circle off-center.
   const rawOuterR = childrenRadius + uniformContextR + CIRCLE_MAP_OUTER_MARGIN
-  const outerCircleR =
-    Math.round(rawOuterR / CIRCLE_MAP_SNAP_GRID) * CIRCLE_MAP_SNAP_GRID
+  const outerCircleR = Math.round(rawOuterR / CIRCLE_MAP_SNAP_GRID) * CIRCLE_MAP_SNAP_GRID
 
   return { centerX, centerY, topicR, uniformContextR, childrenRadius, outerCircleR }
 }

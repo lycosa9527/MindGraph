@@ -260,7 +260,8 @@ export function useAutoComplete() {
       return {
         valid: false,
         error: isZh.value
-          ? '概念图使用实时关系建议，请通过创建链接来生成关系' : 'Concept maps use real-time relationship suggestions; create links to generate',
+          ? '概念图使用实时关系建议，请通过创建链接来生成关系'
+          : 'Concept maps use real-time relationship suggestions; create links to generate',
       }
     }
 

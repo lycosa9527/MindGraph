@@ -3,22 +3,23 @@
  * KnowledgeSpacePage - Personal Knowledge Space interface
  * Route: /knowledge-space
  * Full-page layout with header, document table, and modals
- * 
+ *
  * Features:
  * - Background processing: Documents process in background, user can navigate away
  * - State persistence: Pinia store persists state across navigation
  * - Auto-resume polling: Automatically resumes polling when returning to page
  */
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
-import { useKnowledgeSpace } from '@/composables/useKnowledgeSpace'
-import type { KnowledgeDocument } from '@/stores/knowledgeSpace'
-import KnowledgeSpaceHeader from '@/components/knowledge-space/KnowledgeSpaceHeader.vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+
+import ChunkPreviewModal from '@/components/knowledge-space/ChunkPreviewModal.vue'
 import DocumentTable from '@/components/knowledge-space/DocumentTable.vue'
 import DocumentUpload from '@/components/knowledge-space/DocumentUpload.vue'
-import RetrievalTest from '@/components/knowledge-space/RetrievalTest.vue'
+import KnowledgeSpaceHeader from '@/components/knowledge-space/KnowledgeSpaceHeader.vue'
 import KnowledgeSpaceSettings from '@/components/knowledge-space/KnowledgeSpaceSettings.vue'
 import ProcessingProgressBar from '@/components/knowledge-space/ProcessingProgressBar.vue'
-import ChunkPreviewModal from '@/components/knowledge-space/ChunkPreviewModal.vue'
+import RetrievalTest from '@/components/knowledge-space/RetrievalTest.vue'
+import { useKnowledgeSpace } from '@/composables/useKnowledgeSpace'
+import type { KnowledgeDocument } from '@/stores/knowledgeSpace'
 
 const {
   documents,
@@ -51,7 +52,7 @@ onMounted(async () => {
   // Resume polling for any documents that are processing
   // This ensures progress continues even if user navigated away
   resumePolling()
-  
+
   // Debug: Log documents count
   console.log('[KnowledgeSpacePage] Loaded documents:', documentCount)
 })
@@ -67,8 +68,8 @@ onUnmounted(() => {
 watch(
   documents,
   (newDocuments: KnowledgeDocument[]) => {
-    const processingDocs = newDocuments.filter((d: KnowledgeDocument) => 
-      d.status === 'processing' || d.status === 'pending'
+    const processingDocs = newDocuments.filter(
+      (d: KnowledgeDocument) => d.status === 'processing' || d.status === 'pending'
     )
     if (processingDocs.length > 0) {
       // Resume polling for all processing documents
@@ -109,9 +110,8 @@ const selectedCount = computed(() => selectedDocumentIds.value.length)
 
 const selectedPendingCount = computed(() => {
   return documents.value.filter(
-    (d: KnowledgeDocument) => 
-      selectedDocumentIds.value.includes(d.id) && 
-      (d.status === 'pending' || d.status === 'failed')
+    (d: KnowledgeDocument) =>
+      selectedDocumentIds.value.includes(d.id) && (d.status === 'pending' || d.status === 'failed')
   ).length
 })
 

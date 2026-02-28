@@ -22,7 +22,11 @@ import { Loading } from '@element-plus/icons-vue'
 import { Lock, MoreHorizontal, TestTube, Trash2 } from 'lucide-vue-next'
 
 import { notify, useLanguage } from '@/composables'
-import { useChunkTestHistory, useDeleteChunkTest, type ChunkTestHistoryItem } from '@/composables/queries/useChunkTestQueries'
+import {
+  type ChunkTestHistoryItem,
+  useChunkTestHistory,
+  useDeleteChunkTest,
+} from '@/composables/queries/useChunkTestQueries'
 
 const props = defineProps<{
   isBlurred?: boolean
@@ -120,7 +124,9 @@ function getTestName(test: ChunkTestHistoryItem): string {
     return test.dataset_name
   }
   if (test.document_ids && test.document_ids.length > 0) {
-    return isZh.value ? `用户文档 (${test.document_ids.length})` : `User Documents (${test.document_ids.length})`
+    return isZh.value
+      ? `用户文档 (${test.document_ids.length})`
+      : `User Documents (${test.document_ids.length})`
   }
   return isZh.value ? '未命名测试' : 'Untitled Test'
 }
@@ -146,14 +152,10 @@ async function handleDeleteTest(testId: number): Promise<void> {
     )
 
     await deleteTestMutation.mutateAsync(testId)
-    notify.success(
-      isZh.value ? '测试记录已删除' : 'Test deleted successfully'
-    )
+    notify.success(isZh.value ? '测试记录已删除' : 'Test deleted successfully')
   } catch (error) {
     if (error instanceof Error && error.message !== 'cancel') {
-      notify.error(
-        error.message || (isZh.value ? '删除失败' : 'Failed to delete test')
-      )
+      notify.error(error.message || (isZh.value ? '删除失败' : 'Failed to delete test'))
     }
     // User cancelled - do nothing
   }
@@ -222,7 +224,9 @@ function toggleShowAll(): void {
                     size="small"
                     effect="plain"
                   >
-                    {{ statusConfig[test.status as keyof typeof statusConfig]?.label || test.status }}
+                    {{
+                      statusConfig[test.status as keyof typeof statusConfig]?.label || test.status
+                    }}
                   </ElTag>
                   <span class="test-id">#{{ test.test_id }}</span>
                 </div>
@@ -277,7 +281,9 @@ function toggleShowAll(): void {
                     size="small"
                     effect="plain"
                   >
-                    {{ statusConfig[test.status as keyof typeof statusConfig]?.label || test.status }}
+                    {{
+                      statusConfig[test.status as keyof typeof statusConfig]?.label || test.status
+                    }}
                   </ElTag>
                   <span class="test-id">#{{ test.test_id }}</span>
                 </div>
@@ -332,7 +338,9 @@ function toggleShowAll(): void {
                     size="small"
                     effect="plain"
                   >
-                    {{ statusConfig[test.status as keyof typeof statusConfig]?.label || test.status }}
+                    {{
+                      statusConfig[test.status as keyof typeof statusConfig]?.label || test.status
+                    }}
                   </ElTag>
                   <span class="test-id">#{{ test.test_id }}</span>
                 </div>
@@ -387,7 +395,9 @@ function toggleShowAll(): void {
                     size="small"
                     effect="plain"
                   >
-                    {{ statusConfig[test.status as keyof typeof statusConfig]?.label || test.status }}
+                    {{
+                      statusConfig[test.status as keyof typeof statusConfig]?.label || test.status
+                    }}
                   </ElTag>
                   <span class="test-id">#{{ test.test_id }}</span>
                 </div>

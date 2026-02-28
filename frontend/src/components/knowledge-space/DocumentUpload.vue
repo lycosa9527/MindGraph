@@ -3,9 +3,12 @@
  * DocumentUpload - Modal/drawer for document upload with drag and drop
  */
 import { ref } from 'vue'
+
 import { ElDrawer, ElProgress, ElUpload } from 'element-plus'
-import { Upload } from '@element-plus/icons-vue'
 import type { UploadFile } from 'element-plus'
+
+import { Upload } from '@element-plus/icons-vue'
+
 import { notify } from '@/composables/notifications'
 import { useLanguage } from '@/composables/useLanguage'
 
@@ -44,11 +47,11 @@ const handleFileChange = (file: UploadFile) => {
       'image/png',
       'image/jpg',
     ]
-    
+
     // Also check by extension as fallback
     const ext = file.name.split('.').pop()?.toLowerCase()
     const allowedExts = ['pdf', 'docx', 'txt', 'md', 'jpg', 'jpeg', 'png']
-    
+
     if (!allowedTypes.includes(file.raw.type) && !allowedExts.includes(ext || '')) {
       notify.error(isZh ? '不支持的文件类型' : 'Unsupported file type')
       uploadRef.value?.clearFiles()
@@ -121,7 +124,11 @@ const handleClose = () => {
               {{ isZh ? '或拖拽文件到此处' : 'or drag file here' }}
             </div>
             <div class="text-xs text-stone-500">
-              {{ isZh ? '支持 PDF, DOCX, TXT, MD, 图片 (最大10MB)' : 'Supports PDF, DOCX, TXT, MD, Images (max 10MB)' }}
+              {{
+                isZh
+                  ? '支持 PDF, DOCX, TXT, MD, 图片 (最大10MB)'
+                  : 'Supports PDF, DOCX, TXT, MD, Images (max 10MB)'
+              }}
             </div>
           </div>
         </ElUpload>

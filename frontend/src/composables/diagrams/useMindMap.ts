@@ -27,7 +27,7 @@ import {
   DEFAULT_PADDING,
   DEFAULT_VERTICAL_SPACING,
 } from './layoutConfig'
-import { calculateDagreLayout, type DagreEdgeInput, type DagreNodeInput } from './useDagreLayout'
+import { type DagreEdgeInput, type DagreNodeInput, calculateDagreLayout } from './useDagreLayout'
 
 interface MindMapBranch {
   text: string
@@ -92,7 +92,15 @@ export function useMindMap(options: MindMapOptions = {}) {
       dagreEdges.push({ source: parentId, target: nodeId })
 
       if (branch.children && branch.children.length > 0) {
-        flattenBranchTree(branch.children, nodeId, direction, depth + 1, dagreNodes, dagreEdges, nodeInfos)
+        flattenBranchTree(
+          branch.children,
+          nodeId,
+          direction,
+          depth + 1,
+          dagreNodes,
+          dagreEdges,
+          nodeInfos
+        )
       }
     })
   }
@@ -141,14 +149,14 @@ export function useMindMap(options: MindMapOptions = {}) {
     if (!virtualPos) {
       return { nodes: [], edges: [] }
     }
-    
+
     // Topic edge position (where branches should connect)
-    const topicEdgeX = topicX + (direction * DEFAULT_NODE_WIDTH / 2)
+    const topicEdgeX = topicX + (direction * DEFAULT_NODE_WIDTH) / 2
     // Virtual root center X (Dagre returns top-left, so add half width)
     const virtualRootCenterX = virtualPos.x + virtualPos.width / 2
     // Calculate offset to align virtual root center with topic edge
     const offsetX = topicEdgeX - virtualRootCenterX
-    
+
     // Align vertically: virtual root center Y should match topic center Y
     const virtualRootCenterY = virtualPos.y + virtualPos.height / 2
     const offsetY = topicY - virtualRootCenterY
@@ -163,7 +171,10 @@ export function useMindMap(options: MindMapOptions = {}) {
         nodes.push({
           id: nodeId,
           type: 'branch',
-          position: { x: pos.x + offsetX - DEFAULT_NODE_WIDTH / 2, y: pos.y + offsetY - DEFAULT_NODE_HEIGHT / 2 },
+          position: {
+            x: pos.x + offsetX - DEFAULT_NODE_WIDTH / 2,
+            y: pos.y + offsetY - DEFAULT_NODE_HEIGHT / 2,
+          },
           data: {
             label: info.text,
             nodeType: 'branch',
@@ -184,10 +195,11 @@ export function useMindMap(options: MindMapOptions = {}) {
     dagreEdges.forEach((edge) => {
       if (edge.source === virtualRoot) {
         // Connect to topic with specific handle ID based on side
-        const handleId = side === 'left' 
-          ? `mindmap-left-${leftHandleIndex++}`
-          : `mindmap-right-${rightHandleIndex++}`
-        
+        const handleId =
+          side === 'left'
+            ? `mindmap-left-${leftHandleIndex++}`
+            : `mindmap-right-${rightHandleIndex++}`
+
         edges.push({
           id: `edge-topic-${edge.target}`,
           source: 'topic',

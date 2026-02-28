@@ -54,6 +54,8 @@ ignore-patterns = [
     "^build/",
     "^.*\\.toml$",
     "^pyproject\\.toml$",
+    "^esp32/",
+    "^archive/",
 ]
 
 # Output format

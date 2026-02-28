@@ -81,10 +81,8 @@ const braceGroups = computed<BraceGroup[]>(() => {
   // 2. node.measured (auto-measured by Vue Flow)
   // 3. layoutConfig constants (fallback)
   const getNodeDimensions = (node: (typeof nodes)[0] & NodeWithDimensions) => {
-    const width =
-      node.dimensions?.width ?? node.measured?.width ?? DEFAULT_NODE_WIDTH
-    const height =
-      node.dimensions?.height ?? node.measured?.height ?? DEFAULT_NODE_HEIGHT
+    const width = node.dimensions?.width ?? node.measured?.width ?? DEFAULT_NODE_WIDTH
+    const height = node.dimensions?.height ?? node.measured?.height ?? DEFAULT_NODE_HEIGHT
     return { width, height }
   }
 

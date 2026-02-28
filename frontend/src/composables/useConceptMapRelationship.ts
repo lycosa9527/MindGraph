@@ -9,14 +9,14 @@
  */
 import { ref } from 'vue'
 
+import { isPlaceholderText } from '@/composables/useAutoComplete'
+import { useLanguage } from '@/composables/useLanguage'
+import { useNotifications } from '@/composables/useNotifications'
+import { useDiagramStore } from '@/stores/diagram'
+import { useLLMResultsStore } from '@/stores/llmResults'
 import { authFetch } from '@/utils/api'
 
 export const CONCEPT_MAP_GENERATING_KEY = Symbol('conceptMapRelationshipGenerating')
-import { isPlaceholderText } from '@/composables/useAutoComplete'
-import { useDiagramStore } from '@/stores/diagram'
-import { useLLMResultsStore } from '@/stores/llmResults'
-import { useLanguage } from '@/composables/useLanguage'
-import { useNotifications } from '@/composables/useNotifications'
 
 /** Template-default labels (from getDefaultTemplate) — safe to regenerate when concepts change */
 const TEMPLATE_DEFAULT_LABELS = new Set([
@@ -81,10 +81,7 @@ export function useConceptMapRelationship() {
       return { success: false, error: 'Placeholder text' }
     }
 
-    generatingConnectionIds.value = new Set([
-      ...generatingConnectionIds.value,
-      connectionId,
-    ])
+    generatingConnectionIds.value = new Set([...generatingConnectionIds.value, connectionId])
 
     try {
       const language = isZh.value ? 'zh' : 'en'
@@ -108,9 +105,7 @@ export function useConceptMapRelationship() {
 
       const result = await response.json()
 
-      const connStillExists = diagramStore.data?.connections?.some(
-        (c) => c.id === connectionId
-      )
+      const connStillExists = diagramStore.data?.connections?.some((c) => c.id === connectionId)
       if (!connStillExists) {
         return { success: false, error: 'Connection deleted' }
       }
@@ -145,9 +140,7 @@ export function useConceptMapRelationship() {
     if (!llmResultsStore.selectedModel) return
     const connections = diagramStore.data?.connections ?? []
     const affected = connections.filter(
-      (c) =>
-      (c.source === nodeId || c.target === nodeId) &&
-      isLabelEmptyOrPlaceholder(c.label)
+      (c) => (c.source === nodeId || c.target === nodeId) && isLabelEmptyOrPlaceholder(c.label)
     )
     for (const conn of affected) {
       if (conn.id) {

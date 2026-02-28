@@ -5,9 +5,15 @@
     width="500px"
     @close="handleClose"
   >
-    <el-form :model="form" label-width="100px">
+    <el-form
+      :model="form"
+      label-width="100px"
+    >
       <el-form-item label="Watch ID">
-        <el-input :model-value="watchItem?.watch_id" disabled />
+        <el-input
+          :model-value="watchItem?.watch_id"
+          disabled
+        />
       </el-form-item>
       <el-form-item label="Student">
         <el-select
@@ -28,7 +34,11 @@
 
     <template #footer>
       <el-button @click="handleClose">Cancel</el-button>
-      <el-button type="primary" @click="handleAssign" :loading="loading">
+      <el-button
+        type="primary"
+        @click="handleAssign"
+        :loading="loading"
+      >
         Assign
       </el-button>
     </template>
@@ -36,7 +46,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted } from 'vue'
+import { onMounted, ref, watch } from 'vue'
+
 import type { Watch } from '@/stores/smartResponse'
 
 interface Props {
@@ -57,13 +68,19 @@ const loading = ref(false)
 const form = ref({ student_id: null as number | null })
 const students = ref<Array<{ id: number; name: string; class: string }>>([])
 
-watch(() => props.modelValue, (val) => {
-  visible.value = val
-})
+watch(
+  () => props.modelValue,
+  (val) => {
+    visible.value = val
+  }
+)
 
-watch(() => props.watchItem, () => {
-  form.value.student_id = null
-})
+watch(
+  () => props.watchItem,
+  () => {
+    form.value.student_id = null
+  }
+)
 
 onMounted(async () => {
   // TODO: Load students from API

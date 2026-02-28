@@ -9,8 +9,12 @@ import type { CSSProperties } from 'vue'
 
 import { useVueFlow } from '@vue-flow/core'
 
+import {
+  BRANCH_NODE_HEIGHT,
+  DEFAULT_NODE_HEIGHT,
+  DEFAULT_NODE_WIDTH,
+} from '@/composables/diagrams/layoutConfig'
 import { eventBus } from '@/composables/useEventBus'
-import { BRANCH_NODE_HEIGHT, DEFAULT_NODE_HEIGHT, DEFAULT_NODE_WIDTH } from '@/composables/diagrams/layoutConfig'
 import { useDiagramStore } from '@/stores'
 import type { MindGraphNodeProps } from '@/types'
 
@@ -19,7 +23,9 @@ import InlineEditableText from './InlineEditableText.vue'
 const props = defineProps<MindGraphNodeProps>()
 
 const isPlaceholder = computed(() => props.data.isPlaceholder || !props.data.label)
-const isBridgeDimension = computed(() => props.data.diagramType === 'bridge_map' && props.data.isDimensionLabel)
+const isBridgeDimension = computed(
+  () => props.data.diagramType === 'bridge_map' && props.data.isDimensionLabel
+)
 
 // Position recalculation for bridge map dimension labels
 const labelRef = ref<HTMLElement | null>(null)
@@ -42,7 +48,7 @@ async function recalculatePosition() {
   const actualHeight = labelElement.offsetHeight || 40 // Fallback to estimate
   // Measure actual width instead of using maxWidth for overlap detection
   const actualWidth = labelElement.offsetWidth || maxWidth
-  
+
   // For overlap detection, use actual width if available, otherwise maxWidth
   const labelX = labelNode.position.x
   const labelRightEdge = labelX + actualWidth
@@ -95,21 +101,21 @@ async function recalculatePosition() {
     measured?: { width?: number; height?: number }
     dimensions?: { width?: number; height?: number }
   }
-  
+
   // Helper to get node dimensions (same pattern as BridgeOverlay)
   const getNodeDimensions = (node: (typeof bridgeNodes)[0] & NodeWithDimensions) => {
-    const height =
-      node.dimensions?.height ?? node.measured?.height ?? BRANCH_NODE_HEIGHT
+    const height = node.dimensions?.height ?? node.measured?.height ?? BRANCH_NODE_HEIGHT
     return { height }
   }
-  
+
   const allCenters = bridgeNodes.flatMap((node) => {
     const dims = getNodeDimensions(node as (typeof bridgeNodes)[0] & NodeWithDimensions)
     return [node.position.y + dims.height / 2]
   })
-  const centerY = allCenters.length > 0 
-    ? allCenters.reduce((a, b) => a + b, 0) / allCenters.length 
-    : labelNode.position.y + actualHeight / 2 // Fallback to current position
+  const centerY =
+    allCenters.length > 0
+      ? allCenters.reduce((a, b) => a + b, 0) / allCenters.length
+      : labelNode.position.y + actualHeight / 2 // Fallback to current position
 
   // Recalculate Y position to center label vertically with bridge line
   const newLabelY = centerY - actualHeight / 2
@@ -119,7 +125,7 @@ async function recalculatePosition() {
   // Always use maxWidth for calculation to account for worst-case scenario (wrapped text)
   let adjustedX = labelX
   let needsXUpdate = false
-  
+
   // Maintain gap from label's right edge to horizontal bridge line start (leftmost node's left edge)
   // The horizontal bridge line starts at the leftmost node position (minX)
   // Target: label right edge + gapFromLabelRight = horizontal line start (leftmost node left edge)
@@ -128,7 +134,7 @@ async function recalculatePosition() {
   const currentGapFromLabelRight = leftmostX - labelRightEdge
   const targetLabelRightEdge = leftmostX - gapFromLabelRight
   const targetLabelX = targetLabelRightEdge - actualWidth
-  
+
   // Only adjust if the gap is significantly different from target (more than 1px difference)
   if (Math.abs(currentGapFromLabelRight - gapFromLabelRight) > 1) {
     // Calculate new position: move label so its right edge is gapFromLabelRight pixels from node's left edge
@@ -137,7 +143,7 @@ async function recalculatePosition() {
     const minX = -50 // Allow going slightly negative (up to 50px off-canvas)
     adjustedX = Math.max(adjustedX, minX)
     needsXUpdate = Math.abs(adjustedX - labelX) > 1
-    
+
     console.log('[LabelNode-recalculatePosition] Adjusting to maintain gap:', {
       originalX: labelX,
       originalGap: currentGapFromLabelRight,
@@ -145,7 +151,8 @@ async function recalculatePosition() {
       targetLabelX,
       adjustedX,
       needsXUpdate,
-      reason: 'Gap from label right edge to horizontal line start (leftmost node left edge) should be 10px',
+      reason:
+        'Gap from label right edge to horizontal line start (leftmost node left edge) should be 10px',
     })
   } else {
     console.log('[LabelNode-recalculatePosition] Gap is correct, keeping original position:', {
@@ -256,18 +263,27 @@ onUnmounted(() => {
 const nodeStyle = computed((): CSSProperties => {
   // For bridge map dimension labels, use different styling (no italic, bold, dark blue)
   const isBridgeDimension = props.data.diagramType === 'bridge_map' && props.data.isDimensionLabel
-  
+
   return {
-    color: isPlaceholder.value ? '#1976d2' : (isBridgeDimension ? '#1976d2' : '#1976d2'),
-    opacity: isPlaceholder.value ? 0.4 : (isBridgeDimension ? 1 : 0.8),
+    color: isPlaceholder.value ? '#1976d2' : isBridgeDimension ? '#1976d2' : '#1976d2',
+    opacity: isPlaceholder.value ? 0.4 : isBridgeDimension ? 1 : 0.8,
     fontSize: `${props.data.style?.fontSize || (isBridgeDimension ? 14 : 14)}px`,
     fontStyle: props.data.style?.fontStyle || (isBridgeDimension ? 'normal' : 'italic'),
     fontWeight: props.data.style?.fontWeight || (isBridgeDimension ? 'bold' : 'normal'),
     textDecoration: props.data.style?.textDecoration || 'none',
-    textAlign: (isBridgeDimension ? 'right' : 'center') as 'left' | 'right' | 'center' | 'justify' | 'start' | 'end',
+    textAlign: (isBridgeDimension ? 'right' : 'center') as
+      | 'left'
+      | 'right'
+      | 'center'
+      | 'justify'
+      | 'start'
+      | 'end',
     padding: isBridgeDimension ? '4px 8px' : '4px 8px',
     whiteSpace: isBridgeDimension ? 'normal' : 'nowrap', // Allow natural wrapping for bridge maps
-    overflowWrap: (isBridgeDimension ? 'break-word' : 'normal') as 'normal' | 'break-word' | 'anywhere',
+    overflowWrap: (isBridgeDimension ? 'break-word' : 'normal') as
+      | 'normal'
+      | 'break-word'
+      | 'anywhere',
   }
 })
 
@@ -276,14 +292,14 @@ const bridgeMapDisplay = computed(() => {
   if (props.data.diagramType !== 'bridge_map' || !props.data.isDimensionLabel) {
     return null
   }
-  
+
   // Detect language from label or diagram type
   const hasChinese = props.data.label
     ? /[\u4e00-\u9fa5]/.test(props.data.label)
     : /[\u4e00-\u9fa5]/.test(String(props.data.diagramType || ''))
-  
+
   const labelText = hasChinese ? '类比关系:' : 'Analogy relationship:'
-  
+
   // Wrap dimension value in brackets []
   // Strip existing brackets if present to avoid double brackets
   let rawValue = props.data.label?.trim() || ''
@@ -292,8 +308,10 @@ const bridgeMapDisplay = computed(() => {
   }
   const valueText = rawValue
     ? `[${rawValue}]` // Add brackets around actual value
-    : (hasChinese ? '[点击设置]' : '[Click to set]') // Placeholder already has brackets
-  
+    : hasChinese
+      ? '[点击设置]'
+      : '[Click to set]' // Placeholder already has brackets
+
   return {
     label: labelText,
     value: valueText,
@@ -306,7 +324,7 @@ const displayText = computed(() => {
   if (props.data.diagramType === 'bridge_map' && props.data.isDimensionLabel) {
     return props.data.label || ''
   }
-  
+
   if (props.data.label) {
     // For other diagram types (tree_map, brace_map), show with prefix
     const hasChinese = /[\u4e00-\u9fa5]/.test(props.data.label)
@@ -355,10 +373,16 @@ function handleEditCancel() {
   >
     <!-- Bridge map: two-line format -->
     <template v-if="isBridgeDimension && bridgeMapDisplay">
-      <div class="label-line text-right select-none" style="line-height: 1.2; user-select: none;">
+      <div
+        class="label-line text-right select-none"
+        style="line-height: 1.2; user-select: none"
+      >
         {{ bridgeMapDisplay.label }}
       </div>
-      <div class="value-line text-right" style="line-height: 1.2; margin-top: 2px;">
+      <div
+        class="value-line text-right"
+        style="line-height: 1.2; margin-top: 2px"
+      >
         <InlineEditableText
           :text="bridgeMapDisplay.value"
           :node-id="id"
@@ -372,7 +396,7 @@ function handleEditCancel() {
         />
       </div>
     </template>
-    
+
     <!-- Other diagram types: single line -->
     <template v-else>
       <InlineEditableText

@@ -6,7 +6,9 @@
  * For router guards, use useFeatureFlagsStore().fetchFlags() directly.
  */
 import { computed } from 'vue'
+
 import { useQuery } from '@tanstack/vue-query'
+
 import { useFeatureFlagsStore } from '@/stores/featureFlags'
 
 export function useFeatureFlags() {

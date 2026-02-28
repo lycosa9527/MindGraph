@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.28.2] - 2026-02-28
+
+### Changed
+- **Pylint Integration**: Added pylint to requirements.txt for static analysis and PEP8 linting. Updated pyproject.toml to exclude esp32/ and archive/ from pylint checks.
+- **Library Service**: Refactored library_document_mixin with top-level redis_cache import, improved type hints (cast, Tuple), and PEP8 compliance. Similar cleanup in library_bookmark_mixin, library_danmaku_mixin, library_page_mixin.
+- **Library Model**: Refactored models/domain/library.py for improved code organization and PEP8 compliance.
+- **Frontend Components**: Code quality and styling updates across debateverse, diagram, knowledge-space, library, mindgraph, and workshop components. TeacherUsagePage and ChunkTestResultsPage layout improvements.
+- **Composables & Stores**: Updates to useWorkshop, useConceptMapRelationship, useDiagramExport, useKnowledgeSpace, diagram store, and spec loaders for consistency and maintainability.
+- **Tests**: PEP8 compliance and formatting fixes in test_ip_geolocation.py and test_library.py.
+
 ## [5.28.1] - 2026-02-28
 
 ### Changed

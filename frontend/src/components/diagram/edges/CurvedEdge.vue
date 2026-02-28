@@ -25,14 +25,9 @@ const generatingConnectionIds = inject<{ value: Set<string> }>(
 const diagramStore = useDiagramStore()
 const { t } = useLanguage()
 
+const relationshipPlaceholder = computed(() => t('diagram.relationshipPlaceholder', '输入关系...'))
 
-const relationshipPlaceholder = computed(() =>
-  t('diagram.relationshipPlaceholder', '输入关系...')
-)
-
-const isConceptMap = computed(
-  () => (props.data?.diagramType as DiagramType) === 'concept_map'
-)
+const isConceptMap = computed(() => (props.data?.diagramType as DiagramType) === 'concept_map')
 
 const { theme } = useTheme({
   diagramType: computed(() => props.data?.diagramType as DiagramType),
@@ -109,8 +104,8 @@ const edgeStyle = computed(() => ({
   strokeDasharray: props.data?.style?.strokeDasharray || 'none',
 }))
 
-const isGenerating = computed(() =>
-  isConceptMap.value && generatingConnectionIds.value.has(props.id)
+const isGenerating = computed(
+  () => isConceptMap.value && generatingConnectionIds.value.has(props.id)
 )
 </script>
 
@@ -131,7 +126,7 @@ const isGenerating = computed(() =>
         'edge-label-concept-map': isConceptMap,
         'edge-label-box': !isConceptMap,
         'pointer-events-none': !isConceptMap,
-        'nopan': isConceptMap,
+        nopan: isConceptMap,
         'cursor-text': isConceptMap && !isEditing,
       }"
       :style="{
@@ -153,14 +148,14 @@ const isGenerating = computed(() =>
       />
       <span
         v-else
-        :class="{ 'edge-label-placeholder': isConceptMap && !(data?.label?.trim()) && !isGenerating }"
+        :class="{ 'edge-label-placeholder': isConceptMap && !data?.label?.trim() && !isGenerating }"
       >
         {{
           isGenerating
             ? (t('diagram.aiGenerating', 'AI...') as string)
-            : isConceptMap && !(data?.label?.trim())
+            : isConceptMap && !data?.label?.trim()
               ? relationshipPlaceholder
-              : (data?.label || '')
+              : data?.label || ''
         }}
       </span>
     </div>

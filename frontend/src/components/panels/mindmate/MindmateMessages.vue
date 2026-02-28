@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 
-import { ElAvatar, ElButton, ElIcon, ElLoading, ElScrollbar } from 'element-plus'
 import { useResizeObserver } from '@vueuse/core'
+
+import { ElAvatar, ElButton, ElIcon, ElLoading, ElScrollbar } from 'element-plus'
 
 import { Bottom } from '@element-plus/icons-vue'
 

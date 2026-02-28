@@ -4,15 +4,15 @@
  * Clean, minimal design with book names underneath covers
  * Organized into groups: 精品案例集 and 其他
  */
-import { onMounted, watch, ref, computed } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { BookOpen } from 'lucide-vue-next'
 
 import { LoginModal } from '@/components/auth'
 import { useNotifications } from '@/composables'
-import { useLibraryStore } from '@/stores/library'
 import { useAuthStore } from '@/stores/auth'
+import { useLibraryStore } from '@/stores/library'
 import { getLibraryDocumentCoverUrl } from '@/utils/apiClient'
 import type { LibraryDocument } from '@/utils/apiClient'
 
@@ -152,7 +152,7 @@ function handleLoginSuccess() {
     <!-- Content -->
     <div
       class="library-content flex-1 overflow-y-auto px-6 pt-4 pb-6"
-      :class="{ 'blurred': !authStore.isAuthenticated }"
+      :class="{ blurred: !authStore.isAuthenticated }"
     >
       <div
         v-if="libraryStore.documentsLoading"

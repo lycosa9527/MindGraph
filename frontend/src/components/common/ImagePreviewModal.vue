@@ -24,9 +24,7 @@ const emit = defineEmits<{
 
 const currentIndex = ref(0)
 
-const hasNavigation = computed(
-  () => props.images && props.images.length > 1
-)
+const hasNavigation = computed(() => props.images && props.images.length > 1)
 
 const currentImage = computed(() => {
   if (props.images && props.images.length > 0) {
@@ -38,10 +36,7 @@ const currentImage = computed(() => {
 
 const canGoPrev = computed(() => hasNavigation.value && currentIndex.value > 0)
 const canGoNext = computed(
-  () =>
-    hasNavigation.value &&
-    props.images &&
-    currentIndex.value < props.images.length - 1
+  () => hasNavigation.value && props.images && currentIndex.value < props.images.length - 1
 )
 
 // Only sync currentIndex when modal opens - avoid resetting on parent re-renders
@@ -88,7 +83,6 @@ function goNext() {
     :before-close="handleClose"
     class="image-preview-modal"
   >
-
     <div class="relative flex items-center">
       <!-- Prev button -->
       <button
@@ -111,7 +105,7 @@ function goNext() {
           :src="currentImage.imageUrl"
           :alt="currentImage.title"
           class="max-w-full max-h-[70vh] object-contain"
-        >
+        />
       </div>
 
       <!-- Next button -->

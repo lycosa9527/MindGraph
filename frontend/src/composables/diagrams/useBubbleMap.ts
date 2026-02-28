@@ -8,21 +8,11 @@
 import { computed, ref } from 'vue'
 
 import { useLanguage } from '@/composables/useLanguage'
+import { CONTEXT_FONT_SIZE, computeMinDiameterForNoWrap } from '@/stores/specLoader/textMeasurement'
 import type { Connection, DiagramNode, MindGraphEdge, MindGraphNode } from '@/types'
 
-import {
-  DEFAULT_PADDING,
-  DEFAULT_TOPIC_RADIUS,
-  DEFAULT_CONTEXT_RADIUS,
-} from './layoutConfig'
-import {
-  computeMinDiameterForNoWrap,
-  CONTEXT_FONT_SIZE,
-} from '@/stores/specLoader/textMeasurement'
-import {
-  bubbleMapChildrenRadius,
-  polarToPosition,
-} from './useRadialLayout'
+import { DEFAULT_CONTEXT_RADIUS, DEFAULT_PADDING, DEFAULT_TOPIC_RADIUS } from './layoutConfig'
+import { bubbleMapChildrenRadius, polarToPosition } from './useRadialLayout'
 
 interface BubbleMapData {
   topic: string
@@ -64,12 +54,7 @@ function calculateLayout(
   const uniformRadius =
     radii.length > 0 ? Math.max(DEFAULT_CONTEXT_RADIUS, ...radii) : DEFAULT_CONTEXT_RADIUS
 
-  const childrenRadius = bubbleMapChildrenRadius(
-    nodeCount,
-    topicR,
-    uniformRadius,
-    uniformRadius
-  )
+  const childrenRadius = bubbleMapChildrenRadius(nodeCount, topicR, uniformRadius, uniformRadius)
 
   const centerX = childrenRadius + uniformRadius + padding
   const centerY = childrenRadius + uniformRadius + padding

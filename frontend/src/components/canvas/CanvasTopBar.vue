@@ -20,19 +20,10 @@ import {
   ElTooltip,
 } from 'element-plus'
 
-// Using Lucide icons for a more modern, cute look
-import {
-  ArrowLeft,
-  FileImage,
-  FileJson,
-  FileText,
-  ImageDown,
-} from 'lucide-vue-next'
+import { Connection, Download } from '@element-plus/icons-vue'
 
-import {
-  Download,
-  Connection,
-} from '@element-plus/icons-vue'
+// Using Lucide icons for a more modern, cute look
+import { ArrowLeft, FileImage, FileJson, FileText, ImageDown } from 'lucide-vue-next'
 
 import { DiagramSlotFullModal } from '@/components/canvas'
 import { WorkshopModal } from '@/components/workshop'
@@ -349,7 +340,10 @@ function handleExportCommand(command: string) {
         class="flex items-center gap-1 px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded-md border border-gray-200 dark:border-gray-700"
       >
         <!-- Visible participants (first 10) -->
-        <template v-for="participant in visibleParticipants" :key="participant.user_id">
+        <template
+          v-for="participant in visibleParticipants"
+          :key="participant.user_id"
+        >
           <ElTooltip
             :content="participant.username"
             placement="bottom"
@@ -369,9 +363,7 @@ function handleExportCommand(command: string) {
           trigger="hover"
           placement="bottom-end"
         >
-          <div class="participant-more">
-            +{{ dropdownParticipants.length }}
-          </div>
+          <div class="participant-more">+{{ dropdownParticipants.length }}</div>
           <template #dropdown>
             <ElDropdownMenu>
               <ElDropdownItem
@@ -462,11 +454,13 @@ function handleExportCommand(command: string) {
     <WorkshopModal
       v-model:visible="showWorkshopModal"
       :diagram-id="currentDiagramId"
-      @workshopCodeChanged="(code) => { 
-        workshopCode = code
-        // Emit event for CanvasPage to sync
-        eventBus.emit('workshop:code-changed', { code })
-      }"
+      @workshopCodeChanged="
+        (code) => {
+          workshopCode = code
+          // Emit event for CanvasPage to sync
+          eventBus.emit('workshop:code-changed', { code })
+        }
+      "
     />
   </div>
 </template>

@@ -1,4 +1,4 @@
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import type { Ref } from 'vue'
 
 export interface SmartResponseWebSocketMessage {
@@ -26,7 +26,7 @@ export function useSmartResponseWebSocket(sessionId: Ref<string | null>) {
 
     try {
       ws.value = new WebSocket(wsUrl)
-      
+
       ws.value.onopen = () => {
         connected.value = true
         error.value = null

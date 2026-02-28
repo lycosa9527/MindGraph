@@ -16,11 +16,8 @@ const isMultiFlowMapEdge = computed(() => {
   const sourceId = props.source
   const targetId = props.target
   return (
-    (sourceId?.startsWith('cause-') || sourceId?.startsWith('effect-')) &&
-    targetId === 'event'
-  ) || (
-    sourceId === 'event' &&
-    (targetId?.startsWith('cause-') || targetId?.startsWith('effect-'))
+    ((sourceId?.startsWith('cause-') || sourceId?.startsWith('effect-')) && targetId === 'event') ||
+    (sourceId === 'event' && (targetId?.startsWith('cause-') || targetId?.startsWith('effect-')))
   )
 })
 

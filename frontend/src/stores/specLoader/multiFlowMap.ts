@@ -69,21 +69,21 @@ export function recalculateMultiFlowMapLayout(
   // Find max width among all cause and effect nodes
   let maxCauseWidth = nodeWidth
   let maxEffectWidth = nodeWidth
-  
+
   causeNodes.forEach((node, index) => {
     const storedWidth = nodeWidths[`cause-${index}`] || nodeWidths[node.id || '']
     if (storedWidth) {
       maxCauseWidth = Math.max(maxCauseWidth, storedWidth)
     }
   })
-  
+
   effectNodes.forEach((node, index) => {
     const storedWidth = nodeWidths[`effect-${index}`] || nodeWidths[node.id || '']
     if (storedWidth) {
       maxEffectWidth = Math.max(maxEffectWidth, storedWidth)
     }
   })
-  
+
   // Use the maximum of both columns for visual balance
   const uniformColumnWidth = Math.max(maxCauseWidth, maxEffectWidth)
 
@@ -93,13 +93,13 @@ export function recalculateMultiFlowMapLayout(
   // 3. Topic column width: actualTopicWidth
   // 4. Right arrow column (spacing): rightArrowSpacing
   // 5. Effect column width: uniformColumnWidth
-  
+
   // Balance the arrow columns (left and right) to be visually equal
   // User measured: right arrow appears ~1cm (38px) longer, so reduce right spacing
   // Reduced by 30%: left 200px -> 140px, right 162px -> 113px (maintaining compensation)
   const leftArrowSpacing = sideSpacing * 0.7
   const rightArrowSpacing = (sideSpacing - 38) * 0.7 // Compensate for visual difference (1cm ≈ 38px at 96 DPI)
-  
+
   // Calculate edges based on balanced columns
   const topicLeftEdge = centerX - actualTopicWidth / 2
   const topicRightEdge = centerX + actualTopicWidth / 2

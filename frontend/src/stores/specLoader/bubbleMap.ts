@@ -6,21 +6,15 @@
  * Circles are text-adaptive (like old D3 bubble-map-renderer): min diameter from text measurement.
  */
 import {
+  DEFAULT_CONTEXT_RADIUS,
   DEFAULT_PADDING,
   DEFAULT_TOPIC_RADIUS,
-  DEFAULT_CONTEXT_RADIUS,
 } from '@/composables/diagrams/layoutConfig'
-import {
-  bubbleMapChildrenRadius,
-  polarToPosition,
-} from '@/composables/diagrams/useRadialLayout'
+import { bubbleMapChildrenRadius, polarToPosition } from '@/composables/diagrams/useRadialLayout'
 import type { Connection, DiagramNode } from '@/types'
 
+import { CONTEXT_FONT_SIZE, computeMinDiameterForNoWrap } from './textMeasurement'
 import type { SpecLoaderResult } from './types'
-import {
-  computeMinDiameterForNoWrap,
-  CONTEXT_FONT_SIZE,
-} from './textMeasurement'
 
 /**
  * Compute radius for each attribute from text (min diameter for no-wrap fit).
@@ -54,12 +48,7 @@ export function recalculateBubbleMapLayout(nodes: DiagramNode[]): DiagramNode[] 
   const radii = bubbleNodes.map((n) => radiusFromText(n.text))
   const uniformRadius = Math.max(DEFAULT_CONTEXT_RADIUS, ...radii)
 
-  const childrenRadius = bubbleMapChildrenRadius(
-    nodeCount,
-    topicR,
-    uniformRadius,
-    uniformRadius
-  )
+  const childrenRadius = bubbleMapChildrenRadius(nodeCount, topicR, uniformRadius, uniformRadius)
   const centerX = childrenRadius + uniformRadius + padding
   const centerY = childrenRadius + uniformRadius + padding
 
@@ -118,12 +107,7 @@ export function loadBubbleMapSpec(spec: Record<string, unknown>): SpecLoaderResu
   const uniformRadius =
     nodeCount > 0 ? Math.max(DEFAULT_CONTEXT_RADIUS, ...radii) : DEFAULT_CONTEXT_RADIUS
 
-  const childrenRadius = bubbleMapChildrenRadius(
-    nodeCount,
-    topicR,
-    uniformRadius,
-    uniformRadius
-  )
+  const childrenRadius = bubbleMapChildrenRadius(nodeCount, topicR, uniformRadius, uniformRadius)
   const centerX = childrenRadius + uniformRadius + padding
   const centerY = childrenRadius + uniformRadius + padding
 

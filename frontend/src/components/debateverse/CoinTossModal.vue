@@ -2,9 +2,11 @@
 /**
  * CoinTossModal - Modal explaining the coin toss stage
  */
-import { ElDialog, ElButton } from 'element-plus'
-import { useLanguage } from '@/composables/useLanguage'
+import { ElButton, ElDialog } from 'element-plus'
+
 import { Coins } from 'lucide-vue-next'
+
+import { useLanguage } from '@/composables/useLanguage'
 
 const props = defineProps<{
   visible: boolean
@@ -41,11 +43,15 @@ function handleClose() {
           />
         </div>
       </div>
-      
+
       <p class="text-center text-gray-700 mb-6">
-        {{ isZh ? '赛前通过掷硬币决定发言顺序或选择正反方立场' : 'Before the debate, determine speaking order or choose affirmative/negative positions through coin toss' }}
+        {{
+          isZh
+            ? '赛前通过掷硬币决定发言顺序或选择正反方立场'
+            : 'Before the debate, determine speaking order or choose affirmative/negative positions through coin toss'
+        }}
       </p>
-      
+
       <div class="flex justify-center">
         <ElButton
           type="primary"

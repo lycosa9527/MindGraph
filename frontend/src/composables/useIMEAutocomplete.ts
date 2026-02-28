@@ -19,8 +19,9 @@ import { computed, ref, watch } from 'vue'
 
 import { useDebounceFn } from '@vueuse/core'
 
-import { useLanguage } from './useLanguage'
 import { authFetch } from '@/utils/api'
+
+import { useLanguage } from './useLanguage'
 
 // Types
 export interface IMESuggestion {

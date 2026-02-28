@@ -10,7 +10,7 @@ Proprietary License
 
 import logging
 from pathlib import Path
-from typing import Optional, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING, cast
 
 from services.library.library_path_utils import resolve_library_path
 from services.library.image_path_resolver import resolve_page_image
@@ -79,12 +79,17 @@ class LibraryPageMixin:
         Returns:
             Path to image file, or None if not found or document doesn't use images
         """
-        if not document or not document.use_images or not document.pages_dir_path:
+        if not document:
+            return None
+
+        use_images = cast(bool, document.use_images)
+        pages_dir_path = cast(Optional[str], document.pages_dir_path)
+        if not use_images or not pages_dir_path:
             return None
 
         # Resolve pages directory path
         pages_dir = resolve_library_path(
-            document.pages_dir_path,
+            pages_dir_path,
             self.storage_dir,
             Path.cwd()
         )
@@ -109,11 +114,16 @@ class LibraryPageMixin:
             document = self.get_document(document_id, use_cache=True)
         except NotImplementedError:
             return None
-        if document is None or not document.use_images or not document.pages_dir_path:
+        if document is None:
+            return None
+
+        use_images = cast(bool, document.use_images)
+        pages_dir_path = cast(Optional[str], document.pages_dir_path)
+        if not use_images or not pages_dir_path:
             return None
 
         return resolve_library_path(
-            document.pages_dir_path,
+            pages_dir_path,
             self.storage_dir,
             Path.cwd()
         )

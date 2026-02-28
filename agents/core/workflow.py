@@ -92,7 +92,7 @@ async def _generate_spec_with_agent(
             agent = BraceMapAgent(model=model)
         elif diagram_type == 'multi_flow_map':
             agent = MultiFlowMapAgent(model=model)
-        elif diagram_type == 'mind_map' or diagram_type == 'mindmap':
+        elif diagram_type in ('mind_map', 'mindmap'):
             agent = MindMapAgent(model=model)
         elif diagram_type == 'concept_map':
             agent = ConceptMapAgent(model=model)
@@ -155,7 +155,7 @@ async def _generate_spec_with_agent(
         # Scenario 1: Topic only → handled by standard generation below
         # Scenario 2: Topic + dimension → fixed_dimension mode (topic exists)
         # Scenario 3: Dimension only (no topic) → dimension_only_mode
-        elif (diagram_type == 'tree_map' or diagram_type == 'brace_map') and fixed_dimension:
+        elif diagram_type in ('tree_map', 'brace_map') and fixed_dimension:
             # Create agent in branch so Pylint infers concrete type (avoids E1123)
             if dimension_only_mode:
                 # Scenario 3: Dimension-only mode - user has dimension but no topic
@@ -220,8 +220,7 @@ async def _generate_spec_with_agent(
                         fixed_dimension=fixed_dimension
                     )
         # For brace maps, tree maps, and bridge maps (without fixed dimension), pass dimension_preference if available
-        elif (diagram_type == 'brace_map' or diagram_type == 'tree_map' or
-              diagram_type == 'bridge_map') and dimension_preference:
+        elif diagram_type in ('brace_map', 'tree_map', 'bridge_map') and dimension_preference:
             # Create agent in branch so Pylint infers concrete type (avoids E1123)
             if diagram_type == 'brace_map':
                 logger.debug(
@@ -287,11 +286,10 @@ async def _generate_spec_with_agent(
             if 'spec' in result:
                 logger.debug("Result contains 'spec' key, returning spec")
                 return result['spec']
-            elif 'error' not in result:
+            if 'error' not in result:
                 logger.debug("Result contains no error, returning as-is")
                 return result
-            else:
-                logger.error("Result contains error: %s", result.get('error'))
+            logger.error("Result contains error: %s", result.get('error'))
 
         logger.debug("Returning raw result")
         return result

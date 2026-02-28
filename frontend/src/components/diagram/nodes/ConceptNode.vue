@@ -6,9 +6,11 @@
  */
 import { computed, ref } from 'vue'
 
-import { ElIcon } from 'element-plus'
-import { Menu } from '@element-plus/icons-vue'
 import { Handle, Position } from '@vue-flow/core'
+
+import { ElIcon } from 'element-plus'
+
+import { Menu } from '@element-plus/icons-vue'
 
 import { eventBus } from '@/composables/useEventBus'
 import { useTheme } from '@/composables/useTheme'
@@ -23,22 +25,15 @@ const { getNodeStyle } = useTheme({
 })
 
 const isTopic = computed(() => props.data.nodeType === 'topic')
-const defaultStyle = computed(() =>
-  getNodeStyle(isTopic.value ? 'topic' : 'branch')
-)
+const defaultStyle = computed(() => getNodeStyle(isTopic.value ? 'topic' : 'branch'))
 
 const nodeStyle = computed(() => {
   const pillRadius = '9999px'
   if (isTopic.value) {
     return {
       backgroundColor:
-        props.data.style?.backgroundColor ||
-        defaultStyle.value.backgroundColor ||
-        '#e3f2fd',
-      borderColor:
-        props.data.style?.borderColor ||
-        defaultStyle.value.borderColor ||
-        '#35506b',
+        props.data.style?.backgroundColor || defaultStyle.value.backgroundColor || '#e3f2fd',
+      borderColor: props.data.style?.borderColor || defaultStyle.value.borderColor || '#35506b',
       color: props.data.style?.textColor || defaultStyle.value.textColor || '#000000',
       fontFamily: props.data.style?.fontFamily,
       fontSize: `${props.data.style?.fontSize || defaultStyle.value.fontSize || 18}px`,
@@ -52,13 +47,8 @@ const nodeStyle = computed(() => {
   }
   return {
     backgroundColor:
-      props.data.style?.backgroundColor ||
-      defaultStyle.value.backgroundColor ||
-      '#e3f2fd',
-    borderColor:
-      props.data.style?.borderColor ||
-      defaultStyle.value.borderColor ||
-      '#4e79a7',
+      props.data.style?.backgroundColor || defaultStyle.value.backgroundColor || '#e3f2fd',
+    borderColor: props.data.style?.borderColor || defaultStyle.value.borderColor || '#4e79a7',
     color: props.data.style?.textColor || defaultStyle.value.textColor || '#333333',
     fontFamily: props.data.style?.fontFamily,
     fontSize: `${props.data.style?.fontSize || defaultStyle.value.fontSize || 16}px`,
@@ -125,7 +115,10 @@ function handleLinkDrop(event: DragEvent) {
       :data-node-id="id"
       @dragstart="handleLinkDragStart"
     >
-      <ElIcon :size="20" class="text-blue-500">
+      <ElIcon
+        :size="20"
+        class="text-blue-500"
+      >
         <Menu />
       </ElIcon>
     </div>
@@ -136,14 +129,46 @@ function handleLinkDrop(event: DragEvent) {
       :style="nodeStyle"
     >
       <!-- Handles for smart connection routing (edges pick closest side) -->
-      <Handle type="source" id="source-left" :position="Position.Left" />
-      <Handle type="target" id="target-left" :position="Position.Left" />
-      <Handle type="source" id="source-right" :position="Position.Right" />
-      <Handle type="target" id="target-right" :position="Position.Right" />
-      <Handle type="source" id="source-top" :position="Position.Top" />
-      <Handle type="target" id="target-top" :position="Position.Top" />
-      <Handle type="source" id="source-bottom" :position="Position.Bottom" />
-      <Handle type="target" id="target-bottom" :position="Position.Bottom" />
+      <Handle
+        type="source"
+        id="source-left"
+        :position="Position.Left"
+      />
+      <Handle
+        type="target"
+        id="target-left"
+        :position="Position.Left"
+      />
+      <Handle
+        type="source"
+        id="source-right"
+        :position="Position.Right"
+      />
+      <Handle
+        type="target"
+        id="target-right"
+        :position="Position.Right"
+      />
+      <Handle
+        type="source"
+        id="source-top"
+        :position="Position.Top"
+      />
+      <Handle
+        type="target"
+        id="target-top"
+        :position="Position.Top"
+      />
+      <Handle
+        type="source"
+        id="source-bottom"
+        :position="Position.Bottom"
+      />
+      <Handle
+        type="target"
+        id="target-bottom"
+        :position="Position.Bottom"
+      />
       <InlineEditableText
         :text="data.label || ''"
         :node-id="id"

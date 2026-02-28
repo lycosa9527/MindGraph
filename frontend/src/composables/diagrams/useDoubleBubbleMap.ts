@@ -55,10 +55,7 @@ interface DoubleBubbleMapOptions {
 /** Capsule: 长度随 radius，高度有上限；与 CircleNode / doubleBubbleMap 一致 */
 function capsuleFromRadius(radius: number): { width: number; height: number; diameter: number } {
   const diameter = radius * 2
-  const height = Math.min(
-    Math.round(diameter * 0.56),
-    DOUBLE_BUBBLE_MAX_CAPSULE_HEIGHT
-  )
+  const height = Math.min(Math.round(diameter * 0.56), DOUBLE_BUBBLE_MAX_CAPSULE_HEIGHT)
   return {
     width: Math.round(diameter * 1.22),
     height,

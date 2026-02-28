@@ -9,9 +9,15 @@
  * 4. Poll for login status
  * 5. Show login status
  */
-import { ref, watch, onMounted, onUnmounted } from 'vue'
+import { onMounted, onUnmounted, ref, watch } from 'vue'
 
-import { ChatLineRound, CircleCheck, CircleClose, Loading, RefreshLeft } from '@element-plus/icons-vue'
+import {
+  ChatLineRound,
+  CircleCheck,
+  CircleClose,
+  Loading,
+  RefreshLeft,
+} from '@element-plus/icons-vue'
 
 import { useNotifications } from '@/composables'
 import apiClient from '@/utils/apiClient'
@@ -424,16 +430,20 @@ onUnmounted(() => {
 
 // Auto-save preferences when they change (debounced)
 let saveTimeout: ReturnType<typeof setTimeout> | null = null
-watch([selectedRegionId, selectedDeviceType], () => {
-  // Clear existing timeout
-  if (saveTimeout) {
-    clearTimeout(saveTimeout)
-  }
-  // Debounce: only save after user stops changing for 500ms
-  saveTimeout = setTimeout(() => {
-    saveConfig(true) // Silent save
-  }, 500)
-}, { deep: true })
+watch(
+  [selectedRegionId, selectedDeviceType],
+  () => {
+    // Clear existing timeout
+    if (saveTimeout) {
+      clearTimeout(saveTimeout)
+    }
+    // Debounce: only save after user stops changing for 500ms
+    saveTimeout = setTimeout(() => {
+      saveConfig(true) // Silent save
+    }, 500)
+  },
+  { deep: true }
+)
 
 // Reset device ID
 async function resetDeviceId() {
@@ -451,7 +461,9 @@ async function resetDeviceId() {
       localStorage.removeItem('gewe_app_id')
       // Reload config status to refresh display
       await loadConfigStatus()
-      notify.success('设备ID已重置，已保存的 app_id 和 wxid 已清除。下次登录时将生成新的 app_id 和 wxid')
+      notify.success(
+        '设备ID已重置，已保存的 app_id 和 wxid 已清除。下次登录时将生成新的 app_id 和 wxid'
+      )
     } else {
       const error = await response.json().catch(() => ({ detail: '重置设备ID失败' }))
       throw new Error(error.detail || error.msg || '重置设备ID失败')
@@ -524,7 +536,11 @@ onMounted(async () => {
             </el-input>
             <div class="text-xs text-gray-500 mt-1">
               <span v-if="geweToken">Token 已在后端环境变量 GEWE_TOKEN 中配置（已脱敏）</span>
-              <span v-else class="text-red-500">Token 未配置 - 请在后端 .env 文件中设置 GEWE_TOKEN</span>
+              <span
+                v-else
+                class="text-red-500"
+                >Token 未配置 - 请在后端 .env 文件中设置 GEWE_TOKEN</span
+              >
             </div>
           </el-form-item>
 
@@ -591,9 +607,7 @@ onMounted(async () => {
               <div v-if="selectedDeviceType === 'ipad'">
                 • iPad登录：需要人脸识别App进行二次验证（仅支持iOS，使用苹果自带浏览器打开下载）
               </div>
-              <div v-else>
-                • Mac登录：支持自动验证（约10秒，90%通过率）或手动滑块App验证
-              </div>
+              <div v-else>• Mac登录：支持自动验证（约10秒，90%通过率）或手动滑块App验证</div>
             </div>
           </el-form-item>
         </el-form>
@@ -639,7 +653,8 @@ onMounted(async () => {
           <span
             v-else
             class="text-gray-400"
-          >暂无二维码</span>
+            >暂无二维码</span
+          >
         </div>
         <!-- Countdown Display -->
         <div

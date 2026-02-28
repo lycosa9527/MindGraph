@@ -3,14 +3,16 @@
  *
  * Vue Query mutations for knowledge space operations with automatic cache invalidation.
  */
-import { useMutation, useQueryClient } from '@tanstack/vue-query'
 import { ElMessageBox } from 'element-plus'
+
+import { useMutation, useQueryClient } from '@tanstack/vue-query'
 
 import { notify } from '@/composables/notifications'
 import { useLanguage } from '@/composables/useLanguage'
-import { apiDelete, apiRequest, apiUpload } from '@/utils/apiClient'
-import { knowledgeSpaceKeys } from './knowledgeSpaceKeys'
 import type { KnowledgeDocument } from '@/stores/knowledgeSpace'
+import { apiDelete, apiRequest, apiUpload } from '@/utils/apiClient'
+
+import { knowledgeSpaceKeys } from './knowledgeSpaceKeys'
 
 // ============================================================================
 // Types
@@ -103,9 +105,10 @@ export function useUploadDocument() {
       await queryClient.cancelQueries({ queryKey: knowledgeSpaceKeys.documents() })
 
       // Snapshot previous value
-      const previousData = queryClient.getQueryData<{ documents: KnowledgeDocument[]; total: number }>(
-        knowledgeSpaceKeys.documents()
-      )
+      const previousData = queryClient.getQueryData<{
+        documents: KnowledgeDocument[]
+        total: number
+      }>(knowledgeSpaceKeys.documents())
 
       // Optimistically update
       if (previousData) {
@@ -132,7 +135,9 @@ export function useUploadDocument() {
     onSuccess: (data) => {
       // Invalidate to refetch with real data
       queryClient.invalidateQueries({ queryKey: knowledgeSpaceKeys.documents() })
-      notify.success(isZh.value ? '文档上传成功，正在处理中...' : 'Document uploaded successfully, processing...')
+      notify.success(
+        isZh.value ? '文档上传成功，正在处理中...' : 'Document uploaded successfully, processing...'
+      )
     },
     onError: (error: Error, _file, context) => {
       // Rollback optimistic update
@@ -162,9 +167,10 @@ export function useDeleteDocument() {
       await queryClient.cancelQueries({ queryKey: knowledgeSpaceKeys.documents() })
 
       // Snapshot previous value
-      const previousData = queryClient.getQueryData<{ documents: KnowledgeDocument[]; total: number }>(
-        knowledgeSpaceKeys.documents()
-      )
+      const previousData = queryClient.getQueryData<{
+        documents: KnowledgeDocument[]
+        total: number
+      }>(knowledgeSpaceKeys.documents())
 
       // Optimistically update
       if (previousData) {
@@ -266,7 +272,9 @@ export function useDeleteDocumentWithConfirmation() {
   const deleteWithConfirmation = async (documentId: number) => {
     try {
       await ElMessageBox.confirm(
-        isZh.value ? '确定要删除这个文档吗？删除后无法恢复。' : 'Are you sure you want to delete this document? This action cannot be undone.',
+        isZh.value
+          ? '确定要删除这个文档吗？删除后无法恢复。'
+          : 'Are you sure you want to delete this document? This action cannot be undone.',
         isZh.value ? '确认删除' : 'Confirm Delete',
         {
           confirmButtonText: isZh.value ? '删除' : 'Delete',

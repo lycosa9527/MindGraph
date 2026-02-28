@@ -108,11 +108,11 @@ def _extract_json_content(content: str) -> Optional[str]:
 
         # Fallback: try to find JSON object or array patterns
         return _extract_json_fallback(content, first_brace)
-    else:
-        # No opening brace found, try array pattern
-        arr_match = re.search(r'\[[^\[\]]*(?:\[[^\[\]]*\][^\[\]]*)*\]', content, re.DOTALL)
-        if arr_match:
-            return arr_match.group(0)
+
+    # No opening brace found, try array pattern
+    arr_match = re.search(r'\[[^\[\]]*(?:\[[^\[\]]*\][^\[\]]*)*\]', content, re.DOTALL)
+    if arr_match:
+        return arr_match.group(0)
 
     return None
 

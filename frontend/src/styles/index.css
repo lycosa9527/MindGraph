@@ -2,8 +2,8 @@
  * MindGraph Global Styles
  */
 
-@import "tailwindcss/theme" layer(theme);
-@import "tailwindcss/utilities" layer(utilities);
+@import 'tailwindcss/theme' layer(theme);
+@import 'tailwindcss/utilities' layer(utilities);
 
 /* Tailwind 4 Theme Configuration (migrated from tailwind.config.js) */
 @theme {

@@ -12,10 +12,10 @@ import { ElButton, ElDialog, ElIcon, ElInput, ElOption, ElSelect } from 'element
 
 import { Plus } from '@element-plus/icons-vue'
 
+import DebateSetup from '@/components/debateverse/DebateSetup.vue'
+import DebateVerseStage from '@/components/debateverse/DebateVerseStage.vue'
 import { useLanguage } from '@/composables/useLanguage'
 import { useDebateVerseStore } from '@/stores/debateverse'
-import DebateVerseStage from '@/components/debateverse/DebateVerseStage.vue'
-import DebateSetup from '@/components/debateverse/DebateSetup.vue'
 
 const { t, isZh } = useLanguage()
 const store = useDebateVerseStore()
@@ -51,7 +51,8 @@ onUnmounted(() => {
         <span
           v-if="store.currentSession"
           class="text-gray-300"
-        >|</span>
+          >|</span
+        >
         <span
           v-if="store.currentSession"
           class="text-sm text-gray-500 truncate max-w-xs"

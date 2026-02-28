@@ -11,7 +11,7 @@
  *   const containerRef = ref<HTMLElement | null>(null)
  *   const { width, height, isMobile, debouncedFit } = useCanvasState(containerRef)
  */
-import { computed, watch, type Ref } from 'vue'
+import { type Ref, computed, watch } from 'vue'
 
 import { useVueFlow } from '@vue-flow/core'
 import { useDebounceFn, useElementSize, useMediaQuery } from '@vueuse/core'

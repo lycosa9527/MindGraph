@@ -2,10 +2,12 @@
 /**
  * DebateInput - Input section with message input and Next button
  */
-import { ref, computed } from 'vue'
+import { computed, ref } from 'vue'
 
-import { ElButton, ElInput, ElIcon } from 'element-plus'
+import { ElButton, ElIcon, ElInput } from 'element-plus'
+
 import { ArrowRight } from '@element-plus/icons-vue'
+
 import { Send } from 'lucide-vue-next'
 
 import { useLanguage } from '@/composables/useLanguage'
@@ -62,7 +64,9 @@ const inputPlaceholder = computed(() => {
   if (!store.canUserSpeak) {
     return isZh.value ? '等待你的发言时间...' : 'Waiting for your turn to speak...'
   }
-  return isZh.value ? '输入你的发言... (Ctrl+Enter 发送)' : 'Enter your speech... (Ctrl+Enter to send)'
+  return isZh.value
+    ? '输入你的发言... (Ctrl+Enter 发送)'
+    : 'Enter your speech... (Ctrl+Enter to send)'
 })
 
 // ============================================================================

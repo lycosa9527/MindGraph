@@ -7,6 +7,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { ElAvatar, ElButton, ElDialog, ElInput } from 'element-plus'
+
 import { Connection } from '@element-plus/icons-vue'
 
 import mindgraphLogo from '@/assets/mindgraph-logo-md.png'
@@ -35,10 +36,10 @@ const codeInputRefs = ref<(HTMLInputElement | null)[]>([])
 function handleDigitInput(index: number, event: Event) {
   const target = event.target as HTMLInputElement
   const value = target.value.replace(/\D/g, '') // Only digits
-  
+
   if (value.length > 0) {
     joinCode.value[index] = value[value.length - 1] // Take last digit if multiple entered
-    
+
     // Move to next input
     if (index < 5 && codeInputRefs.value[index + 1]) {
       codeInputRefs.value[index + 1]?.focus()
@@ -61,13 +62,13 @@ function handlePaste(event: ClipboardEvent) {
   event.preventDefault()
   const pastedData = event.clipboardData?.getData('text') || ''
   const digits = pastedData.replace(/\D/g, '').slice(0, 6)
-  
+
   digits.split('').forEach((digit, index) => {
     if (index < 6) {
       joinCode.value[index] = digit
     }
   })
-  
+
   // Focus last filled input or next empty
   const nextEmptyIndex = digits.length < 6 ? digits.length : 5
   codeInputRefs.value[nextEmptyIndex]?.focus()
@@ -85,7 +86,8 @@ function getFormattedCode(): string {
 async function joinWorkshop() {
   const code = getFormattedCode()
 
-  if (code.length !== 7) { // xxx-xxx = 7 characters
+  if (code.length !== 7) {
+    // xxx-xxx = 7 characters
     notify.warning(
       isZh.value ? '请输入完整的工作坊代码' : 'Please enter the complete workshop code'
     )
@@ -119,16 +121,11 @@ async function joinWorkshop() {
       window.location.href = `/canvas?diagram_id=${data.workshop.diagram_id}`
     } else {
       const error = await response.json().catch(() => ({}))
-      notify.error(
-        error.detail ||
-          (isZh.value ? '加入工作坊失败' : 'Failed to join workshop')
-      )
+      notify.error(error.detail || (isZh.value ? '加入工作坊失败' : 'Failed to join workshop'))
     }
   } catch (error) {
     console.error('Failed to join workshop:', error)
-    notify.error(
-      isZh.value ? '网络错误，加入失败' : 'Network error, failed to join'
-    )
+    notify.error(isZh.value ? '网络错误，加入失败' : 'Network error, failed to join')
   } finally {
     isJoining.value = false
   }
@@ -183,7 +180,7 @@ onMounted(() => {
           {{
             isZh
               ? '输入工作坊代码，加入其他人的工作坊并一起编辑图示。'
-              : 'Enter a workshop code to join someone else\'s workshop and collaborate.'
+              : "Enter a workshop code to join someone else's workshop and collaborate."
           }}
         </p>
         <div class="code-input-container">
@@ -191,7 +188,11 @@ onMounted(() => {
             <input
               v-for="(digit, index) in joinCode.slice(0, 3)"
               :key="index"
-              :ref="(el) => { codeInputRefs[index] = el as HTMLInputElement | null }"
+              :ref="
+                (el) => {
+                  codeInputRefs[index] = el as HTMLInputElement | null
+                }
+              "
               v-model="joinCode[index]"
               type="text"
               inputmode="numeric"
@@ -205,7 +206,11 @@ onMounted(() => {
             <input
               v-for="(digit, index) in joinCode.slice(3, 6)"
               :key="index + 3"
-              :ref="(el) => { codeInputRefs[index + 3] = el as HTMLInputElement | null }"
+              :ref="
+                (el) => {
+                  codeInputRefs[index + 3] = el as HTMLInputElement | null
+                }
+              "
               v-model="joinCode[index + 3]"
               type="text"
               inputmode="numeric"
@@ -235,33 +240,33 @@ onMounted(() => {
     <!-- Scrollable content area -->
     <div class="flex-1 min-h-0 overflow-y-auto">
       <div class="p-5 w-[70%] mx-auto pb-8">
-      <!-- Welcome header - above input -->
-      <div class="flex flex-col items-center justify-center mb-8">
-        <ElAvatar
-          :src="mindgraphLogo"
-          alt="MindGraph"
-          :size="96"
-          class="mindgraph-logo mb-4"
-        />
-        <div class="text-lg text-gray-600">
-          {{
-            isZh
-              ? `${username}你好，我是你的AI思维图示助手`
-              : `Hello ${username}, I'm your AI visual thinking assistant`
-          }}
+        <!-- Welcome header - above input -->
+        <div class="flex flex-col items-center justify-center mb-8">
+          <ElAvatar
+            :src="mindgraphLogo"
+            alt="MindGraph"
+            :size="96"
+            class="mindgraph-logo mb-4"
+          />
+          <div class="text-lg text-gray-600">
+            {{
+              isZh
+                ? `${username}你好，我是你的AI思维图示助手`
+                : `Hello ${username}, I'm your AI visual thinking assistant`
+            }}
+          </div>
         </div>
-      </div>
 
-      <!-- Template input -->
-      <DiagramTemplateInput />
+        <!-- Template input -->
+        <DiagramTemplateInput />
 
-      <!-- Diagram type grid -->
-      <div class="mt-6">
-        <DiagramTypeGrid />
-      </div>
+        <!-- Diagram type grid -->
+        <div class="mt-6">
+          <DiagramTypeGrid />
+        </div>
 
-      <!-- Discovery gallery -->
-      <DiscoveryGallery />
+        <!-- Discovery gallery -->
+        <DiscoveryGallery />
       </div>
     </div>
   </div>
@@ -322,7 +327,6 @@ onMounted(() => {
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
   background: #f9fafb;
 }
-
 
 .code-dash {
   font-size: 24px;

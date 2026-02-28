@@ -144,7 +144,10 @@ export function loadBridgeMapSpec(spec: Record<string, unknown>): SpecLoaderResu
       labelY,
       firstNodeX: nodes.length > 0 && nodes[0].position ? nodes[0].position.x : 'no nodes yet',
       gapFromLabelRight,
-      expectedGap: nodes.length > 0 && nodes[0].position ? nodes[0].position.x - (labelX + estimatedLabelWidth) : 'N/A',
+      expectedGap:
+        nodes.length > 0 && nodes[0].position
+          ? nodes[0].position.x - (labelX + estimatedLabelWidth)
+          : 'N/A',
     })
 
     nodes.push({
@@ -166,7 +169,9 @@ export function loadBridgeMapSpec(spec: Record<string, unknown>): SpecLoaderResu
       firstNodeX: firstPairNode?.position?.x,
       firstNodeY: firstPairNode?.position?.y,
       expectedLabelRightEdge: labelX + estimatedLabelWidth,
-      expectedGapFromLabelRight: firstPairNode?.position ? firstPairNode.position.x - (labelX + estimatedLabelWidth) : 'N/A',
+      expectedGapFromLabelRight: firstPairNode?.position
+        ? firstPairNode.position.x - (labelX + estimatedLabelWidth)
+        : 'N/A',
     })
   }
 

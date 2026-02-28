@@ -4,8 +4,11 @@
  * Similar to DocumentTable but for datasets
  */
 import { computed } from 'vue'
-import { ElTable, ElTableColumn, ElButton, ElIcon, ElEmpty, ElSkeleton, ElTag } from 'element-plus'
+
+import { ElButton, ElEmpty, ElIcon, ElSkeleton, ElTable, ElTableColumn, ElTag } from 'element-plus'
+
 import { Document, Link } from '@element-plus/icons-vue'
+
 import type { Benchmark } from '@/composables/queries/useChunkTestQueries'
 import { useLanguage } from '@/composables/useLanguage'
 
@@ -48,7 +51,12 @@ const getVersionInfo = (dataset: Benchmark) => {
 
 <template>
   <div class="dataset-table flex-1 overflow-hidden flex flex-col">
-    <ElSkeleton v-if="loading" :rows="5" animated class="p-4" />
+    <ElSkeleton
+      v-if="loading"
+      :rows="5"
+      animated
+      class="p-4"
+    />
     <ElEmpty
       v-else-if="sortedDatasets.length === 0"
       :description="isZh ? '暂无数据集' : 'No datasets available'"
@@ -62,10 +70,17 @@ const getVersionInfo = (dataset: Benchmark) => {
       class="dataset-table-el"
       :empty-text="isZh ? '暂无数据' : 'No data'"
     >
-      <ElTableColumn :label="isZh ? '数据集名称' : 'Dataset Name'" width="180" show-overflow-tooltip>
+      <ElTableColumn
+        :label="isZh ? '数据集名称' : 'Dataset Name'"
+        width="180"
+        show-overflow-tooltip
+      >
         <template #default="{ row }">
           <div class="flex items-center gap-2">
-            <ElIcon class="text-stone-400 shrink-0" size="16">
+            <ElIcon
+              class="text-stone-400 shrink-0"
+              size="16"
+            >
               <Document />
             </ElIcon>
             <span class="font-medium text-stone-900 truncate">{{ row.name }}</span>
@@ -73,24 +88,39 @@ const getVersionInfo = (dataset: Benchmark) => {
         </template>
       </ElTableColumn>
 
-      <ElTableColumn :label="isZh ? '描述' : 'Description'" min-width="200" show-overflow-tooltip>
+      <ElTableColumn
+        :label="isZh ? '描述' : 'Description'"
+        min-width="200"
+        show-overflow-tooltip
+      >
         <template #default="{ row }">
           <span class="text-stone-600 text-sm truncate block">{{ row.description }}</span>
         </template>
       </ElTableColumn>
 
-      <ElTableColumn :label="isZh ? '来源' : 'Source'" min-width="200" show-overflow-tooltip>
+      <ElTableColumn
+        :label="isZh ? '来源' : 'Source'"
+        min-width="200"
+        show-overflow-tooltip
+      >
         <template #default="{ row }">
           <div class="flex items-center gap-2">
             <span class="text-stone-500 text-sm truncate">{{ row.source }}</span>
-            <ElIcon class="text-stone-400 shrink-0" size="12">
+            <ElIcon
+              class="text-stone-400 shrink-0"
+              size="12"
+            >
               <Link />
             </ElIcon>
           </div>
         </template>
       </ElTableColumn>
 
-      <ElTableColumn :label="isZh ? '版本/日期' : 'Version/Date'" width="180" show-overflow-tooltip>
+      <ElTableColumn
+        :label="isZh ? '版本/日期' : 'Version/Date'"
+        width="180"
+        show-overflow-tooltip
+      >
         <template #default="{ row }">
           <span class="text-stone-600 text-sm truncate">{{ getVersionInfo(row) }}</span>
         </template>
@@ -141,5 +171,4 @@ const getVersionInfo = (dataset: Benchmark) => {
 .dataset-table-el :deep(.el-table__row:hover) {
   background-color: #fafaf9;
 }
-
 </style>

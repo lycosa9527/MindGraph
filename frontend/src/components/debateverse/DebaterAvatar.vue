@@ -4,16 +4,15 @@
  */
 import { computed } from 'vue'
 
-import { useLanguage } from '@/composables/useLanguage'
-import type { DebateParticipant } from '@/stores/debateverse'
-
-// Import avatar images
-import qwenAvatar from '@/assets/qwen-avatar.png'
 import deepseekAvatar from '@/assets/deepseek-avatar.png'
 import doubaoAvatar from '@/assets/doubao-avatar.png'
-import kimiAvatar from '@/assets/kimi-avatar.png'
 import judgeAvatar from '@/assets/judge-avatar.png'
+import kimiAvatar from '@/assets/kimi-avatar.png'
+// Import avatar images
+import qwenAvatar from '@/assets/qwen-avatar.png'
 import userAvatar from '@/assets/user-avatar.png'
+import { useLanguage } from '@/composables/useLanguage'
+import type { DebateParticipant } from '@/stores/debateverse'
 
 const props = defineProps<{
   participant: DebateParticipant
@@ -50,15 +49,15 @@ const avatarImage = computed(() => {
 
 const roleLabel = computed(() => {
   const role = props.participant.role
-  
+
   if (role === 'judge') {
     return isZh.value ? '裁判' : 'Judge'
   }
-  
+
   if (role === 'viewer') {
     return isZh.value ? '观众' : 'Viewer'
   }
-  
+
   // Translate debate roles
   const roleTranslations: Record<string, { zh: string; en: string }> = {
     affirmative_1: { zh: '正方一辩', en: 'Affirmative 1st' },
@@ -66,7 +65,7 @@ const roleLabel = computed(() => {
     negative_1: { zh: '反方一辩', en: 'Negative 1st' },
     negative_2: { zh: '反方二辩', en: 'Negative 2nd' },
   }
-  
+
   const translation = roleTranslations[role]
   return translation ? (isZh.value ? translation.zh : translation.en) : role
 })
@@ -77,7 +76,7 @@ const avatarSize = 96
 <template>
   <div
     class="debater-avatar-container flex flex-col items-center"
-    :class="{ 'speaking': isSpeaking }"
+    :class="{ speaking: isSpeaking }"
   >
     <!-- Avatar Image -->
     <div class="relative">
@@ -116,7 +115,8 @@ const avatarSize = 96
 }
 
 @keyframes pulse {
-  0%, 100% {
+  0%,
+  100% {
     transform: scale(1);
   }
   50% {
@@ -142,7 +142,8 @@ const avatarSize = 96
 }
 
 @keyframes ring-pulse {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 0.6;
     transform: scale(1);
   }

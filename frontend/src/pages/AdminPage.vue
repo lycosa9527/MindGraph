@@ -9,9 +9,9 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
+import GeweLoginComponent from '@/components/admin/GeweLoginComponent.vue'
 import { useLanguage, useNotifications } from '@/composables'
 import { useAuthStore } from '@/stores'
-import GeweLoginComponent from '@/components/admin/GeweLoginComponent.vue'
 
 const route = useRoute()
 const authStore = useAuthStore()
@@ -147,11 +147,14 @@ watch(activeTab, (newTab) => {
 })
 
 // Watch for route query changes to update active tab
-watch(() => route.query.tab, (tab) => {
-  if (tab && typeof tab === 'string') {
-    activeTab.value = tab
+watch(
+  () => route.query.tab,
+  (tab) => {
+    if (tab && typeof tab === 'string') {
+      activeTab.value = tab
+    }
   }
-})
+)
 
 onMounted(() => {
   loadDashboardStats()

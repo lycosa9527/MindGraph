@@ -118,7 +118,11 @@ function handleEditCancel() {
     />
     <!-- Right target handle for mindmap left-side children (RL direction) -->
     <Handle
-      v-if="!isTreeMap && !isBridgeMap && (data.diagramType === 'mindmap' || data.diagramType === 'mind_map')"
+      v-if="
+        !isTreeMap &&
+        !isBridgeMap &&
+        (data.diagramType === 'mindmap' || data.diagramType === 'mind_map')
+      "
       id="right-target"
       type="target"
       :position="Position.Right"
@@ -126,7 +130,11 @@ function handleEditCancel() {
     />
     <!-- Left source handle for mindmap left-side branches (RL direction) -->
     <Handle
-      v-if="!isTreeMap && !isBridgeMap && (data.diagramType === 'mindmap' || data.diagramType === 'mind_map')"
+      v-if="
+        !isTreeMap &&
+        !isBridgeMap &&
+        (data.diagramType === 'mindmap' || data.diagramType === 'mind_map')
+      "
       id="left-source"
       type="source"
       :position="Position.Left"

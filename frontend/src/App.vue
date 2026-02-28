@@ -48,13 +48,13 @@ watch(
 function handleSessionExpiredLoginSuccess() {
   // Restore body scroll first
   document.body.style.overflow = ''
-  
+
   // Close the session expired modal
   authStore.closeSessionExpiredModal()
-  
+
   // Check for pending redirect (set when user tries to access protected route)
   const redirectPath = authStore.getAndClearPendingRedirect()
-  
+
   if (redirectPath) {
     // User was trying to access a protected route - navigate to it
     router.push(redirectPath).catch(() => {
@@ -72,7 +72,7 @@ function handleSessionExpiredLoginSuccess() {
       window.location.reload()
     })
   }
-  
+
   // Note: notification is already shown in LoginModal.vue, no need to duplicate here
 }
 

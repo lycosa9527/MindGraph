@@ -4,8 +4,11 @@
  * Swiss design style matching MindMate/MindGraph
  */
 import { computed } from 'vue'
+
 import { ElButton, ElIcon, ElTooltip } from 'element-plus'
-import { Upload, Setting, Search, Document, VideoPlay } from '@element-plus/icons-vue'
+
+import { Document, Search, Setting, Upload, VideoPlay } from '@element-plus/icons-vue'
+
 import { useLanguage } from '@/composables/useLanguage'
 
 const props = defineProps<{
@@ -57,7 +60,10 @@ const hasSelectedPending = computed(() => props.selectedPendingCount > 0)
       </ElButton>
 
       <!-- Selected Count Badge -->
-      <span v-if="selectedCount > 0" class="selected-badge">
+      <span
+        v-if="selectedCount > 0"
+        class="selected-badge"
+      >
         {{ isZh ? `已选 ${selectedCount} 项` : `${selectedCount} selected` }}
       </span>
 
@@ -69,7 +75,9 @@ const hasSelectedPending = computed(() => props.selectedPendingCount > 0)
         @click="emit('process-selected')"
       >
         <ElIcon class="mr-1"><VideoPlay /></ElIcon>
-        {{ isZh ? `处理选中 (${selectedPendingCount})` : `Process Selected (${selectedPendingCount})` }}
+        {{
+          isZh ? `处理选中 (${selectedPendingCount})` : `Process Selected (${selectedPendingCount})`
+        }}
       </ElButton>
 
       <!-- Start All Processing Button (when no selection but has pending) -->
@@ -84,9 +92,7 @@ const hasSelectedPending = computed(() => props.selectedPendingCount > 0)
       </ElButton>
 
       <!-- Retrieval Test Button -->
-      <ElTooltip
-        :content="isZh ? '检索测试' : 'Retrieval Test'"
-      >
+      <ElTooltip :content="isZh ? '检索测试' : 'Retrieval Test'">
         <ElButton
           text
           circle

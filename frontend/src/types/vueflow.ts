@@ -137,7 +137,7 @@ export function diagramNodeToVueFlowNode(
 
   // Preserve custom data fields from node.data (like pairIndex, position for bridge maps)
   const customData = node.data || {}
-  
+
   return {
     id: node.id,
     type: mappedType,

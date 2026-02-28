@@ -4,7 +4,11 @@
       <template #header>
         <div class="page-header">
           <h2>Smart Response 智回</h2>
-          <el-button type="primary" @click="handleStartLearningMode" :disabled="!selectedDiagramId">
+          <el-button
+            type="primary"
+            @click="handleStartLearningMode"
+            :disabled="!selectedDiagramId"
+          >
             Start Learning Mode
           </el-button>
         </div>
@@ -14,7 +18,11 @@
         <el-col :span="8">
           <el-card>
             <template #header>Diagram Selection</template>
-            <el-select v-model="selectedDiagramId" placeholder="Select diagram" style="width: 100%">
+            <el-select
+              v-model="selectedDiagramId"
+              placeholder="Select diagram"
+              style="width: 100%"
+            >
               <el-option
                 v-for="diagram in diagrams"
                 :key="diagram.id"
@@ -30,22 +38,48 @@
             <template #header>
               <div class="watch-list-header">
                 <span>Watches</span>
-                <el-button size="small" @click="fetchWatches">Refresh</el-button>
+                <el-button
+                  size="small"
+                  @click="fetchWatches"
+                  >Refresh</el-button
+                >
               </div>
             </template>
 
-            <el-table :data="watches" v-loading="isLoading">
-              <el-table-column prop="watch_id" label="Watch ID" width="150" />
-              <el-table-column prop="student_name" label="Student" width="120" />
-              <el-table-column prop="status" label="Status" width="120">
+            <el-table
+              :data="watches"
+              v-loading="isLoading"
+            >
+              <el-table-column
+                prop="watch_id"
+                label="Watch ID"
+                width="150"
+              />
+              <el-table-column
+                prop="student_name"
+                label="Student"
+                width="120"
+              />
+              <el-table-column
+                prop="status"
+                label="Status"
+                width="120"
+              >
                 <template #default="{ row }">
                   <el-tag :type="getStatusType(row.status)">
                     {{ row.status }}
                   </el-tag>
                 </template>
               </el-table-column>
-              <el-table-column prop="last_seen" label="Last Seen" width="180" />
-              <el-table-column label="Actions" width="200">
+              <el-table-column
+                prop="last_seen"
+                label="Last Seen"
+                width="180"
+              />
+              <el-table-column
+                label="Actions"
+                width="200"
+              >
                 <template #default="{ row }">
                   <el-button
                     v-if="row.status === 'unassigned'"
@@ -78,9 +112,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, computed } from 'vue'
-import { useSmartResponseStore } from '@/stores/smartResponse'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
+
 import WatchAssignmentModal from '@/components/smart-response/WatchAssignmentModal.vue'
+import { useSmartResponseStore } from '@/stores/smartResponse'
 
 const store = useSmartResponseStore()
 const watches = computed(() => store.watches)

@@ -5,15 +5,24 @@
 import { computed, ref } from 'vue'
 
 import { ElButton } from 'element-plus'
-import { Coins, Mic, MessageSquare, MessageCircleQuestion, CheckCircle, Gavel } from 'lucide-vue-next'
+
+import {
+  CheckCircle,
+  Coins,
+  Gavel,
+  MessageCircleQuestion,
+  MessageSquare,
+  Mic,
+} from 'lucide-vue-next'
 
 import { useLanguage } from '@/composables/useLanguage'
 import { useDebateVerseStore } from '@/stores/debateverse'
-import DebaterAvatar from './DebaterAvatar.vue'
-import DebateSection from './DebateSection.vue'
-import JudgeArea from './JudgeArea.vue'
-import DebateInput from './DebateInput.vue'
+
 import CoinTossDisplay from './CoinTossDisplay.vue'
+import DebateInput from './DebateInput.vue'
+import DebateSection from './DebateSection.vue'
+import DebaterAvatar from './DebaterAvatar.vue'
+import JudgeArea from './JudgeArea.vue'
 
 const { isZh } = useLanguage()
 const store = useDebateVerseStore()
@@ -58,21 +67,21 @@ const debateStages = [
 ]
 
 function getStageName(stage: string): string {
-  const stageInfo = debateStages.find(s => s.key === stage)
+  const stageInfo = debateStages.find((s) => s.key === stage)
   if (stageInfo) {
     return isZh.value ? stageInfo.zh : stageInfo.en
   }
-  
+
   const names: Record<string, string> = {
     setup: '准备',
     completed: '已完成',
   }
-  return isZh.value ? (names[stage] || stage) : stage
+  return isZh.value ? names[stage] || stage : stage
 }
 
 const currentStageIndex = computed(() => {
   const stage = currentStage.value
-  const index = debateStages.findIndex(s => s.key === stage)
+  const index = debateStages.findIndex((s) => s.key === stage)
   // If stage not found in debateStages (e.g., 'setup'), return -1 to highlight nothing
   // If found, return index to highlight up to and including current stage
   return index >= 0 ? index : -1
@@ -149,7 +158,7 @@ function handleAdvanceStage() {
                 :size="20"
               />
             </div>
-            
+
             <!-- Label -->
             <span
               class="text-xs text-center font-medium"
@@ -171,14 +180,19 @@ function handleAdvanceStage() {
         >
           {{ isZh ? '发言中' : 'Speaking' }}:
           <span class="font-medium text-gray-700 ml-1">
-            {{ store.participants.find(p => p.id === store.currentSpeaker)?.name || '' }}
+            {{ store.participants.find((p) => p.id === store.currentSpeaker)?.name || '' }}
           </span>
         </div>
       </div>
 
       <!-- Judge Advance Button -->
       <div
-        v-if="store.userRole === 'judge' && !showCoinToss && currentStage !== 'setup' && currentStage !== 'completed'"
+        v-if="
+          store.userRole === 'judge' &&
+          !showCoinToss &&
+          currentStage !== 'setup' &&
+          currentStage !== 'completed'
+        "
         class="mt-3 flex justify-end"
       >
         <ElButton
@@ -262,4 +276,3 @@ function handleAdvanceStage() {
     />
   </div>
 </template>
-

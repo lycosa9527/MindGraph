@@ -14,7 +14,6 @@ All Rights Reserved
 Proprietary License
 """
 from typing import Any, Dict, List, Optional, Set, Tuple
-import asyncio
 import json
 import logging
 import math
@@ -163,7 +162,7 @@ class ConceptMapAgent(BaseAgent):
                             if canonical(frm_raw) == mc_canon:
                                 mc_display = frm_raw
                                 break
-                            elif canonical(to_raw) == mc_canon:
+                            if canonical(to_raw) == mc_canon:
                                 mc_display = to_raw
                                 break
 
@@ -224,7 +223,7 @@ class ConceptMapAgent(BaseAgent):
         concept_b: str,
         language: str,
         concept_map_topic: str = "",
-        **kwargs: Any
+        **_kwargs: Any
     ) -> Dict[str, Any]:
         """Generate only the relationship label between two concepts."""
         topic = (concept_map_topic or "").strip() or "—"
@@ -353,26 +352,24 @@ class ConceptMapAgent(BaseAgent):
                 return llm_client.get_response(prompt)
 
             # Check if it's a LangChain LLM client with invoke method
-            elif hasattr(llm_client, 'invoke'):
+            if hasattr(llm_client, 'invoke'):
                 # Use LangChain's invoke method
                 pt = PromptTemplate(input_variables=[], template=prompt)
                 result = llm_client.invoke(pt)
                 return str(result) if result else ""
 
             # Check if it's an async client with chat_completion method
-            elif hasattr(llm_client, 'chat_completion'):
+            if hasattr(llm_client, 'chat_completion'):
                 # For now, return a mock response since we can't easily run async here
                 # In production, you'd want to properly handle the async call
                 if "concepts" in prompt.lower():
                     return '{"topic": "Test Topic", "concepts": ["Concept 1", "Concept 2", "Concept 3"]}'
-                elif "relationships" in prompt.lower():
+                if "relationships" in prompt.lower():
                     return '{"relationships": [{"from": "Concept 1", "to": "Concept 2", "label": "relates to"}]}'
-                else:
-                    return '{"result": "mock response"}'
+                return '{"result": "mock response"}'
 
             # Fallback for other client types
-            else:
-                raise ValueError(f"Unsupported LLM client type: {type(llm_client)}")
+            raise ValueError(f"Unsupported LLM client type: {type(llm_client)}")
 
         except Exception as e:
             raise ValueError(f"Failed to get LLM response: {str(e)}") from e
@@ -473,7 +470,7 @@ class ConceptMapAgent(BaseAgent):
                 # Try to find the start and end of JSON
                 start = cleaned.find('{')
                 end = cleaned.rfind('}') + 1
-                if start >= 0 and end > start:
+                if 0 <= start < end:
                     json_content = cleaned[start:end]
                     return json.loads(json_content)
             except json.JSONDecodeError:
@@ -535,10 +532,9 @@ class ConceptMapAgent(BaseAgent):
             if concepts:
                 logger.info("Extracted partial concepts from malformed JSON: %s", concepts)
                 return {"topic": topic, "concepts": concepts}
-            else:
-                # If we found absolutely nothing, just return the topic
-                logger.warning("Could not extract any concepts from response, returning topic only: %s", topic)
-                return {"topic": topic, "concepts": []}
+            # If we found absolutely nothing, just return the topic
+            logger.warning("Could not extract any concepts from response, returning topic only: %s", topic)
+            return {"topic": topic, "concepts": []}
 
     def _clean_text(self, text: str, max_len: int) -> str:
         if not isinstance(text, str):
@@ -748,8 +744,8 @@ class ConceptMapAgent(BaseAgent):
         content_area_y = coord_span_y * target_scale
 
         # Add space for the largest nodes (half extends on each side)
-        max_concept_w = max([w for w, h in concept_boxes], default=100)
-        max_concept_h = max([h for w, h in concept_boxes], default=40)
+        max_concept_w = max((w for w, h in concept_boxes), default=100)
+        max_concept_h = max((h for w, h in concept_boxes), default=40)
 
         node_margin_x = max(topic_w, max_concept_w) // 2
         node_margin_y = max(topic_h, max_concept_h) // 2

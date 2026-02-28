@@ -5,15 +5,24 @@
  */
 import { computed, ref } from 'vue'
 
-import { ElAvatar, ElButton, ElDropdown, ElDropdownItem, ElDropdownMenu, ElIcon, ElInput } from 'element-plus'
+import {
+  ElAvatar,
+  ElButton,
+  ElDropdown,
+  ElDropdownItem,
+  ElDropdownMenu,
+  ElIcon,
+  ElInput,
+} from 'element-plus'
 
 import { ArrowDown } from '@element-plus/icons-vue'
+
 import { Send } from 'lucide-vue-next'
 
 import debateverseAvatarLg from '@/assets/debateverse-avatar-lg.png'
 import { useLanguage } from '@/composables/useLanguage'
 import { useAuthStore } from '@/stores/auth'
-import { useDebateVerseStore, type LLMAssignment } from '@/stores/debateverse'
+import { type LLMAssignment, useDebateVerseStore } from '@/stores/debateverse'
 
 import SuggestionBubbles from '../common/SuggestionBubbles.vue'
 
@@ -34,7 +43,7 @@ const isCreating = ref(false)
 function shuffleLLMAssignments(): LLMAssignment {
   const models = ['qwen', 'doubao', 'deepseek', 'kimi']
   const shuffled = [...models].sort(() => Math.random() - 0.5)
-  
+
   return {
     affirmative_1: shuffled[0],
     affirmative_2: shuffled[1],
@@ -63,7 +72,11 @@ const roleLabel = computed(() => {
         ? '作为辩手参与'
         : '作为裁判评判'
   }
-  return userRole.value === 'viewer' ? 'Play as Viewer' : userRole.value === 'debater' ? 'Play as Debater' : 'Play as Judge'
+  return userRole.value === 'viewer'
+    ? 'Play as Viewer'
+    : userRole.value === 'debater'
+      ? 'Play as Debater'
+      : 'Play as Judge'
 })
 
 // Debate-specific suggestions
@@ -106,12 +119,7 @@ async function startDebate() {
 
     // If user selected a role, join as that role
     if (userRole.value !== 'viewer') {
-      await store.joinSession(
-        store.currentSessionId!,
-        userRole.value,
-        undefined,
-        undefined
-      )
+      await store.joinSession(store.currentSessionId!, userRole.value, undefined, undefined)
     }
 
     // Set stage to coin_toss (positions will auto-generate)
@@ -155,14 +163,21 @@ function handleKeydown(e: Event | KeyboardEvent) {
       />
       <div class="text-center mt-6">
         <p class="debate-subtitle">
-          {{ isZh ? `${username}你好，真正的智慧，诞生于观点的交锋。` : `${username}, true wisdom is born from the clash of viewpoints.` }}
+          {{
+            isZh
+              ? `${username}你好，真正的智慧，诞生于观点的交锋。`
+              : `${username}, true wisdom is born from the clash of viewpoints.`
+          }}
         </p>
       </div>
     </div>
 
     <!-- Suggestion Bubbles -->
     <div class="debate-suggestions">
-      <SuggestionBubbles :suggestions="debateSuggestions" @select="handleSuggestionSelect" />
+      <SuggestionBubbles
+        :suggestions="debateSuggestions"
+        @select="handleSuggestionSelect"
+      />
     </div>
 
     <!-- Input Area -->

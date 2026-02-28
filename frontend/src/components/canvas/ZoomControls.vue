@@ -9,8 +9,8 @@ import { ElButton, ElOption, ElSelect, ElTooltip } from 'element-plus'
 
 import { Hand, Maximize2, Minus, Play, Plus, Square } from 'lucide-vue-next'
 
-import { ZOOM } from '@/config/uiConfig'
 import { useLanguage } from '@/composables'
+import { ZOOM } from '@/config/uiConfig'
 
 const { isZh } = useLanguage()
 
@@ -199,8 +199,12 @@ defineExpose({
       <ElTooltip
         :content="
           props.isPresentationMode
-            ? (isZh ? '退出全屏' : 'Exit Fullscreen')
-            : (isZh ? '演示模式' : 'Presentation')
+            ? isZh
+              ? '退出全屏'
+              : 'Exit Fullscreen'
+            : isZh
+              ? '演示模式'
+              : 'Presentation'
         "
         placement="top"
       >

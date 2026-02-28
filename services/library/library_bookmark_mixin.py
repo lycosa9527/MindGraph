@@ -61,8 +61,8 @@ class LibraryBookmarkMixin:
         if existing:
             # Update existing bookmark
             sanitized_note = self._sanitize_content(note) if note else None
-            existing.note = sanitized_note
-            existing.updated_at = datetime.utcnow()
+            setattr(existing, "note", sanitized_note)
+            setattr(existing, "updated_at", datetime.utcnow())
             try:
                 self.db.commit()
             except Exception:
@@ -166,8 +166,8 @@ class LibraryBookmarkMixin:
                 "user_id": b.user_id,
                 "page_number": b.page_number,
                 "note": b.note,
-                "created_at": b.created_at.isoformat() if b.created_at else None,
-                "updated_at": b.updated_at.isoformat() if b.updated_at else None,
+                "created_at": b.created_at.isoformat() if b.created_at is not None else None,
+                "updated_at": b.updated_at.isoformat() if b.updated_at is not None else None,
                 "document": {
                     "id": b.document.id if b.document else None,
                     "title": b.document.title if b.document else None,

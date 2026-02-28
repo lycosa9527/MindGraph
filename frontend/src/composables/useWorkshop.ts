@@ -2,10 +2,10 @@
  * useWorkshop - Composable for workshop WebSocket collaboration
  * Handles real-time diagram updates via WebSocket
  */
-import { ref, computed, watch, onUnmounted, type Ref } from 'vue'
+import { type Ref, computed, onUnmounted, ref, watch } from 'vue'
 
+import { useLanguage, useNotifications } from '@/composables'
 import { useAuthStore } from '@/stores'
-import { useNotifications, useLanguage } from '@/composables'
 
 export interface ParticipantInfo {
   user_id: number
@@ -16,13 +16,13 @@ export interface WorkshopUpdate {
   type: 'update' | 'user_joined' | 'user_left' | 'joined' | 'error' | 'pong' | 'node_editing'
   diagram_id?: string
   spec?: Record<string, unknown>
-  nodes?: Array<Record<string, unknown>>  // Granular: only changed nodes
-  connections?: Array<Record<string, unknown>>  // Granular: only changed connections
+  nodes?: Array<Record<string, unknown>> // Granular: only changed nodes
+  connections?: Array<Record<string, unknown>> // Granular: only changed connections
   user_id?: number
   username?: string
   timestamp?: string
-  participants?: number[]  // Backward compatibility
-  participants_with_names?: ParticipantInfo[]  // New: includes usernames
+  participants?: number[] // Backward compatibility
+  participants_with_names?: ParticipantInfo[] // New: includes usernames
   message?: string
   node_id?: string
   editing?: boolean
@@ -41,17 +41,20 @@ export function useWorkshop(
   workshopCode: Ref<string | null>,
   diagramId: Ref<string | null>,
   onUpdate?: (spec: Record<string, unknown>) => void,
-  onGranularUpdate?: (nodes?: Array<Record<string, unknown>>, connections?: Array<Record<string, unknown>>) => void,
+  onGranularUpdate?: (
+    nodes?: Array<Record<string, unknown>>,
+    connections?: Array<Record<string, unknown>>
+  ) => void,
   onNodeEditing?: (nodeId: string, editor: ActiveEditor | null) => void
 ) {
   const ws = ref<WebSocket | null>(null)
   const isConnected = ref(false)
-  const participants = ref<number[]>([])  // Backward compatibility
-  const participantsWithNames = ref<ParticipantInfo[]>([])  // New: includes usernames
+  const participants = ref<number[]>([]) // Backward compatibility
+  const participantsWithNames = ref<ParticipantInfo[]>([]) // New: includes usernames
   const reconnectAttempts = ref(0)
   const maxReconnectAttempts = 5
   const reconnectDelay = 3000
-  const activeEditors = ref<Map<string, ActiveEditor>>(new Map())  // node_id -> ActiveEditor
+  const activeEditors = ref<Map<string, ActiveEditor>>(new Map()) // node_id -> ActiveEditor
   let reconnectTimeout: ReturnType<typeof setTimeout> | null = null
 
   const authStore = useAuthStore()
@@ -113,7 +116,9 @@ export function useWorkshop(
                 } else if (onUpdate) {
                   // Fallback: if no granular handler, use full update handler
                   // This requires the frontend to merge manually
-                  console.warn('[WorkshopWS] Granular update received but no onGranularUpdate handler')
+                  console.warn(
+                    '[WorkshopWS] Granular update received but no onGranularUpdate handler'
+                  )
                 }
               } else if (message.spec && onUpdate) {
                 // Full spec update (backward compatibility)
@@ -132,23 +137,26 @@ export function useWorkshop(
                     emoji: message.emoji,
                   }
                   activeEditors.value.set(message.node_id, editor)
-                  
+
                   // Show notification if not current user
-                  if (message.user_id !== undefined && String(message.user_id) !== authStore.user?.id) {
+                  if (
+                    message.user_id !== undefined &&
+                    String(message.user_id) !== authStore.user?.id
+                  ) {
                     notify.info(
                       isZh.value
                         ? `${editor.username} ${editor.emoji} 正在编辑此节点`
                         : `${editor.username} ${editor.emoji} is editing this node`
                     )
                   }
-                  
+
                   if (onNodeEditing) {
                     onNodeEditing(message.node_id, editor)
                   }
                 } else {
                   // User stopped editing
                   activeEditors.value.delete(message.node_id)
-                  
+
                   if (onNodeEditing) {
                     onNodeEditing(message.node_id, null)
                   }
@@ -157,33 +165,21 @@ export function useWorkshop(
               break
 
             case 'user_joined':
-              participants.value = [
-                ...(participants.value || []),
-                message.user_id!,
-              ]
+              participants.value = [...(participants.value || []), message.user_id!]
               notify.info(
-                isZh.value
-                  ? `用户 ${message.user_id} 已加入`
-                  : `User ${message.user_id} joined`
+                isZh.value ? `用户 ${message.user_id} 已加入` : `User ${message.user_id} joined`
               )
               break
 
             case 'user_left':
-              participants.value = (participants.value || []).filter(
-                (id) => id !== message.user_id
-              )
+              participants.value = (participants.value || []).filter((id) => id !== message.user_id)
               notify.info(
-                isZh.value
-                  ? `用户 ${message.user_id} 已离开`
-                  : `User ${message.user_id} left`
+                isZh.value ? `用户 ${message.user_id} 已离开` : `User ${message.user_id} left`
               )
               break
 
             case 'error':
-              notify.error(
-                message.message ||
-                  (isZh.value ? '工作坊错误' : 'Workshop error')
-              )
+              notify.error(message.message || (isZh.value ? '工作坊错误' : 'Workshop error'))
               break
 
             case 'pong':
@@ -211,13 +207,9 @@ export function useWorkshop(
 
         // Show error notification if not a normal closure
         if (event.code !== 1000 && event.code !== 1001) {
-          const reason =
-            event.reason ||
-            (isZh.value ? '连接已断开' : 'Connection closed')
+          const reason = event.reason || (isZh.value ? '连接已断开' : 'Connection closed')
           notify.warning(
-            isZh.value
-              ? `工作坊连接已断开：${reason}`
-              : `Workshop connection closed: ${reason}`
+            isZh.value ? `工作坊连接已断开：${reason}` : `Workshop connection closed: ${reason}`
           )
         }
 
@@ -229,9 +221,7 @@ export function useWorkshop(
         ) {
           reconnectAttempts.value++
           reconnectTimeout = setTimeout(() => {
-            console.log(
-              `[WorkshopWS] Reconnecting (attempt ${reconnectAttempts.value})...`
-            )
+            console.log(`[WorkshopWS] Reconnecting (attempt ${reconnectAttempts.value})...`)
             connect()
           }, reconnectDelay)
         } else if (reconnectAttempts.value >= maxReconnectAttempts) {
@@ -246,9 +236,7 @@ export function useWorkshop(
       ws.value = socket
     } catch (error) {
       console.error('[WorkshopWS] Failed to connect:', error)
-      notify.error(
-        isZh.value ? '连接工作坊失败' : 'Failed to connect to workshop'
-      )
+      notify.error(isZh.value ? '连接工作坊失败' : 'Failed to connect to workshop')
     }
   }
 
@@ -259,10 +247,10 @@ export function useWorkshop(
       clearTimeout(reconnectTimeout)
       reconnectTimeout = null
     }
-    
+
     // Reset reconnect attempts
     reconnectAttempts.value = 0
-    
+
     // Close WebSocket
     if (ws.value) {
       try {
@@ -272,13 +260,13 @@ export function useWorkshop(
       }
       ws.value = null
     }
-    
+
     // Clear state
     isConnected.value = false
     participants.value = []
     participantsWithNames.value = []
     activeEditors.value.clear()
-    
+
     // Stop heartbeat
     stopHeartbeat()
   }
@@ -376,14 +364,14 @@ export function useWorkshop(
 
   // Watch for code changes and connect/disconnect
   let codeWatcher: (() => void) | null = null
-  
+
   function watchCode() {
     // Stop existing watcher
     if (codeWatcher) {
       codeWatcher()
       codeWatcher = null
     }
-    
+
     // Create new watcher for code/diagram changes
     codeWatcher = watch(
       [workshopCode, diagramId],
@@ -406,7 +394,7 @@ export function useWorkshop(
       codeWatcher()
       codeWatcher = null
     }
-    
+
     // Disconnect and cleanup
     disconnect()
     stopHeartbeat()

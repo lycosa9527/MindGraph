@@ -6,6 +6,7 @@
 import { computed, nextTick, onMounted, onUpdated, ref, watch } from 'vue'
 
 import { useDebateVerseStore } from '@/stores/debateverse'
+
 import DebateMessage from './DebateMessage.vue'
 
 const props = defineProps<{
@@ -21,12 +22,12 @@ const messagesContainer = ref<HTMLElement | null>(null)
 
 const sideMessages = computed(() => {
   const allMessages = [...store.messages]
-  
+
   // Add streaming message if exists
   if (store.streamingMessage) {
     allMessages.push(store.streamingMessage as any)
   }
-  
+
   if (props.side === 'all') {
     // Show all messages sorted by creation time
     return allMessages.sort((a, b) => {
@@ -52,14 +53,14 @@ const sideMessages = computed(() => {
 function scrollToBottom() {
   nextTick(() => {
     if (!messagesContainer.value) return
-    
+
     // Try multiple selectors to find scrollable element
     const scrollbarWrap = messagesContainer.value.closest('.el-scrollbar__wrap')
     if (scrollbarWrap) {
       scrollbarWrap.scrollTop = scrollbarWrap.scrollHeight
       return
     }
-    
+
     // Fallback: find scrollbar in parent chain
     let parent = messagesContainer.value.parentElement
     while (parent) {
@@ -70,7 +71,7 @@ function scrollToBottom() {
       }
       parent = parent.parentElement
     }
-    
+
     // Final fallback: direct scroll
     if (messagesContainer.value.scrollTop !== undefined) {
       messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight
@@ -87,9 +88,13 @@ onUpdated(() => {
 })
 
 // Watch for streaming updates and messages changes
-watch(() => [store.streamingMessage, store.messages], () => {
-  scrollToBottom()
-}, { deep: true })
+watch(
+  () => [store.streamingMessage, store.messages],
+  () => {
+    scrollToBottom()
+  },
+  { deep: true }
+)
 </script>
 
 <template>
