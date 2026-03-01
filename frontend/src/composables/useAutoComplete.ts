@@ -172,6 +172,21 @@ export function useAutoComplete() {
       }
     }
 
+    // Strategy 3b: Flow map uses 'title' (main topic for auto-complete)
+    if (type === 'flow_map') {
+      const title = spec.title as string | undefined
+      if (title && !isPlaceholderText(title)) {
+        return title
+      }
+      // Fallback: flow-topic node text (when rebuilt from nodes)
+      const topicNode = (spec.nodes as Array<{ id?: string; text?: string }>)?.find(
+        (n) => n.id === 'flow-topic'
+      )
+      if (topicNode?.text && !isPlaceholderText(topicNode.text)) {
+        return topicNode.text
+      }
+    }
+
     // Strategy 4: Double bubble map uses left/right
     if (type === 'double_bubble_map') {
       const left = spec.left as string | undefined

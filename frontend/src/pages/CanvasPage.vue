@@ -332,6 +332,22 @@ function handleAddNodeKey() {
   eventBus.emit('diagram:add_node_requested', {})
 }
 
+function handleAddBranchKey() {
+  if (isTypingInInput()) return
+  if (diagramStore.type === 'mindmap' || diagramStore.type === 'mind_map') {
+    eventBus.emit('diagram:add_branch_requested', {})
+  } else {
+    eventBus.emit('diagram:add_node_requested', {})
+  }
+}
+
+function handleAddChildKey() {
+  if (isTypingInInput()) return
+  if (diagramStore.type === 'mindmap' || diagramStore.type === 'mind_map') {
+    eventBus.emit('diagram:add_child_requested', {})
+  }
+}
+
 function handleClearNodeTextKey() {
   if (isTypingInInput()) return
   const selected = [...diagramStore.selectedNodes]
@@ -361,6 +377,8 @@ function handleClearNodeTextKey() {
 useEditorShortcuts({
   delete: handleDeleteKey,
   addNode: handleAddNodeKey,
+  addBranch: handleAddBranchKey,
+  addChild: handleAddChildKey,
   clearNodeText: handleClearNodeTextKey,
 })
 

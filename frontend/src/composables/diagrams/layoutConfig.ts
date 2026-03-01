@@ -51,6 +51,12 @@ export const DEFAULT_NODE_HEIGHT = 50
 /** Default topic node width for multi-flow maps (optimized for "事件" - 2 Chinese characters) */
 export const MULTI_FLOW_MAP_TOPIC_WIDTH = 90
 
+/** Flow map main topic node width */
+export const FLOW_MAP_TOPIC_WIDTH = 120
+
+/** Gap between flow map topic and first step */
+export const FLOW_TOPIC_TO_STEP_GAP = 60
+
 // ============================================================================
 // Node Type-Specific Dimensions
 // ============================================================================
@@ -134,6 +140,10 @@ export const DEFAULT_HORIZONTAL_SPACING = 180
 
 /** Default vertical spacing between nodes */
 export const DEFAULT_VERTICAL_SPACING = 60
+
+/** Mindmap column width (rank separation) - horizontal distance between depth levels.
+ *  Tuned for symmetric left/right curve length. Slightly tighter than generic spacing. */
+export const DEFAULT_MINDMAP_RANK_SEPARATION = 160
 
 /** Default step spacing for flow maps */
 export const DEFAULT_STEP_SPACING = 200

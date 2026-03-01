@@ -21,7 +21,7 @@ import {
 import {
   DEFAULT_CENTER_X,
   DEFAULT_CENTER_Y,
-  DEFAULT_HORIZONTAL_SPACING,
+  DEFAULT_MINDMAP_RANK_SEPARATION,
   DEFAULT_NODE_HEIGHT,
   DEFAULT_NODE_WIDTH,
   DEFAULT_PADDING,
@@ -55,7 +55,7 @@ export function useMindMap(options: MindMapOptions = {}) {
   const {
     centerX = DEFAULT_CENTER_X,
     centerY = DEFAULT_CENTER_Y,
-    horizontalSpacing = DEFAULT_HORIZONTAL_SPACING,
+    horizontalSpacing = DEFAULT_MINDMAP_RANK_SEPARATION,
     verticalSpacing = DEFAULT_VERTICAL_SPACING,
     useBackendLayout = false,
     useDagreLayout = true, // Default to Dagre for local operations
@@ -172,8 +172,8 @@ export function useMindMap(options: MindMapOptions = {}) {
           id: nodeId,
           type: 'branch',
           position: {
-            x: pos.x + offsetX - DEFAULT_NODE_WIDTH / 2,
-            y: pos.y + offsetY - DEFAULT_NODE_HEIGHT / 2,
+            x: pos.x + offsetX,
+            y: pos.y + offsetY,
           },
           data: {
             label: info.text,

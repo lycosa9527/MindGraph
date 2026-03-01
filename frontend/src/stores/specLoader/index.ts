@@ -25,6 +25,13 @@ import type { SpecLoaderResult } from './types'
 export { recalculateCircleMapLayout } from './circleMap'
 export { recalculateBubbleMapLayout } from './bubbleMap'
 export { recalculateMultiFlowMapLayout } from './multiFlowMap'
+export {
+  distributeBranchesClockwise,
+  findBranchByNodeId,
+  loadMindMapSpec,
+  nodesAndConnectionsToMindMapSpec,
+  normalizeMindMapHorizontalSymmetry,
+} from './mindMap'
 export type { SpecLoaderResult } from './types'
 
 /**

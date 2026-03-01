@@ -31,8 +31,17 @@ const isPillShape = computed(
     props.data.diagramType === 'mindmap' ||
     props.data.diagramType === 'mind_map'
 )
-// Multi-flow map uses rounded rectangle
-const isRoundedRectangle = computed(() => props.data.diagramType === 'multi_flow_map')
+// Multi-flow map and flow map use rounded rectangle
+const isRoundedRectangle = computed(
+  () =>
+    props.data.diagramType === 'multi_flow_map' || props.data.diagramType === 'flow_map'
+)
+
+// Flow map: main topic with single handle (right for horizontal, bottom for vertical)
+const isFlowMap = computed(() => props.data.diagramType === 'flow_map')
+const flowMapOrientation = computed(
+  () => (props.data.orientation as 'horizontal' | 'vertical') || 'horizontal'
+)
 
 // Specific diagram type checks for handle positioning
 const isTreeMap = computed(() => props.data.diagramType === 'tree_map')
@@ -82,58 +91,39 @@ const rightHandlePositions = computed(() => {
   return positions
 })
 
-// For mindmaps: get total branch count and quadrant distribution
+// For mindmaps: get total branch count for left/right handle distribution
 const totalBranchCount = computed(() => {
   if (!isMindMap.value) return 0
   return (props.data.totalBranchCount as number) || 0
 })
 
-// Clockwise distribution: top-right → bottom-right → bottom-left → top-left
-// Returns handle positions for all 4 quadrants
+// Mindmap handles: only left and right edges, evenly distributed along each edge
 const mindMapHandlePositions = computed(() => {
   if (totalBranchCount.value === 0) {
-    return { topRight: [], bottomRight: [], bottomLeft: [], topLeft: [] }
+    return { right: [], left: [] }
   }
 
   const total = totalBranchCount.value
-  // Match Python agent logic: first half → RIGHT, second half → LEFT (reversed)
-  // Right side: top to bottom → top-right then bottom-right
-  // Left side: bottom to top (reversed) → bottom-left then top-left
   const midPoint = Math.ceil(total / 2)
-
-  // Count branches per quadrant based on left/right split
-  // Right side (first half): distribute between top-right and bottom-right
-  // Left side (second half): distribute between bottom-left and top-left
   const rightCount = midPoint
   const leftCount = total - midPoint
 
-  const counts = {
-    topRight: Math.ceil(rightCount / 2),
-    bottomRight: Math.floor(rightCount / 2),
-    bottomLeft: Math.ceil(leftCount / 2),
-    topLeft: Math.floor(leftCount / 2),
-  }
-
-  // Generate handles for each quadrant with proper spacing
-  const generateHandles = (count: number, prefix: string, isTop: boolean) => {
-    const handles: Array<{ id: string; top: string }> = []
+  const generateHandles = (count: number, prefix: string) => {
+    const handles: Array<{ id: string; top: string; transform: string }> = []
     for (let i = 0; i < count; i++) {
-      const numerator = (i + 1) * 100
-      const denominator = count + 1
-      const position = isTop ? `${numerator / denominator}%` : `${100 - numerator / denominator}%`
+      const topPercent = ((i + 1) / (count + 1)) * 100
       handles.push({
         id: `${prefix}-${i}`,
-        top: position,
+        top: `${topPercent}%`,
+        transform: 'translateY(-50%)',
       })
     }
     return handles
   }
 
   return {
-    topRight: generateHandles(counts.topRight, 'mindmap-top-right', true),
-    bottomRight: generateHandles(counts.bottomRight, 'mindmap-bottom-right', false),
-    bottomLeft: generateHandles(counts.bottomLeft, 'mindmap-bottom-left', false),
-    topLeft: generateHandles(counts.topLeft, 'mindmap-top-left', true),
+    right: generateHandles(rightCount, 'mindmap-right'),
+    left: generateHandles(leftCount, 'mindmap-left'),
   }
 })
 
@@ -173,6 +163,15 @@ const nodeStyle = computed(() => {
       ...baseStyle,
       width: '90px',
       minWidth: '90px',
+    }
+  }
+
+  // Flow map topic: fixed width for layout consistency
+  if (isFlowMap.value) {
+    return {
+      ...baseStyle,
+      width: '120px',
+      minWidth: '120px',
     }
   }
 
@@ -241,6 +240,7 @@ function handleWidthChange(width: number) {
       'pill-shape': isPillShape,
       'rounded-rectangle': isRoundedRectangle,
       'multi-flow-map-node': isMultiFlowMap,
+      'flow-map-topic-node': isFlowMap,
     }"
     :style="nodeStyle"
   >
@@ -258,26 +258,27 @@ function handleWidthChange(width: number) {
 
     <!-- Connection handles for horizontal layouts (bubble maps, etc.) -->
     <!-- Mindmaps use dynamic handles below, so exclude them here -->
+    <!-- Flow map uses single handle below, so exclude it here -->
     <Handle
-      v-if="!isPillShape && !isMultiFlowMap && !isMindMap"
+      v-if="!isPillShape && !isMultiFlowMap && !isMindMap && !isFlowMap"
       type="source"
       :position="Position.Right"
       class="bg-blue-500!"
     />
     <Handle
-      v-if="!isPillShape && !isMultiFlowMap && !isMindMap"
+      v-if="!isPillShape && !isMultiFlowMap && !isMindMap && !isFlowMap"
       type="source"
       :position="Position.Left"
       class="bg-blue-500!"
     />
     <Handle
-      v-if="!isPillShape && !isMultiFlowMap && !isMindMap"
+      v-if="!isPillShape && !isMultiFlowMap && !isMindMap && !isFlowMap"
       type="source"
       :position="Position.Top"
       class="bg-blue-500!"
     />
     <Handle
-      v-if="!isPillShape && !isMultiFlowMap && !isMindMap"
+      v-if="!isPillShape && !isMultiFlowMap && !isMindMap && !isFlowMap"
       type="source"
       :position="Position.Bottom"
       class="bg-blue-500!"
@@ -325,52 +326,44 @@ function handleWidthChange(width: number) {
       />
     </template>
 
-    <!-- Connection handles for mindmaps (clockwise: top-right → bottom-right → bottom-left → top-left) -->
-    <!-- Top-right quadrant handles (right edge, top portion) -->
+    <!-- Flow map: single handle at right center (horizontal) or bottom center (vertical) -->
+    <Handle
+      v-if="isFlowMap && flowMapOrientation === 'horizontal'"
+      id="right"
+      type="source"
+      :position="Position.Right"
+      :style="{ top: '50%', transform: 'translateY(-50%)' }"
+      class="bg-blue-500!"
+    />
+    <Handle
+      v-if="isFlowMap && flowMapOrientation === 'vertical'"
+      id="bottom"
+      type="source"
+      :position="Position.Bottom"
+      :style="{ left: '50%', transform: 'translateX(-50%)' }"
+      class="bg-blue-500!"
+    />
+
+    <!-- Connection handles for mindmaps: left and right edges, evenly distributed -->
     <template v-if="isMindMap">
       <Handle
-        v-for="handle in mindMapHandlePositions.topRight"
+        v-for="handle in mindMapHandlePositions.right"
         :id="handle.id"
         :key="handle.id"
         type="source"
         :position="Position.Right"
-        :style="{ top: handle.top }"
+        :style="{ top: handle.top, transform: handle.transform }"
         class="bg-blue-500!"
       />
     </template>
-    <!-- Bottom-right quadrant handles (right edge, bottom portion) -->
     <template v-if="isMindMap">
       <Handle
-        v-for="handle in mindMapHandlePositions.bottomRight"
-        :id="handle.id"
-        :key="handle.id"
-        type="source"
-        :position="Position.Right"
-        :style="{ top: handle.top }"
-        class="bg-blue-500!"
-      />
-    </template>
-    <!-- Bottom-left quadrant handles (left edge, bottom portion) -->
-    <template v-if="isMindMap">
-      <Handle
-        v-for="handle in mindMapHandlePositions.bottomLeft"
+        v-for="handle in mindMapHandlePositions.left"
         :id="handle.id"
         :key="handle.id"
         type="source"
         :position="Position.Left"
-        :style="{ top: handle.top }"
-        class="bg-blue-500!"
-      />
-    </template>
-    <!-- Top-left quadrant handles (left edge, top portion) -->
-    <template v-if="isMindMap">
-      <Handle
-        v-for="handle in mindMapHandlePositions.topLeft"
-        :id="handle.id"
-        :key="handle.id"
-        type="source"
-        :position="Position.Left"
-        :style="{ top: handle.top }"
+        :style="{ top: handle.top, transform: handle.transform }"
         class="bg-blue-500!"
       />
     </template>

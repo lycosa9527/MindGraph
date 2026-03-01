@@ -62,6 +62,8 @@ export function useEditorShortcuts(handlers: {
   paste?: () => void
   escape?: () => void
   addNode?: () => void
+  addBranch?: () => void
+  addChild?: () => void
   clearNodeText?: () => void
 }) {
   const shortcuts: KeyboardShortcut[] = []
@@ -102,6 +104,14 @@ export function useEditorShortcuts(handlers: {
 
   if (handlers.addNode) {
     shortcuts.push({ key: '=', handler: handlers.addNode })
+  }
+
+  if (handlers.addBranch) {
+    shortcuts.push({ key: 'Tab', handler: handlers.addBranch })
+  }
+
+  if (handlers.addChild) {
+    shortcuts.push({ key: 'Enter', handler: handlers.addChild })
   }
 
   if (handlers.clearNodeText) {

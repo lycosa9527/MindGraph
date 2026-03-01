@@ -932,30 +932,14 @@ const gridConfig = {
   filter: grayscale(1);
 }
 
-/* Default node selection styles (box-shadow for rectangular nodes) */
+/* All diagrams: hide Vue Flow's default blue selection box, use pulse glow animation instead */
+.diagram-canvas .vue-flow__nodesselection,
+.diagram-canvas .vue-flow__nodesselection-rect {
+  display: none !important;
+}
+
+/* Default node selection: pulse glow animation (same as circle map, concept map) */
 .vue-flow__node.selected {
-  box-shadow: 0 0 0 2px #3b82f6;
-}
-
-/* Circle map & bubble maps: hide Vue Flow's selection bounding box, use per-node pulse animation instead */
-.circle-map-canvas .vue-flow__nodesselection,
-.circle-map-canvas .vue-flow__nodesselection-rect {
-  display: none !important;
-}
-
-/* Concept map: hide Vue Flow's blue selection box, use pulse glow animation instead */
-.concept-map-canvas .vue-flow__nodesselection,
-.concept-map-canvas .vue-flow__nodesselection-rect {
-  display: none !important;
-}
-
-.concept-map-canvas .vue-flow__node-concept.selected {
-  box-shadow: none !important;
-  animation: pulseGlow 2s ease-in-out infinite;
-}
-
-/* Bubble map attribute nodes (pill shape): pulse glow when selected, same as circle map */
-.circle-map-canvas .vue-flow__node-bubble.selected {
   box-shadow: none !important;
   animation: pulseGlow 2s ease-in-out infinite;
 }
@@ -1160,6 +1144,7 @@ const gridConfig = {
 .vue-flow__node-boundary.selected {
   box-shadow: none !important;
   filter: none !important;
+  animation: none !important;
 }
 
 /* Multi-flow map node selection - matches circle map approach */

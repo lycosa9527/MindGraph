@@ -71,7 +71,14 @@ const menuItems = computed<MenuItem[]>(() => {
     items.push({
       label: '删除',
       action: () => {
-        if (diagramStore.removeNode(node.id)) {
+        const diagramType = diagramStore.type
+        let deleted = false
+        if (diagramType === 'mindmap' || diagramType === 'mind_map') {
+          deleted = diagramStore.removeMindMapNodes([node.id]) > 0
+        } else {
+          deleted = diagramStore.removeNode(node.id)
+        }
+        if (deleted) {
           diagramStore.pushHistory('删除节点')
           emit('close')
         }
@@ -115,6 +122,38 @@ const menuItems = computed<MenuItem[]>(() => {
         })
       }
 
+      items.push({ divider: true })
+    }
+
+    if (diagramStore.type === 'mindmap' || diagramStore.type === 'mind_map') {
+      if (node.id !== 'topic') {
+        items.push({
+          label: isZh.value ? '添加子项' : 'Add Child',
+          action: () => {
+            if (diagramStore.addMindMapChild(node.id, isZh.value ? '新子项' : 'New Child')) {
+              diagramStore.pushHistory(isZh.value ? '添加子项' : 'Add Child')
+            }
+            emit('close')
+          },
+        })
+      }
+      items.push({
+        label: isZh.value ? '添加分支' : 'Add Branch',
+        action: () => {
+          const side = node.id.startsWith('branch-l-') ? 'left' : 'right'
+          const childText = isZh.value ? '新子项' : 'New Child'
+          if (
+            diagramStore.addMindMapBranch(
+              side,
+              isZh.value ? '新分支' : 'New Branch',
+              childText
+            )
+          ) {
+            diagramStore.pushHistory(isZh.value ? '添加分支' : 'Add Branch')
+          }
+          emit('close')
+        },
+      })
       items.push({ divider: true })
     }
 

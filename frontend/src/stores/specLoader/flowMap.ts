@@ -8,6 +8,7 @@ import {
   DEFAULT_PADDING,
   DEFAULT_STEP_SPACING,
   FLOW_GROUP_GAP,
+  FLOW_MAP_TOPIC_WIDTH,
   FLOW_MIN_STEP_SPACING,
   FLOW_NODE_HEIGHT,
   FLOW_NODE_WIDTH,
@@ -15,6 +16,8 @@ import {
   FLOW_SUBSTEP_NODE_WIDTH,
   FLOW_SUBSTEP_OFFSET_X,
   FLOW_SUBSTEP_SPACING,
+  FLOW_TOPIC_TO_STEP_GAP,
+  TOPIC_NODE_HEIGHT,
 } from '@/composables/diagrams/layoutConfig'
 import type { Connection, DiagramNode } from '@/types'
 
@@ -31,11 +34,14 @@ interface FlowSubstepEntry {
  * @param spec - Flow map spec with steps, substeps, and orientation
  * @returns SpecLoaderResult with nodes and connections
  */
+const FLOW_TOPIC_NODE_ID = 'flow-topic'
+
 export function loadFlowMapSpec(spec: Record<string, unknown>): SpecLoaderResult {
   // Steps can be strings or objects with text property
   const rawSteps = (spec.steps as Array<string | { id?: string; text: string }>) || []
   const orientation = (spec.orientation as 'horizontal' | 'vertical') || 'horizontal'
   const substepsData = (spec.substeps as FlowSubstepEntry[]) || []
+  const title = (spec.title as string) || ''
 
   // Normalize steps to objects with text
   const steps = rawSteps.map((step, index) => {
@@ -63,11 +69,21 @@ export function loadFlowMapSpec(spec: Record<string, unknown>): SpecLoaderResult
 
   if (isVertical) {
     // =========================================================================
-    // VERTICAL LAYOUT: Steps stacked vertically (same X), substeps to the right
-    // Use dagre for each substep group to get proper vertical distribution
+    // VERTICAL LAYOUT: Main topic at top, steps stacked vertically below
     // =========================================================================
     const stepX = DEFAULT_CENTER_X - FLOW_NODE_WIDTH / 2 // All steps at same X
     const substepX = DEFAULT_CENTER_X + FLOW_NODE_WIDTH / 2 + FLOW_SUBSTEP_OFFSET_X
+
+    // Main topic node at top (left/top of 步骤1)
+    const topicX = DEFAULT_CENTER_X - FLOW_MAP_TOPIC_WIDTH / 2
+    const topicY = DEFAULT_PADDING + 40
+    nodes.push({
+      id: FLOW_TOPIC_NODE_ID,
+      text: title,
+      type: 'topic',
+      position: { x: topicX, y: topicY },
+      data: { orientation: 'vertical' },
+    })
 
     // For each step, calculate substep positions using dagre
     interface SubstepGroup {
@@ -124,8 +140,11 @@ export function loadFlowMapSpec(spec: Record<string, unknown>): SpecLoaderResult
 
     // =========================================================================
     // Position steps vertically, centered on their substep groups
+    // Start below the main topic node
     // =========================================================================
-    let currentY = DEFAULT_PADDING + 40
+    const topicHeight = 52 // Approximate topic node height
+    let currentY =
+      DEFAULT_PADDING + 40 + topicHeight + FLOW_TOPIC_TO_STEP_GAP
 
     substepGroups.forEach((group, groupIndex) => {
       const hasSubsteps = group.substepIds.length > 0
@@ -167,8 +186,19 @@ export function loadFlowMapSpec(spec: Record<string, unknown>): SpecLoaderResult
         currentY += FLOW_NODE_HEIGHT + FLOW_MIN_STEP_SPACING
       }
 
-      // Create edge to previous step (vertical: bottom-to-top flow)
-      if (groupIndex > 0) {
+      // Create edge to previous step or from topic (vertical: top-to-bottom flow)
+      if (groupIndex === 0) {
+        connections.push({
+          id: `edge-${FLOW_TOPIC_NODE_ID}-${group.stepId}`,
+          source: FLOW_TOPIC_NODE_ID,
+          target: group.stepId,
+          sourcePosition: 'bottom',
+          targetPosition: 'top',
+          sourceHandle: 'bottom',
+          targetHandle: 'top',
+          edgeType: 'straight',
+        })
+      } else {
         const prevId = substepGroups[groupIndex - 1].stepId
         connections.push({
           id: `edge-${prevId}-${group.stepId}`,
@@ -197,14 +227,27 @@ export function loadFlowMapSpec(spec: Record<string, unknown>): SpecLoaderResult
     })
   } else {
     // =========================================================================
-    // HORIZONTAL LAYOUT: Steps left-to-right (same Y), substeps below
+    // HORIZONTAL LAYOUT: Main topic at left, steps left-to-right
     // =========================================================================
     const stepY = DEFAULT_CENTER_Y - FLOW_NODE_HEIGHT / 2
+
+    // Main topic node at left, center-aligned with step nodes on Y
+    const topicX = DEFAULT_PADDING
+    const topicY = DEFAULT_CENTER_Y - TOPIC_NODE_HEIGHT / 2
+    nodes.push({
+      id: FLOW_TOPIC_NODE_ID,
+      text: title,
+      type: 'topic',
+      position: { x: topicX, y: topicY },
+      data: { orientation: 'horizontal' },
+    })
+
+    const stepStartX = DEFAULT_PADDING + FLOW_MAP_TOPIC_WIDTH + FLOW_TOPIC_TO_STEP_GAP
 
     steps.forEach((step, stepIndex) => {
       const stepId = step.id
       const substeps = stepToSubsteps[step.text] || []
-      const stepX = DEFAULT_PADDING + stepIndex * DEFAULT_STEP_SPACING
+      const stepX = stepStartX + stepIndex * DEFAULT_STEP_SPACING
 
       // Create step node
       nodes.push({
@@ -214,8 +257,19 @@ export function loadFlowMapSpec(spec: Record<string, unknown>): SpecLoaderResult
         position: { x: stepX, y: stepY },
       })
 
-      // Create edge to previous step (horizontal: right-to-left flow)
-      if (stepIndex > 0) {
+      // Create edge from topic to first step, or previous step (horizontal: left-to-right flow)
+      if (stepIndex === 0) {
+        connections.push({
+          id: `edge-${FLOW_TOPIC_NODE_ID}-${stepId}`,
+          source: FLOW_TOPIC_NODE_ID,
+          target: stepId,
+          sourcePosition: 'right',
+          targetPosition: 'left',
+          sourceHandle: 'right',
+          targetHandle: 'left',
+          edgeType: 'straight',
+        })
+      } else {
         const prevId = steps[stepIndex - 1].id
         connections.push({
           id: `edge-${prevId}-${stepId}`,

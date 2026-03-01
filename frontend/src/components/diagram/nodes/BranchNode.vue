@@ -8,6 +8,7 @@ import { computed, ref } from 'vue'
 
 import { Handle, Position } from '@vue-flow/core'
 
+import { getMindmapBranchColor } from '@/config/mindmapColors'
 import { eventBus } from '@/composables/useEventBus'
 import { useTheme } from '@/composables/useTheme'
 import type { MindGraphNodeProps } from '@/types'
@@ -31,6 +32,17 @@ const isTreeMap = computed(() => props.data.diagramType === 'tree_map')
 
 // Check if this is a bridge map node (should be text-only, including first pair)
 const isBridgeMap = computed(() => props.data.diagramType === 'bridge_map')
+
+// Mindmap uses pill shape for branch and children nodes (matches topic)
+const isMindMap = computed(
+  () => props.data.diagramType === 'mindmap' || props.data.diagramType === 'mind_map'
+)
+
+const mindmapBranchColors = computed(() => {
+  const index = (props.data.branchIndex as number) ?? 0
+  return getMindmapBranchColor(index)
+})
+
 const isFirstPair = computed(() => {
   if (!isBridgeMap.value) return true
   const pairIndex = props.data.pairIndex
@@ -43,13 +55,21 @@ const nodeStyle = computed(() => {
   const shouldHaveBackground = !isBridgeMap.value
   const shouldHaveShadow = !isBridgeMap.value
 
+  const bgColor = shouldHaveBackground
+    ? props.data.style?.backgroundColor ||
+      (isMindMap.value ? mindmapBranchColors.value.fill : defaultStyle.value.backgroundColor) ||
+      '#e3f2fd'
+    : 'transparent'
+  const borderColor = shouldHaveBorder
+    ? props.data.style?.borderColor ||
+      (isMindMap.value ? mindmapBranchColors.value.border : defaultStyle.value.borderColor) ||
+      '#4e79a7'
+    : 'transparent'
+
   return {
-    backgroundColor: shouldHaveBackground
-      ? props.data.style?.backgroundColor || defaultStyle.value.backgroundColor || '#e3f2fd'
-      : 'transparent',
-    borderColor: shouldHaveBorder
-      ? props.data.style?.borderColor || defaultStyle.value.borderColor || '#4e79a7'
-      : 'transparent',
+    backgroundColor: bgColor,
+    borderStyle: shouldHaveBorder ? 'solid' : 'none',
+    borderColor,
     color: props.data.style?.textColor || defaultStyle.value.textColor || '#333333',
     fontFamily: props.data.style?.fontFamily,
     fontSize: `${props.data.style?.fontSize || defaultStyle.value.fontSize || 16}px`,
@@ -57,9 +77,11 @@ const nodeStyle = computed(() => {
     fontStyle: props.data.style?.fontStyle || 'normal',
     textDecoration: props.data.style?.textDecoration || 'none',
     borderWidth: shouldHaveBorder
-      ? `${props.data.style?.borderWidth || defaultStyle.value.borderWidth || 2}px`
+      ? `${props.data.style?.borderWidth ?? (isMindMap.value ? 3 : defaultStyle.value.borderWidth) ?? 2}px`
       : '0px',
-    borderRadius: `${props.data.style?.borderRadius || 8}px`,
+    borderRadius: isMindMap.value
+      ? '9999px'
+      : `${props.data.style?.borderRadius || 8}px`,
     boxShadow: shouldHaveShadow ? undefined : 'none',
   }
 })
@@ -82,7 +104,7 @@ function handleEditCancel() {
 
 <template>
   <div
-    class="branch-node flex items-center justify-center px-4 py-2 cursor-grab select-none"
+    class="branch-node flex items-center justify-center px-4 py-2 cursor-grab select-none border-solid"
     :class="{
       'tree-map-node': isTreeMap,
       'border-none': isBridgeMap,

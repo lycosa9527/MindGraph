@@ -65,6 +65,8 @@ export type EventTypes = {
   }
   'diagram:delete_selected_requested': Record<string, never>
   'diagram:add_node_requested': Record<string, never>
+  'diagram:add_branch_requested': Record<string, never>
+  'diagram:add_child_requested': Record<string, never>
   'diagram:node_updated': {
     nodeId: string
     updates: unknown

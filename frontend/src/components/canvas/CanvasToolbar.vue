@@ -498,8 +498,55 @@ function handleAddNode() {
     return
   }
 
+  // For mindmap: add branch (Tab) or child (Enter) - handled by handleAddBranch/handleAddChild
+  if (diagramType === 'mindmap' || diagramType === 'mind_map') {
+    handleAddBranch()
+    return
+  }
+
   // For other diagram types, show under development message
   notify.info('增加节点功能开发中')
+}
+
+function handleAddBranch() {
+  const diagramType = diagramStore.type
+  if (diagramType !== 'mindmap' && diagramType !== 'mind_map') return
+  if (!diagramStore.data?.nodes) {
+    notify.warning(isZh.value ? '请先创建图示' : 'Please create a diagram first')
+    return
+  }
+
+  const selectedId = diagramStore.selectedNodes[0]
+  const side: 'left' | 'right' =
+    selectedId?.startsWith('branch-l-') ? 'left' : 'right'
+  const text = isZh.value ? '新分支' : 'New Branch'
+  const childText = isZh.value ? '新子项' : 'New Child'
+
+  if (diagramStore.addMindMapBranch(side, text, childText)) {
+    notify.success(isZh.value ? '已添加分支' : 'Branch added')
+  }
+}
+
+function handleAddChild() {
+  const diagramType = diagramStore.type
+  if (diagramType !== 'mindmap' && diagramType !== 'mind_map') return
+  if (!diagramStore.data?.nodes) {
+    notify.warning(isZh.value ? '请先创建图示' : 'Please create a diagram first')
+    return
+  }
+
+  const selectedId = diagramStore.selectedNodes[0]
+  if (!selectedId || selectedId === 'topic') {
+    notify.warning(isZh.value ? '请先选择分支或子节点' : 'Please select a branch or child node')
+    return
+  }
+
+  const text = isZh.value ? '新子项' : 'New Child'
+  if (diagramStore.addMindMapChild(selectedId, text)) {
+    notify.success(isZh.value ? '已添加子项' : 'Child added')
+  } else {
+    notify.warning(isZh.value ? '无法添加子项' : 'Cannot add child')
+  }
 }
 
 function handleAddCause() {
@@ -739,6 +786,21 @@ async function handleDeleteNode() {
     return
   }
 
+  // For mindmap: rebuild spec and remove selected branches/children
+  if (diagramType === 'mindmap' || diagramType === 'mind_map') {
+    const selectedNodes = [...diagramStore.selectedNodes]
+    const deletedCount = diagramStore.removeMindMapNodes(selectedNodes)
+
+    if (deletedCount > 0) {
+      diagramStore.clearSelection()
+      diagramStore.pushHistory(isZh.value ? '删除节点' : 'Delete nodes')
+      notify.success(`已删除 ${deletedCount} 个节点`)
+    } else {
+      notify.warning(isZh.value ? '无法删除主题节点' : 'Cannot delete topic node')
+    }
+    return
+  }
+
   // For bridge maps, delete entire analogy pairs
   if (diagramType === 'bridge_map') {
     if (!diagramStore.data?.nodes) {
@@ -905,11 +967,15 @@ function handleToggleOrientation() {
 onMounted(() => {
   eventBus.on('diagram:delete_selected_requested', handleDeleteNode)
   eventBus.on('diagram:add_node_requested', handleAddNode)
+  eventBus.on('diagram:add_branch_requested', handleAddBranch)
+  eventBus.on('diagram:add_child_requested', handleAddChild)
 })
 
 onUnmounted(() => {
   eventBus.off('diagram:delete_selected_requested', handleDeleteNode)
   eventBus.off('diagram:add_node_requested', handleAddNode)
+  eventBus.off('diagram:add_branch_requested', handleAddBranch)
+  eventBus.off('diagram:add_child_requested', handleAddChild)
 })
 </script>
 

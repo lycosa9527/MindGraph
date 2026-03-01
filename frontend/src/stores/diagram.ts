@@ -14,7 +14,11 @@ import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 
 import { augmentConnectionWithOptimalHandles } from '@/composables/diagrams/conceptMapHandles'
-import { MULTI_FLOW_MAP_TOPIC_WIDTH } from '@/composables/diagrams/layoutConfig'
+import {
+  DEFAULT_CENTER_X,
+  DEFAULT_NODE_WIDTH,
+  MULTI_FLOW_MAP_TOPIC_WIDTH,
+} from '@/composables/diagrams/layoutConfig'
 import { eventBus } from '@/composables/useEventBus'
 import type {
   Connection,
@@ -35,8 +39,13 @@ import {
 } from '@/types/vueflow'
 
 import {
+  distributeBranchesClockwise,
+  findBranchByNodeId,
   getDefaultTemplate,
+  loadMindMapSpec,
   loadSpecForDiagramType,
+  nodesAndConnectionsToMindMapSpec,
+  normalizeMindMapHorizontalSymmetry,
   recalculateBubbleMapLayout,
   recalculateCircleMapLayout,
   recalculateMultiFlowMapLayout,
@@ -143,9 +152,9 @@ const MAX_HISTORY_SIZE = 50
 
 // Helper to determine edge type based on diagram type
 function getEdgeTypeForDiagram(diagramType: DiagramType | null): MindGraphEdgeType {
-  // Mindmaps use straight edges with dynamic handles
+  // Mindmaps use curved edges (same bezier style as concept map)
   if (diagramType === 'mindmap' || diagramType === 'mind_map') {
-    return 'straight'
+    return 'curved'
   }
   if (!diagramType) return 'curved'
 
@@ -270,14 +279,21 @@ export const useDiagramStore = defineStore('diagram', () => {
       })
     }
 
-    // For mindmaps, ensure branch counts are passed through from node.data
-    // (They should already be set by specLoader, but ensure they're preserved)
+    // For mindmaps, ensure topic has totalBranchCount for handle generation
+    // (New branches must use the same quadrant handles on the topic)
     if (diagramType === 'mindmap' || diagramType === 'mind_map') {
+      const connections = data.value.connections ?? []
+      const firstLevelBranchCount = connections.filter(
+        (c) => c.source === 'topic'
+      ).length
+
       return data.value.nodes.map((node) => {
         const vueFlowNode = diagramNodeToVueFlowNode(node, diagramType)
         vueFlowNode.selected = selectedNodes.value.includes(node.id)
-        // Branch counts should already be in node.data from specLoader
-        // This ensures they're preserved in vueFlowNode.data
+        vueFlowNode.draggable = false
+        if (node.id === 'topic' && vueFlowNode.data) {
+          vueFlowNode.data.totalBranchCount = firstLevelBranchCount
+        }
         return vueFlowNode
       })
     }
@@ -846,6 +862,144 @@ export const useDiagramStore = defineStore('diagram', () => {
     return deletedIds.length
   }
 
+  /**
+   * Add a new first-level branch to mindmap with 2 default children.
+   * Uses smart distribution: first half → right, second half → left (clockwise).
+   * E.g. 4 branches: 1,2 right; 3,4 left. 6 branches: 1,2,3 right; 6,5,4 left.
+   * @param _side - Ignored; distribution is automatic for even spread
+   * @param text - Branch label (default: 'New Branch')
+   * @param childText - Base label for child nodes; children get "1" and "2" suffix (default: 'New Child')
+   */
+  function addMindMapBranch(
+    _side: 'left' | 'right',
+    text = 'New Branch',
+    childText = 'New Child'
+  ): boolean {
+    if (type.value !== 'mindmap' && type.value !== 'mind_map') return false
+    if (!data.value?.nodes || !data.value?.connections) return false
+
+    const spec = nodesAndConnectionsToMindMapSpec(data.value.nodes, data.value.connections)
+    const newBranch = {
+      text,
+      children: [
+        { text: `${childText} 1` },
+        { text: `${childText} 2` },
+      ],
+    }
+
+    const allBranches = [
+      ...spec.rightBranches,
+      ...spec.leftBranches.slice().reverse(),
+    ]
+    allBranches.push(newBranch)
+    const { rightBranches, leftBranches } = distributeBranchesClockwise(allBranches)
+
+    const result = loadMindMapSpec({
+      topic: spec.topic,
+      leftBranches,
+      rightBranches,
+      preserveLeftRight: true,
+    })
+
+    data.value.nodes = result.nodes
+    data.value.connections = result.connections
+    pushHistory('Add branch')
+    emitEvent('diagram:node_added', { node: null })
+    return true
+  }
+
+  /**
+   * Add a child node under the selected branch/child in mindmap.
+   * @param parentNodeId - ID of the branch or child to add under
+   * @param text - Child label (default: 'New Child')
+   */
+  function addMindMapChild(parentNodeId: string, text = 'New Child'): boolean {
+    if (type.value !== 'mindmap' && type.value !== 'mind_map') return false
+    if (!data.value?.nodes || !data.value?.connections) return false
+
+    const spec = nodesAndConnectionsToMindMapSpec(data.value.nodes, data.value.connections)
+    const found = findBranchByNodeId(spec.rightBranches, spec.leftBranches, parentNodeId)
+    if (!found) return false
+
+    const { branch } = found
+    if (!branch.children) {
+      branch.children = []
+    }
+    branch.children.push({ text })
+
+    const result = loadMindMapSpec({
+      topic: spec.topic,
+      leftBranches: spec.leftBranches,
+      rightBranches: spec.rightBranches,
+      preserveLeftRight: true,
+    })
+
+    data.value.nodes = result.nodes
+    data.value.connections = result.connections
+    pushHistory('Add child')
+    emitEvent('diagram:node_added', { node: null })
+    return true
+  }
+
+  /**
+   * Remove mindmap nodes (and their descendants) by rebuilding spec.
+   */
+  function removeMindMapNodes(nodeIds: string[]): number {
+    if (type.value !== 'mindmap' && type.value !== 'mind_map') return 0
+    if (!data.value?.nodes || !data.value?.connections) return 0
+
+    const spec = nodesAndConnectionsToMindMapSpec(data.value.nodes, data.value.connections)
+    const idsToRemove = new Set(nodeIds.filter((id) => id.startsWith('branch-')))
+
+    const toRemoveWithParent: {
+      nodeId: string
+      parentArray: { text: string; children?: unknown[] }[]
+      indexInParent: number
+    }[] = []
+    idsToRemove.forEach((nodeId) => {
+      const found = findBranchByNodeId(spec.rightBranches, spec.leftBranches, nodeId)
+      if (found) {
+        toRemoveWithParent.push({
+          nodeId,
+          parentArray: found.parentArray,
+          indexInParent: found.indexInParent,
+        })
+      }
+    })
+
+    const depth = (id: string) => parseInt(id.split('-')[2] ?? '0', 10)
+    toRemoveWithParent.sort((a, b) => {
+      const dA = depth(a.nodeId)
+      const dB = depth(b.nodeId)
+      if (dA !== dB) return dB - dA
+      return b.indexInParent - a.indexInParent
+    })
+    toRemoveWithParent.forEach(({ parentArray, indexInParent }) => {
+      parentArray.splice(indexInParent, 1)
+    })
+
+    const deletedCount = toRemoveWithParent.length
+    if (deletedCount === 0) return 0
+
+    const result = loadMindMapSpec({
+      topic: spec.topic,
+      leftBranches: spec.leftBranches,
+      rightBranches: spec.rightBranches,
+      preserveLeftRight: true,
+    })
+
+    data.value.nodes = result.nodes
+    data.value.connections = result.connections
+    nodeIds.forEach((id) => {
+      clearCustomPosition(id)
+      clearNodeStyle(id)
+      removeFromSelection(id)
+    })
+    pushHistory('Delete nodes')
+    emitEvent('diagram:nodes_deleted', { nodeIds })
+    return deletedCount
+  }
+
   function reset(): void {
     type.value = null
     sessionId.value = null
@@ -1092,6 +1246,21 @@ export const useDiagramStore = defineStore('diagram', () => {
       nodesToStore = recalculateBubbleMapLayout(result.nodes)
     }
 
+    // Mindmap: normalize horizontal symmetry so left/right curves have equal length
+    if (
+      (diagramTypeValue === 'mindmap' || diagramTypeValue === 'mind_map') &&
+      nodesToStore.length > 0
+    ) {
+      const topicNode = nodesToStore.find(
+        (n) => n.id === 'topic' && (n.type === 'topic' || n.type === 'center')
+      )
+      const centerX =
+        topicNode?.position != null
+          ? topicNode.position.x + DEFAULT_NODE_WIDTH / 2
+          : DEFAULT_CENTER_X
+      normalizeMindMapHorizontalSymmetry(nodesToStore, centerX)
+    }
+
     // Initialize multi-flow map topic width if needed
     if (diagramTypeValue === 'multi_flow_map') {
       topicNodeWidth.value = MULTI_FLOW_MAP_TOPIC_WIDTH
@@ -1172,7 +1341,9 @@ export const useDiagramStore = defineStore('diagram', () => {
     const newOrientation = currentOrientation === 'horizontal' ? 'vertical' : 'horizontal'
 
     // Build spec from current data to reload with new orientation
-    // Extract steps and substeps from current nodes
+    // Extract title from flow-topic node, steps and substeps from current nodes
+    const topicNode = data.value.nodes.find((n) => n.id === 'flow-topic')
+    const title = topicNode?.text ?? (data.value as Record<string, unknown>).title ?? ''
     const stepNodes = data.value.nodes.filter((n) => n.type === 'flow')
     const substepNodes = data.value.nodes.filter((n) => n.type === 'flowSubstep')
 
@@ -1204,6 +1375,7 @@ export const useDiagramStore = defineStore('diagram', () => {
 
     // Reload with new orientation
     const newSpec = {
+      title,
       steps,
       substeps,
       orientation: newOrientation,
@@ -1426,6 +1598,9 @@ export const useDiagramStore = defineStore('diagram', () => {
     toggleConnectionArrowhead,
     removeNode,
     removeBubbleMapNodes,
+    addMindMapBranch,
+    addMindMapChild,
+    removeMindMapNodes,
     copySelectedNodes,
     pasteNodesAt,
     reset,

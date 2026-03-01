@@ -91,13 +91,11 @@ class MindMapAgent(BaseAgent):
 
     def _get_node_text(self, node: Dict, default: str = '') -> str:
         """
-        Safely extract text from a node that may have 'label' or 'text' field.
-
-        Root cause: LLM responses sometimes use 'label', sometimes 'text'.
-        This helper ensures we handle both cases gracefully.
+        Safely extract text from a node. Canonical field is 'text' (matches frontend
+        and tree/brace map prompts). Fallback to 'label' for backward compatibility.
 
         Args:
-            node: Node dictionary that may have 'label' or 'text' key
+            node: Node dictionary with 'text' or 'label' key
             default: Default value if neither key exists
 
         Returns:
@@ -106,8 +104,7 @@ class MindMapAgent(BaseAgent):
         if not isinstance(node, dict):
             return default
 
-        # Try 'label' first (standard format), then 'text' (fallback)
-        return node.get('label') or node.get('text') or default
+        return node.get('text') or node.get('label') or default
 
     async def generate_graph(
         self,
@@ -509,7 +506,7 @@ class MindMapAgent(BaseAgent):
             # Use helper function to safely get text (handles both 'label' and 'text' fields)
             branch_label = self._get_node_text(branch)
             if not branch_label:
-                logger.warning("Branch missing 'label' and 'text' keys: %s", branch)
+                logger.warning("Branch missing 'text' key: %s", branch)
                 continue
             branch_width = self._get_capped_node_width(branch_label, 'branch')
             max_branch_width = max(max_branch_width, branch_width)
@@ -519,7 +516,7 @@ class MindMapAgent(BaseAgent):
                 # Use helper function to safely get text (handles both 'label' and 'text' fields)
                 child_label = self._get_node_text(child)
                 if not child_label:
-                    logger.warning("Child node missing 'label' and 'text' keys: %s", child)
+                    logger.warning("Child node missing 'text' key: %s", child)
                     continue
                 child_width = self._get_capped_node_width(child_label, 'child')
                 max_child_width = max(max_child_width, child_width)
@@ -1986,7 +1983,7 @@ class MindMapAgent(BaseAgent):
             nested_children = branch_data.get('children', [])
             logger.debug(
                 "Branch %s ('%s'): %s children in spec",
-                i, branch_data.get('label', ''), len(nested_children)
+                i, self._get_node_text(branch_data), len(nested_children)
             )
 
             for j, _nested_child in enumerate(nested_children):

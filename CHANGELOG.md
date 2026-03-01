@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.28.4] - 2026-03-02
+
+### Added
+- **Mind Map Branch Colors**: New `mindmapColors.ts` config with 20-color palette for branch nodes (fill + border pairs). Each branch gets a distinct color for visual hierarchy.
+- **Mind Map Add Branch/Child**: Context menu and CanvasToolbar support for adding first-level branches and child nodes. Add branch uses smart clockwise distribution (right/left). Add child inserts under selected branch.
+- **Mind Map Spec Helpers**: `loadMindMapSpec`, `nodesAndConnectionsToMindMapSpec`, `distributeBranchesClockwise`, `findBranchByNodeId`, `normalizeMindMapHorizontalSymmetry` in mindMap store for programmatic branch/child management.
+
+### Changed
+- **Mind Map Edges**: Switched from straight to curved (bezier) edges, matching concept map style.
+- **Mind Map Nodes**: Nodes are non-draggable; layout controlled by spec.
+- **Mind Map Agent**: Canonical node field is `text` (fallback to `label` for backward compatibility). Updated docstrings and logging.
+- **Diagram Store**: Added `addMindMapBranch()`, `addMindMapChild()`; mind map sync sets `totalBranchCount` on topic for handle generation.
+- **Context Menu**: Mind map node right-click shows "Add child" and pane right-click shows "Add branch".
+- **CanvasToolbar**: Mind map add-branch and add-child actions with keyboard shortcuts (Tab/Enter).
+- **Flow Map & Mind Map Spec Loaders**: Enhanced spec loading and layout handling.
+
 ## [5.28.3] - 2026-03-01
 
 ### Added
