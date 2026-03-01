@@ -156,38 +156,53 @@ class GeweService(
             logger.error("Error resetting device ID: %s", e, exc_info=True)
             raise
 
-    def save_preferences(self, region_id: str, device_type: str) -> None:
-        """Save user preferences (region_id and device_type) to JSON file."""
+    def save_preferences(
+        self,
+        region_id: str,
+        device_type: str,
+        auto_sliding: Optional[bool] = None
+    ) -> None:
+        """Save user preferences (region_id, device_type, auto_sliding) to JSON file."""
         try:
             preferences = {
                 "region_id": region_id,
                 "device_type": device_type
             }
+            if auto_sliding is not None:
+                preferences["auto_sliding"] = auto_sliding
             with open(GEWE_PREFERENCES_PATH, 'w', encoding='utf-8') as f:
                 json.dump(preferences, f, indent=2, ensure_ascii=False)
-            logger.info("Saved gewe preferences: region_id=%s, device_type=%s", region_id, device_type)
+            logger.info(
+                "Saved gewe preferences: region_id=%s, device_type=%s, auto_sliding=%s",
+                region_id, device_type, auto_sliding
+            )
         except Exception as e:
             logger.error("Error saving gewe preferences: %s", e, exc_info=True)
 
     def get_preferences(self) -> dict:
-        """Load user preferences (region_id and device_type) from JSON file."""
+        """Load user preferences (region_id, device_type, auto_sliding) from JSON file."""
         try:
             if not GEWE_PREFERENCES_PATH.exists():
                 return {
                     "region_id": "110000",
-                    "device_type": "ipad"
+                    "device_type": "ipad",
+                    "auto_sliding": False
                 }
             with open(GEWE_PREFERENCES_PATH, 'r', encoding='utf-8') as f:
                 preferences = json.load(f)
-            return {
+            result = {
                 "region_id": preferences.get("region_id", "110000"),
                 "device_type": preferences.get("device_type", "ipad")
             }
+            if "auto_sliding" in preferences:
+                result["auto_sliding"] = preferences["auto_sliding"]
+            return result
         except Exception as e:
             logger.error("Error loading gewe preferences: %s", e, exc_info=True)
             return {
                 "region_id": "110000",
-                "device_type": "ipad"
+                "device_type": "ipad",
+                "auto_sliding": False
             }
 
     async def close(self):

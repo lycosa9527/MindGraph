@@ -65,13 +65,21 @@ const deviceTypeOptions = [
   { value: 'mac', label: 'Mac' },
 ]
 
+// Verification method options (Mac only - iPad always uses face verification)
+const verificationOptions = [
+  { value: true, label: '自动验证' },
+  { value: false, label: 'App验证' },
+]
+
 // Configuration state
 const geweToken = ref<string>('')
 const selectedRegionId = ref<string>('110000') // Default to 北京市
 const selectedDeviceType = ref<string>('ipad') // Default to iPad
+const selectedAutoSliding = ref<boolean>(false) // Mac: true=auto, false=app; iPad: always false
 
 // Login state
 const qrCodeBase64 = ref<string>('')
+const verificationQrCodeBase64 = ref<string>('') // Second QR for face/slider app (status 1)
 const uuid = ref<string>('')
 const appId = ref<string>('')
 const appIdMasked = ref<string>('')
@@ -81,6 +89,7 @@ const loginInfo = ref<{ app_id: string; wxid: string } | null>(null)
 const loginInfoMasked = ref<{ app_id: string; wxid: string } | null>(null)
 const checkInterval = ref<number | null>(null)
 const expiredTime = ref<number>(0) // Remaining seconds from API
+const terminateRequested = ref(false)
 const countdownInterval = ref<number | null>(null)
 const countdownSeconds = ref<number>(0) // Display countdown
 const isResettingDeviceId = ref(false)
@@ -108,6 +117,9 @@ async function loadSavedConfig() {
         if (data.device_type) {
           selectedDeviceType.value = data.device_type
         }
+        if (typeof data.auto_sliding === 'boolean') {
+          selectedAutoSliding.value = data.auto_sliding
+        }
       }
     } catch (error) {
       // Fallback to localStorage if backend fails
@@ -119,6 +131,10 @@ async function loadSavedConfig() {
       }
       if (savedDeviceType) {
         selectedDeviceType.value = savedDeviceType
+      }
+      const savedAutoSliding = localStorage.getItem('gewe_auto_sliding')
+      if (savedAutoSliding !== null) {
+        selectedAutoSliding.value = savedAutoSliding === 'true'
       }
     }
 
@@ -139,6 +155,8 @@ async function saveConfig(silent = true) {
     const response = await apiClient.post('/api/gewe/preferences/save', {
       regionId: selectedRegionId.value,
       deviceType: selectedDeviceType.value,
+      autoSliding:
+        selectedDeviceType.value === 'mac' ? selectedAutoSliding.value : undefined,
     })
 
     if (!response.ok) {
@@ -152,6 +170,9 @@ async function saveConfig(silent = true) {
     }
     if (selectedDeviceType.value) {
       localStorage.setItem('gewe_device_type', selectedDeviceType.value)
+    }
+    if (selectedDeviceType.value === 'mac') {
+      localStorage.setItem('gewe_auto_sliding', String(selectedAutoSliding.value))
     }
 
     if (!silent) {
@@ -235,8 +256,10 @@ async function loadSavedLoginInfo() {
 
 // Generate QR code
 async function generateQrCode() {
+  terminateRequested.value = false
   isGeneratingQr.value = true
   qrCodeBase64.value = ''
+  verificationQrCodeBase64.value = ''
   uuid.value = ''
   isLoggedIn.value = false
   stopCountdown()
@@ -256,6 +279,7 @@ async function generateQrCode() {
     }
 
     const data = await response.json()
+    if (terminateRequested.value) return
     if (data.ret === 200 && data.data) {
       // Handle qrImgBase64 - check if it already has data URL prefix
       const qrImg = data.data.qrImgBase64 || ''
@@ -289,9 +313,10 @@ async function checkLoginStatus() {
   }
 
   try {
-    // iPad login requires autoSliding: false
-    // Mac login can use autoSliding: true (auto verification) or false (manual app verification)
-    const autoSliding = selectedDeviceType.value === 'mac' ? true : false
+    // iPad: autoSliding must be false (face verification QR)
+    // Mac: use user choice - true (auto) or false (manual app verification QR)
+    const autoSliding =
+      selectedDeviceType.value === 'mac' ? selectedAutoSliding.value : false
 
     const response = await apiClient.post('/api/gewe/login/check', {
       appId: appId.value,
@@ -308,19 +333,21 @@ async function checkLoginStatus() {
       const data = result.data
 
       // Update expiredTime from API response
-      if (typeof data.expiredTime === 'number') {
-        expiredTime.value = data.expiredTime
+      const apiExpiredTime = data.expiredTime ?? data.expired_time
+      if (typeof apiExpiredTime === 'number') {
+        expiredTime.value = apiExpiredTime
         // If QR code expired (expiredTime <= 0), stop polling
-        if (data.expiredTime <= 0) {
+        if (apiExpiredTime <= 0) {
           stopPollingLoginStatus()
           stopCountdown()
           qrCodeBase64.value = ''
+          verificationQrCodeBase64.value = ''
           countdownSeconds.value = 0
           notify.warning('二维码已过期，请重新生成')
           return
         }
         // Sync countdown value with API response (this ensures countdown stays accurate)
-        countdownSeconds.value = data.expiredTime
+        countdownSeconds.value = apiExpiredTime
         // Start countdown if not already running
         if (countdownInterval.value === null && qrCodeBase64.value) {
           startCountdown()
@@ -330,9 +357,9 @@ async function checkLoginStatus() {
       // status: 0=未扫码, 1=已扫码未登录, 2=登录成功
       if (data.status === 2) {
         // Login successful
-        const loginInfoData = data.loginInfo || {}
-        const wxid = loginInfoData.wxid || data.wxid || data.Wxid
-        const finalAppId = data.appId || appId.value
+        const loginInfoData = data.loginInfo ?? data.login_info ?? {}
+        const wxid = loginInfoData.wxid ?? data.wxid ?? data.Wxid
+        const finalAppId = data.appId ?? data.app_id ?? appId.value
 
         if (wxid && finalAppId) {
           stopPollingLoginStatus()
@@ -348,21 +375,29 @@ async function checkLoginStatus() {
           appId.value = finalAppId
           appIdMasked.value = maskValue(finalAppId)
           saveAppId(finalAppId)
-          qrCodeBase64.value = '' // Clear QR code after successful login
+          qrCodeBase64.value = ''
+          verificationQrCodeBase64.value = ''
           stopCountdown()
           notify.success('登录成功！')
         }
       } else if (data.status === 1) {
-        // Scanned but not logged in yet - might need face verification
-        // Show face verification QR code if available
-        if (data.qrImgBase64) {
-          const qrImg = data.qrImgBase64
-          if (qrImg.startsWith('data:')) {
-            qrCodeBase64.value = qrImg
-          } else {
-            qrCodeBase64.value = `data:image/png;base64,${qrImg}`
-          }
+        // Scanned WeChat QR but not logged in - need verification (face/slider app)
+        // API returns data.url (QR image URL) or data.qrImgBase64 (base64)
+        const qrUrl = data.url ?? ''
+        const qrBase64 = data.qrImgBase64 ?? data.qr_img_base64 ?? ''
+        if (qrUrl) {
+          verificationQrCodeBase64.value = qrUrl
+        } else if (qrBase64) {
+          verificationQrCodeBase64.value = qrBase64.startsWith('data:')
+            ? qrBase64
+            : `data:image/png;base64,${qrBase64}`
         }
+      } else if (data.url) {
+        // Verification needed: API may return data.url only (no status)
+        verificationQrCodeBase64.value = data.url
+      } else {
+        // status === 0: not scanned yet
+        verificationQrCodeBase64.value = ''
       }
       // status === 0 means not scanned yet, continue polling
     }
@@ -391,6 +426,20 @@ function stopPollingLoginStatus() {
     clearInterval(checkInterval.value)
     checkInterval.value = null
   }
+}
+
+// Terminate QR code display and polling
+function terminateQrCode() {
+  terminateRequested.value = true
+  stopPollingLoginStatus()
+  stopCountdown()
+  qrCodeBase64.value = ''
+  verificationQrCodeBase64.value = ''
+  uuid.value = ''
+  countdownSeconds.value = 0
+  expiredTime.value = 0
+  isGeneratingQr.value = false
+  notify.info('已终止')
 }
 
 // Start countdown timer
@@ -431,7 +480,7 @@ onUnmounted(() => {
 // Auto-save preferences when they change (debounced)
 let saveTimeout: ReturnType<typeof setTimeout> | null = null
 watch(
-  [selectedRegionId, selectedDeviceType],
+  [selectedRegionId, selectedDeviceType, selectedAutoSliding],
   () => {
     // Clear existing timeout
     if (saveTimeout) {
@@ -575,12 +624,12 @@ onMounted(async () => {
           </el-form-item>
 
           <el-form-item label="设备与地区">
-            <div class="flex gap-2">
+            <div class="flex gap-2 flex-wrap">
               <el-select
                 v-model="selectedRegionId"
                 placeholder="选择地区"
                 filterable
-                style="flex: 1"
+                style="flex: 1; min-width: 120px"
               >
                 <el-option
                   v-for="option in regionOptions"
@@ -602,12 +651,27 @@ onMounted(async () => {
                   :value="option.value"
                 />
               </el-select>
+              <el-select
+                v-if="selectedDeviceType === 'mac'"
+                v-model="selectedAutoSliding"
+                placeholder="验证方式"
+                style="width: 140px"
+              >
+                <el-option
+                  v-for="option in verificationOptions"
+                  :key="String(option.value)"
+                  :label="option.label"
+                  :value="option.value"
+                />
+              </el-select>
             </div>
             <div class="text-xs text-gray-500 mt-1">
               <div v-if="selectedDeviceType === 'ipad'">
-                • iPad登录：需要人脸识别App进行二次验证（仅支持iOS，使用苹果自带浏览器打开下载）
+                • iPad登录：需人脸识别App二次验证（仅iOS，苹果自带浏览器打开下载）
               </div>
-              <div v-else>• Mac登录：支持自动验证（约10秒，90%通过率）或手动滑块App验证</div>
+              <div v-else>
+                • Mac登录：自动验证（约10秒，90%通过率）或 App验证（需下载滑块App扫码）
+              </div>
             </div>
           </el-form-item>
         </el-form>
@@ -624,42 +688,122 @@ onMounted(async () => {
         </div>
       </div>
 
-      <!-- QR Code Display -->
+      <!-- QR Code Display - side by side -->
       <div
         v-if="!isLoggedIn"
-        class="text-center mb-6"
+        class="mb-6"
       >
-        <div
-          v-if="qrCodeBase64"
-          class="inline-block p-4 bg-white rounded-lg shadow-lg"
-        >
-          <img
-            :src="qrCodeBase64"
-            alt="微信登录二维码"
-            class="w-64 h-64"
-          />
-        </div>
-        <div
-          v-else
-          class="w-64 h-64 bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center mx-auto"
-        >
-          <el-icon
-            v-if="isGeneratingQr"
-            :size="48"
-            class="is-loading text-gray-400"
+        <div class="flex flex-wrap justify-center gap-6">
+          <!-- WeChat QR (Step 1) -->
+          <div class="text-center flex-1 min-w-[280px] max-w-[320px]">
+            <div class="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
+              步骤1：微信扫码
+            </div>
+            <div
+              v-if="qrCodeBase64"
+              class="inline-block p-4 bg-white rounded-lg shadow-lg"
+            >
+              <img
+                :src="qrCodeBase64"
+                alt="微信登录二维码"
+                class="w-64 h-64"
+              />
+            </div>
+            <div
+              v-else
+              class="w-64 h-64 bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center mx-auto"
+            >
+              <el-icon
+                v-if="isGeneratingQr"
+                :size="48"
+                class="is-loading text-gray-400"
+              >
+                <Loading />
+              </el-icon>
+              <span
+                v-else
+                class="text-gray-400"
+                >暂无二维码</span
+              >
+            </div>
+          </div>
+          <!-- Verification QR (Step 2 - Gewe face/slider app) -->
+          <div
+            class="text-center flex-1 min-w-[280px] max-w-[320px] p-4 rounded-lg border"
+            :class="
+              verificationQrCodeBase64
+                ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800'
+                : 'bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700'
+            "
           >
-            <Loading />
-          </el-icon>
-          <span
-            v-else
-            class="text-gray-400"
-            >暂无二维码</span
-          >
+            <div
+              class="text-sm font-medium mb-2"
+              :class="
+                verificationQrCodeBase64
+                  ? 'text-amber-700 dark:text-amber-400'
+                  : 'text-gray-500 dark:text-gray-400'
+              "
+            >
+              步骤2：验证App扫码
+            </div>
+            <div
+              v-if="verificationQrCodeBase64"
+              class="space-y-2"
+            >
+              <p
+                class="text-xs"
+                :class="
+                  verificationQrCodeBase64
+                    ? 'text-amber-600 dark:text-amber-500'
+                    : 'text-gray-500'
+                "
+              >
+                {{
+                  selectedDeviceType === 'ipad'
+                    ? '请使用人脸识别App扫码（仅iOS）'
+                    : '请使用滑块App扫码'
+                }}
+              </p>
+              <p class="text-xs text-amber-600 dark:text-amber-500">
+                <a
+                  v-if="selectedDeviceType === 'ipad'"
+                  href="https://app.qiweapi.com/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="underline"
+                  >人脸识别App下载</a
+                >
+                <a
+                  v-else
+                  href="https://www.pgyer.com/secureandroid"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="underline"
+                  >滑块App下载</a
+                >
+              </p>
+              <div class="inline-block p-4 bg-white rounded-lg shadow">
+                <img
+                  :src="verificationQrCodeBase64"
+                  alt="验证二维码"
+                  class="w-64 h-64"
+                />
+              </div>
+            </div>
+            <div
+              v-else
+              class="w-64 h-64 bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center mx-auto"
+            >
+              <span class="text-gray-400 text-sm text-center px-2">
+                微信扫码后显示
+              </span>
+            </div>
+          </div>
         </div>
         <!-- Countdown Display -->
         <div
           v-if="qrCodeBase64 && countdownSeconds > 0"
-          class="mt-4 text-lg font-medium"
+          class="text-center text-lg font-medium mt-4"
           :class="countdownSeconds <= 30 ? 'text-red-500' : 'text-gray-600 dark:text-gray-300'"
         >
           倒计时 {{ countdownSeconds }} 秒
@@ -672,21 +816,25 @@ onMounted(async () => {
         class="text-center mb-6"
       >
         <el-alert
-          type="info"
+          :type="verificationQrCodeBase64 ? 'warning' : 'info'"
           :closable="false"
           show-icon
         >
           <template #title>
             <div class="flex items-center gap-2">
               <el-icon class="is-loading"><Loading /></el-icon>
-              <span>等待扫码... 请使用微信扫描二维码</span>
+              <span>{{
+                verificationQrCodeBase64
+                  ? '已扫码，请使用验证App完成二次验证'
+                  : '等待扫码... 请使用微信扫描二维码'
+              }}</span>
             </div>
           </template>
         </el-alert>
       </div>
 
       <!-- Actions -->
-      <div class="flex justify-center">
+      <div class="flex justify-center gap-2">
         <el-button
           v-if="!isLoggedIn"
           type="primary"
@@ -694,6 +842,12 @@ onMounted(async () => {
           @click="generateQrCode"
         >
           {{ qrCodeBase64 ? '重新生成二维码' : '生成二维码' }}
+        </el-button>
+        <el-button
+          v-if="!isLoggedIn && (qrCodeBase64 || isGeneratingQr)"
+          @click="terminateQrCode"
+        >
+          终止
         </el-button>
         <el-button
           v-else

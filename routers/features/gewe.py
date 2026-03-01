@@ -215,6 +215,14 @@ class GeweSavePreferencesRequest(BaseModel):
     """Request model for saving user preferences"""
     region_id: str = Field(..., alias="regionId", description="Region ID")
     device_type: str = Field(..., alias="deviceType", description="Device type: ipad or mac")
+    auto_sliding: Optional[bool] = Field(
+        None,
+        alias="autoSliding",
+        description=(
+            "Auto sliding verification (Mac only). "
+            "True: auto verify ~10s, 90% success. False: manual app verification QR."
+        )
+    )
 
 
 # =============================================================================
@@ -256,9 +264,9 @@ async def get_gewe_login_qrcode(
         # Also check response_data for detailed error message
         detailed_msg = ""
         if e.response_data:
-            data = e.response_data.get('data', {})
-            if isinstance(data, dict):
-                detailed_msg = str(data.get('msg', '')).lower()
+            err_data = e.response_data.get('data', {})
+            if isinstance(err_data, dict):
+                detailed_msg = str(err_data.get('msg', '')).lower()
 
         is_device_not_found = (
             "设备不存在" in error_msg or
@@ -565,7 +573,8 @@ async def save_gewe_preferences(
     try:
         service.save_preferences(
             region_id=data.region_id,
-            device_type=data.device_type
+            device_type=data.device_type,
+            auto_sliding=data.auto_sliding
         )
         return {"status": "success", "message": "Preferences saved successfully"}
     except Exception as e:

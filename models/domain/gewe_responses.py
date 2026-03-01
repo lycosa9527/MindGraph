@@ -38,11 +38,14 @@ class GeweLoginQrCodeResponse(GeweBaseResponse):
 
 class GeweLoginStatusData(BaseModel):
     """Login status check response data."""
-    status: int = Field(..., description="Login status (0: waiting, 1: scanning, 2: success)")
+    status: Optional[int] = Field(None, description="Login status (0: waiting, 1: scanning, 2: success)")
+    uuid: Optional[str] = Field(None, description="QR code UUID")
+    expired_time: Optional[int] = Field(None, alias="expiredTime", description="QR code expiry seconds")
     app_id: Optional[str] = Field(None, alias="appId", description="Device ID")
     wxid: Optional[str] = Field(None, description="WeChat ID")
     login_info: Optional[Dict[str, Any]] = Field(None, alias="loginInfo", description="Login information")
-    qr_img_base64: Optional[str] = Field(None, alias="qrImgBase64", description="Face recognition QR code (iPad)")
+    qr_img_base64: Optional[str] = Field(None, alias="qrImgBase64", description="Verification QR base64")
+    url: Optional[str] = Field(None, description="Verification QR URL (face/slider app, when base64 not used)")
 
 
 class GeweLoginStatusResponse(GeweBaseResponse):
