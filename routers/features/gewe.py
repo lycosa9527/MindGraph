@@ -63,56 +63,6 @@ def _extract_client_ip(request: Request) -> str:
     )
 
 
-def _verify_webhook_token(request: Request, message_data: dict, client_ip: str) -> str:
-    """
-    Verify webhook token from header or body.
-    
-    Returns:
-        Token source ("header" or "body")
-    
-    Raises:
-        HTTPException: If token verification fails
-    """
-    expected_token = os.getenv('GEWE_TOKEN', '').strip()
-    if not expected_token:
-        logger.error(
-            "GEWE_TOKEN not configured - webhook token verification is mandatory. "
-            "Rejecting request from IP: %s",
-            client_ip
-        )
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Webhook token verification not configured"
-        )
-
-    # Check token in header first
-    header_token = request.headers.get('X-GEWE-TOKEN') or request.headers.get('Authorization')
-    if header_token:
-        if header_token.startswith('Bearer '):
-            header_token = header_token[7:]
-        if header_token == expected_token:
-            logger.debug("Token verified from header")
-            return "header"
-
-    # Check token in body (Gewe sends token in JSON)
-    body_token = message_data.get('token', '')
-    if body_token == expected_token:
-        logger.debug("Token verified from body")
-        return "body"
-
-    # Token verification failed
-    logger.warning(
-        "Invalid webhook token from IP: %s. "
-        "Header token present: %s, Body token present: %s",
-        client_ip,
-        bool(header_token), bool(body_token)
-    )
-    raise HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Invalid token"
-    )
-
-
 # =============================================================================
 # Pydantic Models
 # =============================================================================
@@ -646,7 +596,8 @@ async def gewe_webhook(
     For group chats, only responds when bot is @mentioned.
     For private chats, responds to all messages.
 
-    Security: Token verification is mandatory - verifies token from header or body matches GEWE_TOKEN.
+    Note: Gewe does not send token in webhook requests; validation relies on
+    required Appid/Wxid fields.
     
     Request body follows GeweWebhookMessage structure.
     """
@@ -673,9 +624,8 @@ async def gewe_webhook(
     else:
         logger.info("📄 Full payload:\n%s", payload_str)
 
-    # Token verification (mandatory)
-    token_source = _verify_webhook_token(request, message_data, client_ip)
-    logger.info("✅ [Security] Token verified successfully from %s", token_source)
+    # Token verification: Gewe does not send token in webhook requests.
+    # Rely on URL obscurity and required Appid/Wxid validation instead.
 
     # Handle test messages
     if 'testMsg' in message_data:
