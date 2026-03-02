@@ -564,9 +564,7 @@ class WorkshopService:
             for diagram in diagrams_with_workshop:
                 code = diagram.workshop_code
                 # Check if code exists in Redis
-                exists = await redis.exists(
-                    self._get_code_to_diagram_key(code)
-                )
+                exists = redis.exists(self._get_code_to_diagram_key(code))
                 if not exists:
                     # Redis key expired, clear from database
                     diagram.workshop_code = None
