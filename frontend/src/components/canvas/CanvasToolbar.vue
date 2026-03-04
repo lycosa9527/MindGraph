@@ -13,7 +13,6 @@ import {
   ArrowDownUp,
   Brush,
   ChevronDown,
-  Fish,
   Image as ImageIcon,
   LayoutGrid,
   Package,
@@ -193,13 +192,6 @@ const moreApps = [
     desc: '随机留空，学习复习好搭子',
     iconBg: 'bg-purple-100',
     iconColor: 'text-purple-600',
-  },
-  {
-    name: '专家鱼骨图',
-    icon: Fish,
-    desc: '问题分析与原因追溯工具',
-    iconBg: 'bg-green-100',
-    iconColor: 'text-green-600',
   },
 ]
 
@@ -952,7 +944,33 @@ async function handleAIGenerate() {
   }
 }
 
-function handleMoreApp(appName: string) {
+async function handleMoreApp(appName: string) {
+  if (appName === '半成品图示') {
+    if (!diagramStore.data?.nodes?.length) {
+      notify.warning(isZh.value ? '请先创建图示' : 'Please create a diagram first')
+      return
+    }
+    if (diagramStore.isLearningSheet) {
+      diagramStore.restoreFromLearningSheetMode()
+      notify.success(isZh.value ? '已切换回普通模式' : 'Switched back to regular mode')
+    } else if (diagramStore.hasPreservedLearningSheet()) {
+      diagramStore.applyLearningSheetView()
+      notify.success(isZh.value ? '已恢复学习单' : 'Learning sheet restored')
+    } else {
+      diagramStore.setLearningSheetMode(true)
+      const spec = diagramStore.getSpecForSave()
+      if (spec && diagramStore.type) {
+        const enrichedSpec = {
+          ...spec,
+          is_learning_sheet: true,
+          hidden_node_percentage: 0.2,
+        }
+        diagramStore.loadFromSpec(enrichedSpec, diagramStore.type)
+        notify.success(isZh.value ? '已切换为半成品图示模式' : 'Switched to learning sheet mode')
+      }
+    }
+    return
+  }
   notify.info(`${appName}功能开发中`)
 }
 

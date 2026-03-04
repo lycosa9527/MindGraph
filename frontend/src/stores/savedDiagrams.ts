@@ -18,7 +18,10 @@ import { defineStore } from 'pinia'
 import type { DiagramType } from '@/types'
 import { authFetch } from '@/utils/api'
 
+import { getDefaultDiagramName } from '@/composables'
+
 import { useAuthStore } from './auth'
+import { useDiagramStore } from './diagram'
 import { getDefaultTemplate, loadSpecForDiagramType } from './specLoader'
 
 // Security constants - must match backend limits
@@ -571,6 +574,30 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
   }
 
   /**
+   * Save current diagram to database before it gets replaced (e.g. model switch).
+   * Preserves learning sheet state (is_learning_sheet, hiddenAnswers) and other user edits.
+   * Call this before loadFromSpec when replacing diagram content.
+   */
+  async function saveCurrentDiagramBeforeReplace(): Promise<void> {
+    const diagramStore = useDiagramStore()
+    if (!authStore.isAuthenticated || !diagramStore.type || !diagramStore.data) return
+
+    const spec = diagramStore.getSpecForSave()
+    if (!spec) return
+
+    const title =
+      diagramStore.getTopicNodeText() ||
+      diagramStore.effectiveTitle ||
+      getDefaultDiagramName(diagramStore.type, true)
+
+    try {
+      await autoSaveDiagram(title, diagramStore.type, spec, 'zh', null)
+    } catch (e) {
+      console.error('[SavedDiagrams] Save-before-replace error:', e)
+    }
+  }
+
+  /**
    * Manual save with slot management
    * Unlike auto-save, this will return an error if slots are full
    * so the UI can show a modal to let user delete a diagram first
@@ -691,6 +718,7 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
     setActiveDiagram,
     clearActiveDiagram,
     autoSaveDiagram,
+    saveCurrentDiagramBeforeReplace,
     manualSaveDiagram,
     deleteAndSave,
     reset,

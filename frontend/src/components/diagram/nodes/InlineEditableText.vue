@@ -41,6 +41,12 @@ const props = withDefaults(
     maxLength?: number
     /** Whether to truncate text with ellipsis (single line) */
     truncate?: boolean
+    /** Force single line (no wrap); when true, display uses whitespace-nowrap and no truncate. Used by circle/bubble maps. */
+    noWrap?: boolean
+    /** When true, root takes width 100% and display text is centered in full width (for circle/bubble topic). */
+    fullWidth?: boolean
+    /** When true, display span is content-sized and centered by parent (reduces font-metric shift in circle topic). */
+    centerBlockInCircle?: boolean
     /** Enable IME-style autocomplete */
     enableIME?: boolean
     /** Diagram type for IME context */
@@ -51,6 +57,8 @@ const props = withDefaults(
     nodeCategory?: string
     /** Existing nodes for IME context (to avoid duplicates) */
     existingNodes?: string[]
+    /** When true, disable editing (e.g. learning sheet knocked-out nodes) */
+    readonly?: boolean
   }>(),
   {
     isEditing: false,
@@ -62,11 +70,15 @@ const props = withDefaults(
     minLength: 1,
     maxLength: 200,
     truncate: false,
+    noWrap: false,
+    fullWidth: false,
+    centerBlockInCircle: false,
     enableIME: false,
     diagramType: 'mindmap',
     mainTopics: () => [],
     nodeCategory: 'general',
     existingNodes: () => [],
+    readonly: false,
   }
 )
 
@@ -115,6 +127,7 @@ watch(
 const CONTEXT_MENU_EDIT_DELAY_MS = 50
 
 function handleEditRequested(payload: { nodeId?: string }): void {
+  if (props.readonly) return
   if (payload?.nodeId === props.nodeId && !localIsEditing.value) {
     const noopEvent = { preventDefault: () => {}, stopPropagation: () => {} } as MouseEvent
     setTimeout(() => handleDoubleClick(noopEvent), CONTEXT_MENU_EDIT_DELAY_MS)
@@ -237,7 +250,7 @@ const showIMEDropdown = computed(() => {
  * Start editing mode
  */
 function startEditing(): void {
-  if (localIsEditing.value) return
+  if (localIsEditing.value || props.readonly) return
 
   // Measure width before switching to edit mode
   // For right-aligned text, use parent container width or maxWidth to avoid empty space
@@ -404,6 +417,7 @@ function handleBlur(): void {
  * Handle double-click to start editing
  */
 function handleDoubleClick(event: MouseEvent): void {
+  if (props.readonly) return
   event.preventDefault()
   event.stopPropagation()
   startEditing()
@@ -478,6 +492,7 @@ onUnmounted(() => {
 <template>
   <div
     class="inline-editable-text"
+    :class="{ 'inline-editable-text--full-width': fullWidth }"
     @dblclick="handleDoubleClick"
     @mousedown="handleMouseDown"
   >
@@ -517,7 +532,7 @@ onUnmounted(() => {
           ref="inputRef"
           v-model="editText"
           class="inline-edit-input"
-          :class="{ 'whitespace-nowrap': shouldPreventWrap }"
+          :class="{ 'whitespace-nowrap': noWrap || shouldPreventWrap }"
           :style="inputStyle"
           :placeholder="placeholder"
           :maxlength="maxLength"
@@ -533,7 +548,7 @@ onUnmounted(() => {
             v-model="editText"
             type="text"
             class="inline-edit-input"
-            :class="{ 'whitespace-nowrap': shouldPreventWrap }"
+            :class="{ 'whitespace-nowrap': noWrap || shouldPreventWrap }"
             :style="inputStyle"
             :placeholder="placeholder"
             :maxlength="maxLength"
@@ -577,11 +592,15 @@ onUnmounted(() => {
       class="inline-edit-display"
       :class="[
         textClass,
-        truncate
-          ? 'truncate-text'
-          : shouldPreventWrap
-            ? 'whitespace-nowrap'
-            : 'whitespace-pre-wrap',
+        fullWidth && textAlign === 'center' ? 'inline-edit-display--center-block' : '',
+        centerBlockInCircle ? 'inline-edit-display--center-in-circle' : '',
+        noWrap
+          ? 'whitespace-nowrap'
+          : truncate
+            ? 'truncate-text'
+            : shouldPreventWrap
+              ? 'whitespace-nowrap'
+              : 'whitespace-pre-wrap',
       ]"
       :style="{ maxWidth: maxWidth, textAlign: textAlign }"
       :title="truncate ? text : undefined"
@@ -600,6 +619,10 @@ onUnmounted(() => {
   max-width: 100%;
   min-height: 1.5em;
   position: relative;
+}
+
+.inline-editable-text--full-width {
+  width: 100%;
 }
 
 .inline-edit-wrapper {
@@ -685,6 +708,24 @@ onUnmounted(() => {
 .inline-edit-display {
   cursor: text;
   user-select: none;
+}
+
+/* Center text in full width (circle/bubble topic) so text is visually centered in the circle */
+.inline-edit-display--center-block {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Circle/bubble topic: block width = content width, parent flex centers it; no asymmetric padding */
+.inline-edit-display--center-in-circle {
+  display: block;
+  width: fit-content;
+  max-width: 100%;
+  margin: 0 auto;
+  padding-left: 0;
+  padding-right: 0;
+  box-sizing: border-box;
 }
 
 /* Truncate mode: single line with ellipsis */

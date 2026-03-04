@@ -20,7 +20,7 @@ import {
   ElTooltip,
 } from 'element-plus'
 
-import { Connection, Download } from '@element-plus/icons-vue'
+import { ChatDotRound, Connection, Download } from '@element-plus/icons-vue'
 
 // Using Lucide icons for a more modern, cute look
 import { ArrowLeft, FileImage, FileJson, FileText, ImageDown } from 'lucide-vue-next'
@@ -29,7 +29,7 @@ import { DiagramSlotFullModal } from '@/components/canvas'
 import { WorkshopModal } from '@/components/workshop'
 import { eventBus, getDefaultDiagramName, useNotifications, useWorkshop } from '@/composables'
 import { useLanguage } from '@/composables'
-import { useAuthStore, useDiagramStore, useSavedDiagramsStore } from '@/stores'
+import { useAuthStore, useDiagramStore, usePanelsStore, useSavedDiagramsStore } from '@/stores'
 
 const notify = useNotifications()
 
@@ -39,6 +39,7 @@ const { isZh } = useLanguage()
 const diagramStore = useDiagramStore()
 const savedDiagramsStore = useSavedDiagramsStore()
 const authStore = useAuthStore()
+const panelsStore = usePanelsStore()
 
 // Diagram type from store (when loaded) or route query (for new diagrams)
 const diagramTypeForName = computed(
@@ -281,6 +282,10 @@ function handleSlotModalCancel(): void {
 function handleExportCommand(command: string) {
   eventBus.emit('toolbar:export_requested', { format: command })
 }
+
+function handleOpenMindmate() {
+  panelsStore.openMindmate()
+}
 </script>
 
 <template>
@@ -332,8 +337,8 @@ function handleExportCommand(command: string) {
       </div>
     </div>
 
-    <!-- Right section: Participants + Workshop + Export buttons -->
-    <div class="flex items-center gap-2">
+    <!-- Right section: Participants + 教学设计 + Export buttons -->
+    <div class="flex items-center gap-4">
       <!-- Participant bar (only show when workshop is active) -->
       <div
         v-if="workshopCode && participantsWithNames && participantsWithNames.length > 0"
@@ -386,8 +391,24 @@ function handleExportCommand(command: string) {
         </ElDropdown>
       </div>
 
-      <!-- Workshop button -->
+      <!-- 教学设计 (MindMate) button -->
       <ElTooltip
+        :content="isZh ? '教学设计' : 'Teaching Design'"
+        placement="bottom"
+      >
+        <ElButton
+          class="mindmate-button"
+          size="small"
+          :icon="ChatDotRound"
+          @click="handleOpenMindmate"
+        >
+          教学设计
+        </ElButton>
+      </ElTooltip>
+
+      <!-- Workshop button (hidden for now) -->
+      <ElTooltip
+        v-if="false"
         :content="isZh ? '工作坊协作' : 'Workshop Collaboration'"
         placement="bottom"
       >
@@ -574,6 +595,19 @@ function handleExportCommand(command: string) {
   --el-button-active-bg-color: #a8a29e;
   --el-button-active-border-color: #78716c;
   --el-button-text-color: #1c1917;
+  font-weight: 500;
+  border-radius: 9999px;
+}
+
+/* 教学设计 button - Swiss Design style (matches MindMate) */
+.mindmate-button {
+  --el-button-bg-color: #dbeafe;
+  --el-button-border-color: #93c5fd;
+  --el-button-hover-bg-color: #bfdbfe;
+  --el-button-hover-border-color: #60a5fa;
+  --el-button-active-bg-color: #93c5fd;
+  --el-button-active-border-color: #3b82f6;
+  --el-button-text-color: #1e40af;
   font-weight: 500;
   border-radius: 9999px;
 }

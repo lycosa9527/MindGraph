@@ -2,6 +2,9 @@
  * Shared utilities for spec loaders
  * Contains common layout calculations and type definitions
  */
+import type { DiagramType } from '@/types'
+import type { DiagramNode } from '@/types'
+
 import {
   DEFAULT_CENTER_X,
   DEFAULT_CENTER_Y,
@@ -14,6 +17,117 @@ import {
   computeMinDiameterForNoWrap,
   computeTopicRadiusForCircleMap,
 } from './textMeasurement'
+import type { SpecLoaderResult } from './types'
+
+/** Placeholder text for knocked-out nodes in learning sheet mode */
+export const LEARNING_SHEET_PLACEHOLDER = '___'
+
+/** Node types that should never be hidden (topic, center, boundary, etc.) */
+const PROTECTED_NODE_TYPES = ['topic', 'center', 'boundary', 'label']
+
+/**
+ * Check if a node is hideable for learning sheet (exclude topic, center, boundary, label).
+ */
+function isHideableNode(node: DiagramNode, diagramType: DiagramType): boolean {
+  if (PROTECTED_NODE_TYPES.includes(node.type)) {
+    return false
+  }
+  if ((node.data as { isDimensionLabel?: boolean })?.isDimensionLabel === true) {
+    return false
+  }
+  if (!node.text || !String(node.text).trim()) {
+    return false
+  }
+  return true
+}
+
+/**
+ * Seeded shuffle for deterministic random selection (same spec = same hidden set).
+ */
+function seededShuffle<T>(array: T[], seed: number): T[] {
+  const arr = [...array]
+  let s = seed
+  for (let i = arr.length - 1; i > 0; i--) {
+    s = (s * 9301 + 49297) % 233280
+    const j = Math.floor((s / 233280) * (i + 1))
+    ;[arr[i], arr[j]] = [arr[j], arr[i]]
+  }
+  return arr
+}
+
+/**
+ * Apply learning sheet hidden nodes: randomly knock out a percentage of child nodes,
+ * replace text with placeholder, collect answers. Same business logic as backend.
+ *
+ * @param spec - API spec (may contain is_learning_sheet, hidden_node_percentage)
+ * @param result - SpecLoaderResult from type-specific loader
+ * @param diagramType - Diagram type
+ * @returns Modified result with hidden nodes and hiddenAnswers in metadata
+ */
+export function applyLearningSheetHiddenNodes(
+  spec: Record<string, unknown>,
+  result: SpecLoaderResult,
+  diagramType: DiagramType
+): SpecLoaderResult {
+  const isLearningSheet = spec.is_learning_sheet === true
+  const rawPct = spec.hidden_node_percentage
+  const pct = typeof rawPct === 'number' ? Math.max(0, Math.min(1, rawPct)) : 0
+  const existingHiddenAnswers = Array.isArray(spec.hiddenAnswers) ? spec.hiddenAnswers : []
+
+  if (!isLearningSheet || !result.nodes.length) {
+    if (isLearningSheet && existingHiddenAnswers.length > 0) {
+      const metadata = { ...result.metadata, hiddenAnswers: existingHiddenAnswers, isLearningSheet: true }
+      return { ...result, metadata }
+    }
+    return result
+  }
+
+  if (pct <= 0 && existingHiddenAnswers.length > 0) {
+    const metadata = { ...result.metadata, hiddenAnswers: existingHiddenAnswers, isLearningSheet: true }
+    return { ...result, metadata }
+  }
+
+  if (pct <= 0) {
+    return result
+  }
+
+  const hideableIndices: number[] = []
+  result.nodes.forEach((node, idx) => {
+    if (isHideableNode(node, diagramType)) {
+      hideableIndices.push(idx)
+    }
+  })
+
+  if (hideableIndices.length === 0) {
+    return result
+  }
+
+  const seed = JSON.stringify(spec).length + (spec.topic ? String(spec.topic).length : 0)
+  const shuffled = seededShuffle(hideableIndices, seed)
+  const countToHide = Math.max(1, Math.floor(shuffled.length * pct))
+  const indicesToHide = new Set(shuffled.slice(0, countToHide))
+
+  const hiddenAnswers: string[] = []
+  const nodes = result.nodes.map((node, idx) => {
+    if (!indicesToHide.has(idx)) {
+      return node
+    }
+    const originalText = String(node.text || '').trim()
+    hiddenAnswers.push(originalText)
+    return {
+      ...node,
+      text: LEARNING_SHEET_PLACEHOLDER,
+      data: {
+        ...node.data,
+        hidden: true,
+        hiddenAnswer: originalText,
+      },
+    }
+  })
+
+  const metadata = { ...result.metadata, hiddenAnswers, isLearningSheet: true }
+  return { ...result, nodes, metadata }
+}
 
 /**
  * Circle map layout calculation result
@@ -25,6 +139,18 @@ export interface CircleMapLayoutResult {
   uniformContextR: number
   childrenRadius: number
   outerCircleR: number
+}
+
+/**
+ * Get topic circle diameter from text (circle map center node).
+ * Uses same measurement as layout (computeTopicRadiusForCircleMap) so size is consistent.
+ * Single-line text only; circle adapts to text length.
+ *
+ * @param text - Topic text
+ * @returns Diameter in pixels
+ */
+export function getTopicCircleDiameter(text: string): number {
+  return 2 * computeTopicRadiusForCircleMap((text || '').trim() || ' ')
 }
 
 /**
@@ -43,20 +169,8 @@ export function calculateAdaptiveCircleSize(text: string, isTopic: boolean = fal
   const textLength = text.trim().length
 
   if (isTopic) {
-    // Topic nodes: larger circles, adapt based on text length
-    if (textLength <= 10) {
-      return 120
-    } else if (textLength <= 20) {
-      return 140
-    } else if (textLength <= 30) {
-      return 160
-    } else {
-      // For very long text, calculate based on estimated width
-      // Approximate: ~8px per character at 20px font size
-      const estimatedWidth = textLength * 8
-      // Add padding (40px) and ensure minimum size
-      return Math.max(180, Math.min(estimatedWidth + 40, 250))
-    }
+    // Topic nodes: use measurement-based diameter (single-line, adapts to text length)
+    return getTopicCircleDiameter(text)
   } else {
     // Context nodes: smaller circles, adapt based on text length
     if (textLength <= 6) {

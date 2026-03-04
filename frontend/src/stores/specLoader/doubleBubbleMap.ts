@@ -1,22 +1,108 @@
 /**
  * Double Bubble Map Loader
+ * Text-adaptive radii, capsule dimensions, layout aligned with useDoubleBubbleMap.
+ * Supports _doubleBubbleMapNodeSizes for empty-node saved radii.
  */
 import {
-  DEFAULT_BUBBLE_RADIUS,
-  DEFAULT_DIFF_RADIUS,
-  DEFAULT_DIFF_TO_TOPIC_SPACING,
+  DEFAULT_COLUMN_SPACING,
   DEFAULT_PADDING,
-  DEFAULT_TOPIC_RADIUS,
+  DOUBLE_BUBBLE_MAX_CAPSULE_HEIGHT,
 } from '@/composables/diagrams/layoutConfig'
 import type { Connection, DiagramNode } from '@/types'
+import {
+  doubleBubbleDiffRequiredRadius,
+  doubleBubbleRequiredRadius,
+} from './textMeasurement'
 
 import type { SpecLoaderResult } from './types'
 
+/** Capsule dimensions from radius (same formula as useDoubleBubbleMap) */
+function capsuleFromRadius(radius: number): { width: number; height: number; diameter: number } {
+  const diameter = radius * 2
+  const height = Math.min(
+    Math.round(diameter * 0.56),
+    DOUBLE_BUBBLE_MAX_CAPSULE_HEIGHT
+  )
+  return {
+    width: Math.round(diameter * 1.22),
+    height,
+    diameter,
+  }
+}
+
+/** Layout from unified radii (mirrors useDoubleBubbleMap computeLayoutFromRadii) */
+function computeLayout(
+  simCount: number,
+  leftDiffCount: number,
+  rightDiffCount: number,
+  padding: number,
+  topicR: number,
+  simR: number,
+  diffR: number
+): {
+  centerX: number
+  centerY: number
+  leftDiffX: number
+  leftTopicX: number
+  simX: number
+  rightTopicX: number
+  rightDiffX: number
+  simVerticalSpacing: number
+  diffVerticalSpacing: number
+  simCap: { width: number; height: number }
+  diffCap: { width: number; height: number }
+} {
+  const columnSpacing = DEFAULT_COLUMN_SPACING
+  const diffCap = capsuleFromRadius(diffR)
+  const maxLeftW = diffCap.width
+  const maxRightW = diffCap.width
+  const simCap = capsuleFromRadius(simR)
+  const simVerticalSpacing = simCap.height + 12
+  const diffVerticalSpacing = diffCap.height + 10
+
+  const D = simR + 2 * columnSpacing + 2 * topicR
+  const requiredWidth = 2 * D + maxLeftW + maxRightW + padding * 2
+  const centerX = requiredWidth / 2
+  const simX = centerX
+  const leftTopicX = centerX - simR - columnSpacing - topicR
+  const rightTopicX = centerX + simR + columnSpacing + topicR
+  const leftDiffX = centerX - D
+  const rightDiffX = centerX + D + maxRightW
+
+  const simColHeight = simCount > 0 ? (simCount - 1) * simVerticalSpacing + simCap.height : 0
+  const maxDiffCount = Math.max(leftDiffCount, rightDiffCount)
+  const diffColHeight =
+    maxDiffCount > 0 ? (maxDiffCount - 1) * diffVerticalSpacing + diffCap.height : 0
+  const maxColHeight = Math.max(simColHeight, diffColHeight, topicR * 2)
+  const requiredHeight = maxColHeight + padding * 2
+  const centerY = requiredHeight / 2
+
+  return {
+    centerX,
+    centerY,
+    leftDiffX,
+    leftTopicX,
+    simX,
+    rightTopicX,
+    rightDiffX,
+    simVerticalSpacing,
+    diffVerticalSpacing,
+    simCap,
+    diffCap,
+  }
+}
+
+export interface DoubleBubbleNodeSizes {
+  leftTopicR?: number
+  rightTopicR?: number
+  simRadii?: number[]
+  leftDiffRadii?: number[]
+  rightDiffRadii?: number[]
+}
+
 /**
- * Load double bubble map spec into diagram nodes and connections
- *
- * @param spec - Double bubble map spec with left, right, similarities, and differences
- * @returns SpecLoaderResult with nodes and connections
+ * Load double bubble map spec into diagram nodes and connections.
+ * Uses text-adaptive radii, capsule dimensions, and _doubleBubbleMapNodeSizes for empty nodes.
  */
 export function loadDoubleBubbleMapSpec(spec: Record<string, unknown>): SpecLoaderResult {
   const left = (spec.left as string) || (spec.topic1 as string) || ''
@@ -33,74 +119,90 @@ export function loadDoubleBubbleMapSpec(spec: Record<string, unknown>): SpecLoad
     (spec.right_unique as string[]) ||
     []
 
-  // Layout constants from layoutConfig
+  const sizes = (spec._doubleBubbleMapNodeSizes as DoubleBubbleNodeSizes | undefined) || {}
+
   const padding = DEFAULT_PADDING
-  const topicR = DEFAULT_TOPIC_RADIUS
-  const simR = DEFAULT_BUBBLE_RADIUS
-  const diffR = DEFAULT_DIFF_RADIUS
-  // Use same spacing for topic-to-similarity and topic-to-difference (both sides equal)
-  const topicSpacing = DEFAULT_DIFF_TO_TOPIC_SPACING
 
-  // Unified row spacing for all columns (diff, sim) - same vertical positions
-  const rowSpacing = Math.max(simR * 2 + 12, diffR * 2 + 10)
+  // Topic radii (text-adaptive; empty uses saved)
+  const leftTopicR = doubleBubbleRequiredRadius(left, {
+    isTopic: true,
+    savedRadius: sizes.leftTopicR,
+  })
+  const rightTopicR = doubleBubbleRequiredRadius(right, {
+    isTopic: true,
+    savedRadius: sizes.rightTopicR,
+  })
+  const topicR = Math.max(leftTopicR, rightTopicR)
 
-  // Calculate X positions (column-based layout from left to right)
-  const leftDiffX = padding + diffR
-  const leftTopicX = leftDiffX + diffR + topicSpacing + topicR
-  const simX = leftTopicX + topicR + topicSpacing + simR
-  const rightTopicX = simX + simR + topicSpacing + topicR
-  const rightDiffX = rightTopicX + topicR + topicSpacing + diffR
+  // Similarity radii → unified simR
+  const simRadii = similarities.map((t, i) =>
+    doubleBubbleRequiredRadius(t, { isTopic: false, savedRadius: sizes.simRadii?.[i] })
+  )
+  const simR = simRadii.length > 0 ? Math.max(...simRadii) : 30
 
-  const simCount = similarities.length
-  const leftDiffCount = leftDifferences.length
-  const rightDiffCount = rightDifferences.length
-  const maxDiffCount = Math.max(leftDiffCount, rightDiffCount)
-  const rowCount = Math.max(maxDiffCount, simCount, 1)
+  // Difference radii → unified diffR (both sides)
+  const leftDiffRadii = leftDifferences.map((t, i) =>
+    doubleBubbleDiffRequiredRadius(t, sizes.leftDiffRadii?.[i])
+  )
+  const rightDiffRadii = rightDifferences.map((t, i) =>
+    doubleBubbleDiffRequiredRadius(t, sizes.rightDiffRadii?.[i])
+  )
+  const leftDiffR = leftDiffRadii.length > 0 ? Math.max(...leftDiffRadii) : 30
+  const rightDiffR = rightDiffRadii.length > 0 ? Math.max(...rightDiffRadii) : 30
+  const diffR = Math.max(leftDiffR, rightDiffR)
 
-  const requiredHeight =
-    (rowCount - 1) * rowSpacing + Math.max(simR * 2, diffR * 2, topicR * 2) + padding * 2
-  const centerY = requiredHeight / 2
-
-  // Row Y positions: center-aligned so middle row = centerY (topics align with middle diff row)
-  const rowY = (rowIndex: number) => centerY + (rowIndex - (rowCount - 1) / 2) * rowSpacing
+  const layout = computeLayout(
+    similarities.length,
+    leftDifferences.length,
+    rightDifferences.length,
+    padding,
+    topicR,
+    simR,
+    diffR
+  )
 
   const nodes: DiagramNode[] = []
   const connections: Connection[] = []
 
-  // Topics at centerY (aligned with middle row of diff/sim nodes)
-  const topicY = centerY
-
-  // Left topic (column 2)
+  // Left topic (circle)
   nodes.push({
     id: 'left-topic',
     text: left,
     type: 'topic',
-    position: { x: leftTopicX - topicR, y: topicY - topicR },
+    position: { x: layout.leftTopicX - topicR, y: layout.centerY - topicR },
+    style: { size: topicR * 2, noWrap: true },
   })
 
-  // Right topic (column 4)
+  // Right topic (circle)
   nodes.push({
     id: 'right-topic',
     text: right,
     type: 'topic',
-    position: { x: rightTopicX - topicR, y: topicY - topicR },
+    position: { x: layout.rightTopicX - topicR, y: layout.centerY - topicR },
+    style: { size: topicR * 2, noWrap: true },
   })
 
-  // Similarities: center them in available rows (e.g. 2 sims in 3 rows → rows 0 and 2)
-  const simRowIndices =
-    simCount <= 1
-      ? [0]
-      : Array.from({ length: simCount }, (_, i) =>
-          simCount === rowCount ? i : Math.round((i * (rowCount - 1)) / (simCount - 1))
-        )
-
+  // Similarities (capsules)
+  const simCount = similarities.length
+  const simColHeight =
+    simCount > 0 ? (simCount - 1) * layout.simVerticalSpacing + layout.simCap.height : 0
+  const simStartY = layout.centerY - simColHeight / 2 + layout.simCap.height / 2
   similarities.forEach((sim, index) => {
-    const y = rowY(simRowIndices[index])
+    const cy = simStartY + index * layout.simVerticalSpacing
     nodes.push({
       id: `similarity-${index}`,
       text: sim,
       type: 'bubble',
-      position: { x: simX - simR, y: y - simR },
+      position: {
+        x: layout.simX - layout.simCap.width / 2,
+        y: cy - layout.simCap.height / 2,
+      },
+      style: {
+        width: layout.simCap.width,
+        height: layout.simCap.height,
+        size: simR * 2,
+        noWrap: true,
+      },
     })
     connections.push(
       { id: `edge-left-sim-${index}`, source: 'left-topic', target: `similarity-${index}` },
@@ -108,14 +210,30 @@ export function loadDoubleBubbleMapSpec(spec: Record<string, unknown>): SpecLoad
     )
   })
 
-  // Left and right differences: same row positions, center-aligned with topics
+  // Left differences (capsules)
+  const maxDiffCount = Math.max(leftDifferences.length, rightDifferences.length)
+  const diffColHeight =
+    maxDiffCount > 0
+      ? (maxDiffCount - 1) * layout.diffVerticalSpacing + layout.diffCap.height
+      : 0
+  const diffStartY = layout.centerY - diffColHeight / 2 + layout.diffCap.height / 2
+
   leftDifferences.forEach((diff, index) => {
-    const y = rowY(index)
+    const cy = diffStartY + index * layout.diffVerticalSpacing
     nodes.push({
       id: `left-diff-${index}`,
       text: diff,
       type: 'bubble',
-      position: { x: leftDiffX - diffR, y: y - diffR },
+      position: {
+        x: layout.leftDiffX - layout.diffCap.width,
+        y: cy - layout.diffCap.height / 2,
+      },
+      style: {
+        width: layout.diffCap.width,
+        height: layout.diffCap.height,
+        size: diffR * 2,
+        noWrap: true,
+      },
     })
     connections.push({
       id: `edge-left-diff-${index}`,
@@ -125,12 +243,21 @@ export function loadDoubleBubbleMapSpec(spec: Record<string, unknown>): SpecLoad
   })
 
   rightDifferences.forEach((diff, index) => {
-    const y = rowY(index)
+    const cy = diffStartY + index * layout.diffVerticalSpacing
     nodes.push({
       id: `right-diff-${index}`,
       text: diff,
       type: 'bubble',
-      position: { x: rightDiffX - diffR, y: y - diffR },
+      position: {
+        x: layout.rightDiffX - layout.diffCap.width,
+        y: cy - layout.diffCap.height / 2,
+      },
+      style: {
+        width: layout.diffCap.width,
+        height: layout.diffCap.height,
+        size: diffR * 2,
+        noWrap: true,
+      },
     })
     connections.push({
       id: `edge-right-diff-${index}`,

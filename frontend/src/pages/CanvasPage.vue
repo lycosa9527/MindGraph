@@ -23,6 +23,7 @@ import { useRoute, useRouter } from 'vue-router'
 
 import { AIModelSelector, CanvasToolbar, CanvasTopBar, ZoomControls } from '@/components/canvas'
 import DiagramCanvas from '@/components/diagram/DiagramCanvas.vue'
+import { MindmatePanel } from '@/components/panels'
 import {
   eventBus,
   getDefaultDiagramName,
@@ -31,7 +32,7 @@ import {
   useNotifications,
   useWorkshop,
 } from '@/composables'
-import { ANIMATION } from '@/config/uiConfig'
+import { ANIMATION, PANEL } from '@/config/uiConfig'
 import {
   useAuthStore,
   useDiagramStore,
@@ -48,6 +49,7 @@ const diagramStore = useDiagramStore()
 const uiStore = useUIStore()
 const authStore = useAuthStore()
 const savedDiagramsStore = useSavedDiagramsStore()
+const panelsStore = usePanelsStore()
 const { isZh } = useLanguage()
 const notify = useNotifications()
 
@@ -355,20 +357,57 @@ function handleClearNodeTextKey() {
     notify.warning(isZh.value ? '请先选择要清空的节点' : 'Please select a node to clear')
     return
   }
-  const protectedIds = ['topic', 'event', 'dimension-label', 'outer-boundary']
+  const protectedIds = [
+    'topic',
+    'event',
+    'flow-topic',
+    'left-topic',
+    'right-topic',
+    'dimension-label',
+    'outer-boundary',
+  ]
   let clearedCount = 0
+  const isLearningSheet = diagramStore.isLearningSheet
+
   for (const nodeId of selected) {
     if (protectedIds.includes(nodeId)) continue
     const node = diagramStore.data?.nodes?.find((n) => n.id === nodeId)
     if (node && node.type !== 'topic' && node.type !== 'center' && node.type !== 'boundary') {
-      if (diagramStore.updateNode(nodeId, { text: '' })) {
-        clearedCount++
+      if (isLearningSheet) {
+        if (diagramStore.emptyNodeForLearningSheet(nodeId)) {
+          clearedCount++
+        }
+      } else {
+        if (diagramStore.emptyNode(nodeId)) {
+          clearedCount++
+        }
       }
     }
   }
+
   if (clearedCount > 0) {
-    diagramStore.pushHistory(isZh.value ? '清空节点文字' : 'Clear node text')
-    notify.success(isZh.value ? `已清空 ${clearedCount} 个节点` : `Cleared ${clearedCount} node(s)`)
+    diagramStore.pushHistory(
+      isLearningSheet
+        ? isZh.value
+          ? '留空节点并添加答案'
+          : 'Empty node and add answer'
+        : isZh.value
+          ? '清空节点文字'
+          : 'Clear node text'
+    )
+    notify.success(
+      isLearningSheet
+        ? isZh.value
+          ? `已留空 ${clearedCount} 个节点，答案已添加`
+          : `Emptied ${clearedCount} node(s), added to answers`
+        : isZh.value
+          ? `已清空 ${clearedCount} 个节点`
+          : `Cleared ${clearedCount} node(s)`
+    )
+    // Save immediately when emptying nodes (learning sheet answers) so state persists
+    if (isLearningSheet) {
+      performAutoSave()
+    }
   } else {
     notify.warning(isZh.value ? '无法清空主题或中心节点' : 'Cannot clear topic or center nodes')
   }
@@ -665,16 +704,38 @@ onUnmounted(() => {
     />
 
     <!-- Main canvas area - extends behind toolbar; zoom fit excludes toolbar via FIT_PADDING -->
-    <div class="flex-1 relative overflow-hidden">
+    <div class="flex-1 relative overflow-hidden flex flex-col">
       <!-- Vue Flow Canvas -->
       <DiagramCanvas
         v-if="diagramStore.data"
-        class="w-full h-full"
+        class="w-full flex-1 min-h-0"
         :show-background="true"
         :show-minimap="false"
         :fit-view-on-init="true"
         :hand-tool-active="handToolActive"
       />
+
+      <!-- MindMate floating panel (教学设计) - rounded card, fixed height for stable layout during streaming -->
+      <Transition name="mindmate-slide">
+        <div
+          v-if="panelsStore.mindmatePanel.isOpen"
+          class="mindmate-panel-float fixed z-50 flex flex-col bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl overflow-hidden"
+          :style="{
+            width: `${PANEL.MINDMATE_WIDTH}px`,
+            top: '72px',
+            right: '16px',
+            height: 'calc(100vh - 160px)',
+            minHeight: '400px',
+            maxHeight: 'calc(100vh - 160px)',
+          }"
+        >
+          <MindmatePanel
+            mode="panel"
+            class="flex-1 min-h-0 flex flex-col"
+            @close="panelsStore.closeMindmate"
+          />
+        </div>
+      </Transition>
     </div>
 
     <!-- Zoom controls -->
@@ -693,3 +754,21 @@ onUnmounted(() => {
     <AIModelSelector @model-change="handleModelChange" />
   </div>
 </template>
+
+<style scoped>
+/* MindMate panel slide-in animation */
+.mindmate-slide-enter-active,
+.mindmate-slide-leave-active {
+  transition: transform 0.3s ease;
+}
+
+.mindmate-slide-enter-from,
+.mindmate-slide-leave-to {
+  transform: translateX(100%);
+}
+
+.mindmate-slide-enter-to,
+.mindmate-slide-leave-from {
+  transform: translateX(0);
+}
+</style>

@@ -77,6 +77,7 @@ function handleEditCancel() {
   >
     <InlineEditableText
       :text="data.label || ''"
+      :readonly="data.hidden === true"
       :node-id="id"
       :is-editing="isEditing"
       max-width="140px"

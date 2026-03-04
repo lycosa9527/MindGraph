@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.29.0] - 2026-03-05
+
+### Added
+- **半成品图示 (Learning Sheet)**: Full implementation of learning sheet mode. CanvasToolbar "半成品图示" button toggles mode on existing diagrams. Randomly knocks out child nodes (placeholder `___`), displays answer chips below diagram via LearningSheetOverlay. Press `-` on a node to empty it and add to answer key. State preserved on save/load.
+- **LearningSheetOverlay**: New component rendering dashed separator line and answer chips below diagram (bridge-map style).
+- **Spec Loader Learning Sheet**: `applyLearningSheetHiddenNodes()` in specLoader/utils.ts—seeded shuffle for deterministic hidden set, hideable node filtering, metadata `hiddenAnswers` and `isLearningSheet`.
+- **Diagram Store Learning Sheet**: `emptyNodeForLearningSheet()`, `setLearningSheetMode()`, `restoreFromLearningSheetMode()`, `applyLearningSheetView()`, `hasPreservedLearningSheet()` for mode toggle and answer tracking.
+
+### Changed
+- **Circle Map, Bubble Map, Double Bubble Map**: Huangyi fixes—(1) multi-line theme nodes with wrap support, (2) refit after text edit so diagram stays fully visible, (3) fixed canvas center (no bottom-right shift after edit), (4) text-adaptive topic radius via `getTopicCircleDiameter()` and `computeTopicRadiusForCircleMap`, (5) long English text stays within bubble (dynamic textMaxWidth), (6) `noWrap` for mixed-character nodes to prevent unwanted wrapping, (7) double bubble text-adaptive radii and reload-on-edit for consistent sizes.
+- **CircleNode**: Extended to bubble_map and double_bubble_map; capsule nodes for double-bubble similarity/diff; `noWrap`, `centerBlockInCircle`, `textMaxWidth` from circle size.
+- **InlineEditableText**: New props `noWrap`, `fullWidth`, `centerBlockInCircle`; `disabled` for learning sheet knocked-out nodes.
+- **bubbleMap.ts / doubleBubbleMap.ts**: Fixed center (DEFAULT_CENTER_X/Y), text-adaptive topic radius, double bubble capsule layout.
+- **textMeasurement.ts**: `computeTopicRadiusForCircleMap` now includes BORDER_TOPIC in radius; exported `measureTextWidth` for overlays.
+- **DiagramCanvas**: Refit on `node:text_updated` for circle_map, bubble_map, double_bubble_map; integrated LearningSheetOverlay.
+- **CanvasToolbar**: 半成品图示 handler—append " 半成品" for new generation, or toggle mode on existing diagram.
+- **Mindmate Panel, useAutoComplete, savedDiagrams, llmResults**: Learning sheet state preservation in save/load and auto-complete flows.
+
 ## [5.28.4] - 2026-03-02
 
 ### Added

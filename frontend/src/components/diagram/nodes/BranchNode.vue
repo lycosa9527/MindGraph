@@ -115,6 +115,7 @@ function handleEditCancel() {
       :text="data.label || ''"
       :node-id="id"
       :is-editing="isEditing"
+      :readonly="data.hidden === true"
       max-width="150px"
       text-align="center"
       @save="handleTextSave"

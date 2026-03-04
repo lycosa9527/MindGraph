@@ -29,9 +29,10 @@ export default defineConfig({
     },
   },
   server: {
-    port: 5173, // Use Vite's default port 5173 to avoid conflicts
-    host: process.env.VITE_HOST || '127.0.0.1', // Default to 127.0.0.1 (IPv4) to avoid IPv6 permission issues in WSL; set VITE_HOST=0.0.0.0 for WSL/remote access
-    strictPort: false, // Allow Vite to use another port if 5173 is taken
+    // Use 41732+ to avoid ip_unprivileged_port_start (often 32768 on WSL); override with PORT=3000 npm run dev
+    port: Number(process.env.PORT) || 41732,
+    host: process.env.VITE_HOST || '0.0.0.0',
+    strictPort: false,
     proxy: {
       '/api': {
         target: backendHost,

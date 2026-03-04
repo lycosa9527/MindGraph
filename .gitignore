@@ -209,47 +209,11 @@ storage/tiktoken_cache/
 # RAG test datasets
 services/knowledge/rag_chunk_test/rag-test/
 
-# ESP32 Firmware
-# Build outputs
-esp32/firmware/build/
-esp32/firmware/**/build/
+# ESP32 (ignored for now - will revisit in a few months)
+esp32/
 
-# ESP-IDF configuration backups
-esp32/firmware/sdkconfig.old
-esp32/firmware/sdkconfig.h
-
-# Compiled binaries and images
-esp32/firmware/**/*.bin
-esp32/firmware/**/*.elf
-esp32/firmware/**/*.map
-
-# SPIFFS images (can be regenerated)
-esp32/firmware/main/fonts/fonts.bin
-esp32/firmware/main/fonts/*.bin
-
-# Backup directories
-esp32/firmware/main/fonts/backup_*/
-esp32/firmware/**/backup_*/
-
-# Generated files (can be regenerated)
-esp32/firmware/compile_commands.json
-esp32/firmware/dependencies.lock
-
-# IDE files for ESP32
-esp32/.vscode/
-esp32/.idea/
-esp32/.clangd
-
-# ESP32 cache and temporary files
-esp32/firmware/.cache/
-esp32/firmware/**/.cache/
-
-# ESP32 reference folders (brookesia - for reference only)
-esp32/brookesia-esp/
-esp32/brookesia-waveshare/
-
-# ESP32 assets (if generated, uncomment if needed)
-# esp32/firmware/assets/
+# Archive (most features complete)
+archive/
 
 # Font files (binary fonts should not be tracked)
 *.ttf
@@ -258,10 +222,3 @@ esp32/brookesia-waveshare/
 *.woff2
 *.eot
 *.fnt
-esp32/fonts/
-esp32/firmware/**/fonts/*.ttf
-esp32/firmware/**/fonts/*.otf
-esp32/firmware/**/fonts/*.woff
-esp32/firmware/**/fonts/*.woff2
-esp32/firmware/**/fonts/*.eot
-esp32/firmware/**/fonts/*.fnt

@@ -248,6 +248,7 @@ function handleWidthChange(width: number) {
       :text="data.label || ''"
       :node-id="id"
       :is-editing="isEditing"
+      :readonly="data.hidden === true"
       max-width="300px"
       text-align="center"
       @save="handleTextSave"

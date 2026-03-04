@@ -3,7 +3,7 @@ import { computed, ref } from 'vue'
 
 import { ElButton, ElIcon, ElInput, ElTooltip } from 'element-plus'
 
-import { Close, Promotion, UploadFilled, VideoPause } from '@element-plus/icons-vue'
+import { Close, Promotion, VideoPause } from '@element-plus/icons-vue'
 
 import { Paperclip, Send } from 'lucide-vue-next'
 
@@ -22,6 +22,8 @@ const props = withDefaults(
     isUploading?: boolean
     pendingFiles?: MindMateFile[]
     showSuggestions?: boolean
+    /** When false, hide file upload button (e.g. canvas mini-mindmate) */
+    showFileUpload?: boolean
   }>(),
   {
     mode: 'panel',
@@ -31,6 +33,7 @@ const props = withDefaults(
     isUploading: false,
     pendingFiles: () => [],
     showSuggestions: false,
+    showFileUpload: true,
   }
 )
 
@@ -50,11 +53,8 @@ const fileInputRef = ref<HTMLInputElement | null>(null)
 
 // Computed for send button disabled state
 const isSendDisabled = computed(() => {
-  return (
-    (!props.inputText.trim() && props.pendingFiles.length === 0) ||
-    props.isLoading ||
-    !authStore.isAuthenticated
-  )
+  const hasContent = props.inputText.trim() || (props.showFileUpload && props.pendingFiles.length > 0)
+  return !hasContent || props.isLoading || !authStore.isAuthenticated
 })
 
 // Get file icon based on type
@@ -181,11 +181,8 @@ function handleSuggestionSelect(suggestion: string) {
       <SuggestionBubbles @select="handleSuggestionSelect" />
     </div>
 
-    <!-- Input Area - Fullpage Mode -->
-    <div
-      v-if="isFullpageMode"
-      class="input-area-fullpage"
-    >
+    <!-- Input Area - Same design for fullpage and panel (MindMate module style) -->
+    <div class="input-area-fullpage">
       <!-- Hidden file input -->
       <input
         ref="fileInputRef"
@@ -198,7 +195,7 @@ function handleSuggestionSelect(suggestion: string) {
 
       <!-- Pending Files Preview -->
       <div
-        v-if="pendingFiles.length > 0"
+        v-if="showFileUpload && pendingFiles.length > 0"
         class="pending-files-fullpage"
       >
         <div
@@ -234,7 +231,7 @@ function handleSuggestionSelect(suggestion: string) {
             :model-value="inputText"
             type="textarea"
             :autosize="{ minRows: 1, maxRows: 4 }"
-            :placeholder="isZh ? '输入你的问题...' : 'Type your question...'"
+            :placeholder="isZh ? '请输入你的问题' : 'Type your question...'"
             :disabled="isLoading || !authStore.isAuthenticated"
             class="fullpage-textarea"
             @update:model-value="emit('update:inputText', $event)"
@@ -245,8 +242,11 @@ function handleSuggestionSelect(suggestion: string) {
 
         <!-- Action buttons (right side) -->
         <div class="input-actions-fullpage">
-          <!-- Upload Button (Paperclip) -->
-          <ElTooltip :content="isZh ? '上传文件' : 'Attach file'">
+          <!-- Upload Button (Paperclip) - hidden when showFileUpload is false -->
+          <ElTooltip
+            v-if="showFileUpload"
+            :content="isZh ? '上传文件' : 'Attach file'"
+          >
             <ElButton
               text
               class="attach-btn-fullpage"
@@ -283,107 +283,6 @@ function handleSuggestionSelect(suggestion: string) {
             <Send :size="18" />
           </ElButton>
         </div>
-      </div>
-    </div>
-
-    <!-- Input Area - Panel Mode (Swiss Design) -->
-    <div
-      v-else
-      class="input-area-swiss"
-    >
-      <!-- Pending Files Preview -->
-      <div
-        v-if="pendingFiles.length > 0"
-        class="pending-files-swiss"
-      >
-        <div
-          v-for="file in pendingFiles"
-          :key="file.id"
-          class="pending-file-chip"
-        >
-          <img
-            v-if="file.preview_url"
-            :src="file.preview_url"
-            :alt="file.name"
-            class="w-6 h-6 object-cover"
-          />
-          <span
-            v-else
-            class="file-icon"
-            >{{ getFileIcon(file.type) }}</span
-          >
-          <span class="file-name">{{ file.name }}</span>
-          <span class="file-size">{{ formatFileSize(file.size) }}</span>
-          <button
-            class="file-remove"
-            @click="emit('removeFile', file.id)"
-          >
-            <ElIcon><Close /></ElIcon>
-          </button>
-        </div>
-      </div>
-
-      <!-- Hidden file input -->
-      <input
-        ref="fileInputRef"
-        type="file"
-        class="hidden"
-        accept="image/*"
-        multiple
-        @change="handleFileSelect"
-      />
-
-      <!-- Input Container -->
-      <div class="input-container-swiss">
-        <!-- Attach Button -->
-        <button
-          class="attach-btn"
-          :disabled="isLoading || isUploading || !authStore.isAuthenticated"
-          :class="{ 'is-loading': isUploading }"
-          @click="triggerFileUpload"
-        >
-          <ElIcon v-if="!isUploading"><UploadFilled /></ElIcon>
-          <span
-            v-else
-            class="loading-spinner"
-          />
-        </button>
-
-        <!-- Text Input -->
-        <div class="input-wrapper">
-          <ElInput
-            :model-value="inputText"
-            type="textarea"
-            :autosize="{ minRows: 1, maxRows: 6 }"
-            :placeholder="
-              isZh
-                ? '提问、分析图表、或请求修改...'
-                : 'Ask questions, analyze diagrams, or request changes...'
-            "
-            :disabled="isLoading || !authStore.isAuthenticated"
-            class="swiss-textarea"
-            @update:model-value="emit('update:inputText', $event)"
-            @keydown="handleKeydown"
-            @focus="handleInputFocus"
-          />
-        </div>
-
-        <!-- Send/Stop Button -->
-        <button
-          v-if="isStreaming"
-          class="send-btn stop-btn"
-          @click="emit('stop')"
-        >
-          <ElIcon><VideoPause /></ElIcon>
-        </button>
-        <button
-          v-else
-          class="send-btn"
-          :disabled="isSendDisabled"
-          @click="handleSend"
-        >
-          <ElIcon><Promotion /></ElIcon>
-        </button>
       </div>
     </div>
   </div>

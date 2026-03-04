@@ -139,6 +139,7 @@ function handleDeleteClick(event: MouseEvent) {
 
     <InlineEditableText
       :text="data.label || ''"
+      :readonly="data.hidden === true"
       :node-id="id"
       :is-editing="isEditing"
       max-width="200px"

@@ -171,6 +171,7 @@ function handleLinkDrop(event: DragEvent) {
       />
       <InlineEditableText
         :text="data.label || ''"
+        :readonly="data.hidden === true"
         :node-id="id"
         :is-editing="isEditing"
         :max-width="isTopic ? '300px' : '150px'"

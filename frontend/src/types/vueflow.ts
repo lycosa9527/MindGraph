@@ -50,6 +50,10 @@ export interface MindGraphNodeData {
   arrowheadDirection?: 'none' | 'source' | 'target' | 'both'
   /** Concept map: when multiple edges share target handle, only one draws arrowhead */
   drawTargetArrowhead?: boolean
+  /** Learning sheet: node is knocked out, show placeholder */
+  hidden?: boolean
+  /** Learning sheet: original text (answer) for knocked-out node */
+  hiddenAnswer?: string
   // Allow additional custom properties
   [key: string]: unknown
 }
@@ -102,7 +106,7 @@ export function diagramNodeToVueFlowNode(
     topic: isConceptMap ? 'concept' : useCircleForTopic ? 'circle' : 'topic',
     center: isConceptMap ? 'concept' : useCircleForTopic ? 'circle' : 'topic',
     child: 'branch',
-    bubble: isCircleMap || isBubbleMap ? 'circle' : 'bubble', // bubble_map uses circles like circle_map
+    bubble: isCircleMap || isBubbleMap || isDoubleBubbleMap ? 'circle' : 'bubble', // bubble_map and double_bubble_map use CircleNode
     branch: isConceptMap ? 'concept' : 'branch', // concept_map uses ConceptNode for concept nodes
     left: 'branch',
     right: 'branch',
@@ -135,9 +139,19 @@ export function diagramNodeToVueFlowNode(
   const zIndex = node.type === 'boundary' ? -1 : undefined
 
   // For boundary nodes, set width/height on the node object directly
-  // This tells Vue Flow the actual dimensions of the node
-  const nodeWidth = node.type === 'boundary' ? node.style?.width : undefined
-  const nodeHeight = node.type === 'boundary' ? node.style?.height : undefined
+  // For double_bubble_map capsule nodes (similarity/diff), use style width/height
+  const nodeWidth =
+    node.type === 'boundary'
+      ? node.style?.width
+      : isDoubleBubbleMap && node.style?.width != null
+        ? node.style.width
+        : undefined
+  const nodeHeight =
+    node.type === 'boundary'
+      ? node.style?.height
+      : isDoubleBubbleMap && node.style?.height != null
+        ? node.style.height
+        : undefined
 
   // Preserve custom data fields from node.data (like pairIndex, position for bridge maps)
   const customData = node.data || {}
@@ -210,6 +224,25 @@ export function vueFlowNodeToDiagramNode(node: MindGraphNode): DiagramNode {
   const data = node.data
   const nodeType = data?.nodeType ?? 'branch'
 
+  const excludeKeys = new Set([
+    'label',
+    'nodeType',
+    'diagramType',
+    'style',
+    'parentId',
+    'originalNode',
+    'isDraggable',
+    'isSelectable',
+  ])
+  const customData: Record<string, unknown> = {}
+  if (data && typeof data === 'object') {
+    for (const [k, v] of Object.entries(data)) {
+      if (!excludeKeys.has(k) && v !== undefined) {
+        customData[k] = v
+      }
+    }
+  }
+
   return {
     id: node.id,
     text: data?.label ?? '',
@@ -217,6 +250,7 @@ export function vueFlowNodeToDiagramNode(node: MindGraphNode): DiagramNode {
     position: { x: node.position.x, y: node.position.y },
     style: data?.style,
     parentId: data?.parentId,
+    data: Object.keys(customData).length > 0 ? customData : undefined,
   }
 }
 

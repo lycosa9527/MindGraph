@@ -18,6 +18,7 @@ import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 
 import { useDiagramStore } from './diagram'
+import { useSavedDiagramsStore } from './savedDiagrams'
 
 // Types
 export type ModelState = 'idle' | 'loading' | 'ready' | 'error'
@@ -126,7 +127,7 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
   }
 
   // Switch to a different model's result
-  function switchToModel(model: string): boolean {
+  async function switchToModel(model: string): Promise<boolean> {
     const result = getValidResult(model)
     if (!result || !result.success || !result.spec) {
       console.warn(`[LLMResults] Cannot switch to ${model}: no valid result`)
@@ -144,6 +145,10 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
       return false
     }
 
+    // Save current diagram (including learning sheet state) before replacing
+    const savedDiagramsStore = useSavedDiagramsStore()
+    await savedDiagramsStore.saveCurrentDiagramBeforeReplace()
+
     // Load into diagram store
     const loaded = diagramStore.loadFromSpec(
       result.spec,
@@ -151,6 +156,8 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
     )
     if (loaded) {
       selectedModel.value = model
+      // Clear activeDiagramId so the new diagram is treated as unsaved (from LLM cache)
+      savedDiagramsStore.setActiveDiagram(null)
       console.log(`[LLMResults] Switched to ${model} result`)
       return true
     }
@@ -214,12 +221,12 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
   }
 
   // Handle successful model result
-  function handleModelSuccess(
+  async function handleModelSuccess(
     model: string,
     spec: Record<string, unknown>,
     diagramType: string,
     elapsed: number
-  ): boolean {
+  ): Promise<boolean> {
     // Verify context hasn't changed
     const currentDiagramType = diagramStore.type
     let normalizedCurrentType = currentDiagramType
@@ -242,7 +249,7 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
 
     // If this is the first successful result, render it
     if (selectedModel.value === null) {
-      const loaded = switchToModel(model)
+      const loaded = await switchToModel(model)
       if (loaded) {
         console.log(`[LLMResults] First result from ${model} rendered`)
         return true

@@ -20,6 +20,7 @@ import { loadMindMapSpec } from './mindMap'
 import { loadMultiFlowMapSpec, recalculateMultiFlowMapLayout } from './multiFlowMap'
 import { loadTreeMapSpec } from './treeMap'
 import type { SpecLoaderResult } from './types'
+import { applyLearningSheetHiddenNodes } from './utils'
 
 // Re-export public APIs
 export { recalculateCircleMapLayout } from './circleMap'
@@ -48,19 +49,19 @@ export function loadSpecForDiagramType(
   spec: Record<string, unknown>,
   diagramType: DiagramType
 ): SpecLoaderResult {
+  let result: SpecLoaderResult
+
   // Check if this is a saved diagram (has nodes array)
   // Saved diagrams use generic format: { nodes: [...], connections: [...] }
   // LLM-generated specs use type-specific format: { topic, attributes, ... }
   if (Array.isArray(spec.nodes) && spec.nodes.length > 0) {
-    return loadGenericSpec(spec)
+    result = loadGenericSpec(spec)
+  } else {
+    const loader = SPEC_LOADERS[diagramType]
+    result = loader ? loader(spec) : loadGenericSpec(spec)
   }
 
-  // Use type-specific loader for LLM-generated specs
-  const loader = SPEC_LOADERS[diagramType]
-  if (loader) {
-    return loader(spec)
-  }
-  return loadGenericSpec(spec)
+  return applyLearningSheetHiddenNodes(spec, result, diagramType)
 }
 
 // ============================================================================

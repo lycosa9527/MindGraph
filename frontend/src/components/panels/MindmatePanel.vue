@@ -8,6 +8,7 @@ import { computed, nextTick, ref, watch } from 'vue'
 
 import { useLanguage, useMindMate, useNotifications } from '@/composables'
 import type { FeedbackRating } from '@/composables/useMindMate'
+import { useConversations, usePinnedConversations } from '@/composables/queries'
 import { useAuthStore, useMindMateStore } from '@/stores'
 
 import ShareExportModal from './ShareExportModal.vue'
@@ -78,7 +79,24 @@ const showWelcome = computed(() => {
   return !mindMate.hasMessages.value && !mindMate.isLoading.value && !mindMate.isStreaming.value
 })
 
-// No need to fetch - Vue Query handles it automatically
+// In panel mode (canvas mini-mindmate): fetch conversations from Dify and sync to store
+// ChatHistory sidebar is not mounted on canvas, so we must fetch here
+const { data: conversationsData, isLoading: isLoadingConversationsQuery } = useConversations()
+const { data: pinnedData } = usePinnedConversations()
+
+const historyLoading = computed(() =>
+  props.mode === 'panel' ? isLoadingConversationsQuery.value : mindMate.isLoadingConversations.value
+)
+
+watch(
+  [conversationsData, pinnedData],
+  ([convs, pinned]) => {
+    if (convs && pinned !== undefined) {
+      mindMateStore.syncConversationsFromQuery(convs, pinned)
+    }
+  },
+  { immediate: true }
+)
 
 // Watch for title changes to sync display (from store)
 watch(
@@ -292,16 +310,22 @@ function isLastAssistantMessage(messageId: string): boolean {
       :title="displayTitle"
       :is-typing="isTypingTitle"
       :is-authenticated="authStore.isAuthenticated"
+      :conversations="mindMate.conversations.value"
+      :is-loading-history="historyLoading"
+      :current-conversation-id="mindMateStore.currentConversationId"
       @toggle-history="toggleHistorySidebar"
       @new-conversation="startNewConversation"
       @close="emit('close')"
+      @load-history="loadConversationFromHistory"
+      @delete-history="deleteConversationFromHistory"
     />
 
-    <!-- Conversation History Drawer -->
+    <!-- Conversation History Drawer - fullpage mode only; panel uses header dropdown -->
     <ConversationHistory
+      v-if="isFullpageMode"
       v-model:visible="showHistorySidebar"
       :conversations="mindMate.conversations.value"
-      :is-loading="mindMate.isLoadingConversations.value"
+      :is-loading="historyLoading"
       :current-conversation-id="mindMateStore.currentConversationId"
       @load="loadConversationFromHistory"
       @delete="deleteConversationFromHistory"
@@ -340,6 +364,7 @@ function isLastAssistantMessage(messageId: string): boolean {
       :is-uploading="mindMate.isUploading.value"
       :pending-files="mindMate.pendingFiles.value"
       :show-suggestions="showWelcome"
+      :show-file-upload="isFullpageMode"
       @send="sendMessage"
       @stop="stopGeneration"
       @upload="handleFileSelect"

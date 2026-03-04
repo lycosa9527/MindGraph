@@ -106,7 +106,21 @@ export function measureTextFitsInCircle(
 
 /**
  * Measure width of text in single line (no-wrap) at given fontSize.
+ * Exported for use in overlays (e.g. learning sheet answer chips).
  */
+export function measureTextWidth(text: string, fontSize: number): number {
+  if (typeof document === 'undefined') return 0
+  const t = (text || '').trim() || ' '
+  const el = getMeasureEl()
+  el.style.width = 'max-content'
+  el.style.whiteSpace = 'nowrap'
+  el.style.padding = '0'
+  el.style.fontSize = `${fontSize}px`
+  el.style.fontWeight = 'normal'
+  el.textContent = t
+  return el.offsetWidth
+}
+
 function measureTextWidthNoWrap(
   text: string,
   options: { isTopic: boolean; fontSize: number }
@@ -385,11 +399,12 @@ export function doubleBubbleDiffRequiredRadius(text: string, savedRadius?: numbe
 
 /**
  * Circle map center (topic) radius from text: measure text at same font/size as render,
- * use bounding box → radius = diagonal/2 + inner padding, with minimum radius.
+ * single-line (nowrap). Radius = diagonal/2 + inner padding + border, with minimum radius.
  * Uses invisible DOM measurement for accurate width/height.
+ * See CIRCLE_MAP_IMPLEMENTATION_PROMPT.md §五.
  *
  * @param text - Topic text
- * @returns Radius in pixels
+ * @returns Radius in pixels (to outer edge of circle, includes border)
  */
 export function computeTopicRadiusForCircleMap(text: string): number {
   const t = (text || '').trim() || ' '
@@ -398,15 +413,14 @@ export function computeTopicRadiusForCircleMap(text: string): number {
     const approxW = len * TOPIC_FONT_SIZE * 0.6
     const approxH = TOPIC_FONT_SIZE * 1.4
     const diagonal = Math.sqrt(approxW * approxW + approxH * approxH)
-    return Math.max(
-      MIN_TOPIC_RADIUS_CIRCLE_MAP,
-      Math.ceil(diagonal / 2 + TOPIC_CIRCLE_INNER_PADDING)
-    )
+    const contentR = Math.ceil(diagonal / 2 + TOPIC_CIRCLE_INNER_PADDING)
+    return Math.max(MIN_TOPIC_RADIUS_CIRCLE_MAP, contentR + BORDER_TOPIC)
   }
   const { width, height } = measureTextWithSVG(t, TOPIC_FONT_SIZE, true)
   const w = width || t.length * TOPIC_FONT_SIZE * 0.6
   const h = height || TOPIC_FONT_SIZE * 1.4
   const diagonal = Math.sqrt(w * w + h * h)
-  const radius = Math.ceil(diagonal / 2 + TOPIC_CIRCLE_INNER_PADDING)
+  const contentR = Math.ceil(diagonal / 2 + TOPIC_CIRCLE_INNER_PADDING)
+  const radius = contentR + BORDER_TOPIC
   return Math.max(MIN_TOPIC_RADIUS_CIRCLE_MAP, radius)
 }

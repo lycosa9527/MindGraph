@@ -397,9 +397,11 @@ export function useAutoComplete() {
       onAllComplete?: (successCount: number, totalCount: number) => void
       onSuccess?: () => void
       onError?: (error: string) => void
+      /** Append to prompt (e.g. ' 半成品' for learning sheet mode) */
+      promptSuffix?: string
     } = {}
   ): Promise<{ success: boolean; error?: string }> {
-    const { modelsToRun = [...LLM_MODELS], onFirstResult, onAllComplete } = options
+    const { modelsToRun = [...LLM_MODELS], onFirstResult, onAllComplete, promptSuffix } = options
 
     // Validate
     const validation = validateForAutoComplete()
@@ -410,7 +412,7 @@ export function useAutoComplete() {
 
     // Build simple request - backend handles prompt construction
     const language = isZh.value ? 'zh' : 'en'
-    const topic = extractMainTopic() || ''
+    const topic = (extractMainTopic() || '') + (promptSuffix ?? '')
 
     const requestBody: Record<string, unknown> = {
       prompt: topic,
@@ -476,7 +478,7 @@ export function useAutoComplete() {
           const result = settledResult.value
 
           if (result.success && result.spec) {
-            const rendered = llmResultsStore.handleModelSuccess(
+            const rendered = await llmResultsStore.handleModelSuccess(
               model,
               result.spec,
               result.diagramType || diagramType,
@@ -556,9 +558,10 @@ export function useAutoComplete() {
 
   /**
    * Switch to a different model's cached result
+   * Saves current diagram (including learning sheet state) before replacing
    */
-  function switchToModel(model: string): boolean {
-    const switched = llmResultsStore.switchToModel(model)
+  async function switchToModel(model: string): Promise<boolean> {
+    const switched = await llmResultsStore.switchToModel(model)
     if (switched) {
       eventBus.emit('llm:result_rendered', {
         model,

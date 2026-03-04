@@ -27,6 +27,7 @@ import type { MindGraphNode } from '@/types'
 
 import BraceOverlay from './BraceOverlay.vue'
 import BridgeOverlay from './BridgeOverlay.vue'
+import LearningSheetOverlay from './LearningSheetOverlay.vue'
 import ContextMenu from './ContextMenu.vue'
 import BraceEdge from './edges/BraceEdge.vue'
 // Import custom edge components
@@ -135,6 +136,9 @@ const isFittedForPanel = ref(false)
 // (nodes-initialized can re-fire when vueFlowNodes returns new refs on selection clear)
 const hasInitialFitDoneForDiagram = ref(false)
 
+// Debounce timeout for fit triggered by onNodesChange (layout/dimension changes)
+let fitFromNodesChangeTimeoutId: ReturnType<typeof setTimeout> | null = null
+
 // Reset initial-fit flag when diagram changes (new load, type switch)
 watch(
   () => [diagramStore.type, diagramStore.data] as const,
@@ -217,12 +221,32 @@ const edges = computed(() => {
 
 // Handle node changes (position updates, etc.)
 onNodesChange((changes) => {
+  const fitTriggeringTypes = ['position', 'dimensions', 'remove', 'add'] as const
+  let hasFitTriggeringChange = false
+
   changes.forEach((change) => {
     if (change.type === 'position' && change.position) {
       // During drag, update position but don't mark as custom yet
       diagramStore.updateNodePosition(change.id, change.position, false)
     }
+    if (fitTriggeringTypes.includes(change.type as (typeof fitTriggeringTypes)[number])) {
+      hasFitTriggeringChange = true
+    }
   })
+
+  // Refit when nodes change (dimensions, add/remove, position) - except concept map (free-form)
+  if (
+    hasFitTriggeringChange &&
+    diagramStore.type !== 'concept_map' &&
+    props.fitViewOnInit &&
+    getNodes.value.length > 0
+  ) {
+    if (fitFromNodesChangeTimeoutId) clearTimeout(fitFromNodesChangeTimeoutId)
+    fitFromNodesChangeTimeoutId = setTimeout(() => {
+      fitFromNodesChangeTimeoutId = null
+      eventBus.emit('view:fit_to_canvas_requested', { animate: true })
+    }, ANIMATION.FIT_DELAY)
+  }
 })
 
 // Helper function to get timestamp for logging
@@ -750,14 +774,20 @@ onMounted(() => {
   // Listen for inline text updates from node components
   unsubscribers.push(
     eventBus.on('node:text_updated', ({ nodeId, text }) => {
-      // Update the node text in the diagram store
       diagramStore.pushHistory('Edit node text')
       diagramStore.updateNode(nodeId, { text })
       // Concept map label agent: regenerate only edges with empty labels (when AI on)
       if (diagramStore.type === 'concept_map') {
         regenerateForNodeIfNeeded(nodeId)
       }
-      // Flow maps use fixed dimensions with text truncation, no layout recalculation needed
+      // Double bubble map: rebuild spec from nodes (new text), reload layout
+      // Fit is triggered by onNodesChange when nodes update
+      if (diagramStore.type === 'double_bubble_map') {
+        const spec = diagramStore.getDoubleBubbleSpecFromData()
+        if (spec) {
+          diagramStore.loadFromSpec(spec, 'double_bubble_map')
+        }
+      }
     })
   )
 
@@ -796,6 +826,11 @@ onUnmounted(() => {
   if (contextMenuSetupTimeoutId) {
     clearTimeout(contextMenuSetupTimeoutId)
     contextMenuSetupTimeoutId = null
+  }
+  // Clear fit-from-nodes-change timeout
+  if (fitFromNodesChangeTimeoutId) {
+    clearTimeout(fitFromNodesChangeTimeoutId)
+    fitFromNodesChangeTimeoutId = null
   }
   // Remove context menu listener
   if (contextMenuElement && contextMenuHandler) {
@@ -897,6 +932,9 @@ const gridConfig = {
 
         <!-- Bridge overlay for bridge maps (draws vertical lines, triangles, and dimension label) -->
         <BridgeOverlay />
+
+        <!-- Learning sheet overlay: dashed line + answers below diagram (半成品图示 mode) -->
+        <LearningSheetOverlay />
       </VueFlow>
     </div>
 

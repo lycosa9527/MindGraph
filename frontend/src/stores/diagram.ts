@@ -50,6 +50,9 @@ import {
   recalculateCircleMapLayout,
   recalculateMultiFlowMapLayout,
 } from './specLoader'
+import {
+  LEARNING_SHEET_PLACEHOLDER,
+} from './specLoader/utils'
 
 // Event types for diagram store events
 export type DiagramEventType =
@@ -219,6 +222,15 @@ export const useDiagramStore = defineStore('diagram', () => {
     if (!data.value?.nodes || selectedNodes.value.length === 0) return []
     return data.value.nodes.filter((node) => selectedNodes.value.includes(node.id))
   })
+
+  const isLearningSheet = computed(() => {
+    const d = data.value as { isLearningSheet?: boolean; is_learning_sheet?: boolean } | null
+    return d?.isLearningSheet === true || d?.is_learning_sheet === true
+  })
+
+  const hiddenAnswers = computed(
+    () => (data.value as { hiddenAnswers?: string[] } | null)?.hiddenAnswers ?? []
+  )
 
   // Circle map layout: computed only from node data (NOT selection).
   // Prevents layout recalculation when selection changes (e.g. pane click),
@@ -521,6 +533,128 @@ export const useDiagramStore = defineStore('diagram', () => {
 
     emitEvent('diagram:node_updated', { nodeId, updates })
     return true
+  }
+
+  function emptyNodeForLearningSheet(nodeId: string): boolean {
+    if (!data.value?.nodes || !isLearningSheet.value) return false
+
+    const nodeIndex = data.value.nodes.findIndex((n) => n.id === nodeId)
+    if (nodeIndex === -1) return false
+
+    const node = data.value.nodes[nodeIndex]
+    const originalText = String(node.text ?? '').trim()
+    if (!originalText || node.data?.hidden) return false
+
+    const d = data.value as Record<string, unknown>
+    const existingAnswers = (d.hiddenAnswers as string[] | undefined) ?? []
+    d.hiddenAnswers = [...existingAnswers, originalText]
+
+    data.value.nodes[nodeIndex] = {
+      ...node,
+      text: LEARNING_SHEET_PLACEHOLDER,
+      data: {
+        ...node.data,
+        hidden: true,
+        hiddenAnswer: originalText,
+      },
+    }
+
+    emitEvent('diagram:node_updated', { nodeId, updates: { text: LEARNING_SHEET_PLACEHOLDER } })
+    return true
+  }
+
+  function emptyNode(nodeId: string): boolean {
+    if (!data.value?.nodes) return false
+
+    const nodeIndex = data.value.nodes.findIndex((n) => n.id === nodeId)
+    if (nodeIndex === -1) return false
+
+    data.value.nodes[nodeIndex] = {
+      ...data.value.nodes[nodeIndex],
+      text: '',
+    }
+
+    emitEvent('diagram:node_updated', { nodeId, updates: { text: '' } })
+    return true
+  }
+
+  function setLearningSheetMode(enabled: boolean): void {
+    if (!data.value) return
+    const d = data.value as Record<string, unknown>
+    d.isLearningSheet = enabled
+    if (enabled && !d.hiddenAnswers) {
+      d.hiddenAnswers = []
+    }
+  }
+
+  /**
+   * Switch to regular mode: show full node text but preserve hidden state so user can
+   * toggle back to the same learning sheet later.
+   */
+  function restoreFromLearningSheetMode(): void {
+    if (!data.value?.nodes || !isLearningSheet.value) return
+
+    const d = data.value as Record<string, unknown>
+
+    data.value.nodes.forEach((node, idx) => {
+      const nodeData = node.data as { hidden?: boolean; hiddenAnswer?: string } | undefined
+      if (nodeData?.hidden === true && nodeData?.hiddenAnswer) {
+        const originalText = nodeData.hiddenAnswer
+        data.value!.nodes[idx] = {
+          ...node,
+          text: originalText,
+          data: {
+            ...node.data,
+            hidden: true,
+            hiddenAnswer: originalText,
+          },
+        }
+        emitEvent('diagram:node_updated', { nodeId: node.id, updates: { text: originalText } })
+      }
+    })
+
+    d.isLearningSheet = false
+  }
+
+  /**
+   * Resume learning sheet view from preserved state (nodes with hiddenAnswer).
+   * Used when user toggles 半成品图示 on and has a saved learning sheet from earlier.
+   */
+  function applyLearningSheetView(): void {
+    if (!data.value?.nodes) return
+
+    const d = data.value as Record<string, unknown>
+
+    data.value.nodes.forEach((node, idx) => {
+      const nodeData = node.data as { hidden?: boolean; hiddenAnswer?: string } | undefined
+      if (nodeData?.hidden === true && nodeData?.hiddenAnswer) {
+        data.value!.nodes[idx] = {
+          ...node,
+          text: LEARNING_SHEET_PLACEHOLDER,
+          data: {
+            ...node.data,
+            hidden: true,
+            hiddenAnswer: nodeData.hiddenAnswer,
+          },
+        }
+        emitEvent('diagram:node_updated', {
+          nodeId: node.id,
+          updates: { text: LEARNING_SHEET_PLACEHOLDER },
+        })
+      }
+    })
+
+    d.isLearningSheet = true
+  }
+
+  /**
+   * True if diagram has preserved learning sheet state (can resume without creating new).
+   */
+  function hasPreservedLearningSheet(): boolean {
+    if (!data.value?.nodes) return false
+    return data.value.nodes.some(
+      (n) => (n.data as { hidden?: boolean; hiddenAnswer?: string })?.hidden === true
+    )
   }
 
   function addNode(node: DiagramNode): void {
@@ -1308,6 +1442,82 @@ export const useDiagramStore = defineStore('diagram', () => {
   }
 
   /**
+   * Build double-bubble-map type-specific spec from current nodes.
+   * Used for add-node flow and text_updated reload/fit.
+   */
+  function getDoubleBubbleSpecFromData(): Record<string, unknown> | null {
+    if (type.value !== 'double_bubble_map' || !data.value?.nodes?.length) return null
+    const nodes = data.value.nodes
+    let left = ''
+    let right = ''
+    const leftNode = nodes.find((n) => n.id === 'left-topic')
+    const rightNode = nodes.find((n) => n.id === 'right-topic')
+    if (leftNode) left = String(leftNode.text ?? '').trim()
+    if (rightNode) right = String(rightNode.text ?? '').trim()
+    const simIndices = [...new Set(
+      nodes
+        .filter((n) => /^similarity-\d+$/.test(n.id))
+        .map((n) => parseInt(n.id.replace('similarity-', ''), 10))
+    )].sort((a, b) => a - b)
+    const leftDiffIndices = [...new Set(
+      nodes
+        .filter((n) => /^left-diff-\d+$/.test(n.id))
+        .map((n) => parseInt(n.id.replace('left-diff-', ''), 10))
+    )].sort((a, b) => a - b)
+    const rightDiffIndices = [...new Set(
+      nodes
+        .filter((n) => /^right-diff-\d+$/.test(n.id))
+        .map((n) => parseInt(n.id.replace('right-diff-', ''), 10))
+    )].sort((a, b) => a - b)
+    const similarities = simIndices.map(
+      (i) => String(nodes.find((n) => n.id === `similarity-${i}`)?.text ?? '').trim()
+    )
+    const leftDifferences = leftDiffIndices.map(
+      (i) => String(nodes.find((n) => n.id === `left-diff-${i}`)?.text ?? '').trim()
+    )
+    const rightDifferences = rightDiffIndices.map(
+      (i) => String(nodes.find((n) => n.id === `right-diff-${i}`)?.text ?? '').trim()
+    )
+    // Radii (style.size/2) for loader empty-node fallback
+    const getRadius = (n: { style?: { size?: number; width?: number; height?: number } }) => {
+      const s = n.style?.size
+      if (s != null && s > 0) return s / 2
+      const w = n.style?.width
+      const h = n.style?.height
+      if (w != null && h != null) return Math.min(w, h) / 2
+      return undefined
+    }
+    const _doubleBubbleMapNodeSizes: Record<string, unknown> = {}
+    if (leftNode) {
+      const r = getRadius(leftNode)
+      if (r != null) _doubleBubbleMapNodeSizes['leftTopicR'] = r
+    }
+    if (rightNode) {
+      const r = getRadius(rightNode)
+      if (r != null) _doubleBubbleMapNodeSizes['rightTopicR'] = r
+    }
+    const simRadii = simIndices.map((i) => getRadius(nodes.find((n) => n.id === `similarity-${i}`)!))
+    if (simRadii.some((r) => r != null)) _doubleBubbleMapNodeSizes['simRadii'] = simRadii
+    const leftDiffRadii = leftDiffIndices.map((i) =>
+      getRadius(nodes.find((n) => n.id === `left-diff-${i}`)!)
+    )
+    if (leftDiffRadii.some((r) => r != null)) _doubleBubbleMapNodeSizes['leftDiffRadii'] = leftDiffRadii
+    const rightDiffRadii = rightDiffIndices.map((i) =>
+      getRadius(nodes.find((n) => n.id === `right-diff-${i}`)!)
+    )
+    if (rightDiffRadii.some((r) => r != null)) _doubleBubbleMapNodeSizes['rightDiffRadii'] = rightDiffRadii
+
+    return {
+      left,
+      right,
+      similarities,
+      leftDifferences,
+      rightDifferences,
+      ...(Object.keys(_doubleBubbleMapNodeSizes).length > 0 ? { _doubleBubbleMapNodeSizes } : {}),
+    }
+  }
+
+  /**
    * Get diagram spec for saving (library, export).
    * For bubble_map, recalculates positions so saved spec has correct layout.
    */
@@ -1317,13 +1527,19 @@ export const useDiagramStore = defineStore('diagram', () => {
     if (type.value === 'bubble_map' && nodes.length > 0) {
       nodes = recalculateBubbleMapLayout(nodes)
     }
-    return {
+    const spec: Record<string, unknown> = {
       type: type.value,
       nodes,
       connections: data.value.connections,
       _customPositions: data.value._customPositions,
       _node_styles: data.value._node_styles,
     }
+    const hiddenAnswers = (data.value as { hiddenAnswers?: string[] }).hiddenAnswers
+    const d = data.value as { isLearningSheet?: boolean; is_learning_sheet?: boolean }
+    const isLS = d?.isLearningSheet === true || d?.is_learning_sheet === true
+    if (isLS) spec.is_learning_sheet = true
+    if (hiddenAnswers?.length) spec.hiddenAnswers = hiddenAnswers
+    return spec
   }
 
   /**
@@ -1574,6 +1790,8 @@ export const useDiagramStore = defineStore('diagram', () => {
     hasSelection,
     canPaste,
     selectedNodeData,
+    isLearningSheet,
+    hiddenAnswers,
     effectiveTitle,
 
     // Vue Flow computed
@@ -1592,6 +1810,12 @@ export const useDiagramStore = defineStore('diagram', () => {
     undo,
     redo,
     updateNode,
+    emptyNodeForLearningSheet,
+    emptyNode,
+    setLearningSheetMode,
+    restoreFromLearningSheetMode,
+    applyLearningSheetView,
+    hasPreservedLearningSheet,
     addNode,
     addConnection,
     updateConnectionLabel,
@@ -1629,6 +1853,7 @@ export const useDiagramStore = defineStore('diagram', () => {
     loadDefaultTemplate,
     mergeGranularUpdate,
     getSpecForSave,
+    getDoubleBubbleSpecFromData,
 
     // Flow map orientation
     toggleFlowMapOrientation,
