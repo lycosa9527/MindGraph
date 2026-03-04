@@ -13,7 +13,7 @@ import { AlertTriangle, Loader2, Trash2 } from 'lucide-vue-next'
 
 import { useNotifications } from '@/composables'
 import { useLanguage } from '@/composables'
-import { useSavedDiagramsStore } from '@/stores'
+import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 
 const notify = useNotifications()
 

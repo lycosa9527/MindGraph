@@ -29,7 +29,8 @@ import { DiagramSlotFullModal } from '@/components/canvas'
 import { WorkshopModal } from '@/components/workshop'
 import { eventBus, getDefaultDiagramName, useNotifications, useWorkshop } from '@/composables'
 import { useLanguage } from '@/composables'
-import { useAuthStore, useDiagramStore, usePanelsStore, useSavedDiagramsStore } from '@/stores'
+import { useAuthStore, useDiagramStore, usePanelsStore } from '@/stores'
+import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 
 const notify = useNotifications()
 

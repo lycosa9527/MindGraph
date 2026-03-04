@@ -38,9 +38,9 @@ import {
   useDiagramStore,
   useLLMResultsStore,
   usePanelsStore,
-  useSavedDiagramsStore,
   useUIStore,
 } from '@/stores'
+import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import type { DiagramType } from '@/types'
 
 const route = useRoute()

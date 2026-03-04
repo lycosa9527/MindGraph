@@ -10,7 +10,8 @@ import { ElButton, ElDialog, ElTag } from 'element-plus'
 import { Copy, Users } from 'lucide-vue-next'
 
 import { getDefaultDiagramName, useLanguage, useNotifications } from '@/composables'
-import { useDiagramStore, useSavedDiagramsStore } from '@/stores'
+import { useDiagramStore } from '@/stores'
+import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import { authFetch } from '@/utils/api'
 
 // QR Code generation using backend endpoint (offline, no CDN)
