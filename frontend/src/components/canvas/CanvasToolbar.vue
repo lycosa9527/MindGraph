@@ -44,6 +44,10 @@ import {
 } from '@/config/colorPalette'
 import { useDiagramStore, useUIStore } from '@/stores'
 import type { DiagramNode } from '@/types'
+import {
+  getBorderStyleProps,
+  type BorderStyleType,
+} from '@/utils/borderStyleUtils'
 
 const notify = useNotifications()
 
@@ -121,7 +125,36 @@ const textColorPalette = [
 
 // Background state
 const backgroundColors = ['#FFFFFF', '#F9FAFB', '#F3F4F6', '#E5E7EB', '#D1D5DB']
+const backgroundColor = ref('#FFFFFF')
 const backgroundOpacity = ref(100)
+
+/** Convert hex to rgba with opacity (0-100) */
+function hexToRgba(hex: string, opacityPercent: number): string {
+  const alpha = Math.max(0, Math.min(100, opacityPercent)) / 100
+  const match = hex.replace('#', '').match(/.{2}/g)
+  if (!match || match.length < 3) return hex
+  const [r, g, b] = match.map((x) => parseInt(x, 16))
+  return `rgba(${r},${g},${b},${alpha})`
+}
+
+/** Parse alpha from rgba() or return 100 for hex */
+function parseAlphaFromColor(color: string): number {
+  const rgba = color.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/)
+  if (rgba && rgba[4] !== undefined) return Math.round(parseFloat(rgba[4]) * 100)
+  return 100
+}
+
+/** Extract base hex from rgba or return as-is for hex */
+function colorToHex(color: string): string {
+  const rgba = color.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/)
+  if (rgba) {
+    const r = parseInt(rgba[1], 10).toString(16).padStart(2, '0')
+    const g = parseInt(rgba[2], 10).toString(16).padStart(2, '0')
+    const b = parseInt(rgba[3], 10).toString(16).padStart(2, '0')
+    return `#${r}${g}${b}`
+  }
+  return color
+}
 
 // Border state
 const borderColor = ref('#000000')
@@ -140,7 +173,22 @@ const borderColorPalette = [
   '#db2777',
 ]
 const borderWidth = ref(1)
-const borderStyle = ref('solid')
+const borderStyle = ref<BorderStyleType>('solid')
+
+const borderStyleOptions: BorderStyleType[] = [
+  'solid',
+  'dashed',
+  'dotted',
+  'double',
+  'dash-dot',
+  'dash-dot-dot',
+]
+
+function getBorderPreviewStyle(style: BorderStyleType) {
+  return getBorderStyleProps(borderColor.value, 2, style, {
+    backgroundColor: '#f9fafb',
+  })
+}
 
 // Style presets: WCAG AA contrast-compliant palettes (bg + text + border)
 const stylePresets: Array<
@@ -228,35 +276,44 @@ function applyTextStyleToSelected(updates: {
   notify.success(isZh.value ? '已应用' : 'Applied')
 }
 
-function applyBackgroundToSelected(color: string) {
+function applyBackgroundToSelected(color?: string) {
   const ids = diagramStore.selectedNodes
   if (!ids.length) {
     notify.warning(isZh.value ? '请先选择节点' : 'Please select node(s) first')
     return
   }
+  const baseColor = color ?? backgroundColor.value
+  backgroundColor.value = colorToHex(baseColor)
+  const value = hexToRgba(colorToHex(baseColor), backgroundOpacity.value)
   diagramStore.pushHistory(isZh.value ? '更新背景' : 'Update background')
   ids.forEach((nodeId) => {
     const node = diagramStore.data?.nodes?.find((n) => n.id === nodeId)
     if (node) {
-      const mergedStyle = { ...(node.style || {}), backgroundColor: color }
+      const mergedStyle = { ...(node.style || {}), backgroundColor: value }
       diagramStore.updateNode(nodeId, { style: mergedStyle })
     }
   })
   notify.success(isZh.value ? '已应用' : 'Applied')
 }
 
-function applyBorderToSelected(color: string) {
+function applyBorderToSelected(updates: {
+  borderColor?: string
+  borderWidth?: number
+  borderStyle?: import('@/types').NodeStyle['borderStyle']
+}) {
   const ids = diagramStore.selectedNodes
   if (!ids.length) {
     notify.warning(isZh.value ? '请先选择节点' : 'Please select node(s) first')
     return
   }
-  borderColor.value = color
+  if (updates.borderColor !== undefined) borderColor.value = updates.borderColor
+  if (updates.borderWidth !== undefined) borderWidth.value = updates.borderWidth
+  if (updates.borderStyle !== undefined) borderStyle.value = updates.borderStyle
   diagramStore.pushHistory(isZh.value ? '更新边框' : 'Update border')
   ids.forEach((nodeId) => {
     const node = diagramStore.data?.nodes?.find((n) => n.id === nodeId)
     if (node) {
-      const mergedStyle = { ...(node.style || {}), borderColor: color }
+      const mergedStyle = { ...(node.style || {}), ...updates }
       diagramStore.updateNode(nodeId, { style: mergedStyle })
     }
   })
@@ -336,6 +393,12 @@ watch(
         if (s.fontStyle) fontStyle.value = s.fontStyle
         if (s.textDecoration) textDecoration.value = s.textDecoration
         if (s.borderColor) borderColor.value = s.borderColor
+        if (s.borderWidth !== undefined) borderWidth.value = s.borderWidth
+        if (s.borderStyle) borderStyle.value = s.borderStyle
+        if (s.backgroundColor) {
+          backgroundColor.value = colorToHex(s.backgroundColor)
+          backgroundOpacity.value = parseAlphaFromColor(s.backgroundColor)
+        }
       }
     }
   },
@@ -490,8 +553,8 @@ function handleAddNode() {
     return
   }
 
-  // For mindmap: add branch (Tab) or child (Enter) - handled by handleAddBranch/handleAddChild
-  if (diagramType === 'mindmap' || diagramType === 'mind_map') {
+  // For mindmap/brace_map: add branch (Tab) or child (Enter) - handled by handleAddBranch/handleAddChild
+  if (diagramType === 'mindmap' || diagramType === 'mind_map' || diagramType === 'brace_map') {
     handleAddBranch()
     return
   }
@@ -548,6 +611,25 @@ function getDoubleBubbleGroupFromNodeId(
 
 function handleAddBranch() {
   const diagramType = diagramStore.type
+  if (diagramType === 'brace_map') {
+    if (!diagramStore.data?.nodes) {
+      notify.warning(isZh.value ? '请先创建图示' : 'Please create a diagram first')
+      return
+    }
+    const targetIds = new Set(diagramStore.data.connections?.map((c) => c.target) ?? [])
+    const rootId =
+      diagramStore.data.nodes.find((n) => n.type === 'topic')?.id ??
+      diagramStore.data.nodes.find((n) => !targetIds.has(n.id))?.id
+    if (!rootId) return
+    const text = isZh.value ? '新部分' : 'New Part'
+    const subpartTexts: [string, string] = isZh.value
+      ? ['子部分1', '子部分2']
+      : ['Subpart 1', 'Subpart 2']
+    if (diagramStore.addBraceMapPart(rootId, text, subpartTexts)) {
+      notify.success(isZh.value ? '已添加部分' : 'Part added')
+    }
+    return
+  }
   if (diagramType !== 'mindmap' && diagramType !== 'mind_map') return
   if (!diagramStore.data?.nodes) {
     notify.warning(isZh.value ? '请先创建图示' : 'Please create a diagram first')
@@ -567,6 +649,34 @@ function handleAddBranch() {
 
 function handleAddChild() {
   const diagramType = diagramStore.type
+  if (diagramType === 'brace_map') {
+    if (!diagramStore.data?.nodes) {
+      notify.warning(isZh.value ? '请先创建图示' : 'Please create a diagram first')
+      return
+    }
+    const selectedId = diagramStore.selectedNodes[0]
+    if (!selectedId) {
+      notify.warning(
+        isZh.value ? '请先选择要添加子部分的节点' : 'Please select a part to add subpart to'
+      )
+      return
+    }
+    const targetIds = new Set(diagramStore.data.connections?.map((c) => c.target) ?? [])
+    const rootId =
+      diagramStore.data.nodes.find((n) => n.type === 'topic')?.id ??
+      diagramStore.data.nodes.find((n) => !targetIds.has(n.id))?.id
+    if (selectedId === rootId || selectedId === 'dimension-label') {
+      notify.warning(
+        isZh.value ? '请选择部分节点后按 Enter 添加子部分' : 'Select a part node, then press Enter to add subpart'
+      )
+      return
+    }
+    const text = isZh.value ? '新子部分' : 'New Subpart'
+    if (diagramStore.addBraceMapPart(selectedId, text)) {
+      notify.success(isZh.value ? '已添加子部分' : 'Subpart added')
+    }
+    return
+  }
   if (diagramType !== 'mindmap' && diagramType !== 'mind_map') return
   if (!diagramStore.data?.nodes) {
     notify.warning(isZh.value ? '请先创建图示' : 'Please create a diagram first')
@@ -794,6 +904,23 @@ async function handleDeleteNode() {
       notify.success(`已删除 ${deletedCount} 个节点`)
     } else {
       notify.warning('无法删除主题节点')
+    }
+    return
+  }
+
+  // For brace maps, delete selected part/subpart nodes (and descendants)
+  if (diagramType === 'brace_map') {
+    const selectedNodes = [...diagramStore.selectedNodes]
+    const deletedCount = diagramStore.removeBraceMapNodes(selectedNodes)
+
+    if (deletedCount > 0) {
+      diagramStore.clearSelection()
+      diagramStore.pushHistory(isZh.value ? '删除节点' : 'Delete nodes')
+      notify.success(
+        isZh.value ? `已删除 ${deletedCount} 个节点` : `Deleted ${deletedCount} node(s)`
+      )
+    } else {
+      notify.warning(isZh.value ? '无法删除主题节点' : 'Cannot delete topic node')
     }
     return
   }
@@ -1461,6 +1588,7 @@ onUnmounted(() => {
                     min="0"
                     max="100"
                     class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                    @change="applyBackgroundToSelected()"
                   />
                   <div class="flex justify-between text-xs text-gray-500 mt-1">
                     <span>0%</span>
@@ -1498,7 +1626,7 @@ onUnmounted(() => {
                       class="w-6 h-6 rounded border border-gray-200 cursor-pointer hover:ring-2 hover:ring-blue-400 shrink-0"
                       :class="{ 'ring-2 ring-blue-500': borderColor === color }"
                       :style="{ backgroundColor: color }"
-                      @click="applyBorderToSelected(color)"
+                      @click="applyBorderToSelected({ borderColor: color })"
                     />
                   </div>
                 </div>
@@ -1509,21 +1637,41 @@ onUnmounted(() => {
                   <input
                     v-model.number="borderWidth"
                     type="number"
+                    min="1"
+                    max="10"
                     class="w-full border border-gray-300 rounded-md py-1.5 px-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    @change="applyBorderToSelected({ borderWidth: borderWidth })"
                   />
                 </div>
                 <div class="mb-2">
-                  <label class="text-xs text-gray-500 block mb-1"
+                  <label class="text-xs text-gray-500 block mb-1.5"
                     >{{ isZh ? '样式' : 'Style' }}:</label
                   >
-                  <select
-                    v-model="borderStyle"
-                    class="w-full border border-gray-300 rounded-md py-1.5 px-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
-                  >
-                    <option value="solid">{{ isZh ? '实线' : 'Solid' }}</option>
-                    <option value="dashed">{{ isZh ? '虚线' : 'Dashed' }}</option>
-                    <option value="dotted">{{ isZh ? '点线' : 'Dotted' }}</option>
-                  </select>
+                  <div class="grid grid-cols-3 gap-1.5">
+                    <button
+                      v-for="style in borderStyleOptions"
+                      :key="style"
+                      type="button"
+                      class="border-style-option flex items-center justify-center rounded-md p-1.5 transition-colors hover:bg-gray-100 dark:hover:bg-gray-600"
+                      :class="{
+                        'bg-blue-50 dark:bg-blue-900/30 ring-1 ring-blue-500':
+                          borderStyle === style,
+                      }"
+                      @click="
+                        borderStyle = style;
+                        applyBorderToSelected({ borderStyle: style });
+                      "
+                    >
+                      <div
+                        class="border-preview-pill h-5 w-14"
+                        :style="{
+                          borderRadius: '9999px',
+                          backgroundColor: '#f9fafb',
+                          ...getBorderPreviewStyle(style),
+                        }"
+                      />
+                    </button>
+                  </div>
                 </div>
               </div>
             </ElDropdownMenu>
@@ -1555,6 +1703,11 @@ onUnmounted(() => {
             }}</span>
           </ElButton>
         </template>
+
+        <div
+          v-if="!isConceptMap"
+          class="divider"
+        />
 
         <!-- More apps dropdown -->
         <ElDropdown
@@ -1706,7 +1859,7 @@ onUnmounted(() => {
   border: 1px solid #e5e7eb !important;
   color: #374151 !important;
   padding: 6px 12px !important;
-  margin-left: 8px !important;
+  margin-left: 12px !important;
   gap: 4px !important;
 }
 

@@ -2,21 +2,57 @@
  * Brace Map Loader
  */
 import {
-  DEFAULT_LEVEL_WIDTH,
+  BRACE_MAP_LEVEL_WIDTH,
+  BRACE_MAP_NODE_SPACING,
   DEFAULT_NODE_HEIGHT,
   DEFAULT_NODE_WIDTH,
   DEFAULT_PADDING,
-  DEFAULT_VERTICAL_SPACING,
+  NODE_MIN_DIMENSIONS,
 } from '@/composables/diagrams/layoutConfig'
 import { calculateDagreLayout } from '@/composables/diagrams/useDagreLayout'
 import type { Connection, DiagramNode } from '@/types'
 
+import { measureTextWidth } from './textMeasurement'
 import type { SpecLoaderResult } from './types'
 
 interface BraceNode {
   id?: string
   text: string
   parts?: BraceNode[]
+}
+
+// Font sizes and padding match BraceNode.vue (topic: 18px bold, part: 16px, subpart: 12px)
+const BRACE_TOPIC_FONT_SIZE = 18
+const BRACE_PART_FONT_SIZE = 16
+const BRACE_SUBPART_FONT_SIZE = 12
+const BRACE_TOPIC_PADDING_X = 32
+const BRACE_PILL_PADDING_X = 40
+const BRACE_MAX_NODE_WIDTH = 280
+
+/**
+ * Estimate brace node width from text content.
+ * Uses text measurement to match actual rendered width, preventing overlap with braces
+ * when auto-complete generates longer text.
+ */
+function estimateBraceNodeWidth(text: string, depth: number): number {
+  const trimmed = (text || '').trim()
+  const fontSize =
+    depth === 0 ? BRACE_TOPIC_FONT_SIZE : depth === 1 ? BRACE_PART_FONT_SIZE : BRACE_SUBPART_FONT_SIZE
+  const paddingX = depth === 0 ? BRACE_TOPIC_PADDING_X : BRACE_PILL_PADDING_X
+
+  let textWidth = 0
+  if (typeof document !== 'undefined') {
+    textWidth = measureTextWidth(trimmed || ' ', fontSize)
+    if (depth === 0) {
+      textWidth *= 1.08
+    }
+  }
+
+  const width = Math.ceil(textWidth + paddingX)
+  return Math.max(
+    NODE_MIN_DIMENSIONS.brace.minWidth,
+    Math.min(BRACE_MAX_NODE_WIDTH, width || DEFAULT_NODE_WIDTH)
+  )
 }
 
 // Helper to flatten brace tree into nodes and edges for Dagre
@@ -30,14 +66,13 @@ function flattenBraceTree(
   node: BraceNode,
   depth: number,
   parentId: string | null,
-  nodeWidth: number,
-  nodeHeight: number,
   result: FlattenedBraceData,
   counter: { value: number }
 ): string {
   const nodeId = node.id || `brace-${depth}-${counter.value++}`
+  const nodeWidth = estimateBraceNodeWidth(node.text, depth)
 
-  result.dagreNodes.push({ id: nodeId, width: nodeWidth, height: nodeHeight })
+  result.dagreNodes.push({ id: nodeId, width: nodeWidth, height: DEFAULT_NODE_HEIGHT })
   result.nodeInfos.set(nodeId, { text: node.text, depth })
 
   if (parentId) {
@@ -46,7 +81,7 @@ function flattenBraceTree(
 
   if (node.parts && node.parts.length > 0) {
     node.parts.forEach((part) => {
-      flattenBraceTree(part, depth + 1, nodeId, nodeWidth, nodeHeight, result, counter)
+      flattenBraceTree(part, depth + 1, nodeId, result, counter)
     })
   }
 
@@ -95,15 +130,13 @@ export function loadBraceMapSpec(spec: Record<string, unknown>): SpecLoaderResul
       dagreEdges: [],
       nodeInfos: new Map(),
     }
-    flattenBraceTree(wholeNode, 0, null, DEFAULT_NODE_WIDTH, DEFAULT_NODE_HEIGHT, flatData, {
-      value: 0,
-    })
+    flattenBraceTree(wholeNode, 0, null, flatData, { value: 0 })
 
     // Calculate layout using Dagre (left-to-right direction for brace maps)
     const layoutResult = calculateDagreLayout(flatData.dagreNodes, flatData.dagreEdges, {
       direction: 'LR',
-      nodeSeparation: DEFAULT_VERTICAL_SPACING,
-      rankSeparation: DEFAULT_LEVEL_WIDTH,
+      nodeSeparation: BRACE_MAP_NODE_SPACING,
+      rankSeparation: BRACE_MAP_LEVEL_WIDTH,
       align: 'UL',
       marginX: DEFAULT_PADDING,
       marginY: DEFAULT_PADDING,
@@ -189,22 +222,31 @@ export function loadBraceMapSpec(spec: Record<string, unknown>): SpecLoaderResul
         target: edge.target,
       })
     })
+
+    // Add dimension label if exists - center-aligned under main topic node
+    const dimension = spec.dimension as string | undefined
+    if (dimension !== undefined) {
+      const wholeId = wholeNode?.id || 'brace-0-0'
+      const wholePos = nodes.find((n) => n.id === wholeId)?.position
+      const wholeDagreNode = flatData.dagreNodes.find(
+        (dn: { id: string; width: number }) => dn.id === wholeId
+      )
+      const topicWidth = wholeDagreNode?.width ?? DEFAULT_NODE_WIDTH
+      const topicCenterX = (wholePos?.x ?? 100) + topicWidth / 2
+      const labelWidth = NODE_MIN_DIMENSIONS.label.minWidth
+      nodes.push({
+        id: 'dimension-label',
+        text: dimension || '',
+        type: 'label',
+        position: {
+          x: topicCenterX - labelWidth / 2,
+          y: (wholePos?.y ?? 300) + DEFAULT_NODE_HEIGHT + 20,
+        },
+      })
+    }
   }
 
-  // Add dimension label if exists
   const dimension = spec.dimension as string | undefined
-  if (dimension !== undefined) {
-    // Position below the whole node using Dagre layout info
-    const wholeId = wholeNode?.id || 'brace-0-0'
-    const wholePos = nodes.find((n) => n.id === wholeId)?.position
-    nodes.push({
-      id: 'dimension-label',
-      text: dimension || '',
-      type: 'label',
-      position: { x: wholePos?.x || 100, y: (wholePos?.y || 300) + DEFAULT_NODE_HEIGHT + 20 },
-    })
-  }
-
   return {
     nodes,
     connections,
@@ -213,4 +255,125 @@ export function loadBraceMapSpec(spec: Record<string, unknown>): SpecLoaderResul
       alternativeDimensions: spec.alternative_dimensions as string[] | undefined,
     },
   }
+}
+
+/**
+ * Recalculate brace map layout from nodes and connections.
+ * Used when nodes are added/removed to update positions via Dagre.
+ *
+ * @param nodes - Diagram nodes (topic + brace parts/subparts, optionally dimension-label)
+ * @param connections - Parent-child connections
+ * @returns Nodes with updated positions
+ */
+export function recalculateBraceMapLayout(
+  nodes: DiagramNode[],
+  connections: Connection[]
+): DiagramNode[] {
+  const labelNode = nodes.find((n) => n.type === 'label' || n.id === 'dimension-label')
+  const treeNodes = nodes.filter((n) => n.type !== 'label' && n.id !== 'dimension-label')
+  if (treeNodes.length === 0) return nodes
+
+  const targetIds = new Set(connections.map((c) => c.target))
+  const rootNode = treeNodes.find((n) => !targetIds.has(n.id)) || treeNodes[0]
+  const rootId = rootNode.id
+
+  const childrenMap = new Map<string, string[]>()
+  connections.forEach((conn) => {
+    if (!childrenMap.has(conn.source)) childrenMap.set(conn.source, [])
+    const children = childrenMap.get(conn.source)
+    if (children) children.push(conn.target)
+  })
+
+  function buildTree(nodeId: string): BraceNode {
+    const node = treeNodes.find((n) => n.id === nodeId)
+    const text = node?.text ?? ''
+    const childIds = childrenMap.get(nodeId) ?? []
+    const parts = childIds.map((id) => buildTree(id))
+    return {
+      id: nodeId,
+      text,
+      parts: parts.length > 0 ? parts : undefined,
+    }
+  }
+
+  const wholeNode = buildTree(rootId)
+  const flatData: FlattenedBraceData = {
+    dagreNodes: [],
+    dagreEdges: [],
+    nodeInfos: new Map(),
+  }
+  flattenBraceTree(wholeNode, 0, null, flatData, { value: 0 })
+
+  const layoutResult = calculateDagreLayout(flatData.dagreNodes, flatData.dagreEdges, {
+    direction: 'LR',
+    nodeSeparation: BRACE_MAP_NODE_SPACING,
+    rankSeparation: BRACE_MAP_LEVEL_WIDTH,
+    align: 'UL',
+    marginX: DEFAULT_PADDING,
+    marginY: DEFAULT_PADDING,
+  })
+
+  const adjustedY = new Map<string, number>()
+  const maxDepth = Math.max(...Array.from(flatData.nodeInfos.values()).map((info) => info.depth), 0)
+
+  flatData.dagreNodes.forEach((node) => {
+    const pos = layoutResult.positions.get(node.id)
+    if (pos) adjustedY.set(node.id, pos.y)
+  })
+
+  for (let depth = maxDepth; depth >= 0; depth--) {
+    flatData.dagreNodes.forEach((node) => {
+      const info = flatData.nodeInfos.get(node.id)
+      if (info?.depth === depth) {
+        const directChildren = childrenMap.get(node.id) || []
+        if (directChildren.length > 0) {
+          let minY = Infinity
+          let maxY = -Infinity
+          directChildren.forEach((childId) => {
+            const childY = adjustedY.get(childId)
+            if (childY !== undefined) {
+              minY = Math.min(minY, childY)
+              maxY = Math.max(maxY, childY + DEFAULT_NODE_HEIGHT)
+            }
+          })
+          if (minY !== Infinity && maxY !== -Infinity) {
+            const childrenCenterY = (minY + maxY) / 2
+            adjustedY.set(node.id, childrenCenterY - DEFAULT_NODE_HEIGHT / 2)
+          }
+        }
+      }
+    })
+  }
+
+  const nodeMap = new Map(treeNodes.map((n) => [n.id, { ...n }]))
+  flatData.dagreNodes.forEach((dagreNode) => {
+    const pos = layoutResult.positions.get(dagreNode.id)
+    const adjustedPosY = adjustedY.get(dagreNode.id)
+    const node = nodeMap.get(dagreNode.id)
+    if (node && pos) {
+      node.position = { x: pos.x, y: adjustedPosY !== undefined ? adjustedPosY : pos.y }
+    }
+  })
+
+  let result = Array.from(nodeMap.values())
+  if (labelNode) {
+    const wholePos = result.find((n) => n.id === rootId)?.position
+    const rootDagreNode = flatData.dagreNodes.find(
+      (dn: { id: string; width: number }) => dn.id === rootId
+    )
+    const topicWidth = rootDagreNode?.width ?? DEFAULT_NODE_WIDTH
+    const topicCenterX = (wholePos?.x ?? 100) + topicWidth / 2
+    const labelWidth = NODE_MIN_DIMENSIONS.label.minWidth
+    result = [
+      ...result,
+      {
+        ...labelNode,
+        position: {
+          x: topicCenterX - labelWidth / 2,
+          y: (wholePos?.y ?? 300) + DEFAULT_NODE_HEIGHT + 20,
+        },
+      },
+    ]
+  }
+  return result
 }

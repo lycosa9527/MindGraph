@@ -12,11 +12,11 @@ import { useLanguage } from '@/composables/useLanguage'
 import type { Connection, DiagramNode, MindGraphEdge, MindGraphNode } from '@/types'
 
 import {
-  DEFAULT_LEVEL_WIDTH,
+  BRACE_MAP_LEVEL_WIDTH,
+  BRACE_MAP_NODE_SPACING,
   DEFAULT_NODE_HEIGHT,
   DEFAULT_NODE_WIDTH,
   DEFAULT_PADDING,
-  DEFAULT_VERTICAL_SPACING,
 } from './layoutConfig'
 import { type DagreEdgeInput, type DagreNodeInput, calculateDagreLayout } from './useDagreLayout'
 
@@ -46,8 +46,8 @@ interface FlattenedBraceNode {
 
 export function useBraceMap(options: BraceMapOptions = {}) {
   const {
-    levelWidth = DEFAULT_LEVEL_WIDTH,
-    nodeSpacing = DEFAULT_VERTICAL_SPACING,
+    levelWidth = BRACE_MAP_LEVEL_WIDTH,
+    nodeSpacing = BRACE_MAP_NODE_SPACING,
     nodeWidth = DEFAULT_NODE_WIDTH,
     nodeHeight = DEFAULT_NODE_HEIGHT,
   } = options

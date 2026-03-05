@@ -2,6 +2,7 @@
 /**
  * BraceOverlay - Draws proper curly braces for brace maps
  * Creates unified brace shapes connecting parents to their children groups
+ * Also draws alternative dimensions at bottom (like archive brace-renderer.js)
  *
  * Brace structure (continuous path):
  *   ╮        1. Top curve
@@ -17,6 +18,7 @@ import { computed } from 'vue'
 import { useVueFlow } from '@vue-flow/core'
 
 import { DEFAULT_NODE_HEIGHT, DEFAULT_NODE_WIDTH } from '@/composables/diagrams/layoutConfig'
+import { useLanguage } from '@/composables/useLanguage'
 import { useDiagramStore } from '@/stores'
 
 // Vue Flow instance for viewport tracking and getting nodes with measured dimensions
@@ -47,8 +49,8 @@ interface NodeWithDimensions {
 // Brace styling
 const BRACE_COLOR = '#64748b' // Tailwind slate-500 (matches the screenshot)
 const BRACE_STROKE_WIDTH = 2
-const BRACE_TIP_SIZE = 6 // How far the pointy tip extends horizontally
-const END_CURVE_SIZE = 12 // Size of curves at top/bottom ends
+const BRACE_TIP_SIZE = 2 // How far the pointy tip extends horizontally (compact)
+const END_CURVE_SIZE = 5 // Size of curves at top/bottom ends (compact)
 
 /**
  * Calculate brace groups from edges
@@ -213,11 +215,76 @@ const braceElements = computed(() => {
     }
   })
 })
+
+// Alternative dimensions section (like archive brace-renderer.js lines 974-1027)
+const { isZh } = useLanguage()
+const SEPARATOR_OFFSET_Y = 15
+const ALTERNATIVE_DIMENSIONS_OFFSET_Y = 15
+const ALTERNATIVE_LABEL_FONT_SIZE = 13
+const ALTERNATIVE_CHIP_FONT_SIZE = 12
+const ALTERNATIVE_CHIP_COLOR = '#1976d2'
+
+const alternativeDimensions = computed(() => {
+  if (!isBraceMap.value) return []
+  const diagramData = diagramStore.data
+  if (diagramData && typeof diagramData === 'object' && 'alternative_dimensions' in diagramData) {
+    const altDims = diagramData.alternative_dimensions
+    if (Array.isArray(altDims)) {
+      return altDims.filter((dim) => typeof dim === 'string' && dim.trim())
+    }
+  }
+  return []
+})
+
+const alternativeDimensionsLabel = computed(() =>
+  isZh.value ? '本主题的其他可能拆解维度：' : 'Other possible dimensions for this topic:'
+)
+
+/** Archive uses simple text "• dim1  • dim2" not individual chips */
+const alternativeDimensionsChipsText = computed(() =>
+  alternativeDimensions.value.map((d) => `• ${d}`).join('  ')
+)
+
+const braceMapSeparatorLine = computed(() => {
+  if (!isBraceMap.value) return null
+  const nodes = getNodes.value
+  const treeNodes = nodes.filter((n) => n.type !== 'label' && n.id !== 'dimension-label')
+  if (treeNodes.length === 0) return null
+
+  const getNodeDimensions = (node: (typeof nodes)[0] & NodeWithDimensions) => ({
+    width: node.dimensions?.width ?? node.measured?.width ?? DEFAULT_NODE_WIDTH,
+    height: node.dimensions?.height ?? node.measured?.height ?? DEFAULT_NODE_HEIGHT,
+  })
+
+  let lowestBottom = 0
+  let minX = Infinity
+  let maxX = -Infinity
+  treeNodes.forEach((node) => {
+    const dims = getNodeDimensions(node)
+    const bottom = node.position.y + dims.height
+    if (bottom > lowestBottom) lowestBottom = bottom
+    if (node.position.x < minX) minX = node.position.x
+    if (node.position.x + dims.width > maxX) maxX = node.position.x + dims.width
+  })
+  if (minX === Infinity || maxX === -Infinity) return null
+
+  const separatorY = lowestBottom + SEPARATOR_OFFSET_Y
+  return { x1: minX, y1: separatorY, x2: maxX, y2: separatorY }
+})
+
+const braceMapAlternativePosition = computed(() => {
+  if (!braceMapSeparatorLine.value) return null
+  const labelY = braceMapSeparatorLine.value.y1 + ALTERNATIVE_DIMENSIONS_OFFSET_Y
+  const chipsY = labelY + ALTERNATIVE_LABEL_FONT_SIZE + 8
+  const centerX = (braceMapSeparatorLine.value.x1 + braceMapSeparatorLine.value.x2) / 2
+  return { labelY, chipsY, centerX }
+})
+
 </script>
 
 <template>
   <svg
-    v-if="isBraceMap && braceElements.length > 0"
+    v-if="isBraceMap && (braceElements.length > 0 || braceMapSeparatorLine)"
     class="brace-overlay absolute inset-0 w-full h-full pointer-events-none"
     style="z-index: 0"
   >
@@ -236,6 +303,50 @@ const braceElements = computed(() => {
           stroke-linejoin="miter"
           stroke-miterlimit="10"
         />
+      </g>
+
+      <!-- Alternative dimensions section (like archive brace-renderer.js - only when alternatives exist) -->
+      <g
+        v-if="
+          alternativeDimensions.length > 0 &&
+          braceMapSeparatorLine &&
+          braceMapAlternativePosition
+        "
+      >
+        <line
+          :x1="braceMapSeparatorLine.x1"
+          :y1="braceMapSeparatorLine.y1"
+          :x2="braceMapSeparatorLine.x2"
+          :y2="braceMapSeparatorLine.y2"
+          :stroke="ALTERNATIVE_CHIP_COLOR"
+          stroke-width="1"
+          stroke-dasharray="4,4"
+          :opacity="0.4"
+          stroke-linecap="round"
+        />
+        <text
+          :x="braceMapAlternativePosition.centerX"
+          :y="braceMapAlternativePosition.labelY"
+          :fill="ALTERNATIVE_CHIP_COLOR"
+          :font-size="ALTERNATIVE_LABEL_FONT_SIZE"
+          text-anchor="middle"
+          dominant-baseline="middle"
+          :opacity="0.7"
+        >
+          {{ alternativeDimensionsLabel }}
+        </text>
+        <text
+          :x="braceMapAlternativePosition.centerX"
+          :y="braceMapAlternativePosition.chipsY"
+          :fill="ALTERNATIVE_CHIP_COLOR"
+          :font-size="ALTERNATIVE_LABEL_FONT_SIZE - 1"
+          text-anchor="middle"
+          dominant-baseline="middle"
+          font-weight="600"
+          :opacity="0.8"
+        >
+          {{ alternativeDimensionsChipsText }}
+        </text>
       </g>
     </g>
   </svg>

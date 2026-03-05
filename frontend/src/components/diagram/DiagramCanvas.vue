@@ -28,6 +28,7 @@ import type { MindGraphNode } from '@/types'
 import BraceOverlay from './BraceOverlay.vue'
 import BridgeOverlay from './BridgeOverlay.vue'
 import LearningSheetOverlay from './LearningSheetOverlay.vue'
+import TreeMapOverlay from './TreeMapOverlay.vue'
 import ContextMenu from './ContextMenu.vue'
 import BraceEdge from './edges/BraceEdge.vue'
 // Import custom edge components
@@ -932,6 +933,9 @@ const gridConfig = {
 
         <!-- Bridge overlay for bridge maps (draws vertical lines, triangles, and dimension label) -->
         <BridgeOverlay />
+
+        <!-- Tree map overlay: alternative dimensions at bottom (like archive tree-renderer) -->
+        <TreeMapOverlay />
 
         <!-- Learning sheet overlay: dashed line + answers below diagram (半成品图示 mode) -->
         <LearningSheetOverlay />

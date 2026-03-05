@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.30.0] - 2026-03-06
+
+### Added
+- **TreeMapOverlay**: New overlay component for tree maps displaying alternative dimensions at bottom (like BridgeOverlay/BraceOverlay). Shows "本主题的其他可能分类维度" / "Other possible dimensions for this topic" with dimension chips.
+- **Border Style System**: New `borderStyleUtils.ts` with `getBorderStyleProps()` and `resolveBorderStyle()` for diagram nodes. Supports solid, dashed, dotted, double, dash-dot, dash-dot-dot. Uses background-clip for dash-dot patterns so they respect border-radius (pill shapes).
+- **CanvasToolbar Border Style**: Border style dropdown in CanvasToolbar—apply solid, dashed, dotted, double, dash-dot, dash-dot-dot to selected nodes.
+- **NodeStyle borderStyle**: Added `borderStyle` to NodeStyle type and diagram store for persistence.
+
+### Changed
+- **Diagram Nodes**: BraceNode, BranchNode, BubbleNode, CircleNode, ConceptNode, FlowNode, FlowSubstepNode, LabelNode, TopicNode now use `getBorderStyleProps()` for consistent border styling.
+- **Brace Map Spec Loader**: Enhanced with alternative_dimensions support; refactored layout and metadata handling.
+- **Tree Map Spec Loader**: Refactored useTreeMap and treeMap.ts; added alternative_dimensions to metadata.
+- **BridgeOverlay**: Refactored and simplified.
+- **Diagram Store**: Added border style handling in `applyBorderToSelected`, style preset application, and sync.
+- **DiagramHistory, useAutoComplete, useLanguage, useTheme**: Updates and improvements.
+- **RadialEdge**: Enhanced edge rendering.
+- **layoutConfig**: Added layout constants.
+
 ## [5.29.1] - 2026-03-05
 
 ### Added

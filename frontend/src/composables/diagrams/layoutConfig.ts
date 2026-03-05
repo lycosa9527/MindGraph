@@ -154,6 +154,12 @@ export const DEFAULT_LEVEL_HEIGHT = 100
 /** Default level width for horizontal tree structures (brace maps) */
 export const DEFAULT_LEVEL_WIDTH = 200
 
+/** Brace map: tighter horizontal spacing between whole and parts */
+export const BRACE_MAP_LEVEL_WIDTH = 60
+
+/** Brace map: tighter vertical spacing between sibling parts */
+export const BRACE_MAP_NODE_SPACING = 16
+
 /** Default column spacing for double bubble maps (topic-to-similarity, similarity-to-topic) */
 export const DEFAULT_COLUMN_SPACING = 50
 
@@ -171,6 +177,15 @@ export const DEFAULT_TOPIC_TO_CATEGORY_GAP = 100
 
 /** Category to leaf gap for tree maps */
 export const DEFAULT_CATEGORY_TO_LEAF_GAP = 80
+
+/** Tree map: reduced vertical spacing for tighter layout */
+export const TREE_MAP_TOPIC_TO_CATEGORY_GAP = 50
+
+/** Tree map: vertical gap between leaves in a group */
+export const TREE_MAP_LEAF_SPACING = 24
+
+/** Tree map: gap between category and first leaf */
+export const TREE_MAP_CATEGORY_TO_LEAF_GAP = 32
 
 /** Pair spacing for bridge maps */
 export const DEFAULT_PAIR_SPACING = 250

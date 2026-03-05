@@ -284,6 +284,13 @@ function toggleShowAll(): void {
                   {{ getDiagramTypeLabel(diagram.diagram_type) }}
                 </span>
               </div>
+              <button
+                class="delete-btn"
+                :title="isZh ? '删除' : 'Delete'"
+                @click.stop="handleDeleteDiagram(diagram.id)"
+              >
+                <Trash2 class="w-4 h-4" />
+              </button>
               <ElDropdown
                 trigger="click"
                 class="more-dropdown"
@@ -341,6 +348,13 @@ function toggleShowAll(): void {
                   {{ getDiagramTypeLabel(diagram.diagram_type) }}
                 </span>
               </div>
+              <button
+                class="delete-btn"
+                :title="isZh ? '删除' : 'Delete'"
+                @click.stop="handleDeleteDiagram(diagram.id)"
+              >
+                <Trash2 class="w-4 h-4" />
+              </button>
               <ElDropdown
                 trigger="click"
                 class="more-dropdown"
@@ -398,6 +412,13 @@ function toggleShowAll(): void {
                   {{ getDiagramTypeLabel(diagram.diagram_type) }}
                 </span>
               </div>
+              <button
+                class="delete-btn"
+                :title="isZh ? '删除' : 'Delete'"
+                @click.stop="handleDeleteDiagram(diagram.id)"
+              >
+                <Trash2 class="w-4 h-4" />
+              </button>
               <ElDropdown
                 trigger="click"
                 class="more-dropdown"
@@ -455,6 +476,13 @@ function toggleShowAll(): void {
                   {{ getDiagramTypeLabel(diagram.diagram_type) }}
                 </span>
               </div>
+              <button
+                class="delete-btn"
+                :title="isZh ? '删除' : 'Delete'"
+                @click.stop="handleDeleteDiagram(diagram.id)"
+              >
+                <Trash2 class="w-4 h-4" />
+              </button>
               <ElDropdown
                 trigger="click"
                 class="more-dropdown"
@@ -512,6 +540,13 @@ function toggleShowAll(): void {
                   {{ getDiagramTypeLabel(diagram.diagram_type) }}
                 </span>
               </div>
+              <button
+                class="delete-btn"
+                :title="isZh ? '删除' : 'Delete'"
+                @click.stop="handleDeleteDiagram(diagram.id)"
+              >
+                <Trash2 class="w-4 h-4" />
+              </button>
               <ElDropdown
                 trigger="click"
                 class="more-dropdown"
@@ -652,6 +687,32 @@ function toggleShowAll(): void {
 .diagram-type {
   font-size: 10px;
   color: #a8a29e;
+}
+
+.delete-btn {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  opacity: 0;
+  color: #78716c;
+  transition: all 0.15s ease;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  margin-right: 2px;
+}
+
+.diagram-item:hover .delete-btn {
+  opacity: 1;
+}
+
+.delete-btn:hover {
+  background-color: #fee2e2;
+  color: #dc2626;
 }
 
 .more-btn {

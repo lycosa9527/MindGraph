@@ -46,6 +46,7 @@ import {
   loadSpecForDiagramType,
   nodesAndConnectionsToMindMapSpec,
   normalizeMindMapHorizontalSymmetry,
+  recalculateBraceMapLayout,
   recalculateBubbleMapLayout,
   recalculateCircleMapLayout,
   recalculateMultiFlowMapLayout,
@@ -332,6 +333,19 @@ export const useDiagramStore = defineStore('diagram', () => {
       })
     }
 
+    // Brace map: recalculate layout when nodes/connections change
+    if (diagramType === 'brace_map') {
+      const layoutNodes = recalculateBraceMapLayout(
+        data.value.nodes,
+        data.value.connections ?? []
+      )
+      return layoutNodes.map((node) => {
+        const vueFlowNode = diagramNodeToVueFlowNode(node, diagramType)
+        vueFlowNode.selected = selectedNodes.value.includes(node.id)
+        return vueFlowNode
+      })
+    }
+
     return data.value.nodes.map((node) => {
       const vueFlowNode = diagramNodeToVueFlowNode(node, diagramType)
       vueFlowNode.selected = selectedNodes.value.includes(node.id)
@@ -529,6 +543,22 @@ export const useDiagramStore = defineStore('diagram', () => {
     data.value.nodes[nodeIndex] = {
       ...data.value.nodes[nodeIndex],
       ...updates,
+    }
+
+    // Sync dimension-label text to data.dimension for brace_map, tree_map, bridge_map
+    if (
+      nodeId === 'dimension-label' &&
+      (type.value === 'brace_map' ||
+        type.value === 'tree_map' ||
+        type.value === 'bridge_map') &&
+      'text' in updates
+    ) {
+      const d = data.value as Record<string, unknown>
+      const text = updates.text ?? ''
+      d.dimension = text
+      if (type.value === 'bridge_map') {
+        d.relating_factor = text
+      }
     }
 
     emitEvent('diagram:node_updated', { nodeId, updates })
@@ -991,6 +1021,113 @@ export const useDiagramStore = defineStore('diagram', () => {
       source: 'topic',
       target: `bubble-${i}`,
     }))
+
+    emitEvent('diagram:nodes_deleted', { nodeIds: deletedIds })
+    return deletedIds.length
+  }
+
+  /**
+   * Add a part node to brace map (Tab: add part under whole with 2 subparts; Enter: add subpart under selected part).
+   * @param parentId - Parent node id (whole or part)
+   * @param text - Part/subpart label
+   * @param subpartTexts - Optional [text1, text2] for the two subparts when adding a part group
+   */
+  function addBraceMapPart(
+    parentId: string,
+    text?: string,
+    subpartTexts?: [string, string]
+  ): boolean {
+    if (type.value !== 'brace_map' || !data.value?.nodes || !data.value?.connections) return false
+
+    const parentNode = data.value.nodes.find((n) => n.id === parentId)
+    if (!parentNode) return false
+
+    const isAddingPart = parentId === 'topic' || parentNode.type === 'topic'
+    const partText = text ?? (isAddingPart ? 'New Part' : 'New Subpart')
+    const baseId = Date.now()
+    const newId = `brace-part-${baseId}`
+
+    addNode({
+      id: newId,
+      text: partText,
+      type: 'brace',
+      position: { x: 0, y: 0 },
+    })
+    addConnection(parentId, newId)
+
+    if (isAddingPart) {
+      const [sub1Text, sub2Text] = subpartTexts ?? ['New Subpart 1', 'New Subpart 2']
+      const sub1Id = `brace-part-${baseId}-1`
+      const sub2Id = `brace-part-${baseId}-2`
+      addNode({
+        id: sub1Id,
+        text: sub1Text,
+        type: 'brace',
+        position: { x: 0, y: 0 },
+      })
+      addNode({
+        id: sub2Id,
+        text: sub2Text,
+        type: 'brace',
+        position: { x: 0, y: 0 },
+      })
+      addConnection(newId, sub1Id)
+      addConnection(newId, sub2Id)
+    }
+
+    pushHistory('Add brace map part')
+    emitEvent('diagram:node_added', { node: null })
+    return true
+  }
+
+  /**
+   * Remove brace map part/subpart nodes and their descendants.
+   */
+  function removeBraceMapNodes(nodeIds: string[]): number {
+    if (type.value !== 'brace_map' || !data.value?.nodes) return 0
+
+    const targetIds = new Set(data.value.connections?.map((c) => c.target) ?? [])
+    const rootId = data.value.nodes.find((n) => n.type === 'topic')?.id
+      ?? data.value.nodes.find((n) => !targetIds.has(n.id))?.id
+    if (!rootId) return 0
+
+    const childrenMap = new Map<string, string[]>()
+    data.value.connections?.forEach((c) => {
+      if (!childrenMap.has(c.source)) childrenMap.set(c.source, [])
+      childrenMap.get(c.source)!.push(c.target)
+    })
+
+    function collectDescendants(id: string): Set<string> {
+      const set = new Set<string>([id])
+      for (const childId of childrenMap.get(id) ?? []) {
+        for (const desc of collectDescendants(childId)) set.add(desc)
+      }
+      return set
+    }
+
+    const toRemove = new Set<string>()
+    for (const id of nodeIds) {
+      if (id === rootId || id === 'dimension-label') continue
+      for (const desc of collectDescendants(id)) toRemove.add(desc)
+    }
+    if (toRemove.size === 0) return 0
+
+    const deletedIds: string[] = []
+    data.value.nodes = data.value.nodes.filter((n) => {
+      if (toRemove.has(n.id)) {
+        deletedIds.push(n.id)
+        clearCustomPosition(n.id)
+        clearNodeStyle(n.id)
+        removeFromSelection(n.id)
+        return false
+      }
+      return true
+    })
+    if (data.value.connections) {
+      data.value.connections = data.value.connections.filter(
+        (c) => !toRemove.has(c.source) && !toRemove.has(c.target)
+      )
+    }
 
     emitEvent('diagram:nodes_deleted', { nodeIds: deletedIds })
     return deletedIds.length
@@ -1891,6 +2028,8 @@ export const useDiagramStore = defineStore('diagram', () => {
     toggleConnectionArrowhead,
     removeNode,
     removeBubbleMapNodes,
+    addBraceMapPart,
+    removeBraceMapNodes,
     addMindMapBranch,
     addMindMapChild,
     removeMindMapNodes,

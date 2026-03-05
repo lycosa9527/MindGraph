@@ -2,11 +2,11 @@
  * useTreeMap - Composable for Tree Map layout and data management
  * Tree maps display hierarchical classification with top-down structure
  *
- * Uses Dagre for automatic layout:
+ * Custom layout for center-aligned vertical groups:
  * - Topic (root) at top center with pill shape
  * - Categories (depth 1) spread horizontally below topic
  * - Leaves (depth 2+) stacked vertically below their parent category
- * - Connectors: topic bottom -> category top, category bottom -> leaves top
+ * - Each group (category + leaves) forms a straight vertical line, center-aligned
  */
 import { computed, ref } from 'vue'
 
@@ -17,12 +17,16 @@ import type { Connection, DiagramNode, MindGraphEdge, MindGraphNode } from '@/ty
 
 import {
   DEFAULT_CATEGORY_SPACING,
+  DEFAULT_CENTER_X,
   DEFAULT_NODE_HEIGHT,
   DEFAULT_NODE_WIDTH,
   DEFAULT_PADDING,
-  DEFAULT_TOPIC_TO_CATEGORY_GAP,
+  NODE_MIN_DIMENSIONS,
+  TREE_MAP_CATEGORY_TO_LEAF_GAP,
+  TREE_MAP_LEAF_SPACING,
+  TREE_MAP_TOPIC_TO_CATEGORY_GAP,
 } from './layoutConfig'
-import { type DagreEdgeInput, type DagreNodeInput, calculateDagreLayout } from './useDagreLayout'
+import { measureTextWidth } from '@/stores/specLoader/textMeasurement'
 
 interface TreeNode {
   id: string
@@ -37,16 +41,14 @@ interface TreeMapData {
 }
 
 interface TreeMapOptions {
-  categorySpacing?: number // Horizontal spacing between categories (nodeSeparation)
-  rankSpacing?: number // Vertical spacing between levels (rankSeparation)
+  categorySpacing?: number
   nodeWidth?: number
   nodeHeight?: number
 }
 
 export function useTreeMap(options: TreeMapOptions = {}) {
   const {
-    categorySpacing = DEFAULT_CATEGORY_SPACING, // Horizontal spacing between category nodes
-    rankSpacing = DEFAULT_TOPIC_TO_CATEGORY_GAP, // Vertical spacing between levels
+    categorySpacing = DEFAULT_CATEGORY_SPACING,
     nodeWidth = DEFAULT_NODE_WIDTH,
     nodeHeight = DEFAULT_NODE_HEIGHT,
   } = options
@@ -54,7 +56,7 @@ export function useTreeMap(options: TreeMapOptions = {}) {
   const { t } = useLanguage()
   const data = ref<TreeMapData | null>(null)
 
-  // Generate nodes and edges for tree map using Dagre layout
+  // Generate nodes and edges using custom center-aligned layout
   function generateLayout(): { nodes: MindGraphNode[]; edges: MindGraphEdge[] } {
     if (!data.value) return { nodes: [], edges: [] }
 
@@ -65,75 +67,13 @@ export function useTreeMap(options: TreeMapOptions = {}) {
     const rootId = root.id || 'tree-topic'
     const categories = root.children || []
 
-    // Build Dagre node and edge lists
-    const dagreNodes: DagreNodeInput[] = []
-    const dagreEdges: DagreEdgeInput[] = []
+    const topicY = DEFAULT_PADDING
+    const topicX = DEFAULT_CENTER_X - nodeWidth / 2
 
-    // Add topic node
-    dagreNodes.push({ id: rootId, width: nodeWidth, height: nodeHeight })
-
-    // Add category and leaf nodes
-    categories.forEach((category, catIndex) => {
-      const categoryId = category.id || `tree-cat-${catIndex}`
-      dagreNodes.push({ id: categoryId, width: nodeWidth, height: nodeHeight })
-      dagreEdges.push({ source: rootId, target: categoryId })
-
-      // Add leaf nodes
-      const leaves = category.children || []
-      leaves.forEach((leaf, leafIndex) => {
-        const leafId = leaf.id || `tree-leaf-${catIndex}-${leafIndex}`
-        dagreNodes.push({ id: leafId, width: nodeWidth, height: nodeHeight })
-
-        // Connect leaf to category (first leaf) or previous leaf (chained)
-        const sourceId =
-          leafIndex === 0
-            ? categoryId
-            : leaves[leafIndex - 1].id || `tree-leaf-${catIndex}-${leafIndex - 1}`
-        dagreEdges.push({ source: sourceId, target: leafId })
-      })
-    })
-
-    // Calculate layout using Dagre (top-to-bottom direction)
-    const layoutResult = calculateDagreLayout(dagreNodes, dagreEdges, {
-      direction: 'TB',
-      nodeSeparation: categorySpacing,
-      rankSeparation: rankSpacing,
-      align: 'UL',
-      marginX: DEFAULT_PADDING,
-      marginY: DEFAULT_PADDING,
-    })
-
-    // Calculate center X position of all category nodes to center-align topic node
-    let categoryCenterX = 0
-    if (categories.length > 0) {
-      let minCategoryX = Infinity
-      let maxCategoryX = -Infinity
-      categories.forEach((category, catIndex) => {
-        const categoryId = category.id || `tree-cat-${catIndex}`
-        const categoryPos = layoutResult.positions.get(categoryId)
-        if (categoryPos) {
-          const categoryRight = categoryPos.x + nodeWidth
-          if (categoryPos.x < minCategoryX) minCategoryX = categoryPos.x
-          if (categoryRight > maxCategoryX) maxCategoryX = categoryRight
-        }
-      })
-      if (minCategoryX !== Infinity && maxCategoryX !== -Infinity) {
-        categoryCenterX = (minCategoryX + maxCategoryX) / 2
-      }
-    }
-
-    // Create topic node with Dagre position, centered above categories
-    const topicPos = layoutResult.positions.get(rootId)
-    const topicX =
-      categories.length > 0 && categoryCenterX > 0
-        ? categoryCenterX - nodeWidth / 2
-        : topicPos
-          ? topicPos.x
-          : 0
     nodes.push({
       id: rootId,
       type: 'topic',
-      position: { x: topicX, y: topicPos ? topicPos.y : 0 },
+      position: { x: topicX, y: topicY },
       data: {
         label: root.text,
         nodeType: 'topic',
@@ -144,26 +84,49 @@ export function useTreeMap(options: TreeMapOptions = {}) {
       draggable: false,
     })
 
-    // Create category and leaf nodes with Dagre positions
+    const categoryY = topicY + nodeHeight + TREE_MAP_TOPIC_TO_CATEGORY_GAP
+    const BRANCH_FONT_SIZE = 16
+    const NODE_PADDING_X = 32
+
+    const groupMaxWidths: number[] = []
+    categories.forEach((category, catIndex) => {
+      const catW = measureTextWidth(category.text, BRANCH_FONT_SIZE) + NODE_PADDING_X
+      const leaves = category.children || []
+      let maxW = Math.max(catW, NODE_MIN_DIMENSIONS.branch.minWidth)
+      leaves.forEach((leaf) => {
+        const leafW = measureTextWidth(leaf.text, BRANCH_FONT_SIZE) + NODE_PADDING_X
+        maxW = Math.max(maxW, leafW)
+      })
+      groupMaxWidths.push(maxW)
+    })
+
+    const numCategories = categories.length
+    const totalCategoriesWidth =
+      groupMaxWidths.reduce((a, w) => a + w, 0) +
+      Math.max(0, numCategories - 1) * categorySpacing
+    let columnLeft = DEFAULT_CENTER_X - totalCategoriesWidth / 2
+
     categories.forEach((category, catIndex) => {
       const categoryId = category.id || `tree-cat-${catIndex}`
-      const categoryPos = layoutResult.positions.get(categoryId)
+      const maxWidth = groupMaxWidths[catIndex]
+      const nodeX = columnLeft
 
       nodes.push({
         id: categoryId,
         type: 'branch',
-        position: categoryPos ? { x: categoryPos.x, y: categoryPos.y } : { x: 0, y: 0 },
+        position: { x: nodeX, y: categoryY },
+        width: maxWidth,
         data: {
           label: category.text,
           nodeType: 'branch',
           diagramType: 'tree_map',
           isDraggable: true,
           isSelectable: true,
+          style: { width: maxWidth },
         },
         draggable: true,
       })
 
-      // Edge from topic to category (bottom to top)
       edges.push({
         id: `edge-${rootId}-${categoryId}`,
         source: rootId,
@@ -177,27 +140,27 @@ export function useTreeMap(options: TreeMapOptions = {}) {
         },
       })
 
-      // Add leaf nodes
       const leaves = category.children || []
+      let leafY = categoryY + nodeHeight + TREE_MAP_CATEGORY_TO_LEAF_GAP
+
       leaves.forEach((leaf, leafIndex) => {
         const leafId = leaf.id || `tree-leaf-${catIndex}-${leafIndex}`
-        const leafPos = layoutResult.positions.get(leafId)
-
         nodes.push({
           id: leafId,
           type: 'branch',
-          position: leafPos ? { x: leafPos.x, y: leafPos.y } : { x: 0, y: 0 },
+          position: { x: nodeX, y: leafY },
+          width: maxWidth,
           data: {
             label: leaf.text,
             nodeType: 'branch',
             diagramType: 'tree_map',
             isDraggable: true,
             isSelectable: true,
+            style: { width: maxWidth },
           },
           draggable: true,
         })
 
-        // Edge from category/previous leaf to this leaf
         const sourceId =
           leafIndex === 0
             ? categoryId
@@ -214,18 +177,23 @@ export function useTreeMap(options: TreeMapOptions = {}) {
             style: { strokeColor: '#ccc' },
           },
         })
+
+        leafY += nodeHeight + TREE_MAP_LEAF_SPACING
       })
+
+      columnLeft += maxWidth + categorySpacing
     })
 
-    // Add dimension label node below topic if dimension exists
     if (data.value.dimension !== undefined) {
-      const topicPosition = layoutResult.positions.get(rootId)
-      const dimensionY = topicPosition ? topicPosition.y + nodeHeight + 20 : nodeHeight + 20
-      const dimensionX = topicPosition ? topicPosition.x : 0
+      const topicCenterX = topicX + nodeWidth / 2
+      const labelWidth = 100
       nodes.push({
         id: 'dimension-label',
         type: 'label',
-        position: { x: dimensionX, y: dimensionY },
+        position: {
+          x: topicCenterX - labelWidth / 2,
+          y: topicY + nodeHeight + 20,
+        },
         data: {
           label:
             data.value.dimension ||

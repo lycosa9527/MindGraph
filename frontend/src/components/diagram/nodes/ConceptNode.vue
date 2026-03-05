@@ -13,6 +13,7 @@ import { ElIcon } from 'element-plus'
 import { Menu } from '@element-plus/icons-vue'
 
 import { eventBus } from '@/composables/useEventBus'
+import { getBorderStyleProps } from '@/utils/borderStyleUtils'
 import { useTheme } from '@/composables/useTheme'
 import type { MindGraphNodeProps } from '@/types'
 
@@ -30,32 +31,46 @@ const defaultStyle = computed(() => getNodeStyle(isTopic.value ? 'topic' : 'bran
 const nodeStyle = computed(() => {
   const pillRadius = '9999px'
   if (isTopic.value) {
+    const borderColor =
+      props.data.style?.borderColor || defaultStyle.value.borderColor || '#35506b'
+    const borderWidth =
+      props.data.style?.borderWidth || defaultStyle.value.borderWidth || 3
+    const borderStyle = props.data.style?.borderStyle || 'solid'
+    const backgroundColor =
+      props.data.style?.backgroundColor || defaultStyle.value.backgroundColor || '#e3f2fd'
     return {
-      backgroundColor:
-        props.data.style?.backgroundColor || defaultStyle.value.backgroundColor || '#e3f2fd',
-      borderColor: props.data.style?.borderColor || defaultStyle.value.borderColor || '#35506b',
+      backgroundColor,
       color: props.data.style?.textColor || defaultStyle.value.textColor || '#000000',
       fontFamily: props.data.style?.fontFamily,
       fontSize: `${props.data.style?.fontSize || defaultStyle.value.fontSize || 18}px`,
       fontWeight: props.data.style?.fontWeight || defaultStyle.value.fontWeight || 'bold',
       fontStyle: props.data.style?.fontStyle || 'normal',
       textDecoration: props.data.style?.textDecoration || 'none',
-      borderWidth: `${props.data.style?.borderWidth || defaultStyle.value.borderWidth || 3}px`,
+      ...getBorderStyleProps(borderColor, borderWidth, borderStyle, {
+        backgroundColor,
+      }),
       borderRadius: pillRadius,
       boxShadow: '0 2px 6px rgba(0, 0, 0, 0.08)',
     }
   }
+  const borderColor =
+    props.data.style?.borderColor || defaultStyle.value.borderColor || '#4e79a7'
+  const borderWidth =
+    props.data.style?.borderWidth || defaultStyle.value.borderWidth || 2
+  const borderStyle = props.data.style?.borderStyle || 'solid'
+  const backgroundColor =
+    props.data.style?.backgroundColor || defaultStyle.value.backgroundColor || '#e3f2fd'
   return {
-    backgroundColor:
-      props.data.style?.backgroundColor || defaultStyle.value.backgroundColor || '#e3f2fd',
-    borderColor: props.data.style?.borderColor || defaultStyle.value.borderColor || '#4e79a7',
+    backgroundColor,
     color: props.data.style?.textColor || defaultStyle.value.textColor || '#333333',
     fontFamily: props.data.style?.fontFamily,
     fontSize: `${props.data.style?.fontSize || defaultStyle.value.fontSize || 16}px`,
     fontWeight: props.data.style?.fontWeight || defaultStyle.value.fontWeight || 'normal',
     fontStyle: props.data.style?.fontStyle || 'normal',
     textDecoration: props.data.style?.textDecoration || 'none',
-    borderWidth: `${props.data.style?.borderWidth || defaultStyle.value.borderWidth || 2}px`,
+    ...getBorderStyleProps(borderColor, borderWidth, borderStyle, {
+      backgroundColor,
+    }),
     borderRadius: pillRadius,
     boxShadow: '0 2px 6px rgba(0, 0, 0, 0.08)',
   }

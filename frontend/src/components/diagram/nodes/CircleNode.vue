@@ -9,6 +9,7 @@
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import { eventBus } from '@/composables/useEventBus'
+import { getBorderStyleProps } from '@/utils/borderStyleUtils'
 import { useTheme } from '@/composables/useTheme'
 import { useDiagramStore } from '@/stores'
 import { TOPIC_FONT_SIZE } from '@/stores/specLoader/textMeasurement'
@@ -119,18 +120,25 @@ const textMaxWidth = computed(() => {
 const nodeStyle = computed(() => {
   const width = isCapsuleNode.value ? capsuleWidth.value : circleSize.value
   const height = isCapsuleNode.value ? capsuleHeight.value : circleSize.value
+  const borderColor =
+    props.data.style?.borderColor ||
+    defaultStyle.value.borderColor ||
+    (isTopicNode.value ? '#0d47a1' : '#1976d2')
+  const borderWidth =
+    props.data.style?.borderWidth ||
+    defaultStyle.value.borderWidth ||
+    (isTopicNode.value ? 3 : 2)
+  const borderStyle = props.data.style?.borderStyle || 'solid'
+  const backgroundColor =
+    props.data.style?.backgroundColor ||
+    defaultStyle.value.backgroundColor ||
+    (isTopicNode.value ? '#1976d2' : '#e3f2fd')
+
   return {
     width: typeof width === 'number' ? `${width}px` : width,
     height: typeof height === 'number' ? `${height}px` : height,
     ...(isCapsuleNode.value ? { borderRadius: '9999px' } : {}),
-    backgroundColor:
-      props.data.style?.backgroundColor ||
-      defaultStyle.value.backgroundColor ||
-      (isTopicNode.value ? '#1976d2' : '#e3f2fd'),
-    borderColor:
-      props.data.style?.borderColor ||
-      defaultStyle.value.borderColor ||
-      (isTopicNode.value ? '#0d47a1' : '#1976d2'),
+    backgroundColor,
     color:
       props.data.style?.textColor ||
       defaultStyle.value.textColor ||
@@ -142,7 +150,9 @@ const nodeStyle = computed(() => {
       (isTopicNode.value ? 'bold' : 'normal'),
     fontStyle: props.data.style?.fontStyle || 'normal',
     textDecoration: props.data.style?.textDecoration || 'none',
-    borderWidth: `${props.data.style?.borderWidth || defaultStyle.value.borderWidth || (isTopicNode.value ? 3 : 2)}px`,
+    ...getBorderStyleProps(borderColor, borderWidth, borderStyle, {
+      backgroundColor,
+    }),
   }
 })
 

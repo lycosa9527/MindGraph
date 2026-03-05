@@ -2,6 +2,13 @@
  * Utils Index
  */
 
+export {
+  getBorderStyleProps,
+  resolveBorderStyle,
+  type BorderStyleType,
+  type BorderStyleOptions,
+} from './borderStyleUtils'
+
 // API utilities
 export {
   authFetch,

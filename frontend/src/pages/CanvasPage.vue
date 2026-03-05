@@ -336,7 +336,11 @@ function handleAddNodeKey() {
 
 function handleAddBranchKey() {
   if (isTypingInInput()) return
-  if (diagramStore.type === 'mindmap' || diagramStore.type === 'mind_map') {
+  if (
+    diagramStore.type === 'mindmap' ||
+    diagramStore.type === 'mind_map' ||
+    diagramStore.type === 'brace_map'
+  ) {
     eventBus.emit('diagram:add_branch_requested', {})
   } else {
     eventBus.emit('diagram:add_node_requested', {})
@@ -345,7 +349,11 @@ function handleAddBranchKey() {
 
 function handleAddChildKey() {
   if (isTypingInInput()) return
-  if (diagramStore.type === 'mindmap' || diagramStore.type === 'mind_map') {
+  if (
+    diagramStore.type === 'mindmap' ||
+    diagramStore.type === 'mind_map' ||
+    diagramStore.type === 'brace_map'
+  ) {
     eventBus.emit('diagram:add_child_requested', {})
   }
 }

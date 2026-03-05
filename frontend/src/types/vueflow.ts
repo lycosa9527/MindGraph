@@ -140,12 +140,17 @@ export function diagramNodeToVueFlowNode(
 
   // For boundary nodes, set width/height on the node object directly
   // For double_bubble_map capsule nodes (similarity/diff), use style width/height
+  // For tree_map branch nodes, use style width for center-aligned vertical groups
+  const isTreeMapBranch =
+    diagramType === 'tree_map' && (node.type === 'branch' || node.type === 'child')
   const nodeWidth =
     node.type === 'boundary'
       ? node.style?.width
       : isDoubleBubbleMap && node.style?.width != null
         ? node.style.width
-        : undefined
+        : isTreeMapBranch && node.style?.width != null
+          ? node.style.width
+          : undefined
   const nodeHeight =
     node.type === 'boundary'
       ? node.style?.height

@@ -139,8 +139,22 @@ export function useAutoComplete() {
   const hasAnyResults = computed(() => llmResultsStore.hasAnyResults)
   const readyModels = computed(() => llmResultsStore.readyModels)
 
+  type NodeWithText = {
+    id?: string
+    type?: string
+    text?: string
+    data?: { label?: string }
+  }
+
+  function getNodeText(n: NodeWithText | undefined): string {
+    if (!n) return ''
+    return (n.text ?? (n.data as { label?: string })?.label ?? '').trim()
+  }
+
   /**
-   * Extract main topic from current diagram
+   * Extract main topic from current diagram.
+   * Data stores { nodes, connections }; spec fields (topic, whole, event, etc.) are filtered out
+   * on load, so we must extract from nodes for all diagram types.
    */
   function extractMainTopic(): string | null {
     const spec = diagramStore.data as Record<string, unknown> | null
@@ -148,105 +162,138 @@ export function useAutoComplete() {
 
     if (!spec || !type) return null
 
-    // Strategy 1: Direct topic field (bubble_map, circle_map, tree_map)
+    const nodes = spec.nodes as NodeWithText[] | undefined
+    if (!nodes || !Array.isArray(nodes)) return null
+
+    // Strategy 1: bubble_map, circle_map, tree_map: topic/root node
     if (type === 'bubble_map' || type === 'circle_map' || type === 'tree_map') {
-      const topic = spec.topic as string | undefined
-      if (topic && !isPlaceholderText(topic)) {
-        return topic
-      }
-    }
-
-    // Strategy 2: Brace map uses 'whole'
-    if (type === 'brace_map') {
-      const whole = spec.whole as string | undefined
-      if (whole && !isPlaceholderText(whole)) {
-        return whole
-      }
-    }
-
-    // Strategy 3: Multi-flow map uses 'event'
-    if (type === 'multi_flow_map') {
-      const event = spec.event as string | undefined
-      if (event && !isPlaceholderText(event)) {
-        return event
-      }
-    }
-
-    // Strategy 3b: Flow map uses 'title' (main topic for auto-complete)
-    if (type === 'flow_map') {
-      const title = spec.title as string | undefined
-      if (title && !isPlaceholderText(title)) {
-        return title
-      }
-      // Fallback: flow-topic node text (when rebuilt from nodes)
-      const topicNode = (spec.nodes as Array<{ id?: string; text?: string }>)?.find(
-        (n) => n.id === 'flow-topic'
-      )
-      if (topicNode?.text && !isPlaceholderText(topicNode.text)) {
-        return topicNode.text
-      }
-    }
-
-    // Strategy 4: Double bubble map uses left/right
-    if (type === 'double_bubble_map') {
-      const left = spec.left as string | undefined
-      const right = spec.right as string | undefined
-      if (left && right && !isPlaceholderText(left) && !isPlaceholderText(right)) {
-        return `${left} vs ${right}`
-      }
-    }
-
-    // Strategy 5: Find topic/center node in nodes array
-    const nodes = spec.nodes as Array<{ id?: string; type?: string; text?: string }> | undefined
-    if (nodes && Array.isArray(nodes)) {
       const topicNode = nodes.find(
-        (n) => n.type === 'topic' || n.type === 'center' || n.id === 'topic' || n.id === 'center'
+        (n) => n.id === 'topic' || n.id === 'tree-topic' || n.type === 'topic'
       )
-      if (topicNode?.text && !isPlaceholderText(topicNode.text)) {
-        return topicNode.text
-      }
-
-      // Strategy 6: First non-placeholder node
-      const firstValid = nodes.find((n) => n.text && !isPlaceholderText(n.text))
-      if (firstValid?.text) {
-        return firstValid.text
-      }
+      const text = getNodeText(topicNode)
+      if (text && !isPlaceholderText(text)) return text
     }
+
+    // Strategy 2: Brace map: whole node (root, type 'topic')
+    if (type === 'brace_map') {
+      const wholeNode = nodes.find((n) => n.type === 'topic')
+      const text = getNodeText(wholeNode)
+      if (text && !isPlaceholderText(text)) return text
+    }
+
+    // Strategy 3: Multi-flow map: event node (id 'event')
+    if (type === 'multi_flow_map') {
+      const eventNode = nodes.find((n) => n.id === 'event' || n.type === 'topic')
+      const text = getNodeText(eventNode)
+      if (text && !isPlaceholderText(text)) return text
+    }
+
+    // Strategy 4: Flow map: flow-topic node (id 'flow-topic')
+    if (type === 'flow_map') {
+      const topicNode = nodes.find((n) => n.id === 'flow-topic')
+      const text = getNodeText(topicNode)
+      if (text && !isPlaceholderText(text)) return text
+    }
+
+    // Strategy 5: Double bubble map: left/right topic nodes
+    if (type === 'double_bubble_map') {
+      const leftNode = nodes.find((n) => n.id === 'left-topic')
+      const rightNode = nodes.find((n) => n.id === 'right-topic')
+      const left = getNodeText(leftNode)
+      const right = getNodeText(rightNode)
+      const leftValid = left && !isPlaceholderText(left)
+      const rightValid = right && !isPlaceholderText(right)
+      if (leftValid && rightValid) {
+        return isZh.value ? `${left} 和 ${right}` : `${left} vs ${right}`
+      }
+      if (leftValid) return left
+      if (rightValid) return right
+    }
+
+    // Strategy 6: Fallback - find topic/center node (bubble, circle, mindmap, etc.)
+    const topicNode = nodes.find(
+      (n) =>
+        n.type === 'topic' ||
+        n.type === 'center' ||
+        n.id === 'topic' ||
+        n.id === 'center' ||
+        n.id === 'event'
+    )
+    const topicText = getNodeText(topicNode)
+    if (topicText && !isPlaceholderText(topicText)) return topicText
+
+    // Strategy 7: First non-placeholder node
+    const firstValid = nodes.find((n) => {
+      const t = getNodeText(n)
+      return t && !isPlaceholderText(t)
+    })
+    const firstText = getNodeText(firstValid)
+    if (firstText && !isPlaceholderText(firstText)) return firstText
 
     return null
   }
 
   /**
-   * Extract existing bridge map analogies
+   * Extract existing bridge map analogies from nodes.
+   * spec.analogies is filtered out on load; nodes use pair-X-left, pair-X-right.
    */
   function extractBridgeMapAnalogies(): Array<{ left: string; right: string }> {
     const spec = diagramStore.data as Record<string, unknown> | null
     if (!spec || diagramStore.type !== 'bridge_map') return []
 
-    const analogies = spec.analogies as Array<{ left?: string; right?: string }> | undefined
-    if (!analogies) return []
+    const nodes = spec.nodes as NodeWithText[] | undefined
+    if (!nodes || !Array.isArray(nodes)) return []
 
-    return analogies
-      .filter(
-        (pair): pair is { left: string; right: string } =>
-          typeof pair.left === 'string' &&
-          typeof pair.right === 'string' &&
-          !isPlaceholderText(pair.left) &&
-          !isPlaceholderText(pair.right)
-      )
-      .map((pair) => ({ left: pair.left, right: pair.right }))
+    const pairIndices = new Set(
+      nodes
+        .filter((n) => /^pair-\d+-left$/.test(n.id ?? ''))
+        .map((n) => parseInt(n.id!.replace('pair-', '').replace('-left', ''), 10))
+    )
+
+    const result: Array<{ left: string; right: string }> = []
+    for (const idx of [...pairIndices].sort((a, b) => a - b)) {
+      const leftNode = nodes.find((n) => n.id === `pair-${idx}-left`)
+      const rightNode = nodes.find((n) => n.id === `pair-${idx}-right`)
+      const left = getNodeText(leftNode)
+      const right = getNodeText(rightNode)
+      if (left && right && !isPlaceholderText(left) && !isPlaceholderText(right)) {
+        result.push({ left, right })
+      }
+    }
+    return result
   }
 
   /**
-   * Extract fixed dimension if user specified one
+   * Extract fixed dimension if user specified one.
+   * For brace_map, tree_map, bridge_map: checks dimension-label node first (user-edited),
+   * then falls back to spec.dimension / spec.relating_factor (preserved in metadata).
    */
   function extractFixedDimension(): string | null {
     const spec = diagramStore.data as Record<string, unknown> | null
     if (!spec) return null
 
+    const nodes = spec.nodes as NodeWithText[] | undefined
+    const supportsDimensionLabel =
+      diagramStore.type === 'brace_map' ||
+      diagramStore.type === 'tree_map' ||
+      diagramStore.type === 'bridge_map'
+    if (nodes && Array.isArray(nodes) && supportsDimensionLabel) {
+      const labelNode = nodes.find((n) => n.id === 'dimension-label')
+      const labelText = getNodeText(labelNode)
+      if (labelText && !isPlaceholderText(labelText)) {
+        return labelText
+      }
+    }
+
     const dimension = spec.dimension as string | undefined
     if (dimension && dimension.trim() !== '') {
       return dimension.trim()
+    }
+    if (diagramStore.type === 'bridge_map') {
+      const rf = spec.relating_factor as string | undefined
+      if (rf && rf.trim() !== '' && !isPlaceholderText(rf)) {
+        return rf.trim()
+      }
     }
     return null
   }

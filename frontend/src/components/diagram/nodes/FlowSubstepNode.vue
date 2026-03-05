@@ -10,6 +10,7 @@ import { computed, ref } from 'vue'
 import { Handle, Position } from '@vue-flow/core'
 
 import { eventBus } from '@/composables/useEventBus'
+import { getBorderStyleProps } from '@/utils/borderStyleUtils'
 import type { MindGraphNodeProps } from '@/types'
 
 import InlineEditableText from './InlineEditableText.vue'
@@ -18,17 +19,24 @@ const props = defineProps<MindGraphNodeProps>()
 
 // Substep theme colors matching old JS flow-renderer.js
 // substepFill: '#e3f2fd', substepText: '#333333', substepStroke: '#1976d2'
-const nodeStyle = computed(() => ({
-  backgroundColor: props.data.style?.backgroundColor || '#e3f2fd',
-  borderColor: props.data.style?.borderColor || '#1976d2',
-  color: props.data.style?.textColor || '#333333',
-  fontSize: `${props.data.style?.fontSize || 12}px`,
-  fontWeight: props.data.style?.fontWeight || 'normal',
-  fontStyle: props.data.style?.fontStyle || 'normal',
-  textDecoration: props.data.style?.textDecoration || 'none',
-  borderWidth: `${props.data.style?.borderWidth || 1}px`,
-  borderRadius: `${props.data.style?.borderRadius || 4}px`,
-}))
+const nodeStyle = computed(() => {
+  const borderColor = props.data.style?.borderColor || '#1976d2'
+  const borderWidth = props.data.style?.borderWidth || 1
+  const borderStyle = props.data.style?.borderStyle || 'solid'
+  const backgroundColor = props.data.style?.backgroundColor || '#e3f2fd'
+  return {
+    backgroundColor,
+    color: props.data.style?.textColor || '#333333',
+    fontSize: `${props.data.style?.fontSize || 12}px`,
+    fontWeight: props.data.style?.fontWeight || 'normal',
+    fontStyle: props.data.style?.fontStyle || 'normal',
+    textDecoration: props.data.style?.textDecoration || 'none',
+    ...getBorderStyleProps(borderColor, borderWidth, borderStyle, {
+      backgroundColor,
+    }),
+    borderRadius: `${props.data.style?.borderRadius || 4}px`,
+  }
+})
 
 // Inline editing state
 const isEditing = ref(false)

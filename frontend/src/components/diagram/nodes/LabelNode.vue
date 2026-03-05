@@ -15,6 +15,7 @@ import {
   DEFAULT_NODE_WIDTH,
 } from '@/composables/diagrams/layoutConfig'
 import { eventBus } from '@/composables/useEventBus'
+import { translateDimension, useLanguage } from '@/composables/useLanguage'
 import { useDiagramStore } from '@/stores'
 import type { MindGraphNodeProps } from '@/types'
 
@@ -22,6 +23,7 @@ import InlineEditableText from './InlineEditableText.vue'
 
 const props = defineProps<MindGraphNodeProps>()
 
+const { isZh } = useLanguage()
 const isPlaceholder = computed(() => props.data.isPlaceholder || !props.data.label)
 const isBridgeDimension = computed(
   () => props.data.diagramType === 'bridge_map' && props.data.isDimensionLabel
@@ -293,12 +295,7 @@ const bridgeMapDisplay = computed(() => {
     return null
   }
 
-  // Detect language from label or diagram type
-  const hasChinese = props.data.label
-    ? /[\u4e00-\u9fa5]/.test(props.data.label)
-    : /[\u4e00-\u9fa5]/.test(String(props.data.diagramType || ''))
-
-  const labelText = hasChinese ? '类比关系:' : 'Analogy relationship:'
+  const labelText = isZh.value ? '类比关系:' : 'Analogy relationship:'
 
   // Wrap dimension value in brackets []
   // Strip existing brackets if present to avoid double brackets
@@ -308,7 +305,7 @@ const bridgeMapDisplay = computed(() => {
   }
   const valueText = rawValue
     ? `[${rawValue}]` // Add brackets around actual value
-    : hasChinese
+    : isZh.value
       ? '[点击设置]'
       : '[Click to set]' // Placeholder already has brackets
 
@@ -326,14 +323,17 @@ const displayText = computed(() => {
   }
 
   if (props.data.label) {
-    // For other diagram types (tree_map, brace_map), show with prefix
-    const hasChinese = /[\u4e00-\u9fa5]/.test(props.data.label)
+    // For brace_map: translate dimension to Chinese when language is zh
+    const dimensionValue =
+      props.data.diagramType === 'brace_map' && isZh.value
+        ? translateDimension(props.data.label, true)
+        : props.data.label
+    const hasChinese = /[\u4e00-\u9fa5]/.test(dimensionValue)
     const prefix = hasChinese ? '分类维度' : 'Classification by'
-    return `[${prefix}: ${props.data.label}]`
+    return `[${prefix}: ${dimensionValue}]`
   }
-  // Placeholder text
-  const hasChinese = /[\u4e00-\u9fa5]/.test(String(props.data.diagramType || ''))
-  return hasChinese ? '[分类维度: 点击填写...]' : '[Classification by: click to specify...]'
+  // Placeholder text - use app language
+  return isZh.value ? '[分类维度: 点击填写...]' : '[Classification by: click to specify...]'
 })
 
 // Inline editing state

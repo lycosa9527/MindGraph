@@ -11,6 +11,7 @@ import { Handle, Position } from '@vue-flow/core'
 import { X } from 'lucide-vue-next'
 
 import { eventBus } from '@/composables/useEventBus'
+import { getBorderStyleProps } from '@/utils/borderStyleUtils'
 import { useTheme } from '@/composables/useTheme'
 import { useDiagramStore } from '@/stores'
 import type { MindGraphNodeProps } from '@/types'
@@ -34,17 +35,25 @@ const isCause = computed(() => isMultiFlowMap.value && props.id.startsWith('caus
 const isEffect = computed(() => isMultiFlowMap.value && props.id.startsWith('effect-'))
 
 const nodeStyle = computed(() => {
+  const borderColor =
+    props.data.style?.borderColor || defaultStyle.value.borderColor || '#409eff'
+  const borderWidth =
+    props.data.style?.borderWidth || defaultStyle.value.borderWidth || 2
+  const borderStyle = props.data.style?.borderStyle || 'solid'
+  const backgroundColor =
+    props.data.style?.backgroundColor || defaultStyle.value.backgroundColor || '#ffffff'
+
   const baseStyle = {
-    backgroundColor:
-      props.data.style?.backgroundColor || defaultStyle.value.backgroundColor || '#ffffff',
-    borderColor: props.data.style?.borderColor || defaultStyle.value.borderColor || '#409eff',
+    backgroundColor,
     color: props.data.style?.textColor || defaultStyle.value.textColor || '#303133',
     fontFamily: props.data.style?.fontFamily,
     fontSize: `${props.data.style?.fontSize || defaultStyle.value.fontSize || 13}px`,
     fontWeight: props.data.style?.fontWeight || defaultStyle.value.fontWeight || 'normal',
     fontStyle: props.data.style?.fontStyle || 'normal',
     textDecoration: props.data.style?.textDecoration || 'none',
-    borderWidth: `${props.data.style?.borderWidth || defaultStyle.value.borderWidth || 2}px`,
+    ...getBorderStyleProps(borderColor, borderWidth, borderStyle, {
+      backgroundColor,
+    }),
     // Pill shape for multi-flow map (9999px creates fully rounded ends), default rounded rectangle for others
     borderRadius: isPillShape.value ? '9999px' : `${props.data.style?.borderRadius || 6}px`,
   }

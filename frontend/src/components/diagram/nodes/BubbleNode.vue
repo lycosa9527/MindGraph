@@ -7,6 +7,7 @@
 import { computed, ref } from 'vue'
 
 import { eventBus } from '@/composables/useEventBus'
+import { getBorderStyleProps } from '@/utils/borderStyleUtils'
 import { useTheme } from '@/composables/useTheme'
 import type { MindGraphNodeProps } from '@/types'
 
@@ -21,17 +22,26 @@ const { getNodeStyle } = useTheme({
 
 const defaultStyle = computed(() => getNodeStyle('bubble'))
 
-const nodeStyle = computed(() => ({
-  backgroundColor:
-    props.data.style?.backgroundColor || defaultStyle.value.backgroundColor || '#e3f2fd',
-  borderColor: props.data.style?.borderColor || defaultStyle.value.borderColor || '#000000',
-  color: props.data.style?.textColor || defaultStyle.value.textColor || '#333333',
-  fontSize: `${props.data.style?.fontSize || defaultStyle.value.fontSize || 14}px`,
-  fontWeight: props.data.style?.fontWeight || defaultStyle.value.fontWeight || 'normal',
-  fontStyle: props.data.style?.fontStyle || 'normal',
-  textDecoration: props.data.style?.textDecoration || 'none',
-  borderWidth: `${props.data.style?.borderWidth || defaultStyle.value.borderWidth || 2}px`,
-}))
+const nodeStyle = computed(() => {
+  const borderColor =
+    props.data.style?.borderColor || defaultStyle.value.borderColor || '#000000'
+  const borderWidth =
+    props.data.style?.borderWidth || defaultStyle.value.borderWidth || 2
+  const borderStyle = props.data.style?.borderStyle || 'solid'
+  const backgroundColor =
+    props.data.style?.backgroundColor || defaultStyle.value.backgroundColor || '#e3f2fd'
+  return {
+    backgroundColor,
+    color: props.data.style?.textColor || defaultStyle.value.textColor || '#333333',
+    fontSize: `${props.data.style?.fontSize || defaultStyle.value.fontSize || 14}px`,
+    fontWeight: props.data.style?.fontWeight || defaultStyle.value.fontWeight || 'normal',
+    fontStyle: props.data.style?.fontStyle || 'normal',
+    textDecoration: props.data.style?.textDecoration || 'none',
+    ...getBorderStyleProps(borderColor, borderWidth, borderStyle, {
+      backgroundColor,
+    }),
+  }
+})
 
 // Inline editing state
 const isEditing = ref(false)

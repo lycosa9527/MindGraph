@@ -5,10 +5,12 @@
  * Supports inline text editing on double-click
  */
 import { computed, ref } from 'vue'
+import type { CSSProperties } from 'vue'
 
 import { Handle, Position } from '@vue-flow/core'
 
 import { getMindmapBranchColor } from '@/config/mindmapColors'
+import { getBorderStyleProps } from '@/utils/borderStyleUtils'
 import { eventBus } from '@/composables/useEventBus'
 import { useTheme } from '@/composables/useTheme'
 import type { MindGraphNodeProps } from '@/types'
@@ -49,7 +51,7 @@ const isFirstPair = computed(() => {
   return pairIndex === undefined || pairIndex === 0
 })
 
-const nodeStyle = computed(() => {
+const nodeStyle = computed((): CSSProperties => {
   // For all bridge map nodes (including first pair), remove borders, background, and shadows (text-only)
   const shouldHaveBorder = !isBridgeMap.value
   const shouldHaveBackground = !isBridgeMap.value
@@ -66,24 +68,38 @@ const nodeStyle = computed(() => {
       '#4e79a7'
     : 'transparent'
 
-  return {
+  const borderWidth = shouldHaveBorder
+    ? (props.data.style?.borderWidth ?? (isMindMap.value ? 3 : defaultStyle.value.borderWidth) ?? 2)
+    : 0
+  const borderStyle = shouldHaveBorder
+    ? (props.data.style?.borderStyle || 'solid')
+    : 'solid'
+
+  const base: CSSProperties = {
     backgroundColor: bgColor,
-    borderStyle: shouldHaveBorder ? 'solid' : 'none',
-    borderColor,
+    ...(shouldHaveBorder
+      ? getBorderStyleProps(borderColor, borderWidth, borderStyle, {
+          backgroundColor: bgColor,
+        })
+      : { borderColor: 'transparent', borderWidth: '0px', borderStyle: 'none' }),
     color: props.data.style?.textColor || defaultStyle.value.textColor || '#333333',
     fontFamily: props.data.style?.fontFamily,
     fontSize: `${props.data.style?.fontSize || defaultStyle.value.fontSize || 16}px`,
     fontWeight: props.data.style?.fontWeight || defaultStyle.value.fontWeight || 'normal',
     fontStyle: props.data.style?.fontStyle || 'normal',
     textDecoration: props.data.style?.textDecoration || 'none',
-    borderWidth: shouldHaveBorder
-      ? `${props.data.style?.borderWidth ?? (isMindMap.value ? 3 : defaultStyle.value.borderWidth) ?? 2}px`
-      : '0px',
     borderRadius: isMindMap.value
       ? '9999px'
       : `${props.data.style?.borderRadius || 8}px`,
     boxShadow: shouldHaveShadow ? undefined : 'none',
   }
+  // Tree map: fixed width from layout for center-aligned vertical groups
+  if (isTreeMap.value && props.data.style?.width != null) {
+    base.width = `${props.data.style.width}px`
+    base.minWidth = `${props.data.style.width}px`
+    base.maxWidth = `${props.data.style.width}px`
+  }
+  return base
 })
 
 // Inline editing state

@@ -8,7 +8,7 @@
  */
 import type { DiagramType } from '@/types'
 
-import { loadBraceMapSpec } from './braceMap'
+import { loadBraceMapSpec, recalculateBraceMapLayout } from './braceMap'
 import { loadBridgeMapSpec } from './bridgeMap'
 import { loadBubbleMapSpec, recalculateBubbleMapLayout } from './bubbleMap'
 import { loadCircleMapSpec } from './circleMap'
@@ -23,6 +23,7 @@ import type { SpecLoaderResult } from './types'
 import { applyLearningSheetHiddenNodes } from './utils'
 
 // Re-export public APIs
+export { recalculateBraceMapLayout } from './braceMap'
 export { recalculateCircleMapLayout } from './circleMap'
 export { recalculateBubbleMapLayout } from './bubbleMap'
 export { recalculateMultiFlowMapLayout } from './multiFlowMap'

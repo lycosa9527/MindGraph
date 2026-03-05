@@ -10,6 +10,7 @@ import { Handle, Position } from '@vue-flow/core'
 
 import { eventBus } from '@/composables/useEventBus'
 import { useTheme } from '@/composables/useTheme'
+import { getBorderStyleProps } from '@/utils/borderStyleUtils'
 import type { MindGraphNodeProps } from '@/types'
 
 import InlineEditableText from './InlineEditableText.vue'
@@ -128,16 +129,24 @@ const mindMapHandlePositions = computed(() => {
 })
 
 const nodeStyle = computed(() => {
+  const borderColor =
+    props.data.style?.borderColor || defaultStyle.value.borderColor || '#0d47a1'
+  const borderWidth =
+    props.data.style?.borderWidth || defaultStyle.value.borderWidth || 3
+  const borderStyle = props.data.style?.borderStyle || 'solid'
+  const backgroundColor =
+    props.data.style?.backgroundColor || defaultStyle.value.backgroundColor || '#1976d2'
+
   const baseStyle = {
-    backgroundColor:
-      props.data.style?.backgroundColor || defaultStyle.value.backgroundColor || '#1976d2',
-    borderColor: props.data.style?.borderColor || defaultStyle.value.borderColor || '#0d47a1',
+    backgroundColor,
     color: props.data.style?.textColor || defaultStyle.value.textColor || '#ffffff',
     fontSize: `${props.data.style?.fontSize || defaultStyle.value.fontSize || 18}px`,
     fontWeight: props.data.style?.fontWeight || defaultStyle.value.fontWeight || 'bold',
     fontStyle: props.data.style?.fontStyle || 'normal',
     textDecoration: props.data.style?.textDecoration || 'none',
-    borderWidth: `${props.data.style?.borderWidth || defaultStyle.value.borderWidth || 3}px`,
+    ...getBorderStyleProps(borderColor, borderWidth, borderStyle, {
+      backgroundColor,
+    }),
     // Pill shape for tree map (9999px creates fully rounded ends)
     // Rounded rectangle for multi-flow map, circle for others
     borderRadius: isPillShape.value

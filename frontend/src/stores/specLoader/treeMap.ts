@@ -1,9 +1,14 @@
 /**
  * Tree Map Loader
- * Tree Map Layout - Matches old JS tree-renderer.js:
+ * Tree Map Layout - Custom layout for center-aligned vertical groups:
  * - Topic (root) at top center with pill shape
  * - Categories (depth 1) spread horizontally below topic
  * - Leaves (depth 2+) stacked vertically below their parent category
+ * - Each group (category + leaves) forms a straight vertical line, center-aligned
+ *
+ * Root cause of misalignment: variable node widths. Short "省" vs long "广东省" caused
+ * left-edge positioning to misalign centers. Fix: measure text per group, use max width
+ * for all nodes in group, position by center (nodeX = centerX - maxWidth/2).
  */
 import {
   DEFAULT_CATEGORY_SPACING,
@@ -11,13 +16,20 @@ import {
   DEFAULT_NODE_HEIGHT,
   DEFAULT_NODE_WIDTH,
   DEFAULT_PADDING,
-  DEFAULT_TOPIC_TO_CATEGORY_GAP,
   NODE_MIN_DIMENSIONS,
+  TREE_MAP_CATEGORY_TO_LEAF_GAP,
+  TREE_MAP_LEAF_SPACING,
+  TREE_MAP_TOPIC_TO_CATEGORY_GAP,
 } from '@/composables/diagrams/layoutConfig'
-import { calculateDagreLayout } from '@/composables/diagrams/useDagreLayout'
+import { measureTextWidth } from '@/stores/specLoader/textMeasurement'
 import type { Connection, DiagramNode } from '@/types'
 
 import type { SpecLoaderResult } from './types'
+
+/** Font size for branch nodes (matches theme default) */
+const TREE_MAP_BRANCH_FONT_SIZE = 16
+/** Horizontal padding inside node (px-4 = 16px each side) */
+const TREE_MAP_NODE_PADDING_X = 32
 
 interface TreeNode {
   id?: string
@@ -35,14 +47,12 @@ export function loadTreeMapSpec(spec: Record<string, unknown>): SpecLoaderResult
   const nodes: DiagramNode[] = []
   const connections: Connection[] = []
 
-  // Layout constants from layoutConfig
   const NODE_WIDTH = DEFAULT_NODE_WIDTH
   const NODE_HEIGHT = DEFAULT_NODE_HEIGHT
 
   // Support both new format (root object) and old format (topic + children)
   let root: TreeNode | undefined = spec.root as TreeNode | undefined
   if (!root && spec.topic !== undefined) {
-    // Convert old format to new format
     root = {
       id: 'tree-topic',
       text: (spec.topic as string) || '',
@@ -57,101 +67,54 @@ export function loadTreeMapSpec(spec: Record<string, unknown>): SpecLoaderResult
     const rootId = root.id || 'tree-topic'
     const categories = root.children || []
 
-    // Build node list for Dagre layout
-    interface DagreNode {
-      id: string
-      width: number
-      height: number
-    }
-    interface DagreEdge {
-      source: string
-      target: string
-    }
+    // Custom layout: center-aligned vertical groups with reduced spacing
+    const topicY = DEFAULT_PADDING
+    const topicX = DEFAULT_CENTER_X - NODE_WIDTH / 2
 
-    const dagreNodes: DagreNode[] = []
-    const dagreEdges: DagreEdge[] = []
-
-    // Add topic node
-    dagreNodes.push({ id: rootId, width: NODE_WIDTH, height: NODE_HEIGHT })
-
-    // Add category and leaf nodes
-    categories.forEach((category, catIndex) => {
-      const categoryId = category.id || `tree-cat-${catIndex}`
-      dagreNodes.push({ id: categoryId, width: NODE_WIDTH, height: NODE_HEIGHT })
-      dagreEdges.push({ source: rootId, target: categoryId })
-
-      // Add leaf nodes
-      const leaves = category.children || []
-      leaves.forEach((leaf, leafIndex) => {
-        const leafId = leaf.id || `tree-leaf-${catIndex}-${leafIndex}`
-        dagreNodes.push({ id: leafId, width: NODE_WIDTH, height: NODE_HEIGHT })
-
-        // Connect leaf to category (first leaf) or previous leaf (chained)
-        const sourceId =
-          leafIndex === 0
-            ? categoryId
-            : leaves[leafIndex - 1].id || `tree-leaf-${catIndex}-${leafIndex - 1}`
-        dagreEdges.push({ source: sourceId, target: leafId })
-      })
-    })
-
-    // Calculate layout using Dagre (top-to-bottom direction)
-    const layoutResult = calculateDagreLayout(dagreNodes, dagreEdges, {
-      direction: 'TB',
-      nodeSeparation: DEFAULT_CATEGORY_SPACING,
-      rankSeparation: DEFAULT_TOPIC_TO_CATEGORY_GAP,
-      align: 'UL',
-      marginX: DEFAULT_PADDING,
-      marginY: DEFAULT_PADDING,
-    })
-
-    // Calculate center X position of all category nodes to center-align topic node
-    let categoryCenterX = 0
-    if (categories.length > 0) {
-      let minCategoryX = Infinity
-      let maxCategoryX = -Infinity
-      categories.forEach((category, catIndex) => {
-        const categoryId = category.id || `tree-cat-${catIndex}`
-        const categoryPos = layoutResult.positions.get(categoryId)
-        if (categoryPos) {
-          const categoryRight = categoryPos.x + NODE_WIDTH
-          if (categoryPos.x < minCategoryX) minCategoryX = categoryPos.x
-          if (categoryRight > maxCategoryX) maxCategoryX = categoryRight
-        }
-      })
-      if (minCategoryX !== Infinity && maxCategoryX !== -Infinity) {
-        categoryCenterX = (minCategoryX + maxCategoryX) / 2
-      }
-    }
-
-    // Create topic node with Dagre position, centered above categories
-    const topicPos = layoutResult.positions.get(rootId)
-    const topicX =
-      categories.length > 0 && categoryCenterX > 0
-        ? categoryCenterX - NODE_WIDTH / 2
-        : topicPos
-          ? topicPos.x
-          : DEFAULT_CENTER_X - NODE_WIDTH / 2
     nodes.push({
       id: rootId,
       text: root.text,
       type: 'topic',
-      position: { x: topicX, y: topicPos ? topicPos.y : 60 },
+      position: { x: topicX, y: topicY },
     })
 
-    // Create category and leaf nodes with Dagre positions
+    const categoryY = topicY + NODE_HEIGHT + TREE_MAP_TOPIC_TO_CATEGORY_GAP
+
+    // Per-group: measure text widths, compute maxWidth for center alignment
+    const groupMaxWidths: number[] = []
+    categories.forEach((category, catIndex) => {
+      const catW =
+        measureTextWidth(category.text, TREE_MAP_BRANCH_FONT_SIZE) + TREE_MAP_NODE_PADDING_X
+      const leaves = category.children || []
+      let maxW = Math.max(catW, NODE_MIN_DIMENSIONS.branch.minWidth)
+      leaves.forEach((leaf) => {
+        const leafW =
+          measureTextWidth(leaf.text, TREE_MAP_BRANCH_FONT_SIZE) + TREE_MAP_NODE_PADDING_X
+        maxW = Math.max(maxW, leafW)
+      })
+      groupMaxWidths.push(maxW)
+    })
+
+    const numCategories = categories.length
+    const totalCategoriesWidth =
+      groupMaxWidths.reduce((a, w) => a + w, 0) +
+      Math.max(0, numCategories - 1) * DEFAULT_CATEGORY_SPACING
+    let columnLeft = DEFAULT_CENTER_X - totalCategoriesWidth / 2
+
     categories.forEach((category, catIndex) => {
       const categoryId = category.id || `tree-cat-${catIndex}`
-      const categoryPos = layoutResult.positions.get(categoryId)
+      const maxWidth = groupMaxWidths[catIndex]
+      const centerX = columnLeft + maxWidth / 2
+      const nodeX = centerX - maxWidth / 2
 
       nodes.push({
         id: categoryId,
         text: category.text,
         type: 'branch',
-        position: categoryPos ? { x: categoryPos.x, y: categoryPos.y } : { x: 0, y: 0 },
+        position: { x: nodeX, y: categoryY },
+        style: { width: maxWidth },
       })
 
-      // Connection from topic to category (T-shape step edge)
       connections.push({
         id: `edge-${rootId}-${categoryId}`,
         source: rootId,
@@ -161,20 +124,19 @@ export function loadTreeMapSpec(spec: Record<string, unknown>): SpecLoaderResult
         targetPosition: 'top',
       })
 
-      // Add leaf nodes
       const leaves = category.children || []
+      let leafY = categoryY + NODE_HEIGHT + TREE_MAP_CATEGORY_TO_LEAF_GAP
+
       leaves.forEach((leaf, leafIndex) => {
         const leafId = leaf.id || `tree-leaf-${catIndex}-${leafIndex}`
-        const leafPos = layoutResult.positions.get(leafId)
-
         nodes.push({
           id: leafId,
           text: leaf.text,
           type: 'branch',
-          position: leafPos ? { x: leafPos.x, y: leafPos.y } : { x: 0, y: 0 },
+          position: { x: nodeX, y: leafY },
+          style: { width: maxWidth },
         })
 
-        // Connection from category/previous leaf to this leaf (straight vertical)
         const sourceId =
           leafIndex === 0
             ? categoryId
@@ -187,14 +149,16 @@ export function loadTreeMapSpec(spec: Record<string, unknown>): SpecLoaderResult
           sourcePosition: 'bottom',
           targetPosition: 'top',
         })
+
+        leafY += NODE_HEIGHT + TREE_MAP_LEAF_SPACING
       })
+
+      columnLeft += maxWidth + DEFAULT_CATEGORY_SPACING
     })
 
     // Add dimension label node if dimension field exists
-    // Position it right below the topic node, center-aligned under the topic
     if (dimension !== undefined) {
-      const topicPos = nodes.find((n) => n.id === rootId)?.position
-      const topicCenterX = (topicPos?.x ?? DEFAULT_CENTER_X - NODE_WIDTH / 2) + NODE_WIDTH / 2
+      const topicCenterX = topicX + NODE_WIDTH / 2
       const labelWidth = NODE_MIN_DIMENSIONS.label.minWidth
       nodes.push({
         id: 'dimension-label',
@@ -202,7 +166,7 @@ export function loadTreeMapSpec(spec: Record<string, unknown>): SpecLoaderResult
         type: 'label',
         position: {
           x: topicCenterX - labelWidth / 2,
-          y: (topicPos?.y ?? 60) + NODE_HEIGHT + 20,
+          y: topicY + NODE_HEIGHT + 20,
         },
       })
     }

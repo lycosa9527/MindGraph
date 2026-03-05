@@ -144,6 +144,30 @@ export const translations: Record<Language, Record<string, string>> = {
   },
 }
 
+/** Dimension label translations (English → Chinese) for brace/tree map classification */
+export const DIMENSION_TRANSLATIONS: Record<string, string> = {
+  'Physical Characteristics': '物理特征',
+  Parts: '组成部分',
+  Components: '组件',
+  Structure: '结构',
+  Attributes: '属性',
+  Properties: '属性',
+  Types: '类型',
+  Kinds: '种类',
+  Categories: '类别',
+  Characteristics: '特征',
+  Features: '特点',
+  Elements: '要素',
+  Aspects: '方面',
+  Factors: '因素',
+}
+
+export function translateDimension(value: string, toChinese: boolean): string {
+  if (!toChinese || !value?.trim()) return value
+  const trimmed = value.trim()
+  return DIMENSION_TRANSLATIONS[trimmed] ?? trimmed
+}
+
 export function useLanguage() {
   const uiStore = useUIStore()
 

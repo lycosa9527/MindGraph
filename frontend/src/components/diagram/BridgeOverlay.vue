@@ -69,10 +69,6 @@ const ALTERNATIVE_LABEL_FONT_SIZE = 13
 const ALTERNATIVE_CHIP_FONT_SIZE = 12
 const ALTERNATIVE_CHIP_COLOR = '#1976d2' // Dark blue
 const ALTERNATIVE_CHIP_OPACITY = 0.8
-const ALTERNATIVE_CHIP_SPACING = 8 // Horizontal spacing between chips
-const ALTERNATIVE_CHIP_PADDING_X = 8 // Horizontal padding inside chip
-const ALTERNATIVE_CHIP_PADDING_Y = 4 // Vertical padding inside chip
-const ALTERNATIVE_CHIP_RADIUS = 4 // Border radius for chips
 const DELETE_BUTTON_SIZE = 24 // Size of delete button
 const DELETE_BUTTON_OFFSET_X = 6 // Horizontal offset from right edge
 const DELETE_BUTTON_OFFSET_Y = 6 // Vertical offset from top
@@ -402,7 +398,7 @@ const alternativeDimensions = computed(() => {
 const alternativeDimensionsLabel = computed(() => {
   return hasChineseContent.value
     ? '本主题的其他可能类比关系:'
-    : 'Other possible analogy relationships:'
+    : 'Other possible analogy patterns for this topic:'
 })
 
 /**
@@ -424,39 +420,10 @@ const alternativeDimensionsPosition = computed(() => {
   }
 })
 
-/**
- * Calculate chip positions for alternative dimensions
- */
-const alternativeDimensionChips = computed(() => {
-  const dims = alternativeDimensions.value
-  if (dims.length === 0) return []
-
-  if (!alternativeDimensionsPosition.value) return []
-
-  const { centerX, chipsY } = alternativeDimensionsPosition.value
-
-  // Estimate chip widths (rough approximation)
-  const chipWidths = dims.map((dim) => {
-    // Approximate: 8px padding * 2 + text width (rough estimate: 8px per character)
-    return ALTERNATIVE_CHIP_PADDING_X * 2 + dim.length * 8
-  })
-
-  // Calculate total width and starting X
-  const totalWidth =
-    chipWidths.reduce((sum, w) => sum + w, 0) + ALTERNATIVE_CHIP_SPACING * (dims.length - 1)
-  let currentX = centerX - totalWidth / 2
-
-  return dims.map((dim, index) => {
-    const chipX = currentX + chipWidths[index] / 2
-    currentX += chipWidths[index] + ALTERNATIVE_CHIP_SPACING
-
-    return {
-      text: dim,
-      x: chipX,
-      y: chipsY,
-      width: chipWidths[index],
-    }
-  })
+/** Archive uses simple text "• dim1  • dim2" (slice 0-6 like archive) */
+const alternativeDimensionsChipsText = computed(() => {
+  const dims = alternativeDimensions.value.slice(0, 6)
+  return dims.map((d) => `• ${d}`).join('  ')
 })
 
 /**
@@ -775,53 +742,35 @@ onUnmounted(() => {
           {{ alternativeDimensionsLabel }}
         </text>
 
-        <!-- Chips for alternative dimensions -->
-        <template v-if="alternativeDimensionChips.length > 0">
-          <g
-            v-for="(chip, index) in alternativeDimensionChips"
-            :key="`chip-${index}`"
-          >
-            <!-- Chip background (rounded rectangle) -->
-            <rect
-              :x="chip.x - chip.width / 2"
-              :y="chip.y - ALTERNATIVE_CHIP_PADDING_Y - ALTERNATIVE_CHIP_FONT_SIZE / 2"
-              :width="chip.width"
-              :height="ALTERNATIVE_CHIP_FONT_SIZE + ALTERNATIVE_CHIP_PADDING_Y * 2"
-              :rx="ALTERNATIVE_CHIP_RADIUS"
-              :fill="ALTERNATIVE_CHIP_COLOR"
-              :opacity="ALTERNATIVE_CHIP_OPACITY"
-            />
-            <!-- Chip text -->
-            <text
-              :x="chip.x"
-              :y="chip.y"
-              fill="white"
-              :font-size="ALTERNATIVE_CHIP_FONT_SIZE"
-              text-anchor="middle"
-              dominant-baseline="middle"
-              class="alternative-chip-text"
-            >
-              {{ chip.text }}
-            </text>
-          </g>
-        </template>
-
-        <!-- Placeholder text when no alternative dimensions -->
+        <!-- Alternative dimensions text (archive format: "• dim1  • dim2") or placeholder -->
+        <text
+          v-if="alternativeDimensionsChipsText"
+          :x="alternativeDimensionsPosition.centerX"
+          :y="alternativeDimensionsPosition.chipsY"
+          :fill="ALTERNATIVE_CHIP_COLOR"
+          :font-size="ALTERNATIVE_CHIP_FONT_SIZE"
+          font-weight="600"
+          :opacity="0.8"
+          text-anchor="middle"
+          dominant-baseline="middle"
+        >
+          {{ alternativeDimensionsChipsText }}
+        </text>
         <text
           v-else
           :x="alternativeDimensionsPosition.centerX"
           :y="alternativeDimensionsPosition.chipsY"
           :fill="ALTERNATIVE_CHIP_COLOR"
           :font-size="ALTERNATIVE_CHIP_FONT_SIZE"
-          :opacity="0.6"
+          :opacity="0.4"
+          font-style="italic"
           text-anchor="middle"
           dominant-baseline="middle"
-          class="alternative-placeholder"
         >
           {{
             hasChineseContent
               ? '[替代关系将在此显示]'
-              : '[Alternative relationships will be displayed here]'
+              : '[Alternatives will appear here]'
           }}
         </text>
       </g>
