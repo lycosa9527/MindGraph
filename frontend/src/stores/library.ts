@@ -33,26 +33,16 @@ import {
   updateDanmakuPosition,
 } from '@/utils/apiClient'
 
-// localStorage cache entry with TTL
-interface DocumentsCacheEntry {
-  documents: LibraryDocument[]
-  total: number
-  page: number
-  page_size: number
-  cachedAt: number
-}
-
+// localStorage cache entry with TTL (for individual documents only)
 interface DocumentCacheEntry {
   document: LibraryDocument
   cachedAt: number
 }
 
-// Cache TTL: 30 minutes for document list, 1 hour for individual documents
-const DOCUMENTS_LIST_CACHE_TTL_MS = 30 * 60 * 1000
+// Cache TTL: 1 hour for individual documents (list is not cached - avoids staleness after book registration)
 const DOCUMENT_CACHE_TTL_MS = 60 * 60 * 1000
 
-// localStorage keys
-const DOCUMENTS_LIST_CACHE_KEY_PREFIX = 'library_documents_list_'
+// localStorage key prefix for individual documents
 const DOCUMENT_CACHE_KEY_PREFIX = 'library_document_'
 
 export const useLibraryStore = defineStore('library', () => {
@@ -91,78 +81,10 @@ export const useLibraryStore = defineStore('library', () => {
   // =========================================================================
 
   /**
-   * Get cache key for documents list
-   */
-  function getDocumentsListCacheKey(page: number, pageSize: number, search?: string): string {
-    const searchPart = search ? `_search_${search}` : ''
-    return `${DOCUMENTS_LIST_CACHE_KEY_PREFIX}${page}_${pageSize}${searchPart}`
-  }
-
-  /**
    * Get cache key for individual document
    */
   function getDocumentCacheKey(documentId: number): string {
     return `${DOCUMENT_CACHE_KEY_PREFIX}${documentId}`
-  }
-
-  /**
-   * Load documents list from localStorage cache
-   */
-  function loadDocumentsListFromCache(
-    page: number,
-    pageSize: number,
-    search?: string
-  ): DocumentsCacheEntry | null {
-    try {
-      const key = getDocumentsListCacheKey(page, pageSize, search)
-      const stored = localStorage.getItem(key)
-      if (!stored) return null
-
-      const entry = JSON.parse(stored) as DocumentsCacheEntry
-
-      // Check TTL
-      if (Date.now() - entry.cachedAt > DOCUMENTS_LIST_CACHE_TTL_MS) {
-        localStorage.removeItem(key)
-        return null
-      }
-
-      console.debug(
-        `[LibraryStore] Loaded ${entry.documents.length} documents from localStorage cache (page ${page})`
-      )
-      return entry
-    } catch (error) {
-      console.debug('[LibraryStore] Failed to load documents list from localStorage:', error)
-      return null
-    }
-  }
-
-  /**
-   * Save documents list to localStorage cache
-   */
-  function saveDocumentsListToCache(
-    page: number,
-    pageSize: number,
-    search: string | undefined,
-    documents: LibraryDocument[],
-    total: number
-  ): void {
-    try {
-      const key = getDocumentsListCacheKey(page, pageSize, search)
-      const entry: DocumentsCacheEntry = {
-        documents,
-        total,
-        page,
-        page_size: pageSize,
-        cachedAt: Date.now(),
-      }
-      localStorage.setItem(key, JSON.stringify(entry))
-      console.debug(
-        `[LibraryStore] Saved ${documents.length} documents to localStorage cache (page ${page})`
-      )
-    } catch (error) {
-      console.debug('[LibraryStore] Failed to save documents list to localStorage:', error)
-      // localStorage might be full or disabled - continue without error
-    }
   }
 
   /**
@@ -215,13 +137,6 @@ export const useLibraryStore = defineStore('library', () => {
     try {
       const key = getDocumentCacheKey(documentId)
       localStorage.removeItem(key)
-      // Also clear from documents list cache (invalidate all list caches)
-      for (let i = 0; i < localStorage.length; i++) {
-        const cacheKey = localStorage.key(i)
-        if (cacheKey && cacheKey.startsWith(DOCUMENTS_LIST_CACHE_KEY_PREFIX)) {
-          localStorage.removeItem(cacheKey)
-        }
-      }
       console.debug(`[LibraryStore] Cleared cache for document ${documentId}`)
     } catch (error) {
       console.debug('[LibraryStore] Failed to clear document cache:', error)
@@ -236,16 +151,6 @@ export const useLibraryStore = defineStore('library', () => {
    * Fetch library documents list
    */
   async function fetchDocuments(page: number = 1, pageSize: number = 20, search?: string) {
-    // Check cache first
-    const cached = loadDocumentsListFromCache(page, pageSize, search)
-    if (cached) {
-      documents.value = cached.documents
-      documentsTotal.value = cached.total
-      documentsPage.value = cached.page
-      documentsPageSize.value = cached.page_size
-      return
-    }
-
     documentsLoading.value = true
     documentsError.value = null
     try {
@@ -254,9 +159,6 @@ export const useLibraryStore = defineStore('library', () => {
       documentsTotal.value = result.total
       documentsPage.value = result.page
       documentsPageSize.value = result.page_size
-
-      // Save to cache
-      saveDocumentsListToCache(page, pageSize, search, result.documents, result.total)
     } catch (error) {
       documentsError.value = error as Error
       console.error('[LibraryStore] Failed to fetch documents:', error)

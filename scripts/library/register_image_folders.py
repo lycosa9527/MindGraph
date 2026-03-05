@@ -227,7 +227,6 @@ def main() -> int:
             logger.info("Done. Registered: %d, Updated: %d%s",
                        registered, updated,
                        f" (repaired: {repaired})" if repaired else "")
-
             return 0
 
         finally:

@@ -78,7 +78,6 @@ watch(
   () => authStore.isAuthenticated,
   async (isAuthenticated) => {
     if (isAuthenticated) {
-      // Refresh documents after login
       try {
         await libraryStore.fetchDocuments(1, 20)
       } catch (error) {
@@ -135,7 +134,6 @@ function openLoginModal() {
 // Handle successful login
 function handleLoginSuccess() {
   showLoginModal.value = false
-  // Fetch documents after login
   if (authStore.isAuthenticated) {
     libraryStore.fetchDocuments(1, 20)
   }
