@@ -300,7 +300,7 @@ const templateParts = computed(() => {
     <!-- Controls -->
     <div class="flex items-center justify-between">
       <!-- Chart type selector -->
-      <div class="relative w-1/4">
+      <div class="relative w-1/4 min-w-[150px]">
         <select
           :value="selectedType"
           :disabled="!authStore.isAuthenticated"
