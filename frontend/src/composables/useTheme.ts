@@ -150,7 +150,7 @@ const DEFAULT_THEMES: Partial<Record<DiagramType, DiagramTheme>> = {
     background: '#f5f5f5',
     topicFill: '#1976d2', // Blue
     topicText: '#ffffff', // White
-    topicStroke: '#0d47a1', // Dark blue
+    topicStroke: '#000000', // Black
     topicStrokeWidth: 3,
     contextFill: '#e3f2fd', // Light blue
     contextText: '#333333', // Dark gray

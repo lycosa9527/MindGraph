@@ -175,7 +175,7 @@ watch(
 </script>
 
 <template>
-  <div class="ai-model-selector absolute left-1/2 bottom-4 transform -translate-x-1/2 z-20">
+  <div class="ai-model-selector z-20 max-w-full min-w-0">
     <div class="glass-container rounded-xl shadow-lg px-3 py-2 flex items-center gap-3">
       <!-- Label with icon -->
       <div class="flex flex-col gap-0.5">

@@ -1518,6 +1518,75 @@ export const useDiagramStore = defineStore('diagram', () => {
   }
 
   /**
+   * Add node(s) to a double bubble map group.
+   * Similarity: adds one node (connects both topics).
+   * Difference: adds a PAIR - one left-diff (topic A) and one right-diff (topic B).
+   */
+  function addDoubleBubbleMapNode(
+    group: 'similarity' | 'leftDiff' | 'rightDiff',
+    defaultText: string,
+    pairText?: string
+  ): boolean {
+    const spec = getDoubleBubbleSpecFromData()
+    if (!spec) return false
+
+    const similarities = (spec.similarities as string[]) || []
+    const leftDifferences = (spec.leftDifferences as string[]) || []
+    const rightDifferences = (spec.rightDifferences as string[]) || []
+
+    if (group === 'similarity') {
+      spec.similarities = [...similarities, defaultText]
+    } else {
+      spec.leftDifferences = [...leftDifferences, defaultText]
+      spec.rightDifferences = [...rightDifferences, pairText ?? defaultText]
+    }
+
+    return loadFromSpec(spec, 'double_bubble_map')
+  }
+
+  /**
+   * Remove similarity/difference nodes from double bubble map.
+   * Protects topic nodes. Rebuilds spec and reloads layout.
+   */
+  function removeDoubleBubbleMapNodes(nodeIds: string[]): number {
+    const spec = getDoubleBubbleSpecFromData()
+    if (!spec) return 0
+
+    const simIndices = new Set(
+      nodeIds
+        .filter((id) => /^similarity-\d+$/.test(id))
+        .map((id) => parseInt(id.replace('similarity-', ''), 10))
+    )
+    const leftDiffIndices = new Set(
+      nodeIds
+        .filter((id) => /^left-diff-\d+$/.test(id))
+        .map((id) => parseInt(id.replace('left-diff-', ''), 10))
+    )
+    const rightDiffIndices = new Set(
+      nodeIds
+        .filter((id) => /^right-diff-\d+$/.test(id))
+        .map((id) => parseInt(id.replace('right-diff-', ''), 10))
+    )
+
+    const similarities = ((spec.similarities as string[]) || []).filter(
+      (_, i) => !simIndices.has(i)
+    )
+    const leftDifferences = ((spec.leftDifferences as string[]) || []).filter(
+      (_, i) => !leftDiffIndices.has(i)
+    )
+    const rightDifferences = ((spec.rightDifferences as string[]) || []).filter(
+      (_, i) => !rightDiffIndices.has(i)
+    )
+
+    spec.similarities = similarities
+    spec.leftDifferences = leftDifferences
+    spec.rightDifferences = rightDifferences
+
+    loadFromSpec(spec, 'double_bubble_map')
+    return simIndices.size + leftDiffIndices.size + rightDiffIndices.size
+  }
+
+  /**
    * Get diagram spec for saving (library, export).
    * For bubble_map, recalculates positions so saved spec has correct layout.
    */
@@ -1854,6 +1923,8 @@ export const useDiagramStore = defineStore('diagram', () => {
     mergeGranularUpdate,
     getSpecForSave,
     getDoubleBubbleSpecFromData,
+    addDoubleBubbleMapNode,
+    removeDoubleBubbleMapNodes,
 
     // Flow map orientation
     toggleFlowMapOrientation,

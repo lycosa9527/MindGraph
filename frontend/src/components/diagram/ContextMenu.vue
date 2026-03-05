@@ -45,6 +45,16 @@ const { isZh } = useLanguage()
 const notify = useNotifications()
 const menuRef = ref<HTMLElement | null>(null)
 
+/** Resolve double bubble group from node id: similarity-*, left-diff-*, right-diff-* */
+function getDoubleBubbleGroupFromNodeId(
+  nodeId: string
+): 'similarity' | 'leftDiff' | 'rightDiff' | null {
+  if (/^similarity-\d+$/.test(nodeId)) return 'similarity'
+  if (/^left-diff-\d+$/.test(nodeId)) return 'leftDiff'
+  if (/^right-diff-\d+$/.test(nodeId)) return 'rightDiff'
+  return null
+}
+
 // Build menu items based on context
 const menuItems = computed<MenuItem[]>(() => {
   const items: MenuItem[] = []
@@ -75,6 +85,8 @@ const menuItems = computed<MenuItem[]>(() => {
         let deleted = false
         if (diagramType === 'mindmap' || diagramType === 'mind_map') {
           deleted = diagramStore.removeMindMapNodes([node.id]) > 0
+        } else if (diagramType === 'double_bubble_map') {
+          deleted = diagramStore.removeDoubleBubbleMapNodes([node.id]) > 0
         } else {
           deleted = diagramStore.removeNode(node.id)
         }
@@ -123,6 +135,36 @@ const menuItems = computed<MenuItem[]>(() => {
       }
 
       items.push({ divider: true })
+    }
+
+    // For double bubble map: add "Add to this group" when right-clicking similarity/diff node.
+    // Similarity: one node. Difference: adds a PAIR (left + right for both topics).
+    if (diagramStore.type === 'double_bubble_map') {
+      const group = getDoubleBubbleGroupFromNodeId(node.id)
+      if (group) {
+        const spec = diagramStore.getDoubleBubbleSpecFromData()
+        if (spec) {
+          const similarities = (spec.similarities as string[]) || []
+          const leftDifferences = (spec.leftDifferences as string[]) || []
+          const rightDifferences = (spec.rightDifferences as string[]) || []
+          const newSimText = isZh.value ? `相似点 ${similarities.length + 1}` : `Similarity ${similarities.length + 1}`
+          const pairIndex = Math.max(leftDifferences.length, rightDifferences.length) + 1
+          const newLeftText = isZh.value ? `不同点A${pairIndex}` : `Difference A${pairIndex}`
+          const newRightText = isZh.value ? `不同点B${pairIndex}` : `Difference B${pairIndex}`
+          const text = group === 'similarity' ? newSimText : newLeftText
+          const pairText = group === 'similarity' ? undefined : newRightText
+          items.push({
+            label: isZh.value ? '在此组添加节点' : 'Add to this group',
+            action: () => {
+              if (diagramStore.addDoubleBubbleMapNode(group, text, pairText)) {
+                diagramStore.pushHistory(isZh.value ? '添加节点' : 'Add node')
+              }
+              emit('close')
+            },
+          })
+        }
+        items.push({ divider: true })
+      }
     }
 
     if (diagramStore.type === 'mindmap' || diagramStore.type === 'mind_map') {
@@ -341,6 +383,42 @@ const menuItems = computed<MenuItem[]>(() => {
           diagramStore.pushHistory(isZh.value ? '添加类比对' : 'Add Analogy Pair')
           emit('close')
         },
+      })
+    } else if (diagramType === 'double_bubble_map') {
+      const selectedId = diagramStore.selectedNodes[0]
+      const group = getDoubleBubbleGroupFromNodeId(selectedId)
+      items.push({
+        label: isZh.value ? '添加节点' : 'Add node',
+        action: () => {
+          if (!group) {
+            notify.warning(
+              isZh.value
+                ? '请先选择相似点或不同点节点'
+                : 'Please select a similarity or difference node first'
+            )
+            emit('close')
+            return
+          }
+          const spec = diagramStore.getDoubleBubbleSpecFromData()
+          if (!spec) {
+            emit('close')
+            return
+          }
+          const similarities = (spec.similarities as string[]) || []
+          const leftDifferences = (spec.leftDifferences as string[]) || []
+          const rightDifferences = (spec.rightDifferences as string[]) || []
+          const newSimText = isZh.value ? `相似点 ${similarities.length + 1}` : `Similarity ${similarities.length + 1}`
+          const pairIndex = Math.max(leftDifferences.length, rightDifferences.length) + 1
+          const newLeftText = isZh.value ? `不同点A${pairIndex}` : `Difference A${pairIndex}`
+          const newRightText = isZh.value ? `不同点B${pairIndex}` : `Difference B${pairIndex}`
+          const text = group === 'similarity' ? newSimText : newLeftText
+          const pairText = group === 'similarity' ? undefined : newRightText
+          if (diagramStore.addDoubleBubbleMapNode(group, text, pairText)) {
+            diagramStore.pushHistory(isZh.value ? '添加节点' : 'Add node')
+          }
+          emit('close')
+        },
+        disabled: !group,
       })
     } else {
       items.push({

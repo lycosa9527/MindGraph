@@ -433,7 +433,7 @@ function handleOpenMindmate() {
           size="small"
           :icon="Download"
         >
-          {{ isZh ? '导出' : 'Export' }}
+          {{ isZh ? '图示导出' : 'Export' }}
         </ElButton>
         <template #dropdown>
           <ElDropdownMenu>

@@ -1024,3 +1024,17 @@
 .mindmate-panel.welcome-mode .input-area-fullpage {
   padding-top: 0;
 }
+
+/* Panel mode (canvas MindMate) - input pinned to bottom of modal */
+.mindmate-panel.panel-mode .mindmate-input-section {
+  margin-top: auto;
+  flex-shrink: 0;
+}
+
+.mindmate-panel.panel-mode .input-area-fullpage {
+  padding: 12px 16px 16px;
+}
+
+.mindmate-panel.panel-mode .suggestions-above-input-panel {
+  padding: 8px 16px;
+}

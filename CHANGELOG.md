@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.29.1] - 2026-03-05
+
+### Added
+- **Double Bubble Map Add/Delete**: Add and delete nodes for double bubble maps. Add node: select a similarity or difference node first, then add (similarity adds one node; difference adds a pair). Delete: select similarity/difference nodes (topic nodes protected). Context menu "在此组添加节点" / "Add to this group" on right-click; CanvasToolbar add/delete with validation.
+- **Diagram Store Double Bubble**: `addDoubleBubbleMapNode()` and `removeDoubleBubbleMapNodes()` for programmatic add/delete with spec rebuild.
+
+### Changed
+- **Canvas Bottom Controls Layout**: AI model selector and zoom controls in adaptive flex layout—AI selector centered, zoom on right; responsive for mobile/desktop.
+- **AIModelSelector, ZoomControls**: Removed absolute positioning; now positioned by parent `canvas-bottom-controls` container.
+- **CanvasTopBar**: Export button label "导出" → "图示导出".
+- **Mindmate Panel Mode**: Input area pinned to bottom in panel mode via `mindmate-input-section` wrapper and `panel-mode` CSS.
+- **Circle Map Theme**: Topic stroke color changed from dark blue (#0d47a1) to black (#000000) for better contrast.
+
 ## [5.29.0] - 2026-03-05
 
 ### Added

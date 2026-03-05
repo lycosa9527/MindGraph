@@ -301,6 +301,7 @@ function isLastAssistantMessage(messageId: string): boolean {
     class="mindmate-panel bg-white dark:bg-gray-800 flex flex-col h-full overflow-hidden"
     :class="{
       'border-l border-gray-200 dark:border-gray-700 shadow-lg': !isFullpageMode,
+      'panel-mode': !isFullpageMode,
       'welcome-mode': showWelcome,
     }"
   >
@@ -355,8 +356,9 @@ function isLastAssistantMessage(messageId: string): boolean {
       @message-hover="hoveredMessageId = $event"
     />
 
-    <!-- Input Area -->
-    <MindmateInput
+    <!-- Input Area - wrapper pins to bottom in panel mode -->
+    <div class="mindmate-input-section">
+      <MindmateInput
       v-model:input-text="inputText"
       :mode="mode"
       :is-loading="isLoading"
@@ -371,6 +373,7 @@ function isLastAssistantMessage(messageId: string): boolean {
       @remove-file="mindMate.removeFile"
       @suggestion-select="handleSuggestionSelect"
     />
+    </div>
 
     <!-- Share Export Modal -->
     <ShareExportModal

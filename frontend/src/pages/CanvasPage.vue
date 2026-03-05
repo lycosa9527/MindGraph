@@ -692,7 +692,7 @@ onUnmounted(() => {
 <template>
   <div
     ref="canvasPageRef"
-    class="canvas-page flex flex-col h-screen bg-gray-50"
+    class="canvas-page flex flex-col h-screen bg-gray-50 relative"
   >
     <!-- Top navigation bar (hidden in presentation mode) -->
     <CanvasTopBar v-if="!isPresentationMode" />
@@ -738,20 +738,26 @@ onUnmounted(() => {
       </Transition>
     </div>
 
-    <!-- Zoom controls -->
-    <ZoomControls
-      :zoom="canvasZoom"
-      :is-presentation-mode="isPresentationMode"
-      @zoom-change="handleZoomChange"
-      @zoom-in="handleZoomIn"
-      @zoom-out="handleZoomOut"
-      @fit-to-screen="handleFitToScreen"
-      @hand-tool-toggle="handleHandToolToggle"
-      @start-presentation="handleStartPresentation"
-    />
-
-    <!-- AI model selector -->
-    <AIModelSelector @model-change="handleModelChange" />
+    <!-- Bottom controls: AI selector (center) + Zoom/pan (right) - adaptive layout -->
+    <div
+      class="canvas-bottom-controls absolute bottom-4 left-0 right-0 z-20 px-4 flex flex-col md:flex-row md:items-end md:justify-between gap-3 md:gap-4"
+    >
+      <div class="flex justify-center md:flex-1 md:justify-center order-2 md:order-1 min-w-0">
+        <AIModelSelector @model-change="handleModelChange" />
+      </div>
+      <div class="flex justify-center md:justify-end order-1 md:order-2 shrink-0">
+        <ZoomControls
+          :zoom="canvasZoom"
+          :is-presentation-mode="isPresentationMode"
+          @zoom-change="handleZoomChange"
+          @zoom-in="handleZoomIn"
+          @zoom-out="handleZoomOut"
+          @fit-to-screen="handleFitToScreen"
+          @hand-tool-toggle="handleHandToolToggle"
+          @start-presentation="handleStartPresentation"
+        />
+      </div>
+    </div>
   </div>
 </template>
 

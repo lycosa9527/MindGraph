@@ -496,8 +496,54 @@ function handleAddNode() {
     return
   }
 
+  // For double bubble map: user must select a similarity/difference node, then add to that group.
+  // Similarity: adds one node (connects both topics). Difference: adds a PAIR (left + right).
+  if (diagramType === 'double_bubble_map') {
+    const selectedId = diagramStore.selectedNodes[0]
+    const group = getDoubleBubbleGroupFromNodeId(selectedId)
+    if (!group) {
+      notify.warning(
+        isZh.value
+          ? '请先选择相似点或不同点节点'
+          : 'Please select a similarity or difference node first'
+      )
+      return
+    }
+    const spec = diagramStore.getDoubleBubbleSpecFromData()
+    if (!spec) return
+    const similarities = (spec.similarities as string[]) || []
+    const leftDifferences = (spec.leftDifferences as string[]) || []
+    const rightDifferences = (spec.rightDifferences as string[]) || []
+    const newSimText = isZh.value ? `相似点 ${similarities.length + 1}` : `Similarity ${similarities.length + 1}`
+    const pairIndex = Math.max(leftDifferences.length, rightDifferences.length) + 1
+    const newLeftText = isZh.value ? `不同点A${pairIndex}` : `Difference A${pairIndex}`
+    const newRightText = isZh.value ? `不同点B${pairIndex}` : `Difference B${pairIndex}`
+    const text = group === 'similarity' ? newSimText : newLeftText
+    const pairText = group === 'similarity' ? undefined : newRightText
+    if (diagramStore.addDoubleBubbleMapNode(group, text, pairText)) {
+      diagramStore.pushHistory(isZh.value ? '添加节点' : 'Add node')
+      notify.success(
+        group === 'similarity'
+          ? isZh.value ? '已添加节点' : 'Node added'
+          : isZh.value ? '已添加一对不同点' : 'Difference pair added'
+      )
+    }
+    return
+  }
+
   // For other diagram types, show under development message
   notify.info('增加节点功能开发中')
+}
+
+/** Resolve double bubble group from node id: similarity-*, left-diff-*, right-diff-* */
+function getDoubleBubbleGroupFromNodeId(
+  nodeId: string | undefined
+): 'similarity' | 'leftDiff' | 'rightDiff' | null {
+  if (!nodeId) return null
+  if (/^similarity-\d+$/.test(nodeId)) return 'similarity'
+  if (/^left-diff-\d+$/.test(nodeId)) return 'leftDiff'
+  if (/^right-diff-\d+$/.test(nodeId)) return 'rightDiff'
+  return null
 }
 
 function handleAddBranch() {
@@ -789,6 +835,35 @@ async function handleDeleteNode() {
       notify.success(`已删除 ${deletedCount} 个节点`)
     } else {
       notify.warning(isZh.value ? '无法删除主题节点' : 'Cannot delete topic node')
+    }
+    return
+  }
+
+  // For double bubble map: delete selected similarity/difference nodes (protect topics)
+  if (diagramType === 'double_bubble_map') {
+    const selectedNodes = [...diagramStore.selectedNodes]
+    const toDelete = selectedNodes.filter(
+      (id) =>
+        /^similarity-\d+$/.test(id) ||
+        /^left-diff-\d+$/.test(id) ||
+        /^right-diff-\d+$/.test(id)
+    )
+    if (toDelete.length === 0) {
+      notify.warning(
+        isZh.value
+          ? '请选择相似点或不同点节点（主题节点不可删除）'
+          : 'Please select similarity or difference nodes (topic nodes cannot be deleted)'
+      )
+      return
+    }
+
+    const deletedCount = diagramStore.removeDoubleBubbleMapNodes(toDelete)
+    if (deletedCount > 0) {
+      diagramStore.clearSelection()
+      diagramStore.pushHistory(isZh.value ? '删除节点' : 'Delete nodes')
+      notify.success(
+        isZh.value ? `已删除 ${deletedCount} 个节点` : `Deleted ${deletedCount} node(s)`
+      )
     }
     return
   }

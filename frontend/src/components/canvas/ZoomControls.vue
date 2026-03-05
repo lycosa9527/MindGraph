@@ -110,7 +110,7 @@ defineExpose({
 </script>
 
 <template>
-  <div class="zoom-controls absolute right-4 bottom-4 z-20">
+  <div class="zoom-controls z-20">
     <div
       class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-1.5 flex items-center gap-0.5"
     >
