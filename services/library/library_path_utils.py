@@ -126,4 +126,34 @@ def resolve_library_path(stored_path: str, storage_dir: Path, project_root: Opti
     except Exception:
         pass
 
+    # Strategy 5: Extract folder name and try storage_dir + folder_name
+    # Handles paths from DB import (e.g. different server paths)
+    folder_name = extract_folder_name_from_pages_dir_path(stored_path)
+    if folder_name:
+        try:
+            resolved = storage_dir / folder_name
+            if resolved.exists() and resolved.is_dir():
+                return resolved.resolve()
+        except Exception:
+            pass
+
     return None
+
+
+def extract_folder_name_from_pages_dir_path(pages_dir_path: str) -> str:
+    """
+    Extract the folder name (last path component) from a pages_dir_path.
+
+    E.g. "storage/library/MyBook" -> "MyBook"
+
+    Args:
+        pages_dir_path: Stored path like "storage/library/folder_name"
+
+    Returns:
+        Folder name (last component) or empty string
+    """
+    if not pages_dir_path:
+        return ""
+    normalized = pages_dir_path.replace("\\", "/").rstrip("/")
+    parts = normalized.split("/")
+    return parts[-1] if parts else ""
