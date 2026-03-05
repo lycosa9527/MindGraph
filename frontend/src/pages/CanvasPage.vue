@@ -740,12 +740,17 @@ onUnmounted(() => {
 
     <!-- Bottom controls: AI selector (center) + Zoom/pan (right) - adaptive layout -->
     <div
-      class="canvas-bottom-controls absolute bottom-4 left-0 right-0 z-20 px-4 flex flex-col md:flex-row md:items-end md:justify-between gap-3 md:gap-4"
+      class="canvas-bottom-controls absolute bottom-4 left-0 right-0 z-20 px-4 flex flex-col md:flex-row md:items-end gap-3 md:gap-4"
     >
-      <div class="flex justify-center md:flex-1 md:justify-center order-2 md:order-1 min-w-0">
+      <div class="ai-selector-spacer hidden md:block md:flex-1" aria-hidden="true" />
+      <div
+        class="ai-selector-wrap flex flex-1 justify-center order-2 md:order-1 min-w-0 md:flex-none md:justify-center"
+      >
         <AIModelSelector @model-change="handleModelChange" />
       </div>
-      <div class="flex justify-center md:justify-end order-1 md:order-2 shrink-0">
+      <div
+        class="zoom-controls-wrap flex flex-1 justify-center md:justify-end order-1 md:order-2 shrink-0"
+      >
         <ZoomControls
           :zoom="canvasZoom"
           :is-presentation-mode="isPresentationMode"
@@ -776,5 +781,15 @@ onUnmounted(() => {
 .mindmate-slide-enter-to,
 .mindmate-slide-leave-from {
   transform: translateX(0);
+}
+
+/* Short viewport: move AI selector left to reserve space for zoom/pan controls */
+@media (max-height: 560px) {
+  .ai-selector-spacer {
+    display: none;
+  }
+  .ai-selector-wrap {
+    justify-content: flex-start;
+  }
 }
 </style>
