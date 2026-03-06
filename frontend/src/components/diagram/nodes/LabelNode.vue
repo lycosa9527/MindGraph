@@ -208,15 +208,18 @@ watch(
 )
 
 // Also listen to text_updated event in case text is updated externally
-eventBus.on('node:text_updated', (payload: { nodeId: string; text: string }) => {
-  if (isBridgeDimension.value && payload.nodeId === props.id) {
-    nextTick(() => {
-      setTimeout(() => {
-        recalculatePosition()
-      }, 150)
-    })
+const unsubTextUpdated = eventBus.on(
+  'node:text_updated',
+  (payload: { nodeId: string; text: string }) => {
+    if (isBridgeDimension.value && payload.nodeId === props.id) {
+      nextTick(() => {
+        setTimeout(() => {
+          recalculatePosition()
+        }, 150)
+      })
+    }
   }
-})
+)
 
 // Watch for node position changes (in case nodes move)
 watch(
@@ -255,6 +258,7 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  unsubTextUpdated()
   if (resizeObserver && labelRef.value) {
     resizeObserver.unobserve(labelRef.value)
     resizeObserver.disconnect()

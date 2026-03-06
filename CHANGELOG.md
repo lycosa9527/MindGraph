@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.31.0] - 2026-03-07
+
+### Added
+- **Node Palette Prompts**: New `prompts/node_palette.py` with centralized prompt templates for node palette incremental generation. Content requirements aligned with thinking_maps.py for consistent generation across auto-complete and node palette flows.
+- **useNodePalette Composable**: New composable for Node Palette (瀑布流) AI-suggested nodes—SSE streaming, session management, multi-select and assembly to diagram. Migrated from archive node-palette-manager.js.
+- **llmModelColors Config**: New `llmModelColors.ts` with shared color palette for Qwen, DeepSeek, Doubao. Used by AIModelSelector and NodePalettePanel for consistent visual identity.
+- **utils/placeholder**: New `utils/placeholder.py` for placeholder text detection in Node Palette and diagram generation. Aligned with frontend useAutoComplete.ts patterns.
+
+### Changed
+- **Node Palette Agents**: Refactored all palette generators (base, brace_map, bridge_map, bubble_map, circle_map, double_bubble, flow_map, mindmap, multi_flow, tree_map) to use centralized prompts from prompts/node_palette.py. Reduced duplication and improved maintainability.
+- **NodePalettePanel**: Major refactor with useNodePalette integration, LLM model colors, and improved layout.
+- **Diagram Store**: Added node palette assembly methods and state handling.
+- **Canvas Bottom Controls**: Removed background from AI selector and zoom/pan controls. AIModelSelector glass-container and ZoomControls wrapper now use transparent backgrounds for a cleaner overlay on the canvas.
+- **Routers node_palette**: Simplified to use prompts module; improved PEP8 compliance.
+- **uiConfig, usePanelCoordination, panels store, types/panels**: Minor updates for node palette coordination.
+- **CanvasPage, DiagramCanvas, LabelNode, ImageViewer, CanvasToolbar, CanvasTopBar, vite.config**: Updates and improvements.
+
 ## [5.30.0] - 2026-03-06
 
 ### Added

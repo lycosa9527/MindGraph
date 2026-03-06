@@ -1,24 +1,17 @@
 """
-bubble map palette module.
-"""
-from typing import Optional, Dict, Any
-
-from agents.node_palette.base_palette_generator import BasePaletteGenerator
-
-"""
-Bubble Map Palette Generator
-==============================
+Bubble Map Palette Generator.
 
 Bubble Map specific node palette generator.
-
 Generates attribute/adjective nodes for Bubble Maps using centralized prompt system.
 
 Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved
 Proprietary License
 """
+from functools import lru_cache
+from typing import Optional, Dict, Any
 
-
+from agents.node_palette.base_palette_generator import BasePaletteGenerator
 
 
 class BubbleMapPaletteGenerator(BasePaletteGenerator):
@@ -48,10 +41,14 @@ class BubbleMapPaletteGenerator(BasePaletteGenerator):
             Formatted prompt for Bubble Map attribute node generation
         """
         # Detect language from content (Chinese topic = Chinese prompt)
-        language = self._detect_language  # pylint: disable=protected-access(center_topic, educational_context)
+        language = self._detect_language(center_topic, educational_context)
 
         # Use same context extraction as auto-complete
-        context_desc = educational_context.get('raw_message', 'General K12 teaching') if educational_context else 'General K12 teaching'
+        context_desc = (
+            educational_context.get('raw_message', 'General K12 teaching')
+            if educational_context
+            else 'General K12 teaching'
+        )
 
         # Build prompt based on language
         if language == 'zh':
@@ -94,17 +91,16 @@ Generate {count} attributes:"""
             if language == 'zh':
                 prompt += f"\n\n注意：这是第{batch_num}批。确保最大程度的多样性，从新的维度和角度描述，避免与之前批次重复。"
             else:
-                prompt += f"\n\nNote: This is batch {batch_num}. Ensure MAXIMUM diversity from new dimensions and angles, avoid any repetition from previous batches."
+                prompt += (
+                    f"\n\nNote: This is batch {batch_num}. Ensure MAXIMUM diversity "
+                    "from new dimensions and angles, avoid any repetition from "
+                    "previous batches."
+                )
 
         return prompt
 
-# Global singleton  # pylint: disable=global-statement instance for Bubble Map
-_bubble_map_palette_generator = None
 
+@lru_cache(maxsize=1)
 def get_bubble_map_palette_generator() -> BubbleMapPaletteGenerator:
-    """Get singleton instance of Bubble Map palette generator"""
-    global _bubble_map_palette_generator  # pylint: disable=global-statement
-    if _bubble_map_palette_generator is None:
-        _bubble_map_palette_generator = BubbleMapPaletteGenerator()
-    return _bubble_map_palette_generator
-
+    """Get singleton instance of Bubble Map palette generator."""
+    return BubbleMapPaletteGenerator()

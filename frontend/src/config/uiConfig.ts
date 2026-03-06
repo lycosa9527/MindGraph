@@ -21,8 +21,14 @@ export const PANEL = {
   PROPERTY_WIDTH: 320,
   /** MindMate panel width: w-96 = 24rem = 384px */
   MINDMATE_WIDTH: 384,
-  /** Node palette panel width: w-72 = 18rem = 288px */
+  /** Node palette panel width: 50% of viewport when open (split layout with diagram) */
   NODE_PALETTE_WIDTH: 288,
+  /** Node palette takes half the canvas area when open */
+  NODE_PALETTE_HALF_WIDTH_PERCENT: 50,
+  /** Node palette min width (px) */
+  NODE_PALETTE_MIN_WIDTH: 320,
+  /** Node palette max width (px) */
+  NODE_PALETTE_MAX_WIDTH: 560,
 } as const
 
 // ============================================================================
@@ -80,27 +86,42 @@ export const FIT_PADDING = {
   STANDARD: 0.15,
   /** Standard edge padding in pixels */
   STANDARD_PX: 40,
-  /** Top padding in pixels - clears CanvasTopBar (48px) + CanvasToolbar (top-60px, height 48px) */
-  TOP_UI_HEIGHT_PX: 108,
-  /** Bottom padding in pixels - ZoomControls + AIModelSelector (bottom-4 + bar ~56px + margin) */
-  BOTTOM_UI_HEIGHT_PX: 100,
+  /** Top padding in pixels - clears CanvasTopBar (48px) + CanvasToolbar (top-60px, ~52px) + buffer */
+  TOP_UI_HEIGHT_PX: 124,
+  /** Bottom padding in pixels - ZoomControls + AIModelSelector (bottom-4 + compact bar ~48px + margin) */
+  BOTTOM_UI_HEIGHT_PX: 88,
   /** Extra bottom ratio for fitWithPanel (adds ~13% to base) */
   BOTTOM_UI_EXTRA: 0.13,
   /**
    * Standard padding with extra top/bottom for overlay UI.
    * Vue Flow object format: { top, right, bottom, left } - supports "40px" or ratio
-   * top: must match TOP_UI_HEIGHT_PX (clears CanvasTopBar + CanvasToolbar)
+   * top: clears CanvasTopBar + CanvasToolbar; bottom: clears AI selector + Zoom controls
    */
   STANDARD_WITH_BOTTOM_UI: {
-    top: '108px',
+    top: '124px',
     right: '40px',
-    bottom: '100px',
+    bottom: '88px',
     left: '40px',
   } as const,
   /** Export padding for tight fit (5%) */
   EXPORT: 0.05,
   /** Minimal padding (2%) */
   MINIMAL: 0.02,
+} as const
+
+/**
+ * Panel inset - space reserved for floating overlays (top bar, toolbar, bottom controls).
+ * Used for Node Palette and MindMate panel size/position to avoid overlap.
+ */
+export const PANEL_INSET = {
+  /** Top inset (px) - clears CanvasTopBar + CanvasToolbar */
+  TOP: 124,
+  /** Bottom inset (px) - clears AI selector + Zoom controls */
+  BOTTOM: 88,
+  /** Total vertical inset for max-height calc */
+  get VERTICAL_TOTAL() {
+    return this.TOP + this.BOTTOM
+  },
 } as const
 
 // ============================================================================

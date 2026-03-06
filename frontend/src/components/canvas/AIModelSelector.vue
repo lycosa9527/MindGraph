@@ -17,6 +17,7 @@ import { ElTooltip } from 'element-plus'
 
 import { Loader2, Sparkles, X } from 'lucide-vue-next'
 
+import { LLM_MODEL_COLORS } from '@/config/llmModelColors'
 import { useAutoComplete, useLanguage } from '@/composables'
 import { useDiagramStore, useLLMResultsStore } from '@/stores'
 
@@ -95,24 +96,8 @@ function getTooltipContent(modelKey: string): string {
   }
 }
 
-// Model-specific colors
-const modelColors: Record<string, { bg: string; border: string; text: string }> = {
-  qwen: {
-    bg: 'rgba(99, 102, 241, 0.15)', // Indigo
-    border: 'rgba(99, 102, 241, 0.4)',
-    text: '#6366f1',
-  },
-  deepseek: {
-    bg: 'rgba(16, 185, 129, 0.15)', // Green
-    border: 'rgba(16, 185, 129, 0.4)',
-    text: '#10b981',
-  },
-  doubao: {
-    bg: 'rgba(249, 115, 22, 0.15)', // Orange
-    border: 'rgba(249, 115, 22, 0.4)',
-    text: '#f97316',
-  },
-}
+// Model-specific colors (shared with NodePalettePanel)
+const modelColors = LLM_MODEL_COLORS
 
 // Button class based on state
 function getButtonClass(modelKey: string): string {
@@ -176,25 +161,15 @@ watch(
 
 <template>
   <div class="ai-model-selector z-20 max-w-full min-w-0">
-    <div class="glass-container rounded-xl shadow-lg px-3 py-2 flex items-center gap-3">
+    <div class="glass-container px-2 py-1 flex items-center gap-2">
       <!-- Label with icon -->
-      <div class="flex flex-col gap-0.5">
-        <div class="flex items-center gap-1.5 text-sm font-medium text-gray-600 dark:text-gray-300">
-          <Sparkles class="w-4 h-4 text-purple-500" />
-          <span>{{ isZh ? 'AI模型' : 'AI Model' }}</span>
-        </div>
-        <span
-          v-if="isConceptMap && !llmResultsStore.selectedModel"
-          class="text-xs text-gray-500 dark:text-gray-400"
-        >
-          {{
-            isZh ? '选择模型以启用关系建议' : 'Select a model to enable relationship suggestions'
-          }}
-        </span>
+      <div class="flex items-center gap-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 shrink-0">
+        <Sparkles class="w-3.5 h-3.5 text-purple-500" />
+        <span>{{ isZh ? 'AI模型' : 'AI Model' }}</span>
       </div>
 
       <!-- Model buttons -->
-      <div class="flex gap-1.5">
+      <div class="flex gap-1">
         <ElTooltip
           v-for="modelKey in llmResultsStore.models"
           :key="modelKey"
@@ -228,7 +203,7 @@ watch(
       <!-- Ready count indicator -->
       <div
         v-if="llmResultsStore.isGenerating || llmResultsStore.hasAnyResults"
-        class="text-xs text-gray-500 dark:text-gray-400 ml-1"
+        class="text-[10px] text-gray-500 dark:text-gray-400"
       >
         <span v-if="llmResultsStore.isGenerating"> {{ llmResultsStore.successCount }}/3 </span>
         <span
@@ -245,33 +220,28 @@ watch(
 </template>
 
 <style scoped>
-/* Glassmorphism container */
+/* Transparent container - no background */
 .glass-container {
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  background: transparent;
 }
 
 .dark .glass-container {
-  background: rgba(31, 41, 55, 0.7);
-  border-color: rgba(255, 255, 255, 0.1);
+  background: transparent;
 }
 
 .model-btn {
   display: flex;
   align-items: center;
-  gap: 4px;
-  padding: 6px 12px;
+  gap: 3px;
+  padding: 4px 10px;
   border: 1px solid rgba(229, 231, 235, 0.5);
-  border-radius: 8px;
+  border-radius: 6px;
   background: rgba(255, 255, 255, 0.6);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   cursor: pointer;
   transition: all 0.2s ease;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 500;
   color: #4b5563;
   white-space: nowrap;
@@ -283,8 +253,8 @@ watch(
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 14px;
-  min-height: 14px;
+  min-width: 12px;
+  min-height: 12px;
 }
 
 .model-btn .btn-icon:empty {

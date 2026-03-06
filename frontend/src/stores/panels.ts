@@ -37,6 +37,8 @@ export const usePanelsStore = defineStore('panels', () => {
     suggestions: [],
     selected: [],
     mode: null,
+    stage: null,
+    stage_data: null,
   })
 
   const property = ref<PropertyPanelState>({
@@ -160,10 +162,30 @@ export const usePanelsStore = defineStore('panels', () => {
     nodePalette.value.suggestions = suggestions
   }
 
-  function toggleNodePaletteSelection(nodeId: string): void {
+  /**
+   * Clear node palette session state (suggestions, selected, mode).
+   * Called when diagram changes or user leaves session to avoid stale data.
+   */
+  function clearNodePaletteState(): void {
+    nodePalette.value = {
+      ...nodePalette.value,
+      suggestions: [],
+      selected: [],
+      mode: null,
+      stage: null,
+      stage_data: null,
+    }
+  }
+
+  function toggleNodePaletteSelection(
+    nodeId: string,
+    singleSelect?: boolean
+  ): void {
     const index = nodePalette.value.selected.indexOf(nodeId)
     if (index > -1) {
       nodePalette.value.selected.splice(index, 1)
+    } else if (singleSelect) {
+      nodePalette.value.selected = [nodeId]
     } else {
       nodePalette.value.selected.push(nodeId)
     }
@@ -253,6 +275,8 @@ export const usePanelsStore = defineStore('panels', () => {
       suggestions: [],
       selected: [],
       mode: null,
+      stage: null,
+      stage_data: null,
     }
     property.value = {
       open: false,
@@ -292,6 +316,7 @@ export const usePanelsStore = defineStore('panels', () => {
     toggleNodePalettePanel,
     updateNodePalette,
     setNodePaletteSuggestions,
+    clearNodePaletteState,
     toggleNodePaletteSelection,
     openProperty,
     closeProperty,

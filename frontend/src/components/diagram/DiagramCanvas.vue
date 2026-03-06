@@ -498,12 +498,11 @@ function getRightPanelWidth(): number {
 }
 
 /**
- * Get the width of currently open left-side panels
+ * Get the width of currently open left-side panels.
+ * Returns 0 for Node Palette: it uses split layout (50% each), so the diagram
+ * container is already sized to the visible area.
  */
 function getLeftPanelWidth(): number {
-  if (panelsStore.nodePalettePanel.isOpen) {
-    return PANEL.NODE_PALETTE_WIDTH
-  }
   return 0
 }
 

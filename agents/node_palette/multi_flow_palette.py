@@ -1,25 +1,13 @@
-"""
-multi flow palette module.
+"""Multi Flow Map Palette Generator.
+
+Generates nodes for Multi Flow Map with TWO modes:
+1. Causes: individual cause nodes
+2. Effects: individual effect nodes
 """
 from typing import Optional, Dict, Any, AsyncGenerator
 import logging
 
 from agents.node_palette.base_palette_generator import BasePaletteGenerator
-
-"""
-Multi Flow Map Palette Generator
-=================================
-
-Generates nodes for Multi Flow Map with TWO modes:
-1. Causes: individual cause nodes
-2. Effects: individual effect nodes
-
-Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
-All Rights Reserved
-Proprietary License
-"""
-
-
 
 logger = logging.getLogger(__name__)
 
@@ -43,10 +31,12 @@ class MultiFlowPaletteGenerator(BasePaletteGenerator):
     async def generate_batch(
         self,
         session_id: str,
-        center_topic: str,  # Central event
+        center_topic: str,
         educational_context: Optional[Dict[str, Any]] = None,
         nodes_per_llm: int = 15,
-        mode: str = 'causes',  # NEW: 'causes' or 'effects'
+        _mode: Optional[str] = None,  # For tab-enabled diagrams (multi_flow_map)
+        _stage: Optional[str] = None,
+        _stage_data: Optional[Dict[str, Any]] = None,
         # Token tracking parameters
         user_id: Optional[int] = None,
         organization_id: Optional[int] = None,
@@ -57,24 +47,24 @@ class MultiFlowPaletteGenerator(BasePaletteGenerator):
         Generate batch with mode support.
 
         Args:
-            mode: 'causes' for cause nodes, 'effects' for effect nodes
+            _mode: 'causes' for cause nodes, 'effects' for effect nodes
         """
-        # Store mode for this session
+        mode = _mode or 'causes'
         self.current_mode[session_id] = mode
 
-        # Pass mode through educational_context to avoid race conditions
-        # (Don't use instance variable - it's shared between parallel catapults!)
         if educational_context is None:
             educational_context = {}
-        educational_context = dict(educational_context)  # Make a copy
-        educational_context['_mode'] = mode  # Embed mode in context
+        educational_context = dict(educational_context)
+        educational_context['_mode'] = mode
 
-        # Call parent's generate_batch (handles LLM streaming)
         async for chunk in super().generate_batch(
             session_id=session_id,
             center_topic=center_topic,
             educational_context=educational_context,
             nodes_per_llm=nodes_per_llm,
+            _mode=mode,
+            _stage=_stage,
+            _stage_data=_stage_data,
             user_id=user_id,
             organization_id=organization_id,
             diagram_type=diagram_type,
@@ -104,10 +94,13 @@ class MultiFlowPaletteGenerator(BasePaletteGenerator):
             center_topic: Central event/topic
         """
         # Detect language from content (Chinese topic = Chinese prompt)
-        language = self._detect_language  # pylint: disable=protected-access(center_topic, educational_context)
+        language = self._detect_language(center_topic, educational_context)
 
         # Get educational context
-        context_desc = educational_context.get('raw_message', 'General K12 teaching') if educational_context else 'General K12 teaching'
+        context_desc = (
+            educational_context.get('raw_message', 'General K12 teaching')
+            if educational_context else 'General K12 teaching'
+        )
 
         # Extract mode from educational_context (thread-safe, no race conditions!)
         mode = educational_context.get('_mode', 'causes') if educational_context else 'causes'
@@ -118,10 +111,9 @@ class MultiFlowPaletteGenerator(BasePaletteGenerator):
             return self._build_causes_prompt(
                 center_topic, context_desc, count, batch_num, language
             )
-        else:  # effects
-            return self._build_effects_prompt(
-                center_topic, context_desc, count, batch_num, language
-            )
+        return self._build_effects_prompt(
+            center_topic, context_desc, count, batch_num, language
+        )
 
     def _build_causes_prompt(
         self,
@@ -159,7 +151,9 @@ Thinking approach: Identify factors that CAUSED this event to happen.
 3. Use noun phrases to describe various factors that led to the event
 4. Causes can be direct or indirect
 
-Requirements: Each cause should be concise and clear. More than 4 words is allowed, but avoid long sentences. Use short phrases, not full sentences. Output only the cause text, one per line, no numbering.
+Requirements: Each cause should be concise and clear. More than 4 words is allowed,
+but avoid long sentences. Use short phrases, not full sentences.
+Output only the cause text, one per line, no numbering.
 
 Generate {count} causes:"""
 
@@ -168,7 +162,10 @@ Generate {count} causes:"""
             if language == 'zh':
                 prompt += f"\n\n注意：这是第{batch_num}批。确保最大程度的多样性，从新的维度和角度思考，避免与之前批次重复。"
             else:
-                prompt += f"\n\nNote: This is batch {batch_num}. Ensure MAXIMUM diversity from new dimensions and angles, avoid any repetition from previous batches."
+                prompt += (
+                    f"\n\nNote: This is batch {batch_num}. Ensure MAXIMUM diversity "
+                    "from new dimensions and angles, avoid any repetition from previous batches."
+                )
 
         return prompt
 
@@ -208,7 +205,9 @@ Thinking approach: Identify outcomes and impacts RESULTING from this event.
 3. Use noun phrases to describe various outcomes and consequences of the event
 4. Effects can be immediate or long-term
 
-Requirements: Each effect should be concise and clear. More than 4 words is allowed, but avoid long sentences. Use short phrases, not full sentences. Output only the effect text, one per line, no numbering.
+Requirements: Each effect should be concise and clear. More than 4 words is allowed,
+but avoid long sentences. Use short phrases, not full sentences.
+Output only the effect text, one per line, no numbering.
 
 Generate {count} effects:"""
 
@@ -217,7 +216,11 @@ Generate {count} effects:"""
             if language == 'zh':
                 prompt += f"\n\n注意：这是第{batch_num}批。确保最大程度的多样性，从新的维度和角度思考，避免与之前批次重复。"
             else:
-                prompt += f"\n\nNote: This is batch {batch_num}. Ensure MAXIMUM diversity with new dimensions and angles of analysis, avoid any repetition from previous batches."
+                prompt += (
+                    f"\n\nNote: This is batch {batch_num}. Ensure MAXIMUM diversity "
+                    "with new dimensions and angles of analysis, "
+                    "avoid any repetition from previous batches."
+                )
 
         return prompt
 
@@ -227,13 +230,11 @@ Generate {count} effects:"""
         self.current_mode.pop(session_id, None)
 
 
-# Global singleton  # pylint: disable=global-statement instance for Multi Flow Map
-_multi_flow_palette_generator = None
+MULTI_FLOW_PALETTE_CACHE: list = [None]
+
 
 def get_multi_flow_palette_generator() -> MultiFlowPaletteGenerator:
     """Get singleton instance of Multi Flow Map palette generator"""
-    global _multi_flow_palette_generator  # pylint: disable=global-statement
-    if _multi_flow_palette_generator is None:
-        _multi_flow_palette_generator = MultiFlowPaletteGenerator()
-    return _multi_flow_palette_generator
-
+    if MULTI_FLOW_PALETTE_CACHE[0] is None:
+        MULTI_FLOW_PALETTE_CACHE[0] = MultiFlowPaletteGenerator()
+    return MULTI_FLOW_PALETTE_CACHE[0]

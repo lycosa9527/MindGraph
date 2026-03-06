@@ -1147,6 +1147,14 @@ async function handleAIGenerate() {
 }
 
 async function handleMoreApp(appName: string) {
+  if (appName === '瀑布流') {
+    if (!diagramStore.data?.nodes?.length) {
+      notify.warning(isZh.value ? '请先创建图示' : 'Please create a diagram first')
+      return
+    }
+    eventBus.emit('panel:open_requested', { panel: 'nodePalette', source: 'toolbar' })
+    return
+  }
   if (appName === '半成品图示') {
     if (!diagramStore.data?.nodes?.length) {
       notify.warning(isZh.value ? '请先创建图示' : 'Please create a diagram first')
@@ -1207,7 +1215,7 @@ onUnmounted(() => {
     ]"
   >
     <div
-      class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-1.5 flex items-center justify-center"
+      class="rounded-xl shadow-lg p-1.5 flex items-center justify-center border border-gray-200/80 dark:border-gray-600/80 bg-white/90 dark:bg-gray-800/90 backdrop-blur-md"
     >
       <div
         class="toolbar-content flex items-center bg-gray-50 dark:bg-gray-700/50 rounded-lg p-1 gap-0.5"

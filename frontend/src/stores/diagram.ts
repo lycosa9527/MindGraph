@@ -1575,6 +1575,7 @@ export const useDiagramStore = defineStore('diagram', () => {
       ...(result.metadata || {}),
     }
 
+    eventBus.emit('diagram:loaded', { diagramType: diagramTypeValue })
     return true
   }
 
@@ -1806,6 +1807,157 @@ export const useDiagramStore = defineStore('diagram', () => {
     loadFromSpec(newSpec, 'flow_map')
     pushHistory(`Toggle orientation to ${newOrientation}`)
     emitEvent('diagram:orientation_changed', { orientation: newOrientation })
+  }
+
+  /**
+   * Build flow map spec from current nodes (steps and substeps).
+   */
+  function buildFlowMapSpecFromNodes(): Record<string, unknown> | null {
+    if (!data.value || type.value !== 'flow_map') return null
+    const topicNode = data.value.nodes.find((n) => n.id === 'flow-topic')
+    const title = topicNode?.text ?? (data.value as Record<string, unknown>).title ?? ''
+    const stepNodes = data.value.nodes.filter((n) => n.type === 'flow')
+    const substepNodes = data.value.nodes.filter((n) => n.type === 'flowSubstep')
+    const steps = stepNodes.map((node) => node.text)
+    const stepToSubsteps: Record<string, string[]> = {}
+    substepNodes.forEach((node) => {
+      const match = node.id.match(/flow-substep-(\d+)-/)
+      if (match) {
+        const stepIndex = parseInt(match[1], 10)
+        if (stepIndex < stepNodes.length) {
+          const stepText = stepNodes[stepIndex].text
+          if (!stepToSubsteps[stepText]) {
+            stepToSubsteps[stepText] = []
+          }
+          stepToSubsteps[stepText].push(node.text)
+        }
+      }
+    })
+    const substeps = Object.entries(stepToSubsteps).map(([step, subs]) => ({
+      step,
+      substeps: subs,
+    }))
+    const orientation =
+      (data.value as Record<string, unknown>).orientation ?? 'horizontal'
+    return { title, steps, substeps, orientation }
+  }
+
+  /**
+   * Add a new step to flow map.
+   */
+  function addFlowMapStep(text: string): boolean {
+    const spec = buildFlowMapSpecFromNodes()
+    if (!spec) return false
+    const steps = spec.steps as string[]
+    steps.push(text)
+    loadFromSpec({ ...spec, steps }, 'flow_map')
+    pushHistory('Add flow step')
+    emitEvent('diagram:node_added', { node: null })
+    return true
+  }
+
+  /**
+   * Add a substep to an existing flow map step.
+   */
+  function addFlowMapSubstep(stepText: string, substepText: string): boolean {
+    const spec = buildFlowMapSpecFromNodes()
+    if (!spec) return false
+    const substeps = spec.substeps as Array<{ step: string; substeps: string[] }>
+    const entry = substeps.find((e) => e.step === stepText)
+    if (entry) {
+      entry.substeps.push(substepText)
+    } else {
+      substeps.push({ step: stepText, substeps: [substepText] })
+    }
+    loadFromSpec({ ...spec, substeps }, 'flow_map')
+    pushHistory('Add flow substep')
+    emitEvent('diagram:node_added', { node: null })
+    return true
+  }
+
+  /**
+   * Build tree map spec from current nodes.
+   */
+  function buildTreeMapSpecFromNodes(): Record<string, unknown> | null {
+    if (!data.value || type.value !== 'tree_map') return null
+    const nodes = data.value.nodes
+    const rootNode = nodes.find((n) => n.id === 'tree-topic')
+    if (!rootNode) return null
+    const rootId = rootNode.id ?? 'tree-topic'
+    const categoryNodes = nodes
+      .filter((n) => /^tree-cat-\d+$/.test(n.id ?? ''))
+      .sort(
+        (a, b) =>
+          parseInt((a.id ?? '0').replace('tree-cat-', ''), 10) -
+          parseInt((b.id ?? '0').replace('tree-cat-', ''), 10)
+      )
+    const categories = categoryNodes.map((cat, catIndex) => {
+      const leaves = nodes
+        .filter((n) => {
+          const m = (n.id ?? '').match(/^tree-leaf-(\d+)-(\d+)$/)
+          return m && parseInt(m[1], 10) === catIndex
+        })
+        .sort(
+          (a, b) =>
+            parseInt((a.id ?? '0').split('-').pop() ?? '0', 10) -
+            parseInt((b.id ?? '0').split('-').pop() ?? '0', 10)
+        )
+      return {
+        id: cat.id,
+        text: cat.text,
+        children: leaves.map((l) => ({ id: l.id, text: l.text, children: [] })),
+      }
+    })
+    const dimension = (data.value as Record<string, unknown>).dimension as string | undefined
+    const altDims = (data.value as Record<string, unknown>).alternative_dimensions as
+      | string[]
+      | undefined
+    return {
+      root: {
+        id: rootId,
+        text: rootNode.text,
+        children: categories,
+      },
+      dimension,
+      alternative_dimensions: altDims,
+    }
+  }
+
+  /**
+   * Add a new category to tree map.
+   */
+  function addTreeMapCategory(text: string): boolean {
+    const spec = buildTreeMapSpecFromNodes()
+    if (!spec) return false
+    const root = spec.root as { text: string; children?: Array<{ text: string; children?: unknown[] }> }
+    if (!root.children) {
+      root.children = []
+    }
+    root.children.push({ text, children: [] })
+    loadFromSpec(spec, 'tree_map')
+    pushHistory('Add tree category')
+    emitEvent('diagram:node_added', { node: null })
+    return true
+  }
+
+  /**
+   * Add a child (leaf) to a tree map category.
+   */
+  function addTreeMapChild(categoryId: string, text: string): boolean {
+    const spec = buildTreeMapSpecFromNodes()
+    if (!spec) return false
+    const root = spec.root as { children?: Array<{ id?: string; text: string; children?: Array<{ text: string }> }> }
+    const categories = root.children ?? []
+    const category = categories.find((c) => c.id === categoryId)
+    if (!category) return false
+    if (!category.children) {
+      category.children = []
+    }
+    category.children.push({ text })
+    loadFromSpec(spec, 'tree_map')
+    pushHistory('Add tree child')
+    emitEvent('diagram:node_added', { node: null })
+    return true
   }
 
   /**
@@ -2065,8 +2217,14 @@ export const useDiagramStore = defineStore('diagram', () => {
     addDoubleBubbleMapNode,
     removeDoubleBubbleMapNodes,
 
-    // Flow map orientation
+    // Flow map
+    addFlowMapStep,
+    addFlowMapSubstep,
     toggleFlowMapOrientation,
+
+    // Tree map
+    addTreeMapCategory,
+    addTreeMapChild,
 
     // Title management
     getTopicNodeText,

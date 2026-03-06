@@ -203,19 +203,39 @@ async def start_node_palette(
                 # Get mode from request (default to 'similarities' for double bubble, 'causes' for multi flow)
                 mode = getattr(req, 'mode', 'similarities' if req.diagram_type == 'double_bubble_map' else 'causes')
 
-                # Get stage parameters for multi-stage diagrams (tree_map, brace_map, flow_map, mindmap)
-                # Default stage depends on diagram type
+                # Get stage parameters for multi-stage diagrams
+                # Tree/brace/bridge: dimensions first; mindmap/flow: no dimensions stage
                 if req.diagram_type == 'mindmap':
-                    default_stage = 'branches'  # mindmap uses 'branches' and 'children'
-                elif req.diagram_type == 'brace_map':
-                    default_stage = 'parts'  # brace map uses 'parts' and 'subparts'
+                    default_stage = 'branches'
                 elif req.diagram_type == 'flow_map':
-                    default_stage = 'steps'  # flow map uses 'steps'
-                else:  # tree_map
-                    default_stage = 'categories'  # tree map uses 'categories' and 'items'
+                    default_stage = 'steps'
+                elif req.diagram_type in ('tree_map', 'brace_map', 'bridge_map'):
+                    default_stage = 'dimensions'
+                else:
+                    default_stage = 'categories'
 
                 stage = getattr(req, 'stage', default_stage)
-                stage_data = getattr(req, 'stage_data', None)
+                stage_data = getattr(req, 'stage_data', None) or {}
+                diagram_dim = (req.diagram_data.get('dimension') or '').strip()
+                if (
+                    stage == 'dimensions'
+                    and req.diagram_type in ('tree_map', 'brace_map', 'bridge_map')
+                    and diagram_dim
+                ):
+                    stage = (
+                        'parts' if req.diagram_type == 'brace_map'
+                        else 'categories' if req.diagram_type == 'tree_map'
+                        else 'pairs'
+                    )
+                    stage_data = {**(stage_data if isinstance(stage_data, dict) else {}),
+                                 'dimension': diagram_dim}
+                    logger.debug(
+                        "[NodePalette-API] Dimension already fixed '%s', skipping to stage: %s",
+                        diagram_dim[:30], stage
+                    )
+                elif isinstance(stage_data, dict) and req.diagram_type == 'brace_map':
+                    if diagram_dim and (not stage_data.get('dimension')):
+                        stage_data = {**stage_data, 'dimension': diagram_dim}
 
                 # Call generate_batch with appropriate parameters based on diagram type
                 if req.diagram_type in ['double_bubble_map', 'multi_flow_map']:
@@ -225,7 +245,7 @@ async def start_node_palette(
                         center_topic=center_topic,
                         educational_context=req.educational_context,
                         nodes_per_llm=15,  # Each LLM generates 15 nodes = 60 total per batch
-                        mode=mode,  # type: ignore[call-arg]  # Pass mode for tab-enabled diagrams
+                        _mode=mode,  # Pass mode for tab-enabled diagrams
                         user_id=current_user.id if current_user else None,
                         organization_id=current_user.organization_id if current_user else None,
                         diagram_type=req.diagram_type,
@@ -236,7 +256,7 @@ async def start_node_palette(
                             node_count += 1
 
                         yield f"data: {json.dumps(chunk)}\n\n"
-                elif req.diagram_type in ['tree_map', 'brace_map', 'flow_map', 'mindmap']:
+                elif req.diagram_type in ['tree_map', 'brace_map', 'flow_map', 'mindmap', 'bridge_map']:
                     # Multi-stage diagrams: pass stage and stage_data for progressive workflow
                     logger.debug("[NodePalette-API] %s stage: %s | Stage data: %s", req.diagram_type, stage, stage_data)
                     async for chunk in generator.generate_batch(  # type: ignore[call-arg]
@@ -244,9 +264,8 @@ async def start_node_palette(
                         center_topic=center_topic,
                         educational_context=req.educational_context,
                         nodes_per_llm=15,
-                        stage=stage,  # type: ignore[call-arg]  # Current stage (dimensions, categories, parts, etc.)
-                        # Stage-specific data (dimension, category_name, part_name, etc.)
-                        stage_data=stage_data,  # type: ignore[call-arg]
+                        _stage=stage,  # Current stage (dimensions, categories, parts, etc.)
+                        _stage_data=stage_data,  # Stage-specific data
                         user_id=current_user.id if current_user else None,
                         organization_id=current_user.organization_id if current_user else None,
                         diagram_type=req.diagram_type,
@@ -511,16 +530,16 @@ async def get_next_batch(
                 # Get mode from request (default to 'similarities' for double bubble, 'causes' for multi flow)
                 mode = getattr(req, 'mode', 'similarities' if req.diagram_type == 'double_bubble_map' else 'causes')
 
-                # Get stage parameters for multi-stage diagrams (tree_map, brace_map, flow_map, mindmap)
-                # Default stage depends on diagram type
+                # Get stage parameters for multi-stage diagrams
+                # Tree/brace/bridge: dimensions first; mindmap/flow: no dimensions stage
                 if req.diagram_type == 'mindmap':
-                    default_stage = 'branches'  # mindmap uses 'branches' and 'children'
-                elif req.diagram_type == 'brace_map':
-                    default_stage = 'parts'  # brace map uses 'parts' and 'subparts'
+                    default_stage = 'branches'
                 elif req.diagram_type == 'flow_map':
-                    default_stage = 'steps'  # flow map uses 'steps'
-                else:  # tree_map
-                    default_stage = 'categories'  # tree map uses 'categories' and 'items'
+                    default_stage = 'steps'
+                elif req.diagram_type in ('tree_map', 'brace_map', 'bridge_map'):
+                    default_stage = 'dimensions'
+                else:
+                    default_stage = 'categories'
 
                 stage = getattr(req, 'stage', default_stage)
                 stage_data = getattr(req, 'stage_data', None)
@@ -532,7 +551,7 @@ async def get_next_batch(
                         center_topic=req.center_topic,
                         educational_context=req.educational_context,
                         nodes_per_llm=15,  # 75 total nodes per scroll trigger
-                        mode=mode,  # type: ignore[call-arg]  # Pass mode for tab-enabled diagrams
+                        _mode=mode,  # Pass mode for tab-enabled diagrams
                         user_id=current_user.id if current_user else None,
                         organization_id=current_user.organization_id if current_user else None,
                         diagram_type=req.diagram_type,
@@ -543,7 +562,7 @@ async def get_next_batch(
                             node_count += 1
 
                         yield f"data: {json.dumps(chunk)}\n\n"
-                elif req.diagram_type in ['tree_map', 'brace_map', 'flow_map', 'mindmap']:
+                elif req.diagram_type in ['tree_map', 'brace_map', 'flow_map', 'mindmap', 'bridge_map']:
                     # Multi-stage diagrams: pass stage and stage_data for progressive workflow
                     logger.debug(
                         "[NodePalette-API] %s next batch | Stage: %s | Stage data: %s",
@@ -554,9 +573,8 @@ async def get_next_batch(
                         center_topic=req.center_topic,
                         educational_context=req.educational_context,
                         nodes_per_llm=15,
-                        stage=stage,  # type: ignore[call-arg]  # Current stage (dimensions, categories, parts, etc.)
-                        # Stage-specific data (dimension, category_name, part_name, etc.)
-                        stage_data=stage_data,  # type: ignore[call-arg]
+                        _stage=stage,  # Current stage (dimensions, categories, parts, etc.)
+                        _stage_data=stage_data,  # Stage-specific data
                         user_id=current_user.id if current_user else None,
                         organization_id=current_user.organization_id if current_user else None,
                         diagram_type=req.diagram_type,

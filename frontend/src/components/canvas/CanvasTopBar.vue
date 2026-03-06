@@ -291,7 +291,7 @@ function handleOpenMindmate() {
 
 <template>
   <div
-    class="canvas-top-bar w-full bg-white dark:bg-gray-800 h-12 px-3 flex items-center justify-between shadow-sm border-b border-gray-200 dark:border-gray-700"
+    class="canvas-top-bar absolute top-0 left-0 right-0 z-30 w-full h-12 px-3 flex items-center justify-between shadow-sm border-b border-gray-200/80 dark:border-gray-600/80 bg-white/90 dark:bg-gray-800/90 backdrop-blur-md"
   >
     <!-- Left section: Back + Menu bar -->
     <div class="flex items-center gap-1">
@@ -329,7 +329,7 @@ function handleOpenMindmate() {
           placement="bottom"
         >
           <span
-            class="text-sm font-medium text-gray-700 dark:text-gray-200 cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
+            class="text-xs font-medium text-gray-700 dark:text-gray-200 cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
             @click="handleFileNameClick"
           >
             {{ fileName }}
@@ -555,6 +555,7 @@ function handleOpenMindmate() {
 }
 
 .file-name-input :deep(.el-input__inner) {
+  font-size: 12px;
   font-weight: 500;
   color: var(--el-color-primary);
 }

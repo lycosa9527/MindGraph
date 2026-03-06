@@ -38,6 +38,10 @@ export default defineConfig({
         target: backendHost,
         changeOrigin: true,
       },
+      '/thinking_mode': {
+        target: backendHost,
+        changeOrigin: true,
+      },
       '/ws': {
         target: backendHostWs,
         ws: true,

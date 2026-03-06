@@ -1056,7 +1056,13 @@ onUnmounted(() => {
     imageRef.value.removeEventListener('click', handleImageClick)
   }
   if (containerRef.value) {
-    containerRef.value.removeEventListener('click', handlePinClickDelegation)
+    containerRef.value.removeEventListener('click', handlePinClickDelegation, true)
+  }
+
+  // Clear resize debounce timeout
+  if (resizeTimeout) {
+    clearTimeout(resizeTimeout)
+    resizeTimeout = null
   }
 
   window.removeEventListener('resize', handleResize)

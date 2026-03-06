@@ -23,16 +23,17 @@ import { useRoute, useRouter } from 'vue-router'
 
 import { AIModelSelector, CanvasToolbar, CanvasTopBar, ZoomControls } from '@/components/canvas'
 import DiagramCanvas from '@/components/diagram/DiagramCanvas.vue'
-import { MindmatePanel } from '@/components/panels'
+import { MindmatePanel, NodePalettePanel } from '@/components/panels'
 import {
   eventBus,
   getDefaultDiagramName,
+  getPanelCoordinator,
   useEditorShortcuts,
   useLanguage,
   useNotifications,
   useWorkshop,
 } from '@/composables'
-import { ANIMATION, PANEL } from '@/config/uiConfig'
+import { ANIMATION, PANEL, PANEL_INSET } from '@/config/uiConfig'
 import {
   useAuthStore,
   useDiagramStore,
@@ -459,6 +460,10 @@ eventBus.onWithOwner(
   'CanvasPage'
 )
 
+// Clear node palette when diagram changes (type switch or load from library)
+eventBus.onWithOwner('diagram:loaded', () => panelsStore.clearNodePaletteState(), 'CanvasPage')
+eventBus.onWithOwner('diagram:type_changed', () => panelsStore.clearNodePaletteState(), 'CanvasPage')
+
 // Watch for diagram type changes in store
 watch(
   () => uiStore.selectedChartType,
@@ -622,6 +627,9 @@ async function loadDiagramFromLibrary(diagramId: string): Promise<void> {
 onMounted(async () => {
   document.addEventListener('fullscreenchange', handleFullscreenChange)
 
+  // Initialize panel coordinator so panel:open_requested (e.g. 瀑布流) is handled
+  getPanelCoordinator()
+
   // Fetch diagrams to know current slot count
   await savedDiagramsStore.fetchDiagrams()
 
@@ -711,30 +719,50 @@ onUnmounted(() => {
       @exit-presentation="handleStartPresentation"
     />
 
-    <!-- Main canvas area - extends behind toolbar; zoom fit excludes toolbar via FIT_PADDING -->
-    <div class="flex-1 relative overflow-hidden flex flex-col">
-      <!-- Vue Flow Canvas -->
-      <DiagramCanvas
-        v-if="diagramStore.data"
-        class="w-full flex-1 min-h-0"
-        :show-background="true"
-        :show-minimap="false"
-        :fit-view-on-init="true"
-        :hand-tool-active="handToolActive"
-      />
+    <!-- Main canvas area - full height, toolbars float over with glass effect -->
+    <div class="flex-1 relative overflow-hidden flex flex-row min-h-0">
+      <!-- Node Palette panel (瀑布流) - left 50%, inset to clear floating toolbars -->
+      <Transition name="node-palette-slide">
+        <div
+          v-if="panelsStore.nodePalettePanel.isOpen"
+          class="node-palette-panel-split shrink-0 flex flex-col bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl overflow-hidden ml-4 mr-2 self-stretch"
+          :style="{
+            width: '50%',
+            minWidth: `${PANEL.NODE_PALETTE_MIN_WIDTH}px`,
+            maxWidth: `${PANEL.NODE_PALETTE_MAX_WIDTH}px`,
+            marginTop: `${PANEL_INSET.TOP}px`,
+            marginBottom: `${PANEL_INSET.BOTTOM}px`,
+            maxHeight: `calc(100vh - ${PANEL_INSET.VERTICAL_TOTAL}px)`,
+          }"
+        >
+          <NodePalettePanel @close="panelsStore.closeNodePalette" />
+        </div>
+      </Transition>
 
-      <!-- MindMate floating panel (教学设计) - rounded card, fixed height for stable layout during streaming -->
+      <!-- Diagram area - takes remaining space -->
+      <div class="flex-1 min-w-0 flex flex-col relative">
+        <DiagramCanvas
+          v-if="diagramStore.data"
+          class="w-full flex-1 min-h-0"
+          :show-background="true"
+          :show-minimap="false"
+          :fit-view-on-init="true"
+          :hand-tool-active="handToolActive"
+        />
+      </div>
+
+      <!-- MindMate floating panel (教学设计) - rounded card, inset to clear floating toolbars -->
       <Transition name="mindmate-slide">
         <div
           v-if="panelsStore.mindmatePanel.isOpen"
           class="mindmate-panel-float fixed z-50 flex flex-col bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl overflow-hidden"
           :style="{
             width: `${PANEL.MINDMATE_WIDTH}px`,
-            top: '72px',
+            top: `${PANEL_INSET.TOP}px`,
             right: '16px',
-            height: 'calc(100vh - 160px)',
+            height: `calc(100vh - ${PANEL_INSET.VERTICAL_TOTAL}px)`,
             minHeight: '400px',
-            maxHeight: 'calc(100vh - 160px)',
+            maxHeight: `calc(100vh - ${PANEL_INSET.VERTICAL_TOTAL}px)`,
           }"
         >
           <MindmatePanel
@@ -746,35 +774,48 @@ onUnmounted(() => {
       </Transition>
     </div>
 
-    <!-- Bottom controls: AI selector (center) + Zoom/pan (right) - adaptive layout -->
-    <div
-      class="canvas-bottom-controls absolute bottom-4 left-0 right-0 z-20 px-4 flex flex-col md:flex-row md:items-end gap-3 md:gap-4"
-    >
-      <div class="ai-selector-spacer hidden md:block md:flex-1" aria-hidden="true" />
+    <!-- Bottom controls: single floating glass card with AI selector + Zoom/pan -->
+    <div class="canvas-bottom-controls absolute bottom-4 left-1/2 transform -translate-x-1/2 z-20 px-4">
       <div
-        class="ai-selector-wrap flex flex-1 justify-center order-2 md:order-1 min-w-0 md:flex-none md:justify-center"
+        class="bottom-controls-card flex flex-col md:flex-row md:items-center gap-2 md:gap-3 rounded-xl shadow-lg p-1.5 md:p-2 border border-gray-200/80 dark:border-gray-600/80 bg-white/90 dark:bg-gray-800/90 backdrop-blur-md"
       >
-        <AIModelSelector @model-change="handleModelChange" />
-      </div>
-      <div
-        class="zoom-controls-wrap flex flex-1 justify-center md:justify-end order-1 md:order-2 shrink-0"
-      >
-        <ZoomControls
-          :zoom="canvasZoom"
-          :is-presentation-mode="isPresentationMode"
-          @zoom-change="handleZoomChange"
-          @zoom-in="handleZoomIn"
-          @zoom-out="handleZoomOut"
-          @fit-to-screen="handleFitToScreen"
-          @hand-tool-toggle="handleHandToolToggle"
-          @start-presentation="handleStartPresentation"
-        />
+        <div class="ai-selector-wrap flex flex-1 justify-center md:justify-center min-w-0 order-2 md:order-1">
+          <AIModelSelector @model-change="handleModelChange" />
+        </div>
+        <div class="zoom-controls-wrap flex shrink-0 order-1 md:order-2">
+          <ZoomControls
+            :zoom="canvasZoom"
+            :is-presentation-mode="isPresentationMode"
+            @zoom-change="handleZoomChange"
+            @zoom-in="handleZoomIn"
+            @zoom-out="handleZoomOut"
+            @fit-to-screen="handleFitToScreen"
+            @hand-tool-toggle="handleHandToolToggle"
+            @start-presentation="handleStartPresentation"
+          />
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <style scoped>
+/* Node Palette panel slide-in animation (from left) */
+.node-palette-slide-enter-active,
+.node-palette-slide-leave-active {
+  transition: transform 0.3s ease;
+}
+
+.node-palette-slide-enter-from,
+.node-palette-slide-leave-to {
+  transform: translateX(-100%);
+}
+
+.node-palette-slide-enter-to,
+.node-palette-slide-leave-from {
+  transform: translateX(0);
+}
+
 /* MindMate panel slide-in animation */
 .mindmate-slide-enter-active,
 .mindmate-slide-leave-active {
@@ -791,11 +832,8 @@ onUnmounted(() => {
   transform: translateX(0);
 }
 
-/* Short viewport: move AI selector left to reserve space for zoom/pan controls */
+/* Short viewport: compact bottom controls */
 @media (max-height: 560px) {
-  .ai-selector-spacer {
-    display: none;
-  }
   .ai-selector-wrap {
     justify-content: flex-start;
   }

@@ -299,6 +299,9 @@ export function usePanelCoordination(options: UsePanelCoordinationOptions = {}) 
 
   function destroy(): void {
     eventBus.removeAllListenersForOwner(ownerId)
+    if (ownerId === 'GlobalPanelCoordinator') {
+      _globalCoordinator = null
+    }
   }
 
   onUnmounted(() => {

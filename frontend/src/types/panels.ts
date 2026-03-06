@@ -29,13 +29,28 @@ export interface NodeSuggestion {
   id: string
   text: string
   type: string
+  /** LLM that generated this node (qwen, deepseek, doubao) - used for color coding */
+  source_llm?: string
+  /** For double bubble: 'similarities' | 'differences' - used to store both in same session */
+  mode?: string
+  /** For double bubble differences: attribute of left topic */
+  left?: string
+  /** For double bubble differences: contrasting attribute of right topic */
+  right?: string
+  /** For double bubble differences: comparison dimension */
+  dimension?: string
 }
 
 export interface NodePalettePanelState {
   open: boolean
   suggestions: NodeSuggestion[]
   selected: string[]
+  /** For double_bubble: 'similarities' | 'differences'. For staged: stage name or parent name */
   mode: string | null
+  /** For staged diagrams: 'branches' | 'children', 'steps' | 'substeps', etc. */
+  stage?: string | null
+  /** For staged stage 2: { branch_name }, { step_name }, { category_name }, { part_name } */
+  stage_data?: Record<string, unknown> | null
 }
 
 export interface PropertyPanelState {

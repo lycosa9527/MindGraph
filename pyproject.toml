@@ -75,8 +75,8 @@ max-line-length = 120
 indent-string = "    "
 
 [tool.pylint.design]
-# Complexity thresholds
-max-args = 7
+# Complexity thresholds (max-args raised for palette generators matching BasePaletteGenerator API)
+max-args = 12
 max-locals = 15
 max-branches = 12
 max-statements = 50
@@ -113,6 +113,7 @@ attr-rgx = "^[A-Z][A-Z0-9_]*$|^[a-z_][a-z0-9_]*$"
 # Don't show these specific messages (will fix manually)
 disable = [
     "broad-except",  # Exception handling often needs to catch all exceptions for error recovery
+    "too-many-positional-arguments",  # Palette generators must match BasePaletteGenerator API
 ]
 
 [tool.pylint.typecheck]

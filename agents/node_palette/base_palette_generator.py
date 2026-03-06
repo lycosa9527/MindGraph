@@ -3,20 +3,6 @@ Base Node Palette Generator
 ============================
 
 Shared logic for all diagram-specific palette generators.
-"""
-from abc import ABC, abstractmethod
-from difflib import SequenceMatcher
-from typing import Optional, Dict, Any, Tuple, AsyncGenerator
-import logging
-import re
-import time
-
-from services.llm import llm_service
-
-"""
-base palette generator module.
-
-Shared logic for all diagram-specific palette generators.
 
 Features:
 - Concurrent multi-LLM streaming
@@ -29,8 +15,14 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+from abc import ABC, abstractmethod
+from difflib import SequenceMatcher
+from typing import Optional, Dict, Any, Tuple, AsyncGenerator
+import logging
+import re
+import time
 
-
+from services.llm import llm_service
 
 logger = logging.getLogger(__name__)
 
@@ -71,9 +63,9 @@ class BasePaletteGenerator(ABC):
         center_topic: str,
         educational_context: Optional[Dict[str, Any]] = None,
         nodes_per_llm: int = 15,
-        mode: Optional[str] = None,  # For tab-enabled diagrams (double_bubble_map, multi_flow_map)
-        stage: Optional[str] = None,  # For staged generation (tree_map, flow_map, brace_map)
-        stage_data: Optional[Dict[str, Any]] = None,  # Stage-specific data
+        _mode: Optional[str] = None,  # For tab-enabled diagrams (double_bubble_map, multi_flow_map)
+        _stage: Optional[str] = None,  # For staged generation (tree_map, flow_map, brace_map)
+        _stage_data: Optional[Dict[str, Any]] = None,  # Stage-specific data
         # Token tracking parameters
         user_id: Optional[int] = None,
         organization_id: Optional[int] = None,
@@ -121,11 +113,13 @@ class BasePaletteGenerator(ABC):
         }
 
         # Build prompt using diagram-specific logic (subclass implements this)
-        prompt = self._build_prompt  # pylint: disable=protected-access(center_topic, educational_context, nodes_per_llm, batch_num)
-        system_message = self._get_system_message  # pylint: disable=protected-access(educational_context, center_topic)
+        prompt = self._build_prompt(
+            center_topic, educational_context, nodes_per_llm, batch_num
+        )
+        system_message = self._get_system_message(educational_context, center_topic)
 
         # Get temperature for diversity
-        temperature = self._get_temperature_for_batch  # pylint: disable=protected-access(batch_num)
+        temperature = self._get_temperature_for_batch(batch_num)
 
         batch_start_time = time.time()
         llm_stats = {}
@@ -143,7 +137,10 @@ class BasePaletteGenerator(ABC):
         next_llm_index = 0
 
         # 🚀 CONCURRENT TOKEN STREAMING - 3 LLMs fire simultaneously (qwen, deepseek, doubao)!
-        logger.debug("[NodePalette] Streaming from %d LLMs with progressive rendering (round-robin interleaving)...", len(self.llm_models))
+        logger.debug(
+            "[NodePalette] Streaming from %d LLMs with progressive rendering (round-robin interleaving)...",
+            len(self.llm_models)
+        )
 
         async for chunk in self.llm_service.stream_progressive(
             prompt=prompt,
@@ -186,7 +183,9 @@ class BasePaletteGenerator(ABC):
                             continue
 
                         # Deduplicate
-                        is_unique, match_type, similarity = self._deduplicate_node  # pylint: disable=protected-access(node_text, session_id)
+                        is_unique, _, _ = self._deduplicate_node(
+                            node_text, session_id
+                        )
 
                         if is_unique:
                             # UNIQUE NODE - add to round-robin buffer for interleaved yielding
@@ -240,7 +239,9 @@ class BasePaletteGenerator(ABC):
                 if current_lines[llm_name].strip():
                     node_text = current_lines[llm_name].lstrip('0123456789.-、）) ').strip()
                     if node_text and len(node_text) >= 2:
-                        is_unique, match_type, similarity = self._deduplicate_node  # pylint: disable=protected-access(node_text, session_id)
+                        is_unique, _, _ = self._deduplicate_node(
+                            node_text, session_id
+                        )
                         if is_unique:
                             node = {
                                 'id': f"{session_id}_{llm_name}_{batch_num}_{llm_unique_counts[llm_name]}",
@@ -389,7 +390,7 @@ class BasePaletteGenerator(ABC):
         Returns:
             Formatted prompt string
         """
-        pass
+        raise NotImplementedError("Subclasses must implement _build_prompt")
 
     def _get_system_message(self, educational_context: Optional[Dict[str, Any]], center_topic: str = "") -> str:
         """
@@ -405,7 +406,7 @@ class BasePaletteGenerator(ABC):
         Returns:
             System message string
         """
-        language = self._detect_language  # pylint: disable=protected-access(center_topic, educational_context)
+        language = self._detect_language(center_topic, educational_context)
         return '你是一个有帮助的K12教育助手。' if language == 'zh' else 'You are a helpful K12 education assistant.'
 
     def _get_temperature_for_batch(self, batch_num: int) -> float:
@@ -427,7 +428,7 @@ class BasePaletteGenerator(ABC):
         Returns:
             (is_unique, match_type, similarity)
         """
-        normalized = self._normalize_text  # pylint: disable=protected-access(new_text)
+        normalized = self._normalize_text(new_text)
 
         if session_id not in self.seen_texts:
             self.seen_texts[session_id] = set()
@@ -481,7 +482,7 @@ class BasePaletteGenerator(ABC):
             return 'zh'
 
         # Check raw_message for Chinese characters
-        if educational_context and educational_context.get('raw_message'):
+        if educational_context and 'raw_message' in educational_context:
             if re.search(r'[\u4e00-\u9fff]', educational_context['raw_message']):
                 return 'zh'
 
@@ -514,4 +515,3 @@ class BasePaletteGenerator(ABC):
         self.generated_nodes.pop(session_id, None)
         self.seen_texts.pop(session_id, None)
         self.batch_counts.pop(session_id, None)
-
