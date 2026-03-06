@@ -299,11 +299,14 @@ onNodeDragStop(({ node }) => {
 
 // Concept map link drag state
 const CONCEPT_LINK_DATA_TYPE = 'application/mindgraph-concept-link'
+const PALETTE_CONCEPT_DATA_TYPE = 'application/mindgraph-palette-concept'
 
 function handleConceptMapDragOver(event: DragEvent) {
   if (diagramStore.type !== 'concept_map') return
-  const hasLinkData = event.dataTransfer?.types.includes(CONCEPT_LINK_DATA_TYPE)
-  if (hasLinkData && event.dataTransfer) {
+  const types = event.dataTransfer?.types ?? []
+  const hasLinkData = types.includes(CONCEPT_LINK_DATA_TYPE)
+  const hasPaletteConcept = types.includes(PALETTE_CONCEPT_DATA_TYPE)
+  if ((hasLinkData || hasPaletteConcept) && event.dataTransfer) {
     event.preventDefault()
     event.dataTransfer.dropEffect = 'copy'
   }
@@ -311,6 +314,31 @@ function handleConceptMapDragOver(event: DragEvent) {
 
 function handleConceptMapDrop(event: DragEvent) {
   if (diagramStore.type !== 'concept_map') return
+
+  const paletteData = event.dataTransfer?.getData(PALETTE_CONCEPT_DATA_TYPE)
+  if (paletteData) {
+    event.preventDefault()
+    const target = event.target as HTMLElement
+    if (target.closest('.vue-flow__node')) return
+    try {
+      const { text } = JSON.parse(paletteData) as { text: string }
+      const flowPos = screenToFlowCoordinate({
+        x: event.clientX,
+        y: event.clientY,
+      })
+      diagramStore.addNode({
+        id: '',
+        text: text || '新概念',
+        type: 'branch',
+        position: { x: flowPos.x - 50, y: flowPos.y - 18 },
+      })
+      diagramStore.pushHistory('Add concept')
+    } catch {
+      // Ignore malformed palette data
+    }
+    return
+  }
+
   const sourceId = event.dataTransfer?.getData(CONCEPT_LINK_DATA_TYPE)
   if (!sourceId) return
 

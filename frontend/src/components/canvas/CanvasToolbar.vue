@@ -20,6 +20,7 @@ import {
   Plus,
   RotateCcw,
   RotateCw,
+  Sparkles,
   Square,
   Trash2,
   Type,
@@ -224,24 +225,27 @@ const stylePresets: Array<
   },
 ]
 
-// More apps items
-const moreApps = [
-  {
-    name: '瀑布流',
-    icon: LayoutGrid,
-    desc: '在批量节点中选择，发散聚合思维显性化',
-    tag: '热门',
-    iconBg: 'bg-blue-100',
-    iconColor: 'text-blue-600',
-  },
-  {
-    name: '半成品图示',
-    icon: Package,
-    desc: '随机留空，学习复习好搭子',
-    iconBg: 'bg-purple-100',
-    iconColor: 'text-purple-600',
-  },
-]
+// More apps items (hide 瀑布流 for concept_map - uses dedicated 生成概念 button)
+const moreApps = computed(() => {
+  const apps = [
+    {
+      name: '瀑布流',
+      icon: LayoutGrid,
+      desc: '在批量节点中选择，发散聚合思维显性化',
+      tag: '热门',
+      iconBg: 'bg-blue-100',
+      iconColor: 'text-blue-600',
+    },
+    {
+      name: '半成品图示',
+      icon: Package,
+      desc: '随机留空，学习复习好搭子',
+      iconBg: 'bg-purple-100',
+      iconColor: 'text-purple-600',
+    },
+  ]
+  return isConceptMap.value ? apps.filter((a) => a.name !== '瀑布流') : apps
+})
 
 function handleApplyStylePreset(preset: StylePresetColors) {
   if (!diagramStore.data?.nodes?.length) {
@@ -1146,6 +1150,14 @@ async function handleAIGenerate() {
   }
 }
 
+function handleConceptGeneration() {
+  if (!diagramStore.data?.nodes?.length) {
+    notify.warning(isZh.value ? '请先创建图示' : 'Please create a diagram first')
+    return
+  }
+  eventBus.emit('panel:open_requested', { panel: 'nodePalette', source: 'toolbar' })
+}
+
 async function handleMoreApp(appName: string) {
   if (appName === '瀑布流') {
     if (!diagramStore.data?.nodes?.length) {
@@ -1686,9 +1698,22 @@ onUnmounted(() => {
           </template>
         </ElDropdown>
 
-        <template v-if="!isConceptMap">
+        <template v-if="isConceptMap">
           <div class="divider" />
-          <!-- AI Generate button (hidden for concept_map - uses real-time relationship generation) -->
+          <!-- Concept Generation: opens node palette (drag concepts onto canvas) -->
+          <ElButton
+            type="primary"
+            size="small"
+            class="ai-btn"
+            @click="handleConceptGeneration"
+          >
+            <Sparkles class="w-4 h-4" />
+            <span>{{ isZh ? '生成概念' : 'Concept Generation' }}</span>
+          </ElButton>
+        </template>
+        <template v-else>
+          <div class="divider" />
+          <!-- AI Generate button (hidden for concept_map) -->
           <ElButton
             type="primary"
             size="small"
@@ -1712,10 +1737,7 @@ onUnmounted(() => {
           </ElButton>
         </template>
 
-        <div
-          v-if="!isConceptMap"
-          class="divider"
-        />
+        <div class="divider" />
 
         <!-- More apps dropdown -->
         <ElDropdown

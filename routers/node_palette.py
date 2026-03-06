@@ -22,6 +22,7 @@ from agents.node_palette.brace_map_palette import get_brace_map_palette_generato
 from agents.node_palette.bridge_map_palette import get_bridge_map_palette_generator
 from agents.node_palette.bubble_map_palette import get_bubble_map_palette_generator
 from agents.node_palette.circle_map_palette import get_circle_map_palette_generator
+from agents.node_palette.concept_map_palette import get_concept_map_palette_generator
 from agents.node_palette.double_bubble_palette import get_double_bubble_palette_generator
 from agents.node_palette.flow_map_palette import get_flow_map_palette_generator
 from agents.node_palette.mindmap_palette import get_mindmap_palette_generator
@@ -116,8 +117,8 @@ async def start_node_palette(
             # Empty dimension is OK for bridge map - it means "generate diverse relationships"
             if center_topic is None:
                 center_topic = ''  # Ensure it's a string, not None
-        elif req.diagram_type == 'tree_map' or req.diagram_type == 'mindmap':
-            # Tree map and mindmap use topic
+        elif req.diagram_type in ('tree_map', 'mindmap', 'concept_map'):
+            # Tree map, mindmap, concept map use topic
             center_topic = req.diagram_data.get('topic', '')
         else:
             # Most diagrams use center/topic field - try multiple fallbacks
@@ -185,6 +186,8 @@ async def start_node_palette(
             generator = get_bridge_map_palette_generator()
         elif req.diagram_type == 'mindmap':
             generator = get_mindmap_palette_generator()
+        elif req.diagram_type == 'concept_map':
+            generator = get_concept_map_palette_generator()
         else:
             # Fallback to circle map generator for unsupported types
             logger.warning(
@@ -508,6 +511,8 @@ async def get_next_batch(
             generator = get_bridge_map_palette_generator()
         elif req.diagram_type == 'mindmap':
             generator = get_mindmap_palette_generator()
+        elif req.diagram_type == 'concept_map':
+            generator = get_concept_map_palette_generator()
         else:
             # Fallback to circle map generator for unsupported types
             logger.warning(
@@ -871,6 +876,8 @@ async def node_palette_cleanup(
         generator = get_bridge_map_palette_generator()
     elif diagram_type == 'mindmap':
         generator = get_mindmap_palette_generator()
+    elif diagram_type == 'concept_map':
+        generator = get_concept_map_palette_generator()
     else:
         generator = get_circle_map_palette_generator()
 

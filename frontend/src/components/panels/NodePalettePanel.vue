@@ -2,8 +2,9 @@
 /**
  * Node Palette Panel (瀑布流) - AI-suggested nodes with streaming
  *
- * Displays AI-generated node suggestions in a grid. Users select nodes
- * and click Finish to add them to the diagram.
+ * Displays AI-generated node suggestions in a grid.
+ * - Concept map: nodes are draggable onto canvas (free-form)
+ * - Other diagrams: select nodes and click Finish to add
  *
  * For double_bubble_map: shows tabs (相似点/Similarities | 差异点/Differences).
  * Differences tab displays paired attributes for both Topic A and Topic B.
@@ -56,6 +57,7 @@ const {
 })
 
 const isDoubleBubble = computed(() => diagramType.value === 'double_bubble_map')
+const isConceptMap = computed(() => diagramType.value === 'concept_map')
 const currentMode = computed(
   () => (panelsStore.nodePalettePanel.mode as 'similarities' | 'differences') ?? 'similarities'
 )
@@ -118,6 +120,14 @@ async function handleTabSwitch(mode: 'similarities' | 'differences') {
 async function handleStageTabSwitch(parentId: string, parentName: string) {
   if (panelsStore.nodePalettePanel.mode === parentName) return
   await switchStageTab(parentId, parentName)
+}
+
+const PALETTE_CONCEPT_DATA_TYPE = 'application/mindgraph-palette-concept'
+
+function handleConceptMapDragStart(event: DragEvent, suggestion: NodeSuggestion) {
+  if (!event.dataTransfer) return
+  event.dataTransfer.setData(PALETTE_CONCEPT_DATA_TYPE, JSON.stringify({ text: suggestion.text }))
+  event.dataTransfer.effectAllowed = 'copy'
 }
 
 function getDisplayText(suggestion: NodeSuggestion): string {
@@ -230,7 +240,7 @@ onMounted(() => {
       </div>
       <div class="flex items-center gap-2 shrink-0">
         <span
-          v-if="selectedIds.length > 0"
+          v-if="!isConceptMap && selectedIds.length > 0"
           class="text-xs text-gray-500 dark:text-gray-400"
         >
           {{ selectedIds.length }} {{ isZh ? '已选' : 'selected' }}
@@ -295,18 +305,21 @@ onMounted(() => {
         <div
           v-for="suggestion in suggestions"
           :key="suggestion.id"
-          class="node-card p-3 rounded-lg border-2 cursor-pointer transition-all"
-          :style="getNodeCardStyle(suggestion, selectedIds.includes(suggestion.id))"
+          class="node-card p-3 rounded-lg border-2 transition-all"
           :class="[
-            !suggestion.source_llm && !selectedIds.includes(suggestion.id)
+            isConceptMap ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer',
+            !suggestion.source_llm && (isConceptMap || !selectedIds.includes(suggestion.id))
               ? 'border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-700'
               : '',
           ]"
-          @click="toggleSelection(suggestion.id)"
+          :style="isConceptMap ? getNodeCardStyle(suggestion, false) : getNodeCardStyle(suggestion, selectedIds.includes(suggestion.id))"
+          :draggable="isConceptMap"
+          @dragstart="isConceptMap ? handleConceptMapDragStart($event, suggestion) : undefined"
+          @click="!isConceptMap ? toggleSelection(suggestion.id) : undefined"
         >
           <div class="flex items-start gap-2">
             <div
-              v-if="selectedIds.includes(suggestion.id)"
+              v-if="!isConceptMap && selectedIds.includes(suggestion.id)"
               class="w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center shrink-0 mt-0.5"
             >
               <Check class="w-3 h-3 text-white" />
@@ -372,20 +385,25 @@ onMounted(() => {
       >
         <p class="text-xs text-gray-500 dark:text-gray-400">
           {{
-            isDimensionsStage
+            isConceptMap
               ? isZh
-                ? '选择1个维度，点击「下一步」继续。'
-                : 'Select 1 dimension, then click Next to continue.'
-              : isZh
-                ? '点击选择节点，选择完成后点击下方「完成」添加到图示。'
-                : 'Click to select nodes, then click Finish to add to diagram.'
+                ? '拖拽概念到画布上添加。'
+                : 'Drag concepts onto the canvas to add.'
+              : isDimensionsStage
+                ? isZh
+                  ? '选择1个维度，点击「下一步」继续。'
+                  : 'Select 1 dimension, then click Next to continue.'
+                : isZh
+                  ? '点击选择节点，选择完成后点击下方「完成」添加到图示。'
+                  : 'Click to select nodes, then click Finish to add to diagram.'
           }}
         </p>
       </div>
     </div>
 
-    <!-- Footer -->
+    <!-- Footer: hide Finish for concept_map (drag-only) -->
     <div
+      v-if="!isConceptMap"
       class="panel-footer p-4 border-t border-gray-200 dark:border-gray-700 flex gap-2 justify-center shrink-0"
     >
       <el-button
@@ -403,6 +421,18 @@ onMounted(() => {
         @click="handleFinish"
       >
         {{ isDimensionsStage ? (isZh ? '下一步' : 'Next') : isZh ? '完成' : 'Finish' }}
+      </el-button>
+    </div>
+    <!-- Concept map: minimal footer with close only -->
+    <div
+      v-else
+      class="panel-footer p-4 border-t border-gray-200 dark:border-gray-700 flex gap-2 justify-center shrink-0"
+    >
+      <el-button
+        size="default"
+        @click="handleCancel"
+      >
+        {{ isZh ? '关闭' : 'Close' }}
       </el-button>
     </div>
   </div>

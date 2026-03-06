@@ -437,6 +437,11 @@ function buildDiagramData(
         dimension: dimNode?.text ?? '',
       }
     }
+    case 'concept_map':
+      return {
+        topic: topicText,
+        center: { text: topicText },
+      }
     case 'mindmap':
     default:
       return {
@@ -511,6 +516,8 @@ export function useNodePalette(options: UseNodePaletteOptions = {}) {
         return (whole || topic || center?.text || '').trim()
       case 'bridge_map':
         return (dimension || '').trim()
+      case 'concept_map':
+        return (topic || center?.text || '').trim()
       default:
         return (topic || center?.text || '').trim()
     }
