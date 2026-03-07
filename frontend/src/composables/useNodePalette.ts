@@ -13,7 +13,8 @@ import { useRoute } from 'vue-router'
 
 import { isPlaceholderText } from '@/composables/useAutoComplete'
 import { eventBus } from '@/composables/useEventBus'
-import { useDiagramStore, usePanelsStore, useSavedDiagramsStore } from '@/stores'
+import { useDiagramStore, usePanelsStore } from '@/stores'
+import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import type { DiagramType } from '@/types'
 import { authFetch } from '@/utils/api'
 

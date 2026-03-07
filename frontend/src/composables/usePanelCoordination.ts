@@ -12,7 +12,8 @@
 import { computed, onUnmounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 
-import { useDiagramStore, usePanelsStore, useSavedDiagramsStore } from '@/stores'
+import { useDiagramStore, usePanelsStore } from '@/stores'
+import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 
 import { eventBus } from './useEventBus'
 
