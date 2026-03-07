@@ -42,6 +42,7 @@ export type EventTypes = {
     options?: Record<string, unknown>
     previousPanel?: string
   }
+  'nodePalette:opened': { diagramKey?: string; hasRestoredSession: boolean }
 
   // Diagram Events
   'diagram:render_requested': { source?: string }

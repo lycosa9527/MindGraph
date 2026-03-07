@@ -152,6 +152,7 @@ async function generateFromLanding() {
       throw new Error('No diagram type specified')
     }
 
+    diagramStore.clearHistory()
     const loaded = diagramStore.loadFromSpec(result.spec, finalDiagramType)
     if (loaded) {
       useLLMResultsStore().reset()

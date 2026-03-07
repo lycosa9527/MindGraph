@@ -108,17 +108,24 @@ class FlowMapPaletteGenerator(BasePaletteGenerator):
         stage: str,
         stage_data: Optional[Dict[str, Any]]
     ) -> None:
-        """Set node mode from stage; use step_name for substeps, else stage name."""
+        """Set node mode and parent_id from stage. parent_id is stable; mode is display fallback."""
         node = event.get('node', {})
         if not node:
             return
         if stage == 'substeps' and stage_data and stage_data.get('step_name'):
             node['mode'] = stage_data['step_name']
+            if stage_data.get('step_id'):
+                node['parent_id'] = stage_data['step_id']
         else:
             node['mode'] = stage
+        mode_val = node['mode']
+        parent_id_val = node.get('parent_id') or ''
+        id_val = node.get('id') or 'unknown'
+        text_val = node.get('text') or ''
         logger.debug(
-            "[FlowMapPalette] Node tagged with mode='%s' | ID: %s | Text: %s",
-            node['mode'], node.get('id', 'unknown'), node.get('text', ''))
+            "[FlowMapPalette] Node tagged with mode='%s' parent_id=%s | ID: %s | Text: %s",
+            mode_val, parent_id_val, id_val, text_val
+        )
 
     def _build_prompt(
         self,

@@ -22,6 +22,7 @@ import { getDefaultDiagramName } from '@/composables'
 
 import { useAuthStore } from './auth'
 import { useDiagramStore } from './diagram'
+import { usePanelsStore } from './panels'
 import { getDefaultTemplate, loadSpecForDiagramType } from './specLoader'
 
 // Security constants - must match backend limits
@@ -555,8 +556,8 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
       const saved = await saveDiagram(title, diagramType, spec, language, thumbnail)
 
       if (saved) {
-        // Track this as the active diagram
         activeDiagramId.value = saved.id
+        usePanelsStore().migrateNodePaletteSessionToSavedDiagram(diagramType, saved.id)
         return { success: true, action: 'saved', diagramId: saved.id }
       } else {
         return { success: false, action: 'error', error: error.value || 'Failed to save diagram' }
@@ -645,6 +646,7 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
 
     if (saved) {
       activeDiagramId.value = saved.id
+      usePanelsStore().migrateNodePaletteSessionToSavedDiagram(diagramType, saved.id)
       return { success: true, action: 'saved', diagramId: saved.id }
     } else {
       return { success: false, action: 'error', error: error.value || 'Failed to save diagram' }
@@ -673,6 +675,7 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
     const saved = await saveDiagram(title, diagramType, spec, language, thumbnail)
     if (saved) {
       activeDiagramId.value = saved.id
+      usePanelsStore().migrateNodePaletteSessionToSavedDiagram(diagramType, saved.id)
       return { success: true, action: 'saved', diagramId: saved.id }
     } else {
       return { success: false, action: 'error', error: error.value || 'Failed to save diagram' }

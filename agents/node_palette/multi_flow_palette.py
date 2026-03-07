@@ -1,9 +1,12 @@
 """Multi Flow Map Palette Generator.
 
-Generates nodes for Multi Flow Map with TWO modes:
+Generates nodes for Multi Flow Map with TWO fixed tabs:
 1. Causes: individual cause nodes
 2. Effects: individual effect nodes
+
+When mode='both', generates causes and effects concurrently (like double bubble).
 """
+import asyncio
 from typing import Optional, Dict, Any, AsyncGenerator
 import logging
 
@@ -16,17 +19,15 @@ class MultiFlowPaletteGenerator(BasePaletteGenerator):
     """
     Multi Flow Map specific palette generator.
 
-    Supports TWO generation modes:
+    Supports TWO fixed tabs with concurrent generation:
     - 'causes': Generate individual cause nodes
     - 'effects': Generate individual effect nodes
+    - 'both': Generate causes and effects concurrently (default for start/next)
     """
 
     def __init__(self):
         super().__init__()
-        # Mode-specific session storage
-        self.current_mode = {}  # session_id -> 'causes' | 'effects'
-        # Note: Mode is passed through educational_context to avoid race conditions
-        # with parallel catapults (no shared instance state!)
+        self.current_mode = {}
 
     async def generate_batch(
         self,
@@ -34,10 +35,9 @@ class MultiFlowPaletteGenerator(BasePaletteGenerator):
         center_topic: str,
         educational_context: Optional[Dict[str, Any]] = None,
         nodes_per_llm: int = 15,
-        _mode: Optional[str] = None,  # For tab-enabled diagrams (multi_flow_map)
+        _mode: Optional[str] = None,
         _stage: Optional[str] = None,
         _stage_data: Optional[Dict[str, Any]] = None,
-        # Token tracking parameters
         user_id: Optional[int] = None,
         organization_id: Optional[int] = None,
         diagram_type: Optional[str] = None,
@@ -47,16 +47,49 @@ class MultiFlowPaletteGenerator(BasePaletteGenerator):
         Generate batch with mode support.
 
         Args:
-            _mode: 'causes' for cause nodes, 'effects' for effect nodes
+            _mode: 'causes', 'effects', or 'both' (both = concurrent generation)
         """
         mode = _mode or 'causes'
         self.current_mode[session_id] = mode
 
-        if educational_context is None:
-            educational_context = {}
-        educational_context = dict(educational_context)
-        educational_context['_mode'] = mode
+        if mode == 'both':
+            async for chunk in self._generate_both(
+                session_id=session_id,
+                center_topic=center_topic,
+                educational_context=educational_context,
+                nodes_per_llm=nodes_per_llm,
+                user_id=user_id,
+                organization_id=organization_id,
+                diagram_type=diagram_type,
+                endpoint_path=endpoint_path,
+            ):
+                yield chunk
+            return
 
+        ctx = dict(educational_context or {})
+        ctx['_mode'] = mode
+        async for chunk in self._stream_single_mode(
+            session_id, center_topic, ctx, nodes_per_llm, mode,
+            _stage, _stage_data, user_id, organization_id,
+            diagram_type, endpoint_path
+        ):
+            yield chunk
+
+    async def _stream_single_mode(
+        self,
+        session_id: str,
+        center_topic: str,
+        educational_context: Dict[str, Any],
+        nodes_per_llm: int,
+        mode: str,
+        _stage: Optional[str],
+        _stage_data: Optional[Dict[str, Any]],
+        user_id: Optional[int],
+        organization_id: Optional[int],
+        diagram_type: Optional[str],
+        endpoint_path: Optional[str],
+    ) -> AsyncGenerator[Dict, None]:
+        """Stream nodes for a single mode (causes or effects)."""
         async for chunk in super().generate_batch(
             session_id=session_id,
             center_topic=center_topic,
@@ -70,15 +103,71 @@ class MultiFlowPaletteGenerator(BasePaletteGenerator):
             diagram_type=diagram_type,
             endpoint_path=endpoint_path
         ):
-            # Add mode field to every node for explicit tracking
             if chunk.get('event') == 'node_generated':
                 node = chunk.get('node', {})
-                node['mode'] = mode  # Tag node with its generation mode
-                node_id = node.get('id', 'unknown')
-                node_text = node.get('text', '')
-                logger.debug("[MultiFlow] Node tagged with mode='%s' | ID: %s | Text: %s", mode, node_id, node_text)
-
+                node['mode'] = mode
+                logger.debug(
+                    "[MultiFlow] Node tagged with mode='%s' | ID: %s | Text: %s",
+                    mode, node.get('id', 'unknown'), node.get('text', '')
+                )
             yield chunk
+
+    async def _generate_both(
+        self,
+        session_id: str,
+        center_topic: str,
+        educational_context: Optional[Dict[str, Any]],
+        nodes_per_llm: int,
+        user_id: Optional[int],
+        organization_id: Optional[int],
+        diagram_type: Optional[str],
+        endpoint_path: Optional[str],
+    ) -> AsyncGenerator[Dict, None]:
+        """Run causes and effects generation concurrently, merge streams."""
+        queue: asyncio.Queue = asyncio.Queue()
+        opts = {
+            'ctx': dict(educational_context or {}),
+            'session_id': session_id,
+            'center_topic': center_topic,
+            'nodes_per_llm': nodes_per_llm,
+            'user_id': user_id,
+            'organization_id': organization_id,
+            'diagram_type': diagram_type,
+            'endpoint_path': endpoint_path,
+        }
+
+        async def run_mode(mode_val: str) -> None:
+            sub_id = f"{opts['session_id']}_{mode_val}"
+            try:
+                async for chunk in self.generate_batch(
+                    session_id=sub_id,
+                    center_topic=opts['center_topic'],
+                    educational_context={**opts['ctx'], '_mode': mode_val},
+                    nodes_per_llm=opts['nodes_per_llm'],
+                    _mode=mode_val,
+                    user_id=opts['user_id'],
+                    organization_id=opts['organization_id'],
+                    diagram_type=opts['diagram_type'],
+                    endpoint_path=opts['endpoint_path'],
+                ):
+                    await queue.put(('chunk', chunk))
+            finally:
+                await queue.put(('done', mode_val))
+
+        tasks = [
+            asyncio.create_task(run_mode('causes')),
+            asyncio.create_task(run_mode('effects')),
+        ]
+        done_count = 0
+        while done_count < 2:
+            msg = await queue.get()
+            if msg[0] == 'done':
+                done_count += 1
+            else:
+                yield msg[1]
+        await asyncio.gather(*tasks)
+        self.end_session(f"{session_id}_causes", "complete")
+        self.end_session(f"{session_id}_effects", "complete")
 
     def _build_prompt(
         self,

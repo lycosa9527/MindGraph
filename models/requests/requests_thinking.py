@@ -45,7 +45,10 @@ class NodePaletteStartRequest(BaseModel):
     language: str = Field('en', description="UI language (en or zh)")
     mode: Optional[str] = Field(
         'similarities',
-        description="Mode for double bubble map: 'similarities' or 'differences'"
+        description=(
+            "Mode for double bubble map: 'similarities', 'differences', "
+            "or 'both' (generates both concurrently)"
+        )
     )
     # NEW: Stage-based generation for tree maps
     stage: Optional[str] = Field(
@@ -109,7 +112,10 @@ class NodePaletteNextRequest(BaseModel):
     language: str = Field('en', description="UI language (en or zh)")
     mode: Optional[str] = Field(
         'similarities',
-        description="Mode for double bubble map: 'similarities' or 'differences'"
+        description=(
+            "Mode for double bubble map: 'similarities', 'differences', "
+            "or 'both' (generates both concurrently)"
+        )
     )
     # NEW: Stage-based generation for tree maps
     stage: Optional[str] = Field(

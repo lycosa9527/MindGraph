@@ -85,8 +85,12 @@ const menuItems = computed<MenuItem[]>(() => {
         let deleted = false
         if (diagramType === 'mindmap' || diagramType === 'mind_map') {
           deleted = diagramStore.removeMindMapNodes([node.id]) > 0
+        } else if (diagramType === 'brace_map') {
+          deleted = diagramStore.removeBraceMapNodes([node.id]) > 0
         } else if (diagramType === 'double_bubble_map') {
           deleted = diagramStore.removeDoubleBubbleMapNodes([node.id]) > 0
+        } else if (diagramType === 'tree_map') {
+          deleted = diagramStore.removeTreeMapNodes([node.id]) > 0
         } else {
           deleted = diagramStore.removeNode(node.id)
         }

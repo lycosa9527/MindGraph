@@ -9,14 +9,14 @@
  * For double_bubble_map: shows tabs (相似点/Similarities | 差异点/Differences).
  * Differences tab displays paired attributes for both Topic A and Topic B.
  */
-import { computed, onMounted } from 'vue'
+import { computed, nextTick, onMounted } from 'vue'
 
 import { ElButton, ElTooltip } from 'element-plus'
 import { Check, Loader2, RefreshCw, X } from 'lucide-vue-next'
 
 import { getLLMColor } from '@/config/llmModelColors'
 import { useLanguage, useNotifications } from '@/composables'
-import { useNodePalette } from '@/composables/useNodePalette'
+import { getNodePalette } from '@/composables/useNodePalette'
 import { usePanelsStore, useUIStore } from '@/stores'
 import type { NodeSuggestion } from '@/types/panels'
 
@@ -36,9 +36,12 @@ const {
   suggestions,
   selectedIds,
   diagramType,
+  diagramData,
   doubleBubbleTopics,
+  bridgeMapDimension,
   isStagedDiagram,
   isDimensionsStage,
+  showNextButton,
   stage2Parents,
   stage2StageName,
   defaultStage,
@@ -49,17 +52,26 @@ const {
   toggleSelection,
   finishSelection,
   cancel,
+  dismiss,
   switchTab,
   switchStageTab,
-} = useNodePalette({
+} = getNodePalette({
   language: isZh.value ? 'zh' : 'en',
   onError: (err) => notify.error(err),
 })
 
 const isDoubleBubble = computed(() => diagramType.value === 'double_bubble_map')
+const isMultiFlowMap = computed(() => diagramType.value === 'multi_flow_map')
+const isBridgeMap = computed(() => diagramType.value === 'bridge_map')
 const isConceptMap = computed(() => diagramType.value === 'concept_map')
 const currentMode = computed(
-  () => (panelsStore.nodePalettePanel.mode as 'similarities' | 'differences') ?? 'similarities'
+  () =>
+    (panelsStore.nodePalettePanel.mode as
+      | 'similarities'
+      | 'differences'
+      | 'causes'
+      | 'effects') ??
+    (isMultiFlowMap.value ? 'causes' : 'similarities')
 )
 const currentStage = computed(() => panelsStore.nodePalettePanel.stage ?? '')
 const showStage2Tabs = computed(
@@ -69,8 +81,23 @@ const showStage2Tabs = computed(
     currentStage.value === stage2StageName.value
 )
 
+/** Show paired format (one up, one down) for double bubble differences or bridge map pairs */
+const showPairedFormat = computed(
+  () =>
+    (currentMode.value === 'differences' && isDoubleBubble.value) ||
+    (isBridgeMap.value && (panelsStore.nodePalettePanel.mode as string) === 'pairs')
+)
+
+/** Labels for paired display: Topic A/B for double bubble, Source/Analogy for bridge map */
+const pairedLabelLeft = computed(() =>
+  isBridgeMap.value ? (isZh.value ? '原词' : 'Source') : (doubleBubbleTopics?.value?.left ?? 'A')
+)
+const pairedLabelRight = computed(() =>
+  isBridgeMap.value ? (isZh.value ? '类比词' : 'Analogy') : (doubleBubbleTopics?.value?.right ?? 'B')
+)
+
 function handleClose() {
-  cancel()
+  dismiss()
   emit('close')
 }
 
@@ -87,6 +114,55 @@ function handleCancel() {
 function handleRefresh() {
   startSession()
 }
+
+onMounted(async () => {
+  if (isDoubleBubble.value && !panelsStore.nodePalettePanel.mode) {
+    panelsStore.updateNodePalette({ mode: 'similarities' })
+  }
+  if (isMultiFlowMap.value && !panelsStore.nodePalettePanel.mode) {
+    panelsStore.updateNodePalette({ mode: 'causes' })
+  }
+  const storedStage = panelsStore.nodePalettePanel.stage
+  const stageName = defaultStage.value
+  const stage1ToStage2 =
+    (storedStage === 'branches' && stageName === 'children') ||
+    (storedStage === 'steps' && stageName === 'substeps') ||
+    (storedStage === 'categories' && stageName === 'children') ||
+    (storedStage === 'parts' && stageName === 'subparts')
+  const needsSync =
+    isStagedDiagram.value &&
+    (!storedStage ||
+      (storedStage === 'dimensions' && stageName !== 'dimensions') ||
+      stage1ToStage2)
+  if (needsSync) {
+    const parents = stage2Parents.value
+    if (parents.length > 0 && stageName !== 'dimensions') {
+      panelsStore.updateNodePalette({
+        stage: stage2StageName.value,
+        stage_data: getStageDataForParent(parents[0]),
+        mode: parents[0].name,
+      })
+    } else {
+      let stage_data: { dimension: string } | null = null
+      if (isBridgeMap.value && stageName === 'pairs') {
+        const dim = ((diagramData.value as { dimension?: string })?.dimension ?? '').trim()
+        if (dim) stage_data = { dimension: dim }
+      }
+      panelsStore.updateNodePalette({
+        stage: stageName,
+        stage_data,
+        mode: stageName,
+      })
+    }
+  }
+  await nextTick()
+  if (
+    panelsStore.nodePalettePanel.suggestions.length === 0 &&
+    !isLoading.value
+  ) {
+    startSession()
+  }
+})
 
 function getNodeCardStyle(suggestion: { source_llm?: string }, isSelected: boolean) {
   const colors = suggestion.source_llm
@@ -112,7 +188,9 @@ function getNodeCardStyle(suggestion: { source_llm?: string }, isSelected: boole
   }
 }
 
-async function handleTabSwitch(mode: 'similarities' | 'differences') {
+async function handleTabSwitch(
+  mode: 'similarities' | 'differences' | 'causes' | 'effects'
+) {
   if (mode === currentMode.value) return
   await switchTab(mode)
 }
@@ -131,44 +209,14 @@ function handleConceptMapDragStart(event: DragEvent, suggestion: NodeSuggestion)
 }
 
 function getDisplayText(suggestion: NodeSuggestion): string {
-  if (currentMode.value === 'differences' && (suggestion.left || suggestion.right)) {
+  if (showPairedFormat.value && (suggestion.left || suggestion.right)) {
     const left = suggestion.left ?? ''
     const right = suggestion.right ?? ''
-    const dim = suggestion.dimension ? ` (${suggestion.dimension})` : ''
-    return left && right ? `${left} | ${right}${dim}` : suggestion.text
+    return left && right ? `${left} | ${right}` : suggestion.text
   }
   return suggestion.text
 }
 
-onMounted(() => {
-  if (isDoubleBubble.value && !panelsStore.nodePalettePanel.mode) {
-    panelsStore.updateNodePalette({ mode: 'similarities' })
-  }
-  if (isStagedDiagram.value && !panelsStore.nodePalettePanel.stage) {
-    const stageName = defaultStage.value
-    const parents = stage2Parents.value
-    if (
-      parents.length > 0 &&
-      stageName !== 'dimensions'
-    ) {
-      panelsStore.updateNodePalette({
-        stage: stage2StageName.value,
-        stage_data: getStageDataForParent(parents[0]),
-        mode: parents[0].name,
-      })
-    } else {
-      panelsStore.updateNodePalette({
-        stage: stageName,
-        stage_data: null,
-        mode: stageName,
-      })
-    }
-  }
-  // Only start a new session when we have no suggestions (preserve on reopen)
-  if (panelsStore.nodePalettePanel.suggestions.length === 0) {
-    startSession()
-  }
-})
 </script>
 
 <template>
@@ -186,7 +234,7 @@ onMounted(() => {
         <!-- Staged diagram stage 2 tabs (one per parent) -->
         <div
           v-if="showStage2Tabs"
-          class="flex rounded-lg bg-gray-100 dark:bg-gray-700 p-0.5 shrink-0 overflow-x-auto max-w-[200px]"
+          class="flex flex-1 min-w-0 rounded-lg bg-gray-100 dark:bg-gray-700 p-0.5 overflow-x-auto"
         >
           <button
             v-for="parent in stage2Parents"
@@ -208,7 +256,7 @@ onMounted(() => {
         <!-- Double bubble map tabs: Similarities | Differences -->
         <div
           v-else-if="isDoubleBubble"
-          class="flex rounded-lg bg-gray-100 dark:bg-gray-700 p-0.5 shrink-0"
+          class="flex flex-1 min-w-0 rounded-lg bg-gray-100 dark:bg-gray-700 p-0.5 overflow-x-auto"
         >
           <button
             type="button"
@@ -236,6 +284,50 @@ onMounted(() => {
           >
             {{ isZh ? '差异点' : 'Differences' }}
           </button>
+        </div>
+        <!-- Multi flow map tabs: Causes | Effects -->
+        <div
+          v-else-if="isMultiFlowMap"
+          class="flex flex-1 min-w-0 rounded-lg bg-gray-100 dark:bg-gray-700 p-0.5 overflow-x-auto"
+        >
+          <button
+            type="button"
+            class="px-2.5 py-1 text-xs font-medium rounded-md transition-colors"
+            :class="
+              currentMode === 'causes'
+                ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
+                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+            "
+            :disabled="isLoading"
+            @click="handleTabSwitch('causes')"
+          >
+            {{ isZh ? '原因' : 'Causes' }}
+          </button>
+          <button
+            type="button"
+            class="px-2.5 py-1 text-xs font-medium rounded-md transition-colors"
+            :class="
+              currentMode === 'effects'
+                ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
+                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+            "
+            :disabled="isLoading"
+            @click="handleTabSwitch('effects')"
+          >
+            {{ isZh ? '结果' : 'Effects' }}
+          </button>
+        </div>
+        <!-- Bridge map: dimension tab when in pairs stage -->
+        <div
+          v-else-if="isBridgeMap && bridgeMapDimension"
+          class="flex flex-1 min-w-0 rounded-lg bg-gray-100 dark:bg-gray-700 px-2 py-1"
+        >
+          <span
+            class="text-xs font-medium text-gray-700 dark:text-gray-300 truncate"
+            :title="bridgeMapDimension"
+          >
+            {{ bridgeMapDimension.length > 12 ? bridgeMapDimension.slice(0, 11) + '…' : bridgeMapDimension }}
+          </span>
         </div>
       </div>
       <div class="flex items-center gap-2 shrink-0">
@@ -278,9 +370,9 @@ onMounted(() => {
 
     <!-- Content -->
     <div class="panel-content flex-1 overflow-y-auto p-4 min-h-0">
-      <!-- Loading -->
+      <!-- Loading (only when no suggestions yet - allow streaming nodes to show) -->
       <div
-        v-if="isLoading"
+        v-if="isLoading && suggestions.length === 0"
         class="flex flex-col items-center justify-center py-12 gap-4"
       >
         <Loader2 class="w-8 h-8 animate-spin text-blue-500" />
@@ -297,11 +389,16 @@ onMounted(() => {
         {{ errorMessage }}
       </div>
 
-      <!-- Suggestions grid -->
-      <div
-        v-else
-        class="grid grid-cols-2 gap-2"
-      >
+      <!-- Suggestions grid (show during loading so nodes stream in progressively) -->
+      <div v-else class="flex flex-col gap-2">
+        <p
+          v-if="isLoading && suggestions.length > 0"
+          class="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1.5"
+        >
+          <Loader2 class="w-3.5 h-3.5 animate-spin shrink-0" />
+          {{ isZh ? `正在生成... 已收到 ${suggestions.length} 个` : `Generating... ${suggestions.length} received` }}
+        </p>
+        <div class="grid grid-cols-2 gap-2">
         <div
           v-for="suggestion in suggestions"
           :key="suggestion.id"
@@ -324,28 +421,22 @@ onMounted(() => {
             >
               <Check class="w-3 h-3 text-white" />
             </div>
-            <!-- Differences: show paired format (Topic A | Topic B) -->
+            <!-- Paired format (one up, one down): double bubble differences or bridge map pairs -->
             <div
-              v-if="currentMode === 'differences' && (suggestion.left || suggestion.right)"
+              v-if="showPairedFormat && (suggestion.left || suggestion.right)"
               class="flex flex-col gap-1 text-sm min-w-0 flex-1"
             >
               <div class="text-gray-700 dark:text-gray-300">
                 <span class="font-medium text-blue-600 dark:text-blue-400">
-                  {{ doubleBubbleTopics?.left ?? 'A' }}:
+                  {{ pairedLabelLeft }}:
                 </span>
                 {{ suggestion.left ?? '—' }}
               </div>
               <div class="text-gray-700 dark:text-gray-300">
                 <span class="font-medium text-amber-600 dark:text-amber-400">
-                  {{ doubleBubbleTopics?.right ?? 'B' }}:
+                  {{ pairedLabelRight }}:
                 </span>
                 {{ suggestion.right ?? '—' }}
-              </div>
-              <div
-                v-if="suggestion.dimension"
-                class="text-xs text-gray-500 dark:text-gray-400"
-              >
-                {{ suggestion.dimension }}
               </div>
             </div>
             <!-- Similarities or fallback: plain text -->
@@ -356,6 +447,7 @@ onMounted(() => {
               {{ getDisplayText(suggestion) }}
             </span>
           </div>
+        </div>
         </div>
       </div>
 
@@ -391,8 +483,12 @@ onMounted(() => {
                 : 'Drag concepts onto the canvas to add.'
               : isDimensionsStage
                 ? isZh
-                  ? '选择1个维度，点击「下一步」继续。'
-                  : 'Select 1 dimension, then click Next to continue.'
+                  ? '仅可选择1个维度，点击「下一步」继续。'
+                  : 'Select exactly 1 dimension only, then click Next to continue.'
+              : showNextButton
+                ? isZh
+                  ? '选择节点，点击「下一步」生成下一阶段节点。'
+                  : 'Select nodes, then click Next to generate second-stage nodes.'
                 : isZh
                   ? '点击选择节点，选择完成后点击下方「完成」添加到图示。'
                   : 'Click to select nodes, then click Finish to add to diagram.'
@@ -420,7 +516,7 @@ onMounted(() => {
         "
         @click="handleFinish"
       >
-        {{ isDimensionsStage ? (isZh ? '下一步' : 'Next') : isZh ? '完成' : 'Finish' }}
+        {{ showNextButton ? (isZh ? '下一步' : 'Next') : isZh ? '完成' : 'Finish' }}
       </el-button>
     </div>
     <!-- Concept map: minimal footer with close only -->

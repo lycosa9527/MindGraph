@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.32.0] - 2026-03-08
+
+### Added
+- **nodePalette Composable Modules**: New `composables/nodePalette/` with `applySelection.ts`, `constants.ts`, `diagramDataBuilder.ts`, `placeholderHelpers.ts`, `stageHelpers.ts`—extracted from useNodePalette for better maintainability and separation of concerns.
+
+### Changed
+- **useNodePalette**: Major refactor—logic split into nodePalette submodules. Reduced main composable size; stage helpers, diagram data building, and selection application now in dedicated modules.
+- **Node Palette Agents**: Enhanced palette generators (base, brace_map, bridge_map, double_bubble, flow_map, mindmap, multi_flow, tree_map) with improved prompts and PEP8 compliance.
+- **NodePalettePanel**: Refactored with useNodePalette integration and panel coordination updates.
+- **Panel Coordination**: usePanelCoordination, panels store, types/panels—improved node palette coordination and state handling.
+- **Diagram Store**: Added node palette assembly methods and state handling.
+- **CanvasPage, DiagramCanvas, CanvasToolbar**: Node palette integration and layout updates.
+- **DiagramTemplateInput, ContextMenu**: Minor updates for node palette flow.
+- **useAutoComplete, useEventBus**: Placeholder detection and event handling for node palette.
+- **prompts/node_palette.py, routers/node_palette.py**: Simplified and improved PEP8 compliance.
+- **utils/placeholder.py, models/requests/requests_thinking.py**: Placeholder detection and request handling updates.
+- **multiFlowMap spec loader, savedDiagrams store**: Spec loading and persistence updates.
+
 ## [5.31.0] - 2026-03-07
 
 ### Added

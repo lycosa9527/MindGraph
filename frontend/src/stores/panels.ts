@@ -17,6 +17,7 @@ import type {
   MindmateMessage,
   MindmatePanelState,
   NodePalettePanelState,
+  NodePaletteSessionSnapshot,
   NodeSuggestion,
   PropertyPanelState,
   UploadedFile,
@@ -40,6 +41,8 @@ export const usePanelsStore = defineStore('panels', () => {
     stage: null,
     stage_data: null,
   })
+
+  const nodePaletteSessionsByDiagram = ref<Map<string, NodePaletteSessionSnapshot>>(new Map())
 
   const property = ref<PropertyPanelState>({
     open: false,
@@ -128,26 +131,89 @@ export const usePanelsStore = defineStore('panels', () => {
     mindmate.value.uploadedFiles = mindmate.value.uploadedFiles.filter((f) => f.id !== fileId)
   }
 
-  function openNodePalette(options: Partial<NodePalettePanelState> = {}): void {
+  function openNodePalette(options: Partial<NodePalettePanelState> & { diagramKey?: string } = {}): void {
     const wasOpen = nodePalette.value.open
-    nodePalette.value = {
-      ...nodePalette.value,
-      open: true,
-      ...options,
+    const { diagramKey, ...restOptions } = options
+    const snapshot =
+      diagramKey && nodePaletteSessionsByDiagram.value.get(diagramKey)
+    const hasRestoredSession = !!(snapshot && snapshot.suggestions.length > 0)
+    if (hasRestoredSession) {
+      nodePalette.value = {
+        ...nodePalette.value,
+        suggestions: snapshot.suggestions,
+        selected: snapshot.selected,
+        mode: snapshot.mode,
+        stage: snapshot.stage ?? null,
+        stage_data: snapshot.stage_data ?? null,
+        open: true,
+      }
+    } else {
+      nodePalette.value = {
+        ...nodePalette.value,
+        open: true,
+        ...restOptions,
+      }
     }
     if (!wasOpen) {
       eventBus.emit('panel:opened', { panel: 'nodePalette', isOpen: true, options })
       eventBus.emit('state:panel_opened', { panel: 'nodePalette', state: nodePalette.value })
+      eventBus.emit('nodePalette:opened', { diagramKey, hasRestoredSession })
+    }
+  }
+
+  function saveNodePaletteSession(diagramKey: string): void {
+    const { suggestions, selected, mode, stage, stage_data } = nodePalette.value
+    if (suggestions.length > 0 && diagramKey) {
+      const map = new Map(nodePaletteSessionsByDiagram.value)
+      map.set(diagramKey, {
+        suggestions: [...suggestions],
+        selected: [...selected],
+        mode,
+        stage: stage ?? null,
+        stage_data: stage_data ?? null,
+      })
+      nodePaletteSessionsByDiagram.value = map
+    }
+  }
+
+  function clearNodePaletteSession(diagramKey?: string): void {
+    if (diagramKey) {
+      const map = new Map(nodePaletteSessionsByDiagram.value)
+      map.delete(diagramKey)
+      nodePaletteSessionsByDiagram.value = map
+    } else {
+      nodePaletteSessionsByDiagram.value = new Map()
+    }
+  }
+
+  /**
+   * Migrate node palette session from unsaved key ({type}-new) to saved key ({type}-{id}).
+   * Call when a new diagram is saved so reopen finds the session under the correct key.
+   */
+  function migrateNodePaletteSessionToSavedDiagram(
+    diagramType: string,
+    newDiagramId: string
+  ): void {
+    const dt = diagramType === 'mind_map' ? 'mindmap' : diagramType
+    const oldKey = `${dt}-new`
+    const newKey = `${dt}-${newDiagramId}`
+    const snapshot = nodePaletteSessionsByDiagram.value.get(oldKey)
+    if (snapshot) {
+      const map = new Map(nodePaletteSessionsByDiagram.value)
+      map.set(newKey, snapshot)
+      map.delete(oldKey)
+      nodePaletteSessionsByDiagram.value = map
     }
   }
 
   function closeNodePalette(): void {
     const wasOpen = nodePalette.value.open
     nodePalette.value.open = false
-    nodePalette.value.selected = []
     if (wasOpen) {
       eventBus.emit('panel:closed', { panel: 'nodePalette', isOpen: false })
       eventBus.emit('state:panel_closed', { panel: 'nodePalette' })
+      // Re-fit diagram after panel closes (canvas gains space; 300ms matches slide transition)
+      setTimeout(() => eventBus.emit('view:fit_diagram_requested', {}), 300)
     }
   }
 
@@ -162,11 +228,23 @@ export const usePanelsStore = defineStore('panels', () => {
     nodePalette.value.suggestions = suggestions
   }
 
+  /** Append a suggestion (for parallel streams merging into same list) */
+  function appendNodePaletteSuggestion(suggestion: NodeSuggestion): void {
+    nodePalette.value = {
+      ...nodePalette.value,
+      suggestions: [...nodePalette.value.suggestions, suggestion],
+    }
+  }
+
   /**
-   * Clear node palette session state (suggestions, selected, mode).
-   * Called when diagram changes or user leaves session to avoid stale data.
+   * Clear node palette state.
+   * - Always clears live panel state (suggestions, selected, mode, stage, stage_data).
+   * - clearSessions: when true (default), clears diagram-keyed sessions map.
+   *   Use clearSessions: false for diagram:loaded (switching diagrams) to preserve
+   *   other diagrams' sessions. Use default for diagram:type_changed (type switch).
    */
-  function clearNodePaletteState(): void {
+  function clearNodePaletteState(options?: { clearSessions?: boolean }): void {
+    const clearSessions = options?.clearSessions ?? true
     nodePalette.value = {
       ...nodePalette.value,
       suggestions: [],
@@ -174,6 +252,9 @@ export const usePanelsStore = defineStore('panels', () => {
       mode: null,
       stage: null,
       stage_data: null,
+    }
+    if (clearSessions) {
+      nodePaletteSessionsByDiagram.value = new Map()
     }
   }
 
@@ -278,6 +359,7 @@ export const usePanelsStore = defineStore('panels', () => {
       stage: null,
       stage_data: null,
     }
+    nodePaletteSessionsByDiagram.value = new Map()
     property.value = {
       open: false,
       nodeId: null,
@@ -311,11 +393,15 @@ export const usePanelsStore = defineStore('panels', () => {
     addUploadedFile,
     removeUploadedFile,
     openNodePalette,
+    saveNodePaletteSession,
+    clearNodePaletteSession,
+    migrateNodePaletteSessionToSavedDiagram,
     closeNodePalette,
     closeNodePalettePanel,
     toggleNodePalettePanel,
     updateNodePalette,
     setNodePaletteSuggestions,
+    appendNodePaletteSuggestion,
     clearNodePaletteState,
     toggleNodePaletteSelection,
     openProperty,

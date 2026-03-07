@@ -10,8 +10,9 @@
  * Migrated from archive/static/js/managers/panel-manager.js
  */
 import { computed, onUnmounted, ref } from 'vue'
+import { useRoute } from 'vue-router'
 
-import { usePanelsStore } from '@/stores/panels'
+import { useDiagramStore, usePanelsStore, useSavedDiagramsStore } from '@/stores'
 
 import { eventBus } from './useEventBus'
 
@@ -42,6 +43,15 @@ export interface UsePanelCoordinationOptions {
 // Composable
 // ============================================================================
 
+function getNodePaletteDiagramKey(
+  diagramType: string,
+  activeDiagramId: string | null,
+  routeDiagramId: string | undefined
+): string {
+  const id = routeDiagramId || activeDiagramId || 'new'
+  return `${diagramType}-${id}`
+}
+
 export function usePanelCoordination(options: UsePanelCoordinationOptions = {}) {
   const {
     ownerId = `PanelCoord_${Date.now()}`,
@@ -49,7 +59,10 @@ export function usePanelCoordination(options: UsePanelCoordinationOptions = {}) 
     blockedSources = ['keyboard', 'focus', 'tab_navigation'],
   } = options
 
+  const route = useRoute()
+  const diagramStore = useDiagramStore()
   const panelsStore = usePanelsStore()
+  const savedDiagramsStore = useSavedDiagramsStore()
 
   // =========================================================================
   // State
@@ -97,9 +110,16 @@ export function usePanelCoordination(options: UsePanelCoordinationOptions = {}) 
       case 'mindmate':
         panelsStore.openMindmate(data)
         break
-      case 'nodePalette':
-        panelsStore.openNodePalette(data)
+      case 'nodePalette': {
+        const dt = diagramStore.type === 'mind_map' ? 'mindmap' : diagramStore.type
+        const diagramKey = getNodePaletteDiagramKey(
+          dt ?? 'unknown',
+          savedDiagramsStore.activeDiagramId,
+          route.query.diagramId as string | undefined
+        )
+        panelsStore.openNodePalette({ ...data, diagramKey })
         break
+      }
       case 'property':
         if (data?.nodeId && data?.nodeData) {
           panelsStore.openProperty(data.nodeId as string, data.nodeData as Record<string, unknown>)

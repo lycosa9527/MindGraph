@@ -48,6 +48,7 @@ from services.infrastructure.http.error_handler import (
 )
 from services.redis.redis_activity_tracker import get_activity_tracker
 from utils.auth import get_current_user
+from utils.placeholder import is_placeholder_text
 
 router = APIRouter(tags=["thinking"])
 logger = logging.getLogger(__name__)
@@ -113,10 +114,10 @@ async def start_node_palette(
             center_topic = req.diagram_data.get('whole', '')
         elif req.diagram_type == 'bridge_map':
             # Bridge map uses dimension (can be empty for diverse relationships)
-            center_topic = req.diagram_data.get('dimension', '')
-            # Empty dimension is OK for bridge map - it means "generate diverse relationships"
-            if center_topic is None:
-                center_topic = ''  # Ensure it's a string, not None
+            raw_dim = req.diagram_data.get('dimension', '')
+            if raw_dim is None:
+                raw_dim = ''
+            center_topic = '' if is_placeholder_text(str(raw_dim)) else str(raw_dim)
         elif req.diagram_type in ('tree_map', 'mindmap', 'concept_map'):
             # Tree map, mindmap, concept map use topic
             center_topic = req.diagram_data.get('topic', '')
@@ -219,7 +220,8 @@ async def start_node_palette(
 
                 stage = getattr(req, 'stage', default_stage)
                 stage_data = getattr(req, 'stage_data', None) or {}
-                diagram_dim = (req.diagram_data.get('dimension') or '').strip()
+                raw_dim = (req.diagram_data.get('dimension') or '').strip()
+                diagram_dim = '' if is_placeholder_text(raw_dim) else raw_dim
                 if (
                     stage == 'dimensions'
                     and req.diagram_type in ('tree_map', 'brace_map', 'bridge_map')
@@ -236,9 +238,13 @@ async def start_node_palette(
                         "[NodePalette-API] Dimension already fixed '%s', skipping to stage: %s",
                         diagram_dim[:30], stage
                     )
-                elif isinstance(stage_data, dict) and req.diagram_type == 'brace_map':
+                elif isinstance(stage_data, dict) and req.diagram_type in ('tree_map', 'brace_map', 'bridge_map'):
                     if diagram_dim and (not stage_data.get('dimension')):
                         stage_data = {**stage_data, 'dimension': diagram_dim}
+                    if req.diagram_type == 'bridge_map' and stage == 'dimensions':
+                        analogies = req.diagram_data.get('analogies')
+                        if analogies and isinstance(analogies, list) and not stage_data.get('analogies'):
+                            stage_data = {**stage_data, 'analogies': analogies}
 
                 # Call generate_batch with appropriate parameters based on diagram type
                 if req.diagram_type in ['double_bubble_map', 'multi_flow_map']:

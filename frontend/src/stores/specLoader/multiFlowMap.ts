@@ -12,7 +12,26 @@ import {
 } from '@/composables/diagrams/layoutConfig'
 import type { Connection, DiagramNode } from '@/types'
 
+import { measureTextWidth } from './textMeasurement'
 import type { SpecLoaderResult } from './types'
+
+/** FlowNode font size (matches FlowNode.vue defaultStyle) */
+const FLOW_NODE_FONT_SIZE = 13
+/** FlowNode horizontal padding: px-5 = 20px each side */
+const FLOW_NODE_PADDING_X = 40
+
+/**
+ * Compute adaptive width for a cause/effect node from its text.
+ * Used when nodeWidths has no stored width (e.g. newly added from palette).
+ */
+function computeFlowNodeWidth(text: string): number {
+  const trimmed = (text || '').trim() || ' '
+  const textW =
+    typeof document !== 'undefined'
+      ? measureTextWidth(trimmed, FLOW_NODE_FONT_SIZE)
+      : 0
+  return Math.max(DEFAULT_NODE_WIDTH, Math.ceil(textW + FLOW_NODE_PADDING_X))
+}
 
 /**
  * Recalculate multi-flow map layout from existing nodes
@@ -67,21 +86,20 @@ export function recalculateMultiFlowMapLayout(
 
   // Calculate uniform width for visual balance
   // Find max width among all cause and effect nodes
+  // Use stored width when available (after user edit), otherwise compute from text
   let maxCauseWidth = nodeWidth
   let maxEffectWidth = nodeWidth
 
   causeNodes.forEach((node, index) => {
     const storedWidth = nodeWidths[`cause-${index}`] || nodeWidths[node.id || '']
-    if (storedWidth) {
-      maxCauseWidth = Math.max(maxCauseWidth, storedWidth)
-    }
+    const width = storedWidth ?? computeFlowNodeWidth(node.text ?? '')
+    maxCauseWidth = Math.max(maxCauseWidth, width)
   })
 
   effectNodes.forEach((node, index) => {
     const storedWidth = nodeWidths[`effect-${index}`] || nodeWidths[node.id || '']
-    if (storedWidth) {
-      maxEffectWidth = Math.max(maxEffectWidth, storedWidth)
-    }
+    const width = storedWidth ?? computeFlowNodeWidth(node.text ?? '')
+    maxEffectWidth = Math.max(maxEffectWidth, width)
   })
 
   // Use the maximum of both columns for visual balance

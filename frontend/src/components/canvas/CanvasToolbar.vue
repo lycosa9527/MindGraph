@@ -425,7 +425,7 @@ function handleAddNode() {
     return
   }
 
-  // For bubble maps, add a new attribute node
+  // For bubble maps, add a new attribute node (addNode recalculates layout and connections)
   if (diagramType === 'bubble_map') {
     const bubbleNodes = diagramStore.data.nodes.filter(
       (n) => (n.type === 'bubble' || n.type === 'child') && n.id.startsWith('bubble-')
@@ -437,12 +437,6 @@ function handleAddNode() {
       text: isZh.value ? '新属性' : 'New Attribute',
       type: 'bubble',
       position: { x: 0, y: 0 },
-    })
-
-    diagramStore.data.connections.push({
-      id: `edge-topic-bubble-${newIndex}`,
-      source: 'topic',
-      target: `bubble-${newIndex}`,
     })
 
     diagramStore.pushHistory(isZh.value ? '添加属性' : 'Add Attribute')
@@ -999,6 +993,35 @@ async function handleDeleteNode() {
     return
   }
 
+  // For tree maps, delete selected category/leaf nodes (category deletion includes children)
+  if (diagramType === 'tree_map') {
+    const selectedNodes = [...diagramStore.selectedNodes]
+    const toDelete = selectedNodes.filter(
+      (id) =>
+        /^tree-cat-\d+$/.test(id) || /^tree-leaf-\d+-\d+$/.test(id)
+    )
+    if (toDelete.length === 0) {
+      notify.warning(
+        isZh.value
+          ? '请选择分类或子项节点（主题节点不可删除）'
+          : 'Please select category or leaf nodes (topic node cannot be deleted)'
+      )
+      return
+    }
+
+    const deletedCount = diagramStore.removeTreeMapNodes(toDelete)
+    if (deletedCount > 0) {
+      diagramStore.clearSelection()
+      diagramStore.pushHistory(isZh.value ? '删除节点' : 'Delete nodes')
+      notify.success(
+        isZh.value ? `已删除 ${deletedCount} 个节点` : `Deleted ${deletedCount} node(s)`
+      )
+    } else {
+      notify.warning(isZh.value ? '无法删除主题节点' : 'Cannot delete topic node')
+    }
+    return
+  }
+
   // For bridge maps, delete entire analogy pairs
   if (diagramType === 'bridge_map') {
     if (!diagramStore.data?.nodes) {
@@ -1259,6 +1282,7 @@ onUnmounted(() => {
           <ElButton
             text
             size="small"
+            :disabled="!diagramStore.canUndo"
             @click="handleUndo"
           >
             <RotateCw class="w-4 h-4" />
@@ -1271,6 +1295,7 @@ onUnmounted(() => {
           <ElButton
             text
             size="small"
+            :disabled="!diagramStore.canRedo"
             @click="handleRedo"
           >
             <RotateCcw class="w-4 h-4" />

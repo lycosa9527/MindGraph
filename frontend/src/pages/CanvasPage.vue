@@ -27,6 +27,7 @@ import { MindmatePanel, NodePalettePanel } from '@/components/panels'
 import {
   eventBus,
   getDefaultDiagramName,
+  getNodePalette,
   getPanelCoordinator,
   useEditorShortcuts,
   useLanguage,
@@ -359,6 +360,16 @@ function handleAddChildKey() {
   }
 }
 
+function handleUndoKey() {
+  if (isTypingInInput()) return
+  diagramStore.undo()
+}
+
+function handleRedoKey() {
+  if (isTypingInInput()) return
+  diagramStore.redo()
+}
+
 function handleClearNodeTextKey() {
   if (isTypingInInput()) return
   const selected = [...diagramStore.selectedNodes]
@@ -423,6 +434,8 @@ function handleClearNodeTextKey() {
 }
 
 useEditorShortcuts({
+  undo: handleUndoKey,
+  redo: handleRedoKey,
   delete: handleDeleteKey,
   addNode: handleAddNodeKey,
   addBranch: handleAddBranchKey,
@@ -460,8 +473,14 @@ eventBus.onWithOwner(
   'CanvasPage'
 )
 
-// Clear node palette when diagram changes (type switch or load from library)
-eventBus.onWithOwner('diagram:loaded', () => panelsStore.clearNodePaletteState(), 'CanvasPage')
+// Clear node palette when diagram changes
+// - diagram:loaded: clear live state only, preserve sessions for other diagrams
+// - diagram:type_changed: clear all (live state + sessions map)
+eventBus.onWithOwner(
+  'diagram:loaded',
+  () => panelsStore.clearNodePaletteState({ clearSessions: false }),
+  'CanvasPage'
+)
 eventBus.onWithOwner('diagram:type_changed', () => panelsStore.clearNodePaletteState(), 'CanvasPage')
 
 // Watch for diagram type changes in store
@@ -480,6 +499,16 @@ watch(
     // The canvas will show empty state
   },
   { immediate: true }
+)
+
+// Watch for diagram ID changes (sidebar switch) - load new diagram and clear node palette
+watch(
+  () => route.query.diagramId,
+  async (newId, oldId) => {
+    if (newId && typeof newId === 'string' && newId !== oldId) {
+      await loadDiagramFromLibrary(newId)
+    }
+  }
 )
 
 /**
@@ -612,6 +641,9 @@ async function loadDiagramFromLibrary(diagramId: string): Promise<void> {
     // Set active diagram ID
     savedDiagramsStore.setActiveDiagram(diagramId)
 
+    // Clear undo/redo history when switching diagrams
+    diagramStore.clearHistory()
+
     // Load the diagram into store
     const loaded = diagramStore.loadFromSpec(diagram.spec, diagram.diagram_type as DiagramType)
 
@@ -629,6 +661,21 @@ onMounted(async () => {
 
   // Initialize panel coordinator so panel:open_requested (e.g. 瀑布流) is handled
   getPanelCoordinator()
+
+  // Initialize node palette singleton and listen for open events (start session when no restore)
+  const { startSession } = getNodePalette({
+    language: isZh.value ? 'zh' : 'en',
+    onError: (err) => notify.error(err),
+  })
+  eventBus.onWithOwner(
+    'nodePalette:opened',
+    (data: { hasRestoredSession?: boolean }) => {
+      if (!data.hasRestoredSession && diagramStore.data?.nodes?.length) {
+        nextTick().then(() => startSession())
+      }
+    },
+    'CanvasPage'
+  )
 
   // Fetch diagrams to know current slot count
   await savedDiagramsStore.fetchDiagrams()

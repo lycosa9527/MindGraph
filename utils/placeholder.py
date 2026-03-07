@@ -41,6 +41,7 @@ _CHINESE_PLACEHOLDERS = [
     re.compile(r'^叶子\s*\d+$'),
     re.compile(r'^部分\s*\d+$'),
     re.compile(r'^子部分\s*[\d.]+$'),
+    re.compile(r'^新子部分\s*[\d.]+$'),  # 新子部分 1, 新子部分 2 (Brace Map default)
     re.compile(r'^左\s*\d+$'),
     re.compile(r'^右\s*\d+$'),
     re.compile(r'^中心主题$'),
@@ -52,6 +53,7 @@ _CHINESE_PLACEHOLDERS = [
     re.compile(r'^特征\s*\d+$'),
     re.compile(r'^请输入'),
     re.compile(r'^点击编辑'),
+    re.compile(r'^\[点击设置\]$'),  # Bridge map dimension placeholder
 ]
 
 # English placeholder patterns
@@ -80,6 +82,7 @@ _ENGLISH_PLACEHOLDERS = [
     re.compile(r'^Leaf\s+\d+$', re.IGNORECASE),
     re.compile(r'^Part\s+\d+$', re.IGNORECASE),
     re.compile(r'^Subpart\s+\d+$', re.IGNORECASE),
+    re.compile(r'^New\s+Subpart\s+\d+$', re.IGNORECASE),  # New Subpart 1, 2 (Brace Map default)
     re.compile(r'^Left\s+\d+$', re.IGNORECASE),
     re.compile(r'^Right\s+\d+$', re.IGNORECASE),
     re.compile(r'^Main\s+Topic$', re.IGNORECASE),

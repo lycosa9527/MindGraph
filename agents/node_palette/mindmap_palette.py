@@ -103,16 +103,19 @@ class MindMapPaletteGenerator(BasePaletteGenerator):
         stage: str,
         stage_data: Dict[str, Any]
     ) -> None:
-        """Add mode field to node for explicit tracking."""
+        """Add mode and parent_id to node for tab routing. parent_id is stable; mode is display fallback."""
         node = event.get('node', {})
         if stage == 'children' and stage_data.get('branch_name'):
             node_mode = stage_data['branch_name']
+            if stage_data.get('branch_id'):
+                node['parent_id'] = stage_data['branch_id']
         else:
             node_mode = stage
         node['mode'] = node_mode
         logger.debug(
-            "[MindMapPalette] Node tagged with mode='%s' | ID: %s | Text: %s",
+            "[MindMapPalette] Node tagged with mode='%s' parent_id=%s | ID: %s | Text: %s",
             node_mode,
+            node.get('parent_id', ''),
             node.get('id', 'unknown'),
             node.get('text', '')
         )

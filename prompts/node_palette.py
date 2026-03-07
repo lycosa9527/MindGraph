@@ -776,18 +776,66 @@ def get_bridge_dimensions_prompt(
     context_desc: str,
     language: str,
     count: int,
-    batch_num: int
+    batch_num: int,
+    existing_pairs: Optional[list] = None
 ) -> str:
-    """Stage 1: Generate relationship dimension options."""
-    topic_hint = (
-        f"（若用户指定了主题「{center_topic}」，可结合该主题思考）"
-        if center_topic and center_topic.strip()
-        else ""
-    )
-    rel_types = BRIDGE_RELATIONSHIP_TYPES_ZH if language == 'zh' else BRIDGE_RELATIONSHIP_TYPES_EN
+    """Stage 1: Generate relationship dimension options.
 
-    if language == 'zh':
-        prompt = f"""为桥形图生成{count}个可能的类比关系维度。{topic_hint}
+    When existing_pairs is provided (user has fixed item A and B), infer the
+    relationship dimension that fits those pairs.
+    When existing_pairs is empty, suggest diverse dimension options.
+    """
+    rel_types = BRIDGE_RELATIONSHIP_TYPES_ZH if language == 'zh' else BRIDGE_RELATIONSHIP_TYPES_EN
+    pairs = existing_pairs or []
+
+    if pairs:
+        pairs_text = "\n".join(
+            f"- {p.get('left', '')} | {p.get('right', '')}"
+            for p in pairs[:10]
+        )
+        infer_count = min(count, 5)
+        if language == 'zh':
+            prompt = f"""用户已在桥形图中填写了以下类比对（左项 | 右项）：
+{pairs_text}
+
+请根据这些已有的类比对，推断它们共同遵循的关系维度。找出左项与右项之间的规律（如：首都→国家、工具→使用者、部分→整体等）。
+
+教学背景：{context_desc}
+
+{rel_types}
+
+要求：
+1. 推断出最能概括上述类比对的关系维度
+2. 维度要简洁明了，2-6个字
+3. 可以给出1-5个可能的维度（若存在多种解读）
+4. 只输出维度名称，每行一个，不要编号
+
+生成{infer_count}个关系维度："""
+        else:
+            prompt = f"""User has filled in these analogy pairs (left | right) in the bridge map:
+{pairs_text}
+
+Infer the common relationship dimension that these pairs follow. Find the pattern between left and right items (e.g., capital→country, tool→user, part→whole).
+
+Educational Context: {context_desc}
+
+{rel_types}
+
+Requirements:
+1. Infer the relationship dimension that best describes these pairs
+2. Dimension should be concise, 2-6 words
+3. May give 1-5 possible dimensions if multiple interpretations exist
+4. Output only dimension names, one per line, no numbering
+
+Generate {infer_count} relationship dimensions:"""
+    else:
+        topic_hint = (
+            f"（若用户指定了主题「{center_topic}」，可结合该主题思考）"
+            if center_topic and center_topic.strip()
+            else ""
+        )
+        if language == 'zh':
+            prompt = f"""为桥形图生成{count}个可能的类比关系维度。{topic_hint}
 
 教学背景：{context_desc}
 
@@ -801,13 +849,13 @@ def get_bridge_dimensions_prompt(
 3. 只输出维度名称，每行一个，不要编号
 
 生成{count}个关系维度："""
-    else:
-        topic_hint_en = (
-            f" (If user specified topic '{center_topic}', consider it)"
-            if center_topic and center_topic.strip()
-            else ""
-        )
-        prompt = f"""Generate {count} possible analogy relationship dimensions for bridge map.{topic_hint_en}
+        else:
+            topic_hint_en = (
+                f" (If user specified topic '{center_topic}', consider it)"
+                if center_topic and center_topic.strip()
+                else ""
+            )
+            prompt = f"""Generate {count} possible analogy relationship dimensions for bridge map.{topic_hint_en}
 
 Educational Context: {context_desc}
 

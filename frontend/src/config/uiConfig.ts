@@ -88,6 +88,8 @@ export const FIT_PADDING = {
   STANDARD_PX: 40,
   /** Top padding in pixels - clears CanvasTopBar (48px) + CanvasToolbar (top-60px, ~52px) + buffer */
   TOP_UI_HEIGHT_PX: 124,
+  /** Extra top padding for concept map - leaves space for menu icon above main topic node (icon ~20px + margin) */
+  MAIN_TOPIC_MENU_ICON_PX: 35,
   /** Bottom padding in pixels - ZoomControls + AIModelSelector (bottom-4 + compact bar ~48px + margin) */
   BOTTOM_UI_HEIGHT_PX: 88,
   /** Extra bottom ratio for fitWithPanel (adds ~13% to base) */

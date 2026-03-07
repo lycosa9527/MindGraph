@@ -9,452 +9,72 @@
  * Migrated from archive/static/js/editor/node-palette-manager.js
  */
 import { computed, onUnmounted, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 
 import { isPlaceholderText } from '@/composables/useAutoComplete'
 import { eventBus } from '@/composables/useEventBus'
-import { authFetch } from '@/utils/api'
-import { useDiagramStore, usePanelsStore } from '@/stores'
-import type { NodeSuggestion } from '@/types/panels'
+import { useDiagramStore, usePanelsStore, useSavedDiagramsStore } from '@/stores'
 import type { DiagramType } from '@/types'
+import { authFetch } from '@/utils/api'
 
-const LEARNING_SHEET_PLACEHOLDER = '___'
+import { applySelectionToDiagram } from './nodePalette/applySelection'
+import {
+  getParentIdFromStageData,
+  LEARNING_SHEET_PLACEHOLDER,
+  NODE_PALETTE_NEXT,
+  NODE_PALETTE_START,
+  STAGED_DIAGRAM_TYPES,
+  suggestionBelongsToParent,
+} from './nodePalette/constants'
+import { buildDiagramData } from './nodePalette/diagramDataBuilder'
+import {
+  type Stage2Parent,
+  buildStageDataForParent,
+  getDefaultStage,
+  getStage2ParentsForDiagram,
+  stage2StageNameForType,
+} from './nodePalette/stageHelpers'
 
-function isNodePlaceholder(text: string | undefined): boolean {
-  if (!text || !text.trim()) return false
-  const t = text.trim()
-  return t === LEARNING_SHEET_PLACEHOLDER || isPlaceholderText(t)
-}
-
-/**
- * Get placeholder content nodes for replacement, sorted by diagram slot order.
- */
-function getPlaceholderNodes(
-  diagramType: DiagramType | null,
-  nodes: Array<{ id: string; text: string; type?: string }>,
-  mode?: string | null,
-  stage?: string | null
-): Array<{ id: string; text: string }> {
-  if (!diagramType || !nodes.length) return []
-
-  const isPlaceholder = (n: { text: string }) => isNodePlaceholder(n.text)
-
-  switch (diagramType) {
-    case 'circle_map':
-      return nodes
-        .filter(
-          (n) =>
-            (n.type === 'bubble' || n.type === 'context') &&
-            n.id.startsWith('context-') &&
-            isPlaceholder(n)
-        )
-        .sort(
-          (a, b) =>
-            parseInt(a.id.replace('context-', ''), 10) -
-            parseInt(b.id.replace('context-', ''), 10)
-        )
-    case 'bubble_map':
-      return nodes
-        .filter(
-          (n) =>
-            (n.type === 'bubble' || n.type === 'attribute') &&
-            n.id.startsWith('bubble-') &&
-            isPlaceholder(n)
-        )
-        .sort(
-          (a, b) =>
-            parseInt(a.id.replace('bubble-', ''), 10) -
-            parseInt(b.id.replace('bubble-', ''), 10)
-        )
-    case 'multi_flow_map': {
-      const slot = mode === 'effects' ? 'effect' : 'cause'
-      return nodes
-        .filter((n) => n.id.startsWith(`${slot}-`) && isPlaceholder(n))
-        .sort(
-          (a, b) =>
-            parseInt(a.id.replace(`${slot}-`, ''), 10) -
-            parseInt(b.id.replace(`${slot}-`, ''), 10)
-        )
-    }
-    case 'double_bubble_map':
-      if (mode === 'differences') {
-        const leftNodes = nodes
-          .filter((n) => /^left-diff-\d+$/.test(n.id) && isPlaceholder(n))
-          .sort(
-            (a, b) =>
-              parseInt(a.id.replace('left-diff-', ''), 10) -
-              parseInt(b.id.replace('left-diff-', ''), 10)
-          )
-        const rightNodes = nodes
-          .filter((n) => /^right-diff-\d+$/.test(n.id) && isPlaceholder(n))
-          .sort(
-            (a, b) =>
-              parseInt(a.id.replace('right-diff-', ''), 10) -
-              parseInt(b.id.replace('right-diff-', ''), 10)
-          )
-        return leftNodes.map((l, i) => ({
-          id: `${l.id}|${rightNodes[i]?.id ?? ''}`,
-          text: l.text,
-        }))
-      }
-      return nodes
-        .filter((n) => /^similarity-\d+$/.test(n.id) && isPlaceholder(n))
-        .sort(
-          (a, b) =>
-            parseInt(a.id.replace('similarity-', ''), 10) -
-            parseInt(b.id.replace('similarity-', ''), 10)
-        )
-    case 'flow_map': {
-      if (stage === 'substeps') {
-        return nodes
-          .filter((n) => n.id.startsWith('flow-substep-') && isPlaceholder(n))
-          .sort((a, b) => a.id.localeCompare(b.id))
-      }
-      return nodes
-        .filter((n) => n.id.startsWith('flow-step-') && isPlaceholder(n))
-        .sort((a, b) => a.id.localeCompare(b.id))
-    }
-    case 'mindmap': {
-      const firstLevelBranches = nodes.filter(
-        (n) =>
-          (n.id.startsWith('branch-l-1-') || n.id.startsWith('branch-r-1-')) &&
-          isPlaceholder(n)
-      )
-      return firstLevelBranches.sort((a, b) => a.id.localeCompare(b.id))
-    }
-    case 'bridge_map': {
-      if (stage === 'dimensions') {
-        const dimNode = nodes.find((n) => n.id === 'dimension-label')
-        if (dimNode && (!dimNode.text?.trim() || isPlaceholder(dimNode))) {
-          return [{ id: 'dimension-label', text: dimNode.text ?? '' }]
-        }
-        return []
-      }
-      return nodes
-        .filter((n) => /^pair-\d+-left$/.test(n.id) && isPlaceholder(n))
-        .sort(
-          (a, b) =>
-            parseInt(a.id.replace('pair-', '').replace('-left', ''), 10) -
-            parseInt(b.id.replace('pair-', '').replace('-left', ''), 10)
-        )
-    }
-    case 'tree_map': {
-      if (stage === 'dimensions') {
-        const dimNode = nodes.find((n) => n.id === 'dimension-label')
-        if (dimNode && (!dimNode.text?.trim() || isPlaceholder(dimNode))) {
-          return [{ id: 'dimension-label', text: dimNode.text ?? '' }]
-        }
-        return []
-      }
-      if (stage === 'children') {
-        return nodes
-          .filter((n) => /^tree-leaf-\d+-\d+$/.test(n.id) && isPlaceholder(n))
-          .sort((a, b) => a.id.localeCompare(b.id))
-      }
-      return nodes
-        .filter((n) => /^tree-cat-\d+$/.test(n.id) && isPlaceholder(n))
-        .sort(
-          (a, b) =>
-            parseInt(a.id.replace('tree-cat-', ''), 10) -
-            parseInt(b.id.replace('tree-cat-', ''), 10)
-        )
-    }
-    case 'brace_map': {
-      if (stage === 'dimensions') {
-        const dimNode = nodes.find((n) => n.id === 'dimension-label')
-        if (dimNode && (!dimNode.text?.trim() || isPlaceholder(dimNode))) {
-          return [{ id: 'dimension-label', text: dimNode.text ?? '' }]
-        }
-        return []
-      }
-      if (stage === 'subparts') {
-        const subpartNodes = nodes.filter(
-          (n) =>
-            (n.id.startsWith('brace-subpart-') || /^brace-\d+-\d+$/.test(n.id)) &&
-            n.type === 'brace' &&
-            isPlaceholder(n)
-        )
-        return subpartNodes.sort((a, b) => a.id.localeCompare(b.id))
-      }
-      const partNodes = nodes.filter(
-        (n) =>
-          (n.id.startsWith('brace-part-') || /^brace-1-\d+$/.test(n.id)) &&
-          n.type === 'brace' &&
-          isPlaceholder(n)
-      )
-      return partNodes.sort((a, b) => a.id.localeCompare(b.id))
-    }
-    default:
-      return []
+function isAbortError(err: unknown): boolean {
+  if (err instanceof Error) {
+    if (err.name === 'AbortError') return true
+    const msg = err.message.toLowerCase()
+    return msg.includes('aborted') || msg.includes('bodystream')
   }
-}
-
-const NODE_PALETTE_START = '/thinking_mode/node_palette/start'
-const NODE_PALETTE_NEXT = '/thinking_mode/node_palette/next_batch'
-
-const STAGED_DIAGRAM_TYPES = [
-  'mindmap',
-  'flow_map',
-  'tree_map',
-  'brace_map',
-  'bridge_map',
-] as const
-
-const DIMENSION_FIRST_TYPES = ['tree_map', 'brace_map', 'bridge_map'] as const
-
-function hasDimension(
-  diagramType: DiagramType | null,
-  nodes: Array<{ id?: string; text?: string; type?: string }>,
-  dataDimension?: string | null
-): boolean {
-  if (!DIMENSION_FIRST_TYPES.includes(diagramType as (typeof DIMENSION_FIRST_TYPES)[number])) {
-    return true
-  }
-  const dim = dataDimension ?? nodes.find((n) => n.id === 'dimension-label')?.text ?? ''
-  const t = (dim ?? '').trim()
-  return t.length > 0 && !isPlaceholderText(t)
-}
-
-function getDefaultStage(
-  diagramType: DiagramType | null,
-  nodes: Array<{ id?: string; text?: string; type?: string }>,
-  connections?: Array<{ source: string; target: string }>,
-  dataDimension?: string | null
-): string {
-  switch (diagramType) {
-    case 'mindmap':
-      return 'branches'
-    case 'flow_map':
-      return 'steps'
-    case 'tree_map': {
-      if (!hasDimension(diagramType, nodes, dataDimension)) return 'dimensions'
-      const hasCategories = nodes.some((n) => /^tree-cat-\d+$/.test(n.id ?? ''))
-      return hasCategories ? 'children' : 'categories'
-    }
-    case 'brace_map': {
-      if (!hasDimension(diagramType, nodes, dataDimension)) return 'dimensions'
-      const rootId =
-        nodes.find((n) => n.id === 'brace-whole' || n.id === 'brace-0-0')?.id ??
-        nodes.find((n) => n.type === 'topic')?.id ??
-        (connections
-          ? nodes.find((n) => !new Set(connections.map((c) => c.target)).has(n.id ?? ''))?.id
-          : undefined)
-      const hasParts =
-        rootId &&
-        connections?.some((c) => c.source === rootId) &&
-        nodes.some((n) => n.type === 'brace')
-      return hasParts ? 'subparts' : 'parts'
-    }
-    case 'bridge_map': {
-      if (!hasDimension(diagramType, nodes, dataDimension)) return 'dimensions'
-      return 'pairs'
-    }
-    default:
-      return 'branches'
-  }
-}
-
-function stage2StageNameForType(dt: DiagramType | null): string {
-  switch (dt) {
-    case 'mindmap':
-      return 'children'
-    case 'flow_map':
-      return 'substeps'
-    case 'tree_map':
-      return 'children'
-    case 'brace_map':
-      return 'subparts'
-    case 'bridge_map':
-      return 'pairs'
-    default:
-      return ''
-  }
-}
-
-interface Stage2Parent {
-  id: string
-  name: string
-}
-
-function getStage2ParentsForDiagram(
-  dt: DiagramType | null,
-  nodes: Array<{ id?: string; text?: string; type?: string }>,
-  connections?: Array<{ source: string; target: string }>
-): Stage2Parent[] {
-  const hasRealText = (n: { text?: string }) =>
-    n.text && n.text.trim() && !isPlaceholderText(n.text)
-  if (dt === 'mindmap') {
-    return nodes
-      .filter(
-        (n) =>
-          (n.id?.startsWith('branch-l-1-') || n.id?.startsWith('branch-r-1-')) &&
-          hasRealText(n)
-      )
-      .map((n) => ({ id: n.id ?? '', name: String(n.text) }))
-  }
-  if (dt === 'flow_map') {
-    return nodes
-      .filter((n) => n.type === 'flow' && hasRealText(n))
-      .map((n) => ({ id: n.id ?? '', name: String(n.text) }))
-  }
-  if (dt === 'tree_map') {
-    return nodes
-      .filter((n) => /^tree-cat-\d+$/.test(n.id ?? '') && hasRealText(n))
-      .map((n) => ({ id: n.id ?? '', name: String(n.text) }))
-  }
-  if (dt === 'brace_map') {
-    const targetIds = new Set(connections?.map((c) => c.target) ?? [])
-    const rootId =
-      nodes.find((n) => n.id === 'brace-whole' || n.id === 'brace-0-0')?.id ??
-      nodes.find((n) => n.type === 'topic')?.id ??
-      nodes.find((n) => !targetIds.has(n.id ?? ''))?.id
-    return nodes
-      .filter(
-        (n) =>
-          n.type === 'brace' &&
-          connections?.some((c) => c.source === rootId && c.target === n.id) &&
-          hasRealText(n)
-      )
-      .map((n) => ({ id: n.id ?? '', name: String(n.text) }))
-  }
-  return []
-}
-
-function buildStageDataForParent(
-  parent: Stage2Parent,
-  dt: DiagramType | null,
-  extras?: { dimension?: string }
-): Record<string, unknown> {
-  const key =
-    dt === 'mindmap'
-      ? 'branch_name'
-      : dt === 'flow_map'
-        ? 'step_name'
-        : dt === 'tree_map'
-          ? 'category_name'
-          : 'part_name'
-  const data: Record<string, unknown> = { [key]: parent.name }
-  if (dt === 'tree_map') {
-    data.category_id = parent.id
-  }
-  if (dt === 'brace_map') {
-    data.part_id = parent.id
-    if (extras?.dimension?.trim()) {
-      data.dimension = extras.dimension.trim()
-    }
-  }
-  return data
+  return false
 }
 
 export interface UseNodePaletteOptions {
   language?: 'en' | 'zh'
   onError?: (error: string) => void
+  /** When true, clears singleton on unmount (used by getNodePalette) */
+  _asSingleton?: boolean
 }
 
-/**
- * Build diagram_data for Node Palette API from current diagram
- */
-function buildDiagramData(
-  diagramType: DiagramType | null,
-  nodes: Array<{ id: string; text: string; type?: string }>
-): Record<string, unknown> {
-  if (!diagramType || !nodes.length) {
-    return { topic: '' }
-  }
+function getNodePaletteDiagramKey(
+  diagramType: string,
+  activeDiagramId: string | null,
+  routeDiagramId: string | undefined
+): string {
+  const id = routeDiagramId || activeDiagramId || 'new'
+  return `${diagramType}-${id}`
+}
 
-  const topicNode = nodes.find(
-    (n) => n.type === 'topic' || n.type === 'center' || n.id === 'root'
-  )
-  const topicText = topicNode?.text?.trim() ?? ''
+let _nodePaletteInstance: ReturnType<typeof useNodePalette> | null = null
 
-  switch (diagramType) {
-    case 'circle_map': {
-      const contextNodes = nodes.filter(
-        (n) => (n.type === 'bubble' || n.type === 'context') && n.id.startsWith('context-')
-      )
-      return {
-        topic: topicText,
-        center: { text: topicText },
-        context: contextNodes.map((n) => n.text),
-      }
-    }
-    case 'bubble_map': {
-      const attrNodes = nodes.filter(
-        (n) => n.type === 'bubble' || n.type === 'attribute'
-      )
-      return {
-        topic: topicText,
-        center: { text: topicText },
-        attributes: attrNodes.map((n) => ({ text: n.text })),
-      }
-    }
-    case 'flow_map': {
-      const flowTopic = nodes.find((n) => n.id === 'flow-topic')
-      return {
-        title: flowTopic?.text ?? topicText,
-      }
-    }
-    case 'multi_flow_map': {
-      const eventNode = nodes.find((n) => n.id === 'event')
-      return {
-        event: eventNode?.text ?? topicText,
-      }
-    }
-    case 'double_bubble_map': {
-      const leftNode = nodes.find((n) => n.id === 'left' || n.id?.includes('left'))
-      const rightNode = nodes.find((n) => n.id === 'right' || n.id?.includes('right'))
-      return {
-        left: leftNode?.text ?? '',
-        right: rightNode?.text ?? '',
-      }
-    }
-    case 'brace_map': {
-      const wholeNode = nodes.find(
-        (n) =>
-          n.id === 'brace-whole' ||
-          n.id === 'brace-0-0' ||
-          n.id === 'whole' ||
-          n.type === 'whole'
-      )
-      const dimNode = nodes.find((n) => n.id === 'dimension-label')
-      return {
-        whole: wholeNode?.text ?? topicText,
-        dimension: dimNode?.text ?? '',
-      }
-    }
-    case 'bridge_map': {
-      const dimNode = nodes.find(
-        (n) => n.id === 'dimension-label' || n.id === 'dimension' || n.type === 'dimension'
-      )
-      return {
-        dimension: dimNode?.text ?? '',
-      }
-    }
-    case 'tree_map': {
-      const dimNode = nodes.find((n) => n.id === 'dimension-label')
-      return {
-        topic: topicText,
-        center: { text: topicText },
-        dimension: dimNode?.text ?? '',
-      }
-    }
-    case 'concept_map':
-      return {
-        topic: topicText,
-        center: { text: topicText },
-      }
-    case 'mindmap':
-    default:
-      return {
-        topic: topicText,
-        center: { text: topicText },
-      }
+export function getNodePalette(options: UseNodePaletteOptions = {}) {
+  if (!_nodePaletteInstance) {
+    _nodePaletteInstance = useNodePalette({ ...options, _asSingleton: true })
   }
+  return _nodePaletteInstance
 }
 
 export function useNodePalette(options: UseNodePaletteOptions = {}) {
-  const { language = 'en', onError } = options
+  const { language = 'en', onError, _asSingleton } = options
+  const route = useRoute()
   const diagramStore = useDiagramStore()
   const panelsStore = usePanelsStore()
+  const savedDiagramsStore = useSavedDiagramsStore()
 
   const sessionId = ref<string | null>(null)
   const centerTopic = ref('')
@@ -463,12 +83,23 @@ export function useNodePalette(options: UseNodePaletteOptions = {}) {
   const errorMessage = ref<string | null>(null)
   const abortController = ref<AbortController | null>(null)
 
+  const rawDiagramType = computed(() => diagramStore.type)
+  const diagramType = computed(() => {
+    const dt = rawDiagramType.value
+    return dt === 'mind_map' ? 'mindmap' : dt
+  })
+
   const suggestions = computed(() => {
     const all = panelsStore.nodePalettePanel.suggestions
     const mode = panelsStore.nodePalettePanel.mode as string | null
-    const dt = diagramStore.type
+    const stage = panelsStore.nodePalettePanel.stage
+    const stageData = panelsStore.nodePalettePanel.stage_data
+    const dt = diagramType.value
     if (dt === 'double_bubble_map' && mode) {
       return all.filter((s) => (s.mode ?? 'similarities') === mode)
+    }
+    if (dt === 'multi_flow_map' && mode) {
+      return all.filter((s) => (s.mode ?? 'causes') === mode)
     }
     if (
       (dt === 'mindmap' ||
@@ -478,23 +109,41 @@ export function useNodePalette(options: UseNodePaletteOptions = {}) {
         dt === 'bridge_map') &&
       mode
     ) {
-      return all.filter((s) => (s.mode ?? '') === mode)
+      const parentId = getParentIdFromStageData(
+        dt ?? '',
+        stage ?? undefined,
+        (stageData ?? undefined) as Record<string, unknown>
+      )
+      return all.filter((s) => {
+        if (parentId && s.parent_id) return s.parent_id === parentId
+        return (s.mode ?? '') === mode
+      })
     }
     return all
   })
   const selectedIds = computed(() => panelsStore.nodePalettePanel.selected)
-  const diagramType = computed(() => diagramStore.type)
   const isDimensionsStage = computed(() => {
     const stage = panelsStore.nodePalettePanel.stage
     const mode = panelsStore.nodePalettePanel.mode
     return stage === 'dimensions' || mode === 'dimensions'
   })
+
+  const isStage1WithNext = computed(() => {
+    const stage = panelsStore.nodePalettePanel.stage ?? ''
+    const dt = diagramType.value
+    if (dt === 'mindmap') return stage === 'branches'
+    if (dt === 'flow_map') return stage === 'steps'
+    if (dt === 'tree_map') return stage === 'categories'
+    if (dt === 'brace_map') return stage === 'parts'
+    return false
+  })
+
+  const showNextButton = computed(() => isDimensionsStage.value || isStage1WithNext.value)
   const diagramData = computed(() => {
     const nodes = diagramStore.data?.nodes ?? []
     return buildDiagramData(diagramType.value, nodes)
   })
 
-  /** Topic text for current diagram type (used for empty-check and streaming) */
   const topicText = computed(() => {
     const data = diagramData.value as Record<string, unknown>
     const topic = (data.topic as string) ?? ''
@@ -530,10 +179,17 @@ export function useNodePalette(options: UseNodePaletteOptions = {}) {
   async function streamBatch(
     url: string,
     payload: Record<string, unknown>,
-    isFirstBatch: boolean
+    options?: {
+      append?: boolean
+      sharedExistingIds?: Set<string>
+      useGlobalAbort?: boolean
+    }
   ): Promise<number> {
+    const useGlobalAbort = options?.useGlobalAbort !== false
     const controller = new AbortController()
-    abortController.value = controller
+    if (useGlobalAbort) {
+      abortController.value = controller
+    }
 
     const response = await authFetch(url, {
       method: 'POST',
@@ -552,7 +208,10 @@ export function useNodePalette(options: UseNodePaletteOptions = {}) {
 
     const decoder = new TextDecoder()
     let nodeCount = 0
-    const existingIds = new Set(panelsStore.nodePalettePanel.suggestions.map((s) => s.id))
+    const existingIds =
+      options?.sharedExistingIds ??
+      new Set(panelsStore.nodePalettePanel.suggestions.map((s) => s.id))
+    const doAppend = options?.append ?? false
 
     try {
       while (true) {
@@ -584,6 +243,7 @@ export function useNodePalette(options: UseNodePaletteOptions = {}) {
                 type?: string
                 source_llm?: string
                 mode?: string
+                parent_id?: string
                 left?: string
                 right?: string
                 dimension?: string
@@ -592,19 +252,27 @@ export function useNodePalette(options: UseNodePaletteOptions = {}) {
               existingIds.add(node.id)
               nodeCount++
 
-              panelsStore.setNodePaletteSuggestions([
-                ...panelsStore.nodePalettePanel.suggestions,
-                {
-                  id: node.id,
-                  text: node.text,
-                  type: node.type ?? 'bubble',
-                  source_llm: node.source_llm,
-                  mode: node.mode,
-                  left: node.left,
-                  right: node.right,
-                  dimension: node.dimension,
-                },
-              ])
+              const suggestion = {
+                id: node.id,
+                text: node.text,
+                type: (node.type ?? 'bubble') as 'bubble' | 'branch' | 'label',
+                source_llm: node.source_llm,
+                mode: node.mode,
+                parent_id: node.parent_id,
+                left: node.left,
+                right: node.right,
+                dimension: node.dimension,
+              }
+              if (doAppend) {
+                panelsStore.appendNodePaletteSuggestion(suggestion)
+              } else {
+                panelsStore.setNodePaletteSuggestions([
+                  ...panelsStore.nodePalettePanel.suggestions,
+                  suggestion,
+                ])
+              }
+              // Yield to next frame so each node paints progressively (streaming UX)
+              await new Promise<void>((r) => requestAnimationFrame(() => r()))
             } else if (data.event === 'error') {
               const msg = data.message ?? 'Unknown error'
               errorMessage.value = msg
@@ -618,10 +286,61 @@ export function useNodePalette(options: UseNodePaletteOptions = {}) {
         }
       }
     } finally {
-      abortController.value = null
+      if (useGlobalAbort) {
+        abortController.value = null
+      }
     }
 
     return nodeCount
+  }
+
+  async function startSessionsForAllParents(
+    parents: Stage2Parent[],
+    dt: DiagramType | null,
+    dimension: string
+  ): Promise<void> {
+    if (!sessionId.value || !topicText.value) return
+    isLoading.value = true
+    errorMessage.value = null
+    const sharedIds = new Set(panelsStore.nodePalettePanel.suggestions.map((s) => s.id))
+    const basePayload: Record<string, unknown> = {
+      diagram_type: dt,
+      diagram_data: diagramData.value,
+      language,
+      stage: stage2StageNameForType(dt),
+      mode: parents[0].name,
+    }
+    try {
+      const results = await Promise.allSettled(
+        parents.map((parent) => {
+          const payload = {
+            ...basePayload,
+            session_id: `${sessionId.value}_${parent.id}`,
+            stage_data: buildStageDataForParent(parent, dt, { dimension }),
+            mode: parent.name,
+          }
+          return streamBatch(NODE_PALETTE_START, payload, {
+            append: true,
+            sharedExistingIds: sharedIds,
+            useGlobalAbort: false,
+          })
+        })
+      )
+      const firstRejection = results.find((r) => r.status === 'rejected')
+      if (
+        firstRejection &&
+        firstRejection.status === 'rejected' &&
+        !isAbortError(firstRejection.reason)
+      ) {
+        errorMessage.value =
+          firstRejection.reason instanceof Error
+            ? firstRejection.reason.message
+            : String(firstRejection.reason)
+        onError?.(errorMessage.value)
+      }
+    } finally {
+      isLoading.value = false
+    }
   }
 
   const isWaitingForTopicInput = ref(false)
@@ -643,8 +362,7 @@ export function useNodePalette(options: UseNodePaletteOptions = {}) {
       panelsStore.nodePalettePanel.stage ??
       getDefaultStage(diagramType.value, nodes, connections, dataDimension)
     const isDimensionsStage = stage === 'dimensions'
-    const canStartWithoutTopic =
-      isDimensionsStage && diagramType.value === 'bridge_map'
+    const canStartWithoutTopic = isDimensionsStage && diagramType.value === 'bridge_map'
     if (!canStartWithoutTopic && (!topic || !topic.trim())) {
       isWaitingForTopicInput.value = true
       errorMessage.value =
@@ -672,35 +390,46 @@ export function useNodePalette(options: UseNodePaletteOptions = {}) {
     errorMessage.value = null
     const dt = diagramType.value
     const isStaged = STAGED_DIAGRAM_TYPES.includes(dt as (typeof STAGED_DIAGRAM_TYPES)[number])
-    const resolvedStage =
-      panelsStore.nodePalettePanel.stage ??
-      (isStaged ? stage : undefined)
+    const resolvedStage = panelsStore.nodePalettePanel.stage ?? (isStaged ? stage : undefined)
     const stageData = panelsStore.nodePalettePanel.stage_data ?? undefined
-    const mode =
+    const displayMode =
       panelsStore.nodePalettePanel.mode ??
-      (dt === 'double_bubble_map' ? 'similarities' : dt === 'multi_flow_map' ? 'causes' : resolvedStage)
+      (dt === 'double_bubble_map'
+        ? 'similarities'
+        : dt === 'multi_flow_map'
+          ? 'causes'
+          : resolvedStage)
+    const requestMode =
+      dt === 'double_bubble_map' ? 'both' : dt === 'multi_flow_map' ? 'both' : displayMode
     const paletteUpdates: {
       stage?: string
       stage_data?: Record<string, unknown> | null
       mode?: string
-      selected: string[]
-    } = { selected: [] }
+      selected?: string[]
+    } = {}
+    if (!keepSessionId) {
+      paletteUpdates.selected = []
+    }
     if (isStaged) {
       paletteUpdates.stage = resolvedStage
       paletteUpdates.stage_data = stageData ?? null
-      paletteUpdates.mode = mode
+      paletteUpdates.mode = displayMode
+    } else if (dt === 'double_bubble_map' || dt === 'multi_flow_map') {
+      paletteUpdates.mode = displayMode
     }
     if (keepSessionId) {
       panelsStore.updateNodePalette(paletteUpdates)
     } else {
-      if (dt === 'double_bubble_map') {
-        panelsStore.setNodePaletteSuggestions(
-          panelsStore.nodePalettePanel.suggestions.filter((s) => (s.mode ?? 'similarities') !== mode)
-        )
+      const diagramKey = getNodePaletteDiagramKey(
+        dt ?? 'unknown',
+        savedDiagramsStore.activeDiagramId,
+        route.query.diagramId as string | undefined
+      )
+      panelsStore.clearNodePaletteSession(diagramKey)
+      if (dt === 'double_bubble_map' || dt === 'multi_flow_map') {
+        panelsStore.setNodePaletteSuggestions([])
       } else if (isStaged) {
-        panelsStore.setNodePaletteSuggestions(
-          panelsStore.nodePalettePanel.suggestions.filter((s) => (s.mode ?? '') !== mode)
-        )
+        panelsStore.setNodePaletteSuggestions([])
       } else {
         panelsStore.setNodePaletteSuggestions([])
       }
@@ -709,12 +438,25 @@ export function useNodePalette(options: UseNodePaletteOptions = {}) {
 
     isLoading.value = true
     try {
+      const stage2Names = ['children', 'substeps', 'subparts']
+      const isStage2 = isStaged && resolvedStage && stage2Names.includes(resolvedStage)
+      const parents = isStage2 && dt ? getStage2ParentsForDiagram(dt, nodes, connections) : []
+      const dim =
+        (stageData as { dimension?: string })?.dimension ??
+        (diagramStore.data as { dimension?: string })?.dimension ??
+        ''
+
+      if (isStage2 && parents.length > 1) {
+        await startSessionsForAllParents(parents, dt, dim)
+        return true
+      }
+
       const payload: Record<string, unknown> = {
         session_id: sessionId.value,
         diagram_type: dt,
         diagram_data: diagramData.value,
         language,
-        mode,
+        mode: requestMode,
       }
       if (isStaged && resolvedStage) {
         payload.stage = resolvedStage
@@ -722,9 +464,10 @@ export function useNodePalette(options: UseNodePaletteOptions = {}) {
           payload.stage_data = stageData
         }
       }
-      await streamBatch(NODE_PALETTE_START, payload, true)
+      await streamBatch(NODE_PALETTE_START, payload)
       return true
     } catch (err) {
+      if (isAbortError(err)) return false
       const msg = err instanceof Error ? err.message : String(err)
       errorMessage.value = msg
       onError?.(msg)
@@ -744,11 +487,7 @@ export function useNodePalette(options: UseNodePaletteOptions = {}) {
           diagramStore.data?.connections,
           (diagramStore.data as Record<string, unknown>)?.dimension as string | null | undefined
         ) === 'dimensions')
-    if (
-      !sessionId.value ||
-      (!centerTopic.value && !canLoadWithoutTopic) ||
-      isLoadingMore.value
-    )
+    if (!sessionId.value || (!centerTopic.value && !canLoadWithoutTopic) || isLoadingMore.value)
       return false
 
     isLoadingMore.value = true
@@ -765,25 +504,36 @@ export function useNodePalette(options: UseNodePaletteOptions = {}) {
         panelsStore.nodePalettePanel.stage ??
         (isStaged ? getDefaultStage(dt, nodes, connections, dataDimension) : undefined)
       const stageData = panelsStore.nodePalettePanel.stage_data ?? undefined
-      const mode =
+      const nextBatchMode =
         panelsStore.nodePalettePanel.mode ??
         (dt === 'double_bubble_map' ? 'similarities' : dt === 'multi_flow_map' ? 'causes' : stage)
+      const nextBatchRequestMode =
+        dt === 'double_bubble_map' || dt === 'multi_flow_map' ? 'both' : nextBatchMode
       const payload: Record<string, unknown> = {
         session_id: sessionId.value,
         diagram_type: dt,
-        center_topic: centerTopic.value,
+        center_topic: centerTopic.value || ' ',
         language,
-        mode,
+        mode: nextBatchRequestMode,
       }
       if (isStaged && stage) {
         payload.stage = stage
-        if (stageData && Object.keys(stageData).length > 0) {
-          payload.stage_data = stageData
+        let mergedStageData = stageData ?? {}
+        if (dt === 'bridge_map' && stage === 'dimensions') {
+          const data = diagramData.value as { analogies?: Array<{ left: string; right: string }> }
+          const analogies = data?.analogies
+          if (analogies?.length && !mergedStageData.analogies) {
+            mergedStageData = { ...mergedStageData, analogies }
+          }
+        }
+        if (Object.keys(mergedStageData).length > 0) {
+          payload.stage_data = mergedStageData
         }
       }
-      await streamBatch(NODE_PALETTE_NEXT, payload, false)
+      await streamBatch(NODE_PALETTE_NEXT, payload)
       return true
     } catch (err) {
+      if (isAbortError(err)) return false
       const msg = err instanceof Error ? err.message : String(err)
       errorMessage.value = msg
       onError?.(msg)
@@ -811,285 +561,29 @@ export function useNodePalette(options: UseNodePaletteOptions = {}) {
 
     diagramStore.pushHistory(language === 'zh' ? '替换/添加节点' : 'Replace/add nodes')
 
-    const nodes = diagramStore.data?.nodes ?? []
-    const diagramTypeVal = diagramType.value
-    const stageData = panelsStore.nodePalettePanel.stage_data ?? undefined
     const mode =
       panelsStore.nodePalettePanel.mode ??
-      (diagramTypeVal === 'double_bubble_map' ? 'similarities' : 'causes')
+      (diagramType.value === 'double_bubble_map' ? 'similarities' : 'causes')
 
-    const placeholders = getPlaceholderNodes(diagramTypeVal, nodes, mode, stage)
-    let suggestionIndex = 0
-
-    for (const slot of placeholders) {
-      if (suggestionIndex >= toApply.length) break
-      const suggestion = toApply[suggestionIndex]
-
-      if (slot.id === 'dimension-label') {
-        diagramStore.updateNode('dimension-label', { text: suggestion.text })
-      } else if (diagramTypeVal === 'double_bubble_map' && mode === 'differences') {
-        const ids = slot.id.split('|')
-        const leftId = ids[0]
-        const rightId = ids[1]
-        const leftText =
-          suggestion.left ?? suggestion.text.split('|').map((p) => p.trim())[0] ?? suggestion.text
-        const rightText =
-          suggestion.right ?? suggestion.text.split('|').map((p) => p.trim())[1] ?? ''
-        if (leftId) diagramStore.updateNode(leftId, { text: leftText })
-        if (rightId && rightText) diagramStore.updateNode(rightId, { text: rightText })
-      } else if (diagramTypeVal === 'bridge_map' && /^pair-\d+-left$/.test(slot.id)) {
-        const pairIndex = slot.id.replace('pair-', '').replace('-left', '')
-        const rightId = `pair-${pairIndex}-right`
-        const parts = suggestion.text.split('|').map((p) => p.trim())
-        const leftText = parts[0] ?? suggestion.text
-        const rightText = parts[1] ?? ''
-        diagramStore.updateNode(slot.id, { text: leftText })
-        diagramStore.updateNode(rightId, { text: rightText })
-      } else {
-        diagramStore.updateNode(slot.id, { text: suggestion.text })
-      }
-      suggestionIndex++
-    }
-
-    const remainder = toApply.slice(suggestionIndex)
-    const isStaged = STAGED_DIAGRAM_TYPES.includes(
-      diagramTypeVal as (typeof STAGED_DIAGRAM_TYPES)[number]
+    const diagramKey = getNodePaletteDiagramKey(
+      diagramType.value ?? 'unknown',
+      savedDiagramsStore.activeDiagramId,
+      route.query.diagramId as string | undefined
     )
-    const isStage1WithParents =
-      isStaged &&
-      (stage === 'branches' ||
-        stage === 'steps' ||
-        stage === 'categories' ||
-        stage === 'parts')
-    if (remainder.length === 0 && !isDimensionsStage && !isStage1WithParents) {
-      panelsStore.closeNodePalette()
-      return true
-    }
-    if (isDimensionsStage && suggestionIndex > 0) {
-      const selectedDimension = toApply[0]?.text ?? ''
-      const nextStage =
-        diagramTypeVal === 'tree_map'
-          ? 'categories'
-          : diagramTypeVal === 'brace_map'
-            ? 'parts'
-            : 'pairs'
-      panelsStore.updateNodePalette({
-        stage: nextStage,
-        stage_data: { dimension: selectedDimension },
-        mode: nextStage,
-        selected: [],
-      })
-      await startSession({ keepSessionId: true })
-      return false
-    }
-    if (remainder.length === 0 && isStage1WithParents) {
-      const currentNodes = diagramStore.data?.nodes ?? []
-      const parents = getStage2ParentsForDiagram(
-        diagramTypeVal,
-        currentNodes,
-        diagramStore.data?.connections
-      )
-      if (parents.length > 0) {
-        const dim =
-          (stageData as { dimension?: string })?.dimension ??
-          (diagramStore.data as { dimension?: string })?.dimension ??
-          ''
-        panelsStore.updateNodePalette({
-          stage: stage2StageNameForType(diagramTypeVal),
-          stage_data: buildStageDataForParent(parents[0], diagramTypeVal, {
-            dimension: dim,
-          }),
-          mode: parents[0].name,
-          selected: [],
-        })
-        return false
-      }
-      panelsStore.closeNodePalette()
-      return true
-    }
 
-    if (diagramTypeVal === 'circle_map') {
-      const contextNodes = nodes.filter((n) => n.id.startsWith('context-'))
-      const nextIndex = contextNodes.length
-      remainder.forEach((suggestion, i) => {
-        diagramStore.addNode({
-          id: `context-${nextIndex + i}`,
-          text: suggestion.text,
-          type: 'bubble',
-          position: { x: 0, y: 0 },
-          style: {},
-        })
-      })
-    } else if (diagramTypeVal === 'bubble_map') {
-      const bubbleNodes = nodes.filter(
-        (n) => (n.type === 'bubble' || n.type === 'child') && n.id.startsWith('bubble-')
-      )
-      const nextIndex = bubbleNodes.length
-      const topicId = nodes.find((n) => n.type === 'topic' || n.type === 'center')?.id ?? 'topic'
-      remainder.forEach((suggestion, i) => {
-        const newId = `bubble-${nextIndex + i}`
-        diagramStore.addNode({
-          id: newId,
-          text: suggestion.text,
-          type: 'bubble',
-          position: { x: 0, y: 0 },
-          style: {},
-        })
-        diagramStore.addConnection(topicId, newId)
-      })
-    } else if (diagramTypeVal === 'multi_flow_map') {
-      const category = mode === 'effects' ? 'effects' : 'causes'
-      remainder.forEach((suggestion) => {
-        diagramStore.addNode({
-          id: `${category === 'effects' ? 'effect' : 'cause'}-temp`,
-          text: suggestion.text,
-          type: 'flow',
-          position: { x: 0, y: 0 },
-          style: {},
-          category,
-        } as Parameters<typeof diagramStore.addNode>[0] & { category?: string })
-      })
-    } else if (diagramTypeVal === 'double_bubble_map') {
-      if (mode === 'differences') {
-        remainder.forEach((suggestion) => {
-          const leftText =
-            suggestion.left ?? suggestion.text.split('|').map((p) => p.trim())[0] ?? suggestion.text
-          const rightText =
-            suggestion.right ?? suggestion.text.split('|').map((p) => p.trim())[1] ?? ''
-          diagramStore.addDoubleBubbleMapNode('leftDiff', leftText, rightText)
-        })
-      } else {
-        remainder.forEach((suggestion) => {
-          diagramStore.addDoubleBubbleMapNode('similarity', suggestion.text)
-        })
-      }
-    } else if (diagramTypeVal === 'mindmap') {
-      if (stage === 'children' && stageData?.branch_name) {
-        const parentId = nodes.find(
-          (n) =>
-            (n.id.startsWith('branch-l-') || n.id.startsWith('branch-r-')) &&
-            n.text === stageData.branch_name
-        )?.id
-        if (parentId) {
-          remainder.forEach((s) => diagramStore.addMindMapChild(parentId, s.text))
-        }
-      } else {
-        remainder.forEach((s) =>
-          diagramStore.addMindMapBranch('right', s.text, 'New Child')
-        )
-      }
-    } else if (diagramTypeVal === 'flow_map') {
-      if (stage === 'substeps' && stageData?.step_name) {
-        remainder.forEach((s) =>
-          diagramStore.addFlowMapSubstep(
-            stageData.step_name as string,
-            s.text
-          )
-        )
-      } else {
-        remainder.forEach((s) => diagramStore.addFlowMapStep(s.text))
-      }
-    } else if (diagramTypeVal === 'tree_map') {
-      if (stage === 'children' && stageData?.category_name && stageData?.category_id) {
-        remainder.forEach((s) =>
-          diagramStore.addTreeMapChild(
-            stageData.category_id as string,
-            s.text
-          )
-        )
-      } else {
-        remainder.forEach((s) => diagramStore.addTreeMapCategory(s.text))
-      }
-    } else if (diagramTypeVal === 'brace_map') {
-      const targetIds = new Set(diagramStore.data?.connections?.map((c) => c.target) ?? [])
-      const wholeId =
-        nodes.find((n) => n.id === 'brace-whole' || n.id === 'brace-0-0')?.id ??
-        nodes.find((n) => n.type === 'topic')?.id ??
-        nodes.find((n) => !targetIds.has(n.id))?.id
-      if (stage === 'subparts' && stageData?.part_name && stageData?.part_id) {
-        remainder.forEach((s) =>
-          diagramStore.addBraceMapPart(stageData.part_id as string, s.text)
-        )
-      } else {
-        remainder.forEach((s) =>
-          diagramStore.addBraceMapPart(wholeId ?? 'topic', s.text)
-        )
-      }
-    } else if (diagramTypeVal === 'bridge_map' && stage !== 'dimensions') {
-      const pairNodes = nodes.filter(
-        (n) =>
-          (n as { data?: { pairIndex?: number } }).data?.pairIndex !== undefined &&
-          !(n as { data?: { isDimensionLabel?: boolean } }).data?.isDimensionLabel
-      )
-      let maxPairIndex = -1
-      pairNodes.forEach((n) => {
-        const idx = (n as { data?: { pairIndex?: number } }).data?.pairIndex
-        if (typeof idx === 'number' && idx > maxPairIndex) maxPairIndex = idx
-      })
-      const gapBetweenPairs = 50
-      const verticalGap = 5
-      const nodeWidth = 120
-      const nodeHeight = 28
-      const startX = 130
-      let nextX = startX
-      if (pairNodes.length > 0) {
-        const rightmost = pairNodes.reduce((a, b) =>
-          (a.position?.x ?? 0) > (b.position?.x ?? 0) ? a : b
-        )
-        nextX = (rightmost.position?.x ?? startX) + nodeWidth + gapBetweenPairs
-      }
-      const centerY = 300
-      remainder.forEach((suggestion, i) => {
-        const newPairIndex = maxPairIndex + 1 + i
-        const parts = suggestion.text.split('|').map((p) => p.trim())
-        const leftText =
-          suggestion.left ?? parts[0] ?? suggestion.text
-        const rightText = suggestion.right ?? parts[1] ?? ''
-        const x = nextX + i * (nodeWidth + gapBetweenPairs)
-        diagramStore.addNode({
-          id: `pair-${newPairIndex}-left`,
-          text: leftText,
-          type: 'branch',
-          position: { x, y: centerY - verticalGap - nodeHeight },
-          data: {
-            pairIndex: newPairIndex,
-            position: 'left',
-            diagramType: 'bridge_map',
-          },
-        })
-        diagramStore.addNode({
-          id: `pair-${newPairIndex}-right`,
-          text: rightText,
-          type: 'branch',
-          position: { x, y: centerY + verticalGap },
-          data: {
-            pairIndex: newPairIndex,
-            position: 'right',
-            diagramType: 'bridge_map',
-          },
-        })
-      })
-    } else {
-      const maxX = nodes.length
-        ? Math.max(...nodes.map((n) => (n.position?.x ?? 0) + (n.style?.width ?? 120)))
-        : 400
-      remainder.forEach((suggestion, index) => {
-        diagramStore.addNode({
-          id: `node-${Date.now()}-${index}`,
-          text: suggestion.text,
-          type: 'bubble',
-          position: { x: maxX + 20 + index * 30, y: 300 + index * 20 },
-          style: {
-            backgroundColor: '#ffffff',
-            borderColor: '#4a90e2',
-            textColor: '#303133',
-          },
-        })
-      })
-    }
-
-    panelsStore.closeNodePalette()
-    return true
+    return applySelectionToDiagram({
+      diagramStore: diagramStore as Parameters<typeof applySelectionToDiagram>[0]['diagramStore'],
+      panelsStore: panelsStore as Parameters<typeof applySelectionToDiagram>[0]['panelsStore'],
+      diagramType: diagramType.value,
+      diagramKey,
+      toApply,
+      stage,
+      stageData: panelsStore.nodePalettePanel.stage_data ?? undefined,
+      mode,
+      language,
+      startSession,
+      startSessionsForAllParents,
+    })
   }
 
   function cancel(): void {
@@ -1098,25 +592,50 @@ export function useNodePalette(options: UseNodePaletteOptions = {}) {
     }
     sessionId.value = null
     centerTopic.value = ''
+    const diagramKey = getNodePaletteDiagramKey(
+      diagramType.value ?? 'unknown',
+      savedDiagramsStore.activeDiagramId,
+      route.query.diagramId as string | undefined
+    )
+    panelsStore.clearNodePaletteSession(diagramKey)
     panelsStore.setNodePaletteSuggestions([])
     panelsStore.updateNodePalette({ selected: [] })
     panelsStore.closeNodePalette()
   }
 
-  /**
-   * Switch tab (for double_bubble_map: similarities | differences).
-   * Preserves both modes' suggestions in same session. Only starts generation if target tab is empty.
-   */
-  async function switchTab(mode: 'similarities' | 'differences'): Promise<boolean> {
-    if (diagramType.value !== 'double_bubble_map') return false
+  /** Close panel without clearing suggestions/selection - save to session store for reopen */
+  function dismiss(): void {
+    if (abortController.value) {
+      abortController.value.abort()
+    }
+    sessionId.value = null
+    const diagramKey = getNodePaletteDiagramKey(
+      diagramType.value ?? 'unknown',
+      savedDiagramsStore.activeDiagramId,
+      route.query.diagramId as string | undefined
+    )
+    panelsStore.saveNodePaletteSession(diagramKey)
+    panelsStore.closeNodePalette()
+  }
+
+  async function switchTab(
+    mode: 'similarities' | 'differences' | 'causes' | 'effects'
+  ): Promise<boolean> {
+    const dt = diagramType.value
+    const isDoubleBubble = dt === 'double_bubble_map'
+    const isMultiFlow = dt === 'multi_flow_map'
+    if (!isDoubleBubble && !isMultiFlow) return false
+    if (isDoubleBubble && mode !== 'similarities' && mode !== 'differences') return false
+    if (isMultiFlow && mode !== 'causes' && mode !== 'effects') return false
     if (abortController.value) {
       abortController.value.abort()
       abortController.value = null
     }
-    panelsStore.updateNodePalette({ mode, selected: [] })
+    panelsStore.updateNodePalette({ mode })
     errorMessage.value = null
+    const defaultMode = isDoubleBubble ? 'similarities' : 'causes'
     const suggestionsForMode = panelsStore.nodePalettePanel.suggestions.filter(
-      (s) => (s.mode ?? 'similarities') === mode
+      (s) => (s.mode ?? defaultMode) === mode
     )
     if (suggestionsForMode.length > 0) {
       return true
@@ -1124,48 +643,11 @@ export function useNodePalette(options: UseNodePaletteOptions = {}) {
     return startSession({ keepSessionId: true })
   }
 
-  /**
-   * Stage 2 parents for staged diagrams (branches, steps, categories, parts).
-   */
   const stage2Parents = computed(() => {
     const dt = diagramType.value
     const nodes = diagramStore.data?.nodes ?? []
-    if (dt === 'mindmap') {
-      return nodes
-        .filter(
-          (n) =>
-            (n.id.startsWith('branch-l-1-') || n.id.startsWith('branch-r-1-')) &&
-            n.text
-        )
-        .map((n) => ({ id: n.id, name: String(n.text) }))
-    }
-    if (dt === 'flow_map') {
-      return nodes
-        .filter((n) => n.type === 'flow' && n.text)
-        .map((n) => ({ id: n.id, name: String(n.text) }))
-    }
-    if (dt === 'tree_map') {
-      return nodes
-        .filter((n) => /^tree-cat-\d+$/.test(n.id ?? '') && n.text)
-        .map((n) => ({ id: n.id ?? '', name: String(n.text) }))
-    }
-    if (dt === 'brace_map') {
-      const targetIds = new Set(diagramStore.data?.connections?.map((c) => c.target) ?? [])
-      const rootId =
-        nodes.find((n) => n.id === 'brace-whole' || n.id === 'brace-0-0')?.id ??
-        nodes.find((n) => n.type === 'topic')?.id ??
-        nodes.find((n) => !targetIds.has(n.id))?.id
-      return nodes
-        .filter(
-          (n) =>
-            n.type === 'brace' &&
-            diagramStore.data?.connections?.some(
-              (c) => c.source === rootId && c.target === n.id
-            )
-        )
-        .map((n) => ({ id: n.id ?? '', name: String(n.text) }))
-    }
-    return []
+    const connections = diagramStore.data?.connections
+    return getStage2ParentsForDiagram(dt, nodes, connections)
   })
 
   const isStagedDiagram = computed(() =>
@@ -1183,24 +665,8 @@ export function useNodePalette(options: UseNodePaletteOptions = {}) {
     return getDefaultStage(dt, nodes, connections, dataDimension)
   })
 
-  const stage2StageName = computed(() => {
-    switch (diagramType.value) {
-      case 'mindmap':
-        return 'children'
-      case 'flow_map':
-        return 'substeps'
-      case 'tree_map':
-        return 'children'
-      case 'brace_map':
-        return 'subparts'
-      default:
-        return ''
-    }
-  })
+  const stage2StageName = computed(() => stage2StageNameForType(diagramType.value))
 
-  /**
-   * Switch to a stage 2 parent tab (e.g. branch, step, category, part).
-   */
   async function switchStageTab(parentId: string, parentName: string): Promise<boolean> {
     if (!isStagedDiagram.value) return false
     const dt = diagramType.value
@@ -1215,7 +681,15 @@ export function useNodePalette(options: UseNodePaletteOptions = {}) {
             ? 'category_name'
             : 'part_name'
     const stageDataIdKey =
-      dt === 'tree_map' ? 'category_id' : dt === 'brace_map' ? 'part_id' : undefined
+      dt === 'mindmap'
+        ? 'branch_id'
+        : dt === 'flow_map'
+          ? 'step_id'
+          : dt === 'tree_map'
+            ? 'category_id'
+            : dt === 'brace_map'
+              ? 'part_id'
+              : undefined
     const stageData: Record<string, unknown> = { [stageDataKey]: parentName }
     if (stageDataIdKey) {
       stageData[stageDataIdKey] = parentId
@@ -1228,27 +702,17 @@ export function useNodePalette(options: UseNodePaletteOptions = {}) {
       stage: stageName,
       stage_data: stageData,
       mode: parentName,
-      selected: [],
     })
     errorMessage.value = null
+    const parentNameNorm = (parentName ?? '').trim()
     const suggestionsForMode = panelsStore.nodePalettePanel.suggestions.filter(
-      (s) => (s.mode ?? '') === parentName
+      (s) => suggestionBelongsToParent(s, parentId, parentNameNorm)
     )
     if (suggestionsForMode.length > 0) {
       return true
     }
     return startSession({ keepSessionId: true })
   }
-
-  watch(
-    () => panelsStore.nodePalettePanel.isOpen,
-    (isOpen) => {
-      if (!isOpen) {
-        sessionId.value = null
-        isWaitingForTopicInput.value = false
-      }
-    }
-  )
 
   watch(
     () => topicText.value,
@@ -1287,9 +751,11 @@ export function useNodePalette(options: UseNodePaletteOptions = {}) {
       abortController.value.abort()
       abortController.value = null
     }
+    if (_asSingleton) {
+      _nodePaletteInstance = null
+    }
   })
 
-  /** For double_bubble_map: { left, right } topic labels for display */
   const doubleBubbleTopics = computed(() => {
     if (diagramType.value !== 'double_bubble_map') return null
     const data = diagramData.value as { left?: string; right?: string }
@@ -1299,6 +765,15 @@ export function useNodePalette(options: UseNodePaletteOptions = {}) {
       left: (data.left ?? '').trim() || fallbackLeft,
       right: (data.right ?? '').trim() || fallbackRight,
     }
+  })
+
+  const bridgeMapDimension = computed(() => {
+    if (diagramType.value !== 'bridge_map') return ''
+    const stage = panelsStore.nodePalettePanel.stage
+    const mode = panelsStore.nodePalettePanel.mode as string
+    if (stage !== 'pairs' && mode !== 'pairs') return ''
+    const sd = panelsStore.nodePalettePanel.stage_data as { dimension?: string } | undefined
+    return (sd?.dimension ?? '').trim()
   })
 
   function getStageDataForParent(parent: { id: string; name: string }): Record<string, unknown> {
@@ -1317,10 +792,13 @@ export function useNodePalette(options: UseNodePaletteOptions = {}) {
     errorMessage,
     suggestions,
     selectedIds,
-    diagramType,
+    diagramType: rawDiagramType,
+    diagramData,
     doubleBubbleTopics,
+    bridgeMapDimension,
     isStagedDiagram,
     isDimensionsStage,
+    showNextButton,
     stage2Parents,
     stage2StageName,
     defaultStage,
@@ -1330,6 +808,7 @@ export function useNodePalette(options: UseNodePaletteOptions = {}) {
     toggleSelection,
     finishSelection,
     cancel,
+    dismiss,
     switchTab,
     switchStageTab,
   }

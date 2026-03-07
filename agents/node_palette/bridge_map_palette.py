@@ -19,6 +19,7 @@ from prompts.node_palette import (
     get_bridge_pairs_prompt,
     get_bridge_dimensions_prompt,
 )
+from utils import placeholder
 
 logger = logging.getLogger(__name__)
 
@@ -122,6 +123,7 @@ class BridgeMapPaletteGenerator(BasePaletteGenerator):
                     )
                     if not _parse_analogy_node(node):
                         continue
+                    node['mode'] = 'pairs'
             yield chunk
 
     def _build_prompt(
@@ -152,12 +154,21 @@ class BridgeMapPaletteGenerator(BasePaletteGenerator):
         )
 
         if stage == 'dimensions':
+            existing_pairs = stage_data.get('analogies') or stage_data.get('existing_pairs')
+            if isinstance(existing_pairs, list):
+                existing_pairs = [
+                    p for p in existing_pairs
+                    if isinstance(p, dict) and p.get('left') and p.get('right')
+                ]
+            else:
+                existing_pairs = None
             return self._build_dimensions_prompt(
-                center_topic, context_desc, language, count, batch_num
+                center_topic, context_desc, language, count, batch_num, existing_pairs
             )
 
-        dimension = stage_data.get('dimension', '') or center_topic
-        is_specific_relationship = bool(dimension and str(dimension).strip())
+        raw_dim = stage_data.get('dimension', '') or center_topic
+        dimension = '' if placeholder.is_placeholder_text(str(raw_dim)) else str(raw_dim or '').strip()
+        is_specific_relationship = bool(dimension)
         logger.debug(
             "[BridgeMap-Prompt] Stage: %s | Dimension: '%s'",
             stage, dimension
@@ -174,11 +185,16 @@ class BridgeMapPaletteGenerator(BasePaletteGenerator):
         context_desc: str,
         language: str,
         count: int,
-        batch_num: int
+        batch_num: int,
+        existing_pairs: Optional[list] = None
     ) -> str:
-        """Build prompt for generating relationship dimension options (stage 1). Uses centralized prompts."""
+        """Build prompt for generating relationship dimension options (stage 1).
+
+        When existing_pairs provided: infer dimension from item pairs.
+        Otherwise: suggest diverse dimension options.
+        """
         return get_bridge_dimensions_prompt(
-            center_topic, context_desc, language, count, batch_num
+            center_topic, context_desc, language, count, batch_num, existing_pairs
         )
 
 

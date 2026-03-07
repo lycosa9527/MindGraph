@@ -104,9 +104,14 @@ class TreeMapPaletteGenerator(BasePaletteGenerator):
                     else stage
                 )
                 node['mode'] = node_mode
+                if stage == 'children' and stage_data and stage_data.get('category_id'):
+                    node['parent_id'] = stage_data['category_id']
                 logger.debug(
-                    "[TreeMapPalette] Node tagged with mode='%s' | ID: %s | Text: %s",
-                    node_mode, node.get('id', 'unknown'), node.get('text', '')
+                    "[TreeMapPalette] Node tagged with mode='%s' parent_id=%s | ID: %s | Text: %s",
+                    node_mode,
+                    node.get('parent_id', ''),
+                    node.get('id', 'unknown'),
+                    node.get('text', ''),
                 )
 
             yield event

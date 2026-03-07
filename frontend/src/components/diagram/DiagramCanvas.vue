@@ -551,6 +551,13 @@ function handleViewportChange(viewport: { x: number; y: number; zoom: number }):
   })
 }
 
+/** Top padding for fit view - concept map adds space for menu icon above main topic node */
+function getFitViewTopPx(): number {
+  return diagramStore.type === 'concept_map'
+    ? FIT_PADDING.TOP_UI_HEIGHT_PX + FIT_PADDING.MAIN_TOPIC_MENU_ICON_PX
+    : FIT_PADDING.TOP_UI_HEIGHT_PX
+}
+
 /**
  * Fit diagram to full canvas (no panel space reserved)
  * Use when no panels are open or when you want the diagram centered on full screen
@@ -562,7 +569,10 @@ function fitToFullCanvas(animate = true): void {
 
   // Use Vue Flow's fitView with extra bottom padding for ZoomControls + AIModelSelector
   fitView({
-    padding: FIT_PADDING.STANDARD_WITH_BOTTOM_UI,
+    padding: {
+      ...FIT_PADDING.STANDARD_WITH_BOTTOM_UI,
+      top: `${getFitViewTopPx()}px`,
+    },
     duration: animate ? ANIMATION.DURATION_NORMAL : 0,
   })
 
@@ -596,7 +606,10 @@ function fitWithPanel(animate = true): void {
   if (!container) {
     // Fallback to standard fitView if container not available
     fitView({
-      padding: FIT_PADDING.STANDARD_WITH_BOTTOM_UI,
+      padding: {
+        ...FIT_PADDING.STANDARD_WITH_BOTTOM_UI,
+        top: `${getFitViewTopPx()}px`,
+      },
       duration: animate ? ANIMATION.DURATION_NORMAL : 0,
     })
     return
@@ -619,7 +632,7 @@ function fitWithPanel(animate = true): void {
   // Top uses pixel value to clear toolbar; never overlap CanvasTopBar + CanvasToolbar
   fitView({
     padding: {
-      top: `${FIT_PADDING.TOP_UI_HEIGHT_PX}px`,
+      top: `${getFitViewTopPx()}px`,
       right: adjustedPadding,
       bottom: basePadding + FIT_PADDING.BOTTOM_UI_EXTRA,
       left: adjustedPadding,

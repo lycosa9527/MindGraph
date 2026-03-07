@@ -4,10 +4,13 @@ Generates nodes for Double Bubble Map with TWO modes:
 1. Similarities: individual shared attributes
 2. Differences: paired contrasting attributes
 
+When mode='both', generates similarities and differences concurrently in one request.
+
 Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved
 Proprietary License
 """
+from asyncio import Queue, create_task, gather
 from dataclasses import dataclass
 from typing import Optional, Dict, Any, AsyncGenerator
 import logging
@@ -32,15 +35,16 @@ class DoubleBubblePaletteGenerator(BasePaletteGenerator):
     """
     Double Bubble Map specific palette generator.
 
-    Supports TWO generation modes:
+    Supports THREE generation modes:
     - 'similarities': Generate individual shared nodes
     - 'differences': Generate paired contrasting nodes
+    - 'both': Generate similarities and differences concurrently in one request
     """
 
     def __init__(self):
         super().__init__()
         # Mode-specific session storage
-        self.current_mode = {}  # session_id -> 'similarities' | 'differences'
+        self.current_mode = {}  # session_id -> 'similarities' | 'differences' | 'both'
         # Note: Mode is passed through educational_context to avoid race conditions
         # with parallel catapults (no shared instance state!)
 
@@ -63,10 +67,24 @@ class DoubleBubblePaletteGenerator(BasePaletteGenerator):
         Generate batch with mode support.
 
         Args:
-            _mode: 'similarities' for shared attributes, 'differences' for pairs
+            _mode: 'similarities' | 'differences' | 'both' (both = concurrent generation)
         """
         mode = _mode if _mode is not None else 'similarities'
         self.current_mode[session_id] = mode
+
+        if mode == 'both':
+            async for chunk in self._generate_both(
+                session_id=session_id,
+                center_topic=center_topic,
+                educational_context=educational_context,
+                nodes_per_llm=nodes_per_llm,
+                user_id=user_id,
+                organization_id=organization_id,
+                diagram_type=diagram_type,
+                endpoint_path=endpoint_path,
+            ):
+                yield chunk
+            return
 
         if educational_context is None:
             educational_context = {}
@@ -91,7 +109,10 @@ class DoubleBubblePaletteGenerator(BasePaletteGenerator):
             if chunk.get('event') == 'node_generated':
                 node = chunk.get('node', {})
                 node['mode'] = mode  # Tag node with its generation mode
-                logger.debug("[DoubleBubble] Node tagged with mode='%s' | ID: %s", mode, node.get('id', 'unknown'))
+                logger.debug(
+                    "[DoubleBubble] Node tagged with mode='%s' | ID: %s",
+                    mode, node.get('id', 'unknown')
+                )
 
             # For similarities mode, filter out any pipe-separated format (wrong format)
             if mode == 'similarities' and chunk.get('event') == 'node_generated':
@@ -100,7 +121,10 @@ class DoubleBubblePaletteGenerator(BasePaletteGenerator):
 
                 # Similarities should be simple text - skip if it has pipe separator
                 if '|' in text:
-                    logger.warning("[DoubleBubble] SIMILARITIES mode - skipping node with pipe separator: '%s'", text)
+                    logger.warning(
+                        "[DoubleBubble] SIMILARITIES mode - skipping node with pipe separator: '%s'",
+                        text
+                    )
                     continue  # Skip this node
 
             # For differences mode, parse pipe-separated pairs and add left/right fields
@@ -109,6 +133,55 @@ class DoubleBubblePaletteGenerator(BasePaletteGenerator):
                     continue
 
             yield chunk
+
+    async def _generate_both(
+        self,
+        session_id: str,
+        center_topic: str,
+        educational_context: Optional[Dict[str, Any]],
+        nodes_per_llm: int,
+        user_id: Optional[int],
+        organization_id: Optional[int],
+        diagram_type: Optional[str],
+        endpoint_path: Optional[str],
+    ) -> AsyncGenerator[Dict, None]:
+        """Run similarities and differences generation concurrently, merge streams."""
+        queue: Queue = Queue()
+        ctx = dict(educational_context) if educational_context else {}
+
+        async def run_mode(mode_val: str) -> None:
+            sub_id = f"{session_id}_{mode_val}"
+            try:
+                async for chunk in self.generate_batch(
+                    session_id=sub_id,
+                    center_topic=center_topic,
+                    educational_context={**ctx, '_mode': mode_val},
+                    nodes_per_llm=nodes_per_llm,
+                    _mode=mode_val,
+                    user_id=user_id,
+                    organization_id=organization_id,
+                    diagram_type=diagram_type,
+                    endpoint_path=endpoint_path,
+                ):
+                    await queue.put(('chunk', chunk))
+            finally:
+                await queue.put(('done', mode_val))
+
+        t1 = create_task(run_mode('similarities'))
+        t2 = create_task(run_mode('differences'))
+
+        done_count = 0
+        while done_count < 2:
+            kind, data = await queue.get()
+            if kind == 'done':
+                done_count += 1
+            else:
+                yield data
+
+        await gather(t1, t2)
+
+        self.end_session(f"{session_id}_similarities", "complete")
+        self.end_session(f"{session_id}_differences", "complete")
 
     def _process_differences_node(self, chunk: Dict[str, Any], center_topic: str) -> bool:
         """

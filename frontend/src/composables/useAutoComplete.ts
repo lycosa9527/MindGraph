@@ -56,8 +56,9 @@ const CHINESE_PLACEHOLDERS = [
   /^类别\s*\d+$/, // 类别1, 类别2 (Tree Map)
   /^分类\s*\d+$/, // 分类1
   /^叶子\s*\d+$/, // 叶子1
-  /^部分\s*\d+$/, // 部分1
-  /^子部分\s*\d+$/, // 子部分1
+  /^部分\s*\d+$/, // 部分1, 部分2 (Brace Map)
+  /^子部分\s*[\d.]+$/, // 子部分1.1, 子部分1.2 (Brace Map)
+  /^新子部分\s*[\d.]+$/, // 新子部分 1, 新子部分 2 (Brace Map default subparts)
   /^左\s*\d+$/, // 左1
   /^右\s*\d+$/, // 右1
   /^中心主题$/, // 中心主题
@@ -69,6 +70,7 @@ const CHINESE_PLACEHOLDERS = [
   /^特征\s*\d+$/, // 特征1 (Bubble Map)
   /^请输入/, // 请输入主题
   /^点击编辑/, // 点击编辑
+  /^\[点击设置\]$/, // Bridge map dimension placeholder
 ]
 
 // English placeholder patterns
@@ -95,8 +97,9 @@ const ENGLISH_PLACEHOLDERS = [
   /^Root\s+Topic$/i, // Root Topic (Tree Map)
   /^Category\s+\d+$/i, // Category 1 (Tree Map)
   /^Leaf\s+\d+$/i, // Leaf 1
-  /^Part\s+\d+$/i, // Part 1
-  /^Subpart\s+\d+$/i, // Subpart 1
+  /^Part\s+\d+$/i, // Part 1 (Brace Map)
+  /^Subpart\s+[\d.]+$/i, // Subpart 1.1, Subpart 1.2 (Brace Map)
+  /^New\s+Subpart\s+\d+$/i, // New Subpart 1, New Subpart 2 (Brace Map default subparts)
   /^Left\s+\d+$/i, // Left 1
   /^Right\s+\d+$/i, // Right 1
   /^Main\s+Topic$/i, // Main Topic

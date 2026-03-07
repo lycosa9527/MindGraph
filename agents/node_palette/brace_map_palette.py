@@ -108,16 +108,21 @@ class BraceMapPaletteGenerator(BasePaletteGenerator):
         stage: str,
         stage_data: Dict[str, Any]
     ) -> None:
-        """Set node mode from stage; use part_name for subparts, else stage name."""
+        """Set node mode and parent_id from stage. parent_id is stable; mode is display fallback."""
         node = event.get('node', {})
         if stage == 'subparts' and stage_data and stage_data.get('part_name'):
             node_mode = stage_data['part_name']
+            if stage_data.get('part_id'):
+                node['parent_id'] = stage_data['part_id']
         else:
             node_mode = stage
         node['mode'] = node_mode
         logger.debug(
-            "[BraceMapPalette] Node tagged with mode='%s' | ID: %s | Text: %s",
-            node_mode, node.get('id', 'unknown'), node.get('text', '')
+            "[BraceMapPalette] Node tagged with mode='%s' parent_id=%s | ID: %s | Text: %s",
+            node_mode,
+            node.get('parent_id', ''),
+            node.get('id', 'unknown'),
+            node.get('text', ''),
         )
 
     def _build_prompt(

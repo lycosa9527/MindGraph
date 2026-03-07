@@ -534,6 +534,11 @@ export const useDiagramStore = defineStore('diagram', () => {
     return false
   }
 
+  function clearHistory(): void {
+    history.value = []
+    historyIndex.value = -1
+  }
+
   function updateNode(nodeId: string, updates: Partial<DiagramNode>): boolean {
     if (!data.value?.nodes) return false
 
@@ -753,6 +758,18 @@ export const useDiagramStore = defineStore('diagram', () => {
       // Update nodes and connections
       data.value.nodes = recalculatedNodes
       data.value.connections = recalculatedConnections
+    } else if (type.value === 'bubble_map' && node.id?.startsWith('bubble-')) {
+      data.value.nodes.push(node)
+      const recalculatedNodes = recalculateBubbleMapLayout(data.value.nodes)
+      const bubbleNodes = recalculatedNodes.filter(
+        (n) => (n.type === 'bubble' || n.type === 'child') && n.id.startsWith('bubble-')
+      )
+      data.value.nodes = recalculatedNodes
+      data.value.connections = bubbleNodes.map((_, i) => ({
+        id: `edge-topic-bubble-${i}`,
+        source: 'topic',
+        target: `bubble-${i}`,
+      }))
     } else if (type.value === 'concept_map') {
       // Concept map: ensure concept nodes have proper id and type
       const conceptNode: DiagramNode = {
@@ -1077,6 +1094,14 @@ export const useDiagramStore = defineStore('diagram', () => {
 
     pushHistory('Add brace map part')
     emitEvent('diagram:node_added', { node: null })
+
+    // Persist layout positions to diagram store to avoid overlapping and ensure correct display
+    const layoutNodes = recalculateBraceMapLayout(
+      data.value.nodes,
+      data.value.connections ?? []
+    )
+    data.value.nodes = layoutNodes
+
     return true
   }
 
@@ -1924,6 +1949,72 @@ export const useDiagramStore = defineStore('diagram', () => {
   }
 
   /**
+   * Remove tree map category/leaf nodes. Deleting a category also removes its children.
+   */
+  function removeTreeMapNodes(nodeIds: string[]): number {
+    if (type.value !== 'tree_map' || !data.value?.nodes) return 0
+    const spec = buildTreeMapSpecFromNodes()
+    if (!spec) return 0
+
+    const idsToRemove = new Set(nodeIds)
+    if (idsToRemove.has('tree-topic') || idsToRemove.has('dimension-label')) return 0
+
+    const categoryIdsToRemove = new Set(
+      nodeIds.filter((id) => /^tree-cat-\d+$/.test(id))
+    )
+
+    const root = spec.root as {
+      id?: string
+      text: string
+      children?: Array<{ id?: string; text: string; children?: Array<{ id?: string; text: string }> }>
+    }
+    const categories = root.children ?? []
+
+    let deletedCount = 0
+    const newCategories = categories
+      .filter((cat) => {
+        if (categoryIdsToRemove.has(cat.id ?? '')) {
+          deletedCount += 1 + (cat.children?.length ?? 0)
+          return false
+        }
+        return true
+      })
+      .map((cat) => ({
+        ...cat,
+        children: (cat.children ?? []).filter((leaf) => {
+          if (idsToRemove.has(leaf.id ?? '')) {
+            deletedCount++
+            return false
+          }
+          return true
+        }),
+      }))
+
+    if (deletedCount === 0) return 0
+
+    const newSpec = {
+      ...spec,
+      root: { ...root, children: newCategories },
+    }
+    loadFromSpec(newSpec, 'tree_map')
+
+    const deletedIds = [
+      ...nodeIds,
+      ...categories
+        .filter((c) => categoryIdsToRemove.has(c.id ?? ''))
+        .flatMap((c) => (c.children ?? []).map((l) => l.id).filter(Boolean) as string[]),
+    ]
+    deletedIds.forEach((id) => {
+      clearCustomPosition(id)
+      clearNodeStyle(id)
+      removeFromSelection(id)
+    })
+    pushHistory('Delete nodes')
+    emitEvent('diagram:nodes_deleted', { nodeIds: deletedIds })
+    return deletedCount
+  }
+
+  /**
    * Add a new category to tree map.
    */
   function addTreeMapCategory(text: string): boolean {
@@ -2167,6 +2258,7 @@ export const useDiagramStore = defineStore('diagram', () => {
     pushHistory,
     undo,
     redo,
+    clearHistory,
     updateNode,
     emptyNodeForLearningSheet,
     emptyNode,
@@ -2225,6 +2317,7 @@ export const useDiagramStore = defineStore('diagram', () => {
     // Tree map
     addTreeMapCategory,
     addTreeMapChild,
+    removeTreeMapNodes,
 
     // Title management
     getTopicNodeText,

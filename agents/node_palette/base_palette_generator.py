@@ -18,6 +18,7 @@ Proprietary License
 from abc import ABC, abstractmethod
 from difflib import SequenceMatcher
 from typing import Optional, Dict, Any, Tuple, AsyncGenerator
+import asyncio
 import logging
 import re
 import time
@@ -223,6 +224,7 @@ class BasePaletteGenerator(ABC):
 
                                 if len(pending_nodes[llm]) > 0:
                                     yield pending_nodes[llm].pop(0)
+                                    await asyncio.sleep(0)
 
                             # If no nodes yielded (all buffers empty), don't block
                             # The next node arrival will trigger another round-robin cycle
@@ -275,6 +277,7 @@ class BasePaletteGenerator(ABC):
 
                                 if len(pending_nodes[llm]) > 0:
                                     yield pending_nodes[llm].pop(0)
+                                    await asyncio.sleep(0)
 
                             llm_unique_counts[llm_name] += 1
 
@@ -290,6 +293,7 @@ class BasePaletteGenerator(ABC):
                 # Yield any remaining pending nodes from this LLM before completing
                 while len(pending_nodes[llm_name]) > 0:
                     yield pending_nodes[llm_name].pop(0)
+                    await asyncio.sleep(0)
 
                 # Yield llm_complete event
                 yield {
@@ -314,6 +318,7 @@ class BasePaletteGenerator(ABC):
 
                     if len(pending_nodes[llm]) > 0:
                         yield pending_nodes[llm].pop(0)
+                        await asyncio.sleep(0)
 
             elif event == 'error':
                 # LLM failed - categorize the error type
