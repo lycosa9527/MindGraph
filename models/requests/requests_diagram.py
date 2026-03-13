@@ -104,6 +104,13 @@ class GenerateRequest(BaseModel):
         None,
         description="Topic of the concept map (main concept) for focused relationship generation"
     )
+    link_direction: Optional[str] = Field(
+        None,
+        description=(
+            "Concept map link arrow direction: 'source_to_target' (A→B), "
+            "'target_to_source' (B→A), 'both' (bidirectional), 'none' (parallel/no arrow)"
+        )
+    )
 
     @field_validator('diagram_type', mode='before')
     @classmethod

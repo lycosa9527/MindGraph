@@ -669,9 +669,11 @@ onMounted(async () => {
   })
   eventBus.onWithOwner(
     'nodePalette:opened',
-    (data: { hasRestoredSession?: boolean }) => {
+    (data: { hasRestoredSession?: boolean; wasPanelAlreadyOpen?: boolean }) => {
       if (!data.hasRestoredSession && diagramStore.data?.nodes?.length) {
-        nextTick().then(() => startSession())
+        nextTick().then(() =>
+          startSession({ keepSessionId: data.wasPanelAlreadyOpen ?? false })
+        )
       }
     },
     'CanvasPage'

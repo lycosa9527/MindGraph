@@ -27,6 +27,11 @@ function getNodeCenter(node: DiagramNode): { x: number; y: number } {
   return { x, y }
 }
 
+/** Get center of a concept map node for arrowhead computation. */
+export function getConceptMapNodeCenter(node: DiagramNode): { x: number; y: number } {
+  return getNodeCenter(node)
+}
+
 /**
  * Compute optimal handle positions for an edge based on relative node positions.
  * Picks the source/target sides that face each other for the cleanest path.
@@ -91,4 +96,16 @@ export function augmentConnectionWithOptimalHandles(
     sourceHandle: handles.sourceHandle,
     targetHandle: handles.targetHandle,
   }
+}
+
+/**
+ * CmapTools-style default arrowhead: arrow on target when link goes upward or same Y,
+ * no arrow when link goes downward or parallel (target below source).
+ * Returns 'target' for arrow on new node side, 'none' otherwise.
+ */
+export function computeDefaultArrowheadForConceptMap(
+  sourceCenter: { x: number; y: number },
+  targetCenter: { x: number; y: number }
+): 'target' | 'none' {
+  return targetCenter.y <= sourceCenter.y ? 'target' : 'none'
 }

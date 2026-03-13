@@ -13,7 +13,9 @@ import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 
 import { eventBus } from '@/composables/useEventBus'
+import { useDiagramStore } from '@/stores/diagram'
 import type {
+  ConceptMapTab,
   MindmateMessage,
   MindmatePanelState,
   NodePalettePanelState,
@@ -131,39 +133,86 @@ export const usePanelsStore = defineStore('panels', () => {
     mindmate.value.uploadedFiles = mindmate.value.uploadedFiles.filter((f) => f.id !== fileId)
   }
 
-  function openNodePalette(options: Partial<NodePalettePanelState> & { diagramKey?: string } = {}): void {
+  function openNodePalette(options: Partial<NodePalettePanelState> & {
+    diagramKey?: string
+    conceptMapNodeId?: string
+    conceptMapNodeText?: string
+  } = {}): void {
     const wasOpen = nodePalette.value.open
-    const { diagramKey, ...restOptions } = options
+    const { diagramKey, conceptMapNodeId, conceptMapNodeText, ...restOptions } = options
     const snapshot =
       diagramKey && nodePaletteSessionsByDiagram.value.get(diagramKey)
-    const hasRestoredSession = !!(snapshot && snapshot.suggestions.length > 0)
+    const hasRestoredSession =
+      !conceptMapNodeId && !!(snapshot && snapshot.suggestions.length > 0)
     if (hasRestoredSession) {
+      let conceptMapTabs = snapshot.conceptMapTabs ?? undefined
+      let mode = snapshot.mode
+      if (conceptMapTabs?.length && diagramKey?.startsWith('concept_map')) {
+        const diagramStore = useDiagramStore()
+        const nodeIds = new Set((diagramStore.data?.nodes ?? []).map((n) => n.id))
+        const kept = conceptMapTabs.filter((t) => t.id === 'topic' || nodeIds.has(t.id))
+        conceptMapTabs = kept.length > 0 ? kept : undefined
+        if (mode && typeof mode === 'string' && !nodeIds.has(mode) && mode !== 'topic') {
+          mode = 'topic'
+        }
+      }
       nodePalette.value = {
         ...nodePalette.value,
         suggestions: snapshot.suggestions,
         selected: snapshot.selected,
-        mode: snapshot.mode,
+        mode,
         stage: snapshot.stage ?? null,
         stage_data: snapshot.stage_data ?? null,
+        conceptMapTabs,
         open: true,
       }
     } else {
+      let conceptMapTabs: ConceptMapTab[] | undefined = restOptions.conceptMapTabs
+      let mode = restOptions.mode ?? null
+      if (conceptMapNodeId && conceptMapNodeText) {
+        const existingTabs = nodePalette.value.conceptMapTabs ?? []
+        const hasTab = existingTabs.some((t) => t.id === conceptMapNodeId)
+        if (!hasTab) {
+          conceptMapTabs = [...existingTabs, { id: conceptMapNodeId, name: conceptMapNodeText }]
+        }
+        mode = conceptMapNodeId
+      }
       nodePalette.value = {
         ...nodePalette.value,
         open: true,
         ...restOptions,
+        conceptMapTabs,
+        mode: mode ?? restOptions.mode ?? null,
       }
     }
     if (!wasOpen) {
       eventBus.emit('panel:opened', { panel: 'nodePalette', isOpen: true, options })
       eventBus.emit('state:panel_opened', { panel: 'nodePalette', state: nodePalette.value })
       eventBus.emit('nodePalette:opened', { diagramKey, hasRestoredSession })
+    } else if (conceptMapNodeId && !hasRestoredSession) {
+      eventBus.emit('nodePalette:opened', {
+        diagramKey,
+        hasRestoredSession,
+        wasPanelAlreadyOpen: true,
+      })
     }
   }
 
   function saveNodePaletteSession(diagramKey: string): void {
-    const { suggestions, selected, mode, stage, stage_data } = nodePalette.value
+    let { suggestions, selected, mode, stage, stage_data, conceptMapTabs } = nodePalette.value
     if (suggestions.length > 0 && diagramKey) {
+      let tabsToSave = conceptMapTabs ? [...conceptMapTabs] : undefined
+      if (diagramKey.startsWith('concept_map')) {
+        const diagramStore = useDiagramStore()
+        const nodeIds = new Set((diagramStore.data?.nodes ?? []).map((n) => n.id))
+        if (tabsToSave?.length) {
+          const kept = tabsToSave.filter((t) => t.id === 'topic' || nodeIds.has(t.id))
+          tabsToSave = kept.length > 0 ? kept : undefined
+        }
+        if (mode && typeof mode === 'string' && mode !== 'topic' && !nodeIds.has(mode)) {
+          mode = 'topic'
+        }
+      }
       const map = new Map(nodePaletteSessionsByDiagram.value)
       map.set(diagramKey, {
         suggestions: [...suggestions],
@@ -171,6 +220,7 @@ export const usePanelsStore = defineStore('panels', () => {
         mode,
         stage: stage ?? null,
         stage_data: stage_data ?? null,
+        conceptMapTabs: tabsToSave,
       })
       nodePaletteSessionsByDiagram.value = map
     }
@@ -252,6 +302,7 @@ export const usePanelsStore = defineStore('panels', () => {
       mode: null,
       stage: null,
       stage_data: null,
+      conceptMapTabs: undefined,
     }
     if (clearSessions) {
       nodePaletteSessionsByDiagram.value = new Map()

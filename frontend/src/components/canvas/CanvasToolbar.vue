@@ -1178,7 +1178,19 @@ function handleConceptGeneration() {
     notify.warning(isZh.value ? '请先创建图示' : 'Please create a diagram first')
     return
   }
-  eventBus.emit('panel:open_requested', { panel: 'nodePalette', source: 'toolbar' })
+  const options: Record<string, unknown> = {}
+  if (isConceptMap.value && diagramStore.selectedNodes.length === 1) {
+    const nodeId = diagramStore.selectedNodes[0]
+    const node = diagramStore.data?.nodes?.find((n) => n.id === nodeId)
+    const topicNode = diagramStore.data?.nodes?.find(
+      (n) => n.type === 'topic' || n.type === 'center' || n.id === 'root'
+    )
+    if (node && node.id !== topicNode?.id && node.text?.trim()) {
+      options.conceptMapNodeId = node.id
+      options.conceptMapNodeText = (node.text ?? '').trim()
+    }
+  }
+  eventBus.emit('panel:open_requested', { panel: 'nodePalette', source: 'toolbar', options })
 }
 
 async function handleMoreApp(appName: string) {

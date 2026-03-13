@@ -321,6 +321,7 @@ async def agent_graph_workflow_with_styles(
     concept_a=None,
     concept_b=None,
     concept_map_topic=None,
+    link_direction=None,
     # RAG integration: use knowledge space context
     use_rag=False,
     rag_top_k=5
@@ -371,6 +372,7 @@ auto-complete - user has dimension but no topic (generate topic and children)
                 concept_a=ca,
                 concept_b=cb,
                 concept_map_topic=topic,
+                link_direction=link_direction,
                 user_id=user_id,
                 organization_id=organization_id,
                 request_type=request_type or 'autocomplete',

@@ -120,7 +120,16 @@ async def start_node_palette(
             center_topic = '' if is_placeholder_text(str(raw_dim)) else str(raw_dim)
         elif req.diagram_type in ('tree_map', 'mindmap', 'concept_map'):
             # Tree map, mindmap, concept map use topic
-            center_topic = req.diagram_data.get('topic', '')
+            # Concept map: stage_data.center_topic overrides for sub-concept (node) generation
+            stage_data = getattr(req, 'stage_data', None) or {}
+            if (
+                req.diagram_type == 'concept_map'
+                and isinstance(stage_data, dict)
+                and stage_data.get('center_topic')
+            ):
+                center_topic = str(stage_data.get('center_topic', ''))
+            else:
+                center_topic = req.diagram_data.get('topic', '')
         else:
             # Most diagrams use center/topic field - try multiple fallbacks
             center_topic = (
@@ -275,6 +284,27 @@ async def start_node_palette(
                         nodes_per_llm=15,
                         _stage=stage,  # Current stage (dimensions, categories, parts, etc.)
                         _stage_data=stage_data,  # Stage-specific data
+                        user_id=current_user.id if current_user else None,
+                        organization_id=current_user.organization_id if current_user else None,
+                        diagram_type=req.diagram_type,
+                        endpoint_path='/thinking_mode/node_palette/start'
+                    ):
+                        chunk_count += 1
+                        if chunk.get('event') == 'node_generated':
+                            node_count += 1
+
+                        yield f"data: {json.dumps(chunk)}\n\n"
+                elif req.diagram_type == 'concept_map':
+                    # Concept map: pass mode and stage_data for sub-concept (node) tabs
+                    mode = getattr(req, 'mode', None)
+                    stage_data = getattr(req, 'stage_data', None) or {}
+                    async for chunk in generator.generate_batch(
+                        session_id=session_id,
+                        center_topic=center_topic,
+                        educational_context=req.educational_context,
+                        nodes_per_llm=15,
+                        _mode=mode,
+                        _stage_data=stage_data if isinstance(stage_data, dict) else {},
                         user_id=current_user.id if current_user else None,
                         organization_id=current_user.organization_id if current_user else None,
                         diagram_type=req.diagram_type,
@@ -586,6 +616,27 @@ async def get_next_batch(
                         nodes_per_llm=15,
                         _stage=stage,  # Current stage (dimensions, categories, parts, etc.)
                         _stage_data=stage_data,  # Stage-specific data
+                        user_id=current_user.id if current_user else None,
+                        organization_id=current_user.organization_id if current_user else None,
+                        diagram_type=req.diagram_type,
+                        endpoint_path='/thinking_mode/node_palette/next_batch'
+                    ):
+                        chunk_count += 1
+                        if chunk.get('event') == 'node_generated':
+                            node_count += 1
+
+                        yield f"data: {json.dumps(chunk)}\n\n"
+                elif req.diagram_type == 'concept_map':
+                    # Concept map: pass mode and stage_data for sub-concept tabs
+                    mode = getattr(req, 'mode', None)
+                    stage_data = getattr(req, 'stage_data', None) or {}
+                    async for chunk in generator.generate_batch(
+                        session_id=session_id,
+                        center_topic=req.center_topic,
+                        educational_context=req.educational_context,
+                        nodes_per_llm=15,
+                        _mode=mode,
+                        _stage_data=stage_data if isinstance(stage_data, dict) else {},
                         user_id=current_user.id if current_user else None,
                         organization_id=current_user.organization_id if current_user else None,
                         diagram_type=req.diagram_type,

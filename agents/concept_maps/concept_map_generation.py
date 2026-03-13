@@ -379,7 +379,7 @@ def generate_concept_map_enhanced_30(user_prompt: str, language: str) -> dict:
         # Generate relationships using systematic approach
         if language == 'zh':
             rel_prompt = f"""
-现在为主题"{central_topic}"和这30个概念生成关系：
+我们正在生成此概念图中概念之间的关系。主题是：{central_topic}
 
 概念列表：
 {', '.join(concepts)}
@@ -409,7 +409,7 @@ def generate_concept_map_enhanced_30(user_prompt: str, language: str) -> dict:
 """
         else:
             rel_prompt = f"""
-Generate relationships for topic "{central_topic}" and these 30 concepts:
+We are generating relationships between concepts in this concept map. The topic is about: {central_topic}
 
 Concepts:
 {', '.join(concepts)}

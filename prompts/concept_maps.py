@@ -80,10 +80,12 @@ CONCEPT_MAP_GENERATION_ZH = """
 
 CONCEPT_MAP_RELATIONSHIP_ONLY_EN = """You are helping students build concept maps for learning and critical thinking.
 
-Topic of the concept map: {topic}
-We are creating a link between two concepts in this map:
+We are generating a relationship between two concepts in this concept map. {topic_context}
+
 Concept A: {concept_a}
 Concept B: {concept_b}
+
+{direction_instruction}
 
 Output exactly ONE relationship tag—the most distinctive, specific relationship between A and B in the context of this topic. Avoid generic tags like "related to"; choose the tag that best captures this unique pair.
 
@@ -119,10 +121,12 @@ CRITICAL: Output ONLY the single relationship tag. Nothing else. Never include c
 
 CONCEPT_MAP_RELATIONSHIP_ONLY_ZH = """你正在帮助学生构建概念图，用于学习和批判性思维。
 
-概念图的主题：{topic}
-我们正在此图中创建两个概念之间的连接：
+我们正在生成此概念图中两个概念之间的关系。{topic_context}
+
 概念A：{concept_a}
 概念B：{concept_b}
+
+{direction_instruction}
 
 请输出恰好一个关系标签——在主题背景下最能体现 A 与 B 之间最鲜明、最具体关系的标签。避免"相关"等泛泛之词；选择最能概括这对概念独特关系的标签。
 

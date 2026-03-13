@@ -217,22 +217,94 @@ class ConceptMapAgent(BaseAgent):
         except Exception as exc:
             return {"success": False, "error": f"ConceptMapAgent failed: {exc}"}
 
+    def _get_direction_instruction(
+        self, link_direction: str | None, language: str
+    ) -> str:
+        """Return direction-specific instruction for relationship generation."""
+        direction = (link_direction or "").strip().lower()
+        instructions: Dict[str, Dict[str, str]] = {
+            "zh": {
+                "source_to_target": (
+                    "该连线有箭头，从概念A指向概念B。请生成一个动词短语，描述A如何导致、引导或指向B。"
+                    "STEM示例：力→加速度：导致；酶→反应：催化；太阳→光合作用：促成；DNA→蛋白质：编码；重力→轨道：支配。"
+                    "文学示例：作者→小说：著有；意象→主题：强化；隐喻→意义：传达；主角→冲突：面对。"
+                ),
+                "target_to_source": (
+                    "该连线有箭头，从概念B指向概念A。请生成一个动词短语，描述B如何导致、引导或指向A。"
+                    "STEM示例：加速度←力：由…引起；产物←反应物：由…生成。文学示例：小说←作者：由…创作。"
+                ),
+                "both": (
+                    "该连线两端均有箭头（双向）。请生成一个动词短语，描述A与B如何相互关联或影响。"
+                ),
+                "none": (
+                    "该连线无箭头。这两个概念是平行或对称相关的。"
+                    "请生成最能概括二者关系的标签（对称、非方向性），可以是名词、形容词或短语，不必是动词。"
+                    "选择最能体现这对概念独特关系的表述。示例：相似、对比、同类、互补、对应、并列。"
+                ),
+            },
+            "en": {
+                "source_to_target": (
+                    "The link has an arrow from Concept A to Concept B. "
+                    "Generate a verb phrase describing how A leads to, causes, or directs to B. "
+                    "STEM examples: force→acceleration: causes; enzyme→reaction: catalyzes; "
+                    "sun→photosynthesis: enables; DNA→protein: encodes; gravity→orbit: governs. "
+                    "Literature examples: author→novel: wrote; imagery→theme: reinforces; "
+                    "metaphor→meaning: conveys; protagonist→conflict: faces."
+                ),
+                "target_to_source": (
+                    "The link has an arrow from Concept B to Concept A. "
+                    "Generate a verb phrase describing how B leads to, causes, or directs to A. "
+                    "STEM examples: acceleration←force: caused by; product←reactant: yields. "
+                    "Literature examples: novel←author: written by."
+                ),
+                "both": (
+                    "The link has arrows on both ends (bidirectional). "
+                    "Generate a verb phrase describing how A and B relate or influence each other."
+                ),
+                "none": (
+                    "The link has no arrow. These two concepts are in parallel or symmetrically related. "
+                    "Generate the label that best captures the relationship between them (symmetric, not directional). "
+                    "It may be a noun, adjective, or phrase—not necessarily a verb. "
+                    "Choose the most distinctive description for this pair. "
+                    "Examples: similar to, contrasts with, complementary, analogous to, parallel."
+                ),
+            },
+        }
+        lang = "zh" if language == "zh" else "en"
+        key = direction if direction in instructions[lang] else "none"
+        return instructions[lang][key]
+
     async def _generate_relationship_only(
         self,
         concept_a: str,
         concept_b: str,
         language: str,
         concept_map_topic: str = "",
+        link_direction: str | None = None,
         **_kwargs: Any
     ) -> Dict[str, Any]:
         """Generate only the relationship label between two concepts."""
-        topic = (concept_map_topic or "").strip() or "—"
+        topic = (concept_map_topic or "").strip()
+        if language == "zh":
+            topic_context = (
+                f"主题是：{topic}" if topic else "此图尚未设置主主题。"
+            )
+        else:
+            topic_context = (
+                f"The topic is about: {topic}"
+                if topic
+                else "No main topic has been set for this map."
+            )
+        direction_instruction = self._get_direction_instruction(
+            link_direction, language
+        )
         prompt_key = f"concept_map_relationship_only_{language}"
         prompt_template = self._get_prompt(
             prompt_key,
             concept_a=concept_a,
             concept_b=concept_b,
-            topic=topic,
+            topic_context=topic_context,
+            direction_instruction=direction_instruction,
         )
         if not prompt_template:
             return {"success": False, "error": f"Prompt not found: {prompt_key}"}
@@ -287,7 +359,11 @@ class ConceptMapAgent(BaseAgent):
         try:
             if relationship_only and concept_a and concept_b:
                 return await self._generate_relationship_only(
-                    concept_a, concept_b, language, concept_map_topic=concept_map_topic
+                    concept_a,
+                    concept_b,
+                    language,
+                    concept_map_topic=concept_map_topic,
+                    link_direction=kwargs.get('link_direction'),
                 )
 
             logger.info(
@@ -314,7 +390,6 @@ class ConceptMapAgent(BaseAgent):
         except Exception as e:
             logger.error("ConceptMapAgent: Generation error: %s", e)
             return {"error": f"ConceptMapAgent generation failed: {str(e)}"}
-
 
     def _get_prompt(self, prompt_key: str, **kwargs) -> Optional[str]:
         """Get prompt from the prompts module."""

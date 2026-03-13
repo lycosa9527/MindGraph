@@ -11,7 +11,7 @@
 import { computed, markRaw, nextTick, onMounted, onUnmounted, provide, ref, watch } from 'vue'
 
 import { Background } from '@vue-flow/background'
-import { VueFlow, useVueFlow } from '@vue-flow/core'
+import { getBezierPath, Position, VueFlow, useVueFlow } from '@vue-flow/core'
 import { MiniMap } from '@vue-flow/minimap'
 
 import { getDefaultDiagramName, useDiagramExport, useLanguage } from '@/composables'
@@ -152,10 +152,26 @@ watch(
 function handleConceptMapLinkDrop(payload: { sourceId: string; targetId: string }) {
   if (diagramStore.type !== 'concept_map') return
   const connId = diagramStore.addConnection(payload.sourceId, payload.targetId, '')
-  diagramStore.pushHistory('Add link')
-  if (connId && llmResultsStore.selectedModel) {
-    generateRelationship(connId, payload.sourceId, payload.targetId)
+  if (connId) {
+    diagramStore.pushHistory('Add link')
   }
+  // When AI mode is on: always generate relationship—for new links or existing ones
+  if (llmResultsStore.selectedModel) {
+    const idToUse = connId ?? findConnectionBetween(payload.sourceId, payload.targetId)?.id
+    if (idToUse) {
+      generateRelationship(idToUse, payload.sourceId, payload.targetId)
+    }
+  }
+}
+
+function findConnectionBetween(sourceId: string, targetId: string): { id: string; source: string; target: string } | null {
+  const connections = diagramStore.data?.connections ?? []
+  const conn = connections.find(
+    (c) =>
+      (c.source === sourceId && c.target === targetId) ||
+      (c.source === targetId && c.target === sourceId)
+  )
+  return conn?.id ? { id: conn.id, source: conn.source, target: conn.target } : null
 }
 
 function handleConceptMapLabelCleared(payload: {
@@ -229,6 +245,9 @@ onNodesChange((changes) => {
     if (change.type === 'position' && change.position) {
       // During drag, update position but don't mark as custom yet
       diagramStore.updateNodePosition(change.id, change.position, false)
+      if (diagramStore.type === 'concept_map') {
+        diagramStore.updateConnectionArrowheadsForNode(change.id)
+      }
     }
     if (fitTriggeringTypes.includes(change.type as (typeof fitTriggeringTypes)[number])) {
       hasFitTriggeringChange = true
@@ -293,6 +312,9 @@ onNodeDoubleClick(({ node }) => {
 onNodeDragStop(({ node }) => {
   // Save as custom position since user dragged it
   diagramStore.saveCustomPosition(node.id, node.position.x, node.position.y)
+  if (diagramStore.type === 'concept_map') {
+    diagramStore.updateConnectionArrowheadsForNode(node.id)
+  }
   diagramStore.pushHistory('Move node')
   emit('nodeDragStop', node as unknown as MindGraphNode)
 })
@@ -300,6 +322,135 @@ onNodeDragStop(({ node }) => {
 // Concept map link drag state
 const CONCEPT_LINK_DATA_TYPE = 'application/mindgraph-concept-link'
 const PALETTE_CONCEPT_DATA_TYPE = 'application/mindgraph-palette-concept'
+const linkDragSourceId = ref<string | null>(null)
+const linkDragCursor = ref<{ x: number; y: number } | null>(null)
+/** When hovering over an existing node during link drag, its id; null when over empty space */
+const linkDragTargetNodeId = ref<string | null>(null)
+
+const TOPIC_NODE_WIDTH = 120
+const TOPIC_NODE_HEIGHT = 50
+const CONCEPT_NODE_WIDTH = 120
+const CONCEPT_NODE_HEIGHT = 50
+
+function getConceptNodeCenter(node: {
+  position?: { x: number; y: number }
+  data?: { nodeType?: string }
+  type?: string
+}): { x: number; y: number } {
+  const pos = node.position ?? { x: 0, y: 0 }
+  const isTopic =
+    node.data?.nodeType === 'topic' ||
+    node.type === 'topic' ||
+    node.type === 'center'
+  const w = isTopic ? TOPIC_NODE_WIDTH : CONCEPT_NODE_WIDTH
+  const h = isTopic ? TOPIC_NODE_HEIGHT : CONCEPT_NODE_HEIGHT
+  return { x: pos.x + w / 2, y: pos.y + h / 2 }
+}
+
+function getPositionsFromAngle(dx: number, dy: number): { source: (typeof Position)[keyof typeof Position]; target: (typeof Position)[keyof typeof Position] } {
+  const angle = Math.atan2(dy, dx)
+  const deg = (angle * 180) / Math.PI
+  if (deg >= -45 && deg < 45) return { source: Position.Right, target: Position.Left }
+  if (deg >= 45 && deg < 135) return { source: Position.Bottom, target: Position.Top }
+  if (deg >= 135 || deg < -135) return { source: Position.Left, target: Position.Right }
+  return { source: Position.Top, target: Position.Bottom }
+}
+
+const PILL_HALF_WIDTH = 40
+const PILL_HALF_HEIGHT = 18
+
+function getEdgePoint(
+  center: { x: number; y: number },
+  targetPos: (typeof Position)[keyof typeof Position],
+  halfWidth: number,
+  halfHeight: number
+): { x: number; y: number } {
+  switch (targetPos) {
+    case Position.Left:
+      return { x: center.x - halfWidth, y: center.y }
+    case Position.Right:
+      return { x: center.x + halfWidth, y: center.y }
+    case Position.Top:
+      return { x: center.x, y: center.y - halfHeight }
+    case Position.Bottom:
+      return { x: center.x, y: center.y + halfHeight }
+    default:
+      return center
+  }
+}
+
+function getConceptNodeEdgePoint(
+  node: {
+    position?: { x: number; y: number }
+    data?: { nodeType?: string }
+    type?: string
+  },
+  targetPos: (typeof Position)[keyof typeof Position]
+): { x: number; y: number } {
+  const center = getConceptNodeCenter(node)
+  const isTopic =
+    node.data?.nodeType === 'topic' ||
+    node.type === 'topic' ||
+    node.type === 'center'
+  const halfW = (isTopic ? TOPIC_NODE_WIDTH : CONCEPT_NODE_WIDTH) / 2
+  const halfH = (isTopic ? TOPIC_NODE_HEIGHT : CONCEPT_NODE_HEIGHT) / 2
+  return getEdgePoint(center, targetPos, halfW, halfH)
+}
+
+const linkPreviewPath = computed(() => {
+  if (!linkDragSourceId.value || !linkDragCursor.value || diagramStore.type !== 'concept_map') return null
+  const nodes = diagramStore.data?.nodes ?? []
+  const sourceNode = nodes.find((n) => n.id === linkDragSourceId.value)
+  if (!sourceNode?.position) return null
+  const sourceCenter = getConceptNodeCenter(sourceNode)
+  const cursor = linkDragCursor.value
+  const targetNodeId = linkDragTargetNodeId.value
+  const targetNode = targetNodeId ? nodes.find((n) => n.id === targetNodeId) : null
+  let targetAtEdge: { x: number; y: number }
+  let sourcePos: (typeof Position)[keyof typeof Position]
+  let targetPos: (typeof Position)[keyof typeof Position]
+  if (targetNode?.position) {
+    const targetCenter = getConceptNodeCenter(targetNode)
+    const dx = targetCenter.x - sourceCenter.x
+    const dy = targetCenter.y - sourceCenter.y
+    const positions = getPositionsFromAngle(dx, dy)
+    sourcePos = positions.source
+    targetPos = positions.target
+    targetAtEdge = getConceptNodeEdgePoint(targetNode, targetPos)
+  } else {
+    const dx = cursor.x - sourceCenter.x
+    const dy = cursor.y - sourceCenter.y
+    const positions = getPositionsFromAngle(dx, dy)
+    sourcePos = positions.source
+    targetPos = positions.target
+    targetAtEdge = getEdgePoint(cursor, targetPos, PILL_HALF_WIDTH, PILL_HALF_HEIGHT)
+  }
+  const [edgePath] = getBezierPath({
+    sourceX: sourceCenter.x,
+    sourceY: sourceCenter.y,
+    sourcePosition: sourcePos,
+    targetX: targetAtEdge.x,
+    targetY: targetAtEdge.y,
+    targetPosition: targetPos,
+    curvature: 0.25,
+  })
+  return edgePath
+})
+
+/** CmapTools-style: show arrow on target when link goes upward or same Y */
+const linkPreviewShowArrow = computed(() => {
+  if (!linkDragSourceId.value || !linkDragCursor.value || diagramStore.type !== 'concept_map') return false
+  const nodes = diagramStore.data?.nodes ?? []
+  const sourceNode = nodes.find((n) => n.id === linkDragSourceId.value)
+  if (!sourceNode?.position) return false
+  const sourceCenter = getConceptNodeCenter(sourceNode)
+  const targetNodeId = linkDragTargetNodeId.value
+  const targetNode = targetNodeId ? nodes.find((n) => n.id === targetNodeId) : null
+  const targetCenter = targetNode?.position
+    ? getConceptNodeCenter(targetNode)
+    : linkDragCursor.value
+  return targetCenter.y <= sourceCenter.y
+})
 
 function handleConceptMapDragOver(event: DragEvent) {
   if (diagramStore.type !== 'concept_map') return
@@ -309,6 +460,14 @@ function handleConceptMapDragOver(event: DragEvent) {
   if ((hasLinkData || hasPaletteConcept) && event.dataTransfer) {
     event.preventDefault()
     event.dataTransfer.dropEffect = 'copy'
+  }
+  if (hasLinkData && linkDragSourceId.value) {
+    const flowPos = screenToFlowCoordinate({ x: event.clientX, y: event.clientY })
+    linkDragCursor.value = { x: flowPos.x, y: flowPos.y }
+    const nodeEl = (event.target as HTMLElement).closest('.vue-flow__node')
+    const targetId = nodeEl?.getAttribute('data-id') ?? null
+    linkDragTargetNodeId.value =
+      targetId && targetId !== linkDragSourceId.value ? targetId : null
   }
 }
 
@@ -456,9 +615,22 @@ function handleContextMenuEvent(event: Event) {
 }
 
 // Set up context menu listeners and concept map link drop on mount
+function handleConceptMapLinkDragStart(payload: { sourceId: string }) {
+  linkDragSourceId.value = payload.sourceId
+  linkDragCursor.value = null
+}
+
+function handleConceptMapLinkDragEnd() {
+  linkDragSourceId.value = null
+  linkDragCursor.value = null
+  linkDragTargetNodeId.value = null
+}
+
 onMounted(() => {
   eventBus.on('concept_map:link_drop', handleConceptMapLinkDrop)
   eventBus.on('concept_map:label_cleared', handleConceptMapLabelCleared)
+  eventBus.on('concept_map:link_drag_start', handleConceptMapLinkDragStart)
+  eventBus.on('concept_map:link_drag_end', handleConceptMapLinkDragEnd)
   contextMenuSetupTimeoutId = setTimeout(() => {
     contextMenuSetupTimeoutId = null
     const vueFlowElement = vueFlowWrapper.value?.querySelector('.vue-flow') as HTMLElement | null
@@ -863,6 +1035,8 @@ onMounted(() => {
 onUnmounted(() => {
   eventBus.off('concept_map:link_drop', handleConceptMapLinkDrop)
   eventBus.off('concept_map:label_cleared', handleConceptMapLabelCleared)
+  eventBus.off('concept_map:link_drag_start', handleConceptMapLinkDragStart)
+  eventBus.off('concept_map:link_drag_end', handleConceptMapLinkDragEnd)
   // Clear context menu setup timeout if still pending
   if (contextMenuSetupTimeoutId) {
     clearTimeout(contextMenuSetupTimeoutId)
@@ -979,6 +1153,53 @@ const gridConfig = {
 
         <!-- Learning sheet overlay: dashed line + answers below diagram (半成品图示 mode) -->
         <LearningSheetOverlay />
+
+        <!-- Concept map: link preview while dragging from icon (line + pill at 60% opacity) -->
+        <template #zoom-pane>
+          <svg
+            v-if="linkPreviewPath && linkDragCursor && diagramStore.type === 'concept_map'"
+            class="concept-map-link-preview pointer-events-none"
+            style="position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; z-index: 10"
+          >
+            <defs>
+              <marker
+                id="concept-map-link-preview-arrow"
+                markerWidth="10"
+                markerHeight="10"
+                refX="8"
+                refY="5"
+                orient="auto"
+                markerUnits="userSpaceOnUse"
+              >
+                <path
+                  d="M0,0 L0,10 L10,5 z"
+                  fill="#94a3b8"
+                  opacity="0.6"
+                />
+              </marker>
+            </defs>
+            <path
+              :d="linkPreviewPath"
+              fill="none"
+              stroke="#94a3b8"
+              stroke-width="2"
+              opacity="0.6"
+              :marker-end="linkPreviewShowArrow ? 'url(#concept-map-link-preview-arrow)' : undefined"
+            />
+            <!-- Pill-shaped node preview only when over empty space (not over existing node) -->
+            <rect
+              v-if="!linkDragTargetNodeId"
+              :x="linkDragCursor.x - 40"
+              :y="linkDragCursor.y - 18"
+              width="80"
+              height="36"
+              rx="18"
+              ry="18"
+              class="concept-map-link-preview-pill"
+              opacity="0.6"
+            />
+          </svg>
+        </template>
       </VueFlow>
     </div>
 
@@ -1012,6 +1233,17 @@ const gridConfig = {
 
 .vue-flow-wrapper.wireframe-mode {
   filter: grayscale(1);
+}
+
+/* Concept map link preview pill (matches ConceptNode styling) */
+.concept-map-link-preview-pill {
+  fill: #e3f2fd;
+  stroke: #4e79a7;
+  stroke-width: 2;
+}
+.dark .concept-map-link-preview-pill {
+  fill: #1f2937;
+  stroke: #5a8fc7;
 }
 
 /* All diagrams: hide Vue Flow's default blue selection box, use pulse glow animation instead */

@@ -97,6 +97,11 @@ function handleLinkDragStart(event: DragEvent) {
   event.dataTransfer.setData(CONCEPT_LINK_DATA_TYPE, props.id)
   event.dataTransfer.effectAllowed = 'copy'
   event.dataTransfer.setDragImage(new Image(), 0, 0)
+  eventBus.emit('concept_map:link_drag_start', { sourceId: props.id })
+}
+
+function handleLinkDragEnd() {
+  eventBus.emit('concept_map:link_drag_end', {})
 }
 
 function handleLinkDragOver(event: DragEvent) {
@@ -114,6 +119,7 @@ function handleLinkDrop(event: DragEvent) {
   event.stopPropagation()
   eventBus.emit('concept_map:link_drop', { sourceId, targetId: props.id })
 }
+
 </script>
 
 <template>
@@ -122,17 +128,18 @@ function handleLinkDrop(event: DragEvent) {
     @dragover="handleLinkDragOver"
     @drop="handleLinkDrop"
   >
-    <!-- Menu icon - appears when node is selected (click). nodrag prevents Vue Flow from moving the node when dragging from icon. -->
+    <!-- Menu icon - for link creation only (drag to another node). nodrag prevents node drag when dragging from icon. Container has pointer-events:none so clicks pass through to node body for select/reposition; icon has pointer-events:auto for drag. -->
     <div
       v-show="selected && !isEditing"
-      class="concept-link-icon nodrag absolute left-1/2 cursor-grab active:cursor-grabbing"
-      draggable="true"
-      :data-node-id="id"
-      @dragstart="handleLinkDragStart"
+      class="concept-link-icon absolute left-1/2"
     >
       <ElIcon
         :size="20"
-        class="text-blue-500"
+        class="text-blue-500 concept-link-icon-inner nodrag"
+        draggable="true"
+        :data-node-id="id"
+        @dragstart="handleLinkDragStart"
+        @dragend="handleLinkDragEnd"
       >
         <Menu />
       </ElIcon>
@@ -210,6 +217,17 @@ function handleLinkDrop(event: DragEvent) {
   margin-bottom: 1px;
   transform: translateX(-50%);
   z-index: 10;
+  /* Let clicks pass through transparent area so overlapping nodes can be selected */
+  pointer-events: none;
+}
+
+.concept-link-icon-inner {
+  pointer-events: auto;
+  cursor: grab;
+}
+
+.concept-link-icon-inner:active {
+  cursor: grabbing;
 }
 
 .concept-node {

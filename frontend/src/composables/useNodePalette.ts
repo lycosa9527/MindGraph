@@ -12,7 +12,7 @@ import { computed, onUnmounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
 import { isPlaceholderText } from '@/composables/useAutoComplete'
-import { eventBus } from '@/composables/useEventBus'
+import { eventBus, type EventTypes } from '@/composables/useEventBus'
 import { useDiagramStore, usePanelsStore } from '@/stores'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import type { DiagramType } from '@/types'
@@ -102,6 +102,9 @@ export function useNodePalette(options: UseNodePaletteOptions = {}) {
     if (dt === 'multi_flow_map' && mode) {
       return all.filter((s) => (s.mode ?? 'causes') === mode)
     }
+    if (dt === 'concept_map' && mode) {
+      return all.filter((s) => (s.parent_id ?? s.mode ?? 'topic') === mode)
+    }
     if (
       (dt === 'mindmap' ||
         dt === 'flow_map' ||
@@ -171,6 +174,15 @@ export function useNodePalette(options: UseNodePaletteOptions = {}) {
       default:
         return (topic || center?.text || '').trim()
     }
+  })
+
+  /** For concept_map: center topic for current tab (main topic or selected node text) */
+  const conceptMapCenterTopic = computed(() => {
+    if (diagramType.value !== 'concept_map') return topicText.value
+    const mode = panelsStore.nodePalettePanel.mode
+    if (!mode || mode === 'topic') return topicText.value
+    const node = diagramStore.data?.nodes?.find((n) => n.id === mode)
+    return (node?.text ?? '').trim() || topicText.value
   })
 
   function generateSessionId(): string {
@@ -287,6 +299,11 @@ export function useNodePalette(options: UseNodePaletteOptions = {}) {
         }
       }
     } finally {
+      try {
+        reader.releaseLock()
+      } catch {
+        // Stream may already be closed; ignore
+      }
       if (useGlobalAbort) {
         abortController.value = null
       }
@@ -352,7 +369,8 @@ export function useNodePalette(options: UseNodePaletteOptions = {}) {
       return false
     }
 
-    const topic = topicText.value
+    const topic =
+      diagramType.value === 'concept_map' ? conceptMapCenterTopic.value : topicText.value
     const nodes = diagramStore.data?.nodes ?? []
     const connections = diagramStore.data?.connections
     const dataDimension = (diagramStore.data as Record<string, unknown>)?.dimension as
@@ -399,7 +417,9 @@ export function useNodePalette(options: UseNodePaletteOptions = {}) {
         ? 'similarities'
         : dt === 'multi_flow_map'
           ? 'causes'
-          : resolvedStage)
+          : dt === 'concept_map'
+            ? 'topic'
+            : resolvedStage)
     const requestMode =
       dt === 'double_bubble_map' ? 'both' : dt === 'multi_flow_map' ? 'both' : displayMode
     const paletteUpdates: {
@@ -408,6 +428,9 @@ export function useNodePalette(options: UseNodePaletteOptions = {}) {
       mode?: string
       selected?: string[]
     } = {}
+    if (dt === 'concept_map') {
+      paletteUpdates.mode = displayMode ?? 'topic'
+    }
     if (!keepSessionId) {
       paletteUpdates.selected = []
     }
@@ -455,7 +478,10 @@ export function useNodePalette(options: UseNodePaletteOptions = {}) {
       const payload: Record<string, unknown> = {
         session_id: sessionId.value,
         diagram_type: dt,
-        diagram_data: diagramData.value,
+        diagram_data:
+          dt === 'concept_map' && displayMode && displayMode !== 'topic'
+            ? { ...diagramData.value, topic: conceptMapCenterTopic.value }
+            : diagramData.value,
         language,
         mode: requestMode,
       }
@@ -464,6 +490,9 @@ export function useNodePalette(options: UseNodePaletteOptions = {}) {
         if (stageData && Object.keys(stageData).length > 0) {
           payload.stage_data = stageData
         }
+      }
+      if (dt === 'concept_map' && displayMode && displayMode !== 'topic') {
+        payload.stage_data = { center_topic: conceptMapCenterTopic.value, parent_id: displayMode }
       }
       await streamBatch(NODE_PALETTE_START, payload)
       return true
@@ -507,15 +536,26 @@ export function useNodePalette(options: UseNodePaletteOptions = {}) {
       const stageData = panelsStore.nodePalettePanel.stage_data ?? undefined
       const nextBatchMode =
         panelsStore.nodePalettePanel.mode ??
-        (dt === 'double_bubble_map' ? 'similarities' : dt === 'multi_flow_map' ? 'causes' : stage)
+        (dt === 'double_bubble_map'
+          ? 'similarities'
+          : dt === 'multi_flow_map'
+            ? 'causes'
+            : dt === 'concept_map'
+              ? 'topic'
+              : stage)
       const nextBatchRequestMode =
         dt === 'double_bubble_map' || dt === 'multi_flow_map' ? 'both' : nextBatchMode
+      const nextBatchCenterTopic =
+        dt === 'concept_map' ? conceptMapCenterTopic.value : centerTopic.value
       const payload: Record<string, unknown> = {
         session_id: sessionId.value,
         diagram_type: dt,
-        center_topic: centerTopic.value || ' ',
+        center_topic: nextBatchCenterTopic || ' ',
         language,
         mode: nextBatchRequestMode,
+      }
+      if (dt === 'concept_map' && nextBatchMode && nextBatchMode !== 'topic') {
+        payload.stage_data = { center_topic: nextBatchCenterTopic, parent_id: nextBatchMode }
       }
       if (isStaged && stage) {
         payload.stage = stage
@@ -668,6 +708,24 @@ export function useNodePalette(options: UseNodePaletteOptions = {}) {
 
   const stage2StageName = computed(() => stage2StageNameForType(diagramType.value))
 
+  async function switchConceptMapTab(tabId: string): Promise<boolean> {
+    if (diagramType.value !== 'concept_map') return false
+    if (panelsStore.nodePalettePanel.mode === tabId) return true
+    if (abortController.value) {
+      abortController.value.abort()
+      abortController.value = null
+    }
+    panelsStore.updateNodePalette({ mode: tabId })
+    errorMessage.value = null
+    const suggestionsForTab = panelsStore.nodePalettePanel.suggestions.filter(
+      (s) => (s.parent_id ?? s.mode ?? 'topic') === tabId
+    )
+    if (suggestionsForTab.length > 0) {
+      return true
+    }
+    return startSession({ keepSessionId: true })
+  }
+
   async function switchStageTab(parentId: string, parentName: string): Promise<boolean> {
     if (!isStagedDiagram.value) return false
     const dt = diagramType.value
@@ -732,6 +790,28 @@ export function useNodePalette(options: UseNodePaletteOptions = {}) {
     }
   )
 
+  watch(
+    () =>
+      diagramType.value === 'concept_map' &&
+      panelsStore.nodePalettePanel.isOpen &&
+      topicText.value,
+    (shouldEnsure) => {
+      if (!shouldEnsure) return
+      const topic = topicText.value.trim()
+      if (!topic) return
+      const tabs = panelsStore.nodePalettePanel.conceptMapTabs ?? []
+      const hasTopic = tabs.some((t) => t.id === 'topic')
+      if (!hasTopic) {
+        const newTabs = [{ id: 'topic', name: topic }, ...tabs]
+        panelsStore.updateNodePalette({ conceptMapTabs: newTabs })
+        if (!panelsStore.nodePalettePanel.mode) {
+          panelsStore.updateNodePalette({ mode: 'topic' })
+        }
+      }
+    },
+    { immediate: true }
+  )
+
   function resetSessionState(): void {
     if (abortController.value) {
       abortController.value.abort()
@@ -745,6 +825,30 @@ export function useNodePalette(options: UseNodePaletteOptions = {}) {
 
   eventBus.onWithOwner('diagram:loaded', resetSessionState, 'useNodePalette')
   eventBus.onWithOwner('diagram:type_changed', resetSessionState, 'useNodePalette')
+
+  function removeConceptMapTabsForDeletedNodes(
+    payload: EventTypes['diagram:nodes_deleted']
+  ): void {
+    const nodeIds = payload.nodeIds ?? payload.deletedIds ?? []
+    if (!nodeIds.length) return
+    if (diagramType.value !== 'concept_map' || !panelsStore.nodePalettePanel.isOpen) return
+    const tabs = panelsStore.nodePalettePanel.conceptMapTabs ?? []
+    const deletedSet = new Set(nodeIds)
+    const kept = tabs.filter((t) => t.id === 'topic' || !deletedSet.has(t.id))
+    if (kept.length === tabs.length) return
+    const currentMode = panelsStore.nodePalettePanel.mode as string
+    const modeWasDeleted = currentMode && deletedSet.has(currentMode)
+    panelsStore.updateNodePalette({
+      conceptMapTabs: kept.length > 0 ? kept : undefined,
+      ...(modeWasDeleted ? { mode: 'topic' } : {}),
+    })
+  }
+
+  eventBus.onWithOwner(
+    'diagram:nodes_deleted',
+    removeConceptMapTabsForDeletedNodes,
+    'useNodePalette'
+  )
 
   onUnmounted(() => {
     eventBus.removeAllListenersForOwner('useNodePalette')
@@ -812,5 +916,6 @@ export function useNodePalette(options: UseNodePaletteOptions = {}) {
     dismiss,
     switchTab,
     switchStageTab,
+    switchConceptMapTab,
   }
 }

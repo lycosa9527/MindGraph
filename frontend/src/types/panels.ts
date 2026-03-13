@@ -43,16 +43,24 @@ export interface NodeSuggestion {
   dimension?: string
 }
 
+/** Concept map tab: main topic or a specific node for sub-concept generation */
+export interface ConceptMapTab {
+  id: string
+  name: string
+}
+
 export interface NodePalettePanelState {
   open: boolean
   suggestions: NodeSuggestion[]
   selected: string[]
-  /** For double_bubble: 'similarities' | 'differences'. For staged: stage name or parent name */
+  /** For double_bubble: 'similarities' | 'differences'. For staged: stage name or parent name. For concept_map: 'topic' or nodeId */
   mode: string | null
   /** For staged diagrams: 'branches' | 'children', 'steps' | 'substeps', etc. */
   stage?: string | null
   /** For staged stage 2: { branch_name }, { step_name }, { category_name }, { part_name } */
   stage_data?: Record<string, unknown> | null
+  /** For concept_map: tabs for main topic + per-node sub-concept generation */
+  conceptMapTabs?: ConceptMapTab[]
 }
 
 /** Saved session state when user dismisses (X) node palette - restored on reopen */
@@ -62,6 +70,7 @@ export interface NodePaletteSessionSnapshot {
   mode: string | null
   stage?: string | null
   stage_data?: Record<string, unknown> | null
+  conceptMapTabs?: ConceptMapTab[]
 }
 
 export interface PropertyPanelState {

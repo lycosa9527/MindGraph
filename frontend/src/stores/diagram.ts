@@ -13,7 +13,11 @@ import { computed, ref } from 'vue'
 
 import { defineStore } from 'pinia'
 
-import { augmentConnectionWithOptimalHandles } from '@/composables/diagrams/conceptMapHandles'
+import {
+  augmentConnectionWithOptimalHandles,
+  computeDefaultArrowheadForConceptMap,
+  getConceptMapNodeCenter,
+} from '@/composables/diagrams/conceptMapHandles'
 import {
   DEFAULT_CENTER_X,
   DEFAULT_NODE_WIDTH,
@@ -802,12 +806,22 @@ export const useDiagramStore = defineStore('diagram', () => {
     if (duplicate) return null
 
     const connId = `conn-${Date.now()}`
-    data.value.connections.push({
+    const conn: Connection = {
       id: connId,
       source: sourceId,
       target: targetId,
       label: label || '',
-    })
+    }
+    if (type.value === 'concept_map') {
+      const sourceNode = data.value.nodes.find((n) => n.id === sourceId)
+      const targetNode = data.value.nodes.find((n) => n.id === targetId)
+      if (sourceNode && targetNode) {
+        const sc = getConceptMapNodeCenter(sourceNode)
+        const tc = getConceptMapNodeCenter(targetNode)
+        conn.arrowheadDirection = computeDefaultArrowheadForConceptMap(sc, tc)
+      }
+    }
+    data.value.connections.push(conn)
     return connId
   }
 
@@ -819,6 +833,23 @@ export const useDiagramStore = defineStore('diagram', () => {
 
     conn.label = label
     return true
+  }
+
+  function updateConnectionArrowheadsForNode(nodeId: string): void {
+    if (type.value !== 'concept_map' || !data.value?.nodes || !data.value.connections) return
+    const nodes = data.value.nodes
+    const connections = data.value.connections.filter(
+      (c) => c.source === nodeId || c.target === nodeId
+    )
+    for (const conn of connections) {
+      const sourceNode = nodes.find((n) => n.id === conn.source)
+      const targetNode = nodes.find((n) => n.id === conn.target)
+      if (sourceNode && targetNode) {
+        const sc = getConceptMapNodeCenter(sourceNode)
+        const tc = getConceptMapNodeCenter(targetNode)
+        conn.arrowheadDirection = computeDefaultArrowheadForConceptMap(sc, tc)
+      }
+    }
   }
 
   function toggleConnectionArrowhead(
@@ -2270,6 +2301,7 @@ export const useDiagramStore = defineStore('diagram', () => {
     addConnection,
     updateConnectionLabel,
     toggleConnectionArrowhead,
+    updateConnectionArrowheadsForNode,
     removeNode,
     removeBubbleMapNodes,
     addBraceMapPart,

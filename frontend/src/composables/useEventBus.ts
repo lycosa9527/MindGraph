@@ -42,7 +42,12 @@ export type EventTypes = {
     options?: Record<string, unknown>
     previousPanel?: string
   }
-  'nodePalette:opened': { diagramKey?: string; hasRestoredSession: boolean }
+  'nodePalette:opened': {
+    diagramKey?: string
+    hasRestoredSession: boolean
+    /** True when panel was already open and we switched to a new node tab (concept generation) */
+    wasPanelAlreadyOpen?: boolean
+  }
 
   // Diagram Events
   'diagram:render_requested': { source?: string }
@@ -94,6 +99,8 @@ export type EventTypes = {
   'diagram:positions_cleared': { diagramType?: string }
   'diagram:loaded': { diagramType: string; spec?: unknown }
   'concept_map:link_drop': { sourceId: string; targetId: string }
+  'concept_map:link_drag_start': { sourceId: string }
+  'concept_map:link_drag_end': Record<string, never>
   'concept_map:label_cleared': {
     connectionId: string
     sourceId: string

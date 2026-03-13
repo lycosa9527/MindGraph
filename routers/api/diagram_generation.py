@@ -141,6 +141,7 @@ async def generate_graph(
         concept_map_topic = (
             req.concept_map_topic if hasattr(req, 'concept_map_topic') else None
         )
+        link_direction = req.link_direction if hasattr(req, 'link_direction') else None
 
         result = await agent_graph_workflow_with_styles(
             prompt,
@@ -163,6 +164,7 @@ async def generate_graph(
             concept_a=concept_a,
             concept_b=concept_b,
             concept_map_topic=concept_map_topic,
+            link_direction=link_direction,
             # RAG integration
             use_rag=req.use_rag if req.use_rag else False,
             rag_top_k=req.rag_top_k if req.rag_top_k else 5

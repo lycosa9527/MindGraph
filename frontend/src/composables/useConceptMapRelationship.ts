@@ -60,6 +60,15 @@ export function useConceptMapRelationship() {
     return (node?.text ?? '').trim()
   }
 
+  function getLinkDirection(connectionId: string): string {
+    const conn = diagramStore.data?.connections?.find((c) => c.id === connectionId)
+    const dir = conn?.arrowheadDirection ?? 'none'
+    if (dir === 'target') return 'source_to_target'
+    if (dir === 'source') return 'target_to_source'
+    if (dir === 'both') return 'both'
+    return 'none'
+  }
+
   async function generateRelationship(
     connectionId: string,
     sourceId: string,
@@ -100,6 +109,7 @@ export function useConceptMapRelationship() {
           concept_a: conceptA,
           concept_b: conceptB,
           concept_map_topic: topic,
+          link_direction: getLinkDirection(connectionId),
         }),
       })
 

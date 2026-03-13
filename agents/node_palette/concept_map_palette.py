@@ -3,6 +3,7 @@ Concept map palette module.
 
 Concept Map specific node palette generator.
 Generates concept nodes from the main topic for free-form concept maps.
+Supports sub-concept generation when user selects a node (stage_data.center_topic).
 """
 from typing import Any, Dict, List, Optional
 
@@ -84,6 +85,44 @@ Generate {count} concepts:"""
                 )
 
         return prompt
+
+    async def generate_batch(
+        self,
+        session_id: str,
+        center_topic: str,
+        educational_context: Optional[Dict[str, Any]] = None,
+        nodes_per_llm: int = 15,
+        _mode: Optional[str] = None,
+        _stage_data: Optional[Dict[str, Any]] = None,
+        user_id: Optional[int] = None,
+        organization_id: Optional[int] = None,
+        diagram_type: Optional[str] = None,
+        endpoint_path: Optional[str] = None,
+        **_kwargs: Any,
+    ):
+        """Override to add parent_id to nodes for sub-concept (node) tab routing."""
+        parent_id = None
+        if _stage_data and isinstance(_stage_data, dict) and _stage_data.get('parent_id'):
+            parent_id = str(_stage_data['parent_id'])
+        elif _mode and _mode != 'topic':
+            parent_id = _mode
+
+        async for chunk in super().generate_batch(
+            session_id=session_id,
+            center_topic=center_topic,
+            educational_context=educational_context,
+            nodes_per_llm=nodes_per_llm,
+            user_id=user_id,
+            organization_id=organization_id,
+            diagram_type=diagram_type,
+            endpoint_path=endpoint_path,
+        ):
+            if parent_id and chunk.get('event') == 'node_generated':
+                node = chunk.get('node')
+                if node and isinstance(node, dict):
+                    node['parent_id'] = parent_id
+                    node['mode'] = parent_id
+            yield chunk
 
 
 _PALETTE_GENERATOR_CACHE: List[Optional[ConceptMapPaletteGenerator]] = [None]

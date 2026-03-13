@@ -17,18 +17,20 @@ import {
   ElDropdownItem,
   ElDropdownMenu,
   ElInput,
+  ElMessageBox,
   ElTooltip,
 } from 'element-plus'
 
 import { ChatDotRound, Connection, Download } from '@element-plus/icons-vue'
 
 // Using Lucide icons for a more modern, cute look
-import { ArrowLeft, FileImage, FileJson, FileText, ImageDown } from 'lucide-vue-next'
+import { ArrowLeft, FileImage, FileJson, FileText, ImageDown, RotateCcw } from 'lucide-vue-next'
 
 import { DiagramSlotFullModal } from '@/components/canvas'
 import { WorkshopModal } from '@/components/workshop'
 import { eventBus, getDefaultDiagramName, useNotifications, useWorkshop } from '@/composables'
 import { useLanguage } from '@/composables'
+import type { DiagramType } from '@/types'
 import { useAuthStore, useDiagramStore, usePanelsStore } from '@/stores'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 
@@ -287,6 +289,44 @@ function handleExportCommand(command: string) {
 function handleOpenMindmate() {
   panelsStore.openMindmate()
 }
+
+/**
+ * Reset canvas to default template: clears diagram, node palette, and saved state.
+ * Nothing is persisted. Shows confirmation modal first.
+ */
+async function handleReset() {
+  const diagramType = diagramStore.type as DiagramType | null
+  if (!diagramType) {
+    notify.warning(isZh.value ? '无法重置：请先选择图示类型' : 'Cannot reset: select a diagram type first')
+    return
+  }
+
+  try {
+    await ElMessageBox.confirm(
+      isZh.value
+        ? '确定要重置吗？当前图示、节点调色板等所有内容将丢失，且无法恢复。'
+        : 'Are you sure? All current content will be lost, including the diagram and node palette. This cannot be undone.',
+      isZh.value ? '重置为默认模板' : 'Reset to Default',
+      {
+        confirmButtonText: isZh.value ? '重置' : 'Reset',
+        cancelButtonText: isZh.value ? '取消' : 'Cancel',
+        type: 'warning',
+      }
+    )
+  } catch {
+    return
+  }
+
+  savedDiagramsStore.clearActiveDiagram()
+  router.replace({ path: '/canvas', query: { type: diagramType } })
+  panelsStore.clearNodePaletteState()
+  panelsStore.closeNodePalette()
+  diagramStore.clearHistory()
+  diagramStore.loadDefaultTemplate(diagramType)
+  diagramStore.initTitle(generateDefaultName())
+  eventBus.emit('view:fit_to_canvas_requested', { animate: true })
+  notify.success(isZh.value ? '已重置为默认模板' : 'Reset to default template')
+}
 </script>
 
 <template>
@@ -405,6 +445,19 @@ function handleOpenMindmate() {
         >
           教学设计
         </ElButton>
+      </ElTooltip>
+
+      <!-- Reset to default template -->
+      <ElTooltip
+        :content="isZh ? '重置为默认模板' : 'Reset to default template'"
+        placement="bottom"
+      >
+        <ElButton
+          class="reset-button"
+          size="small"
+          :icon="RotateCcw"
+          @click="handleReset"
+        />
       </ElTooltip>
 
       <!-- Workshop button (hidden for now) -->
@@ -610,6 +663,19 @@ function handleOpenMindmate() {
   --el-button-active-bg-color: #93c5fd;
   --el-button-active-border-color: #3b82f6;
   --el-button-text-color: #1e40af;
+  font-weight: 500;
+  border-radius: 9999px;
+}
+
+/* Reset button - subtle warning tone */
+.reset-button {
+  --el-button-bg-color: #fef3c7;
+  --el-button-border-color: #fcd34d;
+  --el-button-hover-bg-color: #fde68a;
+  --el-button-hover-border-color: #f59e0b;
+  --el-button-active-bg-color: #fcd34d;
+  --el-button-active-border-color: #d97706;
+  --el-button-text-color: #92400e;
   font-weight: 500;
   border-radius: 9999px;
 }

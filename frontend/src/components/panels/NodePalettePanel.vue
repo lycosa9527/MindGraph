@@ -9,7 +9,7 @@
  * For double_bubble_map: shows tabs (相似点/Similarities | 差异点/Differences).
  * Differences tab displays paired attributes for both Topic A and Topic B.
  */
-import { computed, nextTick, onMounted } from 'vue'
+import { computed, nextTick, onMounted, watch } from 'vue'
 
 import { ElButton, ElTooltip } from 'element-plus'
 import { Check, Loader2, RefreshCw, X } from 'lucide-vue-next'
@@ -17,7 +17,7 @@ import { Check, Loader2, RefreshCw, X } from 'lucide-vue-next'
 import { getLLMColor } from '@/config/llmModelColors'
 import { useLanguage, useNotifications } from '@/composables'
 import { getNodePalette } from '@/composables/useNodePalette'
-import { usePanelsStore, useUIStore } from '@/stores'
+import { useDiagramStore, usePanelsStore, useUIStore } from '@/stores'
 import type { NodeSuggestion } from '@/types/panels'
 
 const emit = defineEmits<{
@@ -28,6 +28,7 @@ const { isZh } = useLanguage()
 const notify = useNotifications()
 const uiStore = useUIStore()
 const panelsStore = usePanelsStore()
+const diagramStore = useDiagramStore()
 
 const {
   isLoading,
@@ -55,6 +56,7 @@ const {
   dismiss,
   switchTab,
   switchStageTab,
+  switchConceptMapTab,
 } = getNodePalette({
   language: isZh.value ? 'zh' : 'en',
   onError: (err) => notify.error(err),
@@ -86,6 +88,28 @@ const showPairedFormat = computed(
   () =>
     (currentMode.value === 'differences' && isDoubleBubble.value) ||
     (isBridgeMap.value && (panelsStore.nodePalettePanel.mode as string) === 'pairs')
+)
+
+/** Concept map tabs (main topic + per-node sub-concept tabs), excluding tabs for deleted nodes */
+const conceptMapTabs = computed(() => {
+  const tabs = panelsStore.nodePalettePanel.conceptMapTabs ?? []
+  if (!isConceptMap.value) return tabs
+  const nodes = diagramStore.data?.nodes ?? []
+  const nodeIds = new Set(nodes.map((n) => n.id))
+  return tabs.filter((t) => t.id === 'topic' || nodeIds.has(t.id))
+})
+const showConceptMapTabs = computed(
+  () => isConceptMap.value && conceptMapTabs.value.length > 0
+)
+
+/** When current tab is for a deleted node, switch to topic */
+watch(
+  () => [conceptMapTabs.value, panelsStore.nodePalettePanel.mode] as const,
+  ([tabs, mode]) => {
+    if (!isConceptMap.value || !mode || !tabs.length) return
+    const valid = tabs.some((t) => t.id === mode)
+    if (!valid) switchConceptMapTab('topic')
+  }
 )
 
 /** Labels for paired display: Topic A/B for double bubble, Source/Analogy for bridge map */
@@ -283,6 +307,28 @@ function getDisplayText(suggestion: NodeSuggestion): string {
             @click="handleTabSwitch('differences')"
           >
             {{ isZh ? '差异点' : 'Differences' }}
+          </button>
+        </div>
+        <!-- Concept map tabs: main topic + per-node sub-concept tabs -->
+        <div
+          v-else-if="showConceptMapTabs"
+          class="flex flex-1 min-w-0 rounded-lg bg-gray-100 dark:bg-gray-700 p-0.5 overflow-x-auto"
+        >
+          <button
+            v-for="tab in conceptMapTabs"
+            :key="tab.id"
+            type="button"
+            class="px-2 py-1 text-xs font-medium rounded-md transition-colors shrink-0"
+            :class="
+              panelsStore.nodePalettePanel.mode === tab.id
+                ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
+                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+            "
+            :disabled="isLoading"
+            :title="tab.name"
+            @click="switchConceptMapTab(tab.id)"
+          >
+            {{ tab.name.length > 10 ? tab.name.slice(0, 9) + '…' : tab.name }}
           </button>
         </div>
         <!-- Multi flow map tabs: Causes | Effects -->

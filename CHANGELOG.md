@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.33.0] - 2026-03-13
+
+### Added
+- **Concept Map Arrowhead-Aware Relationship Labels**: When generating relationship labels via AI, the API now considers link direction (`arrowheadDirection`). Direction-specific prompts for source_to_target, target_to_source, both, and none—with STEM and literature examples.
+- **Concept Map Node Palette Sub-Concept Generation**: Node palette for concept maps supports generating sub-concepts from a selected node. Selecting a concept node opens a tab; AI generates concepts related to that node instead of the main topic.
+- **Concept Map Node Palette Tabs**: `conceptMapTabs` in panels store—tabs for main topic and per-node sub-concept tabs. Each tab displays suggestions filtered by its center topic.
+- **Canvas Reset Button**: CanvasTopBar reset button to clear diagram, node palette, and saved state. Loads default template with confirmation modal.
+- **link_direction in GenerateRequest**: New `link_direction` field for concept map relationship API (source_to_target, target_to_source, both, none).
+
+### Changed
+- **Concept Map Agent**: `_generate_relationship_only` now accepts `link_direction`; added `_get_direction_instruction()` for direction-aware relationship labels.
+- **ConceptMapPaletteGenerator**: `generate_batch` override adds `parent_id` to nodes for sub-concept tab routing.
+- **useNodePalette**: Concept map support—`conceptMapCenterTopic`, `switchConceptMapTab`, concept_map-specific filtering and payload for sub-concept generation.
+- **NodePalettePanel**: Concept map tabs UI; click node to open palette with that node as center.
+- **Panels Store**: `openNodePalette` accepts `conceptMapNodeId`/`conceptMapNodeText`; `conceptMapTabs` persisted in session.
+- **DiagramCanvas, ConceptNode**: Concept map node palette integration.
+- **Routers node_palette, diagram_generation**: Concept map sub-concept and link_direction support.
+- **prompts/concept_maps.py**: Updated for direction-aware relationship generation.
+- **useConceptMapRelationship, conceptMapHandles, useEventBus**: Pass link_direction and concept map events.
+- **Diagram Store, types/panels**: Concept map node palette and ConceptMapTab type updates.
+
 ## [5.32.0] - 2026-03-08
 
 ### Added
