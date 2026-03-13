@@ -19,9 +19,16 @@
  * - Silently skips if slots full (user must manually save via File menu)
  */
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
+import { storeToRefs } from 'pinia'
 import { useRoute, useRouter } from 'vue-router'
 
-import { AIModelSelector, CanvasToolbar, CanvasTopBar, ZoomControls } from '@/components/canvas'
+import {
+  AIModelSelector,
+  CanvasToolbar,
+  CanvasTopBar,
+  ConceptMapLabelPicker,
+  ZoomControls,
+} from '@/components/canvas'
 import DiagramCanvas from '@/components/diagram/DiagramCanvas.vue'
 import { MindmatePanel, NodePalettePanel } from '@/components/panels'
 import {
@@ -37,6 +44,7 @@ import {
 import { ANIMATION, PANEL, PANEL_INSET } from '@/config/uiConfig'
 import {
   useAuthStore,
+  useConceptMapRelationshipStore,
   useDiagramStore,
   useLLMResultsStore,
   usePanelsStore,
@@ -48,12 +56,19 @@ import type { DiagramType } from '@/types'
 const route = useRoute()
 const router = useRouter()
 const diagramStore = useDiagramStore()
+const relationshipStore = useConceptMapRelationshipStore()
 const uiStore = useUIStore()
 const authStore = useAuthStore()
 const savedDiagramsStore = useSavedDiagramsStore()
 const panelsStore = usePanelsStore()
 const { isZh } = useLanguage()
 const notify = useNotifications()
+const { activeEntry: relationshipActiveEntry } = storeToRefs(relationshipStore)
+
+// Hide zoom/pan when concept map label picker is showing options
+const showZoomControls = computed(
+  () => !(diagramStore.type === 'concept_map' && relationshipActiveEntry.value)
+)
 
 // Canvas zoom for ZoomControls sync (updated via view:zoom_changed)
 const canvasZoom = ref<number | null>(null)
@@ -823,15 +838,22 @@ onUnmounted(() => {
       </Transition>
     </div>
 
-    <!-- Bottom controls: single floating glass card with AI selector + Zoom/pan -->
-    <div class="canvas-bottom-controls absolute bottom-4 left-1/2 transform -translate-x-1/2 z-20 px-4">
+    <!-- Bottom controls: single floating glass card, adaptive width -->
+    <div class="canvas-bottom-controls absolute bottom-4 left-0 right-0 z-20 flex justify-center px-2 sm:px-4">
       <div
-        class="bottom-controls-card flex flex-col md:flex-row md:items-center gap-2 md:gap-3 rounded-xl shadow-lg p-1.5 md:p-2 border border-gray-200/80 dark:border-gray-600/80 bg-white/90 dark:bg-gray-800/90 backdrop-blur-md"
+        class="bottom-controls-card flex flex-col md:flex-row md:items-center gap-2 md:gap-3 rounded-xl shadow-lg p-1.5 md:p-2 border border-gray-200/80 dark:border-gray-600/80 bg-white/90 dark:bg-gray-800/90 backdrop-blur-md w-fit max-w-[95vw] min-w-0"
       >
         <div class="ai-selector-wrap flex flex-1 justify-center md:justify-center min-w-0 order-2 md:order-1">
           <AIModelSelector @model-change="handleModelChange" />
         </div>
-        <div class="zoom-controls-wrap flex shrink-0 order-1 md:order-2">
+        <ConceptMapLabelPicker
+          v-if="diagramStore.type === 'concept_map'"
+          class="label-picker-wrap order-3 shrink-0 min-w-0"
+        />
+        <div
+          v-if="showZoomControls"
+          class="zoom-controls-wrap flex shrink-0 order-1 md:order-2"
+        >
           <ZoomControls
             :zoom="canvasZoom"
             :is-presentation-mode="isPresentationMode"

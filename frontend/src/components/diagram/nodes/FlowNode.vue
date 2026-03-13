@@ -153,6 +153,7 @@ function handleDeleteClick(event: MouseEvent) {
       :is-editing="isEditing"
       max-width="200px"
       text-align="center"
+      :text-decoration="data.style?.textDecoration || 'none'"
       truncate
       @save="handleTextSave"
       @cancel="handleEditCancel"

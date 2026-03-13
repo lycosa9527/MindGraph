@@ -420,10 +420,6 @@ export type EventTypes = {
   'mindmap:layout_recalculation_requested': { source?: string }
   'mindmap:selection_restore_requested': { nodeIds: string[] }
 
-  // Tab Mode Events
-  'tab_mode:toggled': { enabled: boolean }
-  'tab_mode:node_expanded': { nodeId: string }
-
   // Keyboard Events
   'keyboard:delete_executed': { deletedNodeIds?: string[]; nodeCount?: number; edgeCount?: number }
   'keyboard:escape_pressed': Record<string, never>

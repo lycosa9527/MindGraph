@@ -3,6 +3,7 @@
  *
  * When user creates a link between two concepts (or clears the label),
  * calls the API to generate the relationship label using the selected LLM.
+ * Returns 3-5 options; user can pick via number keys (IME-style).
  *
  * Label agent: When a concept node's text changes, only regenerates edges that
  * have empty labels—avoids overwriting user-edited or AI-generated labels.
@@ -12,11 +13,13 @@ import { ref } from 'vue'
 import { isPlaceholderText } from '@/composables/useAutoComplete'
 import { useLanguage } from '@/composables/useLanguage'
 import { useNotifications } from '@/composables/useNotifications'
+import { useConceptMapRelationshipStore } from '@/stores/conceptMapRelationship'
 import { useDiagramStore } from '@/stores/diagram'
 import { useLLMResultsStore } from '@/stores/llmResults'
 import { authFetch } from '@/utils/api'
 
 export const CONCEPT_MAP_GENERATING_KEY = Symbol('conceptMapRelationshipGenerating')
+export const CONCEPT_MAP_OPTIONS_KEY = Symbol('conceptMapRelationshipOptions')
 
 /** Template-default labels (from getDefaultTemplate) — safe to regenerate when concepts change */
 const TEMPLATE_DEFAULT_LABELS = new Set([
@@ -44,6 +47,7 @@ function isLabelEmptyOrPlaceholder(label: string | undefined | null): boolean {
 
 export function useConceptMapRelationship() {
   const diagramStore = useDiagramStore()
+  const relationshipStore = useConceptMapRelationshipStore()
   const llmResultsStore = useLLMResultsStore()
   const { isZh } = useLanguage()
   const notify = useNotifications()
@@ -121,8 +125,14 @@ export function useConceptMapRelationship() {
       }
 
       if (result.success && result.relationship_label) {
+        const labels = (result.relationship_labels as string[] | undefined) ?? [result.relationship_label]
         diagramStore.updateConnectionLabel(connectionId, result.relationship_label)
         diagramStore.pushHistory('AI relationship')
+        if (labels.length >= 2) {
+          relationshipStore.setOptions(connectionId, labels)
+        } else {
+          relationshipStore.clearAll()
+        }
         return { success: true }
       }
 
@@ -159,10 +169,31 @@ export function useConceptMapRelationship() {
     }
   }
 
+  function dismissOptionsForConnection(connectionId: string): void {
+    relationshipStore.clearConnection(connectionId)
+  }
+
+  /** Clear all relationship options (on pane click) */
+  function dismissAllOptions(): void {
+    relationshipStore.clearAll()
+  }
+
+  /** Switch displayed label by number (1–5). Picker stays visible until canvas click. */
+  function selectOption(connectionId: string, index: number): boolean {
+    const opts = relationshipStore.options[connectionId]
+    if (!opts || index < 0 || index >= opts.length) return false
+    diagramStore.updateConnectionLabel(connectionId, opts[index])
+    diagramStore.pushHistory('AI relationship')
+    return true
+  }
+
   return {
     generateRelationship,
     generatingConnectionIds,
     isGeneratingFor,
     regenerateForNodeIfNeeded,
+    dismissOptionsForConnection,
+    dismissAllOptions,
+    selectOption,
   }
 }

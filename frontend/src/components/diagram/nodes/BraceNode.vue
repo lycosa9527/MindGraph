@@ -100,6 +100,7 @@ function handleEditCancel() {
       :is-editing="isEditing"
       max-width="240px"
       text-align="center"
+      :text-decoration="data.style?.textDecoration || 'none'"
       @save="handleTextSave"
       @cancel="handleEditCancel"
       @edit-start="isEditing = true"

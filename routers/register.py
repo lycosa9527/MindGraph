@@ -16,7 +16,7 @@ from routers.admin import env_router as admin_env, logs_router as admin_logs, re
 from routers.core import pages, cache, update_notification
 from routers.core.vue_spa import router as vue_spa
 from routers.core.health import router as health_router
-from routers.features import voice, tab_mode, school_zone, askonce, gewe
+from routers.features import voice, school_zone, askonce, gewe
 
 logger = logging.getLogger(__name__)
 
@@ -93,7 +93,6 @@ def register_routers(app: FastAPI) -> None:
     app.include_router(admin_realtime)  # Admin realtime user activity monitoring
     app.include_router(voice)  # VoiceAgent (real-time voice conversation)
     app.include_router(update_notification)  # Update notification system
-    app.include_router(tab_mode)  # Tab Mode (autocomplete and expansion)
     # Public dashboard endpoints
     app.include_router(public_dashboard.router, prefix="/api/public", tags=["Public Dashboard"])
     app.include_router(school_zone)  # School Zone (organization-scoped sharing)

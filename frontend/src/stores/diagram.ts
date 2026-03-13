@@ -59,6 +59,8 @@ import {
   LEARNING_SHEET_PLACEHOLDER,
 } from './specLoader/utils'
 
+import { useConceptMapRelationshipStore } from './conceptMapRelationship'
+
 // Event types for diagram store events
 export type DiagramEventType =
   | 'diagram:node_added'
@@ -992,9 +994,10 @@ export const useDiagramStore = defineStore('diagram', () => {
         })
       })
 
-      // Update nodes and connections
+      // Update nodes and connections (all connection IDs change)
       data.value.nodes = recalculatedNodes
       data.value.connections = recalculatedConnections
+      useConceptMapRelationshipStore().clearAll()
 
       // Trigger layout recalculation
       multiFlowMapRecalcTrigger.value++
@@ -1013,16 +1016,21 @@ export const useDiagramStore = defineStore('diagram', () => {
         source: 'topic',
         target: `bubble-${i}`,
       }))
+      useConceptMapRelationshipStore().clearAll()
     } else {
       // Standard deletion for other diagram types
-      data.value.nodes.splice(index, 1)
-
-      // Also remove connections involving this node
       if (data.value.connections) {
+        const removedConnIds = data.value.connections
+          .filter((c) => c.source === nodeId || c.target === nodeId)
+          .map((c) => c.id)
+          .filter((id): id is string => !!id)
         data.value.connections = data.value.connections.filter(
           (c) => c.source !== nodeId && c.target !== nodeId
         )
+        const relStore = useConceptMapRelationshipStore()
+        removedConnIds.forEach((id) => relStore.clearConnection(id))
       }
+      data.value.nodes.splice(index, 1)
     }
 
     // Clean up custom positions and styles for deleted node
@@ -1180,9 +1188,15 @@ export const useDiagramStore = defineStore('diagram', () => {
       return true
     })
     if (data.value.connections) {
+      const removedConnIds = data.value.connections
+        .filter((c) => toRemove.has(c.source) || toRemove.has(c.target))
+        .map((c) => c.id)
+        .filter((id): id is string => !!id)
       data.value.connections = data.value.connections.filter(
         (c) => !toRemove.has(c.source) && !toRemove.has(c.target)
       )
+      const relStore = useConceptMapRelationshipStore()
+      removedConnIds.forEach((id) => relStore.clearConnection(id))
     }
 
     emitEvent('diagram:nodes_deleted', { nodeIds: deletedIds })
@@ -1334,6 +1348,7 @@ export const useDiagramStore = defineStore('diagram', () => {
     selectedNodes.value = []
     history.value = []
     historyIndex.value = -1
+    useConceptMapRelationshipStore().clearAll()
     // Reset title state
     title.value = ''
     isUserEditedTitle.value = false
@@ -1559,6 +1574,8 @@ export const useDiagramStore = defineStore('diagram', () => {
    */
   function loadFromSpec(spec: Record<string, unknown>, diagramTypeValue: DiagramType): boolean {
     if (!spec || !diagramTypeValue) return false
+
+    useConceptMapRelationshipStore().clearAll()
 
     // Set diagram type
     if (!setDiagramType(diagramTypeValue)) return false

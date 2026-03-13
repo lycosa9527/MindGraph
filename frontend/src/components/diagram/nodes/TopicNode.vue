@@ -10,8 +10,8 @@ import { Handle, Position } from '@vue-flow/core'
 
 import { eventBus } from '@/composables/useEventBus'
 import { useTheme } from '@/composables/useTheme'
-import { getBorderStyleProps } from '@/utils/borderStyleUtils'
 import type { MindGraphNodeProps } from '@/types'
+import { getBorderStyleProps } from '@/utils/borderStyleUtils'
 
 import InlineEditableText from './InlineEditableText.vue'
 
@@ -34,10 +34,8 @@ const isPillShape = computed(
 )
 // Multi-flow map and flow map use rounded rectangle
 const isRoundedRectangle = computed(
-  () =>
-    props.data.diagramType === 'multi_flow_map' || props.data.diagramType === 'flow_map'
+  () => props.data.diagramType === 'multi_flow_map' || props.data.diagramType === 'flow_map'
 )
-
 // Flow map: main topic with single handle (right for horizontal, bottom for vertical)
 const isFlowMap = computed(() => props.data.diagramType === 'flow_map')
 const flowMapOrientation = computed(
@@ -129,10 +127,8 @@ const mindMapHandlePositions = computed(() => {
 })
 
 const nodeStyle = computed(() => {
-  const borderColor =
-    props.data.style?.borderColor || defaultStyle.value.borderColor || '#0d47a1'
-  const borderWidth =
-    props.data.style?.borderWidth || defaultStyle.value.borderWidth || 3
+  const borderColor = props.data.style?.borderColor || defaultStyle.value.borderColor || '#0d47a1'
+  const borderWidth = props.data.style?.borderWidth || defaultStyle.value.borderWidth || 3
   const borderStyle = props.data.style?.borderStyle || 'solid'
   const backgroundColor =
     props.data.style?.backgroundColor || defaultStyle.value.backgroundColor || '#1976d2'
@@ -260,6 +256,7 @@ function handleWidthChange(width: number) {
       :readonly="data.hidden === true"
       max-width="300px"
       text-align="center"
+      :text-decoration="data.style?.textDecoration || 'none'"
       @save="handleTextSave"
       @cancel="handleEditCancel"
       @edit-start="isEditing = true"

@@ -76,31 +76,64 @@ CONCEPT_MAP_GENERATION_ZH = """
 
 # ============================================================================
 # RELATIONSHIP ONLY - for real-time link creation (concept map auto-complete)
+# Not to be confused with Tab Mode (tab_suggestions/tab_expand), which has been
+# removed. This is the only real-time AI suggestion flow for concept maps.
 # ============================================================================
 
 CONCEPT_MAP_RELATIONSHIP_ONLY_EN = """You are helping students build concept maps for learning and critical thinking.
 
-We are generating a relationship between two concepts in this concept map. {topic_context}
+We need 3–5 different relationship labels between two concepts so the user can choose the best fit. {topic_context}
 
 Concept A: {concept_a}
 Concept B: {concept_b}
 
 {direction_instruction}
 
-Output exactly ONE relationship tag—the most distinctive, specific relationship between A and B in the context of this topic. Avoid generic tags like "related to"; choose the tag that best captures this unique pair.
+TASK: Output exactly 3 to 5 distinct relationship tags. Each tag must capture a different plausible relationship between A and B. Put the strongest/most distinctive one first. Vary the types (e.g. one causal, one compositional, one comparative) so the user has meaningful choices.
 
-Do NOT repeat or include the concept names (A or B) in the label. Output only the relationship verb/phrase. Example: 养分–泥土 → 提供 (not 提供养分).
+RULES:
+- Do NOT include concept names A or B in any label. Output only the verb/phrase.
+- Avoid generic tags: "related to", "associated with", "connected to" are too vague.
+- One tag per line. No numbering. No prefix. No JSON. No parenthetical notes.
 
-Examples of distinctive tags:
-- dad–mom: husband and wife
-- grandma–mom: mother and child
-- oxygen–water: component of
-- force–acceleration: causes
-- author–novel: wrote
-- sun–plant: provides
-- reactant–product: yields
+MULTI-LABEL EXAMPLES (output format—each line is one tag):
 
-Most common relationship types (use or adapt as needed):
+force → acceleration:
+causes
+determines
+proportional to
+explains
+predicts
+
+oxygen → water:
+component of
+dissolves in
+required for
+reacts to form
+enables combustion in
+
+author → novel:
+wrote
+created
+imagined
+inspired
+portrays in
+
+enzyme → reaction:
+catalyzes
+speeds up
+enables
+regulates
+required for
+
+sun → plant:
+provides light for
+enables photosynthesis in
+sustains
+warms
+determines growth of
+
+Relationship types to draw from (vary across your 3–5 tags):
 - Causal: causes, leads to, results in, produces, triggers
 - Compositional: is part of, contains, includes, consists of
 - Taxonomic: is a type of, is an example of
@@ -108,40 +141,63 @@ Most common relationship types (use or adapt as needed):
 - Sequential: precedes, follows, occurs before
 - Comparative: contrasts with, similar to, opposite of
 - Semantic: means, symbolizes, represents, refers to
-- Association: influences, affects, related to, connected to
 
-STEM examples: catalyzes, oxidizes, accelerates, regulates, equals, derives from
-Literature examples: symbolizes, foreshadows, alludes to, parodies
-
-CRITICAL: Output ONLY the single relationship tag. Nothing else. Never include concept A or B in the label.
-- No prefix (e.g. "The relationship is:", "Answer:", "Tag:")
-- No parenthetical notes or explanations (e.g. "Note: ...")
-- No explanation, no JSON, no punctuation, no period at the end
-- Literally just the tag—one word or short phrase"""
+OUTPUT: Exactly 3–5 lines. Each line = one tag. Minimum 3, maximum 5."""
 
 CONCEPT_MAP_RELATIONSHIP_ONLY_ZH = """你正在帮助学生构建概念图，用于学习和批判性思维。
 
-我们正在生成此概念图中两个概念之间的关系。{topic_context}
+需要为两个概念生成 3–5 个不同的关系标签，供用户选择最合适的一个。{topic_context}
 
 概念A：{concept_a}
 概念B：{concept_b}
 
 {direction_instruction}
 
-请输出恰好一个关系标签——在主题背景下最能体现 A 与 B 之间最鲜明、最具体关系的标签。避免"相关"等泛泛之词；选择最能概括这对概念独特关系的标签。
+任务：输出恰好 3–5 个不同的关系标签。每个标签代表 A 与 B 之间一种 plausible 的关系。将最好、最鲜明的放第一行。请从不同关系类型中选取（如一个因果、一个组成、一个比较），以便用户有实质性的选择。
 
-不要在标签中重复或包含概念A、B的名称。只输出关系动词/短语。例：养分–泥土 → 提供（不要 提供养分）。
+规则：
+- 不要在标签中重复或包含概念A、B的名称。只输出关系动词/短语。
+- 避免泛泛之词：「相关」「关联」「连接」过于笼统。
+- 每行一个标签。不要编号、不要前缀、不要 JSON、不要括号注释。
 
-鲜明标签示例：
-- 爸爸–妈妈：夫妻
-- 奶奶–妈妈：母子
-- 氧–水：组成
-- 力–加速度：导致
-- 作者–小说：著有
-- 太阳–植物：提供
-- 反应物–产物：生成
+多标签示例（输出格式——每行一个标签）：
 
-最常见的关系类型（可选用或改编）：
+力 → 加速度：
+导致
+决定
+与…成正比
+解释
+可预测
+
+氧 → 水：
+组成
+溶于
+为…所需
+反应生成
+参与燃烧
+
+作者 → 小说：
+著有
+创作
+虚构
+启发
+在…中刻画
+
+酶 → 反应：
+催化
+加速
+促成
+调节
+为…所需
+
+太阳 → 植物：
+为…提供光
+促成光合作用
+供养
+温暖
+决定…生长
+
+关系类型参考（在 3–5 个标签中应有变化）：
 - 因果：导致、引起、产生、引发
 - 组成：是…的一部分、包含、由…组成
 - 分类：是…的一种、是…的例子
@@ -149,16 +205,8 @@ CONCEPT_MAP_RELATIONSHIP_ONLY_ZH = """你正在帮助学生构建概念图，用
 - 顺序：先于、后于、发生于…之前
 - 比较：对比、相似于、与…相反
 - 语义：意为、象征、代表、指
-- 关联：影响、相关、连接
 
-STEM示例：催化、氧化、加速、调节、等于、源于
-文学示例：象征、预示、影射、戏仿
-
-重要：只输出一个关系标签，不要输出任何其他内容。标签中不得包含概念A或B的名称。
-- 不要前缀（如「关系是：」「答案是：」「标签：」）
-- 不要括号内的解释或注释（如「注：...」）
-- 不要解释、JSON、标点或句号
-- 仅输出标签本身——一个词或短语"""
+输出：恰好 3–5 行。每行一个标签。最少 3 行，最多 5 行。"""
 
 # ============================================================================
 # PROMPT REGISTRY

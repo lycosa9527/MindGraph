@@ -71,6 +71,7 @@ function handleEditCancel() {
       :is-editing="isEditing"
       max-width="100px"
       text-align="center"
+      :text-decoration="data.style?.textDecoration || 'none'"
       text-class="px-3 py-2"
       @save="handleTextSave"
       @cancel="handleEditCancel"

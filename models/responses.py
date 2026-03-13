@@ -55,6 +55,10 @@ class GenerateResponse(BaseModel):
         None,
         description="Generated relationship label (concept_map relationship-only mode)"
     )
+    relationship_labels: Optional[List[str]] = Field(
+        None,
+        description="Multiple relationship label options (3–5) for concept map picker"
+    )
 
     class Config:
         """Configuration for GenerateResponse JSON schema"""
@@ -157,69 +161,6 @@ class DatabaseHealthResponse(BaseModel):
                     "total_rows": 650
                 },
                 "timestamp": 1642012345
-            }
-        }
-
-
-# ============================================================================
-# TAB MODE RESPONSE MODELS
-# ============================================================================
-
-class TabSuggestionItem(BaseModel):
-    """Individual suggestion item"""
-    text: str = Field(..., description="Suggestion text")
-    confidence: float = Field(0.9, ge=0.0, le=1.0, description="Confidence score")
-
-
-class TabSuggestionResponse(BaseModel):
-    """Response model for /api/tab_suggestions endpoint"""
-    success: bool = Field(..., description="Whether request succeeded")
-    mode: str = Field("autocomplete", description="Mode: 'autocomplete'")
-    suggestions: List[TabSuggestionItem] = Field(default_factory=list, description="List of suggestions")
-    request_id: Optional[str] = Field(None, description="Request ID for tracking")
-    error: Optional[str] = Field(None, description="Error message if failed")
-
-    class Config:
-        """Configuration for TabSuggestionResponse JSON schema"""
-        json_schema_extra = {
-            "example": {
-                "success": True,
-                "mode": "autocomplete",
-                "suggestions": [
-                    {"text": "fruit", "confidence": 0.9},
-                    {"text": "fruit juice", "confidence": 0.8}
-                ],
-                "request_id": "tab_1234567890"
-            }
-        }
-
-
-class TabExpandChild(BaseModel):
-    """Child node for expansion"""
-    text: str = Field(..., description="Child node text")
-    id: str = Field(..., description="Child node ID")
-
-
-class TabExpandResponse(BaseModel):
-    """Response model for /api/tab_expand endpoint"""
-    success: bool = Field(..., description="Whether expansion succeeded")
-    mode: str = Field("expansion", description="Mode: 'expansion'")
-    children: List[TabExpandChild] = Field(default_factory=list, description="Generated child nodes")
-    request_id: Optional[str] = Field(None, description="Request ID for tracking")
-    error: Optional[str] = Field(None, description="Error message if failed")
-
-    class Config:
-        """Configuration for TabExpandResponse JSON schema"""
-        json_schema_extra = {
-            "example": {
-                "success": True,
-                "mode": "expansion",
-                "children": [
-                    {"text": "Group Discussions", "id": "child_0"},
-                    {"text": "Role Playing", "id": "child_1"},
-                    {"text": "Case Studies", "id": "child_2"}
-                ],
-                "request_id": "tab_expand_1234567890"
             }
         }
 

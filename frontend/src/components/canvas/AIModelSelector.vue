@@ -28,6 +28,11 @@ const llmResultsStore = useLLMResultsStore()
 
 const isConceptMap = computed(() => diagramStore.type === 'concept_map')
 
+/** Show "关系" indicator when concept map and a model is selected—AI ready for relationship generation */
+const showRelationshipReady = computed(
+  () => isConceptMap.value && llmResultsStore.selectedModel != null
+)
+
 // Model display names
 const modelDisplayNames: Record<string, string> = {
   qwen: 'Qwen',
@@ -161,7 +166,7 @@ watch(
 
 <template>
   <div class="ai-model-selector z-20 max-w-full min-w-0">
-    <div class="glass-container px-2 py-1 flex items-center gap-2">
+    <div class="glass-container px-3 py-1.5 flex items-center gap-3">
       <!-- Label with icon -->
       <div class="flex items-center gap-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 shrink-0">
         <Sparkles class="w-3.5 h-3.5 text-purple-500" />
@@ -169,7 +174,7 @@ watch(
       </div>
 
       <!-- Model buttons -->
-      <div class="flex gap-1">
+      <div class="flex gap-1 flex-1 justify-center min-w-0">
         <ElTooltip
           v-for="modelKey in llmResultsStore.models"
           :key="modelKey"
@@ -200,6 +205,15 @@ watch(
         </ElTooltip>
       </div>
 
+      <!-- 关系 ready indicator (concept map: AI ready for link generation) - right of buttons -->
+      <ElTooltip
+        v-if="showRelationshipReady"
+        :content="isZh ? '拖拽概念连线即可生成关系' : 'Drag to link concepts—AI will generate relationships'"
+        placement="top"
+      >
+        <span class="relationship-ready-badge">{{ isZh ? '关系' : 'Relationships' }}</span>
+      </ElTooltip>
+
       <!-- Ready count indicator -->
       <div
         v-if="llmResultsStore.isGenerating || llmResultsStore.hasAnyResults"
@@ -223,6 +237,23 @@ watch(
 /* Transparent container - no background */
 .glass-container {
   background: transparent;
+}
+
+.relationship-ready-badge {
+  font-size: 10px;
+  font-weight: 600;
+  color: #10b981;
+  background: rgba(16, 185, 129, 0.12);
+  padding: 2px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.dark .relationship-ready-badge {
+  color: #34d399;
+  background: rgba(16, 185, 129, 0.15);
+  border-color: rgba(16, 185, 129, 0.25);
 }
 
 .dark .glass-container {

@@ -134,6 +134,7 @@ function handleEditCancel() {
       :readonly="data.hidden === true"
       max-width="150px"
       text-align="center"
+      :text-decoration="data.style?.textDecoration || 'none'"
       @save="handleTextSave"
       @cancel="handleEditCancel"
       @edit-start="isEditing = true"

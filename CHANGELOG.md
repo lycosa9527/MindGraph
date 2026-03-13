@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.34.0] - 2026-03-14
+
+### Added
+- **ConceptMapLabelPicker**: Bottom bar label picker for concept map relationship options. When user drags concepts to create a link, AI generates 3–5 labels; user presses 1–5 to select; clicking canvas clears.
+- **conceptMapRelationship Store**: New Pinia store for transient state of AI-generated relationship label options (connectionId → labels), kept separate from diagram store for concept-map-specific UI.
+
+### Changed
+- **Concept Map Agent**: Updates for label generation and direction-aware handling.
+- **useConceptMapRelationship**: Integration with ConceptMapLabelPicker and relationship store.
+- **CurvedEdge**: Enhanced label display and picker integration.
+- **Diagram Nodes**: BraceNode, BranchNode, BubbleNode, CircleNode, ConceptNode, FlowNode, FlowSubstepNode, InlineEditableText, LabelNode, TopicNode—cleanup and consistency.
+- **CanvasToolbar, AIModelSelector, DiagramCanvas, CanvasPage**: UI and integration updates.
+- **prompts/concept_maps.py**: Refined relationship generation prompts.
+- **Config, models, routers**: Tab mode removal and feature flag updates.
+- **useEventBus, useLanguage, diagram store**: Concept map event handling and store updates.
+
+### Removed
+- **Tab Mode Feature**: Removed agents/tab_mode (tab_agent), prompts/tab_mode (autocomplete, colors, expansion), routers/features/tab_mode. Feature no longer in use.
+- **IME Autocomplete**: Removed IMEAutocompleteDropdown.vue and useIMEAutocomplete.ts.
+
 ## [5.33.0] - 2026-03-13
 
 ### Added

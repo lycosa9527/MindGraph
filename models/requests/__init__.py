@@ -46,11 +46,6 @@ from .requests_knowledge_space import (
     MetadataUpdateRequest,
     RollbackRequest,
 )
-from .requests_thinking import (
-    TabExpandRequest,
-    TabSuggestionRequest,
-)
-
 __all__ = [
     # Diagram Requests
     "GenerateRequest",
@@ -90,7 +85,4 @@ __all__ = [
     "RelationshipRequest",
     "MetadataUpdateRequest",
     "RollbackRequest",
-    # Thinking Requests
-    "TabExpandRequest",
-    "TabSuggestionRequest",
 ]

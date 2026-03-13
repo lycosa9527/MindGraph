@@ -256,10 +256,6 @@ class FeatureFlagSettings(BaseModel):
         default=False,
         description="Enable drag and drop functionality for diagram nodes"
     )
-    FEATURE_TAB_MODE: bool = Field(
-        default=False,
-        description="Enable Tab Mode (autocomplete suggestions and node expansion)"
-    )
     FEATURE_COURSE: bool = Field(
         default=False,
         description="Enable Thinking Course (思维课程) feature"

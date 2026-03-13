@@ -225,47 +225,40 @@ class ConceptMapAgent(BaseAgent):
         instructions: Dict[str, Dict[str, str]] = {
             "zh": {
                 "source_to_target": (
-                    "该连线有箭头，从概念A指向概念B。请生成一个动词短语，描述A如何导致、引导或指向B。"
-                    "STEM示例：力→加速度：导致；酶→反应：催化；太阳→光合作用：促成；DNA→蛋白质：编码；重力→轨道：支配。"
-                    "文学示例：作者→小说：著有；意象→主题：强化；隐喻→意义：传达；主角→冲突：面对。"
+                    "该连线有箭头，从概念A指向概念B。请生成 3–5 个不同的动词/短语，描述 A 如何导致、引导或指向 B。"
+                    "类型宜多样：如因果、组成、依赖等。"
                 ),
                 "target_to_source": (
-                    "该连线有箭头，从概念B指向概念A。请生成一个动词短语，描述B如何导致、引导或指向A。"
-                    "STEM示例：加速度←力：由…引起；产物←反应物：由…生成。文学示例：小说←作者：由…创作。"
+                    "该连线有箭头，从概念B指向概念A。请生成 3–5 个不同的动词/短语，描述 B 如何导致、引导或指向 A。"
+                    "类型宜多样。"
                 ),
                 "both": (
-                    "该连线两端均有箭头（双向）。请生成一个动词短语，描述A与B如何相互关联或影响。"
+                    "该连线两端均有箭头（双向）。请生成 3–5 个不同的动词/短语，描述 A 与 B 如何相互关联或影响。"
                 ),
                 "none": (
                     "该连线无箭头。这两个概念是平行或对称相关的。"
-                    "请生成最能概括二者关系的标签（对称、非方向性），可以是名词、形容词或短语，不必是动词。"
-                    "选择最能体现这对概念独特关系的表述。示例：相似、对比、同类、互补、对应、并列。"
+                    "请生成 3–5 个不同的标签（对称、非方向性），可以是名词、形容词或短语。"
+                    "示例类型：相似、对比、同类、互补、对应、并列。"
                 ),
             },
             "en": {
                 "source_to_target": (
-                    "The link has an arrow from Concept A to Concept B. "
-                    "Generate a verb phrase describing how A leads to, causes, or directs to B. "
-                    "STEM examples: force→acceleration: causes; enzyme→reaction: catalyzes; "
-                    "sun→photosynthesis: enables; DNA→protein: encodes; gravity→orbit: governs. "
-                    "Literature examples: author→novel: wrote; imagery→theme: reinforces; "
-                    "metaphor→meaning: conveys; protagonist→conflict: faces."
+                    "The link has an arrow from A to B. "
+                    "Generate 3–5 different verb phrases describing how A leads to, causes, or directs to B. "
+                    "Vary the relationship types (causal, compositional, dependency, etc.)."
                 ),
                 "target_to_source": (
-                    "The link has an arrow from Concept B to Concept A. "
-                    "Generate a verb phrase describing how B leads to, causes, or directs to A. "
-                    "STEM examples: acceleration←force: caused by; product←reactant: yields. "
-                    "Literature examples: novel←author: written by."
+                    "The link has an arrow from B to A. "
+                    "Generate 3–5 different verb phrases describing how B leads to, causes, or directs to A. "
+                    "Vary the relationship types."
                 ),
                 "both": (
                     "The link has arrows on both ends (bidirectional). "
-                    "Generate a verb phrase describing how A and B relate or influence each other."
+                    "Generate 3–5 different phrases describing how A and B relate or influence each other."
                 ),
                 "none": (
-                    "The link has no arrow. These two concepts are in parallel or symmetrically related. "
-                    "Generate the label that best captures the relationship between them (symmetric, not directional). "
-                    "It may be a noun, adjective, or phrase—not necessarily a verb. "
-                    "Choose the most distinctive description for this pair. "
+                    "The link has no arrow. These concepts are in parallel or symmetrically related. "
+                    "Generate 3–5 different symmetric labels (noun, adjective, or phrase). "
                     "Examples: similar to, contrasts with, complementary, analogous to, parallel."
                 ),
             },
@@ -309,6 +302,13 @@ class ConceptMapAgent(BaseAgent):
         if not prompt_template:
             return {"success": False, "error": f"Prompt not found: {prompt_key}"}
 
+        logger.debug(
+            "Concept map relationship-only request: concept_a=%r concept_b=%r topic=%r "
+            "link_direction=%r language=%s model=%s",
+            concept_a, concept_b, topic, link_direction, language, self.model
+        )
+        logger.debug("Concept map relationship prompt (first 500 chars): %.500s", prompt_template)
+
         try:
             response = await llm_service.chat(
                 prompt=prompt_template,
@@ -316,12 +316,23 @@ class ConceptMapAgent(BaseAgent):
                 timeout=15.0
             )
             raw = (response or "").strip()
-            first_line = raw.split("\n")[0].strip() if raw else ""
-            # Strip parenthetical notes (e.g. "姐妹或妯娌（注：...）" -> "姐妹或妯娌")
-            label = _strip_parenthetical(first_line)
-            if not label:
+            logger.debug("Concept map relationship LLM raw response: %r", raw)
+            if raw.startswith("```"):
+                raw = raw.split("```", 2)[-1].strip()
+            lines = [ln.strip() for ln in raw.split("\n") if ln.strip()]
+            labels: List[str] = []
+            for line in lines[:5]:
+                cleaned = _strip_parenthetical(line)
+                if cleaned:
+                    labels.append(cleaned)
+            logger.debug("Concept map relationship parsed labels (%d): %s", len(labels), labels)
+            if not labels:
                 return {"success": False, "error": "Empty response from LLM"}
-            return {"success": True, "relationship_label": label}
+            return {
+                "success": True,
+                "relationship_label": labels[0],
+                "relationship_labels": labels,
+            }
         except Exception as e:
             logger.error("ConceptMapAgent: Relationship-only generation failed: %s", e)
             return {"success": False, "error": str(e)}

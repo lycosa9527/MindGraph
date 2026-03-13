@@ -82,8 +82,12 @@ const panelsStore = usePanelsStore()
 const uiStore = useUIStore()
 
 // Concept map AI relationship (provide for CurvedEdge)
-const { generateRelationship, generatingConnectionIds, regenerateForNodeIfNeeded } =
-  useConceptMapRelationship()
+const {
+  generateRelationship,
+  generatingConnectionIds,
+  regenerateForNodeIfNeeded,
+  dismissAllOptions,
+} = useConceptMapRelationship()
 provide(CONCEPT_MAP_GENERATING_KEY, generatingConnectionIds)
 
 // Theme for background color
@@ -566,6 +570,7 @@ function handlePaneClick(event?: MouseEvent) {
       }
     }
     diagramStore.clearSelection()
+    dismissAllOptions()
   }
   emit('paneClick')
 }

@@ -2,6 +2,7 @@
  * Pinia Stores Index
  */
 
+export { useConceptMapRelationshipStore } from './conceptMapRelationship'
 export {
   useDiagramStore,
   subscribeToDiagramEvents,

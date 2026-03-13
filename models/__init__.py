@@ -104,8 +104,6 @@ from .requests import (
     RelationshipRequest,
     MetadataUpdateRequest,
     RollbackRequest,
-    TabExpandRequest,
-    TabSuggestionRequest,
 )
 
 __all__ = [
@@ -194,6 +192,4 @@ __all__ = [
     "RelationshipRequest",
     "MetadataUpdateRequest",
     "RollbackRequest",
-    "TabExpandRequest",
-    "TabSuggestionRequest",
 ]

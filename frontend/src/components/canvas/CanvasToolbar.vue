@@ -395,7 +395,7 @@ watch(
         if (s.textColor) textColor.value = s.textColor
         if (s.fontWeight) fontWeight.value = s.fontWeight
         if (s.fontStyle) fontStyle.value = s.fontStyle
-        if (s.textDecoration) textDecoration.value = s.textDecoration
+        textDecoration.value = s.textDecoration ?? 'none'
         if (s.borderColor) borderColor.value = s.borderColor
         if (s.borderWidth !== undefined) borderWidth.value = s.borderWidth
         if (s.borderStyle) borderStyle.value = s.borderStyle

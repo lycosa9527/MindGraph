@@ -22,7 +22,7 @@ class FeaturesConfigMixin:
     if TYPE_CHECKING:
         def _get_cached_value(self, _key: str, _default: Any = None) -> Any:
             """Type stub: method provided by BaseConfig."""
-            pass
+            return None
 
         @property
         def version(self) -> str:
@@ -98,11 +98,6 @@ class FeaturesConfigMixin:
     def FEATURE_DRAG_AND_DROP(self):
         """Enable drag and drop functionality for diagram nodes."""
         return self._get_cached_value('FEATURE_DRAG_AND_DROP', 'False').lower() == 'true'
-
-    @property
-    def FEATURE_TAB_MODE(self):
-        """Enable Tab Mode (autocomplete suggestions and node expansion)."""
-        return self._get_cached_value('FEATURE_TAB_MODE', 'False').lower() == 'true'
 
     @property
     def FEATURE_IME_AUTOCOMPLETE(self):

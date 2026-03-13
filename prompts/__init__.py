@@ -15,7 +15,6 @@ from .concept_maps import CONCEPT_MAP_PROMPTS
 from .mind_maps import MIND_MAP_PROMPTS
 from .main_agent import MAIN_AGENT_PROMPTS
 from .voice_agent import VOICE_AGENT_PROMPTS
-from .tab_mode import TAB_MODE_PROMPTS
 from .prompt_to_diagram_agent import PROMPT_TO_DIAGRAM_PROMPTS
 
 
@@ -26,7 +25,6 @@ PROMPT_REGISTRY = {
     **MIND_MAP_PROMPTS,
     **MAIN_AGENT_PROMPTS,
     **VOICE_AGENT_PROMPTS,
-    **TAB_MODE_PROMPTS,
     **PROMPT_TO_DIAGRAM_PROMPTS,
 }
 
@@ -46,7 +44,7 @@ def get_prompt(diagram_type: str, language: str = 'en', prompt_type: str = 'gene
     if diagram_type == 'prompt_to_diagram':
         key = f"prompt_to_diagram_{language}"
         return PROMPT_REGISTRY.get(key, "")
-    
+
     key = f"{diagram_type}_{prompt_type}_{language}"
     return PROMPT_REGISTRY.get(key, "")
 
@@ -65,7 +63,7 @@ def get_available_diagram_types() -> list:
         'mindmap',
         'mind_map'  # Note: both mindmap and mind_map are supported for compatibility
     ]
-    
+
     # Filter to only include types that have prompts in the registry
     available_types = []
     for diagram_type in supported_types:
@@ -73,7 +71,7 @@ def get_available_diagram_types() -> list:
         has_prompt = any(key.startswith(f"{diagram_type}_") for key in PROMPT_REGISTRY.keys())
         if has_prompt:
             available_types.append(diagram_type)
-    
+
     return sorted(available_types)
 
 def get_prompt_metadata(diagram_type: str) -> Dict[str, Any]:
@@ -84,7 +82,7 @@ def get_prompt_metadata(diagram_type: str) -> Dict[str, Any]:
         'has_extraction': False,
         'languages': []
     }
-    
+
     for key in PROMPT_REGISTRY.keys():
         # Check if key starts with diagram_type followed by underscore
         if key.startswith(f"{diagram_type}_"):
@@ -94,11 +92,12 @@ def get_prompt_metadata(diagram_type: str) -> Dict[str, Any]:
                 metadata['has_classification'] = True
             elif 'extraction' in key:
                 metadata['has_extraction'] = True
-            
+
             if '_en' in key:
                 metadata['languages'].append('en')
             elif '_zh' in key:
                 metadata['languages'].append('zh')
-    
+
     metadata['languages'] = list(set(metadata['languages']))
-    return metadata 
+    return metadata
+

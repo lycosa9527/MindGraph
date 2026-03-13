@@ -199,6 +199,7 @@ function handleEditCancel() {
         :readonly="data.hidden === true"
         :max-width="`${textMaxWidth}px`"
         text-align="center"
+        :text-decoration="data.style?.textDecoration || 'none'"
         :text-class="isTopicNode ? 'py-2' : 'px-2 py-1'"
         :full-width="isTopicNode"
         :center-block-in-circle="isCircularTopic"

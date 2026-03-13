@@ -8,14 +8,10 @@
  * - Enter to save, Escape to cancel
  * - Click outside to save
  * - Seamless transition between display and edit modes
- * - IME-style autocomplete (optional, requires enableIME prop)
  */
 import { computed, nextTick, onUnmounted, ref, watch } from 'vue'
 
 import { eventBus } from '@/composables/useEventBus'
-import { useIMEAutocomplete } from '@/composables/useIMEAutocomplete'
-
-import IMEAutocompleteDropdown from '../IMEAutocompleteDropdown.vue'
 
 const props = withDefaults(
   defineProps<{
@@ -47,18 +43,10 @@ const props = withDefaults(
     fullWidth?: boolean
     /** When true, display span is content-sized and centered by parent (reduces font-metric shift in circle topic). */
     centerBlockInCircle?: boolean
-    /** Enable IME-style autocomplete */
-    enableIME?: boolean
-    /** Diagram type for IME context */
-    diagramType?: string
-    /** Main topics for IME context */
-    mainTopics?: string[]
-    /** Node category for IME context */
-    nodeCategory?: string
-    /** Existing nodes for IME context (to avoid duplicates) */
-    existingNodes?: string[]
     /** When true, disable editing (e.g. learning sheet knocked-out nodes) */
     readonly?: boolean
+    /** Text decoration (underline, line-through). Must be passed explicitly - CSS does not inherit to form controls. */
+    textDecoration?: 'none' | 'underline' | 'line-through' | 'underline line-through'
   }>(),
   {
     isEditing: false,
@@ -73,12 +61,8 @@ const props = withDefaults(
     noWrap: false,
     fullWidth: false,
     centerBlockInCircle: false,
-    enableIME: false,
-    diagramType: 'mindmap',
-    mainTopics: () => [],
-    nodeCategory: 'general',
-    existingNodes: () => [],
     readonly: false,
+    textDecoration: 'none',
   }
 )
 
@@ -98,16 +82,6 @@ const displayRef = ref<HTMLSpanElement | null>(null)
 const wrapperRef = ref<HTMLDivElement | null>(null)
 const inputWidth = ref<string | undefined>(undefined)
 const measureRef = ref<HTMLSpanElement | null>(null) // Hidden span for measuring text width
-
-// IME Autocomplete (only initialize if enabled)
-const imeAutocomplete = props.enableIME
-  ? useIMEAutocomplete({
-      diagramType: props.diagramType,
-      mainTopics: props.mainTopics,
-      nodeCategory: props.nodeCategory,
-      existingNodes: props.existingNodes,
-    })
-  : null
 
 // Sync with parent's isEditing prop
 watch(
@@ -145,14 +119,10 @@ watch(
   }
 )
 
-// Update IME when text changes during editing
+// Dynamically adjust input width as user types
 watch(
   () => editText.value,
-  (newText) => {
-    if (localIsEditing.value && imeAutocomplete) {
-      imeAutocomplete.updateInput(newText)
-    }
-    // Dynamically adjust input width as user types
+  () => {
     if (localIsEditing.value) {
       updateInputWidth()
     }
@@ -216,10 +186,11 @@ const shouldPreventWrap = computed(() => {
   return chineseCount > 0 && chineseCount < 5
 })
 
-// Computed styles
+// Computed styles - textDecoration must be explicit (CSS does not inherit to input/textarea)
 const inputStyle = computed(() => ({
   maxWidth: props.maxWidth,
   textAlign: props.textAlign,
+  textDecoration: props.textDecoration || 'none',
 }))
 
 // Computed wrapper style for right-aligned text
@@ -232,18 +203,6 @@ const wrapperStyle = computed(() => {
     baseStyle.marginLeft = 'auto'
   }
   return baseStyle
-})
-
-// Computed: Ghost text from IME
-const ghostText = computed(() => {
-  if (!imeAutocomplete) return ''
-  return imeAutocomplete.ghostText.value
-})
-
-// Computed: Show IME dropdown
-const showIMEDropdown = computed(() => {
-  if (!imeAutocomplete) return false
-  return localIsEditing.value && imeAutocomplete.isVisible.value
 })
 
 /**
@@ -296,11 +255,6 @@ function startEditing(): void {
       inputRef.value.focus()
       inputRef.value.select()
     }
-    // Trigger initial IME fetch if there's text
-    if (imeAutocomplete && editText.value.trim()) {
-      imeAutocomplete.updateInput(editText.value)
-    }
-    // Initial width update
     updateInputWidth()
   })
 }
@@ -310,11 +264,6 @@ function startEditing(): void {
  */
 function saveEdit(): void {
   if (!localIsEditing.value) return
-
-  // Hide IME dropdown
-  if (imeAutocomplete) {
-    imeAutocomplete.hide()
-  }
 
   const trimmedText = editText.value.trim()
 
@@ -346,11 +295,6 @@ function saveEdit(): void {
 function cancelEdit(): void {
   if (!localIsEditing.value) return
 
-  // Hide IME dropdown
-  if (imeAutocomplete) {
-    imeAutocomplete.hide()
-  }
-
   editText.value = originalText.value
   localIsEditing.value = false
 
@@ -364,27 +308,6 @@ function cancelEdit(): void {
  * Handle keyboard events
  */
 function handleKeydown(event: KeyboardEvent): void {
-  // First, let IME handle the event if it's visible
-  if (imeAutocomplete && imeAutocomplete.isVisible.value) {
-    const handled = imeAutocomplete.handleKeydown(event)
-    if (handled) {
-      // If Tab was pressed and ghost text was accepted, update editText
-      if (event.key === 'Tab' && ghostText.value) {
-        editText.value = editText.value + ghostText.value
-      }
-      // If a number was pressed, get the selected suggestion
-      if (event.key >= '1' && event.key <= '5') {
-        const index = parseInt(event.key) - 1
-        const suggestions = imeAutocomplete.currentSuggestions.value
-        if (index < suggestions.length) {
-          editText.value = suggestions[index].text
-        }
-      }
-      return
-    }
-  }
-
-  // Standard keyboard handling
   if (event.key === 'Enter' && !event.shiftKey) {
     event.preventDefault()
     event.stopPropagation()
@@ -392,12 +315,7 @@ function handleKeydown(event: KeyboardEvent): void {
   } else if (event.key === 'Escape') {
     event.preventDefault()
     event.stopPropagation()
-    // If IME is visible, just hide it; otherwise cancel edit
-    if (imeAutocomplete && imeAutocomplete.isVisible.value) {
-      imeAutocomplete.hide()
-    } else {
-      cancelEdit()
-    }
+    cancelEdit()
   }
 }
 
@@ -432,60 +350,12 @@ function handleMouseDown(event: MouseEvent): void {
   }
 }
 
-/**
- * Handle IME suggestion selection
- */
-function handleIMESelect(index: number): void {
-  if (!imeAutocomplete) return
-  const suggestions = imeAutocomplete.currentSuggestions.value
-  if (index < suggestions.length) {
-    editText.value = suggestions[index].text
-    imeAutocomplete.hide()
-    // Re-focus input
-    nextTick(() => {
-      if (inputRef.value) {
-        inputRef.value.focus()
-      }
-    })
-  }
-}
-
-/**
- * Handle IME next page
- */
-function handleIMENextPage(): void {
-  if (imeAutocomplete) {
-    imeAutocomplete.nextPage()
-  }
-}
-
-/**
- * Handle IME previous page
- */
-function handleIMEPrevPage(): void {
-  if (imeAutocomplete) {
-    imeAutocomplete.prevPage()
-  }
-}
-
-/**
- * Handle IME close
- */
-function handleIMEClose(): void {
-  if (imeAutocomplete) {
-    imeAutocomplete.hide()
-  }
-}
-
 // Subscribe to edit request from context menu
 const unsubEditRequested = eventBus.on('node:edit_requested', handleEditRequested)
 
 // Cleanup on unmount
 onUnmounted(() => {
   unsubEditRequested()
-  if (imeAutocomplete) {
-    imeAutocomplete.reset()
-  }
 })
 </script>
 
@@ -557,32 +427,8 @@ onUnmounted(() => {
             @mousedown.stop
             @click.stop
           />
-          <!-- Ghost text overlay -->
-          <span
-            v-if="enableIME && ghostText"
-            class="inline-edit-ghost"
-            :style="inputStyle"
-          >
-            <span class="ghost-prefix">{{ editText }}</span>
-            <span class="ghost-suffix">{{ ghostText }}</span>
-          </span>
         </template>
       </div>
-
-      <!-- IME Autocomplete Dropdown -->
-      <IMEAutocompleteDropdown
-        v-if="enableIME && showIMEDropdown"
-        :suggestions="imeAutocomplete?.currentSuggestions.value || []"
-        :is-loading="imeAutocomplete?.isLoading.value || false"
-        :current-page="(imeAutocomplete?.state.value.currentPage || 0) + 1"
-        :has-next-page="imeAutocomplete?.hasNextPage.value || false"
-        :has-prev-page="imeAutocomplete?.hasPrevPage.value || false"
-        :error="imeAutocomplete?.error.value || null"
-        @select="handleIMESelect"
-        @next-page="handleIMENextPage"
-        @prev-page="handleIMEPrevPage"
-        @close="handleIMEClose"
-      />
     </div>
 
     <!-- Display mode: show text -->
@@ -602,7 +448,11 @@ onUnmounted(() => {
               ? 'whitespace-nowrap'
               : 'whitespace-pre-wrap',
       ]"
-      :style="{ maxWidth: maxWidth, textAlign: textAlign }"
+      :style="{
+        maxWidth: maxWidth,
+        textAlign: textAlign,
+        textDecoration: textDecoration || 'none',
+      }"
       :title="truncate ? text : undefined"
     >
       {{ text }}
@@ -646,6 +496,7 @@ onUnmounted(() => {
   outline: none;
   font: inherit;
   color: inherit;
+  text-decoration: inherit;
   padding: 2px 4px;
   margin: -2px -4px;
   border-radius: 4px;
@@ -677,37 +528,10 @@ onUnmounted(() => {
   background: transparent;
 }
 
-/* Ghost text overlay */
-.inline-edit-ghost {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  padding: 2px 4px;
-  margin: -2px -4px;
-  font: inherit;
-  pointer-events: none;
-  z-index: 1;
-  white-space: nowrap;
-  overflow: hidden;
-}
-
-.ghost-prefix {
-  visibility: hidden;
-}
-
-.ghost-suffix {
-  color: var(--mg-text-secondary, #909399);
-  opacity: 0.7;
-}
-
-.dark .ghost-suffix {
-  color: var(--mg-text-placeholder, #606266);
-}
-
 .inline-edit-display {
   cursor: text;
   user-select: none;
+  text-decoration: inherit;
 }
 
 /* Center text in full width (circle/bubble topic) so text is visually centered in the circle */

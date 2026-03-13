@@ -12,6 +12,7 @@ import { CONCEPT_MAP_GENERATING_KEY } from '@/composables/useConceptMapRelations
 import { eventBus } from '@/composables/useEventBus'
 import { useLanguage } from '@/composables/useLanguage'
 import { useTheme } from '@/composables/useTheme'
+import { useConceptMapRelationshipStore } from '@/stores/conceptMapRelationship'
 import { useDiagramStore } from '@/stores'
 import type { DiagramType, MindGraphEdgeData } from '@/types'
 import { splitBezierPathAtMidpoint } from '@/utils/bezierSplit'
@@ -55,6 +56,7 @@ function startEditing() {
   if (!isConceptMap.value) return
   isEditing.value = true
   editText.value = props.data?.label || ''
+  useConceptMapRelationshipStore().clearAll()
   nextTick(() => inputRef.value?.focus())
 }
 
@@ -115,6 +117,7 @@ const hitAreaStyle = computed(() => ({
 const isGenerating = computed(
   () => isConceptMap.value && generatingConnectionIds.value.has(props.id)
 )
+
 
 // Concept map: split path into two segments for clickable arrowhead toggles
 const pathSegments = computed(() => {
@@ -267,43 +270,51 @@ const targetMarkerEnd = computed(() =>
   <!-- Edge label: concept map = editable, others = static box -->
   <EdgeLabelRenderer v-if="data?.label !== undefined">
     <div
-      class="edge-label absolute"
-      :class="{
-        'edge-label-concept-map': isConceptMap,
-        'edge-label-box': !isConceptMap,
-        'pointer-events-none': !isConceptMap,
-        nopan: isConceptMap,
-        'cursor-text': isConceptMap && !isEditing,
-      }"
+      class="edge-label-wrapper absolute"
       :style="{
         transform: `translate(-50%, -50%) translate(${path.labelX}px, ${path.labelY}px)`,
-        color: isConceptMap ? relationshipColor : undefined,
-        pointerEvents: isConceptMap ? 'auto' : undefined,
       }"
-      @dblclick.stop="startEditing"
     >
-      <input
-        v-if="isConceptMap && isEditing"
-        ref="inputRef"
-        v-model="editText"
-        type="text"
-        class="edge-label-input"
-        :placeholder="relationshipPlaceholder"
-        @blur="saveLabel"
-        @keydown="handleKeydown"
-      />
-      <span
-        v-else
-        :class="{ 'edge-label-placeholder': isConceptMap && !data?.label?.trim() && !isGenerating }"
+      <div
+        class="edge-label"
+        :class="{
+          'edge-label-concept-map': isConceptMap,
+          'edge-label-box': !isConceptMap,
+          'pointer-events-none': !isConceptMap,
+          nopan: isConceptMap,
+          'cursor-text': isConceptMap && !isEditing,
+        }"
+        :style="{
+          color: isConceptMap ? relationshipColor : undefined,
+          pointerEvents: isConceptMap ? 'auto' : undefined,
+        }"
+        @dblclick.stop="startEditing"
       >
-        {{
-          isGenerating
-            ? (t('diagram.aiGenerating', 'AI...') as string)
-            : isConceptMap && !data?.label?.trim()
-              ? relationshipPlaceholder
-              : data?.label || ''
-        }}
-      </span>
+        <span>
+          <input
+            v-if="isConceptMap && isEditing"
+            ref="inputRef"
+            v-model="editText"
+            type="text"
+            class="edge-label-input"
+            :placeholder="relationshipPlaceholder"
+            @blur="saveLabel"
+            @keydown="handleKeydown"
+          />
+          <span
+            v-else
+            :class="{ 'edge-label-placeholder': isConceptMap && !data?.label?.trim() && !isGenerating }"
+          >
+            {{
+              isGenerating
+                ? (t('diagram.aiGenerating', 'AI...') as string)
+                : isConceptMap && !data?.label?.trim()
+                  ? relationshipPlaceholder
+                  : data?.label || ''
+            }}
+          </span>
+        </span>
+      </div>
     </div>
   </EdgeLabelRenderer>
 </template>
@@ -348,15 +359,11 @@ const targetMarkerEnd = computed(() =>
   color: #6b7280;
 }
 
-.edge-label-concept-map {
+.edge-label.edge-label-concept-map {
   background: #f5f5f5;
   padding: 4px 8px;
   min-width: 28px;
   min-height: 22px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 11px;
   border-radius: 2px;
 }
 
@@ -382,4 +389,5 @@ const targetMarkerEnd = computed(() =>
   border-color: #6b7280;
   color: #e5e7eb;
 }
+
 </style>

@@ -198,6 +198,7 @@ function handleLinkDrop(event: DragEvent) {
         :is-editing="isEditing"
         :max-width="isTopic ? '300px' : '150px'"
         text-align="center"
+        :text-decoration="data.style?.textDecoration || 'none'"
         placeholder="输入文本..."
         @save="handleTextSave"
         @cancel="handleEditCancel"

@@ -66,6 +66,7 @@ function handleEditCancel() {
       :is-editing="isEditing"
       max-width="94px"
       text-align="center"
+      :text-decoration="data.style?.textDecoration || 'none'"
       truncate
       @save="handleTextSave"
       @cancel="handleEditCancel"

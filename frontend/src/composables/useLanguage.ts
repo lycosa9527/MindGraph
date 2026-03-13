@@ -59,6 +59,8 @@ export const translations: Record<Language, Record<string, string>> = {
     'diagram.newChild': 'New Child',
     'diagram.relationshipPlaceholder': 'Enter relationship...',
     'diagram.aiGenerating': 'AI...',
+    'diagram.relationship': 'Relationship',
+    'diagram.pressNumberToSelect': 'Press 1–5 to select',
 
     // Panels
     'panel.mindmate': 'MindMate AI',
@@ -127,6 +129,8 @@ export const translations: Record<Language, Record<string, string>> = {
     'diagram.newChild': '新子项',
     'diagram.relationshipPlaceholder': '输入关系...',
     'diagram.aiGenerating': 'AI...',
+    'diagram.relationship': '关系',
+    'diagram.pressNumberToSelect': '按 1–5 选择',
 
     // Panels
     'panel.mindmate': 'MindMate AI 助手',
