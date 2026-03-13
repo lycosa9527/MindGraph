@@ -31,7 +31,7 @@ import { WorkshopModal } from '@/components/workshop'
 import { eventBus, getDefaultDiagramName, useNotifications, useWorkshop } from '@/composables'
 import { useLanguage } from '@/composables'
 import type { DiagramType } from '@/types'
-import { useAuthStore, useDiagramStore, usePanelsStore } from '@/stores'
+import { useAuthStore, useDiagramStore, useLLMResultsStore, usePanelsStore } from '@/stores'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 
 const notify = useNotifications()
@@ -319,8 +319,10 @@ async function handleReset() {
 
   savedDiagramsStore.clearActiveDiagram()
   router.replace({ path: '/canvas', query: { type: diagramType } })
-  panelsStore.clearNodePaletteState()
-  panelsStore.closeNodePalette()
+  showSlotFullModal.value = false
+  showWorkshopModal.value = false
+  useLLMResultsStore().reset()
+  panelsStore.reset()
   diagramStore.clearHistory()
   diagramStore.loadDefaultTemplate(diagramType)
   diagramStore.initTitle(generateDefaultName())
@@ -432,86 +434,72 @@ async function handleReset() {
         </ElDropdown>
       </div>
 
-      <!-- 教学设计 (MindMate) button -->
-      <ElTooltip
-        :content="isZh ? '教学设计' : 'Teaching Design'"
-        placement="bottom"
-      >
-        <ElButton
-          class="mindmate-button"
-          size="small"
-          :icon="ChatDotRound"
-          @click="handleOpenMindmate"
+      <!-- Action buttons: 教学设计, Reset, Export (even spacing) -->
+      <div class="flex items-center gap-2">
+        <ElTooltip
+          :content="isZh ? '教学设计' : 'Teaching Design'"
+          placement="bottom"
         >
-          教学设计
-        </ElButton>
-      </ElTooltip>
+          <ElButton
+            class="mindmate-button"
+            size="small"
+            :icon="ChatDotRound"
+            @click="handleOpenMindmate"
+          >
+            教学设计
+          </ElButton>
+        </ElTooltip>
 
-      <!-- Reset to default template -->
-      <ElTooltip
-        :content="isZh ? '重置为默认模板' : 'Reset to default template'"
-        placement="bottom"
-      >
-        <ElButton
-          class="reset-button"
-          size="small"
-          :icon="RotateCcw"
-          @click="handleReset"
-        />
-      </ElTooltip>
-
-      <!-- Workshop button (hidden for now) -->
-      <ElTooltip
-        v-if="false"
-        :content="isZh ? '工作坊协作' : 'Workshop Collaboration'"
-        placement="bottom"
-      >
-        <ElButton
-          class="workshop-button"
-          size="small"
-          :icon="Connection"
-          @click="showWorkshopModal = true"
+        <ElTooltip
+          :content="isZh ? '重置为默认模板' : 'Reset to default template'"
+          placement="bottom"
         >
-          {{ isZh ? '工作坊' : 'Workshop' }}
-        </ElButton>
-      </ElTooltip>
+          <ElButton
+            class="reset-button"
+            size="small"
+            :icon="RotateCcw"
+            @click="handleReset"
+          >
+            {{ isZh ? '重置' : 'Reset' }}
+          </ElButton>
+        </ElTooltip>
 
-      <!-- Export dropdown -->
-      <ElDropdown
-        trigger="click"
-        @command="handleExportCommand"
-      >
-        <ElButton
-          class="export-button"
-          size="small"
-          :icon="Download"
+        <ElDropdown
+          trigger="click"
+          @command="handleExportCommand"
         >
-          {{ isZh ? '图示导出' : 'Export' }}
-        </ElButton>
-        <template #dropdown>
-          <ElDropdownMenu>
-            <ElDropdownItem command="png">
-              <ImageDown class="w-4 h-4 mr-2 text-emerald-500" />
-              {{ isZh ? '导出为 PNG' : 'Export as PNG' }}
-            </ElDropdownItem>
-            <ElDropdownItem command="svg">
-              <FileImage class="w-4 h-4 mr-2 text-violet-500" />
-              {{ isZh ? '导出为 SVG' : 'Export as SVG' }}
-            </ElDropdownItem>
-            <ElDropdownItem command="pdf">
-              <FileText class="w-4 h-4 mr-2 text-red-500" />
-              {{ isZh ? '导出为 PDF' : 'Export as PDF' }}
-            </ElDropdownItem>
-            <ElDropdownItem
-              divided
-              command="json"
-            >
-              <FileJson class="w-4 h-4 mr-2 text-amber-500" />
-              {{ isZh ? '导出为 JSON' : 'Export as JSON' }}
-            </ElDropdownItem>
-          </ElDropdownMenu>
+          <ElButton
+            class="export-button"
+            size="small"
+            :icon="Download"
+          >
+            {{ isZh ? '图示导出' : 'Export' }}
+          </ElButton>
+          <template #dropdown>
+            <ElDropdownMenu>
+              <ElDropdownItem command="png">
+                <ImageDown class="w-4 h-4 mr-2 text-emerald-500" />
+                {{ isZh ? '导出为 PNG' : 'Export as PNG' }}
+              </ElDropdownItem>
+              <ElDropdownItem command="svg">
+                <FileImage class="w-4 h-4 mr-2 text-violet-500" />
+                {{ isZh ? '导出为 SVG' : 'Export as SVG' }}
+              </ElDropdownItem>
+              <ElDropdownItem command="pdf">
+                <FileText class="w-4 h-4 mr-2 text-red-500" />
+                {{ isZh ? '导出为 PDF' : 'Export as PDF' }}
+              </ElDropdownItem>
+              <ElDropdownItem
+                divided
+                command="json"
+              >
+                <FileJson class="w-4 h-4 mr-2 text-amber-500" />
+                {{ isZh ? '导出为 JSON' : 'Export as JSON' }}
+              </ElDropdownItem>
+            </ElDropdownMenu>
         </template>
       </ElDropdown>
+      </div>
     </div>
 
     <!-- Diagram slot full modal -->

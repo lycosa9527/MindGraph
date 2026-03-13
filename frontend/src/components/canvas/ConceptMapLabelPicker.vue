@@ -2,9 +2,10 @@
 /**
  * ConceptMapLabelPicker - Bottom bar label picker for concept map relationship options
  *
- * When user drags concepts to create a link, AI generates 3-5 labels.
- * This component shows them in the bottom bar with numbers; user presses 1-5 to select.
- * Clicking canvas clears the labels.
+ * Catapult-style: AI streams ~10 labels, we show first 5. User presses:
+ * - 1-5: select option
+ * - - : previous page
+ * - = : next page (fetches more via next_batch when at end)
  */
 import { computed, onMounted, onUnmounted, watch } from 'vue'
 
@@ -16,8 +17,19 @@ import { useDiagramStore } from '@/stores'
 
 const relationshipStore = useConceptMapRelationshipStore()
 const diagramStore = useDiagramStore()
-const { activeEntry } = storeToRefs(relationshipStore)
-const { selectOption } = useConceptMapRelationship()
+const {
+  activeEntry,
+  activePage,
+  activeTotalPages,
+  canPrevPage,
+  canNextPage,
+} = storeToRefs(relationshipStore)
+const {
+  selectOption,
+  prevPage,
+  nextPage,
+  isLoadingMoreFor,
+} = useConceptMapRelationship()
 
 /** Current label for the active connection (to highlight selected option) */
 const currentLabel = computed(() => {
@@ -26,6 +38,13 @@ const currentLabel = computed(() => {
   const conn = diagramStore.data?.connections?.find((c) => c.id === entry[0])
   return (conn?.label ?? '').trim()
 })
+
+const activeConnectionId = computed(() => activeEntry.value?.[0] ?? null)
+const isLoadingMore = computed(() =>
+  activeConnectionId.value
+    ? isLoadingMoreFor(activeConnectionId.value)
+    : false
+)
 
 /** Defense: clear stale options when connection was deleted via another path */
 watch(
@@ -40,12 +59,34 @@ watch(
   { immediate: true }
 )
 
-function handleKeydown(event: KeyboardEvent) {
+async function handleKeydown(event: KeyboardEvent) {
   const entry = activeEntry.value
   if (!entry) return
   const target = event.target as HTMLElement
   if (target?.tagName === 'INPUT' || target?.tagName === 'TEXTAREA') return
-  const num = event.key === '1' ? 1 : event.key === '2' ? 2 : event.key === '3' ? 3 : event.key === '4' ? 4 : event.key === '5' ? 5 : 0
+
+  if (event.key === '-') {
+    if (canPrevPage.value) {
+      event.preventDefault()
+      prevPage(entry[0])
+    }
+    return
+  }
+  if (event.key === '=') {
+    if (canNextPage.value || isLoadingMore.value) {
+      event.preventDefault()
+      await nextPage(entry[0])
+    }
+    return
+  }
+
+  const num =
+    event.key === '1' ? 1
+    : event.key === '2' ? 2
+    : event.key === '3' ? 3
+    : event.key === '4' ? 4
+    : event.key === '5' ? 5
+    : 0
   if (num > 0 && num <= entry[1].length) {
     event.preventDefault()
     selectOption(entry[0], num - 1)
@@ -79,6 +120,33 @@ onUnmounted(() => {
         <span class="font-semibold text-blue-600 dark:text-blue-400">{{ idx + 1 }}</span>
         {{ opt }}
       </span>
+    </span>
+    <span
+      v-if="canPrevPage || canNextPage || isLoadingMore"
+      class="label-picker-nav flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400"
+    >
+      <button
+        v-if="canPrevPage"
+        type="button"
+        class="px-1 rounded hover:bg-gray-200 dark:hover:bg-gray-600"
+        :aria-label="'Previous page'"
+        @click="activeEntry && prevPage(activeEntry[0])"
+      >
+        -
+      </button>
+      <span v-if="activeTotalPages > 1" class="tabular-nums">
+        {{ activePage + 1 }}/{{ activeTotalPages }}
+      </span>
+      <button
+        v-if="canNextPage || isLoadingMore"
+        type="button"
+        class="px-1 rounded hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50"
+        :aria-label="'Next page'"
+        :disabled="isLoadingMore"
+        @click="activeEntry && nextPage(activeEntry[0])"
+      >
+        =
+      </button>
     </span>
   </div>
 </template>

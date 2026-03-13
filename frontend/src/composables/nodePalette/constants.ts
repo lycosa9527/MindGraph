@@ -5,6 +5,10 @@
 export const NODE_PALETTE_START = '/thinking_mode/node_palette/start'
 export const NODE_PALETTE_NEXT = '/thinking_mode/node_palette/next_batch'
 
+export const RELATIONSHIP_LABELS_START = '/thinking_mode/relationship_labels/start'
+export const RELATIONSHIP_LABELS_NEXT = '/thinking_mode/relationship_labels/next_batch'
+export const RELATIONSHIP_LABELS_CLEANUP = '/thinking_mode/relationship_labels/cleanup'
+
 export const LEARNING_SHEET_PLACEHOLDER = '___'
 
 export const STAGED_DIAGRAM_TYPES = [

@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.35.0] - 2026-03-14
+
+### Changed
+- **Canvas Reset Button**: Added label text (重置/Reset); now fully resets canvas—LLM results store, all panels (Mindmate, Property, Node Palette), and closes modals (slot full, workshop).
+- **Canvas Top Bar**: Even spacing between 教学设计, Reset, and Export buttons (grouped with consistent gap).
+
 ## [5.34.0] - 2026-03-14
 
 ### Added

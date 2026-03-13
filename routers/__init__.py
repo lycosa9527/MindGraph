@@ -26,6 +26,7 @@ Proprietary License
 from . import api
 from . import auth
 from . import node_palette
+from . import relationship_labels
 from . import public_dashboard
 from .admin import env_router as admin_env, logs_router as admin_logs, realtime_router as admin_realtime
 from .features import voice, school_zone, askonce, debateverse, library, gewe
@@ -40,6 +41,7 @@ __all__ = [
     "admin_logs",
     "admin_realtime",
     "node_palette",
+    "relationship_labels",
     "voice",
     "update_notification",
     "public_dashboard",

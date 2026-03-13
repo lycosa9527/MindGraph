@@ -1,12 +1,12 @@
 /**
  * useConceptMapRelationship - AI-generated relationship labels for concept map links
  *
- * When user creates a link between two concepts (or clears the label),
- * calls the API to generate the relationship label using the selected LLM.
- * Returns 3-5 options; user can pick via number keys (IME-style).
+ * Catapult-style: fires 3 LLMs concurrently, streams labels via SSE.
+ * Shows first 5; user uses - and = for prev/next page. On next page when at end,
+ * fetches more via next_batch and filters duplicates.
  *
- * Label agent: When a concept node's text changes, only regenerates edges that
- * have empty labels—avoids overwriting user-edited or AI-generated labels.
+ * Label agent: When a concept node's text changes, only regenerates edges with
+ * empty labels—avoids overwriting user-edited or AI-generated labels.
  */
 import { ref } from 'vue'
 
@@ -17,6 +17,11 @@ import { useConceptMapRelationshipStore } from '@/stores/conceptMapRelationship'
 import { useDiagramStore } from '@/stores/diagram'
 import { useLLMResultsStore } from '@/stores/llmResults'
 import { authFetch } from '@/utils/api'
+
+import {
+  RELATIONSHIP_LABELS_NEXT,
+  RELATIONSHIP_LABELS_START,
+} from './nodePalette/constants'
 
 export const CONCEPT_MAP_GENERATING_KEY = Symbol('conceptMapRelationshipGenerating')
 export const CONCEPT_MAP_OPTIONS_KEY = Symbol('conceptMapRelationshipOptions')
@@ -45,6 +50,72 @@ function isLabelEmptyOrPlaceholder(label: string | undefined | null): boolean {
   return TEMPLATE_DEFAULT_LABELS.has(t) || TEMPLATE_DEFAULT_LABELS.has(t.toLowerCase())
 }
 
+async function streamRelationshipLabels(
+  url: string,
+  payload: Record<string, unknown>,
+  onLabel: (label: string) => void,
+  onError?: (msg: string) => void,
+  signal?: AbortSignal
+): Promise<number> {
+  const response = await authFetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+    signal,
+  })
+  if (!response.ok) {
+    const msg = `Request failed: ${response.status}`
+    onError?.(msg)
+    return 0
+  }
+  const reader = response.body?.getReader()
+  if (!reader) {
+    onError?.('No response body')
+    return 0
+  }
+  const decoder = new TextDecoder()
+  let buffer = ''
+  let count = 0
+  try {
+    while (true) {
+      if (signal?.aborted) break
+      let chunk: ReadableStreamReadResult<Uint8Array>
+      try {
+        chunk = await reader.read()
+      } catch (e) {
+        if (e instanceof Error && e.name === 'AbortError') break
+        throw e
+      }
+      const { done, value } = chunk
+      if (done) break
+      buffer += decoder.decode(value, { stream: true })
+      const lines = buffer.split('\n')
+      buffer = lines.pop() ?? ''
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue
+        try {
+          const data = JSON.parse(line.slice(6)) as {
+            event?: string
+            label?: string
+            message?: string
+          }
+          if (data.event === 'label_generated' && data.label) {
+            onLabel(data.label)
+            count++
+          } else if (data.event === 'error' && data.message) {
+            onError?.(data.message)
+          }
+        } catch {
+          // Skip malformed lines
+        }
+      }
+    }
+  } finally {
+    reader.releaseLock()
+  }
+  return count
+}
+
 export function useConceptMapRelationship() {
   const diagramStore = useDiagramStore()
   const relationshipStore = useConceptMapRelationshipStore()
@@ -53,9 +124,14 @@ export function useConceptMapRelationship() {
   const notify = useNotifications()
 
   const generatingConnectionIds = ref<Set<string>>(new Set())
+  const loadingMoreConnectionIds = ref<Set<string>>(new Set())
 
   function isGeneratingFor(connectionId: string): boolean {
     return generatingConnectionIds.value.has(connectionId)
+  }
+
+  function isLoadingMoreFor(connectionId: string): boolean {
+    return loadingMoreConnectionIds.value.has(connectionId)
   }
 
   function getNodeText(nodeId: string): string {
@@ -78,11 +154,6 @@ export function useConceptMapRelationship() {
     sourceId: string,
     targetId: string
   ): Promise<{ success: boolean; error?: string }> {
-    const selectedModel = llmResultsStore.selectedModel
-    if (!selectedModel) {
-      return { success: false, error: 'No model selected' }
-    }
-
     if (generatingConnectionIds.value.has(connectionId)) {
       return { success: false, error: 'Already generating' }
     }
@@ -95,59 +166,117 @@ export function useConceptMapRelationship() {
     }
 
     generatingConnectionIds.value = new Set([...generatingConnectionIds.value, connectionId])
+    const topic = diagramStore.getTopicNodeText() || ''
+    const language = isZh.value ? 'zh' : 'en'
+    const linkDirection = getLinkDirection(connectionId)
+
+    const payload = {
+      session_id: connectionId,
+      concept_a: conceptA,
+      concept_b: conceptB,
+      topic,
+      link_direction: linkDirection,
+      language,
+    }
 
     try {
-      const language = isZh.value ? 'zh' : 'en'
-      const prompt = conceptA && conceptB ? `${conceptA} ${conceptB}` : 'relationship'
-      const topic = diagramStore.getTopicNodeText() || ''
+      const controller = new AbortController()
+      relationshipStore.setStreamAbortController(controller)
+      const labels: string[] = []
+      const onLabel = (label: string) => {
+        labels.push(label)
+        if (labels.length === 1) {
+          diagramStore.updateConnectionLabel(connectionId, label)
+          diagramStore.pushHistory('AI relationship')
+        }
+        relationshipStore.setOptions(connectionId, labels)
+      }
+      const onError = (msg: string) => {
+        const title = isZh.value ? '关系生成失败' : 'Relationship generation failed'
+        notify.error(`${title}: ${msg}`)
+      }
 
-      const response = await authFetch('/api/generate_graph', {
-        method: 'POST',
-        body: JSON.stringify({
-          prompt,
-          diagram_type: 'concept_map',
-          language,
-          llm: selectedModel,
-          request_type: 'autocomplete',
-          concept_map_relationship_only: true,
-          concept_a: conceptA,
-          concept_b: conceptB,
-          concept_map_topic: topic,
-          link_direction: getLinkDirection(connectionId),
-        }),
-      })
-
-      const result = await response.json()
+      const count = await streamRelationshipLabels(
+        RELATIONSHIP_LABELS_START,
+        payload,
+        onLabel,
+        onError,
+        controller.signal
+      )
 
       const connStillExists = diagramStore.data?.connections?.some((c) => c.id === connectionId)
       if (!connStillExists) {
         return { success: false, error: 'Connection deleted' }
       }
 
-      if (result.success && result.relationship_label) {
-        const labels = (result.relationship_labels as string[] | undefined) ?? [result.relationship_label]
-        diagramStore.updateConnectionLabel(connectionId, result.relationship_label)
-        diagramStore.pushHistory('AI relationship')
-        if (labels.length >= 2) {
-          relationshipStore.setOptions(connectionId, labels)
-        } else {
-          relationshipStore.clearAll()
-        }
+      if (count > 0) {
         return { success: true }
       }
-
-      const errMsg = result.error || 'Failed to generate relationship'
-      const title = isZh.value ? '关系生成失败' : 'Relationship generation failed'
-      notify.error(`${title}: ${errMsg}`)
-      return { success: false, error: errMsg }
+      return { success: false, error: 'No labels generated' }
     } catch (error) {
+      const isAbort = error instanceof Error && error.name === 'AbortError'
+      if (isAbort) return { success: false, error: 'Aborted' }
       const errMsg = error instanceof Error ? error.message : 'Unknown error'
       const title = isZh.value ? '关系生成失败' : 'Relationship generation failed'
       notify.error(`${title}: ${errMsg}`)
       return { success: false, error: errMsg }
     } finally {
+      relationshipStore.setStreamAbortController(null)
       generatingConnectionIds.value = new Set(
         [...generatingConnectionIds.value].filter((id) => id !== connectionId)
+      )
+    }
+  }
+
+  /** Fetch next batch when user presses = and we're at the end of current labels */
+  async function fetchNextBatch(connectionId: string): Promise<boolean> {
+    if (loadingMoreConnectionIds.value.has(connectionId)) return false
+
+    const conn = diagramStore.data?.connections?.find((c) => c.id === connectionId)
+    if (!conn) return false
+
+    const conceptA = getNodeText(conn.source)
+    const conceptB = getNodeText(conn.target)
+    if (isPlaceholderText(conceptA) || isPlaceholderText(conceptB)) return false
+
+    loadingMoreConnectionIds.value = new Set([...loadingMoreConnectionIds.value, connectionId])
+    const topic = diagramStore.getTopicNodeText() || ''
+    const language = isZh.value ? 'zh' : 'en'
+    const linkDirection = getLinkDirection(connectionId)
+
+    const payload = {
+      session_id: connectionId,
+      concept_a: conceptA,
+      concept_b: conceptB,
+      topic,
+      link_direction: linkDirection,
+      language,
+    }
+
+    try {
+      const controller = new AbortController()
+      relationshipStore.setStreamAbortController(controller)
+      const newLabels: string[] = []
+      await streamRelationshipLabels(
+        RELATIONSHIP_LABELS_NEXT,
+        payload,
+        (label) => newLabels.push(label),
+        (msg) => notify.error(msg),
+        controller.signal
+      )
+      if (newLabels.length > 0) {
+        relationshipStore.appendLabels(connectionId, newLabels)
+      }
+      return newLabels.length > 0
+    } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') {
+        return false
+      }
+      throw error
+    } finally {
+      relationshipStore.setStreamAbortController(null)
+      loadingMoreConnectionIds.value = new Set(
+        [...loadingMoreConnectionIds.value].filter((id) => id !== connectionId)
       )
     }
   }
@@ -187,13 +316,32 @@ export function useConceptMapRelationship() {
     return true
   }
 
+  /** Go to previous page (- key) */
+  function prevPage(connectionId: string): boolean {
+    return relationshipStore.prevPage(connectionId)
+  }
+
+  /** Go to next page (= key). Fetches more when at end. */
+  async function nextPage(connectionId: string): Promise<boolean> {
+    if (relationshipStore.nextPage(connectionId)) return true
+    const fetched = await fetchNextBatch(connectionId)
+    if (fetched) {
+      return relationshipStore.nextPage(connectionId)
+    }
+    return false
+  }
+
   return {
     generateRelationship,
     generatingConnectionIds,
+    isLoadingMoreFor,
     isGeneratingFor,
     regenerateForNodeIfNeeded,
     dismissOptionsForConnection,
     dismissAllOptions,
     selectOption,
+    prevPage,
+    nextPage,
+    fetchNextBatch,
   }
 }

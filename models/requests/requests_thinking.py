@@ -11,9 +11,7 @@ Proprietary License
 """
 from typing import Optional, Dict, Any, List
 
-from pydantic import BaseModel, Field, field_validator
-
-from ..common import DiagramType, Language, LLMModel
+from pydantic import BaseModel, Field
 
 
 # ============================================================================
@@ -184,7 +182,7 @@ class NodePaletteFinishRequest(BaseModel):
         description="Node Palette session ID"
     )
     selected_node_ids: List[str] = Field(
-        ..., min_items=0, description="List of selected node IDs"
+        ..., min_length=0, description="List of selected node IDs"
     )
     total_nodes_generated: int = Field(
         ..., ge=0, description="Total number of nodes generated"
@@ -211,6 +209,47 @@ class NodePaletteFinishRequest(BaseModel):
                 "batches_loaded": 4
             }
         }
+
+
+class RelationshipLabelsStartRequest(BaseModel):
+    """Request model for /thinking_mode/relationship_labels/start endpoint."""
+
+    session_id: str = Field(
+        ..., min_length=1, max_length=100,
+        description="Relationship labels session ID (connectionId)"
+    )
+    concept_a: str = Field(..., description="Source concept text")
+    concept_b: str = Field(..., description="Target concept text")
+    topic: str = Field('', description="Concept map main topic")
+    link_direction: Optional[str] = Field(
+        None,
+        description="Arrow direction: source_to_target, target_to_source, both, none"
+    )
+    language: str = Field('en', description="UI language (en or zh)")
+
+
+class RelationshipLabelsCleanupRequest(BaseModel):
+    """Request model for /thinking_mode/relationship_labels/cleanup endpoint."""
+
+    connection_ids: List[str] = Field(
+        default_factory=list,
+        description="Connection IDs (session_ids) to clean up",
+        max_length=100,
+    )
+
+
+class RelationshipLabelsNextRequest(BaseModel):
+    """Request model for /thinking_mode/relationship_labels/next_batch endpoint."""
+
+    session_id: str = Field(
+        ..., min_length=1, max_length=100,
+        description="Relationship labels session ID"
+    )
+    concept_a: str = Field(..., description="Source concept text")
+    concept_b: str = Field(..., description="Target concept text")
+    topic: str = Field('', description="Concept map main topic")
+    link_direction: Optional[str] = Field(None, description="Arrow direction")
+    language: str = Field('en', description="UI language (en or zh)")
 
 
 class NodePaletteCleanupRequest(BaseModel):

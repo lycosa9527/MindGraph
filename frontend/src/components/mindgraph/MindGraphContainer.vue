@@ -6,7 +6,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
-import { ElAvatar, ElButton, ElDialog, ElInput } from 'element-plus'
+import { ElAvatar, ElButton, ElDialog } from 'element-plus'
 
 import { Connection } from '@element-plus/icons-vue'
 
@@ -158,7 +158,10 @@ onMounted(() => {
   <div class="mindgraph-container flex flex-col h-full">
     <!-- Header -->
     <header class="h-14 px-4 flex items-center justify-between bg-white border-b border-gray-200">
-      <h1 class="text-sm font-semibold text-gray-800">MindGraph</h1>
+      <div class="flex items-center gap-2">
+        <h1 class="text-sm font-semibold text-gray-800">MindGraph</h1>
+        <span class="text-xs text-gray-500">宇宙中最强大的AI思维图示生成软件</span>
+      </div>
       <ElButton
         class="join-workshop-btn"
         size="small"
@@ -242,12 +245,16 @@ onMounted(() => {
       <div class="p-5 w-[70%] mx-auto pb-8">
         <!-- Welcome header - above input -->
         <div class="flex flex-col items-center justify-center mb-8">
-          <ElAvatar
-            :src="mindgraphLogo"
-            alt="MindGraph"
-            :size="96"
-            class="mindgraph-logo mb-4"
-          />
+          <div class="mindgraph-logo-wrapper">
+            <div class="mindgraph-logo-inner">
+              <ElAvatar
+                :src="mindgraphLogo"
+                alt="MindGraph"
+                :size="96"
+                class="mindgraph-logo"
+              />
+            </div>
+          </div>
           <div class="text-lg text-gray-600">
             {{
               isZh
@@ -273,9 +280,72 @@ onMounted(() => {
 </template>
 
 <style scoped>
+@property --rainbow-angle {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+
+.mindgraph-logo-wrapper {
+  position: relative;
+  width: 104px;
+  height: 104px;
+  border-radius: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1rem;
+}
+
+.mindgraph-logo-wrapper::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 20px;
+  padding: 4px;
+  --rainbow-angle: 0deg;
+  /* Swiss design palette: stone tones + primary blue accent */
+  background: conic-gradient(
+    from var(--rainbow-angle) at 50% 50%,
+    #e7e5e4 0deg,
+    #d6d3d1 45deg,
+    #a8a29e 90deg,
+    #409eff 135deg,
+    #66b1ff 180deg,
+    #409eff 225deg,
+    #78716c 270deg,
+    #d6d3d1 315deg,
+    #e7e5e4 360deg
+  );
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  -webkit-mask-composite: xor;
+  animation: rainbow-travel 2.5s linear infinite;
+}
+
+@keyframes rainbow-travel {
+  to {
+    --rainbow-angle: 360deg;
+  }
+}
+
+.mindgraph-logo-inner {
+  position: relative;
+  width: 96px;
+  height: 96px;
+  border-radius: 16px;
+  overflow: hidden;
+  background: var(--mg-bg-primary, #fff);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
+
 .mindgraph-logo {
   border-radius: 16px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
 }
 
 .mindgraph-logo :deep(img) {

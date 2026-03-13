@@ -10,7 +10,7 @@ from fastapi import FastAPI
 
 from config.settings import config
 from routers import (
-    api, node_palette, auth, public_dashboard
+    api, node_palette, relationship_labels, auth, public_dashboard
 )
 from routers.admin import env_router as admin_env, logs_router as admin_logs, realtime_router as admin_realtime
 from routers.core import pages, cache, update_notification
@@ -65,6 +65,7 @@ def register_routers(app: FastAPI) -> None:
     app.include_router(cache)
     app.include_router(api.router)
     app.include_router(node_palette.router)  # Node Palette endpoints
+    app.include_router(relationship_labels.router)  # Relationship labels (concept map)
     app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])  # Authentication system
 
     # Feature routers that must be registered BEFORE vue_spa catch-all
