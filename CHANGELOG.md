@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.36.0] - 2026-03-14
+
+### Changed
+- **ConceptMapLabelPicker**: Always prevent default for `-` and `=` keys so they don't trigger other shortcuts when label picker is active; only invoke prev/next when applicable.
+- **CanvasPage**: Skip add-node, add-branch, add-child shortcuts for concept maps (use different flow). Skip clear-node-text when relationship label picker is active.
+
 ## [5.35.0] - 2026-03-14
 
 ### Changed

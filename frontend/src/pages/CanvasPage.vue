@@ -348,11 +348,13 @@ function handleDeleteKey() {
 
 function handleAddNodeKey() {
   if (isTypingInInput()) return
+  if (diagramStore.type === 'concept_map') return
   eventBus.emit('diagram:add_node_requested', {})
 }
 
 function handleAddBranchKey() {
   if (isTypingInInput()) return
+  if (diagramStore.type === 'concept_map') return
   if (
     diagramStore.type === 'mindmap' ||
     diagramStore.type === 'mind_map' ||
@@ -366,6 +368,7 @@ function handleAddBranchKey() {
 
 function handleAddChildKey() {
   if (isTypingInInput()) return
+  if (diagramStore.type === 'concept_map') return
   if (
     diagramStore.type === 'mindmap' ||
     diagramStore.type === 'mind_map' ||
@@ -387,6 +390,7 @@ function handleRedoKey() {
 
 function handleClearNodeTextKey() {
   if (isTypingInInput()) return
+  if (relationshipActiveEntry.value) return
   const selected = [...diagramStore.selectedNodes]
   if (selected.length === 0) {
     notify.warning(isZh.value ? '请先选择要清空的节点' : 'Please select a node to clear')

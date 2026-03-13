@@ -66,17 +66,13 @@ async function handleKeydown(event: KeyboardEvent) {
   if (target?.tagName === 'INPUT' || target?.tagName === 'TEXTAREA') return
 
   if (event.key === '-') {
-    if (canPrevPage.value) {
-      event.preventDefault()
-      prevPage(entry[0])
-    }
+    event.preventDefault()
+    if (canPrevPage.value) prevPage(entry[0])
     return
   }
   if (event.key === '=') {
-    if (canNextPage.value || isLoadingMore.value) {
-      event.preventDefault()
-      await nextPage(entry[0])
-    }
+    event.preventDefault()
+    if (canNextPage.value || isLoadingMore.value) await nextPage(entry[0])
     return
   }
 
