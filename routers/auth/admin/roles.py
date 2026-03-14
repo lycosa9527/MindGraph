@@ -47,7 +47,22 @@ async def list_admins(
         .all()
     )
 
-    env_admins = [p.strip() for p in ADMIN_PHONES if p.strip()]
+    env_phones = [p.strip() for p in ADMIN_PHONES if p.strip()]
+
+    env_admins = []
+    if env_phones:
+        env_users = (
+            db.query(User)
+            .filter(User.phone.in_(env_phones))
+            .all()
+        )
+        user_by_phone = {u.phone: u for u in env_users}
+        for phone in env_phones:
+            user = user_by_phone.get(phone)
+            env_admins.append({
+                "phone": phone,
+                "name": user.name if user else None,
+            })
 
     result = []
     for user in admin_users:

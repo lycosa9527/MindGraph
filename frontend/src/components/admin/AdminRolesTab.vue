@@ -2,7 +2,7 @@
 /**
  * Admin Roles Tab - List admins and grant/revoke admin access
  */
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 
 import { ElMessageBox } from 'element-plus'
 import { Loading, Plus, Search, UserFilled } from '@element-plus/icons-vue'
@@ -31,9 +31,41 @@ interface CandidateUser {
   role: string
 }
 
+interface EnvAdmin {
+  phone: string
+  name: string | null
+}
+
 const isLoading = ref(true)
 const admins = ref<AdminUser[]>([])
-const envAdmins = ref<string[]>([])
+const envAdmins = ref<EnvAdmin[]>([])
+
+function maskPhone(phone: string): string {
+  if (phone.length === 11) {
+    return phone.slice(0, 3) + '****' + phone.slice(-4)
+  }
+  return phone
+}
+
+const dbAdminPhones = computed(() => new Set(admins.value.map((a) => a.phone_real)))
+const allAdminsForTable = computed(() => {
+  const dbRows = admins.value.map((a) => ({
+    ...a,
+    source: 'database' as const,
+  }))
+  const envRows = envAdmins.value
+    .filter((ea) => !dbAdminPhones.value.has(ea.phone))
+    .map((ea) => ({
+      id: 0,
+      phone: maskPhone(ea.phone),
+      phone_real: ea.phone,
+      name: ea.name,
+      role: 'admin',
+      source: 'env' as const,
+      created_at: null,
+    }))
+  return [...dbRows, ...envRows]
+})
 
 const addModalVisible = ref(false)
 const addSearchQuery = ref('')
@@ -198,7 +230,7 @@ onMounted(loadAdmins)
         </p>
 
         <el-table
-          :data="admins"
+          :data="allAdminsForTable"
           stripe
           size="small"
         >
@@ -220,13 +252,27 @@ onMounted(loadAdmins)
             prop="created_at"
             :label="t('admin.registrationTime')"
             width="200"
-          />
+          >
+            <template #default="{ row }">
+              {{ row.source === 'database' ? (row.created_at || '—') : '—' }}
+            </template>
+          </el-table-column>
+          <el-table-column
+            prop="source"
+            :label="t('admin.source')"
+            width="120"
+          >
+            <template #default="{ row }">
+              {{ row.source === 'env' ? t('admin.sourceEnv') : t('admin.sourceDatabase') }}
+            </template>
+          </el-table-column>
           <el-table-column
             :label="t('admin.actions')"
             width="120"
           >
             <template #default="{ row }">
               <el-button
+                v-if="row.source === 'database'"
                 type="danger"
                 link
                 size="small"
@@ -234,31 +280,15 @@ onMounted(loadAdmins)
               >
                 {{ t('admin.revokeAdmin') }}
               </el-button>
+              <span
+                v-else
+                class="text-xs text-gray-500"
+              >
+                {{ t('admin.envAdminsNote') }}
+              </span>
             </template>
           </el-table-column>
         </el-table>
-
-        <div
-          v-if="envAdmins.length > 0"
-          class="mt-6 pt-4 border-t border-gray-200"
-        >
-          <p class="text-sm font-medium text-gray-600 mb-2">
-            {{ t('admin.envAdmins') }}
-          </p>
-          <p class="text-xs text-gray-500 mb-2">
-            {{ t('admin.envAdminsNote') }}
-          </p>
-          <div class="flex flex-wrap gap-2">
-            <el-tag
-              v-for="phone in envAdmins"
-              :key="phone"
-              type="info"
-              size="small"
-            >
-              {{ phone }}
-            </el-tag>
-          </div>
-        </div>
       </template>
     </el-card>
 
