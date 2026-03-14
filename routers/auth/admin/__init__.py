@@ -11,13 +11,24 @@ Proprietary License
 
 from fastapi import APIRouter
 
-from . import organizations, users, settings, stats, stats_trends, api_keys, bayi, teacher_usage
+from . import (
+    organizations,
+    roles,
+    users,
+    settings,
+    stats,
+    stats_trends,
+    api_keys,
+    bayi,
+    teacher_usage,
+)
 
 # Create admin router aggregation
 admin_router = APIRouter()
 
 # Include all admin sub-routers
 admin_router.include_router(organizations.router)
+admin_router.include_router(roles.router)
 admin_router.include_router(users.router)
 admin_router.include_router(settings.router)
 admin_router.include_router(stats.router)
@@ -27,6 +38,4 @@ admin_router.include_router(bayi.router)
 admin_router.include_router(teacher_usage.router)
 
 __all__ = ['admin_router']
-
-
 

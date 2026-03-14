@@ -57,6 +57,7 @@ const {
   featureDebateverse,
   featureKnowledgeSpace,
   featureLibrary,
+  featureGewe,
   featureSmartResponse,
   featureTeacherUsage,
 } = useFeatureFlags()
@@ -78,6 +79,8 @@ const currentMode = computed(() => {
   if (path.startsWith('/community')) return 'community'
   if (path.startsWith('/library')) return 'library'
   if (path.startsWith('/gewe')) return 'gewe'
+  if (path.startsWith('/school-dashboard')) return 'school-dashboard'
+  if (path.startsWith('/admin')) return 'admin'
   if (path.startsWith('/smart-response')) return 'smart-response'
   if (path.startsWith('/teacher-usage')) return 'teacher-usage'
   return 'mindmate' // Default
@@ -138,6 +141,10 @@ function setMode(index: string) {
     router.push('/library')
   } else if (index === 'gewe') {
     router.push('/gewe')
+  } else if (index === 'school-dashboard') {
+    router.push('/school-dashboard')
+  } else if (index === 'admin') {
+    router.push('/admin')
   } else if (index === 'smart-response') {
     router.push('/smart-response')
   } else if (index === 'teacher-usage') {
@@ -159,10 +166,6 @@ function openAccountModal() {
 
 async function handleLogout() {
   await authStore.logout()
-}
-
-function goToAdmin() {
-  router.push('/admin')
 }
 
 // Start new MindMate conversation
@@ -318,7 +321,7 @@ async function handleDiagramSelect(diagram: SavedDiagram) {
         <template #title>图书馆</template>
       </el-menu-item>
       <el-menu-item
-        v-if="isAdmin"
+        v-if="isAdmin && featureGewe"
         index="gewe"
       >
         <el-icon><ChatDotRound /></el-icon>
@@ -337,6 +340,20 @@ async function handleDiagramSelect(diagram: SavedDiagram) {
       >
         <el-icon><TrendCharts /></el-icon>
         <template #title>{{ isZh ? '教师使用度' : 'Teacher Usage' }}</template>
+      </el-menu-item>
+      <el-menu-item
+        v-if="isAdminOrManager"
+        index="school-dashboard"
+      >
+        <el-icon><OfficeBuilding /></el-icon>
+        <template #title>{{ t('admin.schoolDashboard') }}</template>
+      </el-menu-item>
+      <el-menu-item
+        v-if="isAdmin"
+        index="admin"
+      >
+        <el-icon><Settings /></el-icon>
+        <template #title>{{ t('admin.title') }}</template>
       </el-menu-item>
     </el-menu>
 
@@ -480,15 +497,6 @@ async function handleDiagramSelect(diagram: SavedDiagram) {
                 <KeyRound class="w-4 h-4 mr-2" />
                 修改密码
               </el-dropdown-item>
-              <!-- Admin option -->
-              <el-dropdown-item
-                v-if="isAdminOrManager"
-                divided
-                @click="goToAdmin"
-              >
-                <Settings class="w-4 h-4 mr-2" />
-                管理面板
-              </el-dropdown-item>
               <el-dropdown-item
                 divided
                 @click="handleLogout"
@@ -536,15 +544,6 @@ async function handleDiagramSelect(diagram: SavedDiagram) {
               <el-dropdown-item @click="openPasswordModal">
                 <KeyRound class="w-4 h-4 mr-2" />
                 修改密码
-              </el-dropdown-item>
-              <!-- Admin option -->
-              <el-dropdown-item
-                v-if="isAdminOrManager"
-                divided
-                @click="goToAdmin"
-              >
-                <Settings class="w-4 h-4 mr-2" />
-                管理面板
               </el-dropdown-item>
               <el-dropdown-item
                 divided

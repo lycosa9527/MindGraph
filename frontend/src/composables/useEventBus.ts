@@ -97,6 +97,8 @@ export type EventTypes = {
     diagramType?: string
   }
   'diagram:positions_cleared': { diagramType?: string }
+  'diagram:position_changed': { nodeId: string; position: { x: number; y: number }; isCustom?: boolean }
+  'diagram:style_changed': { nodeId?: string; style?: unknown; all?: boolean; preset?: boolean }
   'diagram:loaded': { diagramType: string; spec?: unknown }
   'concept_map:link_drop': { sourceId: string; targetId: string }
   'concept_map:link_drag_start': { sourceId: string }

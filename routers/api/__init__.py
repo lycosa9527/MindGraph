@@ -18,6 +18,7 @@ from fastapi import APIRouter
 from config.settings import config as app_config
 
 from . import (
+    activity,
     diagram_generation,
     png_export,
     sse_streaming,
@@ -50,6 +51,7 @@ router = APIRouter(prefix="/api", tags=["api"])
 
 # Include all sub-routers
 router.include_router(config.router)
+router.include_router(activity.router)
 router.include_router(diagram_generation.router)
 router.include_router(png_export.router)
 router.include_router(sse_streaming.router)

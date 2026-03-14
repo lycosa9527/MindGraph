@@ -348,6 +348,10 @@ class DiagramUpdateRequest(BaseModel):
         None, max_length=150000,
         description="Base64 encoded thumbnail image (max ~100KB)"
     )
+    edit_count: Optional[int] = Field(
+        None, ge=0, le=1000,
+        description="Number of content edits (add/delete/change nodes) since last save"
+    )
 
     class Config:
         """Configuration for DiagramUpdateRequest model."""

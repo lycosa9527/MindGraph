@@ -12,6 +12,7 @@ Proprietary License
 """
 from datetime import datetime, timezone
 import logging
+from typing import Optional, cast
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy import and_
@@ -27,7 +28,7 @@ except ImportError:
     TokenUsage = None
 from services.redis.cache.redis_org_cache import org_cache
 from services.redis.cache.redis_user_cache import user_cache
-from utils.invitations import normalize_or_generate
+from utils.invitations import generate_invitation_code, normalize_or_generate
 from ..dependencies import get_language_dependency, require_admin
 from ..helpers import utc_to_beijing_iso
 from .stats import _sql_count
@@ -117,6 +118,8 @@ async def list_organizations_admin(
             "total_tokens": 0
         })
 
+        expires_at_val = cast(Optional[datetime], org.expires_at)
+        created_at_val = cast(Optional[datetime], org.created_at)
         result.append({
             "id": org.id,
             "code": org.code,
@@ -124,9 +127,9 @@ async def list_organizations_admin(
             "invitation_code": org.invitation_code,
             "user_count": user_count,
             "manager_count": manager_count,
-            "expires_at": utc_to_beijing_iso(org.expires_at),
+            "expires_at": utc_to_beijing_iso(expires_at_val),
             "is_active": org.is_active if hasattr(org, 'is_active') else True,
-            "created_at": utc_to_beijing_iso(org.created_at),
+            "created_at": utc_to_beijing_iso(created_at_val),
             "token_stats": org_token_stats
         })
     return result
@@ -231,8 +234,8 @@ async def update_organization_admin(
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
 
     # Save old values for cache invalidation
-    old_code = org.code
-    old_invite = org.invitation_code
+    old_code = cast(Optional[str], org.code)
+    old_invite = cast(Optional[str], org.invitation_code)
 
     # Update code (if provided)
     if "code" in request:
@@ -243,69 +246,74 @@ async def update_organization_admin(
         if len(new_code) > 50:
             error_msg = Messages.error("organization_code_too_long", lang)
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
-        if new_code != org.code:
+        org_code_val = cast(Optional[str], org.code)
+        if new_code != org_code_val:
             # Check code uniqueness (use cache)
             conflict = org_cache.get_by_code(new_code)
-            if not conflict or conflict.id == org.id:
+            if conflict is None or int(conflict.id) == int(org.id):
                 conflict = db.query(Organization).filter(Organization.code == new_code).first()
-            if conflict and conflict.id != org.id:
+            if conflict is not None and int(conflict.id) != int(org.id):
                 error_msg = Messages.error("organization_exists", lang, new_code)
                 raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=error_msg)
-            org.code = new_code
+            setattr(org, 'code', new_code)
 
     if "name" in request:
-        org.name = request["name"]
+        setattr(org, 'name', request["name"])
     if "invitation_code" in request:
         proposed = request.get("invitation_code")
+        org_name_val = cast(Optional[str], org.name)
+        org_code_val = cast(Optional[str], org.code)
         normalized = normalize_or_generate(
             proposed,
-            request.get("name", org.name),
-            request.get("code", org.code)
+            request.get("name", org_name_val),
+            request.get("code", org_code_val)
         )
         # Ensure uniqueness across organizations (exclude current org)
         conflict = org_cache.get_by_invitation_code(normalized)
-        if conflict and conflict.id == org.id:
+        if conflict is not None and int(conflict.id) == int(org.id):
             conflict = None
-        if not conflict:
+        if conflict is None:
             conflict = db.query(Organization).filter(
                 Organization.invitation_code == normalized,
                 Organization.id != org.id
             ).first()
-        if conflict:
+        if conflict is not None:
             attempts = 0
             while attempts < 5:
-                normalized = normalize_or_generate(None, request.get("name", org.name), request.get("code", org.code))
+                normalized = normalize_or_generate(
+                    None, request.get("name", org_name_val), request.get("code", org_code_val)
+                )
                 conflict = org_cache.get_by_invitation_code(normalized)
-                if conflict and conflict.id == org.id:
+                if conflict is not None and int(conflict.id) == int(org.id):
                     conflict = None
-                if not conflict:
+                if conflict is None:
                     conflict = db.query(Organization).filter(
                         Organization.invitation_code == normalized,
                         Organization.id != org.id
                     ).first()
-                if not conflict:
+                if conflict is None:
                     break
                 attempts += 1
             if attempts == 5:
                 error_msg = Messages.error("failed_generate_invitation_code", lang)
                 raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=error_msg)
-        org.invitation_code = normalized
+        setattr(org, 'invitation_code', normalized)
 
     # Update expiration date (if provided)
     if "expires_at" in request:
         expires_str = request.get("expires_at")
         if expires_str:
             try:
-                org.expires_at = datetime.fromisoformat(expires_str.replace('Z', '+00:00'))
+                setattr(org, 'expires_at', datetime.fromisoformat(expires_str.replace('Z', '+00:00')))
             except ValueError as exc:
                 error_msg = Messages.error("invalid_date_format", lang)
                 raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg) from exc
         else:
-            org.expires_at = None
+            setattr(org, 'expires_at', None)
 
     # Update active status (if provided)
     if "is_active" in request:
-        org.is_active = bool(request.get("is_active"))
+        setattr(org, 'is_active', bool(request.get("is_active")))
 
     # Write to database FIRST
     try:
@@ -334,14 +342,87 @@ async def update_organization_admin(
         logger.warning("[Auth] Failed to re-cache org ID %s: %s", org_id, e)
 
     logger.info("Admin %s updated organization: %s", current_user.phone, org.code)
+    updated_expires = cast(Optional[datetime], org.expires_at)
+    updated_created = cast(Optional[datetime], org.created_at)
     return {
         "id": org.id,
         "code": org.code,
         "name": org.name,
         "invitation_code": org.invitation_code,
-        "expires_at": org.expires_at.isoformat() if org.expires_at else None,
+        "expires_at": updated_expires.isoformat() if updated_expires else None,
         "is_active": org.is_active if hasattr(org, 'is_active') else True,
-        "created_at": org.created_at.isoformat() if org.created_at else None
+        "created_at": updated_created.isoformat() if updated_created else None
+    }
+
+
+@router.post("/admin/organizations/{org_id}/refresh-invitation-code", dependencies=[Depends(require_admin)])
+async def refresh_organization_invitation_code(
+    org_id: int,
+    _request: Request,
+    current_user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+    lang: Language = Depends(get_language_dependency)
+):
+    """Generate a new invitation code for the organization (ADMIN ONLY)"""
+    org = org_cache.get_by_id(org_id)
+    if org is None:
+        org = db.query(Organization).filter(Organization.id == org_id).first()
+    if org is None:
+        error_msg = Messages.error("organization_not_found", org_id, lang=lang)
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
+
+    old_invite = cast(Optional[str], org.invitation_code)
+    org_name_val = cast(Optional[str], org.name)
+    org_code_val = cast(Optional[str], org.code)
+    new_code = generate_invitation_code(org_name_val, org_code_val)
+
+    existing = org_cache.get_by_invitation_code(new_code)
+    if existing is not None and int(existing.id) != int(org.id):
+        existing = db.query(Organization).filter(
+            Organization.invitation_code == new_code,
+            Organization.id != org.id
+        ).first()
+    attempts = 0
+    while existing is not None and attempts < 5:
+        new_code = generate_invitation_code(org_name_val, org_code_val)
+        existing = org_cache.get_by_invitation_code(new_code)
+        if existing is not None and int(existing.id) != int(org.id):
+            existing = db.query(Organization).filter(
+                Organization.invitation_code == new_code,
+                Organization.id != org.id
+            ).first()
+        else:
+            existing = None
+        attempts += 1
+    if existing is not None:
+        error_msg = Messages.error("failed_generate_invitation_code", lang)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=error_msg
+        )
+
+    setattr(org, 'invitation_code', new_code)
+    try:
+        db.commit()
+        db.refresh(org)
+    except Exception as e:
+        db.rollback()
+        logger.error("[Auth] Failed to refresh invitation code for org %s: %s", org_id, e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to refresh invitation code"
+        ) from e
+
+    try:
+        org_cache.invalidate(org_id, org_code_val, old_invite)
+        org_cache.cache_org(org)
+    except Exception as e:
+        logger.warning("[Auth] Failed to invalidate org cache: %s", e)
+
+    logger.info("Admin %s refreshed invitation code for org %s", current_user.phone, org.code)
+    return {
+        "id": org.id,
+        "invitation_code": org.invitation_code,
     }
 
 
@@ -356,15 +437,15 @@ async def delete_organization_admin(
     """Delete organization (ADMIN ONLY)"""
     # Load org (use cache with database fallback)
     org = org_cache.get_by_id(org_id)
-    if not org:
+    if org is None:
         org = db.query(Organization).filter(Organization.id == org_id).first()
-        if not org:
+        if org is None:
             error_msg = Messages.error("organization_not_found", lang, org_id)
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
 
     # Save values for cache invalidation
-    org_code = org.code
-    org_invite = org.invitation_code
+    org_code = cast(Optional[str], org.code)
+    org_invite = cast(Optional[str], org.invitation_code)
 
     user_count = db.query(User).filter(User.organization_id == org_id).count()
     if user_count > 0:
@@ -390,8 +471,8 @@ async def delete_organization_admin(
     except Exception as e:
         logger.warning("[Auth] Failed to invalidate cache for deleted org ID %s: %s", org_id, e)
 
-    logger.warning("Admin %s deleted organization: %s", current_user.phone, org.code)
-    return {"message": Messages.success("organization_deleted", lang, org.code)}
+    logger.warning("Admin %s deleted organization: %s", current_user.phone, org_code)
+    return {"message": Messages.success("organization_deleted", lang, org_code)}
 
 
 # =============================================================================

@@ -12,12 +12,16 @@ Proprietary License
 """
 import json
 import logging
+from datetime import datetime
 
 from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
+from sqlalchemy.orm import Session
 
 from agents.relationship_labels import get_relationship_labels_generator
+from config.database import get_db
 from models.domain.auth import User
+from models.domain.user_activity_log import UserActivityLog
 from models.requests.requests_thinking import (
     RelationshipLabelsStartRequest,
     RelationshipLabelsNextRequest,
@@ -97,6 +101,7 @@ async def _stream_labels(req, user: User | None, is_next: bool):
 async def start_relationship_labels(
     req: RelationshipLabelsStartRequest,
     current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
 ):
     """
     Start relationship labels generation - fires 3 LLMs concurrently.
@@ -107,6 +112,24 @@ async def start_relationship_labels(
         "[RelLabels] Start: %s | %s ↔ %s",
         req.session_id[:8], req.concept_a[:20], req.concept_b[:20]
     )
+
+    # Log relationship_labels for teacher usage tracking
+    if current_user and getattr(current_user, 'role', None) == 'user':
+        try:
+            log_entry = UserActivityLog(
+                user_id=current_user.id,
+                activity_type='relationship_labels',
+                created_at=datetime.utcnow(),
+            )
+            db.add(log_entry)
+            db.commit()
+        except Exception as e:
+            logger.debug("Failed to log relationship_labels: %s", e)
+            try:
+                db.rollback()
+            except Exception:
+                pass
+
     return StreamingResponse(
         _stream_labels(req, current_user, is_next=False),
         media_type='text/event-stream',

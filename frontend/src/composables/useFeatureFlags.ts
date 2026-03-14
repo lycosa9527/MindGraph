@@ -32,6 +32,7 @@ export function useFeatureFlags() {
   const featureDebateverse = computed(() => data.value?.feature_debateverse ?? false)
   const featureKnowledgeSpace = computed(() => data.value?.feature_knowledge_space ?? false)
   const featureLibrary = computed(() => data.value?.feature_library ?? false)
+  const featureGewe = computed(() => data.value?.feature_gewe ?? false)
   const featureSmartResponse = computed(() => data.value?.feature_smart_response ?? false)
   const featureTeacherUsage = computed(() => data.value?.feature_teacher_usage ?? false)
 
@@ -45,6 +46,7 @@ export function useFeatureFlags() {
     featureDebateverse,
     featureKnowledgeSpace,
     featureLibrary,
+    featureGewe,
     featureSmartResponse,
     featureTeacherUsage,
     isLoading,

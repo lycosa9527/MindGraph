@@ -23,6 +23,7 @@ class FeatureFlagsResponse(BaseModel):
     feature_debateverse: bool
     feature_knowledge_space: bool
     feature_library: bool
+    feature_gewe: bool
     feature_smart_response: bool
     feature_teacher_usage: bool
 
@@ -40,6 +41,7 @@ async def get_feature_flags():
         feature_debateverse=config.FEATURE_DEBATEVERSE,
         feature_knowledge_space=config.FEATURE_KNOWLEDGE_SPACE,
         feature_library=config.FEATURE_LIBRARY,
+        feature_gewe=config.FEATURE_GEWE,
         feature_smart_response=config.FEATURE_SMART_RESPONSE,
         feature_teacher_usage=config.FEATURE_TEACHER_USAGE,
     )

@@ -12,11 +12,13 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
-import json
 import logging
+
+from datetime import datetime
 
 from fastapi import APIRouter, HTTPException, Depends
 from fastapi.responses import StreamingResponse
+from sqlalchemy.orm import Session
 
 from agents.node_palette.brace_map_palette import get_brace_map_palette_generator
 from agents.node_palette.bridge_map_palette import get_bridge_map_palette_generator
@@ -28,7 +30,10 @@ from agents.node_palette.flow_map_palette import get_flow_map_palette_generator
 from agents.node_palette.mindmap_palette import get_mindmap_palette_generator
 from agents.node_palette.multi_flow_palette import get_multi_flow_palette_generator
 from agents.node_palette.tree_map_palette import get_tree_map_palette_generator
+from config.database import get_db
+from routers.node_palette_streaming import stream_node_palette
 from models.domain.auth import User
+from models.domain.user_activity_log import UserActivityLog
 from models.requests.requests_thinking import (
     NodePaletteStartRequest,
     NodePaletteNextRequest,
@@ -36,22 +41,108 @@ from models.requests.requests_thinking import (
     NodePaletteFinishRequest,
     NodePaletteCleanupRequest
 )
-from services.infrastructure.http.error_handler import (
-    LLMContentFilterError,
-    LLMRateLimitError,
-    LLMTimeoutError,
-    LLMInvalidParameterError,
-    LLMQuotaExhaustedError,
-    LLMModelNotFoundError,
-    LLMAccessDeniedError,
-    LLMServiceError
-)
 from services.redis.redis_activity_tracker import get_activity_tracker
 from utils.auth import get_current_user
 from utils.placeholder import is_placeholder_text
 
 router = APIRouter(tags=["thinking"])
 logger = logging.getLogger(__name__)
+
+_GENERATOR_MAP = {
+    'circle_map': get_circle_map_palette_generator,
+    'bubble_map': get_bubble_map_palette_generator,
+    'double_bubble_map': get_double_bubble_palette_generator,
+    'multi_flow_map': get_multi_flow_palette_generator,
+    'tree_map': get_tree_map_palette_generator,
+    'flow_map': get_flow_map_palette_generator,
+    'brace_map': get_brace_map_palette_generator,
+    'bridge_map': get_bridge_map_palette_generator,
+    'mindmap': get_mindmap_palette_generator,
+    'concept_map': get_concept_map_palette_generator,
+}
+
+
+def _extract_center_topic(req: NodePaletteStartRequest) -> str:
+    """Extract center topic from request based on diagram type."""
+    data = req.diagram_data
+    diagram_type = req.diagram_type
+    topic = ''
+
+    if diagram_type == 'double_bubble_map':
+        topic = f"{data.get('left', '')} vs {data.get('right', '')}"
+    elif diagram_type == 'multi_flow_map':
+        topic = data.get('event', '')
+    elif diagram_type == 'flow_map':
+        topic = data.get('title', '')
+    elif diagram_type == 'brace_map':
+        topic = data.get('whole', '')
+    elif diagram_type == 'bridge_map':
+        raw_dim = data.get('dimension', '')
+        raw_dim = '' if raw_dim is None else str(raw_dim)
+        topic = '' if is_placeholder_text(raw_dim) else raw_dim
+    elif diagram_type in ('tree_map', 'mindmap', 'concept_map'):
+        stage_data = getattr(req, 'stage_data', None) or {}
+        if (
+            diagram_type == 'concept_map'
+            and isinstance(stage_data, dict)
+            and stage_data.get('center_topic')
+        ):
+            topic = str(stage_data.get('center_topic', ''))
+        else:
+            topic = data.get('topic', '')
+    else:
+        center = data.get('center', {}) or {}
+        topic = (
+            center.get('text', '') or
+            data.get('topic', '') or
+            data.get('title', '') or
+            data.get('main_topic', '')
+        )
+    return topic
+
+
+def _get_palette_generator(diagram_type: str):
+    """Get palette generator for diagram type, fallback to circle_map."""
+    getter = _GENERATOR_MAP.get(diagram_type)
+    if getter is None:
+        logger.warning(
+            "[NodePalette-API] No specialized generator for %s, using circle_map fallback",
+            diagram_type
+        )
+        return get_circle_map_palette_generator()
+    return getter()
+
+
+def _log_topic_and_firing(req: NodePaletteStartRequest, center_topic: str, session_id: str) -> None:
+    """Log topic info and LLM firing debug message."""
+    if req.diagram_type == 'bridge_map':
+        if center_topic and center_topic.strip():
+            logger.info("[NodePalette] Topic: '%s' (Bridge map dimension) | Session: %s",
+                        center_topic[:50], session_id[:8])
+        else:
+            logger.info("[NodePalette] Topic: (Diverse relationships mode) | Session: %s",
+                        session_id[:8])
+    else:
+        logger.info("[NodePalette] Topic: '%s' | Session: %s",
+                    center_topic[:50] if center_topic else '(empty)', session_id[:8])
+    if req.diagram_type == 'bridge_map':
+        if center_topic and center_topic.strip():
+            logger.debug(
+                "[NodePalette-API] Type: bridge_map | Dimension: '%s' (SPECIFIC) | "
+                "Firing 3 LLMs concurrently (qwen, deepseek, doubao)",
+                center_topic
+            )
+        else:
+            logger.debug(
+                "[NodePalette-API] Type: bridge_map | Dimension: (EMPTY - DIVERSE mode) | "
+                "Firing 3 LLMs concurrently (qwen, deepseek, doubao)"
+            )
+    else:
+        logger.debug(
+            "[NodePalette-API] Type: %s | Topic: '%s' | "
+            "Firing 3 LLMs concurrently (qwen, deepseek, doubao)",
+            req.diagram_type, center_topic
+        )
 
 
 # ============================================================================
@@ -61,7 +152,8 @@ logger = logging.getLogger(__name__)
 @router.post('/thinking_mode/node_palette/start')
 async def start_node_palette(
     req: NodePaletteStartRequest,
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
 ):
     """
     Initialize Node Palette and fire 3 LLMs concurrently (qwen, deepseek, doubao).
@@ -87,6 +179,27 @@ async def start_node_palette(
         except Exception as e:
             logger.debug("Failed to track user activity: %s", e)
 
+    # Log concept_generation for concept map (teacher usage tracking)
+    if (
+        current_user
+        and getattr(current_user, 'role', None) == 'user'
+        and req.diagram_type == 'concept_map'
+    ):
+        try:
+            log_entry = UserActivityLog(
+                user_id=current_user.id,
+                activity_type='concept_generation',
+                created_at=datetime.utcnow(),
+            )
+            db.add(log_entry)
+            db.commit()
+        except Exception as e:
+            logger.debug("Failed to log concept_generation: %s", e)
+            try:
+                db.rollback()
+            except Exception:
+                pass
+
     # Log at INFO level for user activity tracking
     logger.info("[NodePalette] Started: Session %s (User: %s, Diagram: %s)",
                session_id[:8], user_id, req.diagram_type)
@@ -97,406 +210,23 @@ async def start_node_palette(
     logger.debug("[NodePalette-API] Diagram data: %s", str(req.diagram_data)[:200])
 
     try:
-        # Extract center topic based on diagram type
-        if req.diagram_type == 'double_bubble_map':
-            # Double bubble map uses left and right topics
-            left_topic = req.diagram_data.get('left', '')
-            right_topic = req.diagram_data.get('right', '')
-            center_topic = f"{left_topic} vs {right_topic}"
-        elif req.diagram_type == 'multi_flow_map':
-            # Multi flow map uses event
-            center_topic = req.diagram_data.get('event', '')
-        elif req.diagram_type == 'flow_map':
-            # Flow map uses title
-            center_topic = req.diagram_data.get('title', '')
-        elif req.diagram_type == 'brace_map':
-            # Brace map uses whole
-            center_topic = req.diagram_data.get('whole', '')
-        elif req.diagram_type == 'bridge_map':
-            # Bridge map uses dimension (can be empty for diverse relationships)
-            raw_dim = req.diagram_data.get('dimension', '')
-            if raw_dim is None:
-                raw_dim = ''
-            center_topic = '' if is_placeholder_text(str(raw_dim)) else str(raw_dim)
-        elif req.diagram_type in ('tree_map', 'mindmap', 'concept_map'):
-            # Tree map, mindmap, concept map use topic
-            # Concept map: stage_data.center_topic overrides for sub-concept (node) generation
-            stage_data = getattr(req, 'stage_data', None) or {}
-            if (
-                req.diagram_type == 'concept_map'
-                and isinstance(stage_data, dict)
-                and stage_data.get('center_topic')
-            ):
-                center_topic = str(stage_data.get('center_topic', ''))
-            else:
-                center_topic = req.diagram_data.get('topic', '')
-        else:
-            # Most diagrams use center/topic field - try multiple fallbacks
-            center_topic = (
-                req.diagram_data.get('center', {}).get('text', '') or
-                req.diagram_data.get('topic', '') or
-                req.diagram_data.get('title', '') or
-                req.diagram_data.get('main_topic', '')
-            )
+        center_topic = _extract_center_topic(req)
+        if req.diagram_type != 'bridge_map' and (not center_topic or not center_topic.strip()):
+            logger.error("[NodePalette-API] No center topic for session %s", session_id[:8])
+            raise HTTPException(status_code=400, detail=f"{req.diagram_type} has no center topic")
 
-        # For bridge_map, empty dimension is OK (means diverse relationships)
-        if req.diagram_type != 'bridge_map':
-            if not center_topic or not center_topic.strip():
-                logger.error("[NodePalette-API] No center topic for session %s", session_id[:8])
-                raise HTTPException(status_code=400, detail=f"{req.diagram_type} has no center topic")
-
-        # Log topic at INFO level for tracking
-        if req.diagram_type == 'bridge_map':
-            if center_topic and center_topic.strip():
-                logger.info("[NodePalette] Topic: '%s' (Bridge map dimension) | Session: %s",
-                           center_topic[:50], session_id[:8])
-            else:
-                logger.info("[NodePalette] Topic: (Diverse relationships mode) | Session: %s",
-                           session_id[:8])
-        else:
-            logger.info("[NodePalette] Topic: '%s' | Session: %s",
-                       center_topic[:50] if center_topic else '(empty)', session_id[:8])
-
-        # Keep debug logs for LLM firing details
-        if req.diagram_type == 'bridge_map':
-            if center_topic and center_topic.strip():
-                logger.debug(
-                    "[NodePalette-API] Type: bridge_map | Dimension: '%s' (SPECIFIC) | "
-                    "Firing 3 LLMs concurrently (qwen, deepseek, doubao)",
-                    center_topic
-                )
-            else:
-                logger.debug(
-                    "[NodePalette-API] Type: bridge_map | Dimension: (EMPTY - DIVERSE mode) | "
-                    "Firing 3 LLMs concurrently (qwen, deepseek, doubao)"
-                )
-        else:
-            logger.debug(
-                "[NodePalette-API] Type: %s | Topic: '%s' | "
-                "Firing 3 LLMs concurrently (qwen, deepseek, doubao)",
-                req.diagram_type, center_topic
-            )
-
-        # Get appropriate generator based on diagram type (with fallback)
-        if req.diagram_type == 'circle_map':
-            generator = get_circle_map_palette_generator()
-        elif req.diagram_type == 'bubble_map':
-            generator = get_bubble_map_palette_generator()
-        elif req.diagram_type == 'double_bubble_map':
-            generator = get_double_bubble_palette_generator()
-        elif req.diagram_type == 'multi_flow_map':
-            generator = get_multi_flow_palette_generator()
-        elif req.diagram_type == 'tree_map':
-            generator = get_tree_map_palette_generator()
-        elif req.diagram_type == 'flow_map':
-            generator = get_flow_map_palette_generator()
-        elif req.diagram_type == 'brace_map':
-            generator = get_brace_map_palette_generator()
-        elif req.diagram_type == 'bridge_map':
-            generator = get_bridge_map_palette_generator()
-        elif req.diagram_type == 'mindmap':
-            generator = get_mindmap_palette_generator()
-        elif req.diagram_type == 'concept_map':
-            generator = get_concept_map_palette_generator()
-        else:
-            # Fallback to circle map generator for unsupported types
-            logger.warning(
-                "[NodePalette-API] No specialized generator for %s, using circle_map fallback",
-                req.diagram_type
-            )
-            generator = get_circle_map_palette_generator()
-
-        # Stream with concurrent execution
-        async def generate():
-            logger.debug("[NodePalette-API] SSE stream starting | Session: %s", session_id[:8])
-            node_count = 0
-            chunk_count = 0
-
-            try:
-                # Get mode from request (default to 'similarities' for double bubble, 'causes' for multi flow)
-                mode = getattr(req, 'mode', 'similarities' if req.diagram_type == 'double_bubble_map' else 'causes')
-
-                # Get stage parameters for multi-stage diagrams
-                # Tree/brace/bridge: dimensions first; mindmap/flow: no dimensions stage
-                if req.diagram_type == 'mindmap':
-                    default_stage = 'branches'
-                elif req.diagram_type == 'flow_map':
-                    default_stage = 'steps'
-                elif req.diagram_type in ('tree_map', 'brace_map', 'bridge_map'):
-                    default_stage = 'dimensions'
-                else:
-                    default_stage = 'categories'
-
-                stage = getattr(req, 'stage', default_stage)
-                stage_data = getattr(req, 'stage_data', None) or {}
-                raw_dim = (req.diagram_data.get('dimension') or '').strip()
-                diagram_dim = '' if is_placeholder_text(raw_dim) else raw_dim
-                if (
-                    stage == 'dimensions'
-                    and req.diagram_type in ('tree_map', 'brace_map', 'bridge_map')
-                    and diagram_dim
-                ):
-                    stage = (
-                        'parts' if req.diagram_type == 'brace_map'
-                        else 'categories' if req.diagram_type == 'tree_map'
-                        else 'pairs'
-                    )
-                    stage_data = {**(stage_data if isinstance(stage_data, dict) else {}),
-                                 'dimension': diagram_dim}
-                    logger.debug(
-                        "[NodePalette-API] Dimension already fixed '%s', skipping to stage: %s",
-                        diagram_dim[:30], stage
-                    )
-                elif isinstance(stage_data, dict) and req.diagram_type in ('tree_map', 'brace_map', 'bridge_map'):
-                    if diagram_dim and (not stage_data.get('dimension')):
-                        stage_data = {**stage_data, 'dimension': diagram_dim}
-                    if req.diagram_type == 'bridge_map' and stage == 'dimensions':
-                        analogies = req.diagram_data.get('analogies')
-                        if analogies and isinstance(analogies, list) and not stage_data.get('analogies'):
-                            stage_data = {**stage_data, 'analogies': analogies}
-
-                # Call generate_batch with appropriate parameters based on diagram type
-                if req.diagram_type in ['double_bubble_map', 'multi_flow_map']:
-                    # Tab-enabled diagrams: pass mode parameter
-                    async for chunk in generator.generate_batch(  # type: ignore[call-arg]
-                        session_id=session_id,
-                        center_topic=center_topic,
-                        educational_context=req.educational_context,
-                        nodes_per_llm=15,  # Each LLM generates 15 nodes = 60 total per batch
-                        _mode=mode,  # Pass mode for tab-enabled diagrams
-                        user_id=current_user.id if current_user else None,
-                        organization_id=current_user.organization_id if current_user else None,
-                        diagram_type=req.diagram_type,
-                        endpoint_path='/thinking_mode/node_palette/start'
-                    ):
-                        chunk_count += 1
-                        if chunk.get('event') == 'node_generated':
-                            node_count += 1
-
-                        yield f"data: {json.dumps(chunk)}\n\n"
-                elif req.diagram_type in ['tree_map', 'brace_map', 'flow_map', 'mindmap', 'bridge_map']:
-                    # Multi-stage diagrams: pass stage and stage_data for progressive workflow
-                    logger.debug("[NodePalette-API] %s stage: %s | Stage data: %s", req.diagram_type, stage, stage_data)
-                    async for chunk in generator.generate_batch(  # type: ignore[call-arg]
-                        session_id=session_id,
-                        center_topic=center_topic,
-                        educational_context=req.educational_context,
-                        nodes_per_llm=15,
-                        _stage=stage,  # Current stage (dimensions, categories, parts, etc.)
-                        _stage_data=stage_data,  # Stage-specific data
-                        user_id=current_user.id if current_user else None,
-                        organization_id=current_user.organization_id if current_user else None,
-                        diagram_type=req.diagram_type,
-                        endpoint_path='/thinking_mode/node_palette/start'
-                    ):
-                        chunk_count += 1
-                        if chunk.get('event') == 'node_generated':
-                            node_count += 1
-
-                        yield f"data: {json.dumps(chunk)}\n\n"
-                elif req.diagram_type == 'concept_map':
-                    # Concept map: pass mode and stage_data for sub-concept (node) tabs
-                    mode = getattr(req, 'mode', None)
-                    stage_data = getattr(req, 'stage_data', None) or {}
-                    async for chunk in generator.generate_batch(
-                        session_id=session_id,
-                        center_topic=center_topic,
-                        educational_context=req.educational_context,
-                        nodes_per_llm=15,
-                        _mode=mode,
-                        _stage_data=stage_data if isinstance(stage_data, dict) else {},
-                        user_id=current_user.id if current_user else None,
-                        organization_id=current_user.organization_id if current_user else None,
-                        diagram_type=req.diagram_type,
-                        endpoint_path='/thinking_mode/node_palette/start'
-                    ):
-                        chunk_count += 1
-                        if chunk.get('event') == 'node_generated':
-                            node_count += 1
-
-                        yield f"data: {json.dumps(chunk)}\n\n"
-                else:
-                    # Other diagram types: standard call
-                    async for chunk in generator.generate_batch(
-                        session_id=session_id,
-                        center_topic=center_topic,
-                        educational_context=req.educational_context,
-                        nodes_per_llm=15,  # Each LLM generates 15 nodes = 60 total per batch
-                        user_id=current_user.id if current_user else None,
-                        organization_id=current_user.organization_id if current_user else None,
-                        diagram_type=req.diagram_type,
-                        endpoint_path='/thinking_mode/node_palette/start'
-                    ):
-                        chunk_count += 1
-                        if chunk.get('event') == 'node_generated':
-                            node_count += 1
-
-                        yield f"data: {json.dumps(chunk)}\n\n"
-
-                # Ensure at least one event is yielded to prevent RuntimeError
-                if chunk_count == 0:
-                    logger.warning(
-                        "[NodePalette-API] No chunks yielded, sending completion event | Session: %s",
-                        session_id[:8]
-                    )
-                    yield f"data: {json.dumps({'event': 'batch_complete', 'nodes': node_count})}\n\n"
-
-                logger.debug("[NodePalette-API] Batch complete | Session: %s | Nodes: %d",
-                           session_id[:8], node_count)
-
-            except LLMContentFilterError as e:
-                logger.warning("[NodePalette-API] Content filter | Session: %s | Error: %s",
-                             session_id[:8], str(e))
-                user_message = getattr(e, 'user_message', None)
-                if not user_message:
-                    language = getattr(req, 'language', 'en')
-                    user_message = (
-                        "无法处理您的请求，请尝试修改主题描述。" if language == 'zh'
-                        else "Content could not be processed. Please try a different topic."
-                    )
-                error_data = {
-                    'event': 'error',
-                    'error_type': 'content_filter',
-                    'message': user_message
-                }
-                yield f"data: {json.dumps(error_data)}\n\n"
-
-            except LLMRateLimitError as e:
-                logger.warning("[NodePalette-API] Rate limit | Session: %s | Error: %s",
-                             session_id[:8], str(e))
-                user_message = getattr(e, 'user_message', None)
-                if not user_message:
-                    language = getattr(req, 'language', 'en')
-                    user_message = (
-                        "AI服务繁忙，请稍后重试。" if language == 'zh'
-                        else "AI service is busy. Please try again in a few seconds."
-                    )
-                error_data = {'event': 'error', 'error_type': 'rate_limit', 'message': user_message}
-                yield f"data: {json.dumps(error_data)}\n\n"
-
-            except LLMTimeoutError as e:
-                logger.warning("[NodePalette-API] Timeout | Session: %s | Error: %s",
-                             session_id[:8], str(e))
-                user_message = getattr(e, 'user_message', None)
-                if not user_message:
-                    language = getattr(req, 'language', 'en')
-                    user_message = "请求超时，请重试。" if language == 'zh' else "Request timed out. Please try again."
-                yield f"data: {json.dumps({'event': 'error', 'error_type': 'timeout', 'message': user_message})}\n\n"
-
-            except LLMInvalidParameterError as e:
-                logger.warning("[NodePalette-API] Invalid parameter | Session: %s | Error: %s",
-                             session_id[:8], str(e))
-                user_message = getattr(e, 'user_message', None)
-                if not user_message:
-                    language = getattr(req, 'language', 'en')
-                    user_message = (
-                        "参数错误，请检查输入。" if language == 'zh'
-                        else "Invalid parameter. Please check input."
-                    )
-                error_data = {
-                    'event': 'error',
-                    'error_type': 'invalid_parameter',
-                    'message': user_message
-                }
-                yield f"data: {json.dumps(error_data)}\n\n"
-
-            except LLMQuotaExhaustedError as e:
-                logger.warning("[NodePalette-API] Quota exhausted | Session: %s | Error: %s",
-                             session_id[:8], str(e))
-                user_message = getattr(e, 'user_message', None)
-                if not user_message:
-                    language = getattr(req, 'language', 'en')
-                    user_message = (
-                        "配额已用完，请检查账户。" if language == 'zh'
-                        else "Quota exhausted. Please check account."
-                    )
-                error_data = {
-                    'event': 'error',
-                    'error_type': 'quota_exhausted',
-                    'message': user_message
-                }
-                yield f"data: {json.dumps(error_data)}\n\n"
-
-            except LLMModelNotFoundError as e:
-                logger.warning("[NodePalette-API] Model not found | Session: %s | Error: %s",
-                             session_id[:8], str(e))
-                user_message = getattr(e, 'user_message', None)
-                if not user_message:
-                    language = getattr(req, 'language', 'en')
-                    user_message = (
-                        "模型不存在，请检查配置。" if language == 'zh'
-                        else "Model not found. Please check configuration."
-                    )
-                error_data = {
-                    'event': 'error',
-                    'error_type': 'model_not_found',
-                    'message': user_message
-                }
-                yield f"data: {json.dumps(error_data)}\n\n"
-
-            except LLMAccessDeniedError as e:
-                logger.warning("[NodePalette-API] Access denied | Session: %s | Error: %s",
-                             session_id[:8], str(e))
-                user_message = getattr(e, 'user_message', None)
-                if not user_message:
-                    language = getattr(req, 'language', 'en')
-                    user_message = (
-                        "访问被拒绝，请检查权限。" if language == 'zh'
-                        else "Access denied. Please check permissions."
-                    )
-                error_data = {
-                    'event': 'error',
-                    'error_type': 'access_denied',
-                    'message': user_message
-                }
-                yield f"data: {json.dumps(error_data)}\n\n"
-
-            except LLMServiceError as e:
-                logger.error("[NodePalette-API] LLM service error | Session: %s | Error: %s",
-                            session_id[:8], str(e))
-                user_message = getattr(e, 'user_message', None)
-                if not user_message:
-                    language = getattr(req, 'language', 'en')
-                    user_message = (
-                        "AI服务错误，请稍后重试。" if language == 'zh'
-                        else "AI service error. Please try again later."
-                    )
-                error_data = {
-                    'event': 'error',
-                    'error_type': 'service_error',
-                    'message': user_message
-                }
-                yield f"data: {json.dumps(error_data)}\n\n"
-
-            except Exception as e:
-                logger.error("[NodePalette-API] Stream error | Session: %s | Error: %s",
-                            session_id[:8], str(e), exc_info=True)
-                # Fallback for unknown errors
-                language = getattr(req, 'language', 'en')
-                user_message = "出现问题，请重试。" if language == 'zh' else "Something went wrong. Please try again."
-                yield f"data: {json.dumps({'event': 'error', 'error_type': 'unknown', 'message': user_message})}\n\n"
-            finally:
-                # Always ensure at least one event is yielded to prevent RuntimeError
-                if chunk_count == 0:
-                    logger.warning(
-                        "[NodePalette-API] Generator completed without yielding, "
-                        "sending error event | Session: %s",
-                        session_id[:8]
-                    )
-                    language = getattr(req, 'language', 'en')
-                    user_message = (
-                        "请求处理失败，请重试。" if language == 'zh'
-                        else "Request processing failed. Please try again."
-                    )
-                    error_data = {
-                        'event': 'error',
-                        'error_type': 'no_response',
-                        'message': user_message
-                    }
-                    yield f"data: {json.dumps(error_data)}\n\n"
+        _log_topic_and_firing(req, center_topic, session_id)
+        generator = _get_palette_generator(req.diagram_type)
 
         return StreamingResponse(
-            generate(),
+            stream_node_palette(
+                req=req,
+                session_id=session_id,
+                center_topic=center_topic,
+                generator=generator,
+                current_user=current_user,
+                endpoint_path='/thinking_mode/node_palette/start',
+            ),
             media_type='text/event-stream',
             headers={
                 'Cache-Control': 'no-cache',
@@ -528,276 +258,23 @@ async def get_next_batch(
     logger.debug("[NodePalette-API] POST /next_batch (V2 Concurrent) | Session: %s", session_id[:8])
 
     try:
-        # Get appropriate generator based on diagram type (with fallback)
-        if req.diagram_type == 'circle_map':
-            generator = get_circle_map_palette_generator()
-        elif req.diagram_type == 'bubble_map':
-            generator = get_bubble_map_palette_generator()
-        elif req.diagram_type == 'double_bubble_map':
-            generator = get_double_bubble_palette_generator()
-        elif req.diagram_type == 'multi_flow_map':
-            generator = get_multi_flow_palette_generator()
-        elif req.diagram_type == 'tree_map':
-            generator = get_tree_map_palette_generator()
-        elif req.diagram_type == 'flow_map':
-            generator = get_flow_map_palette_generator()
-        elif req.diagram_type == 'brace_map':
-            generator = get_brace_map_palette_generator()
-        elif req.diagram_type == 'bridge_map':
-            generator = get_bridge_map_palette_generator()
-        elif req.diagram_type == 'mindmap':
-            generator = get_mindmap_palette_generator()
-        elif req.diagram_type == 'concept_map':
-            generator = get_concept_map_palette_generator()
-        else:
-            # Fallback to circle map generator for unsupported types
-            logger.warning(
-                "[NodePalette-API] No specialized generator for %s, using circle_map fallback",
-                req.diagram_type
-            )
-            generator = get_circle_map_palette_generator()
-
+        generator = _get_palette_generator(req.diagram_type)
         logger.debug(
             "[NodePalette-API] Type: %s | Firing 3 LLMs concurrently for next batch "
             "(qwen, deepseek, doubao)...",
             req.diagram_type
         )
 
-        # Stream next batch with concurrent execution
-        async def generate():
-            node_count = 0
-            chunk_count = 0
-            try:
-                # Get mode from request (default to 'similarities' for double bubble, 'causes' for multi flow)
-                mode = getattr(req, 'mode', 'similarities' if req.diagram_type == 'double_bubble_map' else 'causes')
-
-                # Get stage parameters for multi-stage diagrams
-                # Tree/brace/bridge: dimensions first; mindmap/flow: no dimensions stage
-                if req.diagram_type == 'mindmap':
-                    default_stage = 'branches'
-                elif req.diagram_type == 'flow_map':
-                    default_stage = 'steps'
-                elif req.diagram_type in ('tree_map', 'brace_map', 'bridge_map'):
-                    default_stage = 'dimensions'
-                else:
-                    default_stage = 'categories'
-
-                stage = getattr(req, 'stage', default_stage)
-                stage_data = getattr(req, 'stage_data', None)
-
-                if req.diagram_type in ['double_bubble_map', 'multi_flow_map']:
-                    # Tab-enabled diagrams: pass mode parameter
-                    async for chunk in generator.generate_batch(  # type: ignore[call-arg]
-                        session_id=session_id,
-                        center_topic=req.center_topic,
-                        educational_context=req.educational_context,
-                        nodes_per_llm=15,  # 75 total nodes per scroll trigger
-                        _mode=mode,  # Pass mode for tab-enabled diagrams
-                        user_id=current_user.id if current_user else None,
-                        organization_id=current_user.organization_id if current_user else None,
-                        diagram_type=req.diagram_type,
-                        endpoint_path='/thinking_mode/node_palette/next_batch'
-                    ):
-                        chunk_count += 1
-                        if chunk.get('event') == 'node_generated':
-                            node_count += 1
-
-                        yield f"data: {json.dumps(chunk)}\n\n"
-                elif req.diagram_type in ['tree_map', 'brace_map', 'flow_map', 'mindmap', 'bridge_map']:
-                    # Multi-stage diagrams: pass stage and stage_data for progressive workflow
-                    logger.debug(
-                        "[NodePalette-API] %s next batch | Stage: %s | Stage data: %s",
-                        req.diagram_type, stage, stage_data
-                    )
-                    async for chunk in generator.generate_batch(  # type: ignore[call-arg]
-                        session_id=session_id,
-                        center_topic=req.center_topic,
-                        educational_context=req.educational_context,
-                        nodes_per_llm=15,
-                        _stage=stage,  # Current stage (dimensions, categories, parts, etc.)
-                        _stage_data=stage_data,  # Stage-specific data
-                        user_id=current_user.id if current_user else None,
-                        organization_id=current_user.organization_id if current_user else None,
-                        diagram_type=req.diagram_type,
-                        endpoint_path='/thinking_mode/node_palette/next_batch'
-                    ):
-                        chunk_count += 1
-                        if chunk.get('event') == 'node_generated':
-                            node_count += 1
-
-                        yield f"data: {json.dumps(chunk)}\n\n"
-                elif req.diagram_type == 'concept_map':
-                    # Concept map: pass mode and stage_data for sub-concept tabs
-                    mode = getattr(req, 'mode', None)
-                    stage_data = getattr(req, 'stage_data', None) or {}
-                    async for chunk in generator.generate_batch(
-                        session_id=session_id,
-                        center_topic=req.center_topic,
-                        educational_context=req.educational_context,
-                        nodes_per_llm=15,
-                        _mode=mode,
-                        _stage_data=stage_data if isinstance(stage_data, dict) else {},
-                        user_id=current_user.id if current_user else None,
-                        organization_id=current_user.organization_id if current_user else None,
-                        diagram_type=req.diagram_type,
-                        endpoint_path='/thinking_mode/node_palette/next_batch'
-                    ):
-                        chunk_count += 1
-                        if chunk.get('event') == 'node_generated':
-                            node_count += 1
-
-                        yield f"data: {json.dumps(chunk)}\n\n"
-                else:
-                    # Other diagram types: standard call
-                    async for chunk in generator.generate_batch(
-                        session_id=session_id,
-                        center_topic=req.center_topic,
-                        educational_context=req.educational_context,
-                        nodes_per_llm=15,  # 75 total nodes per scroll trigger
-                        user_id=current_user.id if current_user else None,
-                        organization_id=current_user.organization_id if current_user else None,
-                        diagram_type=req.diagram_type,
-                        endpoint_path='/thinking_mode/node_palette/next_batch'
-                    ):
-                        chunk_count += 1
-                        if chunk.get('event') == 'node_generated':
-                            node_count += 1
-
-                        yield f"data: {json.dumps(chunk)}\n\n"
-
-                logger.debug("[NodePalette-API] Next batch complete | Session: %s | Nodes: %d",
-                           session_id[:8], node_count)
-
-            except LLMContentFilterError as e:
-                logger.warning("[NodePalette-API] Next batch content filter | Session: %s | Error: %s",
-                             session_id[:8], str(e))
-                user_message = getattr(e, 'user_message', None)
-                if not user_message:
-                    language = getattr(req, 'language', 'en')
-                    user_message = (
-                        "无法处理您的请求，请尝试修改主题描述。" if language == 'zh'
-                        else "Content could not be processed."
-                    )
-                error_data = {
-                    'event': 'error',
-                    'error_type': 'content_filter',
-                    'message': user_message
-                }
-                yield f"data: {json.dumps(error_data)}\n\n"
-
-            except LLMRateLimitError as e:
-                logger.warning("[NodePalette-API] Next batch rate limit | Session: %s | Error: %s",
-                             session_id[:8], str(e))
-                user_message = getattr(e, 'user_message', None)
-                if not user_message:
-                    language = getattr(req, 'language', 'en')
-                    user_message = "AI服务繁忙，请稍后重试。" if language == 'zh' else "AI service is busy. Please retry."
-                yield f"data: {json.dumps({'event': 'error', 'error_type': 'rate_limit', 'message': user_message})}\n\n"
-
-            except LLMTimeoutError as e:
-                logger.warning("[NodePalette-API] Next batch timeout | Session: %s | Error: %s",
-                             session_id[:8], str(e))
-                user_message = getattr(e, 'user_message', None)
-                if not user_message:
-                    language = getattr(req, 'language', 'en')
-                    user_message = "请求超时，请重试。" if language == 'zh' else "Request timed out. Please try again."
-                yield f"data: {json.dumps({'event': 'error', 'error_type': 'timeout', 'message': user_message})}\n\n"
-
-            except LLMInvalidParameterError as e:
-                logger.warning("[NodePalette-API] Next batch invalid parameter | Session: %s | Error: %s",
-                             session_id[:8], str(e))
-                user_message = getattr(e, 'user_message', None)
-                if not user_message:
-                    language = getattr(req, 'language', 'en')
-                    user_message = (
-                        "参数错误，请检查输入。" if language == 'zh'
-                        else "Invalid parameter. Please check input."
-                    )
-                error_data = {
-                    'event': 'error',
-                    'error_type': 'invalid_parameter',
-                    'message': user_message
-                }
-                yield f"data: {json.dumps(error_data)}\n\n"
-
-            except LLMQuotaExhaustedError as e:
-                logger.warning("[NodePalette-API] Next batch quota exhausted | Session: %s | Error: %s",
-                             session_id[:8], str(e))
-                user_message = getattr(e, 'user_message', None)
-                if not user_message:
-                    language = getattr(req, 'language', 'en')
-                    user_message = (
-                        "配额已用完，请检查账户。" if language == 'zh'
-                        else "Quota exhausted. Please check account."
-                    )
-                error_data = {
-                    'event': 'error',
-                    'error_type': 'quota_exhausted',
-                    'message': user_message
-                }
-                yield f"data: {json.dumps(error_data)}\n\n"
-
-            except LLMModelNotFoundError as e:
-                logger.warning("[NodePalette-API] Next batch model not found | Session: %s | Error: %s",
-                             session_id[:8], str(e))
-                user_message = getattr(e, 'user_message', None)
-                if not user_message:
-                    language = getattr(req, 'language', 'en')
-                    user_message = (
-                        "模型不存在，请检查配置。" if language == 'zh'
-                        else "Model not found. Please check configuration."
-                    )
-                error_data = {
-                    'event': 'error',
-                    'error_type': 'model_not_found',
-                    'message': user_message
-                }
-                yield f"data: {json.dumps(error_data)}\n\n"
-
-            except LLMAccessDeniedError as e:
-                logger.warning("[NodePalette-API] Next batch access denied | Session: %s | Error: %s",
-                             session_id[:8], str(e))
-                user_message = getattr(e, 'user_message', None)
-                if not user_message:
-                    language = getattr(req, 'language', 'en')
-                    user_message = (
-                        "访问被拒绝，请检查权限。" if language == 'zh'
-                        else "Access denied. Please check permissions."
-                    )
-                error_data = {
-                    'event': 'error',
-                    'error_type': 'access_denied',
-                    'message': user_message
-                }
-                yield f"data: {json.dumps(error_data)}\n\n"
-
-            except LLMServiceError as e:
-                logger.error("[NodePalette-API] Next batch LLM service error | Session: %s | Error: %s",
-                            session_id[:8], str(e))
-                user_message = getattr(e, 'user_message', None)
-                if not user_message:
-                    language = getattr(req, 'language', 'en')
-                    user_message = (
-                        "AI服务错误，请稍后重试。" if language == 'zh'
-                        else "AI service error. Please try again later."
-                    )
-                error_data = {
-                    'event': 'error',
-                    'error_type': 'service_error',
-                    'message': user_message
-                }
-                yield f"data: {json.dumps(error_data)}\n\n"
-
-            except Exception as e:
-                logger.error("[NodePalette-API] Next batch error | Session: %s | Error: %s",
-                            session_id[:8], str(e), exc_info=True)
-                # Fallback for unknown errors
-                language = getattr(req, 'language', 'en')
-                user_message = "出现问题，请重试。" if language == 'zh' else "Something went wrong. Please try again."
-                yield f"data: {json.dumps({'event': 'error', 'error_type': 'unknown', 'message': user_message})}\n\n"
-
         return StreamingResponse(
-            generate(),
+            stream_node_palette(
+                req=req,
+                session_id=session_id,
+                center_topic=req.center_topic,
+                generator=generator,
+                current_user=current_user,
+                endpoint_path='/thinking_mode/node_palette/next_batch',
+                log_prefix="[NodePalette-API] Next batch",
+            ),
             media_type='text/event-stream',
             headers={
                 'Cache-Control': 'no-cache',

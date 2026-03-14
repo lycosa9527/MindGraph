@@ -8,6 +8,7 @@ import { toPng, toSvg } from 'html-to-image'
 import { jsPDF } from 'jspdf'
 
 import { useNotifications } from '@/composables'
+import { apiRequest } from '@/utils/apiClient'
 
 function sanitizeFilename(name: string): string {
   return name.replace(/[/\\?%*:|"<>]/g, '-').trim() || 'diagram'
@@ -27,6 +28,15 @@ function triggerDownloadBlob(blob: Blob, filename: string): void {
   link.href = url
   link.click()
   URL.revokeObjectURL(url)
+}
+
+function logDiagramExport(format: string): void {
+  apiRequest('/api/activity/diagram_export', {
+    method: 'POST',
+    body: JSON.stringify({ format }),
+  }).catch(() => {
+    /* Fire-and-forget; do not fail export if log fails */
+  })
 }
 
 export interface UseDiagramExportOptions {
@@ -61,6 +71,7 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
       const timestamp = new Date().toISOString().slice(0, 10)
       triggerDownload(dataUrl, `${baseName}_${timestamp}.png`)
 
+      logDiagramExport('png')
       notify.success(isZh() ? 'PNG图片导出成功' : 'PNG exported successfully')
     } catch (error) {
       console.error('PNG export failed:', error)
@@ -88,6 +99,7 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
       const timestamp = new Date().toISOString().slice(0, 10)
       triggerDownload(dataUrl, `${baseName}_${timestamp}.svg`)
 
+      logDiagramExport('svg')
       notify.success(isZh() ? 'SVG导出成功' : 'SVG exported successfully')
     } catch (error) {
       console.error('SVG export failed:', error)
@@ -130,6 +142,7 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
       const timestamp = new Date().toISOString().slice(0, 10)
       pdf.save(`${baseName}_${timestamp}.pdf`)
 
+      logDiagramExport('pdf')
       notify.success(isZh() ? 'PDF导出成功' : 'PDF exported successfully')
     } catch (error) {
       console.error('PDF export failed:', error)
@@ -154,6 +167,7 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
       const timestamp = new Date().toISOString().slice(0, 10)
       triggerDownloadBlob(blob, `${baseName}_${timestamp}.json`)
 
+      logDiagramExport('json')
       notify.success(isZh() ? 'JSON导出成功' : 'JSON exported successfully')
     } catch (error) {
       console.error('JSON export failed:', error)

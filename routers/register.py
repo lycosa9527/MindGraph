@@ -16,7 +16,7 @@ from routers.admin import env_router as admin_env, logs_router as admin_logs, re
 from routers.core import pages, cache, update_notification
 from routers.core.vue_spa import router as vue_spa
 from routers.core.health import router as health_router
-from routers.features import voice, school_zone, askonce, gewe
+from routers.features import voice, school_zone, askonce
 
 logger = logging.getLogger(__name__)
 
@@ -40,6 +40,16 @@ if config.FEATURE_DEBATEVERSE:
         logger.debug("[RouterRegistration] Failed to import debateverse router: %s", e, exc_info=True)
 else:
     logger.debug("[RouterRegistration] DebateVerse feature disabled via FEATURE_DEBATEVERSE flag")
+
+GEWE_MODULE = None
+if config.FEATURE_GEWE:
+    try:
+        from routers.features.gewe import router as GEWE_MODULE
+    except Exception as e:
+        GEWE_MODULE = None
+        logger.debug("[RouterRegistration] Failed to import gewe router: %s", e, exc_info=True)
+else:
+    logger.debug("[RouterRegistration] Gewe feature disabled via FEATURE_GEWE flag")
 
 
 def register_routers(app: FastAPI) -> None:
@@ -83,7 +93,17 @@ def register_routers(app: FastAPI) -> None:
             logger.debug("[RouterRegistration] Library feature disabled via FEATURE_LIBRARY flag")
 
     # Gewe WeChat integration (admin only) - must be before vue_spa
-    app.include_router(gewe)
+    if GEWE_MODULE is not None:
+        app.include_router(GEWE_MODULE)
+        logger.info("[RouterRegistration] Gewe router registered at /api/gewe")
+    else:
+        if config.FEATURE_GEWE:
+            logger.warning(
+                "[RouterRegistration] Gewe router NOT registered - import failed or router is None. "
+                "Check DEBUG logs for details."
+            )
+        else:
+            logger.debug("[RouterRegistration] Gewe feature disabled via FEATURE_GEWE flag")
 
     # Vue SPA handles all page routes (v5.0.0+) - MUST be registered AFTER API routes
     app.include_router(vue_spa)

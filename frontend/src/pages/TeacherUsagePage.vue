@@ -79,6 +79,8 @@ interface Teacher {
   id: number
   username: string
   diagrams: number
+  conceptGen: number
+  relationshipLabels: number
   tokens: number
   lastActive: string
 }
@@ -138,10 +140,42 @@ const modalTitle = ref('')
 const modalStatCardType = ref<StatCardType | null>(null)
 const showUserChartModal = ref(false)
 const selectedUser = ref<Teacher | null>(null)
-const userChartWeeklyTokens = ref<number[]>([])
 const userChartLoading = ref(false)
 const userChartRef = ref<HTMLDivElement | null>(null)
 let userChart: echarts.ECharts | null = null
+
+const activeTab = ref('overview')
+const allUsers = ref<Teacher[]>([])
+const allUsersLoading = ref(false)
+const usersTotal = ref(0)
+const usersPage = ref(1)
+const usersPageSize = 50
+interface WeeklyDataPoint {
+  date: string
+  tokens: number
+}
+
+interface ActivityTrendPoint {
+  date: string
+  editCount: number
+  exportCount: number
+  autocompleteCount: number
+}
+
+interface UserDetailData {
+  diagrams: number
+  conceptGen: number
+  relationshipLabels: number
+  weeklyData: WeeklyDataPoint[]
+  activityTrends: ActivityTrendPoint[]
+  tokenStats: {
+    today: { input_tokens: number; output_tokens: number; total_tokens: number }
+    week: { input_tokens: number; output_tokens: number; total_tokens: number }
+    month: { input_tokens: number; output_tokens: number; total_tokens: number }
+    total: { input_tokens: number; output_tokens: number; total_tokens: number }
+  }
+}
+const userDetailData = ref<UserDetailData | null>(null)
 
 function getTeachersForStatCard(type: StatCardType): Teacher[] {
   switch (type) {
@@ -187,17 +221,29 @@ function openTeachersModal(type: StatCardType) {
 
 async function openUserChart(row: Teacher) {
   selectedUser.value = row
-  userChartWeeklyTokens.value = []
+  userDetailData.value = null
   showUserChartModal.value = true
   userChartLoading.value = true
   try {
-    const response = await apiRequest(`auth/admin/teacher-usage/user/${row.id}/weekly-tokens`)
+    const response = await apiRequest(`auth/admin/teacher-usage/user/${row.id}/detail`)
     if (response.ok) {
       const data = await response.json()
-      userChartWeeklyTokens.value = data.weeklyTokens ?? []
+      userDetailData.value = {
+        diagrams: data.diagrams ?? 0,
+        conceptGen: data.conceptGen ?? 0,
+        relationshipLabels: data.relationshipLabels ?? 0,
+        weeklyData: data.weeklyData ?? [],
+        activityTrends: data.activityTrends ?? [],
+        tokenStats: data.tokenStats ?? {
+          today: { input_tokens: 0, output_tokens: 0, total_tokens: 0 },
+          week: { input_tokens: 0, output_tokens: 0, total_tokens: 0 },
+          month: { input_tokens: 0, output_tokens: 0, total_tokens: 0 },
+          total: { input_tokens: 0, output_tokens: 0, total_tokens: 0 },
+        },
+      }
     }
   } catch (error) {
-    console.error('Failed to load user tokens:', error)
+    console.error('Failed to load user detail:', error)
     notify.error(isZh.value ? '加载失败' : 'Load failed')
   } finally {
     userChartLoading.value = false
@@ -208,25 +254,90 @@ function initUserChart() {
   if (!userChartRef.value || !showUserChartModal.value) return
   userChart?.dispose()
   userChart = echarts.init(userChartRef.value)
-  const weeks = userChartWeeklyTokens.value.map((_, i) => `W${i + 1}`)
+  const data = userDetailData.value
+  const activityTrends = data?.activityTrends ?? []
+  const dates = activityTrends.map((d) => d.date)
+  const editCounts = activityTrends.map((d) => d.editCount)
+  const exportCounts = activityTrends.map((d) => d.exportCount)
+  const autocompleteCounts = activityTrends.map((d) => d.autocompleteCount)
+  const hasData = dates.length > 0
   userChart.setOption({
+    title: {
+      text: isZh.value ? '每日修改/导出/自动生成趋势' : 'Daily Edit/Export/AutoGen Trend',
+      left: 'center',
+    },
     tooltip: {
       trigger: 'axis',
-      valueFormatter: (value: number) => formatNumber(value),
     },
-    xAxis: { type: 'category', data: weeks.length ? weeks : ['-'] },
+    legend: {
+      data: [
+        isZh.value ? '每日修改次数' : 'Edits',
+        isZh.value ? '导出次数' : 'Exports',
+        isZh.value ? '自动生成次数' : 'AutoGen',
+      ],
+      top: 28,
+    },
+    xAxis: {
+      type: 'category',
+      data: hasData ? dates : [isZh.value ? '暂无数据' : 'No data'],
+      axisLabel: { rotate: dates.length > 14 ? 45 : 0 },
+    },
     yAxis: {
       type: 'value',
-      axisLabel: { formatter: (value: number) => formatNumber(value) },
+      axisLabel: { formatter: (value: number) => String(Math.round(value)) },
     },
     series: [
       {
+        name: isZh.value ? '每日修改次数' : 'Edits',
         type: 'line',
-        data: userChartWeeklyTokens.value.length ? userChartWeeklyTokens.value : [0],
+        data: hasData ? editCounts : [0],
+        smooth: true,
+      },
+      {
+        name: isZh.value ? '导出次数' : 'Exports',
+        type: 'line',
+        data: hasData ? exportCounts : [0],
+        smooth: true,
+      },
+      {
+        name: isZh.value ? '自动生成次数' : 'AutoGen',
+        type: 'line',
+        data: hasData ? autocompleteCounts : [0],
         smooth: true,
       },
     ],
   })
+}
+
+async function loadAllUsers(page = 1) {
+  allUsersLoading.value = true
+  try {
+    const response = await apiRequest(
+      `auth/admin/teacher-usage/users?page=${page}&page_size=${usersPageSize}`
+    )
+    if (response.ok) {
+      const data = await response.json()
+      allUsers.value = data.users ?? []
+      usersTotal.value = data.total ?? 0
+      usersPage.value = data.page ?? page
+    } else {
+      notify.error(isZh.value ? '加载用户列表失败' : 'Failed to load users')
+    }
+  } catch (error) {
+    console.error('Failed to load users:', error)
+    notify.error(isZh.value ? '加载用户列表失败' : 'Failed to load users')
+  } finally {
+    allUsersLoading.value = false
+  }
+}
+
+function onUsersPageChange(page: number) {
+  usersPage.value = page
+  loadAllUsers(page)
+}
+
+function openUserDetailFromList(row: Teacher) {
+  openUserChart(row)
 }
 
 function closeUserChartModal() {
@@ -234,6 +345,7 @@ function closeUserChartModal() {
   userChart?.dispose()
   userChart = null
   selectedUser.value = null
+  userDetailData.value = null
 }
 
 function onUserChartModalOpened() {
@@ -511,9 +623,13 @@ watch(expandedGroupIds, async () => {
 watch(isZh, () => {
   initPieChart()
   initBarChart()
+  if (showUserChartModal.value && userChartRef.value) {
+    initUserChart()
+    userChart?.resize()
+  }
 })
 
-watch([userChartWeeklyTokens, userChartLoading], async ([, loading]) => {
+watch([userDetailData, userChartLoading], async ([, loading]) => {
   if (!loading && showUserChartModal.value) {
     await nextTick()
     setTimeout(() => {
@@ -522,6 +638,12 @@ watch([userChartWeeklyTokens, userChartLoading], async ([, loading]) => {
         userChart?.resize()
       }
     }, 150)
+  }
+})
+
+watch(activeTab, (tab) => {
+  if (tab === 'teachers') {
+    loadAllUsers(usersPage.value)
   }
 })
 
@@ -556,8 +678,8 @@ onBeforeUnmount(() => {
       </h1>
       <el-button
         size="small"
-        :loading="isLoading"
-        @click="loadTeacherUsage"
+        :loading="isLoading || allUsersLoading"
+        @click="activeTab === 'overview' ? loadTeacherUsage() : loadAllUsers(usersPage)"
       >
         {{ isZh ? '刷新' : 'Refresh' }}
       </el-button>
@@ -565,121 +687,122 @@ onBeforeUnmount(() => {
 
     <!-- Scrollable content -->
     <div class="teacher-usage-content flex-1 overflow-y-auto px-6 pt-6 pb-6">
-      <div
-        v-if="isLoading"
-        class="flex items-center justify-center py-20"
-      >
-        <el-icon
-          class="is-loading"
-          :size="32"
-          ><Loading
-        /></el-icon>
-      </div>
-
-      <template v-else>
-        <div class="max-w-7xl mx-auto">
-          <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
-            <el-card
-              shadow="hover"
-              class="stat-card stat-card-clickable"
-              @click="openTeachersModal('total')"
-            >
-              <p class="text-xs text-gray-500 mb-1">
-                {{ isZh ? '总教师数' : 'Total Teachers' }}
-              </p>
-              <p class="text-2xl font-bold text-gray-800 dark:text-white">
-                {{ stats.totalTeachers.toLocaleString() }}
-              </p>
-            </el-card>
-            <el-card
-              shadow="hover"
-              class="stat-card stat-card-clickable"
-              @click="openTeachersModal('unused')"
-            >
-              <p class="text-xs text-gray-500 mb-1">
-                {{ isZh ? '未使用' : 'Unused' }}
-              </p>
-              <p class="text-2xl font-bold text-gray-500 dark:text-gray-400">
-                {{ stats.unused }}
-              </p>
-            </el-card>
-            <el-card
-              shadow="hover"
-              class="stat-card stat-card-clickable"
-              @click="openTeachersModal('continuous')"
-            >
-              <p class="text-xs text-gray-500 mb-1">
-                {{ isZh ? '持续使用' : 'Continuous Usage' }}
-              </p>
-              <p class="text-2xl font-bold text-green-600 dark:text-green-400">
-                {{ stats.continuous }}
-              </p>
-            </el-card>
-            <el-card
-              shadow="hover"
-              class="stat-card stat-card-clickable"
-              @click="openTeachersModal('rejection')"
-            >
-              <p class="text-xs text-gray-500 mb-1">
-                {{ isZh ? '拒绝使用' : 'Rejection' }}
-              </p>
-              <p class="text-2xl font-bold text-orange-600 dark:text-orange-400">
-                {{ stats.rejection }}
-              </p>
-            </el-card>
-            <el-card
-              shadow="hover"
-              class="stat-card stat-card-clickable"
-              @click="openTeachersModal('stopped')"
-            >
-              <p class="text-xs text-gray-500 mb-1">
-                {{ isZh ? '停止使用' : 'Stopped Usage' }}
-              </p>
-              <p class="text-2xl font-bold text-red-600 dark:text-red-400">
-                {{ stats.stopped }}
-              </p>
-            </el-card>
-            <el-card
-              shadow="hover"
-              class="stat-card stat-card-clickable"
-              @click="openTeachersModal('intermittent')"
-            >
-              <p class="text-xs text-gray-500 mb-1">
-                {{ isZh ? '间歇式使用' : 'Intermittent Usage' }}
-              </p>
-              <p class="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                {{ stats.intermittent }}
-              </p>
-            </el-card>
+      <el-tabs v-model="activeTab" class="teacher-usage-tabs">
+        <el-tab-pane :label="isZh ? '概况' : 'Overview'" name="overview">
+          <div
+            v-if="isLoading"
+            class="flex items-center justify-center py-20"
+          >
+            <el-icon
+              class="is-loading"
+              :size="32"
+              ><Loading
+            /></el-icon>
           </div>
 
-          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-            <el-card shadow="hover">
-              <template #header>
-                <span class="font-medium">
-                  {{ isZh ? '教师分组分布' : 'Group Distribution' }}
-                </span>
-              </template>
-              <div
-                ref="pieChartRef"
-                class="h-64"
-              />
-            </el-card>
-            <el-card shadow="hover">
-              <template #header>
-                <span class="font-medium">
-                  {{ isZh ? '各组 Token 使用量' : 'Token Usage by Group' }}
-                </span>
-              </template>
-              <div
-                ref="barChartRef"
-                class="h-64"
-              />
-            </el-card>
-          </div>
+          <div v-else class="max-w-7xl mx-auto">
+              <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
+                <el-card
+                  shadow="hover"
+                  class="stat-card stat-card-clickable"
+                  @click="openTeachersModal('total')"
+                >
+                  <p class="text-xs text-gray-500 mb-1">
+                    {{ isZh ? '总教师数' : 'Total Teachers' }}
+                  </p>
+                  <p class="text-2xl font-bold text-gray-800 dark:text-white">
+                    {{ stats.totalTeachers.toLocaleString() }}
+                  </p>
+                </el-card>
+                    <el-card
+                  shadow="hover"
+                  class="stat-card stat-card-clickable"
+                  @click="openTeachersModal('unused')"
+                >
+                  <p class="text-xs text-gray-500 mb-1">
+                    {{ isZh ? '未使用' : 'Unused' }}
+                  </p>
+                  <p class="text-2xl font-bold text-gray-500 dark:text-gray-400">
+                    {{ stats.unused }}
+                  </p>
+                </el-card>
+                <el-card
+                  shadow="hover"
+                  class="stat-card stat-card-clickable"
+                  @click="openTeachersModal('continuous')"
+                >
+                  <p class="text-xs text-gray-500 mb-1">
+                    {{ isZh ? '持续使用' : 'Continuous Usage' }}
+                  </p>
+                  <p class="text-2xl font-bold text-green-600 dark:text-green-400">
+                    {{ stats.continuous }}
+                  </p>
+                </el-card>
+                <el-card
+                  shadow="hover"
+                  class="stat-card stat-card-clickable"
+                  @click="openTeachersModal('rejection')"
+                >
+                  <p class="text-xs text-gray-500 mb-1">
+                    {{ isZh ? '拒绝使用' : 'Rejection' }}
+                  </p>
+                  <p class="text-2xl font-bold text-orange-600 dark:text-orange-400">
+                    {{ stats.rejection }}
+                  </p>
+                </el-card>
+                <el-card
+                  shadow="hover"
+                  class="stat-card stat-card-clickable"
+                  @click="openTeachersModal('stopped')"
+                >
+                  <p class="text-xs text-gray-500 mb-1">
+                    {{ isZh ? '停止使用' : 'Stopped Usage' }}
+                  </p>
+                  <p class="text-2xl font-bold text-red-600 dark:text-red-400">
+                    {{ stats.stopped }}
+                  </p>
+                </el-card>
+                <el-card
+                  shadow="hover"
+                  class="stat-card stat-card-clickable"
+                  @click="openTeachersModal('intermittent')"
+                >
+                  <p class="text-xs text-gray-500 mb-1">
+                    {{ isZh ? '间歇式使用' : 'Intermittent Usage' }}
+                  </p>
+                  <p class="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                    {{ stats.intermittent }}
+                  </p>
+                </el-card>
+              </div>
 
-          <!-- Diagram cards: Total, 未使用, 持续使用, then 非持续使用 box with 3 sub-cards -->
-          <div class="space-y-4">
+              <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                <el-card shadow="hover">
+                  <template #header>
+                    <span class="font-medium">
+                      {{ isZh ? '教师分组分布' : 'Group Distribution' }}
+                    </span>
+                  </template>
+                  <div
+                    ref="pieChartRef"
+                    class="h-64"
+                  />
+                </el-card>
+                <el-card shadow="hover">
+                  <template #header>
+                    <span class="font-medium">
+                      {{ isZh ? '各组 Token 使用量' : 'Token Usage by Group' }}
+                    </span>
+                  </template>
+                  <div
+                    ref="barChartRef"
+                    class="h-64"
+                  />
+                </el-card>
+              </div>
+
+              <!-- Diagram cards: Total, 未使用, 持续使用, then 非持续使用 box with 3 sub-cards -->
+              <div class="space-y-4">
             <!-- Total -->
             <el-card
               shadow="hover"
@@ -729,7 +852,17 @@ onBeforeUnmount(() => {
                       />
                       <el-table-column
                         prop="diagrams"
-                        :label="isZh ? '智能补全次数' : 'Auto-complete Count'"
+                        :label="isZh ? '智能补全次数' : 'Auto-complete'"
+                        width="80"
+                      />
+                      <el-table-column
+                        prop="conceptGen"
+                        :label="isZh ? '概念生成' : 'Concept Gen'"
+                        width="80"
+                      />
+                      <el-table-column
+                        prop="relationshipLabels"
+                        :label="isZh ? '关系标签' : 'Rel Labels'"
                         width="80"
                       />
                       <el-table-column
@@ -812,7 +945,17 @@ onBeforeUnmount(() => {
                       />
                       <el-table-column
                         prop="diagrams"
-                        :label="isZh ? '智能补全次数' : 'Auto-complete Count'"
+                        :label="isZh ? '智能补全次数' : 'Auto-complete'"
+                        width="80"
+                      />
+                      <el-table-column
+                        prop="conceptGen"
+                        :label="isZh ? '概念生成' : 'Concept Gen'"
+                        width="80"
+                      />
+                      <el-table-column
+                        prop="relationshipLabels"
+                        :label="isZh ? '关系标签' : 'Rel Labels'"
                         width="80"
                       />
                       <el-table-column
@@ -902,7 +1045,17 @@ onBeforeUnmount(() => {
                           />
                           <el-table-column
                             prop="diagrams"
-                            :label="isZh ? '智能补全次数' : 'Auto-complete Count'"
+                            :label="isZh ? '智能补全次数' : 'Auto-complete'"
+                            width="80"
+                          />
+                          <el-table-column
+                            prop="conceptGen"
+                            :label="isZh ? '概念生成' : 'Concept Gen'"
+                            width="80"
+                          />
+                          <el-table-column
+                            prop="relationshipLabels"
+                            :label="isZh ? '关系标签' : 'Rel Labels'"
                             width="80"
                           />
                           <el-table-column
@@ -935,9 +1088,78 @@ onBeforeUnmount(() => {
                 </el-card>
               </div>
             </div>
+            </div>
           </div>
-        </div>
-      </template>
+        </el-tab-pane>
+
+        <el-tab-pane :label="isZh ? '教师情况' : 'Teachers'" name="teachers">
+          <div
+            v-if="allUsersLoading"
+            class="flex items-center justify-center py-20"
+          >
+            <el-icon
+              class="is-loading"
+              :size="32"
+              ><Loading
+            /></el-icon>
+          </div>
+          <div
+            v-else
+            class="max-w-5xl"
+          >
+            <el-table
+              :data="allUsers"
+              stripe
+              size="small"
+              class="teachers-list-table"
+              @row-click="(row: Teacher) => openUserDetailFromList(row)"
+            >
+              <el-table-column
+                prop="username"
+                :label="isZh ? '教师' : 'Teacher'"
+                width="180"
+              />
+              <el-table-column
+                prop="diagrams"
+                :label="isZh ? '智能补全' : 'Auto-complete'"
+                width="100"
+              />
+              <el-table-column
+                prop="conceptGen"
+                :label="isZh ? '概念生成' : 'Concept Gen'"
+                width="100"
+              />
+              <el-table-column
+                prop="relationshipLabels"
+                :label="isZh ? '关系标签' : 'Rel Labels'"
+                width="100"
+              />
+              <el-table-column
+                prop="tokens"
+                :label="isZh ? 'Token' : 'Tokens'"
+                width="120"
+              >
+                <template #default="{ row }">
+                  {{ formatNumber(row.tokens) }}
+                </template>
+              </el-table-column>
+              <el-table-column
+                prop="lastActive"
+                :label="isZh ? '最后活跃' : 'Last Active'"
+              />
+            </el-table>
+            <div class="mt-4 flex justify-end">
+              <el-pagination
+                v-model:current-page="usersPage"
+                :page-size="usersPageSize"
+                :total="usersTotal"
+                layout="prev, pager, next, total"
+                @current-change="onUsersPageChange"
+              />
+            </div>
+          </div>
+        </el-tab-pane>
+      </el-tabs>
     </div>
 
     <!-- Teachers list modal -->
@@ -1134,7 +1356,17 @@ onBeforeUnmount(() => {
         />
         <el-table-column
           prop="diagrams"
-          :label="isZh ? '智能补全次数' : 'Auto-complete Count'"
+          :label="isZh ? '智能补全次数' : 'Auto-complete'"
+          width="90"
+        />
+        <el-table-column
+          prop="conceptGen"
+          :label="isZh ? '概念生成' : 'Concept Gen'"
+          width="90"
+        />
+        <el-table-column
+          prop="relationshipLabels"
+          :label="isZh ? '关系标签' : 'Rel Labels'"
           width="90"
         />
         <el-table-column
@@ -1161,11 +1393,11 @@ onBeforeUnmount(() => {
       </template>
     </el-dialog>
 
-    <!-- User token usage chart modal -->
+    <!-- User detail modal: chart (3 numbers) + token tracking cards -->
     <el-dialog
       v-model="showUserChartModal"
       :title="selectedUser ? selectedUser.username : ''"
-      width="600px"
+      width="640px"
       append-to-body
       destroy-on-close
       @close="closeUserChartModal"
@@ -1181,11 +1413,61 @@ onBeforeUnmount(() => {
           ><Loading
         /></el-icon>
       </div>
-      <div
-        v-else
-        ref="userChartRef"
-        class="user-chart-container"
-      />
+      <template v-else>
+        <div
+          ref="userChartRef"
+          class="user-chart-container mb-6"
+        />
+        <div
+          v-if="userDetailData"
+          class="grid grid-cols-2 md:grid-cols-4 gap-4"
+        >
+          <el-card
+            shadow="hover"
+            class="token-stat-card"
+          >
+            <p class="text-xs text-gray-500 mb-1">
+              {{ isZh ? '今日' : 'Today' }}
+            </p>
+            <p class="text-lg font-semibold">
+              {{ formatNumber(userDetailData.tokenStats.today.total_tokens) }}
+            </p>
+          </el-card>
+          <el-card
+            shadow="hover"
+            class="token-stat-card"
+          >
+            <p class="text-xs text-gray-500 mb-1">
+              {{ isZh ? '本周' : 'This Week' }}
+            </p>
+            <p class="text-lg font-semibold">
+              {{ formatNumber(userDetailData.tokenStats.week.total_tokens) }}
+            </p>
+          </el-card>
+          <el-card
+            shadow="hover"
+            class="token-stat-card"
+          >
+            <p class="text-xs text-gray-500 mb-1">
+              {{ isZh ? '本月' : 'This Month' }}
+            </p>
+            <p class="text-lg font-semibold">
+              {{ formatNumber(userDetailData.tokenStats.month.total_tokens) }}
+            </p>
+          </el-card>
+          <el-card
+            shadow="hover"
+            class="token-stat-card"
+          >
+            <p class="text-xs text-gray-500 mb-1">
+              {{ isZh ? '总计' : 'Total' }}
+            </p>
+            <p class="text-lg font-semibold">
+              {{ formatNumber(userDetailData.tokenStats.total.total_tokens) }}
+            </p>
+          </el-card>
+        </div>
+      </template>
       <template #footer>
         <el-button
           type="primary"
@@ -1224,6 +1506,14 @@ onBeforeUnmount(() => {
 }
 
 .teachers-table-clickable :deep(.el-table__row:hover) {
+  background-color: rgb(245 245 244) !important;
+}
+
+.teachers-list-table :deep(.el-table__row) {
+  cursor: pointer;
+}
+
+.teachers-list-table :deep(.el-table__row:hover) {
   background-color: rgb(245 245 244) !important;
 }
 

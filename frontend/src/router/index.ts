@@ -40,7 +40,7 @@ const routes: RouteRecordRaw[] = [
     path: '/admin',
     name: 'Admin',
     component: () => import('@/pages/AdminPage.vue'),
-    meta: { requiresAuth: true, requiresAdmin: true, layout: 'admin' },
+    meta: { requiresAuth: true, requiresAdmin: true, layout: 'main' },
   },
   {
     path: '/login',
@@ -83,6 +83,12 @@ const routes: RouteRecordRaw[] = [
     name: 'SchoolZone',
     component: () => import('@/pages/SchoolZonePage.vue'),
     meta: { requiresAuth: true, requiresOrganization: true, layout: 'main' },
+  },
+  {
+    path: '/school-dashboard',
+    name: 'SchoolDashboard',
+    component: () => import('@/pages/SchoolDashboardPage.vue'),
+    meta: { requiresAuth: true, requiresAdminOrManager: true, layout: 'main' },
   },
   {
     path: '/askonce',
@@ -199,6 +205,7 @@ router.beforeEach(async (to, _from, next) => {
     to.name === 'SchoolZone' ||
     to.name === 'KnowledgeSpace' ||
     to.name === 'Library' ||
+    to.name === 'Gewe' ||
     to.name === 'SmartResponse' ||
     to.name === 'TeacherUsage'
   if (needsFeatureFlags) {
@@ -231,6 +238,11 @@ router.beforeEach(async (to, _from, next) => {
 
   // Check admin access (admin-only, not managers)
   if (to.meta.requiresAdmin && !authStore.isAdmin) {
+    return next({ name: 'MindMate' })
+  }
+
+  // Check admin or manager access (school dashboard)
+  if (to.meta.requiresAdminOrManager && !authStore.isAdminOrManager) {
     return next({ name: 'MindMate' })
   }
 
@@ -268,6 +280,9 @@ router.beforeEach(async (to, _from, next) => {
     return next({ name: 'MindMate' })
   }
   if (to.name === 'Library' && !featureFlagsStore.getFeatureLibrary()) {
+    return next({ name: 'MindMate' })
+  }
+  if (to.name === 'Gewe' && !featureFlagsStore.getFeatureGewe()) {
     return next({ name: 'MindMate' })
   }
   if (to.name === 'SmartResponse' && !featureFlagsStore.getFeatureSmartResponse()) {

@@ -18,6 +18,7 @@ interface FeatureFlagsResponse {
   feature_debateverse: boolean
   feature_knowledge_space: boolean
   feature_library: boolean
+  feature_gewe: boolean
   feature_smart_response: boolean
   feature_teacher_usage: boolean
 }
@@ -57,6 +58,7 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
           feature_debateverse: false,
           feature_knowledge_space: false,
           feature_library: false,
+          feature_gewe: false,
           feature_smart_response: false,
           feature_teacher_usage: false,
         }
@@ -85,6 +87,7 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
         feature_debateverse: false,
         feature_knowledge_space: false,
         feature_library: false,
+        feature_gewe: false,
         feature_smart_response: false,
         feature_teacher_usage: false,
       }
@@ -135,6 +138,10 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
     return flags.value?.feature_library ?? false
   }
 
+  function getFeatureGewe(): boolean {
+    return flags.value?.feature_gewe ?? false
+  }
+
   function getFeatureSmartResponse(): boolean {
     return flags.value?.feature_smart_response ?? false
   }
@@ -165,6 +172,7 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
     getFeatureDebateverse,
     getFeatureKnowledgeSpace,
     getFeatureLibrary,
+    getFeatureGewe,
     getFeatureSmartResponse,
     getFeatureTeacherUsage,
     init,

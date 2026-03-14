@@ -32,8 +32,8 @@ def is_admin(current_user) -> bool:
     Returns:
         True if user is admin, False otherwise
     """
-    # Check database role field
-    if hasattr(current_user, 'role') and current_user.role == 'admin':
+    # Check database role field (admin or superadmin)
+    if hasattr(current_user, 'role') and current_user.role in ('admin', 'superadmin'):
         return True
 
     # Check ADMIN_PHONES list (production admins)

@@ -286,7 +286,12 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
 
   async function updateDiagram(
     diagramId: string,
-    updates: { title?: string; spec?: Record<string, unknown>; thumbnail?: string }
+    updates: {
+      title?: string
+      spec?: Record<string, unknown>
+      thumbnail?: string
+      edit_count?: number
+    }
   ): Promise<boolean> {
     if (!authStore.isAuthenticated) return false
 
@@ -516,7 +521,8 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
     diagramType: string,
     spec: Record<string, unknown>,
     language: string = 'zh',
-    thumbnail: string | null = null
+    thumbnail: string | null = null,
+    editCount: number = 0
   ): Promise<AutoSaveResult> {
     if (!authStore.isAuthenticated) {
       return { success: false, action: 'skipped', error: 'Not authenticated' }
@@ -527,11 +533,16 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
     try {
       // Case 1: Diagram is already saved - update it
       if (activeDiagramId.value !== null) {
-        const updated = await updateDiagram(activeDiagramId.value, {
-          title,
-          spec,
-          thumbnail: thumbnail || undefined,
-        })
+        const updates: {
+          title: string
+          spec: Record<string, unknown>
+          thumbnail?: string
+          edit_count?: number
+        } = { title, spec, thumbnail: thumbnail || undefined }
+        if (editCount > 0) {
+          updates.edit_count = editCount
+        }
+        const updated = await updateDiagram(activeDiagramId.value, updates)
 
         if (updated) {
           return { success: true, action: 'updated', diagramId: activeDiagramId.value }
@@ -592,7 +603,15 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
       getDefaultDiagramName(diagramStore.type, true)
 
     try {
-      await autoSaveDiagram(title, diagramStore.type, spec, 'zh', null)
+      await autoSaveDiagram(
+        title,
+        diagramStore.type,
+        spec,
+        'zh',
+        null,
+        diagramStore.sessionEditCount
+      )
+      diagramStore.resetSessionEditCount()
     } catch (e) {
       console.error('[SavedDiagrams] Save-before-replace error:', e)
     }

@@ -9,19 +9,21 @@ Admin-only endpoint for teacher engagement classification:
 Reads from user_usage_stats (pre-computed). Groups: unused, continuous,
 rejection, stopped, intermittent.
 """
-from datetime import timedelta, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 from sqlalchemy import func
 from sqlalchemy.orm import Session
+from sqlalchemy.sql.functions import count as sql_count
 
 from config.database import get_db
 from models.domain.auth import User
 from models.domain.token_usage import TokenUsage
+from models.domain.user_activity_log import UserActivityLog
 from models.domain.user_usage_stats import UserUsageStats
-from routers.auth.helpers import get_beijing_now
+from routers.auth.helpers import BEIJING_TIMEZONE, get_beijing_now
 from services.teacher_usage_stats import (
     get_classification_config,
     save_classification_config,
@@ -131,7 +133,7 @@ async def get_teacher_usage(
     user_autocomplete_count: dict[int, int] = {}
     if teacher_ids:
         autocomplete_rows = (
-            db.query(TokenUsage.user_id, func.count(TokenUsage.id).label("cnt"))
+            db.query(TokenUsage.user_id, sql_count(TokenUsage.id).label("cnt"))
             .filter(
                 TokenUsage.user_id.in_(teacher_ids),
                 TokenUsage.request_type == "autocomplete",
@@ -143,6 +145,37 @@ async def get_teacher_usage(
         user_autocomplete_count = {
             int(r.user_id): int(r.cnt or 0) for r in autocomplete_rows
         }
+
+    user_concept_gen_count: dict[int, int] = {}
+    user_rel_labels_count: dict[int, int] = {}
+    if teacher_ids:
+        try:
+            concept_gen_rows = (
+                db.query(UserActivityLog.user_id, sql_count(UserActivityLog.id).label("cnt"))
+                .filter(
+                    UserActivityLog.user_id.in_(teacher_ids),
+                    UserActivityLog.activity_type == "concept_generation",
+                )
+                .group_by(UserActivityLog.user_id)
+                .all()
+            )
+            user_concept_gen_count = {
+                int(r.user_id): int(r.cnt or 0) for r in concept_gen_rows
+            }
+            rel_labels_rows = (
+                db.query(UserActivityLog.user_id, sql_count(UserActivityLog.id).label("cnt"))
+                .filter(
+                    UserActivityLog.user_id.in_(teacher_ids),
+                    UserActivityLog.activity_type == "relationship_labels",
+                )
+                .group_by(UserActivityLog.user_id)
+                .all()
+            )
+            user_rel_labels_count = {
+                int(r.user_id): int(r.cnt or 0) for r in rel_labels_rows
+            }
+        except Exception:
+            pass
 
     groups: dict[str, list[dict[str, Any]]] = {gid: [] for gid in GROUP_IDS}
 
@@ -156,6 +189,8 @@ async def get_teacher_usage(
                 "id": user.id,
                 "username": user.name or user.phone or str(user.id),
                 "diagrams": user_autocomplete_count.get(user.id, 0),
+                "conceptGen": user_concept_gen_count.get(user.id, 0),
+                "relationshipLabels": user_rel_labels_count.get(user.id, 0),
                 "tokens": user_token_total.get(user.id, 0),
                 "lastActive": last_str,
             }
@@ -210,6 +245,106 @@ async def get_teacher_usage(
 
 
 @router.get(
+    "/admin/teacher-usage/users",
+    dependencies=[Depends(require_admin)],
+)
+async def get_teacher_usage_users(
+    db: Session = Depends(get_db),
+    page: int = Query(1, ge=1, description="Page number"),
+    page_size: int = Query(50, ge=1, le=100, description="Items per page"),
+) -> dict[str, Any]:
+    """List teachers with usage stats, paginated (ADMIN ONLY)."""
+    teachers = db.query(User).filter(User.role == "user").all()
+    teacher_ids = [u.id for u in teachers]
+    user_token_total: dict[int, int] = {}
+    user_last_active: dict[int, Any] = {}
+    user_autocomplete_count: dict[int, int] = {}
+    user_concept_gen_count: dict[int, int] = {}
+    user_rel_labels_count: dict[int, int] = {}
+    if teacher_ids:
+        token_rows = (
+            db.query(
+                TokenUsage.user_id,
+                func.sum(TokenUsage.total_tokens).label("total"),
+                func.max(TokenUsage.created_at).label("last_at"),
+            )
+            .filter(
+                TokenUsage.user_id.in_(teacher_ids),
+                TokenUsage.success.is_(True),
+            )
+            .group_by(TokenUsage.user_id)
+            .all()
+        )
+        user_token_total = {r.user_id: int(r.total or 0) for r in token_rows}
+        user_last_active = {r.user_id: r.last_at for r in token_rows}
+        autocomplete_rows = (
+            db.query(TokenUsage.user_id, sql_count(TokenUsage.id).label("cnt"))
+            .filter(
+                TokenUsage.user_id.in_(teacher_ids),
+                TokenUsage.request_type == "autocomplete",
+                TokenUsage.success.is_(True),
+            )
+            .group_by(TokenUsage.user_id)
+            .all()
+        )
+        user_autocomplete_count = {
+            int(r.user_id): int(r.cnt or 0) for r in autocomplete_rows
+        }
+        try:
+            concept_gen_rows = (
+                db.query(UserActivityLog.user_id, sql_count(UserActivityLog.id).label("cnt"))
+                .filter(
+                    UserActivityLog.user_id.in_(teacher_ids),
+                    UserActivityLog.activity_type == "concept_generation",
+                )
+                .group_by(UserActivityLog.user_id)
+                .all()
+            )
+            user_concept_gen_count = {
+                int(r.user_id): int(r.cnt or 0) for r in concept_gen_rows
+            }
+            rel_labels_rows = (
+                db.query(UserActivityLog.user_id, sql_count(UserActivityLog.id).label("cnt"))
+                .filter(
+                    UserActivityLog.user_id.in_(teacher_ids),
+                    UserActivityLog.activity_type == "relationship_labels",
+                )
+                .group_by(UserActivityLog.user_id)
+                .all()
+            )
+            user_rel_labels_count = {
+                int(r.user_id): int(r.cnt or 0) for r in rel_labels_rows
+            }
+        except Exception:
+            pass
+    total = len(teachers)
+    start = (page - 1) * page_size
+    end = start + page_size
+    paginated = teachers[start:end]
+    users_list = []
+    for user in paginated:
+        last_at = user_last_active.get(user.id)
+        last_str = last_at.strftime("%Y-%m-%d") if last_at else ""
+        users_list.append(
+            {
+                "id": user.id,
+                "username": user.name or user.phone or str(user.id),
+                "diagrams": user_autocomplete_count.get(user.id, 0),
+                "conceptGen": user_concept_gen_count.get(user.id, 0),
+                "relationshipLabels": user_rel_labels_count.get(user.id, 0),
+                "tokens": user_token_total.get(user.id, 0),
+                "lastActive": last_str,
+            }
+        )
+    return {
+        "users": users_list,
+        "total": total,
+        "page": page,
+        "pageSize": page_size,
+    }
+
+
+@router.get(
     "/admin/teacher-usage/user/{user_id}/weekly-tokens",
     dependencies=[Depends(require_admin)],
 )
@@ -250,6 +385,223 @@ async def get_user_weekly_tokens(
         "userId": user_id,
         "username": user.name or user.phone or str(user_id),
         "weeklyTokens": weekly_tokens,
+    }
+
+
+@router.get(
+    "/admin/teacher-usage/user/{user_id}/detail",
+    dependencies=[Depends(require_admin)],
+)
+async def get_user_detail(
+    user_id: int,
+    db: Session = Depends(get_db),
+) -> dict[str, Any]:
+    """Get user detail with usage metrics and token stats (ADMIN ONLY)."""
+    user = db.query(User).filter(User.id == user_id, User.role == "user").first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    beijing_now = get_beijing_now()
+    beijing_today = beijing_now.replace(hour=0, minute=0, second=0, microsecond=0)
+    today_start = beijing_today.astimezone(timezone.utc).replace(tzinfo=None)
+    week_ago = (
+        (beijing_today - timedelta(days=7))
+        .astimezone(timezone.utc)
+        .replace(tzinfo=None)
+    )
+    month_ago = (
+        (beijing_today - timedelta(days=30))
+        .astimezone(timezone.utc)
+        .replace(tzinfo=None)
+    )
+    cutoff_90d = (
+        (beijing_today - timedelta(days=90))
+        .astimezone(timezone.utc)
+        .replace(tzinfo=None)
+    )
+    diagrams = 0
+    concept_gen = 0
+    rel_labels = 0
+    weekly_data: list[dict[str, Any]] = []
+    activity_trends: list[dict[str, Any]] = []
+    token_stats = {
+        "today": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0},
+        "week": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0},
+        "month": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0},
+        "total": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0},
+    }
+    try:
+        ac_row = (
+            db.query(sql_count(TokenUsage.id).label("cnt"))
+            .filter(
+                TokenUsage.user_id == user_id,
+                TokenUsage.request_type == "autocomplete",
+                TokenUsage.success.is_(True),
+            )
+            .first()
+        )
+        diagrams = int(ac_row.cnt or 0) if ac_row else 0
+        cg_row = (
+            db.query(sql_count(UserActivityLog.id).label("cnt"))
+            .filter(
+                UserActivityLog.user_id == user_id,
+                UserActivityLog.activity_type == "concept_generation",
+            )
+            .first()
+        )
+        concept_gen = int(cg_row.cnt or 0) if cg_row else 0
+        rl_row = (
+            db.query(sql_count(UserActivityLog.id).label("cnt"))
+            .filter(
+                UserActivityLog.user_id == user_id,
+                UserActivityLog.activity_type == "relationship_labels",
+            )
+            .first()
+        )
+        rel_labels = int(rl_row.cnt or 0) if rl_row else 0
+
+        activity_trends = []
+        beijing_start = (
+            (beijing_today - timedelta(days=90))
+            .astimezone(timezone.utc)
+            .replace(tzinfo=None)
+        )
+        date_list = []
+        current = beijing_today - timedelta(days=90)
+        while current <= beijing_now:
+            date_list.append(current.date())
+            current += timedelta(days=1)
+
+        edit_by_date: dict[str, int] = {}
+        export_by_date: dict[str, int] = {}
+        autocomplete_by_date: dict[str, int] = {}
+
+        edit_rows = (
+            db.query(
+                func.date(UserActivityLog.created_at).label("d"),
+                sql_count(UserActivityLog.id).label("cnt"),
+            )
+            .filter(
+                UserActivityLog.user_id == user_id,
+                UserActivityLog.activity_type == "diagram_edit",
+                UserActivityLog.created_at >= beijing_start,
+            )
+            .group_by(func.date(UserActivityLog.created_at))
+            .all()
+        )
+        for row in edit_rows:
+            utc_date = row.d
+            if isinstance(utc_date, str):
+                utc_date = datetime.strptime(utc_date, "%Y-%m-%d").date()
+            utc_dt = datetime.combine(utc_date, datetime.min.time())
+            beijing_dt = utc_dt.replace(tzinfo=timezone.utc).astimezone(BEIJING_TIMEZONE)
+            edit_by_date[str(beijing_dt.date())] = int(row.cnt or 0)
+
+        export_rows = (
+            db.query(
+                func.date(UserActivityLog.created_at).label("d"),
+                sql_count(UserActivityLog.id).label("cnt"),
+            )
+            .filter(
+                UserActivityLog.user_id == user_id,
+                UserActivityLog.activity_type == "diagram_export",
+                UserActivityLog.created_at >= beijing_start,
+            )
+            .group_by(func.date(UserActivityLog.created_at))
+            .all()
+        )
+        for row in export_rows:
+            utc_date = row.d
+            if isinstance(utc_date, str):
+                utc_date = datetime.strptime(utc_date, "%Y-%m-%d").date()
+            utc_dt = datetime.combine(utc_date, datetime.min.time())
+            beijing_dt = utc_dt.replace(tzinfo=timezone.utc).astimezone(BEIJING_TIMEZONE)
+            export_by_date[str(beijing_dt.date())] = int(row.cnt or 0)
+
+        ac_rows = (
+            db.query(
+                func.date(TokenUsage.created_at).label("d"),
+                sql_count(TokenUsage.id).label("cnt"),
+            )
+            .filter(
+                TokenUsage.user_id == user_id,
+                TokenUsage.request_type == "autocomplete",
+                TokenUsage.success.is_(True),
+                TokenUsage.created_at >= beijing_start,
+            )
+            .group_by(func.date(TokenUsage.created_at))
+            .all()
+        )
+        for row in ac_rows:
+            utc_date = row.d
+            if isinstance(utc_date, str):
+                utc_date = datetime.strptime(utc_date, "%Y-%m-%d").date()
+            utc_dt = datetime.combine(utc_date, datetime.min.time())
+            beijing_dt = utc_dt.replace(tzinfo=timezone.utc).astimezone(BEIJING_TIMEZONE)
+            autocomplete_by_date[str(beijing_dt.date())] = int(row.cnt or 0)
+
+        for d in date_list:
+            date_str = str(d)
+            activity_trends.append(
+                {
+                    "date": date_str,
+                    "editCount": edit_by_date.get(date_str, 0),
+                    "exportCount": export_by_date.get(date_str, 0),
+                    "autocompleteCount": autocomplete_by_date.get(date_str, 0),
+                }
+            )
+
+        weekly_rows = (
+            db.query(
+                func.date_trunc("week", TokenUsage.created_at).label("week"),
+                func.sum(TokenUsage.total_tokens).label("total"),
+            )
+            .filter(
+                TokenUsage.user_id == user_id,
+                TokenUsage.success.is_(True),
+                TokenUsage.created_at >= cutoff_90d,
+            )
+            .group_by(func.date_trunc("week", TokenUsage.created_at))
+            .order_by(func.date_trunc("week", TokenUsage.created_at))
+            .all()
+        )
+        for r in weekly_rows:
+            week_dt = r.week
+            date_str = week_dt.strftime("%Y-%m-%d") if week_dt else ""
+            weekly_data.append({"date": date_str, "tokens": int(r.total or 0)})
+        for period, start_ts in [
+            ("today", today_start),
+            ("week", week_ago),
+            ("month", month_ago),
+            ("total", None),
+        ]:
+            q = db.query(
+                func.sum(TokenUsage.input_tokens).label("input_tokens"),
+                func.sum(TokenUsage.output_tokens).label("output_tokens"),
+                func.sum(TokenUsage.total_tokens).label("total_tokens"),
+            ).filter(
+                TokenUsage.user_id == user_id,
+                TokenUsage.success.is_(True),
+            )
+            if start_ts is not None:
+                q = q.filter(TokenUsage.created_at >= start_ts)
+            row = q.first()
+            if row:
+                token_stats[period] = {
+                    "input_tokens": int(row.input_tokens or 0),
+                    "output_tokens": int(row.output_tokens or 0),
+                    "total_tokens": int(row.total_tokens or 0),
+                }
+    except Exception:
+        pass
+    return {
+        "userId": user_id,
+        "username": user.name or user.phone or str(user_id),
+        "diagrams": diagrams,
+        "conceptGen": concept_gen,
+        "relationshipLabels": rel_labels,
+        "weeklyData": weekly_data,
+        "activityTrends": activity_trends,
+        "tokenStats": token_stats,
     }
 
 

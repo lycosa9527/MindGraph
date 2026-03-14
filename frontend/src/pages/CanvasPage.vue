@@ -502,6 +502,43 @@ eventBus.onWithOwner(
 )
 eventBus.onWithOwner('diagram:type_changed', () => panelsStore.clearNodePaletteState(), 'CanvasPage')
 
+// Track content edits for teacher usage analytics (add/delete/change nodes)
+eventBus.onWithOwner(
+  'diagram:node_added',
+  () => {
+    diagramStore.sessionEditCount += 1
+  },
+  'CanvasPage'
+)
+eventBus.onWithOwner(
+  'diagram:node_updated',
+  () => {
+    diagramStore.sessionEditCount += 1
+  },
+  'CanvasPage'
+)
+eventBus.onWithOwner(
+  'diagram:nodes_deleted',
+  (data: { nodeIds?: string[] }) => {
+    diagramStore.sessionEditCount += data?.nodeIds?.length ?? 1
+  },
+  'CanvasPage'
+)
+eventBus.onWithOwner(
+  'diagram:position_changed',
+  () => {
+    diagramStore.sessionEditCount += 1
+  },
+  'CanvasPage'
+)
+eventBus.onWithOwner(
+  'diagram:style_changed',
+  () => {
+    diagramStore.sessionEditCount += 1
+  },
+  'CanvasPage'
+)
+
 // Watch for diagram type changes in store
 watch(
   () => uiStore.selectedChartType,
@@ -580,8 +617,13 @@ async function performAutoSave(): Promise<void> {
       diagramStore.type,
       spec,
       isZh.value ? 'zh' : 'en',
-      null // TODO: Generate thumbnail
+      null, // TODO: Generate thumbnail
+      diagramStore.sessionEditCount
     )
+
+    if (result.success) {
+      diagramStore.resetSessionEditCount()
+    }
 
     // Log result for debugging (can be removed in production)
     if (result.success) {
@@ -655,6 +697,7 @@ watch(
 
 // Load diagram from library if diagramId is in query
 async function loadDiagramFromLibrary(diagramId: string): Promise<void> {
+  diagramStore.resetSessionEditCount()
   const diagram = await savedDiagramsStore.getDiagram(diagramId)
   if (diagram) {
     // Set active diagram ID

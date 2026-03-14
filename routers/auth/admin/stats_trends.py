@@ -15,13 +15,14 @@ from typing import Optional, Dict, Any
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
-from sqlalchemy import func
+from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 
 from config.database import get_db
 from models.domain.auth import User, Organization
 from models.domain.token_usage import TokenUsage
-from ..dependencies import get_language_dependency, require_admin
+from ..dependencies import get_language_dependency, require_admin, require_admin_or_manager
+from .stats import _resolve_school_org_id
 from ..helpers import get_beijing_now, BEIJING_TIMEZONE
 from .stats import _sql_count
 
@@ -35,11 +36,15 @@ async def get_stats_trends_admin(
     _request: Request,
     metric: str,  # 'users', 'organizations', 'registrations', 'tokens'
     days: Optional[int] = 30,  # Number of days to look back
+    service: Optional[str] = None,  # For tokens: 'mindgraph' | 'mindmate' to filter by service
     _current_user: User = Depends(require_admin),
     db: Session = Depends(get_db),
     _lang: str = Depends(get_language_dependency)
 ) -> Dict[str, Any]:
     """Get time-series trends data for dashboard charts (ADMIN ONLY)"""
+    # service filter only applies when metric is 'tokens'
+    service_filter = service if metric == 'tokens' else None
+
     # Special case: days=0 means all-time (no limit)
     all_time = False
     if days == 0:
@@ -211,6 +216,7 @@ async def get_stats_trends_admin(
 
     elif metric == 'tokens':
         # Daily token usage (non-cumulative)
+        # Optional service filter: mindgraph | mindmate (matches token-stats breakdown)
         try:
             token_counts_query = db.query(
                 func.date(TokenUsage.created_at).label('date'),
@@ -220,9 +226,22 @@ async def get_stats_trends_admin(
             ).filter(
                 TokenUsage.success
             )
+            if service_filter == 'mindmate':
+                token_counts_query = token_counts_query.filter(
+                    TokenUsage.request_type == 'mindmate'
+                )
+            elif service_filter == 'mindgraph':
+                token_counts_query = token_counts_query.filter(
+                    or_(
+                        TokenUsage.request_type != 'mindmate',
+                        TokenUsage.request_type.is_(None)
+                    )
+                )
             # Apply date filter only if not all-time query
             if start_date_utc is not None:
-                token_counts_query = token_counts_query.filter(TokenUsage.created_at >= start_date_utc)
+                token_counts_query = token_counts_query.filter(
+                    TokenUsage.created_at >= start_date_utc
+                )
             token_counts = token_counts_query.group_by(
                 func.date(TokenUsage.created_at)
             ).all()
@@ -273,6 +292,40 @@ async def get_stats_trends_admin(
         "days": days,
         "data": trends_data
     }
+
+
+@router.get("/admin/stats/school/trends", dependencies=[Depends(require_admin_or_manager)])
+async def get_school_token_trends(
+    request: Request,
+    organization_id: Optional[int] = None,
+    days: Optional[int] = 30,
+    hourly: bool = False,
+    current_user: User = Depends(require_admin_or_manager),
+    db: Session = Depends(get_db),
+    lang: str = Depends(get_language_dependency)
+) -> Dict[str, Any]:
+    """
+    Get token trends for a school (ADMIN or MANAGER).
+    Same as /admin/stats/trends/organization but with org access control.
+    """
+    org_id = _resolve_school_org_id(organization_id, current_user)
+    org = db.query(Organization).filter(Organization.id == org_id).first()
+    if not org:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Organization not found"
+        )
+    result = await get_organization_token_trends_admin(
+        _request=request,
+        organization_id=org_id,
+        organization_name=None,
+        days=days,
+        hourly=hourly,
+        _current_user=current_user,
+        db=db,
+        _lang=lang
+    )
+    return result
 
 
 @router.get("/admin/stats/trends/organization", dependencies=[Depends(require_admin)])

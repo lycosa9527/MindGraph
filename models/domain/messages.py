@@ -776,6 +776,16 @@ class Messages:
             "en": "Name cannot contain numbers",
             "az": "Ad rəqəmlər ehtiva edə bilməz"
         },
+        "invalid_role": {
+            "zh": "无效的角色：{}。有效值：user, manager, admin",
+            "en": "Invalid role: {}. Valid values: user, manager, admin",
+            "az": "Etibarsız rol: {}. Etibarlı dəyərlər: user, manager, admin"
+        },
+        "cannot_remove_last_admin": {
+            "zh": "无法移除最后一位管理员，系统至少需要一位管理员",
+            "en": "Cannot remove the last admin. At least one admin is required",
+            "az": "Son admini silmək mümkün deyil. Ən azı bir admin tələb olunur"
+        },
         "cannot_delete_own_account": {
             "zh": "无法删除您自己的账户",
             "en": "Cannot delete your own account",
@@ -924,6 +934,16 @@ class Messages:
             "zh": "用户 {} 已成功解锁",
             "en": "User {} unlocked successfully",
             "az": "İstifadəçi {} uğurla kilidlənmədi"
+        },
+        "admin_role_granted": {
+            "zh": "已授予 {} 管理员权限",
+            "en": "Admin role granted to {}",
+            "az": "{} üçün admin rolu verildi"
+        },
+        "admin_role_revoked": {
+            "zh": "已移除 {} 的管理员权限",
+            "en": "Admin role revoked from {}",
+            "az": "{} üçün admin rolu ləğv edildi"
         },
         "settings_updated": {
             "zh": "设置更新成功",

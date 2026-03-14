@@ -175,6 +175,14 @@ class FeaturesConfigMixin:
         return self._get_cached_value('FEATURE_LIBRARY', 'False').lower() == 'true'
 
     @property
+    def FEATURE_GEWE(self):
+        """Enable Gewe WeChat integration (admin only).
+        
+        Disabled by default. Set FEATURE_GEWE=True in .env to enable.
+        """
+        return self._get_cached_value('FEATURE_GEWE', 'False').lower() == 'true'
+
+    @property
     def FEATURE_SMART_RESPONSE(self):
         """Enable Smart Response (智回) ESP32 watch teacher interface.
         

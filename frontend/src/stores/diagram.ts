@@ -219,6 +219,13 @@ export const useDiagramStore = defineStore('diagram', () => {
   // Clipboard for copy/paste
   const copiedNodes = ref<DiagramNode[]>([])
 
+  // Session edit count for teacher usage analytics (add/delete/change nodes)
+  const sessionEditCount = ref(0)
+
+  function resetSessionEditCount(): void {
+    sessionEditCount.value = 0
+  }
+
   // Getters
   const canUndo = computed(() => historyIndex.value > 0)
   const canRedo = computed(() => historyIndex.value < history.value.length - 1)
@@ -1575,6 +1582,7 @@ export const useDiagramStore = defineStore('diagram', () => {
   function loadFromSpec(spec: Record<string, unknown>, diagramTypeValue: DiagramType): boolean {
     if (!spec || !diagramTypeValue) return false
 
+    resetSessionEditCount()
     useConceptMapRelationshipStore().clearAll()
 
     // Set diagram type
@@ -2279,6 +2287,8 @@ export const useDiagramStore = defineStore('diagram', () => {
     historyIndex,
     title,
     isUserEditedTitle,
+    sessionEditCount,
+    resetSessionEditCount,
 
     // Getters
     canUndo,

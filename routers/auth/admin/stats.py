@@ -17,13 +17,14 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy import func, and_
 from sqlalchemy.orm import Session
 from sqlalchemy.sql.elements import ColumnElement
+from sqlalchemy.sql.functions import count as sql_count
 
 from config.database import get_db
 from models.domain.auth import User, Organization
 from models.domain.token_usage import TokenUsage
 from utils.auth import get_current_user, is_admin
 
-from ..dependencies import get_language_dependency, require_admin
+from ..dependencies import get_language_dependency, require_admin, require_admin_or_manager
 from ..helpers import get_beijing_now, get_beijing_today_start_utc
 
 logger = logging.getLogger(__name__)
@@ -32,9 +33,8 @@ router = APIRouter()
 
 
 def _sql_count(column: Any) -> ColumnElement:
-    """Helper function to call func.count for SQLAlchemy queries."""
-    count_func = getattr(func, 'count')
-    return count_func(column)
+    """Helper function to call count for SQLAlchemy queries."""
+    return sql_count(column)
 
 
 @router.get("/admin/status")
@@ -167,6 +167,192 @@ async def get_stats_admin(
         "token_stats": token_stats,  # Global token stats
         "token_stats_by_org": token_stats_by_org  # Per-organization TOTAL token stats (all time)
     }
+
+
+@router.get("/admin/stats/school", dependencies=[Depends(require_admin_or_manager)])
+async def get_school_stats(
+    organization_id: Optional[int] = None,
+    current_user: User = Depends(require_admin_or_manager),
+    db: Session = Depends(get_db),
+    _lang: str = Depends(get_language_dependency)
+) -> Dict[str, Any]:
+    """
+    Get school-scoped statistics (ADMIN or MANAGER).
+
+    Managers: organization_id must be their own org (or omitted to use their org).
+    Admins: organization_id required to select which school to view.
+    """
+    effective_org_id = organization_id
+    if is_admin(current_user):
+        if effective_org_id is None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="organization_id required for admin"
+            )
+    else:
+        effective_org_id = current_user.organization_id
+        if effective_org_id is None:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Manager must belong to an organization"
+            )
+        if organization_id is not None and organization_id != effective_org_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Manager can only view their own organization"
+            )
+
+    org = db.query(Organization).filter(Organization.id == effective_org_id).first()
+    if not org:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Organization not found"
+        )
+
+    today_start = get_beijing_today_start_utc()
+    beijing_now = get_beijing_now()
+    beijing_today_start = beijing_now.replace(hour=0, minute=0, second=0, microsecond=0)
+    week_ago = (beijing_today_start - timedelta(days=7)).astimezone(timezone.utc).replace(tzinfo=None)
+
+    total_users = db.query(User).filter(User.organization_id == effective_org_id).count()
+    recent_registrations = db.query(User).filter(
+        User.organization_id == effective_org_id,
+        User.created_at >= today_start
+    ).count()
+
+    token_stats = {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}
+    token_stats_by_org = {}
+    users_by_org = {org.name: total_users}
+    top_users = []
+
+    try:
+        week_token_stats = db.query(
+            func.sum(TokenUsage.input_tokens).label('input_tokens'),
+            func.sum(TokenUsage.output_tokens).label('output_tokens'),
+            func.sum(TokenUsage.total_tokens).label('total_tokens')
+        ).filter(
+            TokenUsage.organization_id == effective_org_id,
+            TokenUsage.created_at >= week_ago,
+            TokenUsage.success
+        ).first()
+
+        if week_token_stats:
+            token_stats = {
+                "input_tokens": int(week_token_stats.input_tokens or 0),
+                "output_tokens": int(week_token_stats.output_tokens or 0),
+                "total_tokens": int(week_token_stats.total_tokens or 0)
+            }
+
+        org_token_stats = db.query(
+            func.coalesce(func.sum(TokenUsage.input_tokens), 0).label('input_tokens'),
+            func.coalesce(func.sum(TokenUsage.output_tokens), 0).label('output_tokens'),
+            func.coalesce(func.sum(TokenUsage.total_tokens), 0).label('total_tokens')
+        ).filter(
+            TokenUsage.organization_id == effective_org_id,
+            TokenUsage.success
+        ).first()
+
+        if org_token_stats:
+            token_stats_by_org[org.name] = {
+                "org_id": org.id,
+                "input_tokens": int(org_token_stats.input_tokens or 0),
+                "output_tokens": int(org_token_stats.output_tokens or 0),
+                "total_tokens": int(org_token_stats.total_tokens or 0),
+                "request_count": 0
+            }
+
+        top_users_query = db.query(
+            User.id,
+            User.phone,
+            User.name,
+            func.coalesce(func.sum(TokenUsage.total_tokens), 0).label('total_tokens')
+        ).outerjoin(
+            TokenUsage,
+            and_(
+                User.id == TokenUsage.user_id,
+                TokenUsage.success
+            )
+        ).filter(
+            User.organization_id == effective_org_id
+        ).group_by(
+            User.id,
+            User.phone,
+            User.name
+        ).order_by(
+            func.coalesce(func.sum(TokenUsage.total_tokens), 0).desc()
+        ).limit(10).all()
+
+        top_users = []
+        for u in top_users_query:
+            masked_phone = u.phone
+            if u.phone and len(u.phone) == 11:
+                masked_phone = u.phone[:3] + "****" + u.phone[-4:]
+            top_users.append({
+                "id": u.id,
+                "phone": masked_phone,
+                "name": u.name or u.phone,
+                "total_tokens": int(u.total_tokens or 0)
+            })
+    except (ImportError, Exception) as e:
+        logger.debug("TokenUsage not available: %s", e)
+
+    return {
+        "organization": {"id": org.id, "name": org.name, "code": org.code},
+        "total_users": total_users,
+        "recent_registrations": recent_registrations,
+        "token_stats": token_stats,
+        "token_stats_by_org": token_stats_by_org,
+        "users_by_org": users_by_org,
+        "top_users": top_users,
+    }
+
+
+def _resolve_school_org_id(
+    organization_id: Optional[int],
+    current_user: User,
+) -> int:
+    """Resolve effective org_id for school endpoints. Raises HTTPException on invalid access."""
+    if is_admin(current_user):
+        if organization_id is None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="organization_id required for admin"
+            )
+        return organization_id
+    effective = current_user.organization_id
+    if effective is None:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Manager must belong to an organization"
+        )
+    if organization_id is not None and organization_id != effective:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Manager can only view their own organization"
+        )
+    return effective
+
+
+@router.get("/admin/stats/school/token-stats", dependencies=[Depends(require_admin_or_manager)])
+async def get_school_token_stats(
+    request: Request,
+    organization_id: Optional[int] = None,
+    current_user: User = Depends(require_admin_or_manager),
+    db: Session = Depends(get_db),
+    lang: str = Depends(get_language_dependency)
+) -> Dict[str, Any]:
+    """
+    Get token stats for a school (ADMIN or MANAGER).
+    Same structure as /admin/token-stats with organization_id filter.
+    """
+    org_id = _resolve_school_org_id(organization_id, current_user)
+    return await get_token_stats_admin(
+        _request=request,
+        organization_id=org_id,
+        _current_user=current_user,
+        db=db,
+        _lang=lang
+    )
 
 
 @router.get("/admin/token-stats", dependencies=[Depends(require_admin)])

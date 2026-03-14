@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.37.0] - 2026-03-15
+
+### Added
+- **Admin Page Tabs**: Refactored Admin page into tabbed layout—AdminDashboardTab, AdminRolesTab, AdminSchoolsTab, AdminUsersTab, AdminTrendChartModal for better organization.
+- **School Dashboard Page**: New SchoolDashboardPage.vue with route `/school-dashboard` and sidebar integration.
+- **Admin Roles Router**: New `routers/auth/admin/roles.py` for role management endpoints.
+- **Activity API**: New `routers/api/activity.py` for activity tracking.
+- **Node Palette Streaming**: New `routers/node_palette_streaming.py` for streaming node palette generation.
+- **Backfill Teacher Activity Logs**: New `scripts/db/backfill_teacher_activity_logs.py` for one-time backfill of teacher activity data.
+
+### Changed
+- **Admin Backend**: Enhanced stats, stats_trends, teacher_usage, and organizations routers with additional functionality.
+- **TeacherUsagePage**: Major refactor with improved layout and integration.
+- **useLanguage Composable**: Extended with additional language utilities and translations.
+- **AppSidebar**: Added school-dashboard navigation item.
+- **Feature Flags**: Updates to features_config, useFeatureFlags, and featureFlags store.
+- **Diagram Export, EventBus, Diagram Store, SavedDiagrams**: Integration and state handling updates.
+- **Node Palette Router**: Refactored with streaming support; simplified implementation.
+- **CanvasPage, Config, Models, Auth Utils**: Minor updates and improvements.
+
 ## [5.36.0] - 2026-03-14
 
 ### Changed

@@ -18,6 +18,7 @@ Proprietary License
 """
 
 from datetime import datetime
+
 import io
 import logging
 
@@ -26,7 +27,9 @@ from fastapi.responses import Response
 import qrcode
 from qrcode import constants as qrcode_constants
 from PIL import Image
+from sqlalchemy.orm import Session
 
+from config.database import get_db
 from models.domain.auth import User
 from models.requests.requests_diagram import DiagramCreateRequest, DiagramUpdateRequest
 from models.responses import DiagramListItem, DiagramListResponse, DiagramResponse
@@ -34,7 +37,7 @@ from services.redis.cache.redis_diagram_cache import get_diagram_cache
 from services.workshop import workshop_service
 from utils.auth import get_current_user
 
-from .helpers import check_endpoint_rate_limit, get_rate_limit_identifier
+from .helpers import check_endpoint_rate_limit, get_rate_limit_identifier, log_diagram_edit
 
 logger = logging.getLogger(__name__)
 
@@ -197,6 +200,7 @@ async def update_diagram(
     req: DiagramUpdateRequest,
     request: Request,
     current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
 ):
     """
     Update an existing diagram.
@@ -246,6 +250,9 @@ async def update_diagram(
     logger.info(
         "[Diagrams] Updated diagram %s for user %s", diagram_id, current_user.id
     )
+
+    edit_count = getattr(req, "edit_count", None)
+    log_diagram_edit(current_user, db, count=edit_count if edit_count else 1)
 
     return DiagramResponse(
         id=diagram["id"],
@@ -502,8 +509,8 @@ async def get_workshop_status(
 
 @router.post("/workshop/join")
 async def join_workshop(
+    request: Request,
     code: str = Query(..., description="Workshop code (xxx-xxx format)"),
-    request: Request = None,
     current_user: User = Depends(get_current_user),
 ):
     """

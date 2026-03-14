@@ -1,6 +1,7 @@
 """
 helpers module.
 """
+from datetime import datetime, timezone
 from typing import Optional
 import base64
 import hashlib
@@ -9,10 +10,36 @@ import logging
 import time
 
 from fastapi import HTTPException, Request
+from sqlalchemy.orm import Session
 
 from models.domain.auth import User
+from models.domain.user_activity_log import UserActivityLog
 from services.redis.rate_limiting.redis_rate_limiter import RedisRateLimiter
 from utils.auth import get_jwt_secret
+
+_logger = logging.getLogger(__name__)
+
+
+def log_diagram_edit(user: User, db: Session, count: int = 1) -> None:
+    """Log diagram_edit events to UserActivityLog for teacher usage tracking."""
+    if getattr(user, "role", None) != "user" or count < 1:
+        return
+    try:
+        now = datetime.now(timezone.utc)
+        for _ in range(min(count, 1000)):
+            log_entry = UserActivityLog(
+                user_id=user.id,
+                activity_type="diagram_edit",
+                created_at=now,
+            )
+            db.add(log_entry)
+        db.commit()
+    except Exception as exc:
+        _logger.debug("Failed to log diagram_edit: %s", exc)
+        try:
+            db.rollback()
+        except Exception:
+            pass
 
 
 def get_rate_limit_identifier(current_user: Optional[User], request: Request) -> str:
@@ -28,9 +55,8 @@ def get_rate_limit_identifier(current_user: Optional[User], request: Request) ->
     """
     if current_user and hasattr(current_user, 'id'):
         return f"user:{current_user.id}"
-    else:
-        client_ip = request.client.host if request.client else 'unknown'
-        return f"ip:{client_ip}"
+    client_ip = request.client.host if request.client else 'unknown'
+    return f"ip:{client_ip}"
 
 
 async def check_endpoint_rate_limit(
