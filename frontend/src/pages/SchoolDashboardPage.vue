@@ -7,7 +7,14 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import { ChatDotRound, Connection, Loading, Refresh, TrendCharts, User, Warning } from '@element-plus/icons-vue'
 
-import { Chart, type ChartConfiguration } from 'chart.js/auto'
+import {
+  Chart,
+  registerables,
+  type ChartConfiguration,
+  type TooltipItem,
+} from 'chart.js'
+
+Chart.register(...registerables)
 
 import { useLanguage, useNotifications } from '@/composables'
 import { useAuthStore } from '@/stores'
@@ -259,7 +266,8 @@ function renderTrendChart(data: { data: Array<{ date: string; value: number; inp
         legend: { display: hasInputOutput, position: 'top' },
         tooltip: {
           callbacks: {
-            label: (ctx) => `${ctx.dataset.label}: ${formatChartLabel(Number(ctx.raw))}`,
+            label: (ctx: TooltipItem<'line'>) =>
+              `${ctx.dataset.label}: ${formatChartLabel(Number(ctx.raw))}`,
           },
         },
       },
@@ -268,7 +276,7 @@ function renderTrendChart(data: { data: Array<{ date: string; value: number; inp
           beginAtZero: false,
           min: yMin,
           max: yMax,
-          ticks: { callback: (val) => formatChartLabel(Number(val)) },
+          ticks: { callback: (val: string | number) => formatChartLabel(Number(val)) },
         },
         x: { ticks: { maxRotation: 45, minRotation: 45 } },
       },

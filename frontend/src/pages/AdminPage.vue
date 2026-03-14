@@ -9,7 +9,14 @@
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
-import { Chart, type ChartConfiguration } from 'chart.js/auto'
+import {
+  Chart,
+  registerables,
+  type ChartConfiguration,
+  type TooltipItem,
+} from 'chart.js'
+
+Chart.register(...registerables)
 
 import AdminDashboardTab from '@/components/admin/AdminDashboardTab.vue'
 import AdminRolesTab from '@/components/admin/AdminRolesTab.vue'
@@ -308,7 +315,7 @@ function renderTokenTrendChart(
         legend: { display: hasInputOutput, position: 'top' },
         tooltip: {
           callbacks: {
-            label: (ctx) =>
+            label: (ctx: TooltipItem<'line'>) =>
               `${ctx.dataset.label}: ${formatChartLabel(Number(ctx.raw))}`,
           },
         },
@@ -318,7 +325,7 @@ function renderTokenTrendChart(
           beginAtZero: false,
           min: yMin,
           max: yMax,
-          ticks: { callback: (val) => formatChartLabel(Number(val)) },
+          ticks: { callback: (val: string | number) => formatChartLabel(Number(val)) },
         },
         x: { ticks: { maxRotation: 45, minRotation: 45 } },
       },

@@ -7,7 +7,14 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 
 import { Connection, Document, Loading, TrendCharts, User } from '@element-plus/icons-vue'
 
-import { Chart, type ChartConfiguration } from 'chart.js/auto'
+import {
+  Chart,
+  registerables,
+  type ChartConfiguration,
+  type TooltipItem,
+} from 'chart.js'
+
+Chart.register(...registerables)
 
 import { useLanguage, useNotifications } from '@/composables'
 import { apiRequest } from '@/utils/apiClient'
@@ -352,7 +359,7 @@ function renderTrendChart(
         },
         tooltip: {
           callbacks: {
-            label: (ctx) =>
+            label: (ctx: TooltipItem<'line'>) =>
               `${ctx.dataset.label}: ${formatChartLabel(Number(ctx.raw))}`,
           },
         },
@@ -363,7 +370,7 @@ function renderTrendChart(
           min: yMin,
           max: yMax,
           ticks: {
-            callback: (val) => formatChartLabel(Number(val)),
+            callback: (val: string | number) => formatChartLabel(Number(val)),
           },
         },
         x: {
