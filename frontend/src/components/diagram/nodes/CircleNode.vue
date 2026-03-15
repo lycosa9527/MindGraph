@@ -8,6 +8,8 @@
  */
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 
+import { Handle, Position } from '@vue-flow/core'
+
 import { eventBus } from '@/composables/useEventBus'
 import { getBorderStyleProps } from '@/utils/borderStyleUtils'
 import { useTheme } from '@/composables/useTheme'
@@ -44,6 +46,9 @@ const isCircularTopic = computed(
 const isCapsuleNode = computed(
   () => diagramStore.type === 'double_bubble_map' && !isTopicNode.value
 )
+
+// Double bubble map: show handles for curved edge connections at node boundary
+const isDoubleBubbleMap = computed(() => diagramStore.type === 'double_bubble_map')
 const capsuleWidth = computed(() => props.data.style?.width ?? circleSize.value)
 const capsuleHeight = computed(() => props.data.style?.height ?? circleSize.value)
 
@@ -185,9 +190,17 @@ function handleEditCancel() {
       isTopicNode ? 'cursor-default' : 'cursor-grab',
       isTopicNode ? 'topic-circle' : 'context-circle',
       isCapsuleNode ? 'circle-node--capsule' : '',
+      isDoubleBubbleMap ? 'circle-node--with-handles' : '',
     ]"
     :style="nodeStyle"
   >
+    <!-- Handles for double bubble map curved edges (connect at node boundary) -->
+    <template v-if="isDoubleBubbleMap">
+      <Handle :position="Position.Left" id="left" />
+      <Handle :position="Position.Right" id="right" />
+      <Handle :position="Position.Top" id="top" />
+      <Handle :position="Position.Bottom" id="bottom" />
+    </template>
     <div
       class="circle-node__text-wrapper"
       :class="{ 'circle-node__text-wrapper--nowrap': diagramStore.type === 'double_bubble_map' }"
@@ -254,5 +267,13 @@ function handleEditCancel() {
 
 .topic-circle:hover {
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+}
+
+/* Hide handle dots for double bubble map (handles are for connection points only) */
+.circle-node--with-handles :deep(.vue-flow__handle) {
+  width: 0;
+  height: 0;
+  border: none;
+  background: transparent;
 }
 </style>

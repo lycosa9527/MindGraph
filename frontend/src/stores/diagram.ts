@@ -170,7 +170,7 @@ function getEdgeTypeForDiagram(diagramType: DiagramType | null): MindGraphEdgeTy
 
   const edgeTypeMap: Partial<Record<DiagramType, MindGraphEdgeType>> = {
     bubble_map: 'radial', // Center-to-center straight lines for radial layout
-    double_bubble_map: 'radial', // Center-to-center straight lines for radial layout
+    double_bubble_map: 'curved', // Bezier curves like mindmap for smooth connections
     tree_map: 'step', // T/L shaped orthogonal connectors
     flow_map: 'straight',
     multi_flow_map: 'straight',

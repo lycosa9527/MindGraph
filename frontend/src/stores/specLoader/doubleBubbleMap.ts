@@ -205,8 +205,26 @@ export function loadDoubleBubbleMapSpec(spec: Record<string, unknown>): SpecLoad
       },
     })
     connections.push(
-      { id: `edge-left-sim-${index}`, source: 'left-topic', target: `similarity-${index}` },
-      { id: `edge-right-sim-${index}`, source: 'right-topic', target: `similarity-${index}` }
+      {
+        id: `edge-left-sim-${index}`,
+        source: 'left-topic',
+        target: `similarity-${index}`,
+        edgeType: 'curved',
+        sourcePosition: 'right',
+        targetPosition: 'left',
+        sourceHandle: 'right',
+        targetHandle: 'left',
+      },
+      {
+        id: `edge-right-sim-${index}`,
+        source: 'right-topic',
+        target: `similarity-${index}`,
+        edgeType: 'curved',
+        sourcePosition: 'left',
+        targetPosition: 'right',
+        sourceHandle: 'left',
+        targetHandle: 'right',
+      }
     )
   })
 
@@ -239,6 +257,11 @@ export function loadDoubleBubbleMapSpec(spec: Record<string, unknown>): SpecLoad
       id: `edge-left-diff-${index}`,
       source: 'left-topic',
       target: `left-diff-${index}`,
+      edgeType: 'curved',
+      sourcePosition: 'left',
+      targetPosition: 'right',
+      sourceHandle: 'left',
+      targetHandle: 'right',
     })
   })
 
@@ -263,6 +286,11 @@ export function loadDoubleBubbleMapSpec(spec: Record<string, unknown>): SpecLoad
       id: `edge-right-diff-${index}`,
       source: 'right-topic',
       target: `right-diff-${index}`,
+      edgeType: 'curved',
+      sourcePosition: 'right',
+      targetPosition: 'left',
+      sourceHandle: 'right',
+      targetHandle: 'left',
     })
   })
 

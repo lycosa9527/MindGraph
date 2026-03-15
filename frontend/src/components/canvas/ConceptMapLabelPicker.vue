@@ -64,14 +64,17 @@ async function handleKeydown(event: KeyboardEvent) {
   if (!entry) return
   const target = event.target as HTMLElement
   if (target?.tagName === 'INPUT' || target?.tagName === 'TEXTAREA') return
+  if (target?.isContentEditable) return
 
   if (event.key === '-') {
     event.preventDefault()
+    event.stopPropagation()
     if (canPrevPage.value) prevPage(entry[0])
     return
   }
   if (event.key === '=') {
     event.preventDefault()
+    event.stopPropagation()
     if (canNextPage.value || isLoadingMore.value) await nextPage(entry[0])
     return
   }
@@ -85,15 +88,16 @@ async function handleKeydown(event: KeyboardEvent) {
     : 0
   if (num > 0 && num <= entry[1].length) {
     event.preventDefault()
+    event.stopPropagation()
     selectOption(entry[0], num - 1)
   }
 }
 
 onMounted(() => {
-  window.addEventListener('keydown', handleKeydown)
+  window.addEventListener('keydown', handleKeydown, { capture: true })
 })
 onUnmounted(() => {
-  window.removeEventListener('keydown', handleKeydown)
+  window.removeEventListener('keydown', handleKeydown, { capture: true })
 })
 </script>
 

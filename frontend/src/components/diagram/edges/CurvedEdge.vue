@@ -306,11 +306,13 @@ const targetMarkerEnd = computed(() =>
             :class="{ 'edge-label-placeholder': isConceptMap && !data?.label?.trim() && !isGenerating }"
           >
             {{
-              isGenerating
-                ? (t('diagram.aiGenerating', 'AI...') as string)
-                : isConceptMap && !data?.label?.trim()
-                  ? relationshipPlaceholder
-                  : data?.label || ''
+              data?.label?.trim()
+                ? data.label
+                : isGenerating
+                  ? (t('diagram.aiGenerating', 'AI...') as string)
+                  : isConceptMap
+                    ? relationshipPlaceholder
+                    : ''
             }}
           </span>
         </span>

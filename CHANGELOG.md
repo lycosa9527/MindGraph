@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.38.0] - 2026-03-16
+
+### Changed
+- **Double Bubble Map Curved Edges**: Switched double bubble map from radial (straight) to curved (bezier) edges for smoother connections between topic and similarity/difference nodes.
+- **CircleNode Handles**: Added left/right/top/bottom handles for double bubble map nodes so curved edges connect at node boundaries; handles are invisible (connection points only).
+- **Double Bubble Spec Loader**: Connection specs now include `edgeType: 'curved'`, `sourcePosition`, `targetPosition`, `sourceHandle`, `targetHandle` for proper curved edge routing.
+- **ConceptMapLabelPicker**: Skip key handling when target is contentEditable; added `stopPropagation` for `-`, `=`, and 1–5 keys; use capture-phase keydown listener to prevent shortcut conflicts.
+- **CurvedEdge Label Display**: Reordered label logic—show existing label first when trimmed, then "AI..." when generating, then placeholder for concept maps.
+
 ## [5.37.0] - 2026-03-15
 
 ### Added
