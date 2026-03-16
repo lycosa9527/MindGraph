@@ -5,7 +5,7 @@
  */
 import { onMounted, ref } from 'vue'
 
-import { DocumentCopy, Loading, Plus, Share } from '@element-plus/icons-vue'
+import { DocumentCopy, Loading, Plus, Refresh, Share } from '@element-plus/icons-vue'
 
 import { useLanguage, useNotifications } from '@/composables'
 import { apiRequest } from '@/utils/apiClient'
@@ -21,12 +21,16 @@ const createModalVisible = ref(false)
 const createForm = ref({ code: '', name: '' })
 const shareModalVisible = ref(false)
 const shareInvitationCode = ref('')
+const refreshCodeOrgId = ref<number | null>(null)
 const trendModalVisible = ref(false)
 const trendOrg = ref<{
   name: string
   id?: number
   invitation_code?: string
   display_name?: string
+  is_active?: boolean
+  user_count?: number
+  expires_at?: string | null
 } | null>(null)
 
 function openTrendModal(row: Record<string, unknown>) {
@@ -35,6 +39,9 @@ function openTrendModal(row: Record<string, unknown>) {
     id: row.id as number | undefined,
     invitation_code: row.invitation_code as string | undefined,
     display_name: row.display_name as string | undefined,
+    is_active: row.is_active as boolean | undefined,
+    user_count: (row.user_count as number) ?? 0,
+    expires_at: row.expires_at as string | null | undefined,
   }
   trendModalVisible.value = true
 }
@@ -64,6 +71,9 @@ async function loadSchools() {
           ...trendOrg.value,
           name: String(updated.name ?? trendOrg.value.name),
           display_name: updated.display_name as string | undefined,
+          is_active: updated.is_active as boolean | undefined,
+          user_count: (updated.user_count as number) ?? 0,
+          expires_at: updated.expires_at as string | null | undefined,
         }
       }
     }
@@ -74,9 +84,43 @@ async function loadSchools() {
   }
 }
 
+const SAFE_CHARS = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'
+
+function generateRandomSchoolCode(): string {
+  const suffix = Array.from({ length: 6 }, () =>
+    SAFE_CHARS[Math.floor(Math.random() * SAFE_CHARS.length)]
+  ).join('')
+  return `SCH-${suffix}`
+}
+
+/**
+ * Generate school code from school name: uppercase letters, max 12 chars.
+ * Falls back to random SCH-XXXXXX when name has no Latin letters (e.g. Chinese).
+ * "Beijing High School" -> "BEIJHIGHSCHO", "北京高中" -> "SCH-A1B2C3"
+ */
+function generateSchoolCodeFromName(name: string): string {
+  const letters = name.replace(/[^A-Za-z]/g, '').toUpperCase()
+  if (letters.length > 0) {
+    return letters.slice(0, 12)
+  }
+  return generateRandomSchoolCode()
+}
+
 function openCreateModal() {
   createForm.value = { code: '', name: '' }
   createModalVisible.value = true
+}
+
+function onSchoolNameInput() {
+  const name = createForm.value.name.trim()
+  if (name) {
+    createForm.value.code = generateSchoolCodeFromName(name)
+  }
+}
+
+function regenerateSchoolCode() {
+  const name = createForm.value.name.trim()
+  createForm.value.code = name ? generateSchoolCodeFromName(name) : generateRandomSchoolCode()
 }
 
 function openShareModal(code: string) {
@@ -97,15 +141,42 @@ async function copyShareMessage() {
   }
 }
 
+async function refreshInvitationCode(orgId: number) {
+  refreshCodeOrgId.value = orgId
+  try {
+    const res = await apiRequest(
+      `/api/auth/admin/organizations/${orgId}/refresh-invitation-code`,
+      { method: 'POST' }
+    )
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}))
+      notify.error((data.detail as string) || 'Failed to refresh')
+      return
+    }
+    notify.success(t('notification.saved'))
+    await loadSchools()
+  } catch {
+    notify.error('Failed to refresh invitation code')
+  } finally {
+    refreshCodeOrgId.value = null
+  }
+}
+
 async function createSchool() {
-  if (!createForm.value.code.trim() || !createForm.value.name.trim()) {
-    notify.error('Code and name are required')
+  const name = createForm.value.name.trim()
+  if (!name) {
+    notify.error(t('admin.schoolNameRequired'))
     return
+  }
+  let code = createForm.value.code.trim()
+  if (!code) {
+    code = generateSchoolCodeFromName(name) || generateRandomSchoolCode()
+    createForm.value.code = code
   }
   try {
     const res = await apiRequest('/api/auth/admin/organizations', {
       method: 'POST',
-      body: JSON.stringify(createForm.value),
+      body: JSON.stringify({ name, code }),
     })
     if (!res.ok) {
       const data = await res.json().catch(() => ({}))
@@ -180,6 +251,17 @@ onMounted(loadSchools)
           <template #default="{ row }">
             <span class="inline-flex items-center gap-1">
               {{ row.invitation_code }}
+              <el-tooltip :content="t('admin.refreshInvitationCode')" placement="top">
+                <el-button
+                  link
+                  size="small"
+                  class="p-0 min-w-0"
+                  :loading="refreshCodeOrgId === (row.id as number)"
+                  @click="refreshInvitationCode(row.id as number)"
+                >
+                  <el-icon><Refresh /></el-icon>
+                </el-button>
+              </el-tooltip>
               <el-tooltip :content="t('admin.shareInviteTitle')" placement="top">
                 <el-button
                   link
@@ -257,6 +339,9 @@ onMounted(loadSchools)
       :org-id="trendOrg?.id"
       :org-invitation-code="trendOrg?.invitation_code"
       :org-display-name="trendOrg?.display_name"
+      :org-is-active="trendOrg?.is_active"
+      :org-user-count="trendOrg?.user_count ?? 0"
+      :org-expires-at="trendOrg?.expires_at"
       @refresh="loadSchools"
     />
 
@@ -271,14 +356,29 @@ onMounted(loadSchools)
           <el-input
             v-model="createForm.name"
             placeholder="Beijing High School"
+            @input="onSchoolNameInput"
           />
         </el-form-item>
-        <el-form-item :label="t('admin.invitationCode')" required>
-          <el-input
-            v-model="createForm.code"
-            placeholder="BJSCHOOL"
-          />
+        <el-form-item :label="t('admin.schoolCode')">
+          <div class="flex gap-2">
+            <el-input
+              v-model="createForm.code"
+              :placeholder="t('admin.schoolCodeAutoGenerated')"
+              class="flex-1"
+            />
+            <el-tooltip :content="t('admin.regenerateSchoolCode')" placement="top">
+              <el-button
+                size="default"
+                @click="regenerateSchoolCode"
+              >
+                <el-icon><Refresh /></el-icon>
+              </el-button>
+            </el-tooltip>
+          </div>
         </el-form-item>
+        <p class="text-sm text-gray-500 mb-0">
+          {{ t('admin.invitationCodeAutoGenerated') }}
+        </p>
       </el-form>
       <template #footer>
         <el-button @click="createModalVisible = false">{{ t('common.cancel') }}</el-button>

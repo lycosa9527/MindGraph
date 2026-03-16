@@ -27,7 +27,10 @@ from sqlalchemy.sql import func
 
 from config.database import get_db
 from models.domain.auth import Organization, User
+from models.domain.diagrams import Diagram
 from models.domain.messages import Messages, Language
+from models.domain.user_activity_log import UserActivityLog
+from models.domain.user_usage_stats import UserUsageStats
 try:
     from models.domain.token_usage import TokenUsage
 except ImportError:
@@ -255,9 +258,9 @@ async def update_organization_admin(
         if new_code != org_code_val:
             # Check code uniqueness (use cache)
             conflict = org_cache.get_by_code(new_code)
-            if conflict is None or int(conflict.id) == int(org.id):
+            if conflict is None or cast(int, conflict.id) == cast(int, org.id):
                 conflict = db.query(Organization).filter(Organization.code == new_code).first()
-            if conflict is not None and int(conflict.id) != int(org.id):
+            if conflict is not None and cast(int, conflict.id) != cast(int, org.id):
                 error_msg = Messages.error("organization_exists", lang, new_code)
                 raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=error_msg)
             setattr(org, 'code', new_code)
@@ -279,7 +282,7 @@ async def update_organization_admin(
         )
         # Ensure uniqueness across organizations (exclude current org)
         conflict = org_cache.get_by_invitation_code(normalized)
-        if conflict is not None and int(conflict.id) == int(org.id):
+        if conflict is not None and cast(int, conflict.id) == cast(int, org.id):
             conflict = None
         if conflict is None:
             conflict = db.query(Organization).filter(
@@ -293,7 +296,7 @@ async def update_organization_admin(
                     None, request.get("name", org_name_val), request.get("code", org_code_val)
                 )
                 conflict = org_cache.get_by_invitation_code(normalized)
-                if conflict is not None and int(conflict.id) == int(org.id):
+                if conflict is not None and cast(int, conflict.id) == cast(int, org.id):
                     conflict = None
                 if conflict is None:
                     conflict = db.query(Organization).filter(
@@ -377,7 +380,7 @@ async def refresh_organization_invitation_code(
 
     def _has_conflict(code: str) -> bool:
         cached = org_cache.get_by_invitation_code(code)
-        if cached is not None and int(cached.id) != int(org.id):
+        if cached is not None and cast(int, cached.id) != cast(int, org.id):
             return True
         if cached is None:
             other = db.query(Organization).filter(
@@ -426,9 +429,10 @@ async def delete_organization_admin(
     _request: Request,
     current_user: User = Depends(require_admin),
     db: Session = Depends(get_db),
-    lang: Language = Depends(get_language_dependency)
+    lang: Language = Depends(get_language_dependency),
+    delete_users: bool = False,
 ):
-    """Delete organization (ADMIN ONLY)"""
+    """Delete organization (ADMIN ONLY). Use delete_users=true to also remove all user accounts."""
     org = db.query(Organization).filter(Organization.id == org_id).first()
     if org is None:
         error_msg = Messages.error("organization_not_found", lang, org_id)
@@ -437,10 +441,34 @@ async def delete_organization_admin(
     org_code = cast(Optional[str], org.code)
     org_invite = cast(Optional[str], org.invitation_code)
 
-    user_count = db.query(User).filter(User.organization_id == org_id).count()
-    if user_count > 0:
+    users_in_org = db.query(User).filter(User.organization_id == org_id).all()
+    user_count = len(users_in_org)
+
+    if user_count > 0 and not delete_users:
         error_msg = Messages.error("cannot_delete_organization_with_users", lang, user_count)
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
+
+    if delete_users and user_count > 0:
+        for user in users_in_org:
+            uid = user.id
+            db.query(Diagram).filter(Diagram.user_id == uid).delete()
+            db.query(UserActivityLog).filter(UserActivityLog.user_id == uid).delete()
+            db.query(UserUsageStats).filter(UserUsageStats.user_id == uid).delete()
+            if TokenUsage is not None:
+                db.query(TokenUsage).filter(TokenUsage.user_id == uid).update(
+                    {"user_id": None}, synchronize_session="fetch"
+                )
+            user_cache.invalidate(uid, user.phone)
+            db.delete(user)
+        try:
+            db.flush()
+        except Exception as e:
+            db.rollback()
+            logger.error("[Auth] Failed to delete users for org %s: %s", org_id, e)
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to delete organization users",
+            ) from e
 
     db.delete(org)
     try:
@@ -450,23 +478,75 @@ async def delete_organization_admin(
         logger.error("[Auth] Failed to delete org ID %s in database: %s", org_id, e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to delete organization"
+            detail="Failed to delete organization",
         ) from e
 
-    # Invalidate cache (non-blocking)
     try:
         org_cache.invalidate(org_id, org_code, org_invite)
         logger.info("[Auth] Invalidated cache for deleted org ID %s", org_id)
     except Exception as e:
         logger.warning("[Auth] Failed to invalidate cache for deleted org ID %s: %s", org_id, e)
 
-    logger.warning("Admin %s deleted organization: %s", current_user.phone, org_code)
+    logger.warning(
+        "Admin %s deleted organization: %s (users: %s)",
+        current_user.phone,
+        org_code,
+        user_count if delete_users else 0,
+    )
     return {"message": Messages.success("organization_deleted", lang, org_code)}
 
 
 # =============================================================================
 # Organization Manager Endpoints
 # =============================================================================
+
+@router.get("/admin/managers", dependencies=[Depends(require_admin)])
+async def list_all_managers(
+    _request: Request,
+    _current_user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+    _lang: Language = Depends(get_language_dependency)
+):
+    """
+    List all managers across all organizations (ADMIN ONLY).
+
+    Returns managers with their organization info for the role control panel.
+    """
+    managers = (
+        db.query(User)
+        .filter(
+            User.organization_id.isnot(None),
+            User.role == 'manager'
+        )
+        .order_by(User.organization_id, User.name)
+        .all()
+    )
+
+    org_ids = list({u.organization_id for u in managers if u.organization_id})
+    orgs_by_id: dict[int, Organization] = {}
+    if org_ids:
+        orgs = db.query(Organization).filter(Organization.id.in_(org_ids)).all()
+        orgs_by_id = {cast(int, org.id): org for org in orgs}
+
+    result = []
+    for user in managers:
+        org = orgs_by_id.get(user.organization_id) if user.organization_id else None
+        masked_phone = user.phone
+        if len(user.phone) == 11:
+            masked_phone = user.phone[:3] + "****" + user.phone[-4:]
+        result.append({
+            "id": user.id,
+            "phone": masked_phone,
+            "phone_real": user.phone,
+            "name": user.name or user.phone,
+            "organization_id": user.organization_id,
+            "organization_code": org.code if org else None,
+            "organization_name": org.name if org else None,
+            "created_at": utc_to_beijing_iso(user.created_at),
+        })
+
+    return {"managers": result}
+
 
 @router.get("/admin/organizations/{org_id}/users", dependencies=[Depends(require_admin)])
 async def list_organization_users(

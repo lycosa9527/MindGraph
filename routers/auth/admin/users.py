@@ -11,7 +11,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
-from typing import Optional
+from typing import Optional, cast
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Body, Query, status
@@ -84,7 +84,7 @@ async def list_users_admin(
     organizations_by_id = {}
     if org_ids:
         orgs = db.query(Organization).filter(Organization.id.in_(org_ids)).all()
-        organizations_by_id = {org.id: org for org in orgs}
+        organizations_by_id = {cast(int, org.id): org for org in orgs}
 
     # Get token stats for all users
     token_stats_by_user = {}
@@ -251,11 +251,19 @@ async def update_user_admin(
             if user.organization_id:
                 new_org = org_cache.get_by_id(user.organization_id)
                 if new_org:
-                    org_cache.invalidate(user.organization_id, new_org.code, new_org.invitation_code)
+                    org_cache.invalidate(
+                        user.organization_id,
+                        cast(Optional[str], new_org.code),
+                        cast(Optional[str], new_org.invitation_code),
+                    )
             if old_org_id:
                 old_org = org_cache.get_by_id(old_org_id)
                 if old_org:
-                    org_cache.invalidate(old_org_id, old_org.code, old_org.invitation_code)
+                    org_cache.invalidate(
+                        old_org_id,
+                        cast(Optional[str], old_org.code),
+                        cast(Optional[str], old_org.invitation_code),
+                    )
         except Exception as e:
             logger.warning("[Auth] Failed to invalidate org cache: %s", e)
 

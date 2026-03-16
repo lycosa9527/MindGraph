@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.39.3] - 2026-03-16
+
+### Added
+- **Delete Organization with Users**: Admin can delete an organization and all its user accounts via `delete_users=true`; cascades to diagrams, activity logs, usage stats, and token usage.
+- **List All Managers API**: New `GET /admin/managers` endpoint for role control panel—returns managers with organization info.
+- **Admin Translations**: New i18n keys for school code, invitation code, lock/unlock org, delete org confirmations, danger zone, expiration date, and school managers tab.
+
+### Changed
+- **AdminRolesTab**: Refactored with school managers sub-tab, role control UI improvements.
+- **AdminSchoolsTab**: School code, invitation code, lock/unlock, expiration date, and delete org with users support.
+- **AdminTrendChartModal**: Layout and integration updates.
+- **APIKey Model**: Migrated to SQLAlchemy 2.0 style (Mapped[], mapped_column).
+- **Organizations Router**: Type-safe cast() for org cache comparisons; delete org now supports optional user cascade.
+- **Users Router**: Type-safe cast() for org_cache.invalidate and organizations_by_id.
+
 ## [5.39.2] - 2026-03-16
 
 ### Added

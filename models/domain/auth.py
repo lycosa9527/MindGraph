@@ -93,25 +93,27 @@ class APIKey(Base):
     """
     __tablename__ = "api_keys"
 
-    id = Column(Integer, primary_key=True, index=True)
-    key = Column(String, unique=True, index=True, nullable=False)
-    name = Column(String, nullable=False)  # e.g., "Dify Integration"
-    description = Column(String)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    key: Mapped[str] = mapped_column(String, unique=True, index=True, nullable=False)
+    name: Mapped[str] = mapped_column(String, nullable=False)  # e.g., "Dify Integration"
+    description: Mapped[str | None] = mapped_column(String, nullable=True)
 
     # Quota & Usage Tracking
-    quota_limit = Column(Integer, nullable=True)  # null = unlimited
-    usage_count = Column(Integer, default=0)
+    quota_limit: Mapped[int | None] = mapped_column(Integer, nullable=True)  # null = unlimited
+    usage_count: Mapped[int] = mapped_column(Integer, default=0)
 
     # Status
-    is_active = Column(Boolean, default=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
 
     # Timestamps
-    created_at = Column(DateTime, default=datetime.utcnow)
-    last_used_at = Column(DateTime, nullable=True)
-    expires_at = Column(DateTime, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    last_used_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
     # Optional: Link to organization
-    organization_id = Column(Integer, ForeignKey("organizations.id"), nullable=True)
+    organization_id: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey("organizations.id"), nullable=True
+    )
 
     def __repr__(self):
         return f"<APIKey {self.name}: {self.key[:12]}...>"

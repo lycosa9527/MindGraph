@@ -1,11 +1,12 @@
 <script setup lang="ts">
 /**
- * Admin Roles Tab - List admins and grant/revoke admin access
+ * Admin Roles Tab - List admins and school managers, grant/revoke access
  */
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
+import { useDebounceFn } from '@vueuse/core'
 
 import { ElMessageBox } from 'element-plus'
-import { Loading, Plus, Search, UserFilled } from '@element-plus/icons-vue'
+import { Loading, Plus, Refresh, Search, UserFilled } from '@element-plus/icons-vue'
 
 import { useLanguage, useNotifications } from '@/composables'
 import { apiRequest } from '@/utils/apiClient'
@@ -36,9 +37,24 @@ interface EnvAdmin {
   name: string | null
 }
 
+interface ManagerUser {
+  id: number
+  phone: string
+  phone_real: string
+  name: string | null
+  organization_id: number | null
+  organization_code: string | null
+  organization_name: string | null
+  created_at: string | null
+}
+
+const activeTab = ref<'admins' | 'managers'>('admins')
 const isLoading = ref(true)
 const admins = ref<AdminUser[]>([])
 const envAdmins = ref<EnvAdmin[]>([])
+const managers = ref<ManagerUser[]>([])
+const managersLoading = ref(false)
+const revokingManagerId = ref<number | null>(null)
 
 function maskPhone(phone: string): string {
   if (phone.length === 11) {
@@ -71,6 +87,7 @@ const addModalVisible = ref(false)
 const addSearchQuery = ref('')
 const addSearchResults = ref<CandidateUser[]>([])
 const addSearchLoading = ref(false)
+const addSearchHasRun = ref(false)
 const addGrantingId = ref<number | null>(null)
 
 async function loadAdmins() {
@@ -96,6 +113,7 @@ async function searchUsersToAdd() {
   const q = addSearchQuery.value.trim()
   if (!q || q.length < 2) {
     addSearchResults.value = []
+    addSearchHasRun.value = false
     return
   }
   addSearchLoading.value = true
@@ -118,13 +136,27 @@ async function searchUsersToAdd() {
     addSearchResults.value = []
   } finally {
     addSearchLoading.value = false
+    addSearchHasRun.value = true
   }
 }
+
+const debouncedSearchUsersToAdd = useDebounceFn(searchUsersToAdd, 400)
+
+watch(addSearchQuery, (val) => {
+  const q = val.trim()
+  if (q.length >= 2) {
+    debouncedSearchUsersToAdd()
+  } else {
+    addSearchResults.value = []
+    addSearchHasRun.value = false
+  }
+})
 
 function openAddModal() {
   addModalVisible.value = true
   addSearchQuery.value = ''
   addSearchResults.value = []
+  addSearchHasRun.value = false
 }
 
 async function grantAdmin(user: CandidateUser) {
@@ -184,6 +216,68 @@ async function revokeAdmin(admin: AdminUser) {
   }
 }
 
+async function loadManagers() {
+  managersLoading.value = true
+  try {
+    const res = await apiRequest('/api/auth/admin/managers')
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}))
+      notify.error((data.detail as string) || 'Failed to load managers')
+      return
+    }
+    const data = await res.json()
+    managers.value = data.managers ?? []
+  } catch {
+    notify.error('Failed to load managers')
+  } finally {
+    managersLoading.value = false
+  }
+}
+
+async function revokeManager(manager: ManagerUser) {
+  if (!manager.organization_id) return
+  try {
+    const displayName = manager.name || manager.phone_real || manager.phone
+    await ElMessageBox.confirm(
+      `${t('admin.removeManager')} ${displayName}?`,
+      t('admin.removeManager'),
+      {
+        type: 'warning',
+        confirmButtonText: t('admin.confirm'),
+        cancelButtonText: t('admin.cancel'),
+      }
+    )
+  } catch {
+    return
+  }
+
+  revokingManagerId.value = manager.id
+  try {
+    const res = await apiRequest(
+      `/api/auth/admin/organizations/${manager.organization_id}/managers/${manager.id}`,
+      { method: 'DELETE' }
+    )
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}))
+      notify.error((data.detail as string) || 'Failed to remove manager')
+      return
+    }
+    const data = await res.json()
+    notify.success(data.message || t('admin.managerRoleRemoved'))
+    loadManagers()
+  } catch {
+    notify.error('Failed to remove manager')
+  } finally {
+    revokingManagerId.value = null
+  }
+}
+
+function onTabChange(tab: string) {
+  if (tab === 'managers') {
+    loadManagers()
+  }
+}
+
 onMounted(loadAdmins)
 </script>
 
@@ -191,105 +285,210 @@ onMounted(loadAdmins)
   <div class="admin-roles-tab pt-4">
     <el-card shadow="never">
       <template #header>
-        <div class="flex items-center justify-between flex-wrap gap-4">
-          <span class="font-medium">{{ t('admin.roleControl') }}</span>
-          <div class="flex items-center gap-2">
-            <el-button
-              type="primary"
-              size="small"
-              @click="openAddModal"
+        <span class="font-medium">{{ t('admin.roleControl') }}</span>
+      </template>
+
+      <el-tabs
+        v-model="activeTab"
+        @tab-change="onTabChange"
+      >
+        <el-tab-pane
+          :label="t('admin.adminsTab')"
+          name="admins"
+        >
+          <div class="flex items-center justify-between mb-4">
+            <p class="text-sm text-gray-500 m-0">
+              {{ t('admin.roleControlDesc') }}
+            </p>
+            <div class="flex items-center gap-2">
+              <el-button
+                type="primary"
+                size="small"
+                @click="openAddModal"
+              >
+                <el-icon class="mr-1"><Plus /></el-icon>
+                {{ t('admin.addAdmin') }}
+              </el-button>
+              <el-button
+                size="small"
+                @click="loadAdmins"
+              >
+                <el-icon class="mr-1"><Refresh /></el-icon>
+                {{ t('admin.refresh') }}
+              </el-button>
+            </div>
+          </div>
+
+          <div
+            v-if="isLoading"
+            class="flex justify-center py-12"
+          >
+            <el-icon
+              class="is-loading"
+              :size="32"
             >
-              <el-icon class="mr-1"><Plus /></el-icon>
-              {{ t('admin.addAdmin') }}
-            </el-button>
+              <Loading />
+            </el-icon>
+          </div>
+
+          <el-table
+            v-else
+            :data="allAdminsForTable"
+            stripe
+            size="small"
+          >
+            <el-table-column
+              prop="phone"
+              :label="t('admin.phone')"
+              width="140"
+            />
+            <el-table-column
+              prop="name"
+              :label="t('admin.name')"
+              width="140"
+            >
+              <template #default="{ row }">
+                {{ row.name || row.phone_real || row.phone || '-' }}
+              </template>
+            </el-table-column>
+            <el-table-column
+              prop="created_at"
+              :label="t('admin.registrationTime')"
+              width="200"
+            >
+              <template #default="{ row }">
+                {{ row.source === 'database' ? (row.created_at || '—') : '—' }}
+              </template>
+            </el-table-column>
+            <el-table-column
+              prop="source"
+              :label="t('admin.source')"
+              width="120"
+            >
+              <template #default="{ row }">
+                {{ row.source === 'env' ? t('admin.sourceEnv') : t('admin.sourceDatabase') }}
+              </template>
+            </el-table-column>
+            <el-table-column
+              :label="t('admin.actions')"
+              width="120"
+            >
+              <template #default="{ row }">
+                <el-button
+                  v-if="row.source === 'database'"
+                  type="danger"
+                  link
+                  size="small"
+                  @click="revokeAdmin(row)"
+                >
+                  {{ t('admin.revokeAdmin') }}
+                </el-button>
+                <span
+                  v-else
+                  class="text-xs text-gray-500"
+                >
+                  {{ t('admin.envAdminsNote') }}
+                </span>
+              </template>
+            </el-table-column>
+          </el-table>
+        </el-tab-pane>
+
+        <el-tab-pane
+          :label="t('admin.schoolManagersTab')"
+          name="managers"
+        >
+          <div class="flex items-center justify-between mb-4">
+            <p class="text-sm text-gray-500 m-0">
+              {{ t('admin.roleControlDescManagers') }}
+            </p>
             <el-button
               size="small"
-              @click="loadAdmins"
+              @click="loadManagers"
             >
+              <el-icon class="mr-1"><Refresh /></el-icon>
               {{ t('admin.refresh') }}
             </el-button>
           </div>
-        </div>
-      </template>
 
-      <div
-        v-if="isLoading"
-        class="flex justify-center py-12"
-      >
-        <el-icon
-          class="is-loading"
-          :size="32"
-        >
-          <Loading />
-        </el-icon>
-      </div>
+          <div
+            v-if="managersLoading"
+            class="flex justify-center py-12"
+          >
+            <el-icon
+              class="is-loading"
+              :size="32"
+            >
+              <Loading />
+            </el-icon>
+          </div>
 
-      <template v-else>
-        <p class="text-sm text-gray-500 mb-4">
-          {{ t('admin.roleControlDesc') }}
-        </p>
+          <div
+            v-else-if="managers.length === 0"
+            class="text-center py-12 text-gray-500"
+          >
+            <el-icon :size="32"><UserFilled /></el-icon>
+            <p class="mt-2">{{ t('admin.noManagersFound') }}</p>
+          </div>
 
-        <el-table
-          :data="allAdminsForTable"
-          stripe
-          size="small"
-        >
-          <el-table-column
-            prop="phone"
-            :label="t('admin.phone')"
-            width="140"
-          />
-          <el-table-column
-            prop="name"
-            :label="t('admin.name')"
-            width="140"
+          <el-table
+            v-else
+            :data="managers"
+            stripe
+            size="small"
           >
-            <template #default="{ row }">
-              {{ row.name || row.phone_real || row.phone || '-' }}
-            </template>
-          </el-table-column>
-          <el-table-column
-            prop="created_at"
-            :label="t('admin.registrationTime')"
-            width="200"
-          >
-            <template #default="{ row }">
-              {{ row.source === 'database' ? (row.created_at || '—') : '—' }}
-            </template>
-          </el-table-column>
-          <el-table-column
-            prop="source"
-            :label="t('admin.source')"
-            width="120"
-          >
-            <template #default="{ row }">
-              {{ row.source === 'env' ? t('admin.sourceEnv') : t('admin.sourceDatabase') }}
-            </template>
-          </el-table-column>
-          <el-table-column
-            :label="t('admin.actions')"
-            width="120"
-          >
-            <template #default="{ row }">
-              <el-button
-                v-if="row.source === 'database'"
-                type="danger"
-                link
-                size="small"
-                @click="revokeAdmin(row)"
-              >
-                {{ t('admin.revokeAdmin') }}
-              </el-button>
-              <span
-                v-else
-                class="text-xs text-gray-500"
-              >
-                {{ t('admin.envAdminsNote') }}
-              </span>
-            </template>
-          </el-table-column>
-        </el-table>
-      </template>
+            <el-table-column
+              prop="phone"
+              :label="t('admin.phone')"
+              width="140"
+            />
+            <el-table-column
+              prop="name"
+              :label="t('admin.name')"
+              width="140"
+            >
+              <template #default="{ row }">
+                {{ row.name || row.phone_real || row.phone || '-' }}
+              </template>
+            </el-table-column>
+            <el-table-column
+              prop="organization_name"
+              :label="t('admin.schoolName')"
+              min-width="160"
+            >
+              <template #default="{ row }">
+                {{ row.organization_name || row.organization_code || '—' }}
+              </template>
+            </el-table-column>
+            <el-table-column
+              prop="created_at"
+              :label="t('admin.registrationTime')"
+              width="200"
+            >
+              <template #default="{ row }">
+                {{ row.created_at || '—' }}
+              </template>
+            </el-table-column>
+            <el-table-column
+              :label="t('admin.actions')"
+              width="140"
+            >
+              <template #default="{ row }">
+                <el-button
+                  v-if="row.organization_id"
+                  type="danger"
+                  link
+                  size="small"
+                  :loading="revokingManagerId === row.id"
+                  @click="revokeManager(row)"
+                >
+                  {{ t('admin.removeManager') }}
+                </el-button>
+              </template>
+            </el-table-column>
+          </el-table>
+        </el-tab-pane>
+      </el-tabs>
     </el-card>
 
     <el-dialog
@@ -320,7 +519,10 @@ onMounted(loadAdmins)
         </el-input>
 
         <div
-          v-if="addSearchResults.length === 0 && addSearchQuery.trim().length >= 2"
+          v-if="
+            addSearchQuery.trim().length >= 2 &&
+            (addSearchLoading || (addSearchHasRun && addSearchResults.length === 0))
+          "
           class="text-center py-8 text-gray-500"
         >
           <template v-if="addSearchLoading">

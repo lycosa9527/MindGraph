@@ -15,7 +15,9 @@ import {
 
 Chart.register(...registerables)
 
-import { Loading, Refresh, Share } from '@element-plus/icons-vue'
+import { Delete, Loading, Lock, Refresh, Share, Unlock } from '@element-plus/icons-vue'
+
+import { ElMessageBox } from 'element-plus'
 
 import { useLanguage, useNotifications } from '@/composables'
 import { apiRequest } from '@/utils/apiClient'
@@ -27,6 +29,9 @@ const props = defineProps<{
   orgId?: number
   orgInvitationCode?: string
   orgDisplayName?: string
+  orgIsActive?: boolean
+  orgUserCount?: number
+  orgExpiresAt?: string | null
   userName?: string
   userId?: number
 }>()
@@ -56,6 +61,11 @@ const addManagerSelect = ref<number | null>(null)
 const refreshCodeLoading = ref(false)
 const displayNameEdit = ref('')
 const displayNameSaving = ref(false)
+const orgIsActive = ref(true)
+const lockLoading = ref(false)
+const deleteLoading = ref(false)
+const expiresAtEdit = ref<string | null>(null)
+const expiresAtSaving = ref(false)
 
 function formatNumber(num: number): string {
   if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M'
@@ -67,6 +77,12 @@ function formatChartLabel(value: number): string {
   if (value >= 1000000) return (value / 1000000).toFixed(1) + 'M'
   if (value >= 1000) return (value / 1000).toFixed(1) + 'K'
   return String(value)
+}
+
+function parseExpiresAtToDate(iso: string | null | undefined): string | null {
+  if (!iso) return null
+  const m = iso.match(/^(\d{4}-\d{2}-\d{2})/)
+  return m ? m[1] : null
 }
 
 function close() {
@@ -401,6 +417,31 @@ async function copyShareMessage() {
   }
 }
 
+async function saveExpiresAt() {
+  if (props.orgId == null) return
+  expiresAtSaving.value = true
+  try {
+    const dateVal = expiresAtEdit.value?.trim() || null
+    const expiresAtPayload =
+      dateVal ? `${dateVal}T23:59:59+08:00` : null
+    const res = await apiRequest(`/api/auth/admin/organizations/${props.orgId}`, {
+      method: 'PUT',
+      body: JSON.stringify({ expires_at: expiresAtPayload }),
+    })
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}))
+      notify.error((data.detail as string) || 'Failed to save')
+      return
+    }
+    notify.success(t('notification.saved'))
+    emit('refresh')
+  } catch {
+    notify.error('Failed to save expiration date')
+  } finally {
+    expiresAtSaving.value = false
+  }
+}
+
 async function saveDisplayName() {
   if (props.orgId == null) return
   displayNameSaving.value = true
@@ -423,6 +464,76 @@ async function saveDisplayName() {
   }
 }
 
+async function toggleLock() {
+  if (props.orgId == null) return
+  lockLoading.value = true
+  try {
+    const newActive = !orgIsActive.value
+    const res = await apiRequest(`/api/auth/admin/organizations/${props.orgId}`, {
+      method: 'PUT',
+      body: JSON.stringify({ is_active: newActive }),
+    })
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}))
+      notify.error((data.detail as string) || 'Failed to update')
+      return
+    }
+    orgIsActive.value = newActive
+    notify.success(t('notification.saved'))
+    emit('refresh')
+  } catch {
+    notify.error('Failed to update organization status')
+  } finally {
+    lockLoading.value = false
+  }
+}
+
+async function deleteOrganization() {
+  if (props.orgId == null) return
+  const userCount = props.orgUserCount ?? 0
+  const name = props.orgName ?? ''
+  const confirmMsg =
+    userCount > 0
+      ? t('admin.deleteOrgConfirmWithUsers')
+          .replace('{name}', name)
+          .replace('{count}', String(userCount))
+      : t('admin.deleteOrgConfirm').replace('{name}', name)
+  try {
+    await ElMessageBox.confirm(
+      confirmMsg,
+      t('admin.deleteOrganization'),
+      {
+        type: 'warning',
+        confirmButtonText: t('common.delete'),
+        cancelButtonText: t('common.cancel'),
+        confirmButtonClass: 'el-button--danger',
+      }
+    )
+  } catch {
+    return
+  }
+  deleteLoading.value = true
+  try {
+    const url =
+      userCount > 0
+        ? `/api/auth/admin/organizations/${props.orgId}?delete_users=true`
+        : `/api/auth/admin/organizations/${props.orgId}`
+    const res = await apiRequest(url, { method: 'DELETE' })
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}))
+      notify.error((data.detail as string) || 'Failed to delete')
+      return
+    }
+    notify.success(t('notification.saved'))
+    emit('update:visible', false)
+    emit('refresh')
+  } catch {
+    notify.error('Failed to delete organization')
+  } finally {
+    deleteLoading.value = false
+  }
+}
+
 watch(
   () => props.visible,
   (v) => {
@@ -431,6 +542,8 @@ watch(
       if (props.type === 'org' && props.orgId) {
         invitationCode.value = props.orgInvitationCode ?? ''
         displayNameEdit.value = props.orgDisplayName ?? ''
+        orgIsActive.value = props.orgIsActive ?? true
+        expiresAtEdit.value = parseExpiresAtToDate(props.orgExpiresAt)
         loadManagersAndUsers()
       }
     } else {
@@ -447,6 +560,8 @@ watch(
       props.orgName,
       props.orgInvitationCode,
       props.orgDisplayName,
+      props.orgIsActive,
+      props.orgExpiresAt,
       props.userId,
       props.userName,
     ] as const,
@@ -456,6 +571,8 @@ watch(
       if (props.type === 'org' && props.orgId) {
         invitationCode.value = props.orgInvitationCode ?? ''
         displayNameEdit.value = props.orgDisplayName ?? ''
+        orgIsActive.value = props.orgIsActive ?? true
+        expiresAtEdit.value = parseExpiresAtToDate(props.orgExpiresAt)
         loadManagersAndUsers()
       }
     }
@@ -580,6 +697,51 @@ onBeforeUnmount(() => {
           </div>
         </div>
         <div class="flex items-center justify-between">
+          <span class="text-sm font-medium">{{ t('admin.status') }}</span>
+          <div class="flex items-center gap-2">
+            <el-tag :type="orgIsActive ? 'success' : 'danger'" size="small">
+              {{ orgIsActive ? t('admin.enabled') : t('admin.disabled') }}
+            </el-tag>
+            <el-button
+              :loading="lockLoading"
+              size="small"
+              :type="orgIsActive ? 'warning' : 'success'"
+              @click="toggleLock"
+            >
+              <el-icon class="mr-1">
+                <Lock v-if="orgIsActive" />
+                <Unlock v-else />
+              </el-icon>
+              {{ orgIsActive ? t('admin.lockOrganization') : t('admin.unlockOrganization') }}
+            </el-button>
+          </div>
+        </div>
+        <div>
+          <p class="text-sm font-medium mb-2">{{ t('admin.expirationDate') }}</p>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">
+            {{ t('admin.expirationDateHint') }}
+          </p>
+          <div class="flex items-center gap-2">
+            <el-date-picker
+              v-model="expiresAtEdit"
+              type="date"
+              :placeholder="t('admin.noExpiration')"
+              value-format="YYYY-MM-DD"
+              size="small"
+              clearable
+              class="flex-1"
+            />
+            <el-button
+              type="primary"
+              size="small"
+              :loading="expiresAtSaving"
+              @click="saveExpiresAt"
+            >
+              {{ t('admin.save') }}
+            </el-button>
+          </div>
+        </div>
+        <div class="flex items-center justify-between">
           <span class="text-sm font-medium">{{ t('admin.invitationCode') }}</span>
           <div class="flex items-center gap-2">
             <el-tag type="info">{{ invitationCode }}</el-tag>
@@ -654,7 +816,18 @@ onBeforeUnmount(() => {
       </div>
     </template>
     <template #footer>
-      <el-button @click="close">{{ t('common.close') }}</el-button>
+      <div class="flex justify-end gap-2">
+        <el-button
+          v-if="type === 'org' && orgId"
+          type="danger"
+          :loading="deleteLoading"
+          @click="deleteOrganization"
+        >
+          <el-icon class="mr-1"><Delete /></el-icon>
+          {{ t('admin.deleteOrganization') }}
+        </el-button>
+        <el-button @click="close">{{ t('common.close') }}</el-button>
+      </div>
     </template>
   </el-dialog>
 </template>
