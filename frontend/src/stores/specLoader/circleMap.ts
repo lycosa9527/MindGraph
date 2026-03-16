@@ -3,7 +3,9 @@
  * Circle maps have: central topic circle, context circles around it, outer boundary ring
  * NO connection lines between nodes (unlike bubble maps)
  * Fixed font size; circles grown from text (one line, no wrap, no truncate).
+ * Uses mindmap branch color palette for each context (like double bubble map).
  */
+import { getMindmapBranchColor } from '@/config/mindmapColors'
 import type { Connection, DiagramNode } from '@/types'
 
 import { CONTEXT_FONT_SIZE, TOPIC_FONT_SIZE } from './textMeasurement'
@@ -79,18 +81,22 @@ export function recalculateCircleMapLayout(nodes: DiagramNode[]): DiagramNode[] 
       const y = Math.round(
         layout.centerY + layout.childrenRadius * Math.sin(angleRad) - contextRadius
       )
+      const color = getMindmapBranchColor(index)
 
       const contextStyle = {
         ...(node.style || {}),
         size: uniformContextDiameter,
         fontSize: CONTEXT_FONT_SIZE,
         noWrap: true,
+        backgroundColor: color.fill,
+        borderColor: color.border,
       }
       result.push({
         id: `context-${index}`,
         text: node.text,
         type: 'bubble',
         position: { x, y },
+        data: { ...node.data, groupIndex: index },
         style: contextStyle,
       })
     })
@@ -153,16 +159,20 @@ export function loadCircleMapSpec(spec: Record<string, unknown>): SpecLoaderResu
       const y = Math.round(
         layout.centerY + layout.childrenRadius * Math.sin(angleRad) - contextRadius
       )
+      const color = getMindmapBranchColor(index)
 
       nodes.push({
         id: `context-${index}`,
         text: ctx,
         type: 'bubble',
         position: { x, y },
+        data: { groupIndex: index },
         style: {
           size: uniformContextDiameter,
           fontSize: CONTEXT_FONT_SIZE,
           noWrap: true,
+          backgroundColor: color.fill,
+          borderColor: color.border,
         },
       })
     })

@@ -12,11 +12,11 @@
  * The "AI生成图示" button in the toolbar uses useAutoComplete composable
  * to generate content based on the topic extracted from existing nodes.
  *
- * Auto-save functionality:
- * - Debounced auto-save on diagram changes (2 second delay)
- * - Auto-updates if diagram is already in library
- * - Auto-saves new diagrams if slots available
- * - Silently skips if slots full (user must manually save via File menu)
+ * Auto-save functionality (event + state driven):
+ * - User edits: debounced auto-save on diagram changes (2 second delay)
+ * - LLM generating: skip auto-save; wait for llm:generation_completed
+ * - LLM completed: flush and save once
+ * - Auto-updates if diagram is already in library; auto-saves new if slots available
  */
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { storeToRefs } from 'pinia'
@@ -36,6 +36,7 @@ import {
   getDefaultDiagramName,
   getNodePalette,
   getPanelCoordinator,
+  useDiagramAutoSave,
   useEditorShortcuts,
   useLanguage,
   useNotifications,
@@ -49,6 +50,7 @@ import {
   useLLMResultsStore,
   usePanelsStore,
   useUIStore,
+  type LLMResult,
 } from '@/stores'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import type { DiagramType } from '@/types'
@@ -60,8 +62,9 @@ const relationshipStore = useConceptMapRelationshipStore()
 const uiStore = useUIStore()
 const authStore = useAuthStore()
 const savedDiagramsStore = useSavedDiagramsStore()
+const llmResultsStore = useLLMResultsStore()
 const panelsStore = usePanelsStore()
-const { isZh } = useLanguage()
+const { isZh, t } = useLanguage()
 const notify = useNotifications()
 const { activeEntry: relationshipActiveEntry } = storeToRefs(relationshipStore)
 
@@ -80,9 +83,24 @@ const handToolActive = ref(false)
 const isPresentationMode = ref(false)
 const canvasPageRef = ref<HTMLElement | null>(null)
 
-// Auto-save debounce timer
-let autoSaveTimer: ReturnType<typeof setTimeout> | null = null
-const AUTO_SAVE_DELAY = 2000 // 2 seconds debounce
+// Auto-save: event-driven, config-based (useDiagramAutoSave)
+const diagramAutoSave = useDiagramAutoSave()
+
+// Auto-save status text for bottom bar (grey, e.g. "已自动保存 12:34")
+const autoSavedStatusText = computed(() => {
+  const at = diagramAutoSave.lastSavedAt.value
+  if (!at || !authStore.isAuthenticated) return null
+  const timeStr = at.toLocaleTimeString(isZh.value ? 'zh-CN' : 'en-US', {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+  })
+  return t('editor.autoSavedAt', isZh.value ? '已自动保存 {time}' : 'Auto-saved at {time}').replace(
+    '{time}',
+    timeStr
+  )
+})
 
 // Workshop integration
 const workshopCode = ref<string | null>(null)
@@ -445,16 +463,21 @@ function handleClearNodeTextKey() {
     )
     // Save immediately when emptying nodes (learning sheet answers) so state persists
     if (isLearningSheet) {
-      performAutoSave()
+      diagramAutoSave.performSave()
     }
   } else {
     notify.warning(isZh.value ? '无法清空主题或中心节点' : 'Cannot clear topic or center nodes')
   }
 }
 
+function handleSaveKey() {
+  diagramAutoSave.flush()
+}
+
 useEditorShortcuts({
   undo: handleUndoKey,
   redo: handleRedoKey,
+  save: handleSaveKey,
   delete: handleDeleteKey,
   addNode: handleAddNodeKey,
   addBranch: handleAddBranchKey,
@@ -539,6 +562,8 @@ eventBus.onWithOwner(
   'CanvasPage'
 )
 
+// LLM generation completed + cancel on start: handled by useDiagramAutoSave
+
 // Watch for diagram type changes in store
 watch(
   () => uiStore.selectedChartType,
@@ -575,121 +600,38 @@ function generateDefaultName(): string {
   return getDefaultDiagramName(diagramTypeForName.value, isZh.value)
 }
 
-/**
- * Get the diagram title for auto-save
- * Priority: topic node text > user-edited title > simple default name (no timestamp)
- */
-function getDiagramTitle(): string {
-  // effectiveTitle already prioritizes: user-edited title > topic > stored title
-  // If we have a topic, use it; otherwise use simple default
-  const topicText = diagramStore.getTopicNodeText()
-  if (topicText) {
-    return topicText
-  }
-  // Fallback to effectiveTitle (which may have user-edited title) or simple default
-  return diagramStore.effectiveTitle || generateDefaultName()
-}
-
-/** Get diagram spec for saving (uses recalculated positions for bubble map) */
-function getDiagramSpec(): Record<string, unknown> | null {
-  return diagramStore.getSpecForSave()
-}
-
-/**
- * Perform auto-save of current diagram
- * Called after debounce delay when diagram changes
- */
-async function performAutoSave(): Promise<void> {
-  // Don't auto-save if not authenticated
-  if (!authStore.isAuthenticated) return
-
-  // Don't auto-save if no diagram data
-  if (!diagramStore.type || !diagramStore.data) return
-
-  const spec = getDiagramSpec()
-  if (!spec) return
-
-  const title = getDiagramTitle()
-
-  try {
-    const result = await savedDiagramsStore.autoSaveDiagram(
-      title,
-      diagramStore.type,
-      spec,
-      isZh.value ? 'zh' : 'en',
-      null, // TODO: Generate thumbnail
-      diagramStore.sessionEditCount
-    )
-
-    if (result.success) {
-      diagramStore.resetSessionEditCount()
-    }
-
-    // Log result for debugging (can be removed in production)
-    if (result.success) {
-      console.log(`[CanvasPage] Auto-save ${result.action}: diagram ${result.diagramId}`)
-
-      // Sync URL with diagramId when a new diagram is saved
-      // This ensures the diagram persists on page refresh
-      if (result.action === 'saved' && result.diagramId) {
-        router.replace({
-          path: '/canvas',
-          query: { diagramId: result.diagramId },
-        })
-      }
-    } else if (result.action === 'skipped') {
-      // Silent skip when slots full - this is expected
-      console.log('[CanvasPage] Auto-save skipped: no available slots')
-    }
-    // Don't show notifications for auto-save - it should be invisible to user
-  } catch (error) {
-    console.error('[CanvasPage] Auto-save error:', error)
-  }
-}
-
-/**
- * Debounced auto-save trigger
- * Resets timer on each call, only executes after delay
- */
-function triggerAutoSave(): void {
-  if (autoSaveTimer) {
-    clearTimeout(autoSaveTimer)
-  }
-  autoSaveTimer = setTimeout(performAutoSave, AUTO_SAVE_DELAY)
-}
-
 // Watch for diagram data changes to trigger auto-save and send granular updates
+// Auto-save: only on content change (text, add/remove nodes, connections) - not position-only (Vue Flow sync)
 watch(
   () => diagramStore.data,
   (newData, oldData) => {
-    // Only auto-save if we have data and it's changed
-    if (newData && oldData) {
-      triggerAutoSave()
+    if (!newData || !oldData) return
 
-      // Send granular updates to workshop if active
-      if (workshopCode.value && newData.nodes && newData.connections) {
-        const changedNodes = calculateDiff(
-          previousNodes as Array<{ id: string }>,
-          newData.nodes as Array<{ id: string }>
-        )
-        const changedConnections = calculateDiff(
-          previousConnections as Array<{ id: string }>,
-          (newData.connections || []) as Array<{ id: string }>
-        )
+    // Auto-save only when content changed (event-driven, composable handles guards)
+    if (diagramAutoSave.shouldTrigger(oldData, newData)) {
+      diagramAutoSave.trigger()
+    }
 
-        // Only send if there are changes
-        if (changedNodes.length > 0 || changedConnections.length > 0) {
-          sendUpdate(undefined, changedNodes, changedConnections)
-        }
+    // Send granular updates to workshop if active (any change including position)
+    if (workshopCode.value && newData.nodes && newData.connections) {
+      const changedNodes = calculateDiff(
+        previousNodes as Array<{ id: string }>,
+        newData.nodes as Array<{ id: string }>
+      )
+      const changedConnections = calculateDiff(
+        previousConnections as Array<{ id: string }>,
+        (newData.connections || []) as Array<{ id: string }>
+      )
 
-        // Update previous state
-        previousNodes = JSON.parse(JSON.stringify(newData.nodes))
-        previousConnections = JSON.parse(JSON.stringify(newData.connections || []))
-      } else if (newData.nodes && newData.connections) {
-        // Initialize previous state
-        previousNodes = JSON.parse(JSON.stringify(newData.nodes))
-        previousConnections = JSON.parse(JSON.stringify(newData.connections || []))
+      if (changedNodes.length > 0 || changedConnections.length > 0) {
+        sendUpdate(undefined, changedNodes, changedConnections)
       }
+
+      previousNodes = JSON.parse(JSON.stringify(newData.nodes))
+      previousConnections = JSON.parse(JSON.stringify(newData.connections || []))
+    } else if (newData.nodes && newData.connections) {
+      previousNodes = JSON.parse(JSON.stringify(newData.nodes))
+      previousConnections = JSON.parse(JSON.stringify(newData.connections || []))
     }
   },
   { deep: true }
@@ -706,8 +648,32 @@ async function loadDiagramFromLibrary(diagramId: string): Promise<void> {
     // Clear undo/redo history when switching diagrams
     diagramStore.clearHistory()
 
-    // Load the diagram into store
-    const loaded = diagramStore.loadFromSpec(diagram.spec, diagram.diagram_type as DiagramType)
+    // Restore LLM results if diagram was saved with multiple model results
+    const spec = diagram.spec as Record<string, unknown>
+    const llmResults = spec?.llm_results as
+      | { results?: Record<string, unknown>; selectedModel?: string }
+      | undefined
+    let specForLoad = spec
+    if (llmResults?.results && typeof llmResults.results === 'object') {
+      llmResultsStore.restoreFromSaved(
+        llmResults as { results?: Record<string, LLMResult>; selectedModel?: string },
+        diagram.diagram_type
+      )
+      specForLoad = { ...spec }
+      delete (specForLoad as Record<string, unknown>).llm_results
+    } else {
+      llmResultsStore.clearCache()
+    }
+
+    // Emit so useDiagramAutoSave suppresses auto-save (avoids redundant save)
+    eventBus.emit('diagram:loaded_from_library', {
+      diagramId,
+      diagramType: diagram.diagram_type,
+    })
+    const loaded = diagramStore.loadFromSpec(
+      specForLoad,
+      diagram.diagram_type as DiagramType
+    )
 
     if (loaded) {
       uiStore.setSelectedChartType(
@@ -786,12 +752,7 @@ onUnmounted(() => {
     document.exitFullscreen().catch(() => {})
   }
 
-  // Clear auto-save timer
-  if (autoSaveTimer) {
-    clearTimeout(autoSaveTimer)
-    autoSaveTimer = null
-  }
-
+  diagramAutoSave.teardown()
   eventBus.removeAllListenersForOwner('CanvasPage')
 
   // Clean up workshop connection when leaving canvas
@@ -897,6 +858,14 @@ onUnmounted(() => {
           v-if="diagramStore.type === 'concept_map'"
           class="label-picker-wrap order-3 shrink-0 min-w-0"
         />
+        <div
+          v-if="autoSavedStatusText"
+          class="auto-saved-status text-sm text-gray-500 dark:text-gray-400 shrink-0 order-4 self-center cursor-pointer hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+          :title="t('editor.clickToSave', 'Click to save')"
+          @click="handleSaveKey"
+        >
+          {{ autoSavedStatusText }}
+        </div>
         <div
           v-if="showZoomControls"
           class="zoom-controls-wrap flex shrink-0 order-1 md:order-2"

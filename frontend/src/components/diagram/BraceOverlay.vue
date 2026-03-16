@@ -17,6 +17,7 @@ import { computed } from 'vue'
 
 import { useVueFlow } from '@vue-flow/core'
 
+import { getMindmapBranchColor } from '@/config/mindmapColors'
 import { DEFAULT_NODE_HEIGHT, DEFAULT_NODE_WIDTH } from '@/composables/diagrams/layoutConfig'
 import { useLanguage } from '@/composables/useLanguage'
 import { useDiagramStore } from '@/stores'
@@ -46,8 +47,7 @@ interface NodeWithDimensions {
   dimensions?: { width?: number; height?: number }
 }
 
-// Brace styling
-const BRACE_COLOR = '#64748b' // Tailwind slate-500 (matches the screenshot)
+// Brace styling (per-group colors from mindmap palette, same as double bubble map)
 const BRACE_STROKE_WIDTH = 2
 const BRACE_TIP_SIZE = 2 // How far the pointy tip extends horizontally (compact)
 const END_CURVE_SIZE = 5 // Size of curves at top/bottom ends (compact)
@@ -204,14 +204,27 @@ function generateBracePath(group: BraceGroup): {
 }
 
 /**
- * Generate SVG paths for each brace group
+ * Generate SVG paths for each brace group with per-group colors
  */
 const braceElements = computed(() => {
+  const nodes = getNodes.value
+  const targetIds = new Set(
+    diagramStore.vueFlowEdges.map((e) => e.target)
+  )
+  const rootId = nodes.find((n) => !targetIds.has(n.id))?.id
+
   return braceGroups.value.map((group) => {
     const { bracePath } = generateBracePath(group)
+    const isRootGroup = group.parentId === rootId
+    const parentNode = nodes.find((n) => n.id === group.parentId)
+    const groupIndex = isRootGroup
+      ? 0
+      : (parentNode?.data?.groupIndex as number | undefined) ?? 0
+    const color = getMindmapBranchColor(groupIndex)
     return {
       groupId: group.parentId,
       bracePath,
+      strokeColor: color.border,
     }
   })
 })
@@ -296,7 +309,7 @@ const braceMapAlternativePosition = computed(() => {
         <!-- The curly brace -->
         <path
           :d="element.bracePath"
-          :stroke="BRACE_COLOR"
+          :stroke="element.strokeColor"
           :stroke-width="BRACE_STROKE_WIDTH"
           fill="none"
           stroke-linecap="round"

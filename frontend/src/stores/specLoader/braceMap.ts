@@ -1,6 +1,7 @@
 /**
  * Brace Map Loader
  */
+import { getMindmapBranchColor } from '@/config/mindmapColors'
 import {
   BRACE_MAP_LEVEL_WIDTH,
   BRACE_MAP_NODE_SPACING,
@@ -154,6 +155,27 @@ export function loadBraceMapSpec(spec: Record<string, unknown>): SpecLoaderResul
       }
     })
 
+    // Compute groupIndex for each node (for color scheme like mindmap/double bubble)
+    // Root's direct children: index 0, 1, 2... Subparts inherit parent's groupIndex
+    const rootId = flatData.dagreNodes.find(
+      (n) => !flatData.dagreEdges.some((e) => e.target === n.id)
+    )?.id
+    const groupIndexMap = new Map<string, number>()
+    if (rootId) {
+      const rootChildren = childrenMap.get(rootId) ?? []
+      rootChildren.forEach((childId, idx) => {
+        groupIndexMap.set(childId, idx)
+      })
+      flatData.dagreNodes.forEach((node) => {
+        if (node.id === rootId) return
+        const parentEdge = flatData.dagreEdges.find((e) => e.target === node.id)
+        const parentId = parentEdge?.source
+        if (parentId && groupIndexMap.has(parentId)) {
+          groupIndexMap.set(node.id, groupIndexMap.get(parentId)!)
+        }
+      })
+    }
+
     // Calculate adjusted Y positions by centering each parent relative to its children
     // Process from deepest level to shallowest (bottom-up)
     const adjustedY = new Map<string, number>()
@@ -198,19 +220,30 @@ export function loadBraceMapSpec(spec: Record<string, unknown>): SpecLoaderResul
       })
     }
 
-    // Create nodes with adjusted positions
+    // Create nodes with adjusted positions and groupIndex for color scheme
     flatData.dagreNodes.forEach((dagreNode) => {
       const info = flatData.nodeInfos.get(dagreNode.id)
       const pos = layoutResult.positions.get(dagreNode.id)
       const adjustedPosY = adjustedY.get(dagreNode.id)
+      const groupIndex = groupIndexMap.get(dagreNode.id)
 
       if (info && pos) {
-        nodes.push({
+        const node: DiagramNode = {
           id: dagreNode.id,
           text: info.text || '',
           type: info.depth === 0 ? 'topic' : 'brace',
           position: { x: pos.x, y: adjustedPosY !== undefined ? adjustedPosY : pos.y },
-        })
+        }
+        if (groupIndex !== undefined) {
+          const color = getMindmapBranchColor(groupIndex)
+          node.data = { groupIndex }
+          node.style = {
+            ...node.style,
+            backgroundColor: color.fill,
+            borderColor: color.border,
+          }
+        }
+        nodes.push(node)
       }
     })
 
@@ -284,6 +317,21 @@ export function recalculateBraceMapLayout(
     if (children) children.push(conn.target)
   })
 
+  // Recompute groupIndex for color scheme (same logic as loadBraceMapSpec)
+  const groupIndexMap = new Map<string, number>()
+  const rootChildren = childrenMap.get(rootId) ?? []
+  rootChildren.forEach((childId, idx) => {
+    groupIndexMap.set(childId, idx)
+  })
+  treeNodes.forEach((node) => {
+    if (node.id === rootId) return
+    const parentConn = connections.find((c) => c.target === node.id)
+    const parentId = parentConn?.source
+    if (parentId && groupIndexMap.has(parentId)) {
+      groupIndexMap.set(node.id, groupIndexMap.get(parentId)!)
+    }
+  })
+
   function buildTree(nodeId: string): BraceNode {
     const node = treeNodes.find((n) => n.id === nodeId)
     const text = node?.text ?? ''
@@ -352,6 +400,12 @@ export function recalculateBraceMapLayout(
     const node = nodeMap.get(dagreNode.id)
     if (node && pos) {
       node.position = { x: pos.x, y: adjustedPosY !== undefined ? adjustedPosY : pos.y }
+      const groupIndex = groupIndexMap.get(dagreNode.id)
+      if (groupIndex !== undefined) {
+        const color = getMindmapBranchColor(groupIndex)
+        node.data = { ...node.data, groupIndex }
+        node.style = { ...node.style, backgroundColor: color.fill, borderColor: color.border }
+      }
     }
   })
 

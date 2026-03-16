@@ -3,7 +3,9 @@
  *
  * Layout: fixed canvas center (DEFAULT_CENTER_X/Y); topic at center with text-adaptive radius;
  * attribute bubbles on a ring. Single-line, no truncation; circles grow to fit text.
+ * Uses mindmap branch color palette for each attribute (like double bubble map).
  */
+import { getMindmapBranchColor } from '@/config/mindmapColors'
 import {
   DEFAULT_CENTER_X,
   DEFAULT_CENTER_Y,
@@ -94,14 +96,18 @@ export function recalculateBubbleMapLayout(nodes: DiagramNode[]): DiagramNode[] 
       uniformRadius
     )
     const pos = { x: Math.round(x), y: Math.round(y) }
+    const color = getMindmapBranchColor(index)
     result.push({
       ...node,
       position: pos,
+      data: { ...node.data, groupIndex: index },
       style: {
         ...node.style,
         size: uniformRadius * 2,
         fontSize: CONTEXT_FONT_SIZE,
         noWrap: true,
+        backgroundColor: color.fill,
+        borderColor: color.border,
       },
     })
   })
@@ -167,15 +173,19 @@ export function loadBubbleMapSpec(spec: Record<string, unknown>): SpecLoaderResu
         uniformRadius,
         uniformRadius
       )
+      const color = getMindmapBranchColor(index)
       nodes.push({
         id: `bubble-${index}`,
         text: attr,
         type: 'bubble',
         position: { x: Math.round(x), y: Math.round(y) },
+        data: { groupIndex: index },
         style: {
           size: uniformDiameter,
           fontSize: CONTEXT_FONT_SIZE,
           noWrap: true,
+          backgroundColor: color.fill,
+          borderColor: color.border,
         },
       })
 
@@ -183,6 +193,7 @@ export function loadBubbleMapSpec(spec: Record<string, unknown>): SpecLoaderResu
         id: `edge-topic-bubble-${index}`,
         source: 'topic',
         target: `bubble-${index}`,
+        style: { strokeColor: color.border },
       })
     })
   }

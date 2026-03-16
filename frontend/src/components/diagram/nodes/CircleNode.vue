@@ -1,15 +1,17 @@
 <script setup lang="ts">
 /**
- * CircleNode - Perfect circular node for Circle Maps
- * Used for both topic and context nodes in circle maps
+ * CircleNode - Perfect circular node for Circle Maps, Bubble Maps
+ * Used for both topic and context nodes in circle/bubble maps
  * Always renders as a perfect circle regardless of content
  * Supports inline text editing on double-click
  * Adapts size based on text length
+ * Uses mindmap branch color palette for context nodes (like double bubble map)
  */
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import { Handle, Position } from '@vue-flow/core'
 
+import { getMindmapBranchColor } from '@/config/mindmapColors'
 import { eventBus } from '@/composables/useEventBus'
 import { getBorderStyleProps } from '@/utils/borderStyleUtils'
 import { useTheme } from '@/composables/useTheme'
@@ -24,6 +26,7 @@ import type { MindGraphNodeProps } from '@/types'
 import InlineEditableText from './InlineEditableText.vue'
 
 const props = defineProps<MindGraphNodeProps>()
+const diagramStore = useDiagramStore()
 
 // Get theme defaults
 const { getNodeStyle } = useTheme({
@@ -55,7 +58,14 @@ const capsuleHeight = computed(() => props.data.style?.height ?? circleSize.valu
 // Use 'context' for circle map context nodes (not 'bubble')
 const defaultStyle = computed(() => getNodeStyle(isTopicNode.value ? 'topic' : 'context'))
 
-const diagramStore = useDiagramStore()
+// Per-group color from mindmap palette for bubble_map / circle_map context nodes
+const groupColor = computed(() => {
+  const idx = props.data.groupIndex as number | undefined
+  if (idx === undefined) return null
+  const isContext =
+    diagramStore.type === 'bubble_map' || diagramStore.type === 'circle_map'
+  return isContext && !isTopicNode.value ? getMindmapBranchColor(idx) : null
+})
 
 // Get the circle size from data or calculate adaptively based on text length
 // Topic node (circle_map / bubble_map): single-line, size from text measurement (same as layout)
@@ -121,12 +131,14 @@ const textMaxWidth = computed(() => {
 
 // Circle Map colors matching old JS bubble-map-renderer.js THEME
 // Topic: fill #1976d2 (blue), text #fff, stroke #0d47a1, strokeWidth 3
-// Context: fill #e3f2fd (light blue), text #333, stroke #1976d2, strokeWidth 2
+// Context: per-group colors from mindmap palette (bubble_map, circle_map)
 const nodeStyle = computed(() => {
   const width = isCapsuleNode.value ? capsuleWidth.value : circleSize.value
   const height = isCapsuleNode.value ? capsuleHeight.value : circleSize.value
+  const color = groupColor.value
   const borderColor =
     props.data.style?.borderColor ||
+    color?.border ||
     defaultStyle.value.borderColor ||
     (isTopicNode.value ? '#0d47a1' : '#1976d2')
   const borderWidth =
@@ -136,6 +148,7 @@ const nodeStyle = computed(() => {
   const borderStyle = props.data.style?.borderStyle || 'solid'
   const backgroundColor =
     props.data.style?.backgroundColor ||
+    color?.fill ||
     defaultStyle.value.backgroundColor ||
     (isTopicNode.value ? '#1976d2' : '#e3f2fd')
 

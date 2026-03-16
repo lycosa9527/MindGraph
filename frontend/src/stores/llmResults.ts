@@ -146,19 +146,23 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
       return false
     }
 
-    // Save current diagram (including learning sheet state) before replacing
     const savedDiagramsStore = useSavedDiagramsStore()
-    await savedDiagramsStore.saveCurrentDiagramBeforeReplace()
 
-    // Load into diagram store
+    // During auto-complete: skip save-before-replace. User edits already saved; we save once on llm:generation_completed.
+    // User-initiated switch (after generation): save current before replacing so user can revert.
+    if (!isGenerating.value) {
+      await savedDiagramsStore.saveCurrentDiagramBeforeReplace()
+    }
+
+    // Load into diagram store (emits diagram:loaded; auto-save will re-trigger if needed)
     const loaded = diagramStore.loadFromSpec(
       result.spec,
       diagramType as import('@/types').DiagramType
     )
     if (loaded) {
       selectedModel.value = model
-      // Clear activeDiagramId so the new diagram is treated as unsaved (from LLM cache)
-      savedDiagramsStore.setActiveDiagram(null)
+      // Always keep activeDiagramId - we're updating the same diagram with different
+      // LLM result. Clearing it caused duplicate CREATE when debounced save fired.
       console.log(`[LLMResults] Switched to ${model} result`)
       return true
     }
@@ -309,6 +313,53 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
     totalModels.value = null
   }
 
+  /**
+   * Get results for persistence (save with diagram spec).
+   * Returns { results, selectedModel } when we have 2+ successful results.
+   */
+  function getResultsForPersistence(): {
+    results: Record<string, LLMResult>
+    selectedModel: string
+  } | null {
+    const successResults: Record<string, LLMResult> = {}
+    Object.entries(results.value).forEach(([model, r]) => {
+      if (r.success && r.spec) {
+        successResults[model] = r
+      }
+    })
+    const count = Object.keys(successResults).length
+    if (count < 2 || !selectedModel.value) return null
+    return {
+      results: successResults,
+      selectedModel: selectedModel.value,
+    }
+  }
+
+  /**
+   * Restore LLM results from saved diagram spec.
+   * Enables model switching when reopening a diagram that had multiple results.
+   * @param saved - { results: Record<model, LLMResult>, selectedModel: string }
+   */
+  function restoreFromSaved(
+    saved: { results?: Record<string, LLMResult>; selectedModel?: string },
+    diagramType: string
+  ): void {
+    if (!saved || typeof saved !== 'object' || !saved.results) return
+
+    const normalizedType = diagramType === 'mind_map' ? 'mindmap' : diagramType
+    expectedDiagramType.value = normalizedType
+    results.value = {}
+    Object.entries(saved.results).forEach(([model, r]) => {
+      if (r && r.success && r.spec) {
+        results.value[model] = { ...r, timestamp: Date.now() }
+        modelStates.value[model] = 'ready'
+      }
+    })
+    const sel = saved.selectedModel
+    selectedModel.value =
+      sel && Object.keys(results.value).includes(sel) ? sel : null
+  }
+
   return {
     // State
     results,
@@ -342,5 +393,7 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
     addAbortController,
     removeAbortController,
     reset,
+    getResultsForPersistence,
+    restoreFromSaved,
   }
 })

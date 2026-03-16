@@ -18,6 +18,7 @@ import { defineStore } from 'pinia'
 import type { DiagramType } from '@/types'
 import { authFetch } from '@/utils/api'
 
+import { SAVE } from '@/config'
 import { getDefaultDiagramName } from '@/composables'
 
 import { useAuthStore } from './auth'
@@ -26,7 +27,6 @@ import { usePanelsStore } from './panels'
 import { getDefaultTemplate, loadSpecForDiagramType } from './specLoader'
 
 // Security constants - must match backend limits
-const MAX_SPEC_SIZE_KB = 500 // Backend limit from DIAGRAM_MAX_SPEC_SIZE_KB
 const MAX_THUMBNAIL_SIZE = 150000 // Max base64 chars (~100KB decoded)
 
 /**
@@ -225,11 +225,11 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
     // Validate spec size before sending
     const specJson = JSON.stringify(spec)
     const specSizeKB = new Blob([specJson]).size / 1024
-    if (specSizeKB > MAX_SPEC_SIZE_KB) {
+    if (specSizeKB > SAVE.MAX_SPEC_SIZE_KB) {
       console.error(
-        `[SavedDiagrams] Spec too large: ${specSizeKB.toFixed(1)}KB > ${MAX_SPEC_SIZE_KB}KB`
+        `[SavedDiagrams] Spec too large: ${specSizeKB.toFixed(1)}KB > ${SAVE.MAX_SPEC_SIZE_KB}KB`
       )
-      error.value = `Diagram data too large (${specSizeKB.toFixed(0)}KB). Maximum is ${MAX_SPEC_SIZE_KB}KB.`
+      error.value = `Diagram data too large (${specSizeKB.toFixed(0)}KB). Maximum is ${SAVE.MAX_SPEC_SIZE_KB}KB.`
       return null
     }
 
@@ -299,11 +299,11 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
     if (updates.spec) {
       const specJson = JSON.stringify(updates.spec)
       const specSizeKB = new Blob([specJson]).size / 1024
-      if (specSizeKB > MAX_SPEC_SIZE_KB) {
+      if (specSizeKB > SAVE.MAX_SPEC_SIZE_KB) {
         console.error(
-          `[SavedDiagrams] Spec too large: ${specSizeKB.toFixed(1)}KB > ${MAX_SPEC_SIZE_KB}KB`
+          `[SavedDiagrams] Spec too large: ${specSizeKB.toFixed(1)}KB > ${SAVE.MAX_SPEC_SIZE_KB}KB`
         )
-        error.value = `Diagram data too large (${specSizeKB.toFixed(0)}KB). Maximum is ${MAX_SPEC_SIZE_KB}KB.`
+        error.value = `Diagram data too large (${specSizeKB.toFixed(0)}KB). Maximum is ${SAVE.MAX_SPEC_SIZE_KB}KB.`
         return false
       }
     }

@@ -3,11 +3,13 @@
  * BraceNode - Part node for brace maps
  * Represents parts in a part-whole relationship
  * Supports inline text editing on double-click
+ * Uses mindmap branch color palette for part/subpart groups (like double bubble map)
  */
 import { computed, ref } from 'vue'
 
 import { Handle, Position } from '@vue-flow/core'
 
+import { getMindmapBranchColor } from '@/config/mindmapColors'
 import { eventBus } from '@/composables/useEventBus'
 import { getBorderStyleProps } from '@/utils/borderStyleUtils'
 import { useTheme } from '@/composables/useTheme'
@@ -26,6 +28,12 @@ const isWholeNode = computed(() => props.data.originalNode?.type === 'topic')
 const _isPart = computed(() => !isWholeNode.value && !props.data.parentId)
 const isSubpart = computed(() => !isWholeNode.value && !!props.data.parentId)
 
+// Per-group color from mindmap palette (same as double bubble map / mindmap)
+const groupColor = computed(() => {
+  const idx = props.data.groupIndex as number | undefined
+  return idx !== undefined ? getMindmapBranchColor(idx) : null
+})
+
 const defaultStyle = computed(() => {
   if (isWholeNode.value) return getNodeStyle('topic')
   if (isSubpart.value) return getNodeStyle('subpart')
@@ -36,8 +44,10 @@ const defaultStyle = computed(() => {
 const usePillShape = computed(() => !isWholeNode.value)
 
 const nodeStyle = computed(() => {
+  const color = groupColor.value
   const borderColor =
     props.data.style?.borderColor ||
+    color?.border ||
     defaultStyle.value.borderColor ||
     (isWholeNode.value ? '#0d47a1' : '#1976d2')
   const borderWidth =
@@ -47,6 +57,7 @@ const nodeStyle = computed(() => {
   const borderStyle = props.data.style?.borderStyle || 'solid'
   const backgroundColor =
     props.data.style?.backgroundColor ||
+    color?.fill ||
     defaultStyle.value.backgroundColor ||
     (isWholeNode.value ? '#1976d2' : '#e3f2fd')
 

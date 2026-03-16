@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.39.2] - 2026-03-16
+
+### Added
+- **useDiagramAutoSave**: New composable for event-driven diagram auto-save—config-driven timing, event-based coordination (diagram:loaded_from_library, llm:generation_completed), and state-driven guards.
+- **useDiagramSpecForSave**: New composable to get diagram spec for save with optional LLM results persistence (when 2+ results, under size limit).
+- **saveConfig**: Centralized save constants (debounce, suppression-after-load window, max spec size) in `config/saveConfig.ts`.
+
+### Changed
+- **Auto-save flow**: Refactored from inline logic into useDiagramAutoSave composable for cleaner separation and maintainability.
+
+## [5.39.1] - 2026-03-16
+
+### Fixed
+- **Auto-complete diagram history bug**: Fixed issue where 3 diagrams were saved in diagram history for a single auto-complete. Now uses event + state-driven flow: user edits save immediately (debounced); LLM generation skips auto-save; single save on `llm:generation_completed`.
+
 ## [5.39.0] - 2026-03-16
 
 ### Added

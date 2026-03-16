@@ -9,7 +9,12 @@ import { ElButton, ElDialog, ElTag } from 'element-plus'
 
 import { Copy, Users } from 'lucide-vue-next'
 
-import { getDefaultDiagramName, useLanguage, useNotifications } from '@/composables'
+import {
+  getDefaultDiagramName,
+  useDiagramSpecForSave,
+  useLanguage,
+  useNotifications,
+} from '@/composables'
 import { useDiagramStore } from '@/stores'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import { authFetch } from '@/utils/api'
@@ -63,10 +68,8 @@ const showDialog = computed({
   set: (value) => emit('update:visible', value),
 })
 
-/** Get diagram spec for saving (uses recalculated positions for bubble map) */
-function getDiagramSpec(): Record<string, unknown> | null {
-  return diagramStore.getSpecForSave()
-}
+/** Get diagram spec for saving (includes llm_results when 2+ models) */
+const getDiagramSpec = useDiagramSpecForSave()
 
 // Get diagram title for saving
 function getDiagramTitle(): string {

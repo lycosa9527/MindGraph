@@ -3,6 +3,7 @@
  * FlowNode - Step node for flow maps
  * Represents sequential steps in a process flow
  * Supports inline text editing on double-click
+ * Uses mindmap branch color palette for multi-flow map causes/effects
  */
 import { computed, nextTick, ref } from 'vue'
 
@@ -10,6 +11,7 @@ import { Handle, Position } from '@vue-flow/core'
 
 import { X } from 'lucide-vue-next'
 
+import { getMindmapBranchColor } from '@/config/mindmapColors'
 import { eventBus } from '@/composables/useEventBus'
 import { getBorderStyleProps } from '@/utils/borderStyleUtils'
 import { useTheme } from '@/composables/useTheme'
@@ -34,14 +36,29 @@ const isMultiFlowMap = computed(() => props.data.diagramType === 'multi_flow_map
 const isCause = computed(() => isMultiFlowMap.value && props.id.startsWith('cause-'))
 const isEffect = computed(() => isMultiFlowMap.value && props.id.startsWith('effect-'))
 
+// Per-group color from mindmap palette for multi-flow map causes/effects
+const groupColor = computed(() => {
+  const idx = props.data.groupIndex as number | undefined
+  return idx !== undefined && isMultiFlowMap.value
+    ? getMindmapBranchColor(idx)
+    : null
+})
+
 const nodeStyle = computed(() => {
+  const color = groupColor.value
   const borderColor =
-    props.data.style?.borderColor || defaultStyle.value.borderColor || '#409eff'
+    props.data.style?.borderColor ||
+    color?.border ||
+    defaultStyle.value.borderColor ||
+    '#409eff'
   const borderWidth =
     props.data.style?.borderWidth || defaultStyle.value.borderWidth || 2
   const borderStyle = props.data.style?.borderStyle || 'solid'
   const backgroundColor =
-    props.data.style?.backgroundColor || defaultStyle.value.backgroundColor || '#ffffff'
+    props.data.style?.backgroundColor ||
+    color?.fill ||
+    defaultStyle.value.backgroundColor ||
+    '#ffffff'
 
   const baseStyle = {
     backgroundColor,

@@ -48,6 +48,8 @@ export const translations: Record<Language, Record<string, string>> = {
     'editor.zoomOut': 'Zoom Out',
     'editor.fitToScreen': 'Fit to Screen',
     'editor.selectDiagramType': 'Select Diagram Type',
+    'editor.autoSavedAt': 'Auto-saved at {time}',
+    'editor.clickToSave': 'Click to save',
 
     // Diagram nodes (matching old JS languageManager)
     'diagram.newAttribute': 'New Attribute',
@@ -241,6 +243,8 @@ export const translations: Record<Language, Record<string, string>> = {
     'editor.zoomOut': '缩小',
     'editor.fitToScreen': '适应屏幕',
     'editor.selectDiagramType': '选择图表类型',
+    'editor.autoSavedAt': '已自动保存 {time}',
+    'editor.clickToSave': '点击保存',
 
     // Diagram nodes (matching old JS languageManager)
     'diagram.newAttribute': '新属性',

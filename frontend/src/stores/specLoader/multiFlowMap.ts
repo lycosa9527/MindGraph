@@ -1,6 +1,8 @@
 /**
  * Multi-Flow Map Loader
+ * Uses mindmap branch color palette for causes and effects (like double bubble map).
  */
+import { getMindmapBranchColor } from '@/config/mindmapColors'
 import {
   DEFAULT_CENTER_X,
   DEFAULT_CENTER_Y,
@@ -135,17 +137,15 @@ export function recalculateMultiFlowMapLayout(
   })
 
   // Causes - re-index with sequential IDs (cause-0, cause-1, etc.)
-  // Causes are positioned to the left of topic node
-  // Position: arrow column width is `leftArrowSpacing` (edge-to-edge)
-  // So: cause right edge = topic left edge - leftArrowSpacing
-  //     cause left edge = cause right edge - uniformColumnWidth
-  //     cause x = topicLeftEdge - leftArrowSpacing - uniformColumnWidth
   const causeStartY = centerY - ((causes.length - 1) * verticalSpacing) / 2
   causeNodes.forEach((node, index) => {
+    const color = getMindmapBranchColor(index)
     const causeStyle = {
       ...(node.style || {}),
       width: uniformColumnWidth,
       minWidth: uniformColumnWidth,
+      backgroundColor: color.fill,
+      borderColor: color.border,
     }
     result.push({
       id: `cause-${index}`,
@@ -155,22 +155,21 @@ export function recalculateMultiFlowMapLayout(
         x: topicLeftEdge - leftArrowSpacing - uniformColumnWidth,
         y: causeStartY + index * verticalSpacing - nodeHeight / 2,
       },
+      data: { ...node.data, groupIndex: index },
       style: causeStyle,
     })
   })
 
   // Effects - re-index with sequential IDs (effect-0, effect-1, etc.)
-  // Effects are positioned to the right of topic node
-  // Position: arrow column width is `rightArrowSpacing` (edge-to-edge)
-  // So: effect left edge = topic right edge + rightArrowSpacing
-  //     effect x = topicRightEdge + rightArrowSpacing
-  // Apply uniform width for visual balance (same as causes)
   const effectStartY = centerY - ((effects.length - 1) * verticalSpacing) / 2
   effectNodes.forEach((node, index) => {
+    const color = getMindmapBranchColor(index)
     const effectStyle = {
       ...(node.style || {}),
       width: uniformColumnWidth,
       minWidth: uniformColumnWidth,
+      backgroundColor: color.fill,
+      borderColor: color.border,
     }
     result.push({
       id: `effect-${index}`,
@@ -180,6 +179,7 @@ export function recalculateMultiFlowMapLayout(
         x: topicRightEdge + rightArrowSpacing,
         y: effectStartY + index * verticalSpacing - nodeHeight / 2,
       },
+      data: { ...node.data, groupIndex: index },
       style: effectStyle,
     })
   })
@@ -221,6 +221,7 @@ export function loadMultiFlowMapSpec(spec: Record<string, unknown>): SpecLoaderR
   // Causes
   const causeStartY = centerY - ((causes.length - 1) * verticalSpacing) / 2
   causes.forEach((cause, index) => {
+    const color = getMindmapBranchColor(index)
     nodes.push({
       id: `cause-${index}`,
       text: cause,
@@ -229,19 +230,26 @@ export function loadMultiFlowMapSpec(spec: Record<string, unknown>): SpecLoaderR
         x: centerX - sideSpacing - nodeWidth / 2,
         y: causeStartY + index * verticalSpacing - nodeHeight / 2,
       },
+      data: { groupIndex: index },
+      style: {
+        backgroundColor: color.fill,
+        borderColor: color.border,
+      },
     })
     connections.push({
       id: `edge-cause-${index}`,
       source: `cause-${index}`,
       target: 'event',
       sourceHandle: 'right',
-      targetHandle: `left-${index}`, // Use specific handle ID matching the cause index
+      targetHandle: `left-${index}`,
+      style: { strokeColor: color.border },
     })
   })
 
   // Effects
   const effectStartY = centerY - ((effects.length - 1) * verticalSpacing) / 2
   effects.forEach((effect, index) => {
+    const color = getMindmapBranchColor(index)
     nodes.push({
       id: `effect-${index}`,
       text: effect,
@@ -250,13 +258,19 @@ export function loadMultiFlowMapSpec(spec: Record<string, unknown>): SpecLoaderR
         x: centerX + sideSpacing - nodeWidth / 2,
         y: effectStartY + index * verticalSpacing - nodeHeight / 2,
       },
+      data: { groupIndex: index },
+      style: {
+        backgroundColor: color.fill,
+        borderColor: color.border,
+      },
     })
     connections.push({
       id: `edge-effect-${index}`,
       source: 'event',
       target: `effect-${index}`,
-      sourceHandle: `right-${index}`, // Use specific handle ID matching the effect index
+      sourceHandle: `right-${index}`,
       targetHandle: 'left',
+      style: { strokeColor: color.border },
     })
   })
 

@@ -2,12 +2,14 @@
  * Double Bubble Map Loader
  * Text-adaptive radii, capsule dimensions, layout aligned with useDoubleBubbleMap.
  * Supports _doubleBubbleMapNodeSizes for empty-node saved radii.
+ * Similarities stay default blue; difference pairs use mindmap color palette (same color for left-diff and right-diff).
  */
 import {
   DEFAULT_COLUMN_SPACING,
   DEFAULT_PADDING,
   DOUBLE_BUBBLE_MAX_CAPSULE_HEIGHT,
 } from '@/composables/diagrams/layoutConfig'
+import { getMindmapBranchColor } from '@/config/mindmapColors'
 import type { Connection, DiagramNode } from '@/types'
 import {
   doubleBubbleDiffRequiredRadius,
@@ -238,6 +240,7 @@ export function loadDoubleBubbleMapSpec(spec: Record<string, unknown>): SpecLoad
 
   leftDifferences.forEach((diff, index) => {
     const cy = diffStartY + index * layout.diffVerticalSpacing
+    const pairColor = getMindmapBranchColor(index)
     nodes.push({
       id: `left-diff-${index}`,
       text: diff,
@@ -251,6 +254,8 @@ export function loadDoubleBubbleMapSpec(spec: Record<string, unknown>): SpecLoad
         height: layout.diffCap.height,
         size: diffR * 2,
         noWrap: true,
+        backgroundColor: pairColor.fill,
+        borderColor: pairColor.border,
       },
     })
     connections.push({
@@ -262,11 +267,13 @@ export function loadDoubleBubbleMapSpec(spec: Record<string, unknown>): SpecLoad
       targetPosition: 'right',
       sourceHandle: 'left',
       targetHandle: 'right',
+      style: { strokeColor: pairColor.border },
     })
   })
 
   rightDifferences.forEach((diff, index) => {
     const cy = diffStartY + index * layout.diffVerticalSpacing
+    const pairColor = getMindmapBranchColor(index)
     nodes.push({
       id: `right-diff-${index}`,
       text: diff,
@@ -280,6 +287,8 @@ export function loadDoubleBubbleMapSpec(spec: Record<string, unknown>): SpecLoad
         height: layout.diffCap.height,
         size: diffR * 2,
         noWrap: true,
+        backgroundColor: pairColor.fill,
+        borderColor: pairColor.border,
       },
     })
     connections.push({
@@ -291,6 +300,7 @@ export function loadDoubleBubbleMapSpec(spec: Record<string, unknown>): SpecLoad
       targetPosition: 'left',
       sourceHandle: 'right',
       targetHandle: 'left',
+      style: { strokeColor: pairColor.border },
     })
   })
 

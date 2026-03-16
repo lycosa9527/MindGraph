@@ -13,6 +13,7 @@ import { computed, ref } from 'vue'
 
 import { defineStore } from 'pinia'
 
+import { getMindmapBranchColor } from '@/config/mindmapColors'
 import {
   augmentConnectionWithOptimalHandles,
   computeDefaultArrowheadForConceptMap,
@@ -755,6 +756,7 @@ export const useDiagramStore = defineStore('diagram', () => {
           target: 'event',
           sourceHandle: 'right',
           targetHandle: `left-${causeIndex}`,
+          style: { strokeColor: getMindmapBranchColor(causeIndex).border },
         })
       })
 
@@ -765,6 +767,7 @@ export const useDiagramStore = defineStore('diagram', () => {
           target: effectNode.id,
           sourceHandle: `right-${effectIndex}`,
           targetHandle: 'left',
+          style: { strokeColor: getMindmapBranchColor(effectIndex).border },
         })
       })
 
@@ -782,6 +785,7 @@ export const useDiagramStore = defineStore('diagram', () => {
         id: `edge-topic-bubble-${i}`,
         source: 'topic',
         target: `bubble-${i}`,
+        style: { strokeColor: getMindmapBranchColor(i).border },
       }))
     } else if (type.value === 'concept_map') {
       // Concept map: ensure concept nodes have proper id and type
@@ -988,6 +992,7 @@ export const useDiagramStore = defineStore('diagram', () => {
           target: 'event',
           sourceHandle: 'right',
           targetHandle: `left-${causeIndex}`,
+          style: { strokeColor: getMindmapBranchColor(causeIndex).border },
         })
       })
 
@@ -998,6 +1003,7 @@ export const useDiagramStore = defineStore('diagram', () => {
           target: effectNode.id,
           sourceHandle: `right-${effectIndex}`,
           targetHandle: 'left',
+          style: { strokeColor: getMindmapBranchColor(effectIndex).border },
         })
       })
 
@@ -1022,6 +1028,7 @@ export const useDiagramStore = defineStore('diagram', () => {
         id: `edge-topic-bubble-${i}`,
         source: 'topic',
         target: `bubble-${i}`,
+        style: { strokeColor: getMindmapBranchColor(i).border },
       }))
       useConceptMapRelationshipStore().clearAll()
     } else {
@@ -1083,6 +1090,7 @@ export const useDiagramStore = defineStore('diagram', () => {
       id: `edge-topic-bubble-${i}`,
       source: 'topic',
       target: `bubble-${i}`,
+      style: { strokeColor: getMindmapBranchColor(i).border },
     }))
 
     emitEvent('diagram:nodes_deleted', { nodeIds: deletedIds })

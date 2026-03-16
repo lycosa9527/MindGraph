@@ -48,7 +48,7 @@ const DEFAULT_THEMES: Partial<Record<DiagramType, DiagramTheme>> = {
     background: '#f5f5f5',
     centralTopicFill: '#1976d2',
     centralTopicText: '#ffffff',
-    centralTopicStroke: '#0d47a1',
+    centralTopicStroke: '#000000',
     centralTopicStrokeWidth: 3,
     branchFill: '#e3f2fd',
     branchText: '#333333',
@@ -163,7 +163,7 @@ const DEFAULT_THEMES: Partial<Record<DiagramType, DiagramTheme>> = {
     contextText: '#333333', // Dark gray
     contextStroke: '#1976d2', // Blue
     contextStrokeWidth: 2,
-    boundaryStroke: '#666666', // Gray
+    boundaryStroke: '#000000', // Black
     boundaryStrokeWidth: 2,
     fontTopic: 20,
     fontContext: 14,

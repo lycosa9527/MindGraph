@@ -28,7 +28,13 @@ import { ArrowLeft, FileImage, FileJson, FileText, ImageDown, RotateCcw } from '
 
 import { DiagramSlotFullModal } from '@/components/canvas'
 import { WorkshopModal } from '@/components/workshop'
-import { eventBus, getDefaultDiagramName, useNotifications, useWorkshop } from '@/composables'
+import {
+  eventBus,
+  getDefaultDiagramName,
+  useDiagramSpecForSave,
+  useNotifications,
+  useWorkshop,
+} from '@/composables'
 import { useLanguage } from '@/composables'
 import type { DiagramType } from '@/types'
 import { useAuthStore, useDiagramStore, useLLMResultsStore, usePanelsStore } from '@/stores'
@@ -217,10 +223,8 @@ function handleFileNameKeyPress(e: KeyboardEvent) {
   }
 }
 
-/** Get diagram spec for saving (uses recalculated positions for bubble map) */
-function getDiagramSpec(): Record<string, unknown> | null {
-  return diagramStore.getSpecForSave()
-}
+/** Get diagram spec for saving (includes llm_results when 2+ models) */
+const getDiagramSpec = useDiagramSpecForSave()
 
 // Save to gallery
 async function saveToGallery(): Promise<void> {

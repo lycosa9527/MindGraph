@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
  * LabelNode - Text label node for dimension labels and annotations
- * Used for displaying classification dimensions in Tree Maps and Brace Maps
+ * Tree Maps: classification dimension (分类维度); Brace Maps: decomposition dimension (拆解维度)
  * Supports inline text editing on double-click
  */
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
@@ -333,11 +333,29 @@ const displayText = computed(() => {
         ? translateDimension(props.data.label, true)
         : props.data.label
     const hasChinese = /[\u4e00-\u9fa5]/.test(dimensionValue)
-    const prefix = hasChinese ? '分类维度' : 'Classification by'
+    // Brace map: decomposition dimension (part-subpart); tree map: classification dimension
+    const prefix =
+      props.data.diagramType === 'brace_map'
+        ? hasChinese
+          ? '拆解维度'
+          : 'Decomposition by'
+        : hasChinese
+          ? '分类维度'
+          : 'Classification by'
     return `[${prefix}: ${dimensionValue}]`
   }
-  // Placeholder text - use app language
-  return isZh.value ? '[分类维度: 点击填写...]' : '[Classification by: click to specify...]'
+  // Placeholder text - use app language; brace map: decomposition, tree map: classification
+  const placeholderPrefix =
+    props.data.diagramType === 'brace_map'
+      ? isZh.value
+        ? '拆解维度'
+        : 'Decomposition by'
+      : isZh.value
+        ? '分类维度'
+        : 'Classification by'
+  return isZh.value
+    ? `[${placeholderPrefix}: 点击填写...]`
+    : `[${placeholderPrefix}: click to specify...]`
 })
 
 // Inline editing state
