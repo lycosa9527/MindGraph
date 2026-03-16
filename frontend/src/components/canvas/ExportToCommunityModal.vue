@@ -87,6 +87,17 @@ function close() {
   emit('update:visible', false)
 }
 
+function dataUrlToBlob(dataUrl: string): Blob {
+  const arr = dataUrl.split(',')
+  const mime = arr[0].match(/:(.*?);/)?.[1] ?? 'image/png'
+  const bstr = atob(arr[1])
+  const u8arr = new Uint8Array(bstr.length)
+  for (let i = 0; i < bstr.length; i++) {
+    u8arr[i] = bstr.charCodeAt(i)
+  }
+  return new Blob([u8arr], { type: mime })
+}
+
 async function generateThumbnail(): Promise<Blob | null> {
   const container = props.getContainer()
   if (!container) {
@@ -99,8 +110,7 @@ async function generateThumbnail(): Promise<Blob | null> {
       pixelRatio: 2,
       style: { transform: 'none' },
     })
-    const res = await fetch(dataUrl)
-    return await res.blob()
+    return dataUrlToBlob(dataUrl)
   } catch (e) {
     console.error('[ExportToCommunity] Thumbnail generation failed:', e)
     notify.error(isZh.value ? '预览图生成失败' : 'Failed to generate preview')
