@@ -24,18 +24,18 @@ const { getNodeStyle } = useTheme({
 
 const defaultStyle = computed(() => getNodeStyle('topic'))
 
-// Tree map, brace map, and mindmap use pill shape (fully rounded ends)
+// Tree map, brace map, mindmap, and flow maps use pill shape (fully rounded ends)
 const isPillShape = computed(
   () =>
     props.data.diagramType === 'tree_map' ||
     props.data.diagramType === 'brace_map' ||
     props.data.diagramType === 'mindmap' ||
-    props.data.diagramType === 'mind_map'
+    props.data.diagramType === 'mind_map' ||
+    props.data.diagramType === 'multi_flow_map' ||
+    props.data.diagramType === 'flow_map'
 )
-// Multi-flow map and flow map use rounded rectangle
-const isRoundedRectangle = computed(
-  () => props.data.diagramType === 'multi_flow_map' || props.data.diagramType === 'flow_map'
-)
+// Rounded rectangle (fallback when not pill or circle - e.g. bridge map)
+const isRoundedRectangle = computed(() => false)
 // Flow map: main topic with single handle (right for horizontal, bottom for vertical)
 const isFlowMap = computed(() => props.data.diagramType === 'flow_map')
 const flowMapOrientation = computed(
@@ -171,12 +171,13 @@ const nodeStyle = computed(() => {
     }
   }
 
-  // Flow map topic: fixed width for layout consistency
+  // Flow map topic: adaptive width (min 120px) so full text displays
   if (isFlowMap.value) {
     return {
       ...baseStyle,
-      width: '120px',
+      width: 'max-content',
       minWidth: '120px',
+      height: '48px',
     }
   }
 

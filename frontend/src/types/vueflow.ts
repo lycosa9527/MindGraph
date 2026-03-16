@@ -12,6 +12,7 @@ export type MindGraphNodeType =
   | 'concept' // Concept map concept node (with link icon)
   | 'bubble' // Circular attribute node
   | 'branch' // Mind map branch node
+  | 'leaf' // Tree map leaf node (child of category)
   | 'flow' // Flow map step node
   | 'flowSubstep' // Flow map substep node
   | 'brace' // Brace map part node
@@ -211,11 +212,12 @@ export function connectionToVueFlowEdge(
 }
 
 export function vueFlowNodeToDiagramNode(node: MindGraphNode): DiagramNode {
-  const typeMap: Record<MindGraphNodeType, string> = {
+  const typeMap: Record<string, string> = {
     topic: 'topic',
     concept: 'branch',
     bubble: 'bubble',
     branch: 'child',
+    leaf: 'branch',
     flow: 'flow',
     flowSubstep: 'flowSubstep',
     brace: 'brace',
@@ -247,11 +249,25 @@ export function vueFlowNodeToDiagramNode(node: MindGraphNode): DiagramNode {
       }
     }
   }
+  // Preserve tree map fields (nodeType, groupIndex) so they survive sync/save
+  if (data?.diagramType === 'tree_map') {
+    if (data.nodeType === 'branch' || data.nodeType === 'leaf') {
+      customData.nodeType = data.nodeType
+    }
+    if (typeof data.groupIndex === 'number') {
+      customData.groupIndex = data.groupIndex
+    }
+  }
+
+  let diagramNodeType = typeMap[nodeType] ?? typeMap.branch
+  if (data?.diagramType === 'tree_map') {
+    diagramNodeType = 'branch'
+  }
 
   return {
     id: node.id,
     text: data?.label ?? '',
-    type: typeMap[nodeType] as DiagramNode['type'],
+    type: diagramNodeType as DiagramNode['type'],
     position: { x: node.position.x, y: node.position.y },
     style: data?.style,
     parentId: data?.parentId,

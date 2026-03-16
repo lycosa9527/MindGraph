@@ -347,6 +347,16 @@ export const useDiagramStore = defineStore('diagram', () => {
       })
     }
 
+    // Flow map: disable drag for now
+    if (diagramType === 'flow_map') {
+      return data.value.nodes.map((node) => {
+        const vueFlowNode = diagramNodeToVueFlowNode(node, diagramType)
+        vueFlowNode.selected = selectedNodes.value.includes(node.id)
+        vueFlowNode.draggable = false
+        return vueFlowNode
+      })
+    }
+
     // Brace map: recalculate layout when nodes/connections change
     if (diagramType === 'brace_map') {
       const layoutNodes = recalculateBraceMapLayout(
@@ -1014,6 +1024,33 @@ export const useDiagramStore = defineStore('diagram', () => {
 
       // Trigger layout recalculation
       multiFlowMapRecalcTrigger.value++
+    } else if (type.value === 'flow_map') {
+      // Flow map: remove node (and substeps if step deleted), rebuild spec
+      const idsToRemove = new Set<string>([nodeId])
+      if (node.type === 'flow') {
+        const stepMatch = nodeId.match(/flow-step-(\d+)/)
+        if (stepMatch) {
+          const stepIndex = stepMatch[1]
+          data.value.nodes
+            .filter((n) => n.id?.startsWith(`flow-substep-${stepIndex}-`))
+            .forEach((n) => idsToRemove.add(n.id!))
+        }
+      }
+      data.value.nodes = data.value.nodes.filter((n) => !idsToRemove.has(n.id ?? ''))
+      data.value.connections = (data.value.connections ?? []).filter(
+        (c) => !idsToRemove.has(c.source) && !idsToRemove.has(c.target)
+      )
+      idsToRemove.forEach((id) => {
+        clearCustomPosition(id)
+        clearNodeStyle(id)
+        removeFromSelection(id)
+      })
+      const spec = buildFlowMapSpecFromNodes()
+      if (spec) {
+        loadFromSpec(spec, 'flow_map')
+      }
+      emitEvent('diagram:nodes_deleted', { nodeIds: [...idsToRemove] })
+      return true
     } else if (type.value === 'bubble_map' && nodeId.startsWith('bubble-')) {
       // Bubble map: remove node, re-index remaining bubbles, rebuild connections
       data.value.nodes.splice(index, 1)
@@ -1830,6 +1867,12 @@ export const useDiagramStore = defineStore('diagram', () => {
       _customPositions: data.value._customPositions,
       _node_styles: data.value._node_styles,
     }
+    // Flow map: persist orientation so it's restored when reopening
+    if (type.value === 'flow_map') {
+      const orientation =
+        (data.value as Record<string, unknown>).orientation ?? 'horizontal'
+      spec.orientation = orientation
+    }
     const hiddenAnswers = (data.value as { hiddenAnswers?: string[] }).hiddenAnswers
     const d = data.value as { isLearningSheet?: boolean; is_learning_sheet?: boolean }
     const isLS = d?.isLearningSheet === true || d?.is_learning_sheet === true
@@ -1933,13 +1976,25 @@ export const useDiagramStore = defineStore('diagram', () => {
 
   /**
    * Add a new step to flow map.
+   * @param text - Step label
+   * @param defaultSubsteps - Optional 2 default substep labels (e.g. ['子步骤1', '子步骤2'])
    */
-  function addFlowMapStep(text: string): boolean {
+  function addFlowMapStep(
+    text: string,
+    defaultSubsteps?: [string, string]
+  ): boolean {
     const spec = buildFlowMapSpecFromNodes()
     if (!spec) return false
     const steps = spec.steps as string[]
     steps.push(text)
-    loadFromSpec({ ...spec, steps }, 'flow_map')
+    const substeps = spec.substeps as Array<{ step: string; substeps: string[] }>
+    if (defaultSubsteps && defaultSubsteps.length >= 2) {
+      substeps.push({ step: text, substeps: [defaultSubsteps[0], defaultSubsteps[1]] })
+    }
+    // Preserve orientation
+    const orientation =
+      (data.value as Record<string, unknown>)?.orientation ?? spec.orientation
+    loadFromSpec({ ...spec, steps, substeps, orientation }, 'flow_map')
     pushHistory('Add flow step')
     emitEvent('diagram:node_added', { node: null })
     return true
@@ -1958,7 +2013,10 @@ export const useDiagramStore = defineStore('diagram', () => {
     } else {
       substeps.push({ step: stepText, substeps: [substepText] })
     }
-    loadFromSpec({ ...spec, substeps }, 'flow_map')
+    // Preserve orientation (vertical must not revert to horizontal)
+    const orientation =
+      (data.value as Record<string, unknown>)?.orientation ?? spec.orientation
+    loadFromSpec({ ...spec, substeps, orientation }, 'flow_map')
     pushHistory('Add flow substep')
     emitEvent('diagram:node_added', { node: null })
     return true

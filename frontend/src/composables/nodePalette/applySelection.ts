@@ -700,7 +700,15 @@ function applyRemainder(
         remainder.forEach((s) => diagramStore.addFlowMapSubstep(stepText, s.text))
       }
     } else {
-      remainder.forEach((s) => diagramStore.addFlowMapStep(s.text))
+      const stepCount = nodes.filter((n) => n.type === 'flow').length
+      remainder.forEach((s, i) => {
+        const stepNum = stepCount + i + 1
+        const defaultSubsteps: [string, string] =
+          language === 'zh'
+            ? [`子步骤${stepNum}.1`, `子步骤${stepNum}.2`]
+            : [`Substep ${stepNum}.1`, `Substep ${stepNum}.2`]
+        diagramStore.addFlowMapStep(s.text, defaultSubsteps)
+      })
     }
   } else if (diagramTypeVal === 'tree_map') {
     if (stage === 'children' && stageData?.category_name && stageData?.category_id) {

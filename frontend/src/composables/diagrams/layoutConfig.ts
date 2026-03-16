@@ -54,6 +54,10 @@ export const MULTI_FLOW_MAP_TOPIC_WIDTH = 90
 /** Flow map main topic node width */
 export const FLOW_MAP_TOPIC_WIDTH = 120
 
+/** Flow map unified pill dimensions (topic, steps, substeps - all same size) */
+export const FLOW_MAP_PILL_WIDTH = 120
+export const FLOW_MAP_PILL_HEIGHT = 48
+
 /** Gap between flow map topic and first step */
 export const FLOW_TOPIC_TO_STEP_GAP = 60
 
@@ -87,7 +91,7 @@ export const FLOW_SUBSTEP_NODE_HEIGHT = 50
 export const FLOW_SUBSTEP_NODE_WIDTH = 100
 
 /** Spacing between substep nodes (within a group) */
-export const FLOW_SUBSTEP_SPACING = 10
+export const FLOW_SUBSTEP_SPACING = 12
 
 /** Gap between step node and substep group (X offset) */
 export const FLOW_SUBSTEP_OFFSET_X = 40
@@ -182,10 +186,13 @@ export const DEFAULT_CATEGORY_TO_LEAF_GAP = 80
 export const TREE_MAP_TOPIC_TO_CATEGORY_GAP = 50
 
 /** Tree map: vertical gap between leaves in a group */
-export const TREE_MAP_LEAF_SPACING = 24
+export const TREE_MAP_LEAF_SPACING = 10
 
 /** Tree map: gap between category and first leaf */
-export const TREE_MAP_CATEGORY_TO_LEAF_GAP = 32
+export const TREE_MAP_CATEGORY_TO_LEAF_GAP = 24
+
+/** Tree map: horizontal gap between category groups */
+export const TREE_MAP_CATEGORY_SPACING = 60
 
 /** Pair spacing for bridge maps */
 export const DEFAULT_PAIR_SPACING = 250

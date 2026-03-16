@@ -29,17 +29,20 @@ const { getNodeStyle } = useTheme({
 
 const defaultStyle = computed(() => getNodeStyle('step'))
 
-// Multi-flow map uses pill shape (fully rounded ends)
-const isPillShape = computed(() => props.data.diagramType === 'multi_flow_map')
+// Flow map and multi-flow map use pill shape (fully rounded ends)
+const isFlowMap = computed(() => props.data.diagramType === 'flow_map')
+const isPillShape = computed(
+  () => props.data.diagramType === 'multi_flow_map' || props.data.diagramType === 'flow_map'
+)
 const isMultiFlowMap = computed(() => props.data.diagramType === 'multi_flow_map')
 // For multi-flow map: causes connect from right, effects connect to left
 const isCause = computed(() => isMultiFlowMap.value && props.id.startsWith('cause-'))
 const isEffect = computed(() => isMultiFlowMap.value && props.id.startsWith('effect-'))
 
-// Per-group color from mindmap palette for multi-flow map causes/effects
+// Per-group color from mindmap palette for flow map steps and multi-flow map causes/effects
 const groupColor = computed(() => {
   const idx = props.data.groupIndex as number | undefined
-  return idx !== undefined && isMultiFlowMap.value
+  return idx !== undefined && (isFlowMap.value || isMultiFlowMap.value)
     ? getMindmapBranchColor(idx)
     : null
 })
@@ -75,12 +78,22 @@ const nodeStyle = computed(() => {
     borderRadius: isPillShape.value ? '9999px' : `${props.data.style?.borderRadius || 6}px`,
   }
 
-  // Add dynamic width when editing
-  if (dynamicWidth.value !== null) {
+  // Add dynamic width when editing (multi-flow map only; flow_map uses fixed pill size)
+  if (isMultiFlowMap.value && dynamicWidth.value !== null) {
     return {
       ...baseStyle,
       width: `${dynamicWidth.value}px`,
       minWidth: `${dynamicWidth.value}px`,
+    }
+  }
+
+  // Flow map: adaptive width (min 120px) so full text displays
+  if (isFlowMap.value) {
+    return {
+      ...baseStyle,
+      width: 'max-content',
+      minWidth: '120px',
+      height: '48px',
     }
   }
 
@@ -168,10 +181,10 @@ function handleDeleteClick(event: MouseEvent) {
       :readonly="data.hidden === true"
       :node-id="id"
       :is-editing="isEditing"
-      max-width="200px"
+      :max-width="isFlowMap ? 'none' : '200px'"
       text-align="center"
       :text-decoration="data.style?.textDecoration || 'none'"
-      truncate
+      :truncate="!isFlowMap"
       @save="handleTextSave"
       @cancel="handleEditCancel"
       @edit-start="isEditing = true"
@@ -219,6 +232,14 @@ function handleDeleteClick(event: MouseEvent) {
       :position="Position.Right"
       class="bg-blue-400!"
     />
+    <!-- Center source for flow map step-to-substep (connect to substep center) -->
+    <Handle
+      v-if="!isMultiFlowMap"
+      id="center-source"
+      type="source"
+      :position="Position.Top"
+      class="center-handle bg-blue-400!"
+    />
   </div>
 </template>
 
@@ -256,6 +277,15 @@ function handleDeleteClick(event: MouseEvent) {
   opacity: 0;
   border: none;
   background: transparent;
+}
+
+/* Center handle: position at node center */
+.flow-node :deep(.center-handle) {
+  left: 50% !important;
+  top: 50% !important;
+  right: auto !important;
+  bottom: auto !important;
+  transform: translate(-50%, -50%);
 }
 
 /* Delete button - positioned using Vue Flow handle positioning system */

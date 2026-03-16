@@ -22,6 +22,7 @@ import {
 import { eventBus } from '@/composables/useEventBus'
 import { useTheme } from '@/composables/useTheme'
 import { ANIMATION, FIT_PADDING, GRID, PANEL, ZOOM } from '@/config/uiConfig'
+import { getFlowTopicCenteredPosition } from '@/stores/specLoader/flowMap'
 import { useDiagramStore, useLLMResultsStore, usePanelsStore, useUIStore } from '@/stores'
 import type { MindGraphNode } from '@/types'
 
@@ -735,6 +736,20 @@ function getFitViewTopPx(): number {
     : FIT_PADDING.TOP_UI_HEIGHT_PX
 }
 
+/** Bottom padding for fit view - tree map adds space for alternative_dimensions overlay below nodes */
+function getFitViewBottomPx(): number {
+  if (diagramStore.type !== 'tree_map') return FIT_PADDING.BOTTOM_UI_HEIGHT_PX
+  const data = diagramStore.data
+  if (!data || typeof data !== 'object' || !('alternative_dimensions' in data)) {
+    return FIT_PADDING.BOTTOM_UI_HEIGHT_PX
+  }
+  const altDims = (data as { alternative_dimensions?: unknown }).alternative_dimensions
+  const hasAltDims = Array.isArray(altDims) && altDims.some((d) => typeof d === 'string' && d.trim())
+  return hasAltDims
+    ? FIT_PADDING.BOTTOM_UI_HEIGHT_PX + FIT_PADDING.TREE_MAP_ALTERNATIVE_DIMENSIONS_EXTRA_PX
+    : FIT_PADDING.BOTTOM_UI_HEIGHT_PX
+}
+
 /**
  * Fit diagram to full canvas (no panel space reserved)
  * Use when no panels are open or when you want the diagram centered on full screen
@@ -745,10 +760,12 @@ function fitToFullCanvas(animate = true): void {
   isFittedForPanel.value = false
 
   // Use Vue Flow's fitView with extra bottom padding for ZoomControls + AIModelSelector
+  // Tree map: extra bottom when alternative_dimensions overlay is shown
   fitView({
     padding: {
       ...FIT_PADDING.STANDARD_WITH_BOTTOM_UI,
       top: `${getFitViewTopPx()}px`,
+      bottom: `${getFitViewBottomPx()}px`,
     },
     duration: animate ? ANIMATION.DURATION_NORMAL : 0,
   })
@@ -786,6 +803,7 @@ function fitWithPanel(animate = true): void {
       padding: {
         ...FIT_PADDING.STANDARD_WITH_BOTTOM_UI,
         top: `${getFitViewTopPx()}px`,
+        bottom: `${getFitViewBottomPx()}px`,
       },
       duration: animate ? ANIMATION.DURATION_NORMAL : 0,
     })
@@ -807,11 +825,12 @@ function fitWithPanel(animate = true): void {
 
   // Use fitView with adjusted padding and extra bottom for ZoomControls + AIModelSelector
   // Top uses pixel value to clear toolbar; never overlap CanvasTopBar + CanvasToolbar
+  // Tree map: use pixel bottom when alternative_dimensions overlay is shown
   fitView({
     padding: {
       top: `${getFitViewTopPx()}px`,
       right: adjustedPadding,
-      bottom: basePadding + FIT_PADDING.BOTTOM_UI_EXTRA,
+      bottom: `${getFitViewBottomPx()}px`,
       left: adjustedPadding,
     },
     duration: animate ? ANIMATION.DURATION_NORMAL : 0,
@@ -993,7 +1012,26 @@ onMounted(() => {
   unsubscribers.push(
     eventBus.on('node:text_updated', ({ nodeId, text }) => {
       diagramStore.pushHistory('Edit node text')
-      diagramStore.updateNode(nodeId, { text })
+      // Flow map vertical: recenter topic over step column when text changes
+      if (
+        diagramStore.type === 'flow_map' &&
+        nodeId === 'flow-topic' &&
+        (diagramStore.data?.nodes?.find((n) => n.id === 'flow-topic')?.data?.orientation ===
+          'vertical')
+      ) {
+        const topicNode = diagramStore.data?.nodes?.find((n) => n.id === 'flow-topic')
+        const currentY = (topicNode?.position as { y?: number })?.y ?? 80
+        const pos = getFlowTopicCenteredPosition(text, currentY)
+        console.log('[FlowMap] node:text_updated recenter', {
+          nodeId,
+          text,
+          prevPosition: topicNode?.position,
+          newPosition: pos,
+        })
+        diagramStore.updateNode(nodeId, { text, position: pos })
+      } else {
+        diagramStore.updateNode(nodeId, { text })
+      }
       // Concept map label agent: regenerate only edges with empty labels (when AI on)
       if (diagramStore.type === 'concept_map') {
         regenerateForNodeIfNeeded(nodeId)

@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.40.0] - 2026-03-16
+
+### Added
+- **Flow Map Add/Delete**: Add step or substep via CanvasToolbar (Add Node, Add Branch, Add Child). Add Node: select step → add substep; no selection → add step with 2 default substeps. Add Branch adds step; Add Child adds substep to selected step. Delete step cascades to substeps; spec rebuilt on add/delete.
+- **Flow Map Orientation Persistence**: Vertical/horizontal orientation persisted in spec and restored on save/load.
+- **measureTextDimensions**: New text measurement utility for multi-line width/height (used by flow map substeps and tree map leaves).
+- **Tree Map groupIndex & nodeType**: Preserved in vueflow sync for branch/leaf distinction and mindmapColors.
+
+### Changed
+- **Flow Map Layout**: Unified pill dimensions (FLOW_MAP_PILL_WIDTH/HEIGHT); text-adaptive topic and substep widths; vertical layout: steps on left, substeps on right with curved (mindmap-style) branches; step-to-substep edges use curved instead of horizontalStep; mindmapColors for step/group edges.
+- **FlowSubstepNode**: Pill shape for flow maps; mindmapColors by groupIndex; center handles for step-to-substep; additional top/bottom handles for layout flexibility.
+- **Flow Map Nodes**: Non-draggable (layout controlled by spec).
+- **Tree Map Layout**: measureTextDimensions for adaptive category/leaf widths and heights; TREE_MAP_LEAF_SPACING 24→10, TREE_MAP_CATEGORY_TO_LEAF_GAP 32→24; TREE_MAP_CATEGORY_SPACING 60; mindmapColors for edges; per-leaf width/height for multi-line text.
+- **layoutConfig**: FLOW_MAP_PILL_WIDTH/HEIGHT, FLOW_SUBSTEP_SPACING 10→12.
+- **Diagram Store**: addFlowMapStep accepts defaultSubsteps; addFlowMapSubstep; removeNode for flow_map with spec rebuild; orientation in flow map spec.
+- **CanvasToolbar**: Flow map handlers for handleAddNode, handleAddBranch, handleAddChild.
+- **Diagram Nodes**: BranchNode, FlowNode, TopicNode—updates for flow/tree map integration.
+- **useTreeMap, flowMap, textMeasurement**: Layout and measurement refinements.
+- **AdminSchoolsTab, applySelection, useLanguage, uiConfig, llmResults**: Minor updates.
+
 ## [5.39.3] - 2026-03-16
 
 ### Added

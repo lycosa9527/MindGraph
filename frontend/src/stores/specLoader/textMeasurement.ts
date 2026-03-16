@@ -104,11 +104,20 @@ export function measureTextFitsInCircle(
   return { fits, height }
 }
 
+export interface MeasureTextWidthOptions {
+  /** Font weight (e.g. 'normal', 'bold'). Default 'normal'. */
+  fontWeight?: string
+}
+
 /**
  * Measure width of text in single line (no-wrap) at given fontSize.
  * Exported for use in overlays (e.g. learning sheet answer chips).
  */
-export function measureTextWidth(text: string, fontSize: number): number {
+export function measureTextWidth(
+  text: string,
+  fontSize: number,
+  options?: MeasureTextWidthOptions
+): number {
   if (typeof document === 'undefined') return 0
   const t = (text || '').trim() || ' '
   const el = getMeasureEl()
@@ -116,9 +125,58 @@ export function measureTextWidth(text: string, fontSize: number): number {
   el.style.whiteSpace = 'nowrap'
   el.style.padding = '0'
   el.style.fontSize = `${fontSize}px`
-  el.style.fontWeight = 'normal'
+  el.style.fontWeight = options?.fontWeight ?? 'normal'
   el.textContent = t
   return el.offsetWidth
+}
+
+export interface MeasureTextDimensionsOptions {
+  /** Max width for wrapping (multi-line). If set, text wraps and height is measured. */
+  maxWidth?: number
+  /** Horizontal padding (each side). Default 16 (matches px-4). */
+  paddingX?: number
+  /** Vertical padding (each side). Default 8 (matches py-2). */
+  paddingY?: number
+  /** Font weight. Default 'normal'. */
+  fontWeight?: string
+}
+
+/**
+ * Measure text dimensions (width and height) for layout.
+ * With maxWidth: text wraps, returns actual width and height.
+ * Without maxWidth: single-line, width from content, height from line-height.
+ */
+export function measureTextDimensions(
+  text: string,
+  fontSize: number,
+  options?: MeasureTextDimensionsOptions
+): { width: number; height: number } {
+  if (typeof document === 'undefined') {
+    const w = measureTextWidth(text, fontSize, { fontWeight: options?.fontWeight })
+    const h = fontSize * 1.4 + (options?.paddingY ?? 8) * 2
+    return { width: w + (options?.paddingX ?? 16) * 2, height: h }
+  }
+  const t = (text || '').trim() || ' '
+  const paddingX = options?.paddingX ?? 16
+  const paddingY = options?.paddingY ?? 8
+  const el = getMeasureEl()
+  el.style.fontSize = `${fontSize}px`
+  el.style.fontWeight = options?.fontWeight ?? 'normal'
+  el.style.padding = `${paddingY}px ${paddingX}px`
+  el.style.lineHeight = '1.4'
+  if (options?.maxWidth != null) {
+    el.style.maxWidth = `${options.maxWidth}px`
+    el.style.width = 'max-content'
+    el.style.whiteSpace = 'pre-wrap'
+    el.style.wordBreak = 'break-word'
+  } else {
+    el.style.width = 'max-content'
+    el.style.whiteSpace = 'nowrap'
+  }
+  el.textContent = t
+  const width = el.offsetWidth
+  const height = el.offsetHeight
+  return { width, height }
 }
 
 function measureTextWidthNoWrap(

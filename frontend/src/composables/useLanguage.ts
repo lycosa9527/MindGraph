@@ -50,6 +50,8 @@ export const translations: Record<Language, Record<string, string>> = {
     'editor.selectDiagramType': 'Select Diagram Type',
     'editor.autoSavedAt': 'Auto-saved at {time}',
     'editor.clickToSave': 'Click to save',
+    'editor.slotsFull':
+      'Space full, auto-save not available at the moment. Please delete existing diagrams to free more space.',
 
     // Diagram nodes (matching old JS languageManager)
     'diagram.newAttribute': 'New Attribute',
@@ -268,6 +270,7 @@ export const translations: Record<Language, Record<string, string>> = {
     'editor.selectDiagramType': '选择图表类型',
     'editor.autoSavedAt': '已自动保存 {time}',
     'editor.clickToSave': '点击保存',
+    'editor.slotsFull': '空间已满，暂无法自动保存。请删除现有图示以释放空间。',
 
     // Diagram nodes (matching old JS languageManager)
     'diagram.newAttribute': '新属性',

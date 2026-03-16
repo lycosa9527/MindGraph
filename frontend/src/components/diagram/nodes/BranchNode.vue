@@ -27,7 +27,15 @@ const { getNodeStyle } = useTheme({
 // Determine if this is a child node (deeper in hierarchy)
 const isChild = computed(() => props.data.nodeType === 'branch' && props.data.parentId)
 
-const defaultStyle = computed(() => getNodeStyle(isChild.value ? 'child' : 'branch'))
+// Tree map: use branch style for categories, leaf style for children
+const themeNodeType = computed(() => {
+  if (props.data.diagramType === 'tree_map') {
+    return props.data.nodeType === 'leaf' ? 'leaf' : 'branch'
+  }
+  return isChild.value ? 'child' : 'branch'
+})
+
+const defaultStyle = computed(() => getNodeStyle(themeNodeType.value))
 
 // Check if this is a tree map (needs vertical handles)
 const isTreeMap = computed(() => props.data.diagramType === 'tree_map')
@@ -45,6 +53,17 @@ const mindmapBranchColors = computed(() => {
   return getMindmapBranchColor(index)
 })
 
+const treeMapGroupColors = computed(() => {
+  if (!isTreeMap.value) return null
+  let idx = props.data.groupIndex as number | undefined
+  if (idx === undefined) {
+    const catMatch = props.id.match(/^tree-cat-(\d+)$/)
+    const leafMatch = props.id.match(/^tree-leaf-(\d+)-\d+$/)
+    idx = catMatch ? parseInt(catMatch[1], 10) : leafMatch ? parseInt(leafMatch[1], 10) : undefined
+  }
+  return idx !== undefined ? getMindmapBranchColor(idx) : null
+})
+
 const isFirstPair = computed(() => {
   if (!isBridgeMap.value) return true
   const pairIndex = props.data.pairIndex
@@ -59,12 +78,20 @@ const nodeStyle = computed((): CSSProperties => {
 
   const bgColor = shouldHaveBackground
     ? props.data.style?.backgroundColor ||
-      (isMindMap.value ? mindmapBranchColors.value.fill : defaultStyle.value.backgroundColor) ||
+      (isTreeMap.value && treeMapGroupColors.value
+        ? treeMapGroupColors.value.fill
+        : isMindMap.value
+          ? mindmapBranchColors.value.fill
+          : defaultStyle.value.backgroundColor) ||
       '#e3f2fd'
     : 'transparent'
   const borderColor = shouldHaveBorder
     ? props.data.style?.borderColor ||
-      (isMindMap.value ? mindmapBranchColors.value.border : defaultStyle.value.borderColor) ||
+      (isTreeMap.value && treeMapGroupColors.value
+        ? treeMapGroupColors.value.border
+        : isMindMap.value
+          ? mindmapBranchColors.value.border
+          : defaultStyle.value.borderColor) ||
       '#4e79a7'
     : 'transparent'
 
@@ -88,12 +115,13 @@ const nodeStyle = computed((): CSSProperties => {
     fontWeight: props.data.style?.fontWeight || defaultStyle.value.fontWeight || 'normal',
     fontStyle: props.data.style?.fontStyle || 'normal',
     textDecoration: props.data.style?.textDecoration || 'none',
-    borderRadius: isMindMap.value
-      ? '9999px'
-      : `${props.data.style?.borderRadius || 8}px`,
+    borderRadius:
+      isMindMap.value || isTreeMap.value
+        ? '9999px'
+        : `${props.data.style?.borderRadius || 8}px`,
     boxShadow: shouldHaveShadow ? undefined : 'none',
   }
-  // Tree map: fixed width from layout for center-aligned vertical groups
+  // Tree map: use measured width from layout for center alignment (rendered must match layout)
   if (isTreeMap.value && props.data.style?.width != null) {
     base.width = `${props.data.style.width}px`
     base.minWidth = `${props.data.style.width}px`
@@ -207,9 +235,9 @@ function handleEditCancel() {
     border-color 0.2s ease;
 }
 
-/* Tree map nodes have min-width for consistent vertical alignment (no fixed width for NodeResizer support) */
+/* Tree map nodes: adaptive width, min-width for short labels */
 .branch-node.tree-map-node {
-  min-width: 120px;
+  min-width: 80px;
 }
 
 /* Bridge map nodes (all pairs): no shadow */

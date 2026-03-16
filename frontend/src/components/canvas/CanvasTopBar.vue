@@ -42,6 +42,15 @@ import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 
 const notify = useNotifications()
 
+const props = defineProps<{
+  autoSavedStatus?: string | null
+  slotFullAndNewDiagram?: boolean
+}>()
+
+const emit = defineEmits<{
+  saveRequested: []
+}>()
+
 const route = useRoute()
 const router = useRouter()
 const { isZh } = useLanguage()
@@ -223,6 +232,14 @@ function handleFileNameKeyPress(e: KeyboardEvent) {
   }
 }
 
+function handleAutoSaveStatusClick() {
+  if (props.slotFullAndNewDiagram) {
+    showSlotFullModal.value = true
+  } else {
+    emit('saveRequested')
+  }
+}
+
 /** Get diagram spec for saving (includes llm_results when 2+ models) */
 const getDiagramSpec = useDiagramSpecForSave()
 
@@ -358,7 +375,7 @@ async function handleReset() {
 
       <div class="h-5 border-r border-gray-200 dark:border-gray-600 mx-1" />
 
-      <!-- File name (editable) -->
+      <!-- File name (editable) + auto-save status -->
       <div class="flex items-center gap-2 ml-2">
         <ElInput
           v-if="isFileNameEditing"
@@ -381,6 +398,18 @@ async function handleReset() {
             {{ fileName }}
           </span>
         </ElTooltip>
+        <span
+          v-if="props.autoSavedStatus"
+          class="auto-saved-status text-xs text-gray-500 dark:text-gray-400 shrink-0 cursor-pointer hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+          :title="
+            props.slotFullAndNewDiagram
+              ? (isZh ? '点击管理图库空间' : 'Click to manage gallery space')
+              : (isZh ? '点击保存' : 'Click to save')
+          "
+          @click="handleAutoSaveStatusClick"
+        >
+          {{ props.autoSavedStatus }}
+        </span>
       </div>
     </div>
 

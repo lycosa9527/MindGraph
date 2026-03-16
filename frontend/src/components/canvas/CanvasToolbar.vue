@@ -557,6 +557,32 @@ function handleAddNode() {
     return
   }
 
+  // For flow map: add step or substep
+  if (diagramType === 'flow_map') {
+    const selectedId = diagramStore.selectedNodes[0]
+    const selectedNode = selectedId
+      ? diagramStore.data?.nodes?.find((n) => n.id === selectedId)
+      : undefined
+    const isStepSelected = selectedNode?.type === 'flow'
+    if (isStepSelected && selectedNode?.text) {
+      if (diagramStore.addFlowMapSubstep(selectedNode.text, isZh.value ? '新子步骤' : 'New Substep')) {
+        diagramStore.pushHistory(isZh.value ? '添加子步骤' : 'Add Substep')
+        notify.success(isZh.value ? '已添加子步骤' : 'Substep added')
+      }
+    } else {
+      const stepCount = diagramStore.data?.nodes?.filter((n) => n.type === 'flow').length ?? 0
+      const stepNum = stepCount + 1
+      const defaultSubsteps: [string, string] = isZh.value
+        ? [`子步骤${stepNum}.1`, `子步骤${stepNum}.2`]
+        : [`Substep ${stepNum}.1`, `Substep ${stepNum}.2`]
+      if (diagramStore.addFlowMapStep(isZh.value ? '新步骤' : 'New Step', defaultSubsteps)) {
+        diagramStore.pushHistory(isZh.value ? '添加步骤' : 'Add Step')
+        notify.success(isZh.value ? '已添加步骤' : 'Step added')
+      }
+    }
+    return
+  }
+
   // For double bubble map: user must select a similarity/difference node, then add to that group.
   // Similarity: adds one node (connects both topics). Difference: adds a PAIR (left + right).
   if (diagramType === 'double_bubble_map') {
@@ -609,6 +635,22 @@ function getDoubleBubbleGroupFromNodeId(
 
 function handleAddBranch() {
   const diagramType = diagramStore.type
+  if (diagramType === 'flow_map') {
+    if (!diagramStore.data?.nodes) {
+      notify.warning(isZh.value ? '请先创建图示' : 'Please create a diagram first')
+      return
+    }
+    const stepCount = diagramStore.data.nodes.filter((n) => n.type === 'flow').length
+    const stepNum = stepCount + 1
+    const defaultSubsteps: [string, string] = isZh.value
+      ? [`子步骤${stepNum}.1`, `子步骤${stepNum}.2`]
+      : [`Substep ${stepNum}.1`, `Substep ${stepNum}.2`]
+    if (diagramStore.addFlowMapStep(isZh.value ? '新步骤' : 'New Step', defaultSubsteps)) {
+      diagramStore.pushHistory(isZh.value ? '添加步骤' : 'Add Step')
+      notify.success(isZh.value ? '已添加步骤' : 'Step added')
+    }
+    return
+  }
   if (diagramType === 'brace_map') {
     if (!diagramStore.data?.nodes) {
       notify.warning(isZh.value ? '请先创建图示' : 'Please create a diagram first')
@@ -647,6 +689,27 @@ function handleAddBranch() {
 
 function handleAddChild() {
   const diagramType = diagramStore.type
+  if (diagramType === 'flow_map') {
+    if (!diagramStore.data?.nodes) {
+      notify.warning(isZh.value ? '请先创建图示' : 'Please create a diagram first')
+      return
+    }
+    const selectedId = diagramStore.selectedNodes[0]
+    const selectedNode = selectedId
+      ? diagramStore.data?.nodes?.find((n) => n.id === selectedId)
+      : undefined
+    if (selectedNode?.type !== 'flow' || !selectedNode?.text) {
+      notify.warning(
+        isZh.value ? '请先选择要添加子步骤的步骤节点' : 'Please select a step to add substep to'
+      )
+      return
+    }
+    if (diagramStore.addFlowMapSubstep(selectedNode.text, isZh.value ? '新子步骤' : 'New Substep')) {
+      diagramStore.pushHistory(isZh.value ? '添加子步骤' : 'Add Substep')
+      notify.success(isZh.value ? '已添加子步骤' : 'Substep added')
+    }
+    return
+  }
   if (diagramType === 'brace_map') {
     if (!diagramStore.data?.nodes) {
       notify.warning(isZh.value ? '请先创建图示' : 'Please create a diagram first')

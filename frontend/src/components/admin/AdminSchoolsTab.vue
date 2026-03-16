@@ -71,6 +71,7 @@ async function loadSchools() {
           ...trendOrg.value,
           name: String(updated.name ?? trendOrg.value.name),
           display_name: updated.display_name as string | undefined,
+          invitation_code: updated.invitation_code as string | undefined,
           is_active: updated.is_active as boolean | undefined,
           user_count: (updated.user_count as number) ?? 0,
           expires_at: updated.expires_at as string | null | undefined,
@@ -183,9 +184,13 @@ async function createSchool() {
       notify.error((data.detail as string) || 'Failed to create school')
       return
     }
-    notify.success(t('notification.saved'))
+    const data = (await res.json()) as { invitation_code?: string }
     createModalVisible.value = false
-    loadSchools()
+    await loadSchools()
+    notify.success(t('notification.saved'))
+    if (data.invitation_code) {
+      openShareModal(data.invitation_code)
+    }
   } catch {
     notify.error('Failed to create school')
   }

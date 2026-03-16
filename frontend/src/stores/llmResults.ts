@@ -154,9 +154,17 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
       await savedDiagramsStore.saveCurrentDiagramBeforeReplace()
     }
 
+    // Flow map: preserve current orientation (LLM spec typically omits it, defaulting to horizontal)
+    let specToLoad = result.spec
+    if (diagramType === 'flow_map') {
+      const currentOrientation =
+        (diagramStore.data as Record<string, unknown>)?.orientation ?? 'horizontal'
+      specToLoad = { ...result.spec, orientation: currentOrientation }
+    }
+
     // Load into diagram store (emits diagram:loaded; auto-save will re-trigger if needed)
     const loaded = diagramStore.loadFromSpec(
-      result.spec,
+      specToLoad,
       diagramType as import('@/types').DiagramType
     )
     if (loaded) {

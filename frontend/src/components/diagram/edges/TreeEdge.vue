@@ -25,8 +25,9 @@ const path = computed(() => {
 
 const edgeStyle = computed(() => ({
   stroke: props.data?.style?.strokeColor || '#ccc', // Light gray for tree connectors
-  strokeWidth: props.data?.style?.strokeWidth || 1.5,
+  strokeWidth: props.data?.style?.strokeWidth || 2,
   strokeDasharray: props.data?.style?.strokeDasharray || 'none',
+  strokeLinecap: 'round' as const, // Extends stroke at endpoints to eliminate 1-2px gap
 }))
 </script>
 

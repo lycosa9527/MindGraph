@@ -94,6 +94,8 @@ export const FIT_PADDING = {
   BOTTOM_UI_HEIGHT_PX: 88,
   /** Extra bottom ratio for fitWithPanel (adds ~13% to base) */
   BOTTOM_UI_EXTRA: 0.13,
+  /** Extra bottom padding (px) for tree map when alternative_dimensions overlay is shown below nodes */
+  TREE_MAP_ALTERNATIVE_DIMENSIONS_EXTRA_PX: 70,
   /**
    * Standard padding with extra top/bottom for overlay UI.
    * Vue Flow object format: { top, right, bottom, left } - supports "40px" or ratio

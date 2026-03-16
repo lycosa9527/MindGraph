@@ -86,10 +86,23 @@ const canvasPageRef = ref<HTMLElement | null>(null)
 // Auto-save: event-driven, config-based (useDiagramAutoSave)
 const diagramAutoSave = useDiagramAutoSave()
 
-// Auto-save status text for bottom bar (grey, e.g. "已自动保存 12:34")
+// Auto-save status text next to file name (slot-full message or "已自动保存 12:34")
 const autoSavedStatusText = computed(() => {
+  if (!authStore.isAuthenticated) return null
+  // Slots full + new diagram (not saved): show space-full message
+  if (
+    savedDiagramsStore.isSlotsFullyUsed &&
+    !savedDiagramsStore.activeDiagramId
+  ) {
+    return t(
+      'editor.slotsFull',
+      isZh.value
+        ? '空间已满，暂无法自动保存。请删除现有图示以释放空间。'
+        : 'Space full, auto-save not available at the moment. Please delete existing diagrams to free more space.'
+    )
+  }
   const at = diagramAutoSave.lastSavedAt.value
-  if (!at || !authStore.isAuthenticated) return null
+  if (!at) return null
   const timeStr = at.toLocaleTimeString(isZh.value ? 'zh-CN' : 'en-US', {
     hour: '2-digit',
     minute: '2-digit',
@@ -101,6 +114,14 @@ const autoSavedStatusText = computed(() => {
     timeStr
   )
 })
+
+// When slots full + new diagram, clicking status should open slot management modal
+const isSlotsFullAndNewDiagram = computed(
+  () =>
+    authStore.isAuthenticated &&
+    savedDiagramsStore.isSlotsFullyUsed &&
+    !savedDiagramsStore.activeDiagramId
+)
 
 // Workshop integration
 const workshopCode = ref<string | null>(null)
@@ -376,7 +397,8 @@ function handleAddBranchKey() {
   if (
     diagramStore.type === 'mindmap' ||
     diagramStore.type === 'mind_map' ||
-    diagramStore.type === 'brace_map'
+    diagramStore.type === 'brace_map' ||
+    diagramStore.type === 'flow_map'
   ) {
     eventBus.emit('diagram:add_branch_requested', {})
   } else {
@@ -390,7 +412,8 @@ function handleAddChildKey() {
   if (
     diagramStore.type === 'mindmap' ||
     diagramStore.type === 'mind_map' ||
-    diagramStore.type === 'brace_map'
+    diagramStore.type === 'brace_map' ||
+    diagramStore.type === 'flow_map'
   ) {
     eventBus.emit('diagram:add_child_requested', {})
   }
@@ -783,7 +806,12 @@ onUnmounted(() => {
     class="canvas-page flex flex-col h-screen bg-gray-50 relative"
   >
     <!-- Top navigation bar (hidden in presentation mode) -->
-    <CanvasTopBar v-if="!isPresentationMode" />
+    <CanvasTopBar
+      v-if="!isPresentationMode"
+      :auto-saved-status="autoSavedStatusText"
+      :slot-full-and-new-diagram="isSlotsFullAndNewDiagram"
+      @save-requested="handleSaveKey"
+    />
 
     <!-- Floating toolbar (only UI bar visible in presentation mode) -->
     <CanvasToolbar
@@ -858,14 +886,6 @@ onUnmounted(() => {
           v-if="diagramStore.type === 'concept_map'"
           class="label-picker-wrap order-3 shrink-0 min-w-0"
         />
-        <div
-          v-if="autoSavedStatusText"
-          class="auto-saved-status text-sm text-gray-500 dark:text-gray-400 shrink-0 order-4 self-center cursor-pointer hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
-          :title="t('editor.clickToSave', 'Click to save')"
-          @click="handleSaveKey"
-        >
-          {{ autoSavedStatusText }}
-        </div>
         <div
           v-if="showZoomControls"
           class="zoom-controls-wrap flex shrink-0 order-1 md:order-2"

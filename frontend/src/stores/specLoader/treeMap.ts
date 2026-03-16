@@ -6,12 +6,11 @@
  * - Leaves (depth 2+) stacked vertically below their parent category
  * - Each group (category + leaves) forms a straight vertical line, center-aligned
  *
- * Root cause of misalignment: variable node widths. Short "省" vs long "广东省" caused
- * left-edge positioning to misalign centers. Fix: measure text per group, use max width
- * for all nodes in group, position by center (nodeX = centerX - maxWidth/2).
+ * Node widths are adaptive to text. Each node is centered within its group column.
+ * Group column width = max of all node widths in that group (for layout spacing).
  */
+import { getMindmapBranchColor } from '@/config/mindmapColors'
 import {
-  DEFAULT_CATEGORY_SPACING,
   DEFAULT_CENTER_X,
   DEFAULT_NODE_HEIGHT,
   DEFAULT_NODE_WIDTH,
@@ -19,9 +18,10 @@ import {
   NODE_MIN_DIMENSIONS,
   TREE_MAP_CATEGORY_TO_LEAF_GAP,
   TREE_MAP_LEAF_SPACING,
+  TREE_MAP_CATEGORY_SPACING,
   TREE_MAP_TOPIC_TO_CATEGORY_GAP,
 } from '@/composables/diagrams/layoutConfig'
-import { measureTextWidth } from '@/stores/specLoader/textMeasurement'
+import { measureTextDimensions } from '@/stores/specLoader/textMeasurement'
 import type { Connection, DiagramNode } from '@/types'
 
 import type { SpecLoaderResult } from './types'
@@ -30,6 +30,14 @@ import type { SpecLoaderResult } from './types'
 const TREE_MAP_BRANCH_FONT_SIZE = 16
 /** Horizontal padding inside node (px-4 = 16px each side) */
 const TREE_MAP_NODE_PADDING_X = 32
+/** Vertical padding inside node (py-2 = 8px each side) */
+const TREE_MAP_NODE_PADDING_Y = 8
+/** Max width for leaf text wrap (matches InlineEditableText max-width) */
+const TREE_MAP_LEAF_MAX_WIDTH = 150
+/** Border width for category nodes (theme branchStrokeWidth) - add to measured width for layout */
+const TREE_MAP_CATEGORY_BORDER = 1.5
+/** Border width for leaf nodes (theme leafStrokeWidth) - add to measured width for layout */
+const TREE_MAP_LEAF_BORDER = 1
 
 interface TreeNode {
   id?: string
@@ -80,39 +88,70 @@ export function loadTreeMapSpec(spec: Record<string, unknown>): SpecLoaderResult
 
     const categoryY = topicY + NODE_HEIGHT + TREE_MAP_TOPIC_TO_CATEGORY_GAP
 
-    // Per-group: measure text widths, compute maxWidth for center alignment
-    const groupMaxWidths: number[] = []
+    // Per-group: measure all node dimensions (width + height for multi-line, like flow map substeps)
+    interface GroupDims {
+      categoryWidth: number
+      categoryHeight: number
+      leafWidths: number[]
+      leafHeights: number[]
+      maxWidth: number
+    }
+    const groupDimsList: GroupDims[] = []
     categories.forEach((category, catIndex) => {
-      const catW =
-        measureTextWidth(category.text, TREE_MAP_BRANCH_FONT_SIZE) + TREE_MAP_NODE_PADDING_X
+      const catDims = measureTextDimensions(category.text, TREE_MAP_BRANCH_FONT_SIZE, {
+        paddingX: TREE_MAP_NODE_PADDING_X / 2,
+        paddingY: TREE_MAP_NODE_PADDING_Y,
+        maxWidth: TREE_MAP_LEAF_MAX_WIDTH,
+      })
+      const catWidth =
+        Math.max(catDims.width + 2 * TREE_MAP_CATEGORY_BORDER, NODE_MIN_DIMENSIONS.branch.minWidth)
+      const catHeight = Math.max(catDims.height, NODE_MIN_DIMENSIONS.branch.minHeight)
       const leaves = category.children || []
-      let maxW = Math.max(catW, NODE_MIN_DIMENSIONS.branch.minWidth)
+      const leafWidths: number[] = []
+      const leafHeights: number[] = []
+      let maxW = catWidth
       leaves.forEach((leaf) => {
+        const leafDims = measureTextDimensions(leaf.text, TREE_MAP_BRANCH_FONT_SIZE, {
+          paddingX: TREE_MAP_NODE_PADDING_X / 2,
+          paddingY: TREE_MAP_NODE_PADDING_Y,
+          maxWidth: TREE_MAP_LEAF_MAX_WIDTH,
+        })
         const leafW =
-          measureTextWidth(leaf.text, TREE_MAP_BRANCH_FONT_SIZE) + TREE_MAP_NODE_PADDING_X
+          Math.max(leafDims.width + 2 * TREE_MAP_LEAF_BORDER, NODE_MIN_DIMENSIONS.branch.minWidth)
+        const leafH = Math.max(leafDims.height, NODE_MIN_DIMENSIONS.branch.minHeight)
+        leafWidths.push(leafW)
+        leafHeights.push(leafH)
         maxW = Math.max(maxW, leafW)
       })
-      groupMaxWidths.push(maxW)
+      groupDimsList.push({
+        categoryWidth: catWidth,
+        categoryHeight: catHeight,
+        leafWidths,
+        leafHeights,
+        maxWidth: maxW,
+      })
     })
 
     const numCategories = categories.length
     const totalCategoriesWidth =
-      groupMaxWidths.reduce((a, w) => a + w, 0) +
-      Math.max(0, numCategories - 1) * DEFAULT_CATEGORY_SPACING
+      groupDimsList.reduce((a, g) => a + g.maxWidth, 0) +
+      Math.max(0, numCategories - 1) * TREE_MAP_CATEGORY_SPACING
     let columnLeft = DEFAULT_CENTER_X - totalCategoriesWidth / 2
 
     categories.forEach((category, catIndex) => {
       const categoryId = category.id || `tree-cat-${catIndex}`
-      const maxWidth = groupMaxWidths[catIndex]
-      const centerX = columnLeft + maxWidth / 2
-      const nodeX = centerX - maxWidth / 2
+      const dims = groupDimsList[catIndex]
+      const groupCenterX = columnLeft + dims.maxWidth / 2
+      const categoryX = groupCenterX - dims.categoryWidth / 2
+      const groupColor = getMindmapBranchColor(catIndex)
 
       nodes.push({
         id: categoryId,
         text: category.text,
         type: 'branch',
-        position: { x: nodeX, y: categoryY },
-        style: { width: maxWidth },
+        position: { x: categoryX, y: categoryY },
+        style: { width: dims.categoryWidth },
+        data: { nodeType: 'branch', groupIndex: catIndex },
       })
 
       connections.push({
@@ -122,19 +161,24 @@ export function loadTreeMapSpec(spec: Record<string, unknown>): SpecLoaderResult
         edgeType: 'step',
         sourcePosition: 'bottom',
         targetPosition: 'top',
+        style: { strokeColor: groupColor.border },
       })
 
       const leaves = category.children || []
-      let leafY = categoryY + NODE_HEIGHT + TREE_MAP_CATEGORY_TO_LEAF_GAP
+      let leafY = categoryY + dims.categoryHeight + TREE_MAP_CATEGORY_TO_LEAF_GAP
 
       leaves.forEach((leaf, leafIndex) => {
         const leafId = leaf.id || `tree-leaf-${catIndex}-${leafIndex}`
+        const leafWidth = dims.leafWidths[leafIndex] ?? NODE_MIN_DIMENSIONS.branch.minWidth
+        const leafHeight = dims.leafHeights[leafIndex] ?? NODE_MIN_DIMENSIONS.branch.minHeight
+        const leafX = groupCenterX - leafWidth / 2
         nodes.push({
           id: leafId,
           text: leaf.text,
           type: 'branch',
-          position: { x: nodeX, y: leafY },
-          style: { width: maxWidth },
+          position: { x: leafX, y: leafY },
+          style: { width: leafWidth },
+          data: { nodeType: 'leaf', groupIndex: catIndex },
         })
 
         const sourceId =
@@ -148,12 +192,13 @@ export function loadTreeMapSpec(spec: Record<string, unknown>): SpecLoaderResult
           edgeType: 'tree',
           sourcePosition: 'bottom',
           targetPosition: 'top',
+          style: { strokeColor: groupColor.border },
         })
 
-        leafY += NODE_HEIGHT + TREE_MAP_LEAF_SPACING
+        leafY += leafHeight + TREE_MAP_LEAF_SPACING
       })
 
-      columnLeft += maxWidth + DEFAULT_CATEGORY_SPACING
+      columnLeft += dims.maxWidth + TREE_MAP_CATEGORY_SPACING
     })
 
     // Add dimension label node if dimension field exists

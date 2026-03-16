@@ -61,6 +61,7 @@ const edgeStyle = computed(() => ({
   stroke: props.data?.style?.strokeColor || '#3b82f6',
   strokeWidth: props.data?.style?.strokeWidth || 2,
   strokeDasharray: props.data?.style?.strokeDasharray || 'none',
+  strokeLinecap: 'round' as const, // Extends stroke at endpoints to eliminate 1-2px gap
 }))
 
 // Arrow marker ID
