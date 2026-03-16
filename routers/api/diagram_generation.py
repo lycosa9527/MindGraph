@@ -50,12 +50,10 @@ async def generate_graph(
     accept_language = request.headers.get("Accept-Language", "")
     lang = get_request_language(x_language, accept_language)
 
-    prompt = req.prompt.strip()
-    if not prompt:
-        raise HTTPException(
-            status_code=400,
-            detail=Messages.error("invalid_prompt", lang)
-        )
+    prompt = (req.prompt or '').strip()
+    # Empty prompt allowed only for dimension-only mode (validated by GenerateRequest)
+    # - Bridge map: fixed_dimension only (relationship-only, e.g. "国家吉祥物到国家")
+    # - Tree/brace map: dimension_only_mode (dimension but no topic)
 
     request_id = f"gen_{int(time.time()*1000)}"
     llm_model = req.llm.value if hasattr(req.llm, 'value') else str(req.llm)
@@ -116,7 +114,7 @@ async def generate_graph(
                 logger.debug("Failed to track user activity: %s", e)
 
         # Log auto-complete start at INFO level for user activity tracking
-        # Note: AutoComplete fires 5 concurrent requests (one per LLM model)
+        # Note: AutoComplete fires 3 concurrent requests (one per LLM model)
         # Log once per request with model info to reduce noise
         if request_type == 'autocomplete':
             diagram_type_str = req.diagram_type.value if req.diagram_type else 'auto'

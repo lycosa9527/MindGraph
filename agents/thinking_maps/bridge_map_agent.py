@@ -36,16 +36,7 @@ class BridgeMapAgent(BaseAgent):
         user_prompt: str,
         language: str = "en",
         dimension_preference: Optional[str] = None,
-        # Token tracking parameters
-        user_id: Optional[int] = None,
-        organization_id: Optional[int] = None,
-        request_type: str = 'diagram_generation',
-        endpoint_path: Optional[str] = None,
-        # Bridge map auto-complete: existing pairs to preserve
-        existing_analogies: Optional[List[Dict[str, str]]] = None,
-        # Bridge map auto-complete: fixed dimension/relationship that user has already specified
         fixed_dimension: Optional[str] = None,
-        # Dimension-only mode (for compatibility with base class; not used by bridge map)
         dimension_only_mode: Optional[bool] = None,
         **kwargs: Any
     ) -> Dict[str, Any]:
@@ -56,22 +47,23 @@ class BridgeMapAgent(BaseAgent):
             user_prompt: User's description of what analogy they want to show
             language: Language for generation ("en" or "zh")
             dimension_preference: Optional analogy relationship pattern preference
-            user_id: User ID for token tracking
-            organization_id: Organization ID for token tracking
-            request_type: Request type for token tracking
-            endpoint_path: Endpoint path for token tracking
-            existing_analogies: For auto-complete mode - existing pairs to preserve
-                               [{left, right}, ...]
-                               When provided, LLM only identifies the relationship pattern,
-                               doesn't generate new pairs
             fixed_dimension: For auto-complete mode - user-specified relationship pattern
                             that should NOT be changed by LLM
-            **kwargs: Additional parameters (for compatibility with base class)
+            dimension_only_mode: For compatibility with base class; not used by bridge map
+            **kwargs: Additional parameters (user_id, organization_id, request_type,
+                     endpoint_path for token tracking; existing_analogies for auto-complete
+                     mode - existing pairs [{left, right}, ...] to preserve)
 
         Returns:
             Dict containing success status and generated spec
         """
         try:
+            user_id = kwargs.get("user_id")
+            existing_analogies = kwargs.get("existing_analogies")
+            organization_id = kwargs.get("organization_id")
+            request_type = kwargs.get("request_type", "diagram_generation")
+            endpoint_path = kwargs.get("endpoint_path")
+
             logger.debug("BridgeMapAgent: Starting bridge map generation for prompt")
 
             # Three-template system for bridge maps:
@@ -683,7 +675,10 @@ class BridgeMapAgent(BaseAgent):
                 'alternative_dimensions': result.get('alternative_dimensions', [])
             }
 
-            logger.debug("BridgeMapAgent: Relationship-only complete - dimension: '%s', pairs: %s", relationship, len(analogies))
+            logger.debug(
+                "BridgeMapAgent: Relationship-only complete - dimension: '%s', pairs: %s",
+                relationship, len(analogies)
+            )
 
             return spec
 
@@ -694,7 +689,10 @@ class BridgeMapAgent(BaseAgent):
     def _enhance_spec(self, spec: Dict) -> Dict:
         """Enhance the specification with layout and dimension recommendations."""
         try:
-            logger.debug("BridgeMapAgent: Enhancing spec - Analogies: %s", len(spec.get('analogies', [])))
+            logger.debug(
+                "BridgeMapAgent: Enhancing spec - Analogies: %s",
+                len(spec.get('analogies', []))
+            )
 
             # Agent already generates correct renderer format, just enhance it
             enhanced_spec = spec.copy()

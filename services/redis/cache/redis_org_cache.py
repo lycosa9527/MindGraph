@@ -67,6 +67,7 @@ class OrganizationCache:
             'id': str(org.id),
             'code': org.code or '',
             'name': org.name or '',
+            'display_name': getattr(org, 'display_name', None) or '',
             'invitation_code': org.invitation_code or '',
             'created_at': org.created_at.isoformat() if org.created_at else '',
             'expires_at': org.expires_at.isoformat() if org.expires_at else '',
@@ -88,6 +89,9 @@ class OrganizationCache:
         org.code = data.get('code') or None
         org.name = data.get('name') or None
         org.invitation_code = data.get('invitation_code') or None
+        display_name_val = data.get('display_name') or None
+        if hasattr(Organization, 'display_name'):
+            setattr(org, 'display_name', display_name_val)
 
         # Parse datetime fields
         if data.get('created_at'):
@@ -348,10 +352,13 @@ class OrganizationCache:
         """
         Invalidate organization cache entries (non-blocking).
 
+        Deletes: org:{id} hash, org:code:{code} index, org:invite:{invite_code} index.
+        Call before cache_org after any update/delete to ensure stale indexes are removed.
+
         Args:
-            org_id: Organization ID
-            code: Organization code (optional, for index deletion)
-            invite_code: Invitation code (optional, for index deletion)
+            org_id: Organization ID (always delete main hash)
+            code: Organization code for index deletion (use pre-update value)
+            invite_code: Invitation code for index deletion (use pre-update value)
 
         Returns:
             True if invalidated successfully, False otherwise
@@ -361,28 +368,33 @@ class OrganizationCache:
             return False
 
         try:
-            # Delete org hash
             org_key = f"{ORG_KEY_PREFIX}{org_id}"
             RedisOps.delete(org_key)
-
-            # Delete code index
             if code:
-                code_index_key = f"{ORG_CODE_INDEX_PREFIX}{code}"
-                RedisOps.delete(code_index_key)
-
-            # Delete invitation code index
+                RedisOps.delete(f"{ORG_CODE_INDEX_PREFIX}{code}")
             if invite_code:
-                invite_index_key = f"{ORG_INVITE_INDEX_PREFIX}{invite_code}"
-                RedisOps.delete(invite_index_key)
-
+                RedisOps.delete(f"{ORG_INVITE_INDEX_PREFIX}{invite_code}")
             logger.info("[OrgCache] Invalidated cache for org ID %s", org_id)
-            logger.debug("[OrgCache] Deleted cache keys: org:%s, org:code:%s, org:invite:%s", org_id, code, invite_code)
-
             return True
         except Exception as e:
-            # Log but don't raise - invalidation failures are non-critical
             logger.warning("[OrgCache] Failed to invalidate cache for org ID %s: %s", org_id, e)
             return False
+
+    def write_through(self, org: Organization, old_code: Optional[str], old_invite: Optional[str]) -> bool:
+        """
+        Write-through: invalidate old entries then cache updated org.
+        Call only after successful db.commit(). Database is source of truth.
+
+        Args:
+            org: Session-attached Organization after db.refresh()
+            old_code: Code before update (for index invalidation)
+            old_invite: Invitation code before update (for index invalidation)
+
+        Returns:
+            True if cache updated successfully
+        """
+        self.invalidate(org.id, old_code, old_invite)
+        return self.cache_org(org)
 
 
 def get_org_cache() -> OrganizationCache:
@@ -395,4 +407,3 @@ def get_org_cache() -> OrganizationCache:
 
 # Convenience alias
 org_cache = get_org_cache()
-

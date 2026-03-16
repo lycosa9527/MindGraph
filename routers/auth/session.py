@@ -316,7 +316,8 @@ async def get_me(
             "organization": {
                 "id": org.id if org else None,
                 "code": org.code if org else None,
-                "name": org.name if org else None
+                "name": org.name if org else None,
+                "display_name": getattr(org, "display_name", None) if org else None,
             },
             "created_at": current_user.created_at.isoformat() if current_user.created_at else None,
             "last_login": (

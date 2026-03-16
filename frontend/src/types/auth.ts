@@ -38,7 +38,7 @@ export interface BackendUser {
   email?: string
   role?: UserRole
   avatar?: string
-  organization?: string | { id?: string | number; name?: string }
+  organization?: string | { id?: string | number; name?: string; display_name?: string }
   schoolId?: string
   schoolName?: string
   created_at?: string

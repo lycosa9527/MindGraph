@@ -1166,7 +1166,9 @@ async function handleAIGenerate() {
   }
 
   // Use the composable's autoComplete method
-  const result = await autoComplete()
+  const result = await autoComplete({
+    promptSuffix: diagramStore.isLearningSheet ? ' 半成品' : undefined,
+  })
   if (!result.success && result.error) {
     // Error is already shown by the composable, but we can show it again if needed
     console.error('Auto-complete failed:', result.error)

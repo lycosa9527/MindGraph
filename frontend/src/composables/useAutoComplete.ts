@@ -330,6 +330,26 @@ export function useAutoComplete() {
       }
     }
 
+    // Double bubble map requires BOTH left and right topics
+    if (diagramStore.type === 'double_bubble_map') {
+      const spec = diagramStore.data as Record<string, unknown> | null
+      const nodes = (spec?.nodes as NodeWithText[] | undefined) ?? []
+      const leftNode = nodes.find((n) => n.id === 'left-topic')
+      const rightNode = nodes.find((n) => n.id === 'right-topic')
+      const left = getNodeText(leftNode)
+      const right = getNodeText(rightNode)
+      const leftValid = left && !isPlaceholderText(left)
+      const rightValid = right && !isPlaceholderText(right)
+      if (!leftValid || !rightValid) {
+        return {
+          valid: false,
+          error: isZh.value
+            ? '请填写左右两个主题后再生成'
+            : 'Please fill in both left and right topics before generating',
+        }
+      }
+    }
+
     // Bridge map can work with dimension only (no topic needed)
     if (diagramStore.type === 'bridge_map') {
       const analogies = extractBridgeMapAnalogies()
@@ -514,18 +534,16 @@ export function useAutoComplete() {
       const abortControllers = modelsToRun.map(() => new AbortController())
       abortControllers.forEach((controller) => llmResultsStore.addAbortController(controller))
 
-      const promises = modelsToRun.map((model, index) =>
-        generateFromSingleLLM(requestBody, model, abortControllers[index].signal)
-      )
-
       let firstResultHandled = false
-      const results = await Promise.allSettled(promises)
 
-      for (const [index, settledResult] of results.entries()) {
-        const model = modelsToRun[index]
-
-        if (settledResult.status === 'fulfilled') {
-          const result = settledResult.value
+      // Process each LLM result as soon as it arrives (first-result-wins), don't wait for all 3
+      const processPromises = modelsToRun.map(async (model, index) => {
+        try {
+          const result = await generateFromSingleLLM(
+            requestBody,
+            model,
+            abortControllers[index].signal
+          )
 
           if (result.success && result.spec) {
             const rendered = await llmResultsStore.handleModelSuccess(
@@ -550,20 +568,23 @@ export function useAutoComplete() {
               )
             }
           } else {
-            llmResultsStore.handleModelError(model, result.error || 'Unknown error', result.elapsed)
+            llmResultsStore.handleModelError(
+              model,
+              result.error || 'Unknown error',
+              result.elapsed
+            )
             console.warn(`[AutoComplete] ${model} failed: ${result.error}`)
           }
-        } else {
-          llmResultsStore.handleModelError(
-            model,
-            settledResult.reason?.message || 'Request failed',
-            0
-          )
-          console.warn(`[AutoComplete] ${model} rejected: ${settledResult.reason}`)
+        } catch (err) {
+          const reason = err instanceof Error ? err.message : 'Request failed'
+          llmResultsStore.handleModelError(model, reason, 0)
+          console.warn(`[AutoComplete] ${model} rejected:`, err)
+        } finally {
+          llmResultsStore.removeAbortController(abortControllers[index])
         }
+      })
 
-        llmResultsStore.removeAbortController(abortControllers[index])
-      }
+      await Promise.allSettled(processPromises)
 
       llmResultsStore.completeGeneration()
 

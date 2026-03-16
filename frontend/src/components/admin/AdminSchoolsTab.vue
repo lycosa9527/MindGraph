@@ -22,13 +22,19 @@ const createForm = ref({ code: '', name: '' })
 const shareModalVisible = ref(false)
 const shareInvitationCode = ref('')
 const trendModalVisible = ref(false)
-const trendOrg = ref<{ name: string; id?: number; invitation_code?: string } | null>(null)
+const trendOrg = ref<{
+  name: string
+  id?: number
+  invitation_code?: string
+  display_name?: string
+} | null>(null)
 
 function openTrendModal(row: Record<string, unknown>) {
   trendOrg.value = {
     name: String(row.name ?? ''),
     id: row.id as number | undefined,
     invitation_code: row.invitation_code as string | undefined,
+    display_name: row.display_name as string | undefined,
   }
   trendModalVisible.value = true
 }
@@ -49,6 +55,18 @@ async function loadSchools() {
       return
     }
     schools.value = await res.json()
+    if (trendOrg.value?.id) {
+      const updated = schools.value.find(
+        (s: Record<string, unknown>) => s.id === trendOrg.value!.id
+      )
+      if (updated) {
+        trendOrg.value = {
+          ...trendOrg.value,
+          name: String(updated.name ?? trendOrg.value.name),
+          display_name: updated.display_name as string | undefined,
+        }
+      }
+    }
   } catch {
     notify.error('Failed to load schools')
   } finally {
@@ -238,6 +256,7 @@ onMounted(loadSchools)
       :org-name="trendOrg?.name"
       :org-id="trendOrg?.id"
       :org-invitation-code="trendOrg?.invitation_code"
+      :org-display-name="trendOrg?.display_name"
       @refresh="loadSchools"
     />
 

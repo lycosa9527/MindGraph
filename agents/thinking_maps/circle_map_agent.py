@@ -1,5 +1,11 @@
 """
-circle map agent module.
+Circle map agent module.
+
+Specialized agent for generating circle maps that define topics in context.
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 from typing import Any, Dict, Optional, Tuple
 import logging
@@ -9,18 +15,6 @@ from agents.core.agent_utils import extract_json_from_response
 from config.settings import config
 from prompts import get_prompt
 from services.llm import llm_service
-
-"""
-Circle Map Agent
-
-Specialized agent for generating circle maps that define topics in context.
-
-Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
-All Rights Reserved
-Proprietary License
-"""
-
-
 
 logger = logging.getLogger(__name__)
 
@@ -34,24 +28,23 @@ class CircleMapAgent(BaseAgent):
 
     async def generate_graph(
         self,
-        prompt: str,
+        user_prompt: str,
         language: str = "en",
-        # Token tracking parameters
-        user_id: Optional[int] = None,
-        organization_id: Optional[int] = None,
-        request_type: str = 'diagram_generation',
-        endpoint_path: Optional[str] = None
+        dimension_preference: Optional[str] = None,
+        fixed_dimension: Optional[str] = None,
+        dimension_only_mode: Optional[bool] = None,
+        **kwargs: Any
     ) -> Dict[str, Any]:
         """
         Generate a circle map from a prompt.
 
         Args:
-            prompt: User's description of what they want to define
+            user_prompt: User's description of what they want to define
             language: Language for generation ("en" or "zh")
-            user_id: User ID for token tracking
-            organization_id: Organization ID for token tracking
-            request_type: Request type for token tracking
-            endpoint_path: Endpoint path for token tracking
+            dimension_preference: Preferred dimension (unused for circle maps)
+            fixed_dimension: Fixed dimension (unused for circle maps)
+            dimension_only_mode: Dimension-only mode (unused for circle maps)
+            **kwargs: Token tracking (user_id, organization_id, request_type, endpoint_path)
 
         Returns:
             Dict containing success status and generated spec
@@ -59,13 +52,10 @@ class CircleMapAgent(BaseAgent):
         try:
             logger.debug("CircleMapAgent: Starting circle map generation for prompt")
 
-            # Generate the circle map specification
-            spec = await self._generate_circle_map_spec(                prompt,
+            spec = await self._generate_circle_map_spec(
+                user_prompt,
                 language,
-                user_id=user_id,
-                organization_id=organization_id,
-                request_type=request_type,
-                endpoint_path=endpoint_path
+                **kwargs
             )
 
             if not spec:
@@ -104,36 +94,35 @@ class CircleMapAgent(BaseAgent):
         self,
         prompt: str,
         language: str,
-        # Token tracking parameters
-        user_id: Optional[int] = None,
-        organization_id: Optional[int] = None,
-        request_type: str = 'diagram_generation',
-        endpoint_path: Optional[str] = None
+        **kwargs: Any
     ) -> Optional[Dict]:
         """Generate the circle map specification using LLM."""
         try:
-            # Get prompt from centralized system - use agent-specific format
             system_prompt = get_prompt("circle_map_agent", language, "generation")
 
             if not system_prompt:
                 logger.error("CircleMapAgent: No prompt found for language %s", language)
                 return None
 
-            user_prompt = f"请为以下描述创建一个圆圈图：{prompt}" if language == "zh" else f"Please create a circle map for the following description: {prompt}"
+            if language == "zh":
+                user_prompt = f"请为以下描述创建一个圆圈图：{prompt}"
+            else:
+                user_prompt = f"Please create a circle map for the following description: {prompt}"
 
-            # Call middleware directly - clean and efficient!
+            token_params = {
+                'user_id': kwargs.get('user_id'),
+                'organization_id': kwargs.get('organization_id'),
+                'request_type': kwargs.get('request_type', 'diagram_generation'),
+                'endpoint_path': kwargs.get('endpoint_path'),
+                'diagram_type': 'circle_map'
+            }
             response = await llm_service.chat(
                 prompt=user_prompt,
                 model=self.model,
                 system_message=system_prompt,
                 max_tokens=1000,
-                temperature=config.LLM_TEMPERATURE,  # From .env (default 0.3 for structured output)
-                # Token tracking parameters
-                user_id=user_id,
-                organization_id=organization_id,
-                request_type=request_type,
-                endpoint_path=endpoint_path,
-                diagram_type='circle_map'
+                temperature=config.LLM_TEMPERATURE,
+                **token_params
             )
 
             # Extract JSON from response
@@ -191,37 +180,34 @@ class CircleMapAgent(BaseAgent):
             logger.error("CircleMapAgent: Error enhancing spec: %s", e)
             return spec
 
-    def validate_output(self, spec: Dict) -> Tuple[bool, str]:
+    def validate_output(self, output: Dict[str, Any]) -> Tuple[bool, str]:
         """
         Validate the generated circle map specification.
 
         Args:
-            spec: The specification to validate
+            output: The specification to validate
 
         Returns:
             Tuple of (is_valid, validation_message)
         """
         try:
-            # Check required fields
-            if not isinstance(spec, dict):
-                return False, "Specification must be a dictionary"
-
-            if 'topic' not in spec or not spec['topic']:
-                return False, "Missing or empty topic"
-
-            if 'context' not in spec or not isinstance(spec['context'], list):
-                return False, "Missing or invalid context list"
-
-            # Validate context elements (should be strings for renderer compatibility)
-            if len(spec['context']) < 4:
-                return False, "Must have at least 4 context elements"
-
-            for i, ctx in enumerate(spec['context']):
-                if not isinstance(ctx, str) or not ctx.strip():
-                    return False, f"context[{i}] must be a non-empty string"
-
+            error_msg = None
+            if not isinstance(output, dict):
+                error_msg = "Specification must be a dictionary"
+            elif 'topic' not in output or not output['topic']:
+                error_msg = "Missing or empty topic"
+            elif 'context' not in output or not isinstance(output['context'], list):
+                error_msg = "Missing or invalid context list"
+            elif len(output['context']) < 4:
+                error_msg = "Must have at least 4 context elements"
+            else:
+                for i, ctx in enumerate(output['context']):
+                    if not isinstance(ctx, str) or not ctx.strip():
+                        error_msg = f"context[{i}] must be a non-empty string"
+                        break
+            if error_msg:
+                return False, error_msg
             return True, "Specification is valid"
-
         except Exception as e:
             return False, f"Validation error: {str(e)}"
 
@@ -237,7 +223,11 @@ class CircleMapAgent(BaseAgent):
         """
         try:
             context_count = len(spec.get('context', []))
-            logger.debug("CircleMapAgent: Enhancing spec - Topic: %s, Context elements: %s", spec.get('topic'), context_count)
+            logger.debug(
+                "CircleMapAgent: Enhancing spec - Topic: %s, Context elements: %s",
+                spec.get('topic'),
+                context_count
+            )
 
             # If already enhanced, return as-is
             if spec.get('_metadata', {}).get('enhanced'):

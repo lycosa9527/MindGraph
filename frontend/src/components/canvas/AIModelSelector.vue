@@ -219,7 +219,9 @@ watch(
         v-if="llmResultsStore.isGenerating || llmResultsStore.hasAnyResults"
         class="text-[10px] text-gray-500 dark:text-gray-400"
       >
-        <span v-if="llmResultsStore.isGenerating"> {{ llmResultsStore.successCount }}/3 </span>
+        <span v-if="llmResultsStore.isGenerating">
+          {{ llmResultsStore.successCount }}/{{ llmResultsStore.totalModels ?? llmResultsStore.models.length }}
+        </span>
         <span
           v-else-if="llmResultsStore.hasAnyResults"
           class="text-green-600 dark:text-green-400"

@@ -97,6 +97,10 @@ const isAdmin = computed(() => authStore.isAdmin)
 
 // User info
 const userName = computed(() => authStore.user?.username || '')
+const userSubtitle = computed(() => {
+  const schoolName = authStore.user?.schoolName
+  return schoolName && schoolName.trim() ? schoolName : 'MindGraph专业版'
+})
 const userAvatar = computed(() => {
   const avatar = authStore.user?.avatar || '🐈‍⬛'
   // Handle legacy avatar_01 format
@@ -480,8 +484,19 @@ async function handleDiagramSelect(diagram: SavedDiagram) {
                 <div class="text-sm font-medium text-stone-900 truncate leading-tight">
                   {{ userName }}
                 </div>
-                <div class="text-xs text-stone-500 truncate leading-tight mt-0.5">
-                  MindGraph专业版
+                <div class="org-subtitle-wrapper text-xs text-stone-500 leading-tight mt-0.5">
+                  <div
+                    class="org-subtitle-inner"
+                    :class="{ 'org-subtitle-marquee': userSubtitle.length > 12 }"
+                  >
+                    <span class="org-subtitle-text">{{ userSubtitle }}</span>
+                    <span
+                      v-if="userSubtitle.length > 12"
+                      class="org-subtitle-text org-subtitle-sep"
+                    >
+                      {{ userSubtitle }}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -706,6 +721,42 @@ async function handleDiagramSelect(diagram: SavedDiagram) {
 
 .logo-link:hover {
   text-decoration: none;
+}
+
+/* Organization name marquee for long names */
+.org-subtitle-wrapper {
+  overflow: hidden;
+  min-width: 0;
+}
+
+.org-subtitle-inner {
+  display: inline-flex;
+  white-space: nowrap;
+}
+
+.org-subtitle-text {
+  flex-shrink: 0;
+}
+
+.org-subtitle-sep {
+  padding-left: 1.5em;
+}
+
+.org-subtitle-marquee {
+  animation: org-subtitle-scroll 12s linear infinite;
+}
+
+.org-subtitle-marquee:hover {
+  animation-play-state: paused;
+}
+
+@keyframes org-subtitle-scroll {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
 }
 </style>
 

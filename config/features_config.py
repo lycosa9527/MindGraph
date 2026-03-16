@@ -100,11 +100,6 @@ class FeaturesConfigMixin:
         return self._get_cached_value('FEATURE_DRAG_AND_DROP', 'False').lower() == 'true'
 
     @property
-    def FEATURE_IME_AUTOCOMPLETE(self):
-        """Enable IME-style autocomplete for node editing (experimental)."""
-        return self._get_cached_value('FEATURE_IME_AUTOCOMPLETE', 'False').lower() == 'true'
-
-    @property
     def FEATURE_RAG_CHUNK_TEST(self):
         """Enable RAG Chunk Test feature (hidden by default)."""
         return self._get_cached_value('FEATURE_RAG_CHUNK_TEST', 'False').lower() == 'true'

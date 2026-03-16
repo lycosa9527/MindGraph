@@ -61,6 +61,7 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
   const isGenerating = ref(false)
   const sessionId = ref<string | null>(null)
   const expectedDiagramType = ref<string | null>(null)
+  const totalModels = ref<number | null>(null)
 
   // Track abort controllers for cancellation
   const abortControllers = ref<AbortController[]>([])
@@ -175,6 +176,7 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
       doubao: 'idle',
     }
     selectedModel.value = null
+    totalModels.value = null
   }
 
   // Set selected model (for pre-selection, e.g. concept map relationship)
@@ -217,6 +219,7 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
 
     // Set loading state for models that will run
     const targetModels = modelsToRun || [...MODELS]
+    totalModels.value = targetModels.length
     setAllModelsState('loading', targetModels)
   }
 
@@ -248,12 +251,16 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
     })
 
     // If this is the first successful result, render it
+    // Claim selectedModel synchronously before await to prevent race when two LLMs complete together
     if (selectedModel.value === null) {
+      selectedModel.value = model
       const loaded = await switchToModel(model)
-      if (loaded) {
+      if (!loaded) {
+        selectedModel.value = null
+      } else {
         console.log(`[LLMResults] First result from ${model} rendered`)
-        return true
       }
+      return loaded
     }
 
     return true
@@ -299,6 +306,7 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
     clearCache()
     sessionId.value = null
     expectedDiagramType.value = null
+    totalModels.value = null
   }
 
   return {
@@ -309,6 +317,7 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
     isGenerating,
     sessionId,
     expectedDiagramType,
+    totalModels,
 
     // Getters
     models,

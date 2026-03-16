@@ -26,6 +26,7 @@ const props = defineProps<{
   orgName?: string
   orgId?: number
   orgInvitationCode?: string
+  orgDisplayName?: string
   userName?: string
   userId?: number
 }>()
@@ -53,6 +54,8 @@ const managersLoading = ref(false)
 const addManagerUserId = ref<number | null>(null)
 const addManagerSelect = ref<number | null>(null)
 const refreshCodeLoading = ref(false)
+const displayNameEdit = ref('')
+const displayNameSaving = ref(false)
 
 function formatNumber(num: number): string {
   if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M'
@@ -398,6 +401,28 @@ async function copyShareMessage() {
   }
 }
 
+async function saveDisplayName() {
+  if (props.orgId == null) return
+  displayNameSaving.value = true
+  try {
+    const res = await apiRequest(`/api/auth/admin/organizations/${props.orgId}`, {
+      method: 'PUT',
+      body: JSON.stringify({ display_name: displayNameEdit.value.trim() || null }),
+    })
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}))
+      notify.error((data.detail as string) || 'Failed to save')
+      return
+    }
+    notify.success(t('notification.saved'))
+    emit('refresh')
+  } catch {
+    notify.error('Failed to save display name')
+  } finally {
+    displayNameSaving.value = false
+  }
+}
+
 watch(
   () => props.visible,
   (v) => {
@@ -405,6 +430,7 @@ watch(
       load()
       if (props.type === 'org' && props.orgId) {
         invitationCode.value = props.orgInvitationCode ?? ''
+        displayNameEdit.value = props.orgDisplayName ?? ''
         loadManagersAndUsers()
       }
     } else {
@@ -415,12 +441,21 @@ watch(
 )
 
 watch(
-  () => [props.orgId, props.orgName, props.orgInvitationCode, props.userId, props.userName] as const,
+  () =>
+    [
+      props.orgId,
+      props.orgName,
+      props.orgInvitationCode,
+      props.orgDisplayName,
+      props.userId,
+      props.userName,
+    ] as const,
   () => {
     if (props.visible) {
       load()
       if (props.type === 'org' && props.orgId) {
         invitationCode.value = props.orgInvitationCode ?? ''
+        displayNameEdit.value = props.orgDisplayName ?? ''
         loadManagersAndUsers()
       }
     }
@@ -521,6 +556,29 @@ onBeforeUnmount(() => {
         v-if="type === 'org' && orgId"
         class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 space-y-4"
       >
+        <div>
+          <p class="text-sm font-medium mb-2">{{ t('admin.displayNameLabel') }}</p>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">
+            {{ t('admin.displayNameHint') }}
+          </p>
+          <div class="flex items-center gap-2">
+            <el-input
+              v-model="displayNameEdit"
+              :placeholder="orgName"
+              size="small"
+              clearable
+              class="flex-1"
+            />
+            <el-button
+              type="primary"
+              size="small"
+              :loading="displayNameSaving"
+              @click="saveDisplayName"
+            >
+              {{ t('admin.save') }}
+            </el-button>
+          </div>
+        </div>
         <div class="flex items-center justify-between">
           <span class="text-sm font-medium">{{ t('admin.invitationCode') }}</span>
           <div class="flex items-center gap-2">

@@ -188,6 +188,8 @@ export const translations: Record<Language, Record<string, string>> = {
     'admin.trendTokens': 'Token Usage Trend',
     'admin.trendOrgTokens': 'Token Usage by School',
     'admin.trendUserTokens': 'Token Usage by User',
+    'admin.displayNameLabel': 'Sidebar Display Text',
+    'admin.displayNameHint': 'Custom text shown in user sidebar (e.g. MindGraph Pro). Leave empty to use school name.',
 
     // Notifications
     'notification.saved': 'Changes saved successfully',
@@ -378,6 +380,8 @@ export const translations: Record<Language, Record<string, string>> = {
     'admin.trendTokens': 'Token 使用趋势',
     'admin.trendOrgTokens': '学校 Token 使用趋势',
     'admin.trendUserTokens': '用户 Token 使用趋势',
+    'admin.displayNameLabel': '侧边栏显示文字',
+    'admin.displayNameHint': '用户侧边栏显示的自定义文字（如 MindGraph专业版）。留空则显示学校名称。',
 
     // Notifications
     'notification.saved': '保存成功',

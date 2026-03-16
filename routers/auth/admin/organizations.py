@@ -6,6 +6,12 @@ Admin-only organization CRUD endpoints:
 - PUT /admin/organizations/{org_id} - Update organization
 - DELETE /admin/organizations/{org_id} - Delete organization
 
+Write-through pattern (PostgreSQL + Redis):
+- Database is source of truth; always load org from db Session for writes (update/delete).
+- Write order: 1) db.commit(), 2) invalidate old cache keys, 3) cache_org(updated).
+- Cache used only for read-only lookups (existence, conflict checks).
+- Detached org from Redis cache must never be passed to db.commit/delete/refresh.
+
 Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved
 Proprietary License
@@ -124,6 +130,7 @@ async def list_organizations_admin(
             "id": org.id,
             "code": org.code,
             "name": org.name,
+            "display_name": getattr(org, "display_name", None),
             "invitation_code": org.invitation_code,
             "user_count": user_count,
             "manager_count": manager_count,
@@ -225,13 +232,11 @@ async def update_organization_admin(
     lang: Language = Depends(get_language_dependency)
 ):
     """Update organization (ADMIN ONLY)"""
-    # Load org (use cache with database fallback)
-    org = org_cache.get_by_id(org_id)
+    # Load org from database (must be session-attached for commit/refresh)
+    org = db.query(Organization).filter(Organization.id == org_id).first()
     if not org:
-        org = db.query(Organization).filter(Organization.id == org_id).first()
-        if not org:
-            error_msg = Messages.error("organization_not_found", lang, org_id)
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
+        error_msg = Messages.error("organization_not_found", lang, org_id)
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
 
     # Save old values for cache invalidation
     old_code = cast(Optional[str], org.code)
@@ -259,6 +264,10 @@ async def update_organization_admin(
 
     if "name" in request:
         setattr(org, 'name', request["name"])
+    if "display_name" in request:
+        val = request.get("display_name")
+        stripped = (val or "").strip() if val is not None else None
+        setattr(org, 'display_name', stripped if stripped else None)
     if "invitation_code" in request:
         proposed = request.get("invitation_code")
         org_name_val = cast(Optional[str], org.name)
@@ -327,19 +336,10 @@ async def update_organization_admin(
             detail="Failed to update organization"
         ) from e
 
-    # Invalidate old cache entries
-    try:
-        org_cache.invalidate(org_id, old_code, old_invite)
-        logger.debug("[Auth] Invalidated old cache for org ID %s", org_id)
-    except Exception as e:
-        logger.warning("[Auth] Failed to invalidate org cache: %s", e)
-
-    # Re-cache updated org
-    try:
-        org_cache.cache_org(org)
+    if not org_cache.write_through(org, old_code, old_invite):
+        logger.warning("[Auth] Cache write-through failed for org ID %s", org_id)
+    else:
         logger.info("[Auth] Updated and re-cached org ID %s", org_id)
-    except Exception as e:
-        logger.warning("[Auth] Failed to re-cache org ID %s: %s", org_id, e)
 
     logger.info("Admin %s updated organization: %s", current_user.phone, org.code)
     updated_expires = cast(Optional[datetime], org.expires_at)
@@ -348,6 +348,7 @@ async def update_organization_admin(
         "id": org.id,
         "code": org.code,
         "name": org.name,
+        "display_name": getattr(org, "display_name", None),
         "invitation_code": org.invitation_code,
         "expires_at": updated_expires.isoformat() if updated_expires else None,
         "is_active": org.is_active if hasattr(org, 'is_active') else True,
@@ -364,9 +365,7 @@ async def refresh_organization_invitation_code(
     lang: Language = Depends(get_language_dependency)
 ):
     """Generate a new invitation code for the organization (ADMIN ONLY)"""
-    org = org_cache.get_by_id(org_id)
-    if org is None:
-        org = db.query(Organization).filter(Organization.id == org_id).first()
+    org = db.query(Organization).filter(Organization.id == org_id).first()
     if org is None:
         error_msg = Messages.error("organization_not_found", org_id, lang=lang)
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
@@ -376,25 +375,23 @@ async def refresh_organization_invitation_code(
     org_code_val = cast(Optional[str], org.code)
     new_code = generate_invitation_code(org_name_val, org_code_val)
 
-    existing = org_cache.get_by_invitation_code(new_code)
-    if existing is not None and int(existing.id) != int(org.id):
-        existing = db.query(Organization).filter(
-            Organization.invitation_code == new_code,
-            Organization.id != org.id
-        ).first()
-    attempts = 0
-    while existing is not None and attempts < 5:
-        new_code = generate_invitation_code(org_name_val, org_code_val)
-        existing = org_cache.get_by_invitation_code(new_code)
-        if existing is not None and int(existing.id) != int(org.id):
-            existing = db.query(Organization).filter(
-                Organization.invitation_code == new_code,
+    def _has_conflict(code: str) -> bool:
+        cached = org_cache.get_by_invitation_code(code)
+        if cached is not None and int(cached.id) != int(org.id):
+            return True
+        if cached is None:
+            other = db.query(Organization).filter(
+                Organization.invitation_code == code,
                 Organization.id != org.id
             ).first()
-        else:
-            existing = None
+            return other is not None
+        return False
+
+    attempts = 0
+    while _has_conflict(new_code) and attempts < 5:
+        new_code = generate_invitation_code(org_name_val, org_code_val)
         attempts += 1
-    if existing is not None:
+    if _has_conflict(new_code):
         error_msg = Messages.error("failed_generate_invitation_code", lang)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -413,11 +410,8 @@ async def refresh_organization_invitation_code(
             detail="Failed to refresh invitation code"
         ) from e
 
-    try:
-        org_cache.invalidate(org_id, org_code_val, old_invite)
-        org_cache.cache_org(org)
-    except Exception as e:
-        logger.warning("[Auth] Failed to invalidate org cache: %s", e)
+    if not org_cache.write_through(org, org_code_val, old_invite):
+        logger.warning("[Auth] Cache write-through failed for org ID %s", org_id)
 
     logger.info("Admin %s refreshed invitation code for org %s", current_user.phone, org.code)
     return {
@@ -435,15 +429,11 @@ async def delete_organization_admin(
     lang: Language = Depends(get_language_dependency)
 ):
     """Delete organization (ADMIN ONLY)"""
-    # Load org (use cache with database fallback)
-    org = org_cache.get_by_id(org_id)
+    org = db.query(Organization).filter(Organization.id == org_id).first()
     if org is None:
-        org = db.query(Organization).filter(Organization.id == org_id).first()
-        if org is None:
-            error_msg = Messages.error("organization_not_found", lang, org_id)
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
+        error_msg = Messages.error("organization_not_found", lang, org_id)
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
 
-    # Save values for cache invalidation
     org_code = cast(Optional[str], org.code)
     org_invite = cast(Optional[str], org.invitation_code)
 
@@ -452,7 +442,6 @@ async def delete_organization_admin(
         error_msg = Messages.error("cannot_delete_organization_with_users", lang, user_count)
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
 
-    # Delete from database FIRST
     db.delete(org)
     try:
         db.commit()
@@ -492,13 +481,10 @@ async def list_organization_users(
 
     Used for manager selection dropdown in admin panel.
     """
-    # Verify organization exists
-    org = org_cache.get_by_id(org_id)
+    org = db.query(Organization).filter(Organization.id == org_id).first()
     if not org:
-        org = db.query(Organization).filter(Organization.id == org_id).first()
-        if not org:
-            error_msg = Messages.error("organization_not_found", lang, org_id)
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
+        error_msg = Messages.error("organization_not_found", lang, org_id)
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
 
     # Get all users in this organization
     users = db.query(User).filter(User.organization_id == org_id).order_by(User.name).all()
@@ -536,13 +522,10 @@ async def list_organization_managers(
     """
     List managers of an organization (ADMIN ONLY)
     """
-    # Verify organization exists
-    org = org_cache.get_by_id(org_id)
+    org = db.query(Organization).filter(Organization.id == org_id).first()
     if not org:
-        org = db.query(Organization).filter(Organization.id == org_id).first()
-        if not org:
-            error_msg = Messages.error("organization_not_found", lang, org_id)
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
+        error_msg = Messages.error("organization_not_found", lang, org_id)
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
 
     # Get managers in this organization
     managers = db.query(User).filter(
@@ -582,15 +565,11 @@ async def set_organization_manager(
 
     The user must belong to the specified organization.
     """
-    # Verify organization exists
-    org = org_cache.get_by_id(org_id)
+    org = db.query(Organization).filter(Organization.id == org_id).first()
     if not org:
-        org = db.query(Organization).filter(Organization.id == org_id).first()
-        if not org:
-            error_msg = Messages.error("organization_not_found", lang, org_id)
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
+        error_msg = Messages.error("organization_not_found", lang, org_id)
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
 
-    # Get user
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         error_msg = Messages.error("user_not_found", lang, user_id)
@@ -648,15 +627,11 @@ async def remove_organization_manager(
 
     Resets the user's role back to 'user'.
     """
-    # Verify organization exists
-    org = org_cache.get_by_id(org_id)
+    org = db.query(Organization).filter(Organization.id == org_id).first()
     if not org:
-        org = db.query(Organization).filter(Organization.id == org_id).first()
-        if not org:
-            error_msg = Messages.error("organization_not_found", lang, org_id)
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
+        error_msg = Messages.error("organization_not_found", lang, org_id)
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
 
-    # Get user
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         error_msg = Messages.error("user_not_found", lang, user_id)

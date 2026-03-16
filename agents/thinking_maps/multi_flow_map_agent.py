@@ -1,17 +1,5 @@
 """
-multi flow map agent module.
-"""
-from typing import Dict, List, Any, Tuple, Optional
-import logging
-
-from agents.core.base_agent import BaseAgent
-from agents.core.agent_utils import extract_json_from_response
-from config.settings import config
-from prompts import get_prompt
-from services.llm import llm_service
-
-"""
-Multi-Flow Map Agent
+Multi flow map agent module.
 
 This agent enhances the basic multi-flow map spec (event, causes, effects)
 by cleaning data, de-duplicating entries, applying basic heuristics for
@@ -24,8 +12,14 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+from typing import Dict, List, Any, Tuple, Optional
+import logging
 
-
+from agents.core.base_agent import BaseAgent
+from agents.core.agent_utils import extract_json_from_response
+from config.settings import config
+from prompts import get_prompt
+from services.llm import llm_service
 
 logger = logging.getLogger(__name__)
 
@@ -39,23 +33,28 @@ class MultiFlowMapAgent(BaseAgent):
 
     async def generate_graph(
         self,
-        prompt: str,
+        user_prompt: str,
         language: str = "en",
-        # Token tracking parameters
-        user_id: Optional[int] = None,
-        organization_id: Optional[int] = None,
-        request_type: str = 'diagram_generation',
-        endpoint_path: Optional[str] = None
+        dimension_preference: str | None = None,
+        fixed_dimension: str | None = None,
+        dimension_only_mode: bool | None = None,
+        **kwargs: Any
     ) -> Dict[str, Any]:
         """Generate a multi-flow map from a prompt."""
+        token_kwargs = {
+            'user_id': kwargs.get('user_id'),
+            'organization_id': kwargs.get('organization_id'),
+            'request_type': kwargs.get('request_type', 'diagram_generation'),
+            'endpoint_path': kwargs.get('endpoint_path'),
+        }
         try:
-            # Generate the initial multi-flow map specification
-            spec = await self._generate_multi_flow_map_spec(                prompt,
+            spec = await self._generate_multi_flow_map_spec(
+                user_prompt,
                 language,
-                user_id=user_id,
-                organization_id=organization_id,
-                request_type=request_type,
-                endpoint_path=endpoint_path
+                user_id=token_kwargs['user_id'],
+                organization_id=token_kwargs['organization_id'],
+                request_type=token_kwargs['request_type'],
+                endpoint_path=token_kwargs['endpoint_path']
             )
             if not spec:
                 return {
@@ -114,7 +113,11 @@ class MultiFlowMapAgent(BaseAgent):
                 logger.error("MultiFlowMapAgent: No prompt found for language %s", language)
                 return None
 
-            user_prompt = f"请为以下描述创建一个复流程图：{prompt}" if language == "zh" else f"Please create a multi-flow map for the following description: {prompt}"
+            user_prompt = (
+                f"请为以下描述创建一个复流程图：{prompt}"
+                if language == "zh"
+                else f"Please create a multi-flow map for the following description: {prompt}"
+            )
 
             # Call middleware directly - clean and efficient!
             response = await llm_service.chat(
@@ -153,20 +156,20 @@ class MultiFlowMapAgent(BaseAgent):
             logger.error("MultiFlowMapAgent: Error in spec generation: %s", e)
             return None
 
-    def validate_output(self, spec: Dict) -> Tuple[bool, str]:
+    def validate_output(self, output: Dict[str, Any]) -> Tuple[bool, str]:
         """Validate a multi-flow map specification."""
         try:
-            if not isinstance(spec, dict):
+            if not isinstance(output, dict):
                 return False, "Spec must be a dictionary"
 
             # Accept both standard format and alternative format from LLM
-            event = spec.get("event") or spec.get("topic")
-            causes = spec.get("causes")
-            effects = spec.get("effects")
+            event = output.get("event") or output.get("topic")
+            causes = output.get("causes")
+            effects = output.get("effects")
 
             # If we have 'flows' instead of 'causes'/'effects', try to extract them
-            if not causes and not effects and 'flows' in spec:
-                flows = spec.get('flows', [])
+            if not causes and not effects and 'flows' in output:
+                flows = output.get('flows', [])
                 if isinstance(flows, list) and len(flows) >= 2:
                     # Assume first flow is causes, second flow is effects
                     if len(flows) >= 1 and 'steps' in flows[0]:
@@ -270,7 +273,6 @@ class MultiFlowMapAgent(BaseAgent):
 
             # Calculate dimensions based on content complexity
             max_side = max(len(causes), len(effects))
-            len(causes) + len(effects)
 
             # Estimate text width requirements (rough approximation)
             max_cause_length = max((len(c) for c in causes), default=0)
@@ -325,5 +327,3 @@ class MultiFlowMapAgent(BaseAgent):
             return {"success": True, "spec": enhanced_spec}
         except Exception as exc:  # Defensive guard
             return {"success": False, "error": f"Unexpected error: {exc}"}
-
-

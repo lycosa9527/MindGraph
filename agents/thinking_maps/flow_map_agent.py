@@ -1,17 +1,5 @@
 """
-flow map agent module.
-"""
-from typing import Dict, List, Tuple, Any, Optional
-import logging
-
-from agents.core.base_agent import BaseAgent
-from agents.core.agent_utils import extract_json_from_response
-from config.settings import config
-from prompts import get_prompt
-from services.llm import llm_service
-
-"""
-Flow Map Agent
+Flow map agent module.
 
 Enhances basic flow map specs by:
 - Normalizing and de-duplicating major steps
@@ -27,6 +15,14 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+from typing import Dict, List, Tuple, Any, Optional
+import logging
+
+from agents.core.base_agent import BaseAgent
+from agents.core.agent_utils import extract_json_from_response
+from config.settings import config
+from prompts import get_prompt
+from services.llm import llm_service
 
 
 
@@ -42,23 +38,28 @@ class FlowMapAgent(BaseAgent):
 
     async def generate_graph(
         self,
-        prompt: str,
+        user_prompt: str,
         language: str = "en",
-        # Token tracking parameters
-        user_id: Optional[int] = None,
-        organization_id: Optional[int] = None,
-        request_type: str = 'diagram_generation',
-        endpoint_path: Optional[str] = None
+        dimension_preference: str | None = None,
+        fixed_dimension: str | None = None,
+        dimension_only_mode: bool | None = None,
+        **kwargs: Any
     ) -> Dict[str, Any]:
         """Generate a flow map from a prompt."""
+        token_kwargs = {
+            'user_id': kwargs.get('user_id'),
+            'organization_id': kwargs.get('organization_id'),
+            'request_type': kwargs.get('request_type', 'diagram_generation'),
+            'endpoint_path': kwargs.get('endpoint_path'),
+        }
         try:
-            # Generate the initial flow map specification
-            spec = await self._generate_flow_map_spec(                prompt,
+            spec = await self._generate_flow_map_spec(
+                user_prompt,
                 language,
-                user_id=user_id,
-                organization_id=organization_id,
-                request_type=request_type,
-                endpoint_path=endpoint_path
+                user_id=token_kwargs['user_id'],
+                organization_id=token_kwargs['organization_id'],
+                request_type=token_kwargs['request_type'],
+                endpoint_path=token_kwargs['endpoint_path']
             )
             if not spec:
                 return {
@@ -72,7 +73,7 @@ class FlowMapAgent(BaseAgent):
                 logger.warning("FlowMapAgent: Validation failed: %s", validation_msg)
                 return {
                     'success': False,
-                    'error': 'Generated invalid specification: %s' % validation_msg
+                    'error': f'Generated invalid specification: {validation_msg}'
                 }
 
             # Enhance the spec with layout and dimensions
@@ -95,7 +96,7 @@ class FlowMapAgent(BaseAgent):
             logger.error("FlowMapAgent: Flow map generation failed: %s", e)
             return {
                 'success': False,
-                'error': 'Generation failed: %s' % str(e)
+                'error': f'Generation failed: {e}'
             }
 
     async def _generate_flow_map_spec(
@@ -117,7 +118,11 @@ class FlowMapAgent(BaseAgent):
                 logger.error("FlowMapAgent: No prompt found for language %s", language)
                 return None
 
-            user_prompt = f"请为以下描述创建一个流程图：{prompt}" if language == "zh" else f"Please create a flow map for the following description: {prompt}"
+            user_prompt = (
+                f"请为以下描述创建一个流程图：{prompt}"
+                if language == "zh"
+                else f"Please create a flow map for the following description: {prompt}"
+            )
 
             # Call middleware directly - clean and efficient!
             response = await llm_service.chat(
@@ -160,10 +165,14 @@ class FlowMapAgent(BaseAgent):
                         f"{user_prompt}\n\n"
                         f"重要：你必须只返回有效的JSON格式，不要询问更多信息。"
                         f"如果提示不清楚，请根据提示内容做出合理假设并直接生成JSON规范。"
-                        if language == "zh" else
-                        f"{user_prompt}\n\n"
-                        f"IMPORTANT: You MUST respond with valid JSON only. Do not ask for more information. "
-                        f"If the prompt is unclear, make reasonable assumptions and generate the JSON specification directly."
+                        if language == "zh"
+                        else (
+                            f"{user_prompt}\n\n"
+                            f"IMPORTANT: You MUST respond with valid JSON only. "
+                            f"Do not ask for more information. "
+                            f"If the prompt is unclear, make reasonable assumptions "
+                            f"and generate the JSON specification directly."
+                        )
                     )
 
                     retry_response = await llm_service.chat(
@@ -195,8 +204,16 @@ class FlowMapAgent(BaseAgent):
 
                 if not spec or (isinstance(spec, dict) and spec.get('_error')):
                     # Log the actual response for debugging
-                    response_preview = response_str[:500] + "..." if len(response_str) > 500 else response_str
-                    logger.error("FlowMapAgent: Failed to extract JSON from LLM response. Response preview: %s", response_preview)
+                    response_preview = (
+                        response_str[:500] + "..."
+                        if len(response_str) > 500
+                        else response_str
+                    )
+                    logger.error(
+                        "FlowMapAgent: Failed to extract JSON from LLM response. "
+                        "Response preview: %s",
+                        response_preview
+                    )
                     return None
 
             return spec
@@ -205,15 +222,15 @@ class FlowMapAgent(BaseAgent):
             logger.error("FlowMapAgent: Error in spec generation: %s", e)
             return None
 
-    def validate_output(self, spec: Dict) -> Tuple[bool, str]:
+    def validate_output(self, output: Dict[str, Any]) -> Tuple[bool, str]:
         """Validate a flow map specification."""
         try:
-            if not isinstance(spec, dict):
-                return False, "Spec must as a dictionary"
+            if not isinstance(output, dict):
+                return False, "Spec must be a dictionary"
 
             # Accept both 'title' and 'topic' fields for flexibility
-            title = spec.get("title") or spec.get("topic")
-            steps = spec.get("steps")
+            title = output.get("title") or output.get("topic")
+            steps = output.get("steps")
 
             if not title or not isinstance(title, str):
                 return False, "Missing or invalid title/topic"
@@ -369,14 +386,19 @@ class FlowMapAgent(BaseAgent):
                     current_substeps = step_to_substeps.get(current_step, [])
                     next_substeps = step_to_substeps.get(next_step, [])
 
-                    # Each substep needs height + spacing
-                    current_sub_height = len(current_substeps) * (font_step * 1.2 + vpad_step * 2 + 30)  # 30 = sub spacing
-                    next_sub_height = len(next_substeps) * (font_step * 1.2 + vpad_step * 2 + 30)
+                    # Each substep needs height + spacing (30 = sub spacing)
+                    sub_height_per = font_step * 1.2 + vpad_step * 2 + 30
+                    current_sub_height = len(current_substeps) * sub_height_per
+                    next_sub_height = len(next_substeps) * sub_height_per
 
                     # More efficient spacing calculation (matching D3.js)
                     max_sub_height = max(current_sub_height, next_sub_height)
                     min_base_spacing = 45  # Matches D3.js minBaseSpacing
-                    adaptive_spacing = max(min_base_spacing, max_sub_height * 0.4 + 20) if max_sub_height > 0 else min_base_spacing
+                    adaptive_spacing = (
+                        max(min_base_spacing, max_sub_height * 0.4 + 20)
+                        if max_sub_height > 0
+                        else min_base_spacing
+                    )
 
                     total_vertical_spacing += adaptive_spacing
 
@@ -398,7 +420,10 @@ class FlowMapAgent(BaseAgent):
             if has_substeps:
                 # Add space for substeps: gap + substep width
                 substep_gap = 40  # Gap between step and substeps
-                width = base_content_width + substep_gap + max_substep_w + padding * 2 + extra_padding
+                width = (
+                    base_content_width + substep_gap + max_substep_w
+                    + padding * 2 + extra_padding
+                )
             else:
                 width = base_content_width + padding * 2 + extra_padding
 
@@ -436,5 +461,3 @@ class FlowMapAgent(BaseAgent):
             return {"success": True, "spec": enhanced_spec}
         except Exception as exc:
             return {"success": False, "error": f"Unexpected error: {exc}"}
-
-

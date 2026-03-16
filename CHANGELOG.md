@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.39.0] - 2026-03-16
+
+### Added
+- **Brace Map Helper Modules**: New `brace_map_helpers.py`, `brace_map_models.py`, `brace_map_positioning.py`—extracted from brace_map_agent for reduced complexity and improved maintainability.
+- **Tree Map Helper Module**: New `tree_map_helpers.py`—extracted from tree_map_agent for cleaner separation of concerns.
+
+### Changed
+- **Thinking Map Agents**: Major refactor across brace_map, bridge_map, bubble_map, circle_map, double_bubble_map, flow_map, multi_flow_map, tree_map agents—reduced duplication, improved PEP8 compliance, and modular structure.
+- **Admin Components**: AdminSchoolsTab, AdminTrendChartModal—layout and integration updates.
+- **Canvas Components**: AIModelSelector, CanvasToolbar—minor updates.
+- **AppSidebar**: Navigation and layout updates.
+- **Composables**: useAutoComplete, useLanguage—enhancements.
+- **Auth Store & Types**: auth.ts, auth types, auth domain model—updates.
+- **llmResults Store**: State handling improvements.
+- **Prompts**: concept_maps.py, thinking_maps.py—refinements.
+- **Config**: features_config, rate_limiting—cleanup and simplification.
+- **Routers**: diagram_generation, organizations, session—updates.
+- **Redis Org Cache**: Improved caching logic.
+- **env.example, pyproject.toml, tsconfig.json**: Config cleanup.
+
 ## [5.38.0] - 2026-03-16
 
 ### Changed

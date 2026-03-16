@@ -83,32 +83,6 @@ class RateLimitingConfigMixin:
         return val.lower() == 'true'
 
     @property
-    def DEEPSEEK_DASHSCOPE_QPM_LIMIT(self):
-        """
-        DeepSeek Dashscope route QPM limit for load balancing.
-
-        DEPRECATED: DeepSeek Dashscope route now uses shared DASHSCOPE_QPM_LIMIT.
-        """
-        try:
-            return int(self._get_cached_value('DEEPSEEK_DASHSCOPE_QPM_LIMIT', '13500'))
-        except (ValueError, TypeError):
-            logger.warning("Invalid DEEPSEEK_DASHSCOPE_QPM_LIMIT, using 13500")
-            return 13500
-
-    @property
-    def DEEPSEEK_DASHSCOPE_CONCURRENT_LIMIT(self):
-        """
-        DeepSeek Dashscope route concurrent limit for load balancing.
-
-        DEPRECATED: DeepSeek Dashscope route now uses shared DASHSCOPE_CONCURRENT_LIMIT.
-        """
-        try:
-            return int(self._get_cached_value('DEEPSEEK_DASHSCOPE_CONCURRENT_LIMIT', '500'))
-        except (ValueError, TypeError):
-            logger.warning("Invalid DEEPSEEK_DASHSCOPE_CONCURRENT_LIMIT, using 500")
-            return 500
-
-    @property
     def DEEPSEEK_VOLCENGINE_QPM_LIMIT(self):
         """
         DeepSeek Volcengine route QPM limit for load balancing.

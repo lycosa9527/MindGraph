@@ -1,5 +1,11 @@
 """
-double bubble map agent module.
+Double bubble map agent module.
+
+Specialized agent for generating double bubble maps that compare and contrast two topics.
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 from typing import Any, Dict, Optional, Tuple
 import logging
@@ -10,18 +16,6 @@ from agents.core.topic_extraction import extract_double_bubble_topics_llm
 from config.settings import config
 from prompts import get_prompt
 from services.llm import llm_service
-
-"""
-Double Bubble Map Agent
-
-Specialized agent for generating double bubble maps that compare and contrast two topics.
-
-Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
-All Rights Reserved
-Proprietary License
-"""
-
-
 
 logger = logging.getLogger(__name__)
 
@@ -35,229 +29,252 @@ class DoubleBubbleMapAgent(BaseAgent):
 
     async def generate_graph(
         self,
-        prompt: str,
-        language: str = "en",
-        # Token tracking parameters
-        user_id: Optional[int] = None,
-        organization_id: Optional[int] = None,
-        request_type: str = 'diagram_generation',
-        endpoint_path: Optional[str] = None
+        user_prompt: str,
+        language: str = 'zh',
+        dimension_preference: str | None = None,
+        fixed_dimension: str | None = None,
+        dimension_only_mode: bool | None = None,
+        **kwargs: Any
     ) -> Dict[str, Any]:
         """
         Generate a double bubble map from a prompt.
 
         Args:
-            prompt: User's description of what they want to compare
+            user_prompt: User's description of what they want to compare
             language: Language for generation ("en" or "zh")
-            user_id: User ID for token tracking
-            organization_id: Organization ID for token tracking
-            request_type: Request type for token tracking
-            endpoint_path: Endpoint path for token tracking
+            dimension_preference: Unused, for base class compatibility
+            fixed_dimension: Unused, for base class compatibility
+            dimension_only_mode: Unused, for base class compatibility
+            **kwargs: May include user_id, organization_id, request_type, endpoint_path
 
         Returns:
             Dict containing success status and generated spec
         """
+        token_kwargs = {
+            'user_id': kwargs.get('user_id'),
+            'organization_id': kwargs.get('organization_id'),
+            'request_type': kwargs.get('request_type', 'diagram_generation'),
+            'endpoint_path': kwargs.get('endpoint_path'),
+        }
         try:
-            logger.debug("DoubleBubbleMapAgent: Starting double bubble map generation for prompt")
-
-            # Generate the double bubble map specification
-            spec = await self._generate_double_bubble_map_spec(                prompt,
-                language,
-                user_id=user_id,
-                organization_id=organization_id,
-                request_type=request_type,
-                endpoint_path=endpoint_path
+            logger.debug(
+                "DoubleBubbleMapAgent: Starting double bubble map generation"
             )
-
+            spec = await self._generate_double_bubble_map_spec(
+                user_prompt, language, **token_kwargs
+            )
             if not spec:
                 return {
                     'success': False,
                     'error': 'Failed to generate double bubble map specification'
                 }
-
-            # Validate the generated spec
-            is_valid, validation_msg = self.validate_output(spec)
-            if not is_valid:
-                logger.warning("DoubleBubbleMapAgent: Validation failed: %s. Attempting retry with improved prompt.", validation_msg)
-
-                # Retry generation with validation error included in original prompt
-                # Reuse original prompt instead of regenerating topics for consistency
-                retry_user_prompt = (
-                    f"{prompt}\n\n"
-                    f"重要：之前的生成未通过验证：{validation_msg}。"
-                    f"请确保生成的JSON规范满足以下要求：左主题和右主题都必须至少包含2个属性，相似性至少包含1个属性。"
-                    if language == "zh" else
-                    f"{prompt}\n\n"
-                    f"IMPORTANT: Previous generation failed validation: {validation_msg}. "
-                    f"Please ensure the generated JSON specification meets these requirements: "
-                    f"both left and right topics must have at least 2 attributes, and similarities must have at least 1 attribute."
-                )
-
-                # Retry generation by calling the spec generation method again with enhanced prompt
-                retry_spec = await self._generate_double_bubble_map_spec(
-                    retry_user_prompt,
-                    language,
-                    user_id=user_id,
-                    organization_id=organization_id,
-                    request_type=request_type,
-                    endpoint_path=endpoint_path
-                )
-
-                # Validate retry spec
-                if retry_spec and not (isinstance(retry_spec, dict) and retry_spec.get('_error')):
-                    retry_is_valid, retry_validation_msg = self.validate_output(retry_spec)
-                    if retry_is_valid:
-                        logger.info("DoubleBubbleMapAgent: Retry generation succeeded after validation failure")
-                        spec = retry_spec
-                    else:
-                        logger.error("DoubleBubbleMapAgent: Retry generation also failed validation: %s", retry_validation_msg)
-                        return {
-                            'success': False,
-                            'error': f'Generated invalid specification after retry: {retry_validation_msg}'
-                        }
-                else:
-                    logger.error("DoubleBubbleMapAgent: Retry generation failed to extract valid JSON")
-                    return {
-                        'success': False,
-                        'error': f'Generated invalid specification: {validation_msg}'
-                    }
-
-            # Enhance the spec with layout and dimensions
+            spec, error = await self._validate_and_retry_if_needed(
+                spec, user_prompt, language, token_kwargs
+            )
+            if error:
+                return {'success': False, 'error': error}
             enhanced_spec = self._enhance_spec(spec)
-
-            logger.info("DoubleBubbleMapAgent: Double bubble map generation completed successfully")
+            logger.info(
+                "DoubleBubbleMapAgent: Double bubble map generation completed"
+            )
             return {
                 'success': True,
                 'spec': enhanced_spec,
                 'diagram_type': self.diagram_type
             }
-
         except Exception as e:
-            logger.error("DoubleBubbleMapAgent: Double bubble map generation failed: %s", e)
-            return {
-                'success': False,
-                'error': f'Generation failed: {str(e)}'
-            }
+            logger.error(
+                "DoubleBubbleMapAgent: Generation failed: %s", e
+            )
+            return {'success': False, 'error': f'Generation failed: {str(e)}'}
+
+    async def _validate_and_retry_if_needed(
+        self,
+        spec: Dict,
+        user_prompt: str,
+        language: str,
+        token_kwargs: Dict[str, Any]
+    ) -> Tuple[Dict, Optional[str]]:
+        """Validate spec; retry with enhanced prompt if invalid. Return (spec, error)."""
+        is_valid, validation_msg = self.validate_output(spec)
+        if is_valid:
+            return spec, None
+        logger.warning(
+            "DoubleBubbleMapAgent: Validation failed: %s. Attempting retry.",
+            validation_msg
+        )
+        retry_prompt = self._build_retry_prompt(user_prompt, validation_msg, language)
+        retry_spec = await self._generate_double_bubble_map_spec(
+            retry_prompt, language, **token_kwargs
+        )
+        if not retry_spec or (isinstance(retry_spec, dict) and retry_spec.get('_error')):
+            logger.error(
+                "DoubleBubbleMapAgent: Retry failed to extract valid JSON"
+            )
+            return spec, f'Generated invalid specification: {validation_msg}'
+        retry_valid, retry_msg = self.validate_output(retry_spec)
+        if retry_valid:
+            logger.info(
+                "DoubleBubbleMapAgent: Retry generation succeeded"
+            )
+            return retry_spec, None
+        logger.error(
+            "DoubleBubbleMapAgent: Retry also failed validation: %s",
+            retry_msg
+        )
+        return spec, f'Generated invalid specification after retry: {retry_msg}'
+
+    def _build_retry_prompt(
+        self, user_prompt: str, validation_msg: str, language: str
+    ) -> str:
+        """Build retry prompt with validation feedback."""
+        if language == "zh":
+            return (
+                f"{user_prompt}\n\n"
+                f"重要：之前的生成未通过验证：{validation_msg}。"
+                f"请确保生成的JSON规范满足以下要求："
+                f"左主题和右主题都必须至少包含2个属性，相似性至少包含1个属性。"
+            )
+        return (
+            f"{user_prompt}\n\n"
+            f"IMPORTANT: Previous generation failed validation: {validation_msg}. "
+            f"Please ensure the generated JSON specification meets these "
+            f"requirements: both left and right topics must have at least 2 "
+            f"attributes, and similarities must have at least 1 attribute."
+        )
 
     async def _generate_double_bubble_map_spec(
         self,
         prompt: str,
         language: str,
-        # Token tracking parameters
-        user_id: Optional[int] = None,
-        organization_id: Optional[int] = None,
-        request_type: str = 'diagram_generation',
-        endpoint_path: Optional[str] = None
+        **token_kwargs: Any
     ) -> Optional[Dict]:
         """Generate the double bubble map specification using LLM."""
         try:
-            # Extract two topics for comparison using specialized LLM extraction (async)
-            topics = await extract_double_bubble_topics_llm(prompt, language, self.model)
-            logger.debug("DoubleBubbleMapAgent: Extracted topics: %s", topics)
-
-            # Get prompt from centralized system - use agent-specific format
-            system_prompt = get_prompt("double_bubble_map_agent", language, "generation")
-
-            if not system_prompt:
-                logger.error("DoubleBubbleMapAgent: No prompt found for language %s", language)
-                return None
-
-            # Use the extracted topics instead of raw prompt
-            user_prompt = f"请为以下描述创建一个双气泡图：{topics}" if language == "zh" else f"Please create a double bubble map for the following description: {topics}"
-
-            # Call middleware directly - clean and efficient!
-            response = await llm_service.chat(
-                prompt=user_prompt,
-                model=self.model,
-                system_message=system_prompt,
-                max_tokens=1000,
-                temperature=config.LLM_TEMPERATURE,
-                # Token tracking parameters
-                user_id=user_id,
-                organization_id=organization_id,
-                request_type=request_type,
-                endpoint_path=endpoint_path,
-                diagram_type='double_bubble_map'
+            topics = await extract_double_bubble_topics_llm(
+                prompt, language, self.model
             )
-
-            # Extract JSON from response
-            # Check if response is already a dictionary (from mock client)
+            logger.debug("DoubleBubbleMapAgent: Extracted topics: %s", topics)
+            system_prompt = get_prompt(
+                "double_bubble_map_agent", language, "generation"
+            )
+            if not system_prompt:
+                logger.error(
+                    "DoubleBubbleMapAgent: No prompt found for language %s",
+                    language
+                )
+                return None
+            user_prompt = self._build_user_prompt(topics, language)
+            chat_kwargs = {
+                'prompt': user_prompt,
+                'model': self.model,
+                'system_message': system_prompt,
+                'max_tokens': 1000,
+                'temperature': config.LLM_TEMPERATURE,
+                'diagram_type': 'double_bubble_map',
+                **token_kwargs
+            }
+            response = await llm_service.chat(**chat_kwargs)
             if isinstance(response, dict):
-                spec = response
-            else:
-                # Try to extract JSON from string response
-                response_str = str(response)
-                spec = extract_json_from_response(response_str)
-
-                # Check if we got a non-JSON response error
-                if isinstance(spec, dict) and spec.get('_error') == 'non_json_response':
-                    # LLM returned non-JSON asking for more info - retry with more explicit prompt
-                    logger.warning(
-                        "DoubleBubbleMapAgent: LLM returned non-JSON response asking for more info. "
-                        "Retrying with explicit JSON-only prompt."
-                    )
-
-                    # Retry with more explicit prompt emphasizing JSON-only output
-                    retry_user_prompt = (
-                        f"{user_prompt}\n\n"
-                        f"重要：你必须只返回有效的JSON格式，不要询问更多信息。"
-                        f"如果提示不清楚，请根据提示内容做出合理假设并直接生成JSON规范。"
-                        if language == "zh" else
-                        f"{user_prompt}\n\n"
-                        f"IMPORTANT: You MUST respond with valid JSON only. Do not ask for more information. "
-                        f"If the prompt is unclear, make reasonable assumptions and generate the JSON specification directly."
-                    )
-
-                    retry_response = await llm_service.chat(
-                        prompt=retry_user_prompt,
-                        model=self.model,
-                        system_message=system_prompt,
-                        max_tokens=1000,
-                        temperature=config.LLM_TEMPERATURE,
-                        user_id=user_id,
-                        organization_id=organization_id,
-                        request_type=request_type,
-                        endpoint_path=endpoint_path,
-                        diagram_type='double_bubble_map'
-                    )
-
-                    # Try extraction again
-                    if isinstance(retry_response, dict):
-                        spec = retry_response
-                    else:
-                        spec = extract_json_from_response(str(retry_response))
-
-                        # If still non-JSON, return None
-                        if isinstance(spec, dict) and spec.get('_error') == 'non_json_response':
-                            logger.error(
-                                "DoubleBubbleMapAgent: Retry also returned non-JSON response. "
-                                "Giving up after 1 retry attempt."
-                            )
-                            return None
-
-                if not spec or (isinstance(spec, dict) and spec.get('_error')):
-                    # Log the actual response for debugging with more context
-                    response_preview = response_str[:500] + "..." if len(response_str) > 500 else response_str
-                    logger.error("DoubleBubbleMapAgent: Failed to extract JSON from LLM response")
-                    logger.error("DoubleBubbleMapAgent: Response length: %s, Preview: %s", len(response_str), response_preview)
-                    logger.error("DoubleBubbleMapAgent: This may indicate LLM returned invalid JSON or non-JSON response")
-                    # Return None to trigger error handling upstream
-                    return None
-
-            return spec
-
+                return response
+            return await self._extract_spec_from_response(
+                response, user_prompt, language, chat_kwargs
+            )
         except Exception as e:
-            logger.error("DoubleBubbleMapAgent: Error in spec generation: %s", e)
+            logger.error(
+                "DoubleBubbleMapAgent: Error in spec generation: %s", e
+            )
             return None
+
+    def _build_user_prompt(self, topics: str, language: str) -> str:
+        """Build user prompt from extracted topics."""
+        if language == "zh":
+            return f"请为以下描述创建一个双气泡图：{topics}"
+        return (
+            f"Please create a double bubble map for the following "
+            f"description: {topics}"
+        )
+
+    async def _extract_spec_from_response(
+        self,
+        response: Any,
+        user_prompt: str,
+        language: str,
+        chat_kwargs: Dict[str, Any]
+    ) -> Optional[Dict]:
+        """Extract spec from string response, retrying if non-JSON."""
+        response_str = str(response)
+        spec = extract_json_from_response(response_str)
+        if isinstance(spec, dict) and spec.get('_error') == 'non_json_response':
+            spec = await self._retry_json_extraction(
+                user_prompt, language, chat_kwargs
+            )
+        if not spec or (isinstance(spec, dict) and spec.get('_error')):
+            self._log_extraction_failure(response_str)
+            return None
+        return spec
+
+    async def _retry_json_extraction(
+        self,
+        user_prompt: str,
+        language: str,
+        chat_kwargs: Dict[str, Any]
+    ) -> Optional[Dict]:
+        """Retry LLM call with explicit JSON-only prompt."""
+        logger.warning(
+            "DoubleBubbleMapAgent: LLM returned non-JSON. Retrying."
+        )
+        retry_prompt = (
+            f"{user_prompt}\n\n"
+            f"重要：你必须只返回有效的JSON格式，不要询问更多信息。"
+            f"如果提示不清楚，请根据提示内容做出合理假设并直接生成JSON规范。"
+            if language == "zh" else
+            f"{user_prompt}\n\n"
+            f"IMPORTANT: You MUST respond with valid JSON only. "
+            f"Do not ask for more information. If the prompt is unclear, "
+            f"make reasonable assumptions and generate the JSON spec."
+        )
+        retry_response = await llm_service.chat(
+            **{**chat_kwargs, 'prompt': retry_prompt}
+        )
+        if isinstance(retry_response, dict):
+            return retry_response
+        spec = extract_json_from_response(str(retry_response))
+        if isinstance(spec, dict) and spec.get('_error') == 'non_json_response':
+            logger.error(
+                "DoubleBubbleMapAgent: Retry also returned non-JSON"
+            )
+            return None
+        return spec
+
+    def _log_extraction_failure(self, response_str: str) -> None:
+        """Log JSON extraction failure with context."""
+        response_preview = (
+            response_str[:500] + "..."
+            if len(response_str) > 500 else response_str
+        )
+        logger.error(
+            "DoubleBubbleMapAgent: Failed to extract JSON from response"
+        )
+        logger.error(
+            "DoubleBubbleMapAgent: Response length: %s, Preview: %s",
+            len(response_str), response_preview
+        )
 
     def _enhance_spec(self, spec: Dict) -> Dict:
         """Enhance the specification with layout and dimension recommendations."""
         try:
-            logger.debug("DoubleBubbleMapAgent: Enhancing spec - Left: %s, Right: %s", spec.get('left'), spec.get('right'))
-            left_attrs_count = len(spec.get('left_only', []))
-            right_attrs_count = len(spec.get('right_only', []))
-            shared_attrs_count = len(spec.get('shared', []))
-            logger.debug("DoubleBubbleMapAgent: Left attributes: %s, Right attributes: %s, Shared: %s", left_attrs_count, right_attrs_count, shared_attrs_count)
+            logger.debug(
+                "DoubleBubbleMapAgent: Enhancing spec - Left: %s, Right: %s",
+                spec.get('left'), spec.get('right')
+            )
+            left_attrs_count = len(spec.get('left_differences', []))
+            right_attrs_count = len(spec.get('right_differences', []))
+            shared_attrs_count = len(spec.get('similarities', []))
+            logger.debug(
+                "DoubleBubbleMapAgent: Left attributes: %s, Right attributes: %s, Shared: %s",
+                left_attrs_count, right_attrs_count, shared_attrs_count
+            )
 
             # Agent already generates correct renderer format, just enhance it
             enhanced_spec = spec.copy()
@@ -294,57 +311,58 @@ class DoubleBubbleMapAgent(BaseAgent):
             logger.error("DoubleBubbleMapAgent: Error enhancing spec: %s", e)
             return spec
 
-    def validate_output(self, spec: Dict) -> Tuple[bool, str]:
+    def validate_output(self, output: Dict[str, Any]) -> Tuple[bool, str]:
         """
         Validate the generated double bubble map specification.
 
         Args:
-            spec: The specification to validate
+            output: The specification to validate
 
         Returns:
             Tuple of (is_valid, validation_message)
         """
         try:
-            # Check required fields
-            if not isinstance(spec, dict):
-                return False, "Specification must be a dictionary"
-
-            if 'left' not in spec or not spec['left']:
-                return False, "Missing or empty left topic"
-
-            if 'right' not in spec or not spec['right']:
-                return False, "Missing or empty right topic"
-
-            if 'left_differences' not in spec or not isinstance(spec['left_differences'], list):
-                return False, "Missing or invalid left_differences list"
-
-            if 'right_differences' not in spec or not isinstance(spec['right_differences'], list):
-                return False, "Missing or invalid right_differences list"
-
-            if 'similarities' not in spec or not isinstance(spec['similarities'], list):
-                return False, "Missing or invalid similarities list"
-
-            # Validate attributes
-            if len(spec['left_differences']) < 2:
-                return False, "Left topic must have at least 2 attributes"
-
-            if len(spec['right_differences']) < 2:
-                return False, "Right topic must have at least 2 attributes"
-
-            if len(spec['similarities']) < 1:
-                return False, "Must have at least 1 shared attribute"
-
-            # Check total attribute count
-            total_attrs = (len(spec['left_differences']) +
-                          len(spec['right_differences']) +
-                          len(spec['similarities']))
-            if total_attrs > 20:
-                return False, "Too many total attributes (max 20)"
-
+            error_msg = self._get_validation_error(output)
+            if error_msg:
+                return False, error_msg
             return True, "Specification is valid"
-
         except Exception as e:
             return False, f"Validation error: {str(e)}"
+
+    def _get_validation_error(self, output: Dict[str, Any]) -> Optional[str]:
+        """Return validation error message or None if valid."""
+        checks = [
+            (lambda: not isinstance(output, dict),
+             "Specification must be a dictionary"),
+            (lambda: 'left' not in output or not output['left'],
+             "Missing or empty left topic"),
+            (lambda: 'right' not in output or not output['right'],
+             "Missing or empty right topic"),
+            (lambda: 'left_differences' not in output or not isinstance(
+                output.get('left_differences'), list),
+             "Missing or invalid left_differences list"),
+            (lambda: 'right_differences' not in output or not isinstance(
+                output.get('right_differences'), list),
+             "Missing or invalid right_differences list"),
+            (lambda: 'similarities' not in output or not isinstance(
+                output.get('similarities'), list),
+             "Missing or invalid similarities list"),
+            (lambda: len(output.get('left_differences', [])) < 2,
+             "Left topic must have at least 2 attributes"),
+            (lambda: len(output.get('right_differences', [])) < 2,
+             "Right topic must have at least 2 attributes"),
+            (lambda: len(output.get('similarities', [])) < 1,
+             "Must have at least 1 shared attribute"),
+        ]
+        for condition, message in checks:
+            if condition():
+                return message
+        total = (len(output.get('left_differences', [])) +
+                 len(output.get('right_differences', [])) +
+                 len(output.get('similarities', [])))
+        if total > 20:
+            return "Too many total attributes (max 20)"
+        return None
 
     async def enhance_spec(self, spec: Dict) -> Dict[str, Any]:
         """

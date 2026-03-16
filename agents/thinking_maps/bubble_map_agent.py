@@ -1,5 +1,11 @@
 """
-bubble map agent module.
+Bubble map agent module.
+
+Specialized agent for generating bubble maps that describe attributes of a single topic.
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 from typing import Any, Dict, Optional, Tuple
 import logging
@@ -9,18 +15,6 @@ from agents.core.agent_utils import extract_json_from_response
 from config.settings import config
 from prompts import get_prompt
 from services.llm import llm_service
-
-"""
-Bubble Map Agent
-
-Specialized agent for generating bubble maps that describe attributes of a single topic.
-
-Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
-All Rights Reserved
-Proprietary License
-"""
-
-
 
 logger = logging.getLogger(__name__)
 
@@ -34,20 +28,23 @@ class BubbleMapAgent(BaseAgent):
 
     async def generate_graph(
         self,
-        prompt: str,
+        user_prompt: str,
         language: str = "en",
-        # Token tracking parameters
-        user_id: Optional[int] = None,
-        organization_id: Optional[int] = None,
-        request_type: str = 'diagram_generation',
-        endpoint_path: Optional[str] = None
+        dimension_preference: Optional[str] = None,
+        fixed_dimension: Optional[str] = None,
+        dimension_only_mode: Optional[bool] = None,
+        **kwargs: Any
     ) -> Dict[str, Any]:
         """
         Generate a bubble map from a prompt.
 
         Args:
-            prompt: User's description of what they want
+            user_prompt: User's description of what they want
             language: Language for generation ("en" or "zh")
+            dimension_preference: Preferred dimension (unused for bubble maps)
+            fixed_dimension: Fixed dimension (unused for bubble maps)
+            dimension_only_mode: Dimension-only mode (unused for bubble maps)
+            **kwargs: Token tracking (user_id, organization_id, request_type, endpoint_path)
 
         Returns:
             Dict containing success status and generated spec
@@ -55,13 +52,10 @@ class BubbleMapAgent(BaseAgent):
         try:
             logger.debug("BubbleMapAgent: Starting bubble map generation for prompt")
 
-            # Generate the bubble map specification
-            spec = await self._generate_bubble_map_spec(                prompt,
+            spec = await self._generate_bubble_map_spec(
+                user_prompt,
                 language,
-                user_id=user_id,
-                organization_id=organization_id,
-                request_type=request_type,
-                endpoint_path=endpoint_path
+                **kwargs
             )
 
             if not spec:
@@ -100,36 +94,35 @@ class BubbleMapAgent(BaseAgent):
         self,
         prompt: str,
         language: str,
-        # Token tracking parameters
-        user_id: Optional[int] = None,
-        organization_id: Optional[int] = None,
-        request_type: str = 'diagram_generation',
-        endpoint_path: Optional[str] = None
+        **kwargs: Any
     ) -> Optional[Dict]:
         """Generate the bubble map specification using LLM."""
         try:
-            # Get prompt from centralized system - use agent-specific format
             system_prompt = get_prompt("bubble_map_agent", language, "generation")
 
             if not system_prompt:
                 logger.error("BubbleMapAgent: No prompt found for language %s", language)
                 return None
 
-            user_prompt = f"请为以下描述创建一个气泡图：{prompt}" if language == "zh" else f"Please create a bubble map for the following description: {prompt}"
+            if language == "zh":
+                user_prompt = f"请为以下描述创建一个气泡图：{prompt}"
+            else:
+                user_prompt = f"Please create a bubble map for the following description: {prompt}"
 
-            # Call middleware directly - clean and efficient!
+            token_params = {
+                'user_id': kwargs.get('user_id'),
+                'organization_id': kwargs.get('organization_id'),
+                'request_type': kwargs.get('request_type', 'diagram_generation'),
+                'endpoint_path': kwargs.get('endpoint_path'),
+                'diagram_type': 'bubble_map'
+            }
             response = await llm_service.chat(
                 prompt=user_prompt,
                 model=self.model,
                 system_message=system_prompt,
                 max_tokens=1000,
                 temperature=config.LLM_TEMPERATURE,
-                # Token tracking parameters
-                user_id=user_id,
-                organization_id=organization_id,
-                request_type=request_type,
-                endpoint_path=endpoint_path,
-                diagram_type='bubble_map'
+                **token_params
             )
 
             # Extract JSON from response
@@ -144,7 +137,11 @@ class BubbleMapAgent(BaseAgent):
                 if not spec:
                     # Log the actual response for debugging
                     response_preview = response_str[:500] + "..." if len(response_str) > 500 else response_str
-                    logger.error("BubbleMapAgent: Failed to extract JSON from LLM response. Response preview: %s", response_preview)
+                    logger.error(
+                        "BubbleMapAgent: Failed to extract JSON from LLM response. "
+                        "Response preview: %s",
+                        response_preview
+                    )
                     return None
 
             return spec
@@ -186,52 +183,42 @@ class BubbleMapAgent(BaseAgent):
             logger.error("BubbleMapAgent: Error enhancing spec: %s", e)
             return spec
 
-    def validate_output(self, spec: Dict) -> Tuple[bool, str]:
+    def validate_output(self, output: Dict[str, Any]) -> Tuple[bool, str]:
         """
         Validate the generated bubble map specification.
 
         Args:
-            spec: The specification to validate
+            output: The specification to validate
 
         Returns:
             Tuple of (is_valid, validation_message)
         """
+        is_valid = True
+        validation_msg = "Specification is valid"
         try:
-            # Check required fields
-            if not isinstance(spec, dict):
-                return False, "Specification must be a dictionary"
-
-            if 'topic' not in spec or not spec['topic']:
-                return False, "Missing or empty topic"
-
-            if 'attributes' not in spec or not isinstance(spec['attributes'], list):
-                return False, "Missing or invalid attributes list"
-
-            # Connections are optional for simple bubble maps
-            if 'connections' in spec and not isinstance(spec['connections'], list):
-                return False, "Invalid connections list"
-
-            # Validate attributes (simple string format)
-            if len(spec['attributes']) < 3:
-                return False, "Must have at least 3 attributes"
-
-            if len(spec['attributes']) > 15:
-                return False, "Too many attributes (max 15)"
-
-            # Validate each attribute is a non-empty string
-            for i, attr in enumerate(spec['attributes']):
-                if not isinstance(attr, str) or not attr.strip():
-                    return False, f"attributes[{i}] must be a non-empty string"
-
-            # Validate connections if present
-            if 'connections' in spec:
-                if len(spec['connections']) < len(spec['attributes']):
-                    return False, "Each attribute must have at least one connection"
-
-            return True, "Specification is valid"
-
-        except Exception as e:
-            return False, f"Validation error: {str(e)}"
+            if not isinstance(output, dict):
+                is_valid, validation_msg = False, "Specification must be a dictionary"
+            elif 'topic' not in output or not output['topic']:
+                is_valid, validation_msg = False, "Missing or empty topic"
+            elif 'attributes' not in output or not isinstance(output['attributes'], list):
+                is_valid, validation_msg = False, "Missing or invalid attributes list"
+            elif 'connections' in output and not isinstance(output['connections'], list):
+                is_valid, validation_msg = False, "Invalid connections list"
+            elif len(output['attributes']) < 3:
+                is_valid, validation_msg = False, "Must have at least 3 attributes"
+            elif len(output['attributes']) > 15:
+                is_valid, validation_msg = False, "Too many attributes (max 15)"
+            else:
+                for i, attr in enumerate(output['attributes']):
+                    if not isinstance(attr, str) or not attr.strip():
+                        is_valid, validation_msg = False, f"attributes[{i}] must be a non-empty string"
+                        break
+                if is_valid and 'connections' in output:
+                    if len(output['connections']) < len(output['attributes']):
+                        is_valid, validation_msg = False, "Each attribute must have at least one connection"
+        except Exception as exc:
+            is_valid, validation_msg = False, f"Validation error: {str(exc)}"
+        return is_valid, validation_msg
 
     def enhance_spec(self, spec: Dict) -> Dict[str, Any]:
         """
@@ -245,7 +232,11 @@ class BubbleMapAgent(BaseAgent):
         """
         try:
             attributes_count = len(spec.get('attributes', []))
-            logger.debug("BubbleMapAgent: Enhancing spec - Topic: %s, Attributes: %s", spec.get('topic'), attributes_count)
+            logger.debug(
+                "BubbleMapAgent: Enhancing spec - Topic: %s, Attributes: %s",
+                spec.get('topic'),
+                attributes_count
+            )
 
             # If already enhanced, return as-is
             if spec.get('_metadata', {}).get('enhanced'):

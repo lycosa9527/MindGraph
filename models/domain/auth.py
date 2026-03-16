@@ -31,6 +31,7 @@ class Organization(Base):
     id = Column(Integer, primary_key=True, index=True)
     code = Column(String(50), unique=True, index=True, nullable=False)  # e.g., "DEMO-001"
     name = Column(String(200), nullable=False)  # e.g., "Demo School for Testing"
+    display_name = Column(String(200), nullable=True)  # Custom text shown in sidebar (e.g. "MindGraph专业版")
     invitation_code = Column(String(50), nullable=True)  # For controlled registration
     created_at = Column(DateTime, default=datetime.utcnow)
 

@@ -1,1096 +1,39 @@
 """
 brace map agent module.
 """
-from dataclasses import dataclass
 from datetime import datetime
-from enum import Enum
-from typing import List, Dict, Any, Optional, Tuple, Union
+from typing import List, Dict, Any, Optional, Tuple
 import logging
+
+from config.settings import config
+from prompts import get_prompt
+from services.llm import llm_service
 
 from ..core.base_agent import BaseAgent
 from ..core.agent_utils import extract_json_from_response
-from prompts import get_prompt
-from services.llm import llm_service
-from config.settings import config
+
+from .brace_map_helpers import (
+    CollisionDetector,
+    ContextAwareAlgorithmSelector,
+    ContextManager,
+    LLMHybridProcessor,
+)
+from .brace_map_models import (
+    FONT_WEIGHT_CONFIG,
+    BlockUnit,
+    LayoutAlgorithm,
+    LayoutResult,
+    NodePosition,
+    SpacingInfo,
+    UnitPosition,
+)
+from .brace_map_positioning import (
+    BlockBasedPositioningSystem,
+    FlexibleLayoutCalculator,
+)
 
 
 logger = logging.getLogger(__name__)
-
-# ============================================================================
-# ENUMS AND DATA STRUCTURES
-# ============================================================================
-
-# Configuration constants
-BRACE_SPACING_CONFIG = {
-    'main_brace_from_topic': 20,
-    'main_brace_to_secondary_brace': 20,
-    'secondary_brace_to_parts': 20,
-    'part_brace_from_part': 15,
-    'tertiary_brace_to_subparts': 15,
-    'topic_left_offset': 200,
-    'minimum_brace_height': 20,
-    'minimum_spacing': 10,
-    'secondary_brace_width': 10,
-    'tertiary_brace_width': 8
-}
-
-FONT_WEIGHT_CONFIG = {
-    'topic': 'bold',
-    'part': 'bold',
-    'subpart': 'normal'
-}
-
-CHAR_WIDTH_CONFIG = {
-    'i': 0.3, 'l': 0.3, 'I': 0.4, 'f': 0.4, 't': 0.4, 'r': 0.4,
-    'm': 0.8, 'w': 0.8, 'M': 0.8, 'W': 0.8,
-    'default': 0.6
-}
-
-# Import required components
-
-
-# Debug logging removed for production
-
-
-class LayoutAlgorithm(Enum):
-    """Available layout algorithms for brace maps"""
-    FLEXIBLE_DYNAMIC = "flexible_dynamic"  # New single flexible algorithm
-
-
-class LayoutComplexity(Enum):
-    """Complexity levels for layout processing"""
-    SIMPLE = "simple"
-    MODERATE = "moderate"
-    COMPLEX = "complex"
-
-
-class LLMStrategy(Enum):
-    """LLM processing strategies"""
-    PYTHON_ONLY = "python_only"
-    LLM_ENHANCEMENT = "llm_enhancement"
-    LLM_FIRST = "llm_first"
-    HYBRID_ROUTING = "hybrid_routing"
-
-
-@dataclass
-class NodePosition:
-    """Data structure for node positioning"""
-    x: float
-    y: float
-    width: float
-    height: float
-    text: str
-    node_type: str  # 'topic', 'part', 'subpart'
-    part_index: Optional[int] = None
-    subpart_index: Optional[int] = None
-
-
-@dataclass
-class LayoutResult:
-    """Result of layout algorithm execution"""
-    nodes: List[NodePosition]
-    braces: List[Dict]
-    dimensions: Dict
-    algorithm_used: LayoutAlgorithm
-    performance_metrics: Dict[str, Any]
-    layout_data: Dict[str, Any]  # Additional layout information
-
-
-@dataclass
-class LLMDecision:
-    """Result of LLM processing"""
-    success: bool
-    strategy: LLMStrategy
-    reasoning: str
-    layout_suggestions: Optional[Dict]
-    style_suggestions: Optional[Dict]
-    error_message: Optional[str]
-    processing_time: float
-
-
-@dataclass
-class UnitPosition:
-    """Data structure for unit positioning"""
-    unit_index: int
-    x: float
-    y: float
-    width: float
-    height: float
-    part_position: NodePosition
-    subpart_positions: List[NodePosition]
-
-
-@dataclass
-class SpacingInfo:
-    """Dynamic spacing information"""
-    unit_spacing: float
-    subpart_spacing: float
-    brace_offset: float
-    content_density: float
-
-
-@dataclass
-class BraceParameters:
-    """Parameters for brace creation"""
-    start_x: float
-    start_y: float
-    end_x: float
-    end_y: float
-    height: float
-    is_main_brace: bool = True
-    stroke_width: Optional[int] = None
-    stroke_color: Optional[str] = None
-
-
-@dataclass
-class Block:
-    """Represents a block in the block-based positioning system"""
-    id: str
-    x: float
-    y: float
-    width: float
-    height: float
-    text: str
-    node_type: str  # 'topic', 'part', 'subpart'
-    part_index: Optional[int] = None
-    subpart_index: Optional[int] = None
-    parent_block_id: Optional[str] = None  # For subparts belonging to parts
-
-
-@dataclass
-class BlockUnit:
-    """Represents a unit of blocks (part + its subparts)"""
-    unit_id: str
-    part_block: Block
-    subpart_blocks: List[Block]
-    x: float
-    y: float
-    width: float
-    height: float
-
-
-class ContextManager:
-    """Manages user context and preferences"""
-
-    def __init__(self):
-        self.user_contexts = {}
-        self.user_preferences = {}
-
-    def store_user_prompt(self, user_id: str, prompt: str, diagram_type: str) -> None:
-        """Store user prompt for context analysis"""
-        if user_id not in self.user_contexts:
-            self.user_contexts[user_id] = []
-
-        self.user_contexts[user_id].append({
-            'prompt': prompt,
-            'diagram_type': diagram_type,
-            'timestamp': datetime.now().isoformat()
-        })
-
-        # Keep only last 10 prompts for context
-        if len(self.user_contexts[user_id]) > 10:
-            self.user_contexts[user_id] = self.user_contexts[user_id][-10:]
-
-    def get_user_context(self, user_id: str) -> Dict:
-        """Get user context for personalization"""
-        if user_id not in self.user_contexts:
-            return {'recent_prompts': [], 'preferences': {}}
-
-        recent_prompts = self.user_contexts[user_id]
-        preferences = self.user_preferences.get(user_id, {})
-
-        return {
-            'recent_prompts': recent_prompts,
-            'preferences': preferences,
-            'session_id': self._get_current_session(user_id)        }
-
-    def update_preferences(self, user_id: str, preferences: Dict) -> None:
-        """Update user preferences"""
-        if user_id not in self.user_preferences:
-            self.user_preferences[user_id] = {}
-        self.user_preferences[user_id].update(preferences)
-
-    def alter_diagram_based_on_context(self, spec: Dict, context: Dict) -> Dict:
-        """Alter diagram specification based on user context"""
-        altered_spec = spec.copy()
-
-        # Analyze recent prompts for common themes
-        recent_prompts = context.get('recent_prompts', [])
-        if recent_prompts:
-            common_themes = self._extract_common_themes(recent_prompts)
-            if common_themes:
-                # Could enhance spec based on themes
-                pass
-
-        return altered_spec
-
-    def _get_current_session(self, user_id: str) -> str:
-        """Get current session ID for user"""
-        return f"session_{user_id}_{datetime.now().strftime('%Y%m%d')}"
-
-    def _extract_common_themes(self, recent_prompts: List[Dict]) -> List[str]:
-        """Extract common themes from recent prompts"""
-        themes = []
-        # Simple theme extraction - could be enhanced with NLP
-        for prompt_data in recent_prompts:
-            prompt = prompt_data['prompt'].lower()
-            if 'science' in prompt:
-                themes.append('science')
-            elif 'business' in prompt:
-                themes.append('business')
-            elif 'education' in prompt:
-                themes.append('education')
-        return list(set(themes))
-
-
-class CollisionDetector:
-    """Detects and resolves node collisions"""
-
-    @staticmethod
-    def detect_node_collisions(
-        nodes: List[NodePosition],
-        padding: float = 10.0
-    ) -> List[Tuple[NodePosition, NodePosition]]:
-        """Detect overlapping nodes"""
-        collisions = []
-        for i, node1 in enumerate(nodes):
-            for node2 in nodes[i+1:]:
-                if CollisionDetector._nodes_overlap(node1, node2, padding):
-                    collisions.append((node1, node2))
-        return collisions
-
-    @staticmethod
-    def resolve_collisions(nodes: List[NodePosition], padding: float = 10.0) -> List[NodePosition]:
-        """Resolve node collisions by adjusting positions"""
-        resolved_nodes = nodes.copy()
-        max_iterations = 10
-        iteration = 0
-
-        while iteration < max_iterations:
-            collisions = CollisionDetector.detect_node_collisions(resolved_nodes, padding)
-            if not collisions:
-                break
-
-            for node1, node2 in collisions:
-                CollisionDetector._resolve_collision(node1, node2, padding)
-            iteration += 1
-
-        return resolved_nodes
-
-    @staticmethod
-    def _nodes_overlap(node1: NodePosition, node2: NodePosition, padding: float) -> bool:
-        """Check if two nodes overlap"""
-        return (abs(node1.x - node2.x) < (node1.width + node2.width) / 2 + padding and
-                abs(node1.y - node2.y) < (node1.height + node2.height) / 2 + padding)
-
-    @staticmethod
-    def _resolve_collision(node1: NodePosition, node2: NodePosition, padding: float) -> None:
-        """Resolve collision between two nodes"""
-        # Simple resolution: move node2 away from node1
-        dx = node2.x - node1.x
-        dy = node2.y - node1.y
-
-        # For subparts, always resolve vertically to maintain vertical alignment
-        if node2.node_type == 'subpart' or node1.node_type == 'subpart':
-            # Vertical collision resolution for subparts
-            if dy >= 0:
-                node2.y = node1.y + (node1.height + node2.height) / 2 + padding
-            else:
-                node2.y = node1.y - (node1.height + node2.height) / 2 - padding
-        else:
-            # Normal collision resolution for non-subparts
-            if abs(dx) > abs(dy):
-                # Horizontal collision - move vertically
-                if dy >= 0:
-                    node2.y = node1.y + (node1.height + node2.height) / 2 + padding
-                else:
-                    node2.y = node1.y - (node1.height + node2.height) / 2 - padding
-            else:
-                # Vertical collision - move horizontally
-                if dx >= 0:
-                    node2.x = node1.x + (node1.width + node2.width) / 2 + padding
-                else:
-                    node2.x = node1.x - (node1.width + node2.width) / 2 - padding
-
-
-class LLMHybridProcessor:
-    """Processes content complexity and determines LLM strategy"""
-
-    def analyze_complexity(self, spec: Dict) -> LayoutComplexity:
-        """Analyze content complexity for layout strategy"""
-        total_parts = len(spec.get('parts', []))
-        total_subparts = sum(len(part.get('subparts', [])) for part in spec.get('parts', []))
-
-        total_elements = total_parts + total_subparts
-
-        if total_elements <= 5:
-            return LayoutComplexity.SIMPLE
-        elif total_elements <= 15:
-            return LayoutComplexity.MODERATE
-        else:
-            return LayoutComplexity.COMPLEX
-
-    def determine_strategy(self, complexity: LayoutComplexity, _user_preferences: Optional[Dict] = None) -> LLMStrategy:
-        """Determine LLM processing strategy"""
-        if complexity == LayoutComplexity.SIMPLE:
-            return LLMStrategy.PYTHON_ONLY
-        elif complexity == LayoutComplexity.MODERATE:
-            return LLMStrategy.LLM_ENHANCEMENT
-        else:
-            return LLMStrategy.LLM_FIRST
-
-
-class ContextAwareAlgorithmSelector:
-    """Selects layout algorithm based on context"""
-
-    def __init__(self, context_manager: ContextManager):
-        self.context_manager = context_manager
-
-    def select_algorithm(self, _spec: Dict, _user_id: Optional[str] = None) -> LayoutAlgorithm:
-        """Select the appropriate layout algorithm"""
-        # With the new flexible algorithm, we always use FLEXIBLE_DYNAMIC
-        return LayoutAlgorithm.FLEXIBLE_DYNAMIC
-
-
-class BlockBasedPositioningSystem:
-    """Block-based positioning system that arranges nodes like LEGO pieces"""
-
-    def __init__(self):
-        pass
-
-    def arrange_blocks(self, spec: Dict, dimensions: Dict, theme: Dict) -> List[BlockUnit]:
-        """Arrange blocks using LEGO-like positioning"""
-        # Step 1: Create blocks from specification
-        blocks = self._create_blocks_from_spec(spec, theme)
-        # Step 2: Group blocks into units
-        units = self._group_blocks_into_units(blocks)
-        # Step 3: Calculate optimal spacing and padding
-        spacing_config = self._calculate_spacing_config(spec, dimensions, theme)
-        # Step 4: Position blocks using block-based algorithm
-        positioned_units = self._position_blocks(units, spacing_config, dimensions)
-        return positioned_units
-
-    def _create_blocks_from_spec(self, spec: Dict, theme: Dict) -> List[Block]:
-        """Create blocks from specification with standard heights for each block type"""
-        blocks = []
-
-        # Define standard block heights (only width varies based on text)
-        topic_height = theme['fontTopic'] + 20
-        part_height = theme['fontPart'] + 20
-        subpart_height = theme['fontSubpart'] + 20
-
-        # Create topic block
-        whole = spec.get('whole', 'Main Topic')
-        topic_width = self._calculate_text_width(whole, theme['fontTopic'])
-        topic_block = Block(
-            id='topic',
-            x=0, y=0,  # Will be positioned later
-            width=topic_width,
-            height=topic_height,  # Standard height for all topic blocks
-            text=whole,
-            node_type='topic'
-        )
-        blocks.append(topic_block)
-
-        # Create part and subpart blocks
-        for i, part in enumerate(spec.get('parts', [])):
-            part_width = self._calculate_text_width(part['name'], theme['fontPart'])
-            part_block = Block(
-                id=f'part_{i}',
-                x=0, y=0,  # Will be positioned later
-                width=part_width,
-                height=part_height,  # Standard height for all part blocks
-                text=part['name'],
-                node_type='part',
-                part_index=i
-            )
-            blocks.append(part_block)
-
-            # Create subpart blocks
-            for j, subpart in enumerate(part.get('subparts', [])):
-                subpart_width = self._calculate_text_width(subpart['name'], theme['fontSubpart'])
-                subpart_block = Block(
-                    id=f'subpart_{i}_{j}',
-                    x=0, y=0,  # Will be positioned later
-                    width=subpart_width,
-                    height=subpart_height,  # Standard height for all subpart blocks
-                    text=subpart['name'],
-                    node_type='subpart',
-                    part_index=i,
-                    subpart_index=j,
-                    parent_block_id=f'part_{i}'
-                )
-                blocks.append(subpart_block)
-
-        return blocks
-
-    def _group_blocks_into_units(self, blocks: List[Block]) -> List[BlockUnit]:
-        """Group blocks into units (part + subparts)"""
-        units = []
-
-        # Find all part blocks
-        part_blocks = [block for block in blocks if block.node_type == 'part']
-
-        for part_block in part_blocks:
-            # Find subpart blocks belonging to this part
-            subpart_blocks = [block for block in blocks
-                            if block.node_type == 'subpart' and
-                            block.parent_block_id == part_block.id]
-
-            unit = BlockUnit(
-                unit_id=part_block.id,
-                part_block=part_block,
-                subpart_blocks=subpart_blocks,
-                x=0, y=0, width=0, height=0  # Will be calculated later
-            )
-            units.append(unit)
-
-        return units
-
-    def _calculate_spacing_config(self, spec: Dict, dimensions: Dict, _theme: Dict) -> Dict:
-        """Calculate dynamic spacing configuration based on content"""
-        parts = spec.get('parts', [])
-        total_parts = len(parts)
-        total_subparts = sum(len(part.get('subparts', [])) for part in parts)
-
-        # Calculate complexity score
-        complexity_score = total_parts * 2 + total_subparts * 1.5
-
-        # Dynamic spacing based on complexity - tightened for more compact layout
-        if complexity_score > 50:
-            block_spacing = 12.0  # Reduced from 20.0 for tighter spacing
-            unit_spacing = 18.0   # Reduced from 30.0 for tighter spacing
-            brace_padding = 30.0  # Reduced from 40.0 for tighter spacing
-        elif complexity_score > 25:
-            block_spacing = 10.0  # Reduced from 15.0 for tighter spacing
-            unit_spacing = 15.0   # Reduced from 25.0 for tighter spacing
-            brace_padding = 24.0  # Reduced from 30.0 for tighter spacing
-        else:
-            block_spacing = 8.0   # Reduced from 12.0 for tighter spacing
-            unit_spacing = 12.0   # Reduced from 20.0 for tighter spacing
-            brace_padding = 20.0  # Reduced from 25.0 for tighter spacing
-
-        # Calculate available space
-        available_width = dimensions['width'] - 2 * dimensions['padding']
-        available_height = dimensions['height'] - 2 * dimensions['padding']
-
-        return {
-            'block_spacing': block_spacing,
-            'unit_spacing': unit_spacing,
-            'brace_padding': brace_padding,
-            'available_width': available_width,
-            'available_height': available_height,
-            'complexity_score': complexity_score
-        }
-
-    def _position_blocks(self, units: List[BlockUnit], spacing_config: Dict, dimensions: Dict) -> List[BlockUnit]:
-        """Position blocks using fixed column layout to prevent horizontal crashes"""
-        if not units:
-            return units
-
-        # Step 1: Calculate unit dimensions
-        for unit in units:
-            self._calculate_unit_dimensions(unit, spacing_config)
-        # Step 2: Define column layout with fixed brace columns and flexible node columns
-        canvas_width = dimensions['width']
-        padding = dimensions['padding']
-
-        # Gaps around braces - increased to prevent overlap with nodes
-        gap_topic_to_main_brace = 24.0  # Increased to prevent brace overlap with topic
-        gap_main_brace_to_part = 28.0   # Increased to prevent brace overlap with parts
-        gap_part_to_small_brace = 22.0  # Increased to prevent small brace overlap with parts
-        gap_small_brace_to_subpart = 22.0  # Increased to prevent small brace overlap with subparts
-
-        # Compute max widths of topic, part and subpart blocks to avoid overlap
-        max_part_block_width = max((unit.part_block.width for unit in units), default=100.0)
-        max_subpart_block_width = 100.0
-        max_topic_block_width = 100.0
-        for unit in units:
-            # topic width approximated as the longest of part/subpart widths if not directly available yet
-            if unit.part_block and unit.part_block.width > max_topic_block_width:
-                max_topic_block_width = unit.part_block.width
-            if unit.subpart_blocks:
-                for sb in unit.subpart_blocks:
-                    if sb.width > max_subpart_block_width:
-                        max_subpart_block_width = sb.width
-                    if sb.width > max_topic_block_width:
-                        max_topic_block_width = sb.width
-
-        # Column 1: Topic center (moved further left for brace space). Approximate topic width from part widths if unavailable.
-        approx_topic_width = max(60.0, max_topic_block_width)
-        topic_column_x = padding + approx_topic_width / 2.0 - 12.0  # Reduced from 20px for tighter horizontal spacing
-
-        # Estimate curly brace corridor widths (adaptive, conservative so parts never overlap brace)
-        estimated_main_depth = min(max(24.0, canvas_width * 0.08), 100.0)
-        estimated_small_depth = min(max(18.0, canvas_width * 0.06), 80.0)
-
-        # Column 3: Parts center depends on estimated brace depth + gap + half of max part width (minimized)
-        part_column_x = (
-            topic_column_x + approx_topic_width / 2.0 + gap_topic_to_main_brace +
-            estimated_main_depth + gap_main_brace_to_part + 6.0 +
-            max_part_block_width / 2.0  # Reduced from 12px to move parts closer to brace
-        )
-
-        # Column 4: Small brace X (use estimated small depth/2 past part-right + gap)
-        _small_brace_x = (
-            part_column_x + max_part_block_width / 2.0 + gap_part_to_small_brace + estimated_small_depth / 2.0
-        )
-
-        # Column 5: Subparts center depends on estimated small brace depth + gap + half of max subpart width
-        subpart_column_x = (
-            part_column_x + max_part_block_width / 2.0 + gap_part_to_small_brace +
-            estimated_small_depth + gap_small_brace_to_subpart +
-            max_subpart_block_width / 2.0
-        )
-
-        # Step 3: Position units vertically with proper column separation
-        current_y = dimensions['padding']
-
-        for _i, unit in enumerate(units):
-            # Position unit at current_y
-            unit.y = current_y
-
-            # Position part block at computed parts column center
-            unit.part_block.x = part_column_x
-
-            # Calculate subparts range center for part positioning
-            if unit.subpart_blocks:
-                # Calculate the vertical range of subparts for this part
-                subparts_start_y = unit.y + unit.part_block.height + 12  # Reduced from 20
-                subparts_end_y = (
-                    subparts_start_y +
-                    (len(unit.subpart_blocks) * unit.subpart_blocks[0].height) +
-                    ((len(unit.subpart_blocks) - 1) * 7) - 7
-                )  # Reduced from 10 for tighter spacing
-                subparts_range_center_y = (subparts_start_y + subparts_end_y) / 2
-
-                # Position part at subparts range center
-                unit.part_block.y = subparts_range_center_y - unit.part_block.height / 2
-            else:
-                # No subparts: center vertically in unit
-                unit.part_block.y = unit.y + (unit.height - unit.part_block.height) / 2
-
-            # Position subpart blocks in right column (Column 3)
-            if unit.subpart_blocks:
-                # Calculate total subpart height for centering
-                total_subpart_height = len(unit.subpart_blocks) * unit.subpart_blocks[0].height
-                total_spacing = (len(unit.subpart_blocks) - 1) * spacing_config['block_spacing']
-                total_height = total_subpart_height + total_spacing
-
-                # Start position to center subparts within unit
-                start_y = unit.y + (unit.height - total_height) / 2
-
-                for j, subpart_block in enumerate(unit.subpart_blocks):
-                    subpart_block.x = subpart_column_x
-                    subpart_block.y = start_y + j * (subpart_block.height + spacing_config['block_spacing'])
-
-            # Update current_y for next unit
-            current_y = unit.y + unit.height + spacing_config['unit_spacing']
-
-        return units
-
-    def _calculate_unit_dimensions(self, unit: BlockUnit, spacing_config: Dict) -> None:
-        """Calculate unit dimensions based on its blocks with standard heights"""
-        if not unit.subpart_blocks:
-            # Unit with only part block
-            unit.width = unit.part_block.width + spacing_config['brace_padding']
-            unit.height = unit.part_block.height  # Standard part height
-        else:
-            # Unit with part and subpart blocks
-            # Calculate width: part width + spacing + max subpart width
-            max_subpart_width = max(block.width for block in unit.subpart_blocks)
-            unit.width = (unit.part_block.width + spacing_config['block_spacing'] +
-                         max_subpart_width + spacing_config['brace_padding'])
-
-            # Calculate height: total height of all subpart blocks + spacing
-            # All subpart blocks have the same height, so just multiply by count
-            subpart_height = unit.subpart_blocks[0].height  # Standard subpart height
-            total_subpart_height = len(unit.subpart_blocks) * subpart_height
-            total_spacing = (len(unit.subpart_blocks) - 1) * spacing_config['block_spacing']
-            unit.height = max(unit.part_block.height, total_subpart_height + total_spacing)
-
-    def _calculate_text_width(self, text: str, font_size: int) -> float:
-        """Calculate text width based on font size and character count"""
-        char_widths = {
-            'i': 0.3, 'l': 0.3, 'I': 0.4, 'f': 0.4, 't': 0.4, 'r': 0.4,
-            'm': 0.8, 'w': 0.8, 'M': 0.8, 'W': 0.8,
-            'default': 0.6
-        }
-
-        total_width = 0
-        for char in text:
-            char_width = char_widths.get(char, char_widths['default'])
-            total_width += char_width * font_size
-
-        return total_width
-
-
-class FlexibleLayoutCalculator:
-    """Implements the flexible dynamic layout algorithm"""
-
-    def __init__(self):
-        self._text_width_cache = {}
-
-    def calculate_text_dimensions(self, spec: Dict, theme: Dict) -> Dict[str, Any]:
-        """Calculate text dimensions for all nodes"""
-        dimensions = {
-            'topic': {'width': 0, 'height': 0},
-            'parts': [],
-            'subparts': []
-        }
-
-        # Calculate topic dimensions
-        whole = spec.get('whole', 'Main Topic')
-        topic_width = self._calculate_text_width(whole, theme['fontTopic'])
-        topic_height = theme['fontTopic'] + 20
-        dimensions['topic'] = {'width': topic_width, 'height': topic_height}
-
-        # Calculate part dimensions
-        for part in spec.get('parts', []):
-            part_width = self._calculate_text_width(part['name'], theme['fontPart'])
-            part_height = theme['fontPart'] + 20
-            dimensions['parts'].append({'width': part_width, 'height': part_height})
-
-        # Calculate subpart dimensions
-        for part in spec.get('parts', []):
-            part_subparts = []
-            for subpart in part.get('subparts', []):
-                subpart_width = self._calculate_text_width(subpart['name'], theme['fontSubpart'])
-                subpart_height = theme['fontSubpart'] + 20
-                part_subparts.append({'width': subpart_width, 'height': subpart_height})
-            dimensions['subparts'].append(part_subparts)
-
-        return dimensions
-
-    def calculate_density(self, total_parts: int, subparts_per_part: List[int]) -> float:
-        """Calculate content density for dynamic spacing"""
-        total_elements = total_parts + sum(subparts_per_part)
-        estimated_canvas_area = 800 * 600  # Default canvas size
-        return total_elements / estimated_canvas_area
-
-    def calculate_unit_spacing(self, units: List[Union[Dict, UnitPosition]]) -> float:
-        """Calculate dynamic unit spacing based on content analysis"""
-        total_units = len(units)
-        if total_units <= 1:
-            return 18.0  # Reduced minimum spacing from 30.0 for tighter layout
-
-        # Analyze content complexity dynamically
-        total_subparts = 0
-        avg_unit_height = 0
-        max_unit_height = 0
-
-        for unit in units:
-            if isinstance(unit, UnitPosition):
-                height = unit.height
-                subpart_count = len(unit.subpart_positions)
-            elif isinstance(unit, dict):
-                height = unit.get('height', 100.0)
-                subpart_count = unit.get('subpart_count', 0)
-            else:
-                height = 100.0
-                subpart_count = 0
-
-            total_subparts += subpart_count
-            avg_unit_height += height
-            max_unit_height = max(max_unit_height, height)
-
-        if units:
-            avg_unit_height /= len(units)
-
-        # Dynamic spacing factors based on content analysis
-        content_density = (total_units + total_subparts) / max(1, total_units)
-        height_factor = max_unit_height / 100.0  # Normalize to 100px baseline
-        complexity_factor = min(2.5, content_density * height_factor)
-
-        # Base spacing that scales with content complexity - reduced for tighter layout
-        base_spacing = 18.0 * complexity_factor  # Reduced from 30.0
-
-        # Additional spacing for complex diagrams - reduced for tighter layout
-        if total_units > 3:
-            base_spacing += 6.0 * (total_units - 3)  # Reduced from 10.0
-        if total_subparts > total_units * 2:
-            base_spacing += 9.0  # Reduced from 15.0 - Extra spacing for parts with many subparts
-
-        return max(18.0, base_spacing)  # Reduced minimum spacing from 30.0
-
-    def calculate_subpart_spacing(self, subparts: List[Dict]) -> float:
-        """Calculate dynamic subpart spacing"""
-        total_subparts = len(subparts)
-        if total_subparts <= 1:
-            return 12.0  # Reduced from 20.0 for tighter spacing
-
-        # Dynamic spacing based on subpart count and content complexity - reduced for tighter layout
-        base_spacing = 10.0  # Reduced from 15.0
-        density_factor = min(1.5, total_subparts / 2.0)
-
-        # Adjust based on text length (longer text needs more space)
-        if subparts:
-            avg_text_length = sum(len(subpart.get('name', '')) for subpart in subparts) / len(subparts)
-            text_factor = min(1.3, avg_text_length / 20.0)
-            return base_spacing * density_factor * text_factor
-
-        return base_spacing * density_factor
-
-    def calculate_main_topic_position(self, units: List[UnitPosition], dimensions: Dict) -> Tuple[float, float]:
-        """Calculate main topic position (center-left of entire unit group)"""
-        if not units:
-            return (dimensions['padding'] + 50, dimensions['height'] / 2)
-
-        # Sort units by Y position to ensure proper ordering
-        sorted_units = sorted(units, key=lambda u: u.y)
-
-        # Calculate the center of all units
-        first_unit_y = sorted_units[0].y
-        last_unit_y = sorted_units[-1].y + sorted_units[-1].height
-        center_y = (first_unit_y + last_unit_y) / 2
-
-        # Find the leftmost part position to avoid overlap
-        leftmost_part_x = min(unit.part_position.x for unit in units)
-
-        # Position topic to the left of all parts with proper spacing
-        # Further reduced for tighter horizontal layout
-        # Ensure topic is positioned at least 170px to the left of the leftmost part
-        topic_x = max(
-            dimensions['padding'] + 15,
-            leftmost_part_x - 170
-        )  # Further reduced from 220px for tighter horizontal spacing
-        topic_y = center_y
-
-        return (topic_x, topic_y)
-
-    def calculate_unit_positions(self, spec: Dict, dimensions: Dict, theme: Dict) -> List[UnitPosition]:
-        """Calculate positions for all units (part + subparts) using global grid alignment"""
-        units = []
-        parts = spec.get('parts', [])
-
-        # Start with padding to account for canvas boundaries
-        current_y = dimensions['padding']
-
-        # Calculate dynamic positioning based on content structure
-        total_subparts = sum(len(part.get('subparts', [])) for part in parts)
-
-        # Analyze content for dynamic positioning
-        _max_topic_width = self._calculate_text_width(
-            spec.get('whole', 'Main Topic'), theme['fontTopic'])
-        max_subpart_width = 0
-        if total_subparts > 0:
-            for part in parts:
-                for subpart in part.get('subparts', []):
-                    width = self._calculate_text_width(subpart['name'], theme['fontSubpart'])
-                    max_subpart_width = max(max_subpart_width, width)
-
-        # Dynamic horizontal positioning based on content analysis
-        _canvas_width = dimensions['width']
-        available_width = _canvas_width - 2 * dimensions['padding']
-
-        # Calculate optimal spacing based on content
-        part_offset = max(80, min(160, available_width * 0.2))
-        subpart_offset = max(60, min(120, available_width * 0.16))
-
-        # Calculate global grid positions for all subparts across all parts
-        all_subparts = []
-        for i, part in enumerate(parts):
-            subparts = part.get('subparts', [])
-            for j, subpart in enumerate(subparts):
-                all_subparts.append({
-                    'part_index': i,
-                    'subpart_index': j,
-                    'name': subpart['name'],
-                    'height': theme['fontSubpart'] + 20
-                })
-
-        # Calculate global grid spacing
-        # Calculate single global X position for ALL subparts (perfect vertical line)
-        global_subpart_x = dimensions['padding'] + part_offset + subpart_offset
-
-        if all_subparts:
-            subpart_spacing = self.calculate_subpart_spacing([{'name': 'dummy'} for _ in range(len(all_subparts))])
-
-            # Calculate global grid positions
-            grid_positions = {}
-            grid_y = current_y
-            for subpart_info in all_subparts:
-                grid_positions[(subpart_info['part_index'], subpart_info['subpart_index'])] = grid_y
-                grid_y += subpart_info['height'] + subpart_spacing
-        else:
-            # No subparts case
-            subpart_spacing = 20.0
-            grid_positions = {}
-
-        # Now position each unit using the global grid
-        for i, part in enumerate(parts):
-            subparts = part.get('subparts', [])
-
-            if subparts:
-                # Find the grid positions for this part's subparts
-                part_subpart_positions = []
-                for j, subpart in enumerate(subparts):
-                    grid_y = grid_positions.get((i, j), current_y)
-                    part_subpart_positions.append(grid_y)
-
-                # Calculate part position (center of its subpart grid span)
-                if part_subpart_positions:
-                    first_j = 0
-                    last_j = len(subparts) - 1
-                    first_center = grid_positions[(i, first_j)] + (theme['fontSubpart'] + 20) / 2
-                    last_center = grid_positions[(i, last_j)] + (theme['fontSubpart'] + 20) / 2
-                    part_center_y = (first_center + last_center) / 2
-                else:
-                    part_center_y = current_y
-
-                # Ensure part is properly centered with its subparts
-                # The part should be at the vertical center of its subpart group's span
-
-                # Ensure part is properly centered with its subparts
-                # The part should be at the vertical center of its subpart group's span
-
-                # Ensure part is properly centered with its subparts
-                # The part should be at the vertical center of its subpart group's span
-
-                # Ensure part is properly centered with its subparts
-                # The part should be at the vertical center of its subpart group's span
-
-                # Ensure part is properly centered with its subparts
-                # The part should be at the vertical center of its subpart group's span
-
-                # Double-check that part is properly centered with its subparts
-                # The part should be at the vertical center of its subpart group's span
-
-                # Ensure part is properly centered with its subparts
-                # The part should be at the vertical center of its subpart group
-
-                # Position part at center-left of its subpart grid span
-                part_x = dimensions['padding'] + part_offset
-                part_y = part_center_y - (theme['fontPart'] + 20) / 2
-
-                # Create part node
-                part_node = NodePosition(
-                    x=part_x, y=part_y,
-                    width=self._calculate_text_width(part['name'], theme['fontPart']),
-                    height=theme['fontPart'] + 20,
-                    text=part['name'], node_type='part', part_index=i
-                )
-
-                # Calculate subpart positions using global grid (all subparts in one vertical line)
-                subpart_positions = []
-                for j, subpart in enumerate(subparts):
-                    subpart_x = global_subpart_x  # All subparts use the same X position
-                    subpart_y = grid_positions[(i, j)]
-
-                    subpart_node = NodePosition(
-                        x=subpart_x, y=subpart_y,
-                        width=self._calculate_text_width(subpart['name'], theme['fontSubpart']),
-                        height=theme['fontSubpart'] + 20,
-                        text=subpart['name'], node_type='subpart',
-                        part_index=i, subpart_index=j
-                    )
-                    subpart_positions.append(subpart_node)
-
-                # Create unit with dynamic width and height based on grid span
-                if part_subpart_positions:
-                    first_j = 0
-                    last_j = len(subparts) - 1
-                    first_top = grid_positions[(i, first_j)]
-                    last_bottom = grid_positions[(i, last_j)] + (theme['fontSubpart'] + 20)
-                    unit_height = last_bottom - first_top
-                    unit_y = first_top
-                else:
-                    unit_height = part_node.height
-                    unit_y = current_y
-
-                # Calculate unit spacing - pass all units for better context
-                temp_units = []
-                for k in range(i + 1):
-                    if k < len(units):
-                        temp_units.append(units[k])
-                    else:
-                        temp_units.append({'height': unit_height})
-                unit_spacing = self.calculate_unit_spacing(temp_units)
-
-                # Calculate next_y with overlap prevention
-                if part_subpart_positions:
-                    next_y = last_bottom + unit_spacing
-                else:
-                    next_y = current_y + unit_height + unit_spacing
-
-                # Define min_spacing for overlap prevention (used in multiple blocks)
-                min_spacing = 18.0  # Reduced from 30.0 for tighter spacing between units
-
-                # Ensure no overlap with previous units
-                if i > 0 and units:
-                    # Check against all previous units, not just the last one
-                    max_prev_bottom = 0
-                    for prev_unit in units:
-                        prev_bottom = prev_unit.y + prev_unit.height
-                        max_prev_bottom = max(max_prev_bottom, prev_bottom)
-
-                    if unit_y < max_prev_bottom + min_spacing:
-                        # Adjust current unit position to prevent overlap
-                        unit_y = max_prev_bottom + min_spacing
-                        # Update subpart positions to match new unit position
-                        if part_subpart_positions:
-                            # Recalculate subpart positions based on new unit_y
-                            subpart_positions = []
-                            for j, subpart in enumerate(subparts):
-                                subpart_x = global_subpart_x
-                                subpart_y = (
-                                    unit_y + j * (theme['fontSubpart'] + 20 + subpart_spacing)
-                                )  # subpart_spacing already reduced
-
-                                subpart_node = NodePosition(
-                                    x=subpart_x, y=subpart_y,
-                                    width=self._calculate_text_width(
-                                        subpart['name'], theme['fontSubpart']
-                                    ),
-                                    height=theme['fontSubpart'] + 20,
-                                    text=subpart['name'], node_type='subpart',
-                                    part_index=i, subpart_index=j
-                                )
-                                subpart_positions.append(subpart_node)
-
-                            # Recalculate part position to maintain centering
-                            if subpart_positions:
-                                first_center = subpart_positions[0].y + (theme['fontSubpart'] + 20) / 2
-                                last_center = subpart_positions[-1].y + (theme['fontSubpart'] + 20) / 2
-                                part_center_y = (first_center + last_center) / 2
-                                part_y = part_center_y - (theme['fontPart'] + 20) / 2
-                                part_node = NodePosition(
-                                    x=part_x, y=part_y,
-                                    width=self._calculate_text_width(
-                                        part['name'], theme['fontPart']
-                                    ),
-                                    height=theme['fontPart'] + 20,
-                                    text=part['name'], node_type='part', part_index=i
-                                )
-
-                unit_width = max(400, part_node.width + subpart_offset + 50)  # Dynamic width
-                unit = UnitPosition(
-                    unit_index=i,
-                    x=part_x, y=unit_y,
-                    width=unit_width,
-                    height=unit_height,
-                    part_position=part_node,
-                    subpart_positions=subpart_positions
-                )
-
-                # Final overlap check and adjustment using actual subpart bounds
-                if i > 0 and units and subpart_positions:
-                    # Calculate actual unit bounds based on subpart positions
-                    subpart_ys = [s.y for s in subpart_positions]
-                    actual_unit_min_y = min(subpart_ys)
-
-                    for prev_unit in units:
-                        prev_bottom = prev_unit.y + prev_unit.height
-                        # Check for actual overlap: if current unit starts before previous unit ends + spacing
-                        if actual_unit_min_y < prev_bottom + min_spacing:
-                            # Force adjust the unit position
-                            adjustment_needed = prev_bottom + min_spacing - actual_unit_min_y
-                            unit.y += adjustment_needed
-                            # Update all subpart positions
-                            for subpart in subpart_positions:
-                                subpart.y += adjustment_needed
-                            # Update part position to maintain centering
-                            if subpart_positions:
-                                first_center = subpart_positions[0].y + (theme['fontSubpart'] + 20) / 2
-                                last_center = subpart_positions[-1].y + (theme['fontSubpart'] + 20) / 2
-                                part_center_y = (first_center + last_center) / 2
-                                unit.part_position.y = part_center_y - (theme['fontPart'] + 20) / 2
-
-                units.append(unit)
-
-                # Update current_y for next iteration
-                current_y = next_y
-            else:
-                # Part without subparts - dynamic positioning
-                part_x = dimensions['padding'] + part_offset
-                part_y = current_y + (theme['fontPart'] + 20) / 2  # Center the part
-
-                part_node = NodePosition(
-                    x=part_x, y=part_y,
-                    width=self._calculate_text_width(part['name'], theme['fontPart']),
-                    height=theme['fontPart'] + 20,
-                    text=part['name'], node_type='part', part_index=i
-                )
-
-                # Dynamic height for unit without subparts
-                unit_height = max(60, theme['fontPart'] + 40)  # Based on font size
-                unit_width = max(200, part_node.width + 50)  # Dynamic width
-                unit = UnitPosition(
-                    unit_index=i,
-                    x=part_x, y=current_y,
-                    width=unit_width,
-                    height=unit_height,
-                    part_position=part_node,
-                    subpart_positions=[]
-                )
-                units.append(unit)
-
-                # Calculate unit spacing for next iteration - pass all units for better context
-                temp_units = []
-                for k in range(i + 1):
-                    if k < len(units):
-                        temp_units.append(units[k])
-                    else:
-                        # Estimate for remaining units
-                        temp_units.append({'height': unit_height})
-                unit_spacing = self.calculate_unit_spacing(temp_units)
-                current_y += unit_height + unit_spacing
-
-        return units
-
-    def calculate_spacing_info(self, units: List[UnitPosition]) -> SpacingInfo:
-        """Calculate dynamic spacing information"""
-        total_units = len(units)
-        total_subparts = sum(len(unit.subpart_positions) for unit in units)
-
-        # Calculate unit spacing based on actual unit heights
-        unit_heights = [unit.height for unit in units]
-        unit_spacing = self.calculate_unit_spacing([{'height': height} for height in unit_heights])
-
-        # Calculate subpart spacing based on actual subpart counts
-        subpart_spacing = 20.0  # Default
-        if total_subparts > 0:
-            # Use the first unit with subparts to calculate spacing
-            for unit in units:
-                if unit.subpart_positions:
-                    subpart_spacing = self.calculate_subpart_spacing(
-                        [{'name': 'dummy'} for _ in unit.subpart_positions]
-                    )
-                    break
-
-        brace_offset = 50.0  # Distance from nodes to brace
-        content_density = (total_units + total_subparts) / 1000.0  # Normalized density
-
-        return SpacingInfo(
-            unit_spacing=unit_spacing,
-            subpart_spacing=subpart_spacing,
-            brace_offset=brace_offset,
-            content_density=content_density
-        )
-
-    def _calculate_text_width(self, text: str, font_size: int) -> float:
-        """Calculate text width based on font size and character count with caching"""
-        if not text or font_size <= 0:
-            return 0
-
-        # Simple caching - could be enhanced with proper cache decorator
-        cache_key = f"{text}_{font_size}"
-        if cache_key in self._text_width_cache:
-            return self._text_width_cache[cache_key]
-
-        total_width = 0
-        for char in text:
-            char_width = CHAR_WIDTH_CONFIG.get(char, CHAR_WIDTH_CONFIG['default'])
-            total_width += char_width * font_size
-
-        # Cache the result
-        self._text_width_cache[cache_key] = total_width
-
-        return total_width
-
-    def _get_font_weight(self, node_type: str) -> str:
-        """Get font weight for node type using configuration"""
-        return FONT_WEIGHT_CONFIG.get(node_type, 'normal')
 
 
 class BraceMapAgent(BaseAgent):
@@ -1122,22 +65,20 @@ class BraceMapAgent(BaseAgent):
         user_prompt: str,
         language: str = "en",
         dimension_preference: Optional[str] = None,
-        # Token tracking parameters
-        user_id: Optional[int] = None,
-        organization_id: Optional[int] = None,
-        request_type: str = 'diagram_generation',
-        endpoint_path: Optional[str] = None,
-        # Fixed dimension: user has already specified this, do NOT change it
         fixed_dimension: Optional[str] = None,
-        # Dimension-only mode: user has dimension but no topic (generate topic and children)
-        dimension_only_mode: Optional[bool] = None
+        dimension_only_mode: Optional[bool] = None,
+        **kwargs: Any
     ) -> Dict[str, Any]:
         """Generate a brace map from a prompt."""
+        user_id = kwargs.get("user_id")
+        organization_id = kwargs.get("organization_id")
+        request_type = kwargs.get("request_type", "diagram_generation")
+        endpoint_path = kwargs.get("endpoint_path")
         try:
             # Three-scenario system (similar to bridge_map):
-            # Scenario 1: Topic only → standard generation
-            # Scenario 2: Topic + dimension → fixed_dimension mode
-            # Scenario 3: Dimension only (no topic) → dimension_only_mode
+            # Scenario 1: Topic only 鈫?standard generation
+            # Scenario 2: Topic + dimension 鈫?fixed_dimension mode
+            # Scenario 3: Dimension only (no topic) 鈫?dimension_only_mode
             if dimension_only_mode and fixed_dimension:
                 # Scenario 3: Dimension-only mode - generate topic and children based on dimension
                 logger.debug(
@@ -1224,13 +165,18 @@ class BraceMapAgent(BaseAgent):
                     logger.warning("BraceMapAgent: No fixed_dimension prompt found, using fallback")
                     # Fallback prompt for fixed dimension mode
                     if language == "zh":
-                        system_prompt = f"""用户已经指定了拆解维度："{fixed_dimension}"
+                        json_example = (
+                            '{"whole": "主题", "dimension": "' + fixed_dimension + '", '
+                            '"parts": [...], "alternative_dimensions": [...]}'
+                        )
+                        system_prompt = (
+                            f"""用户已经指定了拆解维度："{fixed_dimension}"
 你必须使用这个指定的拆解维度来生成括号图。不要改变或重新解释这个拆解维度。
-
-生成一个括号图，将主题按照指定的维度"{fixed_dimension}"进行拆解，包含3-5个部分，每个部分有2-4个子部分。
-返回JSON：{{"whole": "主题", "dimension": "{fixed_dimension}", "parts": [...], "alternative_dimensions": [...]}}
+生成一个括号图，将主题按照指定的维度进行拆解，包含3-5个部分，每个部分有2-4个子部分。
+返回JSON：{json_example}
 
 重要：dimension字段必须完全保持为"{fixed_dimension}"，不要改变它！"""
+                        )
                     else:
                         system_prompt = (
                             f"""The user has ALREADY SPECIFIED the decomposition dimension: """
@@ -1249,7 +195,10 @@ CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" """
                 if language == "zh":
                     user_prompt = f"主题：{prompt}\n\n请使用指定的拆解维度「{fixed_dimension}」生成括号图。"
                 else:
-                    user_prompt = f"Topic: {prompt}\n\nGenerate a brace map using the EXACT decomposition dimension \"{fixed_dimension}\"."
+                    user_prompt = (
+                        f"Topic: {prompt}\n\nGenerate a brace map using the "
+                        f"EXACT decomposition dimension \"{fixed_dimension}\"."
+                    )
             else:
                 # No fixed dimension - use standard generation prompt
                 system_prompt = get_prompt("brace_map_agent", language, "generation")
@@ -1321,15 +270,20 @@ CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" """
                     )
 
                     # Retry with more explicit prompt emphasizing JSON-only output
-                    retry_user_prompt = (
-                        f"{user_prompt}\n\n"
-                        f"重要：你必须只返回有效的JSON格式，不要询问更多信息。"
-                        f"如果提示不清楚，请根据提示内容做出合理假设并直接生成JSON规范。"
-                        if language == "zh" else
-                        f"{user_prompt}\n\n"
-                        f"IMPORTANT: You MUST respond with valid JSON only. Do not ask for more information. "
-                        f"If the prompt is unclear, make reasonable assumptions and generate the JSON specification directly."
-                    )
+                    if language == "zh":
+                        retry_user_prompt = (
+                            f"{user_prompt}\n\n"
+                            f"重要：你必须只返回有效的JSON格式，不要询问更多信息。"
+                            f"如果提示不清楚，请根据提示内容做出合理假设并直接生成JSON规范。"
+                        )
+                    else:
+                        retry_user_prompt = (
+                            f"{user_prompt}\n\n"
+                            f"IMPORTANT: You MUST respond with valid JSON only. "
+                            f"Do not ask for more information. "
+                            f"If the prompt is unclear, make reasonable assumptions "
+                            f"and generate the JSON specification directly."
+                        )
 
                     retry_response = await llm_service.chat(
                         prompt=retry_user_prompt,
@@ -1359,14 +313,19 @@ CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" """
                             return None
 
             if not spec or (isinstance(spec, dict) and spec.get('_error')):
-                logger.error("BraceMapAgent: Failed to extract JSON from LLM response. Response type: %s, Response length: %s", type(response), len(str(response)))
+                logger.error(
+                    "BraceMapAgent: Failed to extract JSON from LLM response. "
+                    "Response type: %s, Response length: %s",
+                    type(response), len(str(response))
+                )
                 logger.error("BraceMapAgent: Raw response content: %s", str(response)[:1000])
                 return None
 
             # Normalize field names (e.g., 'topic' -> 'whole') before validation
             spec = self._normalize_field_names(spec)
             # Log extracted spec for debugging
-            logger.debug("BraceMapAgent: Extracted spec keys: %s", list(spec.keys()) if isinstance(spec, dict) else 'Not a dict')
+            spec_keys = list(spec.keys()) if isinstance(spec, dict) else 'Not a dict'
+            logger.debug("BraceMapAgent: Extracted spec keys: %s", spec_keys)
             if isinstance(spec, dict) and 'whole' in spec:
                 logger.debug("BraceMapAgent: Extracted 'whole' field value: %s", spec.get('whole'))
 
@@ -1395,9 +354,9 @@ CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" """
         Generate brace map from a decomposition dimension only (no topic).
 
         This is Scenario 3 of the three-scenario system:
-        - Scenario 1: Topic only → standard generation
-        - Scenario 2: Topic + dimension → fixed_dimension mode
-        - Scenario 3: Dimension only (no topic) → generate topic and children (this method)
+        - Scenario 1: Topic only 鈫?standard generation
+        - Scenario 2: Topic + dimension 鈫?fixed_dimension mode
+        - Scenario 3: Dimension only (no topic) 鈫?generate topic and children (this method)
 
         Args:
             dimension: The decomposition dimension specified by user (e.g., "Physical Parts", "Functional Modules")
@@ -1407,7 +366,10 @@ CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" """
             Spec with generated topic and parts following the specified dimension
         """
         try:
-            logger.debug("BraceMapAgent: Dimension-only mode - generating topic and parts for dimension '%s'", dimension)
+            logger.debug(
+                "BraceMapAgent: Dimension-only mode - generating topic and "
+                "parts for dimension '%s'", dimension
+            )
 
             # Get the dimension-only prompt
             system_prompt = get_prompt("brace_map_agent", language, "dimension_only")
@@ -1465,15 +427,19 @@ CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" """
                     )
 
                     # Retry with more explicit prompt
-                    retry_user_prompt = (
-                        f"{user_prompt}\n\n"
-                        f"重要：你必须只返回有效的JSON格式，不要询问更多信息。"
-                        f"根据拆解维度直接生成JSON规范。"
-                        if language == "zh" else
-                        f"{user_prompt}\n\n"
-                        f"IMPORTANT: You MUST respond with valid JSON only. Do not ask for more information. "
-                        f"Generate the JSON specification directly based on the decomposition dimension."
-                    )
+                    if language == "zh":
+                        retry_user_prompt = (
+                            f"{user_prompt}\n\n"
+                            f"重要：你必须只返回有效的JSON格式，不要询问更多信息。"
+                            f"根据拆解维度直接生成JSON规范。"
+                        )
+                    else:
+                        retry_user_prompt = (
+                            f"{user_prompt}\n\n"
+                            f"IMPORTANT: You MUST respond with valid JSON only. "
+                            f"Do not ask for more information. "
+                            f"Generate the JSON specification directly based on the decomposition dimension."
+                        )
 
                     retry_response = await llm_service.chat(
                         prompt=retry_user_prompt,
@@ -2050,7 +1016,10 @@ CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" """
                 upper_start_x = upper_cx - arc_radius
                 upper_end_x = upper_cx
                 upper_end_y = y_top - arc_radius
-                top_arc_path = f"M {upper_start_x:.2f} {y_top:.2f} A {arc_radius:.2f} {arc_radius:.2f} 0 0 1 {upper_end_x:.2f} {upper_end_y:.2f}"
+                top_arc_path = (
+                    f"M {upper_start_x:.2f} {y_top:.2f} A {arc_radius:.2f} "
+                    f"{arc_radius:.2f} 0 0 1 {upper_end_x:.2f} {upper_end_y:.2f}"
+                )
                 brace_elements.append({
                     'type': 'path',
                     'd': top_arc_path,
@@ -2075,7 +1044,10 @@ CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" """
                 lower_start_x = lower_cx - arc_radius
                 lower_end_x = lower_cx
                 lower_end_y = y_bot + arc_radius
-                bottom_arc_path = f"M {lower_start_x:.2f} {y_bot:.2f} A {arc_radius:.2f} {arc_radius:.2f} 0 0 0 {lower_end_x:.2f} {lower_end_y:.2f}"
+                bottom_arc_path = (
+                    f"M {lower_start_x:.2f} {y_bot:.2f} A {arc_radius:.2f} "
+                    f"{arc_radius:.2f} 0 0 0 {lower_end_x:.2f} {lower_end_y:.2f}"
+                )
                 brace_elements.append({
                     'type': 'path',
                     'd': bottom_arc_path,
@@ -2088,12 +1060,12 @@ CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" """
                 brace_elements.append({
                     'type': 'path',
                     'd': bottom_arc_path,
-                'fill': 'none',
-                'stroke': brace_color,
-                'stroke_width': main_stroke_width,
-                'stroke_linecap': 'round',
-                'stroke_linejoin': 'round'
-            })
+                    'fill': 'none',
+                    'stroke': brace_color,
+                    'stroke_width': main_stroke_width,
+                    'stroke_linecap': 'round',
+                    'stroke_linejoin': 'round'
+                })
 
         # Generate small braces (connect each part to its subparts)
         for part_node in part_nodes:
@@ -2114,7 +1086,8 @@ CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" """
                 part_right = part_node['x'] + part_node['width']
                 subparts_left = min(n['x'] for n in part_subparts)
 
-                small_safety_gap = max(20.0, canvas_width * 0.025)  # Reduced from 28.0 to move small brace closer to nodes
+                # Reduced from 28.0 to move small brace closer to nodes
+                small_safety_gap = max(20.0, canvas_width * 0.025)
 
                 # CRITICAL: Calculate safe positioning for LEFT-opening small brace
                 # Calculate small brace height based on first and last subpart centers
@@ -2139,13 +1112,16 @@ CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" """
                     small_brace_x = min_sx
                 else:
                     # Position small brace closer to both parts and subparts
-                    small_brace_x = min_sx + (max_sx - min_sx) * 0.2  # Reduced from 0.5 (middle) to 0.2 to move closer to nodes
+                    # Reduced from 0.5 (middle) to 0.2 to move closer to nodes
+                    small_brace_x = min_sx + (max_sx - min_sx) * 0.2
 
-                # CRITICAL: Small brace boundaries include arc radius for complete display (arcs extend inward)
-                small_brace_start_y = first_subpart_center_y + s_arc_radius  # Include top arc radius (inward)
-                small_brace_end_y = last_subpart_center_y - s_arc_radius     # Include bottom arc radius (inward)
-                subpart_brace_height = small_brace_end_y - small_brace_start_y  # Total height including arcs
-                small_brace_center_y = (small_brace_start_y + small_brace_end_y) / 2  # Center between adjusted boundaries
+                # CRITICAL: Small brace boundaries include arc radius for display
+                small_brace_start_y = first_subpart_center_y + s_arc_radius
+                small_brace_end_y = last_subpart_center_y - s_arc_radius
+                subpart_brace_height = small_brace_end_y - small_brace_start_y
+                small_brace_center_y = (
+                    (small_brace_start_y + small_brace_end_y) / 2
+                )
 
                 yt = small_brace_start_y
                 yb = small_brace_end_y
@@ -2202,7 +1178,11 @@ CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" """
                     s_upper_start_x = s_upper_cx - s_arc_radius
                     s_upper_end_x = s_upper_cx
                     s_upper_end_y = yt - s_arc_radius
-                    s_top_arc_path = f"M {s_upper_start_x:.2f} {yt:.2f} A {s_arc_radius:.2f} {s_arc_radius:.2f} 0 0 1 {s_upper_end_x:.2f} {s_upper_end_y:.2f}"
+                    s_top_arc_path = (
+                        f"M {s_upper_start_x:.2f} {yt:.2f} A {s_arc_radius:.2f} "
+                        f"{s_arc_radius:.2f} 0 0 1 "
+                        f"{s_upper_end_x:.2f} {s_upper_end_y:.2f}"
+                    )
                     brace_elements.append({
                         'type': 'path',
                         'd': s_top_arc_path,
@@ -2227,7 +1207,11 @@ CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" """
                     s_lower_start_x = s_lower_cx - s_arc_radius
                     s_lower_end_x = s_lower_cx
                     s_lower_end_y = yb + s_arc_radius
-                    s_bottom_arc_path = f"M {s_lower_start_x:.2f} {yb:.2f} A {s_arc_radius:.2f} {s_arc_radius:.2f} 0 0 0 {s_lower_end_x:.2f} {s_lower_end_y:.2f}"
+                    s_bottom_arc_path = (
+                        f"M {s_lower_start_x:.2f} {yb:.2f} A {s_arc_radius:.2f} "
+                        f"{s_arc_radius:.2f} 0 0 0 "
+                        f"{s_lower_end_x:.2f} {s_lower_end_y:.2f}"
+                    )
                     brace_elements.append({
                         'type': 'path',
                         'd': s_bottom_arc_path,
@@ -2240,12 +1224,12 @@ CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" """
                     brace_elements.append({
                         'type': 'path',
                         'd': s_bottom_arc_path,
-                    'fill': 'none',
-                    'stroke': brace_color,
-                    'stroke_width': small_stroke_width,
-                    'stroke_linecap': 'round',
-                    'stroke_linejoin': 'round'
-                })
+                        'fill': 'none',
+                        'stroke': brace_color,
+                        'stroke_width': small_stroke_width,
+                        'stroke_linecap': 'round',
+                        'stroke_linejoin': 'round'
+                    })
 
         return brace_elements
 
@@ -2343,7 +1327,11 @@ CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" """
             return initial_dimensions
 
         # Filter out nodes with invalid coordinates
-        valid_nodes = [node for node in nodes if node.x is not None and node.y is not None and node.width > 0 and node.height > 0]
+        valid_nodes = [
+            node for node in nodes
+            if node.x is not None and node.y is not None
+            and node.width > 0 and node.height > 0
+        ]
 
         if not valid_nodes:
             return initial_dimensions
@@ -2658,12 +1646,10 @@ CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" """
         for node in nodes:
             # Check if node extends beyond canvas boundaries
             # Nodes are positioned with their top-left corner at (x, y)
-            if node.x < dimensions['padding']:
-                node.x = dimensions['padding']
+            node.x = max(node.x, dimensions['padding'])
             if node.x + node.width > dimensions['width'] - dimensions['padding']:
                 node.x = dimensions['width'] - dimensions['padding'] - node.width
-            if node.y < dimensions['padding']:
-                node.y = dimensions['padding']
+            node.y = max(node.y, dimensions['padding'])
             if node.y + node.height > dimensions['height'] - dimensions['padding']:
                 node.y = dimensions['height'] - dimensions['padding'] - node.height
 
@@ -2736,4 +1722,4 @@ CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" """
 
 
 # Export the main agent class
-__all__ = ['BraceMapAgent', 'LayoutAlgorithm', 'LayoutComplexity', 'LLMStrategy']
+__all__ = ['BraceMapAgent']

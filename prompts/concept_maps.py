@@ -76,8 +76,6 @@ CONCEPT_MAP_GENERATION_ZH = """
 
 # ============================================================================
 # RELATIONSHIP ONLY - for real-time link creation (concept map auto-complete)
-# Not to be confused with Tab Mode (tab_suggestions/tab_expand), which has been
-# removed. This is the only real-time AI suggestion flow for concept maps.
 # ============================================================================
 
 CONCEPT_MAP_RELATIONSHIP_ONLY_EN = """You are helping students build concept maps for learning and critical thinking.

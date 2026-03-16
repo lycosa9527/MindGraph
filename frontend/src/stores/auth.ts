@@ -129,6 +129,8 @@ export const useAuthStore = defineStore('auth', () => {
     const orgIsObject = typeof org === 'object' && org !== null
     const orgId = orgIsObject ? org.id : undefined
     const orgName = orgIsObject ? org.name : typeof org === 'string' ? org : undefined
+    const orgDisplayName = orgIsObject && org.display_name ? org.display_name : undefined
+    const displayLabel = orgDisplayName || orgName || backendUser.schoolName || ''
 
     return {
       id: String(backendUser.id || backendUser.user?.id || ''),
@@ -137,7 +139,7 @@ export const useAuthStore = defineStore('auth', () => {
       email: backendUser.email,
       role: backendUser.role || 'user',
       schoolId: orgId ? String(orgId) : backendUser.schoolId,
-      schoolName: orgName || backendUser.schoolName || '',
+      schoolName: displayLabel,
       avatar,
       createdAt: backendUser.created_at || backendUser.createdAt,
       lastLogin: backendUser.last_login || backendUser.lastLogin,

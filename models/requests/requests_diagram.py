@@ -11,7 +11,7 @@ Proprietary License
 """
 from typing import Optional, Dict, Any, List
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from ..common import DiagramType, Language, LLMModel
 
@@ -19,8 +19,9 @@ from ..common import DiagramType, Language, LLMModel
 class GenerateRequest(BaseModel):
     """Request model for /api/generate endpoint"""
     prompt: str = Field(
-        ..., min_length=1, max_length=10000,
-        description="User prompt for diagram generation"
+        default='',
+        max_length=10000,
+        description="User prompt for diagram generation (may be empty for dimension-only mode)",
     )
     diagram_type: Optional[DiagramType] = Field(
         None, description="Diagram type (auto-detected if not provided)"
@@ -128,6 +129,19 @@ class GenerateRequest(BaseModel):
         }
 
         return aliases.get(v_str, v_str)
+
+    @model_validator(mode='after')
+    def validate_prompt_or_dimension(self):
+        """Allow empty prompt only when dimension-only mode (fixed_dimension or dimension_only_mode)."""
+        prompt_empty = not (self.prompt or '').strip()
+        has_fixed_dimension = self.fixed_dimension and str(self.fixed_dimension).strip()
+        dimension_only_mode = self.dimension_only_mode is True
+
+        if prompt_empty and not (has_fixed_dimension or dimension_only_mode):
+            raise ValueError(
+                "Prompt is required unless fixed_dimension or dimension_only_mode is provided"
+            )
+        return self
 
     class Config:
         """Configuration for GenerateRequest model."""
