@@ -93,12 +93,10 @@ async def get_stats_trends_admin(
     if metric == 'users':
         # Daily cumulative user count
         try:
-            # Get initial count before start_date_utc
             initial_count = db.query(_sql_count(User.id)).filter(
                 User.created_at < start_date_utc
             ).scalar() or 0
 
-            # Get user counts grouped by date (using UTC for DB query, but we'll map to Beijing dates)
             user_counts = db.query(
                 func.date(User.created_at).label('date'),
                 _sql_count(User.id).label('count')
@@ -139,7 +137,6 @@ async def get_stats_trends_admin(
     elif metric == 'organizations':
         # Daily cumulative organization count
         try:
-            # Get initial count before start_date_utc
             initial_count = db.query(_sql_count(Organization.id)).filter(
                 Organization.created_at < start_date_utc
             ).scalar() or 0
@@ -153,11 +150,9 @@ async def get_stats_trends_admin(
                 func.date(Organization.created_at)
             ).all()
 
-            # Map UTC dates to Beijing dates
             counts_by_date = {}
             for row in org_counts:
                 utc_date = row.date
-                # Database may return date as string, need to parse it
                 if isinstance(utc_date, str):
                     utc_date = datetime.strptime(utc_date, "%Y-%m-%d").date()
                 utc_datetime = datetime.combine(utc_date, datetime.min.time())
@@ -529,7 +524,6 @@ async def get_user_token_trends_admin(
     _request: Request,
     user_id: Optional[int] = None,
     days: Optional[int] = 10,  # Number of days to look back, default 10
-    _current_user: User = Depends(require_admin),
     db: Session = Depends(get_db),
     _lang: str = Depends(get_language_dependency)
 ) -> Dict[str, Any]:
@@ -551,7 +545,6 @@ async def get_user_token_trends_admin(
         elif days < 1:
             days = 1  # Minimum 1 day
 
-    # Find user
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(

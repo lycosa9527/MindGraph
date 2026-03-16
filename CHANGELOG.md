@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.40.1] - 2026-03-16
+
+### Added
+- **Redis User Cache Role**: User cache now stores and restores `role` field for role-aware lookups.
+
+### Changed
+- **Stats Trends Router**: Removed redundant comments and unused `_current_user` dependency from `get_user_token_trends_admin`.
+- **Users Router**: Removed redundant comments from `list_users_admin`.
+- **Redis User Cache**: Safer `organization_id` parsing when deserializing from cache.
+
 ## [5.40.0] - 2026-03-16
 
 ### Added

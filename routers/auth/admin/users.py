@@ -55,10 +55,8 @@ async def list_users_admin(
     - search: Search by name or phone number
     - organization_id: Filter by organization
     """
-    # Build base query
     query = db.query(User)
 
-    # Apply organization filter
     if organization_id:
         query = query.filter(User.organization_id == organization_id)
 
