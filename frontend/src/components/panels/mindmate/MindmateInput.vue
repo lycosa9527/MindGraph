@@ -24,6 +24,10 @@ const props = withDefaults(
     showSuggestions?: boolean
     /** When false, hide file upload button (e.g. canvas mini-mindmate) */
     showFileUpload?: boolean
+    /** Custom placeholder (default: question prompt) */
+    placeholder?: string
+    /** Max length for input (e.g. 1000 for comments) */
+    maxlength?: number
   }>(),
   {
     mode: 'panel',
@@ -34,6 +38,8 @@ const props = withDefaults(
     pendingFiles: () => [],
     showSuggestions: false,
     showFileUpload: true,
+    placeholder: '',
+    maxlength: undefined,
   }
 )
 
@@ -231,8 +237,10 @@ function handleSuggestionSelect(suggestion: string) {
             :model-value="inputText"
             type="textarea"
             :autosize="{ minRows: 1, maxRows: 4 }"
-            :placeholder="isZh ? '请输入你的问题' : 'Type your question...'"
+            :placeholder="placeholder || (isZh ? '请输入你的问题' : 'Type your question...')"
             :disabled="isLoading || !authStore.isAuthenticated"
+            :maxlength="maxlength"
+            :show-word-limit="maxlength != null"
             class="fullpage-textarea"
             @update:model-value="emit('update:inputText', $event)"
             @keydown="handleKeydown"

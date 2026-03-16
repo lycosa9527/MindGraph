@@ -118,7 +118,7 @@ try:
         is_postgresql_empty,
         MIGRATION_MARKER_FILE
     )
-    from utils.migration.sqlite.migration_tables import verify_migration
+    from utils.migration.sqlite.migration_verification import verify_migration
 except ImportError as e:
     print(f"[ERROR] Failed to import migration module: {e}")
     print("\nRequired dependencies:")

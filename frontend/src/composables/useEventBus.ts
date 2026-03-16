@@ -365,6 +365,7 @@ export type EventTypes = {
   'canvas:fitted_full': Record<string, never>
   'canvas:resized': { width: number; height: number }
   'canvas:fit_requested': { animate?: boolean }
+  'canvas:show_slot_full_modal': Record<string, never>
 
   // Window Events
   'window:resized': { width: number; height: number }

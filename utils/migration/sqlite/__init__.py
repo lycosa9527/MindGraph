@@ -19,9 +19,9 @@ from .migration_backup import (
     move_sqlite_database_to_backup
 )
 from .migration_progress import MigrationProgressTracker
-from .migration_tables import (
-    get_table_migration_order,
-    migrate_table,
+from .migration_table_order import get_table_migration_order
+from .migration_tables import migrate_table
+from .migration_verification import (
     verify_migration,
     create_migration_marker,
     reset_postgresql_sequences

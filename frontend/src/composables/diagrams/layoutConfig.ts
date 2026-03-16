@@ -146,8 +146,8 @@ export const DEFAULT_HORIZONTAL_SPACING = 180
 export const DEFAULT_VERTICAL_SPACING = 60
 
 /** Mindmap column width (rank separation) - horizontal distance between depth levels.
- *  Tuned for symmetric left/right curve length. Slightly tighter than generic spacing. */
-export const DEFAULT_MINDMAP_RANK_SEPARATION = 160
+ *  Matches double bubble map diff-to-topic spacing for shorter, tighter curves. */
+export const DEFAULT_MINDMAP_RANK_SEPARATION = 80
 
 /** Default step spacing for flow maps */
 export const DEFAULT_STEP_SPACING = 200

@@ -41,6 +41,16 @@ if config.FEATURE_DEBATEVERSE:
 else:
     logger.debug("[RouterRegistration] DebateVerse feature disabled via FEATURE_DEBATEVERSE flag")
 
+COMMUNITY_MODULE = None
+if config.FEATURE_COMMUNITY:
+    try:
+        from routers.features.community import router as COMMUNITY_MODULE
+    except Exception as e:
+        COMMUNITY_MODULE = None
+        logger.debug("[RouterRegistration] Failed to import community router: %s", e, exc_info=True)
+else:
+    logger.debug("[RouterRegistration] Community feature disabled via FEATURE_COMMUNITY flag")
+
 GEWE_MODULE = None
 if config.FEATURE_GEWE:
     try:
@@ -91,6 +101,19 @@ def register_routers(app: FastAPI) -> None:
             )
         else:
             logger.debug("[RouterRegistration] Library feature disabled via FEATURE_LIBRARY flag")
+
+    # Community (社区分享) - global diagram sharing
+    if COMMUNITY_MODULE is not None:
+        app.include_router(COMMUNITY_MODULE)
+        logger.info("[RouterRegistration] Community router registered at /api/community")
+    else:
+        if config.FEATURE_COMMUNITY:
+            logger.warning(
+                "[RouterRegistration] Community router NOT registered - import failed or router is None. "
+                "Check DEBUG logs for details."
+            )
+        else:
+            logger.debug("[RouterRegistration] Community feature disabled via FEATURE_COMMUNITY flag")
 
     # Gewe WeChat integration (admin only) - must be before vue_spa
     if GEWE_MODULE is not None:

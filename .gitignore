@@ -190,7 +190,8 @@ browsers/
 # Ignore entire dist folder - build on server during deployment
 frontend/dist/
 
-# Runtime static files (announcement images, etc.)
+# Runtime static files and user content
+# - announcement images, community thumbnails (.png), community specs (.json)
 # These are user uploads, not part of the codebase
 static/
 

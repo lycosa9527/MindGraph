@@ -8,10 +8,10 @@ import { useRoute, useRouter } from 'vue-router'
 
 import { ElAvatar, ElButton, ElDialog } from 'element-plus'
 
-import { Connection } from '@element-plus/icons-vue'
+import { Connection, Upload } from '@element-plus/icons-vue'
 
 import mindgraphLogo from '@/assets/mindgraph-logo-md.png'
-import { useLanguage, useNotifications } from '@/composables'
+import { useDiagramImport, useLanguage, useNotifications } from '@/composables'
 import { useAuthStore } from '@/stores/auth'
 import { authFetch } from '@/utils/api'
 
@@ -22,6 +22,7 @@ import DiscoveryGallery from './DiscoveryGallery.vue'
 const route = useRoute()
 const router = useRouter()
 const { isZh } = useLanguage()
+const { triggerImport } = useDiagramImport()
 const authStore = useAuthStore()
 const notify = useNotifications()
 const username = computed(() => authStore.user?.username || '')
@@ -162,14 +163,24 @@ onMounted(() => {
         <h1 class="text-sm font-semibold text-gray-800">MindGraph</h1>
         <span class="text-xs text-gray-500">宇宙中最强大的AI思维图示生成软件</span>
       </div>
-      <ElButton
-        class="join-workshop-btn"
-        size="small"
-        :icon="Connection"
-        @click="showJoinWorkshopDialog = true"
-      >
-        {{ isZh ? '加入工作坊' : 'Join Workshop' }}
-      </ElButton>
+      <div class="flex items-center gap-2">
+        <ElButton
+          class="import-btn"
+          size="small"
+          :icon="Upload"
+          @click="triggerImport"
+        >
+          {{ isZh ? '导入' : 'Import' }}
+        </ElButton>
+        <ElButton
+          class="join-workshop-btn"
+          size="small"
+          :icon="Connection"
+          @click="showJoinWorkshopDialog = true"
+        >
+          {{ isZh ? '加入工作坊' : 'Join Workshop' }}
+        </ElButton>
+      </div>
     </header>
 
     <!-- Join Workshop Dialog -->
@@ -350,6 +361,19 @@ onMounted(() => {
 
 .mindgraph-logo :deep(img) {
   object-fit: cover;
+}
+
+/* Import button - Swiss Design style */
+.import-btn {
+  --el-button-bg-color: #e7e5e4;
+  --el-button-border-color: #d6d3d1;
+  --el-button-hover-bg-color: #d6d3d1;
+  --el-button-hover-border-color: #a8a29e;
+  --el-button-active-bg-color: #a8a29e;
+  --el-button-active-border-color: #78716c;
+  --el-button-text-color: #1c1917;
+  font-weight: 500;
+  border-radius: 9999px;
 }
 
 /* Join Workshop button - Swiss Design style (matching MindMate) */

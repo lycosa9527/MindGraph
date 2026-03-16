@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.41.0] - 2026-03-17
+
+### Added
+- **Community Feature**: Global community sharing for MindGraph diagrams. Users can share diagrams to a public BBS-like community with thumbnails, likes, and comments.
+- **Community Models**: New `CommunityPost`, `CommunityPostComment`, `CommunityPostLike` models in `models/domain/community.py`.
+- **Community Router**: New `routers/features/community.py` with endpoints for listing, creating, updating, deleting posts; like/unlike; comments; spec JSON and thumbnail serving.
+- **Community Helpers**: New `community_helpers.py` for thumbnail/spec file handling, validation, and post CRUD utilities.
+- **Redis Community Cache**: New `redis_community_cache.py` for post invalidation on updates/deletes.
+- **CommunityPage**: New community page with filters (type, category, sort), infinite scroll, search, "Me" tab for own posts, like/comment/edit/delete.
+- **ExportToCommunityModal**: New modal in CanvasTopBar for sharing diagrams to community—create (title, description, category, auto thumbnail) or edit existing posts.
+- **CommunityPostDetailModal**: New modal for viewing post details, spec import, and engagement (like, comment).
+- **useDiagramImport**: New composable for importing community post specs into the canvas.
+- **Migration Table Order & Verification**: New `migration_table_order.py` and `migration_verification.py` for SQLite migration sequencing and validation.
+
+### Changed
+- **CanvasTopBar**: Added Export to Community button and ExportToCommunityModal integration.
+- **CommunityPage Route**: Added `/community` route and sidebar navigation.
+- **API Client**: Added community endpoints (`getCommunityPosts`, `createCommunityPost`, `updateCommunityPost`, `deleteCommunityPost`, `toggleCommunityPostLike`, `getCommunityPost`, etc.).
+- **Database Config**: Registered Community models for migrations.
+- **SPA Handler**: Added static paths for community thumbnails and spec JSON.
+- **Routers Register**: Registered community feature router.
+- **Diagram/Canvas Components**: Integration updates for community export flow.
+- **Migration Scripts**: Updates to `dump_import_postgres.py`, `migrate_sqlite_to_postgresql.py`, `migration_tables.py`, `data_migration.py`, `table_creation.py` for community tables and migration flow.
+
 ## [5.40.1] - 2026-03-16
 
 ### Added

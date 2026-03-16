@@ -14,14 +14,14 @@ All Rights Reserved
 Proprietary License
 """
 
+import importlib
 import os
 import sqlite3
 import logging
-import importlib.util
+from types import ModuleType
 from typing import Optional, Dict, Any, Tuple
 
 from sqlalchemy import create_engine, inspect
-from sqlalchemy.exc import OperationalError, ProgrammingError
 
 # Import Base directly from models to avoid circular import with config.database
 from models.domain.auth import Base
@@ -56,14 +56,60 @@ except ImportError:
     pass
 
 try:
+    from models.domain.community import (
+        CommunityPost, CommunityPostComment, CommunityPostLike
+    )
+    _ = CommunityPost.__tablename__
+    _ = CommunityPostComment.__tablename__
+    _ = CommunityPostLike.__tablename__
+except ImportError:
+    pass
+
+try:
     from models.domain.pinned_conversations import PinnedConversation
     _ = PinnedConversation.__tablename__
 except ImportError:
     pass
 
 try:
+    from models.domain.library import (
+        LibraryDocument,
+        LibraryDanmaku,
+        LibraryDanmakuLike,
+        LibraryDanmakuReply,
+        LibraryBookmark,
+    )
+    _ = LibraryDocument.__tablename__
+    _ = LibraryDanmaku.__tablename__
+    _ = LibraryDanmakuLike.__tablename__
+    _ = LibraryDanmakuReply.__tablename__
+    _ = LibraryBookmark.__tablename__
+except ImportError:
+    pass
+
+try:
+    from models.domain.user_activity_log import UserActivityLog
+    from models.domain.user_usage_stats import UserUsageStats
+    from models.domain.teacher_usage_config import TeacherUsageConfig
+    _ = UserActivityLog.__tablename__
+    _ = UserUsageStats.__tablename__
+    _ = TeacherUsageConfig.__tablename__
+except ImportError:
+    pass
+
+try:
     from models.domain.dashboard_activity import DashboardActivity
     _ = DashboardActivity.__tablename__
+except ImportError:
+    pass
+
+try:
+    from models.domain.gewe_message import GeweMessage
+    from models.domain.gewe_contact import GeweContact
+    from models.domain.gewe_group_member import GeweGroupMember
+    _ = GeweMessage.__tablename__
+    _ = GeweContact.__tablename__
+    _ = GeweGroupMember.__tablename__
 except ImportError:
     pass
 
@@ -83,9 +129,9 @@ from utils.migration.sqlite.migration_backup import (
     backup_sqlite_database,
     move_sqlite_database_to_backup
 )
-from utils.migration.sqlite.migration_tables import (
-    get_table_migration_order,
-    migrate_table,
+from utils.migration.sqlite.migration_table_order import get_table_migration_order
+from utils.migration.sqlite.migration_tables import migrate_table
+from utils.migration.sqlite.migration_verification import (
     verify_migration,
     create_migration_marker,
     reset_postgresql_sequences
@@ -106,21 +152,29 @@ from utils.migration.sqlite.migration_progress import (
 )
 from utils.migration.sqlite_to_postgresql.table_creation import (
     create_enum_types,
-    create_table_without_indexes,
-    create_table_indexes
+    ensure_missing_tables_created
 )
 
 logger = logging.getLogger(__name__)
 
-PSYCOPG2_AVAILABLE = importlib.util.find_spec('psycopg2') is not None
+try:
+    import psycopg2 as _psycopg2
+    PSYCOPG2_AVAILABLE = _psycopg2 is not None
+except ImportError:
+    PSYCOPG2_AVAILABLE = False
 
 # Lazy import to avoid circular dependency with config.database
-# Use importlib to import at module level while deferring execution
+# Use list to allow mutation without global statement (avoids pylint W0603)
+_CONFIG_DATABASE_CACHE: list[Optional[ModuleType]] = [None]
+
+
 def _get_init_db_func():
     """Get init_db function, importing lazily to avoid circular dependency."""
-    if not hasattr(_get_init_db_func, '_cached_module'):
-        _get_init_db_func._cached_module = importlib.import_module('config.database')
-    return _get_init_db_func._cached_module.init_db
+    cached = _CONFIG_DATABASE_CACHE[0]
+    if cached is None:
+        cached = importlib.import_module('config.database')
+        _CONFIG_DATABASE_CACHE[0] = cached
+    return cached.init_db
 
 
 def migrate_sqlite_to_postgresql(force: bool = False) -> Tuple[bool, Optional[str], Optional[Dict[str, Any]]]:
@@ -345,232 +399,17 @@ def migrate_sqlite_to_postgresql(force: bool = False) -> Tuple[bool, Optional[st
                     len(missing_tables),
                     ', '.join(sorted(missing_tables))
                 )
-
-                # Get tables in migration order (respects foreign key dependencies)
-                migration_order = get_table_migration_order()
-                # Filter to only include missing tables, preserving order
-                tables_to_create = [t for t in migration_order if t in missing_tables]
-                # Add any tables not in migration order (shouldn't happen, but be safe)
-                tables_not_in_order = missing_tables - set(migration_order)
-                if tables_not_in_order:
-                    logger.warning(
-                        "[Migration] Found %d table(s) not in migration order: %s",
-                        len(tables_not_in_order),
-                        ', '.join(sorted(tables_not_in_order))
-                    )
-                    tables_to_create.extend(sorted(tables_not_in_order))
-
-                # Create missing tables one by one in dependency order
-                # This ensures parent tables are created before child tables
-                tables_created = 0
-                tables_failed = []
-
-                # Get existing tables once for performance
-                inspector = inspect(pg_engine)
-                existing_tables_set = set(inspector.get_table_names())
-
-                for table_name in tables_to_create:
-                    try:
-                        table = Base.metadata.tables[table_name]
-
-                        # Create table without indexes first to avoid index creation failures
-                        # This ensures table is created even if indexes already exist
-                        if create_table_without_indexes(
-                            pg_engine, table_name, table, existing_tables_set
-                        ):
-                            # Table created successfully, now add indexes separately
-                            create_table_indexes(pg_engine, table_name, table)
-
-                            inspector = inspect(pg_engine)
-                            if table_name in inspector.get_table_names():
-                                tables_created += 1
-                                logger.info("[Migration] ✓ Created table: %s", table_name)
-                            else:
-                                logger.error(
-                                    "[Migration] ✗ Table creation reported success but table %s doesn't exist",
-                                    table_name
-                                )
-                                tables_failed.append(table_name)
-                        else:
-                            # Table creation failed
-                            tables_failed.append(table_name)
-                    except (OperationalError, ProgrammingError) as table_error:
-                        error_msg = str(table_error).lower()
-                        # Check if error is about table/index already existing
-                        if ("already exists" in error_msg or
-                            "duplicate" in error_msg or
-                            ("relation" in error_msg and "exists" in error_msg)):
-                            # Verify table actually exists (index errors might be caught here)
-                            inspector = inspect(pg_engine)
-                            if table_name in inspector.get_table_names():
-                                logger.debug("[Migration] Table %s already exists: %s", table_name, table_error)
-                                tables_created += 1
-                            else:
-                                # Index/constraint error but table doesn't exist - need to retry
-                                logger.warning(
-                                    "[Migration] Table %s creation error (likely index): %s. "
-                                    "Table doesn't exist, will retry.",
-                                    table_name, table_error
-                                )
-                                tables_failed.append(table_name)
-                        else:
-                            # Check if it's a foreign key dependency error
-                            if "undefinedtable" in error_msg or "does not exist" in error_msg:
-                                # Parent table doesn't exist yet - will retry after other tables are created
-                                logger.debug(
-                                    "[Migration] Table %s depends on missing parent table: %s",
-                                    table_name, table_error
-                                )
-                                tables_failed.append(table_name)
-                            else:
-                                logger.error("[Migration] ✗ Failed to create table %s: %s", table_name, table_error)
-                                tables_failed.append(table_name)
-                    except Exception as table_error:
-                        logger.error("[Migration] ✗ Unexpected error creating table %s: %s", table_name, table_error)
-                        tables_failed.append(table_name)
-
-                # Retry failed tables (dependencies might have been created)
-                # Use multiple retry passes to handle complex dependency chains
-                max_retries = 5  # Increased from 3 to handle complex dependency chains
-                for retry_pass in range(max_retries):
-                    if not tables_failed:
-                        break
-
-                    logger.info(
-                        "[Migration] Retry pass %d/%d: Retrying %d failed table(s): %s",
-                        retry_pass + 1, max_retries, len(tables_failed),
-                        ', '.join(tables_failed)
-                    )
-
-                    # Refresh inspector to get current table state
-                    inspector = inspect(pg_engine)
-                    existing_tables = set(inspector.get_table_names())
-
-                    retry_failed = []
-                    for table_name in tables_failed:
-                        # Check if table was created by another process/retry
-                        if table_name in existing_tables:
-                            logger.debug("[Migration] Table %s now exists (created by another process)", table_name)
-                            tables_created += 1
-                            continue
-
-                        try:
-                            table = Base.metadata.tables[table_name]
-
-                            # Check if parent tables exist (for foreign key dependencies)
-                            parent_tables_missing = []
-                            for fk in table.foreign_keys:
-                                try:
-                                    parent_table = fk.column.table.name
-                                    if parent_table not in existing_tables and parent_table != table_name:
-                                        parent_tables_missing.append(parent_table)
-                                except AttributeError as e:
-                                    logger.error(
-                                        "[Migration] Error getting parent table for FK %s in table %s: %s",
-                                        fk.parent.name if hasattr(fk, 'parent') else 'unknown',
-                                        table_name, e
-                                    )
-                                    # If we can't determine parent table, skip this FK check
-                                    continue
-
-                            if parent_tables_missing:
-                                logger.warning(
-                                    "[Migration] Table %s still waiting for parent tables: %s (existing: %s)",
-                                    table_name, ', '.join(parent_tables_missing),
-                                    ', '.join(sorted(existing_tables))[:200]  # Limit length
-                                )
-                                retry_failed.append(table_name)
-                                continue
-
-                            # Try to create table without indexes first
-                            if create_table_without_indexes(
-                                pg_engine, table_name, table, existing_tables
-                            ):
-                                # Table created, add indexes separately
-                                create_table_indexes(pg_engine, table_name, table)
-
-                                # Verify table was actually created
-                                inspector = inspect(pg_engine)
-                                if table_name in inspector.get_table_names():
-                                    tables_created += 1
-                                    logger.info(
-                                        "[Migration] ✓ Created table (retry %d): %s",
-                                        retry_pass + 1, table_name
-                                    )
-                                    # Refresh existing_tables and inspector so subsequent
-                                    # tables in this pass can see the new table
-                                    inspector = inspect(pg_engine)  # Create fresh inspector
-                                    existing_tables = set(inspector.get_table_names())
-                                else:
-                                    logger.error(
-                                        "[Migration] ✗ Table creation reported success but table %s still missing",
-                                        table_name
-                                    )
-                                    retry_failed.append(table_name)
-                            else:
-                                retry_failed.append(table_name)
-                        except (OperationalError, ProgrammingError) as table_error:
-                            error_msg = str(table_error).lower()
-                            if ("already exists" in error_msg or
-                                "duplicate" in error_msg or
-                                ("relation" in error_msg and "exists" in error_msg)):
-                                # Verify table actually exists
-                                inspector = inspect(pg_engine)
-                                if table_name in inspector.get_table_names():
-                                    logger.debug(
-                                        "[Migration] Table %s already exists (retry %d): %s",
-                                        retry_pass + 1, table_name, table_error
-                                    )
-                                    tables_created += 1
-                                else:
-                                    # Index/constraint error but table doesn't exist
-                                    logger.warning(
-                                        "[Migration] Table %s creation error (likely index): %s. Will retry.",
-                                        table_name, table_error
-                                    )
-                                    retry_failed.append(table_name)
-                            elif "undefinedtable" in error_msg or "does not exist" in error_msg:
-                                # Parent table still missing
-                                logger.debug(
-                                    "[Migration] Table %s still depends on missing parent (retry %d): %s",
-                                    retry_pass + 1, table_name, table_error
-                                )
-                                retry_failed.append(table_name)
-                            else:
-                                logger.error(
-                                    "[Migration] ✗ Failed to create table %s (retry %d): %s",
-                                    retry_pass + 1, table_name, table_error
-                                )
-                                retry_failed.append(table_name)
-                        except Exception as table_error:
-                            logger.error(
-                                "[Migration] ✗ Unexpected error creating table %s (retry %d): %s",
-                                retry_pass + 1, table_name, table_error
-                            )
-                            retry_failed.append(table_name)
-
-                    tables_failed = retry_failed
-
-                # Verify all tables were created
-                inspector = inspect(pg_engine)
-                existing_tables = set(inspector.get_table_names())
-                still_missing = expected_tables - existing_tables
-
-                if still_missing:
-                    logger.error(
-                        "[Migration] CRITICAL: %d table(s) still missing after creation attempt: %s",
-                        len(still_missing),
-                        ', '.join(sorted(still_missing))
-                    )
+                success, error_msg = ensure_missing_tables_created(
+                    pg_engine, missing_tables, expected_tables
+                )
+                if not success:
                     logger.error("[Migration] Cannot proceed with data migration without these tables")
-                    return False, f"Failed to create required tables: {', '.join(sorted(still_missing))}", None
-
+                    return False, error_msg, None
+            else:
                 logger.info(
-                    "[Migration] ✓ All %d required tables exist in PostgreSQL",
+                    "[Migration] ✓ All %d expected tables already exist in PostgreSQL",
                     len(expected_tables)
                 )
-            else:
-                logger.info("[Migration] ✓ All %d expected tables already exist in PostgreSQL", len(expected_tables))
 
             logger.info("[Migration] PostgreSQL tables verified/created successfully")
 

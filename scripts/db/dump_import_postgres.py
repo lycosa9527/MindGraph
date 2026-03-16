@@ -65,7 +65,7 @@ except ImportError:
     start_postgresql_server = None
 
 try:
-    from utils.migration.sqlite.migration_tables import reset_postgresql_sequences
+    from utils.migration.sqlite.migration_verification import reset_postgresql_sequences
 except ImportError:
     reset_postgresql_sequences = None
 

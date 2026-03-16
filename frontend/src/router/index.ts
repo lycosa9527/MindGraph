@@ -76,7 +76,7 @@ const routes: RouteRecordRaw[] = [
     path: '/community',
     name: 'Community',
     component: () => import('@/pages/CommunityPage.vue'),
-    meta: { layout: 'main' },
+    meta: { requiresAuth: true, layout: 'main' },
   },
   {
     path: '/school-zone',

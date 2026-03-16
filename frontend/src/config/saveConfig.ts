@@ -13,3 +13,6 @@ export const SAVE = {
   /** Max spec size for backend (KB) - must match DIAGRAM_MAX_SPEC_SIZE_KB */
   MAX_SPEC_SIZE_KB: 500,
 } as const
+
+/** Session storage key for diagram import from JSON (landing page → canvas) */
+export const IMPORT_SPEC_KEY = 'mindgraph_import_spec'

@@ -91,6 +91,21 @@ def should_serve_vue_spa() -> bool:
     return False
 
 
+def setup_static_files(app: FastAPI) -> None:
+    """
+    Mount /static for backend-generated content (community thumbnails, etc.).
+
+    Must run in both dev and production so community thumbnails and other
+    runtime uploads are always served. In dev, Vite proxies /static to backend.
+    """
+    static_dir = Path(__file__).parent.parent.parent.parent / "static"
+    if static_dir.exists():
+        app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
+        logger.debug("Mounted /static for runtime uploads (community, announcements, etc.)")
+    else:
+        logger.warning("Static directory not found at %s - community thumbnails will 404", static_dir)
+
+
 def setup_vue_spa(app: FastAPI) -> bool:
     """
     Setup Vue SPA serving for production.
@@ -101,6 +116,9 @@ def setup_vue_spa(app: FastAPI) -> bool:
     Returns:
         True if Vue SPA was configured, False if not serving SPA
     """
+    # Always mount /static - needed for community thumbnails in dev and prod
+    setup_static_files(app)
+
     if not should_serve_vue_spa():
         # Don't log misleading message in dev mode - Vite handles frontend, not legacy templates
         if not is_dev_mode():
@@ -119,12 +137,6 @@ def setup_vue_spa(app: FastAPI) -> bool:
     if gallery_dir.exists():
         app.mount("/gallery", StaticFiles(directory=str(gallery_dir)), name="vue-gallery")
         logger.debug("Mounted /gallery for featured diagrams")
-
-    # Mount static folder for runtime uploads (announcement images, etc.)
-    static_dir = Path(__file__).parent.parent.parent.parent / "static"
-    if static_dir.exists():
-        app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
-        logger.debug("Mounted /static for runtime uploads")
 
     return True
 
@@ -170,36 +182,12 @@ def is_spa_route(path: str) -> bool:
 
     API routes (/api/*) and static files (/static/*) are NOT SPA routes.
     """
-    # API routes
-    if path.startswith("/api"):
+    non_spa_prefixes = ("/api", "/static", "/assets", "/ws")
+    if any(path.startswith(p) for p in non_spa_prefixes):
         return False
-
-    # Static files (legacy)
-    if path.startswith("/static"):
+    if path in ["/health", "/healthz", "/ready", "/docs", "/redoc", "/openapi.json"]:
         return False
-
-    # Vue assets
-    if path.startswith("/assets"):
-        return False
-
-    # WebSocket
-    if path.startswith("/ws"):
-        return False
-
-    # Health checks
-    if path in ["/health", "/healthz", "/ready"]:
-        return False
-
-    # OpenAPI docs
-    if path in ["/docs", "/redoc", "/openapi.json"]:
-        return False
-
-    # Exact SPA routes
     if path in VUE_SPA_ROUTES:
         return True
-
     # Catch-all for client-side routing (paths without file extensions)
-    if "." not in path.split("/")[-1]:
-        return True
-
-    return False
+    return "." not in path.split("/")[-1]

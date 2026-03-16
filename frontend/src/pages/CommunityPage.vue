@@ -1,14 +1,33 @@
 <script setup lang="ts">
 /**
  * CommunityPage - Community sharing page (BBS-like)
- * Features: User shared diagrams, likes, comments, filters
+ * Features: User shared diagrams, likes, filters, Me tab, Edit/Delete
  */
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
+import { useInfiniteScroll } from '@vueuse/core'
 
-import { Heart, MessageCircle, Search, Share2, Users } from 'lucide-vue-next'
+import { ElButton, ElEmpty, ElMessageBox, ElSkeleton } from 'element-plus'
+import { Heart, MessageCircle, Pencil, Search, Share2, Trash2 } from 'lucide-vue-next'
 
-// Filter options
+import { CommunityPostDetailModal } from '@/components/community'
+import { ExportToCommunityModal } from '@/components/canvas'
+import { useLanguage, useNotifications } from '@/composables'
+import {
+  deleteCommunityPost,
+  getCommunityPost,
+  getCommunityPosts,
+  toggleCommunityPostLike,
+  type CommunityPost,
+} from '@/utils/apiClient'
+import { useAuthStore } from '@/stores'
+
+const notify = useNotifications()
+const authStore = useAuthStore()
+const { isZh } = useLanguage()
+
+// Filter options - 我的 is shown as header button when authenticated
 const typeOptions = ['全部', 'MindMate', 'MindGraph'] as const
+
 const categoryOptions = [
   '全部',
   '学习笔记',
@@ -18,7 +37,11 @@ const categoryOptions = [
   '创意灵感',
   '知识整理',
 ] as const
+
 const sortOptions = ['最新发布', '最多点赞', '最多评论'] as const
+
+const sortToApi = (s: string) =>
+  s === '最多点赞' ? 'likes' : s === '最多评论' ? 'comments' : 'newest'
 
 // Active filters
 const activeType = ref<string>('全部')
@@ -26,199 +49,131 @@ const activeCategory = ref<string>('全部')
 const activeSort = ref<string>('最新发布')
 const searchQuery = ref('')
 
-// Shared post type
-interface SharedPost {
-  id: string
-  title: string
-  description: string
-  thumbnail: string
-  type: 'MindMate' | 'MindGraph'
-  category: string
-  author: {
-    name: string
-    avatar: string
-  }
-  likes: number
-  comments: number
-  shares: number
-  createdAt: string
-  isLiked: boolean
+// Data
+const posts = ref<CommunityPost[]>([])
+const total = ref(0)
+const page = ref(1)
+const pageSize = 20
+const isLoading = ref(false)
+const loadError = ref<string | null>(null)
+
+// Edit modal
+const showEditModal = ref(false)
+const editingPost = ref<(CommunityPost & { spec?: unknown }) | null>(null)
+
+// Detail modal (post click)
+const showDetailModal = ref(false)
+const selectedPostId = ref<string | null>(null)
+const selectedPostPreview = ref<CommunityPost | null>(null)
+
+function openPostDetail(p: CommunityPost) {
+  selectedPostId.value = p.id
+  selectedPostPreview.value = p
+  showDetailModal.value = true
 }
 
-// Mock shared posts data
-const mockPosts: SharedPost[] = [
-  {
-    id: '1',
-    title: '高中物理力学知识框架',
-    description:
-      '整理了高中物理力学部分的核心知识点，包括牛顿三定律、动量守恒等，希望对大家有帮助！',
-    thumbnail: '',
-    type: 'MindGraph',
-    category: '学习笔记',
-    author: { name: '学霸小明', avatar: '🧑‍🎓' },
-    likes: 234,
-    comments: 45,
-    shares: 12,
-    createdAt: '2小时前',
-    isLiked: false,
-  },
-  {
-    id: '2',
-    title: '《三体》读书笔记思维导图',
-    description: '三体三部曲的完整梳理，包含主要人物关系、科技概念和故事脉络。',
-    thumbnail: '',
-    type: 'MindGraph',
-    category: '读书感悟',
-    author: { name: '科幻迷', avatar: '🚀' },
-    likes: 567,
-    comments: 89,
-    shares: 45,
-    createdAt: '5小时前',
-    isLiked: true,
-  },
-  {
-    id: '3',
-    title: '小学三年级语文教学设计',
-    description: '基于思维图示的语文课堂教学设计，培养学生的思维能力和阅读理解能力。',
-    thumbnail: '',
-    type: 'MindGraph',
-    category: '教学设计',
-    author: { name: '王老师', avatar: '👩‍🏫' },
-    likes: 189,
-    comments: 34,
-    shares: 28,
-    createdAt: '1天前',
-    isLiked: false,
-  },
-  {
-    id: '4',
-    title: '产品经理年度工作总结',
-    description: '用思维导图总结了2024年的产品工作，包括项目复盘、能力成长和未来规划。',
-    thumbnail: '',
-    type: 'MindGraph',
-    category: '工作总结',
-    author: { name: 'PM小李', avatar: '💼' },
-    likes: 345,
-    comments: 56,
-    shares: 23,
-    createdAt: '2天前',
-    isLiked: false,
-  },
-  {
-    id: '5',
-    title: 'AI辅助学习英语的方法',
-    description: '分享我用MindMate学习英语的心得，包括词汇记忆、语法理解和口语练习。',
-    thumbnail: '',
-    type: 'MindMate',
-    category: '学习笔记',
-    author: { name: '英语爱好者', avatar: '🌍' },
-    likes: 456,
-    comments: 78,
-    shares: 34,
-    createdAt: '3天前',
-    isLiked: true,
-  },
-  {
-    id: '6',
-    title: '创业公司商业模式画布',
-    description: '用概念图梳理创业想法，从价值主张到客户细分，全方位思考商业模式。',
-    thumbnail: '',
-    type: 'MindGraph',
-    category: '创意灵感',
-    author: { name: '创业者阿杰', avatar: '💡' },
-    likes: 234,
-    comments: 45,
-    shares: 19,
-    createdAt: '3天前',
-    isLiked: false,
-  },
-  {
-    id: '7',
-    title: '初中化学元素周期表速记',
-    description: '用气泡图帮助记忆元素周期表，附带各族元素的性质特点。',
-    thumbnail: '',
-    type: 'MindGraph',
-    category: '知识整理',
-    author: { name: '化学课代表', avatar: '🧪' },
-    likes: 678,
-    comments: 123,
-    shares: 56,
-    createdAt: '4天前',
-    isLiked: false,
-  },
-  {
-    id: '8',
-    title: '班级读书分享会策划',
-    description: '主题班会活动策划思维导图，包括活动流程、分组安排和评价标准。',
-    thumbnail: '',
-    type: 'MindGraph',
-    category: '教学设计',
-    author: { name: '班主任张老师', avatar: '📚' },
-    likes: 123,
-    comments: 23,
-    shares: 15,
-    createdAt: '5天前',
-    isLiked: false,
-  },
-  {
-    id: '9',
-    title: '用AI整理会议纪要',
-    description: '分享如何用MindMate快速整理会议内容，生成结构化的会议纪要。',
-    thumbnail: '',
-    type: 'MindMate',
-    category: '工作总结',
-    author: { name: '效率达人', avatar: '⚡' },
-    likes: 345,
-    comments: 67,
-    shares: 28,
-    createdAt: '1周前',
-    isLiked: true,
-  },
-  {
-    id: '10',
-    title: '《活着》人物关系图',
-    description: '余华《活着》中福贵一家的命运轨迹和人物关系梳理。',
-    thumbnail: '',
-    type: 'MindGraph',
-    category: '读书感悟',
-    author: { name: '文学青年', avatar: '📖' },
-    likes: 456,
-    comments: 89,
-    shares: 41,
-    createdAt: '1周前',
-    isLiked: false,
-  },
-]
-
-// Filtered and sorted posts
-const filteredPosts = computed(() => {
-  let posts = mockPosts.filter((post) => {
-    const matchesType = activeType.value === '全部' || post.type === activeType.value
-    const matchesCategory =
-      activeCategory.value === '全部' || post.category === activeCategory.value
-    const matchesSearch =
-      !searchQuery.value ||
-      post.title.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-      post.description.toLowerCase().includes(searchQuery.value.toLowerCase())
-    return matchesType && matchesCategory && matchesSearch
-  })
-
-  // Sort
-  if (activeSort.value === '最多点赞') {
-    posts = [...posts].sort((a, b) => b.likes - a.likes)
-  } else if (activeSort.value === '最多评论') {
-    posts = [...posts].sort((a, b) => b.comments - a.comments)
+function handleDetailLikeToggled(updated: CommunityPost) {
+  const idx = posts.value.findIndex((x) => x.id === updated.id)
+  if (idx >= 0) {
+    posts.value[idx] = { ...posts.value[idx], ...updated }
   }
+}
 
-  return posts
+const isLoadingMore = ref(false)
+const scrollContainerRef = ref<HTMLElement | null>(null)
+
+async function fetchPosts(append = false) {
+  if (!authStore.isAuthenticated && activeType.value === '我的') return
+
+  if (append) {
+    isLoadingMore.value = true
+  } else {
+    isLoading.value = true
+  }
+  loadError.value = null
+  try {
+    const typeFilter =
+      activeType.value === '全部' || activeType.value === '我的'
+        ? undefined
+        : activeType.value
+    const categoryFilter =
+      activeCategory.value === '全部' ? undefined : activeCategory.value
+
+    const res = await getCommunityPosts({
+      page: page.value,
+      pageSize,
+      mine: activeType.value === '我的',
+      type: typeFilter,
+      category: categoryFilter,
+      sort: sortToApi(activeSort.value),
+    })
+    if (append) {
+      posts.value = [...posts.value, ...res.posts]
+    } else {
+      posts.value = res.posts
+    }
+    total.value = res.total
+  } catch (e) {
+    loadError.value = e instanceof Error ? e.message : 'Failed to load posts'
+    if (!append) posts.value = []
+  } finally {
+    isLoading.value = false
+    isLoadingMore.value = false
+  }
+}
+
+function loadMore() {
+  if (isLoading.value || isLoadingMore.value) return
+  const totalPages = Math.ceil(total.value / pageSize)
+  if (page.value >= totalPages) return
+  if (searchQuery.value.trim()) return
+  page.value += 1
+  fetchPosts(true)
+}
+
+const canLoadMore = computed(
+  () =>
+    !isLoading.value &&
+    !isLoadingMore.value &&
+    page.value < Math.ceil(total.value / pageSize) &&
+    !searchQuery.value.trim()
+)
+
+useInfiniteScroll(
+  scrollContainerRef,
+  () => loadMore(),
+  { distance: 200, direction: 'bottom', canLoadMore: () => canLoadMore.value }
+)
+
+onMounted(() => {
+  fetchPosts()
+})
+
+watch(
+  [activeType, activeCategory, activeSort],
+  () => {
+    page.value = 1
+    fetchPosts()
+  }
+)
+
+// Client-side search filter (API doesn't support search)
+const filteredPosts = computed(() => {
+  if (!searchQuery.value.trim()) return posts.value
+  const q = searchQuery.value.toLowerCase()
+  return posts.value.filter(
+    (p) =>
+      p.title.toLowerCase().includes(q) ||
+      (p.description?.toLowerCase() ?? '').includes(q)
+  )
 })
 
 function setType(type: string) {
   activeType.value = type
 }
 
-function setCategory(category: string) {
-  activeCategory.value = category
+function setCategory(cat: string) {
+  activeCategory.value = cat
 }
 
 function setSort(sort: string) {
@@ -226,18 +181,86 @@ function setSort(sort: string) {
 }
 
 function formatNumber(num: number): string {
-  if (num >= 1000) {
-    return (num / 1000).toFixed(1) + 'k'
-  }
+  if (num >= 1000) return (num / 1000).toFixed(1) + 'k'
   return num.toString()
 }
 
-function toggleLike(post: SharedPost) {
-  post.isLiked = !post.isLiked
-  post.likes += post.isLiked ? 1 : -1
+function formatDate(iso: string): string {
+  const d = new Date(iso)
+  const now = new Date()
+  const diffMs = now.getTime() - d.getTime()
+  const diffMins = Math.floor(diffMs / 60000)
+  const diffHours = Math.floor(diffMs / 3600000)
+  const diffDays = Math.floor(diffMs / 86400000)
+  if (diffMins < 60) return isZh.value ? `${diffMins}分钟前` : `${diffMins}m ago`
+  if (diffHours < 24) return isZh.value ? `${diffHours}小时前` : `${diffHours}h ago`
+  if (diffDays < 7) return isZh.value ? `${diffDays}天前` : `${diffDays}d ago`
+  return isZh.value ? d.toLocaleDateString('zh-CN') : d.toLocaleDateString()
 }
 
-// Generate placeholder colors based on post id
+async function toggleLike(post: CommunityPost) {
+  if (!authStore.isAuthenticated) return
+  try {
+    const res = await toggleCommunityPostLike(post.id)
+    post.is_liked = res.is_liked
+    post.likes_count = res.likes_count
+  } catch (e) {
+    notify.error(e instanceof Error ? e.message : 'Failed to toggle like')
+  }
+}
+
+function canEditPost(post: CommunityPost): boolean {
+  return Boolean(post.can_edit)
+}
+
+async function openEdit(post: CommunityPost) {
+  try {
+    const full = await getCommunityPost(post.id)
+    editingPost.value = full
+    showEditModal.value = true
+  } catch (e) {
+    notify.error(e instanceof Error ? e.message : 'Failed to load post')
+  }
+}
+
+function closeEditModal() {
+  showEditModal.value = false
+  editingPost.value = null
+}
+
+async function handleEditSuccess(updated: CommunityPost) {
+  const idx = posts.value.findIndex((p) => p.id === updated.id)
+  if (idx >= 0) {
+    posts.value[idx] = { ...posts.value[idx], ...updated }
+  }
+  closeEditModal()
+}
+
+async function confirmDelete(post: CommunityPost) {
+  try {
+    await ElMessageBox.confirm(
+      isZh.value ? '确定删除此分享？' : 'Delete this post?',
+      isZh.value ? '确认删除' : 'Confirm Delete',
+      {
+        confirmButtonText: isZh.value ? '删除' : 'Delete',
+        cancelButtonText: isZh.value ? '取消' : 'Cancel',
+        type: 'warning',
+      }
+    )
+  } catch {
+    return
+  }
+
+  try {
+    await deleteCommunityPost(post.id)
+    notify.success(isZh.value ? '已删除' : 'Deleted')
+    posts.value = posts.value.filter((p) => p.id !== post.id)
+    total.value = Math.max(0, total.value - 1)
+  } catch (e) {
+    notify.error(e instanceof Error ? e.message : 'Failed to delete')
+  }
+}
+
 function getPlaceholderColor(id: string): string {
   const colors = [
     'from-rose-400 to-pink-500',
@@ -260,21 +283,30 @@ function getPlaceholderColor(id: string): string {
     <div class="community-header px-6 py-5 bg-white border-b border-stone-200">
       <div class="flex items-center justify-between mb-4">
         <h1 class="text-xl font-semibold text-stone-900">社区分享</h1>
-        <!-- Search -->
-        <div class="relative">
-          <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" />
-          <input
-            v-model="searchQuery"
-            type="text"
-            placeholder="搜索作品..."
-            class="pl-10 pr-4 py-2 w-64 rounded-lg border border-stone-200 text-sm focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
-          />
+        <div class="flex items-center gap-3">
+          <div class="relative">
+            <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" />
+            <input
+              v-model="searchQuery"
+              type="text"
+              :placeholder="isZh ? '搜索作品...' : 'Search posts...'"
+              class="pl-10 pr-4 py-2 w-64 rounded-lg border border-stone-200 text-sm focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
+            />
+          </div>
+          <ElButton
+            v-if="authStore.isAuthenticated"
+            size="small"
+            :type="activeType === '我的' ? 'primary' : 'default'"
+            class="my-posts-btn"
+            @click="setType('我的')"
+          >
+            {{ isZh ? '我的' : 'My posts' }}
+          </ElButton>
         </div>
       </div>
 
       <!-- Filter rows -->
       <div class="space-y-3">
-        <!-- Type filter -->
         <div class="flex items-center gap-3">
           <span class="text-sm font-medium text-stone-600 w-12 flex-shrink-0">类型</span>
           <div class="flex flex-wrap gap-2">
@@ -294,27 +326,25 @@ function getPlaceholderColor(id: string): string {
           </div>
         </div>
 
-        <!-- Category filter -->
         <div class="flex items-center gap-3">
           <span class="text-sm font-medium text-stone-600 w-12 flex-shrink-0">分类</span>
           <div class="flex flex-wrap gap-2">
             <button
-              v-for="category in categoryOptions"
-              :key="category"
+              v-for="cat in categoryOptions"
+              :key="cat"
               :class="[
                 'px-3 py-1.5 rounded-full text-sm font-medium transition-all',
-                activeCategory === category
+                activeCategory === cat
                   ? 'bg-stone-900 text-white'
                   : 'bg-stone-100 text-stone-600 hover:bg-stone-200',
               ]"
-              @click="setCategory(category)"
+              @click="setCategory(cat)"
             >
-              {{ category }}
+              {{ cat }}
             </button>
           </div>
         </div>
 
-        <!-- Sort filter -->
         <div class="flex items-center gap-3">
           <span class="text-sm font-medium text-stone-600 w-12 flex-shrink-0">排序</span>
           <div class="flex flex-wrap gap-2">
@@ -337,22 +367,53 @@ function getPlaceholderColor(id: string): string {
     </div>
 
     <!-- Posts grid -->
-    <div class="community-grid flex-1 overflow-y-auto p-6">
+    <div
+      ref="scrollContainerRef"
+      class="community-grid flex-1 overflow-y-auto p-6"
+    >
       <div
-        v-if="filteredPosts.length > 0"
+        v-if="loadError"
+        class="flex flex-col items-center justify-center py-8 text-rose-600"
+      >
+        <p>{{ loadError }}</p>
+      </div>
+
+      <ElSkeleton
+        v-else-if="isLoading && posts.length === 0"
+        :rows="8"
+        animated
+        class="p-4"
+      />
+
+      <div
+        v-else-if="filteredPosts.length > 0"
         class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5"
       >
         <div
           v-for="post in filteredPosts"
           :key="post.id"
           class="post-card bg-white rounded-xl shadow-sm border border-stone-100 overflow-hidden group cursor-pointer hover:shadow-md transition-all"
+          @click="openPostDetail(post)"
         >
           <!-- Thumbnail -->
           <div
-            :class="['aspect-[16/10] relative', 'bg-gradient-to-br', getPlaceholderColor(post.id)]"
+            :class="[
+              'aspect-[16/10] relative',
+              post.thumbnail_url ? '' : 'bg-gradient-to-br',
+              post.thumbnail_url ? '' : getPlaceholderColor(post.id),
+            ]"
           >
-            <!-- Placeholder pattern -->
-            <div class="absolute inset-0 flex items-center justify-center opacity-20">
+            <img
+              v-if="post.thumbnail_url"
+              :src="post.thumbnail_url"
+              :alt="post.title"
+              loading="lazy"
+              class="w-full h-full object-cover"
+            />
+            <div
+              v-else
+              class="absolute inset-0 flex items-center justify-center opacity-20"
+            >
               <svg
                 class="w-16 h-16 text-white"
                 viewBox="0 0 24 24"
@@ -360,25 +421,20 @@ function getPlaceholderColor(id: string): string {
                 stroke="currentColor"
                 stroke-width="1.5"
               >
-                <circle
-                  cx="12"
-                  cy="12"
-                  r="3"
-                />
+                <circle cx="12" cy="12" r="3" />
                 <path d="M12 9V3" />
                 <path d="M12 15v6" />
                 <path d="M9 12H3" />
                 <path d="M15 12h6" />
               </svg>
             </div>
-            <!-- Type badge -->
             <div
               class="absolute top-2 left-2 bg-white/90 text-xs font-medium px-2 py-1 rounded-full text-stone-700"
             >
-              {{ post.type }}
+              MindGraph
             </div>
-            <!-- Category badge -->
             <div
+              v-if="post.category"
               class="absolute top-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded-full"
             >
               {{ post.category }}
@@ -387,25 +443,21 @@ function getPlaceholderColor(id: string): string {
 
           <!-- Content -->
           <div class="p-4">
-            <!-- Author -->
             <div class="flex items-center gap-2 mb-3">
               <div
                 class="w-7 h-7 rounded-full bg-stone-100 flex items-center justify-center text-sm"
               >
-                {{ post.author.avatar }}
+                {{ post.author.avatar ?? '👤' }}
               </div>
-              <span class="text-sm text-stone-600">{{ post.author.name }}</span>
-              <span class="text-xs text-stone-400 ml-auto">{{ post.createdAt }}</span>
+              <span class="text-sm text-stone-600">{{ post.author.name ?? 'Anonymous' }}</span>
+              <span class="text-xs text-stone-400 ml-auto">{{ formatDate(post.created_at) }}</span>
             </div>
 
-            <!-- Title & Description -->
-            <h3
-              class="text-sm font-semibold text-stone-800 mb-2 line-clamp-1 group-hover:text-rose-600 transition-colors"
-            >
+            <h3 class="text-sm font-semibold text-stone-800 mb-2 line-clamp-1 group-hover:text-rose-600 transition-colors">
               {{ post.title }}
             </h3>
             <p class="text-xs text-stone-500 line-clamp-2 mb-3">
-              {{ post.description }}
+              {{ post.description || '' }}
             </p>
 
             <!-- Actions -->
@@ -413,49 +465,104 @@ function getPlaceholderColor(id: string): string {
               <button
                 :class="[
                   'flex items-center gap-1 text-xs transition-colors',
-                  post.isLiked ? 'text-rose-500' : 'text-stone-400 hover:text-rose-500',
+                  post.is_liked ? 'text-rose-500' : 'text-stone-400 hover:text-rose-500',
                 ]"
                 @click.stop="toggleLike(post)"
               >
                 <Heart
                   class="w-4 h-4"
-                  :fill="post.isLiked ? 'currentColor' : 'none'"
+                  :fill="post.is_liked ? 'currentColor' : 'none'"
                 />
-                {{ formatNumber(post.likes) }}
+                {{ formatNumber(post.likes_count) }}
               </button>
               <button
                 class="flex items-center gap-1 text-xs text-stone-400 hover:text-blue-500 transition-colors"
               >
                 <MessageCircle class="w-4 h-4" />
-                {{ formatNumber(post.comments) }}
+                {{ formatNumber(post.comments_count) }}
               </button>
-              <button
-                class="flex items-center gap-1 text-xs text-stone-400 hover:text-green-500 transition-colors ml-auto"
-              >
-                <Share2 class="w-4 h-4" />
-                {{ formatNumber(post.shares) }}
-              </button>
+              <div class="ml-auto flex items-center gap-2">
+                <button
+                  v-if="canEditPost(post)"
+                  class="flex items-center gap-1 text-xs text-stone-400 hover:text-blue-500 transition-colors"
+                  @click.stop="openEdit(post)"
+                >
+                  <Pencil class="w-4 h-4" />
+                  {{ isZh ? '编辑' : 'Edit' }}
+                </button>
+                <button
+                  v-if="canEditPost(post)"
+                  class="flex items-center gap-1 text-xs text-stone-400 hover:text-rose-500 transition-colors"
+                  @click.stop="confirmDelete(post)"
+                >
+                  <Trash2 class="w-4 h-4" />
+                  {{ isZh ? '删除' : 'Delete' }}
+                </button>
+              </div>
             </div>
           </div>
         </div>
+
+        <div
+          v-if="isLoadingMore"
+          class="col-span-full flex justify-center py-6 text-stone-400 text-sm"
+        >
+          {{ isZh ? '加载更多...' : 'Loading more...' }}
+        </div>
       </div>
 
-      <!-- Empty state -->
-      <div
+      <ElEmpty
         v-else
-        class="flex flex-col items-center justify-center h-full text-stone-400"
-      >
-        <Users class="w-16 h-16 mb-4 opacity-30" />
-        <p class="text-lg font-medium mb-1">没有找到匹配的作品</p>
-        <p class="text-sm">尝试调整筛选条件或搜索关键词</p>
-      </div>
+        :description="
+          isZh ? '没有找到匹配的作品，尝试调整筛选条件或搜索关键词' : 'No posts found. Try adjusting filters or search'
+        "
+        :image-size="120"
+        class="flex-1 flex items-center justify-center min-h-[300px]"
+      />
     </div>
+
+    <!-- Edit modal -->
+    <ExportToCommunityModal
+      v-model:visible="showEditModal"
+      mode="edit"
+      :diagram-type="editingPost?.diagram_type ?? 'mind_map'"
+      :initial-post="editingPost"
+      @success="handleEditSuccess"
+    />
+
+    <!-- Post detail modal -->
+    <CommunityPostDetailModal
+      v-model:visible="showDetailModal"
+      :post-id="selectedPostId"
+      :post-preview="selectedPostPreview"
+      @like-toggled="handleDetailLikeToggled"
+    />
   </div>
 </template>
 
 <style scoped>
 .community-page {
   min-height: 0;
+}
+
+.my-posts-btn {
+  font-weight: 500;
+  border-radius: 9999px;
+}
+
+.my-posts-btn.el-button--default {
+  --el-button-bg-color: #f5f5f4;
+  --el-button-border-color: #e7e5e4;
+  --el-button-hover-bg-color: #e7e5e4;
+  --el-button-hover-border-color: #d6d3d1;
+  --el-button-text-color: #57534e;
+}
+
+.my-posts-btn.el-button--primary {
+  --el-button-bg-color: #1c1917;
+  --el-button-border-color: #1c1917;
+  --el-button-hover-bg-color: #292524;
+  --el-button-hover-border-color: #292524;
 }
 
 .post-card {
@@ -468,7 +575,6 @@ function getPlaceholderColor(id: string): string {
   transform: translateY(-2px);
 }
 
-/* Custom scrollbar */
 .community-grid::-webkit-scrollbar {
   width: 6px;
 }
@@ -486,7 +592,6 @@ function getPlaceholderColor(id: string): string {
   background: #a8a29e;
 }
 
-/* Line clamp */
 .line-clamp-1 {
   display: -webkit-box;
   -webkit-line-clamp: 1;

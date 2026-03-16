@@ -289,18 +289,20 @@ class RedisDiagramCache:
         try:
             db = SessionLocal()
             try:
-                diagram = db.query(Diagram).filter(
+                rows = db.query(Diagram).filter(
                     Diagram.id == diagram_id,
                     Diagram.user_id == user_id
-                ).first()
-
-                if not diagram:
+                ).update(
+                    {
+                        Diagram.title: title,
+                        Diagram.spec: spec_json,
+                        Diagram.thumbnail: thumbnail,
+                        Diagram.updated_at: updated_at,
+                    },
+                    synchronize_session=False
+                )
+                if rows == 0:
                     return False
-
-                diagram.title = title
-                diagram.spec = spec_json
-                diagram.thumbnail = thumbnail
-                diagram.updated_at = updated_at
                 db.commit()
                 return True
             except Exception as e:
@@ -356,29 +358,32 @@ class RedisDiagramCache:
                     return None
 
                 # Parse spec JSON
+                spec_str = str(getattr(diagram, 'spec', '{}'))
                 try:
-                    spec = json.loads(diagram.spec)
+                    spec = json.loads(spec_str)
                 except json.JSONDecodeError:
                     spec = {}
 
+                created_at_val = getattr(diagram, 'created_at', None)
+                updated_at_val = getattr(diagram, 'updated_at', None)
                 diagram_data = {
-                    'id': diagram.id,
-                    'user_id': diagram.user_id,
-                    'title': diagram.title,
-                    'diagram_type': diagram.diagram_type,
+                    'id': getattr(diagram, 'id', ''),
+                    'user_id': getattr(diagram, 'user_id', 0),
+                    'title': getattr(diagram, 'title', ''),
+                    'diagram_type': getattr(diagram, 'diagram_type', ''),
                     'spec': spec,
-                    'language': diagram.language,
-                    'thumbnail': diagram.thumbnail,
+                    'language': getattr(diagram, 'language', 'zh'),
+                    'thumbnail': getattr(diagram, 'thumbnail', None),
                     'created_at': (
-                        diagram.created_at.isoformat()
-                        if diagram.created_at else None
+                        created_at_val.isoformat()
+                        if created_at_val is not None else None
                     ),
                     'updated_at': (
-                        diagram.updated_at.isoformat()
-                        if diagram.updated_at else None
+                        updated_at_val.isoformat()
+                        if updated_at_val is not None else None
                     ),
-                    'is_deleted': diagram.is_deleted,
-                    'is_pinned': diagram.is_pinned if hasattr(diagram, 'is_pinned') else False
+                    'is_deleted': getattr(diagram, 'is_deleted', False),
+                    'is_pinned': getattr(diagram, 'is_pinned', False)
                 }
 
                 # Cache in Redis
@@ -389,8 +394,8 @@ class RedisDiagramCache:
                             diagram_key = self._get_diagram_key(user_id, diagram_id)
                             meta_key = self._get_user_meta_key(user_id)
                             updated_ts = (
-                                diagram.updated_at.timestamp()
-                                if diagram.updated_at else time.time()
+                                updated_at_val.timestamp()
+                                if updated_at_val is not None else time.time()
                             )
 
                             pipe = redis.pipeline()
@@ -504,13 +509,17 @@ class RedisDiagramCache:
 
                 items = []
                 for d in diagrams:
+                    updated_at_val = getattr(d, 'updated_at', None)
                     items.append({
-                        'id': d.id,
-                        'title': d.title,
-                        'diagram_type': d.diagram_type,
-                        'thumbnail': d.thumbnail,
-                        'updated_at': d.updated_at.isoformat() if d.updated_at else None,
-                        'is_pinned': d.is_pinned if hasattr(d, 'is_pinned') else False
+                        'id': getattr(d, 'id', ''),
+                        'title': getattr(d, 'title', ''),
+                        'diagram_type': getattr(d, 'diagram_type', ''),
+                        'thumbnail': getattr(d, 'thumbnail', None),
+                        'updated_at': (
+                            updated_at_val.isoformat()
+                            if updated_at_val is not None else None
+                        ),
+                        'is_pinned': getattr(d, 'is_pinned', False)
                     })
                 return items
             finally:
@@ -542,11 +551,19 @@ class RedisDiagramCache:
                     return False, "Diagram not found"
 
                 # If already deleted, return success (idempotent delete)
-                if diagram.is_deleted:
+                if getattr(diagram, 'is_deleted', False):
                     return True, None
 
-                diagram.is_deleted = True
-                diagram.updated_at = now
+                db.query(Diagram).filter(
+                    Diagram.id == diagram_id,
+                    Diagram.user_id == user_id
+                ).update(
+                    {
+                        Diagram.is_deleted: True,
+                        Diagram.updated_at: now,
+                    },
+                    synchronize_session=False
+                )
                 db.commit()
             except Exception as e:
                 db.rollback()
@@ -577,28 +594,27 @@ class RedisDiagramCache:
                                 Diagram.user_id == user_id
                             ).first()
                             if diagram:
+                                spec_str = str(getattr(diagram, 'spec', '{}'))
                                 try:
-                                    spec = json.loads(diagram.spec)
+                                    spec = json.loads(spec_str)
                                 except json.JSONDecodeError:
                                     spec = {}
+                                created_at_val = getattr(diagram, 'created_at', None)
                                 diagram_data = {
-                                    'id': diagram.id,
-                                    'user_id': diagram.user_id,
-                                    'title': diagram.title,
-                                    'diagram_type': diagram.diagram_type,
+                                    'id': getattr(diagram, 'id', ''),
+                                    'user_id': getattr(diagram, 'user_id', 0),
+                                    'title': getattr(diagram, 'title', ''),
+                                    'diagram_type': getattr(diagram, 'diagram_type', ''),
                                     'spec': spec,
-                                    'language': diagram.language,
-                                    'thumbnail': diagram.thumbnail,
+                                    'language': getattr(diagram, 'language', 'zh'),
+                                    'thumbnail': getattr(diagram, 'thumbnail', None),
                                     'created_at': (
-                                        diagram.created_at.isoformat()
-                                        if diagram.created_at else None
+                                        created_at_val.isoformat()
+                                        if created_at_val is not None else None
                                     ),
                                     'updated_at': now.isoformat(),
                                     'is_deleted': True,
-                                    'is_pinned': (
-                                        diagram.is_pinned
-                                        if hasattr(diagram, 'is_pinned') else False
-                                    )
+                                    'is_pinned': getattr(diagram, 'is_pinned', False)
                                 }
                             else:
                                 diagram_data = None
@@ -681,17 +697,19 @@ class RedisDiagramCache:
         try:
             db = SessionLocal()
             try:
-                diagram = db.query(Diagram).filter(
+                rows = db.query(Diagram).filter(
                     Diagram.id == diagram_id,
                     Diagram.user_id == user_id,
                     Diagram.is_deleted.is_(False)
-                ).first()
-
-                if not diagram:
+                ).update(
+                    {
+                        Diagram.is_pinned: pinned,
+                        Diagram.updated_at: now,
+                    },
+                    synchronize_session=False
+                )
+                if rows == 0:
                     return False, "Diagram not found"
-
-                diagram.is_pinned = pinned
-                diagram.updated_at = now
                 db.commit()
             except Exception as e:
                 db.rollback()

@@ -24,9 +24,10 @@ import {
 import { ChatDotRound, Connection, Download } from '@element-plus/icons-vue'
 
 // Using Lucide icons for a more modern, cute look
-import { ArrowLeft, FileImage, FileJson, FileText, ImageDown, RotateCcw } from 'lucide-vue-next'
+import { ArrowLeft, FileImage, FileJson, FileText, ImageDown, RotateCcw, Share2 } from 'lucide-vue-next'
 
 import { DiagramSlotFullModal } from '@/components/canvas'
+import { useFeatureFlags } from '@/composables'
 import { WorkshopModal } from '@/components/workshop'
 import {
   eventBus,
@@ -58,6 +59,7 @@ const diagramStore = useDiagramStore()
 const savedDiagramsStore = useSavedDiagramsStore()
 const authStore = useAuthStore()
 const panelsStore = usePanelsStore()
+const { featureCommunity } = useFeatureFlags()
 
 // Diagram type from store (when loaded) or route query (for new diagrams)
 const diagramTypeForName = computed(
@@ -163,12 +165,20 @@ watch(
 // Cleanup watcher on unmount
 onUnmounted(() => {
   disconnect()
+  eventBus.removeAllListenersForOwner('CanvasTopBar')
 })
 
 // Computed for save button state
 const isAlreadySaved = computed(() => savedDiagramsStore.isActiveDiagramSaved)
 
 onMounted(() => {
+  eventBus.onWithOwner(
+    'canvas:show_slot_full_modal',
+    () => {
+      showSlotFullModal.value = true
+    },
+    'CanvasTopBar'
+  )
   // Initialize title if not already set (new diagram)
   if (!diagramStore.title) {
     const topicText = diagramStore.getTopicNodeText()
@@ -528,6 +538,14 @@ async function handleReset() {
               >
                 <FileJson class="w-4 h-4 mr-2 text-amber-500" />
                 {{ isZh ? '导出为 JSON' : 'Export as JSON' }}
+              </ElDropdownItem>
+              <ElDropdownItem
+                v-if="featureCommunity && authStore.isAuthenticated"
+                divided
+                command="community"
+              >
+                <Share2 class="w-4 h-4 mr-2 text-rose-500" />
+                {{ isZh ? '分享到社区' : 'Share to Community' }}
               </ElDropdownItem>
             </ElDropdownMenu>
         </template>

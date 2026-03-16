@@ -87,6 +87,13 @@ function handleKeydown(event: KeyboardEvent) {
   }
 }
 
+// Curvature per diagram type: mindmap uses tighter curves (like double bubble map differences)
+const curvature = computed(() => {
+  const dt = props.data?.diagramType as DiagramType | undefined
+  if (dt === 'mindmap' || dt === 'mind_map') return 0.12
+  return 0.25
+})
+
 // Calculate bezier path
 const path = computed(() => {
   const [edgePath, labelX, labelY] = getBezierPath({
@@ -96,7 +103,7 @@ const path = computed(() => {
     targetX: props.targetX,
     targetY: props.targetY,
     targetPosition: props.targetPosition,
-    curvature: 0.25,
+    curvature: curvature.value,
   })
   return { edgePath, labelX, labelY }
 })

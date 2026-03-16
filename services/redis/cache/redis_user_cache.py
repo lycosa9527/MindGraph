@@ -88,8 +88,8 @@ class UserCache:
         """
         user = User()
         user.id = int(data.get('id', '0'))
-        user.phone = data.get('phone') or None
-        user.password_hash = data.get('password_hash') or None
+        user.phone = data.get('phone') or ''
+        user.password_hash = data.get('password_hash') or ''
         user.name = data.get('name') or None
         org_id_val = data.get('organization_id')
         user.organization_id = int(org_id_val) if org_id_val else None

@@ -232,6 +232,50 @@ export async function apiUpload(
   return response
 }
 
+/**
+ * PUT request with FormData (for multipart updates)
+ */
+export async function apiPutFormData(
+  endpoint: string,
+  formData: FormData,
+  options: RequestInit = {}
+): Promise<Response> {
+  const url = endpoint.startsWith('/') ? endpoint : `${API_BASE}/${endpoint}`
+
+  const headers: Record<string, string> = {
+    ...(options.headers as Record<string, string>),
+  }
+  delete headers['Content-Type']
+
+  let response = await fetch(url, {
+    ...options,
+    method: 'PUT',
+    headers,
+    body: formData,
+    credentials: 'same-origin',
+  })
+
+  if (response.status === 401) {
+    console.debug('[ApiClient] Got 401 on PUT form, attempting token refresh')
+    const refreshed = await refreshAccessToken()
+
+    if (refreshed) {
+      response = await fetch(url, {
+        ...options,
+        method: 'PUT',
+        headers,
+        body: formData,
+        credentials: 'same-origin',
+      })
+    } else {
+      const authStore = useAuthStore()
+      authStore.handleTokenExpired('Your session has expired. Please log in again.', undefined)
+    }
+  }
+
+  return response
+}
+
 // =============================================================================
 // Library API Methods
 // =============================================================================
@@ -333,6 +377,239 @@ export interface CreateReplyData {
   content: string
   parent_reply_id?: number | null
 }
+
+// =============================================================================
+// Community API Methods
+// =============================================================================
+
+export interface CommunityPostAuthor {
+  id: number
+  name: string | null
+  avatar: string | null
+  organization?: string | null
+}
+
+export interface CommunityPost {
+  id: string
+  title: string
+  description: string | null
+  category: string | null
+  diagram_type: string
+  thumbnail_url: string | null
+  spec_json_url?: string
+  author: CommunityPostAuthor
+  likes_count: number
+  comments_count: number
+  created_at: string
+  is_liked: boolean
+  can_edit?: boolean
+}
+
+export interface CommunityPostList {
+  posts: CommunityPost[]
+  total: number
+  page: number
+  page_size: number
+  total_pages: number
+}
+
+export interface CreateCommunityPostParams {
+  title: string
+  description: string
+  category: string | null
+  diagram_type: string
+  spec: Record<string, unknown>
+  thumbnail: Blob
+}
+
+export async function getCommunityPosts(
+  params: {
+    page?: number
+    pageSize?: number
+    mine?: boolean
+    type?: string
+    category?: string
+    sort?: string
+  } = {}
+): Promise<CommunityPostList> {
+  const searchParams = new URLSearchParams()
+  searchParams.set('page', String(params.page ?? 1))
+  searchParams.set('page_size', String(params.pageSize ?? 20))
+  if (params.mine) searchParams.set('mine', '1')
+  if (params.type) searchParams.set('type', params.type)
+  if (params.category) searchParams.set('category', params.category)
+  if (params.sort) searchParams.set('sort', params.sort)
+
+  const response = await apiGet(`/api/community/posts?${searchParams.toString()}`)
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({ detail: 'Failed to fetch posts' }))
+    throw new Error(err.detail || 'Failed to fetch community posts')
+  }
+  return response.json()
+}
+
+export async function getCommunityPost(postId: string): Promise<CommunityPost & { spec?: unknown }> {
+  const response = await apiGet(`/api/community/posts/${postId}`)
+  if (!response.ok) {
+    if (response.status === 404) {
+      throw new Error('Post not found')
+    }
+    const err = await response.json().catch(() => ({ detail: 'Failed to fetch post' }))
+    throw new Error(err.detail || 'Failed to fetch post')
+  }
+  return response.json()
+}
+
+export async function createCommunityPost(
+  data: CreateCommunityPostParams
+): Promise<{ message: string; post: CommunityPost }> {
+  const formData = new FormData()
+  formData.append('title', data.title)
+  formData.append('description', data.description)
+  formData.append('category', data.category || '')
+  formData.append('diagram_type', data.diagram_type)
+  formData.append('spec', JSON.stringify(data.spec))
+  formData.append('thumbnail', data.thumbnail, 'thumbnail.png')
+
+  const response = await apiUpload('/api/community/posts', formData)
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({ detail: 'Failed to create post' }))
+    throw new Error(err.detail || 'Failed to create post')
+  }
+  return response.json()
+}
+
+export async function updateCommunityPost(
+  postId: string,
+  data: {
+    title: string
+    description: string
+    category: string | null
+    diagram_type: string
+    spec: Record<string, unknown>
+    thumbnail?: Blob
+  }
+): Promise<{ message: string; post: CommunityPost }> {
+  const formData = new FormData()
+  formData.append('title', data.title)
+  formData.append('description', data.description)
+  formData.append('category', data.category || '')
+  formData.append('diagram_type', data.diagram_type)
+  formData.append('spec', JSON.stringify(data.spec))
+  if (data.thumbnail) {
+    formData.append('thumbnail', data.thumbnail, 'thumbnail.png')
+  }
+
+  const response = await apiPutFormData(`/api/community/posts/${postId}`, formData)
+
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({ detail: 'Failed to update post' }))
+    throw new Error(err.detail || 'Failed to update post')
+  }
+  return response.json()
+}
+
+export async function deleteCommunityPost(postId: string): Promise<{ message: string }> {
+  const response = await apiDelete(`/api/community/posts/${postId}`)
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({ detail: 'Failed to delete post' }))
+    throw new Error(err.detail || 'Failed to delete post')
+  }
+  return response.json()
+}
+
+export async function toggleCommunityPostLike(
+  postId: string
+): Promise<{ is_liked: boolean; likes_count: number }> {
+  const response = await apiPost(`/api/community/posts/${postId}/like`)
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({ detail: 'Failed to toggle like' }))
+    throw new Error(err.detail || 'Failed to toggle like')
+  }
+  return response.json()
+}
+
+export interface CommunityPostComment {
+  id: number
+  content: string
+  author: CommunityPostAuthor
+  created_at: string
+  can_delete?: boolean
+}
+
+export interface CommunityPostCommentsResponse {
+  comments: CommunityPostComment[]
+  total: number
+  page: number
+  page_size: number
+}
+
+export interface CommunityPostLikesResponse {
+  names: string[]
+  total: number
+}
+
+export async function getCommunityPostLikes(
+  postId: string,
+  limit = 5
+): Promise<CommunityPostLikesResponse> {
+  const params = new URLSearchParams({ limit: String(limit) })
+  const response = await apiGet(`/api/community/posts/${postId}/likes?${params}`)
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({ detail: 'Failed to fetch likes' }))
+    throw new Error(err.detail || 'Failed to fetch likes')
+  }
+  return response.json()
+}
+
+export async function getCommunityPostComments(
+  postId: string,
+  page = 1,
+  pageSize = 50
+): Promise<CommunityPostCommentsResponse> {
+  const params = new URLSearchParams({
+    page: String(page),
+    page_size: String(pageSize),
+  })
+  const response = await apiGet(`/api/community/posts/${postId}/comments?${params}`)
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({ detail: 'Failed to fetch comments' }))
+    throw new Error(err.detail || 'Failed to fetch comments')
+  }
+  return response.json()
+}
+
+export async function createCommunityPostComment(
+  postId: string,
+  content: string
+): Promise<{ message: string; comment: CommunityPostComment }> {
+  const formData = new FormData()
+  formData.append('content', content)
+  const response = await apiUpload(`/api/community/posts/${postId}/comments`, formData)
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({ detail: 'Failed to add comment' }))
+    throw new Error(err.detail || 'Failed to add comment')
+  }
+  return response.json()
+}
+
+export async function deleteCommunityPostComment(
+  postId: string,
+  commentId: number
+): Promise<{ message: string }> {
+  const response = await apiDelete(
+    `/api/community/posts/${postId}/comments/${commentId}`
+  )
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({ detail: 'Failed to delete comment' }))
+    throw new Error(err.detail || 'Failed to delete comment')
+  }
+  return response.json()
+}
+
+// =============================================================================
+// Library API Methods
+// =============================================================================
 
 /**
  * Get list of library documents

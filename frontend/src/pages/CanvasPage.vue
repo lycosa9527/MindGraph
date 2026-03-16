@@ -37,11 +37,13 @@ import {
   getNodePalette,
   getPanelCoordinator,
   useDiagramAutoSave,
+  useDiagramSpecForSave,
   useEditorShortcuts,
   useLanguage,
   useNotifications,
   useWorkshop,
 } from '@/composables'
+import { IMPORT_SPEC_KEY } from '@/config'
 import { ANIMATION, PANEL, PANEL_INSET } from '@/config/uiConfig'
 import {
   useAuthStore,
@@ -303,7 +305,7 @@ const diagramTypeToChineseMap: Record<DiagramType, string> = {
   diagram: '图表',
 }
 
-// Valid diagram types for URL validation
+// Valid diagram types for URL validation and import
 const VALID_DIAGRAM_TYPES: DiagramType[] = [
   'circle_map',
   'bubble_map',
@@ -314,6 +316,7 @@ const VALID_DIAGRAM_TYPES: DiagramType[] = [
   'multi_flow_map',
   'bridge_map',
   'mindmap',
+  'mind_map',
   'concept_map',
 ]
 
@@ -738,6 +741,85 @@ onMounted(async () => {
   if (diagramId) {
     await loadDiagramFromLibrary(String(diagramId))
     return // Don't load default template if loading from library
+  }
+
+  // Priority 1b: Load imported diagram from JSON (landing page Import button)
+  const importFlag = route.query.import
+  if (importFlag === '1') {
+    const importJson = sessionStorage.getItem(IMPORT_SPEC_KEY)
+    if (importJson) {
+      try {
+        const spec = JSON.parse(importJson) as Record<string, unknown>
+        sessionStorage.removeItem(IMPORT_SPEC_KEY)
+        const diagramType = (spec.type as DiagramType) || null
+        if (!diagramType || !VALID_DIAGRAM_TYPES.includes(diagramType)) {
+          notify.error(
+            isZh.value ? '导入失败，不支持的图示类型' : 'Import failed: unsupported diagram type'
+          )
+        } else {
+          const llmResults = spec.llm_results as
+            | { results?: Record<string, unknown>; selectedModel?: string }
+            | undefined
+          let specForLoad = spec
+          if (llmResults?.results && typeof llmResults.results === 'object') {
+            llmResultsStore.restoreFromSaved(
+              llmResults as { results?: Record<string, LLMResult>; selectedModel?: string },
+              diagramType
+            )
+            specForLoad = { ...spec }
+            delete (specForLoad as Record<string, unknown>).llm_results
+          } else {
+            llmResultsStore.clearCache()
+          }
+          const loaded = diagramStore.loadFromSpec(specForLoad, diagramType)
+          if (loaded) {
+            const chineseName = diagramTypeToChineseMap[diagramType]
+            if (chineseName) {
+              uiStore.setSelectedChartType(chineseName)
+            }
+            router.replace({ path: '/canvas' })
+
+            // Save imported diagram to user's library
+            const topicText = diagramStore.getTopicNodeText()
+            const importTitle =
+              topicText ||
+              diagramStore.effectiveTitle ||
+              getDefaultDiagramName(diagramType, isZh.value)
+            diagramStore.initTitle(importTitle)
+            const getDiagramSpec = useDiagramSpecForSave()
+            const specToSave = getDiagramSpec()
+            if (specToSave && authStore.isAuthenticated) {
+              const saveResult = await savedDiagramsStore.manualSaveDiagram(
+                importTitle,
+                diagramType,
+                specToSave,
+                isZh.value ? 'zh' : 'en',
+                null
+              )
+              if (saveResult.success) {
+                notify.success(
+                  isZh.value ? '图示已导入并保存到图库' : 'Diagram imported and saved to library'
+                )
+              } else if (saveResult.needsSlotClear) {
+                eventBus.emit('canvas:show_slot_full_modal', {})
+              } else if (!saveResult.success) {
+                notify.warning(
+                  saveResult.error ||
+                    (isZh.value ? '导入成功，但保存到图库失败' : 'Imported, but save to library failed')
+                )
+              }
+            }
+            return
+          }
+          notify.error(
+            isZh.value ? '导入失败，图示数据无法加载' : 'Import failed: diagram could not be loaded'
+          )
+        }
+      } catch (error) {
+        console.error('Import load failed:', error)
+        notify.error(isZh.value ? '导入失败，图示数据无效' : 'Import failed: invalid diagram data')
+      }
+    }
   }
 
   // Priority 2: Load new diagram by type from URL (survives page refresh)

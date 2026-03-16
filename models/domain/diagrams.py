@@ -13,15 +13,16 @@ Proprietary License
 """
 
 from datetime import datetime
+from typing import Optional
 import uuid
 
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Boolean, Index
-from sqlalchemy.orm import relationship
+from sqlalchemy import Integer, String, Text, DateTime, ForeignKey, Boolean, Index
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from models.domain.auth import Base
 
 
-def generate_uuid():
+def generate_uuid() -> str:
     """Generate a UUID string for diagram IDs."""
     return str(uuid.uuid4())
 
@@ -36,40 +37,46 @@ class Diagram(Base):
     """
     __tablename__ = "diagrams"
 
-    id = Column(String(36), primary_key=True, default=generate_uuid, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    id: Mapped[str] = mapped_column(
+        String(36), primary_key=True, default=generate_uuid, index=True
+    )
+    user_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("users.id"), nullable=False, index=True
+    )
 
     # Metadata (queryable)
-    title = Column(String(200), nullable=False)
-    diagram_type = Column(String(50), nullable=False, index=True)
-    language = Column(String(10), default='zh')
+    title: Mapped[str] = mapped_column(String(200), nullable=False)
+    diagram_type: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
+    language: Mapped[str] = mapped_column(String(10), default='zh')
 
     # The actual diagram data as JSON text
-    spec = Column(Text, nullable=False)
+    spec: Mapped[str] = mapped_column(Text, nullable=False)
 
     # Optional: thumbnail for gallery view (base64 data URL)
-    thumbnail = Column(Text, nullable=True)
+    thumbnail: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
     # Soft delete support
-    is_deleted = Column(Boolean, default=False, index=True)
+    is_deleted: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
 
     # Pin support - pinned diagrams appear at top
-    is_pinned = Column(Boolean, default=False, index=True)
+    is_pinned: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
 
     # Workshop support - shareable code for collaborative editing
-    workshop_code = Column(String(20), nullable=True, index=True)
+    workshop_code: Mapped[Optional[str]] = mapped_column(String(20), nullable=True, index=True)
 
     # Timestamps
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
+    )
 
     # Relationship
-    user = relationship("User", back_populates="diagrams")
+    user: Mapped["User"] = relationship("User", back_populates="diagrams")
 
     # Composite index for efficient queries
     __table_args__ = (
         Index('ix_diagrams_user_updated', 'user_id', 'updated_at', 'is_deleted'),
     )
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"<Diagram {self.id}: {self.title} ({self.diagram_type})>"

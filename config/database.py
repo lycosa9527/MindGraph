@@ -27,14 +27,13 @@ try:
 except ImportError:
     load_invitation_codes = None
 
+from utils.migration.postgresql.schema_migration import run_migrations
+
 # Optional import for critical alerts (lazy import to avoid circular dependency)
 try:
     from services.infrastructure.monitoring.critical_alert import CriticalAlertService
 except ImportError:
     CriticalAlertService = None
-
-# Import migration utility (auth import is lazy to avoid circular dependency)
-from utils.migration.postgresql.schema_migration import run_migrations
 from models.domain.auth import (
     Base, Organization, User, APIKey,
     UpdateNotification, UpdateNotificationDismissed
@@ -87,6 +86,21 @@ except ImportError as e:
     logger.debug("[Database] Could not import debate models: %s", e)
 except Exception as e:
     logger.debug("[Database] Error registering debate models: %s", e)
+
+try:
+    from models.domain.community import (
+        CommunityPost,
+        CommunityPostComment,
+        CommunityPostLike,
+    )
+    _ = CommunityPost.__tablename__
+    _ = CommunityPostLike.__tablename__
+    _ = CommunityPostComment.__tablename__
+    logger.debug("[Database] Community models imported and registered for migrations")
+except ImportError as e:
+    logger.debug("[Database] Could not import community models: %s", e)
+except Exception as e:
+    logger.debug("[Database] Error registering community models: %s", e)
 
 try:
     from models.domain.school_zone import (
@@ -284,10 +298,9 @@ def init_db():
 
     # Get all tables that should exist from Base metadata
     expected_tables = set(Base.metadata.tables.keys())
-    
+
     # Verify LibraryBookmark is registered (explicit check)
     try:
-        from models.domain.library import LibraryBookmark
         bookmark_table_name = LibraryBookmark.__tablename__
         if bookmark_table_name not in expected_tables:
             logger.warning(
@@ -299,12 +312,14 @@ def init_db():
                 "[Database] LibraryBookmark table '%s' is registered in Base.metadata",
                 bookmark_table_name
             )
+    except NameError:
+        logger.debug("[Database] LibraryBookmark not available, skipping verification")
     except Exception as e:
         logger.warning(
             "[Database] Could not verify LibraryBookmark registration: %s",
             e
         )
-    
+
     # Log registered tables for debugging
     logger.debug(
         "[Database] Expected tables in Base.metadata (%d): %s",

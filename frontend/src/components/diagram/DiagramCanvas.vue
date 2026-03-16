@@ -14,7 +14,12 @@ import { Background } from '@vue-flow/background'
 import { getBezierPath, Position, VueFlow, useVueFlow } from '@vue-flow/core'
 import { MiniMap } from '@vue-flow/minimap'
 
-import { getDefaultDiagramName, useDiagramExport, useLanguage } from '@/composables'
+import {
+  getDefaultDiagramName,
+  useDiagramExport,
+  useDiagramSpecForSave,
+  useLanguage,
+} from '@/composables'
 import {
   CONCEPT_MAP_GENERATING_KEY,
   useConceptMapRelationship,
@@ -39,6 +44,7 @@ import RadialEdge from './edges/RadialEdge.vue'
 import StepEdge from './edges/StepEdge.vue'
 import StraightEdge from './edges/StraightEdge.vue'
 import TreeEdge from './edges/TreeEdge.vue'
+import { ExportToCommunityModal } from '@/components/canvas'
 import BoundaryNode from './nodes/BoundaryNode.vue'
 import BraceNode from './nodes/BraceNode.vue'
 import BranchNode from './nodes/BranchNode.vue'
@@ -106,9 +112,7 @@ function getExportTitle(): string {
   return diagramStore.effectiveTitle || getDefaultDiagramName(diagramStore.type, isZh.value)
 }
 
-function getExportSpec(): Record<string, unknown> | null {
-  return diagramStore.getSpecForSave()
-}
+const getExportSpec = useDiagramSpecForSave()
 
 const { exportByFormat } = useDiagramExport({
   getContainer: () => vueFlowWrapper.value,
@@ -134,6 +138,12 @@ const {
 
 // Vue Flow wrapper reference for context menu
 const vueFlowWrapper = ref<HTMLElement | null>(null)
+
+// Export to community modal
+const showExportToCommunityModal = ref(false)
+function getExportContainer(): HTMLElement | null {
+  return vueFlowWrapper.value
+}
 
 // Track if current fit was done with panel space reserved
 const isFittedForPanel = ref(false)
@@ -984,8 +994,13 @@ onMounted(() => {
       const savedViewport = getViewport()
       fitForExport()
       await nextTick()
-      await exportByFormat(format)
-      setViewport(savedViewport, { duration: ANIMATION.DURATION_FAST })
+      if (format === 'community') {
+        showExportToCommunityModal.value = true
+        setViewport(savedViewport, { duration: ANIMATION.DURATION_FAST })
+      } else {
+        await exportByFormat(format)
+        setViewport(savedViewport, { duration: ANIMATION.DURATION_FAST })
+      }
     })
   )
 
@@ -1256,6 +1271,16 @@ const gridConfig = {
       @close="closeContextMenu"
       @paste="handleContextMenuPaste"
       @add-concept="handleContextMenuAddConcept"
+    />
+
+    <!-- Export to community modal -->
+    <ExportToCommunityModal
+      v-model:visible="showExportToCommunityModal"
+      mode="create"
+      :get-container="getExportContainer"
+      :get-diagram-spec="getExportSpec"
+      :get-title="getExportTitle"
+      :diagram-type="diagramStore.type || 'mind_map'"
     />
   </div>
 </template>

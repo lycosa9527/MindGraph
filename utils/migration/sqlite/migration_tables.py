@@ -12,11 +12,8 @@ Proprietary License
 """
 
 import sqlite3
-import json
 import logging
-from pathlib import Path
-from datetime import datetime
-from typing import Optional, Dict, List, Tuple, Any
+from typing import Optional, Tuple, Any
 
 try:
     from psycopg2.extras import execute_values
@@ -24,11 +21,63 @@ try:
 except ImportError:
     PSYCOPG2_AVAILABLE = False
 
-from sqlalchemy import create_engine, inspect, text
+from sqlalchemy import inspect
 from sqlalchemy.exc import OperationalError, ProgrammingError
 
 # Import Base directly from models to avoid circular import with config.database
 from models.domain.auth import Base
+
+# Import community models so they are registered with Base.metadata for table creation
+try:
+    from models.domain.community import (
+        CommunityPost,
+        CommunityPostComment,
+        CommunityPostLike,
+    )
+    _ = CommunityPost.__tablename__
+    _ = CommunityPostComment.__tablename__
+    _ = CommunityPostLike.__tablename__
+except ImportError:
+    pass
+
+# Import library models
+try:
+    from models.domain.library import (
+        LibraryDocument,
+        LibraryDanmaku,
+        LibraryDanmakuLike,
+        LibraryDanmakuReply,
+        LibraryBookmark,
+    )
+    _ = LibraryDocument.__tablename__
+    _ = LibraryDanmaku.__tablename__
+    _ = LibraryDanmakuLike.__tablename__
+    _ = LibraryDanmakuReply.__tablename__
+    _ = LibraryBookmark.__tablename__
+except ImportError:
+    pass
+
+# Import user activity/usage models
+try:
+    from models.domain.user_activity_log import UserActivityLog
+    from models.domain.user_usage_stats import UserUsageStats
+    from models.domain.teacher_usage_config import TeacherUsageConfig
+    _ = UserActivityLog.__tablename__
+    _ = UserUsageStats.__tablename__
+    _ = TeacherUsageConfig.__tablename__
+except ImportError:
+    pass
+
+# Import gewe models
+try:
+    from models.domain.gewe_message import GeweMessage
+    from models.domain.gewe_contact import GeweContact
+    from models.domain.gewe_group_member import GeweGroupMember
+    _ = GeweMessage.__tablename__
+    _ = GeweContact.__tablename__
+    _ = GeweGroupMember.__tablename__
+except ImportError:
+    pass
 
 # Import helper functions
 from utils.migration.sqlite.migration_table_helpers import (
@@ -44,79 +93,6 @@ BATCH_SIZE = 10000  # Number of rows to fetch from SQLite at once
 INSERT_PAGE_SIZE = 1000  # Number of rows to insert per batch in PostgreSQL
 LARGE_TABLE_THRESHOLD = 10000  # Log progress for tables with more than this many rows
 BATCH_FAILURE_THRESHOLD = 0.1  # Fail table migration if > 10% of batches fail
-
-# Migration marker file
-MIGRATION_MARKER_FILE = Path("backup/.migration_completed")
-BACKUP_DIR = Path("backup")
-
-
-def get_table_migration_order() -> List[str]:
-    """
-    Get list of tables in migration order (respecting foreign key dependencies).
-
-    Returns:
-        List of table names in correct migration order
-    """
-    # Order matters: parent tables before child tables
-    # Tables are ordered by foreign key dependencies to ensure referential integrity
-    return [
-        # ========================================================================
-        # TIER 1: Core tables with no foreign key dependencies
-        # ========================================================================
-        "organizations",
-        "users",
-        "api_keys",
-
-        # ========================================================================
-        # TIER 2: Tables that depend on Tier 1
-        # ========================================================================
-        # Knowledge space tables (depend on users/organizations)
-        "knowledge_spaces",  # May reference users/organizations
-        "knowledge_documents",  # References knowledge_spaces, users
-        "document_chunks",  # References knowledge_documents
-        "embeddings",  # References document_chunks
-        "child_chunks",  # References document_chunks
-        "chunk_attachments",  # References document_chunks
-        "document_batches",  # References knowledge_documents
-        "document_versions",  # References knowledge_documents
-        "document_relationships",  # References knowledge_documents
-        "knowledge_queries",  # References knowledge_spaces, users
-        "query_feedback",  # References knowledge_queries
-        "query_templates",  # References knowledge_spaces
-        "evaluation_datasets",  # References knowledge_spaces
-        "evaluation_results",  # References evaluation_datasets
-
-        # Diagram tables (depend on users)
-        "diagrams",  # References users
-
-        # Token usage (depends on users)
-        "token_usage",  # References users
-
-        # Debate tables (depend on users)
-        "debate_sessions",  # References users
-        "debate_participants",  # References debate_sessions, users
-        "debate_messages",  # References debate_sessions, debate_participants
-        "debate_judgments",  # References debate_sessions
-
-        # School zone tables (depend on diagrams, users)
-        "shared_diagrams",  # References diagrams, users
-        "shared_diagram_likes",  # References shared_diagrams, users
-        "shared_diagram_comments",  # References shared_diagrams, users
-
-        # Other tables (depend on users)
-        "pinned_conversations",  # References users
-        "dashboard_activities",  # References users
-        "update_notifications",  # No foreign keys
-        "update_notifications_dismissed",  # References update_notifications, users
-
-        # ========================================================================
-        # TIER 3: Chunk test tables (depend on knowledge space tables)
-        # ========================================================================
-        "chunk_test_documents",  # References knowledge_spaces
-        "chunk_test_document_chunks",  # References chunk_test_documents
-        "chunk_test_results",  # References chunk_test_documents, chunk_test_document_chunks
-    ]
-
 
 def migrate_table(
     sqlite_conn: sqlite3.Connection,
@@ -496,8 +472,7 @@ def migrate_table(
 
                                 (
                                     batch_success_count,
-                                    batch_nullified_count,
-                                    batch_skipped_count,
+                                    *_,
                                     fk_failed_batches,
                                     fk_batch_errors
                                 ) = handle_foreign_key_violations(
@@ -518,10 +493,7 @@ def migrate_table(
                                 batch_errors.extend(fk_batch_errors)
                                 rows_inserted += batch_success_count
 
-                                if batch_success_count > 0:
-                                    continue  # Successfully handled FK violations (partial)
-                                else:
-                                    continue  # All records failed, already logged
+                                continue  # Handled FK violations (partial or all failed)
 
                             # Non-FK error or FK handling failed
                             failed_batches.append(batch_num)
@@ -690,272 +662,3 @@ def migrate_table(
         error_msg = f"Failed to migrate table {table_name}: {str(e)}"
         logger.error("[Migration] %s", error_msg, exc_info=True)
         return 0, error_msg
-
-
-def verify_migration(sqlite_path: Path, pg_url: str) -> Tuple[bool, Dict[str, Any]]:
-    """
-    Verify migration by comparing record counts between SQLite and PostgreSQL.
-
-    Ensures PostgreSQL has complete data (>= SQLite counts) before allowing SQLite to be moved.
-    This is a critical safety check to prevent data loss.
-
-    Args:
-        sqlite_path: Path to SQLite database
-        pg_url: PostgreSQL connection URL
-
-    Returns:
-        Tuple of (is_valid, statistics_dict)
-        - is_valid: True if PostgreSQL has all data (>= SQLite for all tables)
-        - statistics_dict: Contains tables_migrated, total_records, and mismatches
-    """
-    stats = {
-        "tables_migrated": 0,
-        "total_records": 0,
-        "mismatches": [],
-        "missing_tables": [],
-        "incomplete_tables": []
-    }
-
-    try:
-        sqlite_conn = sqlite3.connect(str(sqlite_path))
-        pg_engine = create_engine(pg_url)
-        pg_inspector = inspect(pg_engine)
-        pg_tables = set(pg_inspector.get_table_names())
-
-        tables = get_table_migration_order()
-
-        logger.info("[Migration] Verifying migration completeness for %d tables...", len(tables))
-
-        for table_name in tables:
-            try:
-                # Check if table exists in SQLite
-                sqlite_cursor = sqlite_conn.cursor()
-                sqlite_cursor.execute(
-                    "SELECT name FROM sqlite_master WHERE type='table' AND name=?",
-                    (table_name,)
-                )
-                table_exists_in_sqlite = sqlite_cursor.fetchone() is not None
-
-                if not table_exists_in_sqlite:
-                    # Table doesn't exist in SQLite - skip verification
-                    logger.debug("[Migration] Table %s does not exist in SQLite, skipping", table_name)
-                    continue
-
-                # Count SQLite records (table_name is from trusted source, but quote for safety)
-                sqlite_cursor.execute(f'SELECT COUNT(*) FROM "{table_name}"')
-                sqlite_count = sqlite_cursor.fetchone()[0]
-
-                # Check if table exists in PostgreSQL
-                if table_name not in pg_tables:
-                    # Table missing in PostgreSQL - CRITICAL ERROR
-                    stats["missing_tables"].append(table_name)
-                    stats["mismatches"].append({
-                        "table": table_name,
-                        "sqlite_count": sqlite_count,
-                        "postgresql_count": 0,
-                        "error": "Table missing in PostgreSQL"
-                    })
-                    logger.error(
-                        "[Migration] CRITICAL: Table %s missing in PostgreSQL (SQLite has %d rows)",
-                        table_name, sqlite_count
-                    )
-                    continue
-
-                # Count PostgreSQL records using proper identifier quoting
-                with pg_engine.connect() as conn:
-                    result = conn.execute(text(f'SELECT COUNT(*) FROM "{table_name}"'))
-                    pg_count = result.scalar()
-
-                # Verify PostgreSQL has complete data (>= SQLite)
-                if pg_count < sqlite_count:
-                    # PostgreSQL has fewer rows - CRITICAL ERROR
-                    stats["incomplete_tables"].append(table_name)
-                    stats["mismatches"].append({
-                        "table": table_name,
-                        "sqlite_count": sqlite_count,
-                        "postgresql_count": pg_count,
-                        "error": (
-                            f"PostgreSQL has {pg_count} rows, SQLite has {sqlite_count} rows "
-                            f"(missing {sqlite_count - pg_count} rows)"
-                        )
-                    })
-                    logger.error(
-                        "[Migration] CRITICAL: Table %s incomplete in PostgreSQL: "
-                        "SQLite=%d, PostgreSQL=%d (missing %d rows)",
-                        table_name, sqlite_count, pg_count, sqlite_count - pg_count
-                    )
-                elif pg_count > sqlite_count:
-                    # PostgreSQL has more rows - acceptable (may have new data)
-                    stats["tables_migrated"] += 1
-                    stats["total_records"] += sqlite_count
-                    logger.info(
-                        "[Migration] Table %s verified: SQLite=%d, PostgreSQL=%d "
-                        "(PostgreSQL has more rows - acceptable)",
-                        table_name, sqlite_count, pg_count
-                    )
-                else:
-                    # Exact match - perfect
-                    stats["tables_migrated"] += 1
-                    stats["total_records"] += sqlite_count
-                    logger.debug(
-                        "[Migration] Table %s verified: SQLite=%d, PostgreSQL=%d (match)",
-                        table_name, sqlite_count, pg_count
-                    )
-
-            except Exception as e:
-                logger.error(
-                    "[Migration] Failed to verify table %s: %s",
-                    table_name, e, exc_info=True
-                )
-                stats["mismatches"].append({
-                    "table": table_name,
-                    "error": str(e)
-                })
-
-        sqlite_conn.close()
-        pg_engine.dispose()
-
-        # Determine if verification passed
-        # Verification passes only if:
-        # 1. No missing tables
-        # 2. No incomplete tables (PostgreSQL >= SQLite for all tables)
-        # 3. No errors
-        is_valid = (
-            len(stats["missing_tables"]) == 0 and
-            len(stats["incomplete_tables"]) == 0 and
-            len([m for m in stats["mismatches"] if "error" in m]) == 0
-        )
-
-        if not is_valid:
-            logger.error(
-                "[Migration] Verification FAILED: %d missing tables, %d incomplete tables, %d errors",
-                len(stats["missing_tables"]),
-                len(stats["incomplete_tables"]),
-                len([m for m in stats["mismatches"] if "error" in m])
-            )
-        else:
-            logger.info(
-                "[Migration] Verification PASSED: %d tables verified, %d total records",
-                stats["tables_migrated"],
-                stats["total_records"]
-            )
-
-        return is_valid, stats
-
-    except Exception as e:
-        logger.error("[Migration] Verification failed with exception: %s", e, exc_info=True)
-        return False, stats
-
-
-def create_migration_marker(backup_path: Optional[Path], stats: Dict[str, Any]) -> bool:
-    """
-    Create migration marker file to prevent re-migration.
-
-    Args:
-        backup_path: Path to SQLite backup file
-        stats: Migration statistics
-
-    Returns:
-        True if marker created successfully
-    """
-    try:
-        BACKUP_DIR.mkdir(parents=True, exist_ok=True)
-
-        marker_data = {
-            "migration_completed_at": datetime.now().isoformat(),
-            "backup_path": str(backup_path) if backup_path else None,
-            "statistics": stats
-        }
-
-        with open(MIGRATION_MARKER_FILE, 'w', encoding='utf-8') as f:
-            json.dump(marker_data, f, indent=2)
-
-        logger.info("[Migration] Migration marker created: %s", MIGRATION_MARKER_FILE)
-        return True
-    except Exception as e:
-        logger.error("[Migration] Failed to create migration marker: %s", e)
-        return False
-
-
-def reset_postgresql_sequences(pg_engine: Any) -> None:
-    """
-    Reset PostgreSQL sequences to match migrated data.
-
-    After migrating data, sequences need to be updated so that
-    new inserts don't conflict with existing IDs.
-
-    Uses pg_get_serial_sequence() to find the actual sequence name
-    instead of assuming naming convention.
-
-    Args:
-        pg_engine: PostgreSQL SQLAlchemy engine
-    """
-    try:
-        inspector = inspect(pg_engine)
-        tables = inspector.get_table_names()
-        sequences_reset = 0
-        sequences_failed = []
-
-        with pg_engine.connect() as conn:
-            for table_name in tables:
-                try:
-                    # Get primary key column
-                    pk_cols = inspector.get_pk_constraint(table_name)
-                    if not pk_cols.get('constrained_columns'):
-                        continue
-
-                    pk_col = pk_cols['constrained_columns'][0]
-
-                    # Get the maximum ID value (use proper identifier quoting)
-                    result = conn.execute(text(f'SELECT MAX("{pk_col}") FROM "{table_name}"'))
-                    max_id = result.scalar()
-
-                    if max_id is not None and max_id > 0:
-                        # Use pg_get_serial_sequence() to find actual sequence name
-                        # This is more reliable than assuming naming convention
-                        # pg_get_serial_sequence expects string literals (single quotes), not identifiers
-                        seq_result = conn.execute(text(
-                            f"SELECT pg_get_serial_sequence('{table_name}', '{pk_col}')"
-                        ))
-                        sequence_name = seq_result.scalar()
-
-                        if sequence_name:
-                            # Remove schema prefix if present (e.g., "public.users_id_seq" -> "users_id_seq")
-                            if '.' in sequence_name:
-                                sequence_name = sequence_name.split('.')[-1]
-
-                            try:
-                                conn.execute(text(f"SELECT setval('{sequence_name}', {max_id + 1}, false)"))
-                                conn.commit()
-                                sequences_reset += 1
-                                logger.debug(
-                                    "[Migration] Reset sequence %s to %d (table: %s)",
-                                    sequence_name, max_id + 1, table_name
-                                )
-                            except Exception as seq_error:
-                                logger.warning(
-                                    "[Migration] Failed to reset sequence %s for table %s: %s",
-                                    sequence_name, table_name, seq_error
-                                )
-                                sequences_failed.append(f"{table_name}.{pk_col}")
-                        else:
-                            # No sequence found - might be a non-serial primary key
-                            logger.debug(
-                                "[Migration] No sequence found for %s.%s (may not be serial)",
-                                table_name, pk_col
-                            )
-
-                except Exception as e:
-                    logger.warning("[Migration] Could not reset sequence for %s: %s", table_name, e)
-                    sequences_failed.append(table_name)
-                    continue
-
-        if sequences_failed:
-            logger.warning(
-                "[Migration] PostgreSQL sequences reset: %d succeeded, %d failed: %s",
-                sequences_reset, len(sequences_failed), ', '.join(sequences_failed)
-            )
-        else:
-            logger.info("[Migration] PostgreSQL sequences reset (%d sequences)", sequences_reset)
-    except Exception as e:
-        logger.warning("[Migration] Failed to reset sequences: %s", e)
