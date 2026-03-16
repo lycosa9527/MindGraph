@@ -3,7 +3,7 @@
  * CommunityPostDetailModal - Instagram/Facebook style post detail
  * Image on left (clickable, zoom to fit, click to zoom); right panel: user info + comments
  */
-import { computed, nextTick, onUnmounted, ref, watch } from 'vue'
+import { computed, onUnmounted, ref, watch } from 'vue'
 
 import {
   ElDialog,
@@ -14,9 +14,7 @@ import {
   ElScrollbar,
 } from 'element-plus'
 
-import { useRouter } from 'vue-router'
-
-import { MoreVertical, Trash2, X } from 'lucide-vue-next'
+import { Download, Heart, MoreVertical, Trash2, X } from 'lucide-vue-next'
 
 import MindmateInput from '@/components/panels/mindmate/MindmateInput.vue'
 
@@ -44,7 +42,6 @@ const emit = defineEmits<{
   (e: 'likeToggled', post: CommunityPost): void
 }>()
 
-const router = useRouter()
 const authStore = useAuthStore()
 const savedDiagramsStore = useSavedDiagramsStore()
 const { isZh } = useLanguage()
@@ -121,17 +118,8 @@ async function loadLikes() {
   }
 }
 
-function focusCommentInput() {
-  nextTick(() => {
-    commentInputRef.value?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
-    const input = commentInputRef.value?.querySelector('textarea')
-    input?.focus()
-  })
-}
-
 function handleMenuCommand(cmd: string) {
   if (cmd === 'like') toggleLike()
-  else if (cmd === 'comment') focusCommentInput()
   else if (cmd === 'import') importToLibrary()
 }
 
@@ -207,8 +195,6 @@ async function importToLibrary() {
     if (saved) {
       savedDiagramsStore.setActiveDiagram(saved.id)
       notify.success(isZh.value ? '已导入到图库' : 'Imported to library')
-      close()
-      router.push('/canvas')
     } else if (savedDiagramsStore.error) {
       notify.error(savedDiagramsStore.error)
     } else {
@@ -381,20 +367,17 @@ function formatDate(iso: string): string {
             </button>
             <template #dropdown>
               <ElDropdownMenu>
-                <ElDropdownItem name="like">
-                  <span
-                    :class="post.is_liked ? 'text-rose-500' : ''"
-                  >
-                    {{ post.is_liked ? (isZh ? '取消喜欢' : 'Unlike') : (isZh ? '喜欢' : 'Like') }}
-                  </span>
-                </ElDropdownItem>
-                <ElDropdownItem name="comment">
-                  {{ isZh ? '评论' : 'Comment' }}
+                <ElDropdownItem command="like">
+                  <Heart
+                    :class="['w-4 h-4 mr-2 shrink-0', post.is_liked ? 'text-rose-500' : 'text-stone-400']"
+                  />
+                  {{ post.is_liked ? (isZh ? '取消喜欢' : 'Unlike') : (isZh ? '喜欢' : 'Like') }}
                 </ElDropdownItem>
                 <ElDropdownItem
-                  name="import"
+                  command="import"
                   :disabled="!authStore.isAuthenticated || isImporting"
                 >
+                  <Download class="w-4 h-4 mr-2 shrink-0 text-stone-400" />
                   {{ isZh ? '导入' : 'Import' }}
                 </ElDropdownItem>
               </ElDropdownMenu>
