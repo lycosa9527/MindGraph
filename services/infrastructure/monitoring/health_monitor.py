@@ -136,11 +136,17 @@ class HealthMonitor:
         self._http_client: Optional[httpx.AsyncClient] = None
 
     async def _get_http_client(self) -> httpx.AsyncClient:
-        """Get or create async HTTP client"""
+        """Get or create async HTTP client.
+
+        Uses HTTP/1.1 and disables keepalive to prevent CLOSE_WAIT accumulation
+        when workers call localhost:9527 - the server may close connections
+        before the client, leaving sockets in CLOSE_WAIT.
+        """
         if self._http_client is None or self._http_client.is_closed:
             self._http_client = httpx.AsyncClient(
                 timeout=httpx.Timeout(HEALTH_MONITOR_TIMEOUT_SECONDS),
-                http2=True
+                http2=False,
+                limits=httpx.Limits(max_keepalive_connections=0),
             )
         return self._http_client
 
@@ -399,6 +405,7 @@ class HealthMonitor:
                     else:
                         return "unhealthy", f"Status: {overall_status}", data
                 except (ValueError, json.JSONDecodeError) as e:
+                    await response.aread()
                     return "error", f"Failed to parse JSON response: {e}", None
 
             elif response.status_code == 503:
@@ -410,6 +417,7 @@ class HealthMonitor:
                     else:
                         return "degraded", f"HTTP 503 - Status: {overall_status}", data
                 except (ValueError, json.JSONDecodeError):
+                    await response.aread()
                     return "degraded", "HTTP 503 - Service Unavailable", None
 
             elif response.status_code == 500:
@@ -420,9 +428,11 @@ class HealthMonitor:
                         error_msg = error_msg[0]
                     return "unhealthy", f"HTTP 500 - {error_msg}", data
                 except (ValueError, json.JSONDecodeError):
+                    await response.aread()
                     return "unhealthy", "HTTP 500 - Internal Server Error", None
 
             else:
+                await response.aread()
                 return "error", f"Unexpected HTTP status: {response.status_code}", None
 
         except httpx.TimeoutException:
