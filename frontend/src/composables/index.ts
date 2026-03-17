@@ -46,6 +46,8 @@ export {
   useConceptMapRelationship,
   CONCEPT_MAP_GENERATING_KEY,
 } from './useConceptMapRelationship'
+export { useInlineRecommendations } from './useInlineRecommendations'
+export { useInlineRecommendationsCoordinator } from './useInlineRecommendationsCoordinator'
 export { useWorkshop } from './useWorkshop'
 export type { WorkshopUpdate } from './useWorkshop'
 

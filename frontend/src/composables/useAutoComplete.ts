@@ -668,5 +668,7 @@ export function useAutoComplete() {
 
     // Utilities
     isPlaceholderText,
+    extractFixedDimension,
+    extractBridgeMapAnalogies,
   }
 }

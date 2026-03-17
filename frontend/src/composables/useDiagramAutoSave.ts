@@ -5,38 +5,33 @@
  * - Config-driven timing (no hardcoded values)
  * - Event-based coordination (diagram:loaded_from_library, llm:generation_completed)
  * - State-driven guards (auth, isGenerating, suppress window)
+ * - Content fingerprint computed + watch (Vue deep watch gives same ref for
+ *   in-place mutations; computed fingerprint yields proper old/new on change)
  *
  * Usage:
  *   const autoSave = useDiagramAutoSave({ getDiagramTitle, onSaved })
- *   // In watch on diagramStore.data:
- *   if (autoSave.shouldTrigger(oldData, newData)) autoSave.trigger()
+ *   // Composable sets up internal watch; no CanvasPage integration needed
  *   // On unmount: autoSave.teardown()
  */
 import { computed, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
-import { SAVE } from '@/config'
 import { eventBus, getDefaultDiagramName } from '@/composables'
+import { SAVE } from '@/config'
 import { useAuthStore } from '@/stores/auth'
 import { useDiagramStore } from '@/stores/diagram'
 import { useLLMResultsStore } from '@/stores/llmResults'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
+
 import { useDiagramSpecForSave } from './useDiagramSpecForSave'
 import { useLanguage } from './useLanguage'
 
-function hasContentChange(
-  oldData: { nodes?: unknown[]; connections?: unknown[] } | null,
-  newData: { nodes?: unknown[]; connections?: unknown[] } | null
-): boolean {
-  if (!oldData || !newData) return false
-  const oldNodes = oldData.nodes || []
-  const newNodes = newData.nodes || []
-  const oldConns = oldData.connections || []
-  const newConns = newData.connections || []
+type DiagramDataLike = { nodes?: unknown[]; connections?: unknown[] } | null
 
-  if (oldNodes.length !== newNodes.length) return true
-  if (oldConns.length !== newConns.length) return true
-
+function getContentFingerprint(data: DiagramDataLike): string {
+  if (!data) return ''
+  const nodes = data.nodes || []
+  const conns = data.connections || []
   const nodeContent = (n: unknown) => {
     const node = n as { id?: string; text?: string; data?: { label?: string } }
     return JSON.stringify({
@@ -44,13 +39,6 @@ function hasContentChange(
       text: node.text ?? node.data?.label ?? '',
     })
   }
-  for (let i = 0; i < newNodes.length; i++) {
-    const oldItem = oldNodes.find(
-      (o) => (o as { id?: string }).id === (newNodes[i] as { id?: string }).id
-    )
-    if (!oldItem || nodeContent(oldItem) !== nodeContent(newNodes[i])) return true
-  }
-
   const connContent = (c: unknown) => {
     const conn = c as {
       id?: string
@@ -67,13 +55,9 @@ function hasContentChange(
       arrowheadDirection: conn.arrowheadDirection,
     })
   }
-  const oldConnKeys = new Set(oldConns.map(connContent))
-  const newConnKeys = new Set(newConns.map(connContent))
-  if (oldConnKeys.size !== newConnKeys.size) return true
-  for (const k of newConnKeys) {
-    if (!oldConnKeys.has(k)) return true
-  }
-  return false
+  const nodeFingerprints = nodes.map(nodeContent).sort()
+  const connFingerprints = conns.map(connContent).sort()
+  return JSON.stringify({ nodes: nodeFingerprints, conns: connFingerprints })
 }
 
 export interface UseDiagramAutoSaveOptions {
@@ -104,8 +88,7 @@ export function useDiagramAutoSave(options: UseDiagramAutoSaveOptions = {}) {
     const topicText = diagramStore.getTopicNodeText()
     if (topicText) return topicText
     return (
-      diagramStore.effectiveTitle ||
-      getDefaultDiagramName(diagramTypeForName.value, isZh.value)
+      diagramStore.effectiveTitle || getDefaultDiagramName(diagramTypeForName.value, isZh.value)
     )
   }
 
@@ -133,10 +116,13 @@ export function useDiagramAutoSave(options: UseDiagramAutoSaveOptions = {}) {
     const spec = getDiagramSpec()
     if (!spec) return
 
+    const diagramType = diagramStore.type
+    if (!diagramType) return
+
     try {
       const result = await savedDiagramsStore.autoSaveDiagram(
         getTitle(),
-        diagramStore.type!,
+        diagramType,
         spec,
         isZh.value ? 'zh' : 'en',
         null,
@@ -169,16 +155,14 @@ export function useDiagramAutoSave(options: UseDiagramAutoSaveOptions = {}) {
     performSave()
   }
 
-  function shouldTrigger(
-    oldData: { nodes?: unknown[]; connections?: unknown[] } | null,
-    newData: { nodes?: unknown[]; connections?: unknown[] } | null
-  ): boolean {
-    return (
-      hasContentChange(oldData, newData) &&
-      !llmResultsStore.isGenerating &&
-      !isSuppressed.value
-    )
-  }
+  const contentFingerprint = computed(() =>
+    getContentFingerprint(diagramStore.data as DiagramDataLike)
+  )
+
+  const stopContentWatch = watch(contentFingerprint, (newFP, oldFP) => {
+    if (!newFP || oldFP === undefined || newFP === oldFP) return
+    if (!llmResultsStore.isGenerating && !isSuppressed.value) trigger()
+  })
 
   function setSuppressFromLibrary(): void {
     cancelTimer()
@@ -199,13 +183,13 @@ export function useDiagramAutoSave(options: UseDiagramAutoSaveOptions = {}) {
     }
   )
 
-  const stopLoadedFromLibrary = eventBus.on(
-    'diagram:loaded_from_library',
-    () => setSuppressFromLibrary()
+  const stopLoadedFromLibrary = eventBus.on('diagram:loaded_from_library', () =>
+    setSuppressFromLibrary()
   )
 
   function teardown(): void {
     cancelTimer()
+    stopContentWatch()
     stopIsGenerating()
     stopLlmComplete()
     stopLoadedFromLibrary()
@@ -214,7 +198,6 @@ export function useDiagramAutoSave(options: UseDiagramAutoSaveOptions = {}) {
   onUnmounted(teardown)
 
   return {
-    shouldTrigger,
     trigger,
     flush,
     performSave,

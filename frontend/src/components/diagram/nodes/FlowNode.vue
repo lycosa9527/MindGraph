@@ -87,6 +87,15 @@ const nodeStyle = computed(() => {
     }
   }
 
+  // Multi-flow map: use layout width so full text displays (not fixed 140px)
+  if (isMultiFlowMap.value && layoutWidth.value !== null) {
+    return {
+      ...baseStyle,
+      width: `${layoutWidth.value}px`,
+      minWidth: `${layoutWidth.value}px`,
+    }
+  }
+
   // Flow map: adaptive width (min 120px) so full text displays
   if (isFlowMap.value) {
     return {
@@ -110,6 +119,16 @@ const isHovering = ref(false)
 const dynamicWidth = ref<number | null>(null)
 
 const diagramStore = useDiagramStore()
+
+// Layout width for multi-flow map (from recalculateMultiFlowMapLayout)
+// Used when not editing so node displays full text instead of fixed 140px
+const layoutWidth = computed(() => {
+  if (!isMultiFlowMap.value || dynamicWidth.value !== null) return null
+  const node = diagramStore.vueFlowNodes.find((n) => n.id === props.id)
+  const style = node?.style as { width?: number; minWidth?: number } | undefined
+  const w = style?.width ?? style?.minWidth
+  return typeof w === 'number' ? w : null
+})
 
 function handleTextSave(newText: string) {
   isEditing.value = false
@@ -181,10 +200,10 @@ function handleDeleteClick(event: MouseEvent) {
       :readonly="data.hidden === true"
       :node-id="id"
       :is-editing="isEditing"
-      :max-width="isFlowMap ? 'none' : '200px'"
+      :max-width="isPillShape ? 'none' : '200px'"
       text-align="center"
       :text-decoration="data.style?.textDecoration || 'none'"
-      :truncate="!isFlowMap"
+      :truncate="!isPillShape"
       @save="handleTextSave"
       @cancel="handleEditCancel"
       @edit-start="isEditing = true"

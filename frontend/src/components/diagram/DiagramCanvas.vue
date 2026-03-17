@@ -582,6 +582,7 @@ function handlePaneClick(event?: MouseEvent) {
     }
     diagramStore.clearSelection()
     dismissAllOptions()
+    eventBus.emit('canvas:pane_clicked', {})
   }
   emit('paneClick')
 }
@@ -951,6 +952,21 @@ watch(
 // Unsubscribe functions for cleanup
 const unsubscribers: (() => void)[] = []
 
+// Debounce double bubble rebuild when multiple node:text_updated fire (e.g. diff pair)
+let doubleBubbleRebuildTimer: ReturnType<typeof setTimeout> | null = null
+const DOUBLE_BUBBLE_REBUILD_DEBOUNCE_MS = 16
+
+function scheduleDoubleBubbleRebuild(): void {
+  if (doubleBubbleRebuildTimer) clearTimeout(doubleBubbleRebuildTimer)
+  doubleBubbleRebuildTimer = setTimeout(() => {
+    doubleBubbleRebuildTimer = null
+    const spec = diagramStore.getDoubleBubbleSpecFromData()
+    if (spec) {
+      diagramStore.loadFromSpec(spec, 'double_bubble_map')
+    }
+  }, DOUBLE_BUBBLE_REBUILD_DEBOUNCE_MS)
+}
+
 onMounted(() => {
   // Listen for node edit requests from context menu
   unsubscribers.push(
@@ -1023,41 +1039,35 @@ onMounted(() => {
     })
   )
 
-  // Listen for inline text updates from node components
+  // Listen for inline text updates from node components (and from inline_recommendation:applied)
   unsubscribers.push(
     eventBus.on('node:text_updated', ({ nodeId, text }) => {
-      diagramStore.pushHistory('Edit node text')
-      // Flow map vertical: recenter topic over step column when text changes
-      if (
-        diagramStore.type === 'flow_map' &&
-        nodeId === 'flow-topic' &&
-        (diagramStore.data?.nodes?.find((n) => n.id === 'flow-topic')?.data?.orientation ===
-          'vertical')
-      ) {
-        const topicNode = diagramStore.data?.nodes?.find((n) => n.id === 'flow-topic')
-        const currentY = (topicNode?.position as { y?: number })?.y ?? 80
-        const pos = getFlowTopicCenteredPosition(text, currentY)
-        console.log('[FlowMap] node:text_updated recenter', {
-          nodeId,
-          text,
-          prevPosition: topicNode?.position,
-          newPosition: pos,
-        })
-        diagramStore.updateNode(nodeId, { text, position: pos })
-      } else {
-        diagramStore.updateNode(nodeId, { text })
+      const node = diagramStore.data?.nodes?.find((n) => n.id === nodeId)
+      const currentText = (node?.text ?? (node?.data as { label?: string })?.label ?? '').trim()
+      const alreadyUpdated = currentText === text.trim()
+      if (!alreadyUpdated) {
+        diagramStore.pushHistory('Edit node text')
+        if (
+          diagramStore.type === 'flow_map' &&
+          nodeId === 'flow-topic' &&
+          (diagramStore.data?.nodes?.find((n) => n.id === 'flow-topic')?.data?.orientation ===
+            'vertical')
+        ) {
+          const topicNode = diagramStore.data?.nodes?.find((n) => n.id === 'flow-topic')
+          const currentY = (topicNode?.position as { y?: number })?.y ?? 80
+          const pos = getFlowTopicCenteredPosition(text, currentY)
+          diagramStore.updateNode(nodeId, { text, position: pos })
+        } else {
+          diagramStore.updateNode(nodeId, { text })
+        }
       }
       // Concept map label agent: regenerate only edges with empty labels (when AI on)
       if (diagramStore.type === 'concept_map') {
         regenerateForNodeIfNeeded(nodeId)
       }
-      // Double bubble map: rebuild spec from nodes (new text), reload layout
-      // Fit is triggered by onNodesChange when nodes update
+      // Double bubble map: debounced rebuild (avoids 2 rebuilds when diff pair updates)
       if (diagramStore.type === 'double_bubble_map') {
-        const spec = diagramStore.getDoubleBubbleSpecFromData()
-        if (spec) {
-          diagramStore.loadFromSpec(spec, 'double_bubble_map')
-        }
+        scheduleDoubleBubbleRebuild()
       }
     })
   )
@@ -1104,6 +1114,10 @@ onUnmounted(() => {
   if (fitFromNodesChangeTimeoutId) {
     clearTimeout(fitFromNodesChangeTimeoutId)
     fitFromNodesChangeTimeoutId = null
+  }
+  if (doubleBubbleRebuildTimer) {
+    clearTimeout(doubleBubbleRebuildTimer)
+    doubleBubbleRebuildTimer = null
   }
   // Remove context menu listener
   if (contextMenuElement && contextMenuHandler) {

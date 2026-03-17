@@ -42,6 +42,7 @@ from services.redis.cache.redis_diagram_cache import get_diagram_cache
 from services.redis.redis_token_buffer import get_token_tracker
 from services.utils.backup_scheduler import start_backup_scheduler
 from services.utils.temp_image_cleaner import start_cleanup_scheduler
+from agents.inline_recommendations import start_inline_rec_cleanup_scheduler
 from services.workshop import start_workshop_cleanup_scheduler
 # PDF auto-import removed - no longer needed for image-based viewing
 from services.utils.update_notifier import update_notifier
@@ -391,6 +392,15 @@ async def lifespan(fastapi_app: FastAPI):
     except Exception as e:  # pylint: disable=broad-except
         if is_main_worker:
             logger.warning("Failed to start workshop cleanup scheduler: %s", e)
+
+    # Start inline recommendations cleanup scheduler (prunes stale sessions)
+    try:
+        asyncio.create_task(start_inline_rec_cleanup_scheduler(interval_minutes=30))
+        if is_main_worker:
+            logger.debug("Inline recommendations cleanup scheduler started")
+    except Exception as e:  # pylint: disable=broad-except
+        if is_main_worker:
+            logger.warning("Failed to start inline rec cleanup scheduler: %s", e)
 
     # Start database backup scheduler (daily automatic backups)
     # Backs up database daily, keeps configurable retention (default: 2 backups)

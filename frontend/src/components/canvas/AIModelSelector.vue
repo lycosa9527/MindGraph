@@ -19,18 +19,28 @@ import { Loader2, Sparkles, X } from 'lucide-vue-next'
 
 import { LLM_MODEL_COLORS } from '@/config/llmModelColors'
 import { useAutoComplete, useLanguage } from '@/composables'
-import { useDiagramStore, useLLMResultsStore } from '@/stores'
+import {
+  useDiagramStore,
+  useInlineRecommendationsStore,
+  useLLMResultsStore,
+} from '@/stores'
 
 const { isZh } = useLanguage()
 const { switchToModel } = useAutoComplete()
 const diagramStore = useDiagramStore()
 const llmResultsStore = useLLMResultsStore()
+const inlineRecStore = useInlineRecommendationsStore()
 
 const isConceptMap = computed(() => diagramStore.type === 'concept_map')
 
 /** Show "关系" indicator when concept map and a model is selected—AI ready for relationship generation */
 const showRelationshipReady = computed(
   () => isConceptMap.value && llmResultsStore.selectedModel != null
+)
+
+/** Show "Tab推荐" indicator when topic fixed—AI ready for inline recommendations (edit node, press Tab) */
+const showInlineRecReady = computed(
+  () => !isConceptMap.value && inlineRecStore.isReady
 )
 
 // Model display names
@@ -65,7 +75,7 @@ function handleModelClick(modelKey: string) {
     return
   }
 
-  if (state === 'idle' && isConceptMap.value) {
+  if (state === 'idle') {
     if (isSelectedModel(modelKey)) {
       llmResultsStore.setSelectedModel(null)
     } else {
@@ -94,10 +104,10 @@ function getTooltipContent(modelKey: string): string {
     case 'error':
       return isZh.value ? `${displayName} 生成失败` : `${displayName} generation failed`
     default:
-      if (isConceptMap.value && isSelectedModel(modelKey)) {
+      if (isSelectedModel(modelKey)) {
         return isZh.value ? `点击取消选择 ${displayName}` : `Click to deselect ${displayName}`
       }
-      return isZh.value ? `${displayName} 模型` : `${displayName} model`
+      return isZh.value ? `点击选择 ${displayName}` : `Click to select ${displayName}`
   }
 }
 
@@ -118,7 +128,7 @@ function getButtonClass(modelKey: string): string {
     }
   } else if (state === 'error') {
     classes.push('error')
-  } else if (state === 'idle' && isConceptMap.value && isSelectedModel(modelKey)) {
+  } else if (state === 'idle' && isSelectedModel(modelKey)) {
     classes.push('selected', 'blink-selected')
   }
 
@@ -212,6 +222,15 @@ watch(
         placement="top"
       >
         <span class="relationship-ready-badge">{{ isZh ? '关系' : 'Relationships' }}</span>
+      </ElTooltip>
+
+      <!-- Inline rec ready indicator (thinking maps: edit node, press Tab for AI recommendations) -->
+      <ElTooltip
+        v-if="showInlineRecReady"
+        :content="isZh ? '编辑节点后按Tab获取AI推荐' : 'Press Tab while editing node for AI recommendations'"
+        placement="top"
+      >
+        <span class="relationship-ready-badge">{{ isZh ? 'Tab推荐' : 'Tab rec' }}</span>
       </ElTooltip>
 
       <!-- Ready count indicator -->

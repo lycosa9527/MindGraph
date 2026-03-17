@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.42.0] - 2026-03-17
+
+### Added
+- **Inline Recommendations (Diagram Auto-Completion)**: Extends concept map's auto label generation pattern to mindmap, flow_map, tree_map, brace_map, circle_map, bubble_map, double_bubble_map, multi_flow_map, bridge_map. When user fixes the topic, a green badge indicates readiness; double-clicking step/substep or branch nodes triggers context-aware AI recommendations in an inline picker.
+- **Inline Recommendations Backend**: New `agents/inline_recommendations/` (context extractors, diagram-specific prompts, generator, cleanup scheduler). Catapult-style 3-LLM concurrent streaming.
+- **Inline Recommendations Router**: New `routers/inline_recommendations.py` with `POST /thinking_mode/inline_recommendations/start`, `next_batch`, `cleanup` endpoints.
+- **InlineRecommendationsPicker**: New bottom bar picker component—keys 1–5 select, `-`/`=` for prev/next page.
+- **useInlineRecommendations**: New composable for streaming recommendations, selection, pagination.
+- **useInlineRecommendationsCoordinator**: Central event handler for topic updates, diagram changes, pane click, dismiss.
+- **inlineRecommendations Store**: New Pinia store for options, activeNodeId, isReady, generatingNodeIds, fetchingNextBatchNodeIds.
+- **INLINE_RECOMMENDATIONS_SUPPORTED_TYPES**: Shared constant in `nodePalette/constants.ts`.
+
+### Changed
+- **CanvasToolbar**: Green badge when `isReady` for supported diagram types.
+- **DiagramCanvas, FlowNode, InlineEditableText**: Double-click integration for inline recommendations.
+- **CanvasPage**: Coordinator setup for inline recommendations events.
+- **useEventBus**: Added `node_editor:tab_pressed` event type.
+- **useDiagramAutoSave, useConceptMapRelationship, useAutoComplete**: Integration updates.
+- **conceptMapRelationship Store, diagram Store**: Minor updates.
+- **requests_thinking**: InlineRecommendationsStartRequest, InlineRecommendationsNextRequest, InlineRecommendationsCleanupRequest.
+- **Lifespan**: Start inline recommendations cleanup scheduler (30 min interval, 30 min TTL).
+- **Routers Register**: Registered inline_recommendations router.
+
 ## [5.41.0] - 2026-03-17
 
 ### Added

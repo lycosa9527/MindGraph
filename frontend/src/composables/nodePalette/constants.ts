@@ -9,6 +9,25 @@ export const RELATIONSHIP_LABELS_START = '/thinking_mode/relationship_labels/sta
 export const RELATIONSHIP_LABELS_NEXT = '/thinking_mode/relationship_labels/next_batch'
 export const RELATIONSHIP_LABELS_CLEANUP = '/thinking_mode/relationship_labels/cleanup'
 
+export const INLINE_RECOMMENDATIONS_START =
+  '/thinking_mode/inline_recommendations/start'
+export const INLINE_RECOMMENDATIONS_NEXT =
+  '/thinking_mode/inline_recommendations/next_batch'
+export const INLINE_RECOMMENDATIONS_CLEANUP =
+  '/thinking_mode/inline_recommendations/cleanup'
+
+export const INLINE_RECOMMENDATIONS_SUPPORTED_TYPES = [
+  'mindmap',
+  'flow_map',
+  'tree_map',
+  'brace_map',
+  'circle_map',
+  'bubble_map',
+  'double_bubble_map',
+  'multi_flow_map',
+  'bridge_map',
+] as const
+
 export const LEARNING_SHEET_PLACEHOLDER = '___'
 
 export const STAGED_DIAGRAM_TYPES = [

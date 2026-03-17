@@ -1872,11 +1872,11 @@ onUnmounted(() => {
                     />
                   </div>
                   <div class="flex-1 min-w-0">
-                    <div class="font-medium mb-0.5 flex items-center">
+                    <div class="font-medium mb-0.5 flex items-center gap-2">
                       {{ app.name }}
                       <span
                         v-if="app.tag"
-                        class="ml-2 text-xs bg-orange-100 text-orange-600 px-2 py-0.5 rounded-full"
+                        class="text-xs bg-orange-100 text-orange-600 px-2 py-0.5 rounded-full"
                         >{{ app.tag }}</span
                       >
                     </div>

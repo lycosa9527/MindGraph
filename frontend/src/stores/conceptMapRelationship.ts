@@ -72,9 +72,15 @@ export const useConceptMapRelationshipStore = defineStore(
     /** Whether we can go to next page or fetch more (show = when we have options) */
     const canNextPage = computed((): boolean => activeTotalPages.value > 0)
 
-    function setOptions(connectionId: string, labels: string[]): void {
+    function setOptions(
+      connectionId: string,
+      labels: string[],
+      preservePage = false
+    ): void {
       allLabels.value = { [connectionId]: labels }
-      page.value = { [connectionId]: 0 }
+      if (!preservePage) {
+        page.value = { [connectionId]: 0 }
+      }
     }
 
     /** Append labels (from next_batch), filter duplicates */

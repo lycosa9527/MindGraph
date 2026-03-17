@@ -27,6 +27,7 @@ import {
   CanvasToolbar,
   CanvasTopBar,
   ConceptMapLabelPicker,
+  InlineRecommendationsPicker,
   ZoomControls,
 } from '@/components/canvas'
 import DiagramCanvas from '@/components/diagram/DiagramCanvas.vue'
@@ -39,16 +40,20 @@ import {
   useDiagramAutoSave,
   useDiagramSpecForSave,
   useEditorShortcuts,
+  useInlineRecommendations,
+  useInlineRecommendationsCoordinator,
   useLanguage,
   useNotifications,
   useWorkshop,
 } from '@/composables'
+import { INLINE_RECOMMENDATIONS_SUPPORTED_TYPES } from '@/composables/nodePalette/constants'
 import { IMPORT_SPEC_KEY } from '@/config'
 import { ANIMATION, PANEL, PANEL_INSET } from '@/config/uiConfig'
 import {
   useAuthStore,
   useConceptMapRelationshipStore,
   useDiagramStore,
+  useInlineRecommendationsStore,
   useLLMResultsStore,
   usePanelsStore,
   useUIStore,
@@ -69,11 +74,83 @@ const panelsStore = usePanelsStore()
 const { isZh, t } = useLanguage()
 const notify = useNotifications()
 const { activeEntry: relationshipActiveEntry } = storeToRefs(relationshipStore)
+const inlineRecStore = useInlineRecommendationsStore()
+const { activeNodeId: inlineRecActiveNodeId } = storeToRefs(inlineRecStore)
 
-// Hide zoom/pan when concept map label picker is showing options
+// Hide zoom/pan when concept map label picker or inline recommendations picker is showing
 const showZoomControls = computed(
-  () => !(diagramStore.type === 'concept_map' && relationshipActiveEntry.value)
+  () =>
+    !(
+      (diagramStore.type === 'concept_map' && relationshipActiveEntry.value) ||
+      inlineRecActiveNodeId.value
+    )
 )
+
+const inlineRecCoordinator = useInlineRecommendationsCoordinator()
+const { startRecommendations } = useInlineRecommendations()
+
+function isNodeEligibleForInlineRec(node: { id?: string; type?: string }): boolean {
+  const dt = diagramStore.type === 'mind_map' ? 'mindmap' : diagramStore.type
+  if (
+    !dt ||
+    !(INLINE_RECOMMENDATIONS_SUPPORTED_TYPES as readonly string[]).includes(dt)
+  )
+    return false
+  const nid = node.id ?? ''
+  if (dt === 'mindmap') {
+    return (
+      nid.startsWith('branch-l-1-') ||
+      nid.startsWith('branch-r-1-') ||
+      nid.startsWith('branch-l-2-') ||
+      nid.startsWith('branch-r-2-')
+    )
+  }
+  if (dt === 'flow_map') {
+    return nid.startsWith('flow-step-') || nid.startsWith('flow-substep-')
+  }
+  if (dt === 'tree_map') {
+    return (
+      nid === 'dimension-label' ||
+      /^tree-cat-\d+$/.test(nid) ||
+      /^tree-leaf-/.test(nid)
+    )
+  }
+  if (dt === 'brace_map') {
+    return (
+      nid === 'dimension-label' ||
+      node.type === 'brace' ||
+      nid.startsWith('brace-')
+    )
+  }
+  if (dt === 'circle_map') {
+    return nid.startsWith('context-')
+  }
+  if (dt === 'bubble_map') {
+    return nid.startsWith('bubble-')
+  }
+  if (dt === 'double_bubble_map') {
+    return (
+      nid.startsWith('similarity-') ||
+      nid.startsWith('left-diff-') ||
+      nid.startsWith('right-diff-')
+    )
+  }
+  if (dt === 'multi_flow_map') {
+    return nid.startsWith('cause-') || nid.startsWith('effect-')
+  }
+  if (dt === 'bridge_map') {
+    return (
+      nid === 'dimension-label' ||
+      (nid.startsWith('pair-') && (nid.endsWith('-left') || nid.endsWith('-right')))
+    )
+  }
+  return false
+}
+
+function handleNodeDoubleClick(_node: { id?: string; type?: string }): void {
+  // Double-click only enters edit mode. Inline recommendations are triggered by Tab
+  // when user is editing a node (see node_editor:tab_pressed listener).
+}
 
 // Canvas zoom for ZoomControls sync (updated via view:zoom_changed)
 const canvasZoom = ref<number | null>(null)
@@ -626,17 +703,12 @@ function generateDefaultName(): string {
   return getDefaultDiagramName(diagramTypeForName.value, isZh.value)
 }
 
-// Watch for diagram data changes to trigger auto-save and send granular updates
-// Auto-save: only on content change (text, add/remove nodes, connections) - not position-only (Vue Flow sync)
+// Watch for diagram data changes to send granular updates to workshop
+// Auto-save: handled internally by useDiagramAutoSave (computed fingerprint + watch)
 watch(
   () => diagramStore.data,
-  (newData, oldData) => {
-    if (!newData || !oldData) return
-
-    // Auto-save only when content changed (event-driven, composable handles guards)
-    if (diagramAutoSave.shouldTrigger(oldData, newData)) {
-      diagramAutoSave.trigger()
-    }
+  (newData) => {
+    if (!newData) return
 
     // Send granular updates to workshop if active (any change including position)
     if (workshopCode.value && newData.nodes && newData.connections) {
@@ -715,6 +787,25 @@ onMounted(async () => {
 
   // Initialize panel coordinator so panel:open_requested (e.g. 瀑布流) is handled
   getPanelCoordinator()
+  // Initialize inline recommendations coordinator (topic updates, pane click, etc.)
+  inlineRecCoordinator.setup()
+
+  // Inline recommendations: Tab triggers when user is editing a node (after double-click)
+  eventBus.onWithOwner(
+    'node_editor:tab_pressed',
+    (data: { nodeId?: string }) => {
+      const nodeId = data?.nodeId
+      if (!nodeId) return
+      const nodes = diagramStore.data?.nodes ?? []
+      const node = nodes.find((n: { id?: string }) => n.id === nodeId) as
+        | { id?: string; type?: string }
+        | undefined
+      if (!node || !isNodeEligibleForInlineRec(node)) return
+      if (!inlineRecStore.isReady) return
+      startRecommendations(nodeId)
+    },
+    'CanvasPage'
+  )
 
   // Initialize node palette singleton and listen for open events (start session when no restore)
   const { startSession } = getNodePalette({
@@ -858,6 +949,7 @@ onUnmounted(() => {
   }
 
   diagramAutoSave.teardown()
+  inlineRecCoordinator.teardown()
   eventBus.removeAllListenersForOwner('CanvasPage')
 
   // Clean up workshop connection when leaving canvas
@@ -930,6 +1022,7 @@ onUnmounted(() => {
           :show-minimap="false"
           :fit-view-on-init="true"
           :hand-tool-active="handToolActive"
+          @node-double-click="handleNodeDoubleClick"
         />
       </div>
 
@@ -966,6 +1059,10 @@ onUnmounted(() => {
         </div>
         <ConceptMapLabelPicker
           v-if="diagramStore.type === 'concept_map'"
+          class="label-picker-wrap order-3 shrink-0 min-w-0"
+        />
+        <InlineRecommendationsPicker
+          v-else-if="inlineRecActiveNodeId"
           class="label-picker-wrap order-3 shrink-0 min-w-0"
         />
         <div

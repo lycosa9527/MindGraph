@@ -189,7 +189,7 @@ export function useConceptMapRelationship() {
           diagramStore.updateConnectionLabel(connectionId, label)
           diagramStore.pushHistory('AI relationship')
         }
-        relationshipStore.setOptions(connectionId, labels)
+        relationshipStore.setOptions(connectionId, labels, labels.length > 1)
       }
       const onError = (msg: string) => {
         const title = isZh.value ? '关系生成失败' : 'Relationship generation failed'

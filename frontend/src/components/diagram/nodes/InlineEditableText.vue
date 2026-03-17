@@ -316,6 +316,10 @@ function handleKeydown(event: KeyboardEvent): void {
     event.preventDefault()
     event.stopPropagation()
     cancelEdit()
+  } else if (event.key === 'Tab') {
+    event.preventDefault()
+    event.stopPropagation()
+    eventBus.emit('node_editor:tab_pressed', { nodeId: props.nodeId })
   }
 }
 
@@ -353,9 +357,25 @@ function handleMouseDown(event: MouseEvent): void {
 // Subscribe to edit request from context menu
 const unsubEditRequested = eventBus.on('node:edit_requested', handleEditRequested)
 
+// When user selects an inline recommendation (number key), apply text and exit edit mode
+// so we don't overwrite with stale editText on blur
+function handleRecommendationApplied(payload: { nodeId?: string; text?: string }): void {
+  if (payload?.nodeId !== props.nodeId || !payload?.text) return
+  if (!localIsEditing.value) return
+  editText.value = payload.text
+  originalText.value = payload.text
+  localIsEditing.value = false
+  eventBus.emit('node_editor:closed', { nodeId: props.nodeId })
+}
+const unsubRecommendationApplied = eventBus.on(
+  'inline_recommendation:applied',
+  handleRecommendationApplied
+)
+
 // Cleanup on unmount
 onUnmounted(() => {
   unsubEditRequested()
+  unsubRecommendationApplied()
 })
 </script>
 

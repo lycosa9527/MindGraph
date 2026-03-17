@@ -230,6 +230,7 @@ export type EventTypes = {
   'interaction:edit_text_requested': { nodeId: string }
   'node_editor:opening': { nodeId: string }
   'node_editor:closed': { nodeId: string }
+  'node_editor:tab_pressed': { nodeId: string }
 
   // Workshop Events
   'workshop:code-changed': { code: string | null }
@@ -359,8 +360,10 @@ export type EventTypes = {
   'node:text_updated': { nodeId: string; text: string }
   'node:resized': { nodeId?: string }
   'node:edit_requested': { nodeId: string }
+  'inline_recommendation:applied': { nodeId: string; text: string }
 
   // Canvas Events
+  'canvas:pane_clicked': Record<string, never>
   'canvas:fitted_with_panel': { panelWidth: number }
   'canvas:fitted_full': Record<string, never>
   'canvas:resized': { width: number; height: number }

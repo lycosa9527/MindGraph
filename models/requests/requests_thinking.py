@@ -252,6 +252,83 @@ class RelationshipLabelsNextRequest(BaseModel):
     language: str = Field('en', description="UI language (en or zh)")
 
 
+class InlineRecommendationsStartRequest(BaseModel):
+    """Request model for /thinking_mode/inline_recommendations/start endpoint."""
+
+    session_id: str = Field(
+        ...,
+        min_length=1,
+        max_length=100,
+        description="Session ID (typically node_id)",
+    )
+    diagram_type: str = Field(
+        ...,
+        description="Diagram type: mindmap, flow_map, tree_map, brace_map",
+    )
+    stage: str = Field(
+        ...,
+        description="Stage: branches, children, steps, substeps, categories, parts, subparts",
+    )
+    node_id: str = Field(
+        ...,
+        description="ID of the node being edited (for context)",
+    )
+    nodes: List[Dict[str, Any]] = Field(
+        default_factory=list,
+        description="Current diagram nodes",
+    )
+    connections: Optional[List[Dict[str, Any]]] = Field(
+        default_factory=list,
+        description="Current diagram connections",
+    )
+    language: str = Field('en', description="UI language (en or zh)")
+    count: int = Field(15, ge=5, le=30, description="Recommendations to generate per LLM")
+    models: Optional[List[str]] = Field(
+        default=None,
+        description="LLM models to use (e.g. ['qwen']). When set, only these models run.",
+    )
+    educational_context: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="Educational context (raw_message, grade, subject) for prompt enrichment",
+    )
+
+
+class InlineRecommendationsNextRequest(BaseModel):
+    """Request model for /thinking_mode/inline_recommendations/next_batch."""
+
+    session_id: str = Field(
+        ...,
+        min_length=1,
+        max_length=100,
+        description="Session ID",
+    )
+    diagram_type: str = Field(..., description="Diagram type")
+    stage: str = Field(..., description="Stage")
+    node_id: str = Field(..., description="Node ID")
+    nodes: List[Dict[str, Any]] = Field(default_factory=list)
+    connections: Optional[List[Dict[str, Any]]] = Field(default_factory=list)
+    language: str = Field('en')
+    count: int = Field(15, ge=5, le=30, description="Recommendations per LLM")
+    models: Optional[List[str]] = Field(
+        default=None,
+        description="LLM models to use (e.g. ['qwen']). When set, only these models run.",
+    )
+    educational_context: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="Educational context for prompt enrichment",
+    )
+
+
+class InlineRecommendationsCleanupRequest(BaseModel):
+    """Request model for /thinking_mode/inline_recommendations/cleanup."""
+
+    node_ids: List[str] = Field(
+        default_factory=list,
+        description="Node IDs (session_ids) to clean up",
+        max_length=100,
+    )
+
+
 class NodePaletteCleanupRequest(BaseModel):
     """Request model for /thinking_mode/node_palette/cleanup endpoint
 

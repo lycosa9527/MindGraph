@@ -41,6 +41,7 @@ export default defineConfig({
       '/thinking_mode': {
         target: backendHost,
         changeOrigin: true,
+        timeout: 0, // SSE streams: prevent proxy from buffering/closing long-lived connections
       },
       '/ws': {
         target: backendHostWs,

@@ -3,6 +3,7 @@
  */
 
 export { useConceptMapRelationshipStore } from './conceptMapRelationship'
+export { useInlineRecommendationsStore } from './inlineRecommendations'
 export {
   useDiagramStore,
   subscribeToDiagramEvents,

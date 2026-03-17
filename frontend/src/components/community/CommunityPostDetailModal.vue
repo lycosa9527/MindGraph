@@ -29,7 +29,8 @@ import {
   type CommunityPostComment,
 } from '@/utils/apiClient'
 import { useLanguage, useNotifications } from '@/composables'
-import { useAuthStore, useSavedDiagramsStore } from '@/stores'
+import { useAuthStore } from '@/stores'
+import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 
 const props = defineProps<{
   visible: boolean
