@@ -51,6 +51,8 @@ export interface MindGraphNodeData {
   arrowheadDirection?: 'none' | 'source' | 'target' | 'both'
   /** Concept map: when multiple edges share target handle, only one draws arrowhead */
   drawTargetArrowhead?: boolean
+  /** Concept map: when multiple edges share source handle, only one draws arrowhead */
+  drawSourceArrowhead?: boolean
   /** Learning sheet: node is knocked out, show placeholder */
   hidden?: boolean
   /** Learning sheet: original text (answer) for knocked-out node */

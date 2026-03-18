@@ -150,7 +150,7 @@ function handleLinkDrop(event: DragEvent) {
       :class="{ 'concept-topic': isTopic }"
       :style="nodeStyle"
     >
-      <!-- Handles for smart connection routing (edges pick closest side) -->
+      <!-- Primary handles: centered on each side -->
       <Handle
         id="source-left"
         type="source"
@@ -190,6 +190,105 @@ function handleLinkDrop(event: DragEvent) {
         id="target-bottom"
         type="target"
         :position="Position.Bottom"
+      />
+      <!-- Split handles: offset from center for mixed arrow/no-arrow separation -->
+      <!-- -2 handles: offset toward start (up for L/R, left for T/B) -->
+      <Handle
+        id="source-left-2"
+        type="source"
+        :position="Position.Left"
+        :style="{ top: 'calc(50% - 8px)' }"
+      />
+      <Handle
+        id="target-left-2"
+        type="target"
+        :position="Position.Left"
+        :style="{ top: 'calc(50% - 8px)' }"
+      />
+      <Handle
+        id="source-right-2"
+        type="source"
+        :position="Position.Right"
+        :style="{ top: 'calc(50% - 8px)' }"
+      />
+      <Handle
+        id="target-right-2"
+        type="target"
+        :position="Position.Right"
+        :style="{ top: 'calc(50% - 8px)' }"
+      />
+      <Handle
+        id="source-top-2"
+        type="source"
+        :position="Position.Top"
+        :style="{ left: 'calc(50% - 8px)' }"
+      />
+      <Handle
+        id="target-top-2"
+        type="target"
+        :position="Position.Top"
+        :style="{ left: 'calc(50% - 8px)' }"
+      />
+      <Handle
+        id="source-bottom-2"
+        type="source"
+        :position="Position.Bottom"
+        :style="{ left: 'calc(50% - 8px)' }"
+      />
+      <Handle
+        id="target-bottom-2"
+        type="target"
+        :position="Position.Bottom"
+        :style="{ left: 'calc(50% - 8px)' }"
+      />
+      <!-- -3 handles: offset toward end (down for L/R, right for T/B) -->
+      <Handle
+        id="source-left-3"
+        type="source"
+        :position="Position.Left"
+        :style="{ top: 'calc(50% + 8px)' }"
+      />
+      <Handle
+        id="target-left-3"
+        type="target"
+        :position="Position.Left"
+        :style="{ top: 'calc(50% + 8px)' }"
+      />
+      <Handle
+        id="source-right-3"
+        type="source"
+        :position="Position.Right"
+        :style="{ top: 'calc(50% + 8px)' }"
+      />
+      <Handle
+        id="target-right-3"
+        type="target"
+        :position="Position.Right"
+        :style="{ top: 'calc(50% + 8px)' }"
+      />
+      <Handle
+        id="source-top-3"
+        type="source"
+        :position="Position.Top"
+        :style="{ left: 'calc(50% + 8px)' }"
+      />
+      <Handle
+        id="target-top-3"
+        type="target"
+        :position="Position.Top"
+        :style="{ left: 'calc(50% + 8px)' }"
+      />
+      <Handle
+        id="source-bottom-3"
+        type="source"
+        :position="Position.Bottom"
+        :style="{ left: 'calc(50% + 8px)' }"
+      />
+      <Handle
+        id="target-bottom-3"
+        type="target"
+        :position="Position.Bottom"
+        :style="{ left: 'calc(50% + 8px)' }"
       />
       <InlineEditableText
         :text="data.label || ''"

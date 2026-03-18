@@ -189,6 +189,9 @@ const arrowheadDirection = computed<ArrowheadDirection>(() => {
 const drawTargetArrowhead = computed(
   () => (props.data as { drawTargetArrowhead?: boolean })?.drawTargetArrowhead ?? true
 )
+const drawSourceArrowheadFlag = computed(
+  () => (props.data as { drawSourceArrowhead?: boolean })?.drawSourceArrowhead ?? true
+)
 
 const conceptMapMarkerId = computed(() => `arrow-concept-${props.id}`)
 const conceptMapMarkerBackwardId = computed(() => `arrow-concept-backward-${props.id}`)
@@ -207,7 +210,9 @@ function handleSegment2Click() {
 }
 
 const showSourceArrow = computed(
-  () => arrowheadDirection.value === 'source' || arrowheadDirection.value === 'both'
+  () =>
+    (arrowheadDirection.value === 'source' || arrowheadDirection.value === 'both') &&
+    drawSourceArrowheadFlag.value
 )
 const showTargetArrow = computed(
   () =>

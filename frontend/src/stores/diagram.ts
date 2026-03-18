@@ -17,6 +17,7 @@ import {
   augmentConnectionWithOptimalHandles,
   computeDefaultArrowheadForConceptMap,
   getConceptMapNodeCenter,
+  splitMixedArrowHandleGroups,
 } from '@/composables/diagrams/conceptMapHandles'
 import {
   DEFAULT_CENTER_X,
@@ -427,31 +428,50 @@ export const useDiagramStore = defineStore('diagram', () => {
     })
 
     if (diagramType === 'concept_map' && edges.length > 0) {
-      const groups = new Map<string, MindGraphEdge[]>()
+      splitMixedArrowHandleGroups(edges, nodes)
+
+      const targetGroups = new Map<string, MindGraphEdge[]>()
       for (const edge of edges) {
         const key = `${edge.target}:${edge.targetHandle ?? ''}`
-        if (!groups.has(key)) groups.set(key, [])
-        const bucket = groups.get(key)
-        if (bucket) bucket.push(edge)
+        if (!targetGroups.has(key)) targetGroups.set(key, [])
+        targetGroups.get(key)!.push(edge)
       }
-      for (const group of groups.values()) {
+      for (const group of targetGroups.values()) {
         const allHaveTarget = group.every(
           (e) => e.data?.arrowheadDirection === 'target' || e.data?.arrowheadDirection === 'both'
         )
         group.forEach((edge, i) => {
           if (!edge.data) return
-          const dir = edge.data.arrowheadDirection
-          const hasTarget = dir === 'target' || dir === 'both'
           if (allHaveTarget) {
-            edge.data = {
-              ...edge.data,
-              drawTargetArrowhead: i === 0,
-            }
+            edge.data = { ...edge.data, drawTargetArrowhead: i === 0 }
           } else {
-            edge.data = {
-              ...edge.data,
-              drawTargetArrowhead: hasTarget,
-            }
+            const hasTarget =
+              edge.data.arrowheadDirection === 'target' ||
+              edge.data.arrowheadDirection === 'both'
+            edge.data = { ...edge.data, drawTargetArrowhead: hasTarget }
+          }
+        })
+      }
+
+      const sourceGroups = new Map<string, MindGraphEdge[]>()
+      for (const edge of edges) {
+        const key = `${edge.source}:${edge.sourceHandle ?? ''}`
+        if (!sourceGroups.has(key)) sourceGroups.set(key, [])
+        sourceGroups.get(key)!.push(edge)
+      }
+      for (const group of sourceGroups.values()) {
+        const allHaveSource = group.every(
+          (e) => e.data?.arrowheadDirection === 'source' || e.data?.arrowheadDirection === 'both'
+        )
+        group.forEach((edge, i) => {
+          if (!edge.data) return
+          if (allHaveSource) {
+            edge.data = { ...edge.data, drawSourceArrowhead: i === 0 }
+          } else {
+            const hasSource =
+              edge.data.arrowheadDirection === 'source' ||
+              edge.data.arrowheadDirection === 'both'
+            edge.data = { ...edge.data, drawSourceArrowhead: hasSource }
           }
         })
       }
@@ -892,6 +912,7 @@ export const useDiagramStore = defineStore('diagram', () => {
       (c) => c.source === nodeId || c.target === nodeId
     )
     for (const conn of connections) {
+      if (conn.arrowheadLocked) continue
       const sourceNode = nodes.find((n) => n.id === conn.source)
       const targetNode = nodes.find((n) => n.id === conn.target)
       if (sourceNode && targetNode) {
@@ -924,6 +945,7 @@ export const useDiagramStore = defineStore('diagram', () => {
             ? 'both'
             : 'none'
     conn.arrowheadDirection = next
+    conn.arrowheadLocked = true
     pushHistory('Toggle arrowhead')
     return true
   }

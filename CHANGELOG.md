@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.44.0] - 2026-03-18
+
+### Added
+- **Concept Map Handle Splitting**: When connections sharing the same handle have mixed arrow states (some with arrows, some without), they are automatically split into separate offset handles to prevent visual overlap and confusion.
+- **Smart Bidirectional Offset**: Split handles use spatially-aware offset direction — the group whose connected nodes are above/left gets the upper/left offset, the other gets the lower/right offset, so curves lean toward their endpoints and don't cross.
+- **Secondary/Tertiary Handles**: ConceptNode now has three handle positions per side (center, -2 at `50%-8px`, -3 at `50%+8px`) for split connection routing.
+- **Source Arrow Sharing**: `drawSourceArrowhead` flag added to edge data; when multiple edges share a source handle and all have source arrows, only one draws the arrowhead (mirrors existing target arrow sharing).
+- **arrowheadLocked**: Connection flag that preserves manually toggled arrowhead directions during node moves. `updateConnectionArrowheadsForNode` skips locked connections.
+
+### Changed
+- **toggleConnectionArrowhead**: Now sets `arrowheadLocked: true` on the connection so manual arrow changes persist when nodes are dragged.
+- **updateConnectionArrowheadsForNode**: Skips connections with `arrowheadLocked` flag, preventing auto-recalculation from overwriting user choices.
+- **CurvedEdge**: `showSourceArrow` now respects `drawSourceArrowhead` flag for shared source handle arrowhead deduplication.
+- **vueFlowEdges computed**: Runs `splitMixedArrowHandleGroups` before arrowhead sharing logic; adds source-side grouping and `drawSourceArrowhead` assignment parallel to existing target-side logic.
+
 ## [5.43.0] - 2026-03-18
 
 ### Added

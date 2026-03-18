@@ -102,6 +102,8 @@ export interface Connection {
   }
   /** Concept map: unified arrowhead state. Cycle: none → clicked-side → other-side → both → none */
   arrowheadDirection?: 'none' | 'source' | 'target' | 'both'
+  /** When true, arrowheadDirection was manually set by the user and won't auto-update on node move */
+  arrowheadLocked?: boolean
 }
 
 export interface DiagramData {

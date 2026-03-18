@@ -4,7 +4,7 @@
  * so connection lines stay clean when users drag nodes around
  */
 import { DEFAULT_NODE_HEIGHT, DEFAULT_NODE_WIDTH } from '@/composables/diagrams/layoutConfig'
-import type { Connection, DiagramNode } from '@/types'
+import type { Connection, DiagramNode, MindGraphEdge } from '@/types'
 
 type Position = 'top' | 'bottom' | 'left' | 'right'
 
@@ -108,4 +108,127 @@ export function computeDefaultArrowheadForConceptMap(
   targetCenter: { x: number; y: number }
 ): 'target' | 'none' {
   return targetCenter.y <= sourceCenter.y ? 'target' : 'none'
+}
+
+function edgeHasTargetArrow(edge: MindGraphEdge): boolean {
+  const dir = edge.data?.arrowheadDirection
+  return dir === 'target' || dir === 'both'
+}
+
+function edgeHasSourceArrow(edge: MindGraphEdge): boolean {
+  const dir = edge.data?.arrowheadDirection
+  return dir === 'source' || dir === 'both'
+}
+
+type Side = 'left' | 'right' | 'top' | 'bottom'
+
+function extractSide(handle: string): Side {
+  if (handle.includes('left')) return 'left'
+  if (handle.includes('right')) return 'right'
+  if (handle.includes('top')) return 'top'
+  return 'bottom'
+}
+
+/**
+ * Average the spatial coordinate of connected nodes that's relevant to the
+ * handle side. For L/R handles, compare Y positions; for T/B, compare X.
+ */
+function groupAvgCoord(
+  edges: MindGraphEdge[],
+  connField: 'source' | 'target',
+  nodes: DiagramNode[],
+  side: Side
+): number {
+  let sum = 0
+  let count = 0
+  for (const edge of edges) {
+    const nodeId = connField === 'source' ? edge.source : edge.target
+    const node = nodes.find((n) => n.id === nodeId)
+    if (!node) continue
+    const center = getNodeCenter(node)
+    sum += side === 'left' || side === 'right' ? center.y : center.x
+    count++
+  }
+  return count > 0 ? sum / count : 0
+}
+
+/**
+ * Split edges that share a handle but have mixed arrow states into separate handles.
+ *
+ * Rules:
+ * - All edges on a handle have arrows → share (keep same handle)
+ * - All edges on a handle have NO arrows → share (keep same handle)
+ * - Mixed → split into two offset handles (-2 and -3) on opposite sides of center
+ *
+ * The offset direction is chosen based on where the connected nodes are:
+ * the group whose connected nodes are spatially "above/left" gets the -2 handle
+ * (offset toward start), and the other gets -3 (offset toward end). This ensures
+ * curves lean toward their endpoints and don't cross each other.
+ */
+export function splitMixedArrowHandleGroups(
+  edges: MindGraphEdge[],
+  nodes: DiagramNode[]
+): void {
+  splitByTargetHandle(edges, nodes)
+  splitBySourceHandle(edges, nodes)
+}
+
+function splitByTargetHandle(edges: MindGraphEdge[], nodes: DiagramNode[]): void {
+  const groups = new Map<string, MindGraphEdge[]>()
+  for (const edge of edges) {
+    const key = `${edge.target}:${edge.targetHandle ?? ''}`
+    if (!groups.has(key)) groups.set(key, [])
+    groups.get(key)!.push(edge)
+  }
+
+  for (const group of groups.values()) {
+    if (group.length <= 1) continue
+    const withArrow = group.filter(edgeHasTargetArrow)
+    const withoutArrow = group.filter((e) => !edgeHasTargetArrow(e))
+    if (withArrow.length === 0 || withoutArrow.length === 0) continue
+
+    const side = extractSide(group[0].targetHandle ?? '')
+    const arrowAvg = groupAvgCoord(withArrow, 'source', nodes, side)
+    const noArrowAvg = groupAvgCoord(withoutArrow, 'source', nodes, side)
+
+    const arrowSuffix = arrowAvg <= noArrowAvg ? '-2' : '-3'
+    const noArrowSuffix = arrowAvg <= noArrowAvg ? '-3' : '-2'
+
+    for (const edge of withArrow) {
+      if (edge.targetHandle) edge.targetHandle = `${edge.targetHandle}${arrowSuffix}`
+    }
+    for (const edge of withoutArrow) {
+      if (edge.targetHandle) edge.targetHandle = `${edge.targetHandle}${noArrowSuffix}`
+    }
+  }
+}
+
+function splitBySourceHandle(edges: MindGraphEdge[], nodes: DiagramNode[]): void {
+  const groups = new Map<string, MindGraphEdge[]>()
+  for (const edge of edges) {
+    const key = `${edge.source}:${edge.sourceHandle ?? ''}`
+    if (!groups.has(key)) groups.set(key, [])
+    groups.get(key)!.push(edge)
+  }
+
+  for (const group of groups.values()) {
+    if (group.length <= 1) continue
+    const withArrow = group.filter(edgeHasSourceArrow)
+    const withoutArrow = group.filter((e) => !edgeHasSourceArrow(e))
+    if (withArrow.length === 0 || withoutArrow.length === 0) continue
+
+    const side = extractSide(group[0].sourceHandle ?? '')
+    const arrowAvg = groupAvgCoord(withArrow, 'target', nodes, side)
+    const noArrowAvg = groupAvgCoord(withoutArrow, 'target', nodes, side)
+
+    const arrowSuffix = arrowAvg <= noArrowAvg ? '-2' : '-3'
+    const noArrowSuffix = arrowAvg <= noArrowAvg ? '-3' : '-2'
+
+    for (const edge of withArrow) {
+      if (edge.sourceHandle) edge.sourceHandle = `${edge.sourceHandle}${arrowSuffix}`
+    }
+    for (const edge of withoutArrow) {
+      if (edge.sourceHandle) edge.sourceHandle = `${edge.sourceHandle}${noArrowSuffix}`
+    }
+  }
 }
