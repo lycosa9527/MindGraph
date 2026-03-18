@@ -1,6 +1,0 @@
-#ifndef SDKCONFIG_H
-#define SDKCONFIG_H
-
-#define CONFIG_LV_CONF_INCLUDE_SIMPLE 1
-
-#endif

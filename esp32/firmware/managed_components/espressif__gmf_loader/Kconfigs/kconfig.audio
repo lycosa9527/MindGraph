@@ -1,7 +1,0 @@
-menu "GMF Audio Configurations"
-
-    rsource "kconfig.audio_codec"
-    rsource "kconfig.audio_effects"
-    rsource "kconfig.ai_audio"
-
-endmenu

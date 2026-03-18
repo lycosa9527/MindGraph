@@ -1,8 +1,0 @@
-.gitlab/tools/check_readme_links.py
-.gitlab/tools/push_to_github.sh
-
-tools/check_executables.py
-tools/test_url_404.py
-tools/run_test_apps.py
-
-conftest.py
