@@ -1521,9 +1521,9 @@ export const useDiagramStore = defineStore('diagram', () => {
         spec.rightBranches.push(branch)
       }
     } else if (targetType === 'child' && targetId) {
-      parentArray.splice(indexInParent, 1)
       const targetFound = findBranchByNodeId(spec.rightBranches, spec.leftBranches, targetId)
       if (!targetFound) return false
+      parentArray.splice(indexInParent, 1)
       if (!targetFound.branch.children) targetFound.branch.children = []
       targetFound.branch.children.push(branch)
     } else if (targetType === 'sibling' && targetId !== undefined) {
