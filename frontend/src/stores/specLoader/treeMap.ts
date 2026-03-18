@@ -72,7 +72,7 @@ export function loadTreeMapSpec(spec: Record<string, unknown>): SpecLoaderResult
   const alternativeDimensions = spec.alternative_dimensions as string[] | undefined
 
   if (root) {
-    const rootId = root.id || 'tree-topic'
+    const rootId = 'tree-topic'
     const categories = root.children || []
 
     // Custom layout: center-aligned vertical groups with reduced spacing
@@ -139,7 +139,7 @@ export function loadTreeMapSpec(spec: Record<string, unknown>): SpecLoaderResult
     let columnLeft = DEFAULT_CENTER_X - totalCategoriesWidth / 2
 
     categories.forEach((category, catIndex) => {
-      const categoryId = category.id || `tree-cat-${catIndex}`
+      const categoryId = `tree-cat-${catIndex}`
       const dims = groupDimsList[catIndex]
       const groupCenterX = columnLeft + dims.maxWidth / 2
       const categoryX = groupCenterX - dims.categoryWidth / 2
@@ -168,7 +168,7 @@ export function loadTreeMapSpec(spec: Record<string, unknown>): SpecLoaderResult
       let leafY = categoryY + dims.categoryHeight + TREE_MAP_CATEGORY_TO_LEAF_GAP
 
       leaves.forEach((leaf, leafIndex) => {
-        const leafId = leaf.id || `tree-leaf-${catIndex}-${leafIndex}`
+        const leafId = `tree-leaf-${catIndex}-${leafIndex}`
         const leafWidth = dims.leafWidths[leafIndex] ?? NODE_MIN_DIMENSIONS.branch.minWidth
         const leafHeight = dims.leafHeights[leafIndex] ?? NODE_MIN_DIMENSIONS.branch.minHeight
         const leafX = groupCenterX - leafWidth / 2
@@ -182,9 +182,7 @@ export function loadTreeMapSpec(spec: Record<string, unknown>): SpecLoaderResult
         })
 
         const sourceId =
-          leafIndex === 0
-            ? categoryId
-            : leaves[leafIndex - 1].id || `tree-leaf-${catIndex}-${leafIndex - 1}`
+          leafIndex === 0 ? categoryId : `tree-leaf-${catIndex}-${leafIndex - 1}`
         connections.push({
           id: `edge-${sourceId}-${leafId}`,
           source: sourceId,

@@ -276,11 +276,6 @@ const menuItems = computed<MenuItem[]>(() => {
             type: 'bubble',
             position: { x: 0, y: 0 },
           })
-          diagramStore.data.connections.push({
-            id: `edge-topic-bubble-${newIndex}`,
-            source: 'topic',
-            target: `bubble-${newIndex}`,
-          })
           diagramStore.pushHistory(isZh.value ? '添加属性' : 'Add Attribute')
           emit('close')
         },
