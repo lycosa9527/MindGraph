@@ -149,7 +149,11 @@ class TreeMapAgent(BaseAgent):
             logger.warning(
                 "TreeMapAgent: No fixed_dimension prompt found, using fallback"
             )
-            system_prompt = self._fallback_fixed_dim_prompt(language, fixed_dimension)
+            system_prompt = self._fallback_fixed_dim_prompt(
+                prompt, language, fixed_dimension
+            )
+        else:
+            system_prompt = system_prompt.format(topic=prompt)
         user_prompt = (
             f"主题：{prompt}\n\n请使用指定的分类维度「{fixed_dimension}」生成树形图。"
             if language == "zh"
@@ -157,7 +161,9 @@ class TreeMapAgent(BaseAgent):
         )
         return system_prompt, user_prompt
 
-    def _fallback_fixed_dim_prompt(self, language: str, fixed_dimension: str) -> str:
+    def _fallback_fixed_dim_prompt(
+        self, prompt: str, language: str, fixed_dimension: str
+    ) -> str:
         """Fallback system prompt when fixed_dimension template is missing."""
         if language == "zh":
             return (
@@ -165,7 +171,7 @@ class TreeMapAgent(BaseAgent):
                 "你必须使用这个指定的分类维度来生成树形图。不要改变或重新解释这个分类维度。\n\n"
                 f'生成一个树形图，包含3-5个分类（基于指定的维度"{fixed_dimension}"），'
                 "每个分类有2-4个子项。\n"
-                f'返回JSON：{{"topic": "主题", "dimension": "{fixed_dimension}", '
+                f'返回JSON：{{"topic": "{prompt}", "dimension": "{fixed_dimension}", '
                 '"children": [...], "alternative_dimensions": [...]}\n\n'
                 f'重要：dimension字段必须完全保持为"{fixed_dimension}"，不要改变它！'
             )
@@ -175,7 +181,7 @@ class TreeMapAgent(BaseAgent):
             "Do NOT change or reinterpret it.\n\n"
             f'Generate a tree map with 3-5 categories (based on the specified dimension "{fixed_dimension}"), '
             "each with 2-4 items.\n"
-            f'Return JSON: {{"topic": "Topic", "dimension": "{fixed_dimension}", '
+            f'Return JSON: {{"topic": "{prompt}", "dimension": "{fixed_dimension}", '
             '"children": [...], "alternative_dimensions": [...]}\n\n'
             f'CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" - do NOT change it!'
         )
@@ -191,6 +197,7 @@ class TreeMapAgent(BaseAgent):
         if not system_prompt:
             logger.error("TreeMapAgent: No prompt found for language %s", language)
             return None
+        system_prompt = system_prompt.format(topic=prompt)
         if dimension_preference:
             logger.debug(
                 "TreeMapAgent: User specified dimension preference: %s",

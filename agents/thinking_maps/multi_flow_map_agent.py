@@ -112,6 +112,7 @@ class MultiFlowMapAgent(BaseAgent):
             if not system_prompt:
                 logger.error("MultiFlowMapAgent: No prompt found for language %s", language)
                 return None
+            system_prompt = system_prompt.format(topic=prompt)
 
             user_prompt = (
                 f"请为以下描述创建一个复流程图：{prompt}"

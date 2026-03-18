@@ -103,6 +103,7 @@ class BubbleMapAgent(BaseAgent):
             if not system_prompt:
                 logger.error("BubbleMapAgent: No prompt found for language %s", language)
                 return None
+            system_prompt = system_prompt.format(topic=prompt)
 
             if language == "zh":
                 user_prompt = f"请为以下描述创建一个气泡图：{prompt}"

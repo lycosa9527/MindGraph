@@ -164,6 +164,10 @@ class DoubleBubbleMapAgent(BaseAgent):
                     language
                 )
                 return None
+            left_topic, right_topic = self._split_topics(topics, language)
+            system_prompt = system_prompt.format(
+                left_topic=left_topic, right_topic=right_topic
+            )
             user_prompt = self._build_user_prompt(topics, language)
             chat_kwargs = {
                 'prompt': user_prompt,
@@ -185,6 +189,15 @@ class DoubleBubbleMapAgent(BaseAgent):
                 "DoubleBubbleMapAgent: Error in spec generation: %s", e
             )
             return None
+
+    @staticmethod
+    def _split_topics(topics: str, language: str) -> Tuple[str, str]:
+        """Split extracted topics string into left and right topics."""
+        separator = "和" if language == "zh" else " and "
+        parts = topics.split(separator, 1)
+        if len(parts) == 2:
+            return parts[0].strip(), parts[1].strip()
+        return topics.strip(), topics.strip()
 
     def _build_user_prompt(self, topics: str, language: str) -> str:
         """Build user prompt from extracted topics."""

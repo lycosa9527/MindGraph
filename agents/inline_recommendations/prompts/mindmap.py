@@ -38,7 +38,7 @@ def build_mindmap_branches_prompt(
             prompt += f"""
 
 图中已有分支：{', '.join(branch_names)}。请生成更聚焦、互补的分支推荐，与已有分支形成补充，避免重复。"""
-        prompt += """
+        prompt += f"""
 
 要求：每个分支想法要简洁明了（1-5个词），不要使用完整句子，不要编号。只输出分支文本，每行一个。
 
@@ -65,7 +65,7 @@ Thinking approach: {thinking}
                 f"\n\nThe diagram already has branches: {branches}. "
                 "Generate more focused, complementary recommendations, avoid repetition."
             )
-        prompt += """
+        prompt += f"""
 
 Requirements: Each branch idea should be concise (1-5 words), avoid full sentences, no numbering. Output only the branch text, one per line.
 
@@ -111,7 +111,7 @@ def build_mindmap_children_prompt(
             prompt += f"""
 
 我们正在分支「{branch_name}」下工作，该分支已有子节点：{', '.join(children_texts)}。请生成更聚焦、互补的子分支推荐，与已有子节点形成补充，避免重复。"""
-        prompt += """
+        prompt += f"""
 
 要求：每个子分支想法要简洁明了（1-5个词），不要使用完整句子，不要编号。只输出子分支文本，每行一个。
 
@@ -139,7 +139,7 @@ Thinking approach: In-depth, Refinement, Expansion
                 "Generate more focused, complementary sub-branch recommendations "
                 "that build on these, avoid repetition."
             )
-        prompt += """
+        prompt += f"""
 
 Requirements: Each sub-branch idea should be concise (1-5 words), avoid full sentences, no numbering. Output only sub-branch text, one per line.
 

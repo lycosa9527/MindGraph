@@ -117,6 +117,7 @@ class FlowMapAgent(BaseAgent):
             if not system_prompt:
                 logger.error("FlowMapAgent: No prompt found for language %s", language)
                 return None
+            system_prompt = system_prompt.format(topic=prompt)
 
             user_prompt = (
                 f"请为以下描述创建一个流程图：{prompt}"

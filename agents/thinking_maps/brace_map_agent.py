@@ -163,10 +163,10 @@ class BraceMapAgent(BaseAgent):
 
                 if not system_prompt:
                     logger.warning("BraceMapAgent: No fixed_dimension prompt found, using fallback")
-                    # Fallback prompt for fixed dimension mode
                     if language == "zh":
                         json_example = (
-                            '{"whole": "主题", "dimension": "' + fixed_dimension + '", '
+                            '{"whole": "' + prompt + '", "dimension": "'
+                            + fixed_dimension + '", '
                             '"parts": [...], "alternative_dimensions": [...]}'
                         )
                         system_prompt = (
@@ -185,12 +185,14 @@ You MUST use this exact dimension to generate the brace map. Do NOT change or re
 
 Generate a brace map decomposing the topic according to the specified dimension """
                             f""""{fixed_dimension}", with 3-5 parts, each with 2-4 subparts.
-Return JSON: {{"whole": "Topic", "dimension": "{fixed_dimension}", """
-                            f"""parts": [...], "alternative_dimensions": [...]}}
+Return JSON: {{"whole": "{prompt}", "dimension": "{fixed_dimension}", """
+                            f""""parts": [...], "alternative_dimensions": [...]}}
 
 CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" """
                             f"""- do NOT change it!"""
                         )
+                else:
+                    system_prompt = system_prompt.format(topic=prompt)
 
                 if language == "zh":
                     user_prompt = f"主题：{prompt}\n\n请使用指定的拆解维度「{fixed_dimension}」生成括号图。"
@@ -206,6 +208,7 @@ CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" """
                 if not system_prompt:
                     logger.error("BraceMapAgent: No prompt found for language %s", language)
                     return None
+                system_prompt = system_prompt.format(topic=prompt)
 
                 # Build user prompt with dimension preference if specified
                 if dimension_preference:

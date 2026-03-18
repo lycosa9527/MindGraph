@@ -37,7 +37,7 @@ def build_flow_steps_prompt(
             prompt += f"""
 
 图中已有步骤：{', '.join(step_names)}。请生成更聚焦、互补的步骤推荐，与已有步骤形成补充，避免重复。"""
-        prompt += """
+        prompt += f"""
 
 要求：每个步骤要简洁明了（1-6个词），不要标点符号，不要编号前缀。只输出步骤文本，每行一个。请按照时间顺序从早到晚排列步骤。
 
@@ -64,7 +64,7 @@ Thinking approach: Sequential, Procedural
                 f"\n\nThe diagram already has steps: {steps}. "
                 "Generate more focused, complementary recommendations, avoid repetition."
             )
-        prompt += """
+        prompt += f"""
 
 Requirements: Each step concise (1-6 words), no punctuation, no numbering prefixes. Output only step text, one per line. Arrange steps in chronological order from earliest to latest.
 
