@@ -12,6 +12,7 @@ import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 
 import { authFetch } from '@/utils/api'
+import { useAuthStore } from '@/stores/auth'
 
 import {
   INLINE_RECOMMENDATIONS_CLEANUP,
@@ -208,12 +209,13 @@ export const useInlineRecommendationsStore = defineStore(
 
     function cleanupBackendSessions(nodeIds: string[]): void {
       if (nodeIds.length === 0) return
+      if (!useAuthStore().isAuthenticated) return
       authFetch(INLINE_RECOMMENDATIONS_CLEANUP, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ node_ids: nodeIds }),
-      }).catch((err) => {
-        console.warn('[InlineRec] Cleanup failed:', err)
+      }).catch(() => {
+        // Silently ignore 401/network errors - cleanup is best-effort
       })
     }
 

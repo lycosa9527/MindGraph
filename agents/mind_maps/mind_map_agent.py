@@ -610,6 +610,14 @@ class MindMapAgent(BaseAgent):
         recommended_dimensions = self._compute_recommended_dimensions(positions, topic, children)
 
         logger.debug("🎉 SIMPLE BALANCED LAYOUT - Layout complete!")
+        logger.debug(
+            "[CurveDebug] backend layout extents: left_branches_x=%.1f right_branches_x=%.1f "
+            "left_children_x=%.1f right_children_x=%.1f",
+            left_branches_x,
+            right_branches_x,
+            left_children_x,
+            right_children_x,
+        )
 
         # Return complete layout
         return {

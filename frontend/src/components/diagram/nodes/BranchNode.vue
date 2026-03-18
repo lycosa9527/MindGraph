@@ -4,7 +4,7 @@
  * Represents branches, children, or categories in hierarchical diagrams
  * Supports inline text editing on double-click
  */
-import { computed, ref } from 'vue'
+import { computed, inject, ref } from 'vue'
 import type { CSSProperties } from 'vue'
 
 import { Handle, Position } from '@vue-flow/core'
@@ -133,6 +133,41 @@ const nodeStyle = computed((): CSSProperties => {
 // Inline editing state
 const isEditing = ref(false)
 
+// Branch move (mind map long-press to move branch)
+const branchMove = inject<{
+  onBranchMovePointerDown: (
+    nodeId: string,
+    isEditing: boolean,
+    clientX?: number,
+    clientY?: number
+  ) => void
+  onBranchMovePointerUp: () => void
+}>('branchMove', { onBranchMovePointerDown: () => {}, onBranchMovePointerUp: () => {} })
+
+const supportsBranchMove = computed(
+  () =>
+    isMindMap.value ||
+    (props.data.diagramType === 'tree_map' && (props.id?.startsWith('tree-cat-') || props.id?.startsWith('tree-leaf-'))) ||
+    (isBridgeMap.value && props.id?.startsWith('pair-'))
+)
+
+function handleBranchMovePointerDown(event: MouseEvent): void {
+  if (supportsBranchMove.value) {
+    branchMove.onBranchMovePointerDown(
+      props.id,
+      isEditing.value,
+      event.clientX,
+      event.clientY
+    )
+  }
+}
+
+function handleBranchMovePointerUp(): void {
+  if (supportsBranchMove.value) {
+    branchMove.onBranchMovePointerUp()
+  }
+}
+
 function handleTextSave(newText: string) {
   isEditing.value = false
   eventBus.emit('node:text_updated', {
@@ -154,6 +189,8 @@ function handleEditCancel() {
       'border-none': isBridgeMap,
     }"
     :style="nodeStyle"
+    @mousedown.capture="handleBranchMovePointerDown"
+    @mouseup.capture="handleBranchMovePointerUp"
   >
     <InlineEditableText
       :text="data.label || ''"

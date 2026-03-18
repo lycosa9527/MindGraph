@@ -5,7 +5,7 @@
  * Supports inline text editing on double-click
  * Uses mindmap branch color palette for part/subpart groups (like double bubble map)
  */
-import { computed, ref } from 'vue'
+import { computed, inject, ref } from 'vue'
 
 import { Handle, Position } from '@vue-flow/core'
 
@@ -96,6 +96,30 @@ function handleTextSave(newText: string) {
 function handleEditCancel() {
   isEditing.value = false
 }
+
+const branchMove = inject<{
+  onBranchMovePointerDown: (
+    nodeId: string,
+    isEditing: boolean,
+    clientX?: number,
+    clientY?: number
+  ) => void
+  onBranchMovePointerUp: () => void
+}>('branchMove', { onBranchMovePointerDown: () => {}, onBranchMovePointerUp: () => {} })
+
+const supportsBranchMove = computed(() => !isWholeNode.value)
+
+function handleBranchMovePointerDown(event: MouseEvent): void {
+  if (supportsBranchMove.value) {
+    branchMove.onBranchMovePointerDown(props.id, isEditing.value, event.clientX, event.clientY)
+  }
+}
+
+function handleBranchMovePointerUp(): void {
+  if (supportsBranchMove.value) {
+    branchMove.onBranchMovePointerUp()
+  }
+}
 </script>
 
 <template>
@@ -103,6 +127,8 @@ function handleEditCancel() {
     class="brace-node flex items-center justify-center px-4 py-2 border-solid cursor-grab select-none"
     :class="{ 'pill-shape': usePillShape }"
     :style="nodeStyle"
+    @mousedown.capture="handleBranchMovePointerDown"
+    @mouseup.capture="handleBranchMovePointerUp"
   >
     <InlineEditableText
       :text="data.label || ''"

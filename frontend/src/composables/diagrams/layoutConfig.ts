@@ -149,6 +149,10 @@ export const DEFAULT_VERTICAL_SPACING = 60
  *  Matches double bubble map diff-to-topic spacing for shorter, tighter curves. */
 export const DEFAULT_MINDMAP_RANK_SEPARATION = 80
 
+/** Minimum horizontal extent for mindmap curves. When layout produces smaller extent
+ * (e.g. after branch move), scale both sides up to this for consistent curve length. */
+export const MINDMAP_TARGET_EXTENT = 450
+
 /** Default step spacing for flow maps */
 export const DEFAULT_STEP_SPACING = 200
 

@@ -5,7 +5,7 @@
  * Supports inline text editing on double-click
  * Uses mindmap branch color palette for multi-flow map causes/effects
  */
-import { computed, nextTick, ref } from 'vue'
+import { computed, inject, nextTick, ref } from 'vue'
 
 import { Handle, Position } from '@vue-flow/core'
 
@@ -168,9 +168,37 @@ function handleWidthChange(width: number) {
 }
 
 function handleDeleteClick(event: MouseEvent) {
-  event.stopPropagation() // Prevent node selection/dragging
+  event.stopPropagation()
   if (diagramStore.removeNode(props.id)) {
     diagramStore.pushHistory('删除节点')
+  }
+}
+
+const branchMove = inject<{
+  onBranchMovePointerDown: (
+    nodeId: string,
+    isEditing: boolean,
+    clientX?: number,
+    clientY?: number
+  ) => void
+  onBranchMovePointerUp: () => void
+}>('branchMove', { onBranchMovePointerDown: () => {}, onBranchMovePointerUp: () => {} })
+
+const supportsBranchMove = computed(() => {
+  if (isFlowMap.value) return props.id?.startsWith('flow-step-')
+  if (isMultiFlowMap.value) return isCause.value || isEffect.value
+  return false
+})
+
+function handleBranchMovePointerDown(event: MouseEvent): void {
+  if (supportsBranchMove.value) {
+    branchMove.onBranchMovePointerDown(props.id, isEditing.value, event.clientX, event.clientY)
+  }
+}
+
+function handleBranchMovePointerUp(): void {
+  if (supportsBranchMove.value) {
+    branchMove.onBranchMovePointerUp()
   }
 }
 </script>
@@ -182,6 +210,8 @@ function handleDeleteClick(event: MouseEvent) {
     :style="nodeStyle"
     @mouseenter="isHovering = true"
     @mouseleave="isHovering = false"
+    @mousedown.capture="handleBranchMovePointerDown"
+    @mouseup.capture="handleBranchMovePointerUp"
   >
     <!-- Delete button - positioned using Vue Flow handle positioning system (Top + Right) -->
     <!-- Positioned at top-right corner using same absolute positioning as handles -->

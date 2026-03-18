@@ -10,6 +10,7 @@ import {
   DEFAULT_NODE_WIDTH,
   DEFAULT_PADDING,
   DEFAULT_VERTICAL_SPACING,
+  MINDMAP_TARGET_EXTENT,
 } from '@/composables/diagrams/layoutConfig'
 import { calculateDagreLayout } from '@/composables/diagrams/useDagreLayout'
 import type { Connection, DiagramNode } from '@/types'
@@ -24,6 +25,25 @@ interface MindMapBranch {
 /** Canonical field is text; accept label for backward compatibility with older specs */
 function getBranchText(branch: { text?: string; label?: string }): string {
   return (branch.text ?? branch.label ?? '') as string
+}
+
+/**
+ * Estimate rendered BranchNode width from text content.
+ * BranchNode auto-sizes: min-width 80px, InlineEditableText max-width 150px,
+ * plus px-4 padding (32px) and border (~6px). CJK chars ~16px, Latin ~9px at 16px font.
+ */
+function estimateNodeWidth(text: string): number {
+  if (!text) return DEFAULT_NODE_WIDTH
+  const cjkRegex = /[\u4E00-\u9FFF\u3400-\u4DBF\uF900-\uFAFF]/g
+  const cjkMatches = text.match(cjkRegex)
+  const cjkCount = cjkMatches ? cjkMatches.length : 0
+  const otherCount = text.length - cjkCount
+  const rawTextWidth = cjkCount * 16 + otherCount * 9
+  const maxTextWidth = 150
+  const nodeHorizontalExtra = 38
+  const minNodeWidth = 80
+  const textWidth = Math.min(rawTextWidth, maxTextWidth)
+  return Math.max(minNodeWidth, textWidth + nodeHorizontalExtra)
 }
 
 /**
@@ -46,6 +66,7 @@ interface MindMapNodeInfo {
   text: string
   depth: number
   direction: 1 | -1
+  estimatedWidth: number
 }
 
 function flattenMindMapBranches(
@@ -65,9 +86,11 @@ function flattenMindMapBranches(
     const globalIndex = globalCounter.value++
     const nodeId = `branch-${direction > 0 ? 'r' : 'l'}-${depth}-${globalIndex}`
 
+    const text = getBranchText(branch)
+    const estimatedWidth = estimateNodeWidth(text)
     const nodeHeight = getSubtreeHeight(branch, verticalSpacing)
-    dagreNodes.push({ id: nodeId, width: DEFAULT_NODE_WIDTH, height: nodeHeight })
-    nodeInfos.set(nodeId, { text: getBranchText(branch), depth, direction })
+    dagreNodes.push({ id: nodeId, width: estimatedWidth, height: nodeHeight })
+    nodeInfos.set(nodeId, { text, depth, direction, estimatedWidth })
     dagreEdges.push({ source: parentId, target: nodeId })
 
     if (branch.children && branch.children.length > 0) {
@@ -334,11 +357,9 @@ function layoutMindMapSideWithClockwiseHandles(
     // Use adjusted Y position if available, otherwise use original
     const finalY = adjustedY.get(nodeId) ?? pos.y
 
-    // pos is top-left from Dagre; offset shifts layout. No extra -NODE_WIDTH/2 (was wrong).
     const rawX = pos.x + offsetX
-    // Left side: LR places branches to the right of topic; mirror around centerX for symmetry
     const finalX =
-      side === 'left' ? 2 * topicX - rawX - DEFAULT_NODE_WIDTH : rawX
+      side === 'left' ? 2 * topicX - rawX - info.estimatedWidth : rawX
 
     const branchIndex = branchIndexMap.get(nodeId) ?? 0
 
@@ -350,7 +371,7 @@ function layoutMindMapSideWithClockwiseHandles(
         x: finalX,
         y: finalY + offsetY,
       },
-      data: { branchIndex },
+      data: { branchIndex, estimatedWidth: info.estimatedWidth },
     })
   })
 
@@ -536,11 +557,13 @@ export function distributeBranchesClockwise(branches: MindMapBranch[]): {
 /**
  * Normalize horizontal extent so left and right sides have equal curve length from center.
  * Shrinks the side with greater extent to match the shorter side (avoids over-extending).
+ * Expands the shorter side when below minExtent (fixes short curves after branch move).
  * Exported for use when loading saved mindmap diagrams (loadGenericSpec path).
  */
 export function normalizeMindMapHorizontalSymmetry(
   nodes: DiagramNode[],
-  centerX: number
+  centerX: number,
+  minExtent: number = DEFAULT_MINDMAP_RANK_SEPARATION
 ): void {
   const leftNodes = nodes.filter(
     (n) => n.type === 'branch' && n.id.startsWith('branch-l-')
@@ -551,36 +574,175 @@ export function normalizeMindMapHorizontalSymmetry(
 
   if (leftNodes.length === 0 && rightNodes.length === 0) return
 
+  const getNodeWidth = (node: DiagramNode): number =>
+    (node.data?.estimatedWidth as number) || DEFAULT_NODE_WIDTH
   const getCenterX = (node: DiagramNode): number =>
-    (node.position?.x ?? 0) + DEFAULT_NODE_WIDTH / 2
+    (node.position?.x ?? 0) + getNodeWidth(node) / 2
 
-  const leftExtent =
+  function scaleNodeX(
+    node: DiagramNode,
+    centerX: number,
+    scale: number,
+    side: 'left' | 'right'
+  ): void {
+    if (!node.position) return
+    const nodeWidth = getNodeWidth(node)
+    const center = getCenterX(node)
+    const distFromCenter = side === 'left' ? centerX - center : center - centerX
+    const newCenter =
+      side === 'left'
+        ? centerX - distFromCenter * scale
+        : centerX + distFromCenter * scale
+    node.position.x = newCenter - nodeWidth / 2
+  }
+
+  let leftExtent =
     leftNodes.length > 0
       ? centerX - Math.min(...leftNodes.map(getCenterX))
       : 0
-  const rightExtent =
+  let rightExtent =
     rightNodes.length > 0
       ? Math.max(...rightNodes.map(getCenterX)) - centerX
       : 0
 
-  const targetExtent = Math.min(leftExtent, rightExtent) || Math.max(leftExtent, rightExtent)
-  if (targetExtent <= 0) return
-
-  if (leftExtent > 0 && leftExtent > targetExtent) {
-    const scale = targetExtent / leftExtent
-    leftNodes.forEach((node) => {
-      if (node.position) {
-        node.position.x = centerX - (centerX - node.position.x) * scale
-      }
-    })
+  console.log('[CurveDebug] normalize before', {
+    centerX,
+    leftCount: leftNodes.length,
+    rightCount: rightNodes.length,
+    leftExtent,
+    rightExtent,
+    leftExtentDelta: leftExtent - rightExtent,
+    minExtent,
+  })
+  // Scale both sides up when extent is below target (e.g. after branch move)
+  const currentExtent = Math.min(leftExtent, rightExtent) || Math.max(leftExtent, rightExtent)
+  if (currentExtent > 0 && currentExtent < MINDMAP_TARGET_EXTENT) {
+    const scale = MINDMAP_TARGET_EXTENT / currentExtent
+    leftNodes.forEach((node) => scaleNodeX(node, centerX, scale, 'left'))
+    rightNodes.forEach((node) => scaleNodeX(node, centerX, scale, 'right'))
+    leftExtent = leftExtent > 0 ? leftExtent * scale : 0
+    rightExtent = rightExtent > 0 ? rightExtent * scale : 0
   }
 
-  if (rightExtent > 0 && rightExtent > targetExtent) {
+  const leftExpanded = leftExtent > 0 && leftExtent < minExtent
+  const rightExpanded = rightExtent > 0 && rightExtent < minExtent
+  // Expand shorter side when below minimum (e.g. after branch move leaves one side sparse)
+  if (leftExpanded) {
+    const scale = minExtent / leftExtent
+    leftNodes.forEach((node) => scaleNodeX(node, centerX, scale, 'left'))
+    leftExtent = minExtent
+  }
+  if (rightExpanded) {
+    const scale = minExtent / rightExtent
+    rightNodes.forEach((node) => scaleNodeX(node, centerX, scale, 'right'))
+    rightExtent = minExtent
+  }
+
+  // Expand smaller to match larger (never shrink) - same behavior as manual add
+  const targetExtent = Math.max(leftExtent, rightExtent) || Math.min(leftExtent, rightExtent)
+  if (targetExtent <= 0) return
+
+  if (leftExtent > 0 && leftExtent < targetExtent) {
+    const scale = targetExtent / leftExtent
+    leftNodes.forEach((node) => scaleNodeX(node, centerX, scale, 'left'))
+  }
+
+  if (rightExtent > 0 && rightExtent < targetExtent) {
     const scale = targetExtent / rightExtent
-    rightNodes.forEach((node) => {
-      if (node.position) {
-        node.position.x = centerX + (node.position.x - centerX) * scale
+    rightNodes.forEach((node) => scaleNodeX(node, centerX, scale, 'right'))
+  }
+  const leftExtentAfter =
+    leftNodes.length > 0 ? centerX - Math.min(...leftNodes.map(getCenterX)) : 0
+  const rightExtentAfter =
+    rightNodes.length > 0 ? Math.max(...rightNodes.map(getCenterX)) - centerX : 0
+  console.log('[CurveDebug] normalize after', {
+    targetExtent,
+    leftExtentAfter,
+    rightExtentAfter,
+    extentDiff: Math.abs(leftExtentAfter - rightExtentAfter),
+    leftExpanded,
+    rightExpanded,
+  })
+}
+
+/**
+ * Normalize branch-to-child curve spans so left and right match.
+ * Layout can produce asymmetric spans (e.g. left 224.72 vs right 240); scale the shorter
+ * side's children relative to their parents to match.
+ */
+function normalizeBranchToChildSpans(
+  nodes: DiagramNode[],
+  connections: Connection[]
+): void {
+  const getNodeWidth = (n: DiagramNode): number =>
+    (n.data?.estimatedWidth as number) || DEFAULT_NODE_WIDTH
+  const getCenterX = (n: DiagramNode) =>
+    (n.position?.x ?? 0) + getNodeWidth(n) / 2
+  const nodeCenterX = new Map<string, number>()
+  nodes.forEach((n) => {
+    if (n.position) {
+      nodeCenterX.set(n.id, getCenterX(n))
+    }
+  })
+
+  const leftSpans: { parentId: string; childId: string; span: number }[] = []
+  const rightSpans: { parentId: string; childId: string; span: number }[] = []
+  connections.forEach((conn) => {
+    if (
+      conn.source.startsWith('branch-') &&
+      conn.target.startsWith('branch-') &&
+      conn.source !== conn.target
+    ) {
+      const srcX = nodeCenterX.get(conn.source)
+      const tgtX = nodeCenterX.get(conn.target)
+      if (srcX != null && tgtX != null) {
+        const span = Math.abs(tgtX - srcX)
+        if (conn.source.startsWith('branch-l-')) {
+          leftSpans.push({ parentId: conn.source, childId: conn.target, span })
+        } else {
+          rightSpans.push({ parentId: conn.source, childId: conn.target, span })
+        }
       }
+    }
+  })
+
+  const leftAvg =
+    leftSpans.length > 0
+      ? leftSpans.reduce((s, p) => s + p.span, 0) / leftSpans.length
+      : 0
+  const rightAvg =
+    rightSpans.length > 0
+      ? rightSpans.reduce((s, p) => s + p.span, 0) / rightSpans.length
+      : 0
+  if (leftAvg <= 0 || rightAvg <= 0) return
+
+  const target = Math.max(leftAvg, rightAvg)
+  const nodeMap = new Map(nodes.map((n) => [n.id, n]))
+
+  if (leftAvg < target) {
+    const scale = target / leftAvg
+    leftSpans.forEach(({ parentId, childId }) => {
+      const parent = nodeMap.get(parentId)
+      const child = nodeMap.get(childId)
+      if (!parent?.position || !child?.position) return
+      const parentCenter = getCenterX(parent)
+      const childCenter = getCenterX(child)
+      const distFromParent = childCenter - parentCenter
+      const newChildCenter = parentCenter + distFromParent * scale
+      child.position.x = newChildCenter - getNodeWidth(child) / 2
+    })
+  }
+  if (rightAvg < target) {
+    const scale = target / rightAvg
+    rightSpans.forEach(({ parentId, childId }) => {
+      const parent = nodeMap.get(parentId)
+      const child = nodeMap.get(childId)
+      if (!parent?.position || !child?.position) return
+      const parentCenter = getCenterX(parent)
+      const childCenter = getCenterX(child)
+      const distFromParent = childCenter - parentCenter
+      const newChildCenter = parentCenter + distFromParent * scale
+      child.position.x = newChildCenter - getNodeWidth(child) / 2
     })
   }
 }
@@ -620,20 +782,20 @@ export function nodesAndConnectionsToMindMapSpec(
   }
 
   const topicChildIds = childrenMap.get('topic') ?? []
+  // ID format: branch-{side}-{depth}-{globalIndex}; sort by globalIndex to preserve layout order
+  const sortByGlobalIndex = (a: string, b: string): number => {
+    const aParts = a.split('-')
+    const bParts = b.split('-')
+    const aIdx = parseInt(aParts[3] ?? '0', 10)
+    const bIdx = parseInt(bParts[3] ?? '0', 10)
+    return aIdx - bIdx
+  }
   const rightIds = topicChildIds
     .filter((id) => id.startsWith('branch-r-'))
-    .sort((a, b) => {
-      const aNum = parseInt(a.split('-')[2], 10)
-      const bNum = parseInt(b.split('-')[2], 10)
-      return aNum - bNum
-    })
+    .sort(sortByGlobalIndex)
   const leftIds = topicChildIds
     .filter((id) => id.startsWith('branch-l-'))
-    .sort((a, b) => {
-      const aNum = parseInt(a.split('-')[2], 10)
-      const bNum = parseInt(b.split('-')[2], 10)
-      return aNum - bNum
-    })
+    .sort(sortByGlobalIndex)
 
   const rightBranches = rightIds
     .map((id) => buildBranch(id))
@@ -703,6 +865,11 @@ export function loadMindMapSpec(spec: Record<string, unknown>): SpecLoaderResult
   let leftBranches: MindMapBranch[]
 
   if (spec.preserveLeftRight && spec.leftBranches && spec.rightBranches) {
+    console.log('[BranchMove] loadMindMapSpec (preserveLeftRight)', {
+      topic,
+      leftCount: (spec.leftBranches as MindMapBranch[]).length,
+      rightCount: (spec.rightBranches as MindMapBranch[]).length,
+    })
     rightBranches = spec.rightBranches as MindMapBranch[]
     leftBranches = spec.leftBranches as MindMapBranch[]
   } else if (spec.leftBranches || spec.left || spec.rightBranches || spec.right) {
@@ -729,6 +896,7 @@ export function loadMindMapSpec(spec: Record<string, unknown>): SpecLoaderResult
   // Layout constants from layoutConfig
   const centerX = DEFAULT_CENTER_X
   const centerY = DEFAULT_CENTER_Y
+  // Same rankSeparation for auto-complete and manual add so layout is identical
   const rankSeparation = DEFAULT_MINDMAP_RANK_SEPARATION
   const verticalSpacing = DEFAULT_VERTICAL_SPACING
 
@@ -781,15 +949,32 @@ export function loadMindMapSpec(spec: Record<string, unknown>): SpecLoaderResult
   )
 
   // Step 2.5: Normalize horizontal extent for symmetry (equal curve length on both sides)
+  // Diagnostic: log raw layout positions before normalize
+  const leftBefore = nodes.filter((n) => n.type === 'branch' && n.id.startsWith('branch-l-'))
+  const rightBefore = nodes.filter((n) => n.type === 'branch' && n.id.startsWith('branch-r-'))
+  const getCenterX = (n: DiagramNode) =>
+    (n.position?.x ?? 0) + ((n.data?.estimatedWidth as number) || DEFAULT_NODE_WIDTH) / 2
+  if (leftBefore.length > 0 || rightBefore.length > 0) {
+    const leftMin = leftBefore.length ? Math.min(...leftBefore.map(getCenterX)) : 0
+    const rightMax = rightBefore.length ? Math.max(...rightBefore.map(getCenterX)) : 0
+    console.log('[CurveDebug] layout before normalize', {
+      leftCount: leftBefore.length,
+      rightCount: rightBefore.length,
+      leftMinCenterX: leftMin,
+      rightMaxCenterX: rightMax,
+      leftExtentRaw: centerX - leftMin,
+      rightExtentRaw: rightMax - centerX,
+    })
+  }
+  // Single pass: extent + branch-to-child. Expand smaller side (never shrink) so layout stays consistent.
+  normalizeBranchToChildSpans(nodes, connections)
   normalizeMindMapHorizontalSymmetry(nodes, centerX)
 
   // Step 3: Center topic node vertically relative to all first-level branches
-  // Calculate min and max Y of all first-level branch nodes
   let minBranchY = Infinity
   let maxBranchY = -Infinity
   nodes.forEach((node) => {
     if (node.type === 'branch') {
-      // Check if this is a first-level branch by checking if it's connected directly to topic
       const isFirstLevel = connections.some(
         (conn) => conn.source === 'topic' && conn.target === node.id
       )
@@ -802,26 +987,65 @@ export function loadMindMapSpec(spec: Record<string, unknown>): SpecLoaderResult
     }
   })
 
-  // Calculate center Y of all first-level branches and update topic position
   if (minBranchY !== Infinity && maxBranchY !== -Infinity && topicNode.position) {
     const branchesCenterY = (minBranchY + maxBranchY) / 2
     topicNode.position.y = branchesCenterY - DEFAULT_NODE_HEIGHT / 2
   }
 
   // Step 4: Center entire layout so topic node is at canvas center
-  // Calculate offset needed to move topic to centerX, centerY
   if (topicNode.position) {
     const topicCurrentCenterX = topicNode.position.x + DEFAULT_NODE_WIDTH / 2
     const topicCurrentCenterY = topicNode.position.y + DEFAULT_NODE_HEIGHT / 2
     const offsetXToCenter = centerX - topicCurrentCenterX
     const offsetYToCenter = centerY - topicCurrentCenterY
-
-    // Apply offset to all nodes to center the entire layout
     nodes.forEach((node) => {
       if (node.position) {
         node.position.x += offsetXToCenter
         node.position.y += offsetYToCenter
       }
+    })
+  }
+
+  // Diagnostic: branch-to-child curve lengths (horizontal span from parent to child)
+  const nodeCenterX = new Map<string, number>()
+  nodes.forEach((n) => {
+    if (n.position) {
+      const nodeWidth = (n.data?.estimatedWidth as number) || DEFAULT_NODE_WIDTH
+      nodeCenterX.set(n.id, (n.position.x ?? 0) + nodeWidth / 2)
+    }
+  })
+  const leftChildSpans: number[] = []
+  const rightChildSpans: number[] = []
+  connections.forEach((conn) => {
+    if (
+      conn.source.startsWith('branch-') &&
+      conn.target.startsWith('branch-') &&
+      conn.source !== conn.target
+    ) {
+      const srcX = nodeCenterX.get(conn.source)
+      const tgtX = nodeCenterX.get(conn.target)
+      if (srcX != null && tgtX != null) {
+        const span = Math.abs(tgtX - srcX)
+        if (conn.source.startsWith('branch-l-')) {
+          leftChildSpans.push(span)
+        } else {
+          rightChildSpans.push(span)
+        }
+      }
+    }
+  })
+  if (leftChildSpans.length > 0 || rightChildSpans.length > 0) {
+    const sum = (a: number[]) => a.reduce((s, v) => s + v, 0)
+    const avg = (a: number[]) => (a.length ? sum(a) / a.length : 0)
+    console.log('[CurveDebug] branch-to-child spans', {
+      leftCount: leftChildSpans.length,
+      rightCount: rightChildSpans.length,
+      leftMin: leftChildSpans.length ? Math.min(...leftChildSpans) : 0,
+      leftMax: leftChildSpans.length ? Math.max(...leftChildSpans) : 0,
+      leftAvg: avg(leftChildSpans),
+      rightMin: rightChildSpans.length ? Math.min(...rightChildSpans) : 0,
+      rightMax: rightChildSpans.length ? Math.max(...rightChildSpans) : 0,
+      rightAvg: avg(rightChildSpans),
     })
   }
 

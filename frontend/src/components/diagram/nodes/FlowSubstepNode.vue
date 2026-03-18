@@ -5,7 +5,7 @@
  * Flow map: pill shape, mindmapColors (same as parent step), fixed size
  * Supports inline text editing on double-click
  */
-import { computed, ref } from 'vue'
+import { computed, inject, ref } from 'vue'
 
 import { Handle, Position } from '@vue-flow/core'
 
@@ -75,6 +75,30 @@ function handleTextSave(newText: string) {
 function handleEditCancel() {
   isEditing.value = false
 }
+
+const branchMove = inject<{
+  onBranchMovePointerDown: (
+    nodeId: string,
+    isEditing: boolean,
+    clientX?: number,
+    clientY?: number
+  ) => void
+  onBranchMovePointerUp: () => void
+}>('branchMove', { onBranchMovePointerDown: () => {}, onBranchMovePointerUp: () => {} })
+
+const supportsBranchMove = computed(() => isFlowMap.value && props.id?.startsWith('flow-substep-'))
+
+function handleBranchMovePointerDown(event: MouseEvent): void {
+  if (supportsBranchMove.value) {
+    branchMove.onBranchMovePointerDown(props.id, isEditing.value, event.clientX, event.clientY)
+  }
+}
+
+function handleBranchMovePointerUp(): void {
+  if (supportsBranchMove.value) {
+    branchMove.onBranchMovePointerUp()
+  }
+}
 </script>
 
 <template>
@@ -82,6 +106,8 @@ function handleEditCancel() {
     class="flow-substep-node flex items-center justify-center px-3 py-2 border-solid cursor-grab select-none"
     :class="{ 'pill-shape': isFlowMap }"
     :style="nodeStyle"
+    @mousedown.capture="handleBranchMovePointerDown"
+    @mouseup.capture="handleBranchMovePointerUp"
   >
     <InlineEditableText
       :text="data.label || ''"

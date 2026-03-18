@@ -101,6 +101,7 @@ export type EventTypes = {
   'diagram:style_changed': { nodeId?: string; style?: unknown; all?: boolean; preset?: boolean }
   'diagram:loaded': { diagramType: string; spec?: unknown }
   'diagram:loaded_from_library': { diagramId: string; diagramType: string }
+  'diagram:branch_moved': Record<string, never>
   'concept_map:link_drop': { sourceId: string; targetId: string }
   'concept_map:link_drag_start': { sourceId: string }
   'concept_map:link_drag_end': Record<string, never>

@@ -147,6 +147,16 @@ function generateBracePath(group: BraceGroup): {
   const parent = group.parentNode
   const children = group.children
 
+  // Single child: straight horizontal line instead of a brace
+  if (children.length === 1) {
+    const child = children[0]
+    const fromX = parent.x + parent.width
+    const fromY = parent.y + parent.height / 2
+    const toX = child.x
+    const toY = child.y + child.height / 2
+    return { bracePath: `M ${fromX} ${fromY} L ${toX} ${toY}` }
+  }
+
   // Sort children by Y position
   const sortedChildren = [...children].sort((a, b) => a.y - b.y)
 

@@ -121,59 +121,49 @@ export function loadBridgeMapSpec(spec: Record<string, unknown>): SpecLoaderResu
 
   // Add dimension label node on the left side
   // Use dimension if available, otherwise fall back to relating_factor
-  // Always show label if either exists (even if empty, show relating_factor as default)
+  // Always create the label — LabelNode shows placeholder text when empty
   const dimension =
     (spec.dimension as string | undefined)?.trim() ||
-    (spec.relating_factor as string | undefined)?.trim()
-  if (dimension) {
-    // Position dimension label on the left side, vertically centered with the horizontal bridge line
-    // The bridge line is at centerY (same Y as the center of all analogy pairs)
-    // Vue Flow positions nodes by top-left corner, so we need to adjust Y to center the node
-    // Label node has two lines: "类比关系:" (14px) + gap (2px) + "[点击设置]" (14px) + padding (8px total)
-    // Estimated total height: ~38px, use 40px for safety
-    const labelHeight = 40
-    const labelY = centerY - labelHeight / 2
+    (spec.relating_factor as string | undefined)?.trim() ||
+    ''
 
-    // Position label at DEFAULT_PADDING from left edge
-    // Gap from label's RIGHT edge to node's LEFT edge is gapFromLabelRight (10px)
-    // LabelNode will recalculate position to maintain the gap if actual width differs
-    const labelX = DEFAULT_PADDING
+  const labelHeight = 40
+  const labelY = centerY - labelHeight / 2
+  const labelX = DEFAULT_PADDING
 
-    console.log('[BridgeMap-Loader] Dimension label position:', {
-      labelX,
-      labelY,
-      firstNodeX: nodes.length > 0 && nodes[0].position ? nodes[0].position.x : 'no nodes yet',
-      gapFromLabelRight,
-      expectedGap:
-        nodes.length > 0 && nodes[0].position
-          ? nodes[0].position.x - (labelX + estimatedLabelWidth)
-          : 'N/A',
-    })
-
-    nodes.push({
-      id: 'dimension-label',
-      text: dimension.trim(),
-      type: 'label',
-      position: { x: labelX, y: labelY },
-      data: {
-        diagramType: 'bridge_map',
-        isDimensionLabel: true,
-      },
-    })
-
-    // Log final positions
-    const firstPairNode = nodes.find((n) => n.data?.pairIndex === 0 && n.data?.position === 'left')
-    console.log('[BridgeMap-Loader] Final positions:', {
-      labelX,
-      labelY,
-      firstNodeX: firstPairNode?.position?.x,
-      firstNodeY: firstPairNode?.position?.y,
-      expectedLabelRightEdge: labelX + estimatedLabelWidth,
-      expectedGapFromLabelRight: firstPairNode?.position
-        ? firstPairNode.position.x - (labelX + estimatedLabelWidth)
+  console.log('[BridgeMap-Loader] Dimension label position:', {
+    labelX,
+    labelY,
+    firstNodeX: nodes.length > 0 && nodes[0].position ? nodes[0].position.x : 'no nodes yet',
+    gapFromLabelRight,
+    expectedGap:
+      nodes.length > 0 && nodes[0].position
+        ? nodes[0].position.x - (labelX + estimatedLabelWidth)
         : 'N/A',
-    })
-  }
+  })
+
+  nodes.push({
+    id: 'dimension-label',
+    text: dimension,
+    type: 'label',
+    position: { x: labelX, y: labelY },
+    data: {
+      diagramType: 'bridge_map',
+      isDimensionLabel: true,
+    },
+  })
+
+  const firstPairNode = nodes.find((n) => n.data?.pairIndex === 0 && n.data?.position === 'left')
+  console.log('[BridgeMap-Loader] Final positions:', {
+    labelX,
+    labelY,
+    firstNodeX: firstPairNode?.position?.x,
+    firstNodeY: firstPairNode?.position?.y,
+    expectedLabelRightEdge: labelX + estimatedLabelWidth,
+    expectedGapFromLabelRight: firstPairNode?.position
+      ? firstPairNode.position.x - (labelX + estimatedLabelWidth)
+      : 'N/A',
+  })
 
   // Store dimension, relating_factor, and alternative_dimensions in metadata for BridgeOverlay
   const metadata: Record<string, unknown> = {}

@@ -16,10 +16,12 @@ import { MiniMap } from '@vue-flow/minimap'
 
 import {
   getDefaultDiagramName,
+  useBranchMoveDrag,
   useDiagramExport,
   useDiagramSpecForSave,
   useLanguage,
 } from '@/composables'
+import type { DropTarget } from '@/composables/useBranchMoveDrag'
 import {
   CONCEPT_MAP_GENERATING_KEY,
   useConceptMapRelationship,
@@ -240,15 +242,29 @@ const edgeTypes = {
   bridge: markRaw(StraightEdge), // Use straight for bridge maps
 }
 
+// Branch move drag (mind map long-press to move branch)
+const branchMove = useBranchMoveDrag()
+provide('branchMove', branchMove)
+
 // Computed nodes and edges from store
-const nodes = computed(() => diagramStore.vueFlowNodes)
+const storeNodes = computed(() => diagramStore.vueFlowNodes)
+const storeEdges = computed(() => diagramStore.vueFlowEdges)
+// Filter out dragged branch during branch move
+const nodes = computed(() => {
+  const hidden = branchMove.state.value.hiddenIds
+  if (hidden.size === 0) return storeNodes.value
+  return storeNodes.value.filter((n) => !hidden.has(n.id))
+})
 // For brace maps, hide individual edges since BraceOverlay draws the braces
 const edges = computed(() => {
   if (diagramStore.type === 'brace_map') {
-    // Hide edges for brace maps - the BraceOverlay component draws them
     return []
   }
-  return diagramStore.vueFlowEdges
+  const hidden = branchMove.state.value.hiddenIds
+  if (hidden.size === 0) return storeEdges.value
+  return storeEdges.value.filter(
+    (e) => !hidden.has(e.source) && !hidden.has(e.target)
+  )
 })
 
 // Handle node changes (position updates, etc.)
@@ -284,37 +300,9 @@ onNodesChange((changes) => {
   }
 })
 
-// Helper function to get timestamp for logging
-function getTimestamp(): string {
-  return new Date().toISOString()
-}
-
 // Handle node click
-onNodeClick(({ node, event }) => {
-  console.log(`[DiagramCanvas] [${getTimestamp()}] ========== NODE CLICKED ==========`)
-  console.log(`[DiagramCanvas] [${getTimestamp()}] Node clicked:`, {
-    nodeId: node.id,
-    nodeType: node.type,
-    diagramType: node.data?.diagramType,
-    pairIndex: node.data?.pairIndex,
-    position: node.data?.position,
-    text: node.data?.label || node.data?.text,
-    nodePosition: node.position,
-    clickEvent: {
-      type: event?.type,
-      button: (event as MouseEvent)?.button,
-      clientX: (event as MouseEvent)?.clientX,
-      clientY: (event as MouseEvent)?.clientY,
-    },
-  })
-  console.log(`[DiagramCanvas] [${getTimestamp()}] Currently selected nodes:`, [
-    ...diagramStore.selectedNodes,
-  ])
+onNodeClick(({ node }) => {
   diagramStore.selectNodes(node.id)
-  console.log(`[DiagramCanvas] [${getTimestamp()}] After selection, selected nodes:`, [
-    ...diagramStore.selectedNodes,
-  ])
-  console.log(`[DiagramCanvas] [${getTimestamp()}] ====================================`)
   emit('nodeClick', node as unknown as MindGraphNode)
 })
 
@@ -391,6 +379,92 @@ function getEdgePoint(
       return { x: center.x, y: center.y + halfHeight }
     default:
       return center
+  }
+}
+
+const BRANCH_MOVE_NODE_WIDTH = 120
+const BRANCH_MOVE_NODE_HEIGHT = 50
+
+function getBranchMoveCircleStyle(state: {
+  cursorPos: { x: number; y: number } | null
+  nodeStartPos: { x: number; y: number; width: number; height: number } | null
+  animationPhase: string
+  branchColor: { fill: string; border: string }
+}): Record<string, string> {
+  if (!state.cursorPos) return { display: 'none' }
+  const isShrinking = state.animationPhase === 'shrinking' && state.nodeStartPos
+  const pos = isShrinking ? state.nodeStartPos! : null
+  const left = isShrinking && pos ? pos.x : state.cursorPos.x - 12
+  const top = isShrinking && pos ? pos.y : state.cursorPos.y - 12
+  const width = isShrinking && pos ? pos.width : 24
+  const height = isShrinking && pos ? pos.height : 24
+  const borderRadius = isShrinking ? '9999px' : '50%'
+  return {
+    position: 'absolute',
+    left: left + 'px',
+    top: top + 'px',
+    width: width + 'px',
+    height: height + 'px',
+    borderRadius,
+    backgroundColor: state.branchColor.fill,
+    border: `2px solid ${state.branchColor.border}`,
+    boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+    transition:
+      state.animationPhase === 'shrinking'
+        ? 'left 0.28s ease-out, top 0.28s ease-out, width 0.28s ease-out, height 0.28s ease-out, border-radius 0.28s ease-out'
+        : 'none',
+  }
+}
+
+const DROP_PREVIEW_SCALE = 1.2
+
+interface NodeWithDimensions {
+  dimensions?: { width?: number; height?: number }
+  measured?: { width?: number; height?: number }
+  style?: { width?: number | string; height?: number | string }
+}
+
+function getTargetNodeDimensions(
+  node: { id?: string; style?: { width?: number | string; height?: number | string } } & NodeWithDimensions
+): { width: number; height: number } {
+  const defaultW = node.id === 'topic' || node.id === 'tree-topic' ? TOPIC_NODE_WIDTH : BRANCH_MOVE_NODE_WIDTH
+  const defaultH = node.id === 'topic' || node.id === 'tree-topic' ? TOPIC_NODE_HEIGHT : BRANCH_MOVE_NODE_HEIGHT
+  const w =
+    node.dimensions?.width ??
+    node.measured?.width ??
+    (typeof node.style?.width === 'number' ? node.style.width : null) ??
+    (typeof node.style?.width === 'string' ? parseFloat(node.style.width) || defaultW : defaultW)
+  const h =
+    node.dimensions?.height ??
+    node.measured?.height ??
+    (typeof node.style?.height === 'number' ? node.style.height : null) ??
+    (typeof node.style?.height === 'string' ? parseFloat(node.style.height) || defaultH : defaultH)
+  return { width: Number(w) || defaultW, height: Number(h) || defaultH }
+}
+
+function getDropTargetStyle(target: DropTarget): Record<string, string> {
+  const nodes = getNodes.value
+  const node = nodes.find((n) => n.id === target.nodeId) as
+    | ({ position?: { x: number; y: number } } & NodeWithDimensions)
+    | undefined
+  if (!node?.position) return { display: 'none' }
+
+  const { width: nodeW, height: nodeH } = getTargetNodeDimensions(node)
+  const previewW = Math.round(nodeW * DROP_PREVIEW_SCALE)
+  const previewH = Math.round(nodeH * DROP_PREVIEW_SCALE)
+  const offsetX = (previewW - nodeW) / 2
+  const offsetY = (previewH - nodeH) / 2
+
+  return {
+    position: 'absolute',
+    left: node.position.x - offsetX + 'px',
+    top: node.position.y - offsetY + 'px',
+    width: previewW + 'px',
+    height: previewH + 'px',
+    border: '2px dashed #3b82f6',
+    borderRadius: '9999px',
+    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+    pointerEvents: 'none',
   }
 }
 
@@ -993,6 +1067,18 @@ onMounted(() => {
     })
   )
 
+  // Branch move replaces nodes programmatically; Vue Flow won't emit onNodesChange.
+  // Delay fit until Vue has applied the new layout so curves/positions render correctly.
+  unsubscribers.push(
+    eventBus.on('diagram:branch_moved', () => {
+      nextTick(() => {
+        setTimeout(() => {
+          eventBus.emit('view:fit_to_canvas_requested', { animate: true })
+        }, ANIMATION.FIT_DELAY)
+      })
+    })
+  )
+
   unsubscribers.push(
     eventBus.on('view:fit_diagram_requested', () => {
       fitDiagram(true)
@@ -1178,7 +1264,12 @@ const gridConfig = {
         :max-zoom="zoomConfig.max"
         :snap-to-grid="true"
         :snap-grid="gridConfig.snapSize"
-        :nodes-draggable="!props.handToolActive"
+        :nodes-draggable="
+          !props.handToolActive &&
+          diagramStore.type !== 'mindmap' &&
+          diagramStore.type !== 'mind_map' &&
+          diagramStore.type !== 'tree_map'
+        "
         :nodes-connectable="false"
         :elements-selectable="!props.handToolActive"
         :pan-on-scroll="false"
@@ -1227,7 +1318,23 @@ const gridConfig = {
         <LearningSheetOverlay />
 
         <!-- Concept map: link preview while dragging from icon (line + pill at 60% opacity) -->
+        <!-- Branch move: shrink animation from node to circle, then follow cursor -->
         <template #zoom-pane>
+          <div
+            v-if="branchMove.state.value.active && branchMove.state.value.cursorPos"
+            class="branch-move-overlay pointer-events-none"
+            style="position: absolute; inset: 0; z-index: 10"
+          >
+            <div
+              class="branch-move-circle"
+              :style="getBranchMoveCircleStyle(branchMove.state.value)"
+            />
+            <div
+              v-if="branchMove.state.value.dropTarget"
+              class="branch-move-drop-preview"
+              :style="getDropTargetStyle(branchMove.state.value.dropTarget)"
+            />
+          </div>
           <svg
             v-if="linkPreviewPath && linkDragCursor && diagramStore.type === 'concept_map'"
             class="concept-map-link-preview pointer-events-none"

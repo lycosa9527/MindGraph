@@ -23,6 +23,7 @@ import { getDefaultDiagramName } from '@/composables'
 
 import { useAuthStore } from './auth'
 import { useDiagramStore } from './diagram'
+import { useLLMResultsStore } from './llmResults'
 import { usePanelsStore } from './panels'
 import { getDefaultTemplate, loadSpecForDiagramType } from './specLoader'
 
@@ -592,10 +593,19 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
    */
   async function saveCurrentDiagramBeforeReplace(): Promise<void> {
     const diagramStore = useDiagramStore()
+    const llmResultsStore = useLLMResultsStore()
     if (!authStore.isAuthenticated || !diagramStore.type || !diagramStore.data) return
 
-    const spec = diagramStore.getSpecForSave()
+    let spec = diagramStore.getSpecForSave()
     if (!spec) return
+
+    llmResultsStore.updateCurrentModelSpec(spec)
+    const persisted = llmResultsStore.getResultsForPersistence()
+    if (persisted) {
+      const withLlm = { ...spec, llm_results: persisted }
+      const sizeKB = new Blob([JSON.stringify(withLlm)]).size / 1024
+      spec = sizeKB <= SAVE.MAX_SPEC_SIZE_KB ? withLlm : spec
+    }
 
     const title =
       diagramStore.getTopicNodeText() ||
@@ -631,6 +641,7 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
     language: string = 'zh',
     thumbnail: string | null = null
   ): Promise<AutoSaveResult & { needsSlotClear?: boolean }> {
+    const llmResultsStore = useLLMResultsStore()
     if (!authStore.isAuthenticated) {
       return { success: false, action: 'error', error: 'Please login to save diagrams' }
     }
@@ -644,6 +655,7 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
       })
 
       if (updated) {
+        llmResultsStore.updateCurrentModelSpec(spec)
         return { success: true, action: 'updated', diagramId: activeDiagramId.value }
       } else {
         return { success: false, action: 'error', error: 'Failed to update diagram' }
@@ -665,6 +677,7 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
 
     if (saved) {
       activeDiagramId.value = saved.id
+      llmResultsStore.updateCurrentModelSpec(spec)
       usePanelsStore().migrateNodePaletteSessionToSavedDiagram(diagramType, saved.id)
       return { success: true, action: 'saved', diagramId: saved.id }
     } else {
@@ -684,6 +697,7 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
     language: string = 'zh',
     thumbnail: string | null = null
   ): Promise<AutoSaveResult> {
+    const llmResultsStore = useLLMResultsStore()
     // First delete the selected diagram
     const deleted = await deleteDiagram(diagramIdToDelete)
     if (!deleted) {
@@ -694,6 +708,7 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
     const saved = await saveDiagram(title, diagramType, spec, language, thumbnail)
     if (saved) {
       activeDiagramId.value = saved.id
+      llmResultsStore.updateCurrentModelSpec(spec)
       usePanelsStore().migrateNodePaletteSessionToSavedDiagram(diagramType, saved.id)
       return { success: true, action: 'saved', diagramId: saved.id }
     } else {

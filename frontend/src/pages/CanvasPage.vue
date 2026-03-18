@@ -664,6 +664,13 @@ eventBus.onWithOwner(
   },
   'CanvasPage'
 )
+eventBus.onWithOwner(
+  'diagram:operation_completed',
+  (payload: { operation?: string }) => {
+    if (payload?.operation === 'move_branch') diagramStore.sessionEditCount += 1
+  },
+  'CanvasPage'
+)
 
 // LLM generation completed + cancel on start: handled by useDiagramAutoSave
 

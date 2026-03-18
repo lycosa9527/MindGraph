@@ -5,6 +5,43 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.43.0] - 2026-03-18
+
+### Added
+- **Branch Move (Drag-and-Drop)**: Long-press (1.5s) any node to enter drag mode across all thinking map types. Circle follows cursor with drop preview overlay. Mind map and tree map use hierarchical move (reparent as child, sibling, or top-level); all other types use position swap. Bridge map and double bubble map diff nodes move as pairs.
+- **useBranchMoveDrag**: New composable for long-press drag-and-drop with shrink animation, cursor tracking, drop target detection, and diagram-type-aware move/swap logic.
+- **Mind Map moveMindMapBranch**: Reparent branches to topic (left/right based on cursor), as child of another branch, or swap as sibling. Rebuilds spec and reloads layout.
+- **Tree Map moveTreeMapBranch**: Move categories and leaves between groups or reorder within the same group. Spec-based rebuild.
+- **Generic moveNodeBySwap**: Position swap for bubble map, circle map, double bubble map, flow map, multi-flow map, brace map, and bridge map nodes. Diagram-type-specific swap functions (swapBraceMapNodes, swapBridgeMapPairs, swapDoubleBubbleMapNodes, swapFlowMapNodes, swapMultiFlowMapNodes).
+- **Brace Map moveBraceMapNode**: Reparent (subpart→part) or swap based on depth comparison.
+- **Flow Map moveFlowMapNode**: Reparent substep to another step group or swap steps/substeps.
+- **MindMapCurveExtents**: Curve extent tracking (left/right) with baseline capture for drift monitoring after branch operations.
+- **MINDMAP_TARGET_EXTENT**: Layout constant (450px) for minimum horizontal curve extent; scales both sides up when layout produces smaller extent after branch moves.
+- **estimateNodeWidth**: Text-adaptive node width estimation for mind map branches (CJK ~16px, Latin ~9px at 16px font, capped at 150px text width + 38px padding).
+- **normalizeBranchToChildSpans**: Equalizes branch-to-child curve spans so left and right sides match after layout.
+- **diagram:branch_moved event**: New event bus event to trigger fit-to-canvas after programmatic node replacement.
+- **diagram:operation_completed event**: Auto-save integration for branch move operations.
+
+### Changed
+- **Nodes non-draggable in layout-controlled diagrams**: Mind map, tree map, brace map, flow map, multi-flow map, bubble map, circle map, double bubble map, and bridge map nodes are now non-draggable (only concept map retains free-form drag). Long-press drag replaces direct dragging.
+- **Mind Map horizontal symmetry**: normalizeMindMapHorizontalSymmetry now expands the shorter side to match the longer (instead of shrinking), and scales both sides up when below MINDMAP_TARGET_EXTENT. Uses per-node estimatedWidth for accurate center calculations.
+- **Mind Map layout**: Dagre nodes use estimateNodeWidth for text-adaptive widths; estimatedWidth stored in node data for accurate left-side mirroring.
+- **BranchNode, CircleNode, FlowNode, FlowSubstepNode, BraceNode**: All inject branchMove composable and wire mousedown/mouseup handlers for long-press drag-and-drop.
+- **DiagramCanvas**: Integrates useBranchMoveDrag; filters hidden nodes/edges during drag; renders branch-move-circle and drop-preview overlays in zoom-pane; disables nodes-draggable for mindmap/tree_map.
+- **LLM Model Switching**: contentChangeIsFromModelSwitch flag prevents auto-save from overwriting user edits when switching models. updateCurrentModelSpec syncs user edits to LLM results cache so model switching loads edited spec.
+- **saveCurrentDiagramBeforeReplace**: Now persists LLM results alongside spec before model switch.
+- **savedDiagrams**: updateCurrentModelSpec called on save/update/delete-and-replace to keep LLM cache in sync.
+- **Bridge Map dimension label**: Always create dimension-label node (even when empty); LabelNode shows placeholder text.
+- **BraceOverlay**: Single-child brace renders as straight horizontal line instead of curly brace.
+- **Inline Recommendations cleanup**: Skip cleanup API call when user is not authenticated (avoids 401 errors).
+- **useDiagramAutoSave**: Triggers save on diagram:operation_completed (move_branch); skips save when content change is from model switch.
+- **CanvasPage**: Increments sessionEditCount on move_branch operation.
+- **Code quality**: Removed non-null assertions throughout diagram store; formatting cleanup; debug logging for curve diagnostics in CurvedEdge, mindMap spec loader, and mind_map_agent.py.
+
+### Removed
+- Verbose node-click debug logging in DiagramCanvas (getTimestamp helper and detailed click logs).
+- Obsolete plan files from .cursor/plans/.
+
 ## [5.42.0] - 2026-03-17
 
 ### Added

@@ -40,6 +40,8 @@ export const PANEL = {
  * Use these instead of hardcoded values like 300, 150, 50
  */
 export const ANIMATION = {
+  /** Long-press duration to trigger branch move (ms) */
+  LONG_PRESS_MS: 1500,
   /** Fast animations: hover effects, small transitions */
   DURATION_FAST: 150,
   /** Normal animations: panel open/close, fit view */

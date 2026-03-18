@@ -105,6 +105,36 @@ const path = computed(() => {
     targetPosition: props.targetPosition,
     curvature: curvature.value,
   })
+  // Diagnostic: trace curve connection points for mind map (enable via window.__DEBUG_CURVE_LENGTH__ = true)
+  const dt = props.data?.diagramType as DiagramType | undefined
+  const debugCurve = (window as unknown as { __DEBUG_CURVE_LENGTH__?: boolean }).__DEBUG_CURVE_LENGTH__
+  if ((dt === 'mindmap' || dt === 'mind_map') && debugCurve) {
+    const span = Math.abs(props.targetX - props.sourceX)
+    if (props.source === 'topic') {
+      const side = props.target.startsWith('branch-l-') ? 'left' : 'right'
+      console.log('[CurveDebug] topic-to-branch', {
+        target: props.target,
+        side,
+        sourceX: props.sourceX,
+        targetX: props.targetX,
+        sourcePosition: props.sourcePosition,
+        targetPosition: props.targetPosition,
+        horizontalSpan: span,
+      })
+    } else if (props.source.startsWith('branch-') && props.target.startsWith('branch-')) {
+      const side = props.source.startsWith('branch-l-') ? 'left' : 'right'
+      console.log('[CurveDebug] branch-to-child', {
+        source: props.source,
+        target: props.target,
+        side,
+        sourceX: props.sourceX,
+        targetX: props.targetX,
+        sourcePosition: props.sourcePosition,
+        targetPosition: props.targetPosition,
+        horizontalSpan: span,
+      })
+    }
+  }
   return { edgePath, labelX, labelY }
 })
 

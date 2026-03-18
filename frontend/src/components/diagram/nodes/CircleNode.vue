@@ -7,7 +7,7 @@
  * Adapts size based on text length
  * Uses mindmap branch color palette for context nodes (like double bubble map)
  */
-import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, inject, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import { Handle, Position } from '@vue-flow/core'
 
@@ -194,6 +194,43 @@ function handleTextSave(newText: string) {
 function handleEditCancel() {
   isEditing.value = false
 }
+
+const branchMove = inject<{
+  onBranchMovePointerDown: (
+    nodeId: string,
+    isEditing: boolean,
+    clientX?: number,
+    clientY?: number
+  ) => void
+  onBranchMovePointerUp: () => void
+}>('branchMove', { onBranchMovePointerDown: () => {}, onBranchMovePointerUp: () => {} })
+
+const supportsBranchMove = computed(() => {
+  if (isTopicNode.value) return false
+  const dt = diagramStore.type
+  if (dt === 'bubble_map') return props.id?.startsWith('bubble-')
+  if (dt === 'circle_map') return props.id?.startsWith('context-')
+  if (dt === 'double_bubble_map') {
+    return (
+      props.id?.startsWith('similarity-') ||
+      props.id?.startsWith('left-diff-') ||
+      props.id?.startsWith('right-diff-')
+    )
+  }
+  return false
+})
+
+function handleBranchMovePointerDown(event: MouseEvent): void {
+  if (supportsBranchMove.value) {
+    branchMove.onBranchMovePointerDown(props.id, isEditing.value, event.clientX, event.clientY)
+  }
+}
+
+function handleBranchMovePointerUp(): void {
+  if (supportsBranchMove.value) {
+    branchMove.onBranchMovePointerUp()
+  }
+}
 </script>
 
 <template>
@@ -206,6 +243,8 @@ function handleEditCancel() {
       isDoubleBubbleMap ? 'circle-node--with-handles' : '',
     ]"
     :style="nodeStyle"
+    @mousedown.capture="handleBranchMovePointerDown"
+    @mouseup.capture="handleBranchMovePointerUp"
   >
     <!-- Handles for double bubble map curved edges (connect at node boundary) -->
     <template v-if="isDoubleBubbleMap">

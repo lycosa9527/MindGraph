@@ -13,7 +13,6 @@ import { computed, ref } from 'vue'
 
 import { defineStore } from 'pinia'
 
-import { getMindmapBranchColor } from '@/config/mindmapColors'
 import {
   augmentConnectionWithOptimalHandles,
   computeDefaultArrowheadForConceptMap,
@@ -25,6 +24,7 @@ import {
   MULTI_FLOW_MAP_TOPIC_WIDTH,
 } from '@/composables/diagrams/layoutConfig'
 import { eventBus } from '@/composables/useEventBus'
+import { getMindmapBranchColor } from '@/config/mindmapColors'
 import type {
   Connection,
   DiagramData,
@@ -43,6 +43,8 @@ import {
   vueFlowNodeToDiagramNode,
 } from '@/types/vueflow'
 
+import { useConceptMapRelationshipStore } from './conceptMapRelationship'
+import { useInlineRecommendationsStore } from './inlineRecommendations'
 import {
   distributeBranchesClockwise,
   findBranchByNodeId,
@@ -56,11 +58,7 @@ import {
   recalculateCircleMapLayout,
   recalculateMultiFlowMapLayout,
 } from './specLoader'
-import {
-  LEARNING_SHEET_PLACEHOLDER,
-} from './specLoader/utils'
-
-import { useConceptMapRelationshipStore } from './conceptMapRelationship'
+import { LEARNING_SHEET_PLACEHOLDER } from './specLoader/utils'
 
 // Event types for diagram store events
 export type DiagramEventType =
@@ -182,6 +180,22 @@ function getEdgeTypeForDiagram(diagramType: DiagramType | null): MindGraphEdgeTy
   return edgeTypeMap[diagramType] || 'curved'
 }
 
+/** Left/right curve extent from center (for mind map branch tracking) */
+export interface MindMapCurveExtents {
+  left: number
+  right: number
+}
+
+function getMindMapCurveExtents(nodes: DiagramNode[], centerX: number): MindMapCurveExtents {
+  const leftNodes = nodes.filter((n) => n.type === 'branch' && n.id.startsWith('branch-l-'))
+  const rightNodes = nodes.filter((n) => n.type === 'branch' && n.id.startsWith('branch-r-'))
+  const getCenterX = (n: DiagramNode) =>
+    (n.position?.x ?? 0) + ((n.data?.estimatedWidth as number) || DEFAULT_NODE_WIDTH) / 2
+  const left = leftNodes.length > 0 ? centerX - Math.min(...leftNodes.map(getCenterX)) : 0
+  const right = rightNodes.length > 0 ? Math.max(...rightNodes.map(getCenterX)) - centerX : 0
+  return { left, right }
+}
+
 // Default placeholder texts that should not be used as title
 const PLACEHOLDER_TEXTS = [
   '主题',
@@ -209,6 +223,9 @@ export const useDiagramStore = defineStore('diagram', () => {
 
   // Store topic node width for multi-flow map layout recalculation
   const topicNodeWidth = ref<number | null>(null)
+
+  /** Original curve extents when mind map was loaded (for tracking drift) */
+  const mindMapCurveExtentBaseline = ref<MindMapCurveExtents | null>(null)
 
   // Store node widths for multi-flow map visual balance
   // Maps nodeId -> width in pixels
@@ -267,6 +284,7 @@ export const useDiagramStore = defineStore('diagram', () => {
       return layoutNodes.map((node) => {
         const vf = diagramNodeToVueFlowNode(node, diagramType)
         vf.selected = selectedNodes.value.includes(node.id)
+        vf.draggable = false
         return vf
       })
     }
@@ -289,6 +307,7 @@ export const useDiagramStore = defineStore('diagram', () => {
       return recalculatedNodes.map((node) => {
         const vueFlowNode = diagramNodeToVueFlowNode(node, diagramType)
         vueFlowNode.selected = selectedNodes.value.includes(node.id)
+        vueFlowNode.draggable = false
         // Set causeCount and effectCount for handle generation
         if (node.id === 'event' && vueFlowNode.data) {
           vueFlowNode.data.causeCount = causeNodes.length
@@ -310,9 +329,7 @@ export const useDiagramStore = defineStore('diagram', () => {
     // (New branches must use the same quadrant handles on the topic)
     if (diagramType === 'mindmap' || diagramType === 'mind_map') {
       const connections = data.value.connections ?? []
-      const firstLevelBranchCount = connections.filter(
-        (c) => c.source === 'topic'
-      ).length
+      const firstLevelBranchCount = connections.filter((c) => c.source === 'topic').length
 
       return data.value.nodes.map((node) => {
         const vueFlowNode = diagramNodeToVueFlowNode(node, diagramType)
@@ -359,20 +376,31 @@ export const useDiagramStore = defineStore('diagram', () => {
 
     // Brace map: recalculate layout when nodes/connections change
     if (diagramType === 'brace_map') {
-      const layoutNodes = recalculateBraceMapLayout(
-        data.value.nodes,
-        data.value.connections ?? []
-      )
+      const layoutNodes = recalculateBraceMapLayout(data.value.nodes, data.value.connections ?? [])
       return layoutNodes.map((node) => {
         const vueFlowNode = diagramNodeToVueFlowNode(node, diagramType)
         vueFlowNode.selected = selectedNodes.value.includes(node.id)
+        vueFlowNode.draggable = false
         return vueFlowNode
       })
     }
 
+    // Tree map: nodes not draggable in normal mode; only 1.5s hold triggers branch move
+    if (diagramType === 'tree_map') {
+      return data.value.nodes.map((node) => {
+        const vueFlowNode = diagramNodeToVueFlowNode(node, diagramType)
+        vueFlowNode.selected = selectedNodes.value.includes(node.id)
+        vueFlowNode.draggable = false
+        return vueFlowNode
+      })
+    }
+
+    // Concept map uses free-form drag; all other types use long-press swap
+    const disableDrag = diagramType !== 'concept_map'
     return data.value.nodes.map((node) => {
       const vueFlowNode = diagramNodeToVueFlowNode(node, diagramType)
       vueFlowNode.selected = selectedNodes.value.includes(node.id)
+      if (disableDrag) vueFlowNode.draggable = false
       return vueFlowNode
     })
   })
@@ -403,13 +431,12 @@ export const useDiagramStore = defineStore('diagram', () => {
       for (const edge of edges) {
         const key = `${edge.target}:${edge.targetHandle ?? ''}`
         if (!groups.has(key)) groups.set(key, [])
-        groups.get(key)!.push(edge)
+        const bucket = groups.get(key)
+        if (bucket) bucket.push(edge)
       }
       for (const group of groups.values()) {
         const allHaveTarget = group.every(
-          (e) =>
-            (e.data?.arrowheadDirection === 'target' ||
-              e.data?.arrowheadDirection === 'both')
+          (e) => e.data?.arrowheadDirection === 'target' || e.data?.arrowheadDirection === 'both'
         )
         group.forEach((edge, i) => {
           if (!edge.data) return
@@ -577,9 +604,7 @@ export const useDiagramStore = defineStore('diagram', () => {
     // Sync dimension-label text to data.dimension for brace_map, tree_map, bridge_map
     if (
       nodeId === 'dimension-label' &&
-      (type.value === 'brace_map' ||
-        type.value === 'tree_map' ||
-        type.value === 'bridge_map') &&
+      (type.value === 'brace_map' || type.value === 'tree_map' || type.value === 'bridge_map') &&
       'text' in updates
     ) {
       const d = data.value as Record<string, unknown>
@@ -651,15 +676,16 @@ export const useDiagramStore = defineStore('diagram', () => {
    * toggle back to the same learning sheet later.
    */
   function restoreFromLearningSheetMode(): void {
-    if (!data.value?.nodes || !isLearningSheet.value) return
+    const dv = data.value
+    if (!dv?.nodes || !isLearningSheet.value) return
 
-    const d = data.value as Record<string, unknown>
+    const d = dv as Record<string, unknown>
 
-    data.value.nodes.forEach((node, idx) => {
+    dv.nodes.forEach((node, idx) => {
       const nodeData = node.data as { hidden?: boolean; hiddenAnswer?: string } | undefined
       if (nodeData?.hidden === true && nodeData?.hiddenAnswer) {
         const originalText = nodeData.hiddenAnswer
-        data.value!.nodes[idx] = {
+        dv.nodes[idx] = {
           ...node,
           text: originalText,
           data: {
@@ -680,14 +706,15 @@ export const useDiagramStore = defineStore('diagram', () => {
    * Used when user toggles 半成品图示 on and has a saved learning sheet from earlier.
    */
   function applyLearningSheetView(): void {
-    if (!data.value?.nodes) return
+    const dv = data.value
+    if (!dv?.nodes) return
 
-    const d = data.value as Record<string, unknown>
+    const d = dv as Record<string, unknown>
 
-    data.value.nodes.forEach((node, idx) => {
+    dv.nodes.forEach((node, idx) => {
       const nodeData = node.data as { hidden?: boolean; hiddenAnswer?: string } | undefined
       if (nodeData?.hidden === true && nodeData?.hiddenAnswer) {
-        data.value!.nodes[idx] = {
+        dv.nodes[idx] = {
           ...node,
           text: LEARNING_SHEET_PLACEHOLDER,
           data: {
@@ -1033,7 +1060,9 @@ export const useDiagramStore = defineStore('diagram', () => {
           const stepIndex = stepMatch[1]
           data.value.nodes
             .filter((n) => n.id?.startsWith(`flow-substep-${stepIndex}-`))
-            .forEach((n) => idsToRemove.add(n.id!))
+            .forEach((n) => {
+              if (n.id) idsToRemove.add(n.id)
+            })
         }
       }
       data.value.nodes = data.value.nodes.filter((n) => !idsToRemove.has(n.id ?? ''))
@@ -1187,10 +1216,7 @@ export const useDiagramStore = defineStore('diagram', () => {
     emitEvent('diagram:node_added', { node: null })
 
     // Persist layout positions to diagram store to avoid overlapping and ensure correct display
-    const layoutNodes = recalculateBraceMapLayout(
-      data.value.nodes,
-      data.value.connections ?? []
-    )
+    const layoutNodes = recalculateBraceMapLayout(data.value.nodes, data.value.connections ?? [])
     data.value.nodes = layoutNodes
 
     return true
@@ -1203,14 +1229,16 @@ export const useDiagramStore = defineStore('diagram', () => {
     if (type.value !== 'brace_map' || !data.value?.nodes) return 0
 
     const targetIds = new Set(data.value.connections?.map((c) => c.target) ?? [])
-    const rootId = data.value.nodes.find((n) => n.type === 'topic')?.id
-      ?? data.value.nodes.find((n) => !targetIds.has(n.id))?.id
+    const rootId =
+      data.value.nodes.find((n) => n.type === 'topic')?.id ??
+      data.value.nodes.find((n) => !targetIds.has(n.id))?.id
     if (!rootId) return 0
 
     const childrenMap = new Map<string, string[]>()
     data.value.connections?.forEach((c) => {
       if (!childrenMap.has(c.source)) childrenMap.set(c.source, [])
-      childrenMap.get(c.source)!.push(c.target)
+      const srcList = childrenMap.get(c.source)
+      if (srcList) srcList.push(c.target)
     })
 
     function collectDescendants(id: string): Set<string> {
@@ -1274,16 +1302,10 @@ export const useDiagramStore = defineStore('diagram', () => {
     const spec = nodesAndConnectionsToMindMapSpec(data.value.nodes, data.value.connections)
     const newBranch = {
       text,
-      children: [
-        { text: `${childText} 1` },
-        { text: `${childText} 2` },
-      ],
+      children: [{ text: `${childText} 1` }, { text: `${childText} 2` }],
     }
 
-    const allBranches = [
-      ...spec.rightBranches,
-      ...spec.leftBranches.slice().reverse(),
-    ]
+    const allBranches = [...spec.rightBranches, ...spec.leftBranches.slice().reverse()]
     allBranches.push(newBranch)
     const { rightBranches, leftBranches } = distributeBranchesClockwise(allBranches)
 
@@ -1296,6 +1318,16 @@ export const useDiagramStore = defineStore('diagram', () => {
 
     data.value.nodes = result.nodes
     data.value.connections = result.connections
+    const centerX = DEFAULT_CENTER_X
+    const extentsAfter = getMindMapCurveExtents(result.nodes, centerX)
+    const baseline = mindMapCurveExtentBaseline.value
+    console.log('[BranchMove] curve length after add branch', extentsAfter)
+    if (baseline) {
+      console.log('[BranchMove] curve length change vs original', {
+        leftDelta: extentsAfter.left - baseline.left,
+        rightDelta: extentsAfter.right - baseline.right,
+      })
+    }
     pushHistory('Add branch')
     emitEvent('diagram:node_added', { node: null })
     return true
@@ -1329,6 +1361,16 @@ export const useDiagramStore = defineStore('diagram', () => {
 
     data.value.nodes = result.nodes
     data.value.connections = result.connections
+    const centerX = DEFAULT_CENTER_X
+    const extentsAfter = getMindMapCurveExtents(result.nodes, centerX)
+    const baseline = mindMapCurveExtentBaseline.value
+    console.log('[BranchMove] curve length after add child', extentsAfter)
+    if (baseline) {
+      console.log('[BranchMove] curve length change vs original', {
+        leftDelta: extentsAfter.left - baseline.left,
+        rightDelta: extentsAfter.right - baseline.right,
+      })
+    }
     pushHistory('Add child')
     emitEvent('diagram:node_added', { node: null })
     return true
@@ -1383,6 +1425,16 @@ export const useDiagramStore = defineStore('diagram', () => {
 
     data.value.nodes = result.nodes
     data.value.connections = result.connections
+    const centerX = DEFAULT_CENTER_X
+    const extentsAfter = getMindMapCurveExtents(result.nodes, centerX)
+    const baseline = mindMapCurveExtentBaseline.value
+    console.log('[BranchMove] curve length after remove nodes', extentsAfter)
+    if (baseline) {
+      console.log('[BranchMove] curve length change vs original', {
+        leftDelta: extentsAfter.left - baseline.left,
+        rightDelta: extentsAfter.right - baseline.right,
+      })
+    }
     nodeIds.forEach((id) => {
       clearCustomPosition(id)
       clearNodeStyle(id)
@@ -1393,6 +1445,199 @@ export const useDiagramStore = defineStore('diagram', () => {
     return deletedCount
   }
 
+  /**
+   * Collect all node IDs in the subtree (root + descendants) for mind map.
+   */
+  function getMindMapDescendantIds(rootNodeId: string): Set<string> {
+    const connections = data.value?.connections ?? []
+    const childrenMap = new Map<string, string[]>()
+    connections.forEach((c) => {
+      if (!childrenMap.has(c.source)) childrenMap.set(c.source, [])
+      const srcList = childrenMap.get(c.source)
+      if (srcList) srcList.push(c.target)
+    })
+    const result = new Set<string>([rootNodeId])
+    function collect(id: string): void {
+      for (const childId of childrenMap.get(id) ?? []) {
+        result.add(childId)
+        collect(childId)
+      }
+    }
+    collect(rootNodeId)
+    return result
+  }
+
+  /**
+   * Move a mind map branch to a new location (as child, sibling, or top-level).
+   * Rebuilds spec and reloads; clears _customPositions, _node_styles, selectedNodes.
+   */
+  function moveMindMapBranch(
+    branchNodeId: string,
+    targetType: 'topic' | 'child' | 'sibling',
+    targetId?: string,
+    targetIndex?: number,
+    cursorFlowX?: number
+  ): boolean {
+    if (type.value !== 'mindmap' && type.value !== 'mind_map') return false
+    if (!data.value?.nodes || !data.value?.connections) return false
+
+    console.log('[BranchMove] start', { branchNodeId, targetType, targetId })
+
+    const centerX = DEFAULT_CENTER_X
+    const extentsBefore = getMindMapCurveExtents(data.value.nodes, centerX)
+    console.log('[BranchMove] curve length before', extentsBefore)
+
+    if (mindMapCurveExtentBaseline.value == null) {
+      mindMapCurveExtentBaseline.value = { ...extentsBefore }
+      console.log(
+        '[BranchMove] baseline captured (first move fallback)',
+        mindMapCurveExtentBaseline.value
+      )
+    }
+
+    const spec = nodesAndConnectionsToMindMapSpec(data.value.nodes, data.value.connections)
+    console.log('[BranchMove] spec from nodes', {
+      leftCount: spec.leftBranches.length,
+      rightCount: spec.rightBranches.length,
+      left: spec.leftBranches.map((b) => ({ text: b.text, childCount: b.children?.length ?? 0 })),
+      right: spec.rightBranches.map((b) => ({ text: b.text, childCount: b.children?.length ?? 0 })),
+    })
+    const sourceFound = findBranchByNodeId(spec.rightBranches, spec.leftBranches, branchNodeId)
+    if (!sourceFound) return false
+
+    const { branch, parentArray, indexInParent } = sourceFound
+    const descendantIds = getMindMapDescendantIds(branchNodeId)
+
+    if (targetType === 'child' && targetId) {
+      if (descendantIds.has(targetId)) return false
+    }
+
+    if (targetType === 'topic') {
+      parentArray.splice(indexInParent, 1)
+      const useLeft = cursorFlowX !== undefined && cursorFlowX < DEFAULT_CENTER_X
+      if (useLeft) {
+        spec.leftBranches.push(branch)
+      } else {
+        spec.rightBranches.push(branch)
+      }
+    } else if (targetType === 'child' && targetId) {
+      parentArray.splice(indexInParent, 1)
+      const targetFound = findBranchByNodeId(spec.rightBranches, spec.leftBranches, targetId)
+      if (!targetFound) return false
+      if (!targetFound.branch.children) targetFound.branch.children = []
+      targetFound.branch.children.push(branch)
+    } else if (targetType === 'sibling' && targetId !== undefined) {
+      const targetFound = findBranchByNodeId(spec.rightBranches, spec.leftBranches, targetId)
+      if (!targetFound) return false
+      if (descendantIds.has(targetId)) return false
+
+      const targetBranch = targetFound.branch
+      const targetParentArray = targetFound.parentArray
+      const targetIdx = targetFound.indexInParent
+
+      const isSameParent = parentArray === targetParentArray
+
+      if (isSameParent) {
+        const [removed] = parentArray.splice(indexInParent, 1)
+        const adjustedTargetIdx = indexInParent < targetIdx ? targetIdx - 1 : targetIdx
+        const [removedTarget] = parentArray.splice(adjustedTargetIdx, 1)
+        if (indexInParent < targetIdx) {
+          parentArray.splice(indexInParent, 0, removedTarget)
+          parentArray.splice(targetIdx, 0, removed)
+        } else {
+          parentArray.splice(targetIdx, 0, removed)
+          parentArray.splice(indexInParent, 0, removedTarget)
+        }
+      } else {
+        parentArray.splice(indexInParent, 1)
+        targetParentArray.splice(targetIdx, 1)
+        parentArray.splice(indexInParent, 0, targetBranch)
+        targetParentArray.splice(targetIdx, 0, branch)
+      }
+    } else {
+      return false
+    }
+
+    const sourceParent =
+      parentArray === spec.leftBranches
+        ? 'left-top'
+        : parentArray === spec.rightBranches
+          ? 'right-top'
+          : 'child'
+    const targetLabel =
+      targetType === 'topic'
+        ? `topic (${cursorFlowX !== undefined && cursorFlowX < DEFAULT_CENTER_X ? 'left' : 'right'})`
+        : targetType === 'child'
+          ? `child of ${targetId}`
+          : `sibling of ${targetId}`
+    console.log('[BranchMove] node moved', {
+      branchNodeId,
+      from: sourceParent,
+      to: targetLabel,
+    })
+
+    console.log('[BranchMove] spec after move', {
+      left: spec.leftBranches.map((b) => ({ text: b.text, childCount: b.children?.length ?? 0 })),
+      right: spec.rightBranches.map((b) => ({ text: b.text, childCount: b.children?.length ?? 0 })),
+    })
+    const result = loadMindMapSpec({
+      topic: spec.topic,
+      leftBranches: spec.leftBranches,
+      rightBranches: spec.rightBranches,
+      preserveLeftRight: true,
+    })
+
+    const extentsAfter = getMindMapCurveExtents(result.nodes, centerX)
+    console.log('[BranchMove] curve length after', extentsAfter)
+    const baseline = mindMapCurveExtentBaseline.value
+    console.log('[BranchMove] curve length change vs previous', {
+      leftDelta: extentsAfter.left - extentsBefore.left,
+      rightDelta: extentsAfter.right - extentsBefore.right,
+    })
+    if (baseline) {
+      console.log('[BranchMove] curve length change vs original', {
+        leftDelta: extentsAfter.left - baseline.left,
+        rightDelta: extentsAfter.right - baseline.right,
+      })
+    }
+
+    const branchPositions = result.nodes
+      .filter((n): n is DiagramNode & { position: Position } =>
+        Boolean(n.type === 'branch' && n.position)
+      )
+      .map((n) => ({ id: n.id, x: n.position.x, y: n.position.y }))
+    console.log('[BranchMove] result positions', { branchPositions })
+
+    // Replace data entirely (like loadFromSpec) so Vue Flow fully re-renders.
+    // Mutation alone can leave Vue Flow with stale internal state.
+    const current = data.value as Record<string, unknown>
+    const { _layout, _customPositions, _node_styles, ...rest } = current
+    data.value = {
+      ...rest,
+      type: type.value,
+      nodes: result.nodes,
+      connections: result.connections,
+      _customPositions: {},
+      _node_styles: {},
+    } as DiagramData
+    selectedNodes.value = []
+    pushHistory('Move branch')
+    emitEvent('diagram:operation_completed', { operation: 'move_branch' })
+    eventBus.emit('diagram:loaded', { diagramType: type.value || 'mindmap' })
+    // Programmatic node replace doesn't trigger onNodesChange; DiagramCanvas will fit after layout settles
+    eventBus.emit('diagram:branch_moved', {})
+
+    const targetDescendantIds =
+      (targetType === 'sibling' && targetId) || (targetType === 'child' && targetId)
+        ? getMindMapDescendantIds(targetId)
+        : new Set<string>()
+    ;[...descendantIds, ...targetDescendantIds].forEach((id) => {
+      useInlineRecommendationsStore().invalidateForNode(id)
+    })
+
+    return true
+  }
+
   function reset(): void {
     type.value = null
     sessionId.value = null
@@ -1400,6 +1645,7 @@ export const useDiagramStore = defineStore('diagram', () => {
     selectedNodes.value = []
     history.value = []
     historyIndex.value = -1
+    mindMapCurveExtentBaseline.value = null
     useConceptMapRelationshipStore().clearAll()
     // Reset title state
     title.value = ''
@@ -1519,11 +1765,12 @@ export const useDiagramStore = defineStore('diagram', () => {
     topicTextColor: string
     topicBorderColor: string
   }): void {
-    if (!data.value?.nodes) return
+    const nodes = data.value?.nodes
+    if (!nodes) return
 
     const isTopic = (node: DiagramNode) => node.type === 'topic' || node.type === 'center'
 
-    data.value.nodes.forEach((node) => {
+    nodes.forEach((node) => {
       if (node.type === 'boundary') return
 
       const useTopic = isTopic(node)
@@ -1533,10 +1780,11 @@ export const useDiagramStore = defineStore('diagram', () => {
         textColor: useTopic ? preset.topicTextColor : preset.textColor,
         borderColor: useTopic ? preset.topicBorderColor : preset.borderColor,
       }
-      const nodeIndex = data.value!.nodes.findIndex((n) => n.id === node.id)
+      const nodeIndex = nodes.findIndex((n) => n.id === node.id)
       if (nodeIndex !== -1) {
-        data.value!.nodes[nodeIndex] = {
-          ...data.value!.nodes[nodeIndex],
+        const current = nodes[nodeIndex]
+        nodes[nodeIndex] = {
+          ...current,
           style: mergedStyle,
         }
       }
@@ -1656,6 +1904,10 @@ export const useDiagramStore = defineStore('diagram', () => {
           ? topicNode.position.x + DEFAULT_NODE_WIDTH / 2
           : DEFAULT_CENTER_X
       normalizeMindMapHorizontalSymmetry(nodesToStore, centerX)
+      mindMapCurveExtentBaseline.value = getMindMapCurveExtents(nodesToStore, centerX)
+      console.log('[BranchMove] baseline captured (load)', mindMapCurveExtentBaseline.value)
+    } else {
+      mindMapCurveExtentBaseline.value = null
     }
 
     // Initialize multi-flow map topic width if needed
@@ -1718,29 +1970,35 @@ export const useDiagramStore = defineStore('diagram', () => {
     const rightNode = nodes.find((n) => n.id === 'right-topic')
     if (leftNode) left = String(leftNode.text ?? '').trim()
     if (rightNode) right = String(rightNode.text ?? '').trim()
-    const simIndices = [...new Set(
-      nodes
-        .filter((n) => /^similarity-\d+$/.test(n.id))
-        .map((n) => parseInt(n.id.replace('similarity-', ''), 10))
-    )].sort((a, b) => a - b)
-    const leftDiffIndices = [...new Set(
-      nodes
-        .filter((n) => /^left-diff-\d+$/.test(n.id))
-        .map((n) => parseInt(n.id.replace('left-diff-', ''), 10))
-    )].sort((a, b) => a - b)
-    const rightDiffIndices = [...new Set(
-      nodes
-        .filter((n) => /^right-diff-\d+$/.test(n.id))
-        .map((n) => parseInt(n.id.replace('right-diff-', ''), 10))
-    )].sort((a, b) => a - b)
-    const similarities = simIndices.map(
-      (i) => String(nodes.find((n) => n.id === `similarity-${i}`)?.text ?? '').trim()
+    const simIndices = [
+      ...new Set(
+        nodes
+          .filter((n) => /^similarity-\d+$/.test(n.id))
+          .map((n) => parseInt(n.id.replace('similarity-', ''), 10))
+      ),
+    ].sort((a, b) => a - b)
+    const leftDiffIndices = [
+      ...new Set(
+        nodes
+          .filter((n) => /^left-diff-\d+$/.test(n.id))
+          .map((n) => parseInt(n.id.replace('left-diff-', ''), 10))
+      ),
+    ].sort((a, b) => a - b)
+    const rightDiffIndices = [
+      ...new Set(
+        nodes
+          .filter((n) => /^right-diff-\d+$/.test(n.id))
+          .map((n) => parseInt(n.id.replace('right-diff-', ''), 10))
+      ),
+    ].sort((a, b) => a - b)
+    const similarities = simIndices.map((i) =>
+      String(nodes.find((n) => n.id === `similarity-${i}`)?.text ?? '').trim()
     )
-    const leftDifferences = leftDiffIndices.map(
-      (i) => String(nodes.find((n) => n.id === `left-diff-${i}`)?.text ?? '').trim()
+    const leftDifferences = leftDiffIndices.map((i) =>
+      String(nodes.find((n) => n.id === `left-diff-${i}`)?.text ?? '').trim()
     )
-    const rightDifferences = rightDiffIndices.map(
-      (i) => String(nodes.find((n) => n.id === `right-diff-${i}`)?.text ?? '').trim()
+    const rightDifferences = rightDiffIndices.map((i) =>
+      String(nodes.find((n) => n.id === `right-diff-${i}`)?.text ?? '').trim()
     )
     // Radii (style.size/2) for loader empty-node fallback
     const getRadius = (n: { style?: { size?: number; width?: number; height?: number } }) => {
@@ -1760,16 +2018,23 @@ export const useDiagramStore = defineStore('diagram', () => {
       const r = getRadius(rightNode)
       if (r != null) _doubleBubbleMapNodeSizes['rightTopicR'] = r
     }
-    const simRadii = simIndices.map((i) => getRadius(nodes.find((n) => n.id === `similarity-${i}`)!))
+    const simRadii = simIndices.map((i) => {
+      const nd = nodes.find((n) => n.id === `similarity-${i}`)
+      return nd != null ? getRadius(nd) : undefined
+    })
     if (simRadii.some((r) => r != null)) _doubleBubbleMapNodeSizes['simRadii'] = simRadii
-    const leftDiffRadii = leftDiffIndices.map((i) =>
-      getRadius(nodes.find((n) => n.id === `left-diff-${i}`)!)
-    )
-    if (leftDiffRadii.some((r) => r != null)) _doubleBubbleMapNodeSizes['leftDiffRadii'] = leftDiffRadii
-    const rightDiffRadii = rightDiffIndices.map((i) =>
-      getRadius(nodes.find((n) => n.id === `right-diff-${i}`)!)
-    )
-    if (rightDiffRadii.some((r) => r != null)) _doubleBubbleMapNodeSizes['rightDiffRadii'] = rightDiffRadii
+    const leftDiffRadii = leftDiffIndices.map((i) => {
+      const nd = nodes.find((n) => n.id === `left-diff-${i}`)
+      return nd != null ? getRadius(nd) : undefined
+    })
+    if (leftDiffRadii.some((r) => r != null))
+      _doubleBubbleMapNodeSizes['leftDiffRadii'] = leftDiffRadii
+    const rightDiffRadii = rightDiffIndices.map((i) => {
+      const nd = nodes.find((n) => n.id === `right-diff-${i}`)
+      return nd != null ? getRadius(nd) : undefined
+    })
+    if (rightDiffRadii.some((r) => r != null))
+      _doubleBubbleMapNodeSizes['rightDiffRadii'] = rightDiffRadii
 
     return {
       left,
@@ -1869,8 +2134,7 @@ export const useDiagramStore = defineStore('diagram', () => {
     }
     // Flow map: persist orientation so it's restored when reopening
     if (type.value === 'flow_map') {
-      const orientation =
-        (data.value as Record<string, unknown>).orientation ?? 'horizontal'
+      const orientation = (data.value as Record<string, unknown>).orientation ?? 'horizontal'
       spec.orientation = orientation
     }
     const hiddenAnswers = (data.value as { hiddenAnswers?: string[] }).hiddenAnswers
@@ -1969,8 +2233,7 @@ export const useDiagramStore = defineStore('diagram', () => {
       step,
       substeps: subs,
     }))
-    const orientation =
-      (data.value as Record<string, unknown>).orientation ?? 'horizontal'
+    const orientation = (data.value as Record<string, unknown>).orientation ?? 'horizontal'
     return { title, steps, substeps, orientation }
   }
 
@@ -1979,10 +2242,7 @@ export const useDiagramStore = defineStore('diagram', () => {
    * @param text - Step label
    * @param defaultSubsteps - Optional 2 default substep labels (e.g. ['子步骤1', '子步骤2'])
    */
-  function addFlowMapStep(
-    text: string,
-    defaultSubsteps?: [string, string]
-  ): boolean {
+  function addFlowMapStep(text: string, defaultSubsteps?: [string, string]): boolean {
     const spec = buildFlowMapSpecFromNodes()
     if (!spec) return false
     const steps = spec.steps as string[]
@@ -1992,8 +2252,7 @@ export const useDiagramStore = defineStore('diagram', () => {
       substeps.push({ step: text, substeps: [defaultSubsteps[0], defaultSubsteps[1]] })
     }
     // Preserve orientation
-    const orientation =
-      (data.value as Record<string, unknown>)?.orientation ?? spec.orientation
+    const orientation = (data.value as Record<string, unknown>)?.orientation ?? spec.orientation
     loadFromSpec({ ...spec, steps, substeps, orientation }, 'flow_map')
     pushHistory('Add flow step')
     emitEvent('diagram:node_added', { node: null })
@@ -2014,8 +2273,7 @@ export const useDiagramStore = defineStore('diagram', () => {
       substeps.push({ step: stepText, substeps: [substepText] })
     }
     // Preserve orientation (vertical must not revert to horizontal)
-    const orientation =
-      (data.value as Record<string, unknown>)?.orientation ?? spec.orientation
+    const orientation = (data.value as Record<string, unknown>)?.orientation ?? spec.orientation
     loadFromSpec({ ...spec, substeps, orientation }, 'flow_map')
     pushHistory('Add flow substep')
     emitEvent('diagram:node_added', { node: null })
@@ -2081,14 +2339,16 @@ export const useDiagramStore = defineStore('diagram', () => {
     const idsToRemove = new Set(nodeIds)
     if (idsToRemove.has('tree-topic') || idsToRemove.has('dimension-label')) return 0
 
-    const categoryIdsToRemove = new Set(
-      nodeIds.filter((id) => /^tree-cat-\d+$/.test(id))
-    )
+    const categoryIdsToRemove = new Set(nodeIds.filter((id) => /^tree-cat-\d+$/.test(id)))
 
     const root = spec.root as {
       id?: string
       text: string
-      children?: Array<{ id?: string; text: string; children?: Array<{ id?: string; text: string }> }>
+      children?: Array<{
+        id?: string
+        text: string
+        children?: Array<{ id?: string; text: string }>
+      }>
     }
     const categories = root.children ?? []
 
@@ -2102,21 +2362,23 @@ export const useDiagramStore = defineStore('diagram', () => {
         return true
       })
       .map((cat) => ({
-        ...cat,
-        children: (cat.children ?? []).filter((leaf) => {
-          if (idsToRemove.has(leaf.id ?? '')) {
-            deletedCount++
-            return false
-          }
-          return true
-        }),
+        text: cat.text,
+        children: (cat.children ?? [])
+          .filter((leaf) => {
+            if (idsToRemove.has(leaf.id ?? '')) {
+              deletedCount++
+              return false
+            }
+            return true
+          })
+          .map((leaf) => ({ text: leaf.text })),
       }))
 
     if (deletedCount === 0) return 0
 
     const newSpec = {
       ...spec,
-      root: { ...root, children: newCategories },
+      root: { ...root, id: undefined, children: newCategories },
     }
     loadFromSpec(newSpec, 'tree_map')
 
@@ -2137,12 +2399,172 @@ export const useDiagramStore = defineStore('diagram', () => {
   }
 
   /**
+   * Get descendant node IDs for tree map.
+   * - Category (tree-cat-X): category + all its leaves (traverse connection chain)
+   * - Leaf (tree-leaf-X-Y): only that leaf (leaves have no semantic children; chain is layout-only)
+   */
+  function getTreeMapDescendantIds(nodeId: string): Set<string> {
+    const result = new Set<string>([nodeId])
+    if (/^tree-leaf-\d+-\d+$/.test(nodeId)) return result
+    if (!data.value?.connections) return result
+    const childrenMap = new Map<string, string[]>()
+    data.value.connections.forEach((c) => {
+      if (!childrenMap.has(c.source)) childrenMap.set(c.source, [])
+      const srcList = childrenMap.get(c.source)
+      if (srcList) srcList.push(c.target)
+    })
+    function collect(id: string): void {
+      for (const childId of childrenMap.get(id) ?? []) {
+        if (
+          (childId.startsWith('tree-cat-') || childId.startsWith('tree-leaf-')) &&
+          childId !== 'tree-topic'
+        ) {
+          result.add(childId)
+          collect(childId)
+        }
+      }
+    }
+    collect(nodeId)
+    return result
+  }
+
+  /**
+   * Move a tree map category or leaf (swap or add to category).
+   * Same semantics as mindmap: category on category = swap, leaf on category = add, leaf on leaf = swap.
+   */
+  function moveTreeMapBranch(
+    nodeId: string,
+    targetType: 'topic' | 'child' | 'sibling',
+    targetId?: string
+  ): boolean {
+    if (type.value !== 'tree_map') return false
+    const spec = buildTreeMapSpecFromNodes()
+    if (!spec) return false
+
+    const root = spec.root as {
+      id?: string
+      text: string
+      children?: Array<{
+        id?: string
+        text: string
+        children?: Array<{ id?: string; text: string }>
+      }>
+    }
+    const categories = root.children ?? []
+
+    const isCategory = (id: string) => /^tree-cat-\d+$/.test(id)
+    const isLeaf = (id: string) => /^tree-leaf-\d+-\d+$/.test(id)
+
+    const findCategoryIndex = (id: string) => {
+      const m = id.match(/^tree-cat-(\d+)$/)
+      return m ? parseInt(m[1], 10) : -1
+    }
+
+    let sourceCatIdx = -1
+    let sourceLeafIdx = -1
+    let sourceItem: { id?: string; text: string; children?: unknown[] } | null = null
+
+    if (isCategory(nodeId)) {
+      sourceCatIdx = findCategoryIndex(nodeId)
+      if (sourceCatIdx < 0 || sourceCatIdx >= categories.length) return false
+      sourceItem = categories[sourceCatIdx]
+    } else if (isLeaf(nodeId)) {
+      const m = nodeId.match(/^tree-leaf-(\d+)-(\d+)$/)
+      if (!m) return false
+      sourceCatIdx = parseInt(m[1], 10)
+      sourceLeafIdx = parseInt(m[2], 10)
+      const cat = categories[sourceCatIdx]
+      const leaves = cat?.children ?? []
+      if (sourceLeafIdx < 0 || sourceLeafIdx >= leaves.length) return false
+      sourceItem = leaves[sourceLeafIdx]
+    } else {
+      return false
+    }
+    if (!sourceItem) return false
+
+    if (targetType === 'sibling' && targetId) {
+      if (isCategory(nodeId) && isCategory(targetId)) {
+        const targetCatIdx = findCategoryIndex(targetId)
+        if (targetCatIdx < 0 || targetCatIdx >= categories.length) return false
+        const [removed] = categories.splice(sourceCatIdx, 1)
+        const adj = sourceCatIdx < targetCatIdx ? targetCatIdx - 1 : targetCatIdx
+        const [removedTarget] = categories.splice(adj, 1)
+        if (sourceCatIdx < targetCatIdx) {
+          categories.splice(sourceCatIdx, 0, removedTarget)
+          categories.splice(targetCatIdx, 0, removed)
+        } else {
+          categories.splice(targetCatIdx, 0, removed)
+          categories.splice(sourceCatIdx, 0, removedTarget)
+        }
+      } else if (isLeaf(nodeId) && isLeaf(targetId)) {
+        const tm = targetId.match(/^tree-leaf-(\d+)-(\d+)$/)
+        if (!tm) return false
+        const targetCatIdx = parseInt(tm[1], 10)
+        const targetLeafIdx = parseInt(tm[2], 10)
+        const srcCat = categories[sourceCatIdx]
+        const tgtCat = categories[targetCatIdx]
+        const srcLeaves = srcCat?.children ?? []
+        const tgtLeaves = tgtCat?.children ?? []
+        const srcLeaf = srcLeaves[sourceLeafIdx]
+        const tgtLeaf = tgtLeaves[targetLeafIdx]
+        if (!srcLeaf || !tgtLeaf) return false
+        if (sourceCatIdx === targetCatIdx) {
+          srcLeaves[sourceLeafIdx] = tgtLeaf
+          srcLeaves[targetLeafIdx] = srcLeaf
+        } else {
+          srcLeaves.splice(sourceLeafIdx, 1)
+          tgtLeaves.splice(targetLeafIdx, 1)
+          srcLeaves.splice(sourceLeafIdx, 0, tgtLeaf)
+          tgtLeaves.splice(targetLeafIdx, 0, srcLeaf)
+        }
+      } else {
+        return false
+      }
+    } else if (targetType === 'child' && targetId && isCategory(targetId)) {
+      if (!isLeaf(nodeId)) return false
+      const targetCatIdx = findCategoryIndex(targetId)
+      if (targetCatIdx < 0 || targetCatIdx >= categories.length) return false
+      const srcCat = categories[sourceCatIdx]
+      const tgtCat = categories[targetCatIdx]
+      const srcLeaves = srcCat?.children ?? []
+      const [removed] = srcLeaves.splice(sourceLeafIdx, 1)
+      if (!tgtCat.children) tgtCat.children = []
+      tgtCat.children.push(removed)
+    } else if (targetType === 'topic' && targetId === 'tree-topic') {
+      if (isLeaf(nodeId)) return false
+      const [removed] = categories.splice(sourceCatIdx, 1)
+      categories.push(removed)
+    } else {
+      return false
+    }
+
+    // Strip IDs so loadTreeMapSpec generates correct tree-cat-N / tree-leaf-N-M IDs
+    // matching the new structure. Preserving old IDs causes buildTreeMapSpecFromNodes
+    // to mis-associate leaves with their old categories on subsequent operations.
+    const cleanCategories = categories.map((cat) => ({
+      text: cat.text,
+      children: (cat.children ?? []).map((leaf) => ({ text: leaf.text })),
+    }))
+    const newSpec = { ...spec, root: { ...root, id: undefined, children: cleanCategories } }
+    loadFromSpec(newSpec, 'tree_map')
+    if (data.value?._customPositions) data.value._customPositions = {}
+    if (data.value?._node_styles) data.value._node_styles = {}
+    selectedNodes.value = []
+    pushHistory('Move branch')
+    emitEvent('diagram:operation_completed', { operation: 'move_branch' })
+    return true
+  }
+
+  /**
    * Add a new category to tree map.
    */
   function addTreeMapCategory(text: string): boolean {
     const spec = buildTreeMapSpecFromNodes()
     if (!spec) return false
-    const root = spec.root as { text: string; children?: Array<{ text: string; children?: unknown[] }> }
+    const root = spec.root as {
+      text: string
+      children?: Array<{ text: string; children?: unknown[] }>
+    }
     if (!root.children) {
       root.children = []
     }
@@ -2159,7 +2581,9 @@ export const useDiagramStore = defineStore('diagram', () => {
   function addTreeMapChild(categoryId: string, text: string): boolean {
     const spec = buildTreeMapSpecFromNodes()
     if (!spec) return false
-    const root = spec.root as { children?: Array<{ id?: string; text: string; children?: Array<{ text: string }> }> }
+    const root = spec.root as {
+      children?: Array<{ id?: string; text: string; children?: Array<{ text: string }> }>
+    }
     const categories = root.children ?? []
     const category = categories.find((c) => c.id === categoryId)
     if (!category) return false
@@ -2195,8 +2619,6 @@ export const useDiagramStore = defineStore('diagram', () => {
 
     // Merge updated nodes
     if (updatedNodes && updatedNodes.length > 0) {
-      const nodeMap = new Map(data.value.nodes.map((n) => [n.id, n]))
-
       for (const updatedNode of updatedNodes) {
         const nodeId = updatedNode.id as string
         if (!nodeId) continue
@@ -2217,32 +2639,28 @@ export const useDiagramStore = defineStore('diagram', () => {
 
     // Merge updated connections
     if (updatedConnections && updatedConnections.length > 0) {
-      const connMap = new Map(
-        (data.value.connections || []).map((c) => [`${c.source}-${c.target}`, c])
-      )
-
       for (const updatedConn of updatedConnections) {
         const source = updatedConn.source as string
         const target = updatedConn.target as string
         if (!source || !target) continue
 
-        const key = `${source}-${target}`
-        const existingIndex = (data.value.connections || []).findIndex(
-          (c) => c.source === source && c.target === target
-        )
+        let conns: Connection[]
+        if (data.value.connections) {
+          conns = data.value.connections
+        } else {
+          conns = []
+          data.value.connections = conns
+        }
+        const existingIndex = conns.findIndex((c) => c.source === source && c.target === target)
 
         if (existingIndex >= 0) {
-          // Update existing connection
-          data.value.connections![existingIndex] = {
-            ...data.value.connections![existingIndex],
+          const existing = conns[existingIndex]
+          conns[existingIndex] = {
+            ...existing,
             ...updatedConn,
           } as Connection
         } else {
-          // Add new connection
-          if (!data.value.connections) {
-            data.value.connections = []
-          }
-          data.value.connections.push(updatedConn as unknown as Connection)
+          conns.push(updatedConn as unknown as Connection)
         }
       }
     }
@@ -2343,6 +2761,529 @@ export const useDiagramStore = defineStore('diagram', () => {
     }
   }
 
+  /**
+   * Get the set of node IDs that should be hidden when dragging a node.
+   * Handles pair semantics (bridge_map, double_bubble_map) and
+   * parent-child groups (flow_map steps+substeps, brace_map parts+subparts).
+   */
+  function getNodeGroupIds(nodeId: string): Set<string> {
+    const result = new Set<string>([nodeId])
+    const dt = type.value
+    if (!dt || !data.value) return result
+
+    if (dt === 'bridge_map') {
+      const pairMatch = nodeId.match(/^pair-(\d+)-(left|right)$/)
+      if (pairMatch) {
+        const idx = pairMatch[1]
+        result.add(`pair-${idx}-left`)
+        result.add(`pair-${idx}-right`)
+      }
+    } else if (dt === 'double_bubble_map') {
+      const leftMatch = nodeId.match(/^left-diff-(\d+)$/)
+      const rightMatch = nodeId.match(/^right-diff-(\d+)$/)
+      if (leftMatch) result.add(`right-diff-${leftMatch[1]}`)
+      else if (rightMatch) result.add(`left-diff-${rightMatch[1]}`)
+    } else if (dt === 'flow_map') {
+      const stepMatch = nodeId.match(/^flow-step-(\d+)$/)
+      if (stepMatch) {
+        const stepIdx = stepMatch[1]
+        data.value.nodes
+          .filter((n) => n.id.startsWith(`flow-substep-${stepIdx}-`))
+          .forEach((n) => result.add(n.id))
+      }
+    } else if (dt === 'brace_map' && data.value.connections) {
+      const childrenMap = new Map<string, string[]>()
+      data.value.connections.forEach((c) => {
+        if (!childrenMap.has(c.source)) childrenMap.set(c.source, [])
+        const srcList = childrenMap.get(c.source)
+        if (srcList) srcList.push(c.target)
+      })
+      const collectChildren = (id: string): void => {
+        for (const childId of childrenMap.get(id) ?? []) {
+          result.add(childId)
+          collectChildren(childId)
+        }
+      }
+      collectChildren(nodeId)
+    } else if (dt === 'mindmap' || dt === 'mind_map') {
+      return getMindMapDescendantIds(nodeId)
+    } else if (dt === 'tree_map') {
+      return getTreeMapDescendantIds(nodeId)
+    }
+
+    return result
+  }
+
+  /**
+   * Generic node swap for all diagram types except mindmap and tree_map
+   * (which have their own dedicated moveMindMapBranch / moveTreeMapBranch).
+   */
+  function moveNodeBySwap(sourceId: string, targetId: string): boolean {
+    const dt = type.value
+    if (!dt || !data.value) return false
+
+    let success = false
+    switch (dt) {
+      case 'bubble_map':
+        success = swapBubbleMapNodes(sourceId, targetId)
+        break
+      case 'circle_map':
+        success = swapCircleMapNodes(sourceId, targetId)
+        break
+      case 'double_bubble_map':
+        success = swapDoubleBubbleMapNodes(sourceId, targetId)
+        break
+      case 'flow_map':
+        return moveFlowMapNode(sourceId, targetId)
+      case 'multi_flow_map':
+        success = swapMultiFlowMapNodes(sourceId, targetId)
+        break
+      case 'brace_map':
+        return moveBraceMapNode(sourceId, targetId)
+      case 'bridge_map':
+        success = swapBridgeMapPairs(sourceId, targetId)
+        break
+      default:
+        return false
+    }
+
+    if (success) {
+      if (data.value?._customPositions) data.value._customPositions = {}
+      if (data.value?._node_styles) data.value._node_styles = {}
+      selectedNodes.value = []
+      pushHistory('Move node')
+      emitEvent('diagram:operation_completed', { operation: 'move_branch' })
+      eventBus.emit('diagram:branch_moved', {})
+    }
+    return success
+  }
+
+  function swapBubbleMapNodes(sourceId: string, targetId: string): boolean {
+    if (!data.value?.nodes) return false
+    const srcIdx = parseInt(sourceId.replace('bubble-', ''), 10)
+    const tgtIdx = parseInt(targetId.replace('bubble-', ''), 10)
+    const bubbles = data.value.nodes
+      .filter((n) => n.id.startsWith('bubble-'))
+      .sort(
+        (a, b) =>
+          parseInt(a.id.replace('bubble-', ''), 10) - parseInt(b.id.replace('bubble-', ''), 10)
+      )
+    if (srcIdx < 0 || srcIdx >= bubbles.length || tgtIdx < 0 || tgtIdx >= bubbles.length)
+      return false
+    const srcText = bubbles[srcIdx].text
+    bubbles[srcIdx].text = bubbles[tgtIdx].text
+    bubbles[tgtIdx].text = srcText
+    const recalculatedNodes = recalculateBubbleMapLayout(data.value.nodes)
+    const recalcBubbles = recalculatedNodes.filter(
+      (n) => (n.type === 'bubble' || n.type === 'child') && n.id.startsWith('bubble-')
+    )
+    data.value.nodes = recalculatedNodes
+    data.value.connections = recalcBubbles.map((_, i) => ({
+      id: `edge-topic-bubble-${i}`,
+      source: 'topic',
+      target: `bubble-${i}`,
+      style: { strokeColor: getMindmapBranchColor(i).border },
+    }))
+    return true
+  }
+
+  function swapCircleMapNodes(sourceId: string, targetId: string): boolean {
+    if (!data.value?.nodes) return false
+    const srcIdx = parseInt(sourceId.replace('context-', ''), 10)
+    const tgtIdx = parseInt(targetId.replace('context-', ''), 10)
+    const contexts = data.value.nodes
+      .filter((n) => n.id.startsWith('context-'))
+      .sort(
+        (a, b) =>
+          parseInt(a.id.replace('context-', ''), 10) - parseInt(b.id.replace('context-', ''), 10)
+      )
+    if (srcIdx < 0 || srcIdx >= contexts.length || tgtIdx < 0 || tgtIdx >= contexts.length)
+      return false
+    const topic = data.value.nodes.find((n) => n.id === 'topic')?.text ?? ''
+    const contextTexts = contexts.map((n) => n.text)
+    const tmp = contextTexts[srcIdx]
+    contextTexts[srcIdx] = contextTexts[tgtIdx]
+    contextTexts[tgtIdx] = tmp
+    return loadFromSpec({ topic, context: contextTexts }, 'circle_map')
+  }
+
+  function parseDiffIndex(nodeId: string): number {
+    const match = nodeId.match(/^(?:left|right)-diff-(\d+)$/)
+    return match ? parseInt(match[1], 10) : -1
+  }
+
+  function swapDoubleBubbleMapNodes(sourceId: string, targetId: string): boolean {
+    const spec = getDoubleBubbleSpecFromData()
+    if (!spec) return false
+
+    const similarities = spec.similarities as string[]
+    const leftDiffs = spec.leftDifferences as string[]
+    const rightDiffs = spec.rightDifferences as string[]
+
+    const srcSimMatch = sourceId.match(/^similarity-(\d+)$/)
+    const tgtSimMatch = targetId.match(/^similarity-(\d+)$/)
+
+    if (srcSimMatch && tgtSimMatch) {
+      const si = parseInt(srcSimMatch[1], 10)
+      const ti = parseInt(tgtSimMatch[1], 10)
+      if (si >= 0 && si < similarities.length && ti >= 0 && ti < similarities.length) {
+        const tmp = similarities[si]
+        similarities[si] = similarities[ti]
+        similarities[ti] = tmp
+        return loadFromSpec(spec, 'double_bubble_map')
+      }
+      return false
+    }
+
+    const srcDiffIdx = parseDiffIndex(sourceId)
+    const tgtDiffIdx = parseDiffIndex(targetId)
+    if (
+      srcDiffIdx >= 0 &&
+      tgtDiffIdx >= 0 &&
+      srcDiffIdx < leftDiffs.length &&
+      tgtDiffIdx < leftDiffs.length &&
+      srcDiffIdx < rightDiffs.length &&
+      tgtDiffIdx < rightDiffs.length
+    ) {
+      const tmpL = leftDiffs[srcDiffIdx]
+      leftDiffs[srcDiffIdx] = leftDiffs[tgtDiffIdx]
+      leftDiffs[tgtDiffIdx] = tmpL
+      const tmpR = rightDiffs[srcDiffIdx]
+      rightDiffs[srcDiffIdx] = rightDiffs[tgtDiffIdx]
+      rightDiffs[tgtDiffIdx] = tmpR
+      return loadFromSpec(spec, 'double_bubble_map')
+    }
+    return false
+  }
+
+  function swapFlowMapNodes(sourceId: string, targetId: string): boolean {
+    const spec = buildFlowMapSpecFromNodes()
+    if (!spec) return false
+    const steps = spec.steps as string[]
+    const substepsList = spec.substeps as Array<{ step: string; substeps: string[] }>
+
+    const srcStepMatch = sourceId.match(/^flow-step-(\d+)$/)
+    const tgtStepMatch = targetId.match(/^flow-step-(\d+)$/)
+    if (srcStepMatch && tgtStepMatch) {
+      const si = parseInt(srcStepMatch[1], 10)
+      const ti = parseInt(tgtStepMatch[1], 10)
+      if (si >= 0 && si < steps.length && ti >= 0 && ti < steps.length) {
+        const srcText = steps[si]
+        const tgtText = steps[ti]
+        const srcSubs = substepsList.find((e) => e.step === srcText)
+        const tgtSubs = substepsList.find((e) => e.step === tgtText)
+        steps[si] = tgtText
+        steps[ti] = srcText
+        if (srcSubs) srcSubs.step = srcText
+        if (tgtSubs) tgtSubs.step = tgtText
+        return loadFromSpec(spec, 'flow_map')
+      }
+      return false
+    }
+
+    const srcSubMatch = sourceId.match(/^flow-substep-(\d+)-(\d+)$/)
+    const tgtSubMatch = targetId.match(/^flow-substep-(\d+)-(\d+)$/)
+    if (srcSubMatch && tgtSubMatch) {
+      const srcStep = parseInt(srcSubMatch[1], 10)
+      const srcSub = parseInt(srcSubMatch[2], 10)
+      const tgtStep = parseInt(tgtSubMatch[1], 10)
+      const tgtSub = parseInt(tgtSubMatch[2], 10)
+      if (srcStep < steps.length && tgtStep < steps.length) {
+        const srcStepText = steps[srcStep]
+        const tgtStepText = steps[tgtStep]
+        const srcEntry = substepsList.find((e) => e.step === srcStepText)
+        const tgtEntry = substepsList.find((e) => e.step === tgtStepText)
+        if (
+          srcEntry &&
+          tgtEntry &&
+          srcSub < srcEntry.substeps.length &&
+          tgtSub < tgtEntry.substeps.length
+        ) {
+          const tmp = srcEntry.substeps[srcSub]
+          srcEntry.substeps[srcSub] = tgtEntry.substeps[tgtSub]
+          tgtEntry.substeps[tgtSub] = tmp
+          return loadFromSpec(spec, 'flow_map')
+        }
+      }
+      return false
+    }
+    return false
+  }
+
+  /**
+   * Move a flow map node: reparent if substep → step,
+   * otherwise swap. Handles adding a substep to another step group.
+   */
+  function moveFlowMapNode(sourceId: string, targetId: string): boolean {
+    const spec = buildFlowMapSpecFromNodes()
+    if (!spec) return false
+    const steps = spec.steps as string[]
+    const substepsList = spec.substeps as Array<{ step: string; substeps: string[] }>
+
+    const srcSubMatch = sourceId.match(/^flow-substep-(\d+)-(\d+)$/)
+    const tgtStepMatch = targetId.match(/^flow-step-(\d+)$/)
+
+    let success = false
+
+    if (srcSubMatch && tgtStepMatch) {
+      const srcStepIdx = parseInt(srcSubMatch[1], 10)
+      const srcSubIdx = parseInt(srcSubMatch[2], 10)
+      const tgtStepIdx = parseInt(tgtStepMatch[1], 10)
+
+      if (srcStepIdx === tgtStepIdx) return false
+      if (srcStepIdx >= steps.length || tgtStepIdx >= steps.length) return false
+
+      const srcStepText = steps[srcStepIdx]
+      const tgtStepText = steps[tgtStepIdx]
+      const srcEntry = substepsList.find((e) => e.step === srcStepText)
+      if (!srcEntry || srcSubIdx >= srcEntry.substeps.length) return false
+
+      const [movedText] = srcEntry.substeps.splice(srcSubIdx, 1)
+
+      const tgtEntry = substepsList.find((e) => e.step === tgtStepText)
+      if (tgtEntry) {
+        tgtEntry.substeps.push(movedText)
+      } else {
+        substepsList.push({ step: tgtStepText, substeps: [movedText] })
+      }
+
+      success = loadFromSpec(spec, 'flow_map')
+    } else {
+      success = swapFlowMapNodes(sourceId, targetId)
+    }
+
+    if (success) {
+      if (data.value?._customPositions) data.value._customPositions = {}
+      if (data.value?._node_styles) data.value._node_styles = {}
+      selectedNodes.value = []
+      pushHistory('Move node')
+      emitEvent('diagram:operation_completed', { operation: 'move_branch' })
+      eventBus.emit('diagram:branch_moved', {})
+    }
+    return success
+  }
+
+  function swapMultiFlowMapNodes(sourceId: string, targetId: string): boolean {
+    if (!data.value?.nodes) return false
+    const causeNodes = data.value.nodes
+      .filter((n) => n.id.startsWith('cause-'))
+      .sort(
+        (a, b) =>
+          parseInt(a.id.replace('cause-', ''), 10) - parseInt(b.id.replace('cause-', ''), 10)
+      )
+    const effectNodes = data.value.nodes
+      .filter((n) => n.id.startsWith('effect-'))
+      .sort(
+        (a, b) =>
+          parseInt(a.id.replace('effect-', ''), 10) - parseInt(b.id.replace('effect-', ''), 10)
+      )
+    const eventNode = data.value.nodes.find((n) => n.id === 'event')
+
+    const causes = causeNodes.map((n) => n.text)
+    const effects = effectNodes.map((n) => n.text)
+
+    const srcCause = sourceId.match(/^cause-(\d+)$/)
+    const tgtCause = targetId.match(/^cause-(\d+)$/)
+    if (srcCause && tgtCause) {
+      const si = parseInt(srcCause[1], 10)
+      const ti = parseInt(tgtCause[1], 10)
+      if (si >= 0 && si < causes.length && ti >= 0 && ti < causes.length) {
+        const tmp = causes[si]
+        causes[si] = causes[ti]
+        causes[ti] = tmp
+        return loadFromSpec({ event: eventNode?.text ?? '', causes, effects }, 'multi_flow_map')
+      }
+      return false
+    }
+
+    const srcEffect = sourceId.match(/^effect-(\d+)$/)
+    const tgtEffect = targetId.match(/^effect-(\d+)$/)
+    if (srcEffect && tgtEffect) {
+      const si = parseInt(srcEffect[1], 10)
+      const ti = parseInt(tgtEffect[1], 10)
+      if (si >= 0 && si < effects.length && ti >= 0 && ti < effects.length) {
+        const tmp = effects[si]
+        effects[si] = effects[ti]
+        effects[ti] = tmp
+        return loadFromSpec({ event: eventNode?.text ?? '', causes, effects }, 'multi_flow_map')
+      }
+      return false
+    }
+    return false
+  }
+
+  function swapBraceMapNodes(sourceId: string, targetId: string): boolean {
+    if (!data.value?.nodes || !data.value?.connections) return false
+
+    const targetIdSet = new Set(data.value.connections.map((c) => c.target))
+    const rootId =
+      data.value.nodes.find((n) => n.type === 'topic')?.id ??
+      data.value.nodes.find((n) => !targetIdSet.has(n.id) && n.type !== 'label')?.id
+    if (!rootId) return false
+
+    const childrenMap = new Map<string, string[]>()
+    data.value.connections.forEach((c) => {
+      if (!childrenMap.has(c.source)) childrenMap.set(c.source, [])
+      const srcList = childrenMap.get(c.source)
+      if (srcList) srcList.push(c.target)
+    })
+
+    const srcParentConn = data.value.connections.find((c) => c.target === sourceId)
+    const tgtParentConn = data.value.connections.find((c) => c.target === targetId)
+    if (!srcParentConn || !tgtParentConn) return false
+
+    const srcParent = srcParentConn.source
+    const tgtParent = tgtParentConn.source
+    const srcSiblings = childrenMap.get(srcParent) ?? []
+    const tgtSiblings = childrenMap.get(tgtParent) ?? []
+    const srcIdx = srcSiblings.indexOf(sourceId)
+    const tgtIdx = tgtSiblings.indexOf(targetId)
+    if (srcIdx < 0 || tgtIdx < 0) return false
+
+    if (srcParent === tgtParent) {
+      srcSiblings[srcIdx] = targetId
+      srcSiblings[tgtIdx] = sourceId
+    } else {
+      srcSiblings[srcIdx] = targetId
+      tgtSiblings[tgtIdx] = sourceId
+    }
+
+    const newConnections = data.value.connections.map((c) => {
+      if (c.source === srcParent && c.target === sourceId) return { ...c, target: targetId }
+      if (c.source === tgtParent && c.target === targetId) return { ...c, target: sourceId }
+      if (c.source === sourceId) return { ...c, source: targetId }
+      if (c.source === targetId) return { ...c, source: sourceId }
+      if (c.target === sourceId) return { ...c, target: targetId }
+      if (c.target === targetId) return { ...c, target: sourceId }
+      return c
+    })
+
+    data.value.connections = newConnections
+
+    const layoutNodes = recalculateBraceMapLayout(data.value.nodes, newConnections)
+    data.value.nodes = layoutNodes
+    return true
+  }
+
+  /**
+   * Move a brace map node: reparent if source is deeper than target,
+   * otherwise swap. Handles subpart → part as "add to group".
+   */
+  function moveBraceMapNode(sourceId: string, targetId: string): boolean {
+    if (!data.value?.nodes || !data.value?.connections) return false
+
+    const parentMap = new Map<string, string>()
+    data.value.connections.forEach((c) => {
+      parentMap.set(c.target, c.source)
+    })
+
+    function getDepth(nodeId: string): number {
+      let depth = 0
+      let current = nodeId
+      while (parentMap.has(current)) {
+        depth++
+        const next = parentMap.get(current)
+        if (next === undefined) break
+        current = next
+      }
+      return depth
+    }
+
+    const srcDepth = getDepth(sourceId)
+    const tgtDepth = getDepth(targetId)
+
+    if (parentMap.get(sourceId) === targetId) return false
+
+    let success = false
+
+    if (srcDepth > tgtDepth) {
+      const descendantIds = getNodeGroupIds(sourceId)
+      if (descendantIds.has(targetId)) return false
+
+      const oldParent = parentMap.get(sourceId)
+      if (!oldParent) return false
+
+      data.value.connections = data.value.connections.filter(
+        (c) => !(c.source === oldParent && c.target === sourceId)
+      )
+      data.value.connections.push({
+        id: `edge-${targetId}-${sourceId}`,
+        source: targetId,
+        target: sourceId,
+      })
+
+      const layoutNodes = recalculateBraceMapLayout(data.value.nodes, data.value.connections)
+      data.value.nodes = layoutNodes
+      success = true
+    } else {
+      success = swapBraceMapNodes(sourceId, targetId)
+    }
+
+    if (success) {
+      if (data.value?._customPositions) data.value._customPositions = {}
+      if (data.value?._node_styles) data.value._node_styles = {}
+      selectedNodes.value = []
+      pushHistory('Move node')
+      emitEvent('diagram:operation_completed', { operation: 'move_branch' })
+      eventBus.emit('diagram:branch_moved', {})
+    }
+    return success
+  }
+
+  function swapBridgeMapPairs(sourceId: string, targetId: string): boolean {
+    if (!data.value?.nodes) return false
+    const srcMatch = sourceId.match(/^pair-(\d+)-(left|right)$/)
+    const tgtMatch = targetId.match(/^pair-(\d+)-(left|right)$/)
+    if (!srcMatch || !tgtMatch) return false
+
+    const srcPairIdx = parseInt(srcMatch[1], 10)
+    const tgtPairIdx = parseInt(tgtMatch[1], 10)
+    if (srcPairIdx === tgtPairIdx) return false
+
+    const pairIndices = [
+      ...new Set(
+        data.value.nodes
+          .filter((n) => n.id.startsWith('pair-'))
+          .map((n) => parseInt(n.id.match(/^pair-(\d+)/)?.[1] ?? '-1', 10))
+          .filter((i) => i >= 0)
+      ),
+    ].sort((a, b) => a - b)
+
+    if (!pairIndices.includes(srcPairIdx) || !pairIndices.includes(tgtPairIdx)) return false
+
+    const rawDimension = (
+      (data.value as Record<string, unknown>).dimension as string | undefined
+    )?.trim()
+    const rawFactor = (
+      (data.value as Record<string, unknown>).relating_factor as string | undefined
+    )?.trim()
+    const dimension = rawDimension || rawFactor || ''
+    const altDims = (data.value as Record<string, unknown>).alternative_dimensions as
+      | string[]
+      | undefined
+
+    const bridgeNodes = data.value.nodes
+    const analogies = pairIndices.map((i) => {
+      const leftNode = bridgeNodes.find((n) => n.id === `pair-${i}-left`)
+      const rightNode = bridgeNodes.find((n) => n.id === `pair-${i}-right`)
+      return { left: leftNode?.text ?? '', right: rightNode?.text ?? '' }
+    })
+
+    const srcPos = pairIndices.indexOf(srcPairIdx)
+    const tgtPos = pairIndices.indexOf(tgtPairIdx)
+    const tmp = analogies[srcPos]
+    analogies[srcPos] = analogies[tgtPos]
+    analogies[tgtPos] = tmp
+
+    const spec: Record<string, unknown> = {
+      relating_factor: dimension,
+      dimension,
+      analogies,
+    }
+    if (altDims) spec.alternative_dimensions = altDims
+    return loadFromSpec(spec, 'bridge_map')
+  }
+
   return {
     // State
     type,
@@ -2402,6 +3343,8 @@ export const useDiagramStore = defineStore('diagram', () => {
     addMindMapBranch,
     addMindMapChild,
     removeMindMapNodes,
+    moveMindMapBranch,
+    getMindMapDescendantIds,
     copySelectedNodes,
     pasteNodesAt,
     reset,
@@ -2442,7 +3385,13 @@ export const useDiagramStore = defineStore('diagram', () => {
     // Tree map
     addTreeMapCategory,
     addTreeMapChild,
+    moveTreeMapBranch,
+    getTreeMapDescendantIds,
     removeTreeMapNodes,
+
+    // Generic node move (all diagram types)
+    getNodeGroupIds,
+    moveNodeBySwap,
 
     // Title management
     getTopicNodeText,

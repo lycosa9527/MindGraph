@@ -66,6 +66,13 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
   // Track abort controllers for cancellation
   const abortControllers = ref<AbortController[]>([])
 
+  /**
+   * Set true before loadFromSpec in switchToModel. Auto-save checks this: when
+   * content change is from model switch, do not save (save-before-replace already
+   * saved user edits; persisting the new model's result would overwrite them).
+   */
+  const contentChangeIsFromModelSwitch = ref(false)
+
   // Getters
   const models = computed(() => MODELS)
 
@@ -162,7 +169,9 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
       specToLoad = { ...result.spec, orientation: currentOrientation }
     }
 
-    // Load into diagram store (emits diagram:loaded; auto-save will re-trigger if needed)
+    // Mark before load so auto-save skips: content change is programmatic replace,
+    // not a user edit. save-before-replace already saved user edits.
+    contentChangeIsFromModelSwitch.value = true
     const loaded = diagramStore.loadFromSpec(
       specToLoad,
       diagramType as import('@/types').DiagramType
@@ -175,6 +184,7 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
       return true
     }
 
+    contentChangeIsFromModelSwitch.value = false
     console.error(`[LLMResults] Failed to load ${model} result into diagram store`)
     return false
   }
@@ -344,6 +354,22 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
   }
 
   /**
+   * Update the current model's cached spec with user edits.
+   * Called when auto-save or save-before-replace persists the diagram.
+   * Ensures model switching loads the edited spec (including user-added branches)
+   * instead of the original AI output.
+   */
+  function updateCurrentModelSpec(spec: Record<string, unknown>): void {
+    const model = selectedModel.value
+    if (!model || !results.value[model]?.success) return
+    results.value[model] = {
+      ...results.value[model],
+      spec: { ...spec },
+      timestamp: Date.now(),
+    }
+  }
+
+  /**
    * Restore LLM results from saved diagram spec.
    * Enables model switching when reopening a diagram that had multiple results.
    * @param saved - { results: Record<model, LLMResult>, selectedModel: string }
@@ -374,6 +400,7 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
     modelStates,
     selectedModel,
     isGenerating,
+    contentChangeIsFromModelSwitch,
     sessionId,
     expectedDiagramType,
     totalModels,
@@ -403,5 +430,6 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
     reset,
     getResultsForPersistence,
     restoreFromSaved,
+    updateCurrentModelSpec,
   }
 })

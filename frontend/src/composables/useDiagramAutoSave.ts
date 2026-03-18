@@ -113,6 +113,8 @@ export function useDiagramAutoSave(options: UseDiagramAutoSaveOptions = {}) {
   async function performSave(): Promise<void> {
     if (!canSave.value) return
 
+    const base = diagramStore.getSpecForSave()
+    if (base) llmResultsStore.updateCurrentModelSpec(base)
     const spec = getDiagramSpec()
     if (!spec) return
 
@@ -132,6 +134,7 @@ export function useDiagramAutoSave(options: UseDiagramAutoSaveOptions = {}) {
       if (result.success) {
         lastSavedAt.value = new Date()
         diagramStore.resetSessionEditCount()
+        llmResultsStore.updateCurrentModelSpec(spec)
         options.onSaved?.({
           action: result.action,
           diagramId: result.diagramId,
@@ -161,6 +164,13 @@ export function useDiagramAutoSave(options: UseDiagramAutoSaveOptions = {}) {
 
   const stopContentWatch = watch(contentFingerprint, (newFP, oldFP) => {
     if (!newFP || oldFP === undefined || newFP === oldFP) return
+    // Content change from model switch: save-before-replace already saved user edits.
+    // Do not overwrite with the new model's result. Cancel any pending save.
+    if (llmResultsStore.contentChangeIsFromModelSwitch) {
+      llmResultsStore.contentChangeIsFromModelSwitch = false
+      cancelTimer()
+      return
+    }
     if (!llmResultsStore.isGenerating && !isSuppressed.value) trigger()
   })
 
@@ -187,12 +197,20 @@ export function useDiagramAutoSave(options: UseDiagramAutoSaveOptions = {}) {
     setSuppressFromLibrary()
   )
 
+  const stopOperationCompleted = eventBus.on(
+    'diagram:operation_completed',
+    (payload: { operation?: string }) => {
+      if (payload?.operation === 'move_branch') trigger()
+    }
+  )
+
   function teardown(): void {
     cancelTimer()
     stopContentWatch()
     stopIsGenerating()
     stopLlmComplete()
     stopLoadedFromLibrary()
+    stopOperationCompleted()
   }
 
   onUnmounted(teardown)
