@@ -79,6 +79,24 @@ try:
 except ImportError:
     pass
 
+# Import workshop chat models
+try:
+    from models.domain.workshop_chat import (
+        ChatChannel, ChannelMember, ChatTopic, ChatMessage, DirectMessage,
+        MessageReaction, StarredMessage, FileAttachment, UserTopicPreference,
+    )
+    _ = ChatChannel.__tablename__
+    _ = ChannelMember.__tablename__
+    _ = ChatTopic.__tablename__
+    _ = ChatMessage.__tablename__
+    _ = DirectMessage.__tablename__
+    _ = MessageReaction.__tablename__
+    _ = StarredMessage.__tablename__
+    _ = FileAttachment.__tablename__
+    _ = UserTopicPreference.__tablename__
+except ImportError:
+    pass
+
 # Import helper functions
 from utils.migration.sqlite.migration_table_helpers import (
     build_insert_sql,

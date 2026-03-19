@@ -15,6 +15,7 @@ import os
 import signal
 import time
 from contextlib import asynccontextmanager
+from pathlib import Path
 from typing import Optional
 
 from fastapi import FastAPI
@@ -238,6 +239,17 @@ async def lifespan(fastapi_app: FastAPI):
             logger.debug("Database initialized successfully")
             # Display demo info if in demo mode
             display_demo_info()
+
+        # Ensure library storage directories exist on every startup
+        try:
+            _library_dir = Path(os.getenv("LIBRARY_STORAGE_DIR", "./storage/library"))
+            _library_dir.mkdir(parents=True, exist_ok=True)
+            (_library_dir / "covers").mkdir(parents=True, exist_ok=True)
+            if is_main_worker:
+                logger.debug("[LIFESPAN] Library storage ready: %s", _library_dir.resolve())
+        except Exception as lib_dir_exc:  # pylint: disable=broad-except
+            if is_main_worker:
+                logger.warning("[LIFESPAN] Could not create library storage directory: %s", lib_dir_exc)
 
         # Load cache from database and IP geolocation database in parallel
         # Note: Both use Redis lock/distributed coordination to ensure only one worker loads

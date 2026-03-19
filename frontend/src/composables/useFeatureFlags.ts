@@ -35,6 +35,7 @@ export function useFeatureFlags() {
   const featureGewe = computed(() => data.value?.feature_gewe ?? false)
   const featureSmartResponse = computed(() => data.value?.feature_smart_response ?? false)
   const featureTeacherUsage = computed(() => data.value?.feature_teacher_usage ?? false)
+  const featureWorkshopChat = computed(() => data.value?.feature_workshop_chat ?? false)
 
   return {
     featureRagChunkTest,
@@ -49,6 +50,7 @@ export function useFeatureFlags() {
     featureGewe,
     featureSmartResponse,
     featureTeacherUsage,
+    featureWorkshopChat,
     isLoading,
     error,
   }

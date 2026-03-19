@@ -1,9 +1,10 @@
 <script setup lang="ts">
 /**
- * AppSidebar - Collapsible sidebar with mode switching, history, and user profile
- * Migrated from prototype MindMateChatPage sidebar
+ * AppSidebar - Collapsible sidebar with inline accordion panels
+ * Each module can expand its history panel below; only one panel open at a time.
+ * Workshop mode hides admin items and fills remaining space.
  */
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
 import {
@@ -21,15 +22,24 @@ import {
   VideoPlay,
 } from '@element-plus/icons-vue'
 
-import { ChevronDown, KeyRound, LogIn, LogOut, Menu, Settings, UserRound } from 'lucide-vue-next'
-import { Watch } from 'lucide-vue-next'
+import {
+  ChevronDown,
+  KeyRound,
+  LogIn,
+  LogOut,
+  Menu,
+  MessageSquare,
+  Settings,
+  UserRound,
+  Watch,
+} from 'lucide-vue-next'
 
 import { AccountInfoModal, ChangePasswordModal, LoginModal } from '@/components/auth'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useLanguage } from '@/composables/useLanguage'
 import { useAuthStore, useMindMateStore, useUIStore } from '@/stores'
 import { useAskOnceStore } from '@/stores/askonce'
-import { type SavedDiagram, useSavedDiagramsStore } from '@/stores/savedDiagrams'
+import { type SavedDiagram } from '@/stores/savedDiagrams'
 
 import AskOnceHistory from './AskOnceHistory.vue'
 import ChatHistory from './ChatHistory.vue'
@@ -38,6 +48,7 @@ import DebateHistory from './DebateHistory.vue'
 import DiagramHistory from './DiagramHistory.vue'
 import KnowledgeSpaceHistory from './KnowledgeSpaceHistory.vue'
 import LibraryCommentsHistory from './LibraryCommentsHistory.vue'
+import WorkshopChatHistory from './WorkshopChatHistory.vue'
 
 const { t, isZh } = useLanguage()
 
@@ -46,7 +57,6 @@ const uiStore = useUIStore()
 const authStore = useAuthStore()
 const mindMateStore = useMindMateStore()
 const askOnceStore = useAskOnceStore()
-const _savedDiagramsStore = useSavedDiagramsStore()
 const {
   featureRagChunkTest,
   featureCourse,
@@ -60,6 +70,7 @@ const {
   featureGewe,
   featureSmartResponse,
   featureTeacherUsage,
+  featureWorkshopChat,
 } = useFeatureFlags()
 
 const isCollapsed = computed(() => uiStore.sidebarCollapsed)
@@ -83,6 +94,7 @@ const currentMode = computed(() => {
   if (path.startsWith('/admin')) return 'admin'
   if (path.startsWith('/smart-response')) return 'smart-response'
   if (path.startsWith('/teacher-usage')) return 'teacher-usage'
+  if (path.startsWith('/workshop-chat')) return 'workshop-chat'
   return 'mindmate' // Default
 })
 
@@ -119,40 +131,36 @@ function toggleSidebar() {
   uiStore.toggleSidebar()
 }
 
+const routeMap: Record<string, string> = {
+  mindmate: '/mindmate',
+  mindgraph: '/mindgraph',
+  'knowledge-space': '/knowledge-space',
+  'chunk-test': '/chunk-test',
+  askonce: '/askonce',
+  debateverse: '/debateverse',
+  'school-zone': '/school-zone',
+  template: '/template',
+  course: '/course',
+  community: '/community',
+  library: '/library',
+  gewe: '/gewe',
+  'school-dashboard': '/school-dashboard',
+  admin: '/admin',
+  'smart-response': '/smart-response',
+  'teacher-usage': '/teacher-usage',
+  'workshop-chat': '/workshop-chat',
+}
+
 function setMode(index: string) {
-  // All modes now use routing
-  if (index === 'mindmate') {
-    router.push('/mindmate')
-  } else if (index === 'mindgraph') {
-    router.push('/mindgraph')
-  } else if (index === 'knowledge-space') {
-    router.push('/knowledge-space')
-  } else if (index === 'chunk-test') {
-    router.push('/chunk-test')
-  } else if (index === 'askonce') {
-    router.push('/askonce')
-  } else if (index === 'debateverse') {
-    router.push('/debateverse')
-  } else if (index === 'school-zone') {
-    router.push('/school-zone')
-  } else if (index === 'template') {
-    router.push('/template')
-  } else if (index === 'course') {
-    router.push('/course')
-  } else if (index === 'community') {
-    router.push('/community')
-  } else if (index === 'library') {
-    router.push('/library')
-  } else if (index === 'gewe') {
-    router.push('/gewe')
-  } else if (index === 'school-dashboard') {
-    router.push('/school-dashboard')
-  } else if (index === 'admin') {
-    router.push('/admin')
-  } else if (index === 'smart-response') {
-    router.push('/smart-response')
-  } else if (index === 'teacher-usage') {
-    router.push('/teacher-usage')
+  if (currentMode.value === index) {
+    expandedPanel.value = expandedPanel.value === index ? null : index
+    return
+  }
+
+  expandedPanel.value = index
+  const route = routeMap[index]
+  if (route) {
+    router.push(route)
   }
 }
 
@@ -211,6 +219,26 @@ async function handleDiagramSelect(diagram: SavedDiagram) {
     query: { diagramId: diagram.id.toString() },
   })
 }
+
+const expandedPanel = ref<string | null>(null)
+const workshopExpanded = computed(() => expandedPanel.value === 'workshop-chat')
+
+function navItemClass(mode: string) {
+  return {
+    'nav-item--collapsed': isCollapsed.value,
+    'is-active': currentMode.value === mode,
+  }
+}
+
+function showPanel(mode: string): boolean {
+  return !isCollapsed.value && expandedPanel.value === mode
+}
+
+watch(currentMode, () => {
+  if (expandedPanel.value && expandedPanel.value !== currentMode.value) {
+    expandedPanel.value = null
+  }
+})
 </script>
 
 <template>
@@ -246,180 +274,437 @@ async function handleDiagramSelect(diagram: SavedDiagram) {
       </el-button>
     </div>
 
-    <!-- Mode menu -->
-    <el-menu
-      :default-active="currentMode"
-      :collapse="isCollapsed"
-      class="sidebar-menu"
-      @select="setMode"
-    >
-      <el-menu-item index="mindmate">
-        <el-icon><ChatLineSquare /></el-icon>
-        <template #title>MindMate</template>
-      </el-menu-item>
-      <el-menu-item index="mindgraph">
-        <el-icon><Connection /></el-icon>
-        <template #title>MindGraph</template>
-      </el-menu-item>
-      <el-menu-item
-        v-if="isAuthenticated && featureKnowledgeSpace"
-        index="knowledge-space"
-      >
-        <el-icon><Document /></el-icon>
-        <template #title>个人知识库</template>
-      </el-menu-item>
-      <el-menu-item
-        v-if="isAuthenticated && featureRagChunkTest"
-        index="chunk-test"
-      >
-        <el-icon><Tools /></el-icon>
-        <template #title>RAG分块测试</template>
-      </el-menu-item>
-      <el-menu-item
-        v-if="featureAskOnce"
-        index="askonce"
-      >
-        <el-icon><MagicStick /></el-icon>
-        <template #title>{{ t('askonce.title') }}</template>
-      </el-menu-item>
-      <el-menu-item
-        v-if="featureDebateverse"
-        index="debateverse"
-      >
-        <el-icon><ChatDotRound /></el-icon>
-        <template #title>论境</template>
-      </el-menu-item>
-      <el-menu-item
-        v-if="hasOrganization && featureSchoolZone"
-        index="school-zone"
-      >
-        <el-icon><OfficeBuilding /></el-icon>
-        <template #title>学校专区</template>
-      </el-menu-item>
-      <el-menu-item
-        v-if="featureTemplate"
-        index="template"
-      >
-        <el-icon><Files /></el-icon>
-        <template #title>模板资源</template>
-      </el-menu-item>
-      <el-menu-item
-        v-if="featureCourse"
-        index="course"
-      >
-        <el-icon><VideoPlay /></el-icon>
-        <template #title>思维课程</template>
-      </el-menu-item>
-      <el-menu-item
-        v-if="featureCommunity"
-        index="community"
-      >
-        <el-icon><Share /></el-icon>
-        <template #title>社区分享</template>
-      </el-menu-item>
-      <el-menu-item
-        v-if="featureLibrary"
-        index="library"
-      >
-        <el-icon><Reading /></el-icon>
-        <template #title>图书馆</template>
-      </el-menu-item>
-      <el-menu-item
-        v-if="isAdmin && featureGewe"
-        index="gewe"
-      >
-        <el-icon><ChatDotRound /></el-icon>
-        <template #title>Gewe</template>
-      </el-menu-item>
-      <el-menu-item
-        v-if="isAdminOrManager && featureSmartResponse"
-        index="smart-response"
-      >
-        <el-icon><Watch /></el-icon>
-        <template #title>{{ isZh ? 'Smart Response 智回' : 'Smart Response' }}</template>
-      </el-menu-item>
-      <el-menu-item
-        v-if="isAdmin && featureTeacherUsage"
-        index="teacher-usage"
-      >
-        <el-icon><TrendCharts /></el-icon>
-        <template #title>{{ isZh ? '教师使用度' : 'Teacher Usage' }}</template>
-      </el-menu-item>
-      <el-menu-item
-        v-if="isAdminOrManager"
-        index="school-dashboard"
-      >
-        <el-icon><OfficeBuilding /></el-icon>
-        <template #title>{{ t('admin.schoolDashboard') }}</template>
-      </el-menu-item>
-      <el-menu-item
-        v-if="isAdmin"
-        index="admin"
-      >
-        <el-icon><Settings /></el-icon>
-        <template #title>{{ t('admin.title') }}</template>
-      </el-menu-item>
-    </el-menu>
-
-    <!-- History section (only in expanded mode) -->
-    <!-- MindMate: Show chat history -->
-    <ChatHistory
-      v-if="!isCollapsed && currentMode === 'mindmate'"
-      :is-blurred="!isAuthenticated"
-      class="flex-1 overflow-hidden"
-    />
-    <!-- MindGraph: Show diagram history -->
-    <DiagramHistory
-      v-else-if="!isCollapsed && currentMode === 'mindgraph'"
-      :is-blurred="!isAuthenticated"
-      class="flex-1 overflow-hidden"
-      @select="handleDiagramSelect"
-    />
-    <!-- AskOnce: Show conversation history -->
-    <AskOnceHistory
-      v-else-if="!isCollapsed && currentMode === 'askonce'"
-      :is-blurred="!isAuthenticated"
-      class="flex-1 overflow-hidden"
-    />
-    <!-- Debateverse: Show recent debates -->
-    <DebateHistory
-      v-else-if="!isCollapsed && currentMode === 'debateverse'"
-      :is-blurred="!isAuthenticated"
-      class="flex-1 overflow-hidden"
-    />
-    <!-- Knowledge Space: Show document history -->
-    <KnowledgeSpaceHistory
-      v-else-if="!isCollapsed && currentMode === 'knowledge-space' && featureKnowledgeSpace"
-      class="flex-1 overflow-hidden"
-    />
-    <!-- Chunk Test: Show test history -->
-    <ChunkTestHistory
-      v-else-if="!isCollapsed && currentMode === 'chunk-test' && featureRagChunkTest"
-      :is-blurred="!isAuthenticated"
-      class="flex-1 overflow-hidden"
-    />
-    <!-- Library: Show recent comments -->
-    <LibraryCommentsHistory
-      v-else-if="!isCollapsed && currentMode === 'library' && featureLibrary"
-      :is-blurred="!isAuthenticated"
-      class="flex-1 overflow-hidden"
-    />
-
-    <!-- Spacer to push user section to bottom (when no history shown) -->
+    <!-- Navigation with inline accordion panels -->
     <div
-      v-if="
-        isCollapsed ||
-        !(
-          currentMode === 'mindmate' ||
-          currentMode === 'mindgraph' ||
-          (featureKnowledgeSpace && currentMode === 'knowledge-space') ||
-          (featureRagChunkTest && currentMode === 'chunk-test') ||
-          (featureAskOnce && currentMode === 'askonce') ||
-          (featureDebateverse && currentMode === 'debateverse')
-        )
-      "
-      class="flex-1"
-    />
+      class="sidebar-nav-scroll"
+      :class="{ 'sidebar-nav-scroll--collapsed': isCollapsed }"
+    >
+      <!-- MindMate -->
+      <el-tooltip
+        content="MindMate"
+        placement="right"
+        :disabled="!isCollapsed"
+      >
+        <div
+          class="nav-item"
+          :class="navItemClass('mindmate')"
+          @click="setMode('mindmate')"
+        >
+          <el-icon><ChatLineSquare /></el-icon>
+          <span
+            v-if="!isCollapsed"
+            class="nav-label"
+            >MindMate</span
+          >
+        </div>
+      </el-tooltip>
+      <transition name="panel-slide">
+        <div
+          v-if="showPanel('mindmate')"
+          class="sidebar-panel"
+        >
+          <ChatHistory :is-blurred="!isAuthenticated" />
+        </div>
+      </transition>
+
+      <!-- MindGraph -->
+      <el-tooltip
+        content="MindGraph"
+        placement="right"
+        :disabled="!isCollapsed"
+      >
+        <div
+          class="nav-item"
+          :class="navItemClass('mindgraph')"
+          @click="setMode('mindgraph')"
+        >
+          <el-icon><Connection /></el-icon>
+          <span
+            v-if="!isCollapsed"
+            class="nav-label"
+            >MindGraph</span
+          >
+        </div>
+      </el-tooltip>
+      <transition name="panel-slide">
+        <div
+          v-if="showPanel('mindgraph')"
+          class="sidebar-panel"
+        >
+          <DiagramHistory
+            :is-blurred="!isAuthenticated"
+            @select="handleDiagramSelect"
+          />
+        </div>
+      </transition>
+
+      <!-- Knowledge Space -->
+      <el-tooltip
+        v-if="isAuthenticated && featureKnowledgeSpace"
+        content="个人知识库"
+        placement="right"
+        :disabled="!isCollapsed"
+      >
+        <div
+          class="nav-item"
+          :class="navItemClass('knowledge-space')"
+          @click="setMode('knowledge-space')"
+        >
+          <el-icon><Document /></el-icon>
+          <span
+            v-if="!isCollapsed"
+            class="nav-label"
+            >个人知识库</span
+          >
+        </div>
+      </el-tooltip>
+      <transition name="panel-slide">
+        <div
+          v-if="isAuthenticated && featureKnowledgeSpace && showPanel('knowledge-space')"
+          class="sidebar-panel"
+        >
+          <KnowledgeSpaceHistory />
+        </div>
+      </transition>
+
+      <!-- Chunk Test -->
+      <el-tooltip
+        v-if="isAuthenticated && featureRagChunkTest"
+        content="RAG分块测试"
+        placement="right"
+        :disabled="!isCollapsed"
+      >
+        <div
+          class="nav-item"
+          :class="navItemClass('chunk-test')"
+          @click="setMode('chunk-test')"
+        >
+          <el-icon><Tools /></el-icon>
+          <span
+            v-if="!isCollapsed"
+            class="nav-label"
+            >RAG分块测试</span
+          >
+        </div>
+      </el-tooltip>
+      <transition name="panel-slide">
+        <div
+          v-if="isAuthenticated && featureRagChunkTest && showPanel('chunk-test')"
+          class="sidebar-panel"
+        >
+          <ChunkTestHistory :is-blurred="!isAuthenticated" />
+        </div>
+      </transition>
+
+      <!-- AskOnce -->
+      <el-tooltip
+        v-if="featureAskOnce"
+        :content="t('askonce.title')"
+        placement="right"
+        :disabled="!isCollapsed"
+      >
+        <div
+          class="nav-item"
+          :class="navItemClass('askonce')"
+          @click="setMode('askonce')"
+        >
+          <el-icon><MagicStick /></el-icon>
+          <span
+            v-if="!isCollapsed"
+            class="nav-label"
+            >{{ t('askonce.title') }}</span
+          >
+        </div>
+      </el-tooltip>
+      <transition name="panel-slide">
+        <div
+          v-if="featureAskOnce && showPanel('askonce')"
+          class="sidebar-panel"
+        >
+          <AskOnceHistory :is-blurred="!isAuthenticated" />
+        </div>
+      </transition>
+
+      <!-- Debateverse -->
+      <el-tooltip
+        v-if="featureDebateverse"
+        content="论境"
+        placement="right"
+        :disabled="!isCollapsed"
+      >
+        <div
+          class="nav-item"
+          :class="navItemClass('debateverse')"
+          @click="setMode('debateverse')"
+        >
+          <el-icon><ChatDotRound /></el-icon>
+          <span
+            v-if="!isCollapsed"
+            class="nav-label"
+            >论境</span
+          >
+        </div>
+      </el-tooltip>
+      <transition name="panel-slide">
+        <div
+          v-if="featureDebateverse && showPanel('debateverse')"
+          class="sidebar-panel"
+        >
+          <DebateHistory :is-blurred="!isAuthenticated" />
+        </div>
+      </transition>
+
+      <!-- School Zone -->
+      <el-tooltip
+        v-if="hasOrganization && featureSchoolZone"
+        content="学校专区"
+        placement="right"
+        :disabled="!isCollapsed"
+      >
+        <div
+          class="nav-item"
+          :class="navItemClass('school-zone')"
+          @click="setMode('school-zone')"
+        >
+          <el-icon><OfficeBuilding /></el-icon>
+          <span
+            v-if="!isCollapsed"
+            class="nav-label"
+            >学校专区</span
+          >
+        </div>
+      </el-tooltip>
+
+      <!-- Templates -->
+      <el-tooltip
+        v-if="featureTemplate"
+        content="模板资源"
+        placement="right"
+        :disabled="!isCollapsed"
+      >
+        <div
+          class="nav-item"
+          :class="navItemClass('template')"
+          @click="setMode('template')"
+        >
+          <el-icon><Files /></el-icon>
+          <span
+            v-if="!isCollapsed"
+            class="nav-label"
+            >模板资源</span
+          >
+        </div>
+      </el-tooltip>
+
+      <!-- Courses -->
+      <el-tooltip
+        v-if="featureCourse"
+        content="思维课程"
+        placement="right"
+        :disabled="!isCollapsed"
+      >
+        <div
+          class="nav-item"
+          :class="navItemClass('course')"
+          @click="setMode('course')"
+        >
+          <el-icon><VideoPlay /></el-icon>
+          <span
+            v-if="!isCollapsed"
+            class="nav-label"
+            >思维课程</span
+          >
+        </div>
+      </el-tooltip>
+
+      <!-- Community -->
+      <el-tooltip
+        v-if="featureCommunity"
+        content="社区分享"
+        placement="right"
+        :disabled="!isCollapsed"
+      >
+        <div
+          class="nav-item"
+          :class="navItemClass('community')"
+          @click="setMode('community')"
+        >
+          <el-icon><Share /></el-icon>
+          <span
+            v-if="!isCollapsed"
+            class="nav-label"
+            >社区分享</span
+          >
+        </div>
+      </el-tooltip>
+
+      <!-- Library -->
+      <el-tooltip
+        v-if="featureLibrary"
+        content="图书馆"
+        placement="right"
+        :disabled="!isCollapsed"
+      >
+        <div
+          class="nav-item"
+          :class="navItemClass('library')"
+          @click="setMode('library')"
+        >
+          <el-icon><Reading /></el-icon>
+          <span
+            v-if="!isCollapsed"
+            class="nav-label"
+            >图书馆</span
+          >
+        </div>
+      </el-tooltip>
+      <transition name="panel-slide">
+        <div
+          v-if="featureLibrary && showPanel('library')"
+          class="sidebar-panel"
+        >
+          <LibraryCommentsHistory :is-blurred="!isAuthenticated" />
+        </div>
+      </transition>
+
+      <!-- Workshop Chat (special: modules below disappear when expanded) -->
+      <el-tooltip
+        v-if="isAuthenticated && (hasOrganization || isAdminOrManager) && featureWorkshopChat"
+        :content="t('workshop.title')"
+        placement="right"
+        :disabled="!isCollapsed"
+      >
+        <div
+          class="nav-item"
+          :class="navItemClass('workshop-chat')"
+          @click="setMode('workshop-chat')"
+        >
+          <el-icon><MessageSquare /></el-icon>
+          <span
+            v-if="!isCollapsed"
+            class="nav-label ws-menu-title"
+          >
+            {{ t('workshop.title') }}
+            <ChevronDown
+              class="ws-expand-chevron"
+              :class="{ 'ws-expand-chevron--open': workshopExpanded }"
+            />
+          </span>
+        </div>
+      </el-tooltip>
+      <transition name="ws-slide">
+        <WorkshopChatHistory
+          v-if="workshopExpanded && !isCollapsed && featureWorkshopChat"
+          :is-blurred="!isAuthenticated"
+          class="workshop-panel"
+        />
+      </transition>
+
+      <!-- Admin / management items (inline, hidden when workshop expanded) -->
+      <template v-if="!workshopExpanded && (isAdminOrManager || isAdmin)">
+        <div class="nav-divider" />
+
+        <el-tooltip
+          v-if="isAdmin && featureGewe"
+          content="Gewe"
+          placement="right"
+          :disabled="!isCollapsed"
+        >
+          <div
+            class="nav-item"
+            :class="navItemClass('gewe')"
+            @click="setMode('gewe')"
+          >
+            <el-icon><ChatDotRound /></el-icon>
+            <span
+              v-if="!isCollapsed"
+              class="nav-label"
+              >Gewe</span
+            >
+          </div>
+        </el-tooltip>
+
+        <el-tooltip
+          v-if="isAdminOrManager && featureSmartResponse"
+          :content="isZh ? 'Smart Response 智回' : 'Smart Response'"
+          placement="right"
+          :disabled="!isCollapsed"
+        >
+          <div
+            class="nav-item"
+            :class="navItemClass('smart-response')"
+            @click="setMode('smart-response')"
+          >
+            <el-icon><Watch /></el-icon>
+            <span
+              v-if="!isCollapsed"
+              class="nav-label"
+              >{{ isZh ? 'Smart Response 智回' : 'Smart Response' }}</span
+            >
+          </div>
+        </el-tooltip>
+
+        <el-tooltip
+          v-if="isAdmin && featureTeacherUsage"
+          :content="isZh ? '教师使用度' : 'Teacher Usage'"
+          placement="right"
+          :disabled="!isCollapsed"
+        >
+          <div
+            class="nav-item"
+            :class="navItemClass('teacher-usage')"
+            @click="setMode('teacher-usage')"
+          >
+            <el-icon><TrendCharts /></el-icon>
+            <span
+              v-if="!isCollapsed"
+              class="nav-label"
+              >{{ isZh ? '教师使用度' : 'Teacher Usage' }}</span
+            >
+          </div>
+        </el-tooltip>
+
+        <el-tooltip
+          v-if="isAdminOrManager"
+          :content="t('admin.schoolDashboard')"
+          placement="right"
+          :disabled="!isCollapsed"
+        >
+          <div
+            class="nav-item"
+            :class="navItemClass('school-dashboard')"
+            @click="setMode('school-dashboard')"
+          >
+            <el-icon><OfficeBuilding /></el-icon>
+            <span
+              v-if="!isCollapsed"
+              class="nav-label"
+              >{{ t('admin.schoolDashboard') }}</span
+            >
+          </div>
+        </el-tooltip>
+
+        <el-tooltip
+          v-if="isAdmin"
+          :content="t('admin.title')"
+          placement="right"
+          :disabled="!isCollapsed"
+        >
+          <div
+            class="nav-item"
+            :class="navItemClass('admin')"
+            @click="setMode('admin')"
+          >
+            <el-icon><Settings /></el-icon>
+            <span
+              v-if="!isCollapsed"
+              class="nav-label"
+              >{{ t('admin.title') }}</span
+            >
+          </div>
+        </el-tooltip>
+      </template>
+    </div>
 
     <!-- User profile / Login at bottom -->
     <div
@@ -602,51 +887,169 @@ async function handleDiagramSelect(diagram: SavedDiagram) {
   --el-button-hover-border-color: #292524;
 }
 
-/* Sidebar menu - Swiss Design style */
-.sidebar-menu {
-  border-right: none;
-  background-color: transparent;
-  --el-menu-bg-color: transparent;
-  --el-menu-hover-bg-color: #f5f5f4;
-  --el-menu-active-color: #1c1917;
-  --el-menu-text-color: #57534e;
-  --el-menu-hover-text-color: #1c1917;
-  --el-menu-item-height: 44px;
+/* Navigation container (no scroll — only panels scroll internally) */
+.sidebar-nav-scroll {
+  flex: 1;
+  overflow: hidden;
+  min-height: 0;
   padding: 8px 12px;
 }
 
-.sidebar-menu:not(.el-menu--collapse) {
-  width: 100%;
+.sidebar-nav-scroll--collapsed {
+  padding: 8px;
 }
 
-.sidebar-menu :deep(.el-menu-item) {
+/* Custom nav items (replaces el-menu for inline accordion support) */
+.nav-item {
+  display: flex;
+  align-items: center;
+  height: 44px;
+  padding: 0 16px;
   border-radius: 8px;
   margin-bottom: 4px;
   font-weight: 500;
   font-size: 14px;
+  color: #57534e;
+  cursor: pointer;
+  transition:
+    background-color 0.15s,
+    color 0.15s;
+  user-select: none;
+  flex-shrink: 0;
 }
 
-.sidebar-menu :deep(.el-menu-item.is-active) {
+.nav-item:hover {
+  background-color: #f5f5f4;
+  color: #1c1917;
+}
+.nav-item.is-active {
   background-color: #1c1917;
   color: white;
 }
-
-.sidebar-menu :deep(.el-menu-item.is-active .el-icon) {
+.nav-item.is-active .el-icon {
   color: white;
 }
-
-.sidebar-menu :deep(.el-menu-item.is-disabled) {
-  opacity: 0.5;
+.nav-item .el-icon {
+  margin-right: 8px;
+  font-size: 18px;
+  flex-shrink: 0;
 }
-
-.sidebar-menu.el-menu--collapse {
-  width: 100%;
-  padding: 8px;
-}
-
-.sidebar-menu.el-menu--collapse :deep(.el-menu-item) {
-  padding: 0 !important;
+.nav-item--collapsed {
   justify-content: center;
+  padding: 0;
+}
+.nav-item--collapsed .el-icon {
+  margin-right: 0;
+}
+
+.nav-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+}
+
+.nav-divider {
+  height: 1px;
+  background-color: #e7e5e4;
+  margin: 4px 0;
+  flex-shrink: 0;
+}
+
+/* Inline history panels (accordion) */
+.sidebar-panel {
+  max-height: 40vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  flex-shrink: 0;
+}
+
+.sidebar-panel::-webkit-scrollbar {
+  width: 4px;
+}
+.sidebar-panel::-webkit-scrollbar-track {
+  background: transparent;
+}
+.sidebar-panel::-webkit-scrollbar-thumb {
+  background-color: #d6d3d1;
+  border-radius: 2px;
+}
+.sidebar-panel::-webkit-scrollbar-thumb:hover {
+  background-color: #a8a29e;
+}
+
+.workshop-panel {
+  min-height: 200px;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* Panel slide transition (for accordion history panels) */
+.panel-slide-enter-active {
+  transition:
+    max-height 0.3s ease,
+    opacity 0.3s ease;
+  overflow: hidden;
+}
+.panel-slide-leave-active {
+  transition:
+    max-height 0.25s ease,
+    opacity 0.25s ease;
+  overflow: hidden;
+}
+.panel-slide-enter-from,
+.panel-slide-leave-to {
+  max-height: 0;
+  opacity: 0;
+}
+.panel-slide-enter-to,
+.panel-slide-leave-from {
+  max-height: 40vh;
+  opacity: 1;
+}
+
+/* Workshop chevron indicator */
+.ws-menu-title {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  flex: 1;
+}
+
+.ws-expand-chevron {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  color: #a8a29e;
+  transition: transform 0.2s ease;
+  transform: rotate(-90deg);
+}
+
+.ws-expand-chevron--open {
+  transform: rotate(0deg);
+}
+.nav-item.is-active .ws-expand-chevron {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* Workshop panel slide transition */
+.ws-slide-enter-active {
+  transition: all 0.3s ease;
+  overflow: hidden;
+}
+.ws-slide-leave-active {
+  transition: all 0.25s ease;
+  overflow: hidden;
+}
+.ws-slide-enter-from,
+.ws-slide-leave-to {
+  max-height: 0;
+  opacity: 0;
+}
+.ws-slide-enter-to,
+.ws-slide-leave-from {
+  max-height: 100vh;
+  opacity: 1;
 }
 
 /* Toggle buttons */

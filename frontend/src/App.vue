@@ -7,6 +7,7 @@ import { computed, defineAsyncComponent, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { LoginModal } from '@/components/auth'
+import ChatMessageToast from '@/components/common/ChatMessageToast.vue'
 import VersionNotification from '@/components/common/VersionNotification.vue'
 import { useLanguage, useNotifications } from '@/composables'
 import { useAuthStore, useUIStore } from '@/stores'
@@ -108,6 +109,9 @@ onMounted(async () => {
 
   <!-- Global version update notification -->
   <VersionNotification />
+
+  <!-- Global in-app message toast (WeChat-style, bottom-right) -->
+  <ChatMessageToast />
 
   <!-- Global session expired login modal -->
   <LoginModal

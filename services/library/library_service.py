@@ -54,15 +54,13 @@ class LibraryService(
         storage_dir_env = os.getenv("LIBRARY_STORAGE_DIR", "./storage/library")
         self.storage_dir = Path(storage_dir_env).resolve()
         self.covers_dir = self.storage_dir / "covers"
-        
-        # Health check: Ensure storage directories exist and are writable
-        if not self.storage_dir.exists():
-            raise RuntimeError(f"Library storage directory does not exist: {self.storage_dir}")
-        if not os.access(self.storage_dir, os.W_OK):
-            raise RuntimeError(f"Library storage directory is not writable: {self.storage_dir}")
-        
+
+        # Ensure storage directories exist (create on first use)
         self.storage_dir.mkdir(parents=True, exist_ok=True)
         self.covers_dir.mkdir(parents=True, exist_ok=True)
+
+        if not os.access(self.storage_dir, os.W_OK):
+            raise RuntimeError(f"Library storage directory is not writable: {self.storage_dir}")
         self.max_file_size = int(os.getenv("LIBRARY_MAX_FILE_SIZE", "104857600"))  # 100MB default
         self.cover_max_width = int(os.getenv("LIBRARY_COVER_MAX_WIDTH", "400"))  # Max width
         # Max height for cover images (matches original)

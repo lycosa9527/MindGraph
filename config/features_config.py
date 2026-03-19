@@ -195,6 +195,15 @@ class FeaturesConfigMixin:
         return self._get_cached_value('FEATURE_TEACHER_USAGE', 'False').lower() == 'true'
 
     @property
+    def FEATURE_WORKSHOP_CHAT(self):
+        """Enable Workshop Chat (教研坊) school-scoped communication system.
+        
+        Disabled by default. Set FEATURE_WORKSHOP_CHAT=True in .env to enable.
+        Provides channels, topics, and DMs for teacher collaboration.
+        """
+        return self._get_cached_value('FEATURE_WORKSHOP_CHAT', 'False').lower() == 'true'
+
+    @property
     def AI_ASSISTANT_NAME(self):
         """AI Assistant display name (appears in toolbar button and panel header)."""
         return self._get_cached_value('AI_ASSISTANT_NAME', 'MindMate AI')

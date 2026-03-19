@@ -163,6 +163,12 @@ const routes: RouteRecordRaw[] = [
     meta: { requiresAuth: true, requiresAdmin: true, layout: 'main' },
   },
   {
+    path: '/workshop-chat',
+    name: 'WorkshopChat',
+    component: () => import('@/pages/WorkshopChatPage.vue'),
+    meta: { requiresAuth: true, requiresOrganization: true, layout: 'main' },
+  },
+  {
     path: '/dashboard',
     name: 'PublicDashboard',
     component: () => import('@/pages/PublicDashboardPage.vue'),
@@ -207,7 +213,8 @@ router.beforeEach(async (to, _from, next) => {
     to.name === 'Library' ||
     to.name === 'Gewe' ||
     to.name === 'SmartResponse' ||
-    to.name === 'TeacherUsage'
+    to.name === 'TeacherUsage' ||
+    to.name === 'WorkshopChat'
   if (needsFeatureFlags) {
     await featureFlagsStore.fetchFlags()
   }
@@ -289,6 +296,9 @@ router.beforeEach(async (to, _from, next) => {
     return next({ name: 'MindMate' })
   }
   if (to.name === 'TeacherUsage' && !featureFlagsStore.getFeatureTeacherUsage()) {
+    return next({ name: 'MindMate' })
+  }
+  if (to.name === 'WorkshopChat' && !featureFlagsStore.getFeatureWorkshopChat()) {
     return next({ name: 'MindMate' })
   }
 

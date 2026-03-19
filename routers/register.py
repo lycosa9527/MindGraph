@@ -66,6 +66,26 @@ if config.FEATURE_GEWE:
 else:
     logger.debug("[RouterRegistration] Gewe feature disabled via FEATURE_GEWE flag")
 
+WORKSHOP_CHAT_MODULE = None
+WORKSHOP_CHAT_WS_MODULE = None
+if config.FEATURE_WORKSHOP_CHAT:
+    try:
+        from routers.features import workshop_chat as _wc_mod
+        from routers.features import workshop_chat_ws as _wc_ws_mod
+        WORKSHOP_CHAT_MODULE = _wc_mod.router
+        WORKSHOP_CHAT_WS_MODULE = _wc_ws_mod.router
+    except Exception as e:
+        WORKSHOP_CHAT_MODULE = None
+        WORKSHOP_CHAT_WS_MODULE = None
+        logger.warning(
+            "[RouterRegistration] Failed to import workshop chat routers: %s. "
+            "Workshop Chat API (/api/chat/*) will not be available. Fix the error and restart.",
+            e,
+            exc_info=True,
+        )
+else:
+    logger.debug("[RouterRegistration] Workshop Chat feature disabled via FEATURE_WORKSHOP_CHAT flag")
+
 
 def register_routers(app: FastAPI) -> None:
     """
@@ -134,6 +154,19 @@ def register_routers(app: FastAPI) -> None:
         else:
             logger.debug("[RouterRegistration] Gewe feature disabled via FEATURE_GEWE flag")
 
+    # Workshop Chat (工作坊) - school-scoped communication
+    if WORKSHOP_CHAT_MODULE is not None:
+        app.include_router(WORKSHOP_CHAT_MODULE)
+        logger.info("[RouterRegistration] Workshop Chat REST router registered at /api/chat")
+    else:
+        if config.FEATURE_WORKSHOP_CHAT:
+            logger.warning(
+                "[RouterRegistration] Workshop Chat REST router NOT registered - import failed. "
+                "Check DEBUG logs for details."
+            )
+        else:
+            logger.debug("[RouterRegistration] Workshop Chat feature disabled via FEATURE_WORKSHOP_CHAT flag")
+
     # Vue SPA handles all page routes (v5.0.0+) - MUST be registered AFTER API routes
     app.include_router(vue_spa)
 
@@ -147,6 +180,11 @@ def register_routers(app: FastAPI) -> None:
     app.include_router(public_dashboard.router, prefix="/api/public", tags=["Public Dashboard"])
     app.include_router(school_zone)  # School Zone (organization-scoped sharing)
     app.include_router(askonce)  # AskOnce (多应) - Multi-LLM streaming chat
+
+    # Workshop Chat WebSocket
+    if WORKSHOP_CHAT_WS_MODULE is not None:
+        app.include_router(WORKSHOP_CHAT_WS_MODULE)
+        logger.info("[RouterRegistration] Workshop Chat WS router registered at /api/ws/chat")
 
     # DebateVerse (论境) - US-style debate system
     if DEBATEVERSE_MODULE is not None:

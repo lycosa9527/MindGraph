@@ -9,8 +9,8 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
-from typing import Optional
 from pathlib import Path
+from typing import Optional
 import logging
 import os
 
@@ -21,8 +21,8 @@ from sqlalchemy.orm import Session
 from config.database import get_db
 from models.domain.auth import User
 from services.library import LibraryService
-from services.library.library_path_utils import resolve_library_path
 from services.library.image_path_resolver import resolve_page_image
+from services.library.library_path_utils import resolve_library_path
 from services.library.exceptions import (
     DocumentNotFoundError,
     PageNotFoundError,
@@ -32,7 +32,6 @@ from services.library.exceptions import (
 )
 from services.redis.rate_limiting.redis_rate_limiter import RedisRateLimiter
 from utils.auth import get_current_user
-from utils.auth.roles import is_admin
 
 from .helpers import serialize_document, require_admin, get_optional_user
 from .models import (
@@ -47,6 +46,119 @@ from .models import (
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
+_PAGE_ERROR_STATUS = {
+    "DOCUMENT_NOT_FOUND": status.HTTP_404_NOT_FOUND,
+    "PAGE_NOT_FOUND": status.HTTP_404_NOT_FOUND,
+    "PAGE_IMAGE_NOT_FOUND": status.HTTP_404_NOT_FOUND,
+    "PAGES_DIRECTORY_NOT_FOUND": status.HTTP_404_NOT_FOUND,
+    "DOCUMENT_NOT_IMAGE_BASED": status.HTTP_400_BAD_REQUEST,
+}
+
+_COVER_EXTENSIONS = [".png", ".jpg", ".jpeg", ".webp"]
+
+_MIME_TYPE_MAP = {
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".png": "image/png",
+    ".webp": "image/webp",
+}
+
+
+def _resolve_page_image_from_cache(
+    service: LibraryService,
+    cached_metadata: dict,
+    document_id: int,
+    page_number: int,
+) -> tuple:
+    """Resolve page image path and title using cached document metadata."""
+    if not cached_metadata.get("use_images"):
+        raise DocumentNotImageBasedError(document_id)
+    total_pages = cached_metadata.get("total_pages")
+    if total_pages and page_number > total_pages:
+        raise PageNotFoundError(document_id, page_number, total_pages)
+    pages_dir_path = cached_metadata.get("pages_dir_path")
+    if not pages_dir_path:
+        raise PagesDirectoryNotFoundError(document_id, pages_dir_path)
+    pages_dir = resolve_library_path(pages_dir_path, service.storage_dir, Path.cwd())
+    if not pages_dir or not pages_dir.exists():
+        raise PagesDirectoryNotFoundError(document_id, str(pages_dir) if pages_dir else None)
+    return resolve_page_image(pages_dir, page_number), cached_metadata.get("title", "Document")
+
+
+def _resolve_page_image_from_db(
+    service: LibraryService,
+    document_id: int,
+    page_number: int,
+) -> tuple:
+    """Resolve page image path and title via a database query."""
+    document = service.get_document(document_id, use_cache=True)
+    if not document:
+        raise DocumentNotFoundError(document_id)
+    if not document.use_images:
+        raise DocumentNotImageBasedError(document_id)
+    if document.total_pages and page_number > document.total_pages:
+        raise PageNotFoundError(document_id, page_number, document.total_pages)
+    return service.get_page_image_path_from_document(document, page_number), document.title
+
+
+def _log_mime_mismatch(file_ext: str, declared_mime: str) -> None:
+    """Log a warning when the declared MIME type does not match the file extension."""
+    expected = _MIME_TYPE_MAP.get(file_ext, "")
+    if declared_mime and expected and declared_mime != expected:
+        logger.warning(
+            "[Library] MIME type mismatch: extension=%s, content_type=%s",
+            file_ext, declared_mime,
+        )
+
+
+def _validate_image_magic_bytes(content: bytes, file_ext: str) -> None:
+    """Raise HTTPException 400 when file bytes do not match the declared extension."""
+    if file_ext in {".jpg", ".jpeg"} and not content.startswith(b"\xff\xd8\xff"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid JPEG file format",
+        )
+    if file_ext == ".png" and not content.startswith(b"\x89PNG\r\n\x1a\n"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid PNG file format",
+        )
+    if file_ext == ".webp" and (
+        not content.startswith(b"RIFF") or b"WEBP" not in content[:12]
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid WEBP file format",
+        )
+
+
+def _find_cover_path(document, covers_dir: Path) -> Optional[Path]:
+    """
+    Return the first valid cover-image path for a document.
+
+    Checks in order: DB-recorded path → id-pattern → title-pattern.
+    Returns None when no file is found.
+    """
+    if document.cover_image_path:
+        resolved = resolve_library_path(document.cover_image_path, covers_dir, Path.cwd())
+        if resolved and resolved.exists():
+            return resolved
+
+    for ext in _COVER_EXTENSIONS:
+        candidate = covers_dir / f"{document.id}_cover{ext}"
+        if candidate.exists():
+            return candidate
+
+    title_safe = "".join(
+        c for c in document.title if c.isalnum() or c in (" ", "-", "_")
+    ).strip()
+    if title_safe:
+        candidate = covers_dir / f"{title_safe}_cover.png"
+        if candidate.exists():
+            return candidate
+
+    return None
 
 
 @router.get("/documents", response_model=DocumentListResponse)
@@ -141,88 +253,38 @@ async def get_document_page_image(
     service = LibraryService(db)
 
     try:
-        # Try to use cached metadata first (for high concurrency)
         cached_metadata = service.get_cached_document_metadata(document_id)
-
         if cached_metadata:
-            # Use cached metadata - no DB query needed!
-            if not cached_metadata.get("use_images"):
-                raise DocumentNotImageBasedError(document_id)
-
-            # Validate page number
-            total_pages = cached_metadata.get("total_pages")
-            if total_pages and page_number > total_pages:
-                raise PageNotFoundError(document_id, page_number, total_pages)
-
-            # Get page image path using cached metadata
-            pages_dir_path = cached_metadata.get("pages_dir_path")
-            if not pages_dir_path:
-                raise PagesDirectoryNotFoundError(document_id, pages_dir_path)
-
-            pages_dir = resolve_library_path(
-                pages_dir_path,
-                service.storage_dir,
-                Path.cwd()
+            image_path, document_title = _resolve_page_image_from_cache(
+                service, cached_metadata, document_id, page_number
+            )
+        else:
+            image_path, document_title = _resolve_page_image_from_db(
+                service, document_id, page_number
             )
 
-            if not pages_dir or not pages_dir.exists():
-                raise PagesDirectoryNotFoundError(document_id, str(pages_dir) if pages_dir else None)
-
-            image_path = resolve_page_image(pages_dir, page_number)
-            document_title = cached_metadata.get("title", "Document")
-        else:
-            # Cache miss - query DB and cache result
-            document = service.get_document(document_id, use_cache=True)
-
-            if not document:
-                raise DocumentNotFoundError(document_id)
-
-            if not document.use_images:
-                raise DocumentNotImageBasedError(document_id)
-
-            # Validate page number against total_pages
-            if document.total_pages and page_number > document.total_pages:
-                raise PageNotFoundError(document_id, page_number, document.total_pages)
-
-            # Get page image path - pass document to avoid duplicate DB query
-            image_path = service.get_page_image_path_from_document(document, page_number)
-            document_title = document.title
-
         if not image_path or not image_path.exists():
-            raise PageImageNotFoundError(document_id, page_number, str(image_path) if image_path else None)
+            raise PageImageNotFoundError(
+                document_id, page_number, str(image_path) if image_path else None
+            )
 
-    except (DocumentNotFoundError, PageNotFoundError, PageImageNotFoundError,
-            PagesDirectoryNotFoundError, DocumentNotImageBasedError) as e:
-        # Log with context for debugging
+    except (
+        DocumentNotFoundError, PageNotFoundError, PageImageNotFoundError,
+        PagesDirectoryNotFoundError, DocumentNotImageBasedError
+    ) as exc:
         logger.warning(
             "[Library] Error serving page image: %s",
-            e.message,
-            extra={
-                "error_code": e.error_code,
-                "user_id": current_user.id,
-                **e.context
-            }
+            exc.message,
+            extra={"error_code": exc.error_code, "user_id": current_user.id, **exc.context}
         )
-        # Convert to HTTPException with appropriate status code
-        status_map = {
-            "DOCUMENT_NOT_FOUND": status.HTTP_404_NOT_FOUND,
-            "PAGE_NOT_FOUND": status.HTTP_404_NOT_FOUND,
-            "PAGE_IMAGE_NOT_FOUND": status.HTTP_404_NOT_FOUND,
-            "PAGES_DIRECTORY_NOT_FOUND": status.HTTP_404_NOT_FOUND,
-            "DOCUMENT_NOT_IMAGE_BASED": status.HTTP_400_BAD_REQUEST,
-        }
-        error_code = e.error_code if e.error_code else "DOCUMENT_NOT_FOUND"
+        error_code = exc.error_code or "DOCUMENT_NOT_FOUND"
         raise HTTPException(
-            status_code=status_map.get(error_code, status.HTTP_404_NOT_FOUND),
-            detail=e.message
-        ) from e
+            status_code=_PAGE_ERROR_STATUS.get(error_code, status.HTTP_404_NOT_FOUND),
+            detail=exc.message,
+        ) from exc
 
-    # Determine content type from file extension
-    content_type = "image/jpeg"
-    if image_path.suffix.lower() == ".png":
-        content_type = "image/png"
+    content_type = "image/png" if image_path.suffix.lower() == ".png" else "image/jpeg"
 
-    # Structured logging with context
     logger.info(
         "[Library] Serving page image",
         extra={
@@ -230,7 +292,7 @@ async def get_document_page_image(
             "page_number": page_number,
             "user_id": current_user.id,
             "image_filename": image_path.name,
-            "file_size": image_path.stat().st_size if image_path.exists() else None
+            "file_size": image_path.stat().st_size if image_path.exists() else None,
         }
     )
 
@@ -238,9 +300,7 @@ async def get_document_page_image(
         path=str(image_path),
         media_type=content_type,
         filename=f"{document_title}_page_{page_number}{image_path.suffix}",
-        headers={
-            'Cache-Control': 'public, max-age=3600',
-        }
+        headers={"Cache-Control": "public, max-age=3600"},
     )
 
 
@@ -455,63 +515,28 @@ async def upload_cover_image(
             detail="Document not found"
         )
 
-    allowed_extensions = {'.jpg', '.jpeg', '.png', '.webp'}
     file_ext = os.path.splitext(file.filename)[1].lower()
 
-    if file_ext not in allowed_extensions:
+    if file_ext not in _MIME_TYPE_MAP:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Only JPG, PNG, and WEBP images are supported"
+            detail="Only JPG, PNG, and WEBP images are supported",
         )
 
-    # Read file content
     content = await file.read()
-    file_size = len(content)
 
-    # Enforce file size limit
-    if file_size > service.max_file_size:
-        max_size_mb = service.max_file_size / 1024 / 1024
-        got_size_mb = file_size / 1024 / 1024
+    if len(content) > service.max_file_size:
         raise HTTPException(
             status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
-            detail=f"File too large. Maximum size is {max_size_mb:.1f}MB, got {got_size_mb:.1f}MB"
+            detail=(
+                f"File too large. Maximum size is "
+                f"{service.max_file_size / 1024 / 1024:.1f}MB, "
+                f"got {len(content) / 1024 / 1024:.1f}MB"
+            ),
         )
 
-    # Validate MIME type matches extension
-    content_type = file.content_type or ""
-    expected_mime_types = {
-        '.jpg': ['image/jpeg'],
-        '.jpeg': ['image/jpeg'],
-        '.png': ['image/png'],
-        '.webp': ['image/webp']
-    }
-    if file_ext in expected_mime_types:
-        if content_type and content_type not in expected_mime_types[file_ext]:
-            logger.warning(
-                "[Library] MIME type mismatch: extension=%s, content_type=%s",
-                file_ext, content_type
-            )
-            # Don't reject, but log warning - some clients send wrong MIME types
-
-    # Validate file content (magic bytes check)
-    if file_ext in {'.jpg', '.jpeg'}:
-        if not content.startswith(b'\xff\xd8\xff'):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid JPEG file format"
-            )
-    elif file_ext == '.png':
-        if not content.startswith(b'\x89PNG\r\n\x1a\n'):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid PNG file format"
-            )
-    elif file_ext == '.webp':
-        if not content.startswith(b'RIFF') or b'WEBP' not in content[:12]:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid WEBP file format"
-            )
+    _log_mime_mismatch(file_ext, file.content_type or "")
+    _validate_image_magic_bytes(content, file_ext)
 
     try:
         cover_filename = f"{document_id}_cover{file_ext}"
@@ -564,56 +589,26 @@ async def get_cover_image(
     if not document:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Document not found"
+            detail="Document not found",
         )
 
-    # Try cover_image_path from database first
-    cover_path = None
-    if document.cover_image_path:
-        cover_path_resolved = resolve_library_path(
-            document.cover_image_path,
-            service.covers_dir,
-            Path.cwd()
-        )
-        if cover_path_resolved and cover_path_resolved.exists():
-            cover_path = cover_path_resolved
+    cover_path = _find_cover_path(document, service.covers_dir)
 
-    # If not found, try document_id pattern
     if not cover_path:
-        for ext in ['.png', '.jpg', '.jpeg', '.webp']:
-            potential_path = service.covers_dir / f"{document_id}_cover{ext}"
-            if potential_path.exists():
-                cover_path = potential_path
-                break
-
-    # If still not found, try document title pattern (for manually added covers)
-    if not cover_path:
-        # Use document title as fallback pattern
-        doc_title_safe = "".join(c for c in document.title if c.isalnum() or c in (' ', '-', '_')).strip()
-        if doc_title_safe:
-            potential_path = service.covers_dir / f"{doc_title_safe}_cover.png"
-            if potential_path.exists():
-                cover_path = potential_path
-
-    if not cover_path or not cover_path.exists():
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Cover image not found"
+            detail="Cover image not found",
         )
 
-    # Determine media type from file extension
-    media_type = "image/jpeg"
-    if cover_path.suffix.lower() == ".png":
+    suffix = cover_path.suffix.lower()
+    if suffix == ".png":
         media_type = "image/png"
-    elif cover_path.suffix.lower() == ".webp":
+    elif suffix == ".webp":
         media_type = "image/webp"
-    elif cover_path.suffix.lower() in [".jpg", ".jpeg"]:
+    else:
         media_type = "image/jpeg"
 
-    return FileResponse(
-        path=str(cover_path),
-        media_type=media_type
-    )
+    return FileResponse(path=str(cover_path), media_type=media_type)
 
 
 @router.delete("/documents/{document_id}")

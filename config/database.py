@@ -194,6 +194,26 @@ except ImportError as e:
 except Exception as e:
     logger.debug("[Database] Error registering gewe group member models: %s", e)
 
+try:
+    from models.domain.workshop_chat import (
+        ChatChannel, ChannelMember, ChatTopic, ChatMessage, DirectMessage,
+        MessageReaction, StarredMessage, FileAttachment, UserTopicPreference,
+    )
+    _ = ChatChannel.__tablename__
+    _ = ChannelMember.__tablename__
+    _ = ChatTopic.__tablename__
+    _ = ChatMessage.__tablename__
+    _ = DirectMessage.__tablename__
+    _ = MessageReaction.__tablename__
+    _ = StarredMessage.__tablename__
+    _ = FileAttachment.__tablename__
+    _ = UserTopicPreference.__tablename__
+    logger.debug("[Database] Workshop chat models imported and registered for migrations")
+except ImportError as e:
+    logger.debug("[Database] Could not import workshop chat models: %s", e)
+except Exception as e:
+    logger.debug("[Database] Error registering workshop chat models: %s", e)
+
 # Ensure data directory exists for database files
 DATA_DIR = Path("data")
 DATA_DIR.mkdir(exist_ok=True)
@@ -236,6 +256,38 @@ engine = create_engine(
 
 # Create session factory
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+
+def _fix_workshop_chat_nullability(db_engine):
+    """Make chat_channels.organization_id nullable for announce channels.
+
+    ``create_all`` and the column-add migration cannot alter an existing
+    column's NOT-NULL constraint.  This one-shot fix runs an idempotent
+    ``ALTER COLUMN ... DROP NOT NULL`` so that announce channels (which
+    have ``organization_id = NULL``) can be inserted.
+    """
+    try:
+        inspector = inspect(db_engine)
+        if "chat_channels" not in inspector.get_table_names():
+            return
+        columns = {
+            col["name"]: col for col in inspector.get_columns("chat_channels")
+        }
+        org_col = columns.get("organization_id")
+        if org_col and not org_col.get("nullable", True):
+            with db_engine.connect() as conn:
+                conn.execute(text(
+                    "ALTER TABLE chat_channels "
+                    "ALTER COLUMN organization_id DROP NOT NULL"
+                ))
+                conn.commit()
+            logger.info(
+                "[Database] Fixed chat_channels.organization_id → nullable"
+            )
+    except (OperationalError, ProgrammingError) as exc:
+        logger.warning(
+            "[Database] Could not fix chat_channels nullability: %s", exc
+        )
 
 
 def init_db():
@@ -401,6 +453,9 @@ def init_db():
     except Exception as e:
         logger.error("Migration manager error: %s", e, exc_info=True)
         # Continue anyway - migration failures shouldn't break startup
+
+    # Step 3: Fix column nullability that create_all / migrations cannot handle
+    _fix_workshop_chat_nullability(engine)
 
     # Seed organizations
     db = SessionLocal()

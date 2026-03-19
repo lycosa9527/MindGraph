@@ -113,6 +113,18 @@ try:
 except ImportError:
     pass
 
+try:
+    from models.domain.workshop_chat import (
+        ChatChannel, ChannelMember, ChatTopic, ChatMessage, DirectMessage
+    )
+    _ = ChatChannel.__tablename__
+    _ = ChannelMember.__tablename__
+    _ = ChatTopic.__tablename__
+    _ = ChatMessage.__tablename__
+    _ = DirectMessage.__tablename__
+except ImportError:
+    pass
+
 from utils.migration.sqlite.migration_utils import (
     get_sqlite_db_path,
     is_migration_completed,

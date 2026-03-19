@@ -127,3 +127,24 @@ class BookRegisterRequest(BaseModel):
 class BookRegisterBatchRequest(BaseModel):
     """Request model for batch registering book folders"""
     folder_paths: List[str] = Field(..., description="List of folder paths to register")
+
+
+class DocumentVisibilityUpdate(BaseModel):
+    """Request model for toggling document show/hide visibility"""
+    is_active: bool = Field(..., description="True to show, False to hide the document")
+
+
+class RenameRequest(BaseModel):
+    """Request model for renaming page files to sequential numbering"""
+    folder_name: str = Field(
+        ...,
+        description="Book folder name (must be a direct child of storage/library/)"
+    )
+    book_name: Optional[str] = Field(
+        None,
+        description="Book name prefix for renamed files (defaults to folder_name)"
+    )
+    dry_run: bool = Field(
+        True,
+        description="Preview only — no files are changed when True"
+    )

@@ -95,6 +95,17 @@ def get_table_migration_order() -> List[str]:
         "gewe_contacts",
         "gewe_group_members",
 
+        # Workshop Chat tables (depend on users, chat_channels, chat_messages, direct_messages)
+        "chat_channels",
+        "channel_members",
+        "chat_topics",
+        "chat_messages",
+        "direct_messages",
+        "message_reactions",
+        "starred_messages",
+        "file_attachments",
+        "user_topic_preferences",
+
         # ========================================================================
         # TIER 3: Chunk test tables (depend on knowledge space tables)
         # ========================================================================

@@ -416,6 +416,55 @@ class LibraryDocumentMixin:
         resolved = resolve_library_path(cover_path, self.covers_dir, Path.cwd())
         return resolved is not None and resolved.exists()
 
+    def regenerate_cover(self, document_id: int) -> Optional[str]:
+        """
+        Regenerate cover image from the first page for an already-registered document.
+
+        Overwrites any existing cover file.  Updates cover_image_path in the DB
+        and invalidates both Redis and in-memory caches so the change is immediately
+        visible to readers without a server restart.
+
+        Args:
+            document_id: Primary key of the LibraryDocument to regenerate.
+
+        Returns:
+            Absolute path string to the new cover file, or None if processing failed.
+
+        Raises:
+            ValueError: If the document or its folder cannot be found.
+        """
+        document = self.db.query(LibraryDocument).filter(
+            LibraryDocument.id == document_id
+        ).first()
+        if not document:
+            raise ValueError(f"Document not found: {document_id}")
+
+        folder_path = resolve_library_path(
+            document.pages_dir_path, self.storage_dir, Path.cwd()
+        )
+        if not folder_path or not folder_path.exists():
+            raise ValueError(f"Book folder not found for document {document_id}")
+
+        first_page = self._get_first_page_image_path(folder_path)
+        if not first_page:
+            raise ValueError(f"No page images found in folder: {folder_path}")
+
+        cover_path = self._process_cover_image(first_page, document_id)
+        if not cover_path:
+            return None
+
+        document.cover_image_path = cover_path
+        document.updated_at = datetime.utcnow()
+        try:
+            self.db.commit()
+            self.db.refresh(document)
+        except Exception:
+            self.db.rollback()
+            raise
+
+        self.invalidate_document_cache(document_id)
+        return cover_path
+
     def _update_existing_book_document(
         self,
         existing_doc: LibraryDocument,
@@ -557,9 +606,24 @@ class LibraryDocumentMixin:
         pages_dir_path = normalize_library_path(folder_path, self.storage_dir, Path.cwd())
         first_page_image_path = self._get_first_page_image_path(folder_path)
 
+        # Primary lookup: exact normalised path (fast, unambiguous)
         existing_doc = self.db.query(LibraryDocument).filter(
             LibraryDocument.pages_dir_path == pages_dir_path
         ).first()
+
+        # Fallback lookup: match by folder name alone.
+        # Handles path-format drift (absolute ↔ relative, separator differences,
+        # server migrations) so that "Re-register" on a needs_repair book updates
+        # the existing record instead of silently creating a duplicate.
+        if not existing_doc:
+            folder_name = folder_path.name
+            existing_doc = self.db.query(LibraryDocument).filter(
+                or_(
+                    LibraryDocument.pages_dir_path.like(f"%/{folder_name}"),
+                    LibraryDocument.pages_dir_path.like(f"%\\{folder_name}"),
+                    LibraryDocument.pages_dir_path == folder_name,
+                )
+            ).first()
 
         if existing_doc:
             return self._update_existing_book_document(

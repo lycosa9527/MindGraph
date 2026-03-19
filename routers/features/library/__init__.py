@@ -11,14 +11,15 @@ Proprietary License
 """
 from fastapi import APIRouter
 
-from .documents import router as documents_router
-from .danmaku import router as danmaku_router
+from .admin import router as admin_router
 from .bookmarks import router as bookmarks_router
+from .danmaku import router as danmaku_router
+from .documents import router as documents_router
 
 
 router = APIRouter(prefix="/api/library", tags=["Library"])
 
-# Include all sub-routers
 router.include_router(documents_router)
 router.include_router(danmaku_router)
 router.include_router(bookmarks_router)
+router.include_router(admin_router)

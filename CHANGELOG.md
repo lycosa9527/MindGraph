@@ -5,6 +5,39 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.46.0] - 2026-03-20
+
+### Added
+- **Workshop Chat (教研坊)**: Complete school-scoped real-time communication system for teacher collaboration, gated by `FEATURE_WORKSHOP_CHAT` feature flag.
+  - **Channels**: Create, browse, join, and manage topic-based channels with settings (name, description, member management).
+  - **Topics**: Threaded topic cards within channels; create, edit, star, and delete topics.
+  - **Messages**: Rich message composition with Markdown rendering, file/image attachments, emoji reactions, edit/delete, and inline image lightbox.
+  - **Direct Messages**: One-to-one DM support with conversation history.
+  - **WebSocket**: Real-time message delivery via WebSocket manager (`workshop_chat_ws_manager.py`); dedicated WS router (`workshop_chat_ws.py`).
+  - **Presence & Activity**: `usePresenceActivity` composable tracks user online/away status in real time.
+  - **Chat Notifications**: `useChatNotifications` composable and `chatToastQueue` deliver in-app toast notifications (`ChatMessageToast.vue`) for new messages while browsing other pages.
+  - **Seed Data**: Default channel definitions (`default_channels.py`) and rich seed data sets (`seed_channel_data.py`, `seed_data_stem_math.py`) for onboarding.
+  - **Backend services**: `channel_service`, `topic_service`, `message_service`, `dm_service`, `reaction_service`, `file_service`, `star_service` under `services/features/workshop_chat/`.
+  - **REST API routers**: `channels`, `topics`, `messages`, `direct_messages`, `reactions`, `files` under `routers/features/workshop_chat/`.
+  - **Domain model**: `models/domain/workshop_chat.py` with SQLAlchemy models for channels, topics, messages, reactions, files, stars, and DMs.
+  - **Database migrations**: SQLite migration tables and PostgreSQL data migration extended for all workshop chat entities.
+- **Workshop Chat Frontend**: Full Vue 3 frontend with 20+ components and dedicated page.
+  - **WorkshopChatPage.vue** and `workshop-chat-page.css`: Main chat layout page with sidebar + content panels.
+  - **Components**: `ChannelBrowser`, `ChannelMemberList`, `ChannelSettingsDialog`, `ChannelActionsPopover`, `ChannelSidebarItem`, `WorkshopChatHistory`, `TopicCard`, `TopicEditDialog`, `TopicActionsPopover`, `ChatMessageList`, `ChatMessageItem`, `ChatComposeBox`, `MessageActionBar`, `MessageReactions`, `RecipientBar`, `EmojiPicker`, `FilePreview`, `ImageLightbox`, `UserCardPopover`, `WorkshopGearMenu`, `WorkshopPersonalMenu`.
+  - **workshopChat store** (`stores/workshopChat.ts`): Pinia store managing channels, topics, messages, DMs, and WebSocket connection lifecycle.
+  - **useWorkshopChat composable**: High-level composable wiring store actions to UI interactions.
+  - **useMarkdown composable**: Markdown-to-HTML rendering with syntax highlighting for chat messages.
+- **Admin page refactoring**: `AdminPage.vue` split into `AdminLibraryTab.vue` and `AdminTokensTab.vue` for clearer separation of concerns.
+- **Library admin router** (`routers/features/library/admin.py`): Dedicated admin endpoints for library document management.
+- **useLanguage composable** (`composables/useLanguage.ts`): Centralised language detection and switching logic extracted from inline code.
+- **AppSidebar**: Workshop Chat navigation entry (`ChannelSidebarItem`) and `WorkshopChatHistory` panel integrated into sidebar.
+- **PostgreSQL support**: `config/database.py` extended; SQLite-to-PostgreSQL data migration updated to include workshop chat tables.
+
+### Changed
+- **Feature flags**: `FEATURE_WORKSHOP_CHAT` flag added to `features_config.py`, `featureFlags` store, and `useFeatureFlags` composable.
+- **Router**: Workshop Chat page route registered; library admin routes added.
+- **Lifespan**: Workshop chat WebSocket manager initialised during app startup.
+
 ## [5.45.0] - 2026-03-18
 
 ### Changed
