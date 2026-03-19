@@ -567,9 +567,9 @@ watch(currentMode, () => {
         </div>
       </transition>
 
-      <!-- Workshop Chat (special: modules below disappear when expanded) -->
+      <!-- Workshop Chat (admin-only during development) -->
       <el-tooltip
-        v-if="isAuthenticated && (hasOrganization || isAdminOrManager) && featureWorkshopChat"
+        v-if="isAdmin && featureWorkshopChat"
         :content="t('workshop.title')"
         placement="right"
         :disabled="!isCollapsed"
@@ -594,7 +594,7 @@ watch(currentMode, () => {
       </el-tooltip>
       <transition name="ws-slide">
         <WorkshopChatHistory
-          v-if="workshopExpanded && !isCollapsed && featureWorkshopChat"
+          v-if="workshopExpanded && !isCollapsed && isAdmin && featureWorkshopChat"
           :is-blurred="!isAuthenticated"
           class="workshop-panel"
         />

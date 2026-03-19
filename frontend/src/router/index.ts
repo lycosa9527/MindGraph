@@ -166,7 +166,7 @@ const routes: RouteRecordRaw[] = [
     path: '/workshop-chat',
     name: 'WorkshopChat',
     component: () => import('@/pages/WorkshopChatPage.vue'),
-    meta: { requiresAuth: true, requiresOrganization: true, layout: 'main' },
+    meta: { requiresAuth: true, requiresAdmin: true, layout: 'main' },
   },
   {
     path: '/dashboard',

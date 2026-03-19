@@ -27,7 +27,7 @@ from services.redis.cache.redis_user_cache import user_cache as redis_user_cache
 from services.redis.session.redis_session_manager import (
     get_session_manager as redis_get_session_manager,
 )
-from utils.auth import decode_access_token
+from utils.auth import decode_access_token, is_admin
 
 logger = logging.getLogger(__name__)
 
@@ -87,6 +87,11 @@ async def chat_websocket(websocket: WebSocket):
     if not user:
         await websocket.close(code=4001, reason=error or "Auth failed")
         logger.warning("[ChatWS] Auth rejected: %s", error)
+        return
+
+    if not is_admin(user):
+        await websocket.close(code=4003, reason="Admin only")
+        logger.warning("[ChatWS] Non-admin user %d rejected", user.id)
         return
 
     await websocket.accept()
