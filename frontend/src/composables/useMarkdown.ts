@@ -3,31 +3,13 @@
  *
  * Uses markdown-it (already installed) + DOMPurify for XSS-safe HTML
  * and highlight.js for fenced-code syntax highlighting.
+ *
+ * Uses highlight.js/lib/common for a curated set of popular languages
+ * (bash, css, js, json, python, sql, ts, xml, etc.) to keep bundle size small.
  */
 import MarkdownIt from 'markdown-it'
 import DOMPurify from 'dompurify'
-import hljs from 'highlight.js/lib/core'
-
-import bash from 'highlight.js/lib/languages/bash'
-import css from 'highlight.js/lib/languages/css'
-import javascript from 'highlight.js/lib/languages/javascript'
-import json from 'highlight.js/lib/languages/json'
-import python from 'highlight.js/lib/languages/python'
-import sql from 'highlight.js/lib/languages/sql'
-import typescript from 'highlight.js/lib/languages/typescript'
-import xml from 'highlight.js/lib/languages/xml'
-
-hljs.registerLanguage('bash', bash)
-hljs.registerLanguage('css', css)
-hljs.registerLanguage('javascript', javascript)
-hljs.registerLanguage('js', javascript)
-hljs.registerLanguage('json', json)
-hljs.registerLanguage('python', python)
-hljs.registerLanguage('sql', sql)
-hljs.registerLanguage('typescript', typescript)
-hljs.registerLanguage('ts', typescript)
-hljs.registerLanguage('html', xml)
-hljs.registerLanguage('xml', xml)
+import hljs from 'highlight.js'
 
 const md = new MarkdownIt({
   html: false,
