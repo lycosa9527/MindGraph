@@ -35,7 +35,7 @@ from services.redis.cache.redis_user_cache import user_cache as redis_user_cache
 from services.redis.session.redis_session_manager import (
     get_session_manager as redis_get_session_manager,
 )
-from utils.auth import decode_access_token, is_admin_or_manager
+from utils.auth import can_access_workshop_chat, decode_access_token
 
 logger = logging.getLogger(__name__)
 
@@ -129,9 +129,12 @@ async def chat_websocket(websocket: WebSocket):
         logger.warning("[ChatWS] Auth rejected: %s", error)
         return
 
-    if not is_admin_or_manager(user):
+    if not can_access_workshop_chat(user):
         await websocket.close(code=4003, reason="Elevated access required")
-        logger.warning("[ChatWS] User %d rejected (not admin or manager)", user.id)
+        logger.warning(
+            "[ChatWS] User %d rejected (no workshop chat access)",
+            user.id,
+        )
         return
 
     await websocket.accept()

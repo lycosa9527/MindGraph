@@ -27,6 +27,7 @@ class FeatureFlagsResponse(BaseModel):
     feature_smart_response: bool
     feature_teacher_usage: bool
     feature_workshop_chat: bool
+    workshop_chat_preview_org_ids: list[int]
 
 
 @router.get("/features", response_model=FeatureFlagsResponse)
@@ -46,4 +47,5 @@ async def get_feature_flags():
         feature_smart_response=config.FEATURE_SMART_RESPONSE,
         feature_teacher_usage=config.FEATURE_TEACHER_USAGE,
         feature_workshop_chat=config.FEATURE_WORKSHOP_CHAT,
+        workshop_chat_preview_org_ids=sorted(config.WORKSHOP_CHAT_PREVIEW_ORG_IDS),
     )

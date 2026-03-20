@@ -21,7 +21,14 @@ from models.domain.auth import User
 from models.domain.messages import Messages, get_request_language, Language
 from services.redis.session.redis_session_manager import get_session_manager
 from services.redis.cache.redis_user_cache import user_cache
-from utils.auth import decode_access_token, get_current_user, is_admin, is_admin_or_manager, is_manager
+from utils.auth import (
+    can_access_workshop_chat,
+    decode_access_token,
+    get_current_user,
+    is_admin,
+    is_admin_or_manager,
+    is_manager,
+)
 
 
 
@@ -184,6 +191,22 @@ def require_admin_or_manager(
         HTTPException: 403 if user is neither admin nor manager
     """
     if not is_admin_or_manager(current_user):
+        error_msg = Messages.error("elevated_access_required", lang)
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=error_msg
+        )
+    return current_user
+
+
+def require_workshop_chat_access(
+    current_user: User = Depends(get_current_user),
+    lang: Language = Depends(get_language_dependency)
+) -> User:
+    """
+    Require admin, manager, or membership in WORKSHOP_CHAT_PREVIEW_ORG_IDS.
+    """
+    if not can_access_workshop_chat(current_user):
         error_msg = Messages.error("elevated_access_required", lang)
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,

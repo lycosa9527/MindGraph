@@ -5,6 +5,7 @@ import { type RouteRecordRaw, createRouter, createWebHistory } from 'vue-router'
 
 import { useAuthStore } from '@/stores/auth'
 import { useFeatureFlagsStore } from '@/stores/featureFlags'
+import { userCanAccessWorkshopChat } from '@/utils/workshopAccess'
 
 const routes: RouteRecordRaw[] = [
   {
@@ -253,6 +254,22 @@ router.beforeEach(async (to, _from, next) => {
     return next({ name: 'MindMate' })
   }
 
+  if (to.meta.requiresWorkshopChatAccess) {
+    if (!featureFlagsStore.getFeatureWorkshopChat()) {
+      return next({ name: 'MindMate' })
+    }
+    const previewIds = featureFlagsStore.getWorkshopChatPreviewOrgIds()
+    if (
+      !userCanAccessWorkshopChat(
+        authStore.isAdminOrManager,
+        authStore.user?.schoolId,
+        previewIds,
+      )
+    ) {
+      return next({ name: 'MindMate' })
+    }
+  }
+
   // Check organization membership for school zone
   if (to.meta.requiresOrganization && !authStore.user?.schoolId) {
     return next({ name: 'MindMate' })
@@ -298,10 +315,6 @@ router.beforeEach(async (to, _from, next) => {
   if (to.name === 'TeacherUsage' && !featureFlagsStore.getFeatureTeacherUsage()) {
     return next({ name: 'MindMate' })
   }
-  if (to.name === 'WorkshopChat' && !featureFlagsStore.getFeatureWorkshopChat()) {
-    return next({ name: 'MindMate' })
-  }
-
   // Redirect authenticated users away from guest-only pages
   if (to.meta.guestOnly && authStore.isAuthenticated) {
     return next({ name: 'MindMate' })

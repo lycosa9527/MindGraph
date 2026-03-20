@@ -22,6 +22,7 @@ interface FeatureFlagsResponse {
   feature_smart_response: boolean
   feature_teacher_usage: boolean
   feature_workshop_chat: boolean
+  workshop_chat_preview_org_ids: number[]
 }
 
 export const useFeatureFlagsStore = defineStore('featureFlags', () => {
@@ -63,6 +64,7 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
           feature_smart_response: false,
           feature_teacher_usage: false,
           feature_workshop_chat: false,
+          workshop_chat_preview_org_ids: [],
         }
         flags.value = defaultFlags
         lastFetchTime.value = now
@@ -93,6 +95,7 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
         feature_smart_response: false,
         feature_teacher_usage: false,
         feature_workshop_chat: false,
+        workshop_chat_preview_org_ids: [],
       }
       flags.value = defaultFlags
       return defaultFlags
@@ -157,6 +160,10 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
     return flags.value?.feature_workshop_chat ?? false
   }
 
+  function getWorkshopChatPreviewOrgIds(): number[] {
+    return flags.value?.workshop_chat_preview_org_ids ?? []
+  }
+
   /**
    * Initialize flags (call this early in app lifecycle)
    */
@@ -183,6 +190,7 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
     getFeatureSmartResponse,
     getFeatureTeacherUsage,
     getFeatureWorkshopChat,
+    getWorkshopChatPreviewOrgIds,
     init,
   }
 })

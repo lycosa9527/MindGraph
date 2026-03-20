@@ -10,6 +10,8 @@ All Rights Reserved
 Proprietary License
 """
 
+from config.settings import config
+
 from .config import AUTH_MODE, ADMIN_PHONES
 
 
@@ -82,6 +84,20 @@ def is_admin_or_manager(current_user) -> bool:
         True if user is admin or manager, False otherwise
     """
     return is_admin(current_user) or is_manager(current_user)
+
+
+def can_access_workshop_chat(current_user) -> bool:
+    """
+    Workshop Chat gate: admins/managers, or users in WORKSHOP_CHAT_PREVIEW_ORG_IDS.
+
+    Preview org list is server-configured for in-development testing.
+    """
+    if is_admin_or_manager(current_user):
+        return True
+    org_id = getattr(current_user, 'organization_id', None)
+    if org_id is None:
+        return False
+    return org_id in config.WORKSHOP_CHAT_PREVIEW_ORG_IDS
 
 
 def get_user_role(current_user) -> str:

@@ -204,6 +204,31 @@ class FeaturesConfigMixin:
         return self._get_cached_value('FEATURE_WORKSHOP_CHAT', 'False').lower() == 'true'
 
     @property
+    def WORKSHOP_CHAT_PREVIEW_ORG_IDS(self) -> frozenset[int]:
+        """Organization IDs that may use Workshop Chat without admin/manager role.
+
+        Comma-separated integers (e.g. ``5`` or ``5,12``). Used while the feature
+        is under development so a specific school can test; admins and managers
+        always have access when FEATURE_WORKSHOP_CHAT is enabled.
+
+        Empty by default (only elevated roles).
+        """
+        raw = str(self._get_cached_value('WORKSHOP_CHAT_PREVIEW_ORG_IDS', '') or '')
+        result: list[int] = []
+        for part in raw.split(','):
+            part_stripped = part.strip()
+            if not part_stripped:
+                continue
+            try:
+                result.append(int(part_stripped))
+            except ValueError:
+                logger.warning(
+                    "Invalid org id in WORKSHOP_CHAT_PREVIEW_ORG_IDS: %s",
+                    part_stripped,
+                )
+        return frozenset(result)
+
+    @property
     def AI_ASSISTANT_NAME(self):
         """AI Assistant display name (appears in toolbar button and panel header)."""
         return self._get_cached_value('AI_ASSISTANT_NAME', 'MindMate AI')

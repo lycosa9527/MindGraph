@@ -40,6 +40,7 @@ import { useLanguage } from '@/composables/useLanguage'
 import { useAuthStore, useMindMateStore, useUIStore } from '@/stores'
 import { useAskOnceStore } from '@/stores/askonce'
 import { type SavedDiagram } from '@/stores/savedDiagrams'
+import { userCanAccessWorkshopChat } from '@/utils/workshopAccess'
 
 import AskOnceHistory from './AskOnceHistory.vue'
 import ChatHistory from './ChatHistory.vue'
@@ -71,6 +72,7 @@ const {
   featureSmartResponse,
   featureTeacherUsage,
   featureWorkshopChat,
+  workshopChatPreviewOrgIds,
 } = useFeatureFlags()
 
 const isCollapsed = computed(() => uiStore.sidebarCollapsed)
@@ -106,6 +108,17 @@ const hasOrganization = computed(() => {
 const isAuthenticated = computed(() => authStore.isAuthenticated)
 const isAdminOrManager = computed(() => authStore.isAdminOrManager)
 const isAdmin = computed(() => authStore.isAdmin)
+
+const canAccessWorkshopChat = computed(() => {
+  if (!featureWorkshopChat.value) {
+    return false
+  }
+  return userCanAccessWorkshopChat(
+    authStore.isAdminOrManager,
+    authStore.user?.schoolId,
+    workshopChatPreviewOrgIds.value,
+  )
+})
 
 // User info
 const userName = computed(() => authStore.user?.username || '')
@@ -572,7 +585,7 @@ watch(currentMode, () => {
 
       <!-- Workshop Chat (admin & school managers) -->
       <el-tooltip
-        v-if="isAdminOrManager && featureWorkshopChat"
+        v-if="canAccessWorkshopChat"
         :content="t('workshop.title')"
         placement="right"
         :disabled="!isCollapsed"
@@ -597,7 +610,7 @@ watch(currentMode, () => {
       </el-tooltip>
       <transition name="ws-slide">
         <div
-          v-if="workshopExpanded && !isCollapsed && isAdminOrManager && featureWorkshopChat"
+          v-if="workshopExpanded && !isCollapsed && canAccessWorkshopChat"
           class="workshop-panel-host"
         >
           <WorkshopChatHistory :is-blurred="!isAuthenticated" />

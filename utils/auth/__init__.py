@@ -98,7 +98,13 @@ from .account_lockout import (
 )
 
 # Role exports
-from .roles import is_admin, is_manager, is_admin_or_manager, get_user_role
+from .roles import (
+    is_admin,
+    is_manager,
+    is_admin_or_manager,
+    can_access_workshop_chat,
+    get_user_role,
+)
 
 # API key exports
 from .api_keys import validate_api_key, track_api_key_usage, generate_api_key
@@ -181,6 +187,7 @@ __all__ = [
     "is_admin",
     "is_manager",
     "is_admin_or_manager",
+    "can_access_workshop_chat",
     "get_user_role",
     # API keys
     "validate_api_key",
