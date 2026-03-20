@@ -110,6 +110,8 @@ export interface DiagramData {
   type: DiagramType
   nodes: DiagramNode[]
   connections: Connection[]
+  /** Concept map (standard mode): guiding question persisted with the diagram */
+  focus_question?: string
   metadata?: {
     title?: string
     description?: string

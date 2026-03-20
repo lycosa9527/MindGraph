@@ -20,7 +20,16 @@ from typing import Any, Dict, List, Optional
 from sqlalchemy.orm import Session, joinedload
 
 from models.domain.auth import User
-from models.domain.workshop_chat import ChatMessage, ChatTopic, ChannelMember
+from models.domain.workshop_chat import (
+    ChannelMember,
+    ChatChannel,
+    ChatMessage,
+    ChatTopic,
+)
+from services.features.workshop_chat.mention_resolution import (
+    resolve_mentioned_user_ids,
+)
+from services.features.workshop_chat import message_fts
 
 logger = logging.getLogger(__name__)
 
@@ -32,6 +41,7 @@ MAX_CONTENT_LENGTH = 5000
 def _format_message(msg: ChatMessage) -> Dict[str, Any]:
     """Format a ChatMessage ORM object into a response dict."""
     sender = msg.sender
+    mention_ids = msg.mentioned_user_ids
     return {
         "id": msg.id,
         "channel_id": msg.channel_id,
@@ -43,6 +53,7 @@ def _format_message(msg: ChatMessage) -> Dict[str, Any]:
         "message_type": msg.message_type,
         "parent_id": msg.parent_id,
         "is_deleted": msg.is_deleted,
+        "mentioned_user_ids": list(mention_ids) if mention_ids else [],
         "created_at": msg.created_at.isoformat(),
         "edited_at": msg.edited_at.isoformat() if msg.edited_at else None,
     }
@@ -120,16 +131,71 @@ class MessageService:
         return [_format_message(m) for m in messages]
 
     @staticmethod
+    def search_messages(
+        db: Session,
+        channel_id: int,
+        text: str,
+        topic_id: Optional[int] = None,
+        limit: int = 40,
+    ) -> List[Dict[str, Any]]:
+        """Search within one channel, optionally scoped to a topic.
+
+        On PostgreSQL, uses ``to_tsvector`` / ``plainto_tsquery`` with optional
+        GIN index; otherwise falls back to ``ILIKE`` substring.
+        """
+        match = message_fts.channel_content_match(
+            db, ChatMessage.content, text, limit,
+        )
+        if match is None:
+            return []
+        pred, rank_expr, lim = match
+        filters = [
+            ChatMessage.channel_id == channel_id,
+            ChatMessage.is_deleted.is_(False),
+            pred,
+        ]
+        if topic_id is not None:
+            filters.append(ChatMessage.topic_id == topic_id)
+
+        query = (
+            db.query(ChatMessage)
+            .options(joinedload(ChatMessage.sender))
+            .filter(*filters)
+        )
+        if rank_expr is not None:
+            rows = (
+                query.order_by(rank_expr.desc(), ChatMessage.id.desc())
+                .limit(lim)
+                .all()
+            )
+        else:
+            rows = (
+                query.order_by(ChatMessage.id.desc())
+                .limit(lim)
+                .all()
+            )
+        return [_format_message(m) for m in reversed(rows)]
+
+    @staticmethod
     def send_message(
         db: Session, channel_id: int, sender_id: int, content: str,
         topic_id: Optional[int] = None, message_type: str = "text",
         parent_id: Optional[int] = None,
     ) -> Dict[str, Any]:
         """Send a message to a channel or topic."""
+        sender = db.query(User).filter(User.id == sender_id).first()
+        if not sender:
+            raise ValueError("Sender not found")
+        channel = db.query(ChatChannel).filter(ChatChannel.id == channel_id).first()
+        org_id = channel.organization_id if channel else None
+        mention_ids = resolve_mentioned_user_ids(
+            db, sender, org_id, content[:MAX_CONTENT_LENGTH],
+        )
         msg = ChatMessage(
             channel_id=channel_id, topic_id=topic_id,
             sender_id=sender_id, content=content[:MAX_CONTENT_LENGTH],
             message_type=message_type, parent_id=parent_id,
+            mentioned_user_ids=mention_ids or None,
         )
         db.add(msg)
         db.flush()
@@ -142,7 +208,6 @@ class MessageService:
         db.commit()
         db.refresh(msg)
 
-        sender = db.query(User).filter(User.id == sender_id).first()
         return {
             "id": msg.id, "channel_id": msg.channel_id,
             "topic_id": msg.topic_id, "sender_id": msg.sender_id,
@@ -150,6 +215,7 @@ class MessageService:
             "sender_avatar": sender.avatar if sender else None,
             "content": msg.content, "message_type": msg.message_type,
             "parent_id": msg.parent_id,
+            "mentioned_user_ids": list(msg.mentioned_user_ids or []),
             "created_at": msg.created_at.isoformat(),
         }
 
@@ -160,14 +226,24 @@ class MessageService:
         """Edit a message (sender only)."""
         msg = (
             db.query(ChatMessage)
+            .options(joinedload(ChatMessage.channel), joinedload(ChatMessage.sender))
             .filter(ChatMessage.id == message_id, ChatMessage.sender_id == sender_id)
             .first()
         )
         if not msg:
             return None
+        sender = msg.sender
+        if not sender:
+            return None
+        org_id = msg.channel.organization_id if msg.channel else None
+        mention_ids = resolve_mentioned_user_ids(
+            db, sender, org_id, new_content[:MAX_CONTENT_LENGTH],
+        )
         msg.content = new_content[:MAX_CONTENT_LENGTH]
+        msg.mentioned_user_ids = mention_ids or None
         msg.edited_at = datetime.utcnow()
         db.commit()
+        db.refresh(msg)
         return _format_message(msg)
 
     @staticmethod

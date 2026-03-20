@@ -3,16 +3,16 @@
  * UserCardPopover — Zulip-style user card shown when clicking a contact or
  * buddy-list row. Offers profile view, DM, mention, mute, and admin actions.
  */
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import {
-  User, MessageSquare, AtSign, Copy,
-  VolumeX, Volume2, ShieldCheck,
+  User, MessageSquare, AtSign, Copy, ShieldCheck,
 } from 'lucide-vue-next'
 
 import { useLanguage } from '@/composables/useLanguage'
 import { useAuthStore } from '@/stores/auth'
 import { useWorkshopChatStore } from '@/stores/workshopChat'
+import { resolveWorkshopAvatarDisplay } from '@/utils/workshopAvatar'
 
 export interface UserCardUser {
   id: number
@@ -32,6 +32,7 @@ const emit = defineEmits<{
   (e: 'startDm', userId: number): void
   (e: 'insertMention', name: string): void
   (e: 'viewProfile', userId: number): void
+  (e: 'manageUser', userId: number): void
 }>()
 
 const { t } = useLanguage()
@@ -77,6 +78,27 @@ const userInitial = computed(() =>
   (props.user.name || '?')[0].toUpperCase(),
 )
 
+const avatarDisplay = computed(() =>
+  resolveWorkshopAvatarDisplay(props.user.avatar),
+)
+
+const avatarImageFailed = ref(false)
+
+watch(
+  () => props.user.avatar,
+  () => {
+    avatarImageFailed.value = false
+  },
+)
+
+const showAvatarImage = computed(
+  () => avatarDisplay.value.kind === 'image' && !avatarImageFailed.value,
+)
+
+const avatarImageSrc = computed(() =>
+  avatarDisplay.value.kind === 'image' ? avatarDisplay.value.src : '',
+)
+
 function close(): void {
   emit('update:visible', false)
 }
@@ -102,6 +124,7 @@ function handleCopyMention(): void {
 }
 
 function handleManageUser(): void {
+  emit('manageUser', props.user.id)
   close()
 }
 </script>
@@ -114,7 +137,7 @@ export default { name: 'UserCardPopover' }
   <el-popover
     :visible="visible"
     placement="left-start"
-    :width="260"
+    :width="300"
     trigger="click"
     @update:visible="emit('update:visible', $event)"
   >
@@ -123,15 +146,21 @@ export default { name: 'UserCardPopover' }
     </template>
 
     <div class="user-card">
-      <!-- Header: avatar + name + presence -->
+      <!-- Zulip-style header: avatar column + stacked name / meta -->
       <div class="user-card__header">
         <div class="user-card__avatar-wrapper">
           <img
-            v-if="user.avatar"
-            :src="user.avatar"
+            v-if="showAvatarImage"
+            :src="avatarImageSrc"
             :alt="user.name"
             class="user-card__avatar"
+            @error="avatarImageFailed = true"
           >
+          <span
+            v-else-if="avatarDisplay.kind === 'emoji' && !avatarImageFailed"
+            class="user-card__avatar user-card__avatar--emoji"
+            aria-hidden="true"
+          >{{ avatarDisplay.text }}</span>
           <span v-else class="user-card__avatar user-card__avatar--initials">
             {{ userInitial }}
           </span>
@@ -141,52 +170,88 @@ export default { name: 'UserCardPopover' }
           />
         </div>
         <div class="user-card__info">
-          <span class="user-card__name">{{ user.name }}</span>
+          <div class="user-card__name-row">
+            <span class="user-card__name">{{ user.name }}</span>
+            <span v-if="roleBadge" class="user-card__role-badge">
+              {{ roleBadge }}
+            </span>
+          </div>
+          <span v-if="isSelf" class="user-card__subtitle">
+            {{ t('workshop.userCardYou') }}
+          </span>
           <span class="user-card__presence-label">{{ presenceLabel }}</span>
         </div>
-        <span v-if="roleBadge" class="user-card__role-badge">
-          {{ roleBadge }}
-        </span>
       </div>
 
       <div class="ws-popover-divider" />
 
-      <!-- Actions -->
-      <div class="ws-popover-menu">
-        <button class="ws-popover-item" @click="handleViewProfile">
-          <User class="ws-popover-icon" />
-          {{ t('workshop.viewProfile') }}
-        </button>
+      <ul class="user-card__menu" role="menu">
+        <li role="none">
+          <button
+            type="button"
+            class="ws-popover-item"
+            role="menuitem"
+            @click="handleViewProfile"
+          >
+            <User class="ws-popover-icon" />
+            {{ isSelf ? t('workshop.profile') : t('workshop.viewProfile') }}
+          </button>
+        </li>
 
-        <button v-if="!isSelf" class="ws-popover-item" @click="handleStartDm">
-          <MessageSquare class="ws-popover-icon" />
-          {{ t('workshop.sendDirectMessage') }}
-        </button>
+        <template v-if="!isSelf">
+          <li role="none">
+            <button
+              type="button"
+              class="ws-popover-item"
+              role="menuitem"
+              @click="handleStartDm"
+            >
+              <MessageSquare class="ws-popover-icon" />
+              {{ t('workshop.sendDirectMessage') }}
+            </button>
+          </li>
 
-        <button
-          v-if="!isSelf && channelContext"
-          class="ws-popover-item"
-          @click="handleInsertMention"
-        >
-          <AtSign class="ws-popover-icon" />
-          {{ t('workshop.replyMentioning') }}
-        </button>
+          <li v-if="channelContext" role="none">
+            <button
+              type="button"
+              class="ws-popover-item"
+              role="menuitem"
+              @click="handleInsertMention"
+            >
+              <AtSign class="ws-popover-icon" />
+              {{ t('workshop.replyMentioning') }}
+            </button>
+          </li>
 
-        <button v-if="!isSelf" class="ws-popover-item" @click="handleCopyMention">
-          <Copy class="ws-popover-icon" />
-          {{ t('workshop.copyMentionSyntax') }}
-        </button>
-      </div>
+          <li role="none">
+            <button
+              type="button"
+              class="ws-popover-item"
+              role="menuitem"
+              @click="handleCopyMention"
+            >
+              <Copy class="ws-popover-icon" />
+              {{ t('workshop.copyMentionSyntax') }}
+            </button>
+          </li>
+        </template>
+      </ul>
 
-      <!-- Admin section -->
       <template v-if="isAdmin && !isSelf">
         <div class="ws-popover-divider" />
-        <div class="ws-popover-menu">
-          <button class="ws-popover-item" @click="handleManageUser">
-            <ShieldCheck class="ws-popover-icon" />
-            {{ t('workshop.manageUser') }}
-          </button>
-        </div>
+        <ul class="user-card__menu" role="menu">
+          <li role="none">
+            <button
+              type="button"
+              class="ws-popover-item"
+              role="menuitem"
+              @click="handleManageUser"
+            >
+              <ShieldCheck class="ws-popover-icon" />
+              {{ t('workshop.manageUser') }}
+            </button>
+          </li>
+        </ul>
       </template>
     </div>
   </el-popover>
@@ -226,6 +291,15 @@ export default { name: 'UserCardPopover' }
   font-size: 16px;
 }
 
+.user-card__avatar--emoji {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: hsl(228deg 30% 96%);
+  font-size: 22px;
+  line-height: 1;
+}
+
 .user-card__presence-dot {
   position: absolute;
   bottom: 1px;
@@ -255,6 +329,13 @@ export default { name: 'UserCardPopover' }
   flex: 1;
 }
 
+.user-card__name-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
 .user-card__name {
   font-size: 14px;
   font-weight: 600;
@@ -262,6 +343,13 @@ export default { name: 'UserCardPopover' }
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  min-width: 0;
+}
+
+.user-card__subtitle {
+  font-size: 12px;
+  color: hsl(228deg 44% 42%);
+  font-weight: 500;
 }
 
 .user-card__presence-label {
@@ -279,6 +367,15 @@ export default { name: 'UserCardPopover' }
   border-radius: 3px;
   background: hsl(228deg 44% 94%);
   color: hsl(228deg 44% 45%);
+}
+
+.user-card__menu {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
 .ws-popover-menu {

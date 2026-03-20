@@ -456,6 +456,7 @@ def setup_middleware(app: FastAPI):
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
+        expose_headers=["ETag"],
     )
 
     # GZip Compression with PDF exclusion

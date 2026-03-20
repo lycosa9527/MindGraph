@@ -37,6 +37,8 @@ export default defineConfig({
       '/api': {
         target: backendHost,
         changeOrigin: true,
+        // Workshop chat: browser opens ws(s)://dev-host/api/ws/chat — must upgrade through this proxy
+        ws: true,
       },
       '/thinking_mode': {
         target: backendHost,

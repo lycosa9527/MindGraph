@@ -12,7 +12,7 @@ Routers:
 - admin_env.py: Admin environment settings
 - admin_logs.py: Admin log streaming
 - node_palette.py: Node Palette endpoints
-- voice.py: VoiceAgent endpoints
+- voice/: VoiceAgent endpoints
 - update_notification.py: Update notification system
 
 Author: lycosa9527

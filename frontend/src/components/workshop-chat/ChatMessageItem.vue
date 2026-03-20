@@ -3,7 +3,13 @@ import { computed, nextTick, onMounted, ref } from 'vue'
 
 import { useLanguage } from '@/composables/useLanguage'
 import { useMarkdown } from '@/composables/useMarkdown'
-import type { ChatMessage, FileAttachment, ReactionGroup } from '@/stores/workshopChat'
+import {
+  useWorkshopChatStore,
+  type ChatMessage,
+  type FileAttachment,
+  type ReactionGroup,
+} from '@/stores/workshopChat'
+import { workshopChatHrefFromState } from '@/utils/workshopChatRoute'
 
 import FilePreview from './FilePreview.vue'
 import MessageActionBar from './MessageActionBar.vue'
@@ -11,6 +17,7 @@ import MessageReactions from './MessageReactions.vue'
 
 const { t } = useLanguage()
 const { render } = useMarkdown()
+const workshopStore = useWorkshopChatStore()
 
 const CONDENSE_THRESHOLD = 300
 
@@ -70,7 +77,22 @@ function handleToggleCondense(): void {
 }
 
 function handleCopyLink(): void {
-  const url = `${window.location.origin}${window.location.pathname}#msg-${props.message.id}`
+  const id = props.message.id
+  const hasWorkshopNarrow =
+    workshopStore.currentDMPartnerId != null ||
+    workshopStore.showChannelBrowser ||
+    workshopStore.currentChannelId != null
+  const url = hasWorkshopNarrow
+    ? `${window.location.origin}${workshopChatHrefFromState({
+        currentChannelId: workshopStore.currentChannelId,
+        currentTopicId: workshopStore.currentTopicId,
+        currentDMPartnerId: workshopStore.currentDMPartnerId,
+        showChannelBrowser: workshopStore.showChannelBrowser,
+        workshopHomeViewActive: workshopStore.workshopHomeViewActive,
+        mainChannelFeedActive: workshopStore.mainChannelFeedActive,
+        focusMessageId: id,
+      })}`
+    : `${window.location.origin}${window.location.pathname}${window.location.search}#msg-${id}`
   navigator.clipboard.writeText(url)
 }
 

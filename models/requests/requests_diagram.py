@@ -376,3 +376,65 @@ class DiagramUpdateRequest(BaseModel):
                 "spec": {"topic": "Updated Topic", "children": []}
             }
         }
+
+
+class FocusQuestionReviewRequest(BaseModel):
+    """Request for AI validation and refinement of a concept-map focus question."""
+
+    question: str = Field(
+        ...,
+        min_length=1,
+        max_length=500,
+        description="User's proposed focus question for the concept map",
+    )
+    language: str = Field(
+        default='zh',
+        description="Response language: zh or en",
+    )
+
+    @field_validator('language')
+    @classmethod
+    def normalize_language(cls, value: str) -> str:
+        """Allow only zh or en."""
+        lowered = (value or 'zh').lower()
+        if lowered not in ('zh', 'en'):
+            return 'zh'
+        return lowered
+
+
+class FocusQuestionSuggestionsRequest(BaseModel):
+    """Request for streaming / batch focus-question suggestions (separate from validation)."""
+
+    question: str = Field(
+        ...,
+        min_length=1,
+        max_length=500,
+        description="User's proposed focus question",
+    )
+    language: str = Field(default='zh', description="zh or en")
+    avoid: Optional[List[str]] = Field(
+        default=None,
+        description="Previously shown suggestions to avoid repeating",
+    )
+
+    @field_validator('language')
+    @classmethod
+    def normalize_language_suggestions(cls, value: str) -> str:
+        """Allow only zh or en."""
+        lowered = (value or 'zh').lower()
+        if lowered not in ('zh', 'en'):
+            return 'zh'
+        return lowered
+
+    @field_validator('avoid')
+    @classmethod
+    def cap_avoid_list(cls, value: Optional[List[str]]) -> Optional[List[str]]:
+        """Limit list size and string length."""
+        if not value:
+            return value
+        out: List[str] = []
+        for item in value[:80]:
+            s = str(item).strip()
+            if s and len(s) <= 400:
+                out.append(s)
+        return out or None

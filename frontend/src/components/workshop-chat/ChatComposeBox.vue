@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 
 import {
   Bold, ChevronRight, Code, CodeSquare, Italic,
@@ -8,11 +8,15 @@ import {
 } from 'lucide-vue-next'
 
 import { useLanguage } from '@/composables/useLanguage'
+import { useWorkshopChatStore, type OrgMember } from '@/stores/workshopChat'
 import { apiUpload } from '@/utils/apiClient'
 
 import EmojiPicker from './EmojiPicker.vue'
 
 const { t } = useLanguage()
+const store = useWorkshopChatStore()
+
+const DRAFT_PREFIX = 'workshopChatDraft:'
 
 const props = withDefaults(defineProps<{
   channelName?: string
@@ -20,7 +24,11 @@ const props = withDefaults(defineProps<{
   topicName?: string
   dmPartnerName?: string
   mode?: 'channel' | 'topic' | 'dm'
-}>(), { mode: 'channel' })
+  /** When false, show read-only hint (e.g. global announce topics for non-admins). */
+  allowSend?: boolean
+  /** localStorage key segment for autosave (narrow-scoped). */
+  draftKey?: string
+}>(), { mode: 'channel', allowSend: true })
 
 const emit = defineEmits<{
   send: [content: string]
@@ -35,6 +43,83 @@ const textareaRef = ref<HTMLTextAreaElement>()
 const showEmojiPicker = ref(false)
 const uploading = ref(false)
 const fileInputRef = ref<HTMLInputElement>()
+const showMentionPicker = ref(false)
+const mentionQuery = ref('')
+
+let draftSaveTimer: ReturnType<typeof setTimeout> | null = null
+
+watch(
+  () => props.draftKey,
+  (key) => {
+    if (!key) {
+      content.value = ''
+      return
+    }
+    const raw = localStorage.getItem(DRAFT_PREFIX + key)
+    content.value = raw ?? ''
+  },
+  { immediate: true },
+)
+
+watch(content, () => {
+  const key = props.draftKey
+  if (!key) return
+  if (draftSaveTimer != null) clearTimeout(draftSaveTimer)
+  draftSaveTimer = setTimeout(() => {
+    draftSaveTimer = null
+    const trimmed = content.value.trim()
+    if (trimmed) {
+      localStorage.setItem(DRAFT_PREFIX + key, content.value)
+    } else {
+      localStorage.removeItem(DRAFT_PREFIX + key)
+    }
+  }, 400)
+})
+
+const mentionPickerResults = ref<OrgMember[]>([])
+let mentionFetchTimer: ReturnType<typeof setTimeout> | null = null
+
+function localMentionMatches(): OrgMember[] {
+  const q = mentionQuery.value.trim().toLowerCase()
+  return store.orgMembers
+    .filter((m) => {
+      const label = (m.name || `User ${m.id}`).toLowerCase()
+      return label.includes(q)
+    })
+    .slice(0, 8)
+}
+
+watch(
+  [mentionQuery, showMentionPicker],
+  () => {
+    if (!showMentionPicker.value) {
+      mentionPickerResults.value = []
+      return
+    }
+    if (mentionFetchTimer != null) {
+      clearTimeout(mentionFetchTimer)
+    }
+    const raw = mentionQuery.value.trim()
+    if (!raw) {
+      mentionPickerResults.value = localMentionMatches()
+      return
+    }
+    mentionFetchTimer = setTimeout(async () => {
+      mentionFetchTimer = null
+      mentionPickerResults.value = await store.searchOrgMembers(raw, 12)
+    }, 200)
+  },
+  { flush: 'post' },
+)
+
+watch(
+  () => store.orgMembers.length,
+  () => {
+    if (showMentionPicker.value && !mentionQuery.value.trim()) {
+      mentionPickerResults.value = localMentionMatches()
+    }
+  },
+)
 
 const replyLabel = computed<string>(() => {
   if (props.mode === 'dm' && props.dmPartnerName) {
@@ -71,6 +156,7 @@ function expand(): void {
 
 function collapse(): void {
   isExpanded.value = false
+  showMentionPicker.value = false
 }
 
 function handleSend(): void {
@@ -78,9 +164,78 @@ function handleSend(): void {
   if (!trimmed) return
   emit('send', trimmed)
   content.value = ''
+  if (props.draftKey) {
+    localStorage.removeItem(DRAFT_PREFIX + props.draftKey)
+  }
+}
+
+function syncMentionPicker(): void {
+  const el = textareaRef.value
+  if (!el) return
+  const pos = el.selectionStart ?? 0
+  const text = content.value
+  let at = pos - 1
+  while (at >= 0 && text.charAt(at) !== '@') {
+    if (/\s/.test(text.charAt(at))) {
+      showMentionPicker.value = false
+      return
+    }
+    at -= 1
+  }
+  if (at < 0 || text.charAt(at) !== '@') {
+    showMentionPicker.value = false
+    return
+  }
+  if (at > 0 && !/\s/.test(text.charAt(at - 1))) {
+    showMentionPicker.value = false
+    return
+  }
+  mentionQuery.value = text.slice(at + 1, pos)
+  showMentionPicker.value = true
+}
+
+function insertMentionUser(member: OrgMember): void {
+  const el = textareaRef.value
+  if (!el) return
+  const pos = el.selectionStart ?? content.value.length
+  const text = content.value
+  let at = pos - 1
+  while (at >= 0 && text.charAt(at) !== '@') {
+    if (/\s/.test(text.charAt(at))) return
+    at -= 1
+  }
+  if (at < 0 || text.charAt(at) !== '@') return
+  if (at > 0 && !/\s/.test(text.charAt(at - 1))) return
+  const rawName = member.name || `User ${member.id}`
+  const safeName = rawName.replace(/\*/g, '').trim() || `User ${member.id}`
+  const insert = `@**${safeName}**`
+  content.value = text.slice(0, at) + insert + text.slice(pos)
+  showMentionPicker.value = false
+  nextTick(() => {
+    el.focus()
+    const caret = at + insert.length
+    el.setSelectionRange(caret, caret)
+  })
+}
+
+function onTextareaInput(): void {
+  handleInput()
+  syncMentionPicker()
 }
 
 function handleKeydown(event: KeyboardEvent): void {
+  if (showMentionPicker.value && mentionPickerResults.value.length > 0) {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault()
+      insertMentionUser(mentionPickerResults.value[0])
+      return
+    }
+    if (event.key === 'Escape') {
+      event.preventDefault()
+      showMentionPicker.value = false
+      return
+    }
+  }
   if (event.key === 'Enter' && !event.shiftKey) {
     event.preventDefault()
     handleSend()
@@ -191,7 +346,12 @@ const toolbarButtons = [
 </script>
 
 <template>
-  <div class="compose">
+  <div v-if="!allowSend" class="compose compose--readonly">
+    <div class="compose__read-only">
+      {{ t('workshop.announceReadOnlyHint') }}
+    </div>
+  </div>
+  <div v-else class="compose">
     <div class="compose__box" :class="{ 'compose__box--open': isExpanded }">
       <!-- Collapsed state — Zulip-style three-part bar -->
       <div v-if="!isExpanded" class="compose__collapsed">
@@ -240,6 +400,19 @@ const toolbarButtons = [
           </button>
         </div>
 
+        <div v-if="showMentionPicker && mentionPickerResults.length > 0" class="mention-picker">
+          <button
+            v-for="m in mentionPickerResults"
+            :key="m.id"
+            type="button"
+            class="mention-picker__item"
+            @mousedown.prevent="insertMentionUser(m)"
+          >
+            <span class="mention-picker__avatar">{{ m.avatar || '👤' }}</span>
+            <span class="mention-picker__name">{{ m.name || `User ${m.id}` }}</span>
+          </button>
+        </div>
+
         <textarea
           ref="textareaRef"
           v-model="content"
@@ -247,7 +420,9 @@ const toolbarButtons = [
           rows="3"
           :placeholder="placeholderText"
           @keydown="handleKeydown"
-          @input="handleInput"
+          @input="onTextareaInput"
+          @keyup="syncMentionPicker"
+          @click="syncMentionPicker"
         />
 
         <!-- Toolbar + send -->
@@ -322,6 +497,20 @@ const toolbarButtons = [
 .compose {
   flex-shrink: 0;
   padding: 0 0 8px;
+}
+
+.compose--readonly {
+  padding: 0 14px 10px;
+}
+
+.compose__read-only {
+  font-size: 13px;
+  line-height: 1.45;
+  color: hsl(0deg 0% 45%);
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: hsl(0deg 0% 0% / 4%);
+  border: 1px solid hsl(0deg 0% 0% / 8%);
 }
 
 .compose__box {
@@ -426,6 +615,54 @@ const toolbarButtons = [
 .compose__expanded {
   display: flex;
   flex-direction: column;
+  position: relative;
+}
+
+.mention-picker {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: 100%;
+  margin-bottom: 4px;
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 20;
+  border-radius: 8px;
+  border: 1px solid hsl(0deg 0% 0% / 12%);
+  background: hsl(0deg 0% 100%);
+  box-shadow: 0 4px 18px hsl(0deg 0% 0% / 12%);
+  padding: 4px;
+}
+
+.mention-picker__item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 8px;
+  border: none;
+  border-radius: 6px;
+  background: none;
+  cursor: pointer;
+  font-size: 13px;
+  text-align: left;
+  color: hsl(0deg 0% 20%);
+}
+
+.mention-picker__item:hover {
+  background: hsl(228deg 40% 96%);
+}
+
+.mention-picker__avatar {
+  flex-shrink: 0;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.mention-picker__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* Recipient header row */

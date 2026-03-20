@@ -15,12 +15,15 @@ Proprietary License
 import logging
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
 from config.database import get_db
 from models.domain.auth import User
 from routers.auth.dependencies import require_manager
+from routers.features.workshop_chat.conditional_list_response import (
+    workshop_list_json_response,
+)
 from routers.features.workshop_chat.dependencies import (
     access_channel,
     get_effective_org_id,
@@ -28,6 +31,8 @@ from routers.features.workshop_chat.dependencies import (
 )
 from routers.features.workshop_chat.schemas import (
     CreateChannelRequest,
+    OrgMembersPage,
+    OrgMemberRow,
     UpdateChannelRequest,
     UpdateMemberPrefsRequest,
     UpdateChannelPermissionsRequest,
@@ -37,41 +42,82 @@ from services.features.workshop_chat.default_channels import (
     seed_announce_channel,
     seed_default_channels,
 )
+from services.features.workshop_chat.workshop_list_etag import channels_list_etag
 from utils.auth import get_current_user
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
+_ORG_MEMBER_Q_MAX_LEN = 100
+_ORG_MEMBER_LIMIT_DEFAULT = 200
+_ORG_MEMBER_LIMIT_MAX = 200
+
+
+def _escape_ilike_literal(text: str) -> str:
+    """Escape ``%``, ``_``, ``\\`` for use in ILIKE with PostgreSQL ESCAPE '\\'."""
+    return (
+        text.replace("\\", "\\\\")
+        .replace("%", "\\%")
+        .replace("_", "\\_")
+    )
+
 
 # ── Organization members ─────────────────────────────────────────
 
-@router.get("/org-members")
+@router.get("/org-members", response_model=OrgMembersPage)
 async def list_org_members(
     org_id: Optional[int] = None,
+    q: Optional[str] = None,
+    limit: int = _ORG_MEMBER_LIMIT_DEFAULT,
+    offset: int = 0,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """List members in the user's organization for starting DMs.
+    """List members in the user's organization (including the current user).
 
+    Used for the contacts roster, presence, and starting DMs with colleagues.
     Admins may pass ``org_id`` to list members of another organization.
+
+    Pagination: ``limit`` (default 200, max 200), ``offset``. Optional ``q``
+    filters display names with case-insensitive substring match (ILIKE).
     """
     effective_org_id = get_effective_org_id(current_user, org_id)
+    lim = min(max(limit, 1), _ORG_MEMBER_LIMIT_MAX)
+    off = max(offset, 0)
+
+    raw_q = (q or "").strip()
+    if raw_q and len(raw_q) > _ORG_MEMBER_Q_MAX_LEN:
+        raw_q = raw_q[:_ORG_MEMBER_Q_MAX_LEN]
+
+    filters = [User.organization_id == effective_org_id]
+    if raw_q:
+        pattern = f"%{_escape_ilike_literal(raw_q)}%"
+        filters.append(User.name.ilike(pattern, escape="\\"))
+
+    total = db.query(User).filter(*filters).count()
     users = (
         db.query(User)
-        .filter(User.organization_id == effective_org_id)
+        .filter(*filters)
         .order_by(User.name)
+        .offset(off)
+        .limit(lim)
         .all()
     )
-    return [
-        {
-            "id": u.id,
-            "name": u.name or f"User {u.id}",
-            "avatar": u.avatar,
-        }
+    items = [
+        OrgMemberRow(
+            id=u.id,
+            name=u.name or f"User {u.id}",
+            avatar=u.avatar,
+        )
         for u in users
-        if u.id != current_user.id
     ]
+    return OrgMembersPage(
+        items=items,
+        total=int(total),
+        limit=lim,
+        offset=off,
+    )
 
 
 # ── Initialization ────────────────────────────────────────────────
@@ -127,6 +173,7 @@ async def initialize_default_channels(
 
 @router.get("/channels")
 async def list_channels(
+    request: Request,
     org_id: Optional[int] = None,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
@@ -136,9 +183,16 @@ async def list_channels(
     Admins may pass ``org_id`` to view channels of another organization.
     """
     effective_org_id = get_effective_org_id(current_user, org_id)
-    return channel_service.list_channels(
-        db, effective_org_id, current_user.id,
-        current_user=current_user,
+    etag = channels_list_etag(
+        db, effective_org_id, current_user.id, current_user,
+    )
+    return workshop_list_json_response(
+        request,
+        etag,
+        lambda: channel_service.list_channels(
+            db, effective_org_id, current_user.id,
+            current_user=current_user,
+        ),
     )
 
 
@@ -182,12 +236,31 @@ async def update_channel(
     """Update a channel (manager or owner only, same org)."""
     channel = access_channel(db, channel_id, current_user)
     require_channel_manager(current_user, channel)
+    payload = body.model_dump(exclude_unset=True)
+    clear_deadline = (
+        "deadline" in payload and payload["deadline"] is None
+    )
+    deadline_val = None if clear_deadline else body.deadline
     return channel_service.update_channel(
         db, channel_id,
         name=body.name, description=body.description, avatar=body.avatar,
         color=body.color, channel_status=body.status,
-        deadline=body.deadline, diagram_id=body.diagram_id,
+        deadline=deadline_val, clear_deadline=clear_deadline,
+        diagram_id=body.diagram_id,
         is_resolved=body.is_resolved,
+    )
+
+
+@router.post("/channels/{channel_id}/read")
+async def mark_channel_read(
+    channel_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Advance the current user's read waterline to the latest channel message."""
+    access_channel(db, channel_id, current_user)
+    return channel_service.mark_channel_read(
+        db, channel_id, current_user.id,
     )
 
 

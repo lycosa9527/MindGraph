@@ -21,6 +21,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   loadMore: []
+  backToTopicList: []
   editMessage: [message: ChatMessage]
   deleteMessage: [messageId: number]
   quote: [message: ChatMessage]
@@ -94,6 +95,26 @@ function scrollToBottom(): void {
   })
 }
 
+function scrollToMessageId(messageId: number): void {
+  nextTick(() => {
+    requestAnimationFrame(() => {
+      const root = containerRef.value
+      if (!root) {
+        return
+      }
+      const el = root.querySelector(`#msg-${messageId}`)
+      if (!(el instanceof HTMLElement)) {
+        return
+      }
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      el.classList.add('msg-row--search-focus')
+      window.setTimeout(() => {
+        el.classList.remove('msg-row--search-focus')
+      }, 2400)
+    })
+  })
+}
+
 function handleScroll(): void {
   if (!containerRef.value) return
   const el = containerRef.value
@@ -125,7 +146,7 @@ watch(
 
 onMounted(scrollToBottom)
 
-defineExpose({ scrollToBottom })
+defineExpose({ scrollToBottom, scrollToMessageId })
 </script>
 
 <template>
@@ -162,8 +183,14 @@ defineExpose({ scrollToBottom })
           :channel-color="channelColor"
           :topic-name="topicName"
           :dm-partner-name="dmPartnerName"
+          :enable-channel-navigate="Boolean(topicName && channelName && !dmPartnerName)"
           :is-sticky="true"
-        />
+          @channel-navigate="emit('backToTopicList')"
+        >
+          <template v-if="$slots.recipientActions" #actions>
+            <slot name="recipientActions" />
+          </template>
+        </RecipientBar>
 
         <div class="msg-recipient-group__body">
           <ChatMessageItem

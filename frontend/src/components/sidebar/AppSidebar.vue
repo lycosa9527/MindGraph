@@ -277,7 +277,10 @@ watch(currentMode, () => {
     <!-- Navigation with inline accordion panels -->
     <div
       class="sidebar-nav-scroll"
-      :class="{ 'sidebar-nav-scroll--collapsed': isCollapsed }"
+      :class="{
+        'sidebar-nav-scroll--collapsed': isCollapsed,
+        'sidebar-nav-scroll--workshop': workshopExpanded && !isCollapsed,
+      }"
     >
       <!-- MindMate -->
       <el-tooltip
@@ -567,9 +570,9 @@ watch(currentMode, () => {
         </div>
       </transition>
 
-      <!-- Workshop Chat (admin-only during development) -->
+      <!-- Workshop Chat (admin & school managers) -->
       <el-tooltip
-        v-if="isAdmin && featureWorkshopChat"
+        v-if="isAdminOrManager && featureWorkshopChat"
         :content="t('workshop.title')"
         placement="right"
         :disabled="!isCollapsed"
@@ -593,11 +596,12 @@ watch(currentMode, () => {
         </div>
       </el-tooltip>
       <transition name="ws-slide">
-        <WorkshopChatHistory
-          v-if="workshopExpanded && !isCollapsed && isAdmin && featureWorkshopChat"
-          :is-blurred="!isAuthenticated"
-          class="workshop-panel"
-        />
+        <div
+          v-if="workshopExpanded && !isCollapsed && isAdminOrManager && featureWorkshopChat"
+          class="workshop-panel-host"
+        >
+          <WorkshopChatHistory :is-blurred="!isAuthenticated" />
+        </div>
       </transition>
 
       <!-- Admin / management items (inline, hidden when workshop expanded) -->
@@ -895,6 +899,11 @@ watch(currentMode, () => {
   padding: 8px 12px;
 }
 
+.sidebar-nav-scroll--workshop {
+  display: flex;
+  flex-direction: column;
+}
+
 .sidebar-nav-scroll--collapsed {
   padding: 8px;
 }
@@ -978,10 +987,12 @@ watch(currentMode, () => {
   background-color: #a8a29e;
 }
 
-.workshop-panel {
-  min-height: 200px;
+.workshop-panel-host {
   flex: 1;
+  min-height: 0;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 /* Panel slide transition (for accordion history panels) */

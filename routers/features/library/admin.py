@@ -27,7 +27,11 @@ from services.library.image_path_resolver import (
     detect_image_pattern,
     list_page_images,
 )
-from services.library.library_path_utils import normalize_library_path, resolve_library_path
+from services.library.library_path_utils import (
+    extract_folder_name_from_pages_dir_path,
+    normalize_library_path,
+    resolve_library_path,
+)
 
 from .helpers import require_admin
 from .models import DocumentVisibilityUpdate, RenameRequest
@@ -37,13 +41,49 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-def _build_doc_lookups(all_docs: list) -> tuple:
+def _canonical_path(stored_path: str, storage_dir: Path, project_root: Path) -> str:
+    """
+    Convert a stored pages_dir_path to a canonical forward-slash relative form.
+
+    Handles three legacy formats produced by different environments:
+      1. Already relative with forward slashes:  ``storage/library/Book``  → unchanged
+      2. Windows back-slashes (dev machine):     ``storage\\library\\Book`` → ``storage/library/Book``
+      3. Absolute paths (Linux or Windows):      ``/app/storage/library/Book``
+                                                 ``C:\\Users\\...\\Book``   → ``storage/library/Book``
+    """
+    normalized = stored_path.replace("\\", "/")
+
+    first_component = normalized.lstrip("/").split("/")[0]
+    is_absolute = normalized.startswith("/") or ":" in first_component
+    if not is_absolute:
+        return normalized
+
+    try:
+        result = normalize_library_path(Path(normalized), storage_dir, project_root)
+        if result and "/" in result:
+            return result
+    except Exception:  # pylint: disable=broad-except
+        pass
+
+    folder_name = extract_folder_name_from_pages_dir_path(stored_path)
+    if folder_name:
+        try:
+            rel = str(storage_dir.relative_to(project_root)).replace("\\", "/")
+            return f"{rel}/{folder_name}"
+        except ValueError:
+            pass
+
+    return normalized
+
+
+def _build_doc_lookups(all_docs: list, storage_dir: Path, project_root: Path) -> tuple:
     """Build path-keyed and folder-name-keyed lookups from a list of LibraryDocuments."""
     docs_by_path: dict = {}
     docs_by_folder: dict = {}
     for doc in all_docs:
         if doc.pages_dir_path:
-            docs_by_path[doc.pages_dir_path] = doc
+            canonical = _canonical_path(doc.pages_dir_path, storage_dir, project_root)
+            docs_by_path[canonical] = doc
             docs_by_folder[Path(doc.pages_dir_path).name] = doc
     return docs_by_path, docs_by_folder
 
@@ -52,6 +92,7 @@ def _collect_disk_books(
     library_dir: Path,
     docs_by_path: dict,
     docs_by_folder: dict,
+    project_root: Path,
 ) -> tuple:
     """
     Walk library_dir for valid image-book folders.
@@ -75,7 +116,7 @@ def _collect_disk_books(
             continue
 
         folder_name = folder_path.name
-        pages_dir_path = normalize_library_path(folder_path, library_dir, Path.cwd())
+        pages_dir_path = normalize_library_path(folder_path, library_dir, project_root)
         doc_by_path = docs_by_path.get(pages_dir_path)
         doc_by_folder = docs_by_folder.get(folder_name)
         doc = doc_by_path or doc_by_folder
@@ -111,6 +152,7 @@ async def scan_library_folders(
     """
     service = LibraryService(db, user_id=current_user.id)
     library_dir = service.storage_dir
+    project_root = Path.cwd()
 
     if not library_dir.exists():
         raise HTTPException(
@@ -122,8 +164,10 @@ async def scan_library_folders(
         LibraryDocument.use_images.is_(True)
     ).all()
 
-    docs_by_path, docs_by_folder = _build_doc_lookups(all_docs)
-    books, folders_seen = _collect_disk_books(library_dir, docs_by_path, docs_by_folder)
+    docs_by_path, docs_by_folder = _build_doc_lookups(all_docs, library_dir, project_root)
+    books, folders_seen = _collect_disk_books(
+        library_dir, docs_by_path, docs_by_folder, project_root
+    )
 
     for doc in all_docs:
         if not doc.pages_dir_path:
@@ -147,6 +191,80 @@ async def scan_library_folders(
         "books": books,
         "total": len(books),
     }
+
+
+@router.post("/admin/repair")
+async def repair_library_paths(
+    current_user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """
+    Fix stale pages_dir_path values stored in the database (admin only).
+
+    This is needed when books were registered on a different OS or from a different
+    working directory, causing the stored path format (e.g. Windows back-slashes or
+    absolute paths) to diverge from what the scan produces on the current server.
+
+    For every document whose stored path does not match its canonical form, the path
+    is updated in-place.  Re-runs the scan lookup so only truly stale records are
+    touched; already-correct records are skipped.
+
+    Returns counts of updated and skipped documents.
+    """
+    service = LibraryService(db, user_id=current_user.id)
+    library_dir = service.storage_dir
+    project_root = Path.cwd()
+
+    all_docs = db.query(LibraryDocument).filter(
+        LibraryDocument.use_images.is_(True)
+    ).all()
+
+    updated = 0
+    skipped = 0
+    errors = 0
+
+    for doc in all_docs:
+        if not doc.pages_dir_path:
+            skipped += 1
+            continue
+
+        canonical = _canonical_path(doc.pages_dir_path, library_dir, project_root)
+        if canonical == doc.pages_dir_path:
+            skipped += 1
+            continue
+
+        folder_name = extract_folder_name_from_pages_dir_path(doc.pages_dir_path)
+        disk_path = library_dir / folder_name if folder_name else None
+        if not disk_path or not disk_path.exists():
+            skipped += 1
+            continue
+
+        try:
+            doc.pages_dir_path = canonical
+            doc.updated_at = datetime.utcnow()
+            updated += 1
+        except Exception as exc:  # pylint: disable=broad-except
+            logger.error(
+                "[Library] Repair failed for document %s: %s", doc.id, exc
+            )
+            errors += 1
+
+    if updated:
+        try:
+            db.commit()
+        except Exception as exc:
+            db.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to commit path repairs",
+            ) from exc
+
+    logger.info(
+        "[Library] Path repair completed",
+        extra={"updated": updated, "skipped": skipped, "errors": errors,
+               "admin_user_id": current_user.id},
+    )
+    return {"updated": updated, "skipped": skipped, "errors": errors}
 
 
 @router.patch("/documents/{document_id}/visibility")

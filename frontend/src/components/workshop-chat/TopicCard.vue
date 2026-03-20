@@ -62,6 +62,13 @@ const showPopover = ref(false)
         <el-icon :size="12"><ChatLineSquare /></el-icon>
         {{ topic.message_count }}
       </span>
+      <span
+        v-if="(topic.unread_count ?? 0) > 0"
+        class="topic-card__unread-badge"
+        :title="t('workshop.unreadMessages')"
+      >
+        {{ topic.unread_count }}
+      </span>
     </div>
 
     <div class="topic-card__creator">
@@ -166,6 +173,20 @@ const showPopover = ref(false)
   align-items: center;
   gap: 3px;
   color: hsl(0deg 0% 48%);
+}
+
+.topic-card__unread-badge {
+  margin-left: auto;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 18px;
+  text-align: center;
+  color: #fff;
+  background: hsl(217deg 64% 59%);
 }
 
 .topic-card__creator {

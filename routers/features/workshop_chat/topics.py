@@ -14,14 +14,19 @@ Proprietary License
 
 import logging
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
 from config.database import get_db
 from models.domain.auth import User
+from routers.features.workshop_chat.conditional_list_response import (
+    workshop_list_json_response,
+)
 from routers.features.workshop_chat.dependencies import (
     access_channel,
     require_membership,
+    require_membership_unless_announce,
+    require_post_permission,
 )
 from routers.features.workshop_chat.schemas import (
     CreateTopicRequest,
@@ -31,6 +36,7 @@ from routers.features.workshop_chat.schemas import (
     SetTopicVisibilityRequest,
 )
 from services.features.workshop_chat import topic_service, message_service
+from services.features.workshop_chat.workshop_list_etag import topics_list_etag
 from services.features.workshop_chat_ws_manager import chat_ws_manager
 from utils.auth import get_current_user, is_manager
 
@@ -41,13 +47,22 @@ router = APIRouter()
 
 @router.get("/channels/{channel_id}/topics")
 async def list_topics(
+    request: Request,
     channel_id: int,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     """List topics (conversations) in a channel."""
-    require_membership(db, channel_id, current_user.id)
-    return topic_service.list_topics(db, channel_id, user_id=current_user.id)
+    channel = access_channel(db, channel_id, current_user)
+    require_membership_unless_announce(db, channel, current_user.id)
+    etag = topics_list_etag(db, channel_id, current_user.id)
+    return workshop_list_json_response(
+        request,
+        etag,
+        lambda: topic_service.list_topics(
+            db, channel_id, user_id=current_user.id,
+        ),
+    )
 
 
 @router.post("/channels/{channel_id}/topics", status_code=status.HTTP_201_CREATED)
@@ -57,8 +72,10 @@ async def create_topic(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Create a topic (any channel member)."""
+    """Create a topic (channel members; announce channel is admin-only)."""
+    channel = access_channel(db, channel_id, current_user)
     require_membership(db, channel_id, current_user.id)
+    require_post_permission(channel, current_user)
     result = topic_service.create_topic(
         db, channel_id, body.title, current_user.id,
         description=body.description,
@@ -77,7 +94,8 @@ async def get_topic_detail(
     current_user: User = Depends(get_current_user),
 ):
     """Get topic detail with recent messages."""
-    require_membership(db, channel_id, current_user.id)
+    channel = access_channel(db, channel_id, current_user)
+    require_membership_unless_announce(db, channel, current_user.id)
     topic = topic_service.get_topic(db, topic_id)
     if not topic or topic.channel_id != channel_id:
         raise HTTPException(status_code=404, detail="Topic not found")
@@ -101,6 +119,7 @@ async def update_topic(
     current_user: User = Depends(get_current_user),
 ):
     """Update topic (creator, manager, or channel owner)."""
+    access_channel(db, channel_id, current_user)
     require_membership(db, channel_id, current_user.id)
     topic = topic_service.get_topic(db, topic_id)
     if not topic or topic.channel_id != channel_id:
@@ -130,6 +149,7 @@ async def move_topic(
 ):
     """Move a topic to another channel (manager or topic creator only)."""
     access_channel(db, channel_id, current_user)
+    require_membership(db, channel_id, current_user.id)
     topic = topic_service.get_topic(db, topic_id)
     if not topic or topic.channel_id != channel_id:
         raise HTTPException(status_code=404, detail="Topic not found")
@@ -158,6 +178,7 @@ async def rename_topic(
     current_user: User = Depends(get_current_user),
 ):
     """Rename a topic (creator or manager)."""
+    access_channel(db, channel_id, current_user)
     require_membership(db, channel_id, current_user.id)
     topic = topic_service.get_topic(db, topic_id)
     if not topic or topic.channel_id != channel_id:
@@ -182,6 +203,7 @@ async def delete_topic(
     current_user: User = Depends(get_current_user),
 ):
     """Delete a topic (creator or manager)."""
+    access_channel(db, channel_id, current_user)
     require_membership(db, channel_id, current_user.id)
     topic = topic_service.get_topic(db, topic_id)
     if not topic or topic.channel_id != channel_id:
@@ -205,7 +227,8 @@ async def mark_topic_read(
     current_user: User = Depends(get_current_user),
 ):
     """Mark a topic as read for the current user."""
-    require_membership(db, channel_id, current_user.id)
+    channel = access_channel(db, channel_id, current_user)
+    require_membership_unless_announce(db, channel, current_user.id)
     return topic_service.mark_topic_read(db, topic_id, current_user.id)
 
 
@@ -220,6 +243,7 @@ async def set_topic_visibility(
     current_user: User = Depends(get_current_user),
 ):
     """Set user's visibility preference for a topic (mute/follow/inherit)."""
+    access_channel(db, channel_id, current_user)
     require_membership(db, channel_id, current_user.id)
     topic = topic_service.get_topic(db, topic_id)
     if not topic or topic.channel_id != channel_id:

@@ -8,6 +8,19 @@ Groups (parent_id IS NULL) aggregate lesson-study channels
 (parent_id IS NOT NULL).  The ``list_channels`` response nests child
 channels under their parent groups.
 
+Unread semantics (aligned with ``TopicService.list_topics`` and DM APIs):
+
+- **Channel list badge:** non-deleted ``ChatMessage`` rows in the channel
+  with ``id > ChannelMember.last_read_message_id`` (per member).
+- **Topic row without** ``UserTopicPreference``: same waterline
+  (``id > last_read_message_id``).
+- **Topic row with preference:** non-deleted messages with
+  ``created_at > UserTopicPreference.last_updated``.
+- **DM:** incoming rows with ``is_read`` false.
+
+Muted topics (``UserTopicPreference.visibility_policy == 'muted'``) are
+excluded from the channel-level unread aggregate.
+
 Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved
 Proprietary License
@@ -15,13 +28,18 @@ Proprietary License
 
 import logging
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
-from sqlalchemy import case, or_
+from sqlalchemy import and_, case, func, or_
 from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.sql.functions import count as sql_count
 
 from models.domain.workshop_chat import (
-    ChatChannel, ChannelMember, ChatTopic, ChatMessage,
+    ChatChannel,
+    ChannelMember,
+    ChatMessage,
+    ChatTopic,
+    UserTopicPreference,
 )
 from utils.auth import is_admin
 
@@ -73,13 +91,23 @@ class ChannelService:
 
         member_map = ChannelService._build_member_map(db, user_id, channels)
         user_is_admin = is_admin(current_user) if current_user else False
+        member_counts, topic_counts, unread_counts = (
+            ChannelService._batch_channel_list_metrics(
+                db, [c.id for c in channels], member_map,
+            )
+        )
 
         groups: Dict[int, Dict[str, Any]] = {}
         standalone: List[Dict[str, Any]] = []
 
         for ch in channels:
             formatted = ChannelService._format_channel(
-                db, ch, member_map, user_is_admin,
+                ch,
+                member_map,
+                user_is_admin,
+                member_count=member_counts.get(ch.id, 0),
+                topic_count=topic_counts.get(ch.id, 0),
+                unread_count=unread_counts.get(ch.id, 0),
             )
             if ch.parent_id is None:
                 formatted["children"] = []
@@ -114,37 +142,88 @@ class ChannelService:
         return {m.channel_id: m for m in memberships}
 
     @staticmethod
-    def _format_channel(
+    def _batch_channel_list_metrics(
         db: Session,
+        channel_ids: List[int],
+        member_map: Dict[int, ChannelMember],
+    ) -> Tuple[Dict[int, int], Dict[int, int], Dict[int, int]]:
+        """Member counts, topic counts, and per-user unreads for list_channels."""
+        if not channel_ids:
+            return {}, {}, {}
+        member_counts = {
+            int(a): int(b)
+            for a, b in db.query(
+                ChannelMember.channel_id, sql_count(ChannelMember.user_id),
+            )
+            .filter(ChannelMember.channel_id.in_(channel_ids))
+            .group_by(ChannelMember.channel_id)
+            .all()
+        }
+        topic_counts = {
+            int(a): int(b)
+            for a, b in db.query(
+                ChatTopic.channel_id, sql_count(ChatTopic.id),
+            )
+            .filter(ChatTopic.channel_id.in_(channel_ids))
+            .group_by(ChatTopic.channel_id)
+            .all()
+        }
+        unread_counts = {cid: 0 for cid in channel_ids}
+        if not member_map:
+            return member_counts, topic_counts, unread_counts
+        mids = [cid for cid in member_map if cid in channel_ids]
+        or_clauses = [
+            and_(
+                ChatMessage.channel_id == cid,
+                ChatMessage.id > (member_map[cid].last_read_message_id or 0),
+            )
+            for cid in mids
+        ]
+        uid = member_map[mids[0]].user_id if mids else None
+        muted_topic_ids = ()
+        if uid is not None:
+            muted_topic_ids = tuple(
+                int(row[0])
+                for row in db.query(UserTopicPreference.topic_id)
+                .filter(
+                    UserTopicPreference.user_id == uid,
+                    UserTopicPreference.visibility_policy == "muted",
+                )
+                .all()
+            )
+        if or_clauses:
+            q_unread = (
+                db.query(ChatMessage.channel_id, sql_count(ChatMessage.id))
+                .filter(
+                    ChatMessage.channel_id.in_(mids),
+                    ChatMessage.is_deleted.is_(False),
+                    or_(*or_clauses),
+                )
+            )
+            if muted_topic_ids:
+                q_unread = q_unread.filter(
+                    or_(
+                        ChatMessage.topic_id.is_(None),
+                        ChatMessage.topic_id.notin_(muted_topic_ids),
+                    )
+                )
+            q_unread = q_unread.group_by(ChatMessage.channel_id)
+            for row_cid, cnt in q_unread.all():
+                unread_counts[int(row_cid)] = int(cnt)
+        return member_counts, topic_counts, unread_counts
+
+    @staticmethod
+    def _format_channel(
         channel: ChatChannel,
         member_map: Dict[int, ChannelMember],
         user_is_admin: bool = False,
+        *,
+        member_count: int,
+        topic_count: int,
+        unread_count: int,
     ) -> Dict[str, Any]:
         """Format a single channel with counts and membership info."""
-        member_count = (
-            db.query(ChannelMember)
-            .filter(ChannelMember.channel_id == channel.id)
-            .count()
-        )
-        topic_count = (
-            db.query(ChatTopic)
-            .filter(ChatTopic.channel_id == channel.id)
-            .count()
-        )
-
         membership = member_map.get(channel.id)
-        unread_count = 0
-        if membership:
-            last_read = membership.last_read_message_id or 0
-            unread_count = (
-                db.query(ChatMessage)
-                .filter(
-                    ChatMessage.channel_id == channel.id,
-                    ChatMessage.id > last_read,
-                    ChatMessage.is_deleted.is_(False),
-                )
-                .count()
-            )
 
         can_post = True
         if channel.channel_type == "announce":
@@ -166,6 +245,12 @@ class ChannelService:
             "is_muted": membership.is_muted if membership else False,
             "pin_to_top": membership.pin_to_top if membership else False,
             "color": membership.color if membership else (channel.color or "#c2c2c2"),
+            "desktop_notifications": (
+                membership.desktop_notifications if membership else True
+            ),
+            "email_notifications": (
+                membership.email_notifications if membership else False
+            ),
             "unread_count": unread_count,
             "created_at": channel.created_at.isoformat(),
             "parent_id": channel.parent_id,
@@ -182,6 +267,39 @@ class ChannelService:
             })
 
         return data
+
+    @staticmethod
+    def mark_channel_read(
+        db: Session, channel_id: int, user_id: int,
+    ) -> Dict[str, Any]:
+        """Advance the member waterline to the latest non-deleted message."""
+        member = (
+            db.query(ChannelMember)
+            .filter(
+                ChannelMember.channel_id == channel_id,
+                ChannelMember.user_id == user_id,
+            )
+            .first()
+        )
+        if not member:
+            return {"marked": False}
+        max_msg_id = (
+            db.query(func.max(ChatMessage.id))
+            .filter(
+                ChatMessage.channel_id == channel_id,
+                ChatMessage.is_deleted.is_(False),
+            )
+            .scalar()
+        )
+        if max_msg_id:
+            current = member.last_read_message_id or 0
+            if max_msg_id > current:
+                member.last_read_message_id = max_msg_id
+        db.commit()
+        return {
+            "marked": True,
+            "last_read_message_id": member.last_read_message_id,
+        }
 
     @staticmethod
     def create_channel(
@@ -245,6 +363,7 @@ class ChannelService:
         color: Optional[str] = None,
         channel_status: Optional[str] = None,
         deadline: Optional[datetime] = None,
+        clear_deadline: bool = False,
         diagram_id: Optional[str] = None,
         is_resolved: Optional[bool] = None,
     ) -> Optional[Dict[str, Any]]:
@@ -262,7 +381,9 @@ class ChannelService:
             channel.color = color
         if channel_status is not None:
             channel.status = channel_status
-        if deadline is not None:
+        if clear_deadline:
+            channel.deadline = None
+        elif deadline is not None:
             channel.deadline = deadline
         if diagram_id is not None:
             channel.diagram_id = diagram_id if diagram_id else None

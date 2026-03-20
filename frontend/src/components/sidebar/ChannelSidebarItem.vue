@@ -13,6 +13,7 @@ import ChannelActionsPopover from '@/components/workshop-chat/ChannelActionsPopo
 import TopicActionsPopover from '@/components/workshop-chat/TopicActionsPopover.vue'
 import { useLanguage } from '@/composables/useLanguage'
 import type { ChatChannel, ChatTopic } from '@/stores/workshopChat'
+import { lessonStudyDeadlineBadge } from '@/utils/lessonStudyDeadline'
 
 const MAX_VISIBLE_TOPICS = 5
 
@@ -61,6 +62,33 @@ const remainingCount = computed(() =>
 )
 
 const hasTopics = computed(() => props.topics.length > 0)
+
+const lessonDeadlineKind = computed(
+  () => lessonStudyDeadlineBadge(props.channel).kind,
+)
+
+const lessonDeadlineBadgeClass = computed(() => {
+  const k = lessonDeadlineKind.value
+  if (k === 'inactive') {
+    return null
+  }
+  return `lesson-deadline-badge--${k}`
+})
+
+const lessonDeadlineShortLabel = computed(() => {
+  const k = lessonDeadlineKind.value
+  if (k === 'inactive') {
+    return ''
+  }
+  const keys = {
+    none: 'workshop.deadlineBadgeNone',
+    overdue: 'workshop.deadlineBadgeOverdue',
+    soon: 'workshop.deadlineBadgeSoon',
+    later: 'workshop.deadlineBadgeLater',
+    done: 'workshop.deadlineBadgeDone',
+  } as const
+  return t(keys[k])
+})
 </script>
 
 <template>
@@ -95,6 +123,11 @@ const hasTopics = computed(() => props.topics.length > 0)
         :style="{ color: channel.color || undefined }"
       />
       <span class="channel-name">{{ channel.name }}</span>
+      <span
+        v-if="lessonDeadlineBadgeClass"
+        class="lesson-deadline-badge"
+        :class="lessonDeadlineBadgeClass"
+      >{{ lessonDeadlineShortLabel }}</span>
       <Pin v-if="showPin" :size="10" class="pin-indicator" />
       <span v-if="channel.unread_count > 0" class="unread-badge">
         {{ channel.unread_count }}
@@ -132,10 +165,10 @@ const hasTopics = computed(() => props.topics.length > 0)
         </span>
         <div class="topic-markers">
           <span
-            v-if="topic.message_count > 0"
+            v-if="(topic.unread_count ?? 0) > 0"
             class="unread-badge unread-badge--topic"
           >
-            {{ topic.message_count }}
+            {{ topic.unread_count }}
           </span>
         </div>
         <TopicActionsPopover
@@ -243,6 +276,46 @@ const hasTopics = computed(() => props.topics.length > 0)
   text-overflow: ellipsis;
   white-space: nowrap;
   font-weight: 500;
+}
+
+.lesson-deadline-badge {
+  flex-shrink: 0;
+  max-width: 72px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  padding: 1px 5px;
+  border-radius: 4px;
+  line-height: 1.3;
+}
+
+.lesson-deadline-badge--none {
+  background: hsl(0deg 0% 0% / 6%);
+  color: hsl(0deg 0% 45%);
+}
+
+.lesson-deadline-badge--later {
+  background: hsl(210deg 40% 94%);
+  color: hsl(210deg 35% 38%);
+}
+
+.lesson-deadline-badge--soon {
+  background: hsl(38deg 92% 90%);
+  color: hsl(32deg 90% 32%);
+}
+
+.lesson-deadline-badge--overdue {
+  background: hsl(0deg 72% 94%);
+  color: hsl(0deg 65% 38%);
+}
+
+.lesson-deadline-badge--done {
+  background: hsl(0deg 0% 0% / 6%);
+  color: hsl(0deg 0% 48%);
 }
 
 .pin-indicator {

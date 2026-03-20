@@ -702,9 +702,13 @@ class OmniClient:
             logger.error("Event yielding error: %s", e, exc_info=True)
             yield {'type': 'error', 'error': str(e)}
         finally:
-            if self._native_client:
-                await self._native_client.close()
-                self._native_client = None
+            await self.close()
+
+    async def close(self) -> None:
+        """Close the underlying Omni WebSocket connection if active."""
+        if self._native_client:
+            await self._native_client.close()
+            self._native_client = None
 
     async def send_audio(self, audio_base64: str):
         """Send audio chunk to Omni (base64 encoded PCM)."""

@@ -22,10 +22,10 @@ Proprietary License
 """
 
 from datetime import datetime
-from typing import Optional
+from typing import List, Optional
 
 from sqlalchemy import (
-    Integer, String, Text, DateTime, ForeignKey, Boolean,
+    Integer, String, Text, DateTime, ForeignKey, Boolean, JSON,
     Index, CheckConstraint, UniqueConstraint,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -249,6 +249,10 @@ class ChatMessage(Base):
     )
     is_deleted: Mapped[bool] = mapped_column(Boolean, default=False)
 
+    mentioned_user_ids: Mapped[Optional[List[int]]] = mapped_column(
+        JSON, nullable=True,
+    )
+
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     edited_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
 
@@ -274,6 +278,15 @@ class DirectMessage(Base):
     1:1 private message between two teachers.
 
     Independent of channels. Both users must be in the same organization.
+
+    **Future group DMs (product TBD):** add ``DMConversation`` (stable id,
+    optional ``title``), ``DMConversationMember`` (``conversation_id``,
+    ``user_id``, ``last_read_message_id``, ``is_muted``), and either
+    point ``DirectMessage.conversation_id`` at that row (nullable, with
+    ``sender_id`` / ``recipient_id`` null for groups) or introduce
+    ``GroupDirectMessage`` keyed by ``conversation_id`` only.  Unread
+    then mirrors channel waterlines per member; list endpoints aggregate
+    by conversation id (Zulip-style ``DirectMessageGroup`` + huddle hash).
     """
     __tablename__ = "direct_messages"
 
@@ -288,6 +301,10 @@ class DirectMessage(Base):
     message_type: Mapped[str] = mapped_column(String(20), nullable=False, default="text")
     is_read: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
     is_deleted: Mapped[bool] = mapped_column(Boolean, default=False)
+
+    mentioned_user_ids: Mapped[Optional[List[int]]] = mapped_column(
+        JSON, nullable=True,
+    )
 
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     edited_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)

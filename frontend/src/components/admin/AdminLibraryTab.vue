@@ -47,6 +47,7 @@ const scanData = ref<ScanResponse | null>(null)
 const registeringFolders = ref<Set<string>>(new Set())
 const togglingIds = ref<Set<number>>(new Set())
 const isRegisteringAll = ref(false)
+const isRepairing = ref(false)
 const generatingCoverIds = ref<Set<number>>(new Set())
 const coverTimestamps = ref<Record<number, number>>({})
 const deletingIds = ref<Set<number>>(new Set())
@@ -63,6 +64,7 @@ const renameDialog = reactive({
 const displayLabel = (book: BookEntry) => book.title || book.folder_name
 
 const newBooks = computed(() => scanData.value?.books.filter((b) => !b.in_db) ?? [])
+const repairBooks = computed(() => scanData.value?.books.filter((b) => b.needs_repair) ?? [])
 const registeredCount = computed(() => scanData.value?.books.filter((b) => b.in_db).length ?? 0)
 const activeCount = computed(
   () => scanData.value?.books.filter((b) => b.is_active === true).length ?? 0
@@ -161,6 +163,31 @@ async function registerAll() {
     notify.error(t('admin.library.registerError'))
   } finally {
     isRegisteringAll.value = false
+  }
+}
+
+async function repairPaths() {
+  isRepairing.value = true
+  try {
+    const res = await apiRequest('/api/library/admin/repair', { method: 'POST' })
+    if (res.ok) {
+      const data = await res.json()
+      if (data.updated > 0) {
+        notify.success(
+          t('admin.library.repairSuccess').replace('{count}', String(data.updated))
+        )
+        await scan()
+      } else {
+        notify.success(t('admin.library.repairNothingToFix'))
+      }
+    } else {
+      const data = await res.json().catch(() => ({}))
+      notify.error(data.detail || t('admin.library.repairError'))
+    }
+  } catch {
+    notify.error(t('admin.library.repairError'))
+  } finally {
+    isRepairing.value = false
   }
 }
 
@@ -348,6 +375,20 @@ onMounted(() => {
           @click="scan"
         >
           {{ t('admin.library.scan') }}
+        </el-button>
+        <el-button
+          v-if="repairBooks.length > 0"
+          type="warning"
+          :loading="isRepairing"
+          @click="repairPaths"
+        >
+          {{ t('admin.library.repairPaths') }}
+          <el-tag
+            size="small"
+            effect="dark"
+            round
+            class="ml-1.5 !bg-white/20 !border-0 !text-white !text-xs !px-1.5 !py-0 !h-4 !leading-4"
+          >{{ repairBooks.length }}</el-tag>
         </el-button>
         <el-button
           v-if="newBooks.length > 0"

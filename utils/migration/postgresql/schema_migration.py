@@ -19,7 +19,10 @@ except ImportError:
 from utils.migration.postgresql.schema_helpers import (
     add_column_postgresql,
     create_table_indexes,
-    fix_postgresql_sequence
+    fix_postgresql_sequence,
+)
+from utils.migration.postgresql.workshop_fts_indexes import (
+    ensure_workshop_message_fts_indexes,
 )
 from utils.migration.postgresql.schema_table_ops import create_missing_tables
 
@@ -376,6 +379,22 @@ def run_migrations() -> bool:
                 logger.debug(
                     "[DBMigration] No tables to migrate (all tables exist "
                     "and are up to date)"
+                )
+
+        # =====================================================================
+        # STEP 3.5: Full-text search GIN indexes (workshop chat messages)
+        # =====================================================================
+        if migration_success:
+            try:
+                insp = inspect(db_engine)
+                names = insp.get_table_names()
+                if "chat_messages" in names and "direct_messages" in names:
+                    with db_engine.connect() as fts_conn:
+                        ensure_workshop_message_fts_indexes(fts_conn)
+            except Exception as fts_exc:
+                logger.warning(
+                    "[DBMigration] Optional FTS index step failed: %s",
+                    fts_exc,
                 )
 
         # =====================================================================

@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.47.0] - 2026-03-20
+
+### Added
+- **Concept map focus question**: Multi-model validation and SSE suggestion streams (`routers/concept_map_focus.py`); `ConceptMapFocusQuestionModal.vue` on canvas; diagram request types and `prompts/concept_maps.py` updates.
+- **Workshop Chat search & efficiency**: Full-text message search with normalized query text (`message_search_normalize`, `message_fts`); `@` mention resolution (`mention_resolution`); conditional list responses with `ETag` (`conditional_list_response`, `workshop_list_etag`); PostgreSQL FTS index migration (`workshop_fts_indexes`).
+- **Workshop Chat UX**: `WorkshopInboxWelcome.vue`; `workshopChatRoute.ts`, `workshopChatLocalCache.ts`, `workshopAvatar.ts`, `lessonStudyDeadline.ts` helpers.
+- **Voice API layout**: `routers/features/voice.py` replaced by a `routers/features/voice/` package; `scripts/generate_voice_package.py`.
+- **Tests**: `tests/services/test_mention_resolution.py`, `tests/services/test_workshop_list_etag.py`.
+
+### Changed
+- **Workshop Chat**: Store, WebSocket, and UI updates across sidebar, compose, messages, channel settings, notifications, and DMs (`useWorkshopChat`, `useChatNotifications`, `useLanguage`, related Vue components and CSS).
+- **Canvas**: Toolbar, top bar, and `CanvasPage.vue` wiring for concept map focus flow; diagram store/spec I/O updates for new diagram fields.
+- **Admin & API**: Library admin tab and router tweaks; `clients/omni_client.py`; `vite.config.ts` dev settings; HTTP middleware updates.
+
+### Removed
+- **Monolithic voice router**: `routers/features/voice.py` (superseded by `routers/features/voice/` package).
+
 ## [5.46.0] - 2026-03-20
 
 ### Added

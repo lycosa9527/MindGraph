@@ -11,6 +11,7 @@ from fastapi import FastAPI
 from config.settings import config
 from routers import (
     api,
+    concept_map_focus,
     node_palette,
     relationship_labels,
     inline_recommendations,
@@ -112,6 +113,10 @@ def register_routers(app: FastAPI) -> None:
     app.include_router(node_palette.router)  # Node Palette endpoints
     app.include_router(relationship_labels.router)  # Relationship labels (concept map)
     app.include_router(inline_recommendations.router)  # Inline recommendations (mindmap, flow, etc.)
+    app.include_router(
+        concept_map_focus.router,
+        prefix="/api",
+    )  # Concept map focus question (standard mode)
     app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])  # Authentication system
 
     # Feature routers that must be registered BEFORE vue_spa catch-all

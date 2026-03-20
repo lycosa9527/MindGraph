@@ -9,6 +9,7 @@ import logging
 from typing import Any
 from sqlalchemy import inspect, text, Column
 from sqlalchemy.dialects import postgresql
+from sqlalchemy.schema import ColumnDefault
 from sqlalchemy.sql import quoted_name
 
 logger = logging.getLogger(__name__)
@@ -27,6 +28,35 @@ def get_postgresql_column_type(column: Column) -> str:
     return str(column.type.compile(dialect=postgresql.dialect()))
 
 
+def _python_column_default_sql(column: Column, default: ColumnDefault) -> str:
+    """Format a Python-side ColumnDefault for PostgreSQL DDL (subset of types)."""
+    default_value = default.arg
+    if isinstance(default_value, (int, float)):
+        return f"DEFAULT {default_value}"
+    if isinstance(default_value, bool):
+        return f"DEFAULT {str(default_value).upper()}"
+    if isinstance(default_value, str):
+        escaped_value = default_value.replace("'", "''")
+        return f"DEFAULT '{escaped_value}'"
+    if not callable(default_value):
+        return ""
+    # Callable defaults (e.g., datetime.utcnow) are not expressible in ALTER TABLE.
+    if column.nullable:
+        logger.debug(
+            "[DBMigration] Column '%s' has callable default, "
+            "using NULL for nullable column",
+            column.name
+        )
+        return "DEFAULT NULL"
+    logger.warning(
+        "[DBMigration] Column '%s' has callable default but is "
+        "NOT NULL. Default will be handled by application, "
+        "not database.",
+        column.name
+    )
+    return ""
+
+
 def get_column_default(column: Column) -> str:
     """
     Get column default value as SQL string for PostgreSQL.
@@ -42,38 +72,8 @@ def get_column_default(column: Column) -> str:
             return "DEFAULT NULL"
         return ""
 
-    # Handle server defaults
-    if hasattr(column.default, 'arg'):
-        default_value = column.default.arg
-        if isinstance(default_value, (int, float)):
-            return f"DEFAULT {default_value}"
-        elif isinstance(default_value, bool):
-            return f"DEFAULT {str(default_value).upper()}"
-        elif isinstance(default_value, str):
-            # Escape single quotes in string defaults
-            escaped_value = default_value.replace("'", "''")
-            return f"DEFAULT '{escaped_value}'"
-        elif callable(default_value):
-            # For callable defaults (e.g., datetime.utcnow), we can't set them
-            # in ALTER TABLE. They'll be handled by SQLAlchemy on insert.
-            # For nullable columns, use NULL as default to avoid NOT NULL violations
-            if column.nullable:
-                logger.debug(
-                    "[DBMigration] Column '%s' has callable default, "
-                    "using NULL for nullable column",
-                    column.name
-                )
-                return "DEFAULT NULL"
-            else:
-                # Non-nullable columns with callable defaults will need
-                # application-level handling
-                logger.warning(
-                    "[DBMigration] Column '%s' has callable default but is "
-                    "NOT NULL. Default will be handled by application, "
-                    "not database.",
-                    column.name
-                )
-                return ""
+    if isinstance(column.default, ColumnDefault):
+        return _python_column_default_sql(column, column.default)
 
     return ""
 
@@ -284,6 +284,122 @@ def add_column_postgresql(conn: Any, table_name: str, column: Column) -> bool:
         return False
 
 
+def _create_or_align_pk_sequence(
+    conn: Any, table_name: str, column: Column
+) -> bool:
+    """Create missing PK sequence or align an existing one. Caller filters column type."""
+    column_name = column.name
+    sequence_name = f"{table_name}_{column_name}_seq"
+    quoted_table = quoted_name(table_name, quote=True)
+    quoted_column = quoted_name(column_name, quote=True)
+
+    sequence_exists = conn.execute(text(
+        "SELECT EXISTS(SELECT 1 FROM pg_sequences "
+        "WHERE schemaname = 'public' AND sequencename = :seq_name)"
+    ), {"seq_name": sequence_name}).scalar()
+
+    max_id = conn.execute(
+        text(f'SELECT MAX({quoted_column}) FROM {quoted_table}')
+    ).scalar() or 0
+
+    if not sequence_exists:
+        logger.info(
+            "[DBMigration] Sequence %s does not exist for %s.%s. "
+            "Creating it...",
+            sequence_name,
+            table_name,
+            column_name
+        )
+
+        col_info = conn.execute(text(
+            """
+            SELECT data_type, column_default
+            FROM information_schema.columns
+            WHERE table_name = :table_name AND column_name = :column_name
+            """
+        ), {"table_name": table_name, "column_name": column_name}).fetchone()
+
+        if not col_info:
+            logger.warning(
+                "[DBMigration] Could not find column %s.%s",
+                table_name,
+                column_name
+            )
+            return False
+
+        quoted_sequence = quoted_name(sequence_name, quote=True)
+        conn.execute(text(f"CREATE SEQUENCE {quoted_sequence}"))
+        logger.info("[DBMigration] Created sequence %s", sequence_name)
+
+        if max_id > 0:
+            conn.execute(
+                text(f"SELECT setval('{sequence_name}', {max_id + 1}, false)")
+            )
+            logger.info(
+                "[DBMigration] Set sequence %s to %d",
+                sequence_name,
+                max_id + 1
+            )
+        else:
+            conn.execute(text(f"SELECT setval('{sequence_name}', 1, false)"))
+            logger.info("[DBMigration] Set sequence %s to 1", sequence_name)
+
+        conn.execute(text(
+            f'ALTER TABLE {quoted_table} '
+            f'ALTER COLUMN {quoted_column} SET DEFAULT '
+            f'nextval(\'{sequence_name}\')'
+        ))
+        logger.info(
+            "[DBMigration] Set column default to use sequence for %s.%s",
+            table_name,
+            column_name
+        )
+
+        conn.execute(text(
+            f"ALTER SEQUENCE {quoted_sequence} "
+            f"OWNED BY {quoted_table}.{quoted_column}"
+        ))
+        logger.info("[DBMigration] Set sequence owner")
+
+        conn.commit()
+        logger.info(
+            "[DBMigration] ✓ Successfully fixed sequence for %s.%s",
+            table_name,
+            column_name
+        )
+        return True
+
+    quoted_sequence = quoted_name(sequence_name, quote=True)
+    last_value = conn.execute(
+        text(f"SELECT last_value FROM {quoted_sequence}")
+    ).scalar()
+
+    if last_value <= max_id:
+        logger.info(
+            "[DBMigration] Sequence value (%d) is <= max ID (%d). "
+            "Updating...",
+            last_value,
+            max_id
+        )
+        conn.execute(
+            text(f"SELECT setval('{sequence_name}', {max_id + 1}, false)")
+        )
+        conn.commit()
+        logger.info(
+            "[DBMigration] ✓ Updated sequence %s to %d",
+            sequence_name,
+            max_id + 1
+        )
+        return True
+    logger.debug(
+        "[DBMigration] Sequence %s is already set correctly "
+        "(value: %d)",
+        sequence_name,
+        last_value
+    )
+    return True
+
+
 def fix_postgresql_sequence(conn: Any, table_name: str, column: Column) -> bool:
     """
     Fix PostgreSQL sequence for a primary key column with autoincrement.
@@ -301,153 +417,20 @@ def fix_postgresql_sequence(conn: Any, table_name: str, column: Column) -> bool:
         True if sequence was fixed successfully, False otherwise
     """
     try:
-        # Only fix sequences for primary key columns with autoincrement
         if not column.primary_key:
-            return True  # Not a primary key, skip
+            return True
 
-        # Check if column has autoincrement
         autoincrement = getattr(column, 'autoincrement', False)
         if not autoincrement:
-            return True  # No autoincrement, skip
+            return True
 
-        # Only handle INTEGER types (BIGINT, SMALLINT also work)
         column_type_str = str(column.type).upper()
         if ('INTEGER' not in column_type_str and
                 'BIGINT' not in column_type_str and
                 'SMALLINT' not in column_type_str):
-            return True  # Not an integer type, skip
-
-        column_name = column.name
-        sequence_name = f"{table_name}_{column_name}_seq"
-
-        # Use proper identifier quoting for table and column names
-        quoted_table = quoted_name(table_name, quote=True)
-        quoted_column = quoted_name(column_name, quote=True)
-
-        # Check if sequence exists (use parameterized query for sequence name)
-        seq_check = conn.execute(text(
-            "SELECT EXISTS(SELECT 1 FROM pg_sequences "
-            "WHERE schemaname = 'public' AND sequencename = :seq_name)"
-        ), {"seq_name": sequence_name})
-        sequence_exists = seq_check.scalar()
-
-        # Get current max ID (use quoted identifiers)
-        max_id_result = conn.execute(
-            text(f'SELECT MAX({quoted_column}) FROM {quoted_table}')
-        )
-        max_id = max_id_result.scalar() or 0
-
-        if not sequence_exists:
-            logger.info(
-                "[DBMigration] Sequence %s does not exist for %s.%s. "
-                "Creating it...",
-                sequence_name,
-                table_name,
-                column_name
-            )
-
-            # Check column type and default (use parameterized query)
-            type_check = conn.execute(text(
-                """
-                SELECT data_type, column_default
-                FROM information_schema.columns
-                WHERE table_name = :table_name AND column_name = :column_name
-                """
-            ), {"table_name": table_name, "column_name": column_name})
-            col_info = type_check.fetchone()
-
-            if not col_info:
-                logger.warning(
-                    "[DBMigration] Could not find column %s.%s",
-                    table_name,
-                    column_name
-                )
-                return False
-
-            # Create sequence (sequence name is safe - comes from trusted source)
-            # But we still quote it properly
-            quoted_sequence = quoted_name(sequence_name, quote=True)
-            conn.execute(text(f"CREATE SEQUENCE {quoted_sequence}"))
-            logger.info("[DBMigration] Created sequence %s", sequence_name)
-
-            # Set sequence value
-            # Note: setval() requires literal sequence name, but sequence_name
-            # comes from SQLAlchemy metadata (trusted source), so it's safe
-            if max_id > 0:
-                conn.execute(
-                    text(f"SELECT setval('{sequence_name}', {max_id + 1}, false)")
-                )
-                logger.info(
-                    "[DBMigration] Set sequence %s to %d",
-                    sequence_name,
-                    max_id + 1
-                )
-            else:
-                conn.execute(text(f"SELECT setval('{sequence_name}', 1, false)"))
-                logger.info("[DBMigration] Set sequence %s to 1", sequence_name)
-
-            # Set column default to use sequence (use quoted identifiers)
-            # Sequence name in nextval() must be literal, but comes from
-            # trusted source
-            conn.execute(text(
-                f'ALTER TABLE {quoted_table} '
-                f'ALTER COLUMN {quoted_column} SET DEFAULT '
-                f'nextval(\'{sequence_name}\')'
-            ))
-            logger.info(
-                "[DBMigration] Set column default to use sequence for %s.%s",
-                table_name,
-                column_name
-            )
-
-            # Set sequence owner (use quoted identifiers)
-            conn.execute(text(
-                f"ALTER SEQUENCE {quoted_sequence} "
-                f"OWNED BY {quoted_table}.{quoted_column}"
-            ))
-            logger.info("[DBMigration] Set sequence owner")
-
-            conn.commit()
-            logger.info(
-                "[DBMigration] ✓ Successfully fixed sequence for %s.%s",
-                table_name,
-                column_name
-            )
             return True
-        else:
-            # Sequence exists, verify it's set correctly
-            quoted_sequence = quoted_name(sequence_name, quote=True)
-            seq_value_result = conn.execute(
-                text(f"SELECT last_value FROM {quoted_sequence}")
-            )
-            last_value = seq_value_result.scalar()
 
-            if last_value <= max_id:
-                logger.info(
-                    "[DBMigration] Sequence value (%d) is <= max ID (%d). "
-                    "Updating...",
-                    last_value,
-                    max_id
-                )
-                # Sequence name comes from SQLAlchemy metadata (trusted source)
-                conn.execute(
-                    text(f"SELECT setval('{sequence_name}', {max_id + 1}, false)")
-                )
-                conn.commit()
-                logger.info(
-                    "[DBMigration] ✓ Updated sequence %s to %d",
-                    sequence_name,
-                    max_id + 1
-                )
-                return True
-            else:
-                logger.debug(
-                    "[DBMigration] Sequence %s is already set correctly "
-                    "(value: %d)",
-                    sequence_name,
-                    last_value
-                )
-                return True
+        return _create_or_align_pk_sequence(conn, table_name, column)
 
     except Exception as e:
         logger.warning(
@@ -460,4 +443,4 @@ def fix_postgresql_sequence(conn: Any, table_name: str, column: Column) -> bool:
             conn.rollback()
         except Exception:
             pass  # Ignore rollback errors
-        return False  # Don't fail migration if sequence fix fails
+        return False

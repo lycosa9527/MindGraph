@@ -106,12 +106,27 @@ export function useChatNotifications() {
     return document.hidden
   }
 
-  /** True if the message content contains @<firstName> (case-insensitive). */
-  function isMentioned(content: string): boolean {
+  function escapeRegExp(s: string): string {
+    return s.replace(/[\\^$.*+?()[\]{}|]/g, '\\$&')
+  }
+
+  /**
+   * True if the current user is mentioned: prefer server `mentioned_user_ids`,
+   * else fall back to legacy @firstToken substring match on content.
+   */
+  function isUserMentionedInMessage(msg: {
+    content: string
+    mentioned_user_ids?: number[]
+  }): boolean {
+    const uid = myId()
+    if (uid && msg.mentioned_user_ids?.length) {
+      return msg.mentioned_user_ids.includes(Number(uid))
+    }
     const name = myName()
     if (!name) return false
-    const firstName = name.split(' ')[0]
-    return new RegExp(`@${firstName}`, 'i').test(content)
+    const firstName = name.split(/\s+/)[0]
+    if (!firstName) return false
+    return new RegExp(`@${escapeRegExp(firstName)}`, 'i').test(msg.content)
   }
 
   function notifyChannelMessage(msg: ChatMessage): void {
@@ -127,7 +142,7 @@ export function useChatNotifications() {
       && store.activeTab === 'channels'
     )
 
-    const mentioned = isMentioned(msg.content)
+    const mentioned = isUserMentionedInMessage(msg)
 
     if (!isViewing) {
       playDing()
@@ -169,7 +184,7 @@ export function useChatNotifications() {
       && store.activeTab === 'channels'
     )
 
-    const mentioned = isMentioned(msg.content)
+    const mentioned = isUserMentionedInMessage(msg)
 
     if (!isViewing) {
       playDing()

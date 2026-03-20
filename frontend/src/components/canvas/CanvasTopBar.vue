@@ -46,6 +46,8 @@ const notify = useNotifications()
 const props = defineProps<{
   autoSavedStatus?: string | null
   slotFullAndNewDiagram?: boolean
+  /** Concept map: focus question (standard mode), shown centered in the bar */
+  focusQuestion?: string | null
 }>()
 
 const emit = defineEmits<{
@@ -364,10 +366,10 @@ async function handleReset() {
 
 <template>
   <div
-    class="canvas-top-bar absolute top-0 left-0 right-0 z-30 w-full h-12 px-3 flex items-center justify-between shadow-sm border-b border-gray-200/80 dark:border-gray-600/80 bg-white/90 dark:bg-gray-800/90 backdrop-blur-md"
+    class="canvas-top-bar absolute top-0 left-0 right-0 z-30 w-full h-12 px-3 flex items-center shadow-sm border-b border-gray-200/80 dark:border-gray-600/80 bg-white/90 dark:bg-gray-800/90 backdrop-blur-md"
   >
     <!-- Left section: Back + Menu bar -->
-    <div class="flex items-center gap-1">
+    <div class="flex items-center gap-1 shrink-0 min-w-0 max-w-[min(300px,40vw)] z-10">
       <!-- Back button -->
       <ElTooltip
         :content="isZh ? '返回' : 'Back'"
@@ -423,8 +425,23 @@ async function handleReset() {
       </div>
     </div>
 
+    <!-- Center: concept map focus question (viewport-centered text) -->
+    <div
+      v-if="props.focusQuestion"
+      class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 max-w-[min(50vw,560px)] px-2 pointer-events-none z-[5]"
+    >
+      <p
+        class="text-xs text-gray-600 dark:text-gray-300 text-center truncate"
+        :title="props.focusQuestion"
+      >
+        <span class="text-gray-400 dark:text-gray-500">{{
+          isZh ? '焦点 · ' : 'Focus · '
+        }}</span>{{ props.focusQuestion }}
+      </p>
+    </div>
+
     <!-- Right section: Participants + 教学设计 + Export buttons -->
-    <div class="flex items-center gap-4">
+    <div class="ml-auto flex items-center gap-4 shrink-0 z-10">
       <!-- Participant bar (only show when workshop is active) -->
       <div
         v-if="workshopCode && participantsWithNames && participantsWithNames.length > 0"

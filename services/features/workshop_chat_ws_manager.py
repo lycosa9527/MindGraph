@@ -40,6 +40,7 @@ class _UserConnection:
     __slots__ = (
         "websocket", "user_id", "username", "avatar",
         "subscribed_channels", "subscribed_dm_partners",
+        "presence_org_id",
     )
 
     def __init__(
@@ -52,6 +53,7 @@ class _UserConnection:
         self.avatar = avatar
         self.subscribed_channels: Set[int] = set()
         self.subscribed_dm_partners: Set[int] = set()
+        self.presence_org_id: Optional[int] = None
 
 
 class ChatConnectionManager:
@@ -81,19 +83,54 @@ class ChatConnectionManager:
         )
         logger.info("[ChatWS] User %d (%s) connected", user_id, username)
 
-    def disconnect(self, user_id: int) -> Set[int]:
+    def disconnect(self, user_id: int) -> tuple[Set[int], Optional[int]]:
         """Remove a connection and all its subscriptions.
 
-        Returns the set of channel IDs the user was subscribed to so
-        the caller can broadcast an offline presence event before the
-        subscription data is lost.
+        Returns subscribed channel IDs and presence org (for offline broadcast).
         """
         conn = self._connections.get(user_id)
         subscribed = conn.subscribed_channels.copy() if conn else set()
+        presence_org = conn.presence_org_id if conn else None
         self._remove_subscriptions(user_id)
         self._connections.pop(user_id, None)
         logger.info("[ChatWS] User %d disconnected", user_id)
-        return subscribed
+        return subscribed, presence_org
+
+    def set_presence_org(self, user_id: int, org_id: int) -> None:
+        """Scope workshop presence (contacts sidebar) to this organization."""
+        conn = self._connections.get(user_id)
+        if conn:
+            conn.presence_org_id = org_id
+
+    def get_presence_org_id(self, user_id: int) -> Optional[int]:
+        """Organization ID used for org-wide presence, if subscribed."""
+        conn = self._connections.get(user_id)
+        return conn.presence_org_id if conn else None
+
+    def online_user_ids_for_presence_org(self, org_id: int) -> Set[int]:
+        """User IDs with an active WS and the same presence org scope."""
+        return {
+            uid for uid, conn in self._connections.items()
+            if conn.presence_org_id == org_id
+        }
+
+    async def broadcast_presence_to_presence_org(
+        self, user_id: int, status: str, org_id: int,
+        exclude_user: Optional[int] = None,
+    ) -> None:
+        """Notify everyone in the same presence org (workshop contacts list)."""
+        payload = _dumps({
+            "type": "presence", "user_id": user_id, "status": status,
+        })
+        tasks = []
+        for uid, conn in self._connections.items():
+            if exclude_user is not None and uid == exclude_user:
+                continue
+            if conn.presence_org_id != org_id:
+                continue
+            tasks.append(self._safe_send(conn.websocket, payload, uid))
+        if tasks:
+            await asyncio.gather(*tasks)
 
     def subscribe_channels(self, user_id: int, channel_ids: list) -> None:
         """Subscribe user to a set of channels for broadcast."""
@@ -120,6 +157,15 @@ class ChatConnectionManager:
         if not conn:
             return
         conn.subscribed_dm_partners = set(partner_ids)
+
+    def is_user_subscribed_to_channel(
+        self, user_id: int, channel_id: int,
+    ) -> bool:
+        """Return True if the user is connected and subscribed to the channel."""
+        conn = self._connections.get(user_id)
+        if not conn:
+            return False
+        return channel_id in conn.subscribed_channels
 
     async def broadcast_to_channel(
         self, channel_id: int, payload: Dict[str, Any],

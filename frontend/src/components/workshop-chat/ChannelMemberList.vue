@@ -4,7 +4,7 @@
  * "THIS CONVERSATION", "THIS CHANNEL", "OTHERS".
  * Presence states: active (green), idle (orange), offline (gray).
  */
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import { ChevronRight, Search } from 'lucide-vue-next'
 
@@ -12,7 +12,11 @@ import UserCardPopover from '@/components/workshop-chat/UserCardPopover.vue'
 import type { UserCardUser } from '@/components/workshop-chat/UserCardPopover.vue'
 import { useLanguage } from '@/composables/useLanguage'
 import { useAuthStore } from '@/stores/auth'
-import { useWorkshopChatStore, type ChannelMember } from '@/stores/workshopChat'
+import {
+  useWorkshopChatStore,
+  type ChannelMember,
+  type OrgMember,
+} from '@/stores/workshopChat'
 
 const { t } = useLanguage()
 const store = useWorkshopChatStore()
@@ -22,9 +26,29 @@ const emit = defineEmits<{
   startDm: [userId: number]
   insertMention: [name: string]
   viewProfile: [userId: number]
+  manageUser: [userId: number]
 }>()
 
 const searchQuery = ref('')
+/** When user searches, org members not in channel (server-filtered by name). */
+const othersRemote = ref<OrgMember[] | null>(null)
+let othersSearchTimer: ReturnType<typeof setTimeout> | null = null
+
+watch(searchQuery, (val) => {
+  if (othersSearchTimer != null) {
+    clearTimeout(othersSearchTimer)
+  }
+  const t = val.trim()
+  if (!t) {
+    othersRemote.value = null
+    return
+  }
+  othersSearchTimer = setTimeout(async () => {
+    othersSearchTimer = null
+    othersRemote.value = await store.searchOrgMembers(t, 100)
+  }, 280)
+})
+
 const collapsedSections = ref<Set<string>>(new Set())
 const popoverUserId = ref<number | null>(null)
 
@@ -87,8 +111,12 @@ const channelMembers = computed(() =>
 const otherUsers = computed<BuddyEntry[]>(() => {
   const channelMemberIds = new Set(store.channelMembers.map(m => m.user_id))
   const q = searchQuery.value.trim().toLowerCase()
+  const source: OrgMember[] =
+    q && othersRemote.value != null
+      ? othersRemote.value
+      : store.orgMembers
   return sortEntries(
-    store.orgMembers
+    source
       .filter(m => !channelMemberIds.has(m.id) && (!q || m.name.toLowerCase().includes(q)))
       .map(m => ({
         user_id: m.id,
@@ -146,6 +174,10 @@ function handleInsertMention(name: string): void {
 function handleViewProfile(userId: number): void {
   emit('viewProfile', userId)
 }
+
+function handleManageUser(userId: number): void {
+  emit('manageUser', userId)
+}
 </script>
 
 <template>
@@ -199,6 +231,7 @@ function handleViewProfile(userId: number): void {
               @start-dm="handleStartDm"
               @insert-mention="handleInsertMention"
               @view-profile="handleViewProfile"
+              @manage-user="handleManageUser"
             >
               <div class="buddy-row">
                 <span
@@ -251,6 +284,7 @@ function handleViewProfile(userId: number): void {
               @start-dm="handleStartDm"
               @insert-mention="handleInsertMention"
               @view-profile="handleViewProfile"
+              @manage-user="handleManageUser"
             >
               <div class="buddy-row">
                 <span
@@ -303,6 +337,7 @@ function handleViewProfile(userId: number): void {
               @start-dm="handleStartDm"
               @insert-mention="handleInsertMention"
               @view-profile="handleViewProfile"
+              @manage-user="handleManageUser"
             >
               <div class="buddy-row">
                 <span

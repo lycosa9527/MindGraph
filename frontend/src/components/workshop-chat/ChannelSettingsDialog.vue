@@ -38,9 +38,21 @@ watch(
   (val) => {
     if (val && channel.value) {
       localColor.value = channel.value.color || '#c2c2c2'
+      localDesktopNotif.value = channel.value.desktop_notifications !== false
+      localEmailNotif.value = channel.value.email_notifications === true
       localChannelType.value = channel.value.channel_type
       localPostingPolicy.value = channel.value.posting_policy
       localIsDefault.value = channel.value.is_default
+    }
+  },
+)
+
+watch(
+  () => channel.value,
+  (ch) => {
+    if (props.visible && ch) {
+      localDesktopNotif.value = ch.desktop_notifications !== false
+      localEmailNotif.value = ch.email_notifications === true
     }
   },
 )

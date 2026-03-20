@@ -14,19 +14,28 @@ Proprietary License
 """
 
 import logging
+from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from config.database import get_db
 from models.domain.auth import User
-from routers.features.workshop_chat.dependencies import require_membership
+from models.domain.workshop_chat import ChatTopic
+from routers.features.workshop_chat.dependencies import (
+    access_channel,
+    require_membership_unless_announce,
+    require_post_permission,
+)
 from routers.features.workshop_chat.schemas import (
     SendMessageRequest,
     EditMessageRequest,
 )
 from services.features.workshop_chat import (
     message_service, star_service, reaction_service, file_service,
+)
+from services.features.workshop_chat.mention_resolution import (
+    MentionResolutionError,
 )
 from services.features.workshop_chat_ws_manager import chat_ws_manager
 from utils.auth import get_current_user
@@ -48,10 +57,42 @@ async def get_channel_messages(
     current_user: User = Depends(get_current_user),
 ):
     """Get general channel messages (not tied to a topic)."""
-    require_membership(db, channel_id, current_user.id)
+    channel = access_channel(db, channel_id, current_user)
+    require_membership_unless_announce(db, channel, current_user.id)
     return message_service.get_channel_messages(
         db, channel_id, anchor=anchor,
         num_before=num_before, num_after=num_after,
+    )
+
+
+@router.get("/channels/{channel_id}/messages/search")
+async def search_channel_messages(
+    channel_id: int,
+    q: str,
+    topic_id: Optional[int] = None,
+    limit: int = 40,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Search message bodies within a channel; optional topic narrow (Zulip-style)."""
+    channel = access_channel(db, channel_id, current_user)
+    require_membership_unless_announce(db, channel, current_user.id)
+    if topic_id is not None:
+        topic = (
+            db.query(ChatTopic)
+            .filter(
+                ChatTopic.id == topic_id,
+                ChatTopic.channel_id == channel_id,
+            )
+            .first()
+        )
+        if not topic:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Topic not found in this channel",
+            )
+    return message_service.search_messages(
+        db, channel_id, q, topic_id=topic_id, limit=limit,
     )
 
 
@@ -63,11 +104,23 @@ async def send_channel_message(
     current_user: User = Depends(get_current_user),
 ):
     """Send a general channel message."""
-    require_membership(db, channel_id, current_user.id)
-    result = message_service.send_message(
-        db, channel_id, current_user.id, body.content,
-        message_type=body.message_type, parent_id=body.parent_id,
-    )
+    channel = access_channel(db, channel_id, current_user)
+    require_membership_unless_announce(db, channel, current_user.id)
+    require_post_permission(channel, current_user)
+    try:
+        result = message_service.send_message(
+            db, channel_id, current_user.id, body.content,
+            message_type=body.message_type, parent_id=body.parent_id,
+        )
+    except MentionResolutionError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={
+                "code": "invalid_mentions",
+                "unknown": exc.unknown_names,
+                "ambiguous": exc.ambiguous_names,
+            },
+        ) from exc
     await chat_ws_manager.broadcast_to_channel(channel_id, {
         "type": "channel_message", "channel_id": channel_id, "message": result,
     }, exclude_user=current_user.id)
@@ -87,7 +140,8 @@ async def get_topic_messages(
     current_user: User = Depends(get_current_user),
 ):
     """Get messages for a specific topic."""
-    require_membership(db, channel_id, current_user.id)
+    channel = access_channel(db, channel_id, current_user)
+    require_membership_unless_announce(db, channel, current_user.id)
     return message_service.get_topic_messages(
         db, topic_id, channel_id,
         anchor=anchor, num_before=num_before, num_after=num_after,
@@ -106,12 +160,24 @@ async def send_topic_message(
     current_user: User = Depends(get_current_user),
 ):
     """Send a message to a topic."""
-    require_membership(db, channel_id, current_user.id)
-    result = message_service.send_message(
-        db, channel_id, current_user.id, body.content,
-        topic_id=topic_id,
-        message_type=body.message_type, parent_id=body.parent_id,
-    )
+    channel = access_channel(db, channel_id, current_user)
+    require_membership_unless_announce(db, channel, current_user.id)
+    require_post_permission(channel, current_user)
+    try:
+        result = message_service.send_message(
+            db, channel_id, current_user.id, body.content,
+            topic_id=topic_id,
+            message_type=body.message_type, parent_id=body.parent_id,
+        )
+    except MentionResolutionError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={
+                "code": "invalid_mentions",
+                "unknown": exc.unknown_names,
+                "ambiguous": exc.ambiguous_names,
+            },
+        ) from exc
     await chat_ws_manager.broadcast_to_channel(channel_id, {
         "type": "topic_message", "channel_id": channel_id,
         "topic_id": topic_id, "message": result,
@@ -129,9 +195,19 @@ async def edit_message(
     current_user: User = Depends(get_current_user),
 ):
     """Edit a message (sender only)."""
-    result = message_service.edit_message(
-        db, message_id, current_user.id, body.content,
-    )
+    try:
+        result = message_service.edit_message(
+            db, message_id, current_user.id, body.content,
+        )
+    except MentionResolutionError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={
+                "code": "invalid_mentions",
+                "unknown": exc.unknown_names,
+                "ambiguous": exc.ambiguous_names,
+            },
+        ) from exc
     if not result:
         raise HTTPException(status_code=404, detail="Message not found or not yours")
     return result

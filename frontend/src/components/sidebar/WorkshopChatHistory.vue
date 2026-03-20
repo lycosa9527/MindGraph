@@ -10,14 +10,16 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
+import { ElMessage } from 'element-plus'
 import {
   ChevronRight, ChevronDown, Plus, Search,
-  Star, AtSign, Inbox,
+  Star, AtSign, Inbox, MoreVertical,
 } from 'lucide-vue-next'
 
 import ChannelSidebarItem from '@/components/sidebar/ChannelSidebarItem.vue'
 import { useLanguage } from '@/composables/useLanguage'
 import { useWorkshopChatStore, type ChatChannel, type ChatTopic } from '@/stores/workshopChat'
+import { workshopChatHrefFromState } from '@/utils/workshopChatRoute'
 
 defineProps<{
   isBlurred?: boolean
@@ -28,6 +30,8 @@ const router = useRouter()
 const store = useWorkshopChatStore()
 
 const sidebarFilter = ref('')
+/** Filter lesson-study rows under groups by deadline (client-side). */
+const lessonDueFilter = ref<'all' | 'overdue' | 'due7d' | 'with_deadline'>('all')
 const expandedChannelId = ref<number | null>(null)
 const collapsedGroupIds = ref<Set<number>>(new Set())
 const channelsSectionCollapsed = ref(false)
@@ -85,29 +89,25 @@ function toggleChannelExpand(channelId: number): void {
     expandedChannelId.value = null
   } else {
     expandedChannelId.value = channelId
-    store.fetchTopics(channelId)
+    store.fetchTopics(channelId, { merge: true })
   }
 }
 
 function navigateToChannel(channelId: number): void {
   const switchingChannel = store.currentChannelId !== channelId
-  store.currentChannelId = channelId
-  store.currentTopicId = null
-  store.channelMessages = []
-  store.topicMessages = []
+  store.selectChannel(channelId)
   store.activeTab = 'channels'
   store.showChannelBrowser = false
   if (switchingChannel || expandedChannelId.value !== channelId) {
     expandedChannelId.value = channelId
-    store.fetchTopics(channelId)
+    store.fetchTopics(channelId, { merge: true })
   }
   router.push('/workshop-chat')
 }
 
 function navigateToTopic(channelId: number, topicId: number): void {
   if (store.currentChannelId !== channelId) {
-    store.currentChannelId = channelId
-    store.channelMessages = []
+    store.selectChannel(channelId)
   }
   store.selectTopic(topicId)
   store.activeTab = 'channels'
@@ -116,11 +116,12 @@ function navigateToTopic(channelId: number, topicId: number): void {
 }
 
 function navigateToAllTopics(channelId: number): void {
+  store.leaveWorkshopHomeView()
   if (store.currentChannelId !== channelId) {
-    store.currentChannelId = channelId
-    store.channelMessages = []
+    store.selectChannel(channelId)
+  } else {
+    store.selectTopic(null)
   }
-  store.currentTopicId = null
   store.activeTab = 'channels'
   store.showChannelBrowser = false
   router.push('/workshop-chat')
@@ -133,10 +134,36 @@ function navigateToDM(partnerId: number): void {
   router.push('/workshop-chat')
 }
 
+async function markDmReadSidebar(partnerId: number): Promise<void> {
+  await store.markDMPartnerRead(partnerId)
+  ElMessage.success(t('workshop.markAsRead'))
+}
+
+function copyDmNarrowLink(partnerId: number): void {
+  const href = workshopChatHrefFromState({
+    currentChannelId: null,
+    currentTopicId: null,
+    currentDMPartnerId: partnerId,
+    showChannelBrowser: false,
+    workshopHomeViewActive: false,
+    mainChannelFeedActive: false,
+  })
+  const url = `${window.location.origin}${href}`
+  void navigator.clipboard.writeText(url).then(() => {
+    ElMessage.success(t('workshop.linkCopied'))
+  })
+}
+
 function browseChannels(): void {
+  store.leaveWorkshopHomeView()
   store.showChannelBrowser = true
   store.selectChannel(null)
   store.selectDMPartner(null)
+  router.push('/workshop-chat')
+}
+
+function goToInbox(): void {
+  store.openWorkshopInboxHome()
   router.push('/workshop-chat')
 }
 
@@ -160,8 +187,36 @@ function handleMoveTopic(topicId: number, channelId: number): void {
   router.push('/workshop-chat')
 }
 
+function lessonDueMatches(ch: ChatChannel): boolean {
+  const f = lessonDueFilter.value
+  if (f === 'all') {
+    return true
+  }
+  if (f === 'with_deadline') {
+    return !!ch.deadline
+  }
+  if (!ch.deadline) {
+    return false
+  }
+  const d = new Date(ch.deadline).getTime()
+  if (Number.isNaN(d)) {
+    return false
+  }
+  const now = Date.now()
+  const week = 7 * 24 * 60 * 60 * 1000
+  if (f === 'overdue') {
+    return d < now && !ch.is_resolved
+  }
+  if (f === 'due7d') {
+    return d >= now && d <= now + week
+  }
+  return true
+}
+
 function childChannels(group: ChatChannel): ChatChannel[] {
-  return (group.children ?? []).filter(c => matchesFilter(c.name))
+  return (group.children ?? []).filter(
+    c => matchesFilter(c.name) && lessonDueMatches(c),
+  )
 }
 
 onMounted(async () => {
@@ -173,7 +228,7 @@ onMounted(async () => {
 
   for (const ch of [...announceList, ...allChildren]) {
     if (ch.is_joined) {
-      await store.fetchTopics(ch.id)
+      await store.fetchTopics(ch.id, { merge: true })
     }
   }
 })
@@ -195,38 +250,54 @@ onMounted(async () => {
           :placeholder="t('workshop.filterSidebar')"
         >
       </div>
-    </div>
-
-    <!-- Views section -->
-    <div class="sidebar-section">
-      <button
-        class="section-header"
-        @click="viewsSectionCollapsed = !viewsSectionCollapsed"
-      >
-        <component
-          :is="viewsSectionCollapsed ? ChevronRight : ChevronDown"
-          :size="12"
-          class="section-chevron"
-        />
-        <span class="section-label">{{ t('workshop.views') }}</span>
-      </button>
-      <ul v-if="!viewsSectionCollapsed" class="view-list">
-        <li class="view-row">
-          <Inbox :size="16" class="view-icon" />
-          <span class="view-label">{{ t('workshop.inbox') }}</span>
-        </li>
-        <li class="view-row">
-          <Star :size="16" class="view-icon" />
-          <span class="view-label">{{ t('workshop.starred') }}</span>
-        </li>
-        <li class="view-row">
-          <AtSign :size="16" class="view-icon" />
-          <span class="view-label">{{ t('workshop.mentions') }}</span>
-        </li>
-      </ul>
+      <div v-if="groupChannels.length > 0" class="sidebar-lesson-due">
+        <label class="sidebar-lesson-due__label">{{ t('workshop.lessonDueFilter') }}</label>
+        <select v-model="lessonDueFilter" class="sidebar-lesson-due__select">
+          <option value="all">{{ t('workshop.lessonDueAll') }}</option>
+          <option value="with_deadline">{{ t('workshop.lessonDueHasDeadline') }}</option>
+          <option value="overdue">{{ t('workshop.lessonDueOverdue') }}</option>
+          <option value="due7d">{{ t('workshop.lessonDueNext7d') }}</option>
+        </select>
+      </div>
     </div>
 
     <div class="sidebar-scroll-area">
+      <!-- Views section (inbox, starred, mentions) -->
+      <div class="sidebar-section">
+        <button
+          class="section-header"
+          @click="viewsSectionCollapsed = !viewsSectionCollapsed"
+        >
+          <component
+            :is="viewsSectionCollapsed ? ChevronRight : ChevronDown"
+            :size="12"
+            class="section-chevron"
+          />
+          <span class="section-label">{{ t('workshop.views') }}</span>
+        </button>
+        <ul v-if="!viewsSectionCollapsed" class="view-list">
+          <li>
+            <button
+              type="button"
+              class="view-row view-row--btn"
+              :class="{ 'view-row--active': store.workshopHomeViewActive }"
+              @click="goToInbox"
+            >
+              <Inbox :size="16" class="view-icon" />
+              <span class="view-label">{{ t('workshop.inbox') }}</span>
+            </button>
+          </li>
+          <li class="view-row view-row--muted">
+            <Star :size="16" class="view-icon" />
+            <span class="view-label">{{ t('workshop.starred') }}</span>
+          </li>
+          <li class="view-row view-row--muted">
+            <AtSign :size="16" class="view-icon" />
+            <span class="view-label">{{ t('workshop.mentions') }}</span>
+          </li>
+        </ul>
+      </div>
+
       <!-- Channels section -->
       <div class="sidebar-section">
         <div class="section-header-row">
@@ -352,16 +423,40 @@ onMounted(async () => {
             :key="conv.partner_id"
             class="dm-row"
             :class="{ 'dm-row--active': conv.partner_id === store.currentDMPartnerId }"
-            @click="navigateToDM(conv.partner_id)"
           >
-            <span
-              class="dm-presence"
-              :class="store.onlineUserIds.has(conv.partner_id) ? 'dm-presence--online' : 'dm-presence--offline'"
-            />
-            <span class="dm-name">{{ conv.partner_name }}</span>
-            <span v-if="conv.unread_count > 0" class="unread-badge">
-              {{ conv.unread_count }}
-            </span>
+            <div
+              class="dm-row__main"
+              @click="navigateToDM(conv.partner_id)"
+            >
+              <span
+                class="dm-presence"
+                :class="store.onlineUserIds.has(conv.partner_id) ? 'dm-presence--online' : 'dm-presence--offline'"
+              />
+              <span class="dm-name">{{ conv.partner_name }}</span>
+              <span v-if="conv.unread_count > 0" class="unread-badge">
+                {{ conv.unread_count }}
+              </span>
+            </div>
+            <el-dropdown trigger="click" @click.stop>
+              <button
+                type="button"
+                class="dm-row__menu"
+                :title="t('workshop.more')"
+                @click.stop
+              >
+                <MoreVertical :size="14" />
+              </button>
+              <template #dropdown>
+                <el-dropdown-menu>
+                  <el-dropdown-item @click="markDmReadSidebar(conv.partner_id)">
+                    {{ t('workshop.markAsRead') }}
+                  </el-dropdown-item>
+                  <el-dropdown-item @click="copyDmNarrowLink(conv.partner_id)">
+                    {{ t('workshop.copyLink') }}
+                  </el-dropdown-item>
+                </el-dropdown-menu>
+              </template>
+            </el-dropdown>
           </li>
           <li v-if="filteredDMs.length === 0" class="dm-empty">
             {{ t('workshop.noConversationsYet') }}
@@ -376,7 +471,8 @@ onMounted(async () => {
 .ws-sidebar-panel {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  flex: 1;
+  min-height: 0;
   font-size: 13px;
   user-select: none;
 }
@@ -417,6 +513,31 @@ onMounted(async () => {
 }
 
 .search-input::placeholder { color: hsl(0deg 0% 55%); }
+
+.sidebar-lesson-due {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sidebar-lesson-due__label {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: hsl(0deg 0% 45%);
+}
+
+.sidebar-lesson-due__select {
+  width: 100%;
+  font-size: 12px;
+  padding: 5px 6px;
+  border-radius: 5px;
+  border: 1px solid hsl(0deg 0% 84%);
+  background: hsl(0deg 0% 100%);
+  color: hsl(0deg 0% 15%);
+}
 
 /* Section headers */
 .sidebar-section { margin-bottom: 2px; }
@@ -484,7 +605,30 @@ onMounted(async () => {
   font-size: 12px;
 }
 
-.view-row:hover { background: hsl(0deg 0% 0% / 5%); }
+.view-row--btn {
+  width: 100%;
+  margin: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.view-row--active {
+  background: hsl(228deg 56% 58% / 12%);
+  color: hsl(228deg 40% 38%);
+}
+
+.view-row--active .view-icon { opacity: 0.75; }
+
+.view-row--muted {
+  cursor: default;
+  opacity: 0.55;
+}
+
+.view-row--btn:hover:not(.view-row--active) { background: hsl(0deg 0% 0% / 5%); }
+.view-row:hover:not(.view-row--muted):not(.view-row--active) { background: hsl(0deg 0% 0% / 5%); }
 .view-icon { opacity: 0.5; flex-shrink: 0; }
 
 .view-label {
@@ -495,9 +639,10 @@ onMounted(async () => {
   white-space: nowrap;
 }
 
-/* Scrollable area */
+/* Scrollable area: views, channels (lesson studies), DMs */
 .sidebar-scroll-area {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
   padding-bottom: 8px;
@@ -594,10 +739,9 @@ onMounted(async () => {
 .dm-row {
   display: flex;
   align-items: center;
-  gap: 7px;
-  padding: 3px 8px;
+  gap: 2px;
+  padding: 3px 4px 3px 8px;
   border-radius: 4px;
-  cursor: pointer;
   color: hsl(0deg 0% 20%);
   transition: background 120ms ease, box-shadow 120ms ease;
   line-height: 22px;
@@ -612,6 +756,37 @@ onMounted(async () => {
 .dm-row--active {
   background: hsl(228deg 56% 58% / 10%);
   box-shadow: inset 0 0 0 1px hsl(228deg 56% 58% / 18%);
+}
+
+.dm-row__main {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex: 1;
+  min-width: 0;
+  cursor: pointer;
+}
+
+.dm-row__menu {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: hsl(0deg 0% 45%);
+  cursor: pointer;
+  flex-shrink: 0;
+  opacity: 0.55;
+  transition: opacity 120ms ease, background 120ms ease;
+}
+
+.dm-row__menu:hover {
+  opacity: 1;
+  background: hsl(0deg 0% 0% / 6%);
 }
 
 .dm-presence {

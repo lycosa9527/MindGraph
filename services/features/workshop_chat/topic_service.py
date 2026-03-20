@@ -15,12 +15,14 @@ Proprietary License
 
 import logging
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
+from sqlalchemy import and_, func
 from sqlalchemy.orm import Session
+from sqlalchemy.sql.functions import count as sql_count
 
 from models.domain.workshop_chat import (
-    ChatTopic, ChatMessage, UserTopicPreference,
+    ChannelMember, ChatMessage, ChatTopic, UserTopicPreference,
 )
 
 logger = logging.getLogger(__name__)
@@ -37,45 +39,171 @@ class TopicService:
         channel_id: int,
         user_id: Optional[int] = None,
     ) -> List[Dict[str, Any]]:
-        """List topics in a channel with message counts."""
+        """List topics in a channel with message counts.
+
+        Topics without a ``UserTopicPreference`` row use the channel read
+        waterline (``ChannelMember.last_read_message_id``): only messages with
+        id above that cursor count as unread, matching channel-level catch-up.
+        """
         topics = (
             db.query(ChatTopic)
             .filter(ChatTopic.channel_id == channel_id)
             .order_by(ChatTopic.updated_at.desc())
             .all()
         )
+        if not topics:
+            return []
 
-        return [TopicService._format_topic(db, t, user_id) for t in topics]
-
-    @staticmethod
-    def _format_topic(
-        db: Session,
-        topic: ChatTopic,
-        user_id: Optional[int] = None,
-    ) -> Dict[str, Any]:
-        """Format a topic with message count and user preference."""
-        msg_count = (
-            db.query(ChatMessage)
-            .filter(
-                ChatMessage.topic_id == topic.id,
-                ChatMessage.is_deleted.is_(False),
-            )
-            .count()
+        topic_ids = [topic.id for topic in topics]
+        (
+            _,
+            msg_counts,
+            prefs,
+            unread_pref_map,
+            unread_no_pref_map,
+        ) = TopicService._topic_list_batch_data(
+            db, channel_id, user_id, topic_ids,
         )
 
-        visibility_policy = "inherit"
+        return [
+            TopicService._topic_row_dict(
+                topic,
+                msg_count=msg_counts.get(topic.id, 0),
+                unread_count=TopicService._topic_unread_from_maps(
+                    topic.id,
+                    msg_count=msg_counts.get(topic.id, 0),
+                    has_pref=topic.id in prefs,
+                    unread_pref_map=unread_pref_map,
+                    unread_no_pref_map=unread_no_pref_map,
+                ),
+                visibility_policy=(
+                    prefs[topic.id].visibility_policy
+                    if topic.id in prefs
+                    else "inherit"
+                ),
+            )
+            for topic in topics
+        ]
+
+    @staticmethod
+    def _topic_list_batch_data(
+        db: Session,
+        channel_id: int,
+        user_id: Optional[int],
+        topic_ids: List[int],
+    ) -> Tuple[
+        int,
+        Dict[int, int],
+        Dict[int, UserTopicPreference],
+        Dict[int, int],
+        Dict[int, int],
+    ]:
+        waterline = 0
         if user_id:
-            pref = (
-                db.query(UserTopicPreference)
+            member = (
+                db.query(ChannelMember)
                 .filter(
-                    UserTopicPreference.user_id == user_id,
-                    UserTopicPreference.topic_id == topic.id,
+                    ChannelMember.channel_id == channel_id,
+                    ChannelMember.user_id == user_id,
                 )
                 .first()
             )
-            if pref:
-                visibility_policy = pref.visibility_policy
+            if member and member.last_read_message_id:
+                waterline = int(member.last_read_message_id)
 
+        msg_count_rows = (
+            db.query(ChatMessage.topic_id, sql_count(ChatMessage.id))
+            .filter(
+                ChatMessage.topic_id.in_(topic_ids),
+                ChatMessage.is_deleted.is_(False),
+            )
+            .group_by(ChatMessage.topic_id)
+            .all()
+        )
+        msg_counts = dict(msg_count_rows)
+
+        prefs: Dict[int, UserTopicPreference] = {}
+        if user_id:
+            for row in (
+                db.query(UserTopicPreference)
+                .filter(
+                    UserTopicPreference.user_id == user_id,
+                    UserTopicPreference.topic_id.in_(topic_ids),
+                )
+                .all()
+            ):
+                prefs[row.topic_id] = row
+
+        unread_pref_map: Dict[int, int] = {}
+        if user_id and prefs:
+            unread_pref_rows = (
+                db.query(
+                    ChatMessage.topic_id,
+                    sql_count(ChatMessage.id),
+                )
+                .join(
+                    UserTopicPreference,
+                    and_(
+                        UserTopicPreference.topic_id == ChatMessage.topic_id,
+                        UserTopicPreference.user_id == user_id,
+                    ),
+                )
+                .filter(
+                    ChatMessage.topic_id.in_(list(prefs.keys())),
+                    ChatMessage.is_deleted.is_(False),
+                    ChatMessage.created_at > UserTopicPreference.last_updated,
+                )
+                .group_by(ChatMessage.topic_id)
+                .all()
+            )
+            unread_pref_map = dict(unread_pref_rows)
+
+        topic_ids_no_pref = [
+            tid for tid in topic_ids if tid not in prefs
+        ]
+        unread_no_pref_map: Dict[int, int] = {}
+        if topic_ids_no_pref:
+            no_pref_rows = (
+                db.query(ChatMessage.topic_id, sql_count(ChatMessage.id))
+                .filter(
+                    ChatMessage.topic_id.in_(topic_ids_no_pref),
+                    ChatMessage.is_deleted.is_(False),
+                    ChatMessage.id > waterline,
+                )
+                .group_by(ChatMessage.topic_id)
+                .all()
+            )
+            unread_no_pref_map = dict(no_pref_rows)
+
+        return (
+            waterline,
+            msg_counts,
+            prefs,
+            unread_pref_map,
+            unread_no_pref_map,
+        )
+
+    @staticmethod
+    def _topic_unread_from_maps(
+        topic_id: int,
+        msg_count: int,
+        has_pref: bool,
+        unread_pref_map: Dict[int, int],
+        unread_no_pref_map: Dict[int, int],
+    ) -> int:
+        if msg_count == 0:
+            return 0
+        if has_pref:
+            return int(unread_pref_map.get(topic_id, 0))
+        return int(unread_no_pref_map.get(topic_id, 0))
+
+    @staticmethod
+    def _topic_row_dict(
+        topic: ChatTopic,
+        msg_count: int,
+        unread_count: int,
+        visibility_policy: str,
+    ) -> Dict[str, Any]:
         return {
             "id": topic.id,
             "channel_id": topic.channel_id,
@@ -85,6 +213,7 @@ class TopicService:
             "creator_name": topic.creator.name if topic.creator else None,
             "visibility_policy": visibility_policy,
             "message_count": msg_count,
+            "unread_count": unread_count,
             "created_at": topic.created_at.isoformat(),
             "updated_at": topic.updated_at.isoformat(),
         }
@@ -191,7 +320,16 @@ class TopicService:
     def mark_topic_read(
         db: Session, topic_id: int, user_id: int,
     ) -> Dict[str, Any]:
-        """Update the user topic preference to mark as read."""
+        """Update topic read state and advance channel last-read waterline.
+
+        Channel-level ``unread_count`` uses ``ChannelMember.last_read_message_id``.
+        Advancing it to the latest message id in this topic clears those messages
+        from the channel aggregate while per-topic unreads use ``last_updated``.
+        """
+        topic = db.query(ChatTopic).filter(ChatTopic.id == topic_id).first()
+        if not topic:
+            return {"topic_id": topic_id, "marked_read": False}
+
         pref = (
             db.query(UserTopicPreference)
             .filter(
@@ -208,6 +346,29 @@ class TopicService:
             )
             db.add(pref)
         pref.last_updated = datetime.utcnow()
+
+        max_msg_id = (
+            db.query(func.max(ChatMessage.id))
+            .filter(
+                ChatMessage.topic_id == topic_id,
+                ChatMessage.is_deleted.is_(False),
+            )
+            .scalar()
+        )
+        if max_msg_id:
+            member = (
+                db.query(ChannelMember)
+                .filter(
+                    ChannelMember.channel_id == topic.channel_id,
+                    ChannelMember.user_id == user_id,
+                )
+                .first()
+            )
+            if member:
+                current = member.last_read_message_id or 0
+                if max_msg_id > current:
+                    member.last_read_message_id = max_msg_id
+
         db.commit()
         return {"topic_id": topic_id, "marked_read": True}
 

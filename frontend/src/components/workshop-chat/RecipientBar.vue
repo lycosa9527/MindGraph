@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ChevronRight, Globe, Hash, Lock, User } from 'lucide-vue-next'
 
-defineProps<{
+const props = defineProps<{
   type: 'channel' | 'dm'
   channelName?: string
   channelType?: 'announce' | 'public' | 'private'
@@ -9,8 +9,20 @@ defineProps<{
   topicName?: string
   dmPartnerName?: string
   date?: string
+  /** When true, clicking the channel/stream row returns to the topic list. */
+  enableChannelNavigate?: boolean
   isSticky?: boolean
 }>()
+
+const emit = defineEmits<{
+  channelNavigate: []
+}>()
+
+function onStreamClick(): void {
+  if (props.enableChannelNavigate) {
+    emit('channelNavigate')
+  }
+}
 
 function channelTypeIcon(ct?: string) {
   if (ct === 'private') return Lock
@@ -33,42 +45,56 @@ function channelTypeIcon(ct?: string) {
         ? { background: `linear-gradient(90deg, ${channelColor}22 0%, hsl(0deg 0% 100%) 50%)` }
         : undefined"
     >
-      <!-- Channel header -->
-      <template v-if="type === 'channel'">
-        <span class="recipient-bar__stream">
-          <component
-            :is="channelTypeIcon(channelType)"
-            :size="13"
-            class="recipient-bar__stream-icon"
-            :style="{ color: channelColor || undefined }"
-          />
+      <div class="recipient-bar__main">
+        <!-- Channel header -->
+        <template v-if="type === 'channel'">
           <span
-            class="recipient-bar__stream-name"
-            :style="{ color: channelColor || undefined }"
+            class="recipient-bar__stream"
+            :class="{ 'recipient-bar__stream--nav': enableChannelNavigate }"
+            role="button"
+            :tabindex="enableChannelNavigate ? 0 : undefined"
+            @click="onStreamClick"
+            @keydown.enter.prevent="onStreamClick"
+            @keydown.space.prevent="onStreamClick"
           >
-            {{ channelName }}
+            <component
+              :is="channelTypeIcon(channelType)"
+              :size="13"
+              class="recipient-bar__stream-icon"
+              :style="{ color: channelColor || undefined }"
+            />
+            <span
+              class="recipient-bar__stream-name"
+              :style="{ color: channelColor || undefined }"
+            >
+              {{ channelName }}
+            </span>
           </span>
-        </span>
-        <span v-if="topicName" class="recipient-bar__chevron">
-          <ChevronRight :size="12" />
-        </span>
-        <span v-if="topicName" class="recipient-bar__topic">
-          {{ topicName }}
-        </span>
-      </template>
+          <span v-if="topicName" class="recipient-bar__chevron">
+            <ChevronRight :size="12" />
+          </span>
+          <span v-if="topicName" class="recipient-bar__topic">
+            {{ topicName }}
+          </span>
+        </template>
 
-      <!-- DM header -->
-      <template v-else>
-        <span class="recipient-bar__dm">
-          <User :size="13" class="recipient-bar__dm-icon" />
-          <span class="recipient-bar__dm-name">{{ dmPartnerName }}</span>
-        </span>
-      </template>
+        <!-- DM header -->
+        <template v-else>
+          <span class="recipient-bar__dm">
+            <User :size="13" class="recipient-bar__dm-icon" />
+            <span class="recipient-bar__dm-name">{{ dmPartnerName }}</span>
+          </span>
+        </template>
+      </div>
 
       <!-- Date on the right -->
       <span v-if="date" class="recipient-bar__date">
         {{ date }}
       </span>
+
+      <div v-if="$slots.actions" class="recipient-bar__actions">
+        <slot name="actions" />
+      </div>
     </div>
   </div>
 </template>
@@ -88,7 +114,7 @@ function channelTypeIcon(ct?: string) {
 .recipient-bar__inner {
   display: flex;
   align-items: center;
-  gap: 3px;
+  gap: 6px;
   height: 28px;
   padding: 0 10px;
   border: 1px solid hsl(0deg 0% 0% / 10%);
@@ -97,6 +123,15 @@ function channelTypeIcon(ct?: string) {
   background: hsl(0deg 0% 100%);
   font-size: 13px;
   line-height: 28px;
+}
+
+.recipient-bar__main {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
 }
 
 .recipient-bar--dm .recipient-bar__inner {
@@ -121,6 +156,15 @@ function channelTypeIcon(ct?: string) {
 
 .recipient-bar__stream:hover .recipient-bar__stream-name {
   text-decoration: underline;
+}
+
+.recipient-bar__stream--nav {
+  cursor: pointer;
+}
+
+.recipient-bar__stream--nav:focus-visible {
+  outline: 2px solid hsl(228deg 56% 58%);
+  outline-offset: 1px;
 }
 
 .recipient-bar__stream-icon { flex-shrink: 0; }
@@ -174,12 +218,19 @@ function channelTypeIcon(ct?: string) {
 
 /* Date */
 .recipient-bar__date {
-  margin-left: auto;
+  margin-left: 0;
   font-size: 11px;
   font-weight: 700;
   color: hsl(0deg 0% 15% / 45%);
   text-transform: uppercase;
   letter-spacing: 0.04em;
   white-space: nowrap;
+}
+
+.recipient-bar__actions {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  margin-left: 4px;
 }
 </style>

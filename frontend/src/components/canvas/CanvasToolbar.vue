@@ -5,8 +5,6 @@
  */
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 
-import { useVueFlow } from '@vue-flow/core'
-
 import { ElButton, ElDropdown, ElDropdownItem, ElDropdownMenu, ElTooltip } from 'element-plus'
 
 import {
@@ -14,6 +12,7 @@ import {
   Brush,
   ChevronDown,
   Image as ImageIcon,
+  Layers,
   LayoutGrid,
   Package,
   PenLine,
@@ -69,7 +68,6 @@ const emit = defineEmits<{
 
 const diagramStore = useDiagramStore()
 const uiStore = useUIStore()
-const { updateNode: updateVueFlowNode } = useVueFlow()
 
 // Helper function to get timestamp for logging
 function getTimestamp(): string {
@@ -82,7 +80,8 @@ const isMultiFlowMap = computed(() => diagramStore.type === 'multi_flow_map')
 // Computed property to check if current diagram is bridge map
 const isBridgeMap = computed(() => diagramStore.type === 'bridge_map')
 
-// Concept map uses real-time relationship generation only (no multi-stage AI Generate)
+// Concept map uses real-time relationship generation only (no multi-stage AI Generate).
+// Default editing experience is "standard" mode; alternate concept-map modes are not wired yet.
 const isConceptMap = computed(() => diagramStore.type === 'concept_map')
 
 // Dropdown visibility (prefixed with _ to indicate intentionally unused - reserved for future)
@@ -225,9 +224,32 @@ const stylePresets: Array<
   },
 ]
 
+type MoreAppHandlerKey = 'concept_map_modes'
+
+type MoreAppItem = {
+  name: string
+  icon: typeof LayoutGrid
+  desc: string
+  tag?: string
+  iconBg: string
+  iconColor: string
+  handlerKey?: MoreAppHandlerKey
+}
+
 // More apps items (hide 瀑布流 for concept_map - uses dedicated 生成概念 button)
-const moreApps = computed(() => {
-  const apps = [
+const moreApps = computed((): MoreAppItem[] => {
+  const conceptMapModesRow: MoreAppItem = {
+    name: isZh.value ? '概念图模式' : 'Concept map modes',
+    icon: Layers,
+    desc: isZh.value
+      ? '当前为标准模式，更多模式即将推出'
+      : 'Standard mode now; more modes coming soon',
+    tag: isZh.value ? '即将推出' : 'Soon',
+    iconBg: 'bg-emerald-100',
+    iconColor: 'text-emerald-600',
+    handlerKey: 'concept_map_modes',
+  }
+  const apps: MoreAppItem[] = [
     {
       name: '瀑布流',
       icon: LayoutGrid,
@@ -244,7 +266,11 @@ const moreApps = computed(() => {
       iconColor: 'text-purple-600',
     },
   ]
-  return isConceptMap.value ? apps.filter((a) => a.name !== '瀑布流') : apps
+  const withoutWaterfall = isConceptMap.value ? apps.filter((a) => a.name !== '瀑布流') : apps
+  if (isConceptMap.value) {
+    return [conceptMapModesRow, ...withoutWaterfall]
+  }
+  return withoutWaterfall
 })
 
 function handleApplyStylePreset(preset: StylePresetColors) {
@@ -871,15 +897,6 @@ function repositionBridgeMapPairs() {
       }
     )
 
-    updateVueFlowNode(pair.left.id, (node) => ({
-      ...node,
-      position: { x: currentX, y: leftNodeY },
-    }))
-    updateVueFlowNode(pair.right.id, (node) => ({
-      ...node,
-      position: { x: currentX, y: rightNodeY },
-    }))
-
     diagramStore.updateNodePosition(pair.left.id, { x: currentX, y: leftNodeY }, false)
     diagramStore.updateNodePosition(pair.right.id, { x: currentX, y: rightNodeY }, false)
 
@@ -1256,6 +1273,14 @@ function handleConceptGeneration() {
     }
   }
   eventBus.emit('panel:open_requested', { panel: 'nodePalette', source: 'toolbar', options })
+}
+
+function handleMoreAppItem(app: MoreAppItem) {
+  if (app.handlerKey === 'concept_map_modes') {
+    notify.info(isZh.value ? '概念图模式功能开发中' : 'Concept map modes are in development')
+    return
+  }
+  void handleMoreApp(app.name)
 }
 
 async function handleMoreApp(appName: string) {
@@ -1858,7 +1883,7 @@ onUnmounted(() => {
               <ElDropdownItem
                 v-for="app in moreApps"
                 :key="app.name"
-                @click="handleMoreApp(app.name)"
+                @click="handleMoreAppItem(app)"
               >
                 <div class="flex items-start py-1">
                   <div

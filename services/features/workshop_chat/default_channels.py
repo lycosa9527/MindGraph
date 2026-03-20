@@ -156,6 +156,60 @@ def _ensure_announce_topics_and_messages(
         existing_titles.add(title)
 
 
+def _backfill_empty_announce_topic_messages(
+    db: Session,
+    channel: ChatChannel,
+    created_by: int,
+    base_time: datetime,
+) -> bool:
+    """Insert seed messages for announce topics that exist but have none.
+
+    When topics were created without seed messages (or before seed data
+    existed), :func:`_ensure_announce_topics_and_messages` skips them
+    because the title already exists. This fills those gaps idempotently.
+    """
+    topic_specs = ANNOUNCE_CHANNEL.get("topics", [])
+    title_to_data = {t["title"]: t for t in topic_specs}
+    if not title_to_data:
+        return False
+    ordered_titles = [t["title"] for t in topic_specs]
+    topics = (
+        db.query(ChatTopic)
+        .filter(ChatTopic.channel_id == channel.id)
+        .all()
+    )
+    added = False
+    for topic in topics:
+        data = title_to_data.get(topic.title)
+        if not data:
+            continue
+        msg_count = (
+            db.query(ChatMessage)
+            .filter(
+                ChatMessage.channel_id == channel.id,
+                ChatMessage.topic_id == topic.id,
+                ChatMessage.is_deleted.is_(False),
+            )
+            .count()
+        )
+        if msg_count > 0:
+            continue
+        topic_messages = data.get("messages", [])
+        if not topic_messages:
+            continue
+        try:
+            topic_idx = ordered_titles.index(topic.title)
+        except ValueError:
+            topic_idx = 0
+        topic_base = base_time + timedelta(minutes=topic_idx * 20)
+        _seed_topic_messages(
+            db, channel.id, topic.id, created_by,
+            topic_messages, topic_base,
+        )
+        added = True
+    return added
+
+
 def seed_announce_channel(
     db: Session,
     created_by: int,
@@ -186,6 +240,14 @@ def seed_announce_channel(
             db.commit()
             logger.info(
                 "[WorkshopChat] Topped up announce channel '%s' with missing topics (user %d)",
+                existing.name, created_by,
+            )
+        if _backfill_empty_announce_topic_messages(
+            db, existing, created_by, base_time,
+        ):
+            db.commit()
+            logger.info(
+                "[WorkshopChat] Backfilled seed messages on announce channel '%s' (user %d)",
                 existing.name, created_by,
             )
         membership = (

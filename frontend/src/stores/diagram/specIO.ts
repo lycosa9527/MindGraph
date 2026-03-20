@@ -225,6 +225,12 @@ export function useSpecIOSlice(ctx: DiagramContext) {
     const isLS = d?.isLearningSheet === true || d?.is_learning_sheet === true
     if (isLS) spec.is_learning_sheet = true
     if (hiddenAnswers?.length) spec.hiddenAnswers = hiddenAnswers
+    if (ctx.type.value === 'concept_map') {
+      const fq = dataRecord.focus_question
+      if (typeof fq === 'string' && fq.trim()) {
+        spec.focus_question = fq.trim()
+      }
+    }
     return spec
   }
 

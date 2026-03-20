@@ -135,6 +135,21 @@ def require_membership(
         )
 
 
+def require_membership_unless_announce(
+    db: Session,
+    channel: ChatChannel,
+    user_id: int,
+) -> None:
+    """Require channel subscription except for global announce channels.
+
+    Announce channels are readable (and postable per policy) without a
+    ``ChannelMember`` row, matching :func:`access_channel`.
+    """
+    if channel.channel_type == "announce":
+        return
+    require_membership(db, channel.id, user_id)
+
+
 def require_channel_manager(
     current_user: User,
     channel: ChatChannel,

@@ -26,6 +26,7 @@ import {
   AIModelSelector,
   CanvasToolbar,
   CanvasTopBar,
+  ConceptMapFocusQuestionModal,
   ConceptMapLabelPicker,
   InlineRecommendationsPicker,
   ZoomControls,
@@ -85,6 +86,24 @@ const showZoomControls = computed(
       inlineRecActiveNodeId.value
     )
 )
+
+const conceptMapFocusQuestionDisplay = computed((): string | null => {
+  if (diagramStore.type !== 'concept_map' || !diagramStore.data) return null
+  const fq = diagramStore.data.focus_question
+  if (typeof fq !== 'string' || !fq.trim()) return null
+  return fq.trim()
+})
+
+const showConceptMapFocusGate = computed(
+  () =>
+    diagramStore.type === 'concept_map' &&
+    Boolean(diagramStore.data) &&
+    !conceptMapFocusQuestionDisplay.value
+)
+
+function handleConceptMapFocusConfirmed(text: string): void {
+  diagramStore.setConceptMapFocusQuestion(text)
+}
 
 const inlineRecCoordinator = useInlineRecommendationsCoordinator()
 const { startRecommendations } = useInlineRecommendations()
@@ -991,8 +1010,21 @@ onUnmounted(() => {
       v-if="!isPresentationMode"
       :auto-saved-status="autoSavedStatusText"
       :slot-full-and-new-diagram="isSlotsFullAndNewDiagram"
+      :focus-question="conceptMapFocusQuestionDisplay"
       @save-requested="handleSaveKey"
     />
+
+    <!-- Concept map standard mode: blur canvas until focus question is set -->
+    <div
+      v-if="showConceptMapFocusGate"
+      class="absolute top-12 left-0 right-0 bottom-0 z-[90] flex items-center justify-center p-4 bg-slate-900/25 dark:bg-black/40 backdrop-blur-md"
+      aria-hidden="false"
+    >
+      <ConceptMapFocusQuestionModal
+        :is-authenticated="authStore.isAuthenticated"
+        @confirm="handleConceptMapFocusConfirmed"
+      />
+    </div>
 
     <!-- Floating toolbar (only UI bar visible in presentation mode) -->
     <CanvasToolbar

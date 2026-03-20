@@ -11,9 +11,26 @@ Proprietary License
 """
 
 from datetime import datetime
-from typing import Optional
+from typing import List, Optional
 
 from pydantic import BaseModel, Field
+
+
+class OrgMemberRow(BaseModel):
+    """One organization member for roster / presence / @mention."""
+
+    id: int
+    name: str
+    avatar: Optional[str] = None
+
+
+class OrgMembersPage(BaseModel):
+    """Paginated org roster (contacts sidebar, mention search)."""
+
+    items: List[OrgMemberRow]
+    total: int
+    limit: int
+    offset: int
 
 
 class CreateChannelRequest(BaseModel):

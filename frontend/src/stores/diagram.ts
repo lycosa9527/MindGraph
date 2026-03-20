@@ -250,6 +250,13 @@ export const useDiagramStore = defineStore('diagram', () => {
     return true
   }
 
+  function setConceptMapFocusQuestion(text: string): void {
+    if (!data.value || type.value !== 'concept_map') return
+    const trimmed = text.trim()
+    if (!trimmed) return
+    data.value = { ...data.value, focus_question: trimmed }
+  }
+
   function reset(): void {
     type.value = null
     sessionId.value = null
@@ -357,5 +364,6 @@ export const useDiagramStore = defineStore('diagram', () => {
     shouldAutoUpdateTitle,
     setTopicNodeWidth,
     setNodeWidth,
+    setConceptMapFocusQuestion,
   }
 })

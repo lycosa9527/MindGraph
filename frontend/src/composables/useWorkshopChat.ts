@@ -9,12 +9,14 @@
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import { useWebSocket } from '@vueuse/core'
+import { ElMessage } from 'element-plus'
 
 import { useAuthStore } from '@/stores/auth'
 import {
   requestNotificationPermission,
   useChatNotifications,
 } from '@/composables/useChatNotifications'
+import { useLanguage } from '@/composables/useLanguage'
 import { usePresenceActivity } from '@/composables/usePresenceActivity'
 import { useWorkshopChatStore } from '@/stores/workshopChat'
 
@@ -22,12 +24,16 @@ function buildWsUrl(): string {
   const proto = window.location.protocol === 'https:' ? 'wss' : 'ws'
   const host = window.location.host
   const token = useAuthStore().token
-  return `${proto}://${host}/api/ws/chat?token=${token}`
+  if (token) {
+    return `${proto}://${host}/api/ws/chat?token=${encodeURIComponent(token)}`
+  }
+  return `${proto}://${host}/api/ws/chat`
 }
 
 export function useWorkshopChatComposable() {
   const store = useWorkshopChatStore()
   const authStore = useAuthStore()
+  const { t } = useLanguage()
   const notifications = useChatNotifications()
   const connected = ref(false)
   const wsUrl = ref('')
@@ -48,6 +54,7 @@ export function useWorkshopChatComposable() {
     },
     onConnected() {
       connected.value = true
+      sendSubscribePresence()
       const channelIds = store.joinedChannels.map(c => c.id)
       if (channelIds.length > 0) {
         send(JSON.stringify({ type: 'subscribe_channels', channel_ids: channelIds }))
@@ -71,6 +78,20 @@ export function useWorkshopChatComposable() {
 
   const isConnected = computed(() => status.value === 'OPEN')
 
+  function resolveWorkshopPresenceOrgId(): number | null {
+    if (store.adminOrgId != null) return store.adminOrgId
+    const raw = authStore.user?.schoolId
+    if (!raw) return null
+    const id = parseInt(raw, 10)
+    return Number.isNaN(id) ? null : id
+  }
+
+  function sendSubscribePresence(): void {
+    const orgId = resolveWorkshopPresenceOrgId()
+    if (orgId == null) return
+    send(JSON.stringify({ type: 'subscribe_presence', org_id: orgId }))
+  }
+
   function sendPresence(presenceStatus: 'active' | 'idle'): void {
     if (isConnected.value) {
       send(JSON.stringify({ type: 'presence', status: presenceStatus }))
@@ -86,7 +107,7 @@ export function useWorkshopChatComposable() {
   })
 
   function connect(): void {
-    if (!authStore.token) return
+    if (!authStore.isAuthenticated) return
     wsUrl.value = buildWsUrl()
     open()
   }
@@ -139,9 +160,35 @@ export function useWorkshopChatComposable() {
       case 'presence':
         store.updatePresence(data.user_id as number, data.status as string)
         break
+      case 'presence_snapshot': {
+        const ids = data.user_ids
+        if (!Array.isArray(ids)) break
+        for (const uid of ids) {
+          if (typeof uid === 'number') {
+            store.updatePresence(uid, 'active')
+          }
+        }
+        break
+      }
       case 'topic_updated':
         store.updateTopic(data.topic as never)
         break
+      case 'error': {
+        const code = data.code as string | undefined
+        if (code === 'invalid_mentions') {
+          const unknown = data.unknown as string[] | undefined
+          const ambiguous = data.ambiguous as string[] | undefined
+          const parts: string[] = []
+          if (unknown?.length) {
+            parts.push(t('workshop.mentionUnknown').replace('{0}', unknown.join(', ')))
+          }
+          if (ambiguous?.length) {
+            parts.push(t('workshop.mentionAmbiguous').replace('{0}', ambiguous.join(', ')))
+          }
+          ElMessage.warning(parts.join(' · ') || (data.message as string) || t('workshop.messageSendFailed'))
+        }
+        break
+      }
       case 'pong':
         break
       default:
@@ -196,6 +243,15 @@ export function useWorkshopChatComposable() {
       subscribeChannels(newChannels.map(c => c.id))
     }
   })
+
+  watch(
+    () => store.adminOrgId,
+    () => {
+      if (isConnected.value) {
+        sendSubscribePresence()
+      }
+    },
+  )
 
   onMounted(() => {
     requestNotificationPermission()

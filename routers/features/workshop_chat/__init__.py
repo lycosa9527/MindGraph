@@ -16,7 +16,7 @@ Shared concerns:
 - ``schemas``          Pydantic request/response models
 - ``dependencies``     Reusable access-control helpers (Zulip-style)
 
-Access control: Admin-only during development. Remove when ready for production.
+Access control: Organization admins and school managers (elevated roles).
 
 Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved
@@ -25,7 +25,7 @@ Proprietary License
 
 from fastapi import APIRouter, Depends
 
-from routers.auth.dependencies import require_admin
+from routers.auth.dependencies import require_admin_or_manager
 from routers.features.workshop_chat.channels import router as channels_router
 from routers.features.workshop_chat.topics import router as topics_router
 from routers.features.workshop_chat.messages import router as messages_router
@@ -36,7 +36,7 @@ from routers.features.workshop_chat.files import router as files_router
 router = APIRouter(
     prefix="/api/chat",
     tags=["Workshop Chat"],
-    dependencies=[Depends(require_admin)],
+    dependencies=[Depends(require_admin_or_manager)],
 )
 
 router.include_router(channels_router)
