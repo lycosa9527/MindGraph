@@ -130,19 +130,6 @@ export const useLibraryStore = defineStore('library', () => {
     }
   }
 
-  /**
-   * Clear document cache (when document is updated/deleted)
-   */
-  function clearDocumentCache(documentId: number): void {
-    try {
-      const key = getDocumentCacheKey(documentId)
-      localStorage.removeItem(key)
-      console.debug(`[LibraryStore] Cleared cache for document ${documentId}`)
-    } catch (error) {
-      console.debug('[LibraryStore] Failed to clear document cache:', error)
-    }
-  }
-
   // =========================================================================
   // API Functions
   // =========================================================================

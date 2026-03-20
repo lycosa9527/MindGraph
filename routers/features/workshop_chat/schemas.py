@@ -103,6 +103,16 @@ class UpdateChannelPermissionsRequest(BaseModel):
     is_default: Optional[bool] = None
 
 
+class ReorderTeachingGroupsRequest(BaseModel):
+    """Ordered list of top-level teaching group channel IDs (same org)."""
+    channel_ids: List[int] = Field(..., min_length=1)
+
+
+class InviteChannelMemberRequest(BaseModel):
+    """Add an org colleague to a channel (manager invite)."""
+    user_id: int = Field(..., ge=1)
+
+
 # ── Topic settings ───────────────────────────────────────────────
 
 class MoveTopicRequest(BaseModel):

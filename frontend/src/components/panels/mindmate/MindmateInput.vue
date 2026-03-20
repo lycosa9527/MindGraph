@@ -3,7 +3,7 @@ import { computed, ref } from 'vue'
 
 import { ElButton, ElIcon, ElInput, ElTooltip } from 'element-plus'
 
-import { Close, Promotion, VideoPause } from '@element-plus/icons-vue'
+import { Close, VideoPause } from '@element-plus/icons-vue'
 
 import { Paperclip, Send } from 'lucide-vue-next'
 
@@ -59,7 +59,8 @@ const fileInputRef = ref<HTMLInputElement | null>(null)
 
 // Computed for send button disabled state
 const isSendDisabled = computed(() => {
-  const hasContent = props.inputText.trim() || (props.showFileUpload && props.pendingFiles.length > 0)
+  const hasContent =
+    props.inputText.trim() || (props.showFileUpload && props.pendingFiles.length > 0)
   return !hasContent || props.isLoading || !authStore.isAuthenticated
 })
 
@@ -77,13 +78,6 @@ function getFileIcon(type: string): string {
     default:
       return '📎'
   }
-}
-
-// Format file size
-function formatFileSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
 
 // Trigger file input

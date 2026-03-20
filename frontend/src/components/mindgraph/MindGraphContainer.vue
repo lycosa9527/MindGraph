@@ -27,7 +27,7 @@ const authStore = useAuthStore()
 const notify = useNotifications()
 const username = computed(() => authStore.user?.username || '')
 
-// Join workshop state
+// Join diagram presentation mode (shared code)
 const showJoinWorkshopDialog = ref(false)
 const joinCode = ref(['', '', '', '', '', '']) // Array for 6 digits
 const isJoining = ref(false)
@@ -90,7 +90,7 @@ async function joinWorkshop() {
   if (code.length !== 7) {
     // xxx-xxx = 7 characters
     notify.warning(
-      isZh.value ? '请输入完整的工作坊代码' : 'Please enter the complete workshop code'
+      isZh.value ? '请输入完整的演示代码' : 'Please enter the complete presentation code'
     )
     return
   }
@@ -99,8 +99,8 @@ async function joinWorkshop() {
   if (!/^\d{3}-\d{3}$/.test(code)) {
     notify.warning(
       isZh.value
-        ? '工作坊代码格式不正确（应为 xxx-xxx）'
-        : 'Invalid workshop code format (should be xxx-xxx)'
+        ? '演示代码格式不正确（应为 xxx-xxx）'
+        : 'Invalid presentation code format (should be xxx-xxx)'
     )
     return
   }
@@ -115,17 +115,17 @@ async function joinWorkshop() {
       const data = await response.json()
       notify.success(
         isZh.value
-          ? `已加入工作坊：${data.workshop.title}`
-          : `Joined workshop: ${data.workshop.title}`
+          ? `已加入演示：${data.workshop.title}`
+          : `Joined presentation: ${data.workshop.title}`
       )
       // Navigate to the diagram
       window.location.href = `/canvas?diagram_id=${data.workshop.diagram_id}`
     } else {
       const error = await response.json().catch(() => ({}))
-      notify.error(error.detail || (isZh.value ? '加入工作坊失败' : 'Failed to join workshop'))
+      notify.error(error.detail || (isZh.value ? '加入演示失败' : 'Failed to join presentation'))
     }
   } catch (error) {
-    console.error('Failed to join workshop:', error)
+    console.error('Failed to join presentation mode:', error)
     notify.error(isZh.value ? '网络错误，加入失败' : 'Network error, failed to join')
   } finally {
     isJoining.value = false
@@ -178,23 +178,23 @@ onMounted(() => {
           :icon="Connection"
           @click="showJoinWorkshopDialog = true"
         >
-          {{ isZh ? '加入工作坊' : 'Join Workshop' }}
+          {{ isZh ? '加入演示' : 'Join presentation' }}
         </ElButton>
       </div>
     </header>
 
-    <!-- Join Workshop Dialog -->
+    <!-- Join presentation dialog -->
     <ElDialog
       v-model="showJoinWorkshopDialog"
-      :title="isZh ? '加入工作坊' : 'Join Workshop'"
+      :title="isZh ? '加入演示' : 'Join presentation'"
       width="400px"
     >
       <div class="join-workshop-dialog">
         <p class="mb-4 text-gray-600">
           {{
             isZh
-              ? '输入工作坊代码，加入其他人的工作坊并一起编辑图示。'
-              : "Enter a workshop code to join someone else's workshop and collaborate."
+              ? '输入演示代码，加入其他人的演示并一起编辑图示。'
+              : "Enter a presentation code to join someone else's session and collaborate."
           }}
         </p>
         <div class="code-input-container">
@@ -376,7 +376,7 @@ onMounted(() => {
   border-radius: 9999px;
 }
 
-/* Join Workshop button - Swiss Design style (matching MindMate) */
+/* Join presentation button - Swiss Design style (matching MindMate) */
 .join-workshop-btn {
   --el-button-bg-color: #e7e5e4;
   --el-button-border-color: #d6d3d1;

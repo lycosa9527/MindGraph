@@ -4,7 +4,7 @@
  */
 import { computed } from 'vue'
 
-import { ElCard, ElEmpty, ElSkeleton } from 'element-plus'
+import { ElEmpty, ElSkeleton } from 'element-plus'
 
 import type { KnowledgeDocument } from '@/stores/knowledgeSpace'
 

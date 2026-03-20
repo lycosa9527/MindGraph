@@ -151,7 +151,9 @@ const menuItems = computed<MenuItem[]>(() => {
           const similarities = (spec.similarities as string[]) || []
           const leftDifferences = (spec.leftDifferences as string[]) || []
           const rightDifferences = (spec.rightDifferences as string[]) || []
-          const newSimText = isZh.value ? `相似点 ${similarities.length + 1}` : `Similarity ${similarities.length + 1}`
+          const newSimText = isZh.value
+            ? `相似点 ${similarities.length + 1}`
+            : `Similarity ${similarities.length + 1}`
           const pairIndex = Math.max(leftDifferences.length, rightDifferences.length) + 1
           const newLeftText = isZh.value ? `不同点A${pairIndex}` : `Difference A${pairIndex}`
           const newRightText = isZh.value ? `不同点B${pairIndex}` : `Difference B${pairIndex}`
@@ -189,11 +191,7 @@ const menuItems = computed<MenuItem[]>(() => {
           const side = node.id.startsWith('branch-l-') ? 'left' : 'right'
           const childText = isZh.value ? '新子项' : 'New Child'
           if (
-            diagramStore.addMindMapBranch(
-              side,
-              isZh.value ? '新分支' : 'New Branch',
-              childText
-            )
+            diagramStore.addMindMapBranch(side, isZh.value ? '新分支' : 'New Branch', childText)
           ) {
             diagramStore.pushHistory(isZh.value ? '添加分支' : 'Add Branch')
           }
@@ -406,7 +404,9 @@ const menuItems = computed<MenuItem[]>(() => {
           const similarities = (spec.similarities as string[]) || []
           const leftDifferences = (spec.leftDifferences as string[]) || []
           const rightDifferences = (spec.rightDifferences as string[]) || []
-          const newSimText = isZh.value ? `相似点 ${similarities.length + 1}` : `Similarity ${similarities.length + 1}`
+          const newSimText = isZh.value
+            ? `相似点 ${similarities.length + 1}`
+            : `Similarity ${similarities.length + 1}`
           const pairIndex = Math.max(leftDifferences.length, rightDifferences.length) + 1
           const newLeftText = isZh.value ? `不同点A${pairIndex}` : `Difference A${pairIndex}`
           const newRightText = isZh.value ? `不同点B${pairIndex}` : `Difference B${pairIndex}`

@@ -11,13 +11,13 @@
  */
 import { computed, onUnmounted, ref } from 'vue'
 
-import { ANIMATION } from '@/config/uiConfig'
-import { DEFAULT_CENTER_X } from '@/composables/diagrams/layoutConfig'
-import { useDiagramStore } from '@/stores'
 import { useVueFlow } from '@vue-flow/core'
 
-import type { MindGraphNode } from '@/types'
+import { DEFAULT_CENTER_X } from '@/composables/diagrams/layoutConfig'
 import { getMindmapBranchColor } from '@/config/mindmapColors'
+import { ANIMATION } from '@/config/uiConfig'
+import { useDiagramStore } from '@/stores'
+import type { MindGraphNode } from '@/types'
 
 const DEFAULT_NODE_WIDTH = 120
 const DEFAULT_NODE_HEIGHT = 50
@@ -72,11 +72,7 @@ function getSwapGroup(diagramType: string, nodeId: string): string | null {
 
 /** Whether the diagram type uses hierarchical move (vs simple swap). */
 function usesHierarchicalMove(diagramType: string): boolean {
-  return (
-    diagramType === 'mindmap' ||
-    diagramType === 'mind_map' ||
-    diagramType === 'tree_map'
-  )
+  return diagramType === 'mindmap' || diagramType === 'mind_map' || diagramType === 'tree_map'
 }
 
 /** Get the topic node ID for hierarchical-move diagram types. */
@@ -140,9 +136,10 @@ export function useBranchMoveDrag() {
     const graphNode = node as MindGraphNode & { dimensions?: { width: number; height: number } }
     const dims = graphNode.dimensions
     if (dims?.width && dims?.height) return { w: dims.width, h: dims.height }
-    const style = typeof node.style === 'object' && node.style !== null
-      ? (node.style as Record<string, unknown>)
-      : undefined
+    const style =
+      typeof node.style === 'object' && node.style !== null
+        ? (node.style as Record<string, unknown>)
+        : undefined
     const styleW = style?.width as number | undefined
     const styleH = style?.height as number | undefined
     const dataSize = node.data?.style?.size as number | undefined
@@ -153,7 +150,7 @@ export function useBranchMoveDrag() {
   function hitTestHierarchical(
     nodes: MindGraphNode[],
     flowX: number,
-    flowY: number,
+    flowY: number
   ): DropTarget | null {
     const dt = diagramStore.type ?? ''
     const isTreeMap = dt === 'tree_map'
@@ -184,11 +181,7 @@ export function useBranchMoveDrag() {
     return null
   }
 
-  function hitTestSwap(
-    nodes: MindGraphNode[],
-    flowX: number,
-    flowY: number,
-  ): DropTarget | null {
+  function hitTestSwap(nodes: MindGraphNode[], flowX: number, flowY: number): DropTarget | null {
     const dt = diagramStore.type ?? ''
     const draggedId = pendingNodeId.value
     if (!draggedId) return null
@@ -331,7 +324,9 @@ export function useBranchMoveDrag() {
         0
       capturedBranchColor.value = getMindmapBranchColor(idx)
       const pos = node?.position ?? { x: 0, y: 0 }
-      const { w, h } = node ? getNodeDimensions(node) : { w: DEFAULT_NODE_WIDTH, h: DEFAULT_NODE_HEIGHT }
+      const { w, h } = node
+        ? getNodeDimensions(node)
+        : { w: DEFAULT_NODE_WIDTH, h: DEFAULT_NODE_HEIGHT }
       nodeStartPos.value = { x: pos.x, y: pos.y, width: w, height: h }
       animationPhase.value = 'shrinking'
       const lastPos = lastMouseDownPos.value

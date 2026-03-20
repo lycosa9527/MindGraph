@@ -1,19 +1,23 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
+
 import {
-  Settings,
-  BellOff,
   Bell,
+  BellOff,
+  CalendarClock,
+  CheckCheck,
+  CircleDot,
+  FolderPlus,
+  Link2,
+  LogOut,
+  MessageSquarePlus,
   Pin,
   PinOff,
-  LogOut,
-  Link2,
-  CheckCheck,
   RefreshCw,
-  CircleDot,
-  CalendarClock,
+  Settings,
+  Trash2,
 } from 'lucide-vue-next'
 
 import { useLanguage } from '@/composables/useLanguage'
@@ -29,36 +33,84 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'update:visible', val: boolean): void
   (e: 'openSettings'): void
+  (e: 'addLessonStudy'): void
+  (e: 'addConversation'): void
 }>()
 
 const store = useWorkshopChatStore()
 const authStore = useAuthStore()
 const { t } = useLanguage()
 
-const channel = computed(() =>
-  store.channels.find(c => c.id === props.channelId),
-)
+const channel = computed(() => store.findChannelById(props.channelId))
 
 const isManager = computed(() => authStore.isAdmin || authStore.isManager)
 
 const isLessonStudy = computed(() => Boolean(channel.value?.parent_id))
 
+const isTeachingGroup = computed(() => {
+  const ch = channel.value
+  return Boolean(ch && !ch.parent_id && ch.channel_type !== 'announce')
+})
+
 const deadlineDialogVisible = ref(false)
 const deadlineDraft = ref<Date | null>(null)
 
 function handleCopyChannelLink(): void {
-  const href = workshopChatHrefFromState({
-    currentChannelId: props.channelId,
-    currentTopicId: null,
-    currentDMPartnerId: null,
-    showChannelBrowser: false,
-    workshopHomeViewActive: false,
-    mainChannelFeedActive: false,
-  })
+  const ch = channel.value
+  const isGroup = Boolean(ch && !ch.parent_id && ch.channel_type !== 'announce')
+  const href = workshopChatHrefFromState(
+    isGroup && ch
+      ? {
+          currentChannelId: null,
+          currentTopicId: null,
+          currentDMPartnerId: null,
+          showChannelBrowser: false,
+          workshopHomeViewActive: false,
+          mainChannelFeedActive: false,
+          teachingGroupLandingId: ch.id,
+        }
+      : {
+          currentChannelId: props.channelId,
+          currentTopicId: null,
+          currentDMPartnerId: null,
+          showChannelBrowser: false,
+          workshopHomeViewActive: false,
+          mainChannelFeedActive: false,
+          teachingGroupLandingId: null,
+        }
+  )
   const url = `${window.location.origin}${href}`
   void navigator.clipboard.writeText(url).then(() => {
     ElMessage.success(t('workshop.linkCopied'))
   })
+  emit('update:visible', false)
+}
+
+async function handleArchiveChannel(): Promise<void> {
+  const ch = channel.value
+  if (!ch || !isManager.value) {
+    return
+  }
+  const isGroup = isTeachingGroup.value
+  try {
+    await ElMessageBox.confirm(
+      isGroup ? t('workshop.archiveTeachingGroupConfirm') : t('workshop.archiveLessonStudyConfirm'),
+      isGroup ? t('workshop.archiveTeachingGroup') : t('workshop.archiveLessonStudy'),
+      {
+        confirmButtonText: t('common.confirm'),
+        cancelButtonText: t('common.cancel'),
+        type: 'warning',
+      }
+    )
+  } catch {
+    return
+  }
+  const ok = await store.archiveChannel(props.channelId)
+  if (ok) {
+    ElMessage.success(t('workshop.channelArchived'))
+  } else {
+    ElMessage.error(t('workshop.channelArchiveFailed'))
+  }
   emit('update:visible', false)
 }
 
@@ -134,6 +186,16 @@ async function handleLeave(): Promise<void> {
   store.selectChannel(null)
   emit('update:visible', false)
 }
+
+function handleAddLessonStudy(): void {
+  emit('addLessonStudy')
+  emit('update:visible', false)
+}
+
+function handleAddConversation(): void {
+  emit('addConversation')
+  emit('update:visible', false)
+}
 </script>
 
 <script lang="ts">
@@ -153,6 +215,31 @@ export default { name: 'ChannelActionsPopover' }
     </template>
 
     <div class="ws-popover-menu">
+      <button
+        v-if="isTeachingGroup && isManager"
+        type="button"
+        class="ws-popover-item ws-popover-item--emphasis"
+        @click="handleAddLessonStudy"
+      >
+        <FolderPlus class="ws-popover-icon" />
+        {{ t('workshop.addLessonStudy') }}
+      </button>
+
+      <button
+        v-if="isLessonStudy"
+        type="button"
+        class="ws-popover-item ws-popover-item--emphasis"
+        @click="handleAddConversation"
+      >
+        <MessageSquarePlus class="ws-popover-icon" />
+        {{ t('workshop.addConversation') }}
+      </button>
+
+      <div
+        v-if="(isTeachingGroup && isManager) || isLessonStudy"
+        class="ws-popover-divider"
+      />
+
       <button
         v-if="channel"
         class="ws-popover-item"
@@ -185,11 +272,7 @@ export default { name: 'ChannelActionsPopover' }
           @click="handleToggleResolved"
         >
           <CircleDot class="ws-popover-icon" />
-          {{
-            channel.is_resolved
-              ? t('workshop.reopenStudy')
-              : t('workshop.markStudyResolved')
-          }}
+          {{ channel.is_resolved ? t('workshop.reopenStudy') : t('workshop.markStudyResolved') }}
         </button>
         <button
           class="ws-popover-item"
@@ -215,7 +298,10 @@ export default { name: 'ChannelActionsPopover' }
         class="ws-popover-item"
         @click="handleToggleMute"
       >
-        <component :is="channel?.is_muted ? Bell : BellOff" class="ws-popover-icon" />
+        <component
+          :is="channel?.is_muted ? Bell : BellOff"
+          class="ws-popover-icon"
+        />
         {{ channel?.is_muted ? t('workshop.unmuteChannel') : t('workshop.muteChannel') }}
       </button>
 
@@ -224,13 +310,31 @@ export default { name: 'ChannelActionsPopover' }
         class="ws-popover-item"
         @click="handleTogglePin"
       >
-        <component :is="channel?.pin_to_top ? PinOff : Pin" class="ws-popover-icon" />
+        <component
+          :is="channel?.pin_to_top ? PinOff : Pin"
+          class="ws-popover-icon"
+        />
         {{ channel?.pin_to_top ? t('workshop.unpinChannel') : t('workshop.pinChannel') }}
       </button>
 
-      <button class="ws-popover-item" @click="handleOpenSettings">
+      <button
+        class="ws-popover-item"
+        @click="handleOpenSettings"
+      >
         <Settings class="ws-popover-icon" />
         {{ t('workshop.channelSettings') }}
+      </button>
+
+      <button
+        v-if="isManager && (isLessonStudy || isTeachingGroup)"
+        type="button"
+        class="ws-popover-item ws-popover-item--danger"
+        @click="handleArchiveChannel"
+      >
+        <Trash2 class="ws-popover-icon" />
+        {{
+          isTeachingGroup ? t('workshop.archiveTeachingGroup') : t('workshop.archiveLessonStudy')
+        }}
       </button>
 
       <div class="ws-popover-divider" />
@@ -263,7 +367,11 @@ export default { name: 'ChannelActionsPopover' }
       <el-button @click="deadlineDialogVisible = false">
         {{ t('common.cancel') }}
       </el-button>
-      <el-button type="primary" :disabled="!deadlineDraft" @click="handleSaveDeadline">
+      <el-button
+        type="primary"
+        :disabled="!deadlineDraft"
+        @click="handleSaveDeadline"
+      >
         {{ t('common.save') }}
       </el-button>
     </template>
@@ -296,6 +404,11 @@ export default { name: 'ChannelActionsPopover' }
 
 .ws-popover-item:hover {
   background: hsl(0deg 0% 0% / 5%);
+}
+
+.ws-popover-item--emphasis {
+  font-weight: 600;
+  color: hsl(228deg 45% 32%);
 }
 
 .ws-popover-item--danger {

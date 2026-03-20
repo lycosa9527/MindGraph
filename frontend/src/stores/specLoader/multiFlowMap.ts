@@ -2,7 +2,6 @@
  * Multi-Flow Map Loader
  * Uses mindmap branch color palette for causes and effects (like double bubble map).
  */
-import { getMindmapBranchColor } from '@/config/mindmapColors'
 import {
   DEFAULT_CENTER_X,
   DEFAULT_CENTER_Y,
@@ -12,6 +11,7 @@ import {
   DEFAULT_VERTICAL_SPACING,
   MULTI_FLOW_MAP_TOPIC_WIDTH,
 } from '@/composables/diagrams/layoutConfig'
+import { getMindmapBranchColor } from '@/config/mindmapColors'
 import type { Connection, DiagramNode } from '@/types'
 
 import { measureTextWidth } from './textMeasurement'
@@ -28,10 +28,7 @@ const FLOW_NODE_PADDING_X = 40
  */
 function computeFlowNodeWidth(text: string): number {
   const trimmed = (text || '').trim() || ' '
-  const textW =
-    typeof document !== 'undefined'
-      ? measureTextWidth(trimmed, FLOW_NODE_FONT_SIZE)
-      : 0
+  const textW = typeof document !== 'undefined' ? measureTextWidth(trimmed, FLOW_NODE_FONT_SIZE) : 0
   return Math.max(DEFAULT_NODE_WIDTH, Math.ceil(textW + FLOW_NODE_PADDING_X))
 }
 

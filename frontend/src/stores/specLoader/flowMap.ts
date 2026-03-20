@@ -21,7 +21,6 @@ import type { Connection, DiagramNode } from '@/types'
 import { measureTextWidth } from './textMeasurement'
 import type { SpecLoaderResult } from './types'
 
-const FLOW_STEP_FONT_SIZE = 13
 const FLOW_SUBSTEP_FONT_SIZE = 12
 const FLOW_NODE_PADDING_X = 40
 /** Topic node: px-6 = 24px each side; fontWeight bold for accurate measurement */
@@ -53,10 +52,7 @@ export function getFlowTopicCenteredPosition(
   const measuredTextWidth = measureTextWidth(text, FLOW_TOPIC_FONT_SIZE, {
     fontWeight: 'bold',
   })
-  const topicEstWidth = Math.max(
-    FLOW_MAP_PILL_WIDTH,
-    measuredTextWidth + FLOW_TOPIC_PADDING_X
-  )
+  const topicEstWidth = Math.max(FLOW_MAP_PILL_WIDTH, measuredTextWidth + FLOW_TOPIC_PADDING_X)
   const x = Math.round(stepCenterX - topicEstWidth / 2)
   const topicCenterX = x + topicEstWidth / 2
   console.log('[FlowMap] getFlowTopicCenteredPosition', {
@@ -115,10 +111,7 @@ export function loadFlowMapSpec(spec: Record<string, unknown>): SpecLoaderResult
     const measuredTextWidth = measureTextWidth(title, FLOW_TOPIC_FONT_SIZE, {
       fontWeight: 'bold',
     })
-    const topicEstWidth = Math.max(
-      FLOW_MAP_PILL_WIDTH,
-      measuredTextWidth + FLOW_TOPIC_PADDING_X
-    )
+    const topicEstWidth = Math.max(FLOW_MAP_PILL_WIDTH, measuredTextWidth + FLOW_TOPIC_PADDING_X)
     const topicX = Math.round(stepCenterX - topicEstWidth / 2)
     const topicY = DEFAULT_PADDING + 40
     const topicCenterX = topicX + topicEstWidth / 2
@@ -202,8 +195,7 @@ export function loadFlowMapSpec(spec: Record<string, unknown>): SpecLoaderResult
     // Position steps vertically: step on left, substeps on right (stacked vertically)
     // Start below the main topic node
     // =========================================================================
-    let currentY =
-      DEFAULT_PADDING + 40 + pillHeight + FLOW_TOPIC_TO_STEP_GAP
+    let currentY = DEFAULT_PADDING + 40 + pillHeight + FLOW_TOPIC_TO_STEP_GAP
 
     substepGroups.forEach((group, groupIndex) => {
       const hasSubsteps = group.substepIds.length > 0
@@ -266,24 +258,30 @@ export function loadFlowMapSpec(spec: Record<string, unknown>): SpecLoaderResult
           style: { strokeColor: stepColor },
         })
       } else {
-        const prevStepId = substepGroups[groupIndex - 1]!.stepId
-        connections.push({
-          id: `edge-${prevStepId}-${group.stepId}`,
-          source: prevStepId,
-          target: group.stepId,
-          sourcePosition: 'bottom',
-          targetPosition: 'top',
-          sourceHandle: 'bottom',
-          targetHandle: 'top',
-          edgeType: 'straight',
-          style: { strokeColor: stepColor },
-        })
+        const prevGroup = substepGroups[groupIndex - 1]
+        const prevStepId = prevGroup?.stepId
+        if (prevStepId) {
+          connections.push({
+            id: `edge-${prevStepId}-${group.stepId}`,
+            source: prevStepId,
+            target: group.stepId,
+            sourcePosition: 'bottom',
+            targetPosition: 'top',
+            sourceHandle: 'bottom',
+            targetHandle: 'top',
+            edgeType: 'straight',
+            style: { strokeColor: stepColor },
+          })
+        }
       }
 
       // Substeps: curved branches to the right (mindmap-style)
       if (hasSubsteps) {
         group.substepPositions.forEach((pos, i) => {
-          const substepId = group.substepIds[i]!
+          const substepId = group.substepIds[i]
+          if (!substepId) {
+            return
+          }
           connections.push({
             id: `edge-${group.stepId}-${substepId}`,
             source: group.stepId,

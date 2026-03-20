@@ -10,9 +10,7 @@ import { onMounted, onUnmounted, ref } from 'vue'
 
 const IDLE_TIMEOUT_MS = 5 * 60 * 1000
 
-export function usePresenceActivity(
-  onStatusChange: (status: 'active' | 'idle') => void,
-) {
+export function usePresenceActivity(onStatusChange: (status: 'active' | 'idle') => void) {
   const clientIsActive = ref(document.hasFocus())
   let idleTimer: ReturnType<typeof setTimeout> | null = null
 
@@ -35,7 +33,12 @@ export function usePresenceActivity(
   }
 
   const ACTIVITY_EVENTS: Array<keyof WindowEventMap> = [
-    'focus', 'keydown', 'mousedown', 'mousemove', 'touchstart', 'wheel',
+    'focus',
+    'keydown',
+    'mousedown',
+    'mousemove',
+    'touchstart',
+    'wheel',
   ]
 
   onMounted(() => {

@@ -91,7 +91,12 @@ export function useDocumentStatus(
 ) {
   return useQuery({
     queryKey: knowledgeSpaceKeys.documentStatus(documentId || 0),
-    queryFn: () => fetchDocumentStatus(documentId!),
+    queryFn: () => {
+      if (documentId === null) {
+        throw new Error('Document id is required')
+      }
+      return fetchDocumentStatus(documentId)
+    },
     staleTime: 0, // Always fetch fresh status
     refetchInterval: options?.refetchInterval ?? false,
     enabled: (options?.enabled ?? true) && documentId !== null,

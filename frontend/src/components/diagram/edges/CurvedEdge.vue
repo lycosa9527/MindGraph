@@ -12,8 +12,8 @@ import { CONCEPT_MAP_GENERATING_KEY } from '@/composables/useConceptMapRelations
 import { eventBus } from '@/composables/useEventBus'
 import { useLanguage } from '@/composables/useLanguage'
 import { useTheme } from '@/composables/useTheme'
-import { useConceptMapRelationshipStore } from '@/stores/conceptMapRelationship'
 import { useDiagramStore } from '@/stores'
+import { useConceptMapRelationshipStore } from '@/stores/conceptMapRelationship'
 import type { DiagramType, MindGraphEdgeData } from '@/types'
 import { splitBezierPathAtMidpoint } from '@/utils/bezierSplit'
 
@@ -107,7 +107,8 @@ const path = computed(() => {
   })
   // Diagnostic: trace curve connection points for mind map (enable via window.__DEBUG_CURVE_LENGTH__ = true)
   const dt = props.data?.diagramType as DiagramType | undefined
-  const debugCurve = (window as unknown as { __DEBUG_CURVE_LENGTH__?: boolean }).__DEBUG_CURVE_LENGTH__
+  const debugCurve = (window as unknown as { __DEBUG_CURVE_LENGTH__?: boolean })
+    .__DEBUG_CURVE_LENGTH__
   if ((dt === 'mindmap' || dt === 'mind_map') && debugCurve) {
     const span = Math.abs(props.targetX - props.sourceX)
     if (props.source === 'topic') {
@@ -154,7 +155,6 @@ const hitAreaStyle = computed(() => ({
 const isGenerating = computed(
   () => isConceptMap.value && generatingConnectionIds.value.has(props.id)
 )
-
 
 // Concept map: split path into two segments for clickable arrowhead toggles
 const pathSegments = computed(() => {
@@ -345,7 +345,9 @@ const targetMarkerEnd = computed(() =>
           />
           <span
             v-else
-            :class="{ 'edge-label-placeholder': isConceptMap && !data?.label?.trim() && !isGenerating }"
+            :class="{
+              'edge-label-placeholder': isConceptMap && !data?.label?.trim() && !isGenerating,
+            }"
           >
             {{
               data?.label?.trim()
@@ -433,5 +435,4 @@ const targetMarkerEnd = computed(() =>
   border-color: #6b7280;
   color: #e5e7eb;
 }
-
 </style>

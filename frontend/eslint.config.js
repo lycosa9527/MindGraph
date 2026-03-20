@@ -8,7 +8,13 @@ import globals from 'globals'
 export default tseslint.config(
   // Global ignores
   {
-    ignores: ['dist/**', 'node_modules/**', '*.config.js', '*.config.ts'],
+    ignores: [
+      'dist/**',
+      'node_modules/**',
+      'public/**',
+      '*.config.js',
+      '*.config.ts',
+    ],
   },
 
   // Base JS recommended rules
@@ -52,7 +58,10 @@ export default tseslint.config(
     rules: {
       // Vue rules
       'vue/multi-word-component-names': 'off',
-      'vue/no-v-html': 'warn',
+      // camelCase emits (custom-event-name-casing) conflict with hyphenated v-on in templates
+      'vue/v-on-event-hyphenation': 'off',
+      // Markdown / rich content; sanitize at render or trust server content
+      'vue/no-v-html': 'off',
       'vue/require-default-prop': 'off',
       'vue/require-explicit-emits': 'error',
       'vue/component-definition-name-casing': ['error', 'PascalCase'],
@@ -74,10 +83,10 @@ export default tseslint.config(
         'error',
         { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
       ],
-      '@typescript-eslint/no-explicit-any': 'warn',
+      '@typescript-eslint/no-explicit-any': 'error',
       '@typescript-eslint/explicit-function-return-type': 'off',
       '@typescript-eslint/explicit-module-boundary-types': 'off',
-      '@typescript-eslint/no-non-null-assertion': 'warn',
+      '@typescript-eslint/no-non-null-assertion': 'error',
 
       // General rules
       'no-console': process.env.NODE_ENV === 'production' ? 'warn' : 'off',

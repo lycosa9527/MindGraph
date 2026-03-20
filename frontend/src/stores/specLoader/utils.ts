@@ -2,15 +2,14 @@
  * Shared utilities for spec loaders
  * Contains common layout calculations and type definitions
  */
-import type { DiagramType } from '@/types'
-import type { DiagramNode } from '@/types'
-
 import {
   DEFAULT_CENTER_X,
   DEFAULT_CENTER_Y,
   DEFAULT_CONTEXT_RADIUS,
   DEFAULT_TOPIC_RADIUS,
 } from '@/composables/diagrams/layoutConfig'
+import type { DiagramType } from '@/types'
+import type { DiagramNode } from '@/types'
 
 import {
   CONTEXT_FONT_SIZE,
@@ -28,7 +27,7 @@ const PROTECTED_NODE_TYPES = ['topic', 'center', 'boundary', 'label']
 /**
  * Check if a node is hideable for learning sheet (exclude topic, center, boundary, label).
  */
-function isHideableNode(node: DiagramNode, diagramType: DiagramType): boolean {
+function isHideableNode(node: DiagramNode, _diagramType: DiagramType): boolean {
   if (PROTECTED_NODE_TYPES.includes(node.type)) {
     return false
   }
@@ -76,14 +75,22 @@ export function applyLearningSheetHiddenNodes(
 
   if (!isLearningSheet || !result.nodes.length) {
     if (isLearningSheet && existingHiddenAnswers.length > 0) {
-      const metadata = { ...result.metadata, hiddenAnswers: existingHiddenAnswers, isLearningSheet: true }
+      const metadata = {
+        ...result.metadata,
+        hiddenAnswers: existingHiddenAnswers,
+        isLearningSheet: true,
+      }
       return { ...result, metadata }
     }
     return result
   }
 
   if (pct <= 0 && existingHiddenAnswers.length > 0) {
-    const metadata = { ...result.metadata, hiddenAnswers: existingHiddenAnswers, isLearningSheet: true }
+    const metadata = {
+      ...result.metadata,
+      hiddenAnswers: existingHiddenAnswers,
+      isLearningSheet: true,
+    }
     return { ...result, metadata }
   }
 

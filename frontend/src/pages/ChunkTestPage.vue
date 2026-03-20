@@ -22,7 +22,6 @@ import { notify } from '@/composables/notifications'
 import type { ChunkTestDocument } from '@/composables/queries/useChunkTestDocumentQueries'
 import {
   useBenchmarks,
-  useTestBenchmarkDataset,
   useTestBenchmarkDatasetAsync,
   useTestQueries,
   useTestUserDocuments,
@@ -37,7 +36,6 @@ const router = useRouter()
 const { data: benchmarksData, isLoading: isLoadingBenchmarks } = useBenchmarks()
 const updateDatasetsMutation = useUpdateDatasets()
 const testUserDocumentsMutation = useTestUserDocuments()
-const testBenchmarkMutation = useTestBenchmarkDataset()
 const testBenchmarkAsyncMutation = useTestBenchmarkDatasetAsync()
 const { data: defaultQueries } = useTestQueries('mixed', 20)
 
@@ -50,8 +48,6 @@ const {
   fetchDocuments,
   uploadDocument,
   deleteDocument,
-  startProcessing,
-  processSelected,
   startProcessingMutation,
   processSelectedMutation,
 } = useChunkTestDocumentsComposable()
@@ -101,7 +97,7 @@ const handleProcessDocuments = async () => {
     } else {
       await startProcessingMutation.mutateAsync()
     }
-  } catch (error) {
+  } catch {
     // Error handled by mutation
   }
 }
@@ -214,9 +210,9 @@ const handleUpdateDatasets = async () => {
       :has-documents="hasDocuments"
       :has-pending-documents="hasPendingDocuments"
       @upload="handleUpload"
-      @process-documents="handleProcessDocuments"
-      @test-user-documents="handleTestUserDocuments"
-      @test-all-datasets="handleTestAllDatasets"
+      @processDocuments="handleProcessDocuments"
+      @testUserDocuments="handleTestUserDocuments"
+      @testAllDatasets="handleTestAllDatasets"
     />
 
     <!-- Processing Progress Bar -->

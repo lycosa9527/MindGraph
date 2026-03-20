@@ -7,9 +7,9 @@
  * Uses highlight.js/lib/common for a curated set of popular languages
  * (bash, css, js, json, python, sql, ts, xml, etc.) to keep bundle size small.
  */
-import MarkdownIt from 'markdown-it'
 import DOMPurify from 'dompurify'
 import hljs from 'highlight.js'
+import MarkdownIt from 'markdown-it'
 
 const md = new MarkdownIt({
   html: false,
@@ -20,9 +20,9 @@ const md = new MarkdownIt({
     if (lang && hljs.getLanguage(lang)) {
       try {
         return (
-          '<pre class="hljs"><code>'
-          + hljs.highlight(str, { language: lang, ignoreIllegals: true }).value
-          + '</code></pre>'
+          '<pre class="hljs"><code>' +
+          hljs.highlight(str, { language: lang, ignoreIllegals: true }).value +
+          '</code></pre>'
         )
       } catch {
         /* fall through */

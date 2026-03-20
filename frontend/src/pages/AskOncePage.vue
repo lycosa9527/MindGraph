@@ -7,13 +7,12 @@
  * English name: AskOnce
  */
 import { computed, onUnmounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
 
 import { ElButton, ElDialog, ElIcon, ElInput, ElOption, ElSelect } from 'element-plus'
 
 import { Plus } from '@element-plus/icons-vue'
 
-import { BookOpen, Send, Settings } from 'lucide-vue-next'
+import { Send, Settings } from 'lucide-vue-next'
 
 import { AskOncePanel } from '@/components/askonce'
 import { LoginModal } from '@/components/auth'
@@ -27,7 +26,6 @@ import { useAuthStore } from '@/stores/auth'
 // ============================================================================
 
 const { t, isZh } = useLanguage()
-const router = useRouter()
 
 // ============================================================================
 // Store

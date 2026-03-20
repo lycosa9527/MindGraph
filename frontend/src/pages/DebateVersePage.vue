@@ -6,9 +6,9 @@
  * Chinese name: 论境
  * English name: DebateVerse
  */
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted } from 'vue'
 
-import { ElButton, ElDialog, ElIcon, ElInput, ElOption, ElSelect } from 'element-plus'
+import { ElButton } from 'element-plus'
 
 import { Plus } from '@element-plus/icons-vue'
 
@@ -17,7 +17,7 @@ import DebateVerseStage from '@/components/debateverse/DebateVerseStage.vue'
 import { useLanguage } from '@/composables/useLanguage'
 import { useDebateVerseStore } from '@/stores/debateverse'
 
-const { t, isZh } = useLanguage()
+const { isZh } = useLanguage()
 const store = useDebateVerseStore()
 
 // ============================================================================

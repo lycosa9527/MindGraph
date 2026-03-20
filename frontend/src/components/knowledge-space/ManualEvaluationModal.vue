@@ -14,7 +14,6 @@ import {
   ElInput,
   ElOption,
   ElSelect,
-  ElTag,
 } from 'element-plus'
 
 import { Loading } from '@element-plus/icons-vue'
@@ -23,7 +22,7 @@ import { Sparkles } from 'lucide-vue-next'
 
 import { notify } from '@/composables/notifications'
 import {
-  type ChunkTestChunk,
+  type ManualEvaluationResult,
   useChunkTestChunks,
   useManualEvaluation,
 } from '@/composables/queries/useChunkTestQueries'
@@ -63,7 +62,7 @@ const { data: chunksData, isLoading: isLoadingChunks } = useChunkTestChunks(
 const evaluationMutation = useManualEvaluation()
 
 // Evaluation results
-const evaluationResults = ref<any>(null)
+const evaluationResults = ref<ManualEvaluationResult | null>(null)
 const isEvaluating = computed(() => evaluationMutation.isPending.value)
 
 // Available models

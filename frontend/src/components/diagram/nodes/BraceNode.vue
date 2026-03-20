@@ -9,11 +9,11 @@ import { computed, inject, ref } from 'vue'
 
 import { Handle, Position } from '@vue-flow/core'
 
-import { getMindmapBranchColor } from '@/config/mindmapColors'
 import { eventBus } from '@/composables/useEventBus'
-import { getBorderStyleProps } from '@/utils/borderStyleUtils'
 import { useTheme } from '@/composables/useTheme'
+import { getMindmapBranchColor } from '@/config/mindmapColors'
 import type { MindGraphNodeProps } from '@/types'
+import { getBorderStyleProps } from '@/utils/borderStyleUtils'
 
 import InlineEditableText from './InlineEditableText.vue'
 
@@ -76,9 +76,7 @@ const nodeStyle = computed(() => {
     ...getBorderStyleProps(borderColor, borderWidth, borderStyle, {
       backgroundColor,
     }),
-    borderRadius: usePillShape.value
-      ? '9999px'
-      : `${props.data.style?.borderRadius || 6}px`,
+    borderRadius: usePillShape.value ? '9999px' : `${props.data.style?.borderRadius || 6}px`,
   }
 })
 

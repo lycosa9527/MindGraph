@@ -44,10 +44,7 @@ import {
 } from '@/config/colorPalette'
 import { useDiagramStore, useUIStore } from '@/stores'
 import type { DiagramNode } from '@/types'
-import {
-  getBorderStyleProps,
-  type BorderStyleType,
-} from '@/utils/borderStyleUtils'
+import { type BorderStyleType, getBorderStyleProps } from '@/utils/borderStyleUtils'
 
 const notify = useNotifications()
 
@@ -63,7 +60,7 @@ const props = withDefaults(
 )
 
 const emit = defineEmits<{
-  (e: 'exit-presentation'): void
+  (e: 'exitPresentation'): void
 }>()
 
 const diagramStore = useDiagramStore()
@@ -591,7 +588,9 @@ function handleAddNode() {
       : undefined
     const isStepSelected = selectedNode?.type === 'flow'
     if (isStepSelected && selectedNode?.text) {
-      if (diagramStore.addFlowMapSubstep(selectedNode.text, isZh.value ? '新子步骤' : 'New Substep')) {
+      if (
+        diagramStore.addFlowMapSubstep(selectedNode.text, isZh.value ? '新子步骤' : 'New Substep')
+      ) {
         diagramStore.pushHistory(isZh.value ? '添加子步骤' : 'Add Substep')
         notify.success(isZh.value ? '已添加子步骤' : 'Substep added')
       }
@@ -627,7 +626,9 @@ function handleAddNode() {
     const similarities = (spec.similarities as string[]) || []
     const leftDifferences = (spec.leftDifferences as string[]) || []
     const rightDifferences = (spec.rightDifferences as string[]) || []
-    const newSimText = isZh.value ? `相似点 ${similarities.length + 1}` : `Similarity ${similarities.length + 1}`
+    const newSimText = isZh.value
+      ? `相似点 ${similarities.length + 1}`
+      : `Similarity ${similarities.length + 1}`
     const pairIndex = Math.max(leftDifferences.length, rightDifferences.length) + 1
     const newLeftText = isZh.value ? `不同点A${pairIndex}` : `Difference A${pairIndex}`
     const newRightText = isZh.value ? `不同点B${pairIndex}` : `Difference B${pairIndex}`
@@ -637,8 +638,12 @@ function handleAddNode() {
       diagramStore.pushHistory(isZh.value ? '添加节点' : 'Add node')
       notify.success(
         group === 'similarity'
-          ? isZh.value ? '已添加节点' : 'Node added'
-          : isZh.value ? '已添加一对不同点' : 'Difference pair added'
+          ? isZh.value
+            ? '已添加节点'
+            : 'Node added'
+          : isZh.value
+            ? '已添加一对不同点'
+            : 'Difference pair added'
       )
     }
     return
@@ -703,8 +708,7 @@ function handleAddBranch() {
   }
 
   const selectedId = diagramStore.selectedNodes[0]
-  const side: 'left' | 'right' =
-    selectedId?.startsWith('branch-l-') ? 'left' : 'right'
+  const side: 'left' | 'right' = selectedId?.startsWith('branch-l-') ? 'left' : 'right'
   const text = isZh.value ? '新分支' : 'New Branch'
   const childText = isZh.value ? '新子项' : 'New Child'
 
@@ -730,7 +734,9 @@ function handleAddChild() {
       )
       return
     }
-    if (diagramStore.addFlowMapSubstep(selectedNode.text, isZh.value ? '新子步骤' : 'New Substep')) {
+    if (
+      diagramStore.addFlowMapSubstep(selectedNode.text, isZh.value ? '新子步骤' : 'New Substep')
+    ) {
       diagramStore.pushHistory(isZh.value ? '添加子步骤' : 'Add Substep')
       notify.success(isZh.value ? '已添加子步骤' : 'Substep added')
     }
@@ -754,7 +760,9 @@ function handleAddChild() {
       diagramStore.data.nodes.find((n) => !targetIds.has(n.id))?.id
     if (selectedId === rootId || selectedId === 'dimension-label') {
       notify.warning(
-        isZh.value ? '请选择部分节点后按 Enter 添加子部分' : 'Select a part node, then press Enter to add subpart'
+        isZh.value
+          ? '请选择部分节点后按 Enter 添加子部分'
+          : 'Select a part node, then press Enter to add subpart'
       )
       return
     }
@@ -840,7 +848,7 @@ function repositionBridgeMapPairs() {
 
   if (!diagramStore.data) return
 
-  const pairs = new Map<number, { left: DiagramNode; right: DiagramNode }>()
+  const pairs = new Map<number, { left: DiagramNode | null; right: DiagramNode | null }>()
 
   for (const node of diagramStore.data.nodes) {
     if (
@@ -855,10 +863,13 @@ function repositionBridgeMapPairs() {
     const position = node.data.position as 'left' | 'right'
 
     if (!pairs.has(pairIndex)) {
-      pairs.set(pairIndex, { left: null!, right: null! })
+      pairs.set(pairIndex, { left: null, right: null })
     }
 
-    const pair = pairs.get(pairIndex)!
+    const pair = pairs.get(pairIndex)
+    if (!pair) {
+      continue
+    }
     if (position === 'left') {
       pair.left = node
     } else {
@@ -883,22 +894,28 @@ function repositionBridgeMapPairs() {
 
   let currentX = startX
   for (const [, pair] of sortedPairs) {
+    const left = pair.left
+    const right = pair.right
+    if (!left || !right) {
+      continue
+    }
+
     const leftNodeY = centerY - verticalGap - nodeHeight
     const rightNodeY = centerY + verticalGap
 
     console.debug(
-      `[CanvasToolbar] [${getTimestamp()}] Updating pair ${pair.left.data?.pairIndex}:`,
+      `[CanvasToolbar] [${getTimestamp()}] Updating pair ${left.data?.pairIndex}:`,
       {
-        leftNodeId: pair.left.id,
-        rightNodeId: pair.right.id,
+        leftNodeId: left.id,
+        rightNodeId: right.id,
         newX: currentX,
         leftNodeY,
         rightNodeY,
       }
     )
 
-    diagramStore.updateNodePosition(pair.left.id, { x: currentX, y: leftNodeY }, false)
-    diagramStore.updateNodePosition(pair.right.id, { x: currentX, y: rightNodeY }, false)
+    diagramStore.updateNodePosition(left.id, { x: currentX, y: leftNodeY }, false)
+    diagramStore.updateNodePosition(right.id, { x: currentX, y: rightNodeY }, false)
 
     currentX += nodeWidth + gapBetweenPairs
   }
@@ -1049,9 +1066,7 @@ async function handleDeleteNode() {
     const selectedNodes = [...diagramStore.selectedNodes]
     const toDelete = selectedNodes.filter(
       (id) =>
-        /^similarity-\d+$/.test(id) ||
-        /^left-diff-\d+$/.test(id) ||
-        /^right-diff-\d+$/.test(id)
+        /^similarity-\d+$/.test(id) || /^left-diff-\d+$/.test(id) || /^right-diff-\d+$/.test(id)
     )
     if (toDelete.length === 0) {
       notify.warning(
@@ -1077,8 +1092,7 @@ async function handleDeleteNode() {
   if (diagramType === 'tree_map') {
     const selectedNodes = [...diagramStore.selectedNodes]
     const toDelete = selectedNodes.filter(
-      (id) =>
-        /^tree-cat-\d+$/.test(id) || /^tree-leaf-\d+-\d+$/.test(id)
+      (id) => /^tree-cat-\d+$/.test(id) || /^tree-leaf-\d+-\d+$/.test(id)
     )
     if (toDelete.length === 0) {
       notify.warning(
@@ -1357,7 +1371,7 @@ onUnmounted(() => {
       <div
         class="toolbar-content flex items-center bg-gray-50 dark:bg-gray-700/50 rounded-lg p-1 gap-0.5"
       >
-        <!-- Exit fullscreen (presentation mode only) -->
+        <!-- Exit fullscreen (canvas chrome hidden) -->
         <template v-if="props.isPresentationMode">
           <ElTooltip
             :content="isZh ? '退出全屏' : 'Exit Fullscreen'"
@@ -1367,7 +1381,7 @@ onUnmounted(() => {
               text
               size="small"
               class="text-red-600 hover:text-red-700 dark:text-red-400"
-              @click="emit('exit-presentation')"
+              @click="emit('exitPresentation')"
             >
               <X class="w-4 h-4" />
               <span>{{ isZh ? '退出' : 'Exit' }}</span>
@@ -1806,7 +1820,7 @@ onUnmounted(() => {
                       }"
                       @click="
                         borderStyle = style;
-                        applyBorderToSelected({ borderStyle: style });
+                        applyBorderToSelected({ borderStyle: style })
                       "
                     >
                       <div

@@ -17,13 +17,9 @@ import { ElTooltip } from 'element-plus'
 
 import { Loader2, Sparkles, X } from 'lucide-vue-next'
 
-import { LLM_MODEL_COLORS } from '@/config/llmModelColors'
 import { useAutoComplete, useLanguage } from '@/composables'
-import {
-  useDiagramStore,
-  useInlineRecommendationsStore,
-  useLLMResultsStore,
-} from '@/stores'
+import { LLM_MODEL_COLORS } from '@/config/llmModelColors'
+import { useDiagramStore, useInlineRecommendationsStore, useLLMResultsStore } from '@/stores'
 
 const { isZh } = useLanguage()
 const { switchToModel } = useAutoComplete()
@@ -39,9 +35,7 @@ const showRelationshipReady = computed(
 )
 
 /** Show "Tab推荐" indicator when topic fixed—AI ready for inline recommendations (edit node, press Tab) */
-const showInlineRecReady = computed(
-  () => !isConceptMap.value && inlineRecStore.isReady
-)
+const showInlineRecReady = computed(() => !isConceptMap.value && inlineRecStore.isReady)
 
 // Model display names
 const modelDisplayNames: Record<string, string> = {
@@ -178,7 +172,9 @@ watch(
   <div class="ai-model-selector z-20 max-w-full min-w-0">
     <div class="glass-container px-3 py-1.5 flex items-center gap-3">
       <!-- Label with icon -->
-      <div class="flex items-center gap-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 shrink-0">
+      <div
+        class="flex items-center gap-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 shrink-0"
+      >
         <Sparkles class="w-3.5 h-3.5 text-purple-500" />
         <span>{{ isZh ? 'AI模型' : 'AI Model' }}</span>
       </div>
@@ -218,7 +214,9 @@ watch(
       <!-- 关系 ready indicator (concept map: AI ready for link generation) - right of buttons -->
       <ElTooltip
         v-if="showRelationshipReady"
-        :content="isZh ? '拖拽概念连线即可生成关系' : 'Drag to link concepts—AI will generate relationships'"
+        :content="
+          isZh ? '拖拽概念连线即可生成关系' : 'Drag to link concepts—AI will generate relationships'
+        "
         placement="top"
       >
         <span class="relationship-ready-badge">{{ isZh ? '关系' : 'Relationships' }}</span>
@@ -227,7 +225,9 @@ watch(
       <!-- Inline rec ready indicator (thinking maps: edit node, press Tab for AI recommendations) -->
       <ElTooltip
         v-if="showInlineRecReady"
-        :content="isZh ? '编辑节点后按Tab获取AI推荐' : 'Press Tab while editing node for AI recommendations'"
+        :content="
+          isZh ? '编辑节点后按Tab获取AI推荐' : 'Press Tab while editing node for AI recommendations'
+        "
         placement="top"
       >
         <span class="relationship-ready-badge">{{ isZh ? 'Tab推荐' : 'Tab rec' }}</span>
@@ -239,7 +239,9 @@ watch(
         class="text-[10px] text-gray-500 dark:text-gray-400"
       >
         <span v-if="llmResultsStore.isGenerating">
-          {{ llmResultsStore.successCount }}/{{ llmResultsStore.totalModels ?? llmResultsStore.models.length }}
+          {{ llmResultsStore.successCount }}/{{
+            llmResultsStore.totalModels ?? llmResultsStore.models.length
+          }}
         </span>
         <span
           v-else-if="llmResultsStore.hasAnyResults"

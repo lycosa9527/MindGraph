@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import { User, LogOut } from 'lucide-vue-next'
-import { useAuthStore } from '@/stores/auth'
+import { computed, ref } from 'vue'
+
+import { LogOut, User } from 'lucide-vue-next'
+
 import { useLanguage } from '@/composables/useLanguage'
+import { useAuthStore } from '@/stores/auth'
 
 const emit = defineEmits<{
   (e: 'navigate', page: string): void
@@ -14,9 +16,7 @@ const { t } = useLanguage()
 
 const visible = ref(false)
 
-const displayName = computed(() =>
-  authStore.user?.username || authStore.user?.phone || 'User',
-)
+const displayName = computed(() => authStore.user?.username || authStore.user?.phone || 'User')
 const displayAvatar = computed(() => authStore.user?.avatar || '👤')
 
 function go(page: string): void {
@@ -38,28 +38,46 @@ function handleSignOut(): void {
     trigger="click"
   >
     <template #reference>
-      <button
-        class="p-1 rounded-full hover:bg-stone-200/70 transition-colors text-lg leading-none"
+      <el-button
+        size="small"
+        class="workshop-navbar-action workshop-navbar-action--me"
         :title="t('workshop.personalMenu')"
       >
-        {{ displayAvatar }}
-      </button>
+        <span class="workshop-navbar-action__content">
+          <User
+            class="workshop-navbar-action__icon"
+            :size="14"
+          />
+          <span class="workshop-navbar-action__label">{{ t('workshop.navbarMe') }}</span>
+        </span>
+      </el-button>
     </template>
 
     <div class="ws-popover-menu">
       <div class="ws-popover-user-info">
-        <div class="ws-popover-user-name">{{ displayName }}</div>
-        <div class="ws-popover-user-phone">{{ authStore.user?.phone }}</div>
+        <div class="ws-popover-user-avatar">{{ displayAvatar }}</div>
+        <div class="ws-popover-user-meta">
+          <div class="ws-popover-user-name">{{ displayName }}</div>
+          <div class="ws-popover-user-phone">{{ authStore.user?.phone }}</div>
+        </div>
       </div>
 
-      <button class="ws-popover-item" @click="go('profile')">
+      <button
+        type="button"
+        class="ws-popover-item"
+        @click="go('profile')"
+      >
         <User class="ws-popover-icon" />
         {{ t('workshop.profile') }}
       </button>
 
       <div class="ws-popover-divider" />
 
-      <button class="ws-popover-item ws-popover-item--danger" @click="handleSignOut">
+      <button
+        type="button"
+        class="ws-popover-item ws-popover-item--danger"
+        @click="handleSignOut"
+      >
         <LogOut class="ws-popover-icon" />
         {{ t('workshop.signOut') }}
       </button>
@@ -76,9 +94,23 @@ function handleSignOut(): void {
 }
 
 .ws-popover-user-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   padding: 8px 10px;
   border-bottom: 1px solid hsl(0deg 0% 0% / 6%);
   margin-bottom: 2px;
+}
+
+.ws-popover-user-avatar {
+  font-size: 22px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.ws-popover-user-meta {
+  min-width: 0;
+  flex: 1;
 }
 
 .ws-popover-user-name {

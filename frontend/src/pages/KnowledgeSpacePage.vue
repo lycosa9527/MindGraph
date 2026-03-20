@@ -35,7 +35,6 @@ const {
   startProcessing,
   processSelected,
   resumePolling,
-  stopAllPolling,
 } = useKnowledgeSpace()
 
 const selectedDocumentIds = ref<number[]>([])
@@ -135,9 +134,9 @@ const handleProcessSelected = () => {
       :selected-pending-count="selectedPendingCount"
       @upload="handleUpload"
       @settings="handleSettings"
-      @retrieval-test="handleRetrievalTest"
-      @start-processing="startProcessing"
-      @process-selected="handleProcessSelected"
+      @retrievalTest="handleRetrievalTest"
+      @startProcessing="startProcessing"
+      @processSelected="handleProcessSelected"
     />
 
     <!-- Processing Progress Bar -->

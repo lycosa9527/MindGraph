@@ -54,9 +54,6 @@ const BRIDGE_LINE_WIDTH = 2
 const TRIANGLE_COLOR = '#666' // Darker grey for triangle separators (matching old JS)
 const TRIANGLE_HEIGHT = 8 // Height of triangle separator (vertical distance from base to tip)
 const TRIANGLE_BASE_WIDTH = 12 // Width of triangle base (bottom edge)
-const DIMENSION_LABEL_COLOR = '#303133' // Dark gray for dimension label
-const DIMENSION_FONT_SIZE = 14
-const DIMENSION_LABEL_X = 50 // X position for dimension label (left side)
 const AS_LABEL_COLOR = '#606266' // Grey for "as" labels
 const AS_LABEL_FONT_SIZE = 12
 const AS_LABEL_OFFSET_Y = 15 // Distance below triangle
@@ -83,25 +80,8 @@ interface BridgePair {
   rightNode: { id: string; x: number; y: number; width: number; height: number; text: string }
 }
 
-// Track node count to force recalculation when nodes change
-const bridgeMapNodeCount = computed(() => {
-  if (!isBridgeMap.value || !diagramStore.data?.nodes) return 0
-  return diagramStore.data.nodes.filter(
-    (n) =>
-      n.data?.diagramType === 'bridge_map' &&
-      n.data?.pairIndex !== undefined &&
-      !n.data?.isDimensionLabel
-  ).length
-})
-
 const bridgePairs = computed<BridgePair[]>(() => {
   if (!isBridgeMap.value) return []
-
-  // Force dependency on node count to ensure recalculation when nodes are added/removed
-  const nodeCount = bridgeMapNodeCount.value
-
-  // Also depend on the actual nodes array length to ensure reactivity
-  const nodesLength = diagramStore.data?.nodes?.length || 0
 
   // Use store's nodes for immediate reactivity, Vue Flow's getNodes for dimensions
   // This ensures the computed updates immediately when nodes are added/removed
@@ -205,7 +185,10 @@ const bridgePairs = computed<BridgePair[]>(() => {
         rightNode: position === 'right' ? nodeInfo : ({} as BridgePair['rightNode']),
       })
     } else {
-      const pair = pairsMap.get(pairIndex)!
+      const pair = pairsMap.get(pairIndex)
+      if (!pair) {
+        return
+      }
       if (position === 'left') {
         pair.leftNode = nodeInfo
       } else {
@@ -243,42 +226,6 @@ const bridgePairs = computed<BridgePair[]>(() => {
   }
 
   return pairs
-})
-
-/**
- * Get dimension label from label node (if exists) or spec metadata
- */
-const dimensionLabel = computed(() => {
-  if (!isBridgeMap.value) return ''
-
-  // First check if there's a dimension label node
-  const nodes = getNodes.value
-  const labelNode = nodes.find((node) => node.id === 'dimension-label')
-  if (labelNode?.data?.label) {
-    return labelNode.data.label
-  }
-
-  // Fallback: Try to get dimension from diagram data (spec metadata is preserved there)
-  const diagramData = diagramStore.data
-  if (diagramData && typeof diagramData === 'object') {
-    // Check for dimension field
-    if ('dimension' in diagramData) {
-      const dim = diagramData.dimension
-      if (typeof dim === 'string' && dim.trim()) {
-        return dim
-      }
-    }
-
-    // Fallback to relating_factor if dimension is not available
-    if ('relating_factor' in diagramData) {
-      const rf = diagramData.relating_factor
-      if (typeof rf === 'string' && rf.trim()) {
-        return rf
-      }
-    }
-  }
-
-  return ''
 })
 
 /**
@@ -424,50 +371,6 @@ const alternativeDimensionsPosition = computed(() => {
 const alternativeDimensionsChipsText = computed(() => {
   const dims = alternativeDimensions.value.slice(0, 6)
   return dims.map((d) => `• ${d}`).join('  ')
-})
-
-/**
- * Calculate dimension label position from label node (if exists)
- * Otherwise calculate from bridge pairs
- */
-const dimensionLabelPosition = computed(() => {
-  // First try to get position from dimension label node
-  const nodes = getNodes.value
-
-  // Helper to get node dimensions (redefined here for use in this computed)
-  const getNodeDimensions = (node: (typeof nodes)[0] & NodeWithDimensions) => {
-    const width = node.dimensions?.width ?? node.measured?.width ?? DEFAULT_NODE_WIDTH
-    const height = node.dimensions?.height ?? node.measured?.height ?? DEFAULT_NODE_HEIGHT
-    return { width, height }
-  }
-
-  const labelNode = nodes.find((node) => node.id === 'dimension-label')
-  if (labelNode) {
-    const dims = getNodeDimensions(labelNode as (typeof nodes)[0] & NodeWithDimensions)
-    return {
-      x: labelNode.position.x,
-      y: labelNode.position.y + dims.height / 2, // Center vertically
-    }
-  }
-
-  // Fallback: calculate from bridge pairs
-  if (bridgePairs.value.length === 0) return null
-
-  // Find the vertical span of all pairs
-  const allYPositions: number[] = []
-  bridgePairs.value.forEach((pair) => {
-    allYPositions.push(pair.leftNode.y)
-    allYPositions.push(pair.rightNode.y + pair.rightNode.height)
-  })
-
-  const minY = Math.min(...allYPositions)
-  const maxY = Math.max(...allYPositions)
-  const centerY = (minY + maxY) / 2
-
-  return {
-    x: DIMENSION_LABEL_X,
-    y: centerY,
-  }
 })
 
 /**
@@ -767,11 +670,7 @@ onUnmounted(() => {
           text-anchor="middle"
           dominant-baseline="middle"
         >
-          {{
-            hasChineseContent
-              ? '[替代关系将在此显示]'
-              : '[Alternatives will appear here]'
-          }}
+          {{ hasChineseContent ? '[替代关系将在此显示]' : '[Alternatives will appear here]' }}
         </text>
       </g>
 

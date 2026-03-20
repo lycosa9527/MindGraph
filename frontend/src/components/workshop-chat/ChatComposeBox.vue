@@ -2,13 +2,21 @@
 import { computed, nextTick, ref, watch } from 'vue'
 
 import {
-  Bold, ChevronRight, Code, CodeSquare, Italic,
-  Link2, Paperclip, SendHorizonal,
-  Smile, Strikethrough, X,
+  Bold,
+  ChevronRight,
+  Code,
+  CodeSquare,
+  Italic,
+  Link2,
+  Paperclip,
+  SendHorizonal,
+  Smile,
+  Strikethrough,
+  X,
 } from 'lucide-vue-next'
 
 import { useLanguage } from '@/composables/useLanguage'
-import { useWorkshopChatStore, type OrgMember } from '@/stores/workshopChat'
+import { type OrgMember, useWorkshopChatStore } from '@/stores/workshopChat'
 import { apiUpload } from '@/utils/apiClient'
 
 import EmojiPicker from './EmojiPicker.vue'
@@ -18,17 +26,20 @@ const store = useWorkshopChatStore()
 
 const DRAFT_PREFIX = 'workshopChatDraft:'
 
-const props = withDefaults(defineProps<{
-  channelName?: string
-  channelColor?: string
-  topicName?: string
-  dmPartnerName?: string
-  mode?: 'channel' | 'topic' | 'dm'
-  /** When false, show read-only hint (e.g. global announce topics for non-admins). */
-  allowSend?: boolean
-  /** localStorage key segment for autosave (narrow-scoped). */
-  draftKey?: string
-}>(), { mode: 'channel', allowSend: true })
+const props = withDefaults(
+  defineProps<{
+    channelName?: string
+    channelColor?: string
+    topicName?: string
+    dmPartnerName?: string
+    mode?: 'channel' | 'topic' | 'dm'
+    /** When false, show read-only hint (e.g. global announce topics for non-admins). */
+    allowSend?: boolean
+    /** localStorage key segment for autosave (narrow-scoped). */
+    draftKey?: string
+  }>(),
+  { mode: 'channel', allowSend: true }
+)
 
 const emit = defineEmits<{
   send: [content: string]
@@ -58,7 +69,7 @@ watch(
     const raw = localStorage.getItem(DRAFT_PREFIX + key)
     content.value = raw ?? ''
   },
-  { immediate: true },
+  { immediate: true }
 )
 
 watch(content, () => {
@@ -109,7 +120,7 @@ watch(
       mentionPickerResults.value = await store.searchOrgMembers(raw, 12)
     }, 200)
   },
-  { flush: 'post' },
+  { flush: 'post' }
 )
 
 watch(
@@ -118,7 +129,7 @@ watch(
     if (showMentionPicker.value && !mentionQuery.value.trim()) {
       mentionPickerResults.value = localMentionMatches()
     }
-  },
+  }
 )
 
 const replyLabel = computed<string>(() => {
@@ -268,10 +279,18 @@ function wrapSelection(before: string, after: string): void {
   }, 10)
 }
 
-function insertBold(): void { wrapSelection('**', '**') }
-function insertItalic(): void { wrapSelection('*', '*') }
-function insertStrikethrough(): void { wrapSelection('~~', '~~') }
-function insertInlineCode(): void { wrapSelection('`', '`') }
+function insertBold(): void {
+  wrapSelection('**', '**')
+}
+function insertItalic(): void {
+  wrapSelection('*', '*')
+}
+function insertStrikethrough(): void {
+  wrapSelection('~~', '~~')
+}
+function insertInlineCode(): void {
+  wrapSelection('`', '`')
+}
 
 function insertCodeBlock(): void {
   const el = textareaRef.value
@@ -286,7 +305,9 @@ function insertCodeBlock(): void {
   }, 10)
 }
 
-function insertLink(): void { wrapSelection('[', '](url)') }
+function insertLink(): void {
+  wrapSelection('[', '](url)')
+}
 
 function handleEmojiSelect(_name: string, code: string): void {
   showEmojiPicker.value = false
@@ -338,7 +359,12 @@ async function handleFileChange(event: Event): Promise<void> {
 const toolbarButtons = [
   { key: 'bold', icon: Bold, action: insertBold, titleKey: 'workshop.bold' },
   { key: 'italic', icon: Italic, action: insertItalic, titleKey: 'workshop.italic' },
-  { key: 'strike', icon: Strikethrough, action: insertStrikethrough, titleKey: 'workshop.strikethrough' },
+  {
+    key: 'strike',
+    icon: Strikethrough,
+    action: insertStrikethrough,
+    titleKey: 'workshop.strikethrough',
+  },
   { key: 'code', icon: Code, action: insertInlineCode, titleKey: 'workshop.code' },
   { key: 'codeBlock', icon: CodeSquare, action: insertCodeBlock, titleKey: 'workshop.codeBlock' },
   { key: 'link', icon: Link2, action: insertLink, titleKey: 'workshop.insertLink' },
@@ -346,17 +372,32 @@ const toolbarButtons = [
 </script>
 
 <template>
-  <div v-if="!allowSend" class="compose compose--readonly">
+  <div
+    v-if="!allowSend"
+    class="compose compose--readonly"
+  >
     <div class="compose__read-only">
       {{ t('workshop.announceReadOnlyHint') }}
     </div>
   </div>
-  <div v-else class="compose">
-    <div class="compose__box" :class="{ 'compose__box--open': isExpanded }">
+  <div
+    v-else
+    class="compose"
+  >
+    <div
+      class="compose__box"
+      :class="{ 'compose__box--open': isExpanded }"
+    >
       <!-- Collapsed state — Zulip-style three-part bar -->
-      <div v-if="!isExpanded" class="compose__collapsed">
+      <div
+        v-if="!isExpanded"
+        class="compose__collapsed"
+      >
         <div class="compose__reply-container">
-          <button class="compose__reply-btn" @click="expand">
+          <button
+            class="compose__reply-btn"
+            @click="expand"
+          >
             {{ replyLabel }}
           </button>
           <button
@@ -367,13 +408,19 @@ const toolbarButtons = [
             {{ t('workshop.startNewConversation') }}
           </button>
         </div>
-        <button class="compose__new-dm-btn" @click="emit('newDM')">
+        <button
+          class="compose__new-dm-btn"
+          @click="emit('newDM')"
+        >
           {{ t('workshop.newDirectMessage') }}
         </button>
       </div>
 
       <!-- Expanded state -->
-      <div v-else class="compose__expanded">
+      <div
+        v-else
+        class="compose__expanded"
+      >
         <!-- Recipient header row -->
         <div class="compose__recipient">
           <div class="compose__recipient-info">
@@ -389,18 +436,28 @@ const toolbarButtons = [
                 #
               </span>
               <span class="compose__recipient-channel-name">{{ channelName }}</span>
-              <ChevronRight :size="12" class="compose__recipient-sep" />
+              <ChevronRight
+                :size="12"
+                class="compose__recipient-sep"
+              />
               <span class="compose__recipient-topic">
                 {{ topicName || t('workshop.generalChat') }}
               </span>
             </template>
           </div>
-          <button class="compose__close-btn" :title="t('workshop.dismiss')" @click="collapse">
+          <button
+            class="compose__close-btn"
+            :title="t('workshop.dismiss')"
+            @click="collapse"
+          >
             <X :size="14" />
           </button>
         </div>
 
-        <div v-if="showMentionPicker && mentionPickerResults.length > 0" class="mention-picker">
+        <div
+          v-if="showMentionPicker && mentionPickerResults.length > 0"
+          class="mention-picker"
+        >
           <button
             v-for="m in mentionPickerResults"
             :key="m.id"
@@ -435,7 +492,10 @@ const toolbarButtons = [
               :title="t(btn.titleKey)"
               @click="btn.action"
             >
-              <component :is="btn.icon" :size="15" />
+              <component
+                :is="btn.icon"
+                :size="15"
+              />
             </button>
 
             <span class="compose__divider" />
@@ -456,7 +516,7 @@ const toolbarButtons = [
               class="compose__file-input"
               accept="image/*,.pdf,.doc,.docx,.txt"
               @change="handleFileChange"
-            >
+            />
 
             <!-- Emoji -->
             <el-popover
@@ -518,7 +578,9 @@ const toolbarButtons = [
   border: 1px solid hsl(0deg 0% 0% / 12%);
   border-radius: 6px;
   background: hsl(0deg 0% 100%);
-  transition: border-color 150ms ease, box-shadow 150ms ease;
+  transition:
+    border-color 150ms ease,
+    box-shadow 150ms ease;
 }
 
 .compose__box--open:focus-within {
@@ -541,7 +603,9 @@ const toolbarButtons = [
   border-radius: 4px;
   background: hsl(228deg 24% 96%);
   border: 1px solid hsl(228deg 18% 88%);
-  transition: background 120ms ease, border-color 120ms ease;
+  transition:
+    background 120ms ease,
+    border-color 120ms ease;
 }
 
 .compose__reply-container:hover {
@@ -582,7 +646,9 @@ const toolbarButtons = [
   cursor: pointer;
   white-space: nowrap;
   line-height: 20px;
-  transition: background 100ms ease, color 100ms ease;
+  transition:
+    background 100ms ease,
+    color 100ms ease;
 }
 
 .compose__new-conv-btn:hover {
@@ -603,7 +669,9 @@ const toolbarButtons = [
   cursor: pointer;
   white-space: nowrap;
   line-height: 20px;
-  transition: background 100ms ease, border-color 100ms ease;
+  transition:
+    background 100ms ease,
+    border-color 100ms ease;
 }
 
 .compose__new-dm-btn:hover {
@@ -738,7 +806,9 @@ const toolbarButtons = [
   cursor: pointer;
   color: hsl(0deg 0% 48%);
   flex-shrink: 0;
-  transition: background 100ms ease, color 100ms ease;
+  transition:
+    background 100ms ease,
+    color 100ms ease;
 }
 
 .compose__close-btn:hover {
@@ -762,7 +832,9 @@ const toolbarButtons = [
   font-family: inherit;
 }
 
-.compose__textarea::placeholder { color: hsl(0deg 0% 52%); }
+.compose__textarea::placeholder {
+  color: hsl(0deg 0% 52%);
+}
 
 /* Toolbar */
 .compose__toolbar {
@@ -808,8 +880,13 @@ const toolbarButtons = [
 }
 
 @keyframes compose-pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.35; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
 }
 
 .compose__divider {
@@ -819,7 +896,9 @@ const toolbarButtons = [
   margin: 0 5px;
 }
 
-.compose__file-input { display: none; }
+.compose__file-input {
+  display: none;
+}
 
 /* Send button */
 .compose__send-btn {

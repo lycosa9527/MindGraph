@@ -41,9 +41,11 @@ function channelTypeIcon(ct?: string) {
   >
     <div
       class="recipient-bar__inner"
-      :style="type === 'channel' && channelColor
-        ? { background: `linear-gradient(90deg, ${channelColor}22 0%, hsl(0deg 0% 100%) 50%)` }
-        : undefined"
+      :style="
+        type === 'channel' && channelColor
+          ? { background: `linear-gradient(90deg, ${channelColor}22 0%, hsl(0deg 0% 100%) 50%)` }
+          : undefined
+      "
     >
       <div class="recipient-bar__main">
         <!-- Channel header -->
@@ -70,10 +72,16 @@ function channelTypeIcon(ct?: string) {
               {{ channelName }}
             </span>
           </span>
-          <span v-if="topicName" class="recipient-bar__chevron">
+          <span
+            v-if="topicName"
+            class="recipient-bar__chevron"
+          >
             <ChevronRight :size="12" />
           </span>
-          <span v-if="topicName" class="recipient-bar__topic">
+          <span
+            v-if="topicName"
+            class="recipient-bar__topic"
+          >
             {{ topicName }}
           </span>
         </template>
@@ -81,18 +89,27 @@ function channelTypeIcon(ct?: string) {
         <!-- DM header -->
         <template v-else>
           <span class="recipient-bar__dm">
-            <User :size="13" class="recipient-bar__dm-icon" />
+            <User
+              :size="13"
+              class="recipient-bar__dm-icon"
+            />
             <span class="recipient-bar__dm-name">{{ dmPartnerName }}</span>
           </span>
         </template>
       </div>
 
       <!-- Date on the right -->
-      <span v-if="date" class="recipient-bar__date">
+      <span
+        v-if="date"
+        class="recipient-bar__date"
+      >
         {{ date }}
       </span>
 
-      <div v-if="$slots.actions" class="recipient-bar__actions">
+      <div
+        v-if="$slots.actions"
+        class="recipient-bar__actions"
+      >
         <slot name="actions" />
       </div>
     </div>
@@ -167,7 +184,9 @@ function channelTypeIcon(ct?: string) {
   outline-offset: 1px;
 }
 
-.recipient-bar__stream-icon { flex-shrink: 0; }
+.recipient-bar__stream-icon {
+  flex-shrink: 0;
+}
 
 .recipient-bar__stream-name {
   font-weight: 700;
@@ -208,7 +227,9 @@ function channelTypeIcon(ct?: string) {
   gap: 6px;
 }
 
-.recipient-bar__dm-icon { color: hsl(0deg 0% 42%); }
+.recipient-bar__dm-icon {
+  color: hsl(0deg 0% 42%);
+}
 
 .recipient-bar__dm-name {
   font-weight: 700;

@@ -56,6 +56,8 @@ export interface DebateMessage {
   message_type: string
   audio_url: string | null
   created_at: string
+  /** True while SSE is still streaming this message into the UI */
+  is_streaming?: boolean
 }
 
 export interface DebateSession {

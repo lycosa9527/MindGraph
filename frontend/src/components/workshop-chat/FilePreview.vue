@@ -24,11 +24,11 @@ const lightboxSrc = ref<string | null>(null)
 const lightboxName = ref('')
 
 const imageAttachments = computed(() =>
-  props.attachments.filter(a => a.content_type.startsWith('image/')),
+  props.attachments.filter((a) => a.content_type.startsWith('image/'))
 )
 
 const fileAttachments = computed(() =>
-  props.attachments.filter(a => !a.content_type.startsWith('image/')),
+  props.attachments.filter((a) => !a.content_type.startsWith('image/'))
 )
 
 function openLightbox(att: FileAttachment): void {
@@ -51,9 +51,15 @@ function fileIcon(contentType: string): string {
 </script>
 
 <template>
-  <div v-if="attachments.length > 0" class="file-preview">
+  <div
+    v-if="attachments.length > 0"
+    class="file-preview"
+  >
     <!-- Image thumbnails -->
-    <div v-if="imageAttachments.length > 0" class="file-preview__images">
+    <div
+      v-if="imageAttachments.length > 0"
+      class="file-preview__images"
+    >
       <button
         v-for="att in imageAttachments"
         :key="att.id"
@@ -64,12 +70,15 @@ function fileIcon(contentType: string): string {
           :src="att.file_path"
           :alt="att.filename"
           loading="lazy"
-        >
+        />
       </button>
     </div>
 
     <!-- File cards -->
-    <div v-for="att in fileAttachments" :key="att.id">
+    <div
+      v-for="att in fileAttachments"
+      :key="att.id"
+    >
       <div class="file-preview__card">
         <span class="file-preview__icon">{{ fileIcon(att.content_type) }}</span>
         <div class="file-preview__info">
@@ -122,7 +131,9 @@ function fileIcon(contentType: string): string {
   cursor: pointer;
   background: none;
   padding: 0;
-  transition: border-color 150ms ease, box-shadow 150ms ease;
+  transition:
+    border-color 150ms ease,
+    box-shadow 150ms ease;
 }
 
 .file-preview__thumb:hover {

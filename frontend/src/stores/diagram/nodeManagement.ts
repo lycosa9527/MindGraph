@@ -1,12 +1,8 @@
-import type { Connection, DiagramNode } from '@/types'
 import { getMindmapBranchColor } from '@/config/mindmapColors'
+import type { Connection, DiagramNode } from '@/types'
 
-import {
-  recalculateBubbleMapLayout,
-  recalculateMultiFlowMapLayout,
-} from '../specLoader'
 import { useConceptMapRelationshipStore } from '../conceptMapRelationship'
-
+import { recalculateBubbleMapLayout, recalculateMultiFlowMapLayout } from '../specLoader'
 import { emitEvent } from './events'
 import type { DiagramContext } from './types'
 
@@ -25,7 +21,9 @@ export function useNodeManagementSlice(ctx: DiagramContext) {
     // Sync dimension-label text to data.dimension for brace_map, tree_map, bridge_map
     if (
       nodeId === 'dimension-label' &&
-      (ctx.type.value === 'brace_map' || ctx.type.value === 'tree_map' || ctx.type.value === 'bridge_map') &&
+      (ctx.type.value === 'brace_map' ||
+        ctx.type.value === 'tree_map' ||
+        ctx.type.value === 'bridge_map') &&
       'text' in updates
     ) {
       const d = ctx.data.value as Record<string, unknown>
@@ -120,7 +118,7 @@ export function useNodeManagementSlice(ctx: DiagramContext) {
       ctx.data.value.nodes.push(node)
       const recalculatedNodes = recalculateBubbleMapLayout(ctx.data.value.nodes)
       const bubbleNodes = recalculatedNodes.filter(
-        (n) => (n.type === 'bubble' || n.type === 'child') && n.id.startsWith('bubble-'),
+        (n) => (n.type === 'bubble' || n.type === 'child') && n.id.startsWith('bubble-')
       )
       ctx.data.value.nodes = recalculatedNodes
       ctx.data.value.connections = bubbleNodes.map((_, i) => ({
@@ -198,7 +196,7 @@ export function useNodeManagementSlice(ctx: DiagramContext) {
       const recalculatedNodes = recalculateMultiFlowMapLayout(
         ctx.data.value.nodes,
         ctx.topicNodeWidth.value,
-        ctx.nodeWidths.value,
+        ctx.nodeWidths.value
       )
       const recalculatedConnections: Connection[] = []
       const causeNodes = recalculatedNodes.filter((n) => n.id.startsWith('cause-'))
@@ -246,7 +244,7 @@ export function useNodeManagementSlice(ctx: DiagramContext) {
       }
       ctx.data.value.nodes = ctx.data.value.nodes.filter((n) => !idsToRemove.has(n.id ?? ''))
       ctx.data.value.connections = (ctx.data.value.connections ?? []).filter(
-        (c) => !idsToRemove.has(c.source) && !idsToRemove.has(c.target),
+        (c) => !idsToRemove.has(c.source) && !idsToRemove.has(c.target)
       )
       idsToRemove.forEach((id) => {
         ctx.clearCustomPosition(id)
@@ -263,7 +261,7 @@ export function useNodeManagementSlice(ctx: DiagramContext) {
       ctx.data.value.nodes.splice(index, 1)
 
       const bubbleNodes = ctx.data.value.nodes.filter(
-        (n) => (n.type === 'bubble' || n.type === 'child') && n.id.startsWith('bubble-'),
+        (n) => (n.type === 'bubble' || n.type === 'child') && n.id.startsWith('bubble-')
       )
       bubbleNodes.forEach((bubbleNode, i) => {
         bubbleNode.id = `bubble-${i}`
@@ -282,7 +280,7 @@ export function useNodeManagementSlice(ctx: DiagramContext) {
           .map((c) => c.id)
           .filter((id): id is string => !!id)
         ctx.data.value.connections = ctx.data.value.connections.filter(
-          (c) => c.source !== nodeId && c.target !== nodeId,
+          (c) => c.source !== nodeId && c.target !== nodeId
         )
         const relStore = useConceptMapRelationshipStore()
         removedConnIds.forEach((id) => relStore.clearConnection(id))

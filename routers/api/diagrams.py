@@ -411,7 +411,7 @@ async def start_workshop(
     current_user: User = Depends(get_current_user),
 ):
     """
-    Start a workshop session for a diagram.
+    Start presentation mode for a diagram (live collaborative editing).
 
     Generates a shareable code (xxx-xxx format) that others can use to join
     and edit the diagram collaboratively.
@@ -427,11 +427,11 @@ async def start_workshop(
 
     if not code:
         raise HTTPException(
-            status_code=400, detail=error_msg or "Failed to start workshop session"
+            status_code=400, detail=error_msg or "Failed to start presentation mode"
         )
 
     logger.info(
-        "[Diagrams] Started workshop %s for diagram %s (user %s)",
+        "[Diagrams] Started presentation mode %s for diagram %s (user %s)",
         code,
         diagram_id,
         current_user.id,
@@ -440,7 +440,7 @@ async def start_workshop(
     return {
         "success": True,
         "code": code,
-        "message": "Workshop session started",
+        "message": "Presentation mode started",
     }
 
 
@@ -451,9 +451,9 @@ async def stop_workshop(
     current_user: User = Depends(get_current_user),
 ):
     """
-    Stop a workshop session for a diagram.
+    Stop presentation mode for a diagram.
 
-    Only the diagram owner can stop the workshop.
+    Only the diagram owner can stop the session.
 
     Rate limited: 10 requests per minute per user.
     """
@@ -466,18 +466,18 @@ async def stop_workshop(
 
     if not success:
         raise HTTPException(
-            status_code=404, detail="Workshop session not found or not authorized"
+            status_code=404, detail="Presentation mode not found or not authorized"
         )
 
     logger.info(
-        "[Diagrams] Stopped workshop for diagram %s (user %s)",
+        "[Diagrams] Stopped presentation mode for diagram %s (user %s)",
         diagram_id,
         current_user.id,
     )
 
     return {
         "success": True,
-        "message": "Workshop session stopped",
+        "message": "Presentation mode stopped",
     }
 
 
@@ -488,7 +488,7 @@ async def get_workshop_status(
     current_user: User = Depends(get_current_user),
 ):
     """
-    Get workshop status for a diagram.
+    Get presentation mode status for a diagram.
 
     Rate limited: 30 requests per minute per user.
     """
@@ -510,11 +510,11 @@ async def get_workshop_status(
 @router.post("/workshop/join")
 async def join_workshop(
     request: Request,
-    code: str = Query(..., description="Workshop code (xxx-xxx format)"),
+    code: str = Query(..., description="Presentation code (xxx-xxx format)"),
     current_user: User = Depends(get_current_user),
 ):
     """
-    Join a workshop session using a workshop code.
+    Join presentation mode using a share code.
 
     Rate limited: 20 requests per minute per user.
     """
@@ -526,10 +526,10 @@ async def join_workshop(
     workshop_info = await workshop_service.join_workshop(code, current_user.id)
 
     if not workshop_info:
-        raise HTTPException(status_code=404, detail="Invalid workshop code")
+        raise HTTPException(status_code=404, detail="Invalid presentation code")
 
     logger.info(
-        "[Diagrams] User %s joined workshop %s (diagram %s)",
+        "[Diagrams] User %s joined presentation mode %s (diagram %s)",
         current_user.id,
         code,
         workshop_info["diagram_id"],

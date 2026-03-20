@@ -17,9 +17,9 @@ import { computed } from 'vue'
 
 import { useVueFlow } from '@vue-flow/core'
 
-import { getMindmapBranchColor } from '@/config/mindmapColors'
 import { DEFAULT_NODE_HEIGHT, DEFAULT_NODE_WIDTH } from '@/composables/diagrams/layoutConfig'
 import { useLanguage } from '@/composables/useLanguage'
+import { getMindmapBranchColor } from '@/config/mindmapColors'
 import { useDiagramStore } from '@/stores'
 
 // Vue Flow instance for viewport tracking and getting nodes with measured dimensions
@@ -218,18 +218,14 @@ function generateBracePath(group: BraceGroup): {
  */
 const braceElements = computed(() => {
   const nodes = getNodes.value
-  const targetIds = new Set(
-    diagramStore.vueFlowEdges.map((e) => e.target)
-  )
+  const targetIds = new Set(diagramStore.vueFlowEdges.map((e) => e.target))
   const rootId = nodes.find((n) => !targetIds.has(n.id))?.id
 
   return braceGroups.value.map((group) => {
     const { bracePath } = generateBracePath(group)
     const isRootGroup = group.parentId === rootId
     const parentNode = nodes.find((n) => n.id === group.parentId)
-    const groupIndex = isRootGroup
-      ? 0
-      : (parentNode?.data?.groupIndex as number | undefined) ?? 0
+    const groupIndex = isRootGroup ? 0 : ((parentNode?.data?.groupIndex as number | undefined) ?? 0)
     const color = getMindmapBranchColor(groupIndex)
     return {
       groupId: group.parentId,
@@ -244,7 +240,6 @@ const { isZh } = useLanguage()
 const SEPARATOR_OFFSET_Y = 15
 const ALTERNATIVE_DIMENSIONS_OFFSET_Y = 15
 const ALTERNATIVE_LABEL_FONT_SIZE = 13
-const ALTERNATIVE_CHIP_FONT_SIZE = 12
 const ALTERNATIVE_CHIP_COLOR = '#1976d2'
 
 const alternativeDimensions = computed(() => {
@@ -302,7 +297,6 @@ const braceMapAlternativePosition = computed(() => {
   const centerX = (braceMapSeparatorLine.value.x1 + braceMapSeparatorLine.value.x2) / 2
   return { labelY, chipsY, centerX }
 })
-
 </script>
 
 <template>
@@ -331,9 +325,7 @@ const braceMapAlternativePosition = computed(() => {
       <!-- Alternative dimensions section (like archive brace-renderer.js - only when alternatives exist) -->
       <g
         v-if="
-          alternativeDimensions.length > 0 &&
-          braceMapSeparatorLine &&
-          braceMapAlternativePosition
+          alternativeDimensions.length > 0 && braceMapSeparatorLine && braceMapAlternativePosition
         "
       >
         <line

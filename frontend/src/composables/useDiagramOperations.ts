@@ -10,6 +10,8 @@ import { computed, onUnmounted, ref, shallowRef, watch } from 'vue'
 
 import type { DiagramSpec, DiagramType } from '@/types'
 
+import { useDiagramStore } from '@/stores/diagram'
+
 import { eventBus } from './useEventBus'
 
 // ============================================================================
@@ -578,28 +580,24 @@ export function useDiagramOperations(options: UseDiagramOperationsOptions = {}) 
       const nodes = data.nodes as unknown[]
       if (!Array.isArray(nodes)) return
 
-      // Import store dynamically to avoid circular dependency
-      import('@/stores/diagram').then(({ useDiagramStore }) => {
-        const store = useDiagramStore()
-        const spec = store.data as DiagramSpec | null
+      const store = useDiagramStore()
+      const spec = store.data as DiagramSpec | null
 
-        if (!spec) return
+      if (!spec) return
 
-        let addedCount = 0
-        nodes.forEach((node) => {
-          const nodeType =
-            typeof node === 'object' && node !== null
-              ? ((node as Record<string, unknown>).type as string)
-              : undefined
-          const result = operations.value?.addNode(spec, nodeType)
-          if (result) addedCount++
-        })
-
-        // Save to history after all nodes added
-        if (addedCount > 0) {
-          store.pushHistory(`Add ${addedCount} node(s) via voice`)
-        }
+      let addedCount = 0
+      nodes.forEach((node) => {
+        const nodeType =
+          typeof node === 'object' && node !== null
+            ? ((node as Record<string, unknown>).type as string)
+            : undefined
+        const result = operations.value?.addNode(spec, nodeType)
+        if (result) addedCount++
       })
+
+      if (addedCount > 0) {
+        store.pushHistory(`Add ${addedCount} node(s) via voice`)
+      }
     },
     ownerId
   )
@@ -613,31 +611,28 @@ export function useDiagramOperations(options: UseDiagramOperationsOptions = {}) 
       const nodes = data.nodes as unknown[]
       if (!Array.isArray(nodes)) return
 
-      import('@/stores/diagram').then(({ useDiagramStore }) => {
-        const store = useDiagramStore()
-        const spec = store.data as DiagramSpec | null
+      const store = useDiagramStore()
+      const spec = store.data as DiagramSpec | null
 
-        if (!spec) return
+      if (!spec) return
 
-        let updatedCount = 0
-        nodes.forEach((nodeData) => {
-          if (typeof nodeData !== 'object' || nodeData === null) return
+      let updatedCount = 0
+      nodes.forEach((nodeData) => {
+        if (typeof nodeData !== 'object' || nodeData === null) return
 
-          const obj = nodeData as Record<string, unknown>
-          const nodeId = (obj.node_id as string) || (obj.id as string)
-          const text = (obj.text as string) || (obj.new_text as string)
+        const obj = nodeData as Record<string, unknown>
+        const nodeId = (obj.node_id as string) || (obj.id as string)
+        const text = (obj.text as string) || (obj.new_text as string)
 
-          if (nodeId && text !== undefined) {
-            const result = operations.value?.updateNode(spec, nodeId, { text })
-            if (result) updatedCount++
-          }
-        })
-
-        // Save to history after all nodes updated
-        if (updatedCount > 0) {
-          store.pushHistory(`Update ${updatedCount} node(s) via voice`)
+        if (nodeId && text !== undefined) {
+          const result = operations.value?.updateNode(spec, nodeId, { text })
+          if (result) updatedCount++
         }
       })
+
+      if (updatedCount > 0) {
+        store.pushHistory(`Update ${updatedCount} node(s) via voice`)
+      }
     },
     ownerId
   )
@@ -651,33 +646,30 @@ export function useDiagramOperations(options: UseDiagramOperationsOptions = {}) 
       const nodeIds = data.nodeIds as unknown[]
       if (!Array.isArray(nodeIds)) return
 
-      import('@/stores/diagram').then(({ useDiagramStore }) => {
-        const store = useDiagramStore()
-        const spec = store.data as DiagramSpec | null
+      const store = useDiagramStore()
+      const spec = store.data as DiagramSpec | null
 
-        if (!spec) return
+      if (!spec) return
 
-        // Extract node IDs from various formats
-        const ids = nodeIds
-          .map((item) => {
-            if (typeof item === 'string') return item
-            if (typeof item === 'object' && item !== null) {
-              return (
-                ((item as Record<string, unknown>).node_id as string) ||
-                ((item as Record<string, unknown>).id as string)
-              )
-            }
-            return null
-          })
-          .filter((id): id is string => id !== null)
-
-        if (ids.length > 0) {
-          const result = operations.value?.deleteNodes(spec, ids)
-          if (result && result.deletedIds.length > 0) {
-            store.pushHistory(`Delete ${result.deletedIds.length} node(s) via voice`)
+      const ids = nodeIds
+        .map((item) => {
+          if (typeof item === 'string') return item
+          if (typeof item === 'object' && item !== null) {
+            return (
+              ((item as Record<string, unknown>).node_id as string) ||
+              ((item as Record<string, unknown>).id as string)
+            )
           }
+          return null
+        })
+        .filter((id): id is string => id !== null)
+
+      if (ids.length > 0) {
+        const result = operations.value?.deleteNodes(spec, ids)
+        if (result && result.deletedIds.length > 0) {
+          store.pushHistory(`Delete ${result.deletedIds.length} node(s) via voice`)
         }
-      })
+      }
     },
     ownerId
   )
@@ -688,23 +680,19 @@ export function useDiagramOperations(options: UseDiagramOperationsOptions = {}) 
     (data) => {
       if (!operations.value) return
 
-      import('@/stores/diagram').then(({ useDiagramStore }) => {
-        const store = useDiagramStore()
-        const spec = store.data as DiagramSpec | null
+      const store = useDiagramStore()
+      const spec = store.data as DiagramSpec | null
 
-        if (!spec) return
+      if (!spec) return
 
-        // Update center/topic text based on diagram type
-        const newText = (data.new_text as string) || (data.text as string)
-        if (newText !== undefined) {
-          // Determine the center node ID based on diagram type
-          const centerNodeId = 'topic' // Most diagram types use 'topic' for center
-          const result = operations.value?.updateNode(spec, centerNodeId, { text: newText })
-          if (result) {
-            store.pushHistory('Update center via voice')
-          }
+      const newText = (data.new_text as string) || (data.text as string)
+      if (newText !== undefined) {
+        const centerNodeId = 'topic'
+        const result = operations.value?.updateNode(spec, centerNodeId, { text: newText })
+        if (result) {
+          store.pushHistory('Update center via voice')
         }
-      })
+      }
     },
     ownerId
   )

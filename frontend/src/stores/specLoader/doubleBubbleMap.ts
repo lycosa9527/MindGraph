@@ -11,20 +11,14 @@ import {
 } from '@/composables/diagrams/layoutConfig'
 import { getMindmapBranchColor } from '@/config/mindmapColors'
 import type { Connection, DiagramNode } from '@/types'
-import {
-  doubleBubbleDiffRequiredRadius,
-  doubleBubbleRequiredRadius,
-} from './textMeasurement'
 
+import { doubleBubbleDiffRequiredRadius, doubleBubbleRequiredRadius } from './textMeasurement'
 import type { SpecLoaderResult } from './types'
 
 /** Capsule dimensions from radius (same formula as useDoubleBubbleMap) */
 function capsuleFromRadius(radius: number): { width: number; height: number; diameter: number } {
   const diameter = radius * 2
-  const height = Math.min(
-    Math.round(diameter * 0.56),
-    DOUBLE_BUBBLE_MAX_CAPSULE_HEIGHT
-  )
+  const height = Math.min(Math.round(diameter * 0.56), DOUBLE_BUBBLE_MAX_CAPSULE_HEIGHT)
   return {
     width: Math.round(diameter * 1.22),
     height,
@@ -233,9 +227,7 @@ export function loadDoubleBubbleMapSpec(spec: Record<string, unknown>): SpecLoad
   // Left differences (capsules)
   const maxDiffCount = Math.max(leftDifferences.length, rightDifferences.length)
   const diffColHeight =
-    maxDiffCount > 0
-      ? (maxDiffCount - 1) * layout.diffVerticalSpacing + layout.diffCap.height
-      : 0
+    maxDiffCount > 0 ? (maxDiffCount - 1) * layout.diffVerticalSpacing + layout.diffCap.height : 0
   const diffStartY = layout.centerY - diffColHeight / 2 + layout.diffCap.height / 2
 
   leftDifferences.forEach((diff, index) => {

@@ -20,7 +20,7 @@ from sqlalchemy.orm import Session
 
 from config.database import get_db
 from models.domain.auth import User
-from routers.auth.dependencies import require_manager
+from routers.auth.dependencies import require_admin_or_manager
 from routers.features.workshop_chat.conditional_list_response import (
     workshop_list_json_response,
 )
@@ -31,8 +31,10 @@ from routers.features.workshop_chat.dependencies import (
 )
 from routers.features.workshop_chat.schemas import (
     CreateChannelRequest,
+    InviteChannelMemberRequest,
     OrgMembersPage,
     OrgMemberRow,
+    ReorderTeachingGroupsRequest,
     UpdateChannelRequest,
     UpdateMemberPrefsRequest,
     UpdateChannelPermissionsRequest,
@@ -43,7 +45,8 @@ from services.features.workshop_chat.default_channels import (
     seed_default_channels,
 )
 from services.features.workshop_chat.workshop_list_etag import channels_list_etag
-from utils.auth import get_current_user
+from services.features.workshop_chat_ws_manager import chat_ws_manager
+from utils.auth import get_current_user, is_admin
 
 logger = logging.getLogger(__name__)
 
@@ -169,6 +172,31 @@ async def initialize_default_channels(
         ) from exc
 
 
+# ── Teaching group ordering (must be before /channels/{channel_id}) ─
+
+@router.put("/channels/teaching-groups/order")
+async def reorder_teaching_groups(
+    body: ReorderTeachingGroupsRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin_or_manager),
+):
+    """Set sidebar order for all top-level teaching groups in the org."""
+    if not current_user.organization_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="User does not belong to an organization",
+        )
+    ok = channel_service.reorder_teaching_groups(
+        db, current_user.organization_id, body.channel_ids,
+    )
+    if not ok:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid channel list for reorder",
+        )
+    return {"ok": True}
+
+
 # ── Channel CRUD ─────────────────────────────────────────────────
 
 @router.get("/channels")
@@ -200,9 +228,9 @@ async def list_channels(
 async def create_channel(
     body: CreateChannelRequest,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_manager),
+    current_user: User = Depends(require_admin_or_manager),
 ):
-    """Create a channel — group or lesson-study (manager only).
+    """Create a channel — group or lesson-study (admin or org manager).
 
     Pass ``parent_id`` to create a lesson-study under a group.
     """
@@ -268,10 +296,14 @@ async def mark_channel_read(
 async def archive_channel(
     channel_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_manager),
+    current_user: User = Depends(get_current_user),
 ):
-    """Archive a channel (manager only, same org)."""
-    access_channel(db, channel_id, current_user)
+    """Archive a channel (same rules as channel settings: org managers or admins).
+
+    Global announce channels require a full admin (see ``require_channel_manager``).
+    """
+    channel = access_channel(db, channel_id, current_user)
+    require_channel_manager(current_user, channel)
     channel_service.archive_channel(db, channel_id)
     return {"ok": True}
 
@@ -310,6 +342,97 @@ async def get_channel_members(
     """List members of a channel (must belong to same org)."""
     access_channel(db, channel_id, current_user)
     return channel_service.get_channel_members(db, channel_id)
+
+
+@router.post("/channels/{channel_id}/invite")
+async def invite_channel_member(
+    channel_id: int,
+    body: InviteChannelMemberRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Add an organization member to a channel (managers / creators)."""
+    channel = channel_service.get_channel(db, channel_id)
+    if not channel:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Channel not found",
+        )
+    if channel.channel_type == "announce":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot invite users to announcement channels",
+        )
+    if (
+        channel.organization_id != current_user.organization_id
+        and not is_admin(current_user)
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Permission denied",
+        )
+    require_channel_manager(current_user, channel)
+    if not current_user.organization_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="User does not belong to an organization",
+        )
+    result = channel_service.invite_user_to_channel(
+        db, channel_id, body.user_id, current_user.organization_id,
+    )
+    if not result:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User could not be added to this channel",
+        )
+    await chat_ws_manager.send_to_user(body.user_id, {
+        "type": "channel_invite",
+        "channel_id": channel_id,
+        "channel_name": result["channel_name"],
+        "invited_by": current_user.id,
+    })
+    return {"ok": True, "user_id": body.user_id}
+
+
+@router.post(
+    "/channels/{channel_id}/duplicate",
+    status_code=status.HTTP_201_CREATED,
+)
+async def duplicate_teaching_group(
+    channel_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Duplicate a top-level teaching group (settings only; no lesson-study children)."""
+    channel = channel_service.get_channel(db, channel_id)
+    if not channel:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Channel not found",
+        )
+    if (
+        channel.organization_id != current_user.organization_id
+        and not is_admin(current_user)
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Permission denied",
+        )
+    require_channel_manager(current_user, channel)
+    if not current_user.organization_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="User does not belong to an organization",
+        )
+    result = channel_service.duplicate_teaching_group(
+        db, channel_id, current_user.id, current_user.organization_id,
+    )
+    if not result:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Channel cannot be duplicated",
+        )
+    return result
 
 
 # ── Subscription preferences ─────────────────────────────────────

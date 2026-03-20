@@ -34,10 +34,10 @@ export interface ChunkTestResult {
   test_id: number
   dataset_name: string
   document_ids?: number[]
-  chunking_comparison: Record<string, any>
-  retrieval_comparison: Record<string, any>
-  summary: Record<string, any>
-  evaluation_results?: Record<string, any>
+  chunking_comparison: Record<string, unknown>
+  retrieval_comparison: Record<string, unknown>
+  summary: Record<string, unknown>
+  evaluation_results?: Record<string, unknown>
   status?: string
   current_method?: string | null
   current_stage?: string | null
@@ -53,7 +53,7 @@ export interface ChunkTestHistoryItem {
   semchunk_chunk_count?: number
   mindchunk_chunk_count?: number
   status: string
-  summary: Record<string, any>
+  summary: Record<string, unknown>
   created_at: string
 }
 
@@ -289,7 +289,7 @@ export function useChunkTestHistory(limit: number = 20) {
 export interface ChunkTestChunk {
   chunk_index: number
   text: string
-  metadata?: Record<string, any>
+  metadata?: Record<string, unknown>
   start_char?: number
   end_char?: number
 }
@@ -315,10 +315,10 @@ export interface ManualEvaluationResult {
   chunk_count: number
   results: Array<{
     type: string
-    evaluation?: Record<string, any>
+    evaluation?: Record<string, unknown>
     evaluations?: Array<{
       chunk_index: number
-      evaluation: Record<string, any>
+      evaluation: Record<string, unknown>
     }>
   }>
 }

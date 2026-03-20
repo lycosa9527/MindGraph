@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { ref, watch, computed } from 'vue'
-import { useWorkshopChatStore } from '@/stores/workshopChat'
+import { computed, ref, watch } from 'vue'
+
 import { useLanguage } from '@/composables/useLanguage'
 import { useAuthStore } from '@/stores/auth'
+import { useWorkshopChatStore } from '@/stores/workshopChat'
 
 const props = defineProps<{
   channelId: number
@@ -17,13 +18,9 @@ const store = useWorkshopChatStore()
 const authStore = useAuthStore()
 const { t } = useLanguage()
 
-const channel = computed(() =>
-  store.channels.find(c => c.id === props.channelId),
-)
+const channel = computed(() => store.channels.find((c) => c.id === props.channelId))
 
-const isManagerOrAdmin = computed(() =>
-  authStore.isAdmin || authStore.isManager,
-)
+const isManagerOrAdmin = computed(() => authStore.isAdmin || authStore.isManager)
 
 const localColor = ref('#c2c2c2')
 const localDesktopNotif = ref(true)
@@ -44,7 +41,7 @@ watch(
       localPostingPolicy.value = channel.value.posting_policy
       localIsDefault.value = channel.value.is_default
     }
-  },
+  }
 )
 
 watch(
@@ -54,7 +51,7 @@ watch(
       localDesktopNotif.value = ch.desktop_notifications !== false
       localEmailNotif.value = ch.email_notifications === true
     }
-  },
+  }
 )
 
 const channelTypeOptions = [
@@ -99,48 +96,77 @@ async function savePermissions(): Promise<void> {
     @update:model-value="emit('update:visible', $event)"
   >
     <div class="flex flex-col gap-4">
-      <div v-if="channel" class="flex items-center gap-2 text-sm text-stone-600">
+      <div
+        v-if="channel"
+        class="flex items-center gap-2 text-sm text-stone-600"
+      >
         <span class="text-lg">{{ channel.avatar || '#' }}</span>
         <span class="font-medium">{{ channel.name }}</span>
         <span
           v-if="channel.channel_type !== 'public'"
           class="text-[10px] px-1.5 py-0.5 rounded bg-stone-100 text-stone-500"
         >
-          {{ t(`workshop.channelType${channel.channel_type.charAt(0).toUpperCase() + channel.channel_type.slice(1)}`) }}
+          {{
+            t(
+              `workshop.channelType${channel.channel_type.charAt(0).toUpperCase() + channel.channel_type.slice(1)}`
+            )
+          }}
         </span>
       </div>
 
       <!-- User preferences section -->
-      <div v-if="channel?.is_joined" class="border-t border-stone-100 pt-3">
+      <div
+        v-if="channel?.is_joined"
+        class="border-t border-stone-100 pt-3"
+      >
         <h4 class="text-xs font-semibold text-stone-500 uppercase tracking-wider mb-2">
           {{ t('workshop.preferences') }}
         </h4>
 
         <div class="flex items-center justify-between mb-2">
           <span class="text-xs text-stone-600">{{ t('workshop.channelColor') }}</span>
-          <el-color-picker v-model="localColor" size="small" @change="savePrefs" />
+          <el-color-picker
+            v-model="localColor"
+            size="small"
+            @change="savePrefs"
+          />
         </div>
 
         <div class="flex items-center justify-between mb-2">
           <span class="text-xs text-stone-600">{{ t('workshop.desktopNotifications') }}</span>
-          <el-switch v-model="localDesktopNotif" size="small" @change="savePrefs" />
+          <el-switch
+            v-model="localDesktopNotif"
+            size="small"
+            @change="savePrefs"
+          />
         </div>
 
         <div class="flex items-center justify-between mb-2">
           <span class="text-xs text-stone-600">{{ t('workshop.emailNotifications') }}</span>
-          <el-switch v-model="localEmailNotif" size="small" @change="savePrefs" />
+          <el-switch
+            v-model="localEmailNotif"
+            size="small"
+            @change="savePrefs"
+          />
         </div>
       </div>
 
       <!-- Admin permissions section -->
-      <div v-if="isManagerOrAdmin" class="border-t border-stone-100 pt-3">
+      <div
+        v-if="isManagerOrAdmin"
+        class="border-t border-stone-100 pt-3"
+      >
         <h4 class="text-xs font-semibold text-stone-500 uppercase tracking-wider mb-2">
           {{ t('workshop.permissions') }}
         </h4>
 
         <div class="mb-3">
           <label class="text-xs text-stone-600 mb-1 block">{{ t('workshop.channelType') }}</label>
-          <el-select v-model="localChannelType" size="small" class="w-full">
+          <el-select
+            v-model="localChannelType"
+            size="small"
+            class="w-full"
+          >
             <el-option
               v-for="opt in channelTypeOptions"
               :key="opt.value"
@@ -152,7 +178,11 @@ async function savePermissions(): Promise<void> {
 
         <div class="mb-3">
           <label class="text-xs text-stone-600 mb-1 block">{{ t('workshop.postingPolicy') }}</label>
-          <el-select v-model="localPostingPolicy" size="small" class="w-full">
+          <el-select
+            v-model="localPostingPolicy"
+            size="small"
+            class="w-full"
+          >
             <el-option
               v-for="opt in postingPolicyOptions"
               :key="opt.value"
@@ -164,7 +194,10 @@ async function savePermissions(): Promise<void> {
 
         <div class="flex items-center justify-between mb-3">
           <span class="text-xs text-stone-600">{{ t('workshop.defaultChannel') }}</span>
-          <el-switch v-model="localIsDefault" size="small" />
+          <el-switch
+            v-model="localIsDefault"
+            size="small"
+          />
         </div>
 
         <el-button

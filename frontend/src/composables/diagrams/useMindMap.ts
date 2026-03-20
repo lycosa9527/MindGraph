@@ -474,11 +474,12 @@ export function useMindMap(options: MindMapOptions = {}) {
     }
 
     // Find the branch in left or right branches
-    const allBranches = [...data.value.leftBranches, ...data.value.rightBranches]
+    const mindData = data.value
+    const allBranches = [...mindData.leftBranches, ...mindData.rightBranches]
     const branchIndex = allBranches.findIndex((_, idx) => {
-      const leftIndex = idx < data.value!.leftBranches.length ? idx : -1
+      const leftIndex = idx < mindData.leftBranches.length ? idx : -1
       const rightIndex =
-        idx >= data.value!.leftBranches.length ? idx - data.value!.leftBranches.length : -1
+        idx >= mindData.leftBranches.length ? idx - mindData.leftBranches.length : -1
       const nodeId = leftIndex >= 0 ? `branch-l-1-${leftIndex}` : `branch-r-1-${rightIndex}`
       return nodeId === selectedNodeId
     })
@@ -489,9 +490,9 @@ export function useMindMap(options: MindMapOptions = {}) {
     }
 
     const branch =
-      branchIndex < data.value.leftBranches.length
-        ? data.value.leftBranches[branchIndex]
-        : data.value.rightBranches[branchIndex - data.value.leftBranches.length]
+      branchIndex < mindData.leftBranches.length
+        ? mindData.leftBranches[branchIndex]
+        : mindData.rightBranches[branchIndex - mindData.leftBranches.length]
 
     if (!branch.children) {
       branch.children = []

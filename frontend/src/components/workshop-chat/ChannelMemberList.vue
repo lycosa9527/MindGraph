@@ -12,11 +12,7 @@ import UserCardPopover from '@/components/workshop-chat/UserCardPopover.vue'
 import type { UserCardUser } from '@/components/workshop-chat/UserCardPopover.vue'
 import { useLanguage } from '@/composables/useLanguage'
 import { useAuthStore } from '@/stores/auth'
-import {
-  useWorkshopChatStore,
-  type ChannelMember,
-  type OrgMember,
-} from '@/stores/workshopChat'
+import { type ChannelMember, type OrgMember, useWorkshopChatStore } from '@/stores/workshopChat'
 
 const { t } = useLanguage()
 const store = useWorkshopChatStore()
@@ -84,41 +80,31 @@ function sortEntries(entries: BuddyEntry[]): BuddyEntry[] {
 
 const allBuddies = computed<BuddyEntry[]>(() =>
   store.channelMembers
-    .filter(m => matchesSearch(m.name))
-    .map(m => ({
+    .filter((m) => matchesSearch(m.name))
+    .map((m) => ({
       ...m,
       presence: getPresence(m.user_id),
       isCurrentUser: String(m.user_id) === authStore.user?.id,
-    })),
+    }))
 )
 
 const conversationParticipants = computed(() =>
-  sortEntries(
-    allBuddies.value.filter(m =>
-      store.topicParticipantIds.has(m.user_id),
-    ),
-  ),
+  sortEntries(allBuddies.value.filter((m) => store.topicParticipantIds.has(m.user_id)))
 )
 
 const channelMembers = computed(() =>
-  sortEntries(
-    allBuddies.value.filter(m =>
-      !store.topicParticipantIds.has(m.user_id),
-    ),
-  ),
+  sortEntries(allBuddies.value.filter((m) => !store.topicParticipantIds.has(m.user_id)))
 )
 
 const otherUsers = computed<BuddyEntry[]>(() => {
-  const channelMemberIds = new Set(store.channelMembers.map(m => m.user_id))
+  const channelMemberIds = new Set(store.channelMembers.map((m) => m.user_id))
   const q = searchQuery.value.trim().toLowerCase()
   const source: OrgMember[] =
-    q && othersRemote.value != null
-      ? othersRemote.value
-      : store.orgMembers
+    q && othersRemote.value != null ? othersRemote.value : store.orgMembers
   return sortEntries(
     source
-      .filter(m => !channelMemberIds.has(m.id) && (!q || m.name.toLowerCase().includes(q)))
-      .map(m => ({
+      .filter((m) => !channelMemberIds.has(m.id) && (!q || m.name.toLowerCase().includes(q)))
+      .map((m) => ({
         user_id: m.id,
         name: m.name,
         avatar: m.avatar,
@@ -126,13 +112,11 @@ const otherUsers = computed<BuddyEntry[]>(() => {
         joined_at: '',
         presence: getPresence(m.id),
         isCurrentUser: String(m.id) === authStore.user?.id,
-      })),
+      }))
   )
 })
 
-const hasConversation = computed(() =>
-  store.topicParticipantIds.size > 0,
-)
+const hasConversation = computed(() => store.topicParticipantIds.size > 0)
 
 function toggleSection(sectionId: string): void {
   if (collapsedSections.value.has(sectionId)) {
@@ -185,13 +169,16 @@ function handleManageUser(userId: number): void {
     <!-- Header + search -->
     <div class="buddy-list__header">
       <div class="buddy-list__search-wrapper">
-        <Search :size="13" class="buddy-list__search-icon" />
+        <Search
+          :size="13"
+          class="buddy-list__search-icon"
+        />
         <input
           v-model="searchQuery"
           type="text"
           class="buddy-list__search"
           :placeholder="t('workshop.filterUsers')"
-        >
+        />
       </div>
     </div>
 
@@ -214,11 +201,12 @@ function handleManageUser(userId: number): void {
           <span class="buddy-section__heading">
             {{ t('workshop.thisConversation') }}
           </span>
-          <span class="buddy-section__count">
-            ({{ conversationParticipants.length }})
-          </span>
+          <span class="buddy-section__count"> ({{ conversationParticipants.length }}) </span>
         </button>
-        <ul v-if="!isSectionCollapsed('conversation')" class="buddy-section__list">
+        <ul
+          v-if="!isSectionCollapsed('conversation')"
+          class="buddy-section__list"
+        >
           <li
             v-for="member in conversationParticipants"
             :key="member.user_id"
@@ -240,7 +228,10 @@ function handleManageUser(userId: number): void {
                 />
                 <span class="buddy-name">
                   {{ member.name }}
-                  <span v-if="member.isCurrentUser" class="buddy-you">
+                  <span
+                    v-if="member.isCurrentUser"
+                    class="buddy-you"
+                  >
                     {{ t('workshop.you') }}
                   </span>
                 </span>
@@ -267,11 +258,12 @@ function handleManageUser(userId: number): void {
           <span class="buddy-section__heading">
             {{ hasConversation ? t('workshop.thisChannel') : t('workshop.members') }}
           </span>
-          <span class="buddy-section__count">
-            ({{ channelMembers.length }})
-          </span>
+          <span class="buddy-section__count"> ({{ channelMembers.length }}) </span>
         </button>
-        <ul v-if="!isSectionCollapsed('channel')" class="buddy-section__list">
+        <ul
+          v-if="!isSectionCollapsed('channel')"
+          class="buddy-section__list"
+        >
           <li
             v-for="member in channelMembers"
             :key="member.user_id"
@@ -293,7 +285,10 @@ function handleManageUser(userId: number): void {
                 />
                 <span class="buddy-name">
                   {{ member.name }}
-                  <span v-if="member.isCurrentUser" class="buddy-you">
+                  <span
+                    v-if="member.isCurrentUser"
+                    class="buddy-you"
+                  >
                     {{ t('workshop.you') }}
                   </span>
                 </span>
@@ -320,11 +315,12 @@ function handleManageUser(userId: number): void {
           <span class="buddy-section__heading">
             {{ t('workshop.others') }}
           </span>
-          <span class="buddy-section__count">
-            ({{ otherUsers.length }})
-          </span>
+          <span class="buddy-section__count"> ({{ otherUsers.length }}) </span>
         </button>
-        <ul v-if="!isSectionCollapsed('others')" class="buddy-section__list">
+        <ul
+          v-if="!isSectionCollapsed('others')"
+          class="buddy-section__list"
+        >
           <li
             v-for="member in otherUsers"
             :key="member.user_id"
@@ -346,7 +342,10 @@ function handleManageUser(userId: number): void {
                 />
                 <span class="buddy-name">
                   {{ member.name }}
-                  <span v-if="member.isCurrentUser" class="buddy-you">
+                  <span
+                    v-if="member.isCurrentUser"
+                    class="buddy-you"
+                  >
                     {{ t('workshop.you') }}
                   </span>
                 </span>
@@ -365,7 +364,10 @@ function handleManageUser(userId: number): void {
       </div>
 
       <!-- View all members -->
-      <div v-if="store.channelMembers.length > 0" class="buddy-view-all">
+      <div
+        v-if="store.channelMembers.length > 0"
+        class="buddy-view-all"
+      >
         <a class="buddy-view-all__link">
           {{ t('workshop.viewAllMembers') }}
         </a>
@@ -387,7 +389,9 @@ function handleManageUser(userId: number): void {
   border-bottom: 1px solid hsl(0deg 0% 0% / 6%);
 }
 
-.buddy-list__search-wrapper { position: relative; }
+.buddy-list__search-wrapper {
+  position: relative;
+}
 
 .buddy-list__search-icon {
   position: absolute;
@@ -407,7 +411,9 @@ function handleManageUser(userId: number): void {
   background: hsl(0deg 0% 100%);
   outline: none;
   color: hsl(0deg 0% 15%);
-  transition: border-color 150ms ease, box-shadow 150ms ease;
+  transition:
+    border-color 150ms ease,
+    box-shadow 150ms ease;
 }
 
 .buddy-list__search:focus {
@@ -415,7 +421,9 @@ function handleManageUser(userId: number): void {
   box-shadow: 0 0 0 2px hsl(228deg 56% 58% / 10%);
 }
 
-.buddy-list__search::placeholder { color: hsl(0deg 0% 55%); }
+.buddy-list__search::placeholder {
+  color: hsl(0deg 0% 55%);
+}
 
 /* Scroll area */
 .buddy-list__scroll {
@@ -424,7 +432,9 @@ function handleManageUser(userId: number): void {
   padding-bottom: 8px;
 }
 
-.buddy-list__scroll::-webkit-scrollbar { width: 4px; }
+.buddy-list__scroll::-webkit-scrollbar {
+  width: 4px;
+}
 
 .buddy-list__scroll::-webkit-scrollbar-thumb {
   background: transparent;

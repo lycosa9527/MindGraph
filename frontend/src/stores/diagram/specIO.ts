@@ -5,6 +5,7 @@ import {
 } from '@/composables/diagrams/layoutConfig'
 import { eventBus } from '@/composables/useEventBus'
 import type { Connection, DiagramNode, DiagramType } from '@/types'
+
 import { useConceptMapRelationshipStore } from '../conceptMapRelationship'
 import {
   getDefaultTemplate,
@@ -16,10 +17,7 @@ import { getMindMapCurveExtents } from './events'
 import type { DiagramContext } from './types'
 
 export function useSpecIOSlice(ctx: DiagramContext) {
-  function loadFromSpec(
-    spec: Record<string, unknown>,
-    diagramTypeValue: DiagramType,
-  ): boolean {
+  function loadFromSpec(spec: Record<string, unknown>, diagramTypeValue: DiagramType): boolean {
     if (!spec || !diagramTypeValue) return false
 
     ctx.resetSessionEditCount()
@@ -39,17 +37,14 @@ export function useSpecIOSlice(ctx: DiagramContext) {
       nodesToStore.length > 0
     ) {
       const topicNode = nodesToStore.find(
-        (n) => n.id === 'topic' && (n.type === 'topic' || n.type === 'center'),
+        (n) => n.id === 'topic' && (n.type === 'topic' || n.type === 'center')
       )
       const centerX =
         topicNode?.position != null
           ? topicNode.position.x + DEFAULT_NODE_WIDTH / 2
           : DEFAULT_CENTER_X
       normalizeMindMapHorizontalSymmetry(nodesToStore, centerX)
-      ctx.mindMapCurveExtentBaseline.value = getMindMapCurveExtents(
-        nodesToStore,
-        centerX,
-      )
+      ctx.mindMapCurveExtentBaseline.value = getMindMapCurveExtents(nodesToStore, centerX)
       console.log('[BranchMove] baseline captured (load)', ctx.mindMapCurveExtentBaseline.value)
     } else {
       ctx.mindMapCurveExtentBaseline.value = null
@@ -88,8 +83,8 @@ export function useSpecIOSlice(ctx: DiagramContext) {
               'leftBranches',
               'rightBranches',
               'analogies',
-            ].includes(key),
-        ),
+            ].includes(key)
+        )
       ),
       ...(result.metadata || {}),
     }
@@ -99,8 +94,7 @@ export function useSpecIOSlice(ctx: DiagramContext) {
   }
 
   function getDoubleBubbleSpecFromData(): Record<string, unknown> | null {
-    if (ctx.type.value !== 'double_bubble_map' || !ctx.data.value?.nodes?.length)
-      return null
+    if (ctx.type.value !== 'double_bubble_map' || !ctx.data.value?.nodes?.length) return null
     const nodes = ctx.data.value.nodes
     let left = ''
     let right = ''
@@ -112,35 +106,33 @@ export function useSpecIOSlice(ctx: DiagramContext) {
       ...new Set(
         nodes
           .filter((n) => /^similarity-\d+$/.test(n.id))
-          .map((n) => parseInt(n.id.replace('similarity-', ''), 10)),
+          .map((n) => parseInt(n.id.replace('similarity-', ''), 10))
       ),
     ].sort((a, b) => a - b)
     const leftDiffIndices = [
       ...new Set(
         nodes
           .filter((n) => /^left-diff-\d+$/.test(n.id))
-          .map((n) => parseInt(n.id.replace('left-diff-', ''), 10)),
+          .map((n) => parseInt(n.id.replace('left-diff-', ''), 10))
       ),
     ].sort((a, b) => a - b)
     const rightDiffIndices = [
       ...new Set(
         nodes
           .filter((n) => /^right-diff-\d+$/.test(n.id))
-          .map((n) => parseInt(n.id.replace('right-diff-', ''), 10)),
+          .map((n) => parseInt(n.id.replace('right-diff-', ''), 10))
       ),
     ].sort((a, b) => a - b)
     const similarities = simIndices.map((i) =>
-      String(nodes.find((n) => n.id === `similarity-${i}`)?.text ?? '').trim(),
+      String(nodes.find((n) => n.id === `similarity-${i}`)?.text ?? '').trim()
     )
     const leftDifferences = leftDiffIndices.map((i) =>
-      String(nodes.find((n) => n.id === `left-diff-${i}`)?.text ?? '').trim(),
+      String(nodes.find((n) => n.id === `left-diff-${i}`)?.text ?? '').trim()
     )
     const rightDifferences = rightDiffIndices.map((i) =>
-      String(nodes.find((n) => n.id === `right-diff-${i}`)?.text ?? '').trim(),
+      String(nodes.find((n) => n.id === `right-diff-${i}`)?.text ?? '').trim()
     )
-    const getRadius = (n: {
-      style?: { size?: number; width?: number; height?: number }
-    }) => {
+    const getRadius = (n: { style?: { size?: number; width?: number; height?: number } }) => {
       const s = n.style?.size
       if (s != null && s > 0) return s / 2
       const w = n.style?.width
@@ -161,8 +153,7 @@ export function useSpecIOSlice(ctx: DiagramContext) {
       const nd = nodes.find((n) => n.id === `similarity-${i}`)
       return nd != null ? getRadius(nd) : undefined
     })
-    if (simRadii.some((r) => r != null))
-      _doubleBubbleMapNodeSizes['simRadii'] = simRadii
+    if (simRadii.some((r) => r != null)) _doubleBubbleMapNodeSizes['simRadii'] = simRadii
     const leftDiffRadii = leftDiffIndices.map((i) => {
       const nd = nodes.find((n) => n.id === `left-diff-${i}`)
       return nd != null ? getRadius(nd) : undefined
@@ -182,9 +173,7 @@ export function useSpecIOSlice(ctx: DiagramContext) {
       similarities,
       leftDifferences,
       rightDifferences,
-      ...(Object.keys(_doubleBubbleMapNodeSizes).length > 0
-        ? { _doubleBubbleMapNodeSizes }
-        : {}),
+      ...(Object.keys(_doubleBubbleMapNodeSizes).length > 0 ? { _doubleBubbleMapNodeSizes } : {}),
     }
   }
 
@@ -202,8 +191,7 @@ export function useSpecIOSlice(ctx: DiagramContext) {
       _node_styles: ctx.data.value._node_styles,
     }
     if (ctx.type.value === 'flow_map') {
-      const orientation =
-        (ctx.data.value as Record<string, unknown>).orientation ?? 'horizontal'
+      const orientation = (ctx.data.value as Record<string, unknown>).orientation ?? 'horizontal'
       spec.orientation = orientation
     }
     const dataRecord = ctx.data.value as Record<string, unknown>
@@ -216,8 +204,7 @@ export function useSpecIOSlice(ctx: DiagramContext) {
       if (Array.isArray(dataRecord.alternativeDimensions))
         spec.alternative_dimensions = dataRecord.alternativeDimensions
     }
-    const hiddenAnswers = (ctx.data.value as { hiddenAnswers?: string[] })
-      .hiddenAnswers
+    const hiddenAnswers = (ctx.data.value as { hiddenAnswers?: string[] }).hiddenAnswers
     const d = ctx.data.value as {
       isLearningSheet?: boolean
       is_learning_sheet?: boolean
@@ -237,12 +224,9 @@ export function useSpecIOSlice(ctx: DiagramContext) {
   function buildFlowMapSpecFromNodes(): Record<string, unknown> | null {
     if (!ctx.data.value || ctx.type.value !== 'flow_map') return null
     const topicNode = ctx.data.value.nodes.find((n) => n.id === 'flow-topic')
-    const title =
-      topicNode?.text ?? (ctx.data.value as Record<string, unknown>).title ?? ''
+    const title = topicNode?.text ?? (ctx.data.value as Record<string, unknown>).title ?? ''
     const stepNodes = ctx.data.value.nodes.filter((n) => n.type === 'flow')
-    const substepNodes = ctx.data.value.nodes.filter(
-      (n) => n.type === 'flowSubstep',
-    )
+    const substepNodes = ctx.data.value.nodes.filter((n) => n.type === 'flowSubstep')
     const steps = stepNodes.map((node) => node.text)
     const stepToSubsteps: Record<string, string[]> = {}
     substepNodes.forEach((node) => {
@@ -262,8 +246,7 @@ export function useSpecIOSlice(ctx: DiagramContext) {
       step,
       substeps: subs,
     }))
-    const orientation =
-      (ctx.data.value as Record<string, unknown>).orientation ?? 'horizontal'
+    const orientation = (ctx.data.value as Record<string, unknown>).orientation ?? 'horizontal'
     return { title, steps, substeps, orientation }
   }
 
@@ -275,7 +258,7 @@ export function useSpecIOSlice(ctx: DiagramContext) {
 
   function mergeGranularUpdate(
     updatedNodes?: Array<Record<string, unknown>>,
-    updatedConnections?: Array<Record<string, unknown>>,
+    updatedConnections?: Array<Record<string, unknown>>
   ): boolean {
     if (!ctx.data.value) return false
 
@@ -284,9 +267,7 @@ export function useSpecIOSlice(ctx: DiagramContext) {
         const nodeId = updatedNode.id as string
         if (!nodeId) continue
 
-        const existingIndex = ctx.data.value.nodes.findIndex(
-          (n) => n.id === nodeId,
-        )
+        const existingIndex = ctx.data.value.nodes.findIndex((n) => n.id === nodeId)
         if (existingIndex >= 0) {
           ctx.data.value.nodes[existingIndex] = {
             ...ctx.data.value.nodes[existingIndex],
@@ -311,9 +292,7 @@ export function useSpecIOSlice(ctx: DiagramContext) {
           conns = []
           ctx.data.value.connections = conns
         }
-        const existingIndex = conns.findIndex(
-          (c) => c.source === source && c.target === target,
-        )
+        const existingIndex = conns.findIndex((c) => c.source === source && c.target === target)
 
         if (existingIndex >= 0) {
           const existing = conns[existingIndex]

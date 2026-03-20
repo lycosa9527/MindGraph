@@ -17,7 +17,7 @@ export function useTreeMapOpsSlice(ctx: DiagramContext) {
       .sort(
         (a, b) =>
           parseInt((a.id ?? '0').replace('tree-cat-', ''), 10) -
-          parseInt((b.id ?? '0').replace('tree-cat-', ''), 10),
+          parseInt((b.id ?? '0').replace('tree-cat-', ''), 10)
       )
     const categories = categoryNodes.map((cat, catIndex) => {
       const leaves = nodes
@@ -28,7 +28,7 @@ export function useTreeMapOpsSlice(ctx: DiagramContext) {
         .sort(
           (a, b) =>
             parseInt((a.id ?? '0').split('-').pop() ?? '0', 10) -
-            parseInt((b.id ?? '0').split('-').pop() ?? '0', 10),
+            parseInt((b.id ?? '0').split('-').pop() ?? '0', 10)
         )
       return {
         id: cat.id,
@@ -146,7 +146,7 @@ export function useTreeMapOpsSlice(ctx: DiagramContext) {
   function moveTreeMapBranch(
     nodeId: string,
     targetType: 'topic' | 'child' | 'sibling',
-    targetId?: string,
+    targetId?: string
   ): boolean {
     if (type.value !== 'tree_map') return false
     const spec = buildTreeMapSpecFromNodes()

@@ -8,9 +8,8 @@
 import { ref } from 'vue'
 
 import { Delete, Edit } from '@element-plus/icons-vue'
-import {
-  Smile, Star, Quote, Link2, ChevronDown, ChevronUp,
-} from 'lucide-vue-next'
+
+import { ChevronDown, ChevronUp, Link2, Quote, Smile, Star } from 'lucide-vue-next'
 
 import { useLanguage } from '@/composables/useLanguage'
 
@@ -22,6 +21,8 @@ defineProps<{
   isOwn: boolean
   isStarred: boolean
   isCondensed: boolean
+  /** Admin / school manager: delete others' messages (server enforces). */
+  canModerate?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -48,7 +49,6 @@ function handleCopyLink(): void {
 
 <template>
   <div class="ws-action-bar">
-
     <!-- Add Reaction -->
     <el-popover
       :visible="showEmojiPicker"
@@ -77,7 +77,10 @@ function handleCopyLink(): void {
       :title="isStarred ? t('workshop.unstarMessage') : t('workshop.starMessage')"
       @click="emit('toggleStar')"
     >
-      <Star :size="14" :fill="isStarred ? 'currentColor' : 'none'" />
+      <Star
+        :size="14"
+        :fill="isStarred ? 'currentColor' : 'none'"
+      />
     </button>
 
     <!-- Quote -->
@@ -104,8 +107,14 @@ function handleCopyLink(): void {
       :title="isCondensed ? t('workshop.showMore') : t('workshop.showLess')"
       @click="emit('toggleCondense')"
     >
-      <ChevronDown v-if="isCondensed" :size="14" />
-      <ChevronUp v-else :size="14" />
+      <ChevronDown
+        v-if="isCondensed"
+        :size="14"
+      />
+      <ChevronUp
+        v-else
+        :size="14"
+      />
     </button>
 
     <!-- Edit (own messages) -->
@@ -118,9 +127,9 @@ function handleCopyLink(): void {
       <el-icon :size="14"><Edit /></el-icon>
     </button>
 
-    <!-- Delete (own messages) -->
+    <!-- Delete (own or moderator) -->
     <button
-      v-if="isOwn"
+      v-if="isOwn || canModerate"
       class="action-btn action-btn--danger"
       title="Delete"
       @click="emit('delete')"
@@ -139,7 +148,9 @@ function handleCopyLink(): void {
   background: hsl(0deg 0% 100%);
   border: 1px solid hsl(0deg 0% 84%);
   border-radius: 5px;
-  box-shadow: 0 2px 6px hsl(0deg 0% 0% / 10%), 0 0 1px hsl(0deg 0% 0% / 6%);
+  box-shadow:
+    0 2px 6px hsl(0deg 0% 0% / 10%),
+    0 0 1px hsl(0deg 0% 0% / 6%);
 }
 
 .action-btn {

@@ -5,7 +5,7 @@
 export function userCanAccessWorkshopChat(
   isAdminOrManager: boolean,
   schoolId: string | undefined,
-  previewOrgIds: number[],
+  previewOrgIds: number[]
 ): boolean {
   if (isAdminOrManager) {
     return true

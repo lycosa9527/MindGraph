@@ -8,7 +8,7 @@ import { Coins } from 'lucide-vue-next'
 
 import { useLanguage } from '@/composables/useLanguage'
 
-const props = defineProps<{
+defineProps<{
   visible: boolean
 }>()
 

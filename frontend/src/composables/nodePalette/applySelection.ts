@@ -9,8 +9,8 @@ import type { NodeSuggestion } from '@/types/panels'
 
 import {
   BRACE_MAP_DEFAULT_SUBPARTS,
-  getParentIdFromStageData,
   STAGED_DIAGRAM_TYPES,
+  getParentIdFromStageData,
   suggestionBelongsToParent,
 } from './constants'
 import { getPlaceholderNodes } from './placeholderHelpers'
@@ -53,7 +53,6 @@ export async function applySelectionToDiagram(ctx: ApplySelectionContext): Promi
     stage,
     stageData,
     mode,
-    language,
     startSession,
     startSessionsForAllParents,
   } = ctx
@@ -119,9 +118,7 @@ export async function applySelectionToDiagram(ctx: ApplySelectionContext): Promi
     stage &&
     ['children', 'substeps', 'subparts'].includes(stage) &&
     (currentParentId || currentParentNameNorm)
-      ? toApply.filter((s) =>
-          suggestionBelongsToParent(s, currentParentId, currentParentNameNorm)
-        )
+      ? toApply.filter((s) => suggestionBelongsToParent(s, currentParentId, currentParentNameNorm))
       : toApply
 
   const placeholders = getPlaceholderNodes(
@@ -445,9 +442,7 @@ function applyStage2MultipleParents(
     appliedAny = appliedAny || idx > 0
   }
   const unmatched = toApply.filter(
-    (s) =>
-      !(s.parent_id && parentIds.has(s.parent_id)) &&
-      !parentNames.has((s.mode ?? '').trim())
+    (s) => !(s.parent_id && parentIds.has(s.parent_id)) && !parentNames.has((s.mode ?? '').trim())
   )
   if (unmatched.length > 0) {
     const stageDataTyped = stageData as {

@@ -172,7 +172,12 @@ export function useConversationMessages(convId: string | null) {
 
   return useQuery({
     queryKey: difyKeys.messages(convId || ''),
-    queryFn: () => fetchConversationMessages(convId!),
+    queryFn: () => {
+      if (!convId) {
+        throw new Error('Conversation id is required')
+      }
+      return fetchConversationMessages(convId)
+    },
     staleTime: 5 * 60 * 1000, // 5 minutes
     enabled: !!authStore.user && !!convId,
   })

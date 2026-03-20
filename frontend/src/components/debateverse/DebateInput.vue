@@ -4,7 +4,7 @@
  */
 import { computed, ref } from 'vue'
 
-import { ElButton, ElIcon, ElInput } from 'element-plus'
+import { ElButton, ElInput } from 'element-plus'
 
 import { ArrowRight } from '@element-plus/icons-vue'
 
@@ -26,7 +26,7 @@ interface Props {
   nextButtonText?: string
 }
 
-const props = withDefaults(defineProps<Props>(), {
+withDefaults(defineProps<Props>(), {
   isTriggeringNext: false,
   canTriggerNext: false,
   nextButtonText: '',

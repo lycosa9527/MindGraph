@@ -5,7 +5,7 @@
  */
 import { computed } from 'vue'
 
-import { ElButton, ElEmpty, ElIcon, ElSkeleton, ElTable, ElTableColumn, ElTag } from 'element-plus'
+import { ElEmpty, ElIcon, ElSkeleton, ElTable, ElTableColumn } from 'element-plus'
 
 import { Document, Link } from '@element-plus/icons-vue'
 
@@ -15,10 +15,6 @@ import { useLanguage } from '@/composables/useLanguage'
 const props = defineProps<{
   datasets: Benchmark[]
   loading: boolean
-}>()
-
-const emit = defineEmits<{
-  test: [datasetName: string]
 }>()
 
 const { isZh } = useLanguage()

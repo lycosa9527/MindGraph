@@ -1,0 +1,69 @@
+"""
+Redis publish helpers for WebSocket fan-out (no subscription / listener).
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
+"""
+
+from __future__ import annotations
+
+import asyncio
+import json
+import logging
+from typing import Any, Dict
+
+from services.features.ws_redis_fanout_config import (
+    CHAT_FANOUT_CHANNEL,
+    WORKSHOP_FANOUT_CHANNEL,
+    is_ws_fanout_enabled,
+)
+from services.infrastructure.monitoring.ws_metrics import (
+    record_ws_fanout_chat_published,
+    record_ws_fanout_workshop_published,
+)
+from services.redis.redis_client import get_redis
+
+logger = logging.getLogger(__name__)
+
+
+def publish_chat_fanout(envelope: Dict[str, Any]) -> None:
+    """Publish a chat fan-out envelope (blocking)."""
+    if not is_ws_fanout_enabled():
+        return
+    try:
+        body = json.dumps(envelope, ensure_ascii=False)
+    except (TypeError, ValueError):
+        logger.warning("[WSFanout] Chat publish skipped: invalid envelope")
+        return
+    client = get_redis()
+    if not client:
+        return
+    client.publish(CHAT_FANOUT_CHANNEL, body)
+
+
+def publish_workshop_fanout(envelope: Dict[str, Any]) -> None:
+    """Publish a workshop fan-out envelope (blocking)."""
+    if not is_ws_fanout_enabled():
+        return
+    try:
+        body = json.dumps(envelope, ensure_ascii=False)
+    except (TypeError, ValueError):
+        logger.warning("[WSFanout] Workshop publish skipped: invalid envelope")
+        return
+    client = get_redis()
+    if not client:
+        return
+    client.publish(WORKSHOP_FANOUT_CHANNEL, body)
+
+
+async def publish_chat_fanout_async(envelope: Dict[str, Any]) -> None:
+    """Publish chat fan-out without blocking the event loop."""
+    record_ws_fanout_chat_published()
+    await asyncio.to_thread(publish_chat_fanout, envelope)
+
+
+async def publish_workshop_fanout_async(envelope: Dict[str, Any]) -> None:
+    """Publish workshop fan-out without blocking the event loop."""
+    record_ws_fanout_workshop_published()
+    await asyncio.to_thread(publish_workshop_fanout, envelope)

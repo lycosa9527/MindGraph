@@ -3,16 +3,9 @@
  * Handles standard CSS border-style and custom patterns (e.g. dash-dot)
  * Uses background-clip for dash-dot patterns so they respect border-radius (pill shapes)
  */
-
 import type { NodeStyle } from '@/types'
 
-export type BorderStyleType =
-  | 'solid'
-  | 'dashed'
-  | 'dotted'
-  | 'double'
-  | 'dash-dot'
-  | 'dash-dot-dot'
+export type BorderStyleType = 'solid' | 'dashed' | 'dotted' | 'double' | 'dash-dot' | 'dash-dot-dot'
 
 const DASH_DOT_GRADIENT = (color: string) =>
   `repeating-linear-gradient(90deg, ${color} 0px, ${color} 10px, transparent 10px, transparent 14px, ${color} 14px, ${color} 16px, transparent 16px, transparent 22px)`

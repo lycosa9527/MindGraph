@@ -2,12 +2,7 @@ import { DEFAULT_NODE_WIDTH } from '@/composables/diagrams/layoutConfig'
 import { eventBus } from '@/composables/useEventBus'
 import type { DiagramNode, DiagramType, MindGraphEdgeType } from '@/types'
 
-import type {
-  DiagramEvent,
-  DiagramEventType,
-  EventCallback,
-  MindMapCurveExtents,
-} from './types'
+import type { DiagramEvent, DiagramEventType, EventCallback, MindMapCurveExtents } from './types'
 
 const eventSubscribers = new Map<DiagramEventType | '*', Set<EventCallback>>()
 
@@ -34,13 +29,13 @@ export function emitEvent(type: DiagramEventType, payload?: unknown): void {
     case 'diagram:position_changed':
       eventBus.emit(
         'diagram:position_saved',
-        payload as { nodeId: string; position: { x: number; y: number } },
+        payload as { nodeId: string; position: { x: number; y: number } }
       )
       break
     case 'diagram:operation_completed':
       eventBus.emit(
         'diagram:operation_completed',
-        payload as { operation: string; details?: unknown },
+        payload as { operation: string; details?: unknown }
       )
       break
     case 'diagram:layout_reset':
@@ -51,7 +46,7 @@ export function emitEvent(type: DiagramEventType, payload?: unknown): void {
 
 export function subscribeToDiagramEvents(
   eventType: DiagramEventType | '*',
-  callback: EventCallback,
+  callback: EventCallback
 ): () => void {
   let subscribers = eventSubscribers.get(eventType)
   if (!subscribers) {
@@ -84,10 +79,7 @@ export function getEdgeTypeForDiagram(diagramType: DiagramType | null): MindGrap
   return edgeTypeMap[diagramType] || 'curved'
 }
 
-export function getMindMapCurveExtents(
-  nodes: DiagramNode[],
-  centerX: number,
-): MindMapCurveExtents {
+export function getMindMapCurveExtents(nodes: DiagramNode[], centerX: number): MindMapCurveExtents {
   const leftNodes = nodes.filter((n) => n.type === 'branch' && n.id.startsWith('branch-l-'))
   const rightNodes = nodes.filter((n) => n.type === 'branch' && n.id.startsWith('branch-r-'))
   const getCenterX = (n: DiagramNode) =>

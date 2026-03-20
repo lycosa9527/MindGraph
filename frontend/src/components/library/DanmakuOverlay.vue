@@ -15,6 +15,9 @@ interface Props {
 const props = defineProps<Props>()
 
 const libraryStore = useLibraryStore()
+
+type TextBbox = { x: number; y: number; width: number; height: number }
+
 const overlayRef = ref<HTMLElement | null>(null)
 const highlightCanvasRef = ref<HTMLCanvasElement | null>(null)
 
@@ -46,7 +49,7 @@ function renderHighlights() {
   const textSelectionDanmaku = pageDanmaku.filter((d) => d.selected_text && d.text_bbox)
 
   // Group by selected_text to count comments
-  const highlights = new Map<string, { count: number; bbox: any; color: string }>()
+  const highlights = new Map<string, { count: number; bbox: TextBbox; color: string }>()
   textSelectionDanmaku.forEach((d) => {
     if (d.selected_text && d.text_bbox) {
       const key = d.selected_text
@@ -57,7 +60,10 @@ function renderHighlights() {
           color: d.highlight_color || '#fef08a',
         })
       }
-      highlights.get(key)!.count++
+      const entry = highlights.get(key)
+      if (entry) {
+        entry.count++
+      }
     }
   })
 

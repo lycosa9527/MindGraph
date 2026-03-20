@@ -28,7 +28,7 @@ from sqlalchemy.orm import Session
 from models.domain.auth import User
 from models.domain.workshop_chat import ChatChannel
 from services.features.workshop_chat.channel_service import channel_service
-from utils.auth import is_admin, is_manager
+from utils.auth import can_moderate_workshop_channel, is_admin, is_manager
 
 
 def get_effective_org_id(
@@ -154,9 +154,11 @@ def require_channel_manager(
     current_user: User,
     channel: ChatChannel,
 ) -> None:
-    """Raise 403 unless the user is a manager or the channel creator.
+    """Raise 403 unless the user can manage this channel (Zulip-style).
 
-    For announce channels, only admins qualify.
+    Realm admins (``is_admin``), org managers for org channels, or the user
+    who created the channel may update settings. Global announce channels
+    require a full admin.
     """
     if channel.channel_type == "announce":
         if not is_admin(current_user):
@@ -166,16 +168,22 @@ def require_channel_manager(
             )
         return
 
-    if channel.organization_id != current_user.organization_id:
+    if (
+        channel.organization_id != current_user.organization_id
+        and not is_admin(current_user)
+    ):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Permission denied",
         )
-    if not is_manager(current_user) and channel.created_by != current_user.id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Permission denied",
-        )
+    if can_moderate_workshop_channel(current_user, channel):
+        return
+    if channel.created_by == current_user.id:
+        return
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="Permission denied",
+    )
 
 
 def access_dm_partner(

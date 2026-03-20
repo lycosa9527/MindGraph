@@ -24,7 +24,7 @@ import { notify } from '@/composables/notifications'
 import { type RetrievalTestResponse, useRetrievalTest } from '@/composables/queries'
 import { useLanguage } from '@/composables/useLanguage'
 
-const props = defineProps<{
+defineProps<{
   visible: boolean
 }>()
 
@@ -67,7 +67,7 @@ watch(
 // Watch for mutation error (error handling is done in mutation onError)
 watch(
   () => retrievalTestMutation.error.value,
-  (error) => {
+  (_error) => {
     // Error handling is done in mutation's onError callback
     // This watch is just for reactivity if needed
   }

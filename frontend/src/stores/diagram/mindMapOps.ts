@@ -9,7 +9,6 @@ import {
   loadMindMapSpec,
   nodesAndConnectionsToMindMapSpec,
 } from '../specLoader'
-
 import { emitEvent, getMindMapCurveExtents } from './events'
 import type { DiagramContext } from './types'
 
@@ -19,7 +18,7 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
   function addMindMapBranch(
     _side: 'left' | 'right',
     text = 'New Branch',
-    childText = 'New Child',
+    childText = 'New Child'
   ): boolean {
     if (type.value !== 'mindmap' && type.value !== 'mind_map') return false
     if (!data.value?.nodes || !data.value?.connections) return false
@@ -186,7 +185,7 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
     targetType: 'topic' | 'child' | 'sibling',
     targetId?: string,
     targetIndex?: number,
-    cursorFlowX?: number,
+    cursorFlowX?: number
   ): boolean {
     if (type.value !== 'mindmap' && type.value !== 'mind_map') return false
     if (!data.value?.nodes || !data.value?.connections) return false
@@ -201,7 +200,7 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
       mindMapCurveExtentBaseline.value = { ...extentsBefore }
       console.log(
         '[BranchMove] baseline captured (first move fallback)',
-        mindMapCurveExtentBaseline.value,
+        mindMapCurveExtentBaseline.value
       )
     }
 
@@ -318,9 +317,8 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
     }
 
     const branchPositions = result.nodes
-      .filter(
-        (n): n is DiagramNode & { position: Position } =>
-          Boolean(n.type === 'branch' && n.position),
+      .filter((n): n is DiagramNode & { position: Position } =>
+        Boolean(n.type === 'branch' && n.position)
       )
       .map((n) => ({ id: n.id, x: n.position.x, y: n.position.y }))
     console.log('[BranchMove] result positions', { branchPositions })

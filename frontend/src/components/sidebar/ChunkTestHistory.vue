@@ -28,7 +28,7 @@ import {
   useDeleteChunkTest,
 } from '@/composables/queries/useChunkTestQueries'
 
-const props = defineProps<{
+defineProps<{
   isBlurred?: boolean
 }>()
 

@@ -122,7 +122,8 @@ export function useBridgeMap(options: BridgeMapOptions = {}) {
       })
 
       // Bridge to next pair (the "as" connection)
-      if (pairIndex < data.value!.pairs.length - 1) {
+      const bridgeData = data.value
+      if (bridgeData && pairIndex < bridgeData.pairs.length - 1) {
         // Connect top to next top
         result.push({
           id: `bridge-top-${pairIndex}`,

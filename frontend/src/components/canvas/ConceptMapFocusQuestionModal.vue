@@ -6,6 +6,7 @@
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import { ElAlert, ElButton, ElInput, ElTooltip } from 'element-plus'
+
 import { Check, CircleSlash, Equal, Loader2, Minus } from 'lucide-vue-next'
 
 import { useLanguage, useNotifications } from '@/composables'
@@ -599,7 +600,8 @@ function confirm() {
           <span
             class="text-xs font-semibold"
             :style="llmValidateChipLabelStyle(m)"
-          >{{ MODEL_LABELS[m] }}</span>
+            >{{ MODEL_LABELS[m] }}</span
+          >
           <Loader2
             v-if="vState(m).loading"
             class="w-4 h-4 animate-spin text-blue-500 shrink-0"
@@ -638,7 +640,9 @@ function confirm() {
       class="mt-4 pt-4 border-t border-gray-200/80 dark:border-gray-600/80"
     >
       <div class="flex items-start justify-between gap-3 mb-2">
-        <p class="text-xs font-medium text-gray-500 dark:text-gray-400 flex-1 min-w-0 pr-2 leading-snug">
+        <p
+          class="text-xs font-medium text-gray-500 dark:text-gray-400 flex-1 min-w-0 pr-2 leading-snug"
+        >
           {{ labels.suggestionsHint }}
         </p>
         <div
@@ -701,7 +705,8 @@ function confirm() {
             :title="ownQuestion.trim() || (isZh ? '（尚未输入）' : '(empty)')"
             @click="selectedSlot = 0"
           >
-            <span class="shrink-0 font-mono text-xs font-semibold tabular-nums text-blue-600 dark:text-blue-400"
+            <span
+              class="shrink-0 font-mono text-xs font-semibold tabular-nums text-blue-600 dark:text-blue-400"
               >0</span
             >
             <span class="min-w-0 flex-1 truncate text-left text-gray-800 dark:text-gray-100">{{
@@ -724,9 +729,10 @@ function confirm() {
             :title="row.text"
             @click="selectedSlot = idx + 1"
           >
-            <span class="shrink-0 font-mono text-xs font-semibold tabular-nums text-blue-600 dark:text-blue-400">{{
-              idx + 1
-            }}</span>
+            <span
+              class="shrink-0 font-mono text-xs font-semibold tabular-nums text-blue-600 dark:text-blue-400"
+              >{{ idx + 1 }}</span
+            >
             <span class="min-w-0 flex-1 truncate text-left text-gray-800 dark:text-gray-100">{{
               row.text
             }}</span>

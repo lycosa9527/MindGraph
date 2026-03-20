@@ -12,7 +12,7 @@ import { computed, onUnmounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
 import { isPlaceholderText } from '@/composables/useAutoComplete'
-import { eventBus, type EventTypes } from '@/composables/useEventBus'
+import { type EventTypes, eventBus } from '@/composables/useEventBus'
 import { useDiagramStore, usePanelsStore } from '@/stores'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import type { DiagramType } from '@/types'
@@ -20,11 +20,11 @@ import { authFetch } from '@/utils/api'
 
 import { applySelectionToDiagram } from './nodePalette/applySelection'
 import {
-  getParentIdFromStageData,
   LEARNING_SHEET_PLACEHOLDER,
   NODE_PALETTE_NEXT,
   NODE_PALETTE_START,
   STAGED_DIAGRAM_TYPES,
+  getParentIdFromStageData,
   suggestionBelongsToParent,
 } from './nodePalette/constants'
 import { buildDiagramData } from './nodePalette/diagramDataBuilder'
@@ -764,8 +764,8 @@ export function useNodePalette(options: UseNodePaletteOptions = {}) {
     })
     errorMessage.value = null
     const parentNameNorm = (parentName ?? '').trim()
-    const suggestionsForMode = panelsStore.nodePalettePanel.suggestions.filter(
-      (s) => suggestionBelongsToParent(s, parentId, parentNameNorm)
+    const suggestionsForMode = panelsStore.nodePalettePanel.suggestions.filter((s) =>
+      suggestionBelongsToParent(s, parentId, parentNameNorm)
     )
     if (suggestionsForMode.length > 0) {
       return true
@@ -792,9 +792,7 @@ export function useNodePalette(options: UseNodePaletteOptions = {}) {
 
   watch(
     () =>
-      diagramType.value === 'concept_map' &&
-      panelsStore.nodePalettePanel.isOpen &&
-      topicText.value,
+      diagramType.value === 'concept_map' && panelsStore.nodePalettePanel.isOpen && topicText.value,
     (shouldEnsure) => {
       if (!shouldEnsure) return
       const topic = topicText.value.trim()
@@ -826,9 +824,7 @@ export function useNodePalette(options: UseNodePaletteOptions = {}) {
   eventBus.onWithOwner('diagram:loaded', resetSessionState, 'useNodePalette')
   eventBus.onWithOwner('diagram:type_changed', resetSessionState, 'useNodePalette')
 
-  function removeConceptMapTabsForDeletedNodes(
-    payload: EventTypes['diagram:nodes_deleted']
-  ): void {
+  function removeConceptMapTabsForDeletedNodes(payload: EventTypes['diagram:nodes_deleted']): void {
     const nodeIds = payload.nodeIds ?? payload.deletedIds ?? []
     if (!nodeIds.length) return
     if (diagramType.value !== 'concept_map' || !panelsStore.nodePalettePanel.isOpen) return

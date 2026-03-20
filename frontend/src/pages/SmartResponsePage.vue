@@ -115,7 +115,7 @@
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 
 import WatchAssignmentModal from '@/components/smart-response/WatchAssignmentModal.vue'
-import { useSmartResponseStore } from '@/stores/smartResponse'
+import { type Watch, useSmartResponseStore } from '@/stores/smartResponse'
 
 const store = useSmartResponseStore()
 const watches = computed(() => store.watches)
@@ -124,7 +124,7 @@ const isLoading = computed(() => store.isLoading)
 const selectedDiagramId = ref<string>('')
 const diagrams = ref<Array<{ id: string; name: string }>>([])
 const showAssignDialog = ref(false)
-const selectedWatch = ref(null)
+const selectedWatch = ref<Watch | null>(null)
 
 onMounted(async () => {
   await store.fetchWatches()
@@ -146,12 +146,12 @@ function getStatusType(status: string) {
   return types[status] || 'info'
 }
 
-function showAssignModal(watch: any) {
+function showAssignModal(watch: Watch) {
   selectedWatch.value = watch
   showAssignDialog.value = true
 }
 
-function showUnassignModal(watch: any) {
+function showUnassignModal(_watchItem: unknown) {
   // TODO: Implement unassign
 }
 

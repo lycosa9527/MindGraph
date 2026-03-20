@@ -29,7 +29,6 @@ const { t } = useLanguage()
 const activeTab = ref((route.query.tab as string) || 'dashboard')
 
 const isAdmin = computed(() => authStore.isAdmin)
-const isManager = computed(() => authStore.isManager)
 
 const allTabsConfig = [
   { name: 'dashboard', labelKey: 'admin.dashboard', icon: 'DataAnalysis', adminOnly: false },

@@ -17,13 +17,15 @@ from typing import Dict, Any
 import psutil
 from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import JSONResponse
+from sqlalchemy import text
+
 from config.settings import config
 from config.database import check_integrity, engine, DATABASE_URL
 from models.responses import DatabaseHealthResponse
+from services.infrastructure.monitoring.ws_metrics import get_ws_metrics_snapshot
 from services.infrastructure.recovery.database_check_state import get_database_check_state_manager
 from services.llm import llm_service
 from services.redis.redis_client import is_redis_available, RedisOps
-from sqlalchemy import text
 
 logger = logging.getLogger(__name__)
 
@@ -162,7 +164,7 @@ async def _check_database_health() -> Dict[str, Any]:
         async def _do_check():
             # Use database-agnostic integrity check
             is_healthy = await asyncio.to_thread(check_integrity)
-            
+
             if is_healthy:
                 message = "Database connection and integrity check passed"
             else:
@@ -346,6 +348,16 @@ async def health_check():
     return {"status": "ok", "version": config.version}
 
 
+@router.get("/health/websocket")
+async def websocket_metrics_check():
+    """
+    WebSocket counters (per process) and optional Redis aggregate active count.
+
+    Intended for operators; does not expose secrets.
+    """
+    return get_ws_metrics_snapshot()
+
+
 @router.get("/health/redis")
 async def redis_health_check():
     """
@@ -397,7 +409,7 @@ async def database_health_check():
     try:
         # Database-agnostic integrity check
         is_healthy = check_integrity()
-        
+
         if is_healthy:
             message = "Database connection and integrity check passed"
         else:

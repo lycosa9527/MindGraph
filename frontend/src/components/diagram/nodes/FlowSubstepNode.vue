@@ -9,10 +9,10 @@ import { computed, inject, ref } from 'vue'
 
 import { Handle, Position } from '@vue-flow/core'
 
-import { getMindmapBranchColor } from '@/config/mindmapColors'
 import { eventBus } from '@/composables/useEventBus'
-import { getBorderStyleProps } from '@/utils/borderStyleUtils'
+import { getMindmapBranchColor } from '@/config/mindmapColors'
 import type { MindGraphNodeProps } from '@/types'
+import { getBorderStyleProps } from '@/utils/borderStyleUtils'
 
 import InlineEditableText from './InlineEditableText.vue'
 
@@ -26,16 +26,10 @@ const groupColor = computed(() => {
 
 const nodeStyle = computed(() => {
   const color = groupColor.value
-  const borderColor =
-    props.data.style?.borderColor ||
-    color?.border ||
-    '#1976d2'
+  const borderColor = props.data.style?.borderColor || color?.border || '#1976d2'
   const borderWidth = props.data.style?.borderWidth || 1
   const borderStyle = props.data.style?.borderStyle || 'solid'
-  const backgroundColor =
-    props.data.style?.backgroundColor ||
-    color?.fill ||
-    '#e3f2fd'
+  const backgroundColor = props.data.style?.backgroundColor || color?.fill || '#e3f2fd'
   const baseStyle = {
     backgroundColor,
     color: props.data.style?.textColor || '#333333',
@@ -46,9 +40,7 @@ const nodeStyle = computed(() => {
     ...getBorderStyleProps(borderColor, borderWidth, borderStyle, {
       backgroundColor,
     }),
-    borderRadius: isFlowMap.value
-      ? '9999px'
-      : `${props.data.style?.borderRadius || 4}px`,
+    borderRadius: isFlowMap.value ? '9999px' : `${props.data.style?.borderRadius || 4}px`,
   }
   if (isFlowMap.value) {
     return {

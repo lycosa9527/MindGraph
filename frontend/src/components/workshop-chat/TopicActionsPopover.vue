@@ -1,14 +1,14 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import {
-  ArrowRightLeft, Pencil, Trash2,
-  BookCheck, BellOff, Bell, Eye,
-} from 'lucide-vue-next'
+import { computed } from 'vue'
+
 import { ElMessageBox } from 'element-plus'
-import type { ChatTopic } from '@/stores/workshopChat'
-import { useWorkshopChatStore } from '@/stores/workshopChat'
+
+import { ArrowRightLeft, Bell, BellOff, BookCheck, Eye, Pencil, Trash2 } from 'lucide-vue-next'
+
 import { useLanguage } from '@/composables/useLanguage'
 import { useAuthStore } from '@/stores/auth'
+import type { ChatTopic } from '@/stores/workshopChat'
+import { useWorkshopChatStore } from '@/stores/workshopChat'
 
 const props = defineProps<{
   topic: ChatTopic
@@ -26,8 +26,11 @@ const store = useWorkshopChatStore()
 const authStore = useAuthStore()
 const { t } = useLanguage()
 
-const canManage = computed(() =>
-  authStore.isAdmin || authStore.isManager || props.topic.created_by === Number(authStore.user?.id),
+const canManage = computed(
+  () =>
+    authStore.isAdmin ||
+    authStore.isManager ||
+    props.topic.created_by === Number(authStore.user?.id)
 )
 
 async function handleMarkRead(): Promise<void> {
@@ -59,11 +62,10 @@ function handleMove(): void {
 
 async function handleDelete(): Promise<void> {
   try {
-    await ElMessageBox.confirm(
-      t('workshop.deleteTopicConfirm'),
-      t('workshop.deleteTopic'),
-      { confirmButtonText: t('workshop.deleteTopic'), type: 'warning' },
-    )
+    await ElMessageBox.confirm(t('workshop.deleteTopicConfirm'), t('workshop.deleteTopic'), {
+      confirmButtonText: t('workshop.deleteTopic'),
+      type: 'warning',
+    })
     await store.deleteTopic(props.channelId, props.topic.id)
     emit('update:visible', false)
   } catch {
@@ -85,35 +87,62 @@ async function handleDelete(): Promise<void> {
     </template>
 
     <div class="ws-popover-menu">
-      <button class="ws-popover-item" @click="handleMarkRead">
+      <button
+        class="ws-popover-item"
+        @click="handleMarkRead"
+      >
         <BookCheck class="ws-popover-icon" />
         {{ t('workshop.markAsRead') }}
       </button>
 
-      <button class="ws-popover-item" @click="handleToggleMute">
-        <component :is="topic.visibility_policy === 'muted' ? Bell : BellOff" class="ws-popover-icon" />
-        {{ topic.visibility_policy === 'muted' ? t('workshop.unmuteTopic') : t('workshop.muteTopic') }}
+      <button
+        class="ws-popover-item"
+        @click="handleToggleMute"
+      >
+        <component
+          :is="topic.visibility_policy === 'muted' ? Bell : BellOff"
+          class="ws-popover-icon"
+        />
+        {{
+          topic.visibility_policy === 'muted' ? t('workshop.unmuteTopic') : t('workshop.muteTopic')
+        }}
       </button>
 
-      <button class="ws-popover-item" @click="handleToggleFollow">
+      <button
+        class="ws-popover-item"
+        @click="handleToggleFollow"
+      >
         <Eye class="ws-popover-icon" />
-        {{ topic.visibility_policy === 'followed' ? t('workshop.unfollowTopic') : t('workshop.followTopic') }}
+        {{
+          topic.visibility_policy === 'followed'
+            ? t('workshop.unfollowTopic')
+            : t('workshop.followTopic')
+        }}
       </button>
 
       <template v-if="canManage">
         <div class="ws-popover-divider" />
 
-        <button class="ws-popover-item" @click="handleRename">
+        <button
+          class="ws-popover-item"
+          @click="handleRename"
+        >
           <Pencil class="ws-popover-icon" />
           {{ t('workshop.renameTopic') }}
         </button>
 
-        <button class="ws-popover-item" @click="handleMove">
+        <button
+          class="ws-popover-item"
+          @click="handleMove"
+        >
           <ArrowRightLeft class="ws-popover-icon" />
           {{ t('workshop.moveTopic') }}
         </button>
 
-        <button class="ws-popover-item ws-popover-item--danger" @click="handleDelete">
+        <button
+          class="ws-popover-item ws-popover-item--danger"
+          @click="handleDelete"
+        >
           <Trash2 class="ws-popover-icon" />
           {{ t('workshop.deleteTopic') }}
         </button>

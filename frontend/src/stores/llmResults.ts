@@ -390,8 +390,7 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
       }
     })
     const sel = saved.selectedModel
-    selectedModel.value =
-      sel && Object.keys(results.value).includes(sel) ? sel : null
+    selectedModel.value = sel && Object.keys(results.value).includes(sel) ? sel : null
   }
 
   return {

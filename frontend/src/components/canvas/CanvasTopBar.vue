@@ -21,14 +21,22 @@ import {
   ElTooltip,
 } from 'element-plus'
 
-import { ChatDotRound, Connection, Download } from '@element-plus/icons-vue'
+import { ChatDotRound, Download } from '@element-plus/icons-vue'
 
 // Using Lucide icons for a more modern, cute look
-import { ArrowLeft, FileImage, FileJson, FileText, ImageDown, RotateCcw, Share2 } from 'lucide-vue-next'
+import {
+  ArrowLeft,
+  FileImage,
+  FileJson,
+  FileText,
+  ImageDown,
+  RotateCcw,
+  Share2,
+} from 'lucide-vue-next'
 
 import { DiagramSlotFullModal } from '@/components/canvas'
-import { useFeatureFlags } from '@/composables'
 import { WorkshopModal } from '@/components/workshop'
+import { useFeatureFlags } from '@/composables'
 import {
   eventBus,
   getDefaultDiagramName,
@@ -37,9 +45,9 @@ import {
   useWorkshop,
 } from '@/composables'
 import { useLanguage } from '@/composables'
-import type { DiagramType } from '@/types'
 import { useAuthStore, useDiagramStore, useLLMResultsStore, usePanelsStore } from '@/stores'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
+import type { DiagramType } from '@/types'
 
 const notify = useNotifications()
 
@@ -93,11 +101,9 @@ const fileName = computed({
   set: (value: string) => diagramStore.setTitle(value, true),
 })
 
-// Save to gallery state
-const isSaving = ref(false)
 const showSlotFullModal = ref(false)
 
-// Workshop state
+// Diagram presentation mode (shared code) — not Workshop Chat
 const showWorkshopModal = ref(false)
 const currentDiagramId = computed(() => {
   // Priority 1: Use activeDiagramId from store (set when diagram is saved)
@@ -113,11 +119,8 @@ const currentDiagramId = computed(() => {
 })
 const workshopCode = ref<string | null>(null)
 
-// Workshop composable for participant tracking
-const { participantsWithNames, activeEditors, connect, disconnect, watchCode } = useWorkshop(
-  workshopCode,
-  currentDiagramId
-)
+// Presentation-mode composable for participant tracking
+const { participantsWithNames, disconnect, watchCode } = useWorkshop(workshopCode, currentDiagramId)
 
 // User colors and emojis (must match backend)
 const USER_COLORS = [
@@ -151,7 +154,7 @@ const dropdownParticipants = computed(() => {
   return participantsWithNames.value.slice(10)
 })
 
-// Watch for workshop code changes
+// Watch for presentation code changes
 watch(
   () => workshopCode.value,
   (code) => {
@@ -169,9 +172,6 @@ onUnmounted(() => {
   disconnect()
   eventBus.removeAllListenersForOwner('CanvasTopBar')
 })
-
-// Computed for save button state
-const isAlreadySaved = computed(() => savedDiagramsStore.isActiveDiagramSaved)
 
 onMounted(() => {
   eventBus.onWithOwner(
@@ -255,54 +255,6 @@ function handleAutoSaveStatusClick() {
 /** Get diagram spec for saving (includes llm_results when 2+ models) */
 const getDiagramSpec = useDiagramSpecForSave()
 
-// Save to gallery
-async function saveToGallery(): Promise<void> {
-  if (!diagramStore.type || !diagramStore.data) {
-    notify.warning(isZh.value ? '没有可保存的图示' : 'No diagram to save')
-    return
-  }
-
-  const spec = getDiagramSpec()
-  if (!spec) {
-    notify.warning(isZh.value ? '图示数据无效' : 'Invalid diagram data')
-    return
-  }
-
-  isSaving.value = true
-
-  try {
-    const result = await savedDiagramsStore.manualSaveDiagram(
-      fileName.value,
-      diagramStore.type,
-      spec,
-      isZh.value ? 'zh' : 'en',
-      null // TODO: Generate thumbnail
-    )
-
-    if (result.success) {
-      notify.success(
-        result.action === 'updated'
-          ? isZh.value
-            ? '图示已更新'
-            : 'Diagram updated'
-          : isZh.value
-            ? '图示已保存到图库'
-            : 'Diagram saved to gallery'
-      )
-    } else if (result.needsSlotClear) {
-      // Show modal to let user delete a diagram
-      showSlotFullModal.value = true
-    } else {
-      notify.error(result.error || (isZh.value ? '保存失败' : 'Save failed'))
-    }
-  } catch (error) {
-    console.error('Save to gallery error:', error)
-    notify.error(isZh.value ? '网络错误，保存失败' : 'Network error, save failed')
-  } finally {
-    isSaving.value = false
-  }
-}
-
 // Handle slot full modal success
 function handleSlotModalSuccess(_diagramId: string): void {
   showSlotFullModal.value = false
@@ -330,7 +282,9 @@ function handleOpenMindmate() {
 async function handleReset() {
   const diagramType = diagramStore.type as DiagramType | null
   if (!diagramType) {
-    notify.warning(isZh.value ? '无法重置：请先选择图示类型' : 'Cannot reset: select a diagram type first')
+    notify.warning(
+      isZh.value ? '无法重置：请先选择图示类型' : 'Cannot reset: select a diagram type first'
+    )
     return
   }
 
@@ -415,8 +369,12 @@ async function handleReset() {
           class="auto-saved-status text-xs text-gray-500 dark:text-gray-400 shrink-0 cursor-pointer hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
           :title="
             props.slotFullAndNewDiagram
-              ? (isZh ? '点击管理图库空间' : 'Click to manage gallery space')
-              : (isZh ? '点击保存' : 'Click to save')
+              ? isZh
+                ? '点击管理图库空间'
+                : 'Click to manage gallery space'
+              : isZh
+                ? '点击保存'
+                : 'Click to save'
           "
           @click="handleAutoSaveStatusClick"
         >
@@ -434,15 +392,14 @@ async function handleReset() {
         class="text-xs text-gray-600 dark:text-gray-300 text-center truncate"
         :title="props.focusQuestion"
       >
-        <span class="text-gray-400 dark:text-gray-500">{{
-          isZh ? '焦点 · ' : 'Focus · '
-        }}</span>{{ props.focusQuestion }}
+        <span class="text-gray-400 dark:text-gray-500">{{ isZh ? '焦点 · ' : 'Focus · ' }}</span
+        >{{ props.focusQuestion }}
       </p>
     </div>
 
     <!-- Right section: Participants + 教学设计 + Export buttons -->
     <div class="ml-auto flex items-center gap-4 shrink-0 z-10">
-      <!-- Participant bar (only show when workshop is active) -->
+      <!-- Participant bar (only when presentation mode has a join code) -->
       <div
         v-if="workshopCode && participantsWithNames && participantsWithNames.length > 0"
         class="flex items-center gap-1 px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded-md border border-gray-200 dark:border-gray-700"
@@ -565,8 +522,8 @@ async function handleReset() {
                 {{ isZh ? '分享到社区' : 'Share to Community' }}
               </ElDropdownItem>
             </ElDropdownMenu>
-        </template>
-      </ElDropdown>
+          </template>
+        </ElDropdown>
       </div>
     </div>
 
@@ -581,7 +538,7 @@ async function handleReset() {
       @cancel="handleSlotModalCancel"
     />
 
-    <!-- Workshop modal -->
+    <!-- Presentation mode (share code) modal -->
     <WorkshopModal
       v-model:visible="showWorkshopModal"
       :diagram-id="currentDiagramId"
@@ -685,7 +642,7 @@ async function handleReset() {
   min-width: 180px;
 }
 
-/* Workshop and Export buttons - Swiss Design style (matching MindMate) */
+/* Presentation / export buttons - Swiss Design style (matching MindMate) */
 .workshop-button {
   --el-button-bg-color: #dbeafe;
   --el-button-border-color: #93c5fd;

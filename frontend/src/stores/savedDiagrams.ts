@@ -15,11 +15,10 @@ import { computed, ref } from 'vue'
 
 import { defineStore } from 'pinia'
 
+import { getDefaultDiagramName } from '@/composables'
+import { SAVE } from '@/config'
 import type { DiagramType } from '@/types'
 import { authFetch } from '@/utils/api'
-
-import { SAVE } from '@/config'
-import { getDefaultDiagramName } from '@/composables'
 
 import { useAuthStore } from './auth'
 import { useDiagramStore } from './diagram'

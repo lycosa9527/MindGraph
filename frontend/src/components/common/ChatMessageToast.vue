@@ -14,9 +14,9 @@ import { useRouter } from 'vue-router'
 import { X } from 'lucide-vue-next'
 
 import {
+  type ChatToastItem,
   dismissChatToast,
   useChatToastQueue,
-  type ChatToastItem,
 } from '@/composables/chatToastQueue'
 import { useLanguage } from '@/composables/useLanguage'
 import { useWorkshopChatStore } from '@/stores/workshopChat'
@@ -54,9 +54,11 @@ function navigate(toast: ChatToastItem): void {
           v-for="toast in toasts"
           :key="toast.id"
           class="pointer-events-auto w-80 bg-white rounded-2xl shadow-2xl border border-stone-100 overflow-hidden"
-          :class="toast.type === 'dm'
-            ? 'border-l-[3px] border-l-blue-400'
-            : 'border-l-[3px] border-l-amber-400'"
+          :class="
+            toast.type === 'dm'
+              ? 'border-l-[3px] border-l-blue-400'
+              : 'border-l-[3px] border-l-amber-400'
+          "
           role="alert"
         >
           <!-- Body -->
@@ -98,9 +100,11 @@ function navigate(toast: ChatToastItem): void {
           <div class="px-4 pb-3 flex justify-end">
             <button
               class="text-xs font-semibold tracking-wide transition-colors"
-              :class="toast.type === 'dm'
-                ? 'text-blue-500 hover:text-blue-700'
-                : 'text-amber-500 hover:text-amber-700'"
+              :class="
+                toast.type === 'dm'
+                  ? 'text-blue-500 hover:text-blue-700'
+                  : 'text-amber-500 hover:text-amber-700'
+              "
               @click="navigate(toast)"
             >
               {{ t('workshop.view') }} →
@@ -137,13 +141,25 @@ function navigate(toast: ChatToastItem): void {
 }
 
 @keyframes toast-slide-in {
-  from { opacity: 0; transform: translateX(110%); }
-  to   { opacity: 1; transform: translateX(0); }
+  from {
+    opacity: 0;
+    transform: translateX(110%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 @keyframes toast-slide-out {
-  from { opacity: 1; transform: translateX(0); }
-  to   { opacity: 0; transform: translateX(110%); }
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(110%);
+  }
 }
 
 /* ── Progress drain ───────────────────────────────────────────── */
@@ -152,7 +168,11 @@ function navigate(toast: ChatToastItem): void {
 }
 
 @keyframes toast-drain-progress {
-  from { width: 100%; }
-  to   { width: 0%; }
+  from {
+    width: 100%;
+  }
+  to {
+    width: 0%;
+  }
 }
 </style>

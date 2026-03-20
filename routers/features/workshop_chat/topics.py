@@ -38,11 +38,24 @@ from routers.features.workshop_chat.schemas import (
 from services.features.workshop_chat import topic_service, message_service
 from services.features.workshop_chat.workshop_list_etag import topics_list_etag
 from services.features.workshop_chat_ws_manager import chat_ws_manager
-from utils.auth import get_current_user, is_manager
+from utils.auth import can_moderate_workshop_channel, get_current_user
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
+
+def _may_mutate_topic(
+    current_user: User,
+    channel,
+    topic,
+) -> bool:
+    """Topic author, channel creator, or org/realm moderator (Zulip-style)."""
+    if topic.created_by == current_user.id:
+        return True
+    if channel.created_by == current_user.id:
+        return True
+    return can_moderate_workshop_channel(current_user, channel)
 
 
 @router.get("/channels/{channel_id}/topics")
@@ -118,14 +131,15 @@ async def update_topic(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Update topic (creator, manager, or channel owner)."""
-    access_channel(db, channel_id, current_user)
-    require_membership(db, channel_id, current_user.id)
+    """Update topic (creator, channel creator, or moderator)."""
+    channel = access_channel(db, channel_id, current_user)
     topic = topic_service.get_topic(db, topic_id)
     if not topic or topic.channel_id != channel_id:
         raise HTTPException(status_code=404, detail="Topic not found")
-    if topic.created_by != current_user.id and not is_manager(current_user):
+    if not _may_mutate_topic(current_user, channel, topic):
         raise HTTPException(status_code=403, detail="Permission denied")
+    if not can_moderate_workshop_channel(current_user, channel):
+        require_membership(db, channel_id, current_user.id)
     result = topic_service.update_topic(
         db, topic_id,
         title=body.title, description=body.description,
@@ -147,14 +161,15 @@ async def move_topic(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Move a topic to another channel (manager or topic creator only)."""
-    access_channel(db, channel_id, current_user)
-    require_membership(db, channel_id, current_user.id)
+    """Move a topic to another channel (creator, channel owner, or moderator)."""
+    channel = access_channel(db, channel_id, current_user)
     topic = topic_service.get_topic(db, topic_id)
     if not topic or topic.channel_id != channel_id:
         raise HTTPException(status_code=404, detail="Topic not found")
-    if topic.created_by != current_user.id and not is_manager(current_user):
+    if not _may_mutate_topic(current_user, channel, topic):
         raise HTTPException(status_code=403, detail="Permission denied")
+    if not can_moderate_workshop_channel(current_user, channel):
+        require_membership(db, channel_id, current_user.id)
     access_channel(db, body.target_channel_id, current_user)
     result = topic_service.move_topic(db, topic_id, body.target_channel_id)
     if result:
@@ -177,14 +192,15 @@ async def rename_topic(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Rename a topic (creator or manager)."""
-    access_channel(db, channel_id, current_user)
-    require_membership(db, channel_id, current_user.id)
+    """Rename a topic (creator, channel owner, or moderator)."""
+    channel = access_channel(db, channel_id, current_user)
     topic = topic_service.get_topic(db, topic_id)
     if not topic or topic.channel_id != channel_id:
         raise HTTPException(status_code=404, detail="Topic not found")
-    if topic.created_by != current_user.id and not is_manager(current_user):
+    if not _may_mutate_topic(current_user, channel, topic):
         raise HTTPException(status_code=403, detail="Permission denied")
+    if not can_moderate_workshop_channel(current_user, channel):
+        require_membership(db, channel_id, current_user.id)
     result = topic_service.rename_topic(db, topic_id, body.title)
     if result:
         await chat_ws_manager.broadcast_to_channel(channel_id, {
@@ -202,14 +218,15 @@ async def delete_topic(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Delete a topic (creator or manager)."""
-    access_channel(db, channel_id, current_user)
-    require_membership(db, channel_id, current_user.id)
+    """Delete a topic (creator, channel owner, or moderator)."""
+    channel = access_channel(db, channel_id, current_user)
     topic = topic_service.get_topic(db, topic_id)
     if not topic or topic.channel_id != channel_id:
         raise HTTPException(status_code=404, detail="Topic not found")
-    if topic.created_by != current_user.id and not is_manager(current_user):
+    if not _may_mutate_topic(current_user, channel, topic):
         raise HTTPException(status_code=403, detail="Permission denied")
+    if not can_moderate_workshop_channel(current_user, channel):
+        require_membership(db, channel_id, current_user.id)
     topic_service.delete_topic(db, topic_id)
     await chat_ws_manager.broadcast_to_channel(channel_id, {
         "type": "topic_deleted", "channel_id": channel_id, "topic_id": topic_id,

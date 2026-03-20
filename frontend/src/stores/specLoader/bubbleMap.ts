@@ -5,7 +5,6 @@
  * attribute bubbles on a ring. Single-line, no truncation; circles grow to fit text.
  * Uses mindmap branch color palette for each attribute (like double bubble map).
  */
-import { getMindmapBranchColor } from '@/config/mindmapColors'
 import {
   DEFAULT_CENTER_X,
   DEFAULT_CENTER_Y,
@@ -13,13 +12,14 @@ import {
   DEFAULT_TOPIC_RADIUS,
 } from '@/composables/diagrams/layoutConfig'
 import { bubbleMapChildrenRadius, polarToPosition } from '@/composables/diagrams/useRadialLayout'
+import { getMindmapBranchColor } from '@/config/mindmapColors'
 import type { Connection, DiagramNode } from '@/types'
 
 import {
   CONTEXT_FONT_SIZE,
+  TOPIC_FONT_SIZE,
   computeMinDiameterForNoWrap,
   computeTopicRadiusForCircleMap,
-  TOPIC_FONT_SIZE,
 } from './textMeasurement'
 import type { SpecLoaderResult } from './types'
 
@@ -50,25 +50,15 @@ export function recalculateBubbleMapLayout(nodes: DiagramNode[]): DiagramNode[] 
     })
   const nodeCount = bubbleNodes.length
   const topicText = topicNode?.text ?? ''
-  const topicR = Math.max(
-    DEFAULT_TOPIC_RADIUS,
-    computeTopicRadiusForCircleMap(topicText || ' ')
-  )
+  const topicR = Math.max(DEFAULT_TOPIC_RADIUS, computeTopicRadiusForCircleMap(topicText || ' '))
   const centerX = DEFAULT_CENTER_X
   const centerY = DEFAULT_CENTER_Y
 
   const radii = bubbleNodes.map((n) => radiusFromText(n.text))
   const uniformRadius =
-    bubbleNodes.length > 0
-      ? Math.max(DEFAULT_CONTEXT_RADIUS, ...radii)
-      : DEFAULT_CONTEXT_RADIUS
+    bubbleNodes.length > 0 ? Math.max(DEFAULT_CONTEXT_RADIUS, ...radii) : DEFAULT_CONTEXT_RADIUS
 
-  const childrenRadius = bubbleMapChildrenRadius(
-    nodeCount,
-    topicR,
-    uniformRadius,
-    uniformRadius
-  )
+  const childrenRadius = bubbleMapChildrenRadius(nodeCount, topicR, uniformRadius, uniformRadius)
 
   const result: DiagramNode[] = []
 
@@ -127,10 +117,7 @@ export function loadBubbleMapSpec(spec: Record<string, unknown>): SpecLoaderResu
   const topic = (spec.topic as string) || ''
   const attributes = Array.isArray(spec.attributes) ? (spec.attributes as string[]) : []
 
-  const topicR = Math.max(
-    DEFAULT_TOPIC_RADIUS,
-    computeTopicRadiusForCircleMap(topic || ' ')
-  )
+  const topicR = Math.max(DEFAULT_TOPIC_RADIUS, computeTopicRadiusForCircleMap(topic || ' '))
   const centerX = DEFAULT_CENTER_X
   const centerY = DEFAULT_CENTER_Y
   const nodeCount = attributes.length
@@ -139,12 +126,7 @@ export function loadBubbleMapSpec(spec: Record<string, unknown>): SpecLoaderResu
   const uniformRadius =
     nodeCount > 0 ? Math.max(DEFAULT_CONTEXT_RADIUS, ...radii) : DEFAULT_CONTEXT_RADIUS
 
-  const childrenRadius = bubbleMapChildrenRadius(
-    nodeCount,
-    topicR,
-    uniformRadius,
-    uniformRadius
-  )
+  const childrenRadius = bubbleMapChildrenRadius(nodeCount, topicR, uniformRadius, uniformRadius)
 
   const nodes: DiagramNode[] = []
   const connections: Connection[] = []

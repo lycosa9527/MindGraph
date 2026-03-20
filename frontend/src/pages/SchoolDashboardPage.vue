@@ -5,28 +5,32 @@
  */
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
-import { ChatDotRound, Connection, Loading, Refresh, TrendCharts, User, Warning } from '@element-plus/icons-vue'
-
 import {
-  Chart,
-  registerables,
-  type ChartConfiguration,
-  type TooltipItem,
-} from 'chart.js'
+  ChatDotRound,
+  Connection,
+  Loading,
+  Refresh,
+  TrendCharts,
+  User,
+  Warning,
+} from '@element-plus/icons-vue'
 
-Chart.register(...registerables)
+import { Chart, type ChartConfiguration, type TooltipItem, registerables } from 'chart.js'
 
 import { useLanguage, useNotifications } from '@/composables'
 import { useAuthStore } from '@/stores'
 import { apiRequest } from '@/utils/apiClient'
+
+Chart.register(...registerables)
 
 const { t } = useLanguage()
 const notify = useNotifications()
 const authStore = useAuthStore()
 
 const isAdmin = computed(() => authStore.isAdmin)
-const isManager = computed(() => authStore.isManager)
-const userSchoolId = computed(() => (authStore.user?.schoolId ? Number(authStore.user.schoolId) : null))
+const userSchoolId = computed(() =>
+  authStore.user?.schoolId ? Number(authStore.user.schoolId) : null
+)
 
 const selectedOrgId = ref<number | null>(null)
 const organizations = ref<{ id: number; name: string; code: string }[]>([])
@@ -65,13 +69,23 @@ const tokenStats = ref<{
       today: { total_tokens: number; request_count?: number }
       week: { total_tokens: number; request_count?: number }
       month: { total_tokens: number; request_count?: number }
-      total: { total_tokens: number; input_tokens: number; output_tokens: number; request_count?: number }
+      total: {
+        total_tokens: number
+        input_tokens: number
+        output_tokens: number
+        request_count?: number
+      }
     }
     mindmate: {
       today: { total_tokens: number; request_count?: number }
       week: { total_tokens: number; request_count?: number }
       month: { total_tokens: number; request_count?: number }
-      total: { total_tokens: number; input_tokens: number; output_tokens: number; request_count?: number }
+      total: {
+        total_tokens: number
+        input_tokens: number
+        output_tokens: number
+        request_count?: number
+      }
     }
   }
 } | null>(null)
@@ -180,7 +194,9 @@ async function showTrendChart(period: 'today' | 'week' | 'month' | 'total' = 'we
   }
 }
 
-function renderTrendChart(data: { data: Array<{ date: string; value: number; input?: number; output?: number }> }) {
+function renderTrendChart(data: {
+  data: Array<{ date: string; value: number; input?: number; output?: number }>
+}) {
   if (!trendChartRef.value) return
   const rawData = data?.data ?? []
   if (rawData.length === 0) return
@@ -338,7 +354,6 @@ onMounted(async () => {
   loadStats()
 })
 
-
 onBeforeUnmount(() => {
   trendChartInstance?.destroy()
   trendChartInstance = null
@@ -410,129 +425,129 @@ onBeforeUnmount(() => {
         </div>
 
         <template v-else-if="activeTab === 'overview'">
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4">
-          <el-card
-            shadow="hover"
-            class="stat-card stat-card-clickable"
-            @click="showTrendChart('total')"
-          >
-            <div class="flex items-center gap-4">
-              <div
-                class="w-12 h-12 bg-primary-100 dark:bg-primary-900 rounded-lg flex items-center justify-center"
-              >
-                <el-icon
-                  :size="24"
-                  class="text-primary-500"
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4">
+            <el-card
+              shadow="hover"
+              class="stat-card stat-card-clickable"
+              @click="showTrendChart('total')"
+            >
+              <div class="flex items-center gap-4">
+                <div
+                  class="w-12 h-12 bg-primary-100 dark:bg-primary-900 rounded-lg flex items-center justify-center"
                 >
-                  <User />
-                </el-icon>
+                  <el-icon
+                    :size="24"
+                    class="text-primary-500"
+                  >
+                    <User />
+                  </el-icon>
+                </div>
+                <div>
+                  <p class="text-sm text-gray-500 dark:text-gray-400">
+                    {{ t('admin.totalUsers') }}
+                  </p>
+                  <p class="text-2xl font-bold text-gray-800 dark:text-white">
+                    {{ stats.totalUsers.toLocaleString() }}
+                  </p>
+                </div>
               </div>
-              <div>
-                <p class="text-sm text-gray-500 dark:text-gray-400">
-                  {{ t('admin.totalUsers') }}
-                </p>
-                <p class="text-2xl font-bold text-gray-800 dark:text-white">
-                  {{ stats.totalUsers.toLocaleString() }}
-                </p>
+            </el-card>
+
+            <el-card
+              shadow="hover"
+              class="stat-card stat-card-clickable"
+              @click="showTrendChart('today')"
+            >
+              <div class="flex items-center gap-4">
+                <div
+                  class="w-12 h-12 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center"
+                >
+                  <el-icon
+                    :size="24"
+                    class="text-green-500"
+                  >
+                    <TrendCharts />
+                  </el-icon>
+                </div>
+                <div>
+                  <p class="text-sm text-gray-500 dark:text-gray-400">
+                    {{ t('admin.todayRegistrations') }}
+                  </p>
+                  <p class="text-2xl font-bold text-gray-800 dark:text-white">
+                    {{ stats.recentRegistrations }}
+                  </p>
+                </div>
               </div>
-            </div>
-          </el-card>
+            </el-card>
+
+            <el-card
+              shadow="hover"
+              class="stat-card stat-card-clickable"
+              @click="showTrendChart('week')"
+            >
+              <div class="flex items-center gap-4">
+                <div
+                  class="w-12 h-12 bg-orange-100 dark:bg-orange-900 rounded-lg flex items-center justify-center"
+                >
+                  <el-icon
+                    :size="24"
+                    class="text-orange-500"
+                  >
+                    <Connection />
+                  </el-icon>
+                </div>
+                <div>
+                  <p class="text-sm text-gray-500 dark:text-gray-400">
+                    {{ t('admin.tokens') }} ({{ t('admin.pastWeek') }})
+                  </p>
+                  <p class="text-2xl font-bold text-gray-800 dark:text-white">
+                    {{ formatNumber(stats.totalTokens) }}
+                  </p>
+                </div>
+              </div>
+            </el-card>
+          </div>
 
           <el-card
+            v-if="topUsers.length > 0"
             shadow="hover"
-            class="stat-card stat-card-clickable"
-            @click="showTrendChart('today')"
+            class="mt-6"
           >
-            <div class="flex items-center gap-4">
-              <div
-                class="w-12 h-12 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center"
+            <template #header>
+              <span class="font-medium">{{ t('admin.topUsersByTokens') }}</span>
+              <el-button
+                text
+                size="small"
+                @click="loadStats"
               >
-                <el-icon
-                  :size="24"
-                  class="text-green-500"
-                >
-                  <TrendCharts />
-                </el-icon>
-              </div>
-              <div>
-                <p class="text-sm text-gray-500 dark:text-gray-400">
-                  {{ t('admin.todayRegistrations') }}
-                </p>
-                <p class="text-2xl font-bold text-gray-800 dark:text-white">
-                  {{ stats.recentRegistrations }}
-                </p>
-              </div>
-            </div>
-          </el-card>
-
-          <el-card
-            shadow="hover"
-            class="stat-card stat-card-clickable"
-            @click="showTrendChart('week')"
-          >
-            <div class="flex items-center gap-4">
-              <div
-                class="w-12 h-12 bg-orange-100 dark:bg-orange-900 rounded-lg flex items-center justify-center"
-              >
-                <el-icon
-                  :size="24"
-                  class="text-orange-500"
-                >
-                  <Connection />
-                </el-icon>
-              </div>
-              <div>
-                <p class="text-sm text-gray-500 dark:text-gray-400">
-                  {{ t('admin.tokens') }} ({{ t('admin.pastWeek') }})
-                </p>
-                <p class="text-2xl font-bold text-gray-800 dark:text-white">
-                  {{ formatNumber(stats.totalTokens) }}
-                </p>
-              </div>
-            </div>
-          </el-card>
-        </div>
-
-        <el-card
-          v-if="topUsers.length > 0"
-          shadow="hover"
-          class="mt-6"
-        >
-          <template #header>
-            <span class="font-medium">{{ t('admin.topUsersByTokens') }}</span>
-            <el-button
-              text
+                {{ t('common.refresh') }}
+              </el-button>
+            </template>
+            <el-table
+              :data="topUsers"
+              stripe
               size="small"
-              @click="loadStats"
             >
-              {{ t('common.refresh') }}
-            </el-button>
-          </template>
-          <el-table
-            :data="topUsers"
-            stripe
-            size="small"
-          >
-            <el-table-column
-              prop="name"
-              :label="t('admin.name')"
-            />
-            <el-table-column
-              prop="phone"
-              :label="t('admin.phone')"
-              width="140"
-            />
-            <el-table-column
-              prop="total_tokens"
-              :label="t('admin.tokensUsed')"
-              width="120"
-            >
-              <template #default="{ row }">
-                {{ formatNumber(row.total_tokens) }}
-              </template>
-            </el-table-column>
-          </el-table>
-        </el-card>
+              <el-table-column
+                prop="name"
+                :label="t('admin.name')"
+              />
+              <el-table-column
+                prop="phone"
+                :label="t('admin.phone')"
+                width="140"
+              />
+              <el-table-column
+                prop="total_tokens"
+                :label="t('admin.tokensUsed')"
+                width="120"
+              >
+                <template #default="{ row }">
+                  {{ formatNumber(row.total_tokens) }}
+                </template>
+              </el-table-column>
+            </el-table>
+          </el-card>
         </template>
 
         <!-- Token Usage Tab -->
@@ -593,7 +608,11 @@ onBeforeUnmount(() => {
                       {{ formatNumber(tokenStats.by_service?.mindgraph?.today?.total_tokens || 0) }}
                     </p>
                     <p class="text-xs text-gray-400">
-                      {{ (tokenStats.by_service?.mindgraph?.today?.request_count || 0).toLocaleString() }}
+                      {{
+                        (
+                          tokenStats.by_service?.mindgraph?.today?.request_count || 0
+                        ).toLocaleString()
+                      }}
                       {{ t('admin.requests') }}
                     </p>
                   </div>
@@ -603,7 +622,11 @@ onBeforeUnmount(() => {
                       {{ formatNumber(tokenStats.by_service?.mindgraph?.week?.total_tokens || 0) }}
                     </p>
                     <p class="text-xs text-gray-400">
-                      {{ (tokenStats.by_service?.mindgraph?.week?.request_count || 0).toLocaleString() }}
+                      {{
+                        (
+                          tokenStats.by_service?.mindgraph?.week?.request_count || 0
+                        ).toLocaleString()
+                      }}
                       {{ t('admin.requests') }}
                     </p>
                   </div>
@@ -613,7 +636,11 @@ onBeforeUnmount(() => {
                       {{ formatNumber(tokenStats.by_service?.mindgraph?.month?.total_tokens || 0) }}
                     </p>
                     <p class="text-xs text-gray-400">
-                      {{ (tokenStats.by_service?.mindgraph?.month?.request_count || 0).toLocaleString() }}
+                      {{
+                        (
+                          tokenStats.by_service?.mindgraph?.month?.request_count || 0
+                        ).toLocaleString()
+                      }}
                       {{ t('admin.requests') }}
                     </p>
                   </div>
@@ -623,7 +650,11 @@ onBeforeUnmount(() => {
                       {{ formatNumber(tokenStats.by_service?.mindgraph?.total?.total_tokens || 0) }}
                     </p>
                     <p class="text-xs text-gray-400">
-                      {{ (tokenStats.by_service?.mindgraph?.total?.request_count || 0).toLocaleString() }}
+                      {{
+                        (
+                          tokenStats.by_service?.mindgraph?.total?.request_count || 0
+                        ).toLocaleString()
+                      }}
                       {{ t('admin.requests') }}
                     </p>
                   </div>
@@ -638,7 +669,9 @@ onBeforeUnmount(() => {
                   <div class="flex justify-between text-sm mt-1">
                     <span class="text-gray-500">{{ t('admin.outputTokens') }}</span>
                     <span class="font-medium text-gray-700 dark:text-gray-300">
-                      {{ formatNumber(tokenStats.by_service?.mindgraph?.total?.output_tokens || 0) }}
+                      {{
+                        formatNumber(tokenStats.by_service?.mindgraph?.total?.output_tokens || 0)
+                      }}
                     </span>
                   </div>
                 </div>
@@ -673,7 +706,11 @@ onBeforeUnmount(() => {
                       {{ formatNumber(tokenStats.by_service?.mindmate?.today?.total_tokens || 0) }}
                     </p>
                     <p class="text-xs text-gray-400">
-                      {{ (tokenStats.by_service?.mindmate?.today?.request_count || 0).toLocaleString() }}
+                      {{
+                        (
+                          tokenStats.by_service?.mindmate?.today?.request_count || 0
+                        ).toLocaleString()
+                      }}
                       {{ t('admin.requests') }}
                     </p>
                   </div>
@@ -683,7 +720,9 @@ onBeforeUnmount(() => {
                       {{ formatNumber(tokenStats.by_service?.mindmate?.week?.total_tokens || 0) }}
                     </p>
                     <p class="text-xs text-gray-400">
-                      {{ (tokenStats.by_service?.mindmate?.week?.request_count || 0).toLocaleString() }}
+                      {{
+                        (tokenStats.by_service?.mindmate?.week?.request_count || 0).toLocaleString()
+                      }}
                       {{ t('admin.requests') }}
                     </p>
                   </div>
@@ -693,7 +732,11 @@ onBeforeUnmount(() => {
                       {{ formatNumber(tokenStats.by_service?.mindmate?.month?.total_tokens || 0) }}
                     </p>
                     <p class="text-xs text-gray-400">
-                      {{ (tokenStats.by_service?.mindmate?.month?.request_count || 0).toLocaleString() }}
+                      {{
+                        (
+                          tokenStats.by_service?.mindmate?.month?.request_count || 0
+                        ).toLocaleString()
+                      }}
                       {{ t('admin.requests') }}
                     </p>
                   </div>
@@ -703,7 +746,11 @@ onBeforeUnmount(() => {
                       {{ formatNumber(tokenStats.by_service?.mindmate?.total?.total_tokens || 0) }}
                     </p>
                     <p class="text-xs text-gray-400">
-                      {{ (tokenStats.by_service?.mindmate?.total?.request_count || 0).toLocaleString() }}
+                      {{
+                        (
+                          tokenStats.by_service?.mindmate?.total?.request_count || 0
+                        ).toLocaleString()
+                      }}
                       {{ t('admin.requests') }}
                     </p>
                   </div>
@@ -746,8 +793,14 @@ onBeforeUnmount(() => {
                     {{ formatNumber(tokenStats.today?.total_tokens || 0) }}
                   </p>
                   <div class="flex justify-center gap-2 mt-1 text-xs text-gray-400">
-                    <span>{{ t('admin.inShort') }}: {{ formatNumber(tokenStats.today?.input_tokens || 0) }}</span>
-                    <span>{{ t('admin.outShort') }}: {{ formatNumber(tokenStats.today?.output_tokens || 0) }}</span>
+                    <span
+                      >{{ t('admin.inShort') }}:
+                      {{ formatNumber(tokenStats.today?.input_tokens || 0) }}</span
+                    >
+                    <span
+                      >{{ t('admin.outShort') }}:
+                      {{ formatNumber(tokenStats.today?.output_tokens || 0) }}</span
+                    >
                   </div>
                 </div>
                 <div class="text-center">
@@ -756,8 +809,14 @@ onBeforeUnmount(() => {
                     {{ formatNumber(tokenStats.past_week?.total_tokens || 0) }}
                   </p>
                   <div class="flex justify-center gap-2 mt-1 text-xs text-gray-400">
-                    <span>{{ t('admin.inShort') }}: {{ formatNumber(tokenStats.past_week?.input_tokens || 0) }}</span>
-                    <span>{{ t('admin.outShort') }}: {{ formatNumber(tokenStats.past_week?.output_tokens || 0) }}</span>
+                    <span
+                      >{{ t('admin.inShort') }}:
+                      {{ formatNumber(tokenStats.past_week?.input_tokens || 0) }}</span
+                    >
+                    <span
+                      >{{ t('admin.outShort') }}:
+                      {{ formatNumber(tokenStats.past_week?.output_tokens || 0) }}</span
+                    >
                   </div>
                 </div>
                 <div class="text-center">
@@ -766,8 +825,14 @@ onBeforeUnmount(() => {
                     {{ formatNumber(tokenStats.past_month?.total_tokens || 0) }}
                   </p>
                   <div class="flex justify-center gap-2 mt-1 text-xs text-gray-400">
-                    <span>{{ t('admin.inShort') }}: {{ formatNumber(tokenStats.past_month?.input_tokens || 0) }}</span>
-                    <span>{{ t('admin.outShort') }}: {{ formatNumber(tokenStats.past_month?.output_tokens || 0) }}</span>
+                    <span
+                      >{{ t('admin.inShort') }}:
+                      {{ formatNumber(tokenStats.past_month?.input_tokens || 0) }}</span
+                    >
+                    <span
+                      >{{ t('admin.outShort') }}:
+                      {{ formatNumber(tokenStats.past_month?.output_tokens || 0) }}</span
+                    >
                   </div>
                 </div>
                 <div class="text-center">
@@ -776,8 +841,14 @@ onBeforeUnmount(() => {
                     {{ formatNumber(tokenStats.total?.total_tokens || 0) }}
                   </p>
                   <div class="flex justify-center gap-2 mt-1 text-xs text-gray-400">
-                    <span>{{ t('admin.inShort') }}: {{ formatNumber(tokenStats.total?.input_tokens || 0) }}</span>
-                    <span>{{ t('admin.outShort') }}: {{ formatNumber(tokenStats.total?.output_tokens || 0) }}</span>
+                    <span
+                      >{{ t('admin.inShort') }}:
+                      {{ formatNumber(tokenStats.total?.input_tokens || 0) }}</span
+                    >
+                    <span
+                      >{{ t('admin.outShort') }}:
+                      {{ formatNumber(tokenStats.total?.output_tokens || 0) }}</span
+                    >
                   </div>
                 </div>
               </div>
@@ -853,7 +924,9 @@ onBeforeUnmount(() => {
               :class="{ 'ring-2 ring-primary-500': trendPeriod === 'month' }"
               @click="switchTrendPeriod('month')"
             >
-              <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">{{ t('admin.pastMonth') }}</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">
+                {{ t('admin.pastMonth') }}
+              </p>
               <p class="text-lg font-bold text-gray-800 dark:text-white">{{ periodCards.month }}</p>
             </el-card>
             <el-card

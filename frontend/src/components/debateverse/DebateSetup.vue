@@ -119,7 +119,10 @@ async function startDebate() {
 
     // If user selected a role, join as that role
     if (userRole.value !== 'viewer') {
-      await store.joinSession(store.currentSessionId!, userRole.value, undefined, undefined)
+      const sessionId = store.currentSessionId
+      if (sessionId) {
+        await store.joinSession(sessionId, userRole.value, undefined, undefined)
+      }
     }
 
     // Set stage to coin_toss (positions will auto-generate)

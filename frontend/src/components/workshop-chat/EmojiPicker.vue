@@ -26,64 +26,104 @@ const categories: EmojiCategory[] = [
     key: 'smileys',
     label: '😊',
     emojis: [
-      { name: 'grinning', code: '😀' }, { name: 'smile', code: '😊' },
-      { name: 'laughing', code: '😂' }, { name: 'joy', code: '🤣' },
-      { name: 'wink', code: '😉' }, { name: 'blush', code: '😊' },
-      { name: 'heart_eyes', code: '😍' }, { name: 'star_struck', code: '🤩' },
-      { name: 'thinking', code: '🤔' }, { name: 'shushing', code: '🤫' },
-      { name: 'zipper_mouth', code: '🤐' }, { name: 'raised_eyebrow', code: '🤨' },
-      { name: 'neutral', code: '😐' }, { name: 'expressionless', code: '😑' },
-      { name: 'rolling_eyes', code: '🙄' }, { name: 'grimacing', code: '😬' },
-      { name: 'relieved', code: '😌' }, { name: 'pensive', code: '😔' },
-      { name: 'sleepy', code: '😴' }, { name: 'drooling', code: '🤤' },
-      { name: 'mask', code: '😷' }, { name: 'nerd', code: '🤓' },
-      { name: 'sunglasses', code: '😎' }, { name: 'clown', code: '🤡' },
+      { name: 'grinning', code: '😀' },
+      { name: 'smile', code: '😊' },
+      { name: 'laughing', code: '😂' },
+      { name: 'joy', code: '🤣' },
+      { name: 'wink', code: '😉' },
+      { name: 'blush', code: '😊' },
+      { name: 'heart_eyes', code: '😍' },
+      { name: 'star_struck', code: '🤩' },
+      { name: 'thinking', code: '🤔' },
+      { name: 'shushing', code: '🤫' },
+      { name: 'zipper_mouth', code: '🤐' },
+      { name: 'raised_eyebrow', code: '🤨' },
+      { name: 'neutral', code: '😐' },
+      { name: 'expressionless', code: '😑' },
+      { name: 'rolling_eyes', code: '🙄' },
+      { name: 'grimacing', code: '😬' },
+      { name: 'relieved', code: '😌' },
+      { name: 'pensive', code: '😔' },
+      { name: 'sleepy', code: '😴' },
+      { name: 'drooling', code: '🤤' },
+      { name: 'mask', code: '😷' },
+      { name: 'nerd', code: '🤓' },
+      { name: 'sunglasses', code: '😎' },
+      { name: 'clown', code: '🤡' },
     ],
   },
   {
     key: 'gestures',
     label: '👍',
     emojis: [
-      { name: 'thumbs_up', code: '👍' }, { name: 'thumbs_down', code: '👎' },
-      { name: 'clap', code: '👏' }, { name: 'raised_hands', code: '🙌' },
-      { name: 'wave', code: '👋' }, { name: 'ok_hand', code: '👌' },
-      { name: 'point_up', code: '☝️' }, { name: 'point_down', code: '👇' },
-      { name: 'point_left', code: '👈' }, { name: 'point_right', code: '👉' },
-      { name: 'pray', code: '🙏' }, { name: 'handshake', code: '🤝' },
-      { name: 'muscle', code: '💪' }, { name: 'crossed_fingers', code: '🤞' },
-      { name: 'v', code: '✌️' }, { name: 'love_you', code: '🤟' },
-      { name: 'fist', code: '✊' }, { name: 'fist_bump', code: '🤜' },
-      { name: 'fire', code: '🔥' }, { name: 'sparkles', code: '✨' },
+      { name: 'thumbs_up', code: '👍' },
+      { name: 'thumbs_down', code: '👎' },
+      { name: 'clap', code: '👏' },
+      { name: 'raised_hands', code: '🙌' },
+      { name: 'wave', code: '👋' },
+      { name: 'ok_hand', code: '👌' },
+      { name: 'point_up', code: '☝️' },
+      { name: 'point_down', code: '👇' },
+      { name: 'point_left', code: '👈' },
+      { name: 'point_right', code: '👉' },
+      { name: 'pray', code: '🙏' },
+      { name: 'handshake', code: '🤝' },
+      { name: 'muscle', code: '💪' },
+      { name: 'crossed_fingers', code: '🤞' },
+      { name: 'v', code: '✌️' },
+      { name: 'love_you', code: '🤟' },
+      { name: 'fist', code: '✊' },
+      { name: 'fist_bump', code: '🤜' },
+      { name: 'fire', code: '🔥' },
+      { name: 'sparkles', code: '✨' },
     ],
   },
   {
     key: 'hearts',
     label: '❤️',
     emojis: [
-      { name: 'heart', code: '❤️' }, { name: 'orange_heart', code: '🧡' },
-      { name: 'yellow_heart', code: '💛' }, { name: 'green_heart', code: '💚' },
-      { name: 'blue_heart', code: '💙' }, { name: 'purple_heart', code: '💜' },
-      { name: 'broken_heart', code: '💔' }, { name: 'sparkling_heart', code: '💖' },
-      { name: 'two_hearts', code: '💕' }, { name: 'revolving_hearts', code: '💞' },
-      { name: 'star', code: '⭐' }, { name: 'glowing_star', code: '🌟' },
-      { name: 'hundred', code: '💯' }, { name: 'trophy', code: '🏆' },
-      { name: 'medal', code: '🏅' }, { name: 'crown', code: '👑' },
+      { name: 'heart', code: '❤️' },
+      { name: 'orange_heart', code: '🧡' },
+      { name: 'yellow_heart', code: '💛' },
+      { name: 'green_heart', code: '💚' },
+      { name: 'blue_heart', code: '💙' },
+      { name: 'purple_heart', code: '💜' },
+      { name: 'broken_heart', code: '💔' },
+      { name: 'sparkling_heart', code: '💖' },
+      { name: 'two_hearts', code: '💕' },
+      { name: 'revolving_hearts', code: '💞' },
+      { name: 'star', code: '⭐' },
+      { name: 'glowing_star', code: '🌟' },
+      { name: 'hundred', code: '💯' },
+      { name: 'trophy', code: '🏆' },
+      { name: 'medal', code: '🏅' },
+      { name: 'crown', code: '👑' },
     ],
   },
   {
     key: 'objects',
     label: '📎',
     emojis: [
-      { name: 'bulb', code: '💡' }, { name: 'bookmark', code: '🔖' },
-      { name: 'memo', code: '📝' }, { name: 'pin', code: '📌' },
-      { name: 'link', code: '🔗' }, { name: 'paperclip', code: '📎' },
-      { name: 'scissors', code: '✂️' }, { name: 'package', code: '📦' },
-      { name: 'bell', code: '🔔' }, { name: 'megaphone', code: '📣' },
-      { name: 'loudspeaker', code: '📢' }, { name: 'magnifying', code: '🔍' },
-      { name: 'key', code: '🔑' }, { name: 'lock', code: '🔒' },
-      { name: 'gear', code: '⚙️' }, { name: 'hammer', code: '🔨' },
-      { name: 'check', code: '✅' }, { name: 'cross', code: '❌' },
-      { name: 'warning', code: '⚠️' }, { name: 'question', code: '❓' },
+      { name: 'bulb', code: '💡' },
+      { name: 'bookmark', code: '🔖' },
+      { name: 'memo', code: '📝' },
+      { name: 'pin', code: '📌' },
+      { name: 'link', code: '🔗' },
+      { name: 'paperclip', code: '📎' },
+      { name: 'scissors', code: '✂️' },
+      { name: 'package', code: '📦' },
+      { name: 'bell', code: '🔔' },
+      { name: 'megaphone', code: '📣' },
+      { name: 'loudspeaker', code: '📢' },
+      { name: 'magnifying', code: '🔍' },
+      { name: 'key', code: '🔑' },
+      { name: 'lock', code: '🔒' },
+      { name: 'gear', code: '⚙️' },
+      { name: 'hammer', code: '🔨' },
+      { name: 'check', code: '✅' },
+      { name: 'cross', code: '❌' },
+      { name: 'warning', code: '⚠️' },
+      { name: 'question', code: '❓' },
     ],
   },
 ]
@@ -92,11 +132,11 @@ const activeCategory = ref('smileys')
 const searchQuery = ref('')
 
 const filteredEmojis = computed(() => {
-  const cat = categories.find(c => c.key === activeCategory.value)
+  const cat = categories.find((c) => c.key === activeCategory.value)
   if (!cat) return []
   if (!searchQuery.value) return cat.emojis
   const q = searchQuery.value.toLowerCase()
-  return cat.emojis.filter(e => e.name.includes(q) || e.code.includes(q))
+  return cat.emojis.filter((e) => e.name.includes(q) || e.code.includes(q))
 })
 
 function handleSelect(emoji: EmojiEntry): void {
@@ -121,7 +161,10 @@ function handleSelect(emoji: EmojiEntry): void {
 
     <!-- Search -->
     <div class="emoji-picker__search-wrap">
-      <el-icon class="emoji-picker__search-icon" :size="12">
+      <el-icon
+        class="emoji-picker__search-icon"
+        :size="12"
+      >
         <Search />
       </el-icon>
       <input
@@ -129,7 +172,7 @@ function handleSelect(emoji: EmojiEntry): void {
         type="text"
         placeholder="搜索..."
         class="emoji-picker__search"
-      >
+      />
     </div>
 
     <!-- Emoji grid -->
@@ -145,7 +188,10 @@ function handleSelect(emoji: EmojiEntry): void {
           {{ emoji.code }}
         </button>
       </div>
-      <div v-if="filteredEmojis.length === 0" class="emoji-picker__empty">
+      <div
+        v-if="filteredEmojis.length === 0"
+        class="emoji-picker__empty"
+      >
         未找到表情
       </div>
     </div>
@@ -251,7 +297,9 @@ function handleSelect(emoji: EmojiEntry): void {
   border: none;
   background: none;
   cursor: pointer;
-  transition: background 100ms ease, transform 100ms ease;
+  transition:
+    background 100ms ease,
+    transform 100ms ease;
 }
 
 .emoji-picker__item:hover {

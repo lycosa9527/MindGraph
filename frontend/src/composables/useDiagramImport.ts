@@ -4,8 +4,8 @@
  */
 import { useRouter } from 'vue-router'
 
-import { IMPORT_SPEC_KEY } from '@/config'
 import { useLanguage, useNotifications } from '@/composables'
+import { IMPORT_SPEC_KEY } from '@/config'
 
 const VALID_DIAGRAM_TYPES: string[] = [
   'circle_map',

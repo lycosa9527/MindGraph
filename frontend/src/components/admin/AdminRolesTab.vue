@@ -3,9 +3,11 @@
  * Admin Roles Tab - List admins and school managers, grant/revoke access
  */
 import { computed, onMounted, ref, watch } from 'vue'
+
 import { useDebounceFn } from '@vueuse/core'
 
 import { ElMessageBox } from 'element-plus'
+
 import { Loading, Plus, Refresh, Search, UserFilled } from '@element-plus/icons-vue'
 
 import { useLanguage, useNotifications } from '@/composables'
@@ -162,10 +164,9 @@ function openAddModal() {
 async function grantAdmin(user: CandidateUser) {
   addGrantingId.value = user.id
   try {
-    const res = await apiRequest(
-      `/api/auth/admin/users/${user.id}/role?role=admin`,
-      { method: 'PUT' }
-    )
+    const res = await apiRequest(`/api/auth/admin/users/${user.id}/role?role=admin`, {
+      method: 'PUT',
+    })
     if (!res.ok) {
       const data = await res.json().catch(() => ({}))
       notify.error((data.detail as string) || 'Failed to grant admin')
@@ -199,10 +200,9 @@ async function revokeAdmin(admin: AdminUser) {
   }
 
   try {
-    const res = await apiRequest(
-      `/api/auth/admin/users/${admin.id}/role?role=user`,
-      { method: 'PUT' }
-    )
+    const res = await apiRequest(`/api/auth/admin/users/${admin.id}/role?role=user`, {
+      method: 'PUT',
+    })
     if (!res.ok) {
       const data = await res.json().catch(() => ({}))
       notify.error((data.detail as string) || 'Failed to revoke admin')
@@ -357,7 +357,7 @@ onMounted(loadAdmins)
               width="200"
             >
               <template #default="{ row }">
-                {{ row.source === 'database' ? (row.created_at || '—') : '—' }}
+                {{ row.source === 'database' ? row.created_at || '—' : '—' }}
               </template>
             </el-table-column>
             <el-table-column

@@ -133,7 +133,9 @@ function handleDeleteHistory(convId: string, event: Event) {
                 v-if="isLoadingHistory"
                 class="history-dropdown-loading"
               >
-                <div class="animate-spin w-5 h-5 border-2 border-primary-500 border-t-transparent rounded-full" />
+                <div
+                  class="animate-spin w-5 h-5 border-2 border-primary-500 border-t-transparent rounded-full"
+                />
                 <span class="text-xs text-gray-500">{{ isZh ? '加载中...' : 'Loading...' }}</span>
               </div>
               <div

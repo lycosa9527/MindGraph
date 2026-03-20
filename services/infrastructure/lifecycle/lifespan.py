@@ -26,6 +26,10 @@ from config.database import close_db, init_db
 from config.settings import config
 from services.auth.ip_geolocation import get_geolocation_service
 from services.auth.sms_middleware import get_sms_middleware, shutdown_sms_service
+from services.features.ws_redis_fanout_listener import (
+    start_ws_fanout_listener,
+    stop_ws_fanout_listener,
+)
 from services.infrastructure.monitoring.critical_alert import CriticalAlertService
 from services.infrastructure.monitoring.health_monitor import get_health_monitor
 from services.infrastructure.monitoring.process_monitor import get_process_monitor
@@ -43,10 +47,10 @@ from services.redis.cache.redis_diagram_cache import get_diagram_cache
 from services.redis.redis_token_buffer import get_token_tracker
 from services.utils.backup_scheduler import start_backup_scheduler
 from services.utils.temp_image_cleaner import start_cleanup_scheduler
-from agents.inline_recommendations import start_inline_rec_cleanup_scheduler
 from services.workshop import start_workshop_cleanup_scheduler
 # PDF auto-import removed - no longer needed for image-based viewing
 from services.utils.update_notifier import update_notifier
+from agents.inline_recommendations import start_inline_rec_cleanup_scheduler
 from utils.auth import AUTH_MODE, display_demo_info
 from utils.auth.config import ADMIN_PHONES
 from utils.dependency_checker import DependencyError, check_system_dependencies
@@ -90,6 +94,15 @@ async def lifespan(fastapi_app: FastAPI):
         init_redis_sync()
         if is_main_worker:
             logger.debug("Redis initialized successfully")
+        try:
+            _loop = asyncio.get_running_loop()
+            start_ws_fanout_listener(_loop)
+        except Exception as ws_fan_exc:  # pylint: disable=broad-except
+            if is_main_worker:
+                logger.warning(
+                    "[LIFESPAN] WebSocket Redis fan-out listener: %s",
+                    ws_fan_exc,
+                )
     except RedisStartupError as e:
         # Error message already logged by init_redis_sync with instructions
         # Send critical alert before exiting
@@ -687,6 +700,12 @@ async def lifespan(fastapi_app: FastAPI):
         except Exception as e:  # pylint: disable=broad-except
             if is_main_worker:
                 logger.warning("Failed to close database: %s", e)
+
+        try:
+            stop_ws_fanout_listener()
+        except Exception as e:  # pylint: disable=broad-except
+            if is_main_worker:
+                logger.warning("Failed to stop WebSocket fan-out listener: %s", e)
 
         # Close Redis connection
         try:

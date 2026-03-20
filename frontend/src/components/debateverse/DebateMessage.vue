@@ -107,7 +107,7 @@ const renderedContent = computed(() => {
 
 const hasThinking = computed(() => props.message.thinking && props.message.thinking.length > 0)
 
-const isStreaming = computed(() => (props.message as any).is_streaming || false)
+const isStreaming = computed(() => props.message.is_streaming ?? false)
 
 const isAffirmative = computed(() => participant.value?.side === 'affirmative')
 const isNegative = computed(() => participant.value?.side === 'negative')

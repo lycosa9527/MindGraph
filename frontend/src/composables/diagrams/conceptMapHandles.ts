@@ -165,10 +165,7 @@ function groupAvgCoord(
  * (offset toward start), and the other gets -3 (offset toward end). This ensures
  * curves lean toward their endpoints and don't cross each other.
  */
-export function splitMixedArrowHandleGroups(
-  edges: MindGraphEdge[],
-  nodes: DiagramNode[]
-): void {
+export function splitMixedArrowHandleGroups(edges: MindGraphEdge[], nodes: DiagramNode[]): void {
   splitByTargetHandle(edges, nodes)
   splitBySourceHandle(edges, nodes)
 }
@@ -178,7 +175,10 @@ function splitByTargetHandle(edges: MindGraphEdge[], nodes: DiagramNode[]): void
   for (const edge of edges) {
     const key = `${edge.target}:${edge.targetHandle ?? ''}`
     if (!groups.has(key)) groups.set(key, [])
-    groups.get(key)!.push(edge)
+    const targetGroup = groups.get(key)
+    if (targetGroup) {
+      targetGroup.push(edge)
+    }
   }
 
   for (const group of groups.values()) {
@@ -208,7 +208,10 @@ function splitBySourceHandle(edges: MindGraphEdge[], nodes: DiagramNode[]): void
   for (const edge of edges) {
     const key = `${edge.source}:${edge.sourceHandle ?? ''}`
     if (!groups.has(key)) groups.set(key, [])
-    groups.get(key)!.push(edge)
+    const targetGroup = groups.get(key)
+    if (targetGroup) {
+      targetGroup.push(edge)
+    }
   }
 
   for (const group of groups.values()) {

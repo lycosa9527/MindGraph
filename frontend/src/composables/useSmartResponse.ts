@@ -1,4 +1,4 @@
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { onMounted, onUnmounted, ref } from 'vue'
 import type { Ref } from 'vue'
 
 export interface SmartResponseWebSocketMessage {
@@ -7,7 +7,7 @@ export interface SmartResponseWebSocketMessage {
   watch_id?: string
   text?: string
   is_final?: boolean
-  [key: string]: any
+  [key: string]: unknown
 }
 
 export function useSmartResponseWebSocket(sessionId: Ref<string | null>) {

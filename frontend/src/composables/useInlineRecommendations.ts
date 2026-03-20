@@ -4,25 +4,22 @@
  * Trigger: User fixes topic, double-clicks node to edit, then presses Tab.
  * Streams recommendations via SSE. Similar to useConceptMapRelationship.
  */
-import { computed } from 'vue'
-
-import { isPlaceholderText } from '@/composables/useAutoComplete'
+import { eventBus } from '@/composables/useEventBus'
 import { useLanguage } from '@/composables/useLanguage'
 import { useNotifications } from '@/composables/useNotifications'
 import { useDiagramStore, useInlineRecommendationsStore } from '@/stores'
-import { eventBus } from '@/composables/useEventBus'
+import type { DiagramType } from '@/types'
 import { authFetch } from '@/utils/api'
 
-import type { DiagramType } from '@/types'
 import {
   INLINE_RECOMMENDATIONS_NEXT,
   INLINE_RECOMMENDATIONS_START,
   INLINE_RECOMMENDATIONS_SUPPORTED_TYPES,
 } from './nodePalette/constants'
 import {
+  buildStageDataForParent,
   getDefaultStage,
   getStage2ParentsForDiagram,
-  buildStageDataForParent,
 } from './nodePalette/stageHelpers'
 
 function getStageForNode(
@@ -45,18 +42,12 @@ function getStageForNode(
       return hasChildren
         ? {
             stage: 'children',
-            stageData: buildStageDataForParent(
-              { id: nid, name: (node.text ?? '').trim() },
-              dt,
-              {}
-            ),
+            stageData: buildStageDataForParent({ id: nid, name: (node.text ?? '').trim() }, dt, {}),
           }
         : { stage: 'branches', stageData: {} }
     }
     const parentConn = connections?.find((c) => c.target === nid)
-    const parent = parentConn
-      ? parents.find((p) => p.id === parentConn.source)
-      : null
+    const parent = parentConn ? parents.find((p) => p.id === parentConn.source) : null
     return parent
       ? {
           stage: 'children',
@@ -71,18 +62,12 @@ function getStageForNode(
       return hasSubsteps
         ? {
             stage: 'substeps',
-            stageData: buildStageDataForParent(
-              { id: nid, name: (node.text ?? '').trim() },
-              dt,
-              {}
-            ),
+            stageData: buildStageDataForParent({ id: nid, name: (node.text ?? '').trim() }, dt, {}),
           }
         : { stage: 'steps', stageData: {} }
     }
     const parentConn = connections?.find((c) => c.target === nid)
-    const parent = parentConn
-      ? parents.find((p) => p.id === parentConn.source)
-      : null
+    const parent = parentConn ? parents.find((p) => p.id === parentConn.source) : null
     return parent
       ? {
           stage: 'substeps',
@@ -100,18 +85,12 @@ function getStageForNode(
       return hasChildren
         ? {
             stage: 'children',
-            stageData: buildStageDataForParent(
-              { id: nid, name: (node.text ?? '').trim() },
-              dt,
-              {}
-            ),
+            stageData: buildStageDataForParent({ id: nid, name: (node.text ?? '').trim() }, dt, {}),
           }
         : { stage: 'categories', stageData: {} }
     }
     const parentConn = connections?.find((c) => c.target === nid)
-    const parent = parentConn
-      ? parents.find((p) => p.id === parentConn.source)
-      : null
+    const parent = parentConn ? parents.find((p) => p.id === parentConn.source) : null
     return parent
       ? {
           stage: 'children',
@@ -124,9 +103,7 @@ function getStageForNode(
     if (nid === 'dimension-label') {
       return { stage: 'dimensions', stageData: {} }
     }
-    const rootId = nodes.find(
-      (n) => n.id === 'brace-whole' || n.id === 'brace-0-0'
-    )?.id
+    const rootId = nodes.find((n) => n.id === 'brace-whole' || n.id === 'brace-0-0')?.id
     const isPart =
       node.type === 'brace' &&
       rootId &&
@@ -136,18 +113,14 @@ function getStageForNode(
       return hasSubparts
         ? {
             stage: 'subparts',
-            stageData: buildStageDataForParent(
-              { id: nid, name: (node.text ?? '').trim() },
-              dt,
-              { dimension: nodes.find((n) => n.id === 'dimension-label')?.text }
-            ),
+            stageData: buildStageDataForParent({ id: nid, name: (node.text ?? '').trim() }, dt, {
+              dimension: nodes.find((n) => n.id === 'dimension-label')?.text,
+            }),
           }
         : { stage: 'parts', stageData: {} }
     }
     const parentConn = connections?.find((c) => c.target === nid)
-    const parent = parentConn
-      ? parents.find((p) => p.id === parentConn.source)
-      : null
+    const parent = parentConn ? parents.find((p) => p.id === parentConn.source) : null
     return parent
       ? {
           stage: 'subparts',
@@ -259,9 +232,7 @@ async function streamRecommendations(
     }
   } finally {
     reader.releaseLock()
-    console.log(
-      `[InlineRec] Stream complete: ${count} recommendations received from backend`
-    )
+    console.log(`[InlineRec] Stream complete: ${count} recommendations received from backend`)
   }
   return count
 }
@@ -351,9 +322,7 @@ export function useInlineRecommendations() {
     const dt = diagramStore.type
     const normalizedDt = dt === 'mind_map' ? 'mindmap' : dt
     if (
-      !(INLINE_RECOMMENDATIONS_SUPPORTED_TYPES as readonly string[]).includes(
-        normalizedDt ?? ''
-      )
+      !(INLINE_RECOMMENDATIONS_SUPPORTED_TYPES as readonly string[]).includes(normalizedDt ?? '')
     ) {
       return { success: false, error: 'Diagram type not supported' }
     }
@@ -398,14 +367,10 @@ export function useInlineRecommendations() {
       labels.push(text)
       store.setOptions(nodeId, [...labels], labels.length > 1)
       const totalInStore = store.allOptions[nodeId]?.length ?? 0
-      console.log(
-        `[InlineRec] Store now has ${totalInStore} for ${nodeId} (latest: "${text}")`
-      )
+      console.log(`[InlineRec] Store now has ${totalInStore} for ${nodeId} (latest: "${text}")`)
     }
     const onError = (msg: string) => {
-      notify.error(
-        isZh.value ? `推荐生成失败: ${msg}` : `Recommendation failed: ${msg}`
-      )
+      notify.error(isZh.value ? `推荐生成失败: ${msg}` : `Recommendation failed: ${msg}`)
     }
 
     try {
@@ -434,15 +399,11 @@ export function useInlineRecommendations() {
       const isAbort = error instanceof Error && error.name === 'AbortError'
       if (isAbort) {
         const had = store.allOptions[nodeId]?.length ?? 0
-        console.warn(
-          `[InlineRec] Stream ABORTED for ${nodeId}. Had ${had} in store before abort.`
-        )
+        console.warn(`[InlineRec] Stream ABORTED for ${nodeId}. Had ${had} in store before abort.`)
         return { success: false, error: 'Aborted' }
       }
       const errMsg = error instanceof Error ? error.message : 'Unknown error'
-      notify.error(
-        isZh.value ? `推荐生成失败: ${errMsg}` : `Recommendation failed: ${errMsg}`
-      )
+      notify.error(isZh.value ? `推荐生成失败: ${errMsg}` : `Recommendation failed: ${errMsg}`)
       return { success: false, error: errMsg }
     } finally {
       store.setStreamAbortController(null)

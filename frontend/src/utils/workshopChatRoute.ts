@@ -13,6 +13,8 @@ export type WorkshopRouteQueryState = {
   workshopHomeViewActive: boolean
   /** Main channel stream (topic_id null) when a channel is selected without a topic. */
   mainChannelFeedActive: boolean
+  /** Teaching group (教研组) overview in the center column — no lesson channel selected. */
+  teachingGroupLandingId?: number | null
   /** When set, adds `message=` for deep links to a specific post (topic, stream, or DM). */
   focusMessageId?: number | null
 }
@@ -21,6 +23,7 @@ export type WorkshopParsedRoute =
   | { kind: 'home' }
   | { kind: 'browse' }
   | { kind: 'dm'; partnerId: number }
+  | { kind: 'teachingGroup'; groupId: number }
   | { kind: 'channel'; channelId: number; topicId: number | null; mainStream: boolean }
 
 const Q = {
@@ -30,16 +33,11 @@ const Q = {
   browse: 'browse',
   stream: 'stream',
   message: 'message',
+  group: 'group',
 } as const
 
 /** Keys that define narrow identity (excludes `message`, which is a one-shot focus). */
-const NARROW_KEYS: readonly string[] = [
-  Q.channel,
-  Q.topic,
-  Q.dm,
-  Q.browse,
-  Q.stream,
-]
+const NARROW_KEYS: readonly string[] = [Q.channel, Q.topic, Q.dm, Q.browse, Q.stream, Q.group]
 
 function firstQueryValue(query: LocationQuery, key: string): string {
   const v = query[key]
@@ -53,7 +51,7 @@ function firstQueryValue(query: LocationQuery, key: string): string {
 
 function withOptionalMessage(
   payload: Record<string, string>,
-  focusMessageId?: number | null,
+  focusMessageId?: number | null
 ): Record<string, string> {
   if (focusMessageId != null && focusMessageId > 0) {
     return { ...payload, [Q.message]: String(focusMessageId) }
@@ -72,6 +70,13 @@ export function parseWorkshopChatRouteQuery(query: LocationQuery): WorkshopParse
   const browse = firstQueryValue(query, Q.browse)
   if (browse === '1' || browse === 'true') {
     return { kind: 'browse' }
+  }
+  const groupStr = firstQueryValue(query, Q.group)
+  if (groupStr !== '') {
+    const groupId = parseInt(groupStr, 10)
+    if (Number.isFinite(groupId)) {
+      return { kind: 'teachingGroup', groupId }
+    }
   }
   const chStr = firstQueryValue(query, Q.channel)
   if (chStr !== '') {
@@ -114,18 +119,16 @@ export function parseWorkshopMessageFocus(route: {
   return null
 }
 
-export function workshopQueryFromState(
-  state: WorkshopRouteQueryState,
-): Record<string, string> {
+export function workshopQueryFromState(state: WorkshopRouteQueryState): Record<string, string> {
   const fm = state.focusMessageId
   if (state.currentDMPartnerId != null) {
-    return withOptionalMessage(
-      { [Q.dm]: String(state.currentDMPartnerId) },
-      fm,
-    )
+    return withOptionalMessage({ [Q.dm]: String(state.currentDMPartnerId) }, fm)
   }
   if (state.showChannelBrowser) {
     return withOptionalMessage({ [Q.browse]: '1' }, fm)
+  }
+  if (state.teachingGroupLandingId != null) {
+    return withOptionalMessage({ [Q.group]: String(state.teachingGroupLandingId) }, fm)
   }
   if (state.workshopHomeViewActive) {
     return withOptionalMessage({}, fm)
@@ -136,7 +139,7 @@ export function workshopQueryFromState(
         [Q.channel]: String(state.currentChannelId),
         [Q.topic]: String(state.currentTopicId),
       },
-      fm,
+      fm
     )
   }
   if (state.currentChannelId != null && state.mainChannelFeedActive) {
@@ -145,14 +148,11 @@ export function workshopQueryFromState(
         [Q.channel]: String(state.currentChannelId),
         [Q.stream]: '1',
       },
-      fm,
+      fm
     )
   }
   if (state.currentChannelId != null) {
-    return withOptionalMessage(
-      { [Q.channel]: String(state.currentChannelId) },
-      fm,
-    )
+    return withOptionalMessage({ [Q.channel]: String(state.currentChannelId) }, fm)
   }
   return withOptionalMessage({}, fm)
 }
@@ -179,7 +179,7 @@ export function normalizeWorkshopNarrowQuery(query: LocationQuery): Record<strin
 
 export function workshopRouteQueriesEqual(
   a: Record<string, string>,
-  b: Record<string, string>,
+  b: Record<string, string>
 ): boolean {
   const keys = new Set([...Object.keys(a), ...Object.keys(b)])
   for (const k of keys) {
@@ -189,9 +189,7 @@ export function workshopRouteQueriesEqual(
 }
 
 /** Relative path for sharing (e.g. copy link). */
-export function workshopChatHrefFromState(
-  state: WorkshopRouteQueryState,
-): string {
+export function workshopChatHrefFromState(state: WorkshopRouteQueryState): string {
   const q = workshopQueryFromState(state)
   const params = new URLSearchParams(q)
   const qs = params.toString()

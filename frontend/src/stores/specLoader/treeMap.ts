@@ -9,18 +9,18 @@
  * Node widths are adaptive to text. Each node is centered within its group column.
  * Group column width = max of all node widths in that group (for layout spacing).
  */
-import { getMindmapBranchColor } from '@/config/mindmapColors'
 import {
   DEFAULT_CENTER_X,
   DEFAULT_NODE_HEIGHT,
   DEFAULT_NODE_WIDTH,
   DEFAULT_PADDING,
   NODE_MIN_DIMENSIONS,
+  TREE_MAP_CATEGORY_SPACING,
   TREE_MAP_CATEGORY_TO_LEAF_GAP,
   TREE_MAP_LEAF_SPACING,
-  TREE_MAP_CATEGORY_SPACING,
   TREE_MAP_TOPIC_TO_CATEGORY_GAP,
 } from '@/composables/diagrams/layoutConfig'
+import { getMindmapBranchColor } from '@/config/mindmapColors'
 import { measureTextDimensions } from '@/stores/specLoader/textMeasurement'
 import type { Connection, DiagramNode } from '@/types'
 
@@ -97,14 +97,16 @@ export function loadTreeMapSpec(spec: Record<string, unknown>): SpecLoaderResult
       maxWidth: number
     }
     const groupDimsList: GroupDims[] = []
-    categories.forEach((category, catIndex) => {
+    categories.forEach((category, _catIndex) => {
       const catDims = measureTextDimensions(category.text, TREE_MAP_BRANCH_FONT_SIZE, {
         paddingX: TREE_MAP_NODE_PADDING_X / 2,
         paddingY: TREE_MAP_NODE_PADDING_Y,
         maxWidth: TREE_MAP_LEAF_MAX_WIDTH,
       })
-      const catWidth =
-        Math.max(catDims.width + 2 * TREE_MAP_CATEGORY_BORDER, NODE_MIN_DIMENSIONS.branch.minWidth)
+      const catWidth = Math.max(
+        catDims.width + 2 * TREE_MAP_CATEGORY_BORDER,
+        NODE_MIN_DIMENSIONS.branch.minWidth
+      )
       const catHeight = Math.max(catDims.height, NODE_MIN_DIMENSIONS.branch.minHeight)
       const leaves = category.children || []
       const leafWidths: number[] = []
@@ -116,8 +118,10 @@ export function loadTreeMapSpec(spec: Record<string, unknown>): SpecLoaderResult
           paddingY: TREE_MAP_NODE_PADDING_Y,
           maxWidth: TREE_MAP_LEAF_MAX_WIDTH,
         })
-        const leafW =
-          Math.max(leafDims.width + 2 * TREE_MAP_LEAF_BORDER, NODE_MIN_DIMENSIONS.branch.minWidth)
+        const leafW = Math.max(
+          leafDims.width + 2 * TREE_MAP_LEAF_BORDER,
+          NODE_MIN_DIMENSIONS.branch.minWidth
+        )
         const leafH = Math.max(leafDims.height, NODE_MIN_DIMENSIONS.branch.minHeight)
         leafWidths.push(leafW)
         leafHeights.push(leafH)
@@ -181,8 +185,7 @@ export function loadTreeMapSpec(spec: Record<string, unknown>): SpecLoaderResult
           data: { nodeType: 'leaf', groupIndex: catIndex },
         })
 
-        const sourceId =
-          leafIndex === 0 ? categoryId : `tree-leaf-${catIndex}-${leafIndex - 1}`
+        const sourceId = leafIndex === 0 ? categoryId : `tree-leaf-${catIndex}-${leafIndex - 1}`
         connections.push({
           id: `edge-${sourceId}-${leafId}`,
           source: sourceId,

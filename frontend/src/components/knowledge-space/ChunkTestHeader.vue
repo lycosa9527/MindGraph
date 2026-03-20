@@ -3,15 +3,13 @@
  * ChunkTestHeader - Header component for Chunk Test page
  * Swiss design style matching KnowledgeSpaceHeader
  */
-import { computed } from 'vue'
-
 import { ElButton, ElIcon, ElTooltip } from 'element-plus'
 
 import { RefreshRight, Upload, VideoPlay } from '@element-plus/icons-vue'
 
 import { useLanguage } from '@/composables/useLanguage'
 
-const props = defineProps<{
+defineProps<{
   documentCount: number
   canUpload: boolean
   hasDocuments: boolean
@@ -20,9 +18,9 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'upload'): void
-  (e: 'test-user-documents'): void
-  (e: 'test-all-datasets'): void
-  (e: 'process-documents'): void
+  (e: 'testUserDocuments'): void
+  (e: 'testAllDatasets'): void
+  (e: 'processDocuments'): void
 }>()
 
 const { isZh } = useLanguage()
@@ -51,7 +49,7 @@ const { isZh } = useLanguage()
           class="process-docs-btn"
           size="small"
           :disabled="!hasPendingDocuments"
-          @click="emit('process-documents')"
+          @click="emit('processDocuments')"
         >
           <ElIcon class="mr-1"><RefreshRight /></ElIcon>
           {{ isZh ? '处理文档' : 'Process Documents' }}
@@ -71,7 +69,7 @@ const { isZh } = useLanguage()
           class="test-user-docs-btn"
           size="small"
           :disabled="!hasDocuments"
-          @click="emit('test-user-documents')"
+          @click="emit('testUserDocuments')"
         >
           <ElIcon class="mr-1"><VideoPlay /></ElIcon>
           {{ isZh ? '测试上传文档' : 'Test Upload Documents' }}
@@ -81,7 +79,7 @@ const { isZh } = useLanguage()
       <ElButton
         class="test-all-datasets-btn"
         size="small"
-        @click="emit('test-all-datasets')"
+        @click="emit('testAllDatasets')"
       >
         <ElIcon class="mr-1"><VideoPlay /></ElIcon>
         {{ isZh ? '测试所有数据集' : 'Test All Datasets' }}

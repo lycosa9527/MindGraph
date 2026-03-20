@@ -9,11 +9,11 @@ import type { CSSProperties } from 'vue'
 
 import { Handle, Position } from '@vue-flow/core'
 
-import { getMindmapBranchColor } from '@/config/mindmapColors'
-import { getBorderStyleProps } from '@/utils/borderStyleUtils'
 import { eventBus } from '@/composables/useEventBus'
 import { useTheme } from '@/composables/useTheme'
+import { getMindmapBranchColor } from '@/config/mindmapColors'
 import type { MindGraphNodeProps } from '@/types'
+import { getBorderStyleProps } from '@/utils/borderStyleUtils'
 
 import InlineEditableText from './InlineEditableText.vue'
 
@@ -64,12 +64,6 @@ const treeMapGroupColors = computed(() => {
   return idx !== undefined ? getMindmapBranchColor(idx) : null
 })
 
-const isFirstPair = computed(() => {
-  if (!isBridgeMap.value) return true
-  const pairIndex = props.data.pairIndex
-  return pairIndex === undefined || pairIndex === 0
-})
-
 const nodeStyle = computed((): CSSProperties => {
   // For all bridge map nodes (including first pair), remove borders, background, and shadows (text-only)
   const shouldHaveBorder = !isBridgeMap.value
@@ -98,9 +92,7 @@ const nodeStyle = computed((): CSSProperties => {
   const borderWidth = shouldHaveBorder
     ? (props.data.style?.borderWidth ?? (isMindMap.value ? 3 : defaultStyle.value.borderWidth) ?? 2)
     : 0
-  const borderStyle = shouldHaveBorder
-    ? (props.data.style?.borderStyle || 'solid')
-    : 'solid'
+  const borderStyle = shouldHaveBorder ? props.data.style?.borderStyle || 'solid' : 'solid'
 
   const base: CSSProperties = {
     backgroundColor: bgColor,
@@ -116,9 +108,7 @@ const nodeStyle = computed((): CSSProperties => {
     fontStyle: props.data.style?.fontStyle || 'normal',
     textDecoration: props.data.style?.textDecoration || 'none',
     borderRadius:
-      isMindMap.value || isTreeMap.value
-        ? '9999px'
-        : `${props.data.style?.borderRadius || 8}px`,
+      isMindMap.value || isTreeMap.value ? '9999px' : `${props.data.style?.borderRadius || 8}px`,
     boxShadow: shouldHaveShadow ? undefined : 'none',
   }
   // Tree map: use measured width from layout for center alignment (rendered must match layout)
@@ -147,18 +137,14 @@ const branchMove = inject<{
 const supportsBranchMove = computed(
   () =>
     isMindMap.value ||
-    (props.data.diagramType === 'tree_map' && (props.id?.startsWith('tree-cat-') || props.id?.startsWith('tree-leaf-'))) ||
+    (props.data.diagramType === 'tree_map' &&
+      (props.id?.startsWith('tree-cat-') || props.id?.startsWith('tree-leaf-'))) ||
     (isBridgeMap.value && props.id?.startsWith('pair-'))
 )
 
 function handleBranchMovePointerDown(event: MouseEvent): void {
   if (supportsBranchMove.value) {
-    branchMove.onBranchMovePointerDown(
-      props.id,
-      isEditing.value,
-      event.clientX,
-      event.clientY
-    )
+    branchMove.onBranchMovePointerDown(props.id, isEditing.value, event.clientX, event.clientY)
   }
 }
 

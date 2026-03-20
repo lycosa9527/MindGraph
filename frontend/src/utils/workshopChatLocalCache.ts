@@ -3,7 +3,6 @@
  * to avoid refetching on every navigation (TTL-based, user/org scoped).
  * Stores optional ETag for conditional GET revalidation after TTL.
  */
-
 import type { ChatChannel, ChatTopic } from '@/stores/workshopChat'
 
 const PREFIX = 'mg_ws_v1'
@@ -21,7 +20,7 @@ export interface WorkshopCacheScope {
 export function buildWorkshopCacheScope(
   userId: string | undefined,
   adminOrgId: number | null,
-  schoolId: string | undefined,
+  schoolId: string | undefined
 ): WorkshopCacheScope | null {
   if (!userId) {
     return null
@@ -54,10 +53,10 @@ function parseChannelsRow(raw: string): WorkshopChannelsCacheRow | null {
   try {
     const parsed = JSON.parse(raw) as Record<string, unknown>
     if (
-      typeof parsed !== 'object'
-      || parsed === null
-      || typeof parsed.savedAt !== 'number'
-      || !Array.isArray(parsed.data)
+      typeof parsed !== 'object' ||
+      parsed === null ||
+      typeof parsed.savedAt !== 'number' ||
+      !Array.isArray(parsed.data)
     ) {
       return null
     }
@@ -76,17 +75,17 @@ function parseTopicsRow(raw: string): WorkshopTopicsCacheRow | null {
   try {
     const parsed = JSON.parse(raw) as Record<string, unknown>
     if (
-      typeof parsed !== 'object'
-      || parsed === null
-      || typeof parsed.savedAt !== 'number'
-      || !Array.isArray(parsed.data)
+      typeof parsed !== 'object' ||
+      parsed === null ||
+      typeof parsed.savedAt !== 'number' ||
+      !Array.isArray(parsed.data)
     ) {
       return null
     }
     const etag = typeof parsed.etag === 'string' ? parsed.etag : null
     return {
       savedAt: parsed.savedAt,
-      data: (parsed.data as ChatTopic[]).map(t => ({
+      data: (parsed.data as ChatTopic[]).map((t) => ({
         ...t,
         unread_count: t.unread_count ?? 0,
       })),
@@ -97,9 +96,7 @@ function parseTopicsRow(raw: string): WorkshopTopicsCacheRow | null {
   }
 }
 
-export function readCachedChannelsRow(
-  scope: WorkshopCacheScope,
-): WorkshopChannelsCacheRow | null {
+export function readCachedChannelsRow(scope: WorkshopCacheScope): WorkshopChannelsCacheRow | null {
   try {
     const raw = localStorage.getItem(channelsKey(scope))
     if (!raw) {
@@ -114,7 +111,7 @@ export function readCachedChannelsRow(
 export function writeCachedChannels(
   scope: WorkshopCacheScope,
   channels: ChatChannel[],
-  etag: string | null,
+  etag: string | null
 ): void {
   try {
     const payload = {
@@ -138,7 +135,7 @@ export function touchCachedChannels(scope: WorkshopCacheScope): void {
 
 export function readCachedTopicsRow(
   scope: WorkshopCacheScope,
-  channelId: number,
+  channelId: number
 ): WorkshopTopicsCacheRow | null {
   try {
     const raw = localStorage.getItem(topicsKey(scope, channelId))
@@ -155,12 +152,12 @@ export function writeCachedTopics(
   scope: WorkshopCacheScope,
   channelId: number,
   topics: ChatTopic[],
-  etag: string | null,
+  etag: string | null
 ): void {
   try {
     const payload = {
       savedAt: Date.now(),
-      data: topics.map(t => ({
+      data: topics.map((t) => ({
         ...t,
         unread_count: t.unread_count ?? 0,
       })),
@@ -172,10 +169,7 @@ export function writeCachedTopics(
   }
 }
 
-export function touchCachedTopics(
-  scope: WorkshopCacheScope,
-  channelId: number,
-): void {
+export function touchCachedTopics(scope: WorkshopCacheScope, channelId: number): void {
   const row = readCachedTopicsRow(scope, channelId)
   if (!row) {
     return
@@ -183,10 +177,7 @@ export function touchCachedTopics(
   writeCachedTopics(scope, channelId, row.data, row.etag)
 }
 
-export function clearCachedTopics(
-  scope: WorkshopCacheScope,
-  channelId: number,
-): void {
+export function clearCachedTopics(scope: WorkshopCacheScope, channelId: number): void {
   try {
     localStorage.removeItem(topicsKey(scope, channelId))
   } catch {

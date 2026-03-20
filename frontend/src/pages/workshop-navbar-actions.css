@@ -1,0 +1,73 @@
+/**
+ * Workshop navbar — MindGraph pill shape (9999px, weight 500), distinct tints per control.
+ * Options = stone (same as MindGraph 导入 / 加入演示); contacts = blue; me = violet.
+ */
+.workshop-navbar-action.el-button.el-button--small {
+  font-weight: 500;
+  border-radius: 9999px;
+}
+
+/* 联系人 — primary blue (Canvas “教学设计” / MindMate family) */
+.workshop-navbar-action--contacts.el-button.el-button--small {
+  --el-button-bg-color: #dbeafe;
+  --el-button-border-color: #93c5fd;
+  --el-button-hover-bg-color: #bfdbfe;
+  --el-button-hover-border-color: #60a5fa;
+  --el-button-active-bg-color: #93c5fd;
+  --el-button-active-border-color: #3b82f6;
+  --el-button-text-color: #1e40af;
+}
+
+.workshop-navbar-action--contacts.el-button.el-button--small:hover {
+  --el-button-text-color: #1e3a8a;
+}
+
+.workshop-navbar-action--contacts.workshop-navbar-action--active.el-button.el-button--small {
+  --el-button-bg-color: #bfdbfe;
+  --el-button-border-color: #60a5fa;
+  --el-button-hover-bg-color: #93c5fd;
+  --el-button-hover-border-color: #3b82f6;
+  --el-button-active-bg-color: #60a5fa;
+  --el-button-active-border-color: #2563eb;
+  --el-button-text-color: #1e3a8a;
+}
+
+/* 选项 — Swiss stone (MindGraphContainer .import-btn) */
+.workshop-navbar-action--options.el-button.el-button--small {
+  --el-button-bg-color: #e7e5e4;
+  --el-button-border-color: #d6d3d1;
+  --el-button-hover-bg-color: #d6d3d1;
+  --el-button-hover-border-color: #a8a29e;
+  --el-button-active-bg-color: #a8a29e;
+  --el-button-active-border-color: #78716c;
+  --el-button-text-color: #1c1917;
+}
+
+/* 我 — violet */
+.workshop-navbar-action--me.el-button.el-button--small {
+  --el-button-bg-color: #ede9fe;
+  --el-button-border-color: #c4b5fd;
+  --el-button-hover-bg-color: #ddd6fe;
+  --el-button-hover-border-color: #a78bfa;
+  --el-button-active-bg-color: #c4b5fd;
+  --el-button-active-border-color: #8b5cf6;
+  --el-button-text-color: #5b21b6;
+}
+
+.workshop-navbar-action--me.el-button.el-button--small:hover {
+  --el-button-text-color: #4c1d95;
+}
+
+.workshop-navbar-action__content {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.workshop-navbar-action__icon {
+  flex-shrink: 0;
+}
+
+.workshop-navbar-action__label {
+  white-space: nowrap;
+}

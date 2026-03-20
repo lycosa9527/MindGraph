@@ -18,7 +18,7 @@ interface Chunk {
   text: string
   start_char: number
   end_char: number
-  metadata: Record<string, any> | null
+  metadata: Record<string, unknown> | null
 }
 
 interface ChunksResponse {

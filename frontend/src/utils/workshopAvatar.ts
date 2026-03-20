@@ -10,7 +10,7 @@ export type WorkshopAvatarDisplay =
 const IMAGE_EXT_RE = /\.(png|jpe?g|gif|webp|svg|ico)(\?|#|$)/i
 
 export function resolveWorkshopAvatarDisplay(
-  avatar: string | null | undefined,
+  avatar: string | null | undefined
 ): WorkshopAvatarDisplay {
   const raw = avatar?.trim()
   if (!raw) {
@@ -21,10 +21,10 @@ export function resolveWorkshopAvatarDisplay(
   }
   const lower = raw.toLowerCase()
   if (
-    lower.startsWith('http://')
-    || lower.startsWith('https://')
-    || lower.startsWith('//')
-    || lower.startsWith('data:')
+    lower.startsWith('http://') ||
+    lower.startsWith('https://') ||
+    lower.startsWith('//') ||
+    lower.startsWith('data:')
   ) {
     const src = raw.startsWith('//') ? `https:${raw}` : raw
     return { kind: 'image', src }
@@ -32,11 +32,7 @@ export function resolveWorkshopAvatarDisplay(
   if (raw.startsWith('/') && IMAGE_EXT_RE.test(raw)) {
     return { kind: 'image', src: raw }
   }
-  if (
-    raw.startsWith('/static/')
-    || raw.startsWith('/uploads/')
-    || raw.startsWith('/api/')
-  ) {
+  if (raw.startsWith('/static/') || raw.startsWith('/uploads/') || raw.startsWith('/api/')) {
     return { kind: 'image', src: raw }
   }
   return { kind: 'emoji', text: raw }

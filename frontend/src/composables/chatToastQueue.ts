@@ -47,7 +47,10 @@ export function pushChatToast(item: Omit<ChatToastItem, 'id'>): void {
   }
 
   _toasts.value = [..._toasts.value, { ...item, id }]
-  _timers.set(id, setTimeout(() => dismissChatToast(id), AUTO_DISMISS_MS))
+  _timers.set(
+    id,
+    setTimeout(() => dismissChatToast(id), AUTO_DISMISS_MS)
+  )
 }
 
 export function dismissChatToast(id: string): void {
@@ -56,7 +59,7 @@ export function dismissChatToast(id: string): void {
     clearTimeout(timer)
     _timers.delete(id)
   }
-  _toasts.value = _toasts.value.filter(t => t.id !== id)
+  _toasts.value = _toasts.value.filter((t) => t.id !== id)
 }
 
 export function useChatToastQueue() {

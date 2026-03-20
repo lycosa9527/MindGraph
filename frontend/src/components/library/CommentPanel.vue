@@ -188,12 +188,6 @@ async function deleteDanmaku(danmakuId: number) {
   }
 }
 
-// Check if current user owns the danmaku
-function isOwnDanmaku(danmaku: { user_id: number }) {
-  if (!authStore.user?.id) return false
-  return Number(authStore.user.id) === danmaku.user_id
-}
-
 // Check if current user can delete danmaku (owner or admin)
 function canDeleteDanmaku(danmaku: { user_id: number }) {
   if (!authStore.user?.id) return false

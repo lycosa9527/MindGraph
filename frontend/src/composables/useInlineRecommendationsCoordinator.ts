@@ -6,9 +6,9 @@
  */
 import { onUnmounted, watch } from 'vue'
 
+import { INLINE_RECOMMENDATIONS_SUPPORTED_TYPES } from '@/composables/nodePalette/constants'
 import { useAutoComplete } from '@/composables/useAutoComplete'
 import { eventBus } from '@/composables/useEventBus'
-import { INLINE_RECOMMENDATIONS_SUPPORTED_TYPES } from '@/composables/nodePalette/constants'
 import { useDiagramStore, useInlineRecommendationsStore } from '@/stores'
 
 const TOPIC_NODE_IDS = new Set([
@@ -38,12 +38,8 @@ const DEBOUNCE_MS = 300
 export function useInlineRecommendationsCoordinator() {
   const diagramStore = useDiagramStore()
   const store = useInlineRecommendationsStore()
-  const {
-    extractMainTopic,
-    isPlaceholderText,
-    extractFixedDimension,
-    extractBridgeMapAnalogies,
-  } = useAutoComplete()
+  const { extractMainTopic, isPlaceholderText, extractFixedDimension, extractBridgeMapAnalogies } =
+    useAutoComplete()
 
   let topicDebounceTimer: ReturnType<typeof setTimeout> | null = null
 
@@ -58,14 +54,8 @@ export function useInlineRecommendationsCoordinator() {
     let topicValid =
       topic.trim().length > 0 &&
       !isPlaceholderText(topic) &&
-      (INLINE_RECOMMENDATIONS_SUPPORTED_TYPES as readonly string[]).includes(
-        normalizedDt ?? ''
-      )
-    if (
-      !topicValid &&
-      normalizedDt === 'tree_map' &&
-      diagramStore.data?.nodes
-    ) {
+      (INLINE_RECOMMENDATIONS_SUPPORTED_TYPES as readonly string[]).includes(normalizedDt ?? '')
+    if (!topicValid && normalizedDt === 'tree_map' && diagramStore.data?.nodes) {
       const dimNode = diagramStore.data.nodes.find(
         (n: { id?: string; text?: string }) => n.id === 'dimension-label'
       )
@@ -73,38 +63,26 @@ export function useInlineRecommendationsCoordinator() {
       topicValid =
         dimText.length > 0 &&
         !isPlaceholderText(dimText) &&
-        (INLINE_RECOMMENDATIONS_SUPPORTED_TYPES as readonly string[]).includes(
-          normalizedDt ?? ''
-        )
+        (INLINE_RECOMMENDATIONS_SUPPORTED_TYPES as readonly string[]).includes(normalizedDt ?? '')
     }
-    if (
-      !topicValid &&
-      normalizedDt === 'bridge_map'
-    ) {
+    if (!topicValid && normalizedDt === 'bridge_map') {
       const dimension = extractFixedDimension()
       const analogies = extractBridgeMapAnalogies()
-      const hasDimension = (dimension ?? '').trim().length > 0 && !isPlaceholderText(dimension ?? '')
+      const hasDimension =
+        (dimension ?? '').trim().length > 0 && !isPlaceholderText(dimension ?? '')
       const hasFirstPair = analogies.length > 0
       topicValid =
         hasDimension &&
         hasFirstPair &&
-        (INLINE_RECOMMENDATIONS_SUPPORTED_TYPES as readonly string[]).includes(
-          normalizedDt ?? ''
-        )
+        (INLINE_RECOMMENDATIONS_SUPPORTED_TYPES as readonly string[]).includes(normalizedDt ?? '')
     }
-    if (
-      topicValid &&
-      normalizedDt === 'double_bubble_map' &&
-      diagramStore.data?.nodes
-    ) {
+    if (topicValid && normalizedDt === 'double_bubble_map' && diagramStore.data?.nodes) {
       const nodes = diagramStore.data.nodes as Array<{ id?: string; text?: string }>
       const leftNode = nodes.find((n) => n.id === 'left-topic')
       const rightNode = nodes.find((n) => n.id === 'right-topic')
-      const getText = (n: { id?: string; text?: string } | undefined) =>
-        (n?.text ?? '').trim()
+      const getText = (n: { id?: string; text?: string } | undefined) => (n?.text ?? '').trim()
       const leftValid = getText(leftNode).length > 0 && !isPlaceholderText(getText(leftNode))
-      const rightValid =
-        getText(rightNode).length > 0 && !isPlaceholderText(getText(rightNode))
+      const rightValid = getText(rightNode).length > 0 && !isPlaceholderText(getText(rightNode))
       topicValid = leftValid && rightValid
     }
     store.onTopicUpdated(topic, topicValid)
@@ -153,9 +131,7 @@ export function useInlineRecommendationsCoordinator() {
       const dt = diagramStore.type
       const normalizedDt = dt === 'mind_map' ? 'mindmap' : dt
       if (
-        !(INLINE_RECOMMENDATIONS_SUPPORTED_TYPES as readonly string[]).includes(
-          normalizedDt ?? ''
-        )
+        !(INLINE_RECOMMENDATIONS_SUPPORTED_TYPES as readonly string[]).includes(normalizedDt ?? '')
       )
         return
 

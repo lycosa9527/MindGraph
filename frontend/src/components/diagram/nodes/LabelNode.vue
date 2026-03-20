@@ -9,11 +9,7 @@ import type { CSSProperties } from 'vue'
 
 import { useVueFlow } from '@vue-flow/core'
 
-import {
-  BRANCH_NODE_HEIGHT,
-  DEFAULT_NODE_HEIGHT,
-  DEFAULT_NODE_WIDTH,
-} from '@/composables/diagrams/layoutConfig'
+import { BRANCH_NODE_HEIGHT } from '@/composables/diagrams/layoutConfig'
 import { eventBus } from '@/composables/useEventBus'
 import { translateDimension, useLanguage } from '@/composables/useLanguage'
 import { useDiagramStore } from '@/stores'

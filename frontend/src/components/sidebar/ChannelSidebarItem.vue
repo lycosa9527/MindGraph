@@ -4,10 +4,8 @@
  * nested topic list and bracket indent. Emits navigation and action events.
  */
 import { computed } from 'vue'
-import {
-  Hash, Lock, Globe, Pin, ChevronRight, ChevronDown,
-  MoreVertical,
-} from 'lucide-vue-next'
+
+import { ChevronDown, ChevronRight, Globe, Hash, Lock, MoreVertical, Pin } from 'lucide-vue-next'
 
 import ChannelActionsPopover from '@/components/workshop-chat/ChannelActionsPopover.vue'
 import TopicActionsPopover from '@/components/workshop-chat/TopicActionsPopover.vue'
@@ -39,6 +37,8 @@ const emit = defineEmits<{
   updateTopicPopover: [topicId: number | null]
   renameTopic: [topicId: number, channelId: number]
   moveTopic: [topicId: number, channelId: number]
+  addConversation: []
+  addLessonStudy: []
 }>()
 
 const { t } = useLanguage()
@@ -49,23 +49,15 @@ const channelIcon = computed(() => {
   return Hash
 })
 
-const visibleTopics = computed(() =>
-  props.topics.slice(0, MAX_VISIBLE_TOPICS),
-)
+const visibleTopics = computed(() => props.topics.slice(0, MAX_VISIBLE_TOPICS))
 
-const hasMoreTopics = computed(() =>
-  props.topics.length > MAX_VISIBLE_TOPICS,
-)
+const hasMoreTopics = computed(() => props.topics.length > MAX_VISIBLE_TOPICS)
 
-const remainingCount = computed(() =>
-  Math.max(0, props.topics.length - MAX_VISIBLE_TOPICS),
-)
+const remainingCount = computed(() => Math.max(0, props.topics.length - MAX_VISIBLE_TOPICS))
 
 const hasTopics = computed(() => props.topics.length > 0)
 
-const lessonDeadlineKind = computed(
-  () => lessonStudyDeadlineBadge(props.channel).kind,
-)
+const lessonDeadlineKind = computed(() => lessonStudyDeadlineBadge(props.channel).kind)
 
 const lessonDeadlineBadgeClass = computed(() => {
   const k = lessonDeadlineKind.value
@@ -127,9 +119,17 @@ const lessonDeadlineShortLabel = computed(() => {
         v-if="lessonDeadlineBadgeClass"
         class="lesson-deadline-badge"
         :class="lessonDeadlineBadgeClass"
-      >{{ lessonDeadlineShortLabel }}</span>
-      <Pin v-if="showPin" :size="10" class="pin-indicator" />
-      <span v-if="channel.unread_count > 0" class="unread-badge">
+        >{{ lessonDeadlineShortLabel }}</span
+      >
+      <Pin
+        v-if="showPin"
+        :size="10"
+        class="pin-indicator"
+      />
+      <span
+        v-if="channel.unread_count > 0"
+        class="unread-badge"
+      >
         {{ channel.unread_count }}
       </span>
       <ChannelActionsPopover
@@ -137,8 +137,13 @@ const lessonDeadlineShortLabel = computed(() => {
         :visible="channelPopoverVisible"
         @update:visible="(v: boolean) => emit('updateChannelPopover', v)"
         @open-settings="emit('openSettings', channel.id)"
+        @add-conversation="emit('addConversation')"
+        @add-lesson-study="emit('addLessonStudy')"
       >
-        <button class="channel-kebab" @click.stop>
+        <button
+          class="channel-kebab"
+          @click.stop
+        >
           <MoreVertical :size="12" />
         </button>
       </ChannelActionsPopover>
@@ -179,7 +184,10 @@ const lessonDeadlineShortLabel = computed(() => {
           @rename="(id: number) => emit('renameTopic', id, channel.id)"
           @move="(id: number) => emit('moveTopic', id, channel.id)"
         >
-          <button class="topic-kebab" @click.stop>
+          <button
+            class="topic-kebab"
+            @click.stop
+          >
             <MoreVertical :size="12" />
           </button>
         </TopicActionsPopover>
@@ -198,7 +206,10 @@ const lessonDeadlineShortLabel = computed(() => {
     </ul>
 
     <!-- Empty topics state -->
-    <ul v-if="isExpanded && !hasTopics" class="topic-list">
+    <ul
+      v-if="isExpanded && !hasTopics"
+      class="topic-list"
+    >
       <li class="topic-row topic-row--empty">
         <span class="topic-empty-text">{{ t('workshop.noTopicsYet') }}</span>
       </li>
@@ -221,7 +232,9 @@ const lessonDeadlineShortLabel = computed(() => {
   border-radius: 4px;
   cursor: pointer;
   color: hsl(0deg 0% 20%);
-  transition: background 120ms ease, box-shadow 120ms ease;
+  transition:
+    background 120ms ease,
+    box-shadow 120ms ease;
   line-height: 24px;
   font-size: 13px;
 }
@@ -240,7 +253,9 @@ const lessonDeadlineShortLabel = computed(() => {
   background: hsl(228deg 56% 58% / 14%);
 }
 
-.channel-row--muted { opacity: 0.45; }
+.channel-row--muted {
+  opacity: 0.45;
+}
 
 /* Expand toggle for topics */
 .channel-expand-btn {
@@ -265,9 +280,13 @@ const lessonDeadlineShortLabel = computed(() => {
   opacity: 0.6;
 }
 
-.channel-item--expanded .channel-expand-btn { opacity: 1; }
+.channel-item--expanded .channel-expand-btn {
+  opacity: 1;
+}
 
-.channel-icon { flex-shrink: 0; }
+.channel-icon {
+  flex-shrink: 0;
+}
 
 .channel-name {
   flex: 1;
@@ -417,7 +436,9 @@ const lessonDeadlineShortLabel = computed(() => {
   pointer-events: none;
 }
 
-.topic-list--has-more::after { width: 16px; }
+.topic-list--has-more::after {
+  width: 16px;
+}
 
 /* Topic row */
 .topic-row {
@@ -431,7 +452,9 @@ const lessonDeadlineShortLabel = computed(() => {
   font-size: 12px;
   line-height: 22px;
   color: hsl(0deg 0% 25%);
-  transition: background 120ms ease, box-shadow 120ms ease;
+  transition:
+    background 120ms ease,
+    box-shadow 120ms ease;
 }
 
 .topic-row:hover {
@@ -453,9 +476,16 @@ const lessonDeadlineShortLabel = computed(() => {
   color: hsl(228deg 44% 36%);
 }
 
-.topic-row--muted { opacity: 0.4; }
-.topic-row--empty { cursor: default; }
-.topic-row--empty:hover { background: none; box-shadow: none; }
+.topic-row--muted {
+  opacity: 0.4;
+}
+.topic-row--empty {
+  cursor: default;
+}
+.topic-row--empty:hover {
+  background: none;
+  box-shadow: none;
+}
 
 /* Topic name (supports multi-line like Zulip) */
 .topic-name {
@@ -481,7 +511,10 @@ const lessonDeadlineShortLabel = computed(() => {
 }
 
 /* "Show all topics" row */
-.topic-row--show-all { padding-left: 28px; cursor: pointer; }
+.topic-row--show-all {
+  padding-left: 28px;
+  cursor: pointer;
+}
 
 .topic-row--show-all:hover {
   background: hsl(228deg 20% 96%);
@@ -497,7 +530,9 @@ const lessonDeadlineShortLabel = computed(() => {
   cursor: pointer;
 }
 
-.show-all-label:hover { color: hsl(228deg 50% 38%); }
+.show-all-label:hover {
+  color: hsl(228deg 50% 38%);
+}
 
 .topic-empty-text {
   color: hsl(0deg 0% 52%);

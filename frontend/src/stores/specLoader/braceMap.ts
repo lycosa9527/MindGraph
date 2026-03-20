@@ -1,7 +1,6 @@
 /**
  * Brace Map Loader
  */
-import { getMindmapBranchColor } from '@/config/mindmapColors'
 import {
   BRACE_MAP_LEVEL_WIDTH,
   BRACE_MAP_NODE_SPACING,
@@ -11,6 +10,7 @@ import {
   NODE_MIN_DIMENSIONS,
 } from '@/composables/diagrams/layoutConfig'
 import { calculateDagreLayout } from '@/composables/diagrams/useDagreLayout'
+import { getMindmapBranchColor } from '@/config/mindmapColors'
 import type { Connection, DiagramNode } from '@/types'
 
 import { measureTextWidth } from './textMeasurement'
@@ -38,7 +38,11 @@ const BRACE_MAX_NODE_WIDTH = 280
 function estimateBraceNodeWidth(text: string, depth: number): number {
   const trimmed = (text || '').trim()
   const fontSize =
-    depth === 0 ? BRACE_TOPIC_FONT_SIZE : depth === 1 ? BRACE_PART_FONT_SIZE : BRACE_SUBPART_FONT_SIZE
+    depth === 0
+      ? BRACE_TOPIC_FONT_SIZE
+      : depth === 1
+        ? BRACE_PART_FONT_SIZE
+        : BRACE_SUBPART_FONT_SIZE
   const paddingX = depth === 0 ? BRACE_TOPIC_PADDING_X : BRACE_PILL_PADDING_X
 
   let textWidth = 0
@@ -171,7 +175,10 @@ export function loadBraceMapSpec(spec: Record<string, unknown>): SpecLoaderResul
         const parentEdge = flatData.dagreEdges.find((e) => e.target === node.id)
         const parentId = parentEdge?.source
         if (parentId && groupIndexMap.has(parentId)) {
-          groupIndexMap.set(node.id, groupIndexMap.get(parentId)!)
+          const parentGroup = groupIndexMap.get(parentId)
+          if (parentGroup !== undefined) {
+            groupIndexMap.set(node.id, parentGroup)
+          }
         }
       })
     }
@@ -328,7 +335,10 @@ export function recalculateBraceMapLayout(
     const parentConn = connections.find((c) => c.target === node.id)
     const parentId = parentConn?.source
     if (parentId && groupIndexMap.has(parentId)) {
-      groupIndexMap.set(node.id, groupIndexMap.get(parentId)!)
+      const parentGroup = groupIndexMap.get(parentId)
+      if (parentGroup !== undefined) {
+        groupIndexMap.set(node.id, parentGroup)
+      }
     }
   })
 

@@ -27,6 +27,11 @@ import type {
   LoginResponse,
   User,
 } from '@/types'
+import { clearWorkshopChatCachesForUser } from '@/utils/workshopChatLocalCache'
+import {
+  disconnectWorkshopChatWsIfAny,
+  resetWorkshopChatOnAuthClear,
+} from '@/utils/workshopChatWsRegistry'
 
 // User data stored in sessionStorage (not tokens - those are in httpOnly cookies)
 const USER_KEY = 'auth_user'
@@ -166,6 +171,12 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   function clearAuth(): void {
+    const workshopUserId = user.value?.id
+    disconnectWorkshopChatWsIfAny()
+    if (workshopUserId) {
+      clearWorkshopChatCachesForUser(workshopUserId)
+    }
+    resetWorkshopChatOnAuthClear(workshopUserId)
     user.value = null
     token.value = null
     mode.value = 'standard'

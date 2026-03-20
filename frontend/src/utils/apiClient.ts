@@ -448,7 +448,9 @@ export async function getCommunityPosts(
   return response.json()
 }
 
-export async function getCommunityPost(postId: string): Promise<CommunityPost & { spec?: unknown }> {
+export async function getCommunityPost(
+  postId: string
+): Promise<CommunityPost & { spec?: unknown }> {
   const response = await apiGet(`/api/community/posts/${postId}`)
   if (!response.ok) {
     if (response.status === 404) {
@@ -597,9 +599,7 @@ export async function deleteCommunityPostComment(
   postId: string,
   commentId: number
 ): Promise<{ message: string }> {
-  const response = await apiDelete(
-    `/api/community/posts/${postId}/comments/${commentId}`
-  )
+  const response = await apiDelete(`/api/community/posts/${postId}/comments/${commentId}`)
   if (!response.ok) {
     const err = await response.json().catch(() => ({ detail: 'Failed to delete comment' }))
     throw new Error(err.detail || 'Failed to delete comment')

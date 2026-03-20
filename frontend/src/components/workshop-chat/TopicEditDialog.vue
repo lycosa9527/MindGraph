@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ref, watch, computed } from 'vue'
-import { useWorkshopChatStore } from '@/stores/workshopChat'
+import { computed, ref, watch } from 'vue'
+
 import { useLanguage } from '@/composables/useLanguage'
+import { useWorkshopChatStore } from '@/stores/workshopChat'
 
 const props = defineProps<{
   visible: boolean
@@ -21,12 +22,10 @@ const newTitle = ref('')
 const targetChannelId = ref<number | null>(null)
 const saving = ref(false)
 
-const currentTopic = computed(() =>
-  store.topics.find(tp => tp.id === props.topicId),
-)
+const currentTopic = computed(() => store.topics.find((tp) => tp.id === props.topicId))
 
 const availableChannels = computed(() =>
-  store.channels.filter(c => c.id !== props.channelId && c.is_joined),
+  store.channels.filter((c) => c.id !== props.channelId && c.is_joined)
 )
 
 watch(
@@ -36,7 +35,7 @@ watch(
       newTitle.value = currentTopic.value.title
       targetChannelId.value = null
     }
-  },
+  }
 )
 
 async function handleSave(): Promise<void> {
@@ -72,7 +71,11 @@ async function handleSave(): Promise<void> {
         <p class="text-xs text-stone-500 mb-1">
           {{ t('workshop.moveTopic') }}: {{ currentTopic?.title }}
         </p>
-        <el-select v-model="targetChannelId" class="w-full" :placeholder="t('workshop.selectTopic')">
+        <el-select
+          v-model="targetChannelId"
+          class="w-full"
+          :placeholder="t('workshop.selectTopic')"
+        >
           <el-option
             v-for="ch in availableChannels"
             :key="ch.id"

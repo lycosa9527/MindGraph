@@ -6,11 +6,13 @@
 import { ref } from 'vue'
 
 import { ChatLineSquare } from '@element-plus/icons-vue'
+
 import { MoreVertical } from 'lucide-vue-next'
 
-import TopicActionsPopover from './TopicActionsPopover.vue'
 import { useLanguage } from '@/composables/useLanguage'
 import type { ChatTopic } from '@/stores/workshopChat'
+
+import TopicActionsPopover from './TopicActionsPopover.vue'
 
 const { t } = useLanguage()
 
@@ -46,14 +48,20 @@ const showPopover = ref(false)
           @rename="(id: number) => emit('rename', id)"
           @move="(id: number) => emit('move', id)"
         >
-          <button class="topic-card__kebab" @click.stop>
+          <button
+            class="topic-card__kebab"
+            @click.stop
+          >
             <MoreVertical :size="14" />
           </button>
         </TopicActionsPopover>
       </div>
     </div>
 
-    <p v-if="topic.description" class="topic-card__desc">
+    <p
+      v-if="topic.description"
+      class="topic-card__desc"
+    >
       {{ topic.description }}
     </p>
 
@@ -84,7 +92,9 @@ const showPopover = ref(false)
   padding: 14px 16px;
   background: hsl(0deg 0% 100%);
   cursor: pointer;
-  transition: border-color 150ms ease, box-shadow 150ms ease;
+  transition:
+    border-color 150ms ease,
+    box-shadow 150ms ease;
 }
 
 .topic-card:hover {

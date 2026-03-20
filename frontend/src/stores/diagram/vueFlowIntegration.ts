@@ -4,24 +4,19 @@ import {
   augmentConnectionWithOptimalHandles,
   splitMixedArrowHandleGroups,
 } from '@/composables/diagrams/conceptMapHandles'
-import type {
-  Connection,
-  MindGraphEdge,
-  MindGraphEdgeType,
-  MindGraphNode,
-} from '@/types'
+import type { Connection, MindGraphEdge, MindGraphEdgeType, MindGraphNode } from '@/types'
 import {
   connectionToVueFlowEdge,
   diagramNodeToVueFlowNode,
   vueFlowNodeToDiagramNode,
 } from '@/types/vueflow'
+
 import {
   recalculateBraceMapLayout,
   recalculateBubbleMapLayout,
   recalculateCircleMapLayout,
   recalculateMultiFlowMapLayout,
 } from '../specLoader'
-
 import { getEdgeTypeForDiagram } from './events'
 import type { DiagramContext } from './types'
 
@@ -51,7 +46,7 @@ export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
       const recalculatedNodes = recalculateMultiFlowMapLayout(
         ctx.data.value.nodes,
         ctx.topicNodeWidth.value,
-        ctx.nodeWidths.value,
+        ctx.nodeWidths.value
       )
       const causeNodes = recalculatedNodes.filter((n) => n.id.startsWith('cause-'))
       const effectNodes = recalculatedNodes.filter((n) => n.id.startsWith('effect-'))
@@ -121,7 +116,7 @@ export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
     if (diagramType === 'brace_map') {
       const layoutNodes = recalculateBraceMapLayout(
         ctx.data.value.nodes,
-        ctx.data.value.connections ?? [],
+        ctx.data.value.connections ?? []
       )
       return layoutNodes.map((node) => {
         const vueFlowNode = diagramNodeToVueFlowNode(node, diagramType)
@@ -176,11 +171,14 @@ export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
       for (const edge of edges) {
         const key = `${edge.target}:${edge.targetHandle ?? ''}`
         if (!targetGroups.has(key)) targetGroups.set(key, [])
-        targetGroups.get(key)!.push(edge)
+        const tg = targetGroups.get(key)
+        if (tg) {
+          tg.push(edge)
+        }
       }
       for (const group of targetGroups.values()) {
         const allHaveTarget = group.every(
-          (e) => e.data?.arrowheadDirection === 'target' || e.data?.arrowheadDirection === 'both',
+          (e) => e.data?.arrowheadDirection === 'target' || e.data?.arrowheadDirection === 'both'
         )
         group.forEach((edge, i) => {
           if (!edge.data) return
@@ -188,8 +186,7 @@ export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
             edge.data = { ...edge.data, drawTargetArrowhead: i === 0 }
           } else {
             const hasTarget =
-              edge.data.arrowheadDirection === 'target' ||
-              edge.data.arrowheadDirection === 'both'
+              edge.data.arrowheadDirection === 'target' || edge.data.arrowheadDirection === 'both'
             edge.data = { ...edge.data, drawTargetArrowhead: hasTarget }
           }
         })
@@ -199,11 +196,14 @@ export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
       for (const edge of edges) {
         const key = `${edge.source}:${edge.sourceHandle ?? ''}`
         if (!sourceGroups.has(key)) sourceGroups.set(key, [])
-        sourceGroups.get(key)!.push(edge)
+        const sg = sourceGroups.get(key)
+        if (sg) {
+          sg.push(edge)
+        }
       }
       for (const group of sourceGroups.values()) {
         const allHaveSource = group.every(
-          (e) => e.data?.arrowheadDirection === 'source' || e.data?.arrowheadDirection === 'both',
+          (e) => e.data?.arrowheadDirection === 'source' || e.data?.arrowheadDirection === 'both'
         )
         group.forEach((edge, i) => {
           if (!edge.data) return
@@ -211,8 +211,7 @@ export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
             edge.data = { ...edge.data, drawSourceArrowhead: i === 0 }
           } else {
             const hasSource =
-              edge.data.arrowheadDirection === 'source' ||
-              edge.data.arrowheadDirection === 'both'
+              edge.data.arrowheadDirection === 'source' || edge.data.arrowheadDirection === 'both'
             edge.data = { ...edge.data, drawSourceArrowhead: hasSource }
           }
         })
@@ -225,7 +224,7 @@ export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
   function updateNodePosition(
     nodeId: string,
     position: { x: number; y: number },
-    isUserDrag: boolean = false,
+    isUserDrag: boolean = false
   ): boolean {
     if (!ctx.data.value?.nodes) return false
 

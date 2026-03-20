@@ -17,20 +17,19 @@ import {
 import { Download, Heart, MoreVertical, Trash2, X } from 'lucide-vue-next'
 
 import MindmateInput from '@/components/panels/mindmate/MindmateInput.vue'
-
+import { useLanguage, useNotifications } from '@/composables'
+import { useAuthStore } from '@/stores'
+import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import {
+  type CommunityPost,
+  type CommunityPostComment,
   createCommunityPostComment,
   deleteCommunityPostComment,
   getCommunityPost,
   getCommunityPostComments,
   getCommunityPostLikes,
   toggleCommunityPostLike,
-  type CommunityPost,
-  type CommunityPostComment,
 } from '@/utils/apiClient'
-import { useLanguage, useNotifications } from '@/composables'
-import { useAuthStore } from '@/stores'
-import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 
 const props = defineProps<{
   visible: boolean
@@ -67,9 +66,7 @@ const likesDisplayText = computed(() => {
   if (likesTotal.value === 0) return ''
   const names = likerNames.value
   if (names.length === 0) {
-    return isZh.value
-      ? `${likesTotal.value}人喜欢`
-      : `${likesTotal.value} people liked this`
+    return isZh.value ? `${likesTotal.value}人喜欢` : `${likesTotal.value} people liked this`
   }
   const nameList = names.join('、')
   if (likesTotal.value <= names.length) {
@@ -186,13 +183,7 @@ async function importToLibrary() {
   }
   isImporting.value = true
   try {
-    const saved = await savedDiagramsStore.saveDiagram(
-      p.title,
-      p.diagram_type,
-      spec,
-      'zh',
-      null
-    )
+    const saved = await savedDiagramsStore.saveDiagram(p.title, p.diagram_type, spec, 'zh', null)
     if (saved) {
       savedDiagramsStore.setActiveDiagram(saved.id)
       notify.success(isZh.value ? '已导入到图库' : 'Imported to library')
@@ -202,7 +193,7 @@ async function importToLibrary() {
       notify.error(isZh.value ? '导入失败，图库可能已满' : 'Import failed. Library may be full.')
     }
   } catch (e) {
-    notify.error(e instanceof Error ? e.message : (isZh.value ? '导入失败' : 'Import failed'))
+    notify.error(e instanceof Error ? e.message : isZh.value ? '导入失败' : 'Import failed')
   } finally {
     isImporting.value = false
   }
@@ -342,7 +333,9 @@ function formatDate(iso: string): string {
         </div>
 
         <!-- Below image: likes (cute text) + menu icon -->
-        <div class="detail-image-footer flex items-center justify-between gap-3 px-3 py-2 bg-stone-50 border-t border-stone-200">
+        <div
+          class="detail-image-footer flex items-center justify-between gap-3 px-3 py-2 bg-stone-50 border-t border-stone-200"
+        >
           <p
             v-if="likesDisplayText"
             class="detail-likes-text text-xs text-stone-500 truncate flex-1 min-w-0"
@@ -370,9 +363,12 @@ function formatDate(iso: string): string {
               <ElDropdownMenu>
                 <ElDropdownItem command="like">
                   <Heart
-                    :class="['w-4 h-4 mr-2 shrink-0', post.is_liked ? 'text-rose-500' : 'text-stone-400']"
+                    :class="[
+                      'w-4 h-4 mr-2 shrink-0',
+                      post.is_liked ? 'text-rose-500' : 'text-stone-400',
+                    ]"
                   />
-                  {{ post.is_liked ? (isZh ? '取消喜欢' : 'Unlike') : (isZh ? '喜欢' : 'Like') }}
+                  {{ post.is_liked ? (isZh ? '取消喜欢' : 'Unlike') : isZh ? '喜欢' : 'Like' }}
                 </ElDropdownItem>
                 <ElDropdownItem
                   command="import"
@@ -444,7 +440,9 @@ function formatDate(iso: string): string {
               class="comment-item"
             >
               <div class="flex gap-3">
-                <div class="w-8 h-8 rounded-full bg-stone-100 flex items-center justify-center text-sm shrink-0">
+                <div
+                  class="w-8 h-8 rounded-full bg-stone-100 flex items-center justify-center text-sm shrink-0"
+                >
                   {{ c.author.avatar ?? '👤' }}
                 </div>
                 <div class="min-w-0 flex-1">

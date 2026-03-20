@@ -140,8 +140,9 @@ export function loadConceptMapSpec(spec: Record<string, unknown>): SpecLoaderRes
   conceptsArr.forEach((text, index) => {
     const id = `concept-${index}`
     let position: { x: number; y: number }
-    if (hierarchicalPositions?.has(id)) {
-      position = hierarchicalPositions.get(id)!
+    const hierPos = hierarchicalPositions?.get(id)
+    if (hierPos) {
+      position = hierPos
     } else {
       position = polarToPosition(
         index,

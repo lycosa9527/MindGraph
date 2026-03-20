@@ -7,7 +7,7 @@ import { computed } from 'vue'
 
 import { ElButton, ElIcon, ElTooltip } from 'element-plus'
 
-import { Document, Search, Setting, Upload, VideoPlay } from '@element-plus/icons-vue'
+import { Search, Setting, Upload, VideoPlay } from '@element-plus/icons-vue'
 
 import { useLanguage } from '@/composables/useLanguage'
 
@@ -23,14 +23,13 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'upload'): void
   (e: 'settings'): void
-  (e: 'retrieval-test'): void
-  (e: 'start-processing'): void
-  (e: 'process-selected'): void
+  (e: 'retrievalTest'): void
+  (e: 'startProcessing'): void
+  (e: 'processSelected'): void
 }>()
 
 const { isZh } = useLanguage()
 
-const showRetrievalTest = computed(() => props.completedCount > 0)
 const showStartProcessing = computed(() => props.pendingCount > 0)
 const hasSelectedPending = computed(() => props.selectedPendingCount > 0)
 </script>
@@ -72,7 +71,7 @@ const hasSelectedPending = computed(() => props.selectedPendingCount > 0)
         v-if="hasSelectedPending"
         class="start-processing-btn"
         size="small"
-        @click="emit('process-selected')"
+        @click="emit('processSelected')"
       >
         <ElIcon class="mr-1"><VideoPlay /></ElIcon>
         {{
@@ -85,7 +84,7 @@ const hasSelectedPending = computed(() => props.selectedPendingCount > 0)
         v-else-if="showStartProcessing && selectedCount === 0"
         class="start-processing-btn-secondary"
         size="small"
-        @click="emit('start-processing')"
+        @click="emit('startProcessing')"
       >
         <ElIcon class="mr-1"><VideoPlay /></ElIcon>
         {{ isZh ? '处理全部' : 'Process All' }}
@@ -99,7 +98,7 @@ const hasSelectedPending = computed(() => props.selectedPendingCount > 0)
           size="small"
           class="action-btn"
           :disabled="completedCount === 0"
-          @click="emit('retrieval-test')"
+          @click="emit('retrievalTest')"
         >
           <ElIcon><Search /></ElIcon>
         </ElButton>

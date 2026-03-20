@@ -19,8 +19,9 @@
  * - Auto-updates if diagram is already in library; auto-saves new if slots available
  */
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
-import { storeToRefs } from 'pinia'
 import { useRoute, useRouter } from 'vue-router'
+
+import { storeToRefs } from 'pinia'
 
 import {
   AIModelSelector,
@@ -51,6 +52,7 @@ import { INLINE_RECOMMENDATIONS_SUPPORTED_TYPES } from '@/composables/nodePalett
 import { IMPORT_SPEC_KEY } from '@/config'
 import { ANIMATION, PANEL, PANEL_INSET } from '@/config/uiConfig'
 import {
+  type LLMResult,
   useAuthStore,
   useConceptMapRelationshipStore,
   useDiagramStore,
@@ -58,7 +60,6 @@ import {
   useLLMResultsStore,
   usePanelsStore,
   useUIStore,
-  type LLMResult,
 } from '@/stores'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import type { DiagramType } from '@/types'
@@ -110,10 +111,7 @@ const { startRecommendations } = useInlineRecommendations()
 
 function isNodeEligibleForInlineRec(node: { id?: string; type?: string }): boolean {
   const dt = diagramStore.type === 'mind_map' ? 'mindmap' : diagramStore.type
-  if (
-    !dt ||
-    !(INLINE_RECOMMENDATIONS_SUPPORTED_TYPES as readonly string[]).includes(dt)
-  )
+  if (!dt || !(INLINE_RECOMMENDATIONS_SUPPORTED_TYPES as readonly string[]).includes(dt))
     return false
   const nid = node.id ?? ''
   if (dt === 'mindmap') {
@@ -128,18 +126,10 @@ function isNodeEligibleForInlineRec(node: { id?: string; type?: string }): boole
     return nid.startsWith('flow-step-') || nid.startsWith('flow-substep-')
   }
   if (dt === 'tree_map') {
-    return (
-      nid === 'dimension-label' ||
-      /^tree-cat-\d+$/.test(nid) ||
-      /^tree-leaf-/.test(nid)
-    )
+    return nid === 'dimension-label' || /^tree-cat-\d+$/.test(nid) || /^tree-leaf-/.test(nid)
   }
   if (dt === 'brace_map') {
-    return (
-      nid === 'dimension-label' ||
-      node.type === 'brace' ||
-      nid.startsWith('brace-')
-    )
+    return nid === 'dimension-label' || node.type === 'brace' || nid.startsWith('brace-')
   }
   if (dt === 'circle_map') {
     return nid.startsWith('context-')
@@ -149,9 +139,7 @@ function isNodeEligibleForInlineRec(node: { id?: string; type?: string }): boole
   }
   if (dt === 'double_bubble_map') {
     return (
-      nid.startsWith('similarity-') ||
-      nid.startsWith('left-diff-') ||
-      nid.startsWith('right-diff-')
+      nid.startsWith('similarity-') || nid.startsWith('left-diff-') || nid.startsWith('right-diff-')
     )
   }
   if (dt === 'multi_flow_map') {
@@ -188,10 +176,7 @@ const diagramAutoSave = useDiagramAutoSave()
 const autoSavedStatusText = computed(() => {
   if (!authStore.isAuthenticated) return null
   // Slots full + new diagram (not saved): show space-full message
-  if (
-    savedDiagramsStore.isSlotsFullyUsed &&
-    !savedDiagramsStore.activeDiagramId
-  ) {
+  if (savedDiagramsStore.isSlotsFullyUsed && !savedDiagramsStore.activeDiagramId) {
     return t(
       'editor.slotsFull',
       isZh.value
@@ -221,7 +206,7 @@ const isSlotsFullAndNewDiagram = computed(
     !savedDiagramsStore.activeDiagramId
 )
 
-// Workshop integration
+// Diagram presentation mode (collaborative editing via shared code)
 const workshopCode = ref<string | null>(null)
 const currentDiagramId = computed(() => savedDiagramsStore.activeDiagramId)
 
@@ -276,7 +261,7 @@ const {
   }
 )
 
-// Start watching for workshop code changes
+// Start watching for presentation code changes
 watchWorkshopCode()
 
 // Apply visual indicator to node (add CSS class and data attributes)
@@ -334,9 +319,8 @@ watch(
   { deep: true }
 )
 
-// Watch for workshop code changes from CanvasTopBar
-// Note: CanvasTopBar manages the workshop modal and emits workshopCodeChanged
-// We need to sync the code here for useWorkshop
+// Watch for presentation code changes from CanvasTopBar
+// CanvasTopBar owns the modal; we sync the code here for useWorkshop
 eventBus.onWithOwner(
   'workshop:code-changed',
   (data) => {
@@ -423,11 +407,6 @@ const diagramType = computed<DiagramType | null>(() => {
   if (!chartType.value) return null
   return diagramTypeMap[chartType.value] || null
 })
-
-// Diagram type for default name: from store (when loaded) or route (for new diagrams)
-const diagramTypeForName = computed(
-  () => (diagramStore.type as string) || (route.query.type as string) || null
-)
 
 function handleZoomChange(level: number) {
   const zoom = Math.max(0.1, Math.min(4, level / 100))
@@ -645,7 +624,11 @@ eventBus.onWithOwner(
   () => panelsStore.clearNodePaletteState({ clearSessions: false }),
   'CanvasPage'
 )
-eventBus.onWithOwner('diagram:type_changed', () => panelsStore.clearNodePaletteState(), 'CanvasPage')
+eventBus.onWithOwner(
+  'diagram:type_changed',
+  () => panelsStore.clearNodePaletteState(),
+  'CanvasPage'
+)
 
 // Track content edits for teacher usage analytics (add/delete/change nodes)
 eventBus.onWithOwner(
@@ -721,15 +704,7 @@ watch(
   }
 )
 
-/**
- * Generate default diagram name (simple, no timestamp)
- * Format: "新圆圈图" / "New Circle Map"
- */
-function generateDefaultName(): string {
-  return getDefaultDiagramName(diagramTypeForName.value, isZh.value)
-}
-
-// Watch for diagram data changes to send granular updates to workshop
+// Watch for diagram data changes to send granular updates to presentation mode
 // Auto-save: handled internally by useDiagramAutoSave (computed fingerprint + watch)
 watch(
   () => diagramStore.data,
@@ -794,10 +769,7 @@ async function loadDiagramFromLibrary(diagramId: string): Promise<void> {
       diagramId,
       diagramType: diagram.diagram_type,
     })
-    const loaded = diagramStore.loadFromSpec(
-      specForLoad,
-      diagram.diagram_type as DiagramType
-    )
+    const loaded = diagramStore.loadFromSpec(specForLoad, diagram.diagram_type as DiagramType)
 
     if (loaded) {
       uiStore.setSelectedChartType(
@@ -842,9 +814,7 @@ onMounted(async () => {
     'nodePalette:opened',
     (data: { hasRestoredSession?: boolean; wasPanelAlreadyOpen?: boolean }) => {
       if (!data.hasRestoredSession && diagramStore.data?.nodes?.length) {
-        nextTick().then(() =>
-          startSession({ keepSessionId: data.wasPanelAlreadyOpen ?? false })
-        )
+        nextTick().then(() => startSession({ keepSessionId: data.wasPanelAlreadyOpen ?? false }))
       }
     },
     'CanvasPage'
@@ -922,7 +892,9 @@ onMounted(async () => {
               } else if (!saveResult.success) {
                 notify.warning(
                   saveResult.error ||
-                    (isZh.value ? '导入成功，但保存到图库失败' : 'Imported, but save to library failed')
+                    (isZh.value
+                      ? '导入成功，但保存到图库失败'
+                      : 'Imported, but save to library failed')
                 )
               }
             }
@@ -978,9 +950,7 @@ onUnmounted(() => {
   inlineRecCoordinator.teardown()
   eventBus.removeAllListenersForOwner('CanvasPage')
 
-  // Clean up workshop connection when leaving canvas
-  // Note: Workshop cleanup is handled by useWorkshop composable's onUnmounted
-  // But we should also clear workshop code from CanvasTopBar if needed
+  // Presentation-mode WebSocket cleanup is handled in useWorkshop onUnmounted
 
   // Clean up state when leaving canvas - matches old JS behavior
   diagramStore.reset()
@@ -1029,7 +999,7 @@ onUnmounted(() => {
     <!-- Floating toolbar (only UI bar visible in presentation mode) -->
     <CanvasToolbar
       :is-presentation-mode="isPresentationMode"
-      @exit-presentation="handleStartPresentation"
+      @exitPresentation="handleStartPresentation"
     />
 
     <!-- Main canvas area - full height, toolbars float over with glass effect -->
@@ -1089,11 +1059,15 @@ onUnmounted(() => {
     </div>
 
     <!-- Bottom controls: single floating glass card, adaptive width -->
-    <div class="canvas-bottom-controls absolute bottom-4 left-0 right-0 z-20 flex justify-center px-2 sm:px-4">
+    <div
+      class="canvas-bottom-controls absolute bottom-4 left-0 right-0 z-20 flex justify-center px-2 sm:px-4"
+    >
       <div
         class="bottom-controls-card flex flex-col md:flex-row md:items-center gap-2 md:gap-3 rounded-xl shadow-lg p-1.5 md:p-2 border border-gray-200/80 dark:border-gray-600/80 bg-white/90 dark:bg-gray-800/90 backdrop-blur-md w-fit max-w-[95vw] min-w-0"
       >
-        <div class="ai-selector-wrap flex flex-1 justify-center md:justify-center min-w-0 order-2 md:order-1">
+        <div
+          class="ai-selector-wrap flex flex-1 justify-center md:justify-center min-w-0 order-2 md:order-1"
+        >
           <AIModelSelector @model-change="handleModelChange" />
         </div>
         <ConceptMapLabelPicker
@@ -1111,12 +1085,12 @@ onUnmounted(() => {
           <ZoomControls
             :zoom="canvasZoom"
             :is-presentation-mode="isPresentationMode"
-            @zoom-change="handleZoomChange"
-            @zoom-in="handleZoomIn"
-            @zoom-out="handleZoomOut"
-            @fit-to-screen="handleFitToScreen"
-            @hand-tool-toggle="handleHandToolToggle"
-            @start-presentation="handleStartPresentation"
+            @zoomChange="handleZoomChange"
+            @zoomIn="handleZoomIn"
+            @zoomOut="handleZoomOut"
+            @fitToScreen="handleFitToScreen"
+            @handToolToggle="handleHandToolToggle"
+            @startPresentation="handleStartPresentation"
           />
         </div>
       </div>

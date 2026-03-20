@@ -13,9 +13,9 @@ import { ElIcon } from 'element-plus'
 import { Menu } from '@element-plus/icons-vue'
 
 import { eventBus } from '@/composables/useEventBus'
-import { getBorderStyleProps } from '@/utils/borderStyleUtils'
 import { useTheme } from '@/composables/useTheme'
 import type { MindGraphNodeProps } from '@/types'
+import { getBorderStyleProps } from '@/utils/borderStyleUtils'
 
 import InlineEditableText from './InlineEditableText.vue'
 
@@ -31,10 +31,8 @@ const defaultStyle = computed(() => getNodeStyle(isTopic.value ? 'topic' : 'bran
 const nodeStyle = computed(() => {
   const pillRadius = '9999px'
   if (isTopic.value) {
-    const borderColor =
-      props.data.style?.borderColor || defaultStyle.value.borderColor || '#35506b'
-    const borderWidth =
-      props.data.style?.borderWidth || defaultStyle.value.borderWidth || 3
+    const borderColor = props.data.style?.borderColor || defaultStyle.value.borderColor || '#35506b'
+    const borderWidth = props.data.style?.borderWidth || defaultStyle.value.borderWidth || 3
     const borderStyle = props.data.style?.borderStyle || 'solid'
     const backgroundColor =
       props.data.style?.backgroundColor || defaultStyle.value.backgroundColor || '#e3f2fd'
@@ -53,10 +51,8 @@ const nodeStyle = computed(() => {
       boxShadow: '0 2px 6px rgba(0, 0, 0, 0.08)',
     }
   }
-  const borderColor =
-    props.data.style?.borderColor || defaultStyle.value.borderColor || '#4e79a7'
-  const borderWidth =
-    props.data.style?.borderWidth || defaultStyle.value.borderWidth || 2
+  const borderColor = props.data.style?.borderColor || defaultStyle.value.borderColor || '#4e79a7'
+  const borderWidth = props.data.style?.borderWidth || defaultStyle.value.borderWidth || 2
   const borderStyle = props.data.style?.borderStyle || 'solid'
   const backgroundColor =
     props.data.style?.backgroundColor || defaultStyle.value.backgroundColor || '#e3f2fd'
@@ -106,9 +102,9 @@ function handleLinkDragEnd() {
 
 function handleLinkDragOver(event: DragEvent) {
   const hasLinkData = event.dataTransfer?.types.includes(CONCEPT_LINK_DATA_TYPE)
-  if (hasLinkData) {
+  if (hasLinkData && event.dataTransfer) {
     event.preventDefault()
-    event.dataTransfer!.dropEffect = 'copy'
+    event.dataTransfer.dropEffect = 'copy'
   }
 }
 
@@ -119,7 +115,6 @@ function handleLinkDrop(event: DragEvent) {
   event.stopPropagation()
   eventBus.emit('concept_map:link_drop', { sourceId, targetId: props.id })
 }
-
 </script>
 
 <template>

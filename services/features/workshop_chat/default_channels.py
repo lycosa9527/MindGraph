@@ -339,12 +339,70 @@ def _find_or_create_group(
     )
     db.add(group)
     db.flush()
-    db.add(ChannelMember(
-        channel_id=group.id,
-        user_id=created_by,
-        role="owner",
-    ))
     return group
+
+
+def _seed_one_default_group(
+    db: Session,
+    group_data: Dict[str, Any],
+    organization_id: int,
+    created_by: int,
+    group_idx: int,
+    base_time: datetime,
+) -> Dict[str, Any]:
+    """Create or reuse one top-level group and its lesson-study children."""
+    group = _find_or_create_group(
+        db, group_data, organization_id, created_by,
+    )
+    if not (
+        db.query(ChannelMember)
+        .filter(
+            ChannelMember.channel_id == group.id,
+            ChannelMember.user_id == created_by,
+        )
+        .first()
+    ):
+        db.add(ChannelMember(
+            channel_id=group.id,
+            user_id=created_by,
+            role="owner",
+        ))
+
+    group_base_time = base_time + timedelta(hours=group_idx * 6)
+    children_summaries: List[Dict[str, Any]] = []
+    children_list = group_data.get("children", [])
+
+    for child_idx, child_data in enumerate(children_list):
+        existing_child = (
+            db.query(ChatChannel)
+            .filter(
+                ChatChannel.parent_id == group.id,
+                ChatChannel.name == child_data["name"],
+                ChatChannel.is_archived.is_(False),
+            )
+            .first()
+        )
+        if existing_child:
+            children_summaries.append({
+                "id": existing_child.id,
+                "name": existing_child.name,
+                "topic_count": 0,
+                "skipped": True,
+            })
+            continue
+        child_base = group_base_time + timedelta(hours=child_idx * 2)
+        summary = _seed_lesson_study_channel(
+            db, group.id, organization_id, created_by,
+            child_data, child_base,
+        )
+        children_summaries.append(summary)
+
+    return {
+        "id": group.id,
+        "name": group.name,
+        "children_count": len(children_summaries),
+        "children": children_summaries,
+    }
 
 
 def seed_default_channels(
@@ -375,61 +433,12 @@ def seed_default_channels(
         return []
 
     base_time = datetime.utcnow() - timedelta(days=1)
-    created_groups: List[Dict[str, Any]] = []
-
-    for group_idx, group_data in enumerate(DEFAULT_CHANNEL_GROUPS):
-        group = _find_or_create_group(
-            db, group_data, organization_id, created_by,
+    created_groups = [
+        _seed_one_default_group(
+            db, group_data, organization_id, created_by, group_idx, base_time,
         )
-        if not (
-            db.query(ChannelMember)
-            .filter(
-                ChannelMember.channel_id == group.id,
-                ChannelMember.user_id == created_by,
-            )
-            .first()
-        ):
-            db.add(ChannelMember(
-                channel_id=group.id,
-                user_id=created_by,
-                role="owner",
-            ))
-
-        group_base_time = base_time + timedelta(hours=group_idx * 6)
-        children_summaries = []
-        children_list = group_data.get("children", [])
-
-        for child_idx, child_data in enumerate(children_list):
-            existing_child = (
-                db.query(ChatChannel)
-                .filter(
-                    ChatChannel.parent_id == group.id,
-                    ChatChannel.name == child_data["name"],
-                    ChatChannel.is_archived.is_(False),
-                )
-                .first()
-            )
-            if existing_child:
-                children_summaries.append({
-                    "id": existing_child.id,
-                    "name": existing_child.name,
-                    "topic_count": 0,
-                    "skipped": True,
-                })
-                continue
-            child_base = group_base_time + timedelta(hours=child_idx * 2)
-            summary = _seed_lesson_study_channel(
-                db, group.id, organization_id, created_by,
-                child_data, child_base,
-            )
-            children_summaries.append(summary)
-
-        created_groups.append({
-            "id": group.id,
-            "name": group.name,
-            "children_count": len(children_summaries),
-            "children": children_summaries,
-        })
+        for group_idx, group_data in enumerate(DEFAULT_CHANNEL_GROUPS)
+    ]
 
     db.commit()
 

@@ -11,20 +11,21 @@ import { defineStore } from 'pinia'
 import { useAuthStore } from '@/stores/auth'
 import { apiRequest } from '@/utils/apiClient'
 import {
+  CHANNELS_TTL_MS,
+  TOPICS_TTL_MS,
+  type WorkshopCacheScope,
   buildWorkshopCacheScope,
   cacheIsFresh,
-  CHANNELS_TTL_MS,
   clearCachedTopics,
   clearWorkshopChatCachesForUser,
   readCachedChannelsRow,
   readCachedTopicsRow,
-  TOPICS_TTL_MS,
   touchCachedChannels,
   touchCachedTopics,
-  type WorkshopCacheScope,
   writeCachedChannels,
   writeCachedTopics,
 } from '@/utils/workshopChatLocalCache'
+import { registerWorkshopChatResetOnAuthClear } from '@/utils/workshopChatWsRegistry'
 
 export interface ChatChannel {
   id: number
@@ -47,6 +48,8 @@ export interface ChatChannel {
   unread_count: number
   created_at: string
   parent_id: number | null
+  /** Top-level teaching groups: persisted sidebar order (lower first). */
+  display_order?: number
   status?: string | null
   deadline?: string | null
   diagram_id?: string | null
@@ -198,7 +201,9 @@ export const useWorkshopChatStore = defineStore('workshopChat', () => {
 
   const onlineUserIds = ref<Set<number>>(new Set())
   const idleUserIds = ref<Set<number>>(new Set())
-  const typingUsers = ref<Map<string, { username: string; timeout: ReturnType<typeof setTimeout> }>>(new Map())
+  const typingUsers = ref<
+    Map<string, { username: string; timeout: ReturnType<typeof setTimeout> }>
+  >(new Map())
 
   const loading = ref(false)
 
@@ -226,6 +231,17 @@ export const useWorkshopChatStore = defineStore('workshopChat', () => {
     mode: 'rename' | 'move'
   } | null>(null)
 
+  /** Create-channel dialog (gear menu or “add lesson study” on a 教研组). */
+  const createChannelDialogVisible = ref(false)
+  const createChannelPrefillParentId = ref<number | null>(null)
+  /** WorkshopChatPage opens new-topic dialog when set. */
+  const newTopicDialogRequestChannelId = ref<number | null>(null)
+  /**
+   * Teaching group (教研组) selected: middle column shows overview (Zulip stream
+   * narrow) without selecting a lesson-study channel.
+   */
+  const teachingGroupLandingId = ref<number | null>(null)
+
   const currentChannel = computed(() => {
     if (currentChannelId.value === null) return null
     return findChannelById(currentChannelId.value)
@@ -233,52 +249,38 @@ export const useWorkshopChatStore = defineStore('workshopChat', () => {
 
   const topicParticipantIds = computed<Set<number>>(() => {
     const ids = new Set<number>()
-    const msgs = currentTopicId.value
-      ? topicMessages.value
-      : channelMessages.value
+    const msgs = currentTopicId.value ? topicMessages.value : channelMessages.value
     for (const msg of msgs) {
       ids.add(msg.sender_id)
     }
     return ids
   })
 
-  const joinedChannels = computed(() =>
-    channels.value.filter(c => c.is_joined),
-  )
+  const joinedChannels = computed(() => channels.value.filter((c) => c.is_joined))
 
   const totalUnreadChannels = computed(() =>
-    channels.value.reduce((sum, c) => sum + (c.is_joined ? c.unread_count : 0), 0),
+    channels.value.reduce((sum, c) => sum + (c.is_joined ? c.unread_count : 0), 0)
   )
 
   const totalUnreadDMs = computed(() =>
-    dmConversations.value.reduce((sum, c) => sum + c.unread_count, 0),
+    dmConversations.value.reduce((sum, c) => sum + c.unread_count, 0)
   )
 
   const announceChannels = computed(() =>
-    channels.value.filter(c => c.channel_type === 'announce'),
+    channels.value.filter((c) => c.channel_type === 'announce')
   )
 
-  const publicChannels = computed(() =>
-    channels.value.filter(c => c.channel_type === 'public'),
-  )
+  const publicChannels = computed(() => channels.value.filter((c) => c.channel_type === 'public'))
 
-  const privateChannels = computed(() =>
-    channels.value.filter(c => c.channel_type === 'private'),
-  )
+  const privateChannels = computed(() => channels.value.filter((c) => c.channel_type === 'private'))
 
-  const pinnedChannels = computed(() =>
-    channels.value.filter(c => c.pin_to_top && c.is_joined),
-  )
+  const pinnedChannels = computed(() => channels.value.filter((c) => c.pin_to_top && c.is_joined))
 
   const channelGroups = computed(() =>
-    channels.value.filter(
-      c => c.parent_id === null || c.parent_id === undefined,
-    ),
+    channels.value.filter((c) => c.parent_id === null || c.parent_id === undefined)
   )
 
-  const allLessonStudies = computed(() =>
-    channels.value.flatMap(g => g.children ?? []),
-  )
+  const allLessonStudies = computed(() => channels.value.flatMap((g) => g.children ?? []))
 
   function findChannelById(channelId: number): ChatChannel | null {
     for (const group of channels.value) {
@@ -301,24 +303,16 @@ export const useWorkshopChatStore = defineStore('workshopChat', () => {
 
   function getCacheScope(): WorkshopCacheScope | null {
     const auth = useAuthStore()
-    return buildWorkshopCacheScope(
-      auth.user?.id,
-      adminOrgId.value,
-      auth.user?.schoolId,
-    )
+    return buildWorkshopCacheScope(auth.user?.id, adminOrgId.value, auth.user?.schoolId)
   }
 
-  function applyTopicsPayload(
-    channelId: number,
-    raw: ChatTopic[],
-    merge: boolean,
-  ): void {
-    const mapped = raw.map(t => ({
+  function applyTopicsPayload(channelId: number, raw: ChatTopic[], merge: boolean): void {
+    const mapped = raw.map((t) => ({
       ...t,
       unread_count: t.unread_count ?? 0,
     }))
     if (merge) {
-      const rest = topics.value.filter(t => t.channel_id !== channelId)
+      const rest = topics.value.filter((t) => t.channel_id !== channelId)
       topics.value = [...rest, ...mapped]
     } else {
       topics.value = mapped
@@ -396,7 +390,7 @@ export const useWorkshopChatStore = defineStore('workshopChat', () => {
 
   async function fetchTopics(
     channelId: number,
-    options?: { force?: boolean; merge?: boolean },
+    options?: { force?: boolean; merge?: boolean }
   ): Promise<void> {
     const scope = getCacheScope()
     const merge = options?.merge ?? false
@@ -419,16 +413,13 @@ export const useWorkshopChatStore = defineStore('workshopChat', () => {
             headers['If-None-Match'] = row.etag
           }
         }
-        const res = await apiRequest(
-          `/api/chat/channels/${channelId}/topics`,
-          { headers },
-        )
+        const res = await apiRequest(`/api/chat/channels/${channelId}/topics`, { headers })
         if (res.status === 304) {
           return { kind: 'http304' }
         }
         if (res.ok && res.status === 200) {
           const raw: ChatTopic[] = await res.json()
-          const mapped = raw.map(t => ({
+          const mapped = raw.map((t) => ({
             ...t,
             unread_count: t.unread_count ?? 0,
           }))
@@ -477,12 +468,12 @@ export const useWorkshopChatStore = defineStore('workshopChat', () => {
     channelId: number,
     anchor = 0,
     numBefore = 50,
-    numAfter = 0,
+    numAfter = 0
   ): Promise<ChatMessage[]> {
     try {
       const res = await apiRequest(
-        `/api/chat/channels/${channelId}/messages`
-        + `?anchor=${anchor}&num_before=${numBefore}&num_after=${numAfter}`,
+        `/api/chat/channels/${channelId}/messages` +
+          `?anchor=${anchor}&num_before=${numBefore}&num_after=${numAfter}`
       )
       if (res.ok) {
         const msgs: ChatMessage[] = await res.json()
@@ -505,12 +496,12 @@ export const useWorkshopChatStore = defineStore('workshopChat', () => {
     topicId: number,
     anchor = 0,
     numBefore = 50,
-    numAfter = 0,
+    numAfter = 0
   ): Promise<ChatMessage[]> {
     try {
       const res = await apiRequest(
-        `/api/chat/channels/${channelId}/topics/${topicId}/messages`
-        + `?anchor=${anchor}&num_before=${numBefore}&num_after=${numAfter}`,
+        `/api/chat/channels/${channelId}/topics/${topicId}/messages` +
+          `?anchor=${anchor}&num_before=${numBefore}&num_after=${numAfter}`
       )
       if (res.ok) {
         const msgs: ChatMessage[] = await res.json()
@@ -543,12 +534,12 @@ export const useWorkshopChatStore = defineStore('workshopChat', () => {
     partnerId: number,
     anchor = 0,
     numBefore = 50,
-    numAfter = 0,
+    numAfter = 0
   ): Promise<DirectMessageItem[]> {
     try {
       const res = await apiRequest(
-        `/api/chat/dm/${partnerId}/messages`
-        + `?anchor=${anchor}&num_before=${numBefore}&num_after=${numAfter}`,
+        `/api/chat/dm/${partnerId}/messages` +
+          `?anchor=${anchor}&num_before=${numBefore}&num_after=${numAfter}`
       )
       if (res.ok) {
         const msgs: DirectMessageItem[] = await res.json()
@@ -569,7 +560,7 @@ export const useWorkshopChatStore = defineStore('workshopChat', () => {
   async function searchChannelMessages(
     channelId: number,
     query: string,
-    limit = 40,
+    limit = 40
   ): Promise<ChatMessage[]> {
     const raw = query.trim()
     if (raw.length < 2) {
@@ -577,9 +568,7 @@ export const useWorkshopChatStore = defineStore('workshopChat', () => {
     }
     try {
       const params = new URLSearchParams({ q: raw, limit: String(limit) })
-      const res = await apiRequest(
-        `/api/chat/channels/${channelId}/messages/search?${params}`,
-      )
+      const res = await apiRequest(`/api/chat/channels/${channelId}/messages/search?${params}`)
       if (res.ok) {
         return (await res.json()) as ChatMessage[]
       }
@@ -593,7 +582,7 @@ export const useWorkshopChatStore = defineStore('workshopChat', () => {
     channelId: number,
     topicId: number,
     query: string,
-    limit = 40,
+    limit = 40
   ): Promise<ChatMessage[]> {
     const raw = query.trim()
     if (raw.length < 2) {
@@ -605,9 +594,7 @@ export const useWorkshopChatStore = defineStore('workshopChat', () => {
         topic_id: String(topicId),
         limit: String(limit),
       })
-      const res = await apiRequest(
-        `/api/chat/channels/${channelId}/messages/search?${params}`,
-      )
+      const res = await apiRequest(`/api/chat/channels/${channelId}/messages/search?${params}`)
       if (res.ok) {
         return (await res.json()) as ChatMessage[]
       }
@@ -620,7 +607,7 @@ export const useWorkshopChatStore = defineStore('workshopChat', () => {
   async function searchDMMessages(
     partnerId: number,
     query: string,
-    limit = 40,
+    limit = 40
   ): Promise<DirectMessageItem[]> {
     const raw = query.trim()
     if (raw.length < 2) {
@@ -628,9 +615,7 @@ export const useWorkshopChatStore = defineStore('workshopChat', () => {
     }
     try {
       const params = new URLSearchParams({ q: raw, limit: String(limit) })
-      const res = await apiRequest(
-        `/api/chat/dm/${partnerId}/messages/search?${params}`,
-      )
+      const res = await apiRequest(`/api/chat/dm/${partnerId}/messages/search?${params}`)
       if (res.ok) {
         return (await res.json()) as DirectMessageItem[]
       }
@@ -651,13 +636,9 @@ export const useWorkshopChatStore = defineStore('workshopChat', () => {
     }
   }
 
-  const orgMembersHasMore = computed(
-    () => orgMembers.value.length < orgMembersTotal.value,
-  )
+  const orgMembersHasMore = computed(() => orgMembers.value.length < orgMembersTotal.value)
 
-  function buildOrgMembersQueryString(
-    params: Record<string, string>,
-  ): string {
+  function buildOrgMembersQueryString(params: Record<string, string>): string {
     const search = new URLSearchParams(params)
     if (adminOrgId.value != null) {
       search.set('org_id', String(adminOrgId.value))
@@ -684,9 +665,7 @@ export const useWorkshopChatStore = defineStore('workshopChat', () => {
       if (q.trim()) {
         params.q = q.trim()
       }
-      const res = await apiRequest(
-        `/api/chat/org-members${buildOrgMembersQueryString(params)}`,
-      )
+      const res = await apiRequest(`/api/chat/org-members${buildOrgMembersQueryString(params)}`)
       if (!res.ok) {
         return
       }
@@ -704,10 +683,7 @@ export const useWorkshopChatStore = defineStore('workshopChat', () => {
   }
 
   /** Server-side name filter for @mentions and channel “others” search (does not replace `orgMembers`). */
-  async function searchOrgMembers(
-    query: string,
-    limit = 20,
-  ): Promise<OrgMember[]> {
+  async function searchOrgMembers(query: string, limit = 20): Promise<OrgMember[]> {
     const trimmed = query.trim()
     if (!trimmed) {
       return []
@@ -718,9 +694,7 @@ export const useWorkshopChatStore = defineStore('workshopChat', () => {
         limit: String(Math.min(Math.max(limit, 1), 200)),
         offset: '0',
       }
-      const res = await apiRequest(
-        `/api/chat/org-members${buildOrgMembersQueryString(params)}`,
-      )
+      const res = await apiRequest(`/api/chat/org-members${buildOrgMembersQueryString(params)}`)
       if (!res.ok) {
         return []
       }
@@ -779,6 +753,27 @@ export const useWorkshopChatStore = defineStore('workshopChat', () => {
     return false
   }
 
+  async function archiveChannel(channelId: number): Promise<boolean> {
+    try {
+      const res = await apiRequest(`/api/chat/channels/${channelId}`, {
+        method: 'DELETE',
+      })
+      if (res.ok) {
+        await fetchChannels({ force: true })
+        if (currentChannelId.value === channelId) {
+          selectChannel(null)
+        }
+        if (teachingGroupLandingId.value === channelId) {
+          openWorkshopInboxHome()
+        }
+        return true
+      }
+    } catch (err) {
+      console.error('[WorkshopChat] archiveChannel error:', err)
+    }
+    return false
+  }
+
   // ── Channel subscription helpers ──────────────────────────────
 
   async function toggleChannelMute(channelId: number): Promise<boolean> {
@@ -786,7 +781,7 @@ export const useWorkshopChatStore = defineStore('workshopChat', () => {
       const res = await apiRequest(`/api/chat/channels/${channelId}/mute`, { method: 'POST' })
       if (res.ok) {
         const data = await res.json()
-        const ch = channels.value.find(c => c.id === channelId)
+        const ch = channels.value.find((c) => c.id === channelId)
         if (ch) ch.is_muted = data.is_muted
         return true
       }
@@ -801,7 +796,7 @@ export const useWorkshopChatStore = defineStore('workshopChat', () => {
       const res = await apiRequest(`/api/chat/channels/${channelId}/pin`, { method: 'POST' })
       if (res.ok) {
         const data = await res.json()
-        const ch = channels.value.find(c => c.id === channelId)
+        const ch = channels.value.find((c) => c.id === channelId)
         if (ch) ch.pin_to_top = data.pin_to_top
         return true
       }
@@ -817,7 +812,7 @@ export const useWorkshopChatStore = defineStore('workshopChat', () => {
         method: 'POST',
       })
       if (res.ok) {
-        const ch = channels.value.find(c => c.id === channelId)
+        const ch = channels.value.find((c) => c.id === channelId)
         if (ch) ch.unread_count = 0
         return true
       }
@@ -833,7 +828,7 @@ export const useWorkshopChatStore = defineStore('workshopChat', () => {
         method: 'POST',
       })
       if (res.ok) {
-        const conv = dmConversations.value.find(c => c.partner_id === partnerId)
+        const conv = dmConversations.value.find((c) => c.partner_id === partnerId)
         if (conv) conv.unread_count = 0
         return true
       }
@@ -845,7 +840,7 @@ export const useWorkshopChatStore = defineStore('workshopChat', () => {
 
   async function updateChannelLessonStudy(
     channelId: number,
-    body: { status?: string; deadline?: string | null; is_resolved?: boolean },
+    body: { status?: string; deadline?: string | null; is_resolved?: boolean }
   ): Promise<boolean> {
     try {
       const res = await apiRequest(`/api/chat/channels/${channelId}`, {
@@ -869,7 +864,7 @@ export const useWorkshopChatStore = defineStore('workshopChat', () => {
 
   async function updateChannelPrefs(
     channelId: number,
-    prefs: { color?: string; desktop_notifications?: boolean; email_notifications?: boolean },
+    prefs: { color?: string; desktop_notifications?: boolean; email_notifications?: boolean }
   ): Promise<boolean> {
     try {
       const res = await apiRequest(`/api/chat/channels/${channelId}/preferences`, {
@@ -878,12 +873,12 @@ export const useWorkshopChatStore = defineStore('workshopChat', () => {
         body: JSON.stringify(prefs),
       })
       if (res.ok) {
-        const data = await res.json() as {
+        const data = (await res.json()) as {
           color?: string
           desktop_notifications?: boolean
           email_notifications?: boolean
         }
-        const ch = channels.value.find(c => c.id === channelId)
+        const ch = channels.value.find((c) => c.id === channelId)
         if (ch) {
           if (data.color != null) ch.color = data.color
           if (data.desktop_notifications != null) {
@@ -903,7 +898,7 @@ export const useWorkshopChatStore = defineStore('workshopChat', () => {
 
   async function updateChannelPermissions(
     channelId: number,
-    perms: { channel_type?: string; posting_policy?: string; is_default?: boolean },
+    perms: { channel_type?: string; posting_policy?: string; is_default?: boolean }
   ): Promise<boolean> {
     try {
       const res = await apiRequest(`/api/chat/channels/${channelId}/permissions`, {
@@ -921,21 +916,129 @@ export const useWorkshopChatStore = defineStore('workshopChat', () => {
     return false
   }
 
+  async function updateChannelDetails(
+    channelId: number,
+    body: {
+      name?: string
+      description?: string | null
+      avatar?: string | null
+    }
+  ): Promise<boolean> {
+    try {
+      const res = await apiRequest(`/api/chat/channels/${channelId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      })
+      if (res.ok) {
+        await fetchChannels({ force: true })
+        return true
+      }
+    } catch (err) {
+      console.error('[WorkshopChat] updateChannelDetails error:', err)
+    }
+    return false
+  }
+
+  async function reorderTeachingGroups(orderedIds: number[]): Promise<boolean> {
+    try {
+      const res = await apiRequest('/api/chat/channels/teaching-groups/order', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ channel_ids: orderedIds }),
+      })
+      if (res.ok) {
+        await fetchChannels({ force: true })
+        return true
+      }
+    } catch (err) {
+      console.error('[WorkshopChat] reorderTeachingGroups error:', err)
+    }
+    return false
+  }
+
+  async function inviteChannelMember(channelId: number, userId: number): Promise<boolean> {
+    try {
+      const res = await apiRequest(`/api/chat/channels/${channelId}/invite`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: userId }),
+      })
+      if (res.ok) {
+        await fetchChannels({ force: true })
+        return true
+      }
+    } catch (err) {
+      console.error('[WorkshopChat] inviteChannelMember error:', err)
+    }
+    return false
+  }
+
+  async function duplicateTeachingGroup(channelId: number): Promise<boolean> {
+    try {
+      const res = await apiRequest(`/api/chat/channels/${channelId}/duplicate`, { method: 'POST' })
+      if (res.ok) {
+        await fetchChannels({ force: true })
+        return true
+      }
+    } catch (err) {
+      console.error('[WorkshopChat] duplicateTeachingGroup error:', err)
+    }
+    return false
+  }
+
+  async function createChannel(payload: {
+    name: string
+    description?: string | null
+    avatar?: string | null
+    parent_id?: number | null
+  }): Promise<{ ok: boolean; error?: string }> {
+    try {
+      const res = await apiRequest('/api/chat/channels', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: payload.name.trim(),
+          description: payload.description?.trim() || null,
+          avatar: payload.avatar?.trim() || null,
+          parent_id: payload.parent_id ?? null,
+        }),
+      })
+      if (res.ok) {
+        await fetchChannels({ force: true })
+        return { ok: true }
+      }
+      let detail = res.statusText
+      try {
+        const data = (await res.json()) as { detail?: string }
+        if (typeof data.detail === 'string') {
+          detail = data.detail
+        }
+      } catch {
+        /* ignore */
+      }
+      return { ok: false, error: detail }
+    } catch (err) {
+      console.error('[WorkshopChat] createChannel error:', err)
+      return { ok: false, error: err instanceof Error ? err.message : String(err) }
+    }
+  }
+
   // ── Topic action helpers ────────────────────────────────────────
 
   async function moveTopic(
-    channelId: number, topicId: number, targetChannelId: number,
+    channelId: number,
+    topicId: number,
+    targetChannelId: number
   ): Promise<boolean> {
     try {
-      const res = await apiRequest(
-        `/api/chat/channels/${channelId}/topics/${topicId}/move`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ target_channel_id: targetChannelId }),
-        },
-      )
+      const res = await apiRequest(`/api/chat/channels/${channelId}/topics/${topicId}/move`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ target_channel_id: targetChannelId }),
+      })
       if (res.ok) {
-        topics.value = topics.value.filter(t => t.id !== topicId)
+        topics.value = topics.value.filter((t) => t.id !== topicId)
         const scope = getCacheScope()
         if (scope) {
           clearCachedTopics(scope, channelId)
@@ -949,20 +1052,16 @@ export const useWorkshopChatStore = defineStore('workshopChat', () => {
     return false
   }
 
-  async function renameTopic(
-    channelId: number, topicId: number, title: string,
-  ): Promise<boolean> {
+  async function renameTopic(channelId: number, topicId: number, title: string): Promise<boolean> {
     try {
-      const res = await apiRequest(
-        `/api/chat/channels/${channelId}/topics/${topicId}/rename`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ title }),
-        },
-      )
+      const res = await apiRequest(`/api/chat/channels/${channelId}/topics/${topicId}/rename`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title }),
+      })
       if (res.ok) {
         const data = await res.json()
-        const t = topics.value.find(x => x.id === topicId)
+        const t = topics.value.find((x) => x.id === topicId)
         if (t) t.title = data.title
         const scope = getCacheScope()
         if (scope) {
@@ -978,11 +1077,11 @@ export const useWorkshopChatStore = defineStore('workshopChat', () => {
 
   async function deleteTopic(channelId: number, topicId: number): Promise<boolean> {
     try {
-      const res = await apiRequest(
-        `/api/chat/channels/${channelId}/topics/${topicId}`, { method: 'DELETE' },
-      )
+      const res = await apiRequest(`/api/chat/channels/${channelId}/topics/${topicId}`, {
+        method: 'DELETE',
+      })
       if (res.ok) {
-        topics.value = topics.value.filter(t => t.id !== topicId)
+        topics.value = topics.value.filter((t) => t.id !== topicId)
         const scope = getCacheScope()
         if (scope) {
           clearCachedTopics(scope, channelId)
@@ -997,11 +1096,11 @@ export const useWorkshopChatStore = defineStore('workshopChat', () => {
 
   async function markTopicRead(channelId: number, topicId: number): Promise<boolean> {
     try {
-      const res = await apiRequest(
-        `/api/chat/channels/${channelId}/topics/${topicId}/read`, { method: 'POST' },
-      )
+      const res = await apiRequest(`/api/chat/channels/${channelId}/topics/${topicId}/read`, {
+        method: 'POST',
+      })
       if (res.ok) {
-        const t = topics.value.find(x => x.id === topicId)
+        const t = topics.value.find((x) => x.id === topicId)
         if (t) {
           t.unread_count = 0
         }
@@ -1019,19 +1118,19 @@ export const useWorkshopChatStore = defineStore('workshopChat', () => {
   }
 
   async function setTopicVisibility(
-    channelId: number, topicId: number, policy: string,
+    channelId: number,
+    topicId: number,
+    policy: string
   ): Promise<boolean> {
     try {
-      const res = await apiRequest(
-        `/api/chat/channels/${channelId}/topics/${topicId}/visibility`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ visibility_policy: policy }),
-        },
-      )
+      const res = await apiRequest(`/api/chat/channels/${channelId}/topics/${topicId}/visibility`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ visibility_policy: policy }),
+      })
       if (res.ok) {
         const data = await res.json()
-        const t = topics.value.find(x => x.id === topicId)
+        const t = topics.value.find((x) => x.id === topicId)
         if (t) t.visibility_policy = data.visibility_policy
         return true
       }
@@ -1045,7 +1144,7 @@ export const useWorkshopChatStore = defineStore('workshopChat', () => {
     if (msg.channel_id === currentChannelId.value && !msg.topic_id) {
       channelMessages.value.push(msg)
     }
-    const ch = channels.value.find(c => c.id === msg.channel_id)
+    const ch = channels.value.find((c) => c.id === msg.channel_id)
     if (ch && msg.channel_id !== currentChannelId.value) {
       ch.unread_count += 1
     }
@@ -1055,18 +1154,15 @@ export const useWorkshopChatStore = defineStore('workshopChat', () => {
     if (!msg.topic_id) {
       return
     }
-    if (
-      msg.topic_id === currentTopicId.value
-      && msg.channel_id === currentChannelId.value
-    ) {
+    if (msg.topic_id === currentTopicId.value && msg.channel_id === currentChannelId.value) {
       topicMessages.value.push(msg)
       return
     }
-    const ch = channels.value.find(c => c.id === msg.channel_id)
+    const ch = channels.value.find((c) => c.id === msg.channel_id)
     if (ch) {
       ch.unread_count += 1
     }
-    const t = topics.value.find(x => x.id === msg.topic_id)
+    const t = topics.value.find((x) => x.id === msg.topic_id)
     if (t) {
       t.unread_count = (t.unread_count ?? 0) + 1
       t.message_count += 1
@@ -1075,13 +1171,13 @@ export const useWorkshopChatStore = defineStore('workshopChat', () => {
 
   function addIncomingDM(msg: DirectMessageItem): void {
     if (
-      msg.sender_id === currentDMPartnerId.value
-      || msg.recipient_id === currentDMPartnerId.value
+      msg.sender_id === currentDMPartnerId.value ||
+      msg.recipient_id === currentDMPartnerId.value
     ) {
       dmMessages.value.push(msg)
     }
     const conv = dmConversations.value.find(
-      c => c.partner_id === msg.sender_id || c.partner_id === msg.recipient_id,
+      (c) => c.partner_id === msg.sender_id || c.partner_id === msg.recipient_id
     )
     if (conv) {
       conv.last_message = {
@@ -1120,7 +1216,7 @@ export const useWorkshopChatStore = defineStore('workshopChat', () => {
   }
 
   function updateTopic(topicData: ChatTopic): void {
-    const idx = topics.value.findIndex(t => t.id === topicData.id)
+    const idx = topics.value.findIndex((t) => t.id === topicData.id)
     if (idx >= 0) {
       const prev = topics.value[idx]
       topics.value[idx] = {
@@ -1143,7 +1239,9 @@ export const useWorkshopChatStore = defineStore('workshopChat', () => {
   }
 
   async function toggleReaction(
-    messageId: number, emojiName: string, emojiCode: string,
+    messageId: number,
+    emojiName: string,
+    emojiCode: string
   ): Promise<void> {
     try {
       const res = await apiRequest(`/api/chat/messages/${messageId}/reactions`, {
@@ -1155,22 +1253,25 @@ export const useWorkshopChatStore = defineStore('workshopChat', () => {
         const data = await res.json()
         const current = messageReactions.value.get(messageId) ?? []
         if (data.action === 'added') {
-          const group = current.find(r => r.emoji_name === emojiName)
+          const group = current.find((r) => r.emoji_name === emojiName)
           if (group) {
             group.count += 1
             group.user_ids.push(data.user_id)
             group.reacted = true
           } else {
             current.push({
-              emoji_name: emojiName, emoji_code: emojiCode,
-              count: 1, user_ids: [data.user_id], reacted: true,
+              emoji_name: emojiName,
+              emoji_code: emojiCode,
+              count: 1,
+              user_ids: [data.user_id],
+              reacted: true,
             })
           }
         } else {
-          const group = current.find(r => r.emoji_name === emojiName)
+          const group = current.find((r) => r.emoji_name === emojiName)
           if (group) {
             group.count -= 1
-            group.user_ids = group.user_ids.filter(id => id !== data.user_id)
+            group.user_ids = group.user_ids.filter((id) => id !== data.user_id)
             group.reacted = false
             if (group.count <= 0) {
               const idx = current.indexOf(group)
@@ -1207,9 +1308,7 @@ export const useWorkshopChatStore = defineStore('workshopChat', () => {
     if (messageIds.length === 0) return
     try {
       const idsParam = messageIds.join(',')
-      const res = await apiRequest(
-        `/api/chat/messages/reactions/batch?ids=${idsParam}`,
-      )
+      const res = await apiRequest(`/api/chat/messages/reactions/batch?ids=${idsParam}`)
       if (res.ok) {
         const data: Record<string, ReactionGroup[]> = await res.json()
         for (const [idStr, groups] of Object.entries(data)) {
@@ -1225,9 +1324,7 @@ export const useWorkshopChatStore = defineStore('workshopChat', () => {
     if (messageIds.length === 0) return
     try {
       const idsParam = messageIds.join(',')
-      const res = await apiRequest(
-        `/api/chat/messages/starred/batch?ids=${idsParam}`,
-      )
+      const res = await apiRequest(`/api/chat/messages/starred/batch?ids=${idsParam}`)
       if (res.ok) {
         const data: number[] = await res.json()
         for (const id of data) {
@@ -1243,9 +1340,7 @@ export const useWorkshopChatStore = defineStore('workshopChat', () => {
     if (messageIds.length === 0) return
     try {
       const idsParam = messageIds.join(',')
-      const res = await apiRequest(
-        `/api/chat/messages/attachments/batch?ids=${idsParam}`,
-      )
+      const res = await apiRequest(`/api/chat/messages/attachments/batch?ids=${idsParam}`)
       if (res.ok) {
         const data: Record<string, FileAttachment[]> = await res.json()
         for (const [idStr, atts] of Object.entries(data)) {
@@ -1270,12 +1365,15 @@ export const useWorkshopChatStore = defineStore('workshopChat', () => {
   }
 
   function handleReactionUpdate(
-    messageId: number, emojiName: string, emojiCode: string,
-    userId: number, action: string,
+    messageId: number,
+    emojiName: string,
+    emojiCode: string,
+    userId: number,
+    action: string
   ): void {
     const current = messageReactions.value.get(messageId) ?? []
     if (action === 'added') {
-      const group = current.find(r => r.emoji_name === emojiName)
+      const group = current.find((r) => r.emoji_name === emojiName)
       if (group) {
         if (!group.user_ids.includes(userId)) {
           group.count += 1
@@ -1283,15 +1381,18 @@ export const useWorkshopChatStore = defineStore('workshopChat', () => {
         }
       } else {
         current.push({
-          emoji_name: emojiName, emoji_code: emojiCode,
-          count: 1, user_ids: [userId], reacted: false,
+          emoji_name: emojiName,
+          emoji_code: emojiCode,
+          count: 1,
+          user_ids: [userId],
+          reacted: false,
         })
       }
     } else {
-      const group = current.find(r => r.emoji_name === emojiName)
+      const group = current.find((r) => r.emoji_name === emojiName)
       if (group) {
         group.count -= 1
-        group.user_ids = group.user_ids.filter(id => id !== userId)
+        group.user_ids = group.user_ids.filter((id) => id !== userId)
         if (group.count <= 0) {
           const idx = current.indexOf(group)
           current.splice(idx, 1)
@@ -1309,6 +1410,7 @@ export const useWorkshopChatStore = defineStore('workshopChat', () => {
     workshopHomeViewActive.value = true
     showChannelBrowser.value = false
     mainChannelFeedActive.value = false
+    teachingGroupLandingId.value = null
     currentChannelId.value = null
     currentTopicId.value = null
     currentDMPartnerId.value = null
@@ -1316,6 +1418,22 @@ export const useWorkshopChatStore = defineStore('workshopChat', () => {
     topicMessages.value = []
     topics.value = []
     dmMessages.value = []
+  }
+
+  async function openTeachingGroupLanding(groupId: number): Promise<void> {
+    workshopHomeViewActive.value = false
+    showChannelBrowser.value = false
+    currentDMPartnerId.value = null
+    mainChannelFeedActive.value = false
+    currentChannelId.value = null
+    currentTopicId.value = null
+    channelMessages.value = []
+    topicMessages.value = []
+    topics.value = []
+    teachingGroupLandingId.value = groupId
+    const group = findChannelById(groupId)
+    const children = group?.children ?? []
+    await Promise.all(children.map((c) => fetchTopics(c.id, { merge: true })))
   }
 
   function openMainChannelFeed(): void {
@@ -1332,6 +1450,7 @@ export const useWorkshopChatStore = defineStore('workshopChat', () => {
   }
 
   function selectChannel(channelId: number | null): void {
+    teachingGroupLandingId.value = null
     if (channelId !== null) {
       workshopHomeViewActive.value = false
     }
@@ -1356,14 +1475,33 @@ export const useWorkshopChatStore = defineStore('workshopChat', () => {
     if (partnerId !== null) {
       workshopHomeViewActive.value = false
     }
+    teachingGroupLandingId.value = null
     currentDMPartnerId.value = partnerId
     dmMessages.value = []
   }
 
-  function reset(): void {
+  function openCreateChannel(opts?: { parentId: number | null }): void {
+    createChannelPrefillParentId.value = opts?.parentId ?? null
+    createChannelDialogVisible.value = true
+  }
+
+  function closeCreateChannelDialog(): void {
+    createChannelDialogVisible.value = false
+    createChannelPrefillParentId.value = null
+  }
+
+  function requestNewTopicForChannel(channelId: number): void {
+    newTopicDialogRequestChannelId.value = channelId
+  }
+
+  function clearNewTopicDialogRequest(): void {
+    newTopicDialogRequestChannelId.value = null
+  }
+
+  function reset(userIdOverride?: string): void {
     clearWorkshopListInflight()
     const auth = useAuthStore()
-    const uid = auth.user?.id
+    const uid = userIdOverride ?? auth.user?.id
     if (uid) {
       clearWorkshopChatCachesForUser(uid)
     }
@@ -1394,7 +1532,15 @@ export const useWorkshopChatStore = defineStore('workshopChat', () => {
     mainChannelFeedActive.value = false
     dialogChannelSettingsId.value = null
     dialogTopicEdit.value = null
+    createChannelDialogVisible.value = false
+    createChannelPrefillParentId.value = null
+    newTopicDialogRequestChannelId.value = null
+    teachingGroupLandingId.value = null
   }
+
+  registerWorkshopChatResetOnAuthClear((userId) => {
+    reset(userId)
+  })
 
   return {
     channels,
@@ -1440,6 +1586,7 @@ export const useWorkshopChatStore = defineStore('workshopChat', () => {
     adminOrgId,
     joinChannel,
     leaveChannel,
+    archiveChannel,
     addIncomingChannelMessage,
     addIncomingTopicMessage,
     addIncomingDM,
@@ -1477,6 +1624,11 @@ export const useWorkshopChatStore = defineStore('workshopChat', () => {
     updateChannelLessonStudy,
     updateChannelPrefs,
     updateChannelPermissions,
+    updateChannelDetails,
+    reorderTeachingGroups,
+    inviteChannelMember,
+    duplicateTeachingGroup,
+    createChannel,
     moveTopic,
     renameTopic,
     deleteTopic,
@@ -1491,5 +1643,14 @@ export const useWorkshopChatStore = defineStore('workshopChat', () => {
     leaveWorkshopHomeView,
     dialogChannelSettingsId,
     dialogTopicEdit,
+    createChannelDialogVisible,
+    createChannelPrefillParentId,
+    newTopicDialogRequestChannelId,
+    openCreateChannel,
+    closeCreateChannelDialog,
+    requestNewTopicForChannel,
+    clearNewTopicDialogRequest,
+    teachingGroupLandingId,
+    openTeachingGroupLanding,
   }
 })

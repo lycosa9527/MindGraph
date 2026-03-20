@@ -11,9 +11,10 @@
 import { computed, markRaw, nextTick, onMounted, onUnmounted, provide, ref, watch } from 'vue'
 
 import { Background } from '@vue-flow/background'
-import { getBezierPath, Position, VueFlow, useVueFlow } from '@vue-flow/core'
+import { Position, VueFlow, getBezierPath, useVueFlow } from '@vue-flow/core'
 import { MiniMap } from '@vue-flow/minimap'
 
+import { ExportToCommunityModal } from '@/components/canvas'
 import {
   getDefaultDiagramName,
   useBranchMoveDrag,
@@ -29,15 +30,15 @@ import {
 import { eventBus } from '@/composables/useEventBus'
 import { useTheme } from '@/composables/useTheme'
 import { ANIMATION, FIT_PADDING, GRID, PANEL, ZOOM } from '@/config/uiConfig'
-import { getFlowTopicCenteredPosition } from '@/stores/specLoader/flowMap'
 import { useDiagramStore, useLLMResultsStore, usePanelsStore, useUIStore } from '@/stores'
+import { getFlowTopicCenteredPosition } from '@/stores/specLoader/flowMap'
 import type { MindGraphNode } from '@/types'
 
 import BraceOverlay from './BraceOverlay.vue'
 import BridgeOverlay from './BridgeOverlay.vue'
+import ContextMenu from './ContextMenu.vue'
 import LearningSheetOverlay from './LearningSheetOverlay.vue'
 import TreeMapOverlay from './TreeMapOverlay.vue'
-import ContextMenu from './ContextMenu.vue'
 import BraceEdge from './edges/BraceEdge.vue'
 // Import custom edge components
 import CurvedEdge from './edges/CurvedEdge.vue'
@@ -46,7 +47,6 @@ import RadialEdge from './edges/RadialEdge.vue'
 import StepEdge from './edges/StepEdge.vue'
 import StraightEdge from './edges/StraightEdge.vue'
 import TreeEdge from './edges/TreeEdge.vue'
-import { ExportToCommunityModal } from '@/components/canvas'
 import BoundaryNode from './nodes/BoundaryNode.vue'
 import BraceNode from './nodes/BraceNode.vue'
 import BranchNode from './nodes/BranchNode.vue'
@@ -181,7 +181,10 @@ function handleConceptMapLinkDrop(payload: { sourceId: string; targetId: string 
   }
 }
 
-function findConnectionBetween(sourceId: string, targetId: string): { id: string; source: string; target: string } | null {
+function findConnectionBetween(
+  sourceId: string,
+  targetId: string
+): { id: string; source: string; target: string } | null {
   const connections = diagramStore.data?.connections ?? []
   const conn = connections.find(
     (c) =>
@@ -262,9 +265,7 @@ const edges = computed(() => {
   }
   const hidden = branchMove.state.value.hiddenIds
   if (hidden.size === 0) return storeEdges.value
-  return storeEdges.value.filter(
-    (e) => !hidden.has(e.source) && !hidden.has(e.target)
-  )
+  return storeEdges.value.filter((e) => !hidden.has(e.source) && !hidden.has(e.target))
 })
 
 // Handle node changes (position updates, etc.)
@@ -341,16 +342,19 @@ function getConceptNodeCenter(node: {
   type?: string
 }): { x: number; y: number } {
   const pos = node.position ?? { x: 0, y: 0 }
-  const isTopic =
-    node.data?.nodeType === 'topic' ||
-    node.type === 'topic' ||
-    node.type === 'center'
+  const isTopic = node.data?.nodeType === 'topic' || node.type === 'topic' || node.type === 'center'
   const w = isTopic ? TOPIC_NODE_WIDTH : CONCEPT_NODE_WIDTH
   const h = isTopic ? TOPIC_NODE_HEIGHT : CONCEPT_NODE_HEIGHT
   return { x: pos.x + w / 2, y: pos.y + h / 2 }
 }
 
-function getPositionsFromAngle(dx: number, dy: number): { source: (typeof Position)[keyof typeof Position]; target: (typeof Position)[keyof typeof Position] } {
+function getPositionsFromAngle(
+  dx: number,
+  dy: number
+): {
+  source: (typeof Position)[keyof typeof Position]
+  target: (typeof Position)[keyof typeof Position]
+} {
   const angle = Math.atan2(dy, dx)
   const deg = (angle * 180) / Math.PI
   if (deg >= -45 && deg < 45) return { source: Position.Right, target: Position.Left }
@@ -392,8 +396,9 @@ function getBranchMoveCircleStyle(state: {
   branchColor: { fill: string; border: string }
 }): Record<string, string> {
   if (!state.cursorPos) return { display: 'none' }
-  const isShrinking = state.animationPhase === 'shrinking' && state.nodeStartPos
-  const pos = isShrinking ? state.nodeStartPos! : null
+  const nodeStart = state.nodeStartPos
+  const isShrinking = state.animationPhase === 'shrinking' && nodeStart
+  const pos = isShrinking ? nodeStart : null
   const left = isShrinking && pos ? pos.x : state.cursorPos.x - 12
   const top = isShrinking && pos ? pos.y : state.cursorPos.y - 12
   const width = isShrinking && pos ? pos.width : 24
@@ -425,10 +430,15 @@ interface NodeWithDimensions {
 }
 
 function getTargetNodeDimensions(
-  node: { id?: string; style?: { width?: number | string; height?: number | string } } & NodeWithDimensions
+  node: {
+    id?: string
+    style?: { width?: number | string; height?: number | string }
+  } & NodeWithDimensions
 ): { width: number; height: number } {
-  const defaultW = node.id === 'topic' || node.id === 'tree-topic' ? TOPIC_NODE_WIDTH : BRANCH_MOVE_NODE_WIDTH
-  const defaultH = node.id === 'topic' || node.id === 'tree-topic' ? TOPIC_NODE_HEIGHT : BRANCH_MOVE_NODE_HEIGHT
+  const defaultW =
+    node.id === 'topic' || node.id === 'tree-topic' ? TOPIC_NODE_WIDTH : BRANCH_MOVE_NODE_WIDTH
+  const defaultH =
+    node.id === 'topic' || node.id === 'tree-topic' ? TOPIC_NODE_HEIGHT : BRANCH_MOVE_NODE_HEIGHT
   const w =
     node.dimensions?.width ??
     node.measured?.width ??
@@ -477,17 +487,15 @@ function getConceptNodeEdgePoint(
   targetPos: (typeof Position)[keyof typeof Position]
 ): { x: number; y: number } {
   const center = getConceptNodeCenter(node)
-  const isTopic =
-    node.data?.nodeType === 'topic' ||
-    node.type === 'topic' ||
-    node.type === 'center'
+  const isTopic = node.data?.nodeType === 'topic' || node.type === 'topic' || node.type === 'center'
   const halfW = (isTopic ? TOPIC_NODE_WIDTH : CONCEPT_NODE_WIDTH) / 2
   const halfH = (isTopic ? TOPIC_NODE_HEIGHT : CONCEPT_NODE_HEIGHT) / 2
   return getEdgePoint(center, targetPos, halfW, halfH)
 }
 
 const linkPreviewPath = computed(() => {
-  if (!linkDragSourceId.value || !linkDragCursor.value || diagramStore.type !== 'concept_map') return null
+  if (!linkDragSourceId.value || !linkDragCursor.value || diagramStore.type !== 'concept_map')
+    return null
   const nodes = diagramStore.data?.nodes ?? []
   const sourceNode = nodes.find((n) => n.id === linkDragSourceId.value)
   if (!sourceNode?.position) return null
@@ -528,7 +536,8 @@ const linkPreviewPath = computed(() => {
 
 /** CmapTools-style: show arrow on target when link goes upward or same Y */
 const linkPreviewShowArrow = computed(() => {
-  if (!linkDragSourceId.value || !linkDragCursor.value || diagramStore.type !== 'concept_map') return false
+  if (!linkDragSourceId.value || !linkDragCursor.value || diagramStore.type !== 'concept_map')
+    return false
   const nodes = diagramStore.data?.nodes ?? []
   const sourceNode = nodes.find((n) => n.id === linkDragSourceId.value)
   if (!sourceNode?.position) return false
@@ -555,8 +564,7 @@ function handleConceptMapDragOver(event: DragEvent) {
     linkDragCursor.value = { x: flowPos.x, y: flowPos.y }
     const nodeEl = (event.target as HTMLElement).closest('.vue-flow__node')
     const targetId = nodeEl?.getAttribute('data-id') ?? null
-    linkDragTargetNodeId.value =
-      targetId && targetId !== linkDragSourceId.value ? targetId : null
+    linkDragTargetNodeId.value = targetId && targetId !== linkDragSourceId.value ? targetId : null
   }
 }
 
@@ -829,7 +837,8 @@ function getFitViewBottomPx(): number {
     return FIT_PADDING.BOTTOM_UI_HEIGHT_PX
   }
   const altDims = (data as { alternative_dimensions?: unknown }).alternative_dimensions
-  const hasAltDims = Array.isArray(altDims) && altDims.some((d) => typeof d === 'string' && d.trim())
+  const hasAltDims =
+    Array.isArray(altDims) && altDims.some((d) => typeof d === 'string' && d.trim())
   return hasAltDims
     ? FIT_PADDING.BOTTOM_UI_HEIGHT_PX + FIT_PADDING.TREE_MAP_ALTERNATIVE_DIMENSIONS_EXTRA_PX
     : FIT_PADDING.BOTTOM_UI_HEIGHT_PX
@@ -1136,8 +1145,8 @@ onMounted(() => {
         if (
           diagramStore.type === 'flow_map' &&
           nodeId === 'flow-topic' &&
-          (diagramStore.data?.nodes?.find((n) => n.id === 'flow-topic')?.data?.orientation ===
-            'vertical')
+          diagramStore.data?.nodes?.find((n) => n.id === 'flow-topic')?.data?.orientation ===
+            'vertical'
         ) {
           const topicNode = diagramStore.data?.nodes?.find((n) => n.id === 'flow-topic')
           const currentY = (topicNode?.position as { y?: number })?.y ?? 80
@@ -1338,7 +1347,14 @@ const gridConfig = {
           <svg
             v-if="linkPreviewPath && linkDragCursor && diagramStore.type === 'concept_map'"
             class="concept-map-link-preview pointer-events-none"
-            style="position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; z-index: 10"
+            style="
+              position: absolute;
+              inset: 0;
+              width: 100%;
+              height: 100%;
+              overflow: visible;
+              z-index: 10;
+            "
           >
             <defs>
               <marker
@@ -1363,7 +1379,9 @@ const gridConfig = {
               stroke="#94a3b8"
               stroke-width="2"
               opacity="0.6"
-              :marker-end="linkPreviewShowArrow ? 'url(#concept-map-link-preview-arrow)' : undefined"
+              :marker-end="
+                linkPreviewShowArrow ? 'url(#concept-map-link-preview-arrow)' : undefined
+              "
             />
             <!-- Pill-shaped node preview only when over empty space (not over existing node) -->
             <rect

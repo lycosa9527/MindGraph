@@ -1,12 +1,9 @@
-import { emitEvent } from './events'
 import { eventBus } from '@/composables/useEventBus'
 import { getMindmapBranchColor } from '@/config/mindmapColors'
-import {
-  recalculateBubbleMapLayout,
-  recalculateBraceMapLayout,
-} from '../specLoader'
 import type { Connection } from '@/types'
 
+import { recalculateBraceMapLayout, recalculateBubbleMapLayout } from '../specLoader'
+import { emitEvent } from './events'
 import type { DiagramContext } from './types'
 
 export function useNodeSwapOpsSlice(ctx: DiagramContext) {
@@ -71,8 +68,7 @@ export function useNodeSwapOpsSlice(ctx: DiagramContext) {
       .filter((n) => n.id.startsWith('bubble-'))
       .sort(
         (a, b) =>
-          parseInt(a.id.replace('bubble-', ''), 10) -
-          parseInt(b.id.replace('bubble-', ''), 10),
+          parseInt(a.id.replace('bubble-', ''), 10) - parseInt(b.id.replace('bubble-', ''), 10)
       )
     if (srcIdx < 0 || srcIdx >= bubbles.length || tgtIdx < 0 || tgtIdx >= bubbles.length)
       return false
@@ -81,7 +77,7 @@ export function useNodeSwapOpsSlice(ctx: DiagramContext) {
     bubbles[tgtIdx].text = srcText
     const recalculatedNodes = recalculateBubbleMapLayout(ctx.data.value.nodes)
     const recalcBubbles = recalculatedNodes.filter(
-      (n) => (n.type === 'bubble' || n.type === 'child') && n.id.startsWith('bubble-'),
+      (n) => (n.type === 'bubble' || n.type === 'child') && n.id.startsWith('bubble-')
     )
     ctx.data.value.nodes = recalculatedNodes
     ctx.data.value.connections = recalcBubbles.map((_, i) => ({
@@ -101,8 +97,7 @@ export function useNodeSwapOpsSlice(ctx: DiagramContext) {
       .filter((n) => n.id.startsWith('context-'))
       .sort(
         (a, b) =>
-          parseInt(a.id.replace('context-', ''), 10) -
-          parseInt(b.id.replace('context-', ''), 10),
+          parseInt(a.id.replace('context-', ''), 10) - parseInt(b.id.replace('context-', ''), 10)
       )
     if (srcIdx < 0 || srcIdx >= contexts.length || tgtIdx < 0 || tgtIdx >= contexts.length)
       return false
@@ -267,15 +262,13 @@ export function useNodeSwapOpsSlice(ctx: DiagramContext) {
       .filter((n) => n.id.startsWith('cause-'))
       .sort(
         (a, b) =>
-          parseInt(a.id.replace('cause-', ''), 10) -
-          parseInt(b.id.replace('cause-', ''), 10),
+          parseInt(a.id.replace('cause-', ''), 10) - parseInt(b.id.replace('cause-', ''), 10)
       )
     const effectNodes = ctx.data.value.nodes
       .filter((n) => n.id.startsWith('effect-'))
       .sort(
         (a, b) =>
-          parseInt(a.id.replace('effect-', ''), 10) -
-          parseInt(b.id.replace('effect-', ''), 10),
+          parseInt(a.id.replace('effect-', ''), 10) - parseInt(b.id.replace('effect-', ''), 10)
       )
     const eventNode = ctx.data.value.nodes.find((n) => n.id === 'event')
 
@@ -291,10 +284,7 @@ export function useNodeSwapOpsSlice(ctx: DiagramContext) {
         const tmp = causes[si]
         causes[si] = causes[ti]
         causes[ti] = tmp
-        return ctx.loadFromSpec(
-          { event: eventNode?.text ?? '', causes, effects },
-          'multi_flow_map',
-        )
+        return ctx.loadFromSpec({ event: eventNode?.text ?? '', causes, effects }, 'multi_flow_map')
       }
       return false
     }
@@ -308,10 +298,7 @@ export function useNodeSwapOpsSlice(ctx: DiagramContext) {
         const tmp = effects[si]
         effects[si] = effects[ti]
         effects[ti] = tmp
-        return ctx.loadFromSpec(
-          { event: eventNode?.text ?? '', causes, effects },
-          'multi_flow_map',
-        )
+        return ctx.loadFromSpec({ event: eventNode?.text ?? '', causes, effects }, 'multi_flow_map')
       }
       return false
     }
@@ -324,9 +311,7 @@ export function useNodeSwapOpsSlice(ctx: DiagramContext) {
     const targetIdSet = new Set(ctx.data.value.connections.map((c) => c.target))
     const rootId =
       ctx.data.value.nodes.find((n) => n.type === 'topic')?.id ??
-      ctx.data.value.nodes.find(
-        (n) => !targetIdSet.has(n.id) && n.type !== 'label',
-      )?.id
+      ctx.data.value.nodes.find((n) => !targetIdSet.has(n.id) && n.type !== 'label')?.id
     if (!rootId) return false
 
     const childrenMap = new Map<string, string[]>()
@@ -408,7 +393,7 @@ export function useNodeSwapOpsSlice(ctx: DiagramContext) {
       if (!oldParent) return false
 
       ctx.data.value.connections = ctx.data.value.connections.filter(
-        (c) => !(c.source === oldParent && c.target === sourceId),
+        (c) => !(c.source === oldParent && c.target === sourceId)
       )
       ctx.data.value.connections.push({
         id: `edge-${targetId}-${sourceId}`,
@@ -418,7 +403,7 @@ export function useNodeSwapOpsSlice(ctx: DiagramContext) {
 
       const layoutNodes = recalculateBraceMapLayout(
         ctx.data.value.nodes,
-        ctx.data.value.connections,
+        ctx.data.value.connections
       )
       ctx.data.value.nodes = layoutNodes
       success = true
@@ -452,21 +437,20 @@ export function useNodeSwapOpsSlice(ctx: DiagramContext) {
         ctx.data.value.nodes
           .filter((n) => n.id.startsWith('pair-'))
           .map((n) => parseInt(n.id.match(/^pair-(\d+)/)?.[1] ?? '-1', 10))
-          .filter((i) => i >= 0),
+          .filter((i) => i >= 0)
       ),
     ].sort((a, b) => a - b)
 
     if (!pairIndices.includes(srcPairIdx) || !pairIndices.includes(tgtPairIdx)) return false
 
-    const rawDimension = (
-      ctx.data.value as Record<string, unknown>
-    ).dimension as string | undefined
-    const rawFactor = (
-      ctx.data.value as Record<string, unknown>
-    ).relating_factor as string | undefined
+    const rawDimension = (ctx.data.value as Record<string, unknown>).dimension as string | undefined
+    const rawFactor = (ctx.data.value as Record<string, unknown>).relating_factor as
+      | string
+      | undefined
     const dimension = rawDimension || rawFactor || ''
-    const altDims = (ctx.data.value as Record<string, unknown>)
-      .alternative_dimensions as string[] | undefined
+    const altDims = (ctx.data.value as Record<string, unknown>).alternative_dimensions as
+      | string[]
+      | undefined
 
     const bridgeNodes = ctx.data.value.nodes
     const analogies = pairIndices.map((i) => {

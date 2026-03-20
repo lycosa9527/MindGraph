@@ -27,14 +27,6 @@ const showPicker = ref(false)
 function handlePillClick(reaction: ReactionGroup, messageId: number): void {
   emit('toggle', messageId, reaction.emoji_name, reaction.emoji_code)
 }
-
-function handlePickerSelect(emojiName: string, emojiCode: string): void {
-  showPicker.value = false
-  const msgId = Number(
-    document.querySelector('[data-reaction-msg-id]')?.getAttribute('data-reaction-msg-id') ?? 0,
-  )
-  emit('toggle', msgId, emojiName, emojiCode)
-}
 </script>
 
 <template>
@@ -66,15 +58,20 @@ function handlePickerSelect(emojiName: string, emojiCode: string): void {
       @update:visible="showPicker = $event"
     >
       <template #reference>
-        <button class="reaction-add-btn" @click="showPicker = !showPicker">
+        <button
+          class="reaction-add-btn"
+          @click="showPicker = !showPicker"
+        >
           <el-icon :size="11"><Plus /></el-icon>
         </button>
       </template>
       <EmojiPicker
-        @select="(name: string, code: string) => {
-          showPicker = false
-          emit('toggle', messageId, name, code)
-        }"
+        @select="
+          (name: string, code: string) => {
+            showPicker = false
+            emit('toggle', messageId, name, code)
+          }
+        "
       />
     </el-popover>
   </div>

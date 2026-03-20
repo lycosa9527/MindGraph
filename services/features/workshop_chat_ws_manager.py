@@ -2,11 +2,11 @@
 Workshop Chat WebSocket Manager
 ================================
 
-Connection registry, channel/DM subscriptions, and real-time broadcast
+Connection registry, channel subscriptions, and real-time broadcast
 for the workshop chat system.
 
 Each connected user has one WebSocket. The manager tracks which channels
-and DM partners the client is subscribed to, and routes messages accordingly.
+the client is subscribed to, and routes messages accordingly.
 
 For multi-worker scaling, Redis Pub/Sub can be layered on top.
 
@@ -24,6 +24,14 @@ from typing import Any, Dict, Optional, Set
 from fastapi import WebSocket
 from fastapi.websockets import WebSocketState
 
+from services.features import workshop_chat_presence_store
+from services.features.ws_redis_fanout_config import is_ws_fanout_enabled
+from services.features.ws_redis_fanout_publish import publish_chat_fanout_async
+from services.infrastructure.monitoring.ws_metrics import (
+    record_ws_chat_connection_delta,
+    redis_increment_active_total,
+)
+
 
 def _dumps(obj: Any) -> str:
     """Serialize a dict to a JSON string."""
@@ -39,7 +47,7 @@ class _UserConnection:
 
     __slots__ = (
         "websocket", "user_id", "username", "avatar",
-        "subscribed_channels", "subscribed_dm_partners",
+        "subscribed_channels",
         "presence_org_id",
     )
 
@@ -52,7 +60,6 @@ class _UserConnection:
         self.username = username
         self.avatar = avatar
         self.subscribed_channels: Set[int] = set()
-        self.subscribed_dm_partners: Set[int] = set()
         self.presence_org_id: Optional[int] = None
 
 
@@ -82,6 +89,11 @@ class ChatConnectionManager:
             websocket, user_id, username, avatar,
         )
         logger.info("[ChatWS] User %d (%s) connected", user_id, username)
+        try:
+            record_ws_chat_connection_delta(1)
+            redis_increment_active_total(1)
+        except Exception:  # pylint: disable=broad-except
+            pass
 
     def disconnect(self, user_id: int) -> tuple[Set[int], Optional[int]]:
         """Remove a connection and all its subscriptions.
@@ -91,9 +103,21 @@ class ChatConnectionManager:
         conn = self._connections.get(user_id)
         subscribed = conn.subscribed_channels.copy() if conn else set()
         presence_org = conn.presence_org_id if conn else None
+        if presence_org is not None and is_ws_fanout_enabled():
+            try:
+                workshop_chat_presence_store.remove_presence_org_user(
+                    presence_org, user_id,
+                )
+            except Exception:  # pylint: disable=broad-except
+                pass
         self._remove_subscriptions(user_id)
         self._connections.pop(user_id, None)
         logger.info("[ChatWS] User %d disconnected", user_id)
+        try:
+            record_ws_chat_connection_delta(-1)
+            redis_increment_active_total(-1)
+        except Exception:  # pylint: disable=broad-except
+            pass
         return subscribed, presence_org
 
     def set_presence_org(self, user_id: int, org_id: int) -> None:
@@ -101,14 +125,42 @@ class ChatConnectionManager:
         conn = self._connections.get(user_id)
         if conn:
             conn.presence_org_id = org_id
+        if is_ws_fanout_enabled():
+            try:
+                workshop_chat_presence_store.touch_presence_org_user(
+                    org_id, user_id,
+                )
+            except Exception:  # pylint: disable=broad-except
+                pass
 
     def get_presence_org_id(self, user_id: int) -> Optional[int]:
         """Organization ID used for org-wide presence, if subscribed."""
         conn = self._connections.get(user_id)
         return conn.presence_org_id if conn else None
 
+    def touch_presence_heartbeat(self, user_id: int) -> None:
+        """Refresh Redis org presence TTL for active/idle heartbeats."""
+        if not is_ws_fanout_enabled():
+            return
+        conn = self._connections.get(user_id)
+        if not conn or conn.presence_org_id is None:
+            return
+        try:
+            workshop_chat_presence_store.touch_presence_org_user(
+                conn.presence_org_id, user_id,
+            )
+        except Exception:  # pylint: disable=broad-except
+            pass
+
     def online_user_ids_for_presence_org(self, org_id: int) -> Set[int]:
         """User IDs with an active WS and the same presence org scope."""
+        if is_ws_fanout_enabled():
+            try:
+                return workshop_chat_presence_store.online_user_ids_for_org(
+                    org_id,
+                )
+            except Exception:  # pylint: disable=broad-except
+                pass
         return {
             uid for uid, conn in self._connections.items()
             if conn.presence_org_id == org_id
@@ -122,6 +174,12 @@ class ChatConnectionManager:
         payload = _dumps({
             "type": "presence", "user_id": user_id, "status": status,
         })
+        if is_ws_fanout_enabled():
+            await publish_chat_fanout_async({
+                "v": 1, "k": "po", "oid": org_id,
+                "ex": exclude_user, "d": payload,
+            })
+            return
         tasks = []
         for uid, conn in self._connections.items():
             if exclude_user is not None and uid == exclude_user:
@@ -151,13 +209,6 @@ class ChatConnectionManager:
             conn.subscribed_channels.add(ch_id)
             self._channel_subscribers.setdefault(ch_id, set()).add(user_id)
 
-    def subscribe_dm(self, user_id: int, partner_ids: list) -> None:
-        """Subscribe user to receive DMs from specific partners."""
-        conn = self._connections.get(user_id)
-        if not conn:
-            return
-        conn.subscribed_dm_partners = set(partner_ids)
-
     def is_user_subscribed_to_channel(
         self, user_id: int, channel_id: int,
     ) -> bool:
@@ -172,11 +223,17 @@ class ChatConnectionManager:
         exclude_user: Optional[int] = None,
     ) -> None:
         """Send a message to all subscribers of a channel."""
+        data = _dumps(payload)
+        if is_ws_fanout_enabled():
+            await publish_chat_fanout_async({
+                "v": 1, "k": "ch", "cid": channel_id,
+                "ex": exclude_user, "d": data,
+            })
+            return
         subscriber_ids = self._channel_subscribers.get(channel_id, set()).copy()
         if exclude_user:
             subscriber_ids.discard(exclude_user)
 
-        data = _dumps(payload)
         tasks = []
         for uid in subscriber_ids:
             conn = self._connections.get(uid)
@@ -189,10 +246,15 @@ class ChatConnectionManager:
         self, user_id: int, payload: Dict[str, Any],
     ) -> bool:
         """Send a message to a specific user if online."""
+        data = _dumps(payload)
+        if is_ws_fanout_enabled():
+            await publish_chat_fanout_async({
+                "v": 1, "k": "u", "uid": user_id, "d": data,
+            })
+            return True
         conn = self._connections.get(user_id)
         if not conn:
             return False
-        data = _dumps(payload)
         return await self._safe_send(conn.websocket, data, user_id)
 
     async def broadcast_typing_channel(
@@ -272,7 +334,6 @@ class ChatConnectionManager:
                 if not subs:
                     del self._channel_subscribers[ch_id]
         conn.subscribed_channels.clear()
-        conn.subscribed_dm_partners.clear()
 
     @staticmethod
     async def _safe_send(websocket: WebSocket, data: str, user_id: int) -> bool:
@@ -284,6 +345,47 @@ class ChatConnectionManager:
         except Exception:
             logger.debug("[ChatWS] Failed to send to user %d", user_id)
         return False
+
+    async def deliver_local_channel_broadcast(
+        self,
+        channel_id: int,
+        exclude_user: Optional[int],
+        data: str,
+    ) -> None:
+        """Deliver a channel payload to local subscribers (Redis fan-out path)."""
+        subscriber_ids = self._channel_subscribers.get(channel_id, set()).copy()
+        if exclude_user is not None:
+            subscriber_ids.discard(exclude_user)
+        tasks = []
+        for uid in subscriber_ids:
+            conn = self._connections.get(uid)
+            if conn:
+                tasks.append(self._safe_send(conn.websocket, data, uid))
+        if tasks:
+            await asyncio.gather(*tasks)
+
+    async def deliver_local_user_message(self, user_id: int, data: str) -> None:
+        """Deliver a user-targeted payload on this worker only."""
+        conn = self._connections.get(user_id)
+        if conn:
+            await self._safe_send(conn.websocket, data, user_id)
+
+    async def deliver_local_presence_org(
+        self,
+        org_id: int,
+        exclude_user: Optional[int],
+        data: str,
+    ) -> None:
+        """Deliver presence org payload to local connections scoped to org."""
+        tasks = []
+        for uid, conn in self._connections.items():
+            if exclude_user is not None and uid == exclude_user:
+                continue
+            if conn.presence_org_id != org_id:
+                continue
+            tasks.append(self._safe_send(conn.websocket, data, uid))
+        if tasks:
+            await asyncio.gather(*tasks)
 
 
 chat_ws_manager = ChatConnectionManager()

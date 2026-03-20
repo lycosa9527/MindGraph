@@ -2,7 +2,7 @@
 /**
  * CoinTossDisplay - Coin toss animation and result
  */
-import { computed, onMounted, ref } from 'vue'
+import { computed, ref } from 'vue'
 
 import { ElButton } from 'element-plus'
 

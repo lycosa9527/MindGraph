@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.48.0] - 2026-03-21
+
+### Added
+- **Workshop Chat — channel ordering & teaching groups**: `display_order` on `ChatChannel` (`models/domain/workshop_chat.py`); SQLite bootstrap adds missing column (`_ensure_chat_channels_display_order` in `config/database.py`); `channel_service` create/reorder APIs; `TeachingGroupsManageDialog.vue` for ordering teaching-group channels; sidebar and browser respect order (`ChannelSidebarItem`, `ChannelBrowser`, `WorkshopChatHistory`, store types).
+- **Workshop Chat — preview org access**: Config `WORKSHOP_CHAT_PREVIEW_ORG_IDS` (`config/features_config.py`); gate in `utils/auth/roles.py` and auth dependencies; client config exposure (`routers/api/config.py`); non-admin orgs in the allowlist can use Workshop Chat for staged rollouts.
+- **WebSocket production hardening**: Diagram collaboration WS (`routers/api/workshop_ws.py`) — shared JWT/cookie auth (`authenticate_websocket_user`), max text payload + per-connection rate limits (`utils/ws_limits.py`), connect/auth metrics (`ws_metrics`), Redis-backed editor persistence (`workshop_ws_editor_redis`) and optional Redis fanout hooks; chat WS (`workshop_chat_ws.py`, `workshop_chat_ws_manager.py`) aligned with limits and channel subscribe caps.
+- **Diagram workshop join policy**: `workshop_service` enforces who may join a diagram session (owner, elevated roles, or same organization as diagram owner) consistent with REST workshop APIs.
+- **Lifespan**: Workshop-related startup wiring updates (`services/infrastructure/lifecycle/lifespan.py`).
+
+### Changed
+- **Voice**: `routers/features/voice/routes.py` — WebSocket handling aligned with shared auth and WS limits where applicable.
+- **Health**: `routers/core/health.py` adjustments.
+- **Workshop Chat REST**: `channels`, `topics`, `messages`, `dependencies`, `schemas` under `routers/features/workshop_chat/`; `default_channels` seed data refresh.
+- **Frontend**: ESLint flat config (`eslint.config.js`), Vite (`vite.config.ts`), and dependency refresh (`package.json` / lockfile); broad UX and layout polish across `WorkshopChatPage.vue`, workshop-chat components, canvas/diagram/admin/school/teacher flows, `useLanguage`, `workshopChat` store, and diagram `specLoader` / operations.
+
 ## [5.47.0] - 2026-03-20
 
 ### Added

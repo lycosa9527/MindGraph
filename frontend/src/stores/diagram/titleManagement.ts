@@ -8,7 +8,7 @@ export function useTitleSlice(ctx: DiagramContext) {
 
   function getTopicNodeText(): string | null {
     const topicNode = data.value?.nodes?.find(
-      (n) => n.type === 'topic' || n.type === 'center' || n.id === 'root',
+      (n) => n.type === 'topic' || n.type === 'center' || n.id === 'root'
     )
     if (!topicNode?.text) return null
     const text = topicNode.text.trim()

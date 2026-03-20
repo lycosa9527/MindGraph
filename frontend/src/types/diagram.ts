@@ -40,13 +40,7 @@ export interface NodeStyle {
   fontStyle?: 'normal' | 'italic'
   textDecoration?: 'none' | 'underline' | 'line-through' | 'underline line-through'
   borderWidth?: number
-  borderStyle?:
-    | 'solid'
-    | 'dashed'
-    | 'dotted'
-    | 'double'
-    | 'dash-dot'
-    | 'dash-dot-dot'
+  borderStyle?: 'solid' | 'dashed' | 'dotted' | 'double' | 'dash-dot' | 'dash-dot-dot'
   borderRadius?: number
   // Dimension overrides (for boundary nodes and circle nodes)
   width?: number

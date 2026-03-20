@@ -9,8 +9,8 @@ import { useVueFlow } from '@vue-flow/core'
 
 import { useLanguage } from '@/composables'
 import { DEFAULT_NODE_HEIGHT, DEFAULT_NODE_WIDTH } from '@/composables/diagrams/layoutConfig'
-import { measureTextWidth } from '@/stores/specLoader/textMeasurement'
 import { useDiagramStore } from '@/stores'
+import { measureTextWidth } from '@/stores/specLoader/textMeasurement'
 
 const { viewport: vueFlowViewport, getViewport, getNodes } = useVueFlow()
 const diagramStore = useDiagramStore()
@@ -72,9 +72,7 @@ const separatorLine = computed(() => {
   return { x1: minX, y1: separatorY, x2: maxX, y2: separatorY }
 })
 
-const answersLabel = computed(() =>
-  isZh.value ? '参考答案:' : 'Answers:'
-)
+const answersLabel = computed(() => (isZh.value ? '参考答案:' : 'Answers:'))
 
 const answerSectionPosition = computed(() => {
   if (!separatorLine.value) return null
@@ -93,8 +91,7 @@ const answerChips = computed(() => {
   const chipWidths = answers.map(
     (ans) => CHIP_PADDING_X * 2 + measureTextWidth(ans ?? '', CHIP_FONT_SIZE)
   )
-  const totalWidth =
-    chipWidths.reduce((sum, w) => sum + w, 0) + CHIP_SPACING * (answers.length - 1)
+  const totalWidth = chipWidths.reduce((sum, w) => sum + w, 0) + CHIP_SPACING * (answers.length - 1)
   let currentX = centerX - totalWidth / 2
 
   return answers.map((text, index) => {
@@ -144,7 +141,10 @@ const answerChips = computed(() => {
           {{ answersLabel }}
         </text>
       </g>
-      <g v-for="(chip, index) in answerChips" :key="index">
+      <g
+        v-for="(chip, index) in answerChips"
+        :key="index"
+      >
         <rect
           :x="chip.x - chip.width / 2"
           :y="chip.y - CHIP_PADDING_Y - CHIP_FONT_SIZE / 2"

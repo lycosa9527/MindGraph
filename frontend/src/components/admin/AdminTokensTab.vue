@@ -1,17 +1,12 @@
 <script setup lang="ts">
 import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 
-import {
-  Chart,
-  registerables,
-  type ChartConfiguration,
-  type TooltipItem,
-} from 'chart.js'
-
-Chart.register(...registerables)
+import { Chart, type ChartConfiguration, type TooltipItem, registerables } from 'chart.js'
 
 import { useLanguage, useNotifications } from '@/composables'
 import { apiRequest } from '@/utils/apiClient'
+
+Chart.register(...registerables)
 
 const { t } = useLanguage()
 const notify = useNotifications()
@@ -86,9 +81,9 @@ async function loadTokenStats() {
   }
 }
 
-function renderTokenTrendChart(
-  data: { data: Array<{ date: string; value: number; input?: number; output?: number }> }
-) {
+function renderTokenTrendChart(data: {
+  data: Array<{ date: string; value: number; input?: number; output?: number }>
+}) {
   if (!trendChartRef.value) return
   const rawData = data?.data ?? []
   if (rawData.length === 0) return
@@ -97,9 +92,7 @@ function renderTokenTrendChart(
   trendChartInstance = null
 
   const labels = rawData.map((item) => {
-    const dateStr = item.date.includes(' ')
-      ? item.date.replace(' ', 'T')
-      : item.date + 'T00:00:00'
+    const dateStr = item.date.includes(' ') ? item.date.replace(' ', 'T') : item.date + 'T00:00:00'
     const date = new Date(dateStr)
     if (item.date.includes(':') && item.date.includes(' ')) {
       return date.toLocaleString('en-US', {
@@ -124,8 +117,7 @@ function renderTokenTrendChart(
   const padding = range === 0 ? maxVal * 0.1 : range * 0.1
 
   const hasInputOutput =
-    rawData[0] &&
-    (rawData[0].input !== undefined || rawData[0].output !== undefined)
+    rawData[0] && (rawData[0].input !== undefined || rawData[0].output !== undefined)
 
   const datasets: ChartConfiguration<'line'>['data']['datasets'] = [
     {
@@ -235,10 +227,20 @@ async function showTokenTrendChart(
     if (stats) {
       if (service === 'mindgraph' && stats.by_service?.mindgraph) {
         const s = stats.by_service.mindgraph
-        periodCards.value = { today: fmt(s.today), week: fmt(s.week), month: fmt(s.month), total: fmt(s.total) }
+        periodCards.value = {
+          today: fmt(s.today),
+          week: fmt(s.week),
+          month: fmt(s.month),
+          total: fmt(s.total),
+        }
       } else if (service === 'mindmate' && stats.by_service?.mindmate) {
         const s = stats.by_service.mindmate
-        periodCards.value = { today: fmt(s.today), week: fmt(s.week), month: fmt(s.month), total: fmt(s.total) }
+        periodCards.value = {
+          today: fmt(s.today),
+          week: fmt(s.week),
+          month: fmt(s.month),
+          total: fmt(s.total),
+        }
       } else {
         periodCards.value = {
           today: fmt(stats.today),
@@ -492,8 +494,14 @@ onBeforeUnmount(() => {
               {{ formatNumber(tokenStats.today?.total_tokens || 0) }}
             </p>
             <div class="flex justify-center gap-2 mt-1 text-xs text-gray-400">
-              <span>{{ t('admin.inShort') }}: {{ formatNumber(tokenStats.today?.input_tokens || 0) }}</span>
-              <span>{{ t('admin.outShort') }}: {{ formatNumber(tokenStats.today?.output_tokens || 0) }}</span>
+              <span
+                >{{ t('admin.inShort') }}:
+                {{ formatNumber(tokenStats.today?.input_tokens || 0) }}</span
+              >
+              <span
+                >{{ t('admin.outShort') }}:
+                {{ formatNumber(tokenStats.today?.output_tokens || 0) }}</span
+              >
             </div>
           </div>
           <div class="text-center">
@@ -502,8 +510,14 @@ onBeforeUnmount(() => {
               {{ formatNumber(tokenStats.past_week?.total_tokens || 0) }}
             </p>
             <div class="flex justify-center gap-2 mt-1 text-xs text-gray-400">
-              <span>{{ t('admin.inShort') }}: {{ formatNumber(tokenStats.past_week?.input_tokens || 0) }}</span>
-              <span>{{ t('admin.outShort') }}: {{ formatNumber(tokenStats.past_week?.output_tokens || 0) }}</span>
+              <span
+                >{{ t('admin.inShort') }}:
+                {{ formatNumber(tokenStats.past_week?.input_tokens || 0) }}</span
+              >
+              <span
+                >{{ t('admin.outShort') }}:
+                {{ formatNumber(tokenStats.past_week?.output_tokens || 0) }}</span
+              >
             </div>
           </div>
           <div class="text-center">
@@ -512,8 +526,14 @@ onBeforeUnmount(() => {
               {{ formatNumber(tokenStats.past_month?.total_tokens || 0) }}
             </p>
             <div class="flex justify-center gap-2 mt-1 text-xs text-gray-400">
-              <span>{{ t('admin.inShort') }}: {{ formatNumber(tokenStats.past_month?.input_tokens || 0) }}</span>
-              <span>{{ t('admin.outShort') }}: {{ formatNumber(tokenStats.past_month?.output_tokens || 0) }}</span>
+              <span
+                >{{ t('admin.inShort') }}:
+                {{ formatNumber(tokenStats.past_month?.input_tokens || 0) }}</span
+              >
+              <span
+                >{{ t('admin.outShort') }}:
+                {{ formatNumber(tokenStats.past_month?.output_tokens || 0) }}</span
+              >
             </div>
           </div>
           <div class="text-center">
@@ -522,8 +542,14 @@ onBeforeUnmount(() => {
               {{ formatNumber(tokenStats.total?.total_tokens || 0) }}
             </p>
             <div class="flex justify-center gap-2 mt-1 text-xs text-gray-400">
-              <span>{{ t('admin.inShort') }}: {{ formatNumber(tokenStats.total?.input_tokens || 0) }}</span>
-              <span>{{ t('admin.outShort') }}: {{ formatNumber(tokenStats.total?.output_tokens || 0) }}</span>
+              <span
+                >{{ t('admin.inShort') }}:
+                {{ formatNumber(tokenStats.total?.input_tokens || 0) }}</span
+              >
+              <span
+                >{{ t('admin.outShort') }}:
+                {{ formatNumber(tokenStats.total?.output_tokens || 0) }}</span
+              >
             </div>
           </div>
         </div>
@@ -574,7 +600,12 @@ onBeforeUnmount(() => {
         <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
           <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
             <el-card
-              v-for="(cardPeriod, key) in { today: 'today', week: 'week', month: 'month', total: 'total' } as const"
+              v-for="(cardPeriod, key) in {
+                today: 'today',
+                week: 'week',
+                month: 'month',
+                total: 'total',
+              } as const"
               :key="key"
               shadow="hover"
               class="token-period-card cursor-pointer"
@@ -582,7 +613,15 @@ onBeforeUnmount(() => {
               @click="switchTokenTrendPeriod(key as 'today' | 'week' | 'month' | 'total')"
             >
               <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">
-                {{ key === 'today' ? t('admin.today') : key === 'week' ? t('admin.pastWeek') : key === 'month' ? t('admin.pastMonth') : t('admin.allTime') }}
+                {{
+                  key === 'today'
+                    ? t('admin.today')
+                    : key === 'week'
+                      ? t('admin.pastWeek')
+                      : key === 'month'
+                        ? t('admin.pastMonth')
+                        : t('admin.allTime')
+                }}
               </p>
               <p class="text-lg font-bold text-gray-800 dark:text-white">
                 {{ periodCards[key] }}

@@ -2,10 +2,13 @@
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
-import { CirclePlus } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
-import { School, PanelRightOpen, PanelRightClose, MoreVertical } from 'lucide-vue-next'
 
+import { CirclePlus } from '@element-plus/icons-vue'
+
+import { MoreVertical, School, Users } from 'lucide-vue-next'
+
+import { AccountInfoModal } from '@/components/auth'
 import {
   ChannelBrowser,
   ChannelMemberList,
@@ -14,28 +17,26 @@ import {
   TopicCard,
   UserCardPopover,
 } from '@/components/workshop-chat'
-import WorkshopInboxWelcome from '@/components/workshop-chat/WorkshopInboxWelcome.vue'
-import type { UserCardUser } from '@/components/workshop-chat/UserCardPopover.vue'
 import ChannelActionsPopover from '@/components/workshop-chat/ChannelActionsPopover.vue'
-import WorkshopGearMenu from '@/components/workshop-chat/WorkshopGearMenu.vue'
-import WorkshopPersonalMenu from '@/components/workshop-chat/WorkshopPersonalMenu.vue'
-import { AccountInfoModal } from '@/components/auth'
 import ChannelSettingsDialog from '@/components/workshop-chat/ChannelSettingsDialog.vue'
+import CreateChannelDialog from '@/components/workshop-chat/CreateChannelDialog.vue'
+import TeachingGroupLanding from '@/components/workshop-chat/TeachingGroupLanding.vue'
+import TeachingGroupsManageDialog from '@/components/workshop-chat/TeachingGroupsManageDialog.vue'
 import TopicEditDialog from '@/components/workshop-chat/TopicEditDialog.vue'
+import WorkshopGearMenu from '@/components/workshop-chat/WorkshopGearMenu.vue'
+import WorkshopInboxWelcome from '@/components/workshop-chat/WorkshopInboxWelcome.vue'
+import WorkshopPersonalMenu from '@/components/workshop-chat/WorkshopPersonalMenu.vue'
 import { useLanguage } from '@/composables/useLanguage'
 import { useWorkshopChatComposable } from '@/composables/useWorkshopChat'
 import { useAuthStore } from '@/stores/auth'
 import {
-  useWorkshopChatStore,
   type ChatMessage,
   type DirectMessageItem,
   type OrgMember,
+  useWorkshopChatStore,
 } from '@/stores/workshopChat'
 import { apiRequest } from '@/utils/apiClient'
-import {
-  formatDeadlineRelative,
-  lessonStudyDeadlineBadge,
-} from '@/utils/lessonStudyDeadline'
+import { formatDeadlineRelative, lessonStudyDeadlineBadge } from '@/utils/lessonStudyDeadline'
 import {
   normalizeWorkshopNarrowQuery,
   normalizeWorkshopRouteQuery,
@@ -48,9 +49,7 @@ import {
 
 const { t, currentLanguage } = useLanguage()
 
-const intlLocale = computed(() =>
-  currentLanguage.value === 'zh' ? 'zh-CN' : 'en-US',
-)
+const intlLocale = computed(() => (currentLanguage.value === 'zh' ? 'zh-CN' : 'en-US'))
 const route = useRoute()
 const router = useRouter()
 const store = useWorkshopChatStore()
@@ -83,6 +82,7 @@ const contactsSearchInput = ref('')
 let contactsSearchDebounce: ReturnType<typeof setTimeout> | null = null
 const loadingMoreContacts = ref(false)
 const showAccountModal = ref(false)
+const showTeachingGroupsManage = ref(false)
 
 const messageSearchQuery = ref('')
 const topicSearchServerResults = ref<ChatMessage[] | null>(null)
@@ -143,7 +143,7 @@ const workshopSettingsDialogVisible = computed({
 const contactProfileMember = computed(() => {
   const id = contactProfileUserId.value
   if (id == null) return null
-  return store.orgMembers.find(m => m.id === id) ?? null
+  return store.orgMembers.find((m) => m.id === id) ?? null
 })
 
 const contactProfileDialogVisible = computed({
@@ -156,7 +156,7 @@ const contactProfileDialogVisible = computed({
 function filterMessagesBySearch<T extends { content: string }>(msgs: T[]): T[] {
   const q = messageSearchQuery.value.trim().toLowerCase()
   if (!q) return msgs
-  return msgs.filter(m => m.content.toLowerCase().includes(q))
+  return msgs.filter((m) => m.content.toLowerCase().includes(q))
 }
 
 const displayTopicMessages = computed((): ChatMessage[] => {
@@ -176,12 +176,10 @@ const displayDmMessages = computed((): DirectMessageItem[] => {
 })
 
 const displayChannelStreamMessages = computed((): ChatMessage[] =>
-  filterMessagesBySearch(store.channelMessages),
+  filterMessagesBySearch(store.channelMessages)
 )
 
-const messageListLoading = computed(
-  () => loadingMessages.value || messageSearchLoading.value,
-)
+const messageListLoading = computed(() => loadingMessages.value || messageSearchLoading.value)
 
 const lessonStudyMetaChannel = computed(() => {
   const ch = store.currentChannel
@@ -191,9 +189,7 @@ const lessonStudyMetaChannel = computed(() => {
   return ch
 })
 
-function copyAbsoluteWorkshopHref(
-  state: Parameters<typeof workshopChatHrefFromState>[0],
-): void {
+function copyAbsoluteWorkshopHref(state: Parameters<typeof workshopChatHrefFromState>[0]): void {
   const href = workshopChatHrefFromState(state)
   const url = `${window.location.origin}${href}`
   void navigator.clipboard.writeText(url).then(() => {
@@ -205,6 +201,24 @@ function onGearNavigate(page: string): void {
   if (page === 'notifications' || page === 'preferences') {
     workshopSettingsPanel.value = page
   }
+}
+
+/** Gear: 课例/频道设置 when a concrete channel is selected (not 教研组 landing-only). */
+const showGearChannelSettings = computed(
+  () =>
+    authStore.isAdminOrManager &&
+    store.activeTab === 'channels' &&
+    store.currentDMPartnerId == null &&
+    store.currentChannelId != null
+)
+
+function openChannelSettingsFromGear(): void {
+  const id = store.currentChannelId ?? store.teachingGroupLandingId
+  if (id == null) {
+    ElMessage.info(t('workshop.selectChannelForSettings'))
+    return
+  }
+  handleOpenChannelSettings(id)
 }
 
 function handleManageUserFromDirectory(_userId: number): void {
@@ -227,6 +241,7 @@ function onGlobalKeydown(ev: KeyboardEvent): void {
 type CenterView =
   | 'empty'
   | 'inbox'
+  | 'teaching-group'
   | 'channel'
   | 'channel-stream'
   | 'topic'
@@ -238,14 +253,11 @@ const centerView = computed<CenterView>(() => {
   if (store.showChannelBrowser) return 'browse'
   if (store.currentDMPartnerId) return 'dm'
   if (store.currentTopicId && store.currentChannelId) return 'topic'
-  if (
-    store.currentChannelId
-    && store.mainChannelFeedActive
-    && store.currentTopicId == null
-  ) {
+  if (store.currentChannelId && store.mainChannelFeedActive && store.currentTopicId == null) {
     return 'channel-stream'
   }
   if (store.currentChannelId) return 'channel'
+  if (store.teachingGroupLandingId != null) return 'teaching-group'
   return 'empty'
 })
 
@@ -298,7 +310,7 @@ watch(
     dmSearchServerResults.value = null
     channelSearchServerResults.value = null
     messageSearchLoading.value = false
-  },
+  }
 )
 
 watch(
@@ -342,10 +354,10 @@ watch(
           if (view === 'topic' && ch != null && tp != null) {
             const rows = await store.searchTopicMessages(ch, tp, q)
             if (
-              messageSearchQuery.value.trim() === q
-              && centerView.value === 'topic'
-              && store.currentChannelId === ch
-              && store.currentTopicId === tp
+              messageSearchQuery.value.trim() === q &&
+              centerView.value === 'topic' &&
+              store.currentChannelId === ch &&
+              store.currentTopicId === tp
             ) {
               topicSearchServerResults.value = rows
               dmSearchServerResults.value = null
@@ -354,9 +366,9 @@ watch(
           } else if (view === 'dm' && dmPid != null) {
             const rows = await store.searchDMMessages(dmPid, q)
             if (
-              messageSearchQuery.value.trim() === q
-              && centerView.value === 'dm'
-              && store.currentDMPartnerId === dmPid
+              messageSearchQuery.value.trim() === q &&
+              centerView.value === 'dm' &&
+              store.currentDMPartnerId === dmPid
             ) {
               dmSearchServerResults.value = rows
               topicSearchServerResults.value = null
@@ -365,9 +377,9 @@ watch(
           } else if (view === 'channel' && ch != null) {
             const rows = await store.searchChannelMessages(ch, q)
             if (
-              messageSearchQuery.value.trim() === q
-              && centerView.value === 'channel'
-              && store.currentChannelId === ch
+              messageSearchQuery.value.trim() === q &&
+              centerView.value === 'channel' &&
+              store.currentChannelId === ch
             ) {
               channelSearchServerResults.value = rows
               topicSearchServerResults.value = null
@@ -379,17 +391,17 @@ watch(
         }
       })()
     }, 300)
-  },
+  }
 )
 
 const currentTopicDetail = computed(() => {
   if (!store.currentTopicId) return null
-  return store.topics.find(tp => tp.id === store.currentTopicId) ?? null
+  return store.topics.find((tp) => tp.id === store.currentTopicId) ?? null
 })
 
 const currentDMPartner = computed(() => {
   if (!store.currentDMPartnerId) return null
-  return store.dmConversations.find(c => c.partner_id === store.currentDMPartnerId) ?? null
+  return store.dmConversations.find((c) => c.partner_id === store.currentDMPartnerId) ?? null
 })
 
 const channelStatusConfig: Record<string, { labelKey: string; color: string }> = {
@@ -429,19 +441,19 @@ function sortContactsWithSelfFirst(members: OrgMember[]): OrgMember[] {
 }
 
 const contactsOnline = computed(() => {
-  const list = store.orgMembers.filter(m => contactPresenceRank(m.id) <= 1)
+  const list = store.orgMembers.filter((m) => contactPresenceRank(m.id) <= 1)
   return sortContactsWithSelfFirst(list)
 })
 
 const contactsOffline = computed(() => {
-  const list = store.orgMembers.filter(m => contactPresenceRank(m.id) === 2)
+  const list = store.orgMembers.filter((m) => contactPresenceRank(m.id) === 2)
   return sortContactsWithSelfFirst(list)
 })
 
 const contactsOnlineCount = computed(
-  () => store.orgMembers.filter(
-    m => store.onlineUserIds.has(m.id) || store.idleUserIds.has(m.id),
-  ).length,
+  () =>
+    store.orgMembers.filter((m) => store.onlineUserIds.has(m.id) || store.idleUserIds.has(m.id))
+      .length
 )
 
 function isContactSelf(memberId: number): boolean {
@@ -515,13 +527,11 @@ function applyOrgScopeFromProfile(): void {
 
 function resolveAdminOrgSelection(): void {
   if (!isAdmin.value || store.adminOrgs.length === 0) return
-  const valid = new Set(store.adminOrgs.map(o => o.id))
+  const valid = new Set(store.adminOrgs.map((o) => o.id))
   if (store.adminOrgId != null && valid.has(store.adminOrgId)) return
   const raw = authStore.user?.schoolId
   const sid = raw ? parseInt(raw, 10) : NaN
-  const byProfile = !Number.isNaN(sid)
-    ? store.adminOrgs.find(o => o.id === sid)
-    : undefined
+  const byProfile = !Number.isNaN(sid) ? store.adminOrgs.find((o) => o.id === sid) : undefined
   store.setAdminOrgId((byProfile ?? store.adminOrgs[0]).id)
 }
 
@@ -534,6 +544,7 @@ function syncWorkshopUrlFromStore(): void {
     showChannelBrowser: store.showChannelBrowser,
     workshopHomeViewActive: store.workshopHomeViewActive,
     mainChannelFeedActive: store.mainChannelFeedActive,
+    teachingGroupLandingId: store.teachingGroupLandingId,
   })
   const cur = normalizeWorkshopNarrowQuery(route.query)
   if (workshopRouteQueriesEqual(cur, next)) return
@@ -553,7 +564,7 @@ function maybeStripMessageFromUrlAfterFocus(expectedId: number): void {
   }
 }
 
-function applyWorkshopRouteFromQuery(): void {
+async function applyWorkshopRouteFromQuery(): Promise<void> {
   applyingWorkshopRoute.value = true
   try {
     const parsed = parseWorkshopChatRouteQuery(route.query)
@@ -569,6 +580,18 @@ function applyWorkshopRouteFromQuery(): void {
         store.selectChannel(null)
         store.selectDMPartner(null)
         break
+      case 'teachingGroup': {
+        const g = store.findChannelById(parsed.groupId)
+        if (!g || g.parent_id != null || g.channel_type === 'announce') {
+          store.openWorkshopInboxHome()
+          void router.replace({ name: 'WorkshopChat', query: {} })
+          break
+        }
+        store.showChannelBrowser = false
+        await store.openTeachingGroupLanding(parsed.groupId)
+        store.activeTab = 'channels'
+        break
+      }
       case 'dm': {
         store.showChannelBrowser = false
         if (msgFocus != null) {
@@ -618,12 +641,8 @@ onMounted(async () => {
     resolveAdminOrgSelection()
   }
   await store.initializeDefaults()
-  await Promise.all([
-    store.fetchChannels(),
-    store.fetchDMConversations(),
-    store.fetchOrgMembers(),
-  ])
-  applyWorkshopRouteFromQuery()
+  await Promise.all([store.fetchChannels(), store.fetchDMConversations(), store.fetchOrgMembers()])
+  await applyWorkshopRouteFromQuery()
   ws.connect()
   store.loading = false
   window.addEventListener('keydown', onGlobalKeydown)
@@ -642,12 +661,13 @@ watch(
     showChannelBrowser: store.showChannelBrowser,
     workshopHomeViewActive: store.workshopHomeViewActive,
     mainChannelFeedActive: store.mainChannelFeedActive,
+    teachingGroupLandingId: store.teachingGroupLandingId,
   }),
   () => {
     if (store.loading) return
     syncWorkshopUrlFromStore()
   },
-  { deep: true },
+  { deep: true }
 )
 
 watch(
@@ -662,116 +682,147 @@ watch(
       showChannelBrowser: store.showChannelBrowser,
       workshopHomeViewActive: store.workshopHomeViewActive,
       mainChannelFeedActive: store.mainChannelFeedActive,
+      teachingGroupLandingId: store.teachingGroupLandingId,
     })
     if (workshopRouteQueriesEqual(newQ, fromStore)) return
-    applyWorkshopRouteFromQuery()
+    void applyWorkshopRouteFromQuery()
   },
-  { deep: true },
+  { deep: true }
 )
 
-watch(() => store.currentChannelId, async (channelId, prevChannelId) => {
-  if (prevChannelId != null && channelId !== prevChannelId) {
-    pendingTopicFocusMessageId.value = null
-    pendingMainChannelFocusMessageId.value = null
-    pendingDmFocusMessageId.value = null
-    messageIdToStripFromUrlAfterFocus.value = null
-  }
-  if (!channelId) {
-    pendingTopicFocusMessageId.value = null
-    pendingMainChannelFocusMessageId.value = null
-    if (store.currentDMPartnerId == null) {
+watch(
+  () => store.currentChannelId,
+  async (channelId, prevChannelId) => {
+    if (prevChannelId != null && channelId !== prevChannelId) {
+      pendingTopicFocusMessageId.value = null
+      pendingMainChannelFocusMessageId.value = null
       pendingDmFocusMessageId.value = null
       messageIdToStripFromUrlAfterFocus.value = null
     }
-    return
-  }
-  pendingDmFocusMessageId.value = null
-  store.showChannelBrowser = false
-  loadingMessages.value = true
-  await Promise.all([
-    store.fetchChannelMessages(channelId),
-    store.fetchTopics(channelId),
-    store.fetchChannelMembers(channelId),
-  ])
-  loadingMessages.value = false
-})
-
-watch(() => store.currentTopicId, async (topicId) => {
-  if (!topicId || !store.currentChannelId) return
-  const focusId = pendingTopicFocusMessageId.value
-  pendingTopicFocusMessageId.value = null
-  loadingMessages.value = true
-  try {
-    if (focusId != null) {
-      await store.fetchTopicMessages(
-        store.currentChannelId,
-        topicId,
-        focusId,
-        TOPIC_FOCUS_NUM_BEFORE,
-        TOPIC_FOCUS_NUM_AFTER,
-      )
-    } else {
-      await store.fetchTopicMessages(store.currentChannelId, topicId)
+    if (!channelId) {
+      pendingTopicFocusMessageId.value = null
+      pendingMainChannelFocusMessageId.value = null
+      if (store.currentDMPartnerId == null) {
+        pendingDmFocusMessageId.value = null
+        messageIdToStripFromUrlAfterFocus.value = null
+      }
+      return
     }
-    await store.markTopicRead(store.currentChannelId, topicId)
-  } finally {
+    pendingDmFocusMessageId.value = null
+    store.showChannelBrowser = false
+    loadingMessages.value = true
+    await Promise.all([
+      store.fetchChannelMessages(channelId),
+      store.fetchTopics(channelId),
+      store.fetchChannelMembers(channelId),
+    ])
     loadingMessages.value = false
   }
-  if (focusId != null) {
-    await nextTick()
-    messageListRef.value?.scrollToMessageId(focusId)
-    maybeStripMessageFromUrlAfterFocus(focusId)
-  }
-})
+)
 
-watch(() => store.currentDMPartnerId, async (partnerId) => {
-  if (partnerId != null) {
+watch(
+  () => store.currentTopicId,
+  async (topicId) => {
+    if (!topicId || !store.currentChannelId) return
+    const focusId = pendingTopicFocusMessageId.value
     pendingTopicFocusMessageId.value = null
-    pendingMainChannelFocusMessageId.value = null
-  }
-  if (!partnerId) return
-  const focusDm = pendingDmFocusMessageId.value
-  pendingDmFocusMessageId.value = null
-  store.showChannelBrowser = false
-  loadingMessages.value = true
-  try {
-    if (focusDm != null) {
-      await store.fetchDMMessages(
-        partnerId,
-        focusDm,
-        TOPIC_FOCUS_NUM_BEFORE,
-        TOPIC_FOCUS_NUM_AFTER,
-      )
-    } else {
-      await store.fetchDMMessages(partnerId)
+    loadingMessages.value = true
+    try {
+      if (focusId != null) {
+        await store.fetchTopicMessages(
+          store.currentChannelId,
+          topicId,
+          focusId,
+          TOPIC_FOCUS_NUM_BEFORE,
+          TOPIC_FOCUS_NUM_AFTER
+        )
+      } else {
+        await store.fetchTopicMessages(store.currentChannelId, topicId)
+      }
+      await store.markTopicRead(store.currentChannelId, topicId)
+    } finally {
+      loadingMessages.value = false
     }
-  } finally {
-    loadingMessages.value = false
+    if (focusId != null) {
+      await nextTick()
+      messageListRef.value?.scrollToMessageId(focusId)
+      maybeStripMessageFromUrlAfterFocus(focusId)
+    }
   }
-  if (focusDm != null) {
-    await nextTick()
-    messageListRef.value?.scrollToMessageId(focusDm)
-    maybeStripMessageFromUrlAfterFocus(focusDm)
-  }
-})
+)
 
-watch(() => store.dialogChannelSettingsId, (id) => {
-  if (id) {
-    channelSettingsId.value = id
-    showChannelSettings.value = true
-    store.dialogChannelSettingsId = null
+watch(
+  () => store.currentDMPartnerId,
+  async (partnerId) => {
+    if (partnerId != null) {
+      pendingTopicFocusMessageId.value = null
+      pendingMainChannelFocusMessageId.value = null
+    }
+    if (!partnerId) return
+    const focusDm = pendingDmFocusMessageId.value
+    pendingDmFocusMessageId.value = null
+    store.showChannelBrowser = false
+    loadingMessages.value = true
+    try {
+      if (focusDm != null) {
+        await store.fetchDMMessages(
+          partnerId,
+          focusDm,
+          TOPIC_FOCUS_NUM_BEFORE,
+          TOPIC_FOCUS_NUM_AFTER
+        )
+      } else {
+        await store.fetchDMMessages(partnerId)
+      }
+    } finally {
+      loadingMessages.value = false
+    }
+    if (focusDm != null) {
+      await nextTick()
+      messageListRef.value?.scrollToMessageId(focusDm)
+      maybeStripMessageFromUrlAfterFocus(focusDm)
+    }
   }
-})
+)
 
-watch(() => store.dialogTopicEdit, (editState) => {
-  if (editState) {
-    topicEditId.value = editState.topicId
-    topicEditChannelId.value = editState.channelId
-    topicEditMode.value = editState.mode
-    showTopicEdit.value = true
-    store.dialogTopicEdit = null
+watch(
+  () => store.dialogChannelSettingsId,
+  (id) => {
+    if (id) {
+      channelSettingsId.value = id
+      showChannelSettings.value = true
+      store.dialogChannelSettingsId = null
+    }
   }
-})
+)
+
+watch(
+  () => store.dialogTopicEdit,
+  (editState) => {
+    if (editState) {
+      topicEditId.value = editState.topicId
+      topicEditChannelId.value = editState.channelId
+      topicEditMode.value = editState.mode
+      showTopicEdit.value = true
+      store.dialogTopicEdit = null
+    }
+  }
+)
+
+watch(
+  () => store.newTopicDialogRequestChannelId,
+  (channelId) => {
+    if (channelId == null) {
+      return
+    }
+    store.selectChannel(channelId)
+    store.selectTopic(null)
+    newTopicTitle.value = ''
+    newTopicDescription.value = ''
+    showNewTopicDialog.value = true
+    store.clearNewTopicDialogRequest()
+  }
+)
 
 watch(
   () => [store.mainChannelFeedActive, store.currentChannelId] as const,
@@ -782,24 +833,21 @@ watch(
     pendingMainChannelFocusMessageId.value = null
     loadingMessages.value = true
     try {
-      await store.fetchChannelMessages(
-        ch,
-        focusId,
-        TOPIC_FOCUS_NUM_BEFORE,
-        TOPIC_FOCUS_NUM_AFTER,
-      )
+      await store.fetchChannelMessages(ch, focusId, TOPIC_FOCUS_NUM_BEFORE, TOPIC_FOCUS_NUM_AFTER)
     } finally {
       loadingMessages.value = false
     }
     await nextTick()
     messageListRef.value?.scrollToMessageId(focusId)
     maybeStripMessageFromUrlAfterFocus(focusId)
-  },
+  }
 )
 
 async function showSendMentionError(res: Response): Promise<boolean> {
   try {
-    const data = (await res.json()) as { detail?: { code?: string; unknown?: string[]; ambiguous?: string[] } }
+    const data = (await res.json()) as {
+      detail?: { code?: string; unknown?: string[]; ambiguous?: string[] }
+    }
     const d = data.detail
     if (d?.code === 'invalid_mentions') {
       const parts: string[] = []
@@ -844,7 +892,7 @@ async function handleSendTopicMessage(content: string): Promise<void> {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ content }),
-    },
+    }
   )
   if (!res.ok) {
     if (!(await showSendMentionError(res))) {
@@ -899,7 +947,7 @@ function topicTitleForChannelSearchHit(msg: ChatMessage): string {
   if (msg.topic_id == null) {
     return t('workshop.mainChannelStream')
   }
-  const tp = store.topics.find(x => x.id === msg.topic_id)
+  const tp = store.topics.find((x) => x.id === msg.topic_id)
   return tp?.title ?? t('workshop.selectTopic')
 }
 
@@ -930,7 +978,7 @@ function handleChannelSearchHitClick(msg: ChatMessage): void {
             cid,
             msg.id,
             TOPIC_FOCUS_NUM_BEFORE,
-            TOPIC_FOCUS_NUM_AFTER,
+            TOPIC_FOCUS_NUM_AFTER
           )
         } finally {
           loadingMessages.value = false
@@ -944,18 +992,23 @@ function handleChannelSearchHitClick(msg: ChatMessage): void {
     store.openMainChannelFeed()
     return
   }
-  if (store.currentChannelId === cid && store.currentTopicId === msg.topic_id) {
+  const focusTopicId = msg.topic_id
+  if (
+    store.currentChannelId === cid &&
+    store.currentTopicId === focusTopicId &&
+    focusTopicId != null
+  ) {
     void (async () => {
       loadingMessages.value = true
       try {
         await store.fetchTopicMessages(
           cid,
-          msg.topic_id!,
+          focusTopicId,
           msg.id,
           TOPIC_FOCUS_NUM_BEFORE,
-          TOPIC_FOCUS_NUM_AFTER,
+          TOPIC_FOCUS_NUM_AFTER
         )
-        await store.markTopicRead(cid, msg.topic_id!)
+        await store.markTopicRead(cid, focusTopicId)
       } finally {
         loadingMessages.value = false
       }
@@ -966,18 +1019,6 @@ function handleChannelSearchHitClick(msg: ChatMessage): void {
   }
   pendingTopicFocusMessageId.value = msg.id
   handleSelectTopic(cid, msg.topic_id)
-}
-
-function handleSelectDM(partnerId: number): void {
-  store.selectDMPartner(partnerId)
-  store.selectChannel(null)
-}
-
-function handleBrowseChannels(): void {
-  store.leaveWorkshopHomeView()
-  store.showChannelBrowser = true
-  store.selectChannel(null)
-  store.selectDMPartner(null)
 }
 
 function handleJoinChannel(channelId: number): void {
@@ -1001,9 +1042,9 @@ function handleStartDM(memberId: number): void {
   store.selectDMPartner(memberId)
   store.selectChannel(null)
   store.showChannelBrowser = false
-  const existing = store.dmConversations.find(c => c.partner_id === memberId)
+  const existing = store.dmConversations.find((c) => c.partner_id === memberId)
   if (!existing) {
-    const member = store.orgMembers.find(m => m.id === memberId)
+    const member = store.orgMembers.find((m) => m.id === memberId)
     if (member) {
       store.dmConversations.unshift({
         partner_id: member.id,
@@ -1074,10 +1115,7 @@ async function handleSwitchSchool(orgId: number | null): Promise<void> {
   store.setAdminOrgId(orgId)
   store.selectChannel(null)
   store.loading = true
-  await Promise.all([
-    store.fetchChannels(),
-    store.fetchOrgMembers(),
-  ])
+  await Promise.all([store.fetchChannels(), store.fetchOrgMembers()])
   store.loading = false
   store.openWorkshopInboxHome()
 }
@@ -1106,7 +1144,7 @@ function handleOpenChannelSettings(channelId: number): void {
 }
 
 function handleTopicRename(topicId: number): void {
-  const topic = store.topics.find(tp => tp.id === topicId)
+  const topic = store.topics.find((tp) => tp.id === topicId)
   topicEditId.value = topicId
   topicEditChannelId.value = topic?.channel_id ?? store.currentChannelId ?? 0
   topicEditMode.value = 'rename'
@@ -1114,7 +1152,7 @@ function handleTopicRename(topicId: number): void {
 }
 
 function handleTopicMove(topicId: number): void {
-  const topic = store.topics.find(tp => tp.id === topicId)
+  const topic = store.topics.find((tp) => tp.id === topicId)
   topicEditId.value = topicId
   topicEditChannelId.value = topic?.channel_id ?? store.currentChannelId ?? 0
   topicEditMode.value = 'move'
@@ -1137,7 +1175,7 @@ function handleTopicMove(topicId: number): void {
           class="ws-navbar__search"
           :placeholder="t('workshop.searchMessages')"
           autocomplete="off"
-        >
+        />
       </div>
 
       <div class="ws-navbar__right">
@@ -1152,7 +1190,10 @@ function handleTopicMove(topicId: number): void {
           @change="handleSwitchSchool"
         >
           <template #prefix>
-            <School class="w-3.5 h-3.5" style="color: hsl(0deg 0% 55%);" />
+            <School
+              class="w-3.5 h-3.5"
+              style="color: hsl(0deg 0% 55%)"
+            />
           </template>
           <el-option
             v-for="org in store.adminOrgs"
@@ -1162,38 +1203,50 @@ function handleTopicMove(topicId: number): void {
           >
             <div class="flex items-center justify-between w-full">
               <span class="truncate">{{ org.name }}</span>
-              <span class="text-xs ml-2 shrink-0" style="color: hsl(0deg 0% 55%);">{{ org.user_count }}</span>
+              <span
+                class="text-xs ml-2 shrink-0"
+                style="color: hsl(0deg 0% 55%)"
+                >{{ org.user_count }}</span
+              >
             </div>
           </el-option>
         </el-select>
 
-        <!-- Admin viewing indicator -->
         <span
-          v-if="isAdmin && store.adminOrgId"
-          class="ws-navbar__admin-badge"
-        >
-          {{ t('workshop.viewingSchool').replace('{0}', store.adminOrgs.find(o => o.id === store.adminOrgId)?.name || '') }}
-        </span>
-        <span
-          v-else-if="isManager && authStore.user?.schoolName"
+          v-if="isManager && authStore.user?.schoolName && !isAdmin"
           class="ws-navbar__admin-badge"
         >
           {{ authStore.user.schoolName }}
         </span>
 
-        <button
-          class="ws-navbar__icon-btn"
-          :class="{ 'ws-navbar__icon-btn--active': showRightSidebar }"
-          @click="showRightSidebar = !showRightSidebar"
-        >
-          <component :is="showRightSidebar ? PanelRightClose : PanelRightOpen" :size="18" />
-        </button>
+        <div class="ws-navbar__action-group">
+          <el-button
+            size="small"
+            class="workshop-navbar-action workshop-navbar-action--contacts"
+            :class="{ 'workshop-navbar-action--active': showRightSidebar }"
+            :title="t('workshop.toggleContacts')"
+            @click="showRightSidebar = !showRightSidebar"
+          >
+            <span class="workshop-navbar-action__content">
+              <Users
+                class="workshop-navbar-action__icon"
+                :size="14"
+              />
+              <span class="workshop-navbar-action__label">{{ t('workshop.navbarContacts') }}</span>
+            </span>
+          </el-button>
 
-        <WorkshopGearMenu @navigate="onGearNavigate" />
-        <WorkshopPersonalMenu
-          @navigate="handlePersonalNavigate"
-          @sign-out="handleSignOut"
-        />
+          <WorkshopGearMenu
+            :show-channel-settings="showGearChannelSettings"
+            @navigate="onGearNavigate"
+            @openChannelSettings="openChannelSettingsFromGear"
+            @manageTeachingGroups="showTeachingGroupsManage = true"
+          />
+          <WorkshopPersonalMenu
+            @navigate="handlePersonalNavigate"
+            @sign-out="handleSignOut"
+          />
+        </div>
       </div>
     </div>
 
@@ -1205,6 +1258,11 @@ function handleTopicMove(topicId: number): void {
           <!-- Inbox + welcome (default landing) -->
           <template v-if="centerView === 'inbox'">
             <WorkshopInboxWelcome />
+          </template>
+
+          <!-- Teaching group (教研组): overview of lesson studies + conversations (Zulip stream narrow) -->
+          <template v-else-if="centerView === 'teaching-group'">
+            <TeachingGroupLanding />
           </template>
 
           <!-- Empty state: nothing selected -->
@@ -1249,22 +1307,31 @@ function handleTopicMove(topicId: number): void {
                   #
                 </span>
                 <h2 class="ws-center-header__title">{{ store.currentChannel.name }}</h2>
-                <span v-if="parentGroupName" class="ws-center-header__group-tag">
+                <span
+                  v-if="parentGroupName"
+                  class="ws-center-header__group-tag"
+                >
                   {{ parentGroupName }}
                 </span>
                 <span
                   v-if="store.currentChannel.status"
                   class="ws-status-badge"
                   :style="{
-                    backgroundColor: (channelStatusConfig[store.currentChannel.status]?.color || '#a8a29e') + '20',
+                    backgroundColor:
+                      (channelStatusConfig[store.currentChannel.status]?.color || '#a8a29e') + '20',
                     color: channelStatusConfig[store.currentChannel.status]?.color || '#a8a29e',
                   }"
                 >
-                  {{ t(channelStatusConfig[store.currentChannel.status]?.labelKey || 'workshop.statusOpen') }}
+                  {{
+                    t(
+                      channelStatusConfig[store.currentChannel.status]?.labelKey ||
+                        'workshop.statusOpen'
+                    )
+                  }}
                 </span>
                 <span class="ws-center-header__meta">
-                  {{ store.channelMembers.length }} {{ t('workshop.members') }}
-                  · {{ t('workshop.mainChannelStream') }}
+                  {{ store.channelMembers.length }} {{ t('workshop.members') }} ·
+                  {{ t('workshop.mainChannelStream') }}
                 </span>
                 <ChannelActionsPopover
                   v-if="store.currentChannelId"
@@ -1297,7 +1364,10 @@ function handleTopicMove(topicId: number): void {
               @back-to-topic-list="store.leaveMainChannelFeed()"
             >
               <template #recipientActions>
-                <el-dropdown trigger="click" @click.stop>
+                <el-dropdown
+                  trigger="click"
+                  @click.stop
+                >
                   <button
                     type="button"
                     class="recipient-bar__menu-btn"
@@ -1308,14 +1378,16 @@ function handleTopicMove(topicId: number): void {
                   <template #dropdown>
                     <el-dropdown-menu>
                       <el-dropdown-item
-                        @click="copyAbsoluteWorkshopHref({
-                          currentChannelId: store.currentChannelId,
-                          currentTopicId: null,
-                          currentDMPartnerId: null,
-                          showChannelBrowser: false,
-                          workshopHomeViewActive: false,
-                          mainChannelFeedActive: true,
-                        })"
+                        @click="
+                          copyAbsoluteWorkshopHref({
+                            currentChannelId: store.currentChannelId,
+                            currentTopicId: null,
+                            currentDMPartnerId: null,
+                            showChannelBrowser: false,
+                            workshopHomeViewActive: false,
+                            mainChannelFeedActive: true,
+                          })
+                        "
                       >
                         {{ t('workshop.copyLink') }}
                       </el-dropdown-item>
@@ -1346,26 +1418,38 @@ function handleTopicMove(topicId: number): void {
           <template v-else-if="centerView === 'channel'">
             <div class="ws-center-header">
               <div class="ws-center-header__info">
-                <span class="ws-center-header__channel-icon" :style="{ color: store.currentChannel?.color || undefined }">
+                <span
+                  class="ws-center-header__channel-icon"
+                  :style="{ color: store.currentChannel?.color || undefined }"
+                >
                   #
                 </span>
                 <h2 class="ws-center-header__title">{{ store.currentChannel?.name }}</h2>
-                <span v-if="parentGroupName" class="ws-center-header__group-tag">
+                <span
+                  v-if="parentGroupName"
+                  class="ws-center-header__group-tag"
+                >
                   {{ parentGroupName }}
                 </span>
                 <span
                   v-if="store.currentChannel?.status"
                   class="ws-status-badge"
                   :style="{
-                    backgroundColor: (channelStatusConfig[store.currentChannel.status]?.color || '#a8a29e') + '20',
+                    backgroundColor:
+                      (channelStatusConfig[store.currentChannel.status]?.color || '#a8a29e') + '20',
                     color: channelStatusConfig[store.currentChannel.status]?.color || '#a8a29e',
                   }"
                 >
-                  {{ t(channelStatusConfig[store.currentChannel.status]?.labelKey || 'workshop.statusOpen') }}
+                  {{
+                    t(
+                      channelStatusConfig[store.currentChannel.status]?.labelKey ||
+                        'workshop.statusOpen'
+                    )
+                  }}
                 </span>
                 <span class="ws-center-header__meta">
-                  {{ store.channelMembers.length }} {{ t('workshop.members') }}
-                  · {{ store.topics.length }} {{ t('workshop.conversations') }}
+                  {{ store.channelMembers.length }} {{ t('workshop.members') }} ·
+                  {{ store.topics.length }} {{ t('workshop.conversations') }}
                 </span>
                 <ChannelActionsPopover
                   v-if="store.currentChannelId"
@@ -1399,7 +1483,8 @@ function handleTopicMove(topicId: number): void {
                 <span
                   v-if="messageSearchLoading"
                   class="ws-channel-search__loading"
-                >{{ t('common.loading') }}</span>
+                  >{{ t('common.loading') }}</span
+                >
               </div>
               <template v-if="!messageSearchLoading && channelSearchServerResults != null">
                 <p
@@ -1422,13 +1507,12 @@ function handleTopicMove(topicId: number): void {
                       <span class="ws-channel-search__hit-topic">{{
                         topicTitleForChannelSearchHit(msg)
                       }}</span>
-                      <span class="ws-channel-search__hit-sender">{{
-                        msg.sender_name
-                      }}</span>
+                      <span class="ws-channel-search__hit-sender">{{ msg.sender_name }}</span>
                       <time
                         class="ws-channel-search__hit-time"
                         :datetime="msg.created_at"
-                      >{{ formatSearchHitTime(msg.created_at) }}</time>
+                        >{{ formatSearchHitTime(msg.created_at) }}</time
+                      >
                     </div>
                     <p class="ws-channel-search__hit-snippet">
                       {{ workshopMessageSnippet(msg.content) }}
@@ -1459,7 +1543,10 @@ function handleTopicMove(topicId: number): void {
                   {{ t('workshop.newConversation') }}
                 </el-button>
               </div>
-              <div v-if="store.topics.length > 0" class="ws-topic-grid__list">
+              <div
+                v-if="store.topics.length > 0"
+                class="ws-topic-grid__list"
+              >
                 <TopicCard
                   v-for="topic in store.topics"
                   :key="topic.id"
@@ -1469,7 +1556,10 @@ function handleTopicMove(topicId: number): void {
                   @move="handleTopicMove"
                 />
               </div>
-              <div v-else class="ws-topic-grid__empty">
+              <div
+                v-else
+                class="ws-topic-grid__empty"
+              >
                 <p>{{ t('workshop.noConversationsYet') }}</p>
                 <p class="ws-topic-grid__empty-hint">{{ t('workshop.startConversationHint') }}</p>
               </div>
@@ -1496,7 +1586,10 @@ function handleTopicMove(topicId: number): void {
               @back-to-topic-list="store.selectTopic(null)"
             >
               <template #recipientActions>
-                <el-dropdown trigger="click" @click.stop>
+                <el-dropdown
+                  trigger="click"
+                  @click.stop
+                >
                   <button
                     type="button"
                     class="recipient-bar__menu-btn"
@@ -1507,19 +1600,23 @@ function handleTopicMove(topicId: number): void {
                   <template #dropdown>
                     <el-dropdown-menu>
                       <el-dropdown-item
-                        @click="copyAbsoluteWorkshopHref({
-                          currentChannelId: store.currentChannelId,
-                          currentTopicId: store.currentTopicId,
-                          currentDMPartnerId: null,
-                          showChannelBrowser: false,
-                          workshopHomeViewActive: false,
-                          mainChannelFeedActive: false,
-                        })"
+                        @click="
+                          copyAbsoluteWorkshopHref({
+                            currentChannelId: store.currentChannelId,
+                            currentTopicId: store.currentTopicId,
+                            currentDMPartnerId: null,
+                            showChannelBrowser: false,
+                            workshopHomeViewActive: false,
+                            mainChannelFeedActive: false,
+                          })
+                        "
                       >
                         {{ t('workshop.copyLink') }}
                       </el-dropdown-item>
                       <el-dropdown-item
-                        @click="void store.markTopicRead(store.currentChannelId!, currentTopicDetail.id)"
+                        @click="
+                          void store.markTopicRead(store.currentChannelId!, currentTopicDetail.id)
+                        "
                       >
                         {{ t('workshop.markAsRead') }}
                       </el-dropdown-item>
@@ -1559,7 +1656,10 @@ function handleTopicMove(topicId: number): void {
               :dm-partner-name="currentDMPartner.partner_name"
             >
               <template #recipientActions>
-                <el-dropdown trigger="click" @click.stop>
+                <el-dropdown
+                  trigger="click"
+                  @click.stop
+                >
                   <button
                     type="button"
                     class="recipient-bar__menu-btn"
@@ -1570,14 +1670,16 @@ function handleTopicMove(topicId: number): void {
                   <template #dropdown>
                     <el-dropdown-menu>
                       <el-dropdown-item
-                        @click="copyAbsoluteWorkshopHref({
-                          currentChannelId: null,
-                          currentTopicId: null,
-                          currentDMPartnerId: store.currentDMPartnerId,
-                          showChannelBrowser: false,
-                          workshopHomeViewActive: false,
-                          mainChannelFeedActive: false,
-                        })"
+                        @click="
+                          copyAbsoluteWorkshopHref({
+                            currentChannelId: null,
+                            currentTopicId: null,
+                            currentDMPartnerId: store.currentDMPartnerId,
+                            showChannelBrowser: false,
+                            workshopHomeViewActive: false,
+                            mainChannelFeedActive: false,
+                          })
+                        "
                       >
                         {{ t('workshop.copyLink') }}
                       </el-dropdown-item>
@@ -1599,14 +1701,20 @@ function handleTopicMove(topicId: number): void {
       </div>
 
       <!-- Right sidebar -->
-      <div v-if="showRightSidebar" class="ws-column-right">
+      <div
+        v-if="showRightSidebar"
+        class="ws-column-right"
+      >
         <ChannelMemberList
           v-if="store.currentChannelId"
           @start-dm="handleStartDM"
           @view-profile="handleContactViewProfile"
           @manage-user="handleManageUserFromDirectory"
         />
-        <div v-else class="ws-right-contacts">
+        <div
+          v-else
+          class="ws-right-contacts"
+        >
           <div class="ws-right-contacts__header">
             <span class="ws-right-contacts__label">{{ t('workshop.contacts') }}</span>
             <span class="ws-right-contacts__count">
@@ -1652,24 +1760,32 @@ function handleTopicMove(topicId: number): void {
                       :class="{
                         'ws-right-contacts__presence--online': store.onlineUserIds.has(member.id),
                         'ws-right-contacts__presence--idle': store.idleUserIds.has(member.id),
-                        'ws-right-contacts__presence--offline': !store.onlineUserIds.has(member.id) && !store.idleUserIds.has(member.id),
+                        'ws-right-contacts__presence--offline':
+                          !store.onlineUserIds.has(member.id) && !store.idleUserIds.has(member.id),
                       }"
                     />
                     <span
                       class="ws-right-contacts__name"
-                      :class="{ 'ws-right-contacts__name--online': store.onlineUserIds.has(member.id) || store.idleUserIds.has(member.id) }"
+                      :class="{
+                        'ws-right-contacts__name--online':
+                          store.onlineUserIds.has(member.id) || store.idleUserIds.has(member.id),
+                      }"
                     >
                       {{ member.name
                       }}<span
                         v-if="isContactSelf(member.id)"
                         class="ws-right-contacts__you"
-                      >{{ t('workshop.you') }}</span>
+                        >{{ t('workshop.you') }}</span
+                      >
                     </span>
                   </div>
                 </UserCardPopover>
               </div>
             </template>
-            <div v-if="store.orgMembers.length === 0" class="ws-right-contacts__empty">
+            <div
+              v-if="store.orgMembers.length === 0"
+              class="ws-right-contacts__empty"
+            >
               {{ t('workshop.noMembersFound') }}
             </div>
           </div>
@@ -1706,17 +1822,35 @@ function handleTopicMove(topicId: number): void {
       width="480px"
       :close-on-click-modal="false"
     >
-      <el-form label-position="top" class="space-y-4">
+      <el-form
+        label-position="top"
+        class="space-y-4"
+      >
         <el-form-item :label="t('workshop.conversationTitle')">
-          <el-input v-model="newTopicTitle" :placeholder="t('workshop.conversationTitlePlaceholder')" maxlength="200" />
+          <el-input
+            v-model="newTopicTitle"
+            :placeholder="t('workshop.conversationTitlePlaceholder')"
+            maxlength="200"
+          />
         </el-form-item>
         <el-form-item :label="t('workshop.topicDescription')">
-          <el-input v-model="newTopicDescription" type="textarea" :rows="3" :placeholder="t('workshop.topicDescriptionPlaceholder')" maxlength="1000" />
+          <el-input
+            v-model="newTopicDescription"
+            type="textarea"
+            :rows="3"
+            :placeholder="t('workshop.topicDescriptionPlaceholder')"
+            maxlength="1000"
+          />
         </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="showNewTopicDialog = false">{{ t('common.cancel') }}</el-button>
-        <el-button type="primary" :loading="creatingTopic" :disabled="!newTopicTitle.trim()" @click="handleCreateTopic">
+        <el-button
+          type="primary"
+          :loading="creatingTopic"
+          :disabled="!newTopicTitle.trim()"
+          @click="handleCreateTopic"
+        >
           {{ t('workshop.create') }}
         </el-button>
       </template>
@@ -1728,6 +1862,20 @@ function handleTopicMove(topicId: number): void {
       :channel-id="channelSettingsId"
       :visible="showChannelSettings"
       @update:visible="showChannelSettings = $event"
+    />
+
+    <CreateChannelDialog
+      :visible="store.createChannelDialogVisible"
+      @update:visible="
+        (v: boolean) => {
+          if (!v) store.closeCreateChannelDialog()
+        }
+      "
+    />
+
+    <TeachingGroupsManageDialog
+      v-model:visible="showTeachingGroupsManage"
+      @openChannelSettings="handleOpenChannelSettings"
     />
 
     <!-- Topic Edit Dialog -->
@@ -1780,7 +1928,10 @@ function handleTopicMove(topicId: number): void {
       width="360px"
       append-to-body
     >
-      <div v-if="contactProfileMember" class="flex flex-col gap-3 text-sm text-stone-600">
+      <div
+        v-if="contactProfileMember"
+        class="flex flex-col gap-3 text-sm text-stone-600"
+      >
         <div class="flex items-center gap-3">
           <span class="text-2xl">{{ contactProfileMember.avatar || '👤' }}</span>
           <span class="font-medium text-stone-800">{{ contactProfileMember.name }}</span>
@@ -1796,3 +1947,4 @@ function handleTopicMove(topicId: number): void {
 </template>
 
 <style src="./workshop-chat-page.css" scoped></style>
+<style src="./workshop-navbar-actions.css"></style>

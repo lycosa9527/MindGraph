@@ -22,7 +22,6 @@ import CoinTossDisplay from './CoinTossDisplay.vue'
 import DebateInput from './DebateInput.vue'
 import DebateSection from './DebateSection.vue'
 import DebaterAvatar from './DebaterAvatar.vue'
-import JudgeArea from './JudgeArea.vue'
 
 const { isZh } = useLanguage()
 const store = useDebateVerseStore()
@@ -66,19 +65,6 @@ const debateStages = [
   { key: 'judgment' as const, zh: '评判', en: 'Judgment', icon: Gavel },
 ]
 
-function getStageName(stage: string): string {
-  const stageInfo = debateStages.find((s) => s.key === stage)
-  if (stageInfo) {
-    return isZh.value ? stageInfo.zh : stageInfo.en
-  }
-
-  const names: Record<string, string> = {
-    setup: '准备',
-    completed: '已完成',
-  }
-  return isZh.value ? names[stage] || stage : stage
-}
-
 const currentStageIndex = computed(() => {
   const stage = currentStage.value
   const index = debateStages.findIndex((s) => s.key === stage)
@@ -116,7 +102,7 @@ function handleAdvanceStage() {
     'closing',
     'judgment',
   ] as const
-  const currentIndex = stageOrder.indexOf(currentStage.value as any)
+  const currentIndex = stageOrder.indexOf(currentStage.value as (typeof stageOrder)[number])
   if (currentIndex < stageOrder.length - 1) {
     store.advanceStage(stageOrder[currentIndex + 1])
   }

@@ -21,8 +21,9 @@ const store = useDebateVerseStore()
 const judge = computed(() => store.judgeParticipant)
 
 const judgeMessages = computed(() => {
-  if (!judge.value) return []
-  return store.messages.filter((msg) => msg.participant_id === judge.value!.id)
+  const j = judge.value
+  if (!j) return []
+  return store.messages.filter((msg) => msg.participant_id === j.id)
 })
 
 function handleAdvanceStage() {

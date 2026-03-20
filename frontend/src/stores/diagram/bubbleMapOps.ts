@@ -25,7 +25,7 @@ export function useBubbleMapOpsSlice(ctx: DiagramContext) {
     })
 
     const bubbleNodes = data.value.nodes.filter(
-      (n) => (n.type === 'bubble' || n.type === 'child') && n.id.startsWith('bubble-'),
+      (n) => (n.type === 'bubble' || n.type === 'child') && n.id.startsWith('bubble-')
     )
     bubbleNodes.forEach((bubbleNode, i) => {
       bubbleNode.id = `bubble-${i}`

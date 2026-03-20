@@ -14,7 +14,6 @@ import { useNotifications } from '@/composables'
 import { useAuthStore } from '@/stores/auth'
 import { useLibraryStore } from '@/stores/library'
 import { getLibraryDocumentCoverUrl } from '@/utils/apiClient'
-import type { LibraryDocument } from '@/utils/apiClient'
 
 const router = useRouter()
 const libraryStore = useLibraryStore()
@@ -124,11 +123,6 @@ function openDocument(documentId: number) {
     return
   }
   router.push(`/library/${documentId}`)
-}
-
-// Open login modal
-function openLoginModal() {
-  showLoginModal.value = true
 }
 
 // Handle successful login

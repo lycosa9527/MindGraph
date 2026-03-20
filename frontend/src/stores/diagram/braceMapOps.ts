@@ -1,6 +1,5 @@
 import { useConceptMapRelationshipStore } from '../conceptMapRelationship'
 import { recalculateBraceMapLayout } from '../specLoader'
-
 import { emitEvent } from './events'
 import type { DiagramContext } from './types'
 
@@ -10,7 +9,7 @@ export function useBraceMapOpsSlice(ctx: DiagramContext) {
   function addBraceMapPart(
     parentId: string,
     text?: string,
-    subpartTexts?: [string, string],
+    subpartTexts?: [string, string]
   ): boolean {
     if (type.value !== 'brace_map' || !data.value?.nodes || !data.value?.connections) return false
 
@@ -107,7 +106,7 @@ export function useBraceMapOpsSlice(ctx: DiagramContext) {
         .map((c) => c.id)
         .filter((id): id is string => !!id)
       data.value.connections = data.value.connections.filter(
-        (c) => !toRemove.has(c.source) && !toRemove.has(c.target),
+        (c) => !toRemove.has(c.source) && !toRemove.has(c.target)
       )
       const relStore = useConceptMapRelationshipStore()
       removedConnIds.forEach((id) => relStore.clearConnection(id))

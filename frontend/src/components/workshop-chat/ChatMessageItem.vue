@@ -4,10 +4,10 @@ import { computed, nextTick, onMounted, ref } from 'vue'
 import { useLanguage } from '@/composables/useLanguage'
 import { useMarkdown } from '@/composables/useMarkdown'
 import {
-  useWorkshopChatStore,
   type ChatMessage,
   type FileAttachment,
   type ReactionGroup,
+  useWorkshopChatStore,
 } from '@/stores/workshopChat'
 import { workshopChatHrefFromState } from '@/utils/workshopChatRoute'
 
@@ -29,6 +29,7 @@ const props = defineProps<{
   isStarred: boolean
   attachments: FileAttachment[]
   isUnread?: boolean
+  canModerate?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -81,7 +82,8 @@ function handleCopyLink(): void {
   const hasWorkshopNarrow =
     workshopStore.currentDMPartnerId != null ||
     workshopStore.showChannelBrowser ||
-    workshopStore.currentChannelId != null
+    workshopStore.currentChannelId != null ||
+    workshopStore.teachingGroupLandingId != null
   const url = hasWorkshopNarrow
     ? `${window.location.origin}${workshopChatHrefFromState({
         currentChannelId: workshopStore.currentChannelId,
@@ -90,6 +92,7 @@ function handleCopyLink(): void {
         showChannelBrowser: workshopStore.showChannelBrowser,
         workshopHomeViewActive: workshopStore.workshopHomeViewActive,
         mainChannelFeedActive: workshopStore.mainChannelFeedActive,
+        teachingGroupLandingId: workshopStore.teachingGroupLandingId,
         focusMessageId: id,
       })}`
     : `${window.location.origin}${window.location.pathname}${window.location.search}#msg-${id}`
@@ -117,11 +120,15 @@ function handleAddReaction(emojiName: string, emojiCode: string): void {
     />
 
     <!-- Hover action bar -->
-    <div v-if="!message.is_deleted" class="msg-row__actions">
+    <div
+      v-if="!message.is_deleted"
+      class="msg-row__actions"
+    >
       <MessageActionBar
         :is-own="isOwn"
         :is-starred="isStarred"
         :is-condensed="isCondensed"
+        :can-moderate="props.canModerate"
         @add-reaction="handleAddReaction"
         @toggle-star="emit('toggleStar', message.id)"
         @quote="emit('quote', message)"
@@ -135,22 +142,43 @@ function handleAddReaction(emojiName: string, emojiCode: string): void {
     <!-- Zulip-style message grid -->
     <div class="msg-box">
       <!-- Avatar column -->
-      <div v-if="!hideHeader" class="msg-box__avatar">
+      <div
+        v-if="!hideHeader"
+        class="msg-box__avatar"
+      >
         <div class="msg-avatar">{{ senderInitial }}</div>
       </div>
       <!-- Empty avatar gutter for continuation messages -->
-      <div v-else class="msg-box__time-gutter">
+      <div
+        v-else
+        class="msg-box__time-gutter"
+      >
         <span class="msg-time-inline">{{ formattedTime }}</span>
       </div>
 
       <!-- Sender + time header row -->
-      <div v-if="!hideHeader" class="msg-box__sender">
+      <div
+        v-if="!hideHeader"
+        class="msg-box__sender"
+      >
         <span class="msg-sender-name">{{ message.sender_name }}</span>
       </div>
-      <div v-if="!hideHeader" class="msg-box__time">
+      <div
+        v-if="!hideHeader"
+        class="msg-box__time"
+      >
         <span class="msg-timestamp">{{ formattedTime }}</span>
-        <span v-if="isEdited" class="msg-edited">{{ t('workshop.edited') }}</span>
-        <span v-if="isStarred" class="msg-star" :title="t('workshop.starMessage')">★</span>
+        <span
+          v-if="isEdited"
+          class="msg-edited"
+          >{{ t('workshop.edited') }}</span
+        >
+        <span
+          v-if="isStarred"
+          class="msg-star"
+          :title="t('workshop.starMessage')"
+          >★</span
+        >
       </div>
 
       <!-- Content area spans across sender+time columns -->
@@ -174,7 +202,10 @@ function handleAddReaction(emojiName: string, emojiCode: string): void {
             {{ isCondensed ? t('workshop.showMore') : t('workshop.showLess') }}
           </button>
         </div>
-        <div v-else class="msg-deleted">
+        <div
+          v-else
+          class="msg-deleted"
+        >
           {{ t('workshop.messageDeleted') }}
         </div>
 
@@ -235,7 +266,9 @@ function handleAddReaction(emojiName: string, emojiCode: string): void {
   z-index: 5;
   opacity: 0;
   transform: translateY(2px);
-  transition: opacity 100ms ease, transform 100ms ease;
+  transition:
+    opacity 100ms ease,
+    transform 100ms ease;
 }
 
 .msg-row:hover .msg-row__actions {
@@ -379,8 +412,12 @@ function handleAddReaction(emojiName: string, emojiCode: string): void {
 }
 
 /* Prose overrides */
-.msg-content :deep(p) { margin: 0 0 4px; }
-.msg-content :deep(p:last-child) { margin-bottom: 0; }
+.msg-content :deep(p) {
+  margin: 0 0 4px;
+}
+.msg-content :deep(p:last-child) {
+  margin-bottom: 0;
+}
 
 .msg-content :deep(pre) {
   margin: 8px 0;
@@ -400,7 +437,7 @@ function handleAddReaction(emojiName: string, emojiCode: string): void {
   background: hsl(228deg 20% 95%);
   color: hsl(228deg 50% 42%);
   font-size: 12.5px;
-  font-family: "JetBrains Mono", "Fira Code", "Consolas", monospace;
+  font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
 }
 
 .msg-content :deep(pre code) {
@@ -417,7 +454,9 @@ function handleAddReaction(emojiName: string, emojiCode: string): void {
   font-weight: 500;
 }
 
-.msg-content :deep(a:hover) { text-decoration: underline; }
+.msg-content :deep(a:hover) {
+  text-decoration: underline;
+}
 
 .msg-content :deep(blockquote) {
   margin: 6px 0;
@@ -434,7 +473,9 @@ function handleAddReaction(emojiName: string, emojiCode: string): void {
   padding-left: 22px;
 }
 
-.msg-content :deep(li) { margin-bottom: 2px; }
+.msg-content :deep(li) {
+  margin-bottom: 2px;
+}
 
 .msg-content :deep(img) {
   max-width: 100%;
@@ -479,7 +520,9 @@ function handleAddReaction(emojiName: string, emojiCode: string): void {
   font-weight: 500;
 }
 
-.msg-condense-toggle:hover { text-decoration: underline; }
+.msg-condense-toggle:hover {
+  text-decoration: underline;
+}
 
 /* Deleted */
 .msg-deleted {

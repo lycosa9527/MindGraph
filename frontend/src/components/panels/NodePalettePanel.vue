@@ -12,11 +12,12 @@
 import { computed, nextTick, onMounted, watch } from 'vue'
 
 import { ElButton, ElTooltip } from 'element-plus'
+
 import { Check, Loader2, RefreshCw, X } from 'lucide-vue-next'
 
-import { getLLMColor } from '@/config/llmModelColors'
 import { useLanguage, useNotifications } from '@/composables'
 import { getNodePalette } from '@/composables/useNodePalette'
+import { getLLMColor } from '@/config/llmModelColors'
 import { useDiagramStore, usePanelsStore, useUIStore } from '@/stores'
 import type { NodeSuggestion } from '@/types/panels'
 
@@ -68,11 +69,7 @@ const isBridgeMap = computed(() => diagramType.value === 'bridge_map')
 const isConceptMap = computed(() => diagramType.value === 'concept_map')
 const currentMode = computed(
   () =>
-    (panelsStore.nodePalettePanel.mode as
-      | 'similarities'
-      | 'differences'
-      | 'causes'
-      | 'effects') ??
+    (panelsStore.nodePalettePanel.mode as 'similarities' | 'differences' | 'causes' | 'effects') ??
     (isMultiFlowMap.value ? 'causes' : 'similarities')
 )
 const currentStage = computed(() => panelsStore.nodePalettePanel.stage ?? '')
@@ -98,9 +95,7 @@ const conceptMapTabs = computed(() => {
   const nodeIds = new Set(nodes.map((n) => n.id))
   return tabs.filter((t) => t.id === 'topic' || nodeIds.has(t.id))
 })
-const showConceptMapTabs = computed(
-  () => isConceptMap.value && conceptMapTabs.value.length > 0
-)
+const showConceptMapTabs = computed(() => isConceptMap.value && conceptMapTabs.value.length > 0)
 
 /** When current tab is for a deleted node, switch to topic */
 watch(
@@ -117,7 +112,11 @@ const pairedLabelLeft = computed(() =>
   isBridgeMap.value ? (isZh.value ? '原词' : 'Source') : (doubleBubbleTopics?.value?.left ?? 'A')
 )
 const pairedLabelRight = computed(() =>
-  isBridgeMap.value ? (isZh.value ? '类比词' : 'Analogy') : (doubleBubbleTopics?.value?.right ?? 'B')
+  isBridgeMap.value
+    ? isZh.value
+      ? '类比词'
+      : 'Analogy'
+    : (doubleBubbleTopics?.value?.right ?? 'B')
 )
 
 function handleClose() {
@@ -155,9 +154,7 @@ onMounted(async () => {
     (storedStage === 'parts' && stageName === 'subparts')
   const needsSync =
     isStagedDiagram.value &&
-    (!storedStage ||
-      (storedStage === 'dimensions' && stageName !== 'dimensions') ||
-      stage1ToStage2)
+    (!storedStage || (storedStage === 'dimensions' && stageName !== 'dimensions') || stage1ToStage2)
   if (needsSync) {
     const parents = stage2Parents.value
     if (parents.length > 0 && stageName !== 'dimensions') {
@@ -180,18 +177,13 @@ onMounted(async () => {
     }
   }
   await nextTick()
-  if (
-    panelsStore.nodePalettePanel.suggestions.length === 0 &&
-    !isLoading.value
-  ) {
+  if (panelsStore.nodePalettePanel.suggestions.length === 0 && !isLoading.value) {
     startSession()
   }
 })
 
 function getNodeCardStyle(suggestion: { source_llm?: string }, isSelected: boolean) {
-  const colors = suggestion.source_llm
-    ? getLLMColor(suggestion.source_llm, uiStore.isDark)
-    : null
+  const colors = suggestion.source_llm ? getLLMColor(suggestion.source_llm, uiStore.isDark) : null
   const selectedStyle = uiStore.isDark
     ? { borderColor: 'rgb(96, 165, 250)', backgroundColor: 'rgb(30, 58, 95)' }
     : { borderColor: 'rgb(59, 130, 246)', backgroundColor: 'rgb(239, 246, 255)' }
@@ -212,9 +204,7 @@ function getNodeCardStyle(suggestion: { source_llm?: string }, isSelected: boole
   }
 }
 
-async function handleTabSwitch(
-  mode: 'similarities' | 'differences' | 'causes' | 'effects'
-) {
+async function handleTabSwitch(mode: 'similarities' | 'differences' | 'causes' | 'effects') {
   if (mode === currentMode.value) return
   await switchTab(mode)
 }
@@ -240,13 +230,10 @@ function getDisplayText(suggestion: NodeSuggestion): string {
   }
   return suggestion.text
 }
-
 </script>
 
 <template>
-  <div
-    class="node-palette-panel bg-white dark:bg-gray-800 flex flex-col h-full"
-  >
+  <div class="node-palette-panel bg-white dark:bg-gray-800 flex flex-col h-full">
     <!-- Header (matches MindMate panel) -->
     <div
       class="panel-header h-14 px-4 flex items-center justify-between border-b border-gray-200 dark:border-gray-700 shrink-0"
@@ -372,7 +359,11 @@ function getDisplayText(suggestion: NodeSuggestion): string {
             class="text-xs font-medium text-gray-700 dark:text-gray-300 truncate"
             :title="bridgeMapDimension"
           >
-            {{ bridgeMapDimension.length > 12 ? bridgeMapDimension.slice(0, 11) + '…' : bridgeMapDimension }}
+            {{
+              bridgeMapDimension.length > 12
+                ? bridgeMapDimension.slice(0, 11) + '…'
+                : bridgeMapDimension
+            }}
           </span>
         </div>
       </div>
@@ -396,9 +387,7 @@ function getDisplayText(suggestion: NodeSuggestion): string {
               :disabled="isLoading"
               @click="handleRefresh"
             >
-              <RefreshCw
-                :class="['w-4 h-4', isLoading ? 'animate-spin' : '']"
-              />
+              <RefreshCw :class="['w-4 h-4', isLoading ? 'animate-spin' : '']" />
             </ElButton>
           </ElTooltip>
           <ElButton
@@ -436,64 +425,75 @@ function getDisplayText(suggestion: NodeSuggestion): string {
       </div>
 
       <!-- Suggestions grid (show during loading so nodes stream in progressively) -->
-      <div v-else class="flex flex-col gap-2">
+      <div
+        v-else
+        class="flex flex-col gap-2"
+      >
         <p
           v-if="isLoading && suggestions.length > 0"
           class="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1.5"
         >
           <Loader2 class="w-3.5 h-3.5 animate-spin shrink-0" />
-          {{ isZh ? `正在生成... 已收到 ${suggestions.length} 个` : `Generating... ${suggestions.length} received` }}
+          {{
+            isZh
+              ? `正在生成... 已收到 ${suggestions.length} 个`
+              : `Generating... ${suggestions.length} received`
+          }}
         </p>
         <div class="grid grid-cols-2 gap-2">
-        <div
-          v-for="suggestion in suggestions"
-          :key="suggestion.id"
-          class="node-card p-3 rounded-lg border-2 transition-all"
-          :class="[
-            isConceptMap ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer',
-            !suggestion.source_llm && (isConceptMap || !selectedIds.includes(suggestion.id))
-              ? 'border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-700'
-              : '',
-          ]"
-          :style="isConceptMap ? getNodeCardStyle(suggestion, false) : getNodeCardStyle(suggestion, selectedIds.includes(suggestion.id))"
-          :draggable="isConceptMap"
-          @dragstart="isConceptMap ? handleConceptMapDragStart($event, suggestion) : undefined"
-          @click="!isConceptMap ? toggleSelection(suggestion.id) : undefined"
-        >
-          <div class="flex items-start gap-2">
-            <div
-              v-if="!isConceptMap && selectedIds.includes(suggestion.id)"
-              class="w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center shrink-0 mt-0.5"
-            >
-              <Check class="w-3 h-3 text-white" />
-            </div>
-            <!-- Paired format (one up, one down): double bubble differences or bridge map pairs -->
-            <div
-              v-if="showPairedFormat && (suggestion.left || suggestion.right)"
-              class="flex flex-col gap-1 text-sm min-w-0 flex-1"
-            >
-              <div class="text-gray-700 dark:text-gray-300">
-                <span class="font-medium text-blue-600 dark:text-blue-400">
-                  {{ pairedLabelLeft }}:
-                </span>
-                {{ suggestion.left ?? '—' }}
+          <div
+            v-for="suggestion in suggestions"
+            :key="suggestion.id"
+            class="node-card p-3 rounded-lg border-2 transition-all"
+            :class="[
+              isConceptMap ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer',
+              !suggestion.source_llm && (isConceptMap || !selectedIds.includes(suggestion.id))
+                ? 'border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-700'
+                : '',
+            ]"
+            :style="
+              isConceptMap
+                ? getNodeCardStyle(suggestion, false)
+                : getNodeCardStyle(suggestion, selectedIds.includes(suggestion.id))
+            "
+            :draggable="isConceptMap"
+            @dragstart="isConceptMap ? handleConceptMapDragStart($event, suggestion) : undefined"
+            @click="!isConceptMap ? toggleSelection(suggestion.id) : undefined"
+          >
+            <div class="flex items-start gap-2">
+              <div
+                v-if="!isConceptMap && selectedIds.includes(suggestion.id)"
+                class="w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center shrink-0 mt-0.5"
+              >
+                <Check class="w-3 h-3 text-white" />
               </div>
-              <div class="text-gray-700 dark:text-gray-300">
-                <span class="font-medium text-amber-600 dark:text-amber-400">
-                  {{ pairedLabelRight }}:
-                </span>
-                {{ suggestion.right ?? '—' }}
+              <!-- Paired format (one up, one down): double bubble differences or bridge map pairs -->
+              <div
+                v-if="showPairedFormat && (suggestion.left || suggestion.right)"
+                class="flex flex-col gap-1 text-sm min-w-0 flex-1"
+              >
+                <div class="text-gray-700 dark:text-gray-300">
+                  <span class="font-medium text-blue-600 dark:text-blue-400">
+                    {{ pairedLabelLeft }}:
+                  </span>
+                  {{ suggestion.left ?? '—' }}
+                </div>
+                <div class="text-gray-700 dark:text-gray-300">
+                  <span class="font-medium text-amber-600 dark:text-amber-400">
+                    {{ pairedLabelRight }}:
+                  </span>
+                  {{ suggestion.right ?? '—' }}
+                </div>
               </div>
+              <!-- Similarities or fallback: plain text -->
+              <span
+                v-else
+                class="text-sm text-gray-700 dark:text-gray-300 line-clamp-3 break-words"
+              >
+                {{ getDisplayText(suggestion) }}
+              </span>
             </div>
-            <!-- Similarities or fallback: plain text -->
-            <span
-              v-else
-              class="text-sm text-gray-700 dark:text-gray-300 line-clamp-3 break-words"
-            >
-              {{ getDisplayText(suggestion) }}
-            </span>
           </div>
-        </div>
         </div>
       </div>
 
@@ -531,13 +531,13 @@ function getDisplayText(suggestion: NodeSuggestion): string {
                 ? isZh
                   ? '仅可选择1个维度，点击「下一步」继续。'
                   : 'Select exactly 1 dimension only, then click Next to continue.'
-              : showNextButton
-                ? isZh
-                  ? '选择节点，点击「下一步」生成下一阶段节点。'
-                  : 'Select nodes, then click Next to generate second-stage nodes.'
-                : isZh
-                  ? '点击选择节点，选择完成后点击下方「完成」添加到图示。'
-                  : 'Click to select nodes, then click Finish to add to diagram.'
+                : showNextButton
+                  ? isZh
+                    ? '选择节点，点击「下一步」生成下一阶段节点。'
+                    : 'Select nodes, then click Next to generate second-stage nodes.'
+                  : isZh
+                    ? '点击选择节点，选择完成后点击下方「完成」添加到图示。'
+                    : 'Click to select nodes, then click Finish to add to diagram.'
           }}
         </p>
       </div>
@@ -557,9 +557,7 @@ function getDisplayText(suggestion: NodeSuggestion): string {
       <el-button
         type="primary"
         size="default"
-        :disabled="
-          isDimensionsStage ? selectedIds.length !== 1 : selectedIds.length === 0
-        "
+        :disabled="isDimensionsStage ? selectedIds.length !== 1 : selectedIds.length === 0"
         @click="handleFinish"
       >
         {{ showNextButton ? (isZh ? '下一步' : 'Next') : isZh ? '完成' : 'Finish' }}

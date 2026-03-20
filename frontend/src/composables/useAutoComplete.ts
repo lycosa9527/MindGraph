@@ -250,7 +250,7 @@ export function useAutoComplete() {
     const pairIndices = new Set(
       nodes
         .filter((n) => /^pair-\d+-left$/.test(n.id ?? ''))
-        .map((n) => parseInt(n.id!.replace('pair-', '').replace('-left', ''), 10))
+        .map((n) => parseInt((n.id ?? '').replace('pair-', '').replace('-left', ''), 10))
     )
 
     const result: Array<{ left: string; right: string }> = []
@@ -568,11 +568,7 @@ export function useAutoComplete() {
               )
             }
           } else {
-            llmResultsStore.handleModelError(
-              model,
-              result.error || 'Unknown error',
-              result.elapsed
-            )
+            llmResultsStore.handleModelError(model, result.error || 'Unknown error', result.elapsed)
             console.warn(`[AutoComplete] ${model} failed: ${result.error}`)
           }
         } catch (err) {

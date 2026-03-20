@@ -7,9 +7,9 @@
 import { computed, ref } from 'vue'
 
 import { eventBus } from '@/composables/useEventBus'
-import { getBorderStyleProps } from '@/utils/borderStyleUtils'
 import { useTheme } from '@/composables/useTheme'
 import type { MindGraphNodeProps } from '@/types'
+import { getBorderStyleProps } from '@/utils/borderStyleUtils'
 
 import InlineEditableText from './InlineEditableText.vue'
 
@@ -23,10 +23,8 @@ const { getNodeStyle } = useTheme({
 const defaultStyle = computed(() => getNodeStyle('bubble'))
 
 const nodeStyle = computed(() => {
-  const borderColor =
-    props.data.style?.borderColor || defaultStyle.value.borderColor || '#000000'
-  const borderWidth =
-    props.data.style?.borderWidth || defaultStyle.value.borderWidth || 2
+  const borderColor = props.data.style?.borderColor || defaultStyle.value.borderColor || '#000000'
+  const borderWidth = props.data.style?.borderWidth || defaultStyle.value.borderWidth || 2
   const borderStyle = props.data.style?.borderStyle || 'solid'
   const backgroundColor =
     props.data.style?.backgroundColor || defaultStyle.value.backgroundColor || '#e3f2fd'

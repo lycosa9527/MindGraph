@@ -11,11 +11,7 @@ import type { DiagramContext } from './types'
  * Handles adding, labelling, and arrowhead toggling on connections.
  */
 export function useConnectionManagementSlice(ctx: DiagramContext) {
-  function addConnection(
-    sourceId: string,
-    targetId: string,
-    label?: string,
-  ): string | null {
+  function addConnection(sourceId: string, targetId: string, label?: string): string | null {
     if (!ctx.data.value?.nodes || !ctx.data.value.connections) return null
 
     const sourceExists = ctx.data.value.nodes.some((n) => n.id === sourceId)
@@ -23,7 +19,7 @@ export function useConnectionManagementSlice(ctx: DiagramContext) {
     if (!sourceExists || !targetExists) return null
 
     const duplicate = ctx.data.value.connections.some(
-      (c) => c.source === sourceId && c.target === targetId,
+      (c) => c.source === sourceId && c.target === targetId
     )
     if (duplicate) return null
 
@@ -47,10 +43,7 @@ export function useConnectionManagementSlice(ctx: DiagramContext) {
     return connId
   }
 
-  function updateConnectionLabel(
-    connectionId: string,
-    label: string,
-  ): boolean {
+  function updateConnectionLabel(connectionId: string, label: string): boolean {
     if (!ctx.data.value?.connections) return false
 
     const conn = ctx.data.value.connections.find((c) => c.id === connectionId)
@@ -61,16 +54,12 @@ export function useConnectionManagementSlice(ctx: DiagramContext) {
   }
 
   function updateConnectionArrowheadsForNode(nodeId: string): void {
-    if (
-      ctx.type.value !== 'concept_map' ||
-      !ctx.data.value?.nodes ||
-      !ctx.data.value.connections
-    )
+    if (ctx.type.value !== 'concept_map' || !ctx.data.value?.nodes || !ctx.data.value.connections)
       return
 
     const nodes = ctx.data.value.nodes
     const connections = ctx.data.value.connections.filter(
-      (c) => c.source === nodeId || c.target === nodeId,
+      (c) => c.source === nodeId || c.target === nodeId
     )
     for (const conn of connections) {
       if (conn.arrowheadLocked) continue
@@ -86,7 +75,7 @@ export function useConnectionManagementSlice(ctx: DiagramContext) {
 
   function toggleConnectionArrowhead(
     connectionId: string,
-    segment: 'sourceSegment' | 'targetSegment',
+    segment: 'sourceSegment' | 'targetSegment'
   ): boolean {
     if (!ctx.data.value?.connections) return false
 

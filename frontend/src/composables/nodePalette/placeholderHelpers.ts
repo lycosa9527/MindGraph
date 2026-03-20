@@ -196,10 +196,7 @@ export function getPlaceholderNodes(
           /^brace-\d+-\d+$/.test(id) ||
           /^brace-part-\d+-\d+$/.test(id)
         let subpartNodes = nodes.filter(
-          (n) =>
-            isSubpartId(n.id) &&
-            n.type === 'brace' &&
-            isPlaceholder(n)
+          (n) => isSubpartId(n.id) && n.type === 'brace' && isPlaceholder(n)
         )
         if (parentId && connections?.length) {
           const childIds = new Set(

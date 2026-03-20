@@ -18,7 +18,7 @@ import {
   ElTag,
 } from 'element-plus'
 
-import { Check, CircleCheck, CircleClose, Loading, View } from '@element-plus/icons-vue'
+import { Check, CircleClose, Loading, View } from '@element-plus/icons-vue'
 
 import { Sparkles } from 'lucide-vue-next'
 
@@ -38,7 +38,7 @@ const { isZh } = useLanguage()
 const testId = computed(() => parseInt(route.params.testId as string, 10))
 
 const { data: progress, isLoading: isLoadingProgress } = useChunkTestProgress(testId.value)
-const { data: result, isLoading: isLoadingResult } = useChunkTestResult(testId.value)
+const { data: result } = useChunkTestResult(testId.value)
 const cancelTestMutation = useCancelChunkTest()
 
 // Chunk viewing state
@@ -96,6 +96,16 @@ const methodLabels: Record<string, string> = {
   mindchunk: 'MindChunk',
 }
 
+/** Per-method metric rows from API evaluation_results buckets */
+type MethodMetricRow = Record<string, number | undefined>
+
+interface EvalResultsBuckets {
+  standard_ir?: Record<string, MethodMetricRow>
+  chunk_quality?: Record<string, MethodMetricRow>
+  answer_quality?: Record<string, MethodMetricRow>
+  diversity_efficiency?: Record<string, MethodMetricRow>
+}
+
 // Watch for completion and fetch full results
 watch(
   isCompleted,
@@ -113,11 +123,11 @@ const metricsTableData = computed(() => {
     return []
   }
 
-  const evalResults = result.value.evaluation_results
+  const evalResults = result.value.evaluation_results as EvalResultsBuckets
   const methods = allMethods
 
   return methods.map((method) => {
-    const row: Record<string, any> = { method: methodLabels[method] || method }
+    const row: Record<string, string> = { method: methodLabels[method] || method }
 
     // Standard IR Metrics
     const standardIr = evalResults.standard_ir?.[method] || {}

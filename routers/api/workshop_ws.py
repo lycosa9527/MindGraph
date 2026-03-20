@@ -19,38 +19,48 @@ Proprietary License
 
 import json
 import logging
-from typing import Dict, Set, Any, Optional
+import re
+from typing import Any, Dict
 from datetime import datetime
 
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query, Depends
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from fastapi.websockets import WebSocketState
 
-from models.domain.auth import User
+from services.features.ws_redis_fanout_config import is_ws_fanout_enabled
+from services.features.ws_redis_fanout_publish import publish_workshop_fanout_async
+from services.features.workshop_ws_connection_state import (
+    ACTIVE_CONNECTIONS as active_connections,
+    ACTIVE_EDITORS as active_editors,
+)
+from services.infrastructure.monitoring.ws_metrics import (
+    record_ws_auth_failure,
+    record_ws_rate_limit_hit,
+    record_ws_workshop_connection_delta,
+    redis_increment_active_total,
+)
 from services.workshop import workshop_service
-from utils.auth import decode_access_token
-
-try:
-    from services.redis.session.redis_session_manager import (
-        get_session_manager as redis_get_session_manager
-    )
-except ImportError:
-    redis_get_session_manager = None
+from services.workshop.workshop_ws_editor_redis import (
+    load_editors,
+    remove_user_from_all_nodes,
+    save_editors,
+)
 
 try:
     from services.redis.cache.redis_user_cache import user_cache as redis_user_cache
 except ImportError:
     redis_user_cache = None
 
+from utils.auth_ws import authenticate_websocket_user
+from utils.ws_limits import (
+    DEFAULT_MAX_WS_MESSAGES_PER_SECOND,
+    DEFAULT_MAX_WS_TEXT_BYTES,
+    WebsocketMessageRateLimiter,
+    inbound_text_exceeds_limit,
+)
+
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
-
-# Track active WebSocket connections by workshop code
-# Structure: {workshop_code: {user_id: websocket}}
-active_connections: Dict[str, Dict[int, WebSocket]] = {}
-
-# Track active editors per node: {workshop_code: {node_id: {user_id: username}}}
-active_editors: Dict[str, Dict[str, Dict[int, str]]] = {}
 
 # User colors for visual indicators (consistent per user)
 USER_COLORS = [
@@ -65,8 +75,6 @@ USER_COLORS = [
 ]
 
 USER_EMOJIS = ["✏️", "🖊️", "✒️", "🖋️", "📝", "✍️", "🖍️", "🖌️"]
-
-
 
 
 @router.websocket("/ws/workshop/{code}")
@@ -86,8 +94,10 @@ async def workshop_websocket(
 
     - Server -> Client:
       - {"type": "joined", "user_id": 123, "participants": [...]}
-      - {"type": "update", "diagram_id": "...", "nodes": [...], "connections": [...], "user_id": 123, "timestamp": "..."}
-      - {"type": "node_editing", "node_id": "...", "user_id": 123, "username": "...", "editing": true/false, "color": "...", "emoji": "..."}
+      - {"type": "update", "diagram_id": "...", "nodes": [...], "connections": [...],
+         "user_id": 123, "timestamp": "..."}
+      - {"type": "node_editing", "node_id": "...", "user_id": 123, "username": "...",
+         "editing": true/false, "color": "...", "emoji": "..."}
       - {"type": "user_joined", "user_id": 123}
       - {"type": "user_left", "user_id": 123}
       - {"type": "error", "message": "..."}
@@ -97,81 +107,42 @@ async def workshop_websocket(
         websocket: WebSocket connection
         code: Workshop code
     """
-    # Authenticate user from WebSocket BEFORE accepting (security best practice)
-    user = None
-    try:
-        # Get token from query params or cookies
-        token = websocket.query_params.get('token')
-        if not token:
-            token = websocket.cookies.get('access_token')
-
-        if not token:
-            await websocket.close(code=4001, reason="No authentication token")
-            logger.warning("[WorkshopWS] Auth failed: No token provided")
-            return
-
-        # Decode and validate token
-        payload = decode_access_token(token)
-        user_id_str = payload.get("sub")
-
-        if not user_id_str:
-            await websocket.close(code=4001, reason="Invalid token payload")
-            logger.warning("[WorkshopWS] Auth failed: Invalid token payload")
-            return
-
-        # Session validation: Check if session exists in Redis
-        if redis_get_session_manager:
-            session_manager = redis_get_session_manager()
-            if session_manager and not session_manager.is_session_valid(
-                int(user_id_str), token
-            ):
-                await websocket.close(
-                    code=4001, reason="Session expired or invalidated"
-                )
-                logger.warning(
-                    "[WorkshopWS] Auth failed: Session invalid for user %s",
-                    user_id_str,
-                )
-                return
-
-        # Get user from cache (with database fallback)
-        if redis_user_cache:
-            user = redis_user_cache.get_by_id(int(user_id_str))
-
-        if not user:
-            await websocket.close(code=4001, reason="User not found")
-            logger.warning(
-                "[WorkshopWS] Auth failed: User %s not found", user_id_str
-            )
-            return
-
-        logger.debug("[WorkshopWS] Authenticated: user %d", user.id)
-
-    except Exception as e:
-        logger.error("[WorkshopWS] Auth error: %s", e, exc_info=True)
-        await websocket.close(code=4001, reason=f"Authentication failed: {str(e)}")
+    user, auth_error = authenticate_websocket_user(websocket)
+    if auth_error or user is None:
+        try:
+            record_ws_auth_failure()
+        except Exception:  # pylint: disable=broad-except
+            pass
+        reason = auth_error or "Authentication failed"
+        await websocket.close(code=4001, reason=reason)
+        logger.warning("[WorkshopWS] Auth failed: %s", reason)
         return
+
+    logger.info("[WorkshopWS] connection accepted user_id=%s", user.id)
 
     # Normalize and validate code (digits and dash only, xxx-xxx format)
     code = code.strip()
-    
+
     # Validate workshop code format
-    import re
     if not re.match(r'^\d{3}-\d{3}$', code):
-        await websocket.close(code=1008, reason="Invalid workshop code format")
-        logger.warning("[WorkshopWS] Invalid workshop code format: %s", code)
+        await websocket.close(code=1008, reason="Invalid presentation code format")
+        logger.warning("[WorkshopWS] Invalid presentation code format: %s", code)
         return
 
     # Verify workshop code and get diagram info
     workshop_info = await workshop_service.join_workshop(code, user.id)
     if not workshop_info:
-        await websocket.close(code=1008, reason="Invalid workshop code")
+        await websocket.close(code=1008, reason="Invalid presentation code")
         return
 
     diagram_id = workshop_info["diagram_id"]
 
     # Accept connection only after authentication and validation
     await websocket.accept()
+
+    rate_limiter = WebsocketMessageRateLimiter(
+        DEFAULT_MAX_WS_MESSAGES_PER_SECOND,
+    )
 
     # Add to active connections
     if code not in active_connections:
@@ -181,6 +152,12 @@ async def workshop_websocket(
     # Initialize active editors tracking for this workshop
     if code not in active_editors:
         active_editors[code] = {}
+
+    try:
+        record_ws_workshop_connection_delta(1)
+        redis_increment_active_total(1)
+    except Exception:  # pylint: disable=broad-except
+        pass
 
     logger.info(
         "[WorkshopWS] User %s connected to workshop %s (diagram %s)",
@@ -225,22 +202,26 @@ async def workshop_websocket(
         "participants_with_names": participants_with_names,  # New: includes usernames
     })
 
-    # Send current active editors for all nodes
-    if code in active_editors:
-        for node_id, editors in active_editors[code].items():
-            for editor_user_id, editor_username in editors.items():
-                if editor_user_id != user.id:
-                    color = USER_COLORS[editor_user_id % len(USER_COLORS)]
-                    emoji = USER_EMOJIS[editor_user_id % len(USER_EMOJIS)]
-                    await websocket.send_json({
-                        "type": "node_editing",
-                        "node_id": node_id,
-                        "user_id": editor_user_id,
-                        "username": editor_username,
-                        "editing": True,
-                        "color": color,
-                        "emoji": emoji,
-                    })
+    # Send current active editors for all nodes (Redis when multi-worker fan-out)
+    _editor_map = (
+        load_editors(code)
+        if is_ws_fanout_enabled()
+        else active_editors.get(code, {})
+    )
+    for node_id, editors in _editor_map.items():
+        for editor_user_id, editor_username in editors.items():
+            if editor_user_id != user.id:
+                color = USER_COLORS[editor_user_id % len(USER_COLORS)]
+                emoji = USER_EMOJIS[editor_user_id % len(USER_EMOJIS)]
+                await websocket.send_json({
+                    "type": "node_editing",
+                    "node_id": node_id,
+                    "user_id": editor_user_id,
+                    "username": editor_username,
+                    "editing": True,
+                    "color": color,
+                    "emoji": emoji,
+                })
 
     # Notify other participants
     await broadcast_to_others(
@@ -257,6 +238,22 @@ async def workshop_websocket(
         while True:
             # Receive message
             data = await websocket.receive_text()
+            if inbound_text_exceeds_limit(data, DEFAULT_MAX_WS_TEXT_BYTES):
+                await websocket.send_json({
+                    "type": "error",
+                    "message": "Message too large",
+                })
+                continue
+            if not rate_limiter.allow():
+                try:
+                    record_ws_rate_limit_hit()
+                except Exception:  # pylint: disable=broad-except
+                    pass
+                await websocket.send_json({
+                    "type": "error",
+                    "message": "Rate limit exceeded",
+                })
+                continue
 
             try:
                 message = json.loads(data)
@@ -298,7 +295,7 @@ async def workshop_websocket(
                             "user_id": pid,
                             "username": f"User {pid}",
                         })
-                
+
                 await websocket.send_json({
                     "type": "joined",
                     "user_id": user.id,
@@ -314,7 +311,7 @@ async def workshop_websocket(
                 node_id = message.get("node_id")
                 editing = message.get("editing", False)
                 username = getattr(user, "username", None) or f"User {user.id}"
-                
+
                 # Validate node_id
                 if not node_id or not isinstance(node_id, str) or len(node_id) > 200:
                     await websocket.send_json({
@@ -348,6 +345,9 @@ async def workshop_websocket(
                         del active_editors[code][node_id]
                     color = None
                     emoji = None
+
+                if is_ws_fanout_enabled():
+                    save_editors(code, active_editors[code])
 
                 # Broadcast to all participants
                 await broadcast_to_all(
@@ -384,7 +384,7 @@ async def workshop_websocket(
                         "message": "Missing spec, nodes, or connections in update",
                     })
                     continue
-                
+
                 # Validate nodes array if provided
                 if nodes is not None:
                     if not isinstance(nodes, list):
@@ -400,7 +400,7 @@ async def workshop_websocket(
                             "message": "Too many nodes in update (max 100)",
                         })
                         continue
-                
+
                 # Validate connections array if provided
                 if connections is not None:
                     if not isinstance(connections, list):
@@ -476,48 +476,82 @@ async def workshop_websocket(
             if websocket.client_state == WebSocketState.CONNECTED:
                 await websocket.send_json({
                     "type": "error",
-                    "message": f"Workshop error: {str(e)}",
+                    "message": f"Presentation mode error: {str(e)}",
                 })
         except Exception:
             pass  # Ignore errors when sending error message
     finally:
-        # Remove user from all active editors
-        if code in active_editors:
-            nodes_to_remove = []
-            for node_id, editors in active_editors[code].items():
-                if user.id in editors:
-                    editors.pop(user.id, None)
-                    # Notify others that user stopped editing
-                    await broadcast_to_others(
-                        code,
-                        user.id,
-                        {
-                            "type": "node_editing",
-                            "node_id": node_id,
-                            "user_id": user.id,
-                            "username": editors.get(user.id, f"User {user.id}"),
-                            "editing": False,
-                            "color": None,
-                            "emoji": None,
-                        },
-                    )
-                    if not editors:
-                        nodes_to_remove.append(node_id)
-            for node_id in nodes_to_remove:
-                del active_editors[code][node_id]
-            if not active_editors[code]:
-                del active_editors[code]
+        try:
+            record_ws_workshop_connection_delta(-1)
+            redis_increment_active_total(-1)
+        except Exception:  # pylint: disable=broad-except
+            pass
 
-        # Remove from active connections
+        um_leave = getattr(user, "username", None) or f"User {user.id}"
+
+        if is_ws_fanout_enabled():
+            editors_map = load_editors(code)
+            nodes_with_user = [
+                nid for nid, ed in editors_map.items()
+                if user.id in ed
+            ]
+            remove_user_from_all_nodes(code, user.id, editors_map)
+            for nid in nodes_with_user:
+                await broadcast_to_others(
+                    code,
+                    user.id,
+                    {
+                        "type": "node_editing",
+                        "node_id": nid,
+                        "user_id": user.id,
+                        "username": um_leave,
+                        "editing": False,
+                        "color": None,
+                        "emoji": None,
+                    },
+                )
+            if code in active_editors:
+                for nid in list(active_editors[code].keys()):
+                    ed = active_editors[code].get(nid)
+                    if ed and user.id in ed:
+                        ed.pop(user.id, None)
+                        if not ed:
+                            del active_editors[code][nid]
+                if not active_editors[code]:
+                    del active_editors[code]
+        else:
+            if code in active_editors:
+                nodes_to_remove = []
+                for node_id, editors in active_editors[code].items():
+                    if user.id in editors:
+                        editors.pop(user.id, None)
+                        await broadcast_to_others(
+                            code,
+                            user.id,
+                            {
+                                "type": "node_editing",
+                                "node_id": node_id,
+                                "user_id": user.id,
+                                "username": um_leave,
+                                "editing": False,
+                                "color": None,
+                                "emoji": None,
+                            },
+                        )
+                        if not editors:
+                            nodes_to_remove.append(node_id)
+                for node_id in nodes_to_remove:
+                    del active_editors[code][node_id]
+                if not active_editors[code]:
+                    del active_editors[code]
+
         if code in active_connections:
             active_connections[code].pop(user.id, None)
             if not active_connections[code]:
                 del active_connections[code]
 
-        # Remove from participants
         await workshop_service.remove_participant(code, user.id)
 
-        # Notify other participants
         await broadcast_to_others(
             code,
             user.id,
@@ -539,6 +573,18 @@ async def broadcast_to_others(
         sender_id: User ID of sender (excluded from broadcast)
         message: Message to broadcast
     """
+    if is_ws_fanout_enabled():
+        try:
+            data_str = json.dumps(message, ensure_ascii=False)
+        except (TypeError, ValueError):
+            logger.warning("[WorkshopWS] broadcast_to_others: serialize failed")
+            return
+        await publish_workshop_fanout_async({
+            "v": 1, "k": "ws", "code": code, "mode": "others",
+            "ex": sender_id, "d": data_str,
+        })
+        return
+
     if code not in active_connections:
         return
 
@@ -574,6 +620,18 @@ async def broadcast_to_all(code: str, message: Dict[str, Any]) -> None:
         code: Workshop code
         message: Message to broadcast
     """
+    if is_ws_fanout_enabled():
+        try:
+            data_str = json.dumps(message, ensure_ascii=False)
+        except (TypeError, ValueError):
+            logger.warning("[WorkshopWS] broadcast_to_all: serialize failed")
+            return
+        await publish_workshop_fanout_async({
+            "v": 1, "k": "ws", "code": code, "mode": "all",
+            "ex": None, "d": data_str,
+        })
+        return
+
     if code not in active_connections:
         return
 

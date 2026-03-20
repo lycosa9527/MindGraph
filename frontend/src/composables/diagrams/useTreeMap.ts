@@ -13,21 +13,21 @@ import { computed, ref } from 'vue'
 import { Position } from '@vue-flow/core'
 
 import { useLanguage } from '@/composables/useLanguage'
+import { getMindmapBranchColor } from '@/config/mindmapColors'
+import { measureTextDimensions } from '@/stores/specLoader/textMeasurement'
 import type { Connection, DiagramNode, MindGraphEdge, MindGraphNode } from '@/types'
 
-import { getMindmapBranchColor } from '@/config/mindmapColors'
 import {
   DEFAULT_CENTER_X,
   DEFAULT_NODE_HEIGHT,
   DEFAULT_NODE_WIDTH,
   DEFAULT_PADDING,
   NODE_MIN_DIMENSIONS,
+  TREE_MAP_CATEGORY_SPACING,
   TREE_MAP_CATEGORY_TO_LEAF_GAP,
   TREE_MAP_LEAF_SPACING,
-  TREE_MAP_CATEGORY_SPACING,
   TREE_MAP_TOPIC_TO_CATEGORY_GAP,
 } from './layoutConfig'
-import { measureTextDimensions } from '@/stores/specLoader/textMeasurement'
 
 interface TreeNode {
   id: string
@@ -99,13 +99,15 @@ export function useTreeMap(options: TreeMapOptions = {}) {
       maxWidth: number
     }
     const groupDimsList: GroupDims[] = []
-    categories.forEach((category, catIndex) => {
+    categories.forEach((category, _catIndex) => {
       const catDims = measureTextDimensions(category.text, BRANCH_FONT_SIZE, {
         paddingX: NODE_PADDING_X,
         paddingY: NODE_PADDING_Y,
       })
-      const catWidth =
-        Math.max(catDims.width + 2 * BORDER_WIDTH, NODE_MIN_DIMENSIONS.branch.minWidth)
+      const catWidth = Math.max(
+        catDims.width + 2 * BORDER_WIDTH,
+        NODE_MIN_DIMENSIONS.branch.minWidth
+      )
       const catHeight = Math.max(catDims.height, NODE_MIN_DIMENSIONS.branch.minHeight)
       const leaves = category.children || []
       const leafWidths: number[] = []
@@ -117,8 +119,7 @@ export function useTreeMap(options: TreeMapOptions = {}) {
           paddingY: NODE_PADDING_Y,
           maxWidth: 150,
         })
-        const leafW =
-          Math.max(leafDims.width + 2 * 1, NODE_MIN_DIMENSIONS.branch.minWidth)
+        const leafW = Math.max(leafDims.width + 2 * 1, NODE_MIN_DIMENSIONS.branch.minWidth)
         const leafH = Math.max(leafDims.height, NODE_MIN_DIMENSIONS.branch.minHeight)
         leafWidths.push(leafW)
         leafHeights.push(leafH)
@@ -215,8 +216,7 @@ export function useTreeMap(options: TreeMapOptions = {}) {
           },
         })
 
-        const leafHeight =
-          dims.leafHeights[leafIndex] ?? NODE_MIN_DIMENSIONS.branch.minHeight
+        const leafHeight = dims.leafHeights[leafIndex] ?? NODE_MIN_DIMENSIONS.branch.minHeight
         leafY += leafHeight + TREE_MAP_LEAF_SPACING
       })
 

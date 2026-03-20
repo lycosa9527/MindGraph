@@ -11,14 +11,22 @@ import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { ElMessage } from 'element-plus'
+
 import {
-  ChevronRight, ChevronDown, Plus, Search,
-  Star, AtSign, Inbox, MoreVertical,
+  AtSign,
+  ChevronDown,
+  ChevronRight,
+  Inbox,
+  MoreVertical,
+  Plus,
+  Search,
+  Star,
 } from 'lucide-vue-next'
 
 import ChannelSidebarItem from '@/components/sidebar/ChannelSidebarItem.vue'
+import ChannelActionsPopover from '@/components/workshop-chat/ChannelActionsPopover.vue'
 import { useLanguage } from '@/composables/useLanguage'
-import { useWorkshopChatStore, type ChatChannel, type ChatTopic } from '@/stores/workshopChat'
+import { type ChatChannel, type ChatTopic, useWorkshopChatStore } from '@/stores/workshopChat'
 import { workshopChatHrefFromState } from '@/utils/workshopChatRoute'
 
 defineProps<{
@@ -32,12 +40,14 @@ const store = useWorkshopChatStore()
 const sidebarFilter = ref('')
 /** Filter lesson-study rows under groups by deadline (client-side). */
 const lessonDueFilter = ref<'all' | 'overdue' | 'due7d' | 'with_deadline'>('all')
-const expandedChannelId = ref<number | null>(null)
+/** Multiple lesson-study rows may be expanded at once (Zulip-style under a stream). */
+const expandedChannelIds = ref<number[]>([])
 const collapsedGroupIds = ref<Set<number>>(new Set())
 const channelsSectionCollapsed = ref(false)
 const dmsSectionCollapsed = ref(false)
 const viewsSectionCollapsed = ref(false)
 const activeChannelPopover = ref<number | null>(null)
+const activeGroupPopover = ref<number | null>(null)
 const activeTopicPopover = ref<number | null>(null)
 
 function matchesFilter(name: string): boolean {
@@ -47,49 +57,69 @@ function matchesFilter(name: string): boolean {
 }
 
 const announceChannels = computed(() =>
-  store.channels.filter(
-    c => c.channel_type === 'announce' && matchesFilter(c.name),
-  ),
+  store.channels.filter((c) => c.channel_type === 'announce' && matchesFilter(c.name))
 )
 
 const groupChannels = computed(() =>
   store.channels.filter(
-    c => c.channel_type !== 'announce'
-      && (c.parent_id === null || c.parent_id === undefined)
-      && matchesFilter(c.name),
-  ),
+    (c) =>
+      c.channel_type !== 'announce' &&
+      (c.parent_id === null || c.parent_id === undefined) &&
+      matchesFilter(c.name)
+  )
 )
 
 const filteredDMs = computed(() => {
   const q = sidebarFilter.value.trim().toLowerCase()
   if (!q) return store.dmConversations
-  return store.dmConversations.filter(c =>
-    c.partner_name.toLowerCase().includes(q),
-  )
+  return store.dmConversations.filter((c) => c.partner_name.toLowerCase().includes(q))
 })
 
 function topicsForChannel(channelId: number): ChatTopic[] {
-  return store.topics.filter(tp => tp.channel_id === channelId)
+  return store.topics.filter((tp) => tp.channel_id === channelId)
 }
 
 function isGroupCollapsed(groupId: number): boolean {
   return collapsedGroupIds.value.has(groupId)
 }
 
-function toggleGroupCollapse(groupId: number): void {
-  if (collapsedGroupIds.value.has(groupId)) {
-    collapsedGroupIds.value.delete(groupId)
+function isChannelExpanded(channelId: number): boolean {
+  return expandedChannelIds.value.includes(channelId)
+}
+
+function setExpandedChannelIds(ids: number[]): void {
+  expandedChannelIds.value = ids
+}
+
+/** Chevron only: show or hide lesson-study rows in the sidebar (Zulip stream expand). */
+function toggleGroupSidebarCollapse(groupId: number): void {
+  const next = new Set(collapsedGroupIds.value)
+  if (next.has(groupId)) {
+    next.delete(groupId)
   } else {
-    collapsedGroupIds.value.add(groupId)
+    next.add(groupId)
   }
+  collapsedGroupIds.value = next
+}
+
+/** Group label: open teaching-group overview in the center column (Zulip stream narrow). */
+function onTeachingGroupClick(group: ChatChannel): void {
+  void store.openTeachingGroupLanding(group.id)
+  store.activeTab = 'channels'
+  store.showChannelBrowser = false
+  const next = new Set(collapsedGroupIds.value)
+  next.delete(group.id)
+  collapsedGroupIds.value = next
+  router.push('/workshop-chat')
 }
 
 function toggleChannelExpand(channelId: number): void {
-  if (expandedChannelId.value === channelId) {
-    expandedChannelId.value = null
+  const cur = expandedChannelIds.value
+  if (cur.includes(channelId)) {
+    setExpandedChannelIds(cur.filter((id) => id !== channelId))
   } else {
-    expandedChannelId.value = channelId
-    store.fetchTopics(channelId, { merge: true })
+    setExpandedChannelIds([...cur, channelId])
+    void store.fetchTopics(channelId, { merge: true })
   }
 }
 
@@ -98,9 +128,11 @@ function navigateToChannel(channelId: number): void {
   store.selectChannel(channelId)
   store.activeTab = 'channels'
   store.showChannelBrowser = false
-  if (switchingChannel || expandedChannelId.value !== channelId) {
-    expandedChannelId.value = channelId
-    store.fetchTopics(channelId, { merge: true })
+  if (switchingChannel || !expandedChannelIds.value.includes(channelId)) {
+    if (!expandedChannelIds.value.includes(channelId)) {
+      setExpandedChannelIds([...expandedChannelIds.value, channelId])
+    }
+    void store.fetchTopics(channelId, { merge: true })
   }
   router.push('/workshop-chat')
 }
@@ -214,17 +246,15 @@ function lessonDueMatches(ch: ChatChannel): boolean {
 }
 
 function childChannels(group: ChatChannel): ChatChannel[] {
-  return (group.children ?? []).filter(
-    c => matchesFilter(c.name) && lessonDueMatches(c),
-  )
+  return (group.children ?? []).filter((c) => matchesFilter(c.name) && lessonDueMatches(c))
 }
 
 onMounted(async () => {
   await store.fetchChannels()
   await store.fetchDMConversations()
 
-  const allChildren = store.channels.flatMap(g => g.children ?? [])
-  const announceList = store.channels.filter(c => c.channel_type === 'announce')
+  const allChildren = store.channels.flatMap((g) => g.children ?? [])
+  const announceList = store.channels.filter((c) => c.channel_type === 'announce')
 
   for (const ch of [...announceList, ...allChildren]) {
     if (ch.is_joined) {
@@ -242,17 +272,26 @@ onMounted(async () => {
     <!-- Filter box -->
     <div class="sidebar-search">
       <div class="search-wrapper">
-        <Search class="search-icon" :size="14" />
+        <Search
+          class="search-icon"
+          :size="14"
+        />
         <input
           v-model="sidebarFilter"
           type="text"
           class="search-input"
           :placeholder="t('workshop.filterSidebar')"
-        >
+        />
       </div>
-      <div v-if="groupChannels.length > 0" class="sidebar-lesson-due">
+      <div
+        v-if="groupChannels.length > 0"
+        class="sidebar-lesson-due"
+      >
         <label class="sidebar-lesson-due__label">{{ t('workshop.lessonDueFilter') }}</label>
-        <select v-model="lessonDueFilter" class="sidebar-lesson-due__select">
+        <select
+          v-model="lessonDueFilter"
+          class="sidebar-lesson-due__select"
+        >
           <option value="all">{{ t('workshop.lessonDueAll') }}</option>
           <option value="with_deadline">{{ t('workshop.lessonDueHasDeadline') }}</option>
           <option value="overdue">{{ t('workshop.lessonDueOverdue') }}</option>
@@ -275,7 +314,10 @@ onMounted(async () => {
           />
           <span class="section-label">{{ t('workshop.views') }}</span>
         </button>
-        <ul v-if="!viewsSectionCollapsed" class="view-list">
+        <ul
+          v-if="!viewsSectionCollapsed"
+          class="view-list"
+        >
           <li>
             <button
               type="button"
@@ -283,16 +325,25 @@ onMounted(async () => {
               :class="{ 'view-row--active': store.workshopHomeViewActive }"
               @click="goToInbox"
             >
-              <Inbox :size="16" class="view-icon" />
+              <Inbox
+                :size="16"
+                class="view-icon"
+              />
               <span class="view-label">{{ t('workshop.inbox') }}</span>
             </button>
           </li>
           <li class="view-row view-row--muted">
-            <Star :size="16" class="view-icon" />
+            <Star
+              :size="16"
+              class="view-icon"
+            />
             <span class="view-label">{{ t('workshop.starred') }}</span>
           </li>
           <li class="view-row view-row--muted">
-            <AtSign :size="16" class="view-icon" />
+            <AtSign
+              :size="16"
+              class="view-icon"
+            />
             <span class="view-label">{{ t('workshop.mentions') }}</span>
           </li>
         </ul>
@@ -321,14 +372,17 @@ onMounted(async () => {
           </button>
         </div>
 
-        <ul v-if="!channelsSectionCollapsed" class="channel-list">
+        <ul
+          v-if="!channelsSectionCollapsed"
+          class="channel-list"
+        >
           <!-- Announce channels (standalone) -->
           <ChannelSidebarItem
             v-for="ch in announceChannels"
             :key="ch.id"
             :channel="ch"
             :topics="topicsForChannel(ch.id)"
-            :is-expanded="expandedChannelId === ch.id"
+            :is-expanded="isChannelExpanded(ch.id)"
             :is-active-channel="ch.id === store.currentChannelId"
             :active-topic-id="store.currentTopicId"
             :channel-popover-visible="activeChannelPopover === ch.id"
@@ -338,27 +392,73 @@ onMounted(async () => {
             @navigate-to-topic="navigateToTopic"
             @navigate-to-all-topics="navigateToAllTopics"
             @open-settings="handleOpenChannelSettings"
-            @update-channel-popover="(v) => activeChannelPopover = v ? ch.id : null"
-            @update-topic-popover="(id) => activeTopicPopover = id"
+            @update-channel-popover="
+              (v) => {
+                activeChannelPopover = v ? ch.id : null
+                if (v) activeGroupPopover = null
+              }
+            "
+            @update-topic-popover="(id) => (activeTopicPopover = id)"
             @rename-topic="handleRenameTopic"
             @move-topic="handleMoveTopic"
           />
 
           <!-- Groups with lesson-study children -->
-          <template v-for="group in groupChannels" :key="group.id">
-            <li class="group-header-item">
-              <button
-                class="group-header-btn"
-                @click="toggleGroupCollapse(group.id)"
-              >
-                <component
-                  :is="isGroupCollapsed(group.id) ? ChevronRight : ChevronDown"
-                  :size="12"
-                  class="group-chevron"
-                />
-                <span v-if="group.avatar" class="group-avatar">{{ group.avatar }}</span>
-                <span class="group-name">{{ group.name }}</span>
-              </button>
+          <template
+            v-for="group in groupChannels"
+            :key="group.id"
+          >
+            <li
+              class="group-header-item"
+              :class="{ 'group-header-item--active': store.teachingGroupLandingId === group.id }"
+            >
+              <div class="group-header-row">
+                <button
+                  type="button"
+                  class="group-header-chevron"
+                  :title="t('workshop.expandCollapseGroup')"
+                  @click.stop="toggleGroupSidebarCollapse(group.id)"
+                >
+                  <component
+                    :is="isGroupCollapsed(group.id) ? ChevronRight : ChevronDown"
+                    :size="12"
+                    class="group-chevron"
+                  />
+                </button>
+                <button
+                  type="button"
+                  class="group-header-btn"
+                  @click="onTeachingGroupClick(group)"
+                >
+                  <span
+                    v-if="group.avatar"
+                    class="group-avatar"
+                    >{{ group.avatar }}</span
+                  >
+                  <span class="group-name">{{ group.name }}</span>
+                </button>
+                <ChannelActionsPopover
+                  :channel-id="group.id"
+                  :visible="activeGroupPopover === group.id"
+                  @update:visible="
+                    (v: boolean) => {
+                      activeGroupPopover = v ? group.id : null
+                      if (v) activeChannelPopover = null
+                    }
+                  "
+                  @open-settings="handleOpenChannelSettings(group.id)"
+                  @add-lesson-study="store.openCreateChannel({ parentId: group.id })"
+                >
+                  <button
+                    type="button"
+                    class="group-header-kebab"
+                    :title="t('workshop.more')"
+                    @click.stop
+                  >
+                    <MoreVertical :size="14" />
+                  </button>
+                </ChannelActionsPopover>
+              </div>
             </li>
 
             <template v-if="!isGroupCollapsed(group.id)">
@@ -367,7 +467,7 @@ onMounted(async () => {
                 :key="child.id"
                 :channel="child"
                 :topics="topicsForChannel(child.id)"
-                :is-expanded="expandedChannelId === child.id"
+                :is-expanded="isChannelExpanded(child.id)"
                 :is-active-channel="child.id === store.currentChannelId"
                 :active-topic-id="store.currentTopicId"
                 :channel-popover-visible="activeChannelPopover === child.id"
@@ -378,17 +478,29 @@ onMounted(async () => {
                 @navigate-to-topic="navigateToTopic"
                 @navigate-to-all-topics="navigateToAllTopics"
                 @open-settings="handleOpenChannelSettings"
-                @update-channel-popover="(v) => activeChannelPopover = v ? child.id : null"
-                @update-topic-popover="(id) => activeTopicPopover = id"
+                @update-channel-popover="
+                  (v) => {
+                    activeChannelPopover = v ? child.id : null
+                    if (v) activeGroupPopover = null
+                  }
+                "
+                @update-topic-popover="(id) => (activeTopicPopover = id)"
                 @rename-topic="handleRenameTopic"
                 @move-topic="handleMoveTopic"
+                @add-conversation="store.requestNewTopicForChannel(child.id)"
               />
             </template>
           </template>
 
           <!-- Browse more channels -->
-          <li class="browse-more-row" @click="browseChannels">
-            <Plus :size="12" class="browse-more-icon" />
+          <li
+            class="browse-more-row"
+            @click="browseChannels"
+          >
+            <Plus
+              :size="12"
+              class="browse-more-icon"
+            />
             <span class="browse-more-label">{{ t('workshop.browseChannels') }}</span>
           </li>
         </ul>
@@ -417,7 +529,10 @@ onMounted(async () => {
           </button>
         </div>
 
-        <ul v-if="!dmsSectionCollapsed" class="dm-list">
+        <ul
+          v-if="!dmsSectionCollapsed"
+          class="dm-list"
+        >
           <li
             v-for="conv in filteredDMs"
             :key="conv.partner_id"
@@ -430,14 +545,24 @@ onMounted(async () => {
             >
               <span
                 class="dm-presence"
-                :class="store.onlineUserIds.has(conv.partner_id) ? 'dm-presence--online' : 'dm-presence--offline'"
+                :class="
+                  store.onlineUserIds.has(conv.partner_id)
+                    ? 'dm-presence--online'
+                    : 'dm-presence--offline'
+                "
               />
               <span class="dm-name">{{ conv.partner_name }}</span>
-              <span v-if="conv.unread_count > 0" class="unread-badge">
+              <span
+                v-if="conv.unread_count > 0"
+                class="unread-badge"
+              >
                 {{ conv.unread_count }}
               </span>
             </div>
-            <el-dropdown trigger="click" @click.stop>
+            <el-dropdown
+              trigger="click"
+              @click.stop
+            >
               <button
                 type="button"
                 class="dm-row__menu"
@@ -458,7 +583,10 @@ onMounted(async () => {
               </template>
             </el-dropdown>
           </li>
-          <li v-if="filteredDMs.length === 0" class="dm-empty">
+          <li
+            v-if="filteredDMs.length === 0"
+            class="dm-empty"
+          >
             {{ t('workshop.noConversationsYet') }}
           </li>
         </ul>
@@ -483,8 +611,12 @@ onMounted(async () => {
 }
 
 /* Search */
-.sidebar-search { padding: 8px; }
-.search-wrapper { position: relative; }
+.sidebar-search {
+  padding: 8px;
+}
+.search-wrapper {
+  position: relative;
+}
 
 .search-icon {
   position: absolute;
@@ -504,7 +636,9 @@ onMounted(async () => {
   background: hsl(0deg 0% 100%);
   outline: none;
   color: hsl(0deg 0% 15%);
-  transition: border-color 150ms ease, box-shadow 150ms ease;
+  transition:
+    border-color 150ms ease,
+    box-shadow 150ms ease;
 }
 
 .search-input:focus {
@@ -512,7 +646,9 @@ onMounted(async () => {
   box-shadow: 0 0 0 2px hsl(228deg 56% 58% / 10%);
 }
 
-.search-input::placeholder { color: hsl(0deg 0% 55%); }
+.search-input::placeholder {
+  color: hsl(0deg 0% 55%);
+}
 
 .sidebar-lesson-due {
   margin-top: 8px;
@@ -540,7 +676,9 @@ onMounted(async () => {
 }
 
 /* Section headers */
-.sidebar-section { margin-bottom: 2px; }
+.sidebar-section {
+  margin-bottom: 2px;
+}
 
 .section-header-row {
   display: flex;
@@ -565,9 +703,16 @@ onMounted(async () => {
   opacity: 0.7;
 }
 
-.section-header:hover { opacity: 0.9; }
-.section-chevron { color: inherit; opacity: 0.6; }
-.section-label { line-height: 1; }
+.section-header:hover {
+  opacity: 0.9;
+}
+.section-chevron {
+  color: inherit;
+  opacity: 0.6;
+}
+.section-label {
+  line-height: 1;
+}
 
 .section-action {
   display: flex;
@@ -590,7 +735,11 @@ onMounted(async () => {
 }
 
 /* Views */
-.view-list { list-style: none; margin: 0; padding: 0 4px; }
+.view-list {
+  list-style: none;
+  margin: 0;
+  padding: 0 4px;
+}
 
 .view-row {
   display: flex;
@@ -620,16 +769,25 @@ onMounted(async () => {
   color: hsl(228deg 40% 38%);
 }
 
-.view-row--active .view-icon { opacity: 0.75; }
+.view-row--active .view-icon {
+  opacity: 0.75;
+}
 
 .view-row--muted {
   cursor: default;
   opacity: 0.55;
 }
 
-.view-row--btn:hover:not(.view-row--active) { background: hsl(0deg 0% 0% / 5%); }
-.view-row:hover:not(.view-row--muted):not(.view-row--active) { background: hsl(0deg 0% 0% / 5%); }
-.view-icon { opacity: 0.5; flex-shrink: 0; }
+.view-row--btn:hover:not(.view-row--active) {
+  background: hsl(0deg 0% 0% / 5%);
+}
+.view-row:hover:not(.view-row--muted):not(.view-row--active) {
+  background: hsl(0deg 0% 0% / 5%);
+}
+.view-icon {
+  opacity: 0.5;
+  flex-shrink: 0;
+}
 
 .view-label {
   flex: 1;
@@ -648,7 +806,9 @@ onMounted(async () => {
   padding-bottom: 8px;
 }
 
-.sidebar-scroll-area::-webkit-scrollbar { width: 4px; }
+.sidebar-scroll-area::-webkit-scrollbar {
+  width: 4px;
+}
 
 .sidebar-scroll-area::-webkit-scrollbar-thumb {
   background: transparent;
@@ -660,7 +820,11 @@ onMounted(async () => {
 }
 
 /* Channel list */
-.channel-list { list-style: none; margin: 0; padding: 0 4px; }
+.channel-list {
+  list-style: none;
+  margin: 0;
+  padding: 0 4px;
+}
 
 /* Group header (collapsible section divider) */
 .group-header-item {
@@ -668,11 +832,45 @@ onMounted(async () => {
   margin-top: 6px;
 }
 
+.group-header-item--active .group-header-row {
+  background: hsl(228deg 56% 58% / 10%);
+  border-radius: 4px;
+}
+
+.group-header-chevron {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 26px;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  cursor: pointer;
+  color: hsl(0deg 0% 40%);
+  flex-shrink: 0;
+  opacity: 0.75;
+}
+
+.group-header-chevron:hover {
+  background: hsl(0deg 0% 0% / 6%);
+  opacity: 1;
+}
+
+.group-header-row {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+}
+
 .group-header-btn {
   display: flex;
   align-items: center;
   gap: 4px;
-  width: 100%;
+  flex: 1;
+  min-width: 0;
   padding: 4px 6px;
   border: none;
   border-radius: 4px;
@@ -710,6 +908,34 @@ onMounted(async () => {
   white-space: nowrap;
 }
 
+.group-header-kebab {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: hsl(0deg 0% 45%);
+  cursor: pointer;
+  flex-shrink: 0;
+  opacity: 0.55;
+  transition:
+    opacity 120ms ease,
+    background 120ms ease;
+}
+
+.group-header-kebab:hover {
+  opacity: 1;
+  background: hsl(0deg 0% 0% / 6%);
+}
+
+.group-header-row:hover .group-header-kebab {
+  opacity: 0.85;
+}
+
 /* Browse more */
 .browse-more-row {
   display: flex;
@@ -730,11 +956,19 @@ onMounted(async () => {
   background: hsl(0deg 0% 0% / 5%);
 }
 
-.browse-more-icon { flex-shrink: 0; }
-.browse-more-label { font-weight: 500; }
+.browse-more-icon {
+  flex-shrink: 0;
+}
+.browse-more-label {
+  font-weight: 500;
+}
 
 /* DMs */
-.dm-list { list-style: none; margin: 0; padding: 0 4px; }
+.dm-list {
+  list-style: none;
+  margin: 0;
+  padding: 0 4px;
+}
 
 .dm-row {
   display: flex;
@@ -743,7 +977,9 @@ onMounted(async () => {
   padding: 3px 4px 3px 8px;
   border-radius: 4px;
   color: hsl(0deg 0% 20%);
-  transition: background 120ms ease, box-shadow 120ms ease;
+  transition:
+    background 120ms ease,
+    box-shadow 120ms ease;
   line-height: 22px;
   font-size: 12px;
 }
@@ -781,7 +1017,9 @@ onMounted(async () => {
   cursor: pointer;
   flex-shrink: 0;
   opacity: 0.55;
-  transition: opacity 120ms ease, background 120ms ease;
+  transition:
+    opacity 120ms ease,
+    background 120ms ease;
 }
 
 .dm-row__menu:hover {
@@ -796,8 +1034,12 @@ onMounted(async () => {
   flex-shrink: 0;
 }
 
-.dm-presence--online { background: hsl(143deg 55% 43%); }
-.dm-presence--offline { background: hsl(0deg 0% 75%); }
+.dm-presence--online {
+  background: hsl(143deg 55% 43%);
+}
+.dm-presence--offline {
+  background: hsl(0deg 0% 75%);
+}
 
 .dm-name {
   flex: 1;

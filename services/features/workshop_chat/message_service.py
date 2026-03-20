@@ -30,6 +30,7 @@ from services.features.workshop_chat.mention_resolution import (
     resolve_mentioned_user_ids,
 )
 from services.features.workshop_chat import message_fts
+from utils.auth.roles import can_moderate_workshop_channel
 
 logger = logging.getLogger(__name__)
 
@@ -247,15 +248,23 @@ class MessageService:
         return _format_message(msg)
 
     @staticmethod
-    def delete_message(db: Session, message_id: int, sender_id: int) -> bool:
-        """Soft-delete a message (sender only)."""
+    def delete_message(db: Session, message_id: int, user: User) -> bool:
+        """Soft-delete a message (sender or channel moderator, Zulip-style)."""
         msg = (
             db.query(ChatMessage)
-            .filter(ChatMessage.id == message_id, ChatMessage.sender_id == sender_id)
+            .options(joinedload(ChatMessage.channel))
+            .filter(
+                ChatMessage.id == message_id,
+                ChatMessage.is_deleted.is_(False),
+            )
             .first()
         )
         if not msg:
             return False
+        if msg.sender_id != user.id:
+            channel = msg.channel
+            if not channel or not can_moderate_workshop_channel(user, channel):
+                return False
         msg.is_deleted = True
         db.commit()
         return True

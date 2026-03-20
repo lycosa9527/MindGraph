@@ -10,7 +10,7 @@ import { useMutation, useQueryClient } from '@tanstack/vue-query'
 import { notify } from '@/composables/notifications'
 import { useLanguage } from '@/composables/useLanguage'
 import type { KnowledgeDocument } from '@/stores/knowledgeSpace'
-import { apiDelete, apiRequest, apiUpload } from '@/utils/apiClient'
+import { apiRequest, apiUpload } from '@/utils/apiClient'
 
 import { knowledgeSpaceKeys } from './knowledgeSpaceKeys'
 
@@ -132,7 +132,7 @@ export function useUploadDocument() {
 
       return { previousData }
     },
-    onSuccess: (data) => {
+    onSuccess: (_data) => {
       // Invalidate to refetch with real data
       queryClient.invalidateQueries({ queryKey: knowledgeSpaceKeys.documents() })
       notify.success(

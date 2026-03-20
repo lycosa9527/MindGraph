@@ -6,21 +6,16 @@
  */
 import { nextTick, onBeforeUnmount, ref, watch } from 'vue'
 
-import {
-  Chart,
-  registerables,
-  type ChartConfiguration,
-  type TooltipItem,
-} from 'chart.js'
-
-Chart.register(...registerables)
+import { ElMessageBox } from 'element-plus'
 
 import { Delete, Loading, Lock, Refresh, Share, Unlock } from '@element-plus/icons-vue'
 
-import { ElMessageBox } from 'element-plus'
+import { Chart, type ChartConfiguration, type TooltipItem, registerables } from 'chart.js'
 
 import { useLanguage, useNotifications } from '@/composables'
 import { apiRequest } from '@/utils/apiClient'
+
+Chart.register(...registerables)
 
 const props = defineProps<{
   visible: boolean
@@ -61,7 +56,7 @@ const addManagerSelect = ref<number | null>(null)
 const refreshCodeLoading = ref(false)
 const displayNameEdit = ref('')
 const displayNameSaving = ref(false)
-const orgIsActive = ref(true)
+const orgActiveState = ref(true)
 const lockLoading = ref(false)
 const deleteLoading = ref(false)
 const expiresAtEdit = ref<string | null>(null)
@@ -141,9 +136,7 @@ async function loadOrgTokenCards() {
 
 async function loadUserTokenCards() {
   if (props.userId == null) return
-  const res = await apiRequest(
-    `/api/auth/admin/stats/trends/user?user_id=${props.userId}&days=0`
-  )
+  const res = await apiRequest(`/api/auth/admin/stats/trends/user?user_id=${props.userId}&days=0`)
   if (!res.ok) return
   const data = await res.json()
   const arr = data?.data ?? []
@@ -157,9 +150,9 @@ async function loadUserTokenCards() {
   }
 }
 
-function renderChart(
-  data: { data: Array<{ date: string; value: number; input?: number; output?: number }> }
-) {
+function renderChart(data: {
+  data: Array<{ date: string; value: number; input?: number; output?: number }>
+}) {
   if (!chartRef.value) return
   const rawData = data?.data ?? []
   if (rawData.length === 0) return
@@ -168,9 +161,7 @@ function renderChart(
   chartInstance = null
 
   const labels = rawData.map((item) => {
-    const dateStr = item.date.includes(' ')
-      ? item.date.replace(' ', 'T')
-      : item.date + 'T00:00:00'
+    const dateStr = item.date.includes(' ') ? item.date.replace(' ', 'T') : item.date + 'T00:00:00'
     const date = new Date(dateStr)
     if (item.date.includes(':') && item.date.includes(' ')) {
       return date.toLocaleString('en-US', {
@@ -197,8 +188,7 @@ function renderChart(
   const yMax = maxVal + padding
 
   const hasInputOutput =
-    rawData[0] &&
-    (rawData[0].input !== undefined || rawData[0].output !== undefined)
+    rawData[0] && (rawData[0].input !== undefined || rawData[0].output !== undefined)
 
   const datasets: ChartConfiguration<'line'>['data']['datasets'] = [
     {
@@ -320,10 +310,7 @@ async function loadManagersAndUsers() {
       const users = uData.users ?? []
       const managerIds = new Set(managers.value.map((x) => x.id))
       orgUsers.value = users
-        .filter(
-          (u: { id: number; is_manager?: boolean }) =>
-            !managerIds.has(u.id) && !u.is_manager
-        )
+        .filter((u: { id: number; is_manager?: boolean }) => !managerIds.has(u.id) && !u.is_manager)
         .map((u: { id: number; phone?: string; name?: string }) => ({
           id: u.id,
           phone: u.phone ?? '',
@@ -422,8 +409,7 @@ async function saveExpiresAt() {
   expiresAtSaving.value = true
   try {
     const dateVal = expiresAtEdit.value?.trim() || null
-    const expiresAtPayload =
-      dateVal ? `${dateVal}T23:59:59+08:00` : null
+    const expiresAtPayload = dateVal ? `${dateVal}T23:59:59+08:00` : null
     const res = await apiRequest(`/api/auth/admin/organizations/${props.orgId}`, {
       method: 'PUT',
       body: JSON.stringify({ expires_at: expiresAtPayload }),
@@ -468,7 +454,7 @@ async function toggleLock() {
   if (props.orgId == null) return
   lockLoading.value = true
   try {
-    const newActive = !orgIsActive.value
+    const newActive = !orgActiveState.value
     const res = await apiRequest(`/api/auth/admin/organizations/${props.orgId}`, {
       method: 'PUT',
       body: JSON.stringify({ is_active: newActive }),
@@ -478,7 +464,7 @@ async function toggleLock() {
       notify.error((data.detail as string) || 'Failed to update')
       return
     }
-    orgIsActive.value = newActive
+    orgActiveState.value = newActive
     notify.success(t('notification.saved'))
     emit('refresh')
   } catch {
@@ -499,16 +485,12 @@ async function deleteOrganization() {
           .replace('{count}', String(userCount))
       : t('admin.deleteOrgConfirm').replace('{name}', name)
   try {
-    await ElMessageBox.confirm(
-      confirmMsg,
-      t('admin.deleteOrganization'),
-      {
-        type: 'warning',
-        confirmButtonText: t('common.delete'),
-        cancelButtonText: t('common.cancel'),
-        confirmButtonClass: 'el-button--danger',
-      }
-    )
+    await ElMessageBox.confirm(confirmMsg, t('admin.deleteOrganization'), {
+      type: 'warning',
+      confirmButtonText: t('common.delete'),
+      cancelButtonText: t('common.cancel'),
+      confirmButtonClass: 'el-button--danger',
+    })
   } catch {
     return
   }
@@ -542,7 +524,7 @@ watch(
       if (props.type === 'org' && props.orgId) {
         invitationCode.value = props.orgInvitationCode ?? ''
         displayNameEdit.value = props.orgDisplayName ?? ''
-        orgIsActive.value = props.orgIsActive ?? true
+        orgActiveState.value = props.orgIsActive ?? true
         expiresAtEdit.value = parseExpiresAtToDate(props.orgExpiresAt)
         loadManagersAndUsers()
       }
@@ -571,7 +553,7 @@ watch(
       if (props.type === 'org' && props.orgId) {
         invitationCode.value = props.orgInvitationCode ?? ''
         displayNameEdit.value = props.orgDisplayName ?? ''
-        orgIsActive.value = props.orgIsActive ?? true
+        orgActiveState.value = props.orgIsActive ?? true
         expiresAtEdit.value = parseExpiresAtToDate(props.orgExpiresAt)
         loadManagersAndUsers()
       }
@@ -699,20 +681,23 @@ onBeforeUnmount(() => {
         <div class="flex items-center justify-between">
           <span class="text-sm font-medium">{{ t('admin.status') }}</span>
           <div class="flex items-center gap-2">
-            <el-tag :type="orgIsActive ? 'success' : 'danger'" size="small">
-              {{ orgIsActive ? t('admin.enabled') : t('admin.disabled') }}
+            <el-tag
+              :type="orgActiveState ? 'success' : 'danger'"
+              size="small"
+            >
+              {{ orgActiveState ? t('admin.enabled') : t('admin.disabled') }}
             </el-tag>
             <el-button
               :loading="lockLoading"
               size="small"
-              :type="orgIsActive ? 'warning' : 'success'"
+              :type="orgActiveState ? 'warning' : 'success'"
               @click="toggleLock"
             >
               <el-icon class="mr-1">
-                <Lock v-if="orgIsActive" />
+                <Lock v-if="orgActiveState" />
                 <Unlock v-else />
               </el-icon>
-              {{ orgIsActive ? t('admin.lockOrganization') : t('admin.unlockOrganization') }}
+              {{ orgActiveState ? t('admin.lockOrganization') : t('admin.unlockOrganization') }}
             </el-button>
           </div>
         </div>
@@ -753,7 +738,10 @@ onBeforeUnmount(() => {
               <el-icon class="mr-1"><Refresh /></el-icon>
               {{ t('admin.refreshInvitationCode') }}
             </el-button>
-            <el-tooltip :content="t('admin.shareInviteTitle')" placement="top">
+            <el-tooltip
+              :content="t('admin.shareInviteTitle')"
+              placement="top"
+            >
               <el-button
                 size="small"
                 @click="copyShareMessage"

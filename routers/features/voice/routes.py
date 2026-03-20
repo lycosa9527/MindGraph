@@ -10,19 +10,8 @@ from models.domain.auth import User
 from services.features.voice_agent import voice_agent_manager
 from services.features.websocket_llm_middleware import omni_middleware
 
-try:
-    from services.redis.cache.redis_user_cache import user_cache as redis_user_cache
-except ImportError:
-    redis_user_cache = None
-
-try:
-    from services.redis.session.redis_session_manager import (
-        get_session_manager as redis_get_session_manager,
-    )
-except ImportError:
-    redis_get_session_manager = None
-
-from utils.auth import decode_access_token, get_current_user
+from utils.auth import get_current_user
+from utils.auth_ws import authenticate_websocket_user
 
 from routers.features.voice.commands import process_voice_command
 from routers.features.voice.messaging import (
@@ -77,52 +66,16 @@ async def voice_conversation(
         logger.warning("Voice agent WebSocket connection rejected: feature disabled")
         return
 
-    # Authenticate AFTER accepting - use manual session management to avoid holding connection
-    current_user = None
-    try:
-        # Get token from query params or cookies
-        token = websocket.query_params.get('token')
-        if not token:  # Handles both None and '' (empty string)
-            token = websocket.cookies.get('access_token')
-
-        if not token:
-            await websocket.close(code=4001, reason="No authentication token")
-            logger.warning("WebSocket auth failed: No token provided")
-            return
-
-        # Decode and validate token
-        payload = decode_access_token(token)
-        user_id_str = payload.get("sub")
-
-        if not user_id_str:
-            await websocket.close(code=4001, reason="Invalid token payload")
-            logger.warning("WebSocket auth failed: Invalid token payload")
-            return
-
-        # Session validation: Check if session exists in Redis
-        if redis_get_session_manager:
-            session_manager = redis_get_session_manager()
-            if session_manager and not session_manager.is_session_valid(int(user_id_str), token):
-                await websocket.close(code=4001, reason="Session expired or invalidated")
-                logger.warning("WebSocket auth failed: Session invalid for user %s", user_id_str)
-                return
-
-        # Get user from cache (with database fallback)
-        current_user = None
-        if redis_user_cache:
-            current_user = redis_user_cache.get_by_id(int(user_id_str))
-
-        if not current_user:
-            await websocket.close(code=4001, reason="User not found")
-            logger.warning("WebSocket auth failed: User %s not found", user_id_str)
-            return
-
-        logger.debug("WebSocket authenticated: user %d", current_user.id)
-
-    except (ValueError, KeyError, AttributeError) as e:
-        logger.error("WebSocket auth error: %s", e, exc_info=True)
-        await websocket.close(code=4001, reason=f"Authentication failed: {str(e)}")
+    current_user, auth_error = authenticate_websocket_user(websocket)
+    if auth_error or current_user is None:
+        await websocket.close(
+            code=4001,
+            reason=auth_error or "Authentication failed",
+        )
+        logger.warning("WebSocket auth failed: %s", auth_error)
         return
+
+    logger.info("WebSocket connection accepted user_id=%s", current_user.id)
 
     voice_session_id = None
     omni_generator = None

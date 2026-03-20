@@ -86,6 +86,26 @@ def is_admin_or_manager(current_user) -> bool:
     return is_admin(current_user) or is_manager(current_user)
 
 
+def can_moderate_workshop_channel(current_user, channel) -> bool:
+    """
+    Whether the user may remove or manage others' content in this channel.
+
+    Mirrors Zulip's model: realm administrators and organization-scoped
+    managers act as stream administrators; the global announce channel is
+    limited to full admins (like a system-wide announcement stream).
+    """
+    ch_type = getattr(channel, "channel_type", None)
+    if ch_type == "announce":
+        return is_admin(current_user)
+    if is_admin(current_user):
+        return True
+    if not is_manager(current_user):
+        return False
+    org_id = getattr(channel, "organization_id", None)
+    user_org = getattr(current_user, "organization_id", None)
+    return org_id is not None and org_id == user_org
+
+
 def can_access_workshop_chat(current_user) -> bool:
     """
     Workshop Chat gate: admins/managers, or users in WORKSHOP_CHAT_PREVIEW_ORG_IDS.

@@ -7,8 +7,8 @@
 import { computed, nextTick, ref, watch } from 'vue'
 
 import { useLanguage, useMindMate, useNotifications } from '@/composables'
-import type { FeedbackRating } from '@/composables/useMindMate'
 import { useConversations, usePinnedConversations } from '@/composables/queries'
+import type { FeedbackRating } from '@/composables/useMindMate'
 import { useAuthStore, useMindMateStore } from '@/stores'
 
 import ShareExportModal from './ShareExportModal.vue'
@@ -359,20 +359,20 @@ function isLastAssistantMessage(messageId: string): boolean {
     <!-- Input Area - wrapper pins to bottom in panel mode -->
     <div class="mindmate-input-section">
       <MindmateInput
-      v-model:input-text="inputText"
-      :mode="mode"
-      :is-loading="isLoading"
-      :is-streaming="mindMate.isStreaming.value"
-      :is-uploading="mindMate.isUploading.value"
-      :pending-files="mindMate.pendingFiles.value"
-      :show-suggestions="showWelcome"
-      :show-file-upload="isFullpageMode"
-      @send="sendMessage"
-      @stop="stopGeneration"
-      @upload="handleFileSelect"
-      @remove-file="mindMate.removeFile"
-      @suggestion-select="handleSuggestionSelect"
-    />
+        v-model:input-text="inputText"
+        :mode="mode"
+        :is-loading="isLoading"
+        :is-streaming="mindMate.isStreaming.value"
+        :is-uploading="mindMate.isUploading.value"
+        :pending-files="mindMate.pendingFiles.value"
+        :show-suggestions="showWelcome"
+        :show-file-upload="isFullpageMode"
+        @send="sendMessage"
+        @stop="stopGeneration"
+        @upload="handleFileSelect"
+        @remove-file="mindMate.removeFile"
+        @suggestion-select="handleSuggestionSelect"
+      />
     </div>
 
     <!-- Share Export Modal -->

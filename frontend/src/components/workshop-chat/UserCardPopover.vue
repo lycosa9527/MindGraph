@@ -5,9 +5,7 @@
  */
 import { computed, ref, watch } from 'vue'
 
-import {
-  User, MessageSquare, AtSign, Copy, ShieldCheck,
-} from 'lucide-vue-next'
+import { AtSign, Copy, MessageSquare, ShieldCheck, User } from 'lucide-vue-next'
 
 import { useLanguage } from '@/composables/useLanguage'
 import { useAuthStore } from '@/stores/auth'
@@ -39,12 +37,8 @@ const { t } = useLanguage()
 const authStore = useAuthStore()
 const store = useWorkshopChatStore()
 
-const isSelf = computed(
-  () => String(props.user.id) === authStore.user?.id,
-)
-const isAdmin = computed(
-  () => authStore.isAdmin || authStore.isManager,
-)
+const isSelf = computed(() => String(props.user.id) === authStore.user?.id)
+const isAdmin = computed(() => authStore.isAdmin || authStore.isManager)
 
 type PresenceStatus = 'active' | 'idle' | 'offline'
 
@@ -74,13 +68,9 @@ const roleBadge = computed(() => {
   return map[role] ?? null
 })
 
-const userInitial = computed(() =>
-  (props.user.name || '?')[0].toUpperCase(),
-)
+const userInitial = computed(() => (props.user.name || '?')[0].toUpperCase())
 
-const avatarDisplay = computed(() =>
-  resolveWorkshopAvatarDisplay(props.user.avatar),
-)
+const avatarDisplay = computed(() => resolveWorkshopAvatarDisplay(props.user.avatar))
 
 const avatarImageFailed = ref(false)
 
@@ -88,15 +78,15 @@ watch(
   () => props.user.avatar,
   () => {
     avatarImageFailed.value = false
-  },
+  }
 )
 
 const showAvatarImage = computed(
-  () => avatarDisplay.value.kind === 'image' && !avatarImageFailed.value,
+  () => avatarDisplay.value.kind === 'image' && !avatarImageFailed.value
 )
 
 const avatarImageSrc = computed(() =>
-  avatarDisplay.value.kind === 'image' ? avatarDisplay.value.src : '',
+  avatarDisplay.value.kind === 'image' ? avatarDisplay.value.src : ''
 )
 
 function close(): void {
@@ -155,13 +145,17 @@ export default { name: 'UserCardPopover' }
             :alt="user.name"
             class="user-card__avatar"
             @error="avatarImageFailed = true"
-          >
+          />
           <span
             v-else-if="avatarDisplay.kind === 'emoji' && !avatarImageFailed"
             class="user-card__avatar user-card__avatar--emoji"
             aria-hidden="true"
-          >{{ avatarDisplay.text }}</span>
-          <span v-else class="user-card__avatar user-card__avatar--initials">
+            >{{ avatarDisplay.text }}</span
+          >
+          <span
+            v-else
+            class="user-card__avatar user-card__avatar--initials"
+          >
             {{ userInitial }}
           </span>
           <span
@@ -172,11 +166,17 @@ export default { name: 'UserCardPopover' }
         <div class="user-card__info">
           <div class="user-card__name-row">
             <span class="user-card__name">{{ user.name }}</span>
-            <span v-if="roleBadge" class="user-card__role-badge">
+            <span
+              v-if="roleBadge"
+              class="user-card__role-badge"
+            >
               {{ roleBadge }}
             </span>
           </div>
-          <span v-if="isSelf" class="user-card__subtitle">
+          <span
+            v-if="isSelf"
+            class="user-card__subtitle"
+          >
             {{ t('workshop.userCardYou') }}
           </span>
           <span class="user-card__presence-label">{{ presenceLabel }}</span>
@@ -185,7 +185,10 @@ export default { name: 'UserCardPopover' }
 
       <div class="ws-popover-divider" />
 
-      <ul class="user-card__menu" role="menu">
+      <ul
+        class="user-card__menu"
+        role="menu"
+      >
         <li role="none">
           <button
             type="button"
@@ -211,7 +214,10 @@ export default { name: 'UserCardPopover' }
             </button>
           </li>
 
-          <li v-if="channelContext" role="none">
+          <li
+            v-if="channelContext"
+            role="none"
+          >
             <button
               type="button"
               class="ws-popover-item"
@@ -239,7 +245,10 @@ export default { name: 'UserCardPopover' }
 
       <template v-if="isAdmin && !isSelf">
         <div class="ws-popover-divider" />
-        <ul class="user-card__menu" role="menu">
+        <ul
+          class="user-card__menu"
+          role="menu"
+        >
           <li role="none">
             <button
               type="button"

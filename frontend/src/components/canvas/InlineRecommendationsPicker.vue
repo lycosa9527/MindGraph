@@ -14,19 +14,8 @@ import { useDiagramStore, useInlineRecommendationsStore } from '@/stores'
 
 const diagramStore = useDiagramStore()
 const store = useInlineRecommendationsStore()
-const {
-  activeEntry,
-  activePage,
-  activeTotalPages,
-  canPrevPage,
-  canNextPage,
-} = storeToRefs(store)
-const {
-  selectOption,
-  prevPage,
-  nextPage,
-  isLoadingMoreFor,
-} = useInlineRecommendations()
+const { activeEntry, activePage, activeTotalPages, canPrevPage, canNextPage } = storeToRefs(store)
+const { selectOption, prevPage, nextPage, isLoadingMoreFor } = useInlineRecommendations()
 
 const activeNodeId = computed(() => activeEntry.value?.[0] ?? null)
 const isLoadingMore = computed(() =>
@@ -71,12 +60,17 @@ async function handleKeydown(event: KeyboardEvent) {
   }
 
   const num =
-    event.key === '1' ? 1
-    : event.key === '2' ? 2
-    : event.key === '3' ? 3
-    : event.key === '4' ? 4
-    : event.key === '5' ? 5
-    : 0
+    event.key === '1'
+      ? 1
+      : event.key === '2'
+        ? 2
+        : event.key === '3'
+          ? 3
+          : event.key === '4'
+            ? 4
+            : event.key === '5'
+              ? 5
+              : 0
   if (num > 0 && num <= entry[1].length) {
     event.preventDefault()
     event.stopPropagation()
@@ -127,7 +121,10 @@ onUnmounted(() => {
       >
         -
       </button>
-      <span v-if="activeTotalPages > 1" class="tabular-nums">
+      <span
+        v-if="activeTotalPages > 1"
+        class="tabular-nums"
+      >
         {{ activePage + 1 }}/{{ activeTotalPages }}
       </span>
       <button

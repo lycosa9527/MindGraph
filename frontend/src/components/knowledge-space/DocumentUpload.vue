@@ -12,7 +12,7 @@ import { Upload } from '@element-plus/icons-vue'
 import { notify } from '@/composables/notifications'
 import { useLanguage } from '@/composables/useLanguage'
 
-const props = defineProps<{
+defineProps<{
   visible: boolean
   uploading: boolean
   canUpload: boolean

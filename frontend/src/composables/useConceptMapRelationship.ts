@@ -18,10 +18,7 @@ import { useDiagramStore } from '@/stores/diagram'
 import { useLLMResultsStore } from '@/stores/llmResults'
 import { authFetch } from '@/utils/api'
 
-import {
-  RELATIONSHIP_LABELS_NEXT,
-  RELATIONSHIP_LABELS_START,
-} from './nodePalette/constants'
+import { RELATIONSHIP_LABELS_NEXT, RELATIONSHIP_LABELS_START } from './nodePalette/constants'
 
 export const CONCEPT_MAP_GENERATING_KEY = Symbol('conceptMapRelationshipGenerating')
 export const CONCEPT_MAP_OPTIONS_KEY = Symbol('conceptMapRelationshipOptions')

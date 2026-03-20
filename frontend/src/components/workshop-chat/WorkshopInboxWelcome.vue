@@ -5,7 +5,7 @@
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 
-import { Inbox, Hash, MessageSquare } from 'lucide-vue-next'
+import { Hash, Inbox, MessageSquare } from 'lucide-vue-next'
 
 import { useLanguage } from '@/composables/useLanguage'
 import { useWorkshopChatStore } from '@/stores/workshopChat'
@@ -19,13 +19,14 @@ const unreadDms = computed(() => store.totalUnreadDMs)
 
 const recentDmThreads = computed(() =>
   [...store.dmConversations]
-    .filter(c => c.last_message?.created_at)
+    .filter((c) => c.last_message?.created_at)
     .sort((a, b) => {
-      const ta = new Date(a.last_message!.created_at!).getTime()
-      const tb = new Date(b.last_message!.created_at!).getTime()
-      return tb - ta
+      const da = a.last_message?.created_at
+      const db = b.last_message?.created_at
+      if (!da || !db) return 0
+      return new Date(db).getTime() - new Date(da).getTime()
     })
-    .slice(0, 8),
+    .slice(0, 8)
 )
 
 function openRecentDm(partnerId: number): void {
@@ -45,19 +46,34 @@ function openRecentDm(partnerId: number): void {
       <p class="wi-welcome__intro">{{ t('workshop.welcomeIntro') }}</p>
     </header>
 
-    <section class="wi-welcome__inbox" aria-labelledby="wi-inbox-heading">
-      <h2 id="wi-inbox-heading" class="wi-welcome__section-title">
-        <Inbox :size="18" class="wi-welcome__section-icon" />
+    <section
+      class="wi-welcome__inbox"
+      aria-labelledby="wi-inbox-heading"
+    >
+      <h2
+        id="wi-inbox-heading"
+        class="wi-welcome__section-title"
+      >
+        <Inbox
+          :size="18"
+          class="wi-welcome__section-icon"
+        />
         {{ t('workshop.inboxSummaryTitle') }}
       </h2>
       <div class="wi-welcome__stats">
         <div class="wi-welcome__stat">
-          <Hash :size="16" class="wi-welcome__stat-icon" />
+          <Hash
+            :size="16"
+            class="wi-welcome__stat-icon"
+          />
           <span class="wi-welcome__stat-label">{{ t('workshop.inboxUnreadChannels') }}</span>
           <span class="wi-welcome__stat-value">{{ unreadChannels }}</span>
         </div>
         <div class="wi-welcome__stat">
-          <MessageSquare :size="16" class="wi-welcome__stat-icon" />
+          <MessageSquare
+            :size="16"
+            class="wi-welcome__stat-icon"
+          />
           <span class="wi-welcome__stat-label">{{ t('workshop.inboxUnreadDms') }}</span>
           <span class="wi-welcome__stat-value">{{ unreadDms }}</span>
         </div>
@@ -70,7 +86,10 @@ function openRecentDm(partnerId: number): void {
       class="wi-welcome__recent"
       aria-labelledby="wi-recent-heading"
     >
-      <h2 id="wi-recent-heading" class="wi-welcome__section-title">
+      <h2
+        id="wi-recent-heading"
+        class="wi-welcome__section-title"
+      >
         {{ t('workshop.recentDmActivity') }}
       </h2>
       <ul class="wi-welcome__recent-list">
@@ -88,14 +107,21 @@ function openRecentDm(partnerId: number): void {
             <span
               v-if="conv.unread_count > 0"
               class="wi-welcome__recent-unread"
-            >{{ conv.unread_count }}</span>
+              >{{ conv.unread_count }}</span
+            >
           </button>
         </li>
       </ul>
     </section>
 
-    <section class="wi-welcome__explain" aria-labelledby="wi-how-heading">
-      <h2 id="wi-how-heading" class="wi-welcome__section-title">
+    <section
+      class="wi-welcome__explain"
+      aria-labelledby="wi-how-heading"
+    >
+      <h2
+        id="wi-how-heading"
+        class="wi-welcome__section-title"
+      >
         {{ t('workshop.welcomeHowTitle') }}
       </h2>
 
@@ -118,7 +144,10 @@ function openRecentDm(partnerId: number): void {
         </article>
       </div>
 
-      <figure class="wi-example" aria-label="Workshop structure example">
+      <figure
+        class="wi-example"
+        aria-label="Workshop structure example"
+      >
         <figcaption class="wi-example__caption">
           {{ t('workshop.welcomeExampleCaption') }}
         </figcaption>
@@ -149,7 +178,9 @@ function openRecentDm(partnerId: number): void {
             </div>
 
             <div class="wi-example__group">
-              <div class="wi-example__group-title">{{ t('workshop.welcomeExampleGroupEnglish') }}</div>
+              <div class="wi-example__group-title">
+                {{ t('workshop.welcomeExampleGroupEnglish') }}
+              </div>
 
               <div class="wi-example__ls">
                 <div class="wi-example__ls-title">{{ t('workshop.welcomeExampleLSEng1') }}</div>
@@ -483,5 +514,4 @@ function openRecentDm(partnerId: number): void {
   color: hsl(0deg 0% 45%);
   text-align: center;
 }
-
 </style>

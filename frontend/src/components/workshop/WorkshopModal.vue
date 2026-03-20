@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
- * WorkshopModal - Modal for managing workshop sessions
- * Allows users to start/stop workshops and join with codes
+ * WorkshopModal - Modal for diagram presentation mode (live collaborative editing).
+ * Lets the owner share a join code; others use it to edit the same diagram.
  */
 import { computed, ref, watch } from 'vue'
 
@@ -57,7 +57,7 @@ const joinCode = ref('')
 // QR Code URL
 const qrCodeUrl = computed(() => {
   if (!workshopCode.value) return null
-  // Generate URL that will join the workshop when scanned
+  // URL opened when the QR code is scanned (joins presentation mode on MindGraph home)
   const joinUrl = `${window.location.origin}/mindgraph?join_workshop=${workshopCode.value}`
   return generateQRCodeUrl(joinUrl)
 })
@@ -121,7 +121,9 @@ async function ensureDiagramSaved(): Promise<string | null> {
       // Ensure the diagram is set as active in the store
       savedDiagramsStore.setActiveDiagram(result.diagramId)
       notify.success(
-        isZh.value ? '图示已保存，正在启动工作坊...' : 'Diagram saved, starting workshop...'
+        isZh.value
+          ? '图示已保存，正在启动演示模式...'
+          : 'Diagram saved, starting presentation mode...'
       )
       // Small delay to ensure database commit is complete
       await new Promise((resolve) => setTimeout(resolve, 100))
@@ -151,7 +153,7 @@ watch(
   () => props.visible,
   async (visible) => {
     if (visible) {
-      // Ensure diagram is saved before starting workshop
+      // Ensure diagram is saved before starting presentation mode
       const diagramId = await ensureDiagramSaved()
 
       if (diagramId) {
@@ -178,7 +180,7 @@ watch(
   }
 )
 
-// Watch for workshop code changes and emit
+// Watch for presentation code changes and emit
 watch(
   () => workshopCode.value,
   (code) => {
@@ -201,11 +203,11 @@ async function checkWorkshopStatusWithId(diagramId: string) {
     } else {
       // Non-critical error, just log it
       const error = await response.json().catch(() => ({}))
-      console.warn('Failed to check workshop status:', error.detail || 'Unknown error')
+      console.warn('Failed to check presentation mode status:', error.detail || 'Unknown error')
     }
   } catch (error) {
     // Non-critical error, just log it
-    console.warn('Failed to check workshop status:', error)
+    console.warn('Failed to check presentation mode status:', error)
   }
 }
 
@@ -215,7 +217,7 @@ async function startWorkshopWithId(diagramId: string) {
 
   // Prevent multiple simultaneous calls
   if (isLoading.value) {
-    console.warn('[WorkshopModal] Workshop start already in progress, skipping')
+    console.warn('[WorkshopModal] Presentation mode start already in progress, skipping')
     return
   }
 
@@ -234,13 +236,13 @@ async function startWorkshopWithId(diagramId: string) {
       // Note: Workshop code is also available via props/emits for parent component
       notify.success(
         isZh.value
-          ? '工作坊代码已生成，分享给其他人即可一起编辑'
-          : 'Workshop code generated! Share with others to collaborate'
+          ? '演示代码已生成，分享给其他人即可一起编辑'
+          : 'Presentation code generated! Share it so others can collaborate.'
       )
     } else {
       const error = await response.json().catch(() => ({}))
       const errorMessage = error.detail || error.message || `HTTP ${response.status}`
-      console.error('[WorkshopModal] Failed to start workshop:', {
+      console.error('[WorkshopModal] Failed to start presentation mode:', {
         status: response.status,
         error,
         errorDetail: error.detail,
@@ -251,11 +253,13 @@ async function startWorkshopWithId(diagramId: string) {
       console.error('[WorkshopModal] Full error response:', error)
       // Use the error message from backend (now includes specific details)
       notify.error(
-        isZh.value ? `启动工作坊失败: ${errorMessage}` : `Failed to start workshop: ${errorMessage}`
+        isZh.value
+          ? `启动演示模式失败: ${errorMessage}`
+          : `Failed to start presentation mode: ${errorMessage}`
       )
     }
   } catch (error) {
-    console.error('Failed to start workshop:', error)
+    console.error('Failed to start presentation mode:', error)
     notify.error(isZh.value ? '网络错误，启动失败' : 'Network error, failed to start')
   } finally {
     isLoading.value = false
@@ -292,7 +296,7 @@ async function copyCode() {
 <template>
   <ElDialog
     v-model="showDialog"
-    :title="isZh ? '工作坊协作' : 'Workshop Collaboration'"
+    :title="isZh ? '演示模式' : 'Presentation mode'"
     width="500px"
     :close-on-click-modal="false"
   >
@@ -303,7 +307,7 @@ async function copyCode() {
         class="workshop-section"
       >
         <h3 class="section-title">
-          {{ isZh ? '生成工作坊代码' : 'Generate Workshop Code' }}
+          {{ isZh ? '生成演示代码' : 'Generate presentation code' }}
         </h3>
 
         <div
@@ -325,7 +329,7 @@ async function copyCode() {
                 <img
                   v-if="qrCodeUrl"
                   :src="qrCodeUrl"
-                  alt="Workshop QR Code"
+                  alt="Presentation QR code"
                   class="qr-code-image"
                 />
               </div>
@@ -382,8 +386,8 @@ async function copyCode() {
           <p class="description">
             {{
               isZh
-                ? '生成工作坊代码后，其他人可以使用此代码加入并一起编辑此图示。'
-                : 'Generate a workshop code to allow others to join and collaboratively edit this diagram.'
+                ? '生成演示代码后，其他人可以使用此代码加入并一起编辑此图示。'
+                : 'Generate a presentation code so others can join and edit this diagram with you.'
             }}
           </p>
           <ElButton

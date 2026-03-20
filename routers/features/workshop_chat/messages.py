@@ -21,7 +21,7 @@ from sqlalchemy.orm import Session
 
 from config.database import get_db
 from models.domain.auth import User
-from models.domain.workshop_chat import ChatTopic
+from models.domain.workshop_chat import ChatMessage, ChatTopic
 from routers.features.workshop_chat.dependencies import (
     access_channel,
     require_membership_unless_announce,
@@ -219,10 +219,21 @@ async def delete_message(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Soft-delete a message (sender only)."""
-    success = message_service.delete_message(db, message_id, current_user.id)
+    """Soft-delete a message (sender or org/realm moderator)."""
+    stub = (
+        db.query(ChatMessage)
+        .filter(ChatMessage.id == message_id)
+        .first()
+    )
+    if not stub:
+        raise HTTPException(status_code=404, detail="Message not found")
+    access_channel(db, stub.channel_id, current_user)
+    success = message_service.delete_message(db, message_id, current_user)
     if not success:
-        raise HTTPException(status_code=404, detail="Message not found or not yours")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Message not found or not permitted",
+        )
     return {"ok": True}
 
 

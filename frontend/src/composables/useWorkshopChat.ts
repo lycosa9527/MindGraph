@@ -9,24 +9,25 @@
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import { useWebSocket } from '@vueuse/core'
+
 import { ElMessage } from 'element-plus'
 
-import { useAuthStore } from '@/stores/auth'
 import {
   requestNotificationPermission,
   useChatNotifications,
 } from '@/composables/useChatNotifications'
 import { useLanguage } from '@/composables/useLanguage'
 import { usePresenceActivity } from '@/composables/usePresenceActivity'
+import { useAuthStore } from '@/stores/auth'
 import { useWorkshopChatStore } from '@/stores/workshopChat'
+import {
+  registerWorkshopChatWsDisconnect,
+  unregisterWorkshopChatWsDisconnect,
+} from '@/utils/workshopChatWsRegistry'
 
 function buildWsUrl(): string {
   const proto = window.location.protocol === 'https:' ? 'wss' : 'ws'
   const host = window.location.host
-  const token = useAuthStore().token
-  if (token) {
-    return `${proto}://${host}/api/ws/chat?token=${encodeURIComponent(token)}`
-  }
   return `${proto}://${host}/api/ws/chat`
 }
 
@@ -55,7 +56,7 @@ export function useWorkshopChatComposable() {
     onConnected() {
       connected.value = true
       sendSubscribePresence()
-      const channelIds = store.joinedChannels.map(c => c.id)
+      const channelIds = store.joinedChannels.map((c) => c.id)
       if (channelIds.length > 0) {
         send(JSON.stringify({ type: 'subscribe_channels', channel_ids: channelIds }))
       }
@@ -185,33 +186,54 @@ export function useWorkshopChatComposable() {
           if (ambiguous?.length) {
             parts.push(t('workshop.mentionAmbiguous').replace('{0}', ambiguous.join(', ')))
           }
-          ElMessage.warning(parts.join(' · ') || (data.message as string) || t('workshop.messageSendFailed'))
+          ElMessage.warning(
+            parts.join(' · ') || (data.message as string) || t('workshop.messageSendFailed')
+          )
         }
         break
       }
       case 'pong':
         break
+      case 'channel_invite': {
+        void store.fetchChannels({ force: true })
+        const name = typeof data.channel_name === 'string' ? data.channel_name : ''
+        ElMessage.info(t('workshop.channelInviteReceived').replace('{name}', name))
+        break
+      }
       default:
         break
     }
   }
 
   function sendChannelMessage(channelId: number, content: string): void {
-    send(JSON.stringify({
-      type: 'channel_message', channel_id: channelId, content,
-    }))
+    send(
+      JSON.stringify({
+        type: 'channel_message',
+        channel_id: channelId,
+        content,
+      })
+    )
   }
 
   function sendTopicMessage(channelId: number, topicId: number, content: string): void {
-    send(JSON.stringify({
-      type: 'topic_message', channel_id: channelId, topic_id: topicId, content,
-    }))
+    send(
+      JSON.stringify({
+        type: 'topic_message',
+        channel_id: channelId,
+        topic_id: topicId,
+        content,
+      })
+    )
   }
 
   function sendDM(recipientId: number, content: string): void {
-    send(JSON.stringify({
-      type: 'dm', recipient_id: recipientId, content,
-    }))
+    send(
+      JSON.stringify({
+        type: 'dm',
+        recipient_id: recipientId,
+        content,
+      })
+    )
   }
 
   function sendTypingChannel(channelId: number): void {
@@ -219,9 +241,13 @@ export function useWorkshopChatComposable() {
   }
 
   function sendTypingTopic(channelId: number, topicId: number): void {
-    send(JSON.stringify({
-      type: 'typing_topic', channel_id: channelId, topic_id: topicId,
-    }))
+    send(
+      JSON.stringify({
+        type: 'typing_topic',
+        channel_id: channelId,
+        topic_id: topicId,
+      })
+    )
   }
 
   function sendTypingDM(recipientId: number): void {
@@ -229,20 +255,27 @@ export function useWorkshopChatComposable() {
   }
 
   function sendReadChannel(channelId: number, messageId: number): void {
-    send(JSON.stringify({
-      type: 'read_channel', channel_id: channelId, message_id: messageId,
-    }))
+    send(
+      JSON.stringify({
+        type: 'read_channel',
+        channel_id: channelId,
+        message_id: messageId,
+      })
+    )
   }
 
   function subscribeChannels(channelIds: number[]): void {
     send(JSON.stringify({ type: 'subscribe_channels', channel_ids: channelIds }))
   }
 
-  watch(() => store.joinedChannels, (newChannels) => {
-    if (isConnected.value && newChannels.length > 0) {
-      subscribeChannels(newChannels.map(c => c.id))
+  watch(
+    () => store.joinedChannels,
+    (newChannels) => {
+      if (isConnected.value && newChannels.length > 0) {
+        subscribeChannels(newChannels.map((c) => c.id))
+      }
     }
-  })
+  )
 
   watch(
     () => store.adminOrgId,
@@ -250,14 +283,16 @@ export function useWorkshopChatComposable() {
       if (isConnected.value) {
         sendSubscribePresence()
       }
-    },
+    }
   )
 
   onMounted(() => {
     requestNotificationPermission()
+    registerWorkshopChatWsDisconnect(disconnect)
   })
 
   onUnmounted(() => {
+    unregisterWorkshopChatWsDisconnect(disconnect)
     disconnect()
   })
 

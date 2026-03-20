@@ -5,7 +5,7 @@
  */
 import { computed, nextTick, onMounted, onUpdated, ref, watch } from 'vue'
 
-import { useDebateVerseStore } from '@/stores/debateverse'
+import { type DebateMessage as DebateMessageDto, useDebateVerseStore } from '@/stores/debateverse'
 
 import DebateMessage from './DebateMessage.vue'
 
@@ -25,7 +25,7 @@ const sideMessages = computed(() => {
 
   // Add streaming message if exists
   if (store.streamingMessage) {
-    allMessages.push(store.streamingMessage as any)
+    allMessages.push(store.streamingMessage as DebateMessageDto)
   }
 
   if (props.side === 'all') {

@@ -1,7 +1,6 @@
 import { computed } from 'vue'
 
 import { LEARNING_SHEET_PLACEHOLDER } from '../specLoader/utils'
-
 import { emitEvent } from './events'
 import type { DiagramContext } from './types'
 
@@ -14,7 +13,7 @@ export function useLearningSheetSlice(ctx: DiagramContext) {
   })
 
   const hiddenAnswers = computed(
-    () => (data.value as { hiddenAnswers?: string[] } | null)?.hiddenAnswers ?? [],
+    () => (data.value as { hiddenAnswers?: string[] } | null)?.hiddenAnswers ?? []
   )
 
   function emptyNodeForLearningSheet(nodeId: string): boolean {
@@ -111,7 +110,7 @@ export function useLearningSheetSlice(ctx: DiagramContext) {
   function hasPreservedLearningSheet(): boolean {
     if (!data.value?.nodes) return false
     return data.value.nodes.some(
-      (n) => (n.data as { hidden?: boolean; hiddenAnswer?: string })?.hidden === true,
+      (n) => (n.data as { hidden?: boolean; hiddenAnswer?: string })?.hidden === true
     )
   }
 

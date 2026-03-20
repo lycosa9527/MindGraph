@@ -7,17 +7,12 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 
 import { Connection, Document, Loading, TrendCharts, User } from '@element-plus/icons-vue'
 
-import {
-  Chart,
-  registerables,
-  type ChartConfiguration,
-  type TooltipItem,
-} from 'chart.js'
-
-Chart.register(...registerables)
+import { Chart, type ChartConfiguration, type TooltipItem, registerables } from 'chart.js'
 
 import { useLanguage, useNotifications } from '@/composables'
 import { apiRequest } from '@/utils/apiClient'
+
+Chart.register(...registerables)
 
 const { t } = useLanguage()
 const notify = useNotifications()
@@ -113,13 +108,12 @@ async function loadStats() {
   }
 }
 
-type MetricKey =
-  | 'users'
-  | 'organizations'
-  | 'registrations'
-  | 'tokens'
+type MetricKey = 'users' | 'organizations' | 'registrations' | 'tokens'
 
-async function showTrendChart(metric: MetricKey, period: 'today' | 'week' | 'month' | 'total' = 'week') {
+async function showTrendChart(
+  metric: MetricKey,
+  period: 'today' | 'week' | 'month' | 'total' = 'week'
+) {
   trendContext.value = { type: 'metric', metric, period }
   trendChartTitle.value =
     metric === 'users'
@@ -168,7 +162,8 @@ async function showTrendChart(metric: MetricKey, period: 'today' | 'week' | 'mon
       const cardsData = await cardsRes.json()
       const arr = cardsData?.data ?? []
       if (metric === 'registrations') {
-        const sum = (n: number) => arr.slice(-n).reduce((a: number, b: { value: number }) => a + (b.value ?? 0), 0)
+        const sum = (n: number) =>
+          arr.slice(-n).reduce((a: number, b: { value: number }) => a + (b.value ?? 0), 0)
         periodCards.value = {
           today: String(sum(1) || 0),
           week: String(sum(7) || 0),
@@ -176,8 +171,9 @@ async function showTrendChart(metric: MetricKey, period: 'today' | 'week' | 'mon
           total: String(arr.reduce((a: number, b: { value: number }) => a + (b.value ?? 0), 0)),
         }
       } else {
-        const valAt = (idx: number) => (arr.length > idx ? arr[arr.length - 1 - idx]?.value ?? '-' : '-')
-        const final = arr.length ? arr[arr.length - 1]?.value ?? '-' : '-'
+        const valAt = (idx: number) =>
+          arr.length > idx ? (arr[arr.length - 1 - idx]?.value ?? '-') : '-'
+        const final = arr.length ? (arr[arr.length - 1]?.value ?? '-') : '-'
         periodCards.value = {
           today: String(final),
           week: String(valAt(7)),
@@ -214,9 +210,7 @@ async function showOrganizationTrendChart(
     } else {
       params += `&organization_name=${encodeURIComponent(orgName)}`
     }
-    const chartRes = await apiRequest(
-      `/api/auth/admin/stats/trends/organization?${params}`
-    )
+    const chartRes = await apiRequest(`/api/auth/admin/stats/trends/organization?${params}`)
     if (!chartRes.ok) {
       notify.error(t('admin.dashboardLoadError'))
       trendChartLoading.value = false

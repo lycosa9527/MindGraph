@@ -9,12 +9,9 @@ export const RELATIONSHIP_LABELS_START = '/thinking_mode/relationship_labels/sta
 export const RELATIONSHIP_LABELS_NEXT = '/thinking_mode/relationship_labels/next_batch'
 export const RELATIONSHIP_LABELS_CLEANUP = '/thinking_mode/relationship_labels/cleanup'
 
-export const INLINE_RECOMMENDATIONS_START =
-  '/thinking_mode/inline_recommendations/start'
-export const INLINE_RECOMMENDATIONS_NEXT =
-  '/thinking_mode/inline_recommendations/next_batch'
-export const INLINE_RECOMMENDATIONS_CLEANUP =
-  '/thinking_mode/inline_recommendations/cleanup'
+export const INLINE_RECOMMENDATIONS_START = '/thinking_mode/inline_recommendations/start'
+export const INLINE_RECOMMENDATIONS_NEXT = '/thinking_mode/inline_recommendations/next_batch'
+export const INLINE_RECOMMENDATIONS_CLEANUP = '/thinking_mode/inline_recommendations/cleanup'
 
 export const INLINE_RECOMMENDATIONS_SUPPORTED_TYPES = [
   'mindmap',

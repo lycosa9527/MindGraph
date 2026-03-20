@@ -290,6 +290,32 @@ def _fix_workshop_chat_nullability(db_engine):
         )
 
 
+def _ensure_chat_channels_display_order(db_engine):
+    """Add ``display_order`` on SQLite when missing (PostgreSQL uses migrations)."""
+    try:
+        if db_engine.dialect.name != "sqlite":
+            return
+        inspector = inspect(db_engine)
+        if "chat_channels" not in inspector.get_table_names():
+            return
+        column_names = {
+            col["name"] for col in inspector.get_columns("chat_channels")
+        }
+        if "display_order" in column_names:
+            return
+        with db_engine.connect() as conn:
+            conn.execute(text(
+                "ALTER TABLE chat_channels ADD COLUMN display_order "
+                "INTEGER NOT NULL DEFAULT 0"
+            ))
+            conn.commit()
+        logger.info("[Database] Added chat_channels.display_order (SQLite)")
+    except (OperationalError, ProgrammingError) as exc:
+        logger.warning(
+            "[Database] Could not add chat_channels.display_order: %s", exc
+        )
+
+
 def init_db():
     """
     Initialize database: create tables, run migrations, and seed demo data.
@@ -456,6 +482,7 @@ def init_db():
 
     # Step 3: Fix column nullability that create_all / migrations cannot handle
     _fix_workshop_chat_nullability(engine)
+    _ensure_chat_channels_display_order(engine)
 
     # Seed organizations
     db = SessionLocal()

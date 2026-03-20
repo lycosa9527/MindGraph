@@ -534,7 +534,7 @@ function formatNumber(num: number): string {
 function initPieChart() {
   if (!pieChartRef.value) return
   pieChart = echarts.init(pieChartRef.value)
-  const data = GROUPS.map((g, i) => ({
+  const data = GROUPS.map((g, _i) => ({
     name: isZh.value ? g.nameZh : g.nameEn,
     value: groupStats.value[g.id]?.count ?? 0,
   }))
@@ -687,8 +687,14 @@ onBeforeUnmount(() => {
 
     <!-- Scrollable content -->
     <div class="teacher-usage-content flex-1 overflow-y-auto px-6 pt-6 pb-6">
-      <el-tabs v-model="activeTab" class="teacher-usage-tabs">
-        <el-tab-pane :label="isZh ? '概况' : 'Overview'" name="overview">
+      <el-tabs
+        v-model="activeTab"
+        class="teacher-usage-tabs"
+      >
+        <el-tab-pane
+          :label="isZh ? '概况' : 'Overview'"
+          name="overview"
+        >
           <div
             v-if="isLoading"
             class="flex items-center justify-center py-20"
@@ -700,399 +706,405 @@ onBeforeUnmount(() => {
             /></el-icon>
           </div>
 
-          <div v-else class="max-w-7xl mx-auto">
-              <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
-                <el-card
-                  shadow="hover"
-                  class="stat-card stat-card-clickable"
-                  @click="openTeachersModal('total')"
-                >
-                  <p class="text-xs text-gray-500 mb-1">
-                    {{ isZh ? '总教师数' : 'Total Teachers' }}
-                  </p>
-                  <p class="text-2xl font-bold text-gray-800 dark:text-white">
-                    {{ stats.totalTeachers.toLocaleString() }}
-                  </p>
-                </el-card>
-                    <el-card
-                  shadow="hover"
-                  class="stat-card stat-card-clickable"
-                  @click="openTeachersModal('unused')"
-                >
-                  <p class="text-xs text-gray-500 mb-1">
-                    {{ isZh ? '未使用' : 'Unused' }}
-                  </p>
-                  <p class="text-2xl font-bold text-gray-500 dark:text-gray-400">
-                    {{ stats.unused }}
-                  </p>
-                </el-card>
-                <el-card
-                  shadow="hover"
-                  class="stat-card stat-card-clickable"
-                  @click="openTeachersModal('continuous')"
-                >
-                  <p class="text-xs text-gray-500 mb-1">
-                    {{ isZh ? '持续使用' : 'Continuous Usage' }}
-                  </p>
-                  <p class="text-2xl font-bold text-green-600 dark:text-green-400">
-                    {{ stats.continuous }}
-                  </p>
-                </el-card>
-                <el-card
-                  shadow="hover"
-                  class="stat-card stat-card-clickable"
-                  @click="openTeachersModal('rejection')"
-                >
-                  <p class="text-xs text-gray-500 mb-1">
-                    {{ isZh ? '拒绝使用' : 'Rejection' }}
-                  </p>
-                  <p class="text-2xl font-bold text-orange-600 dark:text-orange-400">
-                    {{ stats.rejection }}
-                  </p>
-                </el-card>
-                <el-card
-                  shadow="hover"
-                  class="stat-card stat-card-clickable"
-                  @click="openTeachersModal('stopped')"
-                >
-                  <p class="text-xs text-gray-500 mb-1">
-                    {{ isZh ? '停止使用' : 'Stopped Usage' }}
-                  </p>
-                  <p class="text-2xl font-bold text-red-600 dark:text-red-400">
-                    {{ stats.stopped }}
-                  </p>
-                </el-card>
-                <el-card
-                  shadow="hover"
-                  class="stat-card stat-card-clickable"
-                  @click="openTeachersModal('intermittent')"
-                >
-                  <p class="text-xs text-gray-500 mb-1">
-                    {{ isZh ? '间歇式使用' : 'Intermittent Usage' }}
-                  </p>
-                  <p class="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                    {{ stats.intermittent }}
-                  </p>
-                </el-card>
-              </div>
-
-              <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-                <el-card shadow="hover">
-                  <template #header>
-                    <span class="font-medium">
-                      {{ isZh ? '教师分组分布' : 'Group Distribution' }}
-                    </span>
-                  </template>
-                  <div
-                    ref="pieChartRef"
-                    class="h-64"
-                  />
-                </el-card>
-                <el-card shadow="hover">
-                  <template #header>
-                    <span class="font-medium">
-                      {{ isZh ? '各组 Token 使用量' : 'Token Usage by Group' }}
-                    </span>
-                  </template>
-                  <div
-                    ref="barChartRef"
-                    class="h-64"
-                  />
-                </el-card>
-              </div>
-
-              <!-- Diagram cards: Total, 未使用, 持续使用, then 非持续使用 box with 3 sub-cards -->
-              <div class="space-y-4">
-            <!-- Total -->
-            <el-card
-              shadow="hover"
-              class="group-card cursor-pointer transition-colors"
-              :class="{ 'group-card-expanded': isGroupExpanded('total') }"
-              @click="toggleGroupExpanded('total')"
-            >
-              <div class="flex items-center justify-between">
-                <div>
-                  <span class="font-semibold text-stone-900">
-                    {{ isZh ? TOTAL_GROUP.nameZh : TOTAL_GROUP.nameEn }}
-                  </span>
-                  <div class="text-xs text-stone-500 mt-0.5">
-                    {{ isZh ? TOTAL_GROUP.descriptionZh : TOTAL_GROUP.descriptionEn }}
-                  </div>
-                </div>
-                <div class="flex items-center gap-2">
-                  <el-tag size="small">
-                    {{ groupStats.total?.count ?? 0 }}
-                    {{ isZh ? '位教师' : ' teachers' }}
-                  </el-tag>
-                  <el-icon
-                    :size="18"
-                    class="text-stone-400"
-                  >
-                    <ArrowDown v-if="!isGroupExpanded('total')" />
-                    <ArrowUp v-else />
-                  </el-icon>
-                </div>
-              </div>
-              <div
-                v-show="isGroupExpanded('total')"
-                class="mt-6 pt-6 border-t border-stone-200"
-                @click.stop
+          <div
+            v-else
+            class="max-w-7xl mx-auto"
+          >
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
+              <el-card
+                shadow="hover"
+                class="stat-card stat-card-clickable"
+                @click="openTeachersModal('total')"
               >
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <div>
-                    <el-table
-                      :data="groupStats.total?.teachers ?? []"
-                      stripe
-                      size="small"
-                    >
-                      <el-table-column
-                        prop="username"
-                        :label="isZh ? '教师' : 'Teacher'"
-                        width="140"
-                      />
-                      <el-table-column
-                        prop="diagrams"
-                        :label="isZh ? '智能补全次数' : 'Auto-complete'"
-                        width="80"
-                      />
-                      <el-table-column
-                        prop="conceptGen"
-                        :label="isZh ? '概念生成' : 'Concept Gen'"
-                        width="80"
-                      />
-                      <el-table-column
-                        prop="relationshipLabels"
-                        :label="isZh ? '关系标签' : 'Rel Labels'"
-                        width="80"
-                      />
-                      <el-table-column
-                        prop="tokens"
-                        :label="isZh ? 'Token' : 'Tokens'"
-                        width="100"
-                      >
-                        <template #default="{ row }">
-                          {{ formatNumber(row.tokens) }}
-                        </template>
-                      </el-table-column>
-                      <el-table-column
-                        prop="lastActive"
-                        :label="isZh ? '最后活跃' : 'Last Active'"
-                      />
-                    </el-table>
-                  </div>
-                  <div>
-                    <div
-                      :ref="
-                        (el) => {
-                          if (el) groupChartRefs['total'] = el as HTMLDivElement
-                        }
-                      "
-                      class="h-48"
-                    />
-                  </div>
-                </div>
-              </div>
-            </el-card>
-
-            <!-- 未使用, 持续使用 -->
-            <el-card
-              v-for="group in TOP_LEVEL_GROUPS"
-              :key="group.id"
-              shadow="hover"
-              class="group-card cursor-pointer transition-colors"
-              :class="{ 'group-card-expanded': isGroupExpanded(group.id) }"
-              @click="toggleGroupExpanded(group.id)"
-            >
-              <div class="flex items-center justify-between">
-                <div>
-                  <span class="font-semibold text-stone-900">
-                    {{ isZh ? group.nameZh : group.nameEn }}
-                  </span>
-                  <div class="text-xs text-stone-500 mt-0.5">
-                    {{ isZh ? group.descriptionZh : group.descriptionEn }}
-                  </div>
-                </div>
-                <div class="flex items-center gap-2">
-                  <el-tag size="small">
-                    {{ groupStats[group.id]?.count ?? 0 }}
-                    {{ isZh ? '位教师' : ' teachers' }}
-                  </el-tag>
-                  <el-icon
-                    :size="18"
-                    class="text-stone-400"
-                  >
-                    <ArrowDown v-if="!isGroupExpanded(group.id)" />
-                    <ArrowUp v-else />
-                  </el-icon>
-                </div>
-              </div>
-              <div
-                v-show="isGroupExpanded(group.id)"
-                class="mt-6 pt-6 border-t border-stone-200"
-                @click.stop
+                <p class="text-xs text-gray-500 mb-1">
+                  {{ isZh ? '总教师数' : 'Total Teachers' }}
+                </p>
+                <p class="text-2xl font-bold text-gray-800 dark:text-white">
+                  {{ stats.totalTeachers.toLocaleString() }}
+                </p>
+              </el-card>
+              <el-card
+                shadow="hover"
+                class="stat-card stat-card-clickable"
+                @click="openTeachersModal('unused')"
               >
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <div>
-                    <el-table
-                      :data="groupStats[group.id]?.teachers ?? []"
-                      stripe
-                      size="small"
-                    >
-                      <el-table-column
-                        prop="username"
-                        :label="isZh ? '教师' : 'Teacher'"
-                        width="140"
-                      />
-                      <el-table-column
-                        prop="diagrams"
-                        :label="isZh ? '智能补全次数' : 'Auto-complete'"
-                        width="80"
-                      />
-                      <el-table-column
-                        prop="conceptGen"
-                        :label="isZh ? '概念生成' : 'Concept Gen'"
-                        width="80"
-                      />
-                      <el-table-column
-                        prop="relationshipLabels"
-                        :label="isZh ? '关系标签' : 'Rel Labels'"
-                        width="80"
-                      />
-                      <el-table-column
-                        prop="tokens"
-                        :label="isZh ? 'Token' : 'Tokens'"
-                        width="100"
-                      >
-                        <template #default="{ row }">
-                          {{ formatNumber(row.tokens) }}
-                        </template>
-                      </el-table-column>
-                      <el-table-column
-                        prop="lastActive"
-                        :label="isZh ? '最后活跃' : 'Last Active'"
-                      />
-                    </el-table>
-                  </div>
-                  <div>
-                    <div
-                      :ref="
-                        (el) => {
-                          if (el) groupChartRefs[group.id] = el as HTMLDivElement
-                        }
-                      "
-                      class="h-48"
-                    />
-                  </div>
-                </div>
-              </div>
-            </el-card>
-
-            <!-- 非持续使用: 拒绝使用, 停止使用, 间歇式使用 in a visual box -->
-            <div
-              class="sub-groups-box rounded-lg border-2 border-stone-300 bg-stone-100/50 p-4 dark:border-stone-600 dark:bg-stone-800/30"
-            >
-              <div class="text-sm font-semibold text-stone-700 dark:text-stone-300 mb-4">
-                {{ isZh ? '非持续使用' : 'Non-continuous Usage' }}
-              </div>
-              <div class="space-y-4">
-                <el-card
-                  v-for="group in SUB_GROUPS"
-                  :key="group.id"
-                  shadow="hover"
-                  class="group-card group-card-nested cursor-pointer transition-colors"
-                  :class="{ 'group-card-expanded': isGroupExpanded(group.id) }"
-                  @click="toggleGroupExpanded(group.id)"
-                >
-                  <div class="flex items-center justify-between">
-                    <div>
-                      <span class="font-semibold text-stone-900">
-                        {{ isZh ? group.nameZh : group.nameEn }}
-                      </span>
-                      <div class="text-xs text-stone-500 mt-0.5">
-                        {{ isZh ? group.descriptionZh : group.descriptionEn }}
-                      </div>
-                    </div>
-                    <div class="flex items-center gap-2">
-                      <el-tag size="small">
-                        {{ groupStats[group.id]?.count ?? 0 }}
-                        {{ isZh ? '位教师' : ' teachers' }}
-                      </el-tag>
-                      <el-icon
-                        :size="18"
-                        class="text-stone-400"
-                      >
-                        <ArrowDown v-if="!isGroupExpanded(group.id)" />
-                        <ArrowUp v-else />
-                      </el-icon>
-                    </div>
-                  </div>
-                  <div
-                    v-show="isGroupExpanded(group.id)"
-                    class="mt-6 pt-6 border-t border-stone-200"
-                    @click.stop
-                  >
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                      <div>
-                        <el-table
-                          :data="groupStats[group.id]?.teachers ?? []"
-                          stripe
-                          size="small"
-                        >
-                          <el-table-column
-                            prop="username"
-                            :label="isZh ? '教师' : 'Teacher'"
-                            width="140"
-                          />
-                          <el-table-column
-                            prop="diagrams"
-                            :label="isZh ? '智能补全次数' : 'Auto-complete'"
-                            width="80"
-                          />
-                          <el-table-column
-                            prop="conceptGen"
-                            :label="isZh ? '概念生成' : 'Concept Gen'"
-                            width="80"
-                          />
-                          <el-table-column
-                            prop="relationshipLabels"
-                            :label="isZh ? '关系标签' : 'Rel Labels'"
-                            width="80"
-                          />
-                          <el-table-column
-                            prop="tokens"
-                            :label="isZh ? 'Token' : 'Tokens'"
-                            width="100"
-                          >
-                            <template #default="{ row }">
-                              {{ formatNumber(row.tokens) }}
-                            </template>
-                          </el-table-column>
-                          <el-table-column
-                            prop="lastActive"
-                            :label="isZh ? '最后活跃' : 'Last Active'"
-                          />
-                        </el-table>
-                      </div>
-                      <div>
-                        <div
-                          :ref="
-                            (el) => {
-                              if (el) groupChartRefs[group.id] = el as HTMLDivElement
-                            }
-                          "
-                          class="h-48"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </el-card>
-              </div>
+                <p class="text-xs text-gray-500 mb-1">
+                  {{ isZh ? '未使用' : 'Unused' }}
+                </p>
+                <p class="text-2xl font-bold text-gray-500 dark:text-gray-400">
+                  {{ stats.unused }}
+                </p>
+              </el-card>
+              <el-card
+                shadow="hover"
+                class="stat-card stat-card-clickable"
+                @click="openTeachersModal('continuous')"
+              >
+                <p class="text-xs text-gray-500 mb-1">
+                  {{ isZh ? '持续使用' : 'Continuous Usage' }}
+                </p>
+                <p class="text-2xl font-bold text-green-600 dark:text-green-400">
+                  {{ stats.continuous }}
+                </p>
+              </el-card>
+              <el-card
+                shadow="hover"
+                class="stat-card stat-card-clickable"
+                @click="openTeachersModal('rejection')"
+              >
+                <p class="text-xs text-gray-500 mb-1">
+                  {{ isZh ? '拒绝使用' : 'Rejection' }}
+                </p>
+                <p class="text-2xl font-bold text-orange-600 dark:text-orange-400">
+                  {{ stats.rejection }}
+                </p>
+              </el-card>
+              <el-card
+                shadow="hover"
+                class="stat-card stat-card-clickable"
+                @click="openTeachersModal('stopped')"
+              >
+                <p class="text-xs text-gray-500 mb-1">
+                  {{ isZh ? '停止使用' : 'Stopped Usage' }}
+                </p>
+                <p class="text-2xl font-bold text-red-600 dark:text-red-400">
+                  {{ stats.stopped }}
+                </p>
+              </el-card>
+              <el-card
+                shadow="hover"
+                class="stat-card stat-card-clickable"
+                @click="openTeachersModal('intermittent')"
+              >
+                <p class="text-xs text-gray-500 mb-1">
+                  {{ isZh ? '间歇式使用' : 'Intermittent Usage' }}
+                </p>
+                <p class="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                  {{ stats.intermittent }}
+                </p>
+              </el-card>
             </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+              <el-card shadow="hover">
+                <template #header>
+                  <span class="font-medium">
+                    {{ isZh ? '教师分组分布' : 'Group Distribution' }}
+                  </span>
+                </template>
+                <div
+                  ref="pieChartRef"
+                  class="h-64"
+                />
+              </el-card>
+              <el-card shadow="hover">
+                <template #header>
+                  <span class="font-medium">
+                    {{ isZh ? '各组 Token 使用量' : 'Token Usage by Group' }}
+                  </span>
+                </template>
+                <div
+                  ref="barChartRef"
+                  class="h-64"
+                />
+              </el-card>
+            </div>
+
+            <!-- Diagram cards: Total, 未使用, 持续使用, then 非持续使用 box with 3 sub-cards -->
+            <div class="space-y-4">
+              <!-- Total -->
+              <el-card
+                shadow="hover"
+                class="group-card cursor-pointer transition-colors"
+                :class="{ 'group-card-expanded': isGroupExpanded('total') }"
+                @click="toggleGroupExpanded('total')"
+              >
+                <div class="flex items-center justify-between">
+                  <div>
+                    <span class="font-semibold text-stone-900">
+                      {{ isZh ? TOTAL_GROUP.nameZh : TOTAL_GROUP.nameEn }}
+                    </span>
+                    <div class="text-xs text-stone-500 mt-0.5">
+                      {{ isZh ? TOTAL_GROUP.descriptionZh : TOTAL_GROUP.descriptionEn }}
+                    </div>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <el-tag size="small">
+                      {{ groupStats.total?.count ?? 0 }}
+                      {{ isZh ? '位教师' : ' teachers' }}
+                    </el-tag>
+                    <el-icon
+                      :size="18"
+                      class="text-stone-400"
+                    >
+                      <ArrowDown v-if="!isGroupExpanded('total')" />
+                      <ArrowUp v-else />
+                    </el-icon>
+                  </div>
+                </div>
+                <div
+                  v-show="isGroupExpanded('total')"
+                  class="mt-6 pt-6 border-t border-stone-200"
+                  @click.stop
+                >
+                  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div>
+                      <el-table
+                        :data="groupStats.total?.teachers ?? []"
+                        stripe
+                        size="small"
+                      >
+                        <el-table-column
+                          prop="username"
+                          :label="isZh ? '教师' : 'Teacher'"
+                          width="140"
+                        />
+                        <el-table-column
+                          prop="diagrams"
+                          :label="isZh ? '智能补全次数' : 'Auto-complete'"
+                          width="80"
+                        />
+                        <el-table-column
+                          prop="conceptGen"
+                          :label="isZh ? '概念生成' : 'Concept Gen'"
+                          width="80"
+                        />
+                        <el-table-column
+                          prop="relationshipLabels"
+                          :label="isZh ? '关系标签' : 'Rel Labels'"
+                          width="80"
+                        />
+                        <el-table-column
+                          prop="tokens"
+                          :label="isZh ? 'Token' : 'Tokens'"
+                          width="100"
+                        >
+                          <template #default="{ row }">
+                            {{ formatNumber(row.tokens) }}
+                          </template>
+                        </el-table-column>
+                        <el-table-column
+                          prop="lastActive"
+                          :label="isZh ? '最后活跃' : 'Last Active'"
+                        />
+                      </el-table>
+                    </div>
+                    <div>
+                      <div
+                        :ref="
+                          (el) => {
+                            if (el) groupChartRefs['total'] = el as HTMLDivElement
+                          }
+                        "
+                        class="h-48"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </el-card>
+
+              <!-- 未使用, 持续使用 -->
+              <el-card
+                v-for="group in TOP_LEVEL_GROUPS"
+                :key="group.id"
+                shadow="hover"
+                class="group-card cursor-pointer transition-colors"
+                :class="{ 'group-card-expanded': isGroupExpanded(group.id) }"
+                @click="toggleGroupExpanded(group.id)"
+              >
+                <div class="flex items-center justify-between">
+                  <div>
+                    <span class="font-semibold text-stone-900">
+                      {{ isZh ? group.nameZh : group.nameEn }}
+                    </span>
+                    <div class="text-xs text-stone-500 mt-0.5">
+                      {{ isZh ? group.descriptionZh : group.descriptionEn }}
+                    </div>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <el-tag size="small">
+                      {{ groupStats[group.id]?.count ?? 0 }}
+                      {{ isZh ? '位教师' : ' teachers' }}
+                    </el-tag>
+                    <el-icon
+                      :size="18"
+                      class="text-stone-400"
+                    >
+                      <ArrowDown v-if="!isGroupExpanded(group.id)" />
+                      <ArrowUp v-else />
+                    </el-icon>
+                  </div>
+                </div>
+                <div
+                  v-show="isGroupExpanded(group.id)"
+                  class="mt-6 pt-6 border-t border-stone-200"
+                  @click.stop
+                >
+                  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div>
+                      <el-table
+                        :data="groupStats[group.id]?.teachers ?? []"
+                        stripe
+                        size="small"
+                      >
+                        <el-table-column
+                          prop="username"
+                          :label="isZh ? '教师' : 'Teacher'"
+                          width="140"
+                        />
+                        <el-table-column
+                          prop="diagrams"
+                          :label="isZh ? '智能补全次数' : 'Auto-complete'"
+                          width="80"
+                        />
+                        <el-table-column
+                          prop="conceptGen"
+                          :label="isZh ? '概念生成' : 'Concept Gen'"
+                          width="80"
+                        />
+                        <el-table-column
+                          prop="relationshipLabels"
+                          :label="isZh ? '关系标签' : 'Rel Labels'"
+                          width="80"
+                        />
+                        <el-table-column
+                          prop="tokens"
+                          :label="isZh ? 'Token' : 'Tokens'"
+                          width="100"
+                        >
+                          <template #default="{ row }">
+                            {{ formatNumber(row.tokens) }}
+                          </template>
+                        </el-table-column>
+                        <el-table-column
+                          prop="lastActive"
+                          :label="isZh ? '最后活跃' : 'Last Active'"
+                        />
+                      </el-table>
+                    </div>
+                    <div>
+                      <div
+                        :ref="
+                          (el) => {
+                            if (el) groupChartRefs[group.id] = el as HTMLDivElement
+                          }
+                        "
+                        class="h-48"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </el-card>
+
+              <!-- 非持续使用: 拒绝使用, 停止使用, 间歇式使用 in a visual box -->
+              <div
+                class="sub-groups-box rounded-lg border-2 border-stone-300 bg-stone-100/50 p-4 dark:border-stone-600 dark:bg-stone-800/30"
+              >
+                <div class="text-sm font-semibold text-stone-700 dark:text-stone-300 mb-4">
+                  {{ isZh ? '非持续使用' : 'Non-continuous Usage' }}
+                </div>
+                <div class="space-y-4">
+                  <el-card
+                    v-for="group in SUB_GROUPS"
+                    :key="group.id"
+                    shadow="hover"
+                    class="group-card group-card-nested cursor-pointer transition-colors"
+                    :class="{ 'group-card-expanded': isGroupExpanded(group.id) }"
+                    @click="toggleGroupExpanded(group.id)"
+                  >
+                    <div class="flex items-center justify-between">
+                      <div>
+                        <span class="font-semibold text-stone-900">
+                          {{ isZh ? group.nameZh : group.nameEn }}
+                        </span>
+                        <div class="text-xs text-stone-500 mt-0.5">
+                          {{ isZh ? group.descriptionZh : group.descriptionEn }}
+                        </div>
+                      </div>
+                      <div class="flex items-center gap-2">
+                        <el-tag size="small">
+                          {{ groupStats[group.id]?.count ?? 0 }}
+                          {{ isZh ? '位教师' : ' teachers' }}
+                        </el-tag>
+                        <el-icon
+                          :size="18"
+                          class="text-stone-400"
+                        >
+                          <ArrowDown v-if="!isGroupExpanded(group.id)" />
+                          <ArrowUp v-else />
+                        </el-icon>
+                      </div>
+                    </div>
+                    <div
+                      v-show="isGroupExpanded(group.id)"
+                      class="mt-6 pt-6 border-t border-stone-200"
+                      @click.stop
+                    >
+                      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div>
+                          <el-table
+                            :data="groupStats[group.id]?.teachers ?? []"
+                            stripe
+                            size="small"
+                          >
+                            <el-table-column
+                              prop="username"
+                              :label="isZh ? '教师' : 'Teacher'"
+                              width="140"
+                            />
+                            <el-table-column
+                              prop="diagrams"
+                              :label="isZh ? '智能补全次数' : 'Auto-complete'"
+                              width="80"
+                            />
+                            <el-table-column
+                              prop="conceptGen"
+                              :label="isZh ? '概念生成' : 'Concept Gen'"
+                              width="80"
+                            />
+                            <el-table-column
+                              prop="relationshipLabels"
+                              :label="isZh ? '关系标签' : 'Rel Labels'"
+                              width="80"
+                            />
+                            <el-table-column
+                              prop="tokens"
+                              :label="isZh ? 'Token' : 'Tokens'"
+                              width="100"
+                            >
+                              <template #default="{ row }">
+                                {{ formatNumber(row.tokens) }}
+                              </template>
+                            </el-table-column>
+                            <el-table-column
+                              prop="lastActive"
+                              :label="isZh ? '最后活跃' : 'Last Active'"
+                            />
+                          </el-table>
+                        </div>
+                        <div>
+                          <div
+                            :ref="
+                              (el) => {
+                                if (el) groupChartRefs[group.id] = el as HTMLDivElement
+                              }
+                            "
+                            class="h-48"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </el-card>
+                </div>
+              </div>
             </div>
           </div>
         </el-tab-pane>
 
-        <el-tab-pane :label="isZh ? '教师情况' : 'Teachers'" name="teachers">
+        <el-tab-pane
+          :label="isZh ? '教师情况' : 'Teachers'"
+          name="teachers"
+        >
           <div
             v-if="allUsersLoading"
             class="flex items-center justify-center py-20"

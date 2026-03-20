@@ -287,14 +287,14 @@ watch([orgFilter], () => {
             <el-button
               size="small"
               :disabled="pagination.page <= 1"
-              @click="pagination.page--; loadUsers()"
+              @click="pagination.page -= 1; loadUsers()"
             >
               {{ t('admin.previous') }}
             </el-button>
             <el-button
               size="small"
               :disabled="pagination.page >= pagination.total_pages"
-              @click="pagination.page++; loadUsers()"
+              @click="pagination.page += 1; loadUsers()"
             >
               {{ t('admin.next') }}
             </el-button>

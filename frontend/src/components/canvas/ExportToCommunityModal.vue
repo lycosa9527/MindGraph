@@ -11,12 +11,8 @@ import { ElButton, ElDialog, ElForm, ElFormItem, ElInput } from 'element-plus'
 
 import { toPng } from 'html-to-image'
 
-import {
-  createCommunityPost,
-  updateCommunityPost,
-  type CommunityPost,
-} from '@/utils/apiClient'
 import { useLanguage, useNotifications } from '@/composables'
+import { type CommunityPost, createCommunityPost, updateCommunityPost } from '@/utils/apiClient'
 
 const categoryOptions = [
   '学习笔记',
@@ -60,7 +56,13 @@ const isSubmitting = ref(false)
 
 const isEdit = computed(() => props.mode === 'edit')
 const modalTitle = computed(() =>
-  isZh.value ? (isEdit.value ? '编辑分享' : '分享到社区') : isEdit.value ? 'Edit Post' : 'Share to Community'
+  isZh.value
+    ? isEdit.value
+      ? '编辑分享'
+      : '分享到社区'
+    : isEdit.value
+      ? 'Edit Post'
+      : 'Share to Community'
 )
 const submitLabel = computed(() =>
   isZh.value ? (isEdit.value ? '保存' : '发布') : isEdit.value ? 'Save' : 'Publish'
@@ -126,8 +128,10 @@ async function submit() {
 
   let spec: Record<string, unknown> | null = null
   if (props.mode === 'edit' && props.initialPost) {
-    spec = (props.initialPost as CommunityPost & { spec?: unknown }).spec as Record<string, unknown> | undefined
-      ?? null
+    spec =
+      ((props.initialPost as CommunityPost & { spec?: unknown }).spec as
+        | Record<string, unknown>
+        | undefined) ?? null
   } else {
     spec = props.getDiagramSpec()
   }
@@ -170,7 +174,7 @@ async function submit() {
       router.push('/community')
     }
   } catch (e) {
-    const msg = e instanceof Error ? e.message : (isZh.value ? '操作失败' : 'Operation failed')
+    const msg = e instanceof Error ? e.message : isZh.value ? '操作失败' : 'Operation failed'
     notify.error(msg)
   } finally {
     isSubmitting.value = false
@@ -191,7 +195,10 @@ async function submit() {
       label-position="top"
       class="community-form"
     >
-      <el-form-item :label="isZh ? '标题' : 'Title'" required>
+      <el-form-item
+        :label="isZh ? '标题' : 'Title'"
+        required
+      >
         <el-input
           v-model="title"
           :placeholder="isZh ? '给你的分享起个标题' : 'Give your post a title'"

@@ -4,9 +4,9 @@
  * Combines ImageViewer, DanmakuOverlay, and CommentPanel components
  */
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
-import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
-import { ElButton, ElIcon } from 'element-plus'
+import { ElButton } from 'element-plus'
 
 import { ArrowLeft } from 'lucide-vue-next'
 
@@ -43,8 +43,6 @@ const initialPageFromQuery = computed(() => {
   return 1
 })
 
-// Check if document uses images (should always be true now)
-const useImages = computed(() => libraryStore.currentDocument?.use_images ?? false)
 const totalPagesFromDoc = computed(() => libraryStore.currentDocument?.total_pages ?? 0)
 
 // Get viewer ref (ImageViewer only)
@@ -80,14 +78,6 @@ watch(currentPage, async () => {
 // Check bookmark status
 async function checkBookmarkStatus() {
   if (!authStore.isAuthenticated || !documentId.value || !currentPage.value) return
-
-  // Don't check bookmarks for pages we know don't exist
-  if (false) {
-    // Page doesn't exist - don't check for bookmark
-    isBookmarked.value = false
-    bookmarkId.value = null
-    return
-  }
 
   try {
     const bookmark = await libraryStore.getBookmark(documentId.value, currentPage.value)
@@ -499,10 +489,8 @@ watch([() => selectedDanmakuId.value, () => pinPlacementPosition.value], () => {
       if (viewerRef.value && imageViewerRef.value) {
         // Trigger re-render by calling renderPins through the component
         // We'll expose a method or trigger it via a watcher
-        const viewer = imageViewerRef.value as any
-        if (viewer.renderPins) {
-          viewer.renderPins()
-        }
+        const viewer = imageViewerRef.value as { renderPins?: () => void }
+        viewer.renderPins?.()
       }
     }, 150)
   })
@@ -543,14 +531,14 @@ watch([() => selectedDanmakuId.value, () => pinPlacementPosition.value], () => {
       :is-bookmarked="isBookmarked"
       @previous-page="handlePreviousPage"
       @next-page="handleNextPage"
-      @go-to-page="handleGoToPage"
-      @zoom-in="handleZoomIn"
-      @zoom-out="handleZoomOut"
-      @zoom-change="handleZoomChange"
+      @goToPage="handleGoToPage"
+      @zoomIn="handleZoomIn"
+      @zoomOut="handleZoomOut"
+      @zoomChange="handleZoomChange"
       @rotate="handleRotate"
       @print="handlePrint"
-      @toggle-pin-mode="handleTogglePinMode"
-      @toggle-bookmark="handleToggleBookmark"
+      @togglePinMode="handleTogglePinMode"
+      @toggleBookmark="handleToggleBookmark"
     />
 
     <!-- Main content area -->

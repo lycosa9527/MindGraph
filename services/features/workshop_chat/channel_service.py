@@ -34,6 +34,7 @@ from sqlalchemy import and_, case, func, or_
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy.sql.functions import count as sql_count
 
+from models.domain.auth import User
 from models.domain.workshop_chat import (
     ChatChannel,
     ChannelMember,
@@ -84,6 +85,7 @@ class ChannelService:
                     (ChatChannel.parent_id.is_(None), 0),
                     else_=1,
                 ),
+                ChatChannel.display_order.asc(),
                 ChatChannel.name,
             )
             .all()
@@ -254,6 +256,7 @@ class ChannelService:
             "unread_count": unread_count,
             "created_at": channel.created_at.isoformat(),
             "parent_id": channel.parent_id,
+            "display_order": channel.display_order,
         }
 
         if channel.parent_id is not None:
@@ -316,6 +319,19 @@ class ChannelService:
         diagram_id: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Create a channel (group or lesson-study) and add creator as owner."""
+        display_order = 0
+        if parent_id is None:
+            max_order = (
+                db.query(func.coalesce(func.max(ChatChannel.display_order), -1))
+                .filter(
+                    ChatChannel.organization_id == organization_id,
+                    ChatChannel.is_archived.is_(False),
+                    ChatChannel.parent_id.is_(None),
+                )
+                .scalar()
+            )
+            display_order = int(max_order) + 1
+
         channel = ChatChannel(
             name=name,
             description=description,
@@ -327,6 +343,7 @@ class ChannelService:
             status=channel_status,
             deadline=deadline,
             diagram_id=diagram_id,
+            display_order=display_order,
         )
         db.add(channel)
         db.flush()
@@ -593,6 +610,143 @@ class ChannelService:
             "channel_type": channel.channel_type,
             "posting_policy": channel.posting_policy,
             "is_default": channel.is_default,
+        }
+
+    @staticmethod
+    def reorder_teaching_groups(
+        db: Session,
+        organization_id: int,
+        ordered_ids: List[int],
+    ) -> bool:
+        """Set display_order for all top-level org teaching groups (non-announce)."""
+        rows = (
+            db.query(ChatChannel.id)
+            .filter(
+                ChatChannel.organization_id == organization_id,
+                ChatChannel.is_archived.is_(False),
+                ChatChannel.parent_id.is_(None),
+                ChatChannel.channel_type != "announce",
+            )
+            .all()
+        )
+        expected = {int(r[0]) for r in rows}
+        got = list(ordered_ids)
+        if set(got) != expected or len(got) != len(expected):
+            return False
+        for idx, cid in enumerate(got):
+            channel = (
+                db.query(ChatChannel)
+                .filter(ChatChannel.id == cid)
+                .first()
+            )
+            if not channel:
+                return False
+            channel.display_order = idx
+            channel.updated_at = datetime.utcnow()
+        db.commit()
+        return True
+
+    @staticmethod
+    def invite_user_to_channel(
+        db: Session,
+        channel_id: int,
+        target_user_id: int,
+        organization_id: int,
+    ) -> Optional[Dict[str, Any]]:
+        """Add an org member to a channel. Announce channels are not supported."""
+        channel = (
+            db.query(ChatChannel)
+            .filter(
+                ChatChannel.id == channel_id,
+                ChatChannel.is_archived.is_(False),
+            )
+            .first()
+        )
+        if not channel:
+            return None
+        if channel.channel_type == "announce":
+            return None
+        if channel.organization_id != organization_id:
+            return None
+        target = db.query(User).filter(User.id == target_user_id).first()
+        if not target or target.organization_id != organization_id:
+            return None
+        ChannelService.join_channel(db, channel_id, target_user_id)
+        return {
+            "channel_id": channel_id,
+            "user_id": target_user_id,
+            "channel_name": channel.name,
+        }
+
+    @staticmethod
+    def duplicate_teaching_group(
+        db: Session,
+        source_channel_id: int,
+        created_by: int,
+        organization_id: int,
+    ) -> Optional[Dict[str, Any]]:
+        """Clone a top-level teaching group; does not copy lesson-study children."""
+        src = (
+            db.query(ChatChannel)
+            .filter(
+                ChatChannel.id == source_channel_id,
+                ChatChannel.is_archived.is_(False),
+                ChatChannel.organization_id == organization_id,
+                ChatChannel.parent_id.is_(None),
+            )
+            .first()
+        )
+        if not src or src.channel_type == "announce":
+            return None
+        max_order = (
+            db.query(func.coalesce(func.max(ChatChannel.display_order), -1))
+            .filter(
+                ChatChannel.organization_id == organization_id,
+                ChatChannel.is_archived.is_(False),
+                ChatChannel.parent_id.is_(None),
+            )
+            .scalar()
+        )
+        suffix = " (copy)"
+        base = src.name
+        if len(base) + len(suffix) > 100:
+            base = base[: max(0, 100 - len(suffix))]
+        new_name = f"{base}{suffix}"
+        channel = ChatChannel(
+            name=new_name,
+            description=src.description,
+            organization_id=organization_id,
+            created_by=created_by,
+            avatar=src.avatar,
+            parent_id=None,
+            color=src.color,
+            channel_type=src.channel_type,
+            is_default=False,
+            posting_policy=src.posting_policy,
+            display_order=int(max_order) + 1,
+        )
+        db.add(channel)
+        db.flush()
+
+        owner_member = ChannelMember(
+            channel_id=channel.id, user_id=created_by, role="owner",
+        )
+        db.add(owner_member)
+        db.commit()
+        logger.info(
+            "[WorkshopChat] Channel %d duplicated as %d by user %d",
+            source_channel_id, channel.id, created_by,
+        )
+        return {
+            "id": channel.id,
+            "name": channel.name,
+            "description": channel.description,
+            "avatar": channel.avatar,
+            "created_by": channel.created_by,
+            "parent_id": channel.parent_id,
+            "color": channel.color,
+            "status": channel.status,
+            "created_at": channel.created_at.isoformat(),
         }
 
 

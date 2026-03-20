@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from 'vue'
+
 import { ElMessageBox } from 'element-plus'
 
 import { useLanguage, useNotifications } from '@/composables'
@@ -173,9 +174,7 @@ async function repairPaths() {
     if (res.ok) {
       const data = await res.json()
       if (data.updated > 0) {
-        notify.success(
-          t('admin.library.repairSuccess').replace('{count}', String(data.updated))
-        )
+        notify.success(t('admin.library.repairSuccess').replace('{count}', String(data.updated)))
         await scan()
       } else {
         notify.success(t('admin.library.repairNothingToFix'))
@@ -263,7 +262,9 @@ async function deleteBook(book: BookEntry, deleteFiles: boolean) {
       : `/api/library/admin/documents/${docId}`
     const res = await apiRequest(url, { method: 'DELETE' })
     if (res.ok) {
-      notify.success(deleteFiles ? t('admin.library.deleteBookSuccess') : t('admin.library.deleteSuccess'))
+      notify.success(
+        deleteFiles ? t('admin.library.deleteBookSuccess') : t('admin.library.deleteSuccess')
+      )
       await scan()
     } else {
       const data = await res.json().catch(() => ({}))
@@ -358,7 +359,9 @@ onMounted(() => {
     <!-- Header -->
     <div class="flex items-start justify-between gap-4 mb-5">
       <div>
-        <h2 class="text-sm font-semibold text-stone-800 m-0 mb-0.5">{{ t('admin.library.tabTitle') }}</h2>
+        <h2 class="text-sm font-semibold text-stone-800 m-0 mb-0.5">
+          {{ t('admin.library.tabTitle') }}
+        </h2>
         <p class="text-xs text-stone-400 m-0">{{ t('admin.library.tabSubtitle') }}</p>
       </div>
       <div class="flex items-center gap-2 flex-shrink-0">
@@ -388,7 +391,8 @@ onMounted(() => {
             effect="dark"
             round
             class="ml-1.5 !bg-white/20 !border-0 !text-white !text-xs !px-1.5 !py-0 !h-4 !leading-4"
-          >{{ repairBooks.length }}</el-tag>
+            >{{ repairBooks.length }}</el-tag
+          >
         </el-button>
         <el-button
           v-if="newBooks.length > 0"
@@ -402,23 +406,30 @@ onMounted(() => {
             effect="dark"
             round
             class="ml-1.5 !bg-white/20 !border-0 !text-white !text-xs !px-1.5 !py-0 !h-4 !leading-4"
-          >{{ newBooks.length }}</el-tag>
+            >{{ newBooks.length }}</el-tag
+          >
         </el-button>
       </div>
     </div>
 
     <!-- Storage path strip (always visible) -->
-    <div class="flex items-center gap-1.5 mb-4 px-3 py-2 rounded-lg bg-stone-50 border border-stone-100">
+    <div
+      class="flex items-center gap-1.5 mb-4 px-3 py-2 rounded-lg bg-stone-50 border border-stone-100"
+    >
       <el-icon class="text-stone-400 flex-shrink-0"><FolderOpened /></el-icon>
-      <span class="text-[11px] text-stone-400 flex-shrink-0">{{ t('admin.library.storageDir') }}:</span>
+      <span class="text-[11px] text-stone-400 flex-shrink-0"
+        >{{ t('admin.library.storageDir') }}:</span
+      >
       <span
         v-if="scanData"
         class="font-mono text-[11px] text-stone-600 truncate"
-      >{{ scanData.storage_dir }}</span>
+        >{{ scanData.storage_dir }}</span
+      >
       <span
         v-else
         class="font-mono text-[11px] text-stone-300"
-      >storage/library/</span>
+        >storage/library/</span
+      >
     </div>
 
     <!-- Stats row -->
@@ -427,7 +438,9 @@ onMounted(() => {
       class="grid grid-cols-4 gap-2.5 mb-4"
     >
       <div class="stat-card stat-default">
-        <p class="text-[11px] text-stone-400 truncate mb-1">{{ t('admin.library.totalFolders') }}</p>
+        <p class="text-[11px] text-stone-400 truncate mb-1">
+          {{ t('admin.library.totalFolders') }}
+        </p>
         <p class="stat-value">{{ scanData.total }}</p>
       </div>
       <div class="stat-card stat-green">
@@ -439,7 +452,9 @@ onMounted(() => {
         <p class="stat-value">{{ activeCount }}</p>
       </div>
       <div class="stat-card stat-amber">
-        <p class="text-[11px] text-stone-400 truncate mb-1">{{ t('admin.library.newUnregistered') }}</p>
+        <p class="text-[11px] text-stone-400 truncate mb-1">
+          {{ t('admin.library.newUnregistered') }}
+        </p>
         <p class="stat-value">{{ newBooks.length }}</p>
       </div>
     </div>
@@ -452,7 +467,8 @@ onMounted(() => {
       <el-icon
         class="is-loading"
         :size="28"
-      ><Loading /></el-icon>
+        ><Loading
+      /></el-icon>
       <p class="mt-3 text-sm">{{ t('admin.library.scanning') }}</p>
     </div>
 
@@ -488,7 +504,7 @@ onMounted(() => {
               class="cover-thumb"
               alt=""
               @error="(e: Event) => ((e.target as HTMLImageElement).style.opacity = '0')"
-            >
+            />
           </div>
         </template>
       </el-table-column>
@@ -502,9 +518,7 @@ onMounted(() => {
           <div class="flex items-center gap-2.5">
             <el-tooltip
               :content="
-                row.exists_on_disk
-                  ? t('admin.library.diskPresent')
-                  : t('admin.library.diskMissing')
+                row.exists_on_disk ? t('admin.library.diskPresent') : t('admin.library.diskMissing')
               "
             >
               <el-icon
@@ -515,7 +529,9 @@ onMounted(() => {
               </el-icon>
             </el-tooltip>
             <div class="min-w-0">
-              <p class="text-[13px] font-medium text-stone-800 m-0 truncate">{{ displayLabel(row) }}</p>
+              <p class="text-[13px] font-medium text-stone-800 m-0 truncate">
+                {{ displayLabel(row) }}
+              </p>
               <p
                 v-if="row.title && row.title !== row.folder_name"
                 class="book-folder text-[11px] text-stone-400 mt-px m-0 truncate"
@@ -573,7 +589,8 @@ onMounted(() => {
           <span
             v-else
             class="text-stone-300 text-xs"
-          >—</span>
+            >—</span
+          >
         </template>
       </el-table-column>
 
@@ -640,7 +657,11 @@ onMounted(() => {
                   @click="deleteBook(row, row.exists_on_disk)"
                 >
                   <el-icon><Delete /></el-icon>
-                  {{ row.exists_on_disk ? t('admin.library.deleteBook') : t('admin.library.deleteRecord') }}
+                  {{
+                    row.exists_on_disk
+                      ? t('admin.library.deleteBook')
+                      : t('admin.library.deleteRecord')
+                  }}
                 </el-dropdown-item>
               </el-dropdown-menu>
             </template>
@@ -648,7 +669,6 @@ onMounted(() => {
         </template>
       </el-table-column>
     </el-table>
-
 
     <!-- Rename Pages Dialog -->
     <el-dialog
@@ -680,8 +700,7 @@ onMounted(() => {
           <p class="mt-1.5 text-[11px] text-stone-400">
             {{ t('admin.library.renameBookNameHint') }}:
             <span class="font-mono text-stone-500">
-              {{ renameDialog.bookName || '…' }}_01.jpg,
-              {{ renameDialog.bookName || '…' }}_02.jpg …
+              {{ renameDialog.bookName || '…' }}_01.jpg, {{ renameDialog.bookName || '…' }}_02.jpg …
             </span>
           </p>
         </div>
@@ -692,7 +711,9 @@ onMounted(() => {
           class="flex items-center py-5"
         >
           <el-icon class="is-loading"><Loading /></el-icon>
-          <span class="ml-2 text-sm text-stone-400">{{ t('admin.library.renamePreviewLoading') }}</span>
+          <span class="ml-2 text-sm text-stone-400">{{
+            t('admin.library.renamePreviewLoading')
+          }}</span>
         </div>
 
         <!-- No changes needed -->
@@ -758,10 +779,18 @@ onMounted(() => {
   border-left: 3px solid transparent;
 }
 
-.stat-default { border-left-color: var(--el-border-color); }
-.stat-green   { border-left-color: #22c55e; }
-.stat-blue    { border-left-color: #3b82f6; }
-.stat-amber   { border-left-color: #f59e0b; }
+.stat-default {
+  border-left-color: var(--el-border-color);
+}
+.stat-green {
+  border-left-color: #22c55e;
+}
+.stat-blue {
+  border-left-color: #3b82f6;
+}
+.stat-amber {
+  border-left-color: #f59e0b;
+}
 
 .stat-value {
   font-size: 24px;
@@ -778,10 +807,18 @@ onMounted(() => {
   flex-shrink: 0;
 }
 
-.dot-new        { background: #3b82f6; }
-.dot-registered { background: #22c55e; }
-.dot-repair     { background: #f59e0b; }
-.dot-orphaned   { background: #ef4444; }
+.dot-new {
+  background: #3b82f6;
+}
+.dot-registered {
+  background: #22c55e;
+}
+.dot-repair {
+  background: #f59e0b;
+}
+.dot-orphaned {
+  background: #ef4444;
+}
 
 .book-folder {
   font-family: ui-monospace, monospace;

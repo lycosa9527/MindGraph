@@ -133,17 +133,17 @@ export const usePanelsStore = defineStore('panels', () => {
     mindmate.value.uploadedFiles = mindmate.value.uploadedFiles.filter((f) => f.id !== fileId)
   }
 
-  function openNodePalette(options: Partial<NodePalettePanelState> & {
-    diagramKey?: string
-    conceptMapNodeId?: string
-    conceptMapNodeText?: string
-  } = {}): void {
+  function openNodePalette(
+    options: Partial<NodePalettePanelState> & {
+      diagramKey?: string
+      conceptMapNodeId?: string
+      conceptMapNodeText?: string
+    } = {}
+  ): void {
     const wasOpen = nodePalette.value.open
     const { diagramKey, conceptMapNodeId, conceptMapNodeText, ...restOptions } = options
-    const snapshot =
-      diagramKey && nodePaletteSessionsByDiagram.value.get(diagramKey)
-    const hasRestoredSession =
-      !conceptMapNodeId && !!(snapshot && snapshot.suggestions.length > 0)
+    const snapshot = diagramKey && nodePaletteSessionsByDiagram.value.get(diagramKey)
+    const hasRestoredSession = !conceptMapNodeId && !!(snapshot && snapshot.suggestions.length > 0)
     if (hasRestoredSession) {
       let conceptMapTabs = snapshot.conceptMapTabs ?? undefined
       let mode = snapshot.mode
@@ -199,7 +199,8 @@ export const usePanelsStore = defineStore('panels', () => {
   }
 
   function saveNodePaletteSession(diagramKey: string): void {
-    let { suggestions, selected, mode, stage, stage_data, conceptMapTabs } = nodePalette.value
+    const { suggestions, selected, stage, stage_data, conceptMapTabs } = nodePalette.value
+    let mode = nodePalette.value.mode
     if (suggestions.length > 0 && diagramKey) {
       let tabsToSave = conceptMapTabs ? [...conceptMapTabs] : undefined
       if (diagramKey.startsWith('concept_map')) {
@@ -309,10 +310,7 @@ export const usePanelsStore = defineStore('panels', () => {
     }
   }
 
-  function toggleNodePaletteSelection(
-    nodeId: string,
-    singleSelect?: boolean
-  ): void {
+  function toggleNodePaletteSelection(nodeId: string, singleSelect?: boolean): void {
     const index = nodePalette.value.selected.indexOf(nodeId)
     if (index > -1) {
       nodePalette.value.selected.splice(index, 1)

@@ -4,7 +4,9 @@
  * Groups channels by type: Announce, Public, Private.
  */
 import { computed } from 'vue'
+
 import { OfficeBuilding } from '@element-plus/icons-vue'
+
 import { Globe, Lock, Megaphone, Pin } from 'lucide-vue-next'
 
 import { useLanguage } from '@/composables/useLanguage'
@@ -31,27 +33,33 @@ interface ChannelSection {
 }
 
 const sections = computed<ChannelSection[]>(() => {
-  const announce = props.channels.filter(c => c.channel_type === 'announce')
-  const pub = props.channels.filter(c => c.channel_type === 'public')
-  const priv = props.channels.filter(c => c.channel_type === 'private')
+  const announce = props.channels.filter((c) => c.channel_type === 'announce')
+  const pub = props.channels.filter((c) => c.channel_type === 'public')
+  const priv = props.channels.filter((c) => c.channel_type === 'private')
 
   const result: ChannelSection[] = []
   if (announce.length > 0) {
     result.push({
-      key: 'announce', labelKey: 'workshop.announceChannels',
-      icon: Megaphone, channels: announce,
+      key: 'announce',
+      labelKey: 'workshop.announceChannels',
+      icon: Megaphone,
+      channels: announce,
     })
   }
   if (pub.length > 0) {
     result.push({
-      key: 'public', labelKey: 'workshop.publicChannels',
-      icon: Globe, channels: pub,
+      key: 'public',
+      labelKey: 'workshop.publicChannels',
+      icon: Globe,
+      channels: pub,
     })
   }
   if (priv.length > 0) {
     result.push({
-      key: 'private', labelKey: 'workshop.privateChannels',
-      icon: Lock, channels: priv,
+      key: 'private',
+      labelKey: 'workshop.privateChannels',
+      icon: Lock,
+      channels: priv,
     })
   }
   return result
@@ -66,19 +74,36 @@ function typeColor(ct: string): string {
 
 <template>
   <div class="cb">
-    <div v-if="loading" class="cb__loading">
+    <div
+      v-if="loading"
+      class="cb__loading"
+    >
       <div class="cb__spinner" />
     </div>
 
-    <div v-else-if="channels.length === 0" class="cb__empty">
+    <div
+      v-else-if="channels.length === 0"
+      class="cb__empty"
+    >
       {{ t('workshop.noChannelsAvailable') }}
     </div>
 
-    <div v-else class="cb__body">
-      <div v-for="section in sections" :key="section.key" class="cb__section">
+    <div
+      v-else
+      class="cb__body"
+    >
+      <div
+        v-for="section in sections"
+        :key="section.key"
+        class="cb__section"
+      >
         <!-- Section header -->
         <div class="cb__section-header">
-          <component :is="section.icon" class="cb__section-icon" :class="typeColor(section.key)" />
+          <component
+            :is="section.icon"
+            class="cb__section-icon"
+            :class="typeColor(section.key)"
+          />
           <h2 class="cb__section-title">{{ t(section.labelKey) }}</h2>
           <span class="cb__section-count">{{ section.channels.length }}</span>
         </div>
@@ -93,9 +118,11 @@ function typeColor(ct: string): string {
               'cb__card--muted': channel.is_muted,
               'cb__card--joined': channel.is_joined,
             }"
-            :style="channel.is_joined && channel.color
-              ? { borderLeftColor: channel.color, borderLeftWidth: '3px' }
-              : {}"
+            :style="
+              channel.is_joined && channel.color
+                ? { borderLeftColor: channel.color, borderLeftWidth: '3px' }
+                : {}
+            "
             @click="channel.is_joined ? emit('select', channel.id) : undefined"
           >
             <div class="cb__card-top">
@@ -105,7 +132,10 @@ function typeColor(ct: string): string {
               <div class="cb__card-info">
                 <div class="cb__card-name-row">
                   <h3 class="cb__card-name">{{ channel.name }}</h3>
-                  <Pin v-if="channel.pin_to_top" class="cb__card-pin" />
+                  <Pin
+                    v-if="channel.pin_to_top"
+                    class="cb__card-pin"
+                  />
                   <el-badge
                     v-if="channel.unread_count > 0"
                     :value="channel.unread_count"
@@ -113,7 +143,10 @@ function typeColor(ct: string): string {
                     class="shrink-0"
                   />
                 </div>
-                <p v-if="channel.description" class="cb__card-desc">
+                <p
+                  v-if="channel.description"
+                  class="cb__card-desc"
+                >
                   {{ channel.description }}
                 </p>
                 <div class="cb__card-meta">
@@ -124,7 +157,10 @@ function typeColor(ct: string): string {
                   <span class="cb__card-meta-item">
                     {{ channel.topic_count }} {{ t('workshop.topicCount') }}
                   </span>
-                  <span v-if="channel.is_default" class="cb__card-default-badge">
+                  <span
+                    v-if="channel.is_default"
+                    class="cb__card-default-badge"
+                  >
                     {{ t('workshop.defaultChannel') }}
                   </span>
                 </div>
@@ -173,7 +209,9 @@ function typeColor(ct: string): string {
 }
 
 @keyframes cb-spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .cb__empty {
@@ -234,7 +272,9 @@ function typeColor(ct: string): string {
   padding: 14px 16px;
   background: hsl(0deg 0% 100%);
   cursor: pointer;
-  transition: border-color 150ms ease, box-shadow 150ms ease;
+  transition:
+    border-color 150ms ease,
+    box-shadow 150ms ease;
 }
 
 .cb__card:hover {

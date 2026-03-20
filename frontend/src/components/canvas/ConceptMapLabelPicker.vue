@@ -11,25 +11,15 @@ import { computed, onMounted, onUnmounted, watch } from 'vue'
 
 import { storeToRefs } from 'pinia'
 
-import { useConceptMapRelationshipStore } from '@/stores/conceptMapRelationship'
 import { useConceptMapRelationship } from '@/composables/useConceptMapRelationship'
 import { useDiagramStore } from '@/stores'
+import { useConceptMapRelationshipStore } from '@/stores/conceptMapRelationship'
 
 const relationshipStore = useConceptMapRelationshipStore()
 const diagramStore = useDiagramStore()
-const {
-  activeEntry,
-  activePage,
-  activeTotalPages,
-  canPrevPage,
-  canNextPage,
-} = storeToRefs(relationshipStore)
-const {
-  selectOption,
-  prevPage,
-  nextPage,
-  isLoadingMoreFor,
-} = useConceptMapRelationship()
+const { activeEntry, activePage, activeTotalPages, canPrevPage, canNextPage } =
+  storeToRefs(relationshipStore)
+const { selectOption, prevPage, nextPage, isLoadingMoreFor } = useConceptMapRelationship()
 
 /** Current label for the active connection (to highlight selected option) */
 const currentLabel = computed(() => {
@@ -41,9 +31,7 @@ const currentLabel = computed(() => {
 
 const activeConnectionId = computed(() => activeEntry.value?.[0] ?? null)
 const isLoadingMore = computed(() =>
-  activeConnectionId.value
-    ? isLoadingMoreFor(activeConnectionId.value)
-    : false
+  activeConnectionId.value ? isLoadingMoreFor(activeConnectionId.value) : false
 )
 
 /** Defense: clear stale options when connection was deleted via another path */
@@ -80,12 +68,17 @@ async function handleKeydown(event: KeyboardEvent) {
   }
 
   const num =
-    event.key === '1' ? 1
-    : event.key === '2' ? 2
-    : event.key === '3' ? 3
-    : event.key === '4' ? 4
-    : event.key === '5' ? 5
-    : 0
+    event.key === '1'
+      ? 1
+      : event.key === '2'
+        ? 2
+        : event.key === '3'
+          ? 3
+          : event.key === '4'
+            ? 4
+            : event.key === '5'
+              ? 5
+              : 0
   if (num > 0 && num <= entry[1].length) {
     event.preventDefault()
     event.stopPropagation()
@@ -136,7 +129,10 @@ onUnmounted(() => {
       >
         -
       </button>
-      <span v-if="activeTotalPages > 1" class="tabular-nums">
+      <span
+        v-if="activeTotalPages > 1"
+        class="tabular-nums"
+      >
         {{ activePage + 1 }}/{{ activeTotalPages }}
       </span>
       <button

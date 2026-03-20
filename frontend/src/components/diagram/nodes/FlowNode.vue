@@ -11,12 +11,12 @@ import { Handle, Position } from '@vue-flow/core'
 
 import { X } from 'lucide-vue-next'
 
-import { getMindmapBranchColor } from '@/config/mindmapColors'
 import { eventBus } from '@/composables/useEventBus'
-import { getBorderStyleProps } from '@/utils/borderStyleUtils'
 import { useTheme } from '@/composables/useTheme'
+import { getMindmapBranchColor } from '@/config/mindmapColors'
 import { useDiagramStore } from '@/stores'
 import type { MindGraphNodeProps } from '@/types'
+import { getBorderStyleProps } from '@/utils/borderStyleUtils'
 
 import InlineEditableText from './InlineEditableText.vue'
 
@@ -50,12 +50,8 @@ const groupColor = computed(() => {
 const nodeStyle = computed(() => {
   const color = groupColor.value
   const borderColor =
-    props.data.style?.borderColor ||
-    color?.border ||
-    defaultStyle.value.borderColor ||
-    '#409eff'
-  const borderWidth =
-    props.data.style?.borderWidth || defaultStyle.value.borderWidth || 2
+    props.data.style?.borderColor || color?.border || defaultStyle.value.borderColor || '#409eff'
+  const borderWidth = props.data.style?.borderWidth || defaultStyle.value.borderWidth || 2
   const borderStyle = props.data.style?.borderStyle || 'solid'
   const backgroundColor =
     props.data.style?.backgroundColor ||

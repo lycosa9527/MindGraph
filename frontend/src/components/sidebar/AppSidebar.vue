@@ -116,7 +116,7 @@ const canAccessWorkshopChat = computed(() => {
   return userCanAccessWorkshopChat(
     authStore.isAdminOrManager,
     authStore.user?.schoolId,
-    workshopChatPreviewOrgIds.value,
+    workshopChatPreviewOrgIds.value
   )
 })
 

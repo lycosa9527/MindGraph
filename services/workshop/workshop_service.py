@@ -27,6 +27,7 @@ from datetime import datetime
 
 from services.redis.redis_client import get_redis
 from config.database import SessionLocal
+from models.domain.auth import User
 from models.domain.diagrams import Diagram
 
 logger = logging.getLogger(__name__)
@@ -43,6 +44,31 @@ WORKSHOP_SESSION_KEY = "workshop:session:{code}"
 WORKSHOP_DIAGRAM_KEY = "workshop:diagram:{code}"
 WORKSHOP_PARTICIPANTS_KEY = "workshop:participants:{code}"
 WORKSHOP_CODE_TO_DIAGRAM_KEY = "workshop:code_to_diagram:{code}"
+
+
+def _user_may_join_diagram_workshop(
+    db, diagram: Diagram, joiner_id: int,
+) -> bool:
+    """
+    Owner always joins. Admins may join. Same-organization as diagram owner may join.
+    """
+    if diagram.user_id == joiner_id:
+        return True
+    joiner = db.query(User).filter(User.id == joiner_id).first()
+    owner = db.query(User).filter(User.id == diagram.user_id).first()
+    if not joiner or not owner:
+        return False
+    if joiner.role in ("admin", "superadmin", "manager"):
+        return True
+    org_joiner = joiner.organization_id
+    org_owner = owner.organization_id
+    if (
+        org_joiner is not None
+        and org_owner is not None
+        and org_joiner == org_owner
+    ):
+        return True
+    return False
 
 
 def generate_workshop_code() -> str:
@@ -116,7 +142,7 @@ class WorkshopService:
             code = None
             redis = get_redis()
             if not redis:
-                error_msg = "Redis client not available. Workshop feature requires Redis."
+                error_msg = "Redis client not available. Presentation mode requires Redis."
                 logger.error("[WorkshopService] %s", error_msg)
                 return None, error_msg
 
@@ -131,7 +157,7 @@ class WorkshopService:
                     break
 
             if not code:
-                error_msg = "Failed to generate unique workshop code after multiple attempts"
+                error_msg = "Failed to generate unique presentation code after multiple attempts"
                 logger.error("[WorkshopService] %s", error_msg)
                 return None, error_msg
 
@@ -142,7 +168,7 @@ class WorkshopService:
             # Store workshop session in Redis (Redis is required)
             redis = get_redis()
             if not redis:
-                error_msg = "Redis client not available. Workshop feature requires Redis."
+                error_msg = "Redis client not available. Presentation mode requires Redis."
                 logger.error("[WorkshopService] %s", error_msg)
                 db.rollback()
                 return None, error_msg
@@ -173,7 +199,7 @@ class WorkshopService:
             return code, None
 
         except Exception as e:
-            error_msg = f"Error starting workshop: {str(e)}"
+            error_msg = f"Error starting presentation mode: {str(e)}"
             logger.error(
                 "[WorkshopService] %s",
                 error_msg,
@@ -300,6 +326,14 @@ class WorkshopService:
             ).first()
 
             if not diagram:
+                return None
+
+            if not _user_may_join_diagram_workshop(db, diagram, user_id):
+                logger.warning(
+                    "[WorkshopService] Join denied user=%s diagram=%s",
+                    user_id,
+                    diagram_id,
+                )
                 return None
 
             # Add participant to Redis (Redis is required)
@@ -563,6 +597,8 @@ class WorkshopService:
 
             for diagram in diagrams_with_workshop:
                 code = diagram.workshop_code
+                if code is None:
+                    continue
                 # Check if code exists in Redis
                 exists = redis.exists(self._get_code_to_diagram_key(code))
                 if not exists:

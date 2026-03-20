@@ -15,9 +15,9 @@
  *     · Channel message → ding + browser OS notification
  *     · DM or @mention  → ding + browser OS notification + in-app toast card
  */
-import { useAuthStore } from '@/stores/auth'
 import { pushChatToast } from '@/composables/chatToastQueue'
 import { useLanguage } from '@/composables/useLanguage'
+import { useAuthStore } from '@/stores/auth'
 import type { ChatMessage, DirectMessageItem } from '@/stores/workshopChat'
 import { useWorkshopChatStore } from '@/stores/workshopChat'
 
@@ -132,15 +132,14 @@ export function useChatNotifications() {
   function notifyChannelMessage(msg: ChatMessage): void {
     if (String(msg.sender_id) === myId()) return
 
-    const channel = store.channels.find(c => c.id === msg.channel_id)
+    const channel = store.channels.find((c) => c.id === msg.channel_id)
     if (channel?.is_muted) return
 
-    const isViewing = (
-      !isDocumentHidden()
-      && msg.channel_id === store.currentChannelId
-      && store.currentTopicId === null
-      && store.activeTab === 'channels'
-    )
+    const isViewing =
+      !isDocumentHidden() &&
+      msg.channel_id === store.currentChannelId &&
+      store.currentTopicId === null &&
+      store.activeTab === 'channels'
 
     const mentioned = isUserMentionedInMessage(msg)
 
@@ -167,7 +166,7 @@ export function useChatNotifications() {
           ? t('workshop.mentionedInChannel').replace('{0}', channelName)
           : `#${channelName}`,
         `${msg.sender_name}: ${msg.content}`,
-        `channel-${msg.channel_id}`,
+        `channel-${msg.channel_id}`
       )
     }
   }
@@ -175,14 +174,11 @@ export function useChatNotifications() {
   function notifyTopicMessage(msg: ChatMessage): void {
     if (String(msg.sender_id) === myId()) return
 
-    const channel = store.channels.find(c => c.id === msg.channel_id)
+    const channel = store.channels.find((c) => c.id === msg.channel_id)
     if (channel?.is_muted) return
 
-    const isViewing = (
-      !isDocumentHidden()
-      && msg.topic_id === store.currentTopicId
-      && store.activeTab === 'channels'
-    )
+    const isViewing =
+      !isDocumentHidden() && msg.topic_id === store.currentTopicId && store.activeTab === 'channels'
 
     const mentioned = isUserMentionedInMessage(msg)
 
@@ -191,7 +187,7 @@ export function useChatNotifications() {
     }
 
     if (mentioned && !isViewing) {
-      const matchedTopic = store.topics.find(tp => tp.id === msg.topic_id)
+      const matchedTopic = store.topics.find((tp) => tp.id === msg.topic_id)
       const channelName = channel?.name ?? t('workshop.channels')
       const topicTitle = matchedTopic?.title ?? t('workshop.topics')
       pushChatToast({
@@ -205,7 +201,7 @@ export function useChatNotifications() {
     }
 
     if (isDocumentHidden()) {
-      const matchedTopic = store.topics.find(tp => tp.id === msg.topic_id)
+      const matchedTopic = store.topics.find((tp) => tp.id === msg.topic_id)
       const channelName = channel?.name ?? t('workshop.channels')
       const topicTitle = matchedTopic?.title ?? t('workshop.topics')
       showBrowserNotification(
@@ -213,7 +209,7 @@ export function useChatNotifications() {
           ? t('workshop.mentionedInTopic').replace('{0}', topicTitle)
           : `#${channelName} › ${topicTitle}`,
         `${msg.sender_name}: ${msg.content}`,
-        `topic-${msg.topic_id}`,
+        `topic-${msg.topic_id}`
       )
     }
   }
@@ -221,16 +217,13 @@ export function useChatNotifications() {
   function notifyDM(msg: DirectMessageItem): void {
     if (String(msg.sender_id) === myId()) return
 
-    const isViewing = (
-      !isDocumentHidden()
-      && msg.sender_id === store.currentDMPartnerId
-      && store.activeTab === 'dms'
-    )
+    const isViewing =
+      !isDocumentHidden() && msg.sender_id === store.currentDMPartnerId && store.activeTab === 'dms'
 
     if (!isViewing) {
       playDing()
 
-      const conv = store.dmConversations.find(c => c.partner_id === msg.sender_id)
+      const conv = store.dmConversations.find((c) => c.partner_id === msg.sender_id)
       pushChatToast({
         type: 'dm',
         senderName: conv?.partner_name ?? `User ${msg.sender_id}`,
@@ -242,11 +235,11 @@ export function useChatNotifications() {
     }
 
     if (isDocumentHidden()) {
-      const conv = store.dmConversations.find(c => c.partner_id === msg.sender_id)
+      const conv = store.dmConversations.find((c) => c.partner_id === msg.sender_id)
       showBrowserNotification(
         conv?.partner_name ?? `User ${msg.sender_id}`,
         msg.content,
-        `dm-${msg.sender_id}`,
+        `dm-${msg.sender_id}`
       )
     }
   }

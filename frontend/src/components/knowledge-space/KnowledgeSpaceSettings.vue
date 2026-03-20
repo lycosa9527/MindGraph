@@ -9,7 +9,7 @@ import { ElButton, ElDivider, ElDrawer, ElForm, ElFormItem, ElInput, ElSelect } 
 
 import { useLanguage } from '@/composables/useLanguage'
 
-const props = defineProps<{
+defineProps<{
   visible: boolean
 }>()
 

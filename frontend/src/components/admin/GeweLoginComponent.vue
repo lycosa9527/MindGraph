@@ -155,8 +155,7 @@ async function saveConfig(silent = true) {
     const response = await apiClient.post('/api/gewe/preferences/save', {
       regionId: selectedRegionId.value,
       deviceType: selectedDeviceType.value,
-      autoSliding:
-        selectedDeviceType.value === 'mac' ? selectedAutoSliding.value : undefined,
+      autoSliding: selectedDeviceType.value === 'mac' ? selectedAutoSliding.value : undefined,
     })
 
     if (!response.ok) {
@@ -178,10 +177,11 @@ async function saveConfig(silent = true) {
     if (!silent) {
       notify.success('配置已保存')
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Failed to save config:', error)
     if (!silent) {
-      notify.error(error.message || '保存配置失败')
+      const msg = error instanceof Error ? error.message : '保存配置失败'
+      notify.error(msg)
     }
   }
 }
@@ -299,8 +299,9 @@ async function generateQrCode() {
     } else {
       throw new Error(data.msg || '生成二维码失败')
     }
-  } catch (error: any) {
-    notify.error(error.message || '生成二维码失败')
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : '生成二维码失败'
+    notify.error(msg)
   } finally {
     isGeneratingQr.value = false
   }
@@ -315,8 +316,7 @@ async function checkLoginStatus() {
   try {
     // iPad: autoSliding must be false (face verification QR)
     // Mac: use user choice - true (auto) or false (manual app verification QR)
-    const autoSliding =
-      selectedDeviceType.value === 'mac' ? selectedAutoSliding.value : false
+    const autoSliding = selectedDeviceType.value === 'mac' ? selectedAutoSliding.value : false
 
     const response = await apiClient.post('/api/gewe/login/check', {
       appId: appId.value,
@@ -401,8 +401,9 @@ async function checkLoginStatus() {
       }
       // status === 0 means not scanned yet, continue polling
     }
-  } catch (error: any) {
-    console.debug('Login check:', error.message)
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : String(error)
+    console.debug('Login check:', msg)
   }
 }
 
@@ -517,9 +518,10 @@ async function resetDeviceId() {
       const error = await response.json().catch(() => ({ detail: '重置设备ID失败' }))
       throw new Error(error.detail || error.msg || '重置设备ID失败')
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Failed to reset device ID:', error)
-    notify.error(error.message || '重置设备ID失败')
+    const msg = error instanceof Error ? error.message : '重置设备ID失败'
+    notify.error(msg)
   } finally {
     isResettingDeviceId.value = false
   }
@@ -753,9 +755,7 @@ onMounted(async () => {
               <p
                 class="text-xs"
                 :class="
-                  verificationQrCodeBase64
-                    ? 'text-amber-600 dark:text-amber-500'
-                    : 'text-gray-500'
+                  verificationQrCodeBase64 ? 'text-amber-600 dark:text-amber-500' : 'text-gray-500'
                 "
               >
                 {{
@@ -794,9 +794,7 @@ onMounted(async () => {
               v-else
               class="w-64 h-64 bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center mx-auto"
             >
-              <span class="text-gray-400 text-sm text-center px-2">
-                微信扫码后显示
-              </span>
+              <span class="text-gray-400 text-sm text-center px-2"> 微信扫码后显示 </span>
             </div>
           </div>
         </div>

@@ -1,4 +1,4 @@
-import { defineConfig, Plugin } from 'vite'
+import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import tailwindcss from '@tailwindcss/vite'
 import { resolve, dirname } from 'path'
@@ -7,6 +7,26 @@ import { fileURLToPath } from 'url'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
+// Vendor chunk patterns (order: specific → general; first match wins)
+const vendorChunkGroups = [
+  {
+    name: 'vendor-element-plus',
+    test: /node_modules[\\/](?:element-plus|@element-plus\/icons-vue)[\\/]/,
+  },
+  {
+    name: 'vendor-vueflow',
+    test: /node_modules[\\/]@vue-flow[\\/]/,
+  },
+  {
+    name: 'vendor-vue',
+    test: /node_modules[\\/](?:vue-router|pinia|vue)[\\/]/,
+  },
+  {
+    name: 'vendor-utils',
+    test:
+      /node_modules[\\/](?:axios|mitt|dompurify|markdown-it|@vueuse[\\/]core)[\\/]/,
+  },
+]
 
 // Read version from VERSION file (single source of truth)
 const version = readFileSync(resolve(__dirname, '../VERSION'), 'utf-8').trim()
@@ -24,6 +44,9 @@ export default defineConfig({
     __BUILD_TIME__: JSON.stringify(Date.now()),
   },
   resolve: {
+    // tsconfig `paths` for TS/JS; explicit `@` alias still required for CSS @import in SFCs
+    // (Tailwind generate / enhanced-resolve does not resolve tsconfigPaths for those).
+    tsconfigPaths: true,
     alias: {
       '@': resolve(__dirname, 'src'),
     },
@@ -65,23 +88,10 @@ export default defineConfig({
     // Element Plus is ~1MB (expected for a full UI framework)
     // Suppress warning since we've already split vendors optimally
     chunkSizeWarningLimit: 1100,
-    rollupOptions: {
+    rolldownOptions: {
       output: {
-        // Split vendor libraries into separate chunks for better caching
-        manualChunks: {
-          // Vue core libraries
-          'vendor-vue': ['vue', 'vue-router', 'pinia'],
-          // UI framework (largest dependency)
-          'vendor-element-plus': ['element-plus', '@element-plus/icons-vue'],
-          // VueFlow (diagram visualization)
-          'vendor-vueflow': [
-            '@vue-flow/core',
-            '@vue-flow/background',
-            '@vue-flow/controls',
-            '@vue-flow/minimap',
-          ],
-          // Utilities
-          'vendor-utils': ['axios', '@vueuse/core', 'mitt', 'dompurify', 'markdown-it'],
+        codeSplitting: {
+          groups: vendorChunkGroups,
         },
       },
     },

@@ -25,7 +25,7 @@ const props = withDefaults(
   defineProps<{
     /** Canvas zoom (0.1-4) - when provided, display syncs with canvas */
     zoom?: number | null
-    /** When true, presentation button shows exit state */
+    /** When true, fullscreen button shows exit state */
     isPresentationMode?: boolean
   }>(),
   { zoom: null, isPresentationMode: false }
@@ -56,9 +56,9 @@ const zoomSelectValue = computed({
   set: (value: number) => {
     zoomLevel.value = value
     if (value === 100) {
-      emit('fit-to-screen')
+      emit('fitToScreen')
     } else {
-      emit('zoom-change', value)
+      emit('zoomChange', value)
     }
   },
 })
@@ -74,33 +74,33 @@ watch(
 )
 
 function handleZoomIn() {
-  emit('zoom-in')
+  emit('zoomIn')
 }
 
 function handleZoomOut() {
-  emit('zoom-out')
+  emit('zoomOut')
 }
 
 function handleZoomReset() {
-  emit('fit-to-screen')
+  emit('fitToScreen')
 }
 
 function toggleHandTool() {
   isHandToolActive.value = !isHandToolActive.value
-  emit('hand-tool-toggle', isHandToolActive.value)
+  emit('handToolToggle', isHandToolActive.value)
 }
 
 function handlePresentation() {
-  emit('start-presentation')
+  emit('startPresentation')
 }
 
 const emit = defineEmits<{
-  (e: 'zoom-change', level: number): void
-  (e: 'zoom-in'): void
-  (e: 'zoom-out'): void
-  (e: 'fit-to-screen'): void
-  (e: 'hand-tool-toggle', active: boolean): void
-  (e: 'start-presentation'): void
+  (e: 'zoomChange', level: number): void
+  (e: 'zoomIn'): void
+  (e: 'zoomOut'): void
+  (e: 'fitToScreen'): void
+  (e: 'handToolToggle', active: boolean): void
+  (e: 'startPresentation'): void
 }>()
 
 defineExpose({
@@ -111,9 +111,7 @@ defineExpose({
 
 <template>
   <div class="zoom-controls z-20">
-    <div
-      class="rounded-xl p-1.5 flex items-center gap-0.5"
-    >
+    <div class="rounded-xl p-1.5 flex items-center gap-0.5">
       <!-- Hand tool -->
       <ElTooltip
         :content="isZh ? '抓手工具' : 'Hand Tool'"
@@ -195,16 +193,16 @@ defineExpose({
 
       <div class="divider" />
 
-      <!-- Presentation mode / Exit fullscreen -->
+      <!-- Fullscreen (canvas chrome hidden) / exit -->
       <ElTooltip
         :content="
           props.isPresentationMode
             ? isZh
               ? '退出全屏'
-              : 'Exit Fullscreen'
+              : 'Exit fullscreen'
             : isZh
-              ? '演示模式'
-              : 'Presentation'
+              ? '全屏'
+              : 'Fullscreen'
         "
         placement="top"
       >

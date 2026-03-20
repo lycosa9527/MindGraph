@@ -102,6 +102,7 @@ from .roles import (
     is_admin,
     is_manager,
     is_admin_or_manager,
+    can_moderate_workshop_channel,
     can_access_workshop_chat,
     get_user_role,
 )
@@ -187,6 +188,7 @@ __all__ = [
     "is_admin",
     "is_manager",
     "is_admin_or_manager",
+    "can_moderate_workshop_channel",
     "can_access_workshop_chat",
     "get_user_role",
     # API keys

@@ -1,5 +1,5 @@
 /**
- * useWorkshop - Composable for workshop WebSocket collaboration
+ * useWorkshop - Composable for presentation-mode WebSocket collaboration
  * Handles real-time diagram updates via WebSocket
  */
 import { type Ref, computed, onUnmounted, ref, watch } from 'vue'
@@ -68,7 +68,7 @@ export function useWorkshop(
     return `${protocol}//${host}/api/ws/workshop/${code}`
   }
 
-  // Connect to workshop WebSocket
+  // Connect to presentation-mode WebSocket
   function connect() {
     if (!workshopCode.value || !diagramId.value) {
       return
@@ -104,7 +104,7 @@ export function useWorkshop(
             case 'joined':
               participants.value = message.participants || []
               participantsWithNames.value = message.participants_with_names || []
-              console.log('[WorkshopWS] Joined workshop', message)
+              console.log('[WorkshopWS] Joined presentation mode', message)
               break
 
             case 'update':
@@ -164,12 +164,17 @@ export function useWorkshop(
               }
               break
 
-            case 'user_joined':
-              participants.value = [...(participants.value || []), message.user_id!]
+            case 'user_joined': {
+              const joinedId = message.user_id
+              if (joinedId == null) {
+                break
+              }
+              participants.value = [...(participants.value || []), joinedId]
               notify.info(
                 isZh.value ? `用户 ${message.user_id} 已加入` : `User ${message.user_id} joined`
               )
               break
+            }
 
             case 'user_left':
               participants.value = (participants.value || []).filter((id) => id !== message.user_id)
@@ -179,7 +184,9 @@ export function useWorkshop(
               break
 
             case 'error':
-              notify.error(message.message || (isZh.value ? '工作坊错误' : 'Workshop error'))
+              notify.error(
+                message.message || (isZh.value ? '演示模式错误' : 'Presentation mode error')
+              )
               break
 
             case 'pong':
@@ -196,8 +203,8 @@ export function useWorkshop(
         isConnected.value = false
         notify.error(
           isZh.value
-            ? '工作坊连接错误，请检查网络连接'
-            : 'Workshop connection error, please check your network'
+            ? '演示模式连接错误，请检查网络连接'
+            : 'Presentation mode connection error, please check your network'
         )
       }
 
@@ -209,7 +216,9 @@ export function useWorkshop(
         if (event.code !== 1000 && event.code !== 1001) {
           const reason = event.reason || (isZh.value ? '连接已断开' : 'Connection closed')
           notify.warning(
-            isZh.value ? `工作坊连接已断开：${reason}` : `Workshop connection closed: ${reason}`
+            isZh.value
+              ? `演示模式连接已断开：${reason}`
+              : `Presentation mode connection closed: ${reason}`
           )
         }
 
@@ -227,8 +236,8 @@ export function useWorkshop(
         } else if (reconnectAttempts.value >= maxReconnectAttempts) {
           notify.error(
             isZh.value
-              ? '工作坊重连失败，请刷新页面重试'
-              : 'Failed to reconnect to workshop, please refresh the page'
+              ? '演示模式重连失败，请刷新页面重试'
+              : 'Failed to reconnect to presentation mode, please refresh the page'
           )
         }
       }
@@ -236,11 +245,11 @@ export function useWorkshop(
       ws.value = socket
     } catch (error) {
       console.error('[WorkshopWS] Failed to connect:', error)
-      notify.error(isZh.value ? '连接工作坊失败' : 'Failed to connect to workshop')
+      notify.error(isZh.value ? '连接演示模式失败' : 'Failed to connect to presentation mode')
     }
   }
 
-  // Disconnect from workshop
+  // Disconnect from presentation mode
   function disconnect() {
     // Clear reconnect timeout
     if (reconnectTimeout) {

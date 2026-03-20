@@ -17,7 +17,7 @@ import {
   ElTag,
 } from 'element-plus'
 
-import { Check, Close, Delete, Document, Loading, View } from '@element-plus/icons-vue'
+import { Close, Delete, Document, View } from '@element-plus/icons-vue'
 
 import { useLanguage } from '@/composables/useLanguage'
 import type { KnowledgeDocument } from '@/stores/knowledgeSpace'

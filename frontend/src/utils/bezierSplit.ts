@@ -69,13 +69,7 @@ export function splitBezierPathAtMidpoint(path: string): {
   const points = parseCubicBezierPath(path)
   if (!points) return null
 
-  const [segment1, segment2] = splitCubicBezierAt(
-    points[0],
-    points[1],
-    points[2],
-    points[3],
-    0.5
-  )
+  const [segment1, segment2] = splitCubicBezierAt(points[0], points[1], points[2], points[3], 0.5)
 
   return { segment1, segment2 }
 }

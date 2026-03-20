@@ -19,16 +19,16 @@ interface Props {
 }
 
 interface Emits {
-  (e: 'previous-page'): void
-  (e: 'next-page'): void
-  (e: 'go-to-page', page: number): void
-  (e: 'zoom-in'): void
-  (e: 'zoom-out'): void
-  (e: 'zoom-change', zoom: number): void
+  (e: 'previousPage'): void
+  (e: 'nextPage'): void
+  (e: 'goToPage', page: number): void
+  (e: 'zoomIn'): void
+  (e: 'zoomOut'): void
+  (e: 'zoomChange', zoom: number): void
   (e: 'rotate'): void
   (e: 'print'): void
-  (e: 'toggle-bookmark'): void
-  (e: 'toggle-pin-mode'): void
+  (e: 'toggleBookmark'): void
+  (e: 'togglePinMode'): void
 }
 
 const props = defineProps<Props>()
@@ -38,14 +38,14 @@ const pageInput = computed({
   get: () => props.currentPage,
   set: (value: number | null) => {
     if (value !== null && value >= 1 && value <= props.totalPages) {
-      emit('go-to-page', value)
+      emit('goToPage', value)
     }
   },
 })
 
-function handlePageInput(cur: number | undefined, prev: number | undefined) {
+function handlePageInput(cur: number | undefined, _prev: number | undefined) {
   if (cur !== undefined && cur !== null && cur >= 1 && cur <= props.totalPages) {
-    emit('go-to-page', cur)
+    emit('goToPage', cur)
   }
 }
 
@@ -88,12 +88,12 @@ const zoomSelectValue = computed({
     return zoomToPercentage(props.zoom)
   },
   set: (value: number) => {
-    emit('zoom-change', percentageToZoom(value))
+    emit('zoomChange', percentageToZoom(value))
   },
 })
 
 function handleZoomSelectChange(value: number) {
-  emit('zoom-change', value)
+  emit('zoomChange', value)
 }
 </script>
 
@@ -121,7 +121,7 @@ function handleZoomSelectChange(value: number) {
         text
         size="small"
         class="toolbar-button"
-        @click="emit('zoom-out')"
+        @click="emit('zoomOut')"
       >
         <ZoomOut class="w-4 h-4" />
       </ElButton>
@@ -143,7 +143,7 @@ function handleZoomSelectChange(value: number) {
         text
         size="small"
         class="toolbar-button"
-        @click="emit('zoom-in')"
+        @click="emit('zoomIn')"
       >
         <ZoomIn class="w-4 h-4" />
       </ElButton>
@@ -156,7 +156,7 @@ function handleZoomSelectChange(value: number) {
         size="small"
         :class="['toolbar-button', { 'is-active': pinMode }]"
         title="添加评论"
-        @click="emit('toggle-pin-mode')"
+        @click="emit('togglePinMode')"
       >
         <MapPin :class="['w-4 h-4', { 'fill-current': pinMode }]" />
       </ElButton>
@@ -165,7 +165,7 @@ function handleZoomSelectChange(value: number) {
         size="small"
         :class="['toolbar-button', { 'is-active': isBookmarked }]"
         title="书签"
-        @click="emit('toggle-bookmark')"
+        @click="emit('toggleBookmark')"
       >
         <Bookmark :class="['w-4 h-4', { 'fill-current': isBookmarked }]" />
       </ElButton>

@@ -11,17 +11,14 @@ import { computed, inject, nextTick, onMounted, onUnmounted, ref, watch } from '
 
 import { Handle, Position } from '@vue-flow/core'
 
-import { getMindmapBranchColor } from '@/config/mindmapColors'
 import { eventBus } from '@/composables/useEventBus'
-import { getBorderStyleProps } from '@/utils/borderStyleUtils'
 import { useTheme } from '@/composables/useTheme'
+import { getMindmapBranchColor } from '@/config/mindmapColors'
 import { useDiagramStore } from '@/stores'
 import { TOPIC_FONT_SIZE } from '@/stores/specLoader/textMeasurement'
-import {
-  calculateAdaptiveCircleSize,
-  getTopicCircleDiameter,
-} from '@/stores/specLoader/utils'
+import { calculateAdaptiveCircleSize, getTopicCircleDiameter } from '@/stores/specLoader/utils'
 import type { MindGraphNodeProps } from '@/types'
+import { getBorderStyleProps } from '@/utils/borderStyleUtils'
 
 import InlineEditableText from './InlineEditableText.vue'
 
@@ -62,8 +59,7 @@ const defaultStyle = computed(() => getNodeStyle(isTopicNode.value ? 'topic' : '
 const groupColor = computed(() => {
   const idx = props.data.groupIndex as number | undefined
   if (idx === undefined) return null
-  const isContext =
-    diagramStore.type === 'bubble_map' || diagramStore.type === 'circle_map'
+  const isContext = diagramStore.type === 'bubble_map' || diagramStore.type === 'circle_map'
   return isContext && !isTopicNode.value ? getMindmapBranchColor(idx) : null
 })
 
@@ -76,8 +72,7 @@ const circleSize = computed(() => {
   }
   const text = props.data.label || ''
   const isRadialTopic =
-    (diagramStore.type === 'circle_map' || diagramStore.type === 'bubble_map') &&
-    isTopicNode.value
+    (diagramStore.type === 'circle_map' || diagramStore.type === 'bubble_map') && isTopicNode.value
   if (isRadialTopic) {
     return getTopicCircleDiameter(text)
   }
@@ -102,8 +97,7 @@ watch(
 
 // Listen for text_updated event to recalculate size (topic/context in circle_map / bubble_map)
 function handleTextUpdated(payload: { nodeId: string; text: string }) {
-  const isRadial =
-    diagramStore.type === 'circle_map' || diagramStore.type === 'bubble_map'
+  const isRadial = diagramStore.type === 'circle_map' || diagramStore.type === 'bubble_map'
   if (payload.nodeId !== props.id || !isRadial) return
   const adaptiveSize = isTopicNode.value
     ? getTopicCircleDiameter(payload.text)
@@ -142,9 +136,7 @@ const nodeStyle = computed(() => {
     defaultStyle.value.borderColor ||
     (isTopicNode.value ? '#0d47a1' : '#1976d2')
   const borderWidth =
-    props.data.style?.borderWidth ||
-    defaultStyle.value.borderWidth ||
-    (isTopicNode.value ? 3 : 2)
+    props.data.style?.borderWidth || defaultStyle.value.borderWidth || (isTopicNode.value ? 3 : 2)
   const borderStyle = props.data.style?.borderStyle || 'solid'
   const backgroundColor =
     props.data.style?.backgroundColor ||
@@ -161,7 +153,7 @@ const nodeStyle = computed(() => {
       props.data.style?.textColor ||
       defaultStyle.value.textColor ||
       (isTopicNode.value ? '#ffffff' : '#333333'),
-    fontSize: `${props.data.style?.fontSize ?? ((diagramStore.type === 'circle_map' || diagramStore.type === 'bubble_map') && isTopicNode.value ? TOPIC_FONT_SIZE : defaultStyle.value.fontSize ?? (isTopicNode.value ? 20 : 14))}px`,
+    fontSize: `${props.data.style?.fontSize ?? ((diagramStore.type === 'circle_map' || diagramStore.type === 'bubble_map') && isTopicNode.value ? TOPIC_FONT_SIZE : (defaultStyle.value.fontSize ?? (isTopicNode.value ? 20 : 14)))}px`,
     fontWeight:
       props.data.style?.fontWeight ||
       defaultStyle.value.fontWeight ||
@@ -180,8 +172,7 @@ const isEditing = ref(false)
 function handleTextSave(newText: string) {
   isEditing.value = false
   const isRadialTopic =
-    (diagramStore.type === 'circle_map' || diagramStore.type === 'bubble_map') &&
-    isTopicNode.value
+    (diagramStore.type === 'circle_map' || diagramStore.type === 'bubble_map') && isTopicNode.value
   if (isRadialTopic) {
     diagramStore.saveNodeStyle(props.id, { size: getTopicCircleDiameter(newText) })
   }
@@ -248,10 +239,22 @@ function handleBranchMovePointerUp(): void {
   >
     <!-- Handles for double bubble map curved edges (connect at node boundary) -->
     <template v-if="isDoubleBubbleMap">
-      <Handle :position="Position.Left" id="left" />
-      <Handle :position="Position.Right" id="right" />
-      <Handle :position="Position.Top" id="top" />
-      <Handle :position="Position.Bottom" id="bottom" />
+      <Handle
+        id="left"
+        :position="Position.Left"
+      />
+      <Handle
+        id="right"
+        :position="Position.Right"
+      />
+      <Handle
+        id="top"
+        :position="Position.Top"
+      />
+      <Handle
+        id="bottom"
+        :position="Position.Bottom"
+      />
     </template>
     <div
       class="circle-node__text-wrapper"
@@ -268,7 +271,12 @@ function handleBranchMovePointerUp(): void {
         :text-class="isTopicNode ? 'py-2' : 'px-2 py-1'"
         :full-width="isTopicNode"
         :center-block-in-circle="isCircularTopic"
-        :no-wrap="diagramStore.type === 'circle_map' || diagramStore.type === 'bubble_map' || diagramStore.type === 'double_bubble_map' || !!data.style?.noWrap"
+        :no-wrap="
+          diagramStore.type === 'circle_map' ||
+          diagramStore.type === 'bubble_map' ||
+          diagramStore.type === 'double_bubble_map' ||
+          !!data.style?.noWrap
+        "
         :truncate="false"
         @save="handleTextSave"
         @cancel="handleEditCancel"

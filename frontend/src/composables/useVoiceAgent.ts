@@ -542,10 +542,13 @@ export function useVoiceAgent(options: VoiceAgentOptions = {}) {
 
     // Initialize audio context if needed
     if (!audioContext.value) {
-      audioContext.value = new (
+      const AudioCtx =
         window.AudioContext ||
-        (window as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext!
-      )({
+        (window as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
+      if (!AudioCtx) {
+        throw new Error('Web Audio API is not supported')
+      }
+      audioContext.value = new AudioCtx({
         sampleRate,
       })
     }

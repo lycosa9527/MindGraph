@@ -4,22 +4,24 @@
  * Features: User shared diagrams, likes, filters, Me tab, Edit/Delete
  */
 import { computed, onMounted, ref, watch } from 'vue'
+
 import { useInfiniteScroll } from '@vueuse/core'
 
 import { ElButton, ElEmpty, ElMessageBox, ElSkeleton } from 'element-plus'
-import { Heart, MessageCircle, Pencil, Search, Share2, Trash2 } from 'lucide-vue-next'
 
-import { CommunityPostDetailModal } from '@/components/community'
+import { Heart, MessageCircle, Pencil, Search, Trash2 } from 'lucide-vue-next'
+
 import { ExportToCommunityModal } from '@/components/canvas'
+import { CommunityPostDetailModal } from '@/components/community'
 import { useLanguage, useNotifications } from '@/composables'
+import { useAuthStore } from '@/stores'
 import {
+  type CommunityPost,
   deleteCommunityPost,
   getCommunityPost,
   getCommunityPosts,
   toggleCommunityPostLike,
-  type CommunityPost,
 } from '@/utils/apiClient'
-import { useAuthStore } from '@/stores'
 
 const notify = useNotifications()
 const authStore = useAuthStore()
@@ -93,11 +95,8 @@ async function fetchPosts(append = false) {
   loadError.value = null
   try {
     const typeFilter =
-      activeType.value === '全部' || activeType.value === '我的'
-        ? undefined
-        : activeType.value
-    const categoryFilter =
-      activeCategory.value === '全部' ? undefined : activeCategory.value
+      activeType.value === '全部' || activeType.value === '我的' ? undefined : activeType.value
+    const categoryFilter = activeCategory.value === '全部' ? undefined : activeCategory.value
 
     const res = await getCommunityPosts({
       page: page.value,
@@ -139,32 +138,27 @@ const canLoadMore = computed(
     !searchQuery.value.trim()
 )
 
-useInfiniteScroll(
-  scrollContainerRef,
-  () => loadMore(),
-  { distance: 200, direction: 'bottom', canLoadMore: () => canLoadMore.value }
-)
+useInfiniteScroll(scrollContainerRef, () => loadMore(), {
+  distance: 200,
+  direction: 'bottom',
+  canLoadMore: () => canLoadMore.value,
+})
 
 onMounted(() => {
   fetchPosts()
 })
 
-watch(
-  [activeType, activeCategory, activeSort],
-  () => {
-    page.value = 1
-    fetchPosts()
-  }
-)
+watch([activeType, activeCategory, activeSort], () => {
+  page.value = 1
+  fetchPosts()
+})
 
 // Client-side search filter (API doesn't support search)
 const filteredPosts = computed(() => {
   if (!searchQuery.value.trim()) return posts.value
   const q = searchQuery.value.toLowerCase()
   return posts.value.filter(
-    (p) =>
-      p.title.toLowerCase().includes(q) ||
-      (p.description?.toLowerCase() ?? '').includes(q)
+    (p) => p.title.toLowerCase().includes(q) || (p.description?.toLowerCase() ?? '').includes(q)
   )
 })
 
@@ -421,7 +415,11 @@ function getPlaceholderColor(id: string): string {
                 stroke="currentColor"
                 stroke-width="1.5"
               >
-                <circle cx="12" cy="12" r="3" />
+                <circle
+                  cx="12"
+                  cy="12"
+                  r="3"
+                />
                 <path d="M12 9V3" />
                 <path d="M12 15v6" />
                 <path d="M9 12H3" />
@@ -453,7 +451,9 @@ function getPlaceholderColor(id: string): string {
               <span class="text-xs text-stone-400 ml-auto">{{ formatDate(post.created_at) }}</span>
             </div>
 
-            <h3 class="text-sm font-semibold text-stone-800 mb-2 line-clamp-1 group-hover:text-rose-600 transition-colors">
+            <h3
+              class="text-sm font-semibold text-stone-800 mb-2 line-clamp-1 group-hover:text-rose-600 transition-colors"
+            >
               {{ post.title }}
             </h3>
             <p class="text-xs text-stone-500 line-clamp-2 mb-3">
@@ -514,7 +514,9 @@ function getPlaceholderColor(id: string): string {
       <ElEmpty
         v-else
         :description="
-          isZh ? '没有找到匹配的作品，尝试调整筛选条件或搜索关键词' : 'No posts found. Try adjusting filters or search'
+          isZh
+            ? '没有找到匹配的作品，尝试调整筛选条件或搜索关键词'
+            : 'No posts found. Try adjusting filters or search'
         "
         :image-size="120"
         class="flex-1 flex items-center justify-center min-h-[300px]"

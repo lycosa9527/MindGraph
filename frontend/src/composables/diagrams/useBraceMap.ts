@@ -111,7 +111,10 @@ export function useBraceMap(options: BraceMapOptions = {}) {
       if (!childrenMap.has(edge.source)) {
         childrenMap.set(edge.source, [])
       }
-      childrenMap.get(edge.source)!.push(edge.target)
+      const children = childrenMap.get(edge.source)
+      if (children) {
+        children.push(edge.target)
+      }
     })
 
     // Calculate adjusted Y positions by centering each parent relative to its children
