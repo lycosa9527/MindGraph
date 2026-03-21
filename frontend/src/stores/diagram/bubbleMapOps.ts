@@ -1,5 +1,6 @@
 import { getMindmapBranchColor } from '@/config/mindmapColors'
 
+import { collabForeignLockBlocksAnyId, emitCollabDeleteBlocked } from './collabHelpers'
 import { emitEvent } from './events'
 import type { DiagramContext } from './types'
 
@@ -11,6 +12,11 @@ export function useBubbleMapOpsSlice(ctx: DiagramContext) {
 
     const idsToRemove = new Set(nodeIds.filter((id) => id.startsWith('bubble-')))
     if (idsToRemove.size === 0) return 0
+
+    if (collabForeignLockBlocksAnyId(ctx, idsToRemove)) {
+      emitCollabDeleteBlocked()
+      return 0
+    }
 
     const deletedIds: string[] = []
     data.value.nodes = data.value.nodes.filter((n) => {

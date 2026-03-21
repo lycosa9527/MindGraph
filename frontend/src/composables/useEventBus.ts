@@ -70,6 +70,7 @@ export type EventTypes = {
     diagramType?: string
   }
   'diagram:delete_selected_requested': Record<string, never>
+  'diagram:collab_delete_blocked': Record<string, never>
   'diagram:add_node_requested': Record<string, never>
   'diagram:add_branch_requested': Record<string, never>
   'diagram:add_child_requested': Record<string, never>
@@ -106,6 +107,7 @@ export type EventTypes = {
   'diagram:loaded': { diagramType: string; spec?: unknown }
   'diagram:loaded_from_library': { diagramId: string; diagramType: string }
   'diagram:branch_moved': Record<string, never>
+  'diagram:workshop_snapshot_applied': Record<string, never>
   'concept_map:link_drop': { sourceId: string; targetId: string }
   'concept_map:link_drag_start': { sourceId: string }
   'concept_map:link_drag_end': Record<string, never>

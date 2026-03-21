@@ -5,9 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.49.0] - 2026-03-22
+
+### Notes
+- **Online canvas collaboration (diagram workshop / MindGraph)**: Still **under development** and not treated as production-complete. Further backend and client work should align with the high-concurrency collaboration review plan: [`.cursor/plans/high-concurrency_collab_review_01b89726.plan.md`](.cursor/plans/high-concurrency_collab_review_01b89726.plan.md) — including atomic Redis live-spec merge, multi-worker debounce/flush coordination, participant caps and connection safeguards, and load testing with extended metrics and observability.
+
 ## [5.48.0] - 2026-03-21
 
 ### Added
+- **Workshop Phase 2 — authoritative live spec**: Redis `workshop:live_spec:{code}` merges each WS `update` (full or granular); **`snapshot`** message after **`joined`** seeds from DB when needed; debounced (**45s**) + max-interval (**60s**) flush to **`Diagram.spec`** (`workshop_live_flush.py`, `workshop_live_spec_ops.py`); flush on **stop**, when **last participant** leaves, and existing cleanup paths; new keys purged in `purge_workshop_redis_keys`. Frontend: **`snapshot`** applies via **`loadFromSpec`**, **`diagram:workshop_snapshot_applied`** suppresses autosave **5s** (`SAVE.SUPPRESS_AFTER_WORKSHOP_SNAPSHOT_MS`).
 - **Workshop Chat — channel ordering & teaching groups**: `display_order` on `ChatChannel` (`models/domain/workshop_chat.py`); SQLite bootstrap adds missing column (`_ensure_chat_channels_display_order` in `config/database.py`); `channel_service` create/reorder APIs; `TeachingGroupsManageDialog.vue` for ordering teaching-group channels; sidebar and browser respect order (`ChannelSidebarItem`, `ChannelBrowser`, `WorkshopChatHistory`, store types).
 - **Workshop Chat — preview org access**: Config `WORKSHOP_CHAT_PREVIEW_ORG_IDS` (`config/features_config.py`); gate in `utils/auth/roles.py` and auth dependencies; client config exposure (`routers/api/config.py`); non-admin orgs in the allowlist can use Workshop Chat for staged rollouts.
 - **WebSocket production hardening**: Diagram collaboration WS (`routers/api/workshop_ws.py`) — shared JWT/cookie auth (`authenticate_websocket_user`), max text payload + per-connection rate limits (`utils/ws_limits.py`), connect/auth metrics (`ws_metrics`), Redis-backed editor persistence (`workshop_ws_editor_redis`) and optional Redis fanout hooks; chat WS (`workshop_chat_ws.py`, `workshop_chat_ws_manager.py`) aligned with limits and channel subscribe caps.
@@ -15,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Lifespan**: Workshop-related startup wiring updates (`services/infrastructure/lifecycle/lifespan.py`).
 
 ### Changed
+- **Canvas online collaboration**: WebSocket endpoint **`GET /api/ws/canvas-collab/{code}`** replaces `/api/ws/workshop/{code}`; server broadcasts **`node_selected`**, filters granular **`update`** (nodes + **connections**) when another user holds an edit lock (`services/workshop/canvas_collab_locks.py`), and includes **`owner_id`** in **`joined`**; REST `POST /api/generate_graph` blocks non-owner **LLM** use when the diagram has an active workshop (`routers/api/diagram_generation.py`, `models/requests/requests_diagram.py`). Frontend: **`useWorkshop.ts`** (owner id unknown during collab ⇒ not owner for AI), **`CanvasTopBar`** (在线协作 entry + participant names; sync **`workshop:code-changed`**), **`CanvasPage`** (remote-merge echo guard for outbound **`sendUpdate`**; selection sync; redo invalidation; undo/redo lock guard; **`applyJoinWorkshopFromQuery`**; presentation-mode collab strip; **`provide('collabCanvas')`**), **`DiagramCanvas`**, **`InlineEditableText`**, **`CanvasToolbar`** / **`useAutoComplete`**, diagram store **`collabForeignLockedNodeIds`** + delete guards (`collabHelpers.ts`, diagram ops slices), **`MindGraphContainer`** (navigate with **`join_workshop`** query).
 - **Voice**: `routers/features/voice/routes.py` — WebSocket handling aligned with shared auth and WS limits where applicable.
 - **Health**: `routers/core/health.py` adjustments.
 - **Workshop Chat REST**: `channels`, `topics`, `messages`, `dependencies`, `schemas` under `routers/features/workshop_chat/`; `default_channels` seed data refresh.

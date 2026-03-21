@@ -6,9 +6,9 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
-import { ElAvatar, ElButton, ElDialog } from 'element-plus'
+import { ElAvatar, ElButton, ElDialog, ElDropdown, ElDropdownItem, ElDropdownMenu } from 'element-plus'
 
-import { Connection, Upload } from '@element-plus/icons-vue'
+import { Upload, User } from '@element-plus/icons-vue'
 
 import mindgraphLogo from '@/assets/mindgraph-logo-md.png'
 import { useDiagramImport, useLanguage, useNotifications } from '@/composables'
@@ -27,9 +27,20 @@ const authStore = useAuthStore()
 const notify = useNotifications()
 const username = computed(() => authStore.user?.username || '')
 
-// Join diagram presentation mode (shared code)
-const showJoinWorkshopDialog = ref(false)
-const joinCode = ref(['', '', '', '', '', '']) // Array for 6 digits
+// Collaboration: 校内 list + 共同 code
+const showOrgSessionsDialog = ref(false)
+const showSharedCodeDialog = ref(false)
+const orgSessionsLoading = ref(false)
+const orgSessions = ref<
+  Array<{
+    diagram_id: string
+    title: string
+    owner_username: string
+    participant_count: number
+  }>
+>([])
+
+const joinCode = ref(['', '', '', '', '', ''])
 const isJoining = ref(false)
 const codeInputRefs = ref<(HTMLInputElement | null)[]>([])
 
@@ -118,8 +129,9 @@ async function joinWorkshop() {
           ? `已加入演示：${data.workshop.title}`
           : `Joined presentation: ${data.workshop.title}`
       )
-      // Navigate to the diagram
-      window.location.href = `/canvas?diagram_id=${data.workshop.diagram_id}`
+      // Navigate to the diagram; carry code so canvas can connect WS without re-entry
+      const enc = encodeURIComponent(code)
+      window.location.href = `/canvas?diagramId=${encodeURIComponent(data.workshop.diagram_id)}&join_workshop=${enc}`
     } else {
       const error = await response.json().catch(() => ({}))
       notify.error(error.detail || (isZh.value ? '加入演示失败' : 'Failed to join presentation'))
@@ -129,6 +141,63 @@ async function joinWorkshop() {
     notify.error(isZh.value ? '网络错误，加入失败' : 'Network error, failed to join')
   } finally {
     isJoining.value = false
+  }
+}
+
+async function openOrgSessionsDialog() {
+  showOrgSessionsDialog.value = true
+  orgSessionsLoading.value = true
+  orgSessions.value = []
+  try {
+    const response = await authFetch('/api/workshop/organization/sessions', { method: 'GET' })
+    if (response.ok) {
+      const data = await response.json()
+      orgSessions.value = data.sessions || []
+    } else {
+      notify.error(isZh.value ? '无法加载校内会话' : 'Could not load school sessions')
+    }
+  } catch (error) {
+    console.error(error)
+    notify.error(isZh.value ? '网络错误' : 'Network error')
+  } finally {
+    orgSessionsLoading.value = false
+  }
+}
+
+async function joinOrgSession(session: { diagram_id: string }) {
+  isJoining.value = true
+  try {
+    const response = await authFetch('/api/workshop/join-organization', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ diagram_id: session.diagram_id }),
+    })
+    if (response.ok) {
+      const data = await response.json()
+      const code = data.workshop.code as string
+      const enc = encodeURIComponent(code)
+      notify.success(
+        isZh.value ? `加入协同：${data.workshop.title}` : `Joined: ${data.workshop.title}`
+      )
+      showOrgSessionsDialog.value = false
+      window.location.href = `/canvas?diagramId=${encodeURIComponent(data.workshop.diagram_id)}&join_workshop=${enc}`
+    } else {
+      const error = await response.json().catch(() => ({}))
+      notify.error(error.detail || (isZh.value ? '加入失败' : 'Failed to join'))
+    }
+  } catch (error) {
+    console.error(error)
+    notify.error(isZh.value ? '网络错误' : 'Network error')
+  } finally {
+    isJoining.value = false
+  }
+}
+
+function handleCollabCommand(cmd: string) {
+  if (cmd === 'organization') {
+    void openOrgSessionsDialog()
+  } else if (cmd === 'network') {
+    showSharedCodeDialog.value = true
   }
 }
 
@@ -172,29 +241,96 @@ onMounted(() => {
         >
           {{ isZh ? '导入' : 'Import' }}
         </ElButton>
-        <ElButton
-          class="join-workshop-btn"
-          size="small"
-          :icon="Connection"
-          @click="showJoinWorkshopDialog = true"
+        <ElDropdown
+          trigger="click"
+          @command="handleCollabCommand"
         >
-          {{ isZh ? '加入演示' : 'Join presentation' }}
-        </ElButton>
+          <ElButton
+            class="join-workshop-btn"
+            size="small"
+            :icon="User"
+          >
+            {{ isZh ? '协同' : 'Collaborate' }}
+          </ElButton>
+          <template #dropdown>
+            <ElDropdownMenu>
+              <ElDropdownItem command="organization">
+                {{ isZh ? '校内协同' : 'School collaboration' }}
+              </ElDropdownItem>
+              <ElDropdownItem command="network">
+                {{ isZh ? '共同协同' : 'Shared collaboration' }}
+              </ElDropdownItem>
+            </ElDropdownMenu>
+          </template>
+        </ElDropdown>
       </div>
     </header>
 
-    <!-- Join presentation dialog -->
+    <!-- 校内：同校可加入的会话列表 -->
     <ElDialog
-      v-model="showJoinWorkshopDialog"
-      :title="isZh ? '加入演示' : 'Join presentation'"
+      v-model="showOrgSessionsDialog"
+      :title="isZh ? '校内协同' : 'School collaboration'"
+      width="480px"
+    >
+      <div
+        v-loading="orgSessionsLoading"
+        class="min-h-[120px]"
+      >
+        <p
+          v-if="!orgSessionsLoading && orgSessions.length === 0"
+          class="text-gray-500 text-sm"
+        >
+          {{
+            isZh
+              ? '当前没有可加入的校内协同会话（需同事已开启「校内协同」）。'
+              : 'No school sessions right now. A colleague must start “School collaboration” on the canvas.'
+          }}
+        </p>
+        <ul
+          v-else
+          class="space-y-2 max-h-[360px] overflow-y-auto"
+        >
+          <li
+            v-for="s in orgSessions"
+            :key="s.diagram_id"
+            class="flex items-center justify-between gap-3 p-3 rounded-lg border border-gray-100 bg-gray-50/80"
+          >
+            <div class="min-w-0 flex-1">
+              <div class="font-medium text-gray-900 truncate">{{ s.title }}</div>
+              <div class="text-xs text-gray-500">
+                {{ s.owner_username }} ·
+                {{
+                  isZh
+                    ? `${s.participant_count} 人在线`
+                    : `${s.participant_count} online`
+                }}
+              </div>
+            </div>
+            <ElButton
+              type="primary"
+              size="small"
+              :loading="isJoining"
+              @click="joinOrgSession(s)"
+            >
+              {{ isZh ? '加入' : 'Join' }}
+            </ElButton>
+          </li>
+        </ul>
+      </div>
+    </ElDialog>
+
+    <!-- 共同：输入邀请码 -->
+    <ElDialog
+      v-model="showSharedCodeDialog"
+      :title="isZh ? '共同协同' : 'Shared collaboration'"
       width="400px"
     >
       <div class="join-workshop-dialog">
         <p class="mb-4 text-gray-600">
           {{
             isZh
-              ? '输入演示代码，加入其他人的演示并一起编辑图示。'
-              : "Enter a presentation code to join someone else's session and collaborate."
+              ? '输入邀请码（xxx-xxx），加入对方的协同会话。'
+              : 'Enter the invitation code (xxx-xxx) to join their session.'
           }}
         </p>
         <div class="code-input-container">
@@ -237,7 +373,7 @@ onMounted(() => {
           </div>
         </div>
         <div class="mt-4 flex justify-end gap-2">
-          <ElButton @click="showJoinWorkshopDialog = false">
+          <ElButton @click="showSharedCodeDialog = false">
             {{ isZh ? '取消' : 'Cancel' }}
           </ElButton>
           <ElButton

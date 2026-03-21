@@ -197,6 +197,10 @@ export function useDiagramAutoSave(options: UseDiagramAutoSaveOptions = {}) {
     setSuppressFromLibrary()
   )
 
+  const stopWorkshopSnapshot = eventBus.on('diagram:workshop_snapshot_applied', () => {
+    suppressUntil.value = Date.now() + SAVE.SUPPRESS_AFTER_WORKSHOP_SNAPSHOT_MS
+  })
+
   const stopOperationCompleted = eventBus.on(
     'diagram:operation_completed',
     (payload: { operation?: string }) => {
@@ -210,6 +214,7 @@ export function useDiagramAutoSave(options: UseDiagramAutoSaveOptions = {}) {
     stopIsGenerating()
     stopLlmComplete()
     stopLoadedFromLibrary()
+    stopWorkshopSnapshot()
     stopOperationCompleted()
   }
 

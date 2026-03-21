@@ -51,9 +51,22 @@ export const useDiagramStore = defineStore('diagram', () => {
   const nodeWidths = ref<Record<string, number>>({})
   const multiFlowMapRecalcTrigger = ref(0)
   const sessionEditCount = ref(0)
+  const collabSessionActive = ref(false)
+  const collabForeignLockedNodeIds = ref<Set<string>>(new Set())
 
   function resetSessionEditCount(): void {
     sessionEditCount.value = 0
+  }
+
+  function setCollabSessionActive(active: boolean): void {
+    collabSessionActive.value = active
+    if (!active) {
+      collabForeignLockedNodeIds.value = new Set()
+    }
+  }
+
+  function setCollabForeignLockedNodeIds(nodeIds: string[]): void {
+    collabForeignLockedNodeIds.value = new Set(nodeIds)
   }
 
   // Shared context (two-phase: refs now, cross-deps wired after slice init)
@@ -71,6 +84,8 @@ export const useDiagramStore = defineStore('diagram', () => {
     topicNodeWidth,
     multiFlowMapRecalcTrigger,
     sessionEditCount,
+    collabSessionActive,
+    collabForeignLockedNodeIds,
   } as DiagramContext
 
   // ?? Phase 2 slices ??
@@ -83,7 +98,8 @@ export const useDiagramStore = defineStore('diagram', () => {
   const learningSheetSlice = useLearningSheetSlice(ctx)
   const titleSlice = useTitleSlice(ctx)
 
-  const { pushHistory, canUndo, canRedo, undo, redo, clearHistory } = historySlice
+  const { pushHistory, canUndo, canRedo, undo, redo, clearHistory, clearRedoStack } =
+    historySlice
   const {
     selectNodes,
     clearSelection,
@@ -303,6 +319,11 @@ export const useDiagramStore = defineStore('diagram', () => {
     undo,
     redo,
     clearHistory,
+    clearRedoStack,
+    collabSessionActive,
+    setCollabSessionActive,
+    collabForeignLockedNodeIds,
+    setCollabForeignLockedNodeIds,
     updateNode,
     emptyNodeForLearningSheet,
     emptyNode,

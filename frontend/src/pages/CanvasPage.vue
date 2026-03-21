@@ -18,7 +18,7 @@
  * - LLM completed: flush and save once
  * - Auto-updates if diagram is already in library; auto-saves new if slots available
  */
-import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, provide, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { storeToRefs } from 'pinia'
@@ -213,6 +213,8 @@ const currentDiagramId = computed(() => savedDiagramsStore.activeDiagramId)
 // Track previous diagram state for granular updates
 let previousNodes: Array<Record<string, unknown>> = []
 let previousConnections: Array<Record<string, unknown>> = []
+/** True while applying inbound WS merge — same store drives outbound watch; skip re-broadcast. */
+const applyingRemoteCollabPatch = ref(false)
 
 // Calculate diff between two arrays of objects (by id)
 function calculateDiff<T extends { id: string }>(oldArray: T[], newArray: T[]): T[] {
@@ -232,8 +234,11 @@ function calculateDiff<T extends { id: string }>(oldArray: T[], newArray: T[]): 
 // Workshop composable with granular update callbacks
 const {
   sendUpdate,
+  sendNodeSelected,
   notifyNodeEditing,
   activeEditors,
+  remoteSelectionsByUser,
+  isDiagramOwner,
   watchCode: watchWorkshopCode,
 } = useWorkshop(
   workshopCode,
@@ -242,7 +247,15 @@ const {
   (nodes, connections) => {
     // Granular update handler: merge incoming changes
     if (nodes || connections) {
-      diagramStore.mergeGranularUpdate(nodes, connections)
+      applyingRemoteCollabPatch.value = true
+      try {
+        diagramStore.mergeGranularUpdate(nodes, connections)
+        diagramStore.clearRedoStack()
+      } finally {
+        nextTick(() => {
+          applyingRemoteCollabPatch.value = false
+        })
+      }
     }
   },
   (nodeId, editor) => {
@@ -258,11 +271,120 @@ const {
       // Remove visual indicator
       removeNodeEditingIndicator(nodeId)
     }
+  },
+  (spec, _version) => {
+    const t = (spec.type as DiagramType) || diagramType.value
+    if (!t) return
+    applyingRemoteCollabPatch.value = true
+    try {
+      diagramStore.loadFromSpec(spec, t)
+      eventBus.emit('diagram:workshop_snapshot_applied', {})
+    } finally {
+      nextTick(() => {
+        applyingRemoteCollabPatch.value = false
+      })
+    }
   }
 )
 
 // Start watching for presentation code changes
 watchWorkshopCode()
+
+watch(
+  () => workshopCode.value,
+  (code) => {
+    diagramStore.setCollabSessionActive(Boolean(code))
+    if (!code) {
+      diagramStore.setCollabForeignLockedNodeIds([])
+    }
+  },
+  { immediate: true }
+)
+
+watch(
+  () => activeEditors.value,
+  (editors) => {
+    const uid = Number(authStore.user?.id)
+    const foreign: string[] = []
+    for (const [nid, ed] of editors) {
+      if (ed.user_id !== uid) {
+        foreign.push(nid)
+      }
+    }
+    diagramStore.setCollabForeignLockedNodeIds(foreign)
+  },
+  { deep: true, immediate: true }
+)
+
+const collabLockedNodeIds = computed(() => {
+  const uid = Number(authStore.user?.id)
+  const out: string[] = []
+  for (const [nid, ed] of activeEditors.value) {
+    if (ed.user_id !== uid) {
+      out.push(nid)
+    }
+  }
+  return out
+})
+
+let lastRemoteSelectionKey = ''
+watch(
+  () => remoteSelectionsByUser.value,
+  (next) => {
+    nextTick(() => {
+      const key = JSON.stringify([...next.entries()])
+      if (key === lastRemoteSelectionKey) return
+      lastRemoteSelectionKey = key
+      document.querySelectorAll('.collab-remote-selected').forEach((el) => {
+        el.classList.remove('collab-remote-selected')
+        el.removeAttribute('data-collab-remote-user')
+      })
+      for (const [, sel] of next) {
+        const el = document.querySelector(
+          `#${CSS.escape(sel.nodeId)}`
+        ) as HTMLElement | null
+        if (el) {
+          el.classList.add('collab-remote-selected')
+          el.setAttribute('data-collab-remote-user', sel.username)
+        }
+      }
+    })
+  },
+  { deep: true }
+)
+
+let lastSentSelectionNodeId: string | null = null
+watch(
+  () => [...diagramStore.selectedNodes],
+  (ids) => {
+    if (!workshopCode.value) {
+      return
+    }
+    const primary = ids.length > 0 ? ids[0] : null
+    if (primary === lastSentSelectionNodeId) {
+      return
+    }
+    if (lastSentSelectionNodeId && lastSentSelectionNodeId !== primary) {
+      sendNodeSelected(lastSentSelectionNodeId, false)
+    }
+    if (primary) {
+      sendNodeSelected(primary, true)
+    }
+    lastSentSelectionNodeId = primary
+  },
+  { deep: true }
+)
+
+provide('collabCanvas', {
+  isNodeLockedByOther: (nodeId: string) => {
+    const ed = activeEditors.value.get(nodeId)
+    if (!ed) {
+      return false
+    }
+    return ed.user_id !== Number(authStore.user?.id)
+  },
+  isDiagramOwner,
+})
 
 // Apply visual indicator to node (add CSS class and data attributes)
 function applyNodeEditingIndicator(
@@ -271,7 +393,7 @@ function applyNodeEditingIndicator(
 ): void {
   nextTick(() => {
     // Vue Flow nodes use id attribute, not data-id
-    const nodeElement = document.querySelector(`#${nodeId}`) as HTMLElement
+    const nodeElement = document.querySelector(`#${CSS.escape(nodeId)}`) as HTMLElement
     if (nodeElement) {
       nodeElement.classList.add('workshop-editing')
       nodeElement.style.setProperty('--editor-color', editor.color)
@@ -284,7 +406,7 @@ function applyNodeEditingIndicator(
 // Remove visual indicator from node
 function removeNodeEditingIndicator(nodeId: string): void {
   nextTick(() => {
-    const nodeElement = document.querySelector(`#${nodeId}`) as HTMLElement
+    const nodeElement = document.querySelector(`#${CSS.escape(nodeId)}`) as HTMLElement
     if (nodeElement) {
       nodeElement.classList.remove('workshop-editing')
       nodeElement.style.removeProperty('--editor-color')
@@ -331,14 +453,50 @@ eventBus.onWithOwner(
   'CanvasPage'
 )
 
+eventBus.onWithOwner(
+  'diagram:collab_delete_blocked',
+  () => {
+    notify.warning(
+      isZh.value
+        ? '无法删除：其他用户正在编辑相关节点'
+        : 'Cannot delete while another user is editing a selected node'
+    )
+  },
+  'CanvasPage'
+)
+
+function applyJoinWorkshopFromQuery(): void {
+  const raw = route.query.join_workshop
+  if (!raw || typeof raw !== 'string') {
+    return
+  }
+  const trimmed = raw.trim()
+  if (!/^\d{3}-\d{3}$/.test(trimmed)) {
+    return
+  }
+  workshopCode.value = trimmed
+  eventBus.emit('workshop:code-changed', { code: trimmed })
+  const nextQuery = { ...route.query } as Record<string, string | string[] | undefined>
+  delete nextQuery.join_workshop
+  router.replace({ query: nextQuery })
+}
+
 // Track node editing via eventBus
 eventBus.onWithOwner(
   'node_editor:opening',
   (data) => {
     const nodeId = (data as { nodeId: string }).nodeId
-    if (nodeId && workshopCode.value) {
-      notifyNodeEditing(nodeId, true)
+    if (!nodeId || !workshopCode.value) {
+      return
     }
+    const ed = activeEditors.value.get(nodeId)
+    if (ed && ed.user_id !== Number(authStore.user?.id)) {
+      notify.warning(
+        isZh.value ? '其他用户正在编辑此节点' : 'Someone else is editing this node'
+      )
+      return
+    }
+    notifyNodeEditing(nodeId, true)
   },
   'CanvasPage'
 )
@@ -497,13 +655,76 @@ function handleAddChildKey() {
   }
 }
 
+function nodeIdsDiffBetweenDiagrams(
+  a: { nodes?: { id: string }[] } | null,
+  b: { nodes?: { id: string }[] } | null
+): Set<string> {
+  const ids = new Set<string>()
+  const nodesA = a?.nodes ?? []
+  const nodesB = b?.nodes ?? []
+  const mapB = new Map(nodesB.map((n) => [n.id, n]))
+  for (const n of nodesA) {
+    const o = mapB.get(n.id)
+    if (!o || JSON.stringify(n) !== JSON.stringify(o)) {
+      ids.add(n.id)
+    }
+  }
+  for (const n of nodesB) {
+    if (!nodesA.find((x) => x.id === n.id)) {
+      ids.add(n.id)
+    }
+  }
+  return ids
+}
+
 function handleUndoKey() {
   if (isTypingInInput()) return
+  if (!diagramStore.canUndo) {
+    return
+  }
+  if (workshopCode.value) {
+    const prevEntry = diagramStore.history[diagramStore.historyIndex - 1]
+    const cur = diagramStore.data
+    if (prevEntry?.data && cur) {
+      const changed = nodeIdsDiffBetweenDiagrams(cur, prevEntry.data as { nodes?: { id: string }[] })
+      for (const nid of changed) {
+        const ed = activeEditors.value.get(nid)
+        if (ed && ed.user_id !== Number(authStore.user?.id)) {
+          notify.warning(
+            isZh.value ? '无法撤销：其他用户正在编辑相关节点' : 'Cannot undo while another user is editing'
+          )
+          return
+        }
+      }
+    }
+  }
   diagramStore.undo()
 }
 
 function handleRedoKey() {
   if (isTypingInInput()) return
+  if (!diagramStore.canRedo) {
+    return
+  }
+  if (workshopCode.value) {
+    const nextEntry = diagramStore.history[diagramStore.historyIndex + 1]
+    const cur = diagramStore.data
+    if (nextEntry?.data && cur) {
+      const changed = nodeIdsDiffBetweenDiagrams(
+        cur,
+        nextEntry.data as { nodes?: { id: string }[] }
+      )
+      for (const nid of changed) {
+        const ed = activeEditors.value.get(nid)
+        if (ed && ed.user_id !== Number(authStore.user?.id)) {
+          notify.warning(
+            isZh.value ? '无法重做：其他用户正在编辑相关节点' : 'Cannot redo while another user is editing'
+          )
+          return
+        }
+      }
+    }
+  }
   diagramStore.redo()
 }
 
@@ -696,7 +917,11 @@ watch(
 
 // Watch for diagram ID changes (sidebar switch) - load new diagram and clear node palette
 watch(
-  () => route.query.diagramId,
+  () => {
+    const q = route.query
+    const id = q.diagramId ?? q.diagram_id
+    return typeof id === 'string' ? id : Array.isArray(id) ? id[0] : undefined
+  },
   async (newId, oldId) => {
     if (newId && typeof newId === 'string' && newId !== oldId) {
       await loadDiagramFromLibrary(newId)
@@ -713,6 +938,11 @@ watch(
 
     // Send granular updates to workshop if active (any change including position)
     if (workshopCode.value && newData.nodes && newData.connections) {
+      if (applyingRemoteCollabPatch.value) {
+        previousNodes = JSON.parse(JSON.stringify(newData.nodes))
+        previousConnections = JSON.parse(JSON.stringify(newData.connections || []))
+        return
+      }
       const changedNodes = calculateDiff(
         previousNodes as Array<{ id: string }>,
         newData.nodes as Array<{ id: string }>
@@ -823,10 +1053,17 @@ onMounted(async () => {
   // Fetch diagrams to know current slot count
   await savedDiagramsStore.fetchDiagrams()
 
-  // Priority 1: Load saved diagram by ID from library
-  const diagramId = route.query.diagramId
+  // Priority 1: Load saved diagram by ID from library (accept diagramId or legacy diagram_id)
+  const diagramIdRaw = route.query.diagramId ?? route.query.diagram_id
+  const diagramId =
+    typeof diagramIdRaw === 'string'
+      ? diagramIdRaw
+      : Array.isArray(diagramIdRaw)
+        ? diagramIdRaw[0]
+        : undefined
   if (diagramId) {
     await loadDiagramFromLibrary(String(diagramId))
+    applyJoinWorkshopFromQuery()
     return // Don't load default template if loading from library
   }
 
@@ -984,6 +1221,17 @@ onUnmounted(() => {
       @save-requested="handleSaveKey"
     />
 
+    <!-- Collaboration strip when fullscreen presentation hides the top bar -->
+    <div
+      v-if="isPresentationMode && workshopCode"
+      class="fixed top-0 left-0 right-0 z-40 flex items-center justify-center gap-2 px-3 py-1.5 text-xs text-white bg-slate-800/90 backdrop-blur-sm border-b border-slate-600/60 pointer-events-none"
+      role="status"
+    >
+      <span>{{ isZh ? '在线协作' : 'Collaboration' }}</span>
+      <span class="opacity-60">·</span>
+      <span class="font-mono">{{ workshopCode }}</span>
+    </div>
+
     <!-- Concept map standard mode: blur canvas until focus question is set -->
     <div
       v-if="showConceptMapFocusGate"
@@ -1031,6 +1279,7 @@ onUnmounted(() => {
           :show-minimap="false"
           :fit-view-on-init="true"
           :hand-tool-active="handToolActive"
+          :collab-locked-node-ids="collabLockedNodeIds"
           @node-double-click="handleNodeDoubleClick"
         />
       </div>

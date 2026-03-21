@@ -63,6 +63,12 @@ class Diagram(Base):
 
     # Workshop support - shareable code for collaborative editing
     workshop_code: Mapped[Optional[str]] = mapped_column(String(20), nullable=True, index=True)
+    # organization = 校内 (same-org / list join); network = 共同 (code + any authenticated user)
+    workshop_visibility: Mapped[Optional[str]] = mapped_column(String(32), nullable=True, index=True)
+    # Collaborative session window (naive UTC); None = legacy row before migration / backfill
+    workshop_started_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    workshop_expires_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True, index=True)
+    workshop_duration_preset: Mapped[Optional[str]] = mapped_column(String(16), nullable=True)
 
     # Timestamps
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)

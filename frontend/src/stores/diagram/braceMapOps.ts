@@ -1,5 +1,6 @@
 import { useConceptMapRelationshipStore } from '../conceptMapRelationship'
 import { recalculateBraceMapLayout } from '../specLoader'
+import { collabForeignLockBlocksAnyId, emitCollabDeleteBlocked } from './collabHelpers'
 import { emitEvent } from './events'
 import type { DiagramContext } from './types'
 
@@ -88,6 +89,11 @@ export function useBraceMapOpsSlice(ctx: DiagramContext) {
       for (const desc of collectDescendants(id)) toRemove.add(desc)
     }
     if (toRemove.size === 0) return 0
+
+    if (collabForeignLockBlocksAnyId(ctx, toRemove)) {
+      emitCollabDeleteBlocked()
+      return 0
+    }
 
     const deletedIds: string[] = []
     data.value.nodes = data.value.nodes.filter((n) => {

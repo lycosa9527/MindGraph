@@ -66,6 +66,8 @@ interface Props {
   fitViewOnInit?: boolean
   /** When true, left-click drag pans canvas; nodes are not draggable */
   handToolActive?: boolean
+  /** Node ids another user is editing — disable drag for these */
+  collabLockedNodeIds?: string[]
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -73,6 +75,7 @@ const props = withDefaults(defineProps<Props>(), {
   showMinimap: false,
   fitViewOnInit: true,
   handToolActive: false,
+  collabLockedNodeIds: () => [],
 })
 
 // Emits
@@ -255,8 +258,18 @@ const storeEdges = computed(() => diagramStore.vueFlowEdges)
 // Filter out dragged branch during branch move
 const nodes = computed(() => {
   const hidden = branchMove.state.value.hiddenIds
-  if (hidden.size === 0) return storeNodes.value
-  return storeNodes.value.filter((n) => !hidden.has(n.id))
+  let list = storeNodes.value
+  if (hidden.size > 0) {
+    list = list.filter((n) => !hidden.has(n.id))
+  }
+  const locked = props.collabLockedNodeIds
+  if (locked.length === 0) {
+    return list
+  }
+  const lockedSet = new Set(locked)
+  return list.map((n) =>
+    lockedSet.has(n.id) ? { ...n, draggable: false } : n
+  )
 })
 // For brace maps, hide individual edges since BraceOverlay draws the braces
 const edges = computed(() => {
@@ -1715,83 +1728,25 @@ const gridConfig = {
 .vue-flow__node.workshop-editing::after {
   content: attr(data-editor-username) ' ' attr(data-editor-emoji) ' editing';
   position: absolute;
-  top: -40px;
+  bottom: -22px;
   left: 50%;
   transform: translateX(-50%);
-  background: var(--editor-color, #ff6b6b);
-  color: white;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 12px;
+  background: transparent;
+  color: #6b7280;
+  font-size: 11px;
+  line-height: 1.2;
   white-space: nowrap;
   z-index: 1000;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
   pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.2s;
-}
-
-.vue-flow__node.workshop-editing:hover::after {
   opacity: 1;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-@keyframes workshop-pulse {
-  0%,
-  100% {
-    box-shadow: 0 0 8px rgba(255, 107, 107, 0.4);
-  }
-  50% {
-    box-shadow: 0 0 16px rgba(255, 107, 107, 0.6);
-  }
-}
-
-/* Workshop editing indicators */
-.vue-flow__node.workshop-editing {
-  position: relative;
-  border: 3px solid var(--editor-color, #ff6b6b) !important;
-  box-shadow: 0 0 8px rgba(255, 107, 107, 0.4);
-  animation: workshop-pulse 2s ease-in-out infinite;
-}
-
-.vue-flow__node.workshop-editing::before {
-  content: attr(data-editor-emoji);
-  position: absolute;
-  top: -12px;
-  right: -12px;
-  width: 24px;
-  height: 24px;
-  background: var(--editor-color, #ff6b6b);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 14px;
-  z-index: 1000;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-  border: 2px solid white;
-}
-
-.vue-flow__node.workshop-editing::after {
-  content: attr(data-editor-username) ' ' attr(data-editor-emoji) ' editing';
-  position: absolute;
-  top: -40px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: var(--editor-color, #ff6b6b);
-  color: white;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 12px;
-  white-space: nowrap;
-  z-index: 1000;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.2s;
-}
-
-.vue-flow__node.workshop-editing:hover::after {
-  opacity: 1;
+.vue-flow__node.collab-remote-selected {
+  outline: 2px dashed #f97316 !important;
+  outline-offset: 2px;
 }
 
 @keyframes workshop-pulse {

@@ -76,13 +76,34 @@ def _canonical_path(stored_path: str, storage_dir: Path, project_root: Path) -> 
     return normalized
 
 
+def _pages_dir_key_for_lookup(
+    pages_dir_path: str,
+    storage_dir: Path,
+    project_root: Path,
+) -> str:
+    """
+    Path key that matches the disk scan (normalize_library_path on the real folder).
+
+    _canonical_path alone can disagree with normalize_library_path when the stored
+    value is a relative path whose prefix does not match storage_dir relative to
+    cwd (e.g. configured storage layout vs legacy DB string). Resolving the
+    on-disk folder and re-normalizing aligns Windows / WSL / Linux layouts.
+    """
+    resolved = resolve_library_path(pages_dir_path, storage_dir, project_root)
+    if resolved and resolved.exists() and resolved.is_dir():
+        return normalize_library_path(resolved, storage_dir, project_root)
+    return _canonical_path(pages_dir_path, storage_dir, project_root)
+
+
 def _build_doc_lookups(all_docs: list, storage_dir: Path, project_root: Path) -> tuple:
     """Build path-keyed and folder-name-keyed lookups from a list of LibraryDocuments."""
     docs_by_path: dict = {}
     docs_by_folder: dict = {}
     for doc in all_docs:
         if doc.pages_dir_path:
-            canonical = _canonical_path(doc.pages_dir_path, storage_dir, project_root)
+            canonical = _pages_dir_key_for_lookup(
+                doc.pages_dir_path, storage_dir, project_root
+            )
             docs_by_path[canonical] = doc
             docs_by_folder[Path(doc.pages_dir_path).name] = doc
     return docs_by_path, docs_by_folder
@@ -205,9 +226,9 @@ async def repair_library_paths(
     working directory, causing the stored path format (e.g. Windows back-slashes or
     absolute paths) to diverge from what the scan produces on the current server.
 
-    For every document whose stored path does not match its canonical form, the path
-    is updated in-place.  Re-runs the scan lookup so only truly stale records are
-    touched; already-correct records are skipped.
+    For every document whose stored path does not match the path produced by
+    normalize_library_path on the on-disk folder, the value is updated in-place.
+    This matches the scan's notion of "repair" (path key vs disk key).
 
     Returns counts of updated and skipped documents.
     """
@@ -228,19 +249,19 @@ async def repair_library_paths(
             skipped += 1
             continue
 
-        canonical = _canonical_path(doc.pages_dir_path, library_dir, project_root)
-        if canonical == doc.pages_dir_path:
-            skipped += 1
-            continue
-
         folder_name = extract_folder_name_from_pages_dir_path(doc.pages_dir_path)
         disk_path = library_dir / folder_name if folder_name else None
         if not disk_path or not disk_path.exists():
             skipped += 1
             continue
 
+        desired = normalize_library_path(disk_path, library_dir, project_root)
+        if desired == doc.pages_dir_path:
+            skipped += 1
+            continue
+
         try:
-            doc.pages_dir_path = canonical
+            doc.pages_dir_path = desired
             doc.updated_at = datetime.utcnow()
             updated += 1
         except Exception as exc:  # pylint: disable=broad-except

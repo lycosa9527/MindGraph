@@ -3,8 +3,10 @@
  * Handles real-time diagram updates via WebSocket
  */
 import { type Ref, computed, onUnmounted, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
 
 import { useLanguage, useNotifications } from '@/composables'
+import { eventBus } from '@/composables/useEventBus'
 import { useAuthStore } from '@/stores'
 
 export interface ParticipantInfo {
@@ -13,7 +15,16 @@ export interface ParticipantInfo {
 }
 
 export interface WorkshopUpdate {
-  type: 'update' | 'user_joined' | 'user_left' | 'joined' | 'error' | 'pong' | 'node_editing'
+  type:
+    | 'update'
+    | 'user_joined'
+    | 'user_left'
+    | 'joined'
+    | 'snapshot'
+    | 'error'
+    | 'pong'
+    | 'node_editing'
+    | 'node_selected'
   diagram_id?: string
   spec?: Record<string, unknown>
   nodes?: Array<Record<string, unknown>> // Granular: only changed nodes
@@ -28,6 +39,15 @@ export interface WorkshopUpdate {
   editing?: boolean
   color?: string
   emoji?: string
+  selected?: boolean
+  owner_id?: number
+  version?: number
+}
+
+export interface RemoteNodeSelection {
+  nodeId: string
+  username: string
+  color: string
 }
 
 export interface ActiveEditor {
@@ -45,7 +65,8 @@ export function useWorkshop(
     nodes?: Array<Record<string, unknown>>,
     connections?: Array<Record<string, unknown>>
   ) => void,
-  onNodeEditing?: (nodeId: string, editor: ActiveEditor | null) => void
+  onNodeEditing?: (nodeId: string, editor: ActiveEditor | null) => void,
+  onServerSnapshot?: (spec: Record<string, unknown>, version: number) => void
 ) {
   const ws = ref<WebSocket | null>(null)
   const isConnected = ref(false)
@@ -55,17 +76,31 @@ export function useWorkshop(
   const maxReconnectAttempts = 5
   const reconnectDelay = 3000
   const activeEditors = ref<Map<string, ActiveEditor>>(new Map()) // node_id -> ActiveEditor
+  /** Remote users' selected node (for dashed outline); excludes current user. */
+  const remoteSelectionsByUser = ref<Map<number, RemoteNodeSelection>>(new Map())
+  const diagramOwnerId = ref<number | null>(null)
   let reconnectTimeout: ReturnType<typeof setTimeout> | null = null
 
   const authStore = useAuthStore()
   const notify = useNotifications()
   const { isZh } = useLanguage()
+  const router = useRouter()
+
+  const isDiagramOwner = computed(() => {
+    if (!workshopCode.value) {
+      return true
+    }
+    if (diagramOwnerId.value == null) {
+      return false
+    }
+    return String(diagramOwnerId.value) === String(authStore.user?.id ?? '')
+  })
 
   // Get WebSocket URL
   function getWebSocketUrl(code: string): string {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
     const host = window.location.host
-    return `${protocol}//${host}/api/ws/workshop/${code}`
+    return `${protocol}//${host}/api/ws/canvas-collab/${code}`
   }
 
   // Connect to presentation-mode WebSocket
@@ -104,7 +139,16 @@ export function useWorkshop(
             case 'joined':
               participants.value = message.participants || []
               participantsWithNames.value = message.participants_with_names || []
+              if (message.owner_id !== undefined && message.owner_id !== null) {
+                diagramOwnerId.value = Number(message.owner_id)
+              }
               console.log('[WorkshopWS] Joined presentation mode', message)
+              break
+
+            case 'snapshot':
+              if (message.spec && onServerSnapshot) {
+                onServerSnapshot(message.spec, message.version ?? 1)
+              }
               break
 
             case 'update':
@@ -176,16 +220,44 @@ export function useWorkshop(
               break
             }
 
-            case 'user_left':
-              participants.value = (participants.value || []).filter((id) => id !== message.user_id)
+            case 'user_left': {
+              const leftId = message.user_id
+              participants.value = (participants.value || []).filter((id) => id !== leftId)
+              if (leftId != null) {
+                remoteSelectionsByUser.value.delete(leftId)
+                remoteSelectionsByUser.value = new Map(remoteSelectionsByUser.value)
+              }
               notify.info(
                 isZh.value ? `用户 ${message.user_id} 已离开` : `User ${message.user_id} left`
               )
               break
+            }
+
+            case 'node_selected': {
+              const uid = message.user_id
+              const nid = message.node_id
+              if (uid == null || !nid) {
+                break
+              }
+              if (String(uid) === String(authStore.user?.id ?? '')) {
+                break
+              }
+              if (message.selected === false) {
+                remoteSelectionsByUser.value.delete(uid)
+              } else {
+                remoteSelectionsByUser.value.set(uid, {
+                  nodeId: nid,
+                  username: message.username || `User ${uid}`,
+                  color: message.color || '#f97316',
+                })
+              }
+              remoteSelectionsByUser.value = new Map(remoteSelectionsByUser.value)
+              break
+            }
 
             case 'error':
               notify.error(
-                message.message || (isZh.value ? '演示模式错误' : 'Presentation mode error')
+                message.message || (isZh.value ? '在线协作错误' : 'Collaboration error')
               )
               break
 
@@ -203,8 +275,8 @@ export function useWorkshop(
         isConnected.value = false
         notify.error(
           isZh.value
-            ? '演示模式连接错误，请检查网络连接'
-            : 'Presentation mode connection error, please check your network'
+            ? '在线协作连接错误，请检查网络连接'
+            : 'Collaboration connection error, please check your network'
         )
       }
 
@@ -212,13 +284,25 @@ export function useWorkshop(
         console.log('[WorkshopWS] Disconnected', event.code, event.reason)
         isConnected.value = false
 
+        if (event.code === 4002) {
+          disconnect()
+          eventBus.emit('workshop:code-changed', { code: null })
+          notify.info(
+            isZh.value
+              ? '长时间未编辑图示，已返回首页'
+              : 'Returned home — no diagram edits for 30 minutes.'
+          )
+          void router.push('/mindgraph')
+          return
+        }
+
         // Show error notification if not a normal closure
         if (event.code !== 1000 && event.code !== 1001) {
           const reason = event.reason || (isZh.value ? '连接已断开' : 'Connection closed')
           notify.warning(
             isZh.value
-              ? `演示模式连接已断开：${reason}`
-              : `Presentation mode connection closed: ${reason}`
+              ? `在线协作连接已断开：${reason}`
+              : `Collaboration connection closed: ${reason}`
           )
         }
 
@@ -236,8 +320,8 @@ export function useWorkshop(
         } else if (reconnectAttempts.value >= maxReconnectAttempts) {
           notify.error(
             isZh.value
-              ? '演示模式重连失败，请刷新页面重试'
-              : 'Failed to reconnect to presentation mode, please refresh the page'
+              ? '在线协作重连失败，请刷新页面重试'
+              : 'Failed to reconnect to collaboration, please refresh the page'
           )
         }
       }
@@ -245,7 +329,7 @@ export function useWorkshop(
       ws.value = socket
     } catch (error) {
       console.error('[WorkshopWS] Failed to connect:', error)
-      notify.error(isZh.value ? '连接演示模式失败' : 'Failed to connect to presentation mode')
+      notify.error(isZh.value ? '连接在线协作失败' : 'Failed to connect to collaboration')
     }
   }
 
@@ -275,6 +359,8 @@ export function useWorkshop(
     participants.value = []
     participantsWithNames.value = []
     activeEditors.value.clear()
+    remoteSelectionsByUser.value.clear()
+    diagramOwnerId.value = null
 
     // Stop heartbeat
     stopHeartbeat()
@@ -316,6 +402,26 @@ export function useWorkshop(
       ws.value.send(JSON.stringify(message))
     } catch (error) {
       console.error('[WorkshopWS] Failed to send update:', error)
+    }
+  }
+
+  function sendNodeSelected(nodeId: string | null, selected: boolean) {
+    if (!ws.value || ws.value.readyState !== WebSocket.OPEN) {
+      return
+    }
+    if (!nodeId) {
+      return
+    }
+    try {
+      ws.value.send(
+        JSON.stringify({
+          type: 'node_selected',
+          node_id: nodeId,
+          selected,
+        })
+      )
+    } catch (error) {
+      console.error('[WorkshopWS] Failed to send node_selected:', error)
     }
   }
 
@@ -414,9 +520,13 @@ export function useWorkshop(
     participants,
     participantsWithNames: computed(() => participantsWithNames.value),
     activeEditors: computed(() => activeEditors.value),
+    remoteSelectionsByUser: computed(() => remoteSelectionsByUser.value),
+    diagramOwnerId: computed(() => diagramOwnerId.value),
+    isDiagramOwner,
     connect,
     disconnect,
     sendUpdate,
+    sendNodeSelected,
     notifyNodeEditing,
     watchCode,
   }

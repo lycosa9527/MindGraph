@@ -1,3 +1,4 @@
+import { collabForeignLockBlocksAnyId, emitCollabDeleteBlocked } from './collabHelpers'
 import type { DiagramContext } from './types'
 
 export function useDoubleBubbleMapOpsSlice(ctx: DiagramContext) {
@@ -26,6 +27,11 @@ export function useDoubleBubbleMapOpsSlice(ctx: DiagramContext) {
   function removeDoubleBubbleMapNodes(nodeIds: string[]): number {
     const spec = ctx.getDoubleBubbleSpecFromData()
     if (!spec) return 0
+
+    if (collabForeignLockBlocksAnyId(ctx, nodeIds)) {
+      emitCollabDeleteBlocked()
+      return 0
+    }
 
     const simIndices = new Set(
       nodeIds

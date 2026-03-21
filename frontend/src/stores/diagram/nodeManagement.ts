@@ -3,6 +3,7 @@ import type { Connection, DiagramNode } from '@/types'
 
 import { useConceptMapRelationshipStore } from '../conceptMapRelationship'
 import { recalculateBubbleMapLayout, recalculateMultiFlowMapLayout } from '../specLoader'
+import { collabForeignLockBlocksAnyId, emitCollabDeleteBlocked } from './collabHelpers'
 import { emitEvent } from './events'
 import type { DiagramContext } from './types'
 
@@ -54,6 +55,13 @@ export function useNodeManagementSlice(ctx: DiagramContext) {
   }
 
   function addNode(node: DiagramNode): void {
+    if (ctx.collabSessionActive.value && node.id) {
+      const suffix =
+        typeof crypto !== 'undefined' && crypto.randomUUID
+          ? crypto.randomUUID().slice(0, 8)
+          : `${Date.now().toString(36)}`
+      node.id = `${node.id}-c${suffix}`
+    }
     if (!ctx.data.value) {
       ctx.data.value = { type: ctx.type.value || 'mindmap', nodes: [], connections: [] }
     }
@@ -146,6 +154,11 @@ export function useNodeManagementSlice(ctx: DiagramContext) {
 
   function removeNode(nodeId: string): boolean {
     if (!ctx.data.value?.nodes) return false
+
+    if (collabForeignLockBlocksAnyId(ctx, [nodeId])) {
+      emitCollabDeleteBlocked()
+      return false
+    }
 
     const index = ctx.data.value.nodes.findIndex((n) => n.id === nodeId)
     if (index === -1) return false

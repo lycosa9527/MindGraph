@@ -9,6 +9,7 @@ import {
   loadMindMapSpec,
   nodesAndConnectionsToMindMapSpec,
 } from '../specLoader'
+import { collabForeignLockBlocksAnyId, emitCollabDeleteBlocked } from './collabHelpers'
 import { emitEvent, getMindMapCurveExtents } from './events'
 import type { DiagramContext } from './types'
 
@@ -101,6 +102,11 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
 
     const spec = nodesAndConnectionsToMindMapSpec(data.value.nodes, data.value.connections)
     const idsToRemove = new Set(nodeIds.filter((id) => id.startsWith('branch-')))
+
+    if (collabForeignLockBlocksAnyId(ctx, idsToRemove)) {
+      emitCollabDeleteBlocked()
+      return 0
+    }
 
     const toRemoveWithParent: {
       nodeId: string

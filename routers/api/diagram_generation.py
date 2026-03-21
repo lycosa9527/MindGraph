@@ -14,6 +14,8 @@ import time
 from fastapi import APIRouter, Depends, HTTPException, Request
 
 from agents.core.workflow import agent_graph_workflow_with_styles
+from config.database import SessionLocal
+from models.domain.diagrams import Diagram
 from models import GenerateRequest, GenerateResponse, Messages, get_request_language
 from models.domain.auth import User
 from utils.auth import get_current_user_or_api_key
@@ -45,6 +47,25 @@ async def generate_graph(
     # Rate limiting: 100 requests per minute per user/IP
     identifier = get_rate_limit_identifier(current_user, request)
     await check_endpoint_rate_limit('generate_graph', identifier, max_requests=100, window_seconds=60)
+
+    if req.diagram_id and current_user:
+        db = SessionLocal()
+        try:
+            diagram = db.query(Diagram).filter(
+                Diagram.id == req.diagram_id,
+                ~Diagram.is_deleted,
+            ).first()
+            if diagram and diagram.workshop_code:
+                role = getattr(current_user, 'role', 'user') or 'user'
+                if role != 'admin' and diagram.user_id != current_user.id:
+                    raise HTTPException(
+                        status_code=403,
+                        detail=(
+                            'Only the diagram owner can use AI generation during collaboration'
+                        ),
+                    )
+        finally:
+            db.close()
 
     # Get language for error messages
     accept_language = request.headers.get("Accept-Language", "")

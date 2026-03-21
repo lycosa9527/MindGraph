@@ -20,10 +20,11 @@
  *   // Switch to different model's result
  *   switchToModel('deepseek')
  */
-import { computed } from 'vue'
+import { type ComputedRef, computed, inject } from 'vue'
 
 import { eventBus, useLanguage, useNotifications } from '@/composables'
 import { useDiagramStore, useLLMResultsStore } from '@/stores'
+import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import { authFetch } from '@/utils/api'
 
 // LLM Models to use for parallel generation
@@ -132,8 +133,12 @@ export function isPlaceholderText(text: string | undefined | null): boolean {
 export function useAutoComplete() {
   const diagramStore = useDiagramStore()
   const llmResultsStore = useLLMResultsStore()
+  const savedDiagramsStore = useSavedDiagramsStore()
   const { isZh } = useLanguage()
   const notify = useNotifications()
+  const collabCanvas = inject<
+    { isDiagramOwner?: ComputedRef<boolean> } | undefined
+  >('collabCanvas', undefined)
 
   // Expose store state
   const isGenerating = computed(() => llmResultsStore.isGenerating)
@@ -473,6 +478,19 @@ export function useAutoComplete() {
   ): Promise<{ success: boolean; error?: string }> {
     const { modelsToRun = [...LLM_MODELS], onFirstResult, onAllComplete, promptSuffix } = options
 
+    if (
+      diagramStore.collabSessionActive &&
+      collabCanvas?.isDiagramOwner &&
+      !collabCanvas.isDiagramOwner.value
+    ) {
+      notify.warning(
+        isZh.value
+          ? '协作模式下仅图示所有者可以使用 AI 生成'
+          : 'Only the diagram owner can use AI generation during collaboration'
+      )
+      return { success: false, error: 'collab_owner_only' }
+    }
+
     // Validate
     const validation = validateForAutoComplete()
     if (!validation.valid) {
@@ -489,6 +507,10 @@ export function useAutoComplete() {
       diagram_type: diagramStore.type,
       language,
       request_type: 'autocomplete',
+    }
+    const activeId = savedDiagramsStore.activeDiagramId
+    if (activeId) {
+      requestBody.diagram_id = activeId
     }
 
     // Add bridge map specific data

@@ -32,10 +32,11 @@ import {
   ImageDown,
   RotateCcw,
   Share2,
+  Users,
 } from 'lucide-vue-next'
 
 import { DiagramSlotFullModal } from '@/components/canvas'
-import { WorkshopModal } from '@/components/workshop'
+import OnlineCollabModal from '@/components/canvas/OnlineCollabModal.vue'
 import { useFeatureFlags } from '@/composables'
 import {
   eventBus,
@@ -104,16 +105,17 @@ const fileName = computed({
 const showSlotFullModal = ref(false)
 
 // Diagram presentation mode (shared code) — not Workshop Chat
-const showWorkshopModal = ref(false)
+const showOnlineCollabModal = ref(false)
+const collabMode = ref<'organization' | 'network'>('organization')
 const currentDiagramId = computed(() => {
   // Priority 1: Use activeDiagramId from store (set when diagram is saved)
   if (savedDiagramsStore.activeDiagramId) {
     return savedDiagramsStore.activeDiagramId
   }
-  // Priority 2: Check route query parameter (for saved diagrams loaded from URL)
-  const diagramIdFromRoute = route.query.diagramId
-  if (diagramIdFromRoute && typeof diagramIdFromRoute === 'string') {
-    return diagramIdFromRoute
+  // Priority 2: Route query (diagramId or legacy diagram_id)
+  const raw = route.query.diagramId ?? route.query.diagram_id
+  if (raw && typeof raw === 'string') {
+    return raw
   }
   return null
 })
@@ -174,6 +176,15 @@ onUnmounted(() => {
 })
 
 onMounted(() => {
+  eventBus.onWithOwner(
+    'workshop:code-changed',
+    (data) => {
+      if (data.code !== undefined) {
+        workshopCode.value = data.code as string | null
+      }
+    },
+    'CanvasTopBar'
+  )
   eventBus.onWithOwner(
     'canvas:show_slot_full_modal',
     () => {
@@ -275,6 +286,13 @@ function handleOpenMindmate() {
   panelsStore.openMindmate()
 }
 
+function handleCollabCommand(cmd: string) {
+  if (cmd === 'organization' || cmd === 'network') {
+    collabMode.value = cmd
+    showOnlineCollabModal.value = true
+  }
+}
+
 /**
  * Reset canvas to default template: clears diagram, node palette, and saved state.
  * Nothing is persisted. Shows confirmation modal first.
@@ -307,7 +325,7 @@ async function handleReset() {
   savedDiagramsStore.clearActiveDiagram()
   router.replace({ path: '/canvas', query: { type: diagramType } })
   showSlotFullModal.value = false
-  showWorkshopModal.value = false
+  showOnlineCollabModal.value = false
   useLLMResultsStore().reset()
   panelsStore.reset()
   diagramStore.clearHistory()
@@ -397,9 +415,39 @@ async function handleReset() {
       </p>
     </div>
 
-    <!-- Right section: Participants + 教学设计 + Export buttons -->
+    <!-- Right section: Online collaboration + participants + teaching design + export -->
     <div class="ml-auto flex items-center gap-4 shrink-0 z-10">
-      <!-- Participant bar (only when presentation mode has a join code) -->
+      <ElTooltip
+        :content="isZh ? '在线协作（校内 / 共同）' : 'Collaborate (school or shared)'"
+        placement="bottom"
+      >
+        <ElDropdown
+          trigger="click"
+          :disabled="!currentDiagramId"
+          @command="handleCollabCommand"
+        >
+          <ElButton
+            class="workshop-button"
+            size="small"
+            :disabled="!currentDiagramId"
+          >
+            <Users class="w-4 h-4 mr-1" />
+            {{ isZh ? '在线协作' : 'Collaborate' }}
+          </ElButton>
+          <template #dropdown>
+            <ElDropdownMenu>
+              <ElDropdownItem command="organization">
+                {{ isZh ? '校内协同' : 'School collaboration' }}
+              </ElDropdownItem>
+              <ElDropdownItem command="network">
+                {{ isZh ? '共同协同' : 'Shared collaboration' }}
+              </ElDropdownItem>
+            </ElDropdownMenu>
+          </template>
+        </ElDropdown>
+      </ElTooltip>
+
+      <!-- Participant bar (only when collaboration session has a join code) -->
       <div
         v-if="workshopCode && participantsWithNames && participantsWithNames.length > 0"
         class="flex items-center gap-1 px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded-md border border-gray-200 dark:border-gray-700"
@@ -413,11 +461,19 @@ async function handleReset() {
             :content="participant.username"
             placement="bottom"
           >
-            <div
-              class="participant-emoji"
-              :style="{ backgroundColor: getUserColor(participant.user_id) }"
-            >
-              {{ getUserEmoji(participant.user_id) }}
+            <div class="flex items-center gap-1 max-w-[140px]">
+              <div
+                class="participant-emoji shrink-0"
+                :style="{ backgroundColor: getUserColor(participant.user_id) }"
+              >
+                {{ getUserEmoji(participant.user_id) }}
+              </div>
+              <span
+                class="text-xs font-medium text-gray-700 dark:text-gray-200 truncate"
+                :title="participant.username"
+              >
+                {{ participant.username }}
+              </span>
             </div>
           </ElTooltip>
         </template>
@@ -538,14 +594,13 @@ async function handleReset() {
       @cancel="handleSlotModalCancel"
     />
 
-    <!-- Presentation mode (share code) modal -->
-    <WorkshopModal
-      v-model:visible="showWorkshopModal"
+    <OnlineCollabModal
+      v-model:visible="showOnlineCollabModal"
       :diagram-id="currentDiagramId"
-      @workshop-code-changed="
+      :mode="collabMode"
+      @collab-code-changed="
         (code) => {
           workshopCode = code
-          // Emit event for CanvasPage to sync
           eventBus.emit('workshop:code-changed', { code })
         }
       "

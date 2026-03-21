@@ -9,8 +9,9 @@
  * - Click outside to save
  * - Seamless transition between display and edit modes
  */
-import { computed, nextTick, onUnmounted, ref, watch } from 'vue'
+import { computed, inject, nextTick, onUnmounted, ref, watch } from 'vue'
 
+import { useLanguage, useNotifications } from '@/composables'
 import { eventBus } from '@/composables/useEventBus'
 
 const props = withDefaults(
@@ -72,6 +73,12 @@ const emit = defineEmits<{
   (e: 'editStart'): void
   (e: 'widthChange', width: number): void
 }>()
+
+const collabCanvas = inject<
+  { isNodeLockedByOther?: (nodeId: string) => boolean } | undefined
+>('collabCanvas', undefined)
+const notifyCollab = useNotifications()
+const { isZh } = useLanguage()
 
 // Local editing state
 const localIsEditing = ref(false)
@@ -210,6 +217,13 @@ const wrapperStyle = computed(() => {
  */
 function startEditing(): void {
   if (localIsEditing.value || props.readonly) return
+
+  if (collabCanvas?.isNodeLockedByOther?.(props.nodeId)) {
+    notifyCollab.warning(
+      isZh.value ? '其他用户正在编辑此节点' : 'Someone else is editing this node'
+    )
+    return
+  }
 
   // Measure width before switching to edit mode
   // For right-aligned text, use parent container width or maxWidth to avoid empty space

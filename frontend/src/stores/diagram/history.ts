@@ -62,5 +62,12 @@ export function useHistorySlice(ctx: DiagramContext) {
     historyIndex.value = -1
   }
 
-  return { canUndo, canRedo, pushHistory, undo, redo, clearHistory }
+  /** Drop redo stack after remote collaboration merge (external change invalidates redo). */
+  function clearRedoStack(): void {
+    if (historyIndex.value < history.value.length - 1) {
+      history.value = history.value.slice(0, historyIndex.value + 1)
+    }
+  }
+
+  return { canUndo, canRedo, pushHistory, undo, redo, clearHistory, clearRedoStack }
 }

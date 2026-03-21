@@ -21,8 +21,9 @@ from datetime import datetime
 
 import io
 import logging
+from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, Body, Depends, HTTPException, Query, Request
 from fastapi.responses import Response
 import qrcode
 from qrcode import constants as qrcode_constants
@@ -31,7 +32,12 @@ from sqlalchemy.orm import Session
 
 from config.database import get_db
 from models.domain.auth import User
-from models.requests.requests_diagram import DiagramCreateRequest, DiagramUpdateRequest
+from models.requests.requests_diagram import (
+    DiagramCreateRequest,
+    DiagramUpdateRequest,
+    WorkshopJoinOrganizationRequest,
+    WorkshopStartRequest,
+)
 from models.responses import DiagramListItem, DiagramListResponse, DiagramResponse
 from services.redis.cache.redis_diagram_cache import get_diagram_cache
 from services.workshop import workshop_service
@@ -408,6 +414,7 @@ async def pin_diagram(
 async def start_workshop(
     diagram_id: str,
     request: Request,
+    body: Optional[WorkshopStartRequest] = Body(default=None),
     current_user: User = Depends(get_current_user),
 ):
     """
@@ -423,7 +430,11 @@ async def start_workshop(
         "workshop", identifier, max_requests=10, window_seconds=60
     )
 
-    code, error_msg = await workshop_service.start_workshop(diagram_id, current_user.id)
+    visibility = body.visibility if body else "organization"
+    duration = body.duration if body else "today"
+    code, error_msg, expires_at = await workshop_service.start_workshop(
+        diagram_id, current_user.id, visibility, duration
+    )
 
     if not code:
         raise HTTPException(
@@ -437,11 +448,15 @@ async def start_workshop(
         current_user.id,
     )
 
-    return {
+    payload = {
         "success": True,
         "code": code,
         "message": "Presentation mode started",
+        "duration": duration,
     }
+    if expires_at is not None:
+        payload["expires_at"] = expires_at.isoformat() + "Z"
+    return payload
 
 
 @router.post("/diagrams/{diagram_id}/workshop/stop")
@@ -497,12 +512,14 @@ async def get_workshop_status(
         "workshop", identifier, max_requests=30, window_seconds=60
     )
 
-    status = await workshop_service.get_workshop_status(
-        diagram_id
+    status, err = await workshop_service.get_workshop_status(
+        diagram_id, current_user.id
     )
 
-    if not status:
+    if err == "not_found" or status is None:
         raise HTTPException(status_code=404, detail="Diagram not found")
+    if err == "forbidden":
+        raise HTTPException(status_code=403, detail="Not allowed to view workshop status")
 
     return status
 
@@ -526,13 +543,71 @@ async def join_workshop(
     workshop_info = await workshop_service.join_workshop(code, current_user.id)
 
     if not workshop_info:
-        raise HTTPException(status_code=404, detail="Invalid presentation code")
+        raise HTTPException(
+            status_code=404,
+            detail="Collaboration session ended or invalid code",
+        )
 
     logger.info(
         "[Diagrams] User %s joined presentation mode %s (diagram %s)",
         current_user.id,
         code,
         workshop_info["diagram_id"],
+    )
+
+    return {
+        "success": True,
+        "workshop": workshop_info,
+    }
+
+
+@router.get("/workshop/organization/sessions")
+async def list_organization_workshop_sessions(
+    request: Request,
+    current_user: User = Depends(get_current_user),
+):
+    """
+    List active organization-scoped workshops for the same school (校内).
+    """
+    identifier = get_rate_limit_identifier(current_user, request)
+    await check_endpoint_rate_limit(
+        "workshop", identifier, max_requests=30, window_seconds=60
+    )
+
+    sessions = await workshop_service.list_organization_workshop_sessions(
+        current_user.id
+    )
+    return {"success": True, "sessions": sessions}
+
+
+@router.post("/workshop/join-organization")
+async def join_workshop_organization(
+    request: Request,
+    body: WorkshopJoinOrganizationRequest,
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Join a 校内 session by diagram id (no meeting code in the UI).
+    """
+    identifier = get_rate_limit_identifier(current_user, request)
+    await check_endpoint_rate_limit(
+        "workshop", identifier, max_requests=20, window_seconds=60
+    )
+
+    workshop_info = await workshop_service.join_workshop_by_diagram(
+        body.diagram_id, current_user.id
+    )
+
+    if not workshop_info:
+        raise HTTPException(
+            status_code=404,
+            detail="Collaboration session ended or unavailable organization workshop",
+        )
+
+    logger.info(
+        "[Diagrams] User %s joined org workshop diagram %s",
+        current_user.id,
+        body.diagram_id,
     )
 
     return {

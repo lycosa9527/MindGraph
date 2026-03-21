@@ -1,5 +1,6 @@
 import { eventBus } from '@/composables/useEventBus'
 
+import { collabForeignLockBlocksAnyId, emitCollabDeleteBlocked } from './collabHelpers'
 import { emitEvent } from './events'
 import type { DiagramContext } from './types'
 
@@ -71,6 +72,19 @@ export function useTreeMapOpsSlice(ctx: DiagramContext) {
       }>
     }
     const categories = root.children ?? []
+
+    const affectedPreview = new Set<string>(nodeIds)
+    for (const cat of categories) {
+      if (categoryIdsToRemove.has(cat.id ?? '')) {
+        for (const leaf of cat.children ?? []) {
+          if (leaf.id) affectedPreview.add(leaf.id)
+        }
+      }
+    }
+    if (collabForeignLockBlocksAnyId(ctx, affectedPreview)) {
+      emitCollabDeleteBlocked()
+      return 0
+    }
 
     let deletedCount = 0
     const newCategories = categories

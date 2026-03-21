@@ -47,6 +47,10 @@ class GenerateRequest(BaseModel):
             "'diagram_generation' or 'autocomplete'"
         )
     )
+    diagram_id: Optional[str] = Field(
+        None,
+        description="Current saved diagram id (for collaboration / owner checks on autocomplete)",
+    )
     use_rag: Optional[bool] = Field(
         False,
         description=(
@@ -438,3 +442,38 @@ class FocusQuestionSuggestionsRequest(BaseModel):
             if s and len(s) <= 400:
                 out.append(s)
         return out or None
+
+
+class WorkshopStartRequest(BaseModel):
+    """Optional body for POST /api/diagrams/{id}/workshop/start."""
+
+    visibility: str = Field(
+        default="organization",
+        description="organization (校内) or network (共同)",
+    )
+    duration: str = Field(
+        default="today",
+        description="Session window: 1h | today | 2d (allowed set depends on visibility)",
+    )
+
+    @field_validator("visibility")
+    @classmethod
+    def validate_workshop_visibility(cls, value: str) -> str:
+        """Allow only organization or network."""
+        if value not in ("organization", "network"):
+            raise ValueError("visibility must be organization or network")
+        return value
+
+    @field_validator("duration")
+    @classmethod
+    def validate_workshop_duration(cls, value: str) -> str:
+        """Allow only known preset keys."""
+        if value not in ("1h", "today", "2d"):
+            raise ValueError("duration must be 1h, today, or 2d")
+        return value
+
+
+class WorkshopJoinOrganizationRequest(BaseModel):
+    """Body for POST /api/workshop/join-organization (校内 join by diagram)."""
+
+    diagram_id: str = Field(..., min_length=10, max_length=40)

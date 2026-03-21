@@ -49,6 +49,10 @@ export interface DiagramContext {
   topicNodeWidth: Ref<number | null>
   multiFlowMapRecalcTrigger: Ref<number>
   sessionEditCount: Ref<number>
+  /** True when canvas WS collaboration session is active (unique new node ids). */
+  collabSessionActive: Ref<boolean>
+  /** Node ids another participant is inline-editing; blocks delete while collab active. */
+  collabForeignLockedNodeIds: Ref<Set<string>>
 
   // Cross-cutting functions (filled during two-phase init)
   pushHistory: (action: string) => void

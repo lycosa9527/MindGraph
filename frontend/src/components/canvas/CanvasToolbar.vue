@@ -3,7 +3,7 @@
  * CanvasToolbar - Floating toolbar for canvas editing
  * Migrated from prototype MindGraphCanvasPage toolbar
  */
-import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
+import { type ComputedRef, computed, inject, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import { ElButton, ElDropdown, ElDropdownItem, ElDropdownMenu, ElTooltip } from 'element-plus'
 
@@ -65,6 +65,24 @@ const emit = defineEmits<{
 
 const diagramStore = useDiagramStore()
 const uiStore = useUIStore()
+
+const collabCanvas = inject<
+  | {
+      isDiagramOwner?: ComputedRef<boolean>
+    }
+  | undefined
+>('collabCanvas', undefined)
+
+const aiBlockedByCollab = computed(() => {
+  if (!diagramStore.collabSessionActive) {
+    return false
+  }
+  const own = collabCanvas?.isDiagramOwner
+  if (!own) {
+    return false
+  }
+  return !own.value
+})
 
 // Helper function to get timestamp for logging
 function getTimestamp(): string {
@@ -1252,6 +1270,14 @@ function handleFormatBrush() {
  * Uses the useAutoComplete composable which mirrors the old JS "Auto" button behavior
  */
 async function handleAIGenerate() {
+  if (aiBlockedByCollab.value) {
+    notify.warning(
+      isZh.value
+        ? '协作模式下仅图示所有者可以使用 AI 生成'
+        : 'Only the diagram owner can use AI generation during collaboration'
+    )
+    return
+  }
   // Validate before generating
   const validation = validateForAutoComplete()
   if (!validation.valid) {
@@ -1860,6 +1886,7 @@ onUnmounted(() => {
             size="small"
             class="ai-btn"
             :loading="isAIGenerating"
+            :disabled="aiBlockedByCollab"
             @click="handleAIGenerate"
           >
             <Wand2
