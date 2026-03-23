@@ -5,8 +5,9 @@
   "type": "module",
   "scripts": {
     "sync-version": "npx tsx scripts/sync-version.ts",
+    "build-prompt-registry": "cd .. && python scripts/build_prompt_language_registry.py",
     "dev": "vite",
-    "prebuild": "npm run sync-version",
+    "prebuild": "npm run build-prompt-registry && npm run sync-version",
     "build": "vue-tsc --noEmit && vite build",
     "preview": "vite preview",
     "lint": "eslint .",

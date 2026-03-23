@@ -1,0 +1,1683 @@
+[
+  {
+    "code": "zh",
+    "englishName": "Simplified Chinese",
+    "nativeLabel": "简体中文",
+    "search": [
+      "zh",
+      "simplified chinese",
+      "简体中文",
+      "简体",
+      "中文"
+    ]
+  },
+  {
+    "code": "zh-hant",
+    "englishName": "Traditional Chinese",
+    "nativeLabel": "繁體中文",
+    "search": [
+      "zh-hant",
+      "traditional chinese",
+      "繁體中文",
+      "繁体",
+      "繁體"
+    ]
+  },
+  {
+    "code": "en",
+    "englishName": "English",
+    "nativeLabel": "English",
+    "search": [
+      "en",
+      "english",
+      "english",
+      "英语"
+    ]
+  },
+  {
+    "code": "fr",
+    "englishName": "French",
+    "nativeLabel": "Français",
+    "search": [
+      "fr",
+      "french",
+      "français",
+      "法语",
+      "法文"
+    ]
+  },
+  {
+    "code": "es",
+    "englishName": "Spanish",
+    "nativeLabel": "Español",
+    "search": [
+      "es",
+      "spanish",
+      "español",
+      "西班牙语",
+      "西语"
+    ]
+  },
+  {
+    "code": "ar",
+    "englishName": "Arabic (Modern Standard)",
+    "nativeLabel": "العربية",
+    "search": [
+      "ar",
+      "arabic (modern standard)",
+      "العربية",
+      "阿拉伯语",
+      "阿语"
+    ]
+  },
+  {
+    "code": "ru",
+    "englishName": "Russian",
+    "nativeLabel": "Русский",
+    "search": [
+      "ru",
+      "russian",
+      "русский",
+      "俄语"
+    ]
+  },
+  {
+    "code": "pt",
+    "englishName": "Portuguese",
+    "nativeLabel": "Português",
+    "search": [
+      "pt",
+      "portuguese",
+      "português",
+      "葡萄牙语"
+    ]
+  },
+  {
+    "code": "de",
+    "englishName": "German",
+    "nativeLabel": "Deutsch",
+    "search": [
+      "de",
+      "german",
+      "deutsch",
+      "德语",
+      "德文"
+    ]
+  },
+  {
+    "code": "it",
+    "englishName": "Italian",
+    "nativeLabel": "Italiano",
+    "search": [
+      "it",
+      "italian",
+      "italiano",
+      "意大利语"
+    ]
+  },
+  {
+    "code": "nl",
+    "englishName": "Dutch",
+    "nativeLabel": "Nederlands",
+    "search": [
+      "nl",
+      "dutch",
+      "nederlands",
+      "荷兰语"
+    ]
+  },
+  {
+    "code": "da",
+    "englishName": "Danish",
+    "nativeLabel": "Dansk",
+    "search": [
+      "da",
+      "danish",
+      "dansk",
+      "丹麦语"
+    ]
+  },
+  {
+    "code": "ga",
+    "englishName": "Irish",
+    "nativeLabel": "Gaeilge",
+    "search": [
+      "ga",
+      "irish",
+      "gaeilge",
+      "爱尔兰语"
+    ]
+  },
+  {
+    "code": "cy",
+    "englishName": "Welsh",
+    "nativeLabel": "Cymraeg",
+    "search": [
+      "cy",
+      "welsh",
+      "cymraeg",
+      "威尔士语"
+    ]
+  },
+  {
+    "code": "fi",
+    "englishName": "Finnish",
+    "nativeLabel": "Suomi",
+    "search": [
+      "fi",
+      "finnish",
+      "suomi",
+      "芬兰语"
+    ]
+  },
+  {
+    "code": "is",
+    "englishName": "Icelandic",
+    "nativeLabel": "Íslenska",
+    "search": [
+      "is",
+      "icelandic",
+      "íslenska",
+      "冰岛语"
+    ]
+  },
+  {
+    "code": "sv",
+    "englishName": "Swedish",
+    "nativeLabel": "Svenska",
+    "search": [
+      "sv",
+      "swedish",
+      "svenska",
+      "瑞典语"
+    ]
+  },
+  {
+    "code": "nn",
+    "englishName": "Norwegian Nynorsk",
+    "nativeLabel": "Nynorsk",
+    "search": [
+      "nn",
+      "norwegian nynorsk",
+      "nynorsk",
+      "新挪威语",
+      "尼诺斯克"
+    ]
+  },
+  {
+    "code": "nb",
+    "englishName": "Norwegian Bokmål",
+    "nativeLabel": "Bokmål",
+    "search": [
+      "nb",
+      "norwegian bokmål",
+      "bokmål",
+      "书面挪威语",
+      "布克莫尔"
+    ]
+  },
+  {
+    "code": "no",
+    "englishName": "Norwegian",
+    "nativeLabel": "Norsk",
+    "search": [
+      "no",
+      "norwegian",
+      "norsk",
+      "挪威语"
+    ]
+  },
+  {
+    "code": "ja",
+    "englishName": "Japanese",
+    "nativeLabel": "日本語",
+    "search": [
+      "ja",
+      "japanese",
+      "日本語",
+      "日语",
+      "日文"
+    ]
+  },
+  {
+    "code": "ko",
+    "englishName": "Korean",
+    "nativeLabel": "한국어",
+    "search": [
+      "ko",
+      "korean",
+      "한국어",
+      "朝鲜语",
+      "韩语",
+      "韩文"
+    ]
+  },
+  {
+    "code": "vi",
+    "englishName": "Vietnamese",
+    "nativeLabel": "Tiếng Việt",
+    "search": [
+      "vi",
+      "vietnamese",
+      "tiếng việt",
+      "越南语"
+    ]
+  },
+  {
+    "code": "th",
+    "englishName": "Thai",
+    "nativeLabel": "ไทย",
+    "search": [
+      "th",
+      "thai",
+      "ไทย",
+      "泰语",
+      "泰文"
+    ]
+  },
+  {
+    "code": "id",
+    "englishName": "Indonesian",
+    "nativeLabel": "Bahasa Indonesia",
+    "search": [
+      "id",
+      "indonesian",
+      "bahasa indonesia",
+      "印度尼西亚语",
+      "印尼语"
+    ]
+  },
+  {
+    "code": "ms",
+    "englishName": "Malay",
+    "nativeLabel": "Bahasa Melayu",
+    "search": [
+      "ms",
+      "malay",
+      "bahasa melayu",
+      "马来语"
+    ]
+  },
+  {
+    "code": "my",
+    "englishName": "Burmese",
+    "nativeLabel": "မြန်မာ",
+    "search": [
+      "my",
+      "burmese",
+      "မြန်မာ",
+      "缅甸语"
+    ]
+  },
+  {
+    "code": "tl",
+    "englishName": "Tagalog",
+    "nativeLabel": "Tagalog",
+    "search": [
+      "tl",
+      "tagalog",
+      "tagalog",
+      "他加禄语",
+      "菲律宾语"
+    ]
+  },
+  {
+    "code": "km",
+    "englishName": "Khmer",
+    "nativeLabel": "ខ្មែរ",
+    "search": [
+      "km",
+      "khmer",
+      "ខ្មែរ",
+      "高棉语",
+      "柬埔寨"
+    ]
+  },
+  {
+    "code": "lo",
+    "englishName": "Lao",
+    "nativeLabel": "ລາວ",
+    "search": [
+      "lo",
+      "lao",
+      "ລາວ",
+      "老挝语"
+    ]
+  },
+  {
+    "code": "hi",
+    "englishName": "Hindi",
+    "nativeLabel": "हिन्दी",
+    "search": [
+      "hi",
+      "hindi",
+      "हिन्दी",
+      "印地语"
+    ]
+  },
+  {
+    "code": "bn",
+    "englishName": "Bengali",
+    "nativeLabel": "বাংলা",
+    "search": [
+      "bn",
+      "bengali",
+      "বাংলা",
+      "孟加拉语"
+    ]
+  },
+  {
+    "code": "ur",
+    "englishName": "Urdu",
+    "nativeLabel": "اردو",
+    "search": [
+      "ur",
+      "urdu",
+      "اردو",
+      "乌尔都语"
+    ]
+  },
+  {
+    "code": "ne",
+    "englishName": "Nepali",
+    "nativeLabel": "नेपाली",
+    "search": [
+      "ne",
+      "nepali",
+      "नेपाली",
+      "尼泊尔语"
+    ]
+  },
+  {
+    "code": "he",
+    "englishName": "Hebrew",
+    "nativeLabel": "עברית",
+    "search": [
+      "he",
+      "hebrew",
+      "עברית",
+      "希伯来语"
+    ]
+  },
+  {
+    "code": "tr",
+    "englishName": "Turkish",
+    "nativeLabel": "Türkçe",
+    "search": [
+      "tr",
+      "turkish",
+      "türkçe",
+      "土耳其语"
+    ]
+  },
+  {
+    "code": "fa",
+    "englishName": "Persian (Farsi)",
+    "nativeLabel": "فارسی",
+    "search": [
+      "fa",
+      "persian (farsi)",
+      "فارسی",
+      "波斯语",
+      "伊朗"
+    ]
+  },
+  {
+    "code": "pl",
+    "englishName": "Polish",
+    "nativeLabel": "Polski",
+    "search": [
+      "pl",
+      "polish",
+      "polski",
+      "波兰语"
+    ]
+  },
+  {
+    "code": "uk",
+    "englishName": "Ukrainian",
+    "nativeLabel": "Українська",
+    "search": [
+      "uk",
+      "ukrainian",
+      "українська",
+      "乌克兰语"
+    ]
+  },
+  {
+    "code": "cs",
+    "englishName": "Czech",
+    "nativeLabel": "Čeština",
+    "search": [
+      "cs",
+      "czech",
+      "čeština",
+      "捷克语"
+    ]
+  },
+  {
+    "code": "ro",
+    "englishName": "Romanian",
+    "nativeLabel": "Română",
+    "search": [
+      "ro",
+      "romanian",
+      "română",
+      "罗马尼亚语"
+    ]
+  },
+  {
+    "code": "bg",
+    "englishName": "Bulgarian",
+    "nativeLabel": "Български",
+    "search": [
+      "bg",
+      "bulgarian",
+      "български",
+      "保加利亚语"
+    ]
+  },
+  {
+    "code": "sk",
+    "englishName": "Slovak",
+    "nativeLabel": "Slovenčina",
+    "search": [
+      "sk",
+      "slovak",
+      "slovenčina",
+      "斯洛伐克语"
+    ]
+  },
+  {
+    "code": "hu",
+    "englishName": "Hungarian",
+    "nativeLabel": "Magyar",
+    "search": [
+      "hu",
+      "hungarian",
+      "magyar",
+      "匈牙利语"
+    ]
+  },
+  {
+    "code": "sl",
+    "englishName": "Slovenian",
+    "nativeLabel": "Slovenščina",
+    "search": [
+      "sl",
+      "slovenian",
+      "slovenščina",
+      "斯洛文尼亚语"
+    ]
+  },
+  {
+    "code": "lv",
+    "englishName": "Latvian",
+    "nativeLabel": "Latviešu",
+    "search": [
+      "lv",
+      "latvian",
+      "latviešu",
+      "拉脱维亚语"
+    ]
+  },
+  {
+    "code": "et",
+    "englishName": "Estonian",
+    "nativeLabel": "Eesti",
+    "search": [
+      "et",
+      "estonian",
+      "eesti",
+      "爱沙尼亚语"
+    ]
+  },
+  {
+    "code": "lt",
+    "englishName": "Lithuanian",
+    "nativeLabel": "Lietuvių",
+    "search": [
+      "lt",
+      "lithuanian",
+      "lietuvių",
+      "立陶宛语"
+    ]
+  },
+  {
+    "code": "be",
+    "englishName": "Belarusian",
+    "nativeLabel": "Беларуская",
+    "search": [
+      "be",
+      "belarusian",
+      "беларуская",
+      "白俄罗斯语"
+    ]
+  },
+  {
+    "code": "el",
+    "englishName": "Greek",
+    "nativeLabel": "Ελληνικά",
+    "search": [
+      "el",
+      "greek",
+      "ελληνικά",
+      "希腊语"
+    ]
+  },
+  {
+    "code": "hr",
+    "englishName": "Croatian",
+    "nativeLabel": "Hrvatski",
+    "search": [
+      "hr",
+      "croatian",
+      "hrvatski",
+      "克罗地亚语"
+    ]
+  },
+  {
+    "code": "mk",
+    "englishName": "Macedonian",
+    "nativeLabel": "Македонски",
+    "search": [
+      "mk",
+      "macedonian",
+      "македонски",
+      "马其顿语",
+      "北马其顿"
+    ]
+  },
+  {
+    "code": "mt",
+    "englishName": "Maltese",
+    "nativeLabel": "Malti",
+    "search": [
+      "mt",
+      "maltese",
+      "malti",
+      "马耳他语"
+    ]
+  },
+  {
+    "code": "sr",
+    "englishName": "Serbian",
+    "nativeLabel": "Српски",
+    "search": [
+      "sr",
+      "serbian",
+      "српски",
+      "塞尔维亚语"
+    ]
+  },
+  {
+    "code": "bs",
+    "englishName": "Bosnian",
+    "nativeLabel": "Bosanski",
+    "search": [
+      "bs",
+      "bosnian",
+      "bosanski",
+      "波斯尼亚语"
+    ]
+  },
+  {
+    "code": "ka",
+    "englishName": "Georgian",
+    "nativeLabel": "ქართული",
+    "search": [
+      "ka",
+      "georgian",
+      "ქართული",
+      "格鲁吉亚语"
+    ]
+  },
+  {
+    "code": "hy",
+    "englishName": "Armenian",
+    "nativeLabel": "Հայերեն",
+    "search": [
+      "hy",
+      "armenian",
+      "հայերեն",
+      "亚美尼亚语"
+    ]
+  },
+  {
+    "code": "az",
+    "englishName": "Azerbaijani (North)",
+    "nativeLabel": "Azərbaycan",
+    "search": [
+      "az",
+      "azerbaijani (north)",
+      "azərbaycan",
+      "阿塞拜疆语",
+      "北阿塞拜疆"
+    ]
+  },
+  {
+    "code": "kk",
+    "englishName": "Kazakh",
+    "nativeLabel": "Қазақша",
+    "search": [
+      "kk",
+      "kazakh",
+      "қазақша",
+      "哈萨克语"
+    ]
+  },
+  {
+    "code": "uz",
+    "englishName": "Uzbek (Northern)",
+    "nativeLabel": "Oʻzbek",
+    "search": [
+      "uz",
+      "uzbek (northern)",
+      "oʻzbek",
+      "乌兹别克语",
+      "北乌兹别克"
+    ]
+  },
+  {
+    "code": "tg",
+    "englishName": "Tajik",
+    "nativeLabel": "Тоҷикӣ",
+    "search": [
+      "tg",
+      "tajik",
+      "тоҷикӣ",
+      "塔吉克语"
+    ]
+  },
+  {
+    "code": "sw",
+    "englishName": "Swahili",
+    "nativeLabel": "Kiswahili",
+    "search": [
+      "sw",
+      "swahili",
+      "kiswahili",
+      "斯瓦西里语",
+      "斯瓦希里"
+    ]
+  },
+  {
+    "code": "af",
+    "englishName": "Afrikaans",
+    "nativeLabel": "Afrikaans",
+    "search": [
+      "af",
+      "afrikaans",
+      "afrikaans",
+      "南非语"
+    ]
+  },
+  {
+    "code": "yue",
+    "englishName": "Cantonese",
+    "nativeLabel": "粵語",
+    "search": [
+      "yue",
+      "cantonese",
+      "粵語",
+      "粤语",
+      "广东话",
+      "香港"
+    ]
+  },
+  {
+    "code": "lb",
+    "englishName": "Luxembourgish",
+    "nativeLabel": "Lëtzebuergesch",
+    "search": [
+      "lb",
+      "luxembourgish",
+      "lëtzebuergesch",
+      "卢森堡语"
+    ]
+  },
+  {
+    "code": "li",
+    "englishName": "Limburgish",
+    "nativeLabel": "Limburgs",
+    "search": [
+      "li",
+      "limburgish",
+      "limburgs",
+      "林堡语"
+    ]
+  },
+  {
+    "code": "ca",
+    "englishName": "Catalan",
+    "nativeLabel": "Català",
+    "search": [
+      "ca",
+      "catalan",
+      "català",
+      "加泰罗尼亚语"
+    ]
+  },
+  {
+    "code": "gl",
+    "englishName": "Galician",
+    "nativeLabel": "Galego",
+    "search": [
+      "gl",
+      "galician",
+      "galego",
+      "加利西亚语"
+    ]
+  },
+  {
+    "code": "ast",
+    "englishName": "Asturian",
+    "nativeLabel": "Asturianu",
+    "search": [
+      "ast",
+      "asturian",
+      "asturianu",
+      "阿斯图里亚斯语"
+    ]
+  },
+  {
+    "code": "eu",
+    "englishName": "Basque",
+    "nativeLabel": "Euskara",
+    "search": [
+      "eu",
+      "basque",
+      "euskara",
+      "巴斯克语"
+    ]
+  },
+  {
+    "code": "oc",
+    "englishName": "Occitan",
+    "nativeLabel": "Occitan",
+    "search": [
+      "oc",
+      "occitan",
+      "occitan",
+      "奥克语"
+    ]
+  },
+  {
+    "code": "vec",
+    "englishName": "Venetian",
+    "nativeLabel": "Vèneto",
+    "search": [
+      "vec",
+      "venetian",
+      "vèneto",
+      "威尼斯语"
+    ]
+  },
+  {
+    "code": "sc",
+    "englishName": "Sardinian",
+    "nativeLabel": "Sardu",
+    "search": [
+      "sc",
+      "sardinian",
+      "sardu",
+      "撒丁语"
+    ]
+  },
+  {
+    "code": "scn",
+    "englishName": "Sicilian",
+    "nativeLabel": "Sicilianu",
+    "search": [
+      "scn",
+      "sicilian",
+      "sicilianu",
+      "西西里语"
+    ]
+  },
+  {
+    "code": "fur",
+    "englishName": "Friulian",
+    "nativeLabel": "Furlan",
+    "search": [
+      "fur",
+      "friulian",
+      "furlan",
+      "弗留利语"
+    ]
+  },
+  {
+    "code": "lmo",
+    "englishName": "Lombard",
+    "nativeLabel": "Lombard",
+    "search": [
+      "lmo",
+      "lombard",
+      "lombard",
+      "隆巴底语",
+      "伦巴第"
+    ]
+  },
+  {
+    "code": "lij",
+    "englishName": "Ligurian",
+    "nativeLabel": "Ligure",
+    "search": [
+      "lij",
+      "ligurian",
+      "ligure",
+      "利古里亚语"
+    ]
+  },
+  {
+    "code": "fo",
+    "englishName": "Faroese",
+    "nativeLabel": "Føroyskt",
+    "search": [
+      "fo",
+      "faroese",
+      "føroyskt",
+      "法罗语"
+    ]
+  },
+  {
+    "code": "sq",
+    "englishName": "Albanian (Tosk)",
+    "nativeLabel": "Shqip",
+    "search": [
+      "sq",
+      "albanian (tosk)",
+      "shqip",
+      "阿尔巴尼亚语",
+      "托斯克"
+    ]
+  },
+  {
+    "code": "szl",
+    "englishName": "Silesian",
+    "nativeLabel": "Ślōnski",
+    "search": [
+      "szl",
+      "silesian",
+      "ślōnski",
+      "西里西亚语"
+    ]
+  },
+  {
+    "code": "ba",
+    "englishName": "Bashkir",
+    "nativeLabel": "Башҡортса",
+    "search": [
+      "ba",
+      "bashkir",
+      "башҡортса",
+      "巴什基尔语"
+    ]
+  },
+  {
+    "code": "tt",
+    "englishName": "Tatar",
+    "nativeLabel": "Татар",
+    "search": [
+      "tt",
+      "tatar",
+      "татар",
+      "鞑靼语"
+    ]
+  },
+  {
+    "code": "acm",
+    "englishName": "Arabic (Mesopotamian)",
+    "nativeLabel": "عراقي",
+    "search": [
+      "acm",
+      "arabic (mesopotamian)",
+      "عراقي",
+      "美索不达米亚阿拉伯语",
+      "伊拉克"
+    ]
+  },
+  {
+    "code": "ars",
+    "englishName": "Arabic (Najdi)",
+    "nativeLabel": "نجدي",
+    "search": [
+      "ars",
+      "arabic (najdi)",
+      "نجدي",
+      "内志阿拉伯语",
+      "沙特"
+    ]
+  },
+  {
+    "code": "arz",
+    "englishName": "Arabic (Egyptian)",
+    "nativeLabel": "مصري",
+    "search": [
+      "arz",
+      "arabic (egyptian)",
+      "مصري",
+      "埃及阿拉伯语"
+    ]
+  },
+  {
+    "code": "apc",
+    "englishName": "Arabic (Levantine)",
+    "nativeLabel": "شامي",
+    "search": [
+      "apc",
+      "arabic (levantine)",
+      "شامي",
+      "黎凡特阿拉伯语",
+      "叙利亚",
+      "黎巴嫩"
+    ]
+  },
+  {
+    "code": "acq",
+    "englishName": "Arabic (Ta'izzi-Adeni)",
+    "nativeLabel": "عدني",
+    "search": [
+      "acq",
+      "arabic (ta'izzi-adeni)",
+      "عدني",
+      "闪米特阿拉伯语",
+      "也门"
+    ]
+  },
+  {
+    "code": "prs",
+    "englishName": "Dari",
+    "nativeLabel": "دری",
+    "search": [
+      "prs",
+      "dari",
+      "دری",
+      "达里语",
+      "阿富汗"
+    ]
+  },
+  {
+    "code": "aeb",
+    "englishName": "Arabic (Tunisian)",
+    "nativeLabel": "تونسي",
+    "search": [
+      "aeb",
+      "arabic (tunisian)",
+      "تونسي",
+      "突尼斯阿拉伯语"
+    ]
+  },
+  {
+    "code": "ary",
+    "englishName": "Arabic (Moroccan)",
+    "nativeLabel": "دارجة",
+    "search": [
+      "ary",
+      "arabic (moroccan)",
+      "دارجة",
+      "摩洛哥阿拉伯语"
+    ]
+  },
+  {
+    "code": "kea",
+    "englishName": "Kabuverdianu",
+    "nativeLabel": "Kabuverdianu",
+    "search": [
+      "kea",
+      "kabuverdianu",
+      "kabuverdianu",
+      "克里奥尔语",
+      "佛得角"
+    ]
+  },
+  {
+    "code": "tpi",
+    "englishName": "Tok Pisin",
+    "nativeLabel": "Tok Pisin",
+    "search": [
+      "tpi",
+      "tok pisin",
+      "tok pisin",
+      "托克皮辛语",
+      "巴布亚"
+    ]
+  },
+  {
+    "code": "ydd",
+    "englishName": "Yiddish (Eastern)",
+    "nativeLabel": "יידיש",
+    "search": [
+      "ydd",
+      "yiddish (eastern)",
+      "יידיש",
+      "意第绪",
+      "犹太"
+    ]
+  },
+  {
+    "code": "sd",
+    "englishName": "Sindhi",
+    "nativeLabel": "سنڌي",
+    "search": [
+      "sd",
+      "sindhi",
+      "سنڌي",
+      "信德语",
+      "信德"
+    ]
+  },
+  {
+    "code": "si",
+    "englishName": "Sinhala",
+    "nativeLabel": "සිංහල",
+    "search": [
+      "si",
+      "sinhala",
+      "සිංහල",
+      "僧伽罗语",
+      "斯里兰卡"
+    ]
+  },
+  {
+    "code": "te",
+    "englishName": "Telugu",
+    "nativeLabel": "తెలుగు",
+    "search": [
+      "te",
+      "telugu",
+      "తెలుగు",
+      "泰卢固语"
+    ]
+  },
+  {
+    "code": "pa",
+    "englishName": "Punjabi (Gurmukhi)",
+    "nativeLabel": "ਪੰਜਾਬੀ",
+    "search": [
+      "pa",
+      "punjabi (gurmukhi)",
+      "ਪੰਜਾਬੀ",
+      "旁遮普语"
+    ]
+  },
+  {
+    "code": "ta",
+    "englishName": "Tamil",
+    "nativeLabel": "தமிழ்",
+    "search": [
+      "ta",
+      "tamil",
+      "தமிழ்",
+      "泰米尔语"
+    ]
+  },
+  {
+    "code": "gu",
+    "englishName": "Gujarati",
+    "nativeLabel": "ગુજરાતી",
+    "search": [
+      "gu",
+      "gujarati",
+      "ગુજરાતી",
+      "古吉拉特语"
+    ]
+  },
+  {
+    "code": "ml",
+    "englishName": "Malayalam",
+    "nativeLabel": "മലയാളം",
+    "search": [
+      "ml",
+      "malayalam",
+      "മലയാളം",
+      "马拉雅拉姆语"
+    ]
+  },
+  {
+    "code": "mr",
+    "englishName": "Marathi",
+    "nativeLabel": "मराठी",
+    "search": [
+      "mr",
+      "marathi",
+      "मराठी",
+      "马拉地语"
+    ]
+  },
+  {
+    "code": "mag",
+    "englishName": "Magahi",
+    "nativeLabel": "मगही",
+    "search": [
+      "mag",
+      "magahi",
+      "मगही",
+      "马加拉语",
+      "马加希"
+    ]
+  },
+  {
+    "code": "or",
+    "englishName": "Odia (Oriya)",
+    "nativeLabel": "ଓଡ଼ିଆ",
+    "search": [
+      "or",
+      "odia (oriya)",
+      "ଓଡ଼ିଆ",
+      "奥里亚语",
+      "奥里亚"
+    ]
+  },
+  {
+    "code": "awa",
+    "englishName": "Awadhi",
+    "nativeLabel": "अवधी",
+    "search": [
+      "awa",
+      "awadhi",
+      "अवधी",
+      "阿瓦德语"
+    ]
+  },
+  {
+    "code": "mai",
+    "englishName": "Maithili",
+    "nativeLabel": "मैथिली",
+    "search": [
+      "mai",
+      "maithili",
+      "मैथिली",
+      "迈蒂利语"
+    ]
+  },
+  {
+    "code": "as",
+    "englishName": "Assamese",
+    "nativeLabel": "অসমীয়া",
+    "search": [
+      "as",
+      "assamese",
+      "অসমীয়া",
+      "阿萨姆语"
+    ]
+  },
+  {
+    "code": "hne",
+    "englishName": "Chhattisgarhi",
+    "nativeLabel": "छत्तीसगढ़ी",
+    "search": [
+      "hne",
+      "chhattisgarhi",
+      "छत्तीसगढ़ी",
+      "切蒂斯格尔语"
+    ]
+  },
+  {
+    "code": "bho",
+    "englishName": "Bhojpuri",
+    "nativeLabel": "भोजपुरी",
+    "search": [
+      "bho",
+      "bhojpuri",
+      "भोजपुरी",
+      "比哈尔语",
+      "博杰普尔"
+    ]
+  },
+  {
+    "code": "min",
+    "englishName": "Minangkabau",
+    "nativeLabel": "Minangkabau",
+    "search": [
+      "min",
+      "minangkabau",
+      "minangkabau",
+      "米南加保语"
+    ]
+  },
+  {
+    "code": "ban",
+    "englishName": "Balinese",
+    "nativeLabel": "Basa Bali",
+    "search": [
+      "ban",
+      "balinese",
+      "basa bali",
+      "巴厘语"
+    ]
+  },
+  {
+    "code": "jv",
+    "englishName": "Javanese",
+    "nativeLabel": "Basa Jawa",
+    "search": [
+      "jv",
+      "javanese",
+      "basa jawa",
+      "爪哇语"
+    ]
+  },
+  {
+    "code": "bjn",
+    "englishName": "Banjar",
+    "nativeLabel": "Banjar",
+    "search": [
+      "bjn",
+      "banjar",
+      "banjar",
+      "班章语"
+    ]
+  },
+  {
+    "code": "sun",
+    "englishName": "Sundanese",
+    "nativeLabel": "Basa Sunda",
+    "search": [
+      "sun",
+      "sundanese",
+      "basa sunda",
+      "巽他语"
+    ]
+  },
+  {
+    "code": "ceb",
+    "englishName": "Cebuano",
+    "nativeLabel": "Cebuano",
+    "search": [
+      "ceb",
+      "cebuano",
+      "cebuano",
+      "宿务语"
+    ]
+  },
+  {
+    "code": "pag",
+    "englishName": "Pangasinan",
+    "nativeLabel": "Pangasinan",
+    "search": [
+      "pag",
+      "pangasinan",
+      "pangasinan",
+      "邦阿西楠语"
+    ]
+  },
+  {
+    "code": "ilo",
+    "englishName": "Iloko",
+    "nativeLabel": "Iloko",
+    "search": [
+      "ilo",
+      "iloko",
+      "iloko",
+      "伊洛卡诺语"
+    ]
+  },
+  {
+    "code": "war",
+    "englishName": "Waray (Philippines)",
+    "nativeLabel": "Waray",
+    "search": [
+      "war",
+      "waray (philippines)",
+      "waray",
+      "瓦莱语",
+      "菲律宾"
+    ]
+  },
+  {
+    "code": "ht",
+    "englishName": "Haitian Creole",
+    "nativeLabel": "Kreyòl ayisyen",
+    "search": [
+      "ht",
+      "haitian creole",
+      "kreyòl ayisyen",
+      "海地语",
+      "海地克里奥尔"
+    ]
+  },
+  {
+    "code": "pap",
+    "englishName": "Papiamento",
+    "nativeLabel": "Papiamentu",
+    "search": [
+      "pap",
+      "papiamento",
+      "papiamentu",
+      "帕皮阿门托语",
+      "加勒比"
+    ]
+  },
+  {
+    "code": "br",
+    "englishName": "Breton",
+    "nativeLabel": "Brezhoneg",
+    "search": [
+      "br",
+      "breton",
+      "brezhoneg",
+      "布列塔尼语"
+    ]
+  },
+  {
+    "code": "gd",
+    "englishName": "Scottish Gaelic",
+    "nativeLabel": "Gàidhlig",
+    "search": [
+      "gd",
+      "scottish gaelic",
+      "gàidhlig",
+      "苏格兰盖尔语"
+    ]
+  },
+  {
+    "code": "gv",
+    "englishName": "Manx",
+    "nativeLabel": "Gaelg",
+    "search": [
+      "gv",
+      "manx",
+      "gaelg",
+      "马恩语"
+    ]
+  },
+  {
+    "code": "kw",
+    "englishName": "Cornish",
+    "nativeLabel": "Kernewek",
+    "search": [
+      "kw",
+      "cornish",
+      "kernewek",
+      "康沃尔语"
+    ]
+  },
+  {
+    "code": "fy",
+    "englishName": "Western Frisian",
+    "nativeLabel": "Frysk",
+    "search": [
+      "fy",
+      "western frisian",
+      "frysk",
+      "西弗里西亚语",
+      "弗里西"
+    ]
+  },
+  {
+    "code": "kn",
+    "englishName": "Kannada",
+    "nativeLabel": "ಕನ್ನಡ",
+    "search": [
+      "kn",
+      "kannada",
+      "ಕನ್ನಡ",
+      "卡纳达语"
+    ]
+  },
+  {
+    "code": "kok",
+    "englishName": "Konkani",
+    "nativeLabel": "कोंकणी",
+    "search": [
+      "kok",
+      "konkani",
+      "कोंकणी",
+      "孔卡尼语"
+    ]
+  },
+  {
+    "code": "mni",
+    "englishName": "Manipuri",
+    "nativeLabel": "ꯃꯤꯇꯩ ꯂꯣꯟ",
+    "search": [
+      "mni",
+      "manipuri",
+      "ꯃꯤꯇꯩ ꯂꯣꯟ",
+      "曼尼普尔语"
+    ]
+  },
+  {
+    "code": "sat",
+    "englishName": "Santali",
+    "nativeLabel": "ᱥᱟᱱᱛᱟᱲᱤ",
+    "search": [
+      "sat",
+      "santali",
+      "ᱥᱟᱱᱛᱟᱲᱤ",
+      "桑塔利语"
+    ]
+  },
+  {
+    "code": "bo",
+    "englishName": "Tibetan",
+    "nativeLabel": "བོད་སྐད་",
+    "search": [
+      "bo",
+      "tibetan",
+      "བོད་སྐད་",
+      "藏语"
+    ]
+  },
+  {
+    "code": "ug",
+    "englishName": "Uyghur",
+    "nativeLabel": "ئۇيغۇرچە",
+    "search": [
+      "ug",
+      "uyghur",
+      "ئۇيغۇرچە",
+      "维吾尔语"
+    ]
+  },
+  {
+    "code": "mn",
+    "englishName": "Mongolian",
+    "nativeLabel": "Монгол",
+    "search": [
+      "mn",
+      "mongolian",
+      "монгол",
+      "蒙古语"
+    ]
+  },
+  {
+    "code": "am",
+    "englishName": "Amharic",
+    "nativeLabel": "አማርኛ",
+    "search": [
+      "am",
+      "amharic",
+      "አማርኛ",
+      "阿姆哈拉语"
+    ]
+  },
+  {
+    "code": "so",
+    "englishName": "Somali",
+    "nativeLabel": "Soomaali",
+    "search": [
+      "so",
+      "somali",
+      "soomaali",
+      "索马里语"
+    ]
+  },
+  {
+    "code": "zu",
+    "englishName": "Zulu",
+    "nativeLabel": "isiZulu",
+    "search": [
+      "zu",
+      "zulu",
+      "isizulu",
+      "祖鲁语"
+    ]
+  },
+  {
+    "code": "xh",
+    "englishName": "Xhosa",
+    "nativeLabel": "isiXhosa",
+    "search": [
+      "xh",
+      "xhosa",
+      "isixhosa",
+      "科萨语"
+    ]
+  },
+  {
+    "code": "st",
+    "englishName": "Southern Sotho",
+    "nativeLabel": "Sesotho",
+    "search": [
+      "st",
+      "southern sotho",
+      "sesotho",
+      "南索托语"
+    ]
+  },
+  {
+    "code": "ts",
+    "englishName": "Tsonga",
+    "nativeLabel": "Xitsonga",
+    "search": [
+      "ts",
+      "tsonga",
+      "xitsonga",
+      "聪加语"
+    ]
+  },
+  {
+    "code": "tn",
+    "englishName": "Tswana",
+    "nativeLabel": "Setswana",
+    "search": [
+      "tn",
+      "tswana",
+      "setswana",
+      "茨瓦纳语"
+    ]
+  },
+  {
+    "code": "ve",
+    "englishName": "Venda",
+    "nativeLabel": "Tshivenda",
+    "search": [
+      "ve",
+      "venda",
+      "tshivenda",
+      "文达语"
+    ]
+  },
+  {
+    "code": "ss",
+    "englishName": "Swati",
+    "nativeLabel": "siSwati",
+    "search": [
+      "ss",
+      "swati",
+      "siswati",
+      "斯瓦蒂语"
+    ]
+  },
+  {
+    "code": "nr",
+    "englishName": "Southern Ndebele",
+    "nativeLabel": "isiNdebele",
+    "search": [
+      "nr",
+      "southern ndebele",
+      "isindebele",
+      "南恩德贝莱语"
+    ]
+  },
+  {
+    "code": "nso",
+    "englishName": "Northern Sotho",
+    "nativeLabel": "Sesotho sa Leboa",
+    "search": [
+      "nso",
+      "northern sotho",
+      "sesotho sa leboa",
+      "北索托语"
+    ]
+  },
+  {
+    "code": "qu",
+    "englishName": "Quechua",
+    "nativeLabel": "Runa Simi",
+    "search": [
+      "qu",
+      "quechua",
+      "runa simi",
+      "克丘亚语"
+    ]
+  },
+  {
+    "code": "gn",
+    "englishName": "Guarani",
+    "nativeLabel": "Avañe'ẽ",
+    "search": [
+      "gn",
+      "guarani",
+      "avañe'ẽ",
+      "瓜拉尼语"
+    ]
+  },
+  {
+    "code": "ay",
+    "englishName": "Aymara",
+    "nativeLabel": "Aymar aru",
+    "search": [
+      "ay",
+      "aymara",
+      "aymar aru",
+      "艾马拉语"
+    ]
+  },
+  {
+    "code": "wo",
+    "englishName": "Wolof",
+    "nativeLabel": "Wolof",
+    "search": [
+      "wo",
+      "wolof",
+      "wolof",
+      "沃洛夫语"
+    ]
+  },
+  {
+    "code": "ha",
+    "englishName": "Hausa",
+    "nativeLabel": "Hausa",
+    "search": [
+      "ha",
+      "hausa",
+      "hausa",
+      "豪萨语"
+    ]
+  },
+  {
+    "code": "yo",
+    "englishName": "Yoruba",
+    "nativeLabel": "Yorùbá",
+    "search": [
+      "yo",
+      "yoruba",
+      "yorùbá",
+      "约鲁巴语"
+    ]
+  },
+  {
+    "code": "ig",
+    "englishName": "Igbo",
+    "nativeLabel": "Igbo",
+    "search": [
+      "ig",
+      "igbo",
+      "igbo",
+      "伊博语"
+    ]
+  }
+]
