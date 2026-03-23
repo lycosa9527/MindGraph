@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.51.0] - 2026-03-24
+
+### Changed
+- **Mind map layout — column-based stacking**: Replaced Dagre-based `layoutMindMapSideWithClockwiseHandles` with `layoutMindMapSideSimple`, a simpler column-stacking layout that assigns Y positions by vertical stacking with bottom-up centering and X positions by a column system keyed on depth. Adds `estimateTopicNodeWidth` and `estimateBranchNodeHeight` for text-aware sizing; removes `normalizeMindMapHorizontalSymmetry` and `normalizeBranchToChildSpans` normalize passes and associated debug logging.
+- **Mind map reactive dimension tracking**: New `mindMapLayout.ts` store slice (`useMindMapLayoutSlice`, `recalculateMindMapColumnPositions`) enables DOM-measured node dimensions to feed back into layout. `BranchNode.vue` reports `offsetWidth`/`offsetHeight` on mount and text save; `TopicNode.vue` reports actual topic width on mount. Diagram store carries `mindMapNodeWidths`, `mindMapNodeHeights`, `mindMapRecalcTrigger`, `mindMapTopicActualWidth`, and `mindMapTopicBranchGaps` state refs; `vueFlowIntegration` uses the column recalculation in its computed node list.
+- **Tree map topic node measured sizing**: New `treeMapTopicLayout.ts` (`measureTreeMapTopicDimensions`, `treeMapTopicPositionFromLayout`, `ensureTreeMapTopicLayout`, `applyTreeMapTopicLayoutToNodes`) replaces fixed `DEFAULT_NODE_WIDTH`/`DEFAULT_NODE_HEIGHT` for tree map topic nodes with text-measured pill dimensions. `TopicNode.vue` renders constrained `width`/`height` style for tree maps; `diagramNodeToVueFlowNode` forwards measured dimensions; `nodeManagement` applies layout on topic text update; `useTreeMap` composable and `treeMap` spec loader use the new helpers.
+- **CanvasPage setup ordering**: Moved `getPanelCoordinator()` and `getNodePalette()` singleton creation from `onMounted` to the `<script setup>` top level so composables that use `useI18n` / `onUnmounted` run within the component setup context.
+- **Minor cleanup**: Sorted imports (`DiagramCanvas.vue`, `CanvasPage.vue`, `DefaultLayout.vue`); removed redundant inline comments; formatted multi-line ternaries for consistency.
+
 ## [5.50.0] - 2026-03-24
 
 ### Added

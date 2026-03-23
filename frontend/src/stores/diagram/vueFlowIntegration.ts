@@ -18,6 +18,7 @@ import {
   recalculateMultiFlowMapLayout,
 } from '../specLoader'
 import { getEdgeTypeForDiagram } from './events'
+import { recalculateMindMapColumnPositions } from './mindMapLayout'
 import type { DiagramContext } from './types'
 
 export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
@@ -71,10 +72,20 @@ export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
     }
 
     if (diagramType === 'mindmap' || diagramType === 'mind_map') {
+      void ctx.mindMapRecalcTrigger.value
+
       const connections = ctx.data.value.connections ?? []
+      const { nodes: correctedNodes, gaps } = recalculateMindMapColumnPositions(
+        ctx.data.value.nodes,
+        ctx.mindMapTopicActualWidth.value,
+        ctx.mindMapNodeWidths.value,
+        ctx.mindMapNodeHeights.value,
+        connections
+      )
+      ctx.mindMapTopicBranchGaps.value = gaps
       const firstLevelBranchCount = connections.filter((c) => c.source === 'topic').length
 
-      return ctx.data.value.nodes.map((node) => {
+      return correctedNodes.map((node) => {
         const vueFlowNode = diagramNodeToVueFlowNode(node, diagramType)
         vueFlowNode.selected = ctx.selectedNodes.value.includes(node.id)
         vueFlowNode.draggable = false

@@ -11,8 +11,6 @@
  */
 import {
   DEFAULT_CENTER_X,
-  DEFAULT_NODE_HEIGHT,
-  DEFAULT_NODE_WIDTH,
   DEFAULT_PADDING,
   NODE_MIN_DIMENSIONS,
   TREE_MAP_CATEGORY_SPACING,
@@ -24,6 +22,7 @@ import { getMindmapBranchColor } from '@/config/mindmapColors'
 import { measureTextDimensions } from '@/stores/specLoader/textMeasurement'
 import type { Connection, DiagramNode } from '@/types'
 
+import { measureTreeMapTopicDimensions, treeMapTopicPositionFromLayout } from './treeMapTopicLayout'
 import type { SpecLoaderResult } from './types'
 
 /** Font size for branch nodes (matches theme default) */
@@ -55,9 +54,6 @@ export function loadTreeMapSpec(spec: Record<string, unknown>): SpecLoaderResult
   const nodes: DiagramNode[] = []
   const connections: Connection[] = []
 
-  const NODE_WIDTH = DEFAULT_NODE_WIDTH
-  const NODE_HEIGHT = DEFAULT_NODE_HEIGHT
-
   // Support both new format (root object) and old format (topic + children)
   let root: TreeNode | undefined = spec.root as TreeNode | undefined
   if (!root && spec.topic !== undefined) {
@@ -77,16 +73,18 @@ export function loadTreeMapSpec(spec: Record<string, unknown>): SpecLoaderResult
 
     // Custom layout: center-aligned vertical groups with reduced spacing
     const topicY = DEFAULT_PADDING
-    const topicX = DEFAULT_CENTER_X - NODE_WIDTH / 2
+    const topicDims = measureTreeMapTopicDimensions(root.text)
+    const topicPos = treeMapTopicPositionFromLayout(topicDims.width, topicY)
 
     nodes.push({
       id: rootId,
       text: root.text,
       type: 'topic',
-      position: { x: topicX, y: topicY },
+      position: topicPos,
+      style: { width: topicDims.width, height: topicDims.height },
     })
 
-    const categoryY = topicY + NODE_HEIGHT + TREE_MAP_TOPIC_TO_CATEGORY_GAP
+    const categoryY = topicY + topicDims.height + TREE_MAP_TOPIC_TO_CATEGORY_GAP
 
     // Per-group: measure all node dimensions (width + height for multi-line, like flow map substeps)
     interface GroupDims {
@@ -204,7 +202,7 @@ export function loadTreeMapSpec(spec: Record<string, unknown>): SpecLoaderResult
 
     // Add dimension label node if dimension field exists
     if (dimension !== undefined) {
-      const topicCenterX = topicX + NODE_WIDTH / 2
+      const topicCenterX = DEFAULT_CENTER_X
       const labelWidth = NODE_MIN_DIMENSIONS.label.minWidth
       nodes.push({
         id: 'dimension-label',
@@ -212,7 +210,7 @@ export function loadTreeMapSpec(spec: Record<string, unknown>): SpecLoaderResult
         type: 'label',
         position: {
           x: topicCenterX - labelWidth / 2,
-          y: topicY + NODE_HEIGHT + 20,
+          y: topicY + topicDims.height + 20,
         },
       })
     }

@@ -15,12 +15,14 @@ import { Position } from '@vue-flow/core'
 import { useLanguage } from '@/composables/useLanguage'
 import { getMindmapBranchColor } from '@/config/mindmapColors'
 import { measureTextDimensions } from '@/stores/specLoader/textMeasurement'
+import {
+  measureTreeMapTopicDimensions,
+  treeMapTopicPositionFromLayout,
+} from '@/stores/specLoader/treeMapTopicLayout'
 import type { Connection, DiagramNode, MindGraphEdge, MindGraphNode } from '@/types'
 
 import {
   DEFAULT_CENTER_X,
-  DEFAULT_NODE_HEIGHT,
-  DEFAULT_NODE_WIDTH,
   DEFAULT_PADDING,
   NODE_MIN_DIMENSIONS,
   TREE_MAP_CATEGORY_SPACING,
@@ -43,16 +45,10 @@ interface TreeMapData {
 
 interface TreeMapOptions {
   categorySpacing?: number
-  nodeWidth?: number
-  nodeHeight?: number
 }
 
 export function useTreeMap(options: TreeMapOptions = {}) {
-  const {
-    categorySpacing = TREE_MAP_CATEGORY_SPACING,
-    nodeWidth = DEFAULT_NODE_WIDTH,
-    nodeHeight = DEFAULT_NODE_HEIGHT,
-  } = options
+  const { categorySpacing = TREE_MAP_CATEGORY_SPACING } = options
 
   const { t } = useLanguage()
   const data = ref<TreeMapData | null>(null)
@@ -69,23 +65,27 @@ export function useTreeMap(options: TreeMapOptions = {}) {
     const categories = root.children || []
 
     const topicY = DEFAULT_PADDING
-    const topicX = DEFAULT_CENTER_X - nodeWidth / 2
+    const topicDims = measureTreeMapTopicDimensions(root.text)
+    const topicPos = treeMapTopicPositionFromLayout(topicDims.width, topicY)
 
     nodes.push({
       id: rootId,
       type: 'topic',
-      position: { x: topicX, y: topicY },
+      position: topicPos,
+      width: topicDims.width,
+      height: topicDims.height,
       data: {
         label: root.text,
         nodeType: 'topic',
         diagramType: 'tree_map',
         isDraggable: false,
         isSelectable: true,
+        style: { width: topicDims.width, height: topicDims.height },
       },
       draggable: false,
     })
 
-    const categoryY = topicY + nodeHeight + TREE_MAP_TOPIC_TO_CATEGORY_GAP
+    const categoryY = topicY + topicDims.height + TREE_MAP_TOPIC_TO_CATEGORY_GAP
     const BRANCH_FONT_SIZE = 16
     const NODE_PADDING_X = 16
     const NODE_PADDING_Y = 8
@@ -224,14 +224,14 @@ export function useTreeMap(options: TreeMapOptions = {}) {
     })
 
     if (data.value.dimension !== undefined) {
-      const topicCenterX = topicX + nodeWidth / 2
+      const topicCenterX = DEFAULT_CENTER_X
       const labelWidth = 100
       nodes.push({
         id: 'dimension-label',
         type: 'label',
         position: {
           x: topicCenterX - labelWidth / 2,
-          y: topicY + nodeHeight + 20,
+          y: topicY + topicDims.height + 20,
         },
         data: {
           label:

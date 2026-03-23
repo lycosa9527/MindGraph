@@ -49,6 +49,13 @@ export interface DiagramContext {
   isUserEditedTitle: Ref<boolean>
   copiedNodes: Ref<DiagramNode[]>
   mindMapCurveExtentBaseline: Ref<MindMapCurveExtents | null>
+  mindMapTopicActualWidth: Ref<number | null>
+
+  // Mind-map column layout state refs
+  mindMapNodeWidths: Ref<Record<string, number>>
+  mindMapNodeHeights: Ref<Record<string, number>>
+  mindMapRecalcTrigger: Ref<number>
+  mindMapTopicBranchGaps: Ref<{ left: number; right: number } | null>
 
   // Multi-flow layout state refs (Phase 4)
   nodeWidths: Ref<Record<string, number>>

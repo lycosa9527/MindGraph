@@ -52,22 +52,22 @@ import {
 import { INLINE_RECOMMENDATIONS_SUPPORTED_TYPES } from '@/composables/nodePalette/constants'
 import { IMPORT_SPEC_KEY } from '@/config'
 import { ANIMATION, PANEL, PANEL_INSET } from '@/config/uiConfig'
+import { ensureFontsForLanguageCode } from '@/fonts/promptLanguageFonts'
+import { intlLocaleForUiCode } from '@/i18n'
+import type { LocaleCode } from '@/i18n/locales'
 import {
   type LLMResult,
   useAuthStore,
   useConceptMapFocusReviewStore,
-  useConceptMapRootConceptReviewStore,
   useConceptMapRelationshipStore,
+  useConceptMapRootConceptReviewStore,
   useDiagramStore,
   useInlineRecommendationsStore,
   useLLMResultsStore,
   usePanelsStore,
   useUIStore,
 } from '@/stores'
-import { intlLocaleForUiCode } from '@/i18n'
 import { stripConceptMapFocusQuestionPrefix } from '@/stores/diagram/diagramDefaultLabels'
-import type { LocaleCode } from '@/i18n/locales'
-import { ensureFontsForLanguageCode } from '@/fonts/promptLanguageFonts'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import type { DiagramType } from '@/types'
 import { getTopicRootConceptTargetId } from '@/utils/conceptMapTopicRootEdge'
@@ -83,6 +83,12 @@ const llmResultsStore = useLLMResultsStore()
 const panelsStore = usePanelsStore()
 const { promptLanguage, t, currentLanguage } = useLanguage()
 const notify = useNotifications()
+
+// Singletons must be created during setup (not in onMounted); they use useI18n / onUnmounted.
+getPanelCoordinator()
+const { startSession: startNodePaletteSession } = getNodePalette({
+  onError: (err) => notify.error(err),
+})
 const { activeEntry: relationshipActiveEntry } = storeToRefs(relationshipStore)
 const focusReviewStore = useConceptMapFocusReviewStore()
 const rootConceptReviewStore = useConceptMapRootConceptReviewStore()
@@ -853,8 +859,7 @@ eventBus.onWithOwner(
     const nodes = selectedNodes ?? []
     const rootId = getTopicRootConceptTargetId(diagramStore.data?.connections)
 
-    const focusActive =
-      focusReviewStore.validating || focusReviewStore.reviewWaveComplete
+    const focusActive = focusReviewStore.validating || focusReviewStore.reviewWaveComplete
     if (focusActive && !nodes.includes('topic')) {
       focusReviewStore.clear()
     }
@@ -1034,8 +1039,6 @@ onMounted(async () => {
 
   document.addEventListener('fullscreenchange', handleFullscreenChange)
 
-  // Initialize panel coordinator so panel:open_requested (e.g. 瀑布流) is handled
-  getPanelCoordinator()
   // Initialize inline recommendations coordinator (topic updates, pane click, etc.)
   inlineRecCoordinator.setup()
 
@@ -1082,15 +1085,14 @@ onMounted(async () => {
     'CanvasPage'
   )
 
-  // Initialize node palette singleton and listen for open events (start session when no restore)
-  const { startSession } = getNodePalette({
-    onError: (err) => notify.error(err),
-  })
+  // Node palette: listen for open events (singleton created at setup top)
   eventBus.onWithOwner(
     'nodePalette:opened',
     (data: { hasRestoredSession?: boolean; wasPanelAlreadyOpen?: boolean }) => {
       if (!data.hasRestoredSession && diagramStore.data?.nodes?.length) {
-        nextTick().then(() => startSession({ keepSessionId: data.wasPanelAlreadyOpen ?? false }))
+        nextTick().then(() =>
+          startNodePaletteSession({ keepSessionId: data.wasPanelAlreadyOpen ?? false })
+        )
       }
     },
     'CanvasPage'

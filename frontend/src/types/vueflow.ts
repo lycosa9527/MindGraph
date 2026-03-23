@@ -146,6 +146,9 @@ export function diagramNodeToVueFlowNode(
   // For tree_map branch nodes, use style width for center-aligned vertical groups
   const isTreeMapBranch =
     diagramType === 'tree_map' && (node.type === 'branch' || node.type === 'child')
+  // For tree_map topic pill, measured width/height so long text stays inside the node
+  const isTreeMapTopic =
+    diagramType === 'tree_map' && node.type === 'topic' && node.style?.width != null
   const nodeWidth =
     node.type === 'boundary'
       ? node.style?.width
@@ -153,13 +156,17 @@ export function diagramNodeToVueFlowNode(
         ? node.style.width
         : isTreeMapBranch && node.style?.width != null
           ? node.style.width
-          : undefined
+          : isTreeMapTopic
+            ? node.style?.width
+            : undefined
   const nodeHeight =
     node.type === 'boundary'
       ? node.style?.height
       : isDoubleBubbleMap && node.style?.height != null
         ? node.style.height
-        : undefined
+        : isTreeMapTopic && node.style?.height != null
+          ? node.style.height
+          : undefined
 
   // Preserve custom data fields from node.data (like pairIndex, position for bridge maps)
   const customData = node.data || {}

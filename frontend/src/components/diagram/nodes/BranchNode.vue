@@ -4,7 +4,7 @@
  * Represents branches, children, or categories in hierarchical diagrams
  * Supports inline text editing on double-click
  */
-import { computed, inject, ref } from 'vue'
+import { computed, inject, nextTick, onMounted, onUnmounted, ref } from 'vue'
 import type { CSSProperties } from 'vue'
 
 import { Handle, Position } from '@vue-flow/core'
@@ -12,6 +12,7 @@ import { Handle, Position } from '@vue-flow/core'
 import { eventBus } from '@/composables/useEventBus'
 import { useTheme } from '@/composables/useTheme'
 import { getMindmapBranchColor } from '@/config/mindmapColors'
+import { useDiagramStore } from '@/stores/diagram'
 import type { MindGraphNodeProps } from '@/types'
 import { getBorderStyleProps } from '@/utils/borderStyleUtils'
 import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
@@ -19,6 +20,9 @@ import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
 import InlineEditableText from './InlineEditableText.vue'
 
 const props = defineProps<MindGraphNodeProps>()
+
+const diagramStore = useDiagramStore()
+const branchNodeRef = ref<HTMLDivElement | null>(null)
 
 // Get theme defaults matching old StyleManager
 const { getNodeStyle } = useTheme({
@@ -155,12 +159,36 @@ function handleBranchMovePointerUp(): void {
   }
 }
 
+function reportDimensions(): void {
+  if (!isMindMap.value || !branchNodeRef.value) return
+  const w = branchNodeRef.value.offsetWidth
+  const h = branchNodeRef.value.offsetHeight
+  if (w > 0 && h > 0) {
+    diagramStore.setMindMapNodeDimensions(props.id, w, h)
+  }
+}
+
+onMounted(() => {
+  reportDimensions()
+})
+
+onUnmounted(() => {
+  if (isMindMap.value) {
+    diagramStore.setMindMapNodeDimensions(props.id, null, null)
+  }
+})
+
 function handleTextSave(newText: string) {
   isEditing.value = false
   eventBus.emit('node:text_updated', {
     nodeId: props.id,
     text: newText,
   })
+  if (isMindMap.value) {
+    nextTick(() => {
+      reportDimensions()
+    })
+  }
 }
 
 function handleEditCancel() {
@@ -170,6 +198,7 @@ function handleEditCancel() {
 
 <template>
   <div
+    ref="branchNodeRef"
     class="branch-node flex items-center justify-center px-4 py-2 cursor-grab select-none border-solid"
     :class="{
       'tree-map-node': isTreeMap,

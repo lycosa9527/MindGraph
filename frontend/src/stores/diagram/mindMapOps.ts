@@ -40,6 +40,8 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
       rightBranches,
       preserveLeftRight: true,
     })
+    ctx.mindMapNodeWidths.value = {}
+    ctx.mindMapNodeHeights.value = {}
 
     data.value.nodes = result.nodes
     data.value.connections = result.connections
@@ -78,6 +80,8 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
       rightBranches: spec.rightBranches,
       preserveLeftRight: true,
     })
+    ctx.mindMapNodeWidths.value = {}
+    ctx.mindMapNodeHeights.value = {}
 
     data.value.nodes = result.nodes
     data.value.connections = result.connections
@@ -144,6 +148,8 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
       rightBranches: spec.rightBranches,
       preserveLeftRight: true,
     })
+    ctx.mindMapNodeWidths.value = {}
+    ctx.mindMapNodeHeights.value = {}
 
     data.value.nodes = result.nodes
     data.value.connections = result.connections
@@ -307,6 +313,8 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
       rightBranches: spec.rightBranches,
       preserveLeftRight: true,
     })
+    ctx.mindMapNodeWidths.value = {}
+    ctx.mindMapNodeHeights.value = {}
 
     const extentsAfter = getMindMapCurveExtents(result.nodes, centerX)
     console.log('[BranchMove] curve length after', extentsAfter)

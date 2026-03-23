@@ -12,7 +12,6 @@ import { useUIStore } from '../ui'
 import {
   getDefaultTemplate,
   loadSpecForDiagramType,
-  normalizeMindMapHorizontalSymmetry,
   recalculateBubbleMapLayout,
 } from '../specLoader'
 import { getMindMapCurveExtents } from './events'
@@ -38,20 +37,22 @@ export function useSpecIOSlice(ctx: DiagramContext) {
       nodesToStore = recalculateBubbleMapLayout(result.nodes)
     }
 
-    if (
-      (diagramTypeValue === 'mindmap' || diagramTypeValue === 'mind_map') &&
-      nodesToStore.length > 0
-    ) {
-      const topicNode = nodesToStore.find(
-        (n) => n.id === 'topic' && (n.type === 'topic' || n.type === 'center')
-      )
-      const centerX =
-        topicNode?.position != null
-          ? topicNode.position.x + DEFAULT_NODE_WIDTH / 2
-          : DEFAULT_CENTER_X
-      normalizeMindMapHorizontalSymmetry(nodesToStore, centerX)
-      ctx.mindMapCurveExtentBaseline.value = getMindMapCurveExtents(nodesToStore, centerX)
-      console.log('[BranchMove] baseline captured (load)', ctx.mindMapCurveExtentBaseline.value)
+    if (diagramTypeValue === 'mindmap' || diagramTypeValue === 'mind_map') {
+      ctx.mindMapNodeWidths.value = {}
+      ctx.mindMapTopicActualWidth.value = null
+      ctx.mindMapTopicBranchGaps.value = null
+      ctx.mindMapRecalcTrigger.value = 0
+
+      if (nodesToStore.length > 0) {
+        const topicNode = nodesToStore.find(
+          (n) => n.id === 'topic' && (n.type === 'topic' || n.type === 'center')
+        )
+        const topicW =
+          (topicNode?.data?.estimatedWidth as number | undefined) ?? DEFAULT_NODE_WIDTH
+        const centerX =
+          topicNode?.position != null ? topicNode.position.x + topicW / 2 : DEFAULT_CENTER_X
+        ctx.mindMapCurveExtentBaseline.value = getMindMapCurveExtents(nodesToStore, centerX)
+      }
     } else {
       ctx.mindMapCurveExtentBaseline.value = null
     }

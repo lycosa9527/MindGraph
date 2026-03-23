@@ -3,6 +3,7 @@ import type { Connection, DiagramNode } from '@/types'
 
 import { useConceptMapRelationshipStore } from '../conceptMapRelationship'
 import { recalculateBubbleMapLayout, recalculateMultiFlowMapLayout } from '../specLoader'
+import { applyTreeMapTopicLayoutToNodes } from '../specLoader/treeMapTopicLayout'
 import { collabForeignLockBlocksAnyId, emitCollabDeleteBlocked } from './collabHelpers'
 import { emitEvent } from './events'
 import type { DiagramContext } from './types'
@@ -14,9 +15,16 @@ export function useNodeManagementSlice(ctx: DiagramContext) {
     const nodeIndex = ctx.data.value.nodes.findIndex((n) => n.id === nodeId)
     if (nodeIndex === -1) return false
 
-    ctx.data.value.nodes[nodeIndex] = {
-      ...ctx.data.value.nodes[nodeIndex],
+    const oldNode = ctx.data.value.nodes[nodeIndex]
+    const merged: DiagramNode = {
+      ...oldNode,
       ...updates,
+    }
+
+    if (ctx.type.value === 'tree_map' && nodeId === 'tree-topic' && 'text' in updates) {
+      ctx.data.value.nodes = applyTreeMapTopicLayoutToNodes(ctx.data.value.nodes, nodeIndex, merged)
+    } else {
+      ctx.data.value.nodes[nodeIndex] = merged
     }
 
     if (ctx.type.value === 'concept_map' && nodeId === 'topic' && 'text' in updates) {
@@ -319,5 +327,10 @@ export function useNodeManagementSlice(ctx: DiagramContext) {
     return true
   }
 
-  return { addNode, updateNode, emptyNode, removeNode }
+  return {
+    addNode,
+    updateNode,
+    emptyNode,
+    removeNode,
+  }
 }

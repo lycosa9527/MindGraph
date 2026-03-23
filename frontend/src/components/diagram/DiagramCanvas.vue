@@ -26,6 +26,7 @@ import {
   useDiagramSpecForSave,
   useLanguage,
 } from '@/composables'
+import { PALETTE_CONCEPT_DRAG_MIME } from '@/composables/nodePalette/constants'
 import type { DropTarget } from '@/composables/useBranchMoveDrag'
 import {
   CONCEPT_MAP_GENERATING_KEY,
@@ -33,7 +34,6 @@ import {
 } from '@/composables/useConceptMapRelationship'
 import { eventBus } from '@/composables/useEventBus'
 import { useTheme } from '@/composables/useTheme'
-import { PALETTE_CONCEPT_DRAG_MIME } from '@/composables/nodePalette/constants'
 import { ANIMATION, FIT_PADDING, GRID, PANEL, ZOOM } from '@/config/uiConfig'
 import { useDiagramStore, useLLMResultsStore, usePanelsStore, useUIStore } from '@/stores'
 import { getFlowTopicCenteredPosition } from '@/stores/specLoader/flowMap'
@@ -122,7 +122,9 @@ const { currentLanguage, t } = useLanguage()
 function getExportTitle(): string {
   const topicText = diagramStore.getTopicNodeText()
   if (topicText) return topicText
-  return diagramStore.effectiveTitle || getDefaultDiagramName(diagramStore.type, currentLanguage.value)
+  return (
+    diagramStore.effectiveTitle || getDefaultDiagramName(diagramStore.type, currentLanguage.value)
+  )
 }
 
 const getExportSpec = useDiagramSpecForSave()
@@ -616,9 +618,7 @@ function handleConceptMapDrop(event: DragEvent) {
       if (newId && rootId) {
         diagramStore.addConnection(rootId, newId, rootLinkLabel)
       }
-      diagramStore.pushHistory(
-        newId && rootId ? 'Add concept and link from root' : 'Add concept'
-      )
+      diagramStore.pushHistory(newId && rootId ? 'Add concept and link from root' : 'Add concept')
     } catch {
       // Ignore malformed palette data
     }

@@ -4,12 +4,13 @@
  * Used as the main/central node in bubble maps, mind maps, etc.
  * Supports inline text editing on double-click
  */
-import { computed, nextTick, ref } from 'vue'
+import { computed, nextTick, onMounted, ref } from 'vue'
 
 import { Handle, Position } from '@vue-flow/core'
 
 import { eventBus } from '@/composables/useEventBus'
 import { useTheme } from '@/composables/useTheme'
+import { useDiagramStore } from '@/stores'
 import type { MindGraphNodeProps } from '@/types'
 import { getBorderStyleProps } from '@/utils/borderStyleUtils'
 import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
@@ -47,7 +48,9 @@ const flowMapOrientation = computed(
 const isTreeMap = computed(() => props.data.diagramType === 'tree_map')
 const isBraceMap = computed(() => props.data.diagramType === 'brace_map')
 const isMultiFlowMap = computed(() => props.data.diagramType === 'multi_flow_map')
-const isMindMap = computed(() => props.data.diagramType === 'mindmap')
+const isMindMap = computed(
+  () => props.data.diagramType === 'mindmap' || props.data.diagramType === 'mind_map'
+)
 
 // For multi-flow maps: get cause count to generate handles dynamically
 const causeCount = computed(() => {
@@ -183,6 +186,22 @@ const nodeStyle = computed(() => {
     }
   }
 
+  // Tree map: measured box from layout so wrapped text stays inside the pill (Vue Flow + CSS match)
+  if (isTreeMap.value && props.data.style?.width != null) {
+    return {
+      ...baseStyle,
+      width: `${props.data.style.width}px`,
+      minWidth: `${props.data.style.width}px`,
+      maxWidth: `${props.data.style.width}px`,
+      ...(props.data.style.height != null
+        ? {
+            height: `${props.data.style.height}px`,
+            minHeight: `${props.data.style.height}px`,
+          }
+        : {}),
+    }
+  }
+
   return baseStyle
 })
 
@@ -193,21 +212,42 @@ const isEditing = ref(false)
 const dynamicWidth = ref<number | null>(null)
 const topicNodeRef = ref<HTMLDivElement | null>(null)
 
+const diagramStore = useDiagramStore()
+
+onMounted(() => {
+  if (!isMindMap.value || !topicNodeRef.value) return
+  nextTick(() => {
+    const actualWidth = topicNodeRef.value?.offsetWidth || 0
+    if (actualWidth > 0) {
+      diagramStore.setMindMapTopicWidth(actualWidth)
+    }
+  })
+})
+
 function handleTextSave(newText: string) {
   isEditing.value = false
-  dynamicWidth.value = null // Reset width after saving
-  // Emit event to update the node text in the store
+  dynamicWidth.value = null
+
   eventBus.emit('node:text_updated', {
     nodeId: props.id,
     text: newText,
   })
-  // Trigger layout recalculation for multi-flow map
+
   if (isMultiFlowMap.value) {
     nextTick(() => {
       eventBus.emit('multi_flow_map:topic_width_changed', {
         nodeId: props.id,
         width: topicNodeRef.value?.offsetWidth || null,
       })
+    })
+  }
+
+  if (isMindMap.value) {
+    nextTick(() => {
+      const newWidth = topicNodeRef.value?.offsetWidth || 0
+      if (newWidth > 0) {
+        diagramStore.setMindMapTopicWidth(newWidth)
+      }
     })
   }
 }

@@ -20,6 +20,7 @@ import { useDoubleBubbleMapOpsSlice } from './diagram/doubleBubbleMapOps'
 import { useFlowMapOpsSlice } from './diagram/flowMapOps'
 import { useHistorySlice } from './diagram/history'
 import { useLearningSheetSlice } from './diagram/learningSheet'
+import { useMindMapLayoutSlice } from './diagram/mindMapLayout'
 import { useMindMapOpsSlice } from './diagram/mindMapOps'
 import { useMultiFlowLayoutSlice } from './diagram/multiFlowLayout'
 import { useNodeManagementSlice } from './diagram/nodeManagement'
@@ -53,8 +54,13 @@ export const useDiagramStore = defineStore('diagram', () => {
   const copiedNodes = ref<DiagramNode[]>([])
   const topicNodeWidth = ref<number | null>(null)
   const mindMapCurveExtentBaseline = ref<MindMapCurveExtents | null>(null)
+  const mindMapTopicActualWidth = ref<number | null>(null)
   const nodeWidths = ref<Record<string, number>>({})
   const multiFlowMapRecalcTrigger = ref(0)
+  const mindMapNodeWidths = ref<Record<string, number>>({})
+  const mindMapNodeHeights = ref<Record<string, number>>({})
+  const mindMapRecalcTrigger = ref(0)
+  const mindMapTopicBranchGaps = ref<{ left: number; right: number } | null>(null)
   const sessionEditCount = ref(0)
   const collabSessionActive = ref(false)
   const collabForeignLockedNodeIds = ref<Set<string>>(new Set())
@@ -85,9 +91,14 @@ export const useDiagramStore = defineStore('diagram', () => {
     isUserEditedTitle,
     copiedNodes,
     mindMapCurveExtentBaseline,
+    mindMapTopicActualWidth,
     nodeWidths,
     topicNodeWidth,
     multiFlowMapRecalcTrigger,
+    mindMapNodeWidths,
+    mindMapNodeHeights,
+    mindMapRecalcTrigger,
+    mindMapTopicBranchGaps,
     sessionEditCount,
     collabSessionActive,
     collabForeignLockedNodeIds,
@@ -198,6 +209,14 @@ export const useDiagramStore = defineStore('diagram', () => {
   const { setTopicNodeWidth, setNodeWidth } = multiFlowLayoutSlice
   ctx.setNodeWidth = setNodeWidth
 
+  const mindMapLayoutSlice = useMindMapLayoutSlice(ctx)
+  const {
+    setMindMapTopicWidth,
+    setMindMapNodeWidth: setMindMapNodeWidthSlice,
+    setMindMapNodeDimensions,
+    clearMindMapNodeWidths,
+  } = mindMapLayoutSlice
+
   const specIOSlice = useSpecIOSlice(ctx)
   const {
     loadFromSpec,
@@ -286,6 +305,11 @@ export const useDiagramStore = defineStore('diagram', () => {
     history.value = []
     historyIndex.value = -1
     mindMapCurveExtentBaseline.value = null
+    mindMapTopicActualWidth.value = null
+    mindMapNodeWidths.value = {}
+    mindMapNodeHeights.value = {}
+    mindMapRecalcTrigger.value = 0
+    mindMapTopicBranchGaps.value = null
     useConceptMapRelationshipStore().clearAll()
     title.value = ''
     isUserEditedTitle.value = false
@@ -391,5 +415,10 @@ export const useDiagramStore = defineStore('diagram', () => {
     setTopicNodeWidth,
     setNodeWidth,
     setConceptMapFocusQuestion,
+    setMindMapTopicWidth,
+    setMindMapNodeWidth: setMindMapNodeWidthSlice,
+    setMindMapNodeDimensions,
+    clearMindMapNodeWidths,
+    mindMapTopicBranchGaps,
   }
 })

@@ -19,6 +19,7 @@ import { loadGenericSpec } from './generic'
 import { loadMindMapSpec } from './mindMap'
 import { loadMultiFlowMapSpec } from './multiFlowMap'
 import { loadTreeMapSpec } from './treeMap'
+import { ensureTreeMapTopicLayout } from './treeMapTopicLayout'
 import type { SpecLoaderResult } from './types'
 import { applyLearningSheetHiddenNodes } from './utils'
 
@@ -59,6 +60,9 @@ export function loadSpecForDiagramType(
   // LLM-generated specs use type-specific format: { topic, attributes, ... }
   if (Array.isArray(spec.nodes) && spec.nodes.length > 0) {
     result = loadGenericSpec(spec)
+    if (diagramType === 'tree_map') {
+      result = { ...result, nodes: ensureTreeMapTopicLayout(result.nodes) }
+    }
   } else {
     const loader = SPEC_LOADERS[diagramType]
     result = loader ? loader(spec) : loadGenericSpec(spec)
