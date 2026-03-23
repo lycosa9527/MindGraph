@@ -182,14 +182,7 @@ async def generate_png_from_prompt(
     if not prompt:
         raise HTTPException(status_code=400, detail=Messages.error("invalid_prompt", lang))
 
-    if req.language and hasattr(req.language, 'value'):
-        language = req.language.value
-    elif req.language:
-        language = str(req.language)
-    else:
-        language = 'zh'
-    if language not in ['zh', 'en']:
-        raise HTTPException(status_code=400, detail="Invalid language. Must be 'zh' or 'en'")
+    language = (req.language or 'zh').strip()
 
     logger.info("[GeneratePNG] Request: prompt='%s', language='%s'", prompt, language)
 
@@ -215,8 +208,9 @@ async def generate_png_from_prompt(
 
         if not prompt_template:
             error_detail = Messages.error(
-                "generation_failed", lang,
-                f"No prompt template found for language {language}"
+                "generation_failed",
+                f"No prompt template found for language {language}",
+                lang=lang,
             )
             raise HTTPException(status_code=500, detail=error_detail)
 
@@ -248,17 +242,10 @@ async def generate_png_from_prompt(
         )
 
         if not response:
-            if lang == 'zh':
-                error_msg = (
-                    "无法理解您的意图，请更具体地说明图表类型和主题，"
-                    "或点击下方的图表卡片。"
-                )
-            else:
-                error_msg = (
-                    "Unable to process user's intention, please be more specific "
-                    "about the diagram type and topic, or click the diagrams card below."
-                )
-            raise HTTPException(status_code=500, detail=error_msg)
+            raise HTTPException(
+                status_code=500,
+                detail=Messages.error("generate_png_unclear_intent", lang=lang),
+            )
 
         # Extract JSON from response
         result = extract_json_from_response(response)
@@ -266,32 +253,18 @@ async def generate_png_from_prompt(
         # Check for non-JSON response (LLM asking for more information)
         if isinstance(result, dict) and result.get('_error') == 'non_json_response':
             logger.warning("[GeneratePNG] LLM returned non-JSON response asking for more info")
-            if lang == 'zh':
-                error_msg = (
-                    "无法理解您的意图，请更具体地说明图表类型和主题，"
-                    "或点击下方的图表卡片。"
-                )
-            else:
-                error_msg = (
-                    "Unable to process user's intention, please be more specific "
-                    "about the diagram type and topic, or click the diagrams card below."
-                )
-            raise HTTPException(status_code=400, detail=error_msg)
+            raise HTTPException(
+                status_code=400,
+                detail=Messages.error("generate_png_unclear_intent", lang=lang),
+            )
 
         # Check if JSON extraction failed
         if not isinstance(result, dict) or 'spec' not in result:
             logger.error("[GeneratePNG] Invalid response format from LLM: %s", type(result))
-            if lang == 'zh':
-                error_msg = (
-                    "无法理解您的意图，请更具体地说明图表类型和主题，"
-                    "或点击下方的图表卡片。"
-                )
-            else:
-                error_msg = (
-                    "Unable to process user's intention, please be more specific "
-                    "about the diagram type and topic, or click the diagrams card below."
-                )
-            raise HTTPException(status_code=500, detail=error_msg)
+            raise HTTPException(
+                status_code=500,
+                detail=Messages.error("generate_png_unclear_intent", lang=lang),
+            )
 
         spec = result.get('spec', {})
         diagram_type = result.get('diagram_type', 'bubble_map')
@@ -304,18 +277,10 @@ async def generate_png_from_prompt(
         if isinstance(spec, dict) and spec.get('error'):
             error_from_spec = spec.get('error')
             logger.warning("[GeneratePNG] Spec contains error field: %s", error_from_spec)
-            # Use user-friendly message instead of raw error
-            if lang == 'zh':
-                error_msg = (
-                    "无法理解您的意图，请更具体地说明图表类型和主题，"
-                    "或点击下方的图表卡片。"
-                )
-            else:
-                error_msg = (
-                    "Unable to process user's intention, please be more specific "
-                    "about the diagram type and topic, or click the diagrams card below."
-                )
-            raise HTTPException(status_code=400, detail=error_msg)
+            raise HTTPException(
+                status_code=400,
+                detail=Messages.error("generate_png_unclear_intent", lang=lang),
+            )
 
         # Add learning sheet metadata to spec object so renderers can access it
         if isinstance(spec, dict):
@@ -393,7 +358,7 @@ async def generate_png_from_prompt(
                     right = spec.get('right', '')
                     if left and right:
                         # Format as "Left vs Right" (English) or "左和右" (Chinese)
-                        topic_display = f"{left} vs {right}" if language == 'en' else f"{left}和{right}"
+                        topic_display = f"{left}和{right}" if language == 'zh' else f"{left} vs {right}"
                     elif left or right:
                         topic_display = left or right
 
@@ -444,15 +409,7 @@ async def generate_dingtalk_png(
         )
 
     try:
-        # Handle language - default to 'zh' if not provided
-        if req.language and hasattr(req.language, 'value'):
-            language = req.language.value
-        elif req.language:
-            language = str(req.language)
-        else:
-            language = 'zh'
-        if language not in ['zh', 'en']:
-            raise HTTPException(status_code=400, detail="Invalid language. Must be 'zh' or 'en'")
+        language = (req.language or 'zh').strip()
 
         logger.info("[GenerateDingTalk] Request: prompt='%s', language='%s'", prompt, language)
 
@@ -478,7 +435,11 @@ async def generate_dingtalk_png(
         if not prompt_template:
             raise HTTPException(
                 status_code=500,
-                detail=Messages.error("generation_failed", lang, f"No prompt template found for language {language}")
+                detail=Messages.error(
+                    "generation_failed",
+                    f"No prompt template found for language {language}",
+                    lang=lang,
+                ),
             )
 
         # Format prompt with cleaned user input
@@ -505,17 +466,10 @@ async def generate_dingtalk_png(
         )
 
         if not response:
-            if lang == 'zh':
-                error_msg = (
-                    "无法理解您的意图，请更具体地说明图表类型和主题，"
-                    "或点击下方的图表卡片。"
-                )
-            else:
-                error_msg = (
-                    "Unable to process user's intention, please be more specific "
-                    "about the diagram type and topic, or click the diagrams card below."
-                )
-            raise HTTPException(status_code=500, detail=error_msg)
+            raise HTTPException(
+                status_code=500,
+                detail=Messages.error("generate_png_unclear_intent", lang=lang),
+            )
 
         # Extract JSON from response
         result = extract_json_from_response(response)
@@ -523,32 +477,18 @@ async def generate_dingtalk_png(
         # Check for non-JSON response (LLM asking for more information)
         if isinstance(result, dict) and result.get('_error') == 'non_json_response':
             logger.warning("[GenerateDingTalk] LLM returned non-JSON response asking for more info")
-            if lang == 'zh':
-                error_msg = (
-                    "无法理解您的意图，请更具体地说明图表类型和主题，"
-                    "或点击下方的图表卡片。"
-                )
-            else:
-                error_msg = (
-                    "Unable to process user's intention, please be more specific "
-                    "about the diagram type and topic, or click the diagrams card below."
-                )
-            raise HTTPException(status_code=400, detail=error_msg)
+            raise HTTPException(
+                status_code=400,
+                detail=Messages.error("generate_png_unclear_intent", lang=lang),
+            )
 
         # Check if JSON extraction failed
         if not isinstance(result, dict) or 'spec' not in result:
             logger.error("[GenerateDingTalk] Invalid response format from LLM: %s", type(result))
-            if lang == 'zh':
-                error_msg = (
-                    "无法理解您的意图，请更具体地说明图表类型和主题，"
-                    "或点击下方的图表卡片。"
-                )
-            else:
-                error_msg = (
-                    "Unable to process user's intention, please be more specific "
-                    "about the diagram type and topic, or click the diagrams card below."
-                )
-            raise HTTPException(status_code=500, detail=error_msg)
+            raise HTTPException(
+                status_code=500,
+                detail=Messages.error("generate_png_unclear_intent", lang=lang),
+            )
 
         spec = result.get('spec', {})
         diagram_type = result.get('diagram_type', 'bubble_map')
@@ -561,18 +501,10 @@ async def generate_dingtalk_png(
         if isinstance(spec, dict) and spec.get('error'):
             error_from_spec = spec.get('error')
             logger.warning("[GenerateDingTalk] Spec contains error field: %s", error_from_spec)
-            # Use user-friendly message instead of raw error
-            if lang == 'zh':
-                error_msg = (
-                    "无法理解您的意图，请更具体地说明图表类型和主题，"
-                    "或点击下方的图表卡片。"
-                )
-            else:
-                error_msg = (
-                    "Unable to process user's intention, please be more specific "
-                    "about the diagram type and topic, or click the diagrams card below."
-                )
-            raise HTTPException(status_code=400, detail=error_msg)
+            raise HTTPException(
+                status_code=400,
+                detail=Messages.error("generate_png_unclear_intent", lang=lang),
+            )
 
         # Add learning sheet metadata to spec object so renderers can access it
         if isinstance(spec, dict):
@@ -650,7 +582,7 @@ async def generate_dingtalk_png(
                     right = spec.get('right', '')
                     if left and right:
                         # Format as "Left vs Right" (English) or "左和右" (Chinese)
-                        topic_display = f"{left} vs {right}" if language == 'en' else f"{left}和{right}"
+                        topic_display = f"{left}和{right}" if language == 'zh' else f"{left} vs {right}"
                     elif left or right:
                         topic_display = left or right
 

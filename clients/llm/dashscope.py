@@ -84,6 +84,7 @@ class QwenClient:
             logprobs: Whether to return token log probabilities
             top_logprobs: Number of top logprobs to return (0-5, requires logprobs=True)
             **kwargs: Additional parameters:
+                - dashscope_model: Override model id sent to DashScope (popped; e.g. AskOnce-only)
                 - tools: Function calling tools array
                 - tool_choice: Tool selection strategy
                 - parallel_tool_calls: Enable parallel tool calls
@@ -110,6 +111,9 @@ class QwenClient:
                 model_name = config.QWEN_MODEL_CLASSIFICATION
             else:  # generation
                 model_name = config.QWEN_MODEL_GENERATION
+            dashscope_model = kwargs.pop('dashscope_model', None)
+            if dashscope_model:
+                model_name = dashscope_model
 
             # Build extra_body for DashScope-specific parameters
             extra_body: Dict[str, Any] = {"enable_thinking": False}
@@ -301,6 +305,7 @@ class QwenClient:
             logprobs: Whether to return token log probabilities
             top_logprobs: Number of top logprobs to return (0-5, requires logprobs=True)
             **kwargs: Additional parameters:
+                - dashscope_model: Override model id sent to DashScope (popped; e.g. AskOnce-only)
                 - tools: Function calling tools array
                 - tool_choice: Tool selection strategy
                 - parallel_tool_calls: Enable parallel tool calls
@@ -330,6 +335,9 @@ class QwenClient:
                 model_name = config.QWEN_MODEL_CLASSIFICATION
             else:
                 model_name = config.QWEN_MODEL_GENERATION
+            dashscope_model = kwargs.pop('dashscope_model', None)
+            if dashscope_model:
+                model_name = dashscope_model
 
             # Build extra_body for DashScope-specific parameters
             extra_body: Dict[str, Any] = {"enable_thinking": enable_thinking}

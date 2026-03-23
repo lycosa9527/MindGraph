@@ -18,7 +18,7 @@ const emit = defineEmits<{
   (e: 'close'): void
 }>()
 
-const { isZh } = useLanguage()
+const { t } = useLanguage()
 
 const formData = ref({
   defaultRetrievalMethod: 'hybrid',
@@ -42,7 +42,7 @@ const handleSave = () => {
 <template>
   <ElDrawer
     :model-value="visible"
-    :title="isZh ? '知识库设置' : 'Knowledge Base Settings'"
+    :title="t('knowledge.settings.title')"
     size="400px"
     @update:model-value="emit('update:visible', $event)"
     @close="handleClose"
@@ -55,31 +55,31 @@ const handleSave = () => {
       >
         <ElDivider content-position="left">
           <span class="text-sm font-semibold text-stone-700">
-            {{ isZh ? '检索设置' : 'Retrieval Settings' }}
+            {{ t('knowledge.settings.retrievalSection') }}
           </span>
         </ElDivider>
 
-        <ElFormItem :label="isZh ? '默认检索方法' : 'Default Retrieval Method'">
+        <ElFormItem :label="t('knowledge.settings.defaultMethod')">
           <ElSelect
             v-model="formData.defaultRetrievalMethod"
             style="width: 100%"
           >
             <el-option
-              :label="isZh ? '混合检索' : 'Hybrid Search'"
+              :label="t('knowledge.retrieval.hybrid')"
               value="hybrid"
             />
             <el-option
-              :label="isZh ? '语义检索' : 'Semantic Search'"
+              :label="t('knowledge.retrieval.semantic')"
               value="semantic"
             />
             <el-option
-              :label="isZh ? '关键词检索' : 'Keyword Search'"
+              :label="t('knowledge.retrieval.keyword')"
               value="keyword"
             />
           </ElSelect>
         </ElFormItem>
 
-        <ElFormItem :label="isZh ? '默认返回数量' : 'Default Top K'">
+        <ElFormItem :label="t('knowledge.settings.defaultTopK')">
           <ElSelect
             v-model="formData.defaultTopK"
             style="width: 100%"
@@ -93,7 +93,7 @@ const handleSave = () => {
           </ElSelect>
         </ElFormItem>
 
-        <ElFormItem :label="isZh ? '默认分数阈值' : 'Default Score Threshold'">
+        <ElFormItem :label="t('knowledge.settings.defaultThreshold')">
           <ElInput
             v-model.number="formData.defaultScoreThreshold"
             type="number"
@@ -106,11 +106,11 @@ const handleSave = () => {
 
         <ElDivider content-position="left">
           <span class="text-sm font-semibold text-stone-700">
-            {{ isZh ? '分块设置' : 'Chunking Settings' }}
+            {{ t('knowledge.settings.chunkSection') }}
           </span>
         </ElDivider>
 
-        <ElFormItem :label="isZh ? '分块大小' : 'Chunk Size'">
+        <ElFormItem :label="t('knowledge.settings.chunkSize')">
           <div
             class="flex items-center gap-2"
             style="width: 100%"
@@ -124,12 +124,12 @@ const handleSave = () => {
               style="flex: 1"
             />
             <span class="text-xs text-stone-500 whitespace-nowrap">
-              {{ isZh ? '字符数' : 'characters' }}
+              {{ t('knowledge.settings.characters') }}
             </span>
           </div>
         </ElFormItem>
 
-        <ElFormItem :label="isZh ? '分块重叠' : 'Chunk Overlap'">
+        <ElFormItem :label="t('knowledge.settings.chunkOverlap')">
           <div
             class="flex items-center gap-2"
             style="width: 100%"
@@ -143,7 +143,7 @@ const handleSave = () => {
               style="flex: 1"
             />
             <span class="text-xs text-stone-500 whitespace-nowrap">
-              {{ isZh ? '字符数' : 'characters' }}
+              {{ t('knowledge.settings.characters') }}
             </span>
           </div>
         </ElFormItem>
@@ -151,14 +151,14 @@ const handleSave = () => {
 
       <div class="mt-6 flex justify-end gap-2">
         <ElButton @click="handleClose">
-          {{ isZh ? '取消' : 'Cancel' }}
+          {{ t('common.cancel') }}
         </ElButton>
         <ElButton
           type="primary"
           class="save-btn"
           @click="handleSave"
         >
-          {{ isZh ? '保存' : 'Save' }}
+          {{ t('common.save') }}
         </ElButton>
       </div>
     </div>

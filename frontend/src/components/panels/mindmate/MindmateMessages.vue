@@ -18,7 +18,7 @@ import MindmateWelcome from './MindmateWelcome.vue'
 // v-loading directive
 const vLoading = ElLoading.directive
 
-const { isZh } = useLanguage()
+const { t } = useLanguage()
 const uiStore = useUIStore()
 
 // Loading background color (dark mode aware)
@@ -154,7 +154,7 @@ watch(
 <template>
   <div
     v-loading="isLoadingHistory ?? false"
-    :element-loading-text="isZh ? '加载中...' : 'Loading...'"
+    :element-loading-text="t('common.loading')"
     :element-loading-background="loadingBackground"
     class="messages-container"
   >

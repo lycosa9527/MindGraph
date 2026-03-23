@@ -52,7 +52,7 @@ const emit = defineEmits<{
   (e: 'suggestionSelect', suggestion: string): void
 }>()
 
-const { isZh } = useLanguage()
+const { t } = useLanguage()
 const authStore = useAuthStore()
 const isFullpageMode = computed(() => props.mode === 'fullpage')
 const fileInputRef = ref<HTMLInputElement | null>(null)
@@ -231,7 +231,7 @@ function handleSuggestionSelect(suggestion: string) {
             :model-value="inputText"
             type="textarea"
             :autosize="{ minRows: 1, maxRows: 4 }"
-            :placeholder="placeholder || (isZh ? '请输入你的问题' : 'Type your question...')"
+            :placeholder="placeholder || t('mindmate.input.placeholder')"
             :disabled="isLoading || !authStore.isAuthenticated"
             :maxlength="maxlength"
             :show-word-limit="maxlength != null"
@@ -247,7 +247,7 @@ function handleSuggestionSelect(suggestion: string) {
           <!-- Upload Button (Paperclip) - hidden when showFileUpload is false -->
           <ElTooltip
             v-if="showFileUpload"
-            :content="isZh ? '上传文件' : 'Attach file'"
+            :content="t('mindmate.input.attachFile')"
           >
             <ElButton
               text

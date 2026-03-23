@@ -6,6 +6,7 @@ import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { useLanguage } from '@/composables'
+import { toolbarShortForUiCode } from '@/i18n/locales'
 import { useAuthStore, useUIStore } from '@/stores'
 
 const router = useRouter()
@@ -56,7 +57,7 @@ function goToAdmin(): void {
           circle
           @click="uiStore.toggleLanguage"
         >
-          {{ uiStore.language === 'zh' ? 'EN' : '中' }}
+          {{ toolbarShortForUiCode(uiStore.language) }}
         </el-button>
 
         <!-- User Menu -->

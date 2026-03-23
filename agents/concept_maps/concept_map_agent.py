@@ -25,6 +25,8 @@ from langchain_core.prompts import PromptTemplate
 
 from prompts.concept_maps import CONCEPT_MAP_PROMPTS
 from services.llm import llm_service
+from utils.prompt_locale import output_language_instruction, template_lang_for_registry
+from utils.text_width_estimate import estimate_text_width_px
 
 from ..core.base_agent import BaseAgent
 
@@ -291,9 +293,11 @@ class ConceptMapAgent(BaseAgent):
         direction_instruction = self._get_direction_instruction(
             link_direction, language
         )
-        prompt_key = f"concept_map_relationship_only_{language}"
+        registry_lang = template_lang_for_registry(language)
+        prompt_key = f"concept_map_relationship_only_{registry_lang}"
         prompt_template = self._get_prompt(
             prompt_key,
+            language=language,
             concept_a=concept_a,
             concept_b=concept_b,
             topic_context=topic_context,
@@ -407,17 +411,22 @@ class ConceptMapAgent(BaseAgent):
         try:
             # Try to get the language-specific prompt first
             language = kwargs.get('language', 'en')
+            formatted: Optional[str] = None
             if language == 'zh':
                 # Try Chinese version first
                 zh_key = prompt_key.replace('_en', '_zh')
                 prompt_template = CONCEPT_MAP_PROMPTS.get(zh_key)
                 if prompt_template:
-                    return prompt_template.format(**kwargs)
+                    formatted = prompt_template.format(**kwargs)
 
-            # Fallback to English version
-            prompt_template = CONCEPT_MAP_PROMPTS.get(prompt_key)
-            if prompt_template:
-                return prompt_template.format(**kwargs)
+            if formatted is None:
+                # Fallback to English version
+                prompt_template = CONCEPT_MAP_PROMPTS.get(prompt_key)
+                if prompt_template:
+                    formatted = prompt_template.format(**kwargs)
+
+            if formatted is not None:
+                return formatted + output_language_instruction(language)
 
             # If we still don't have a prompt, log the issue
             print(f"Warning: No prompt found for key '{prompt_key}' (language: {language})")
@@ -775,9 +784,7 @@ class ConceptMapAgent(BaseAgent):
             font_size = 26 if is_topic else 22  # Even larger font sizes for maximum readability (was 22/18)
             max_text_width = 350 if is_topic else 300  # Even larger max width for bigger text (was 300/260)
 
-            # Estimate character width (approximate for common fonts)
-            char_width = font_size * 0.6  # Rough estimate for common fonts
-            text_width = len(text) * char_width
+            text_width = estimate_text_width_px(text, float(font_size), is_topic=is_topic)
 
             # Handle text wrapping
             if text_width > max_text_width:

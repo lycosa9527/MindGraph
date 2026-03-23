@@ -17,7 +17,7 @@ const emit = defineEmits<{
   (e: 'close'): void
 }>()
 
-const { isZh } = useLanguage()
+const { t } = useLanguage()
 
 function handleClose() {
   emit('update:visible', false)
@@ -28,7 +28,7 @@ function handleClose() {
 <template>
   <ElDialog
     :model-value="visible"
-    :title="isZh ? '掷硬币阶段' : 'Coin Toss Stage'"
+    :title="t('debateverse.coinTossStageTitle')"
     width="500px"
     :close-on-click-modal="false"
     :close-on-press-escape="false"
@@ -45,11 +45,7 @@ function handleClose() {
       </div>
 
       <p class="text-center text-gray-700 mb-6">
-        {{
-          isZh
-            ? '赛前通过掷硬币决定发言顺序或选择正反方立场'
-            : 'Before the debate, determine speaking order or choose affirmative/negative positions through coin toss'
-        }}
+        {{ t('debateverse.coinTossModalBody') }}
       </p>
 
       <div class="flex justify-center">
@@ -57,7 +53,7 @@ function handleClose() {
           type="primary"
           @click="handleClose"
         >
-          {{ isZh ? '知道了' : 'Got it' }}
+          {{ t('debateverse.coinTossGotIt') }}
         </ElButton>
       </div>
     </div>

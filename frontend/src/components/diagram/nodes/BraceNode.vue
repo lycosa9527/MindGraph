@@ -14,6 +14,7 @@ import { useTheme } from '@/composables/useTheme'
 import { getMindmapBranchColor } from '@/config/mindmapColors'
 import type { MindGraphNodeProps } from '@/types'
 import { getBorderStyleProps } from '@/utils/borderStyleUtils'
+import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
 
 import InlineEditableText from './InlineEditableText.vue'
 
@@ -67,6 +68,7 @@ const nodeStyle = computed(() => {
       props.data.style?.textColor ||
       defaultStyle.value.textColor ||
       (isWholeNode.value ? '#ffffff' : '#333333'),
+    fontFamily: props.data.style?.fontFamily || DIAGRAM_NODE_FONT_STACK,
     fontSize: `${props.data.style?.fontSize || defaultStyle.value.fontSize || (isWholeNode.value ? 18 : isSubpart.value ? 12 : 16)}px`,
     fontWeight: isWholeNode.value
       ? 'bold'

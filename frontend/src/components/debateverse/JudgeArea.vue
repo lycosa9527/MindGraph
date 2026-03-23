@@ -11,7 +11,7 @@ import { useDebateVerseStore } from '@/stores/debateverse'
 
 import DebaterAvatar from './DebaterAvatar.vue'
 
-const { isZh } = useLanguage()
+const { t } = useLanguage()
 const store = useDebateVerseStore()
 
 // ============================================================================
@@ -73,7 +73,7 @@ function handleAdvanceStage() {
         size="small"
         @click="store.coinToss()"
       >
-        {{ isZh ? '执行掷硬币' : 'Execute Coin Toss' }}
+        {{ t('debateverse.executeCoinToss') }}
       </ElButton>
       <ElButton
         v-else-if="store.currentStage !== 'completed'"
@@ -81,7 +81,7 @@ function handleAdvanceStage() {
         size="small"
         @click="handleAdvanceStage"
       >
-        {{ isZh ? '进入下一阶段' : 'Advance Stage' }}
+        {{ t('debateverse.advanceStage') }}
       </ElButton>
     </div>
   </div>

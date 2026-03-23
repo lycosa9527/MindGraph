@@ -23,6 +23,7 @@
 import { type ComputedRef, computed, inject } from 'vue'
 
 import { eventBus, useLanguage, useNotifications } from '@/composables'
+import { ensureFontsForLanguageCode } from '@/fonts/promptLanguageFonts'
 import { useDiagramStore, useLLMResultsStore } from '@/stores'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import { authFetch } from '@/utils/api'
@@ -70,8 +71,17 @@ const CHINESE_PLACEHOLDERS = [
   /^整体$/, // 整体 (Brace Map)
   /^特征\s*\d+$/, // 特征1 (Bubble Map)
   /^请输入/, // 请输入主题
+  /^焦点问题:请输入$/, // Concept map focus question default (zh)
   /^点击编辑/, // 点击编辑
   /^\[点击设置\]$/, // Bridge map dimension placeholder
+]
+
+// English defaults for new canvas (match defaultTemplates / diagramDefaultLabels)
+const EN_DEFAULT_CANVAS_PLACEHOLDERS = [
+  /^Focus question:\s*Enter$/i,
+  /^Root concept$/i,
+  /^'s root concept$/i,
+  /^\[Click to set\]$/i,
 ]
 
 // English placeholder patterns
@@ -117,7 +127,11 @@ const ENGLISH_PLACEHOLDERS = [
 ]
 
 // Combined placeholder patterns
-const PLACEHOLDER_PATTERNS = [...CHINESE_PLACEHOLDERS, ...ENGLISH_PLACEHOLDERS]
+const PLACEHOLDER_PATTERNS = [
+  ...CHINESE_PLACEHOLDERS,
+  ...ENGLISH_PLACEHOLDERS,
+  ...EN_DEFAULT_CANVAS_PLACEHOLDERS,
+]
 
 /**
  * Check if text is a placeholder that shouldn't be used as topic
@@ -134,11 +148,12 @@ export function useAutoComplete() {
   const diagramStore = useDiagramStore()
   const llmResultsStore = useLLMResultsStore()
   const savedDiagramsStore = useSavedDiagramsStore()
-  const { isZh } = useLanguage()
+  const { promptLanguage, t } = useLanguage()
   const notify = useNotifications()
-  const collabCanvas = inject<
-    { isDiagramOwner?: ComputedRef<boolean> } | undefined
-  >('collabCanvas', undefined)
+  const collabCanvas = inject<{ isDiagramOwner?: ComputedRef<boolean> } | undefined>(
+    'collabCanvas',
+    undefined
+  )
 
   // Expose store state
   const isGenerating = computed(() => llmResultsStore.isGenerating)
@@ -212,7 +227,7 @@ export function useAutoComplete() {
       const leftValid = left && !isPlaceholderText(left)
       const rightValid = right && !isPlaceholderText(right)
       if (leftValid && rightValid) {
-        return isZh.value ? `${left} 和 ${right}` : `${left} vs ${right}`
+        return t('autoComplete.doubleBubbleTopicPair', { left, right })
       }
       if (leftValid) return left
       if (rightValid) return right
@@ -313,25 +328,23 @@ export function useAutoComplete() {
     if (llmResultsStore.isGenerating) {
       return {
         valid: false,
-        error: isZh.value ? '正在生成中，请稍候' : 'Generation in progress, please wait',
+        error: t('autoComplete.generationInProgress'),
       }
     }
 
     if (!diagramStore.type) {
-      return { valid: false, error: isZh.value ? '请选择图表类型' : 'Please select diagram type' }
+      return { valid: false, error: t('autoComplete.selectDiagramType') }
     }
 
     if (!diagramStore.data) {
-      return { valid: false, error: isZh.value ? '没有图表数据' : 'No diagram data' }
+      return { valid: false, error: t('autoComplete.noDiagramData') }
     }
 
     // Concept map uses real-time relationship generation only (no multi-stage AI Generate)
     if (diagramStore.type === 'concept_map') {
       return {
         valid: false,
-        error: isZh.value
-          ? '概念图使用实时关系建议，请通过创建链接来生成关系'
-          : 'Concept maps use real-time relationship suggestions; create links to generate',
+        error: t('autoComplete.conceptMapRealtime'),
       }
     }
 
@@ -348,9 +361,7 @@ export function useAutoComplete() {
       if (!leftValid || !rightValid) {
         return {
           valid: false,
-          error: isZh.value
-            ? '请填写左右两个主题后再生成'
-            : 'Please fill in both left and right topics before generating',
+          error: t('autoComplete.doubleBubbleNeedBothTopics'),
         }
       }
     }
@@ -377,7 +388,7 @@ export function useAutoComplete() {
     if (!mainTopic) {
       return {
         valid: false,
-        error: isZh.value ? '请先输入主题内容' : 'Please enter topic content first',
+        error: t('autoComplete.enterTopicFirst'),
       }
     }
 
@@ -483,11 +494,7 @@ export function useAutoComplete() {
       collabCanvas?.isDiagramOwner &&
       !collabCanvas.isDiagramOwner.value
     ) {
-      notify.warning(
-        isZh.value
-          ? '协作模式下仅图示所有者可以使用 AI 生成'
-          : 'Only the diagram owner can use AI generation during collaboration'
-      )
+      notify.warning(t('autoComplete.collabOwnerOnly'))
       return { success: false, error: 'collab_owner_only' }
     }
 
@@ -499,7 +506,7 @@ export function useAutoComplete() {
     }
 
     // Build simple request - backend handles prompt construction
-    const language = isZh.value ? 'zh' : 'en'
+    const language = promptLanguage.value
     const topic = (extractMainTopic() || '') + (promptSuffix ?? '')
 
     const requestBody: Record<string, unknown> = {
@@ -539,6 +546,8 @@ export function useAutoComplete() {
     if (diagramType === 'mind_map') {
       diagramType = 'mindmap'
     }
+
+    await ensureFontsForLanguageCode(language)
 
     // Start generation
     llmResultsStore.startGeneration(newSessionId, diagramType, modelsToRun)
@@ -620,14 +629,15 @@ export function useAutoComplete() {
       onAllComplete?.(successCount, totalCount)
 
       if (successCount === 0) {
-        const errorMsg = isZh.value ? '生成失败，请重试' : 'Generation failed, please try again'
+        const errorMsg = t('autoComplete.generationFailedRetry')
         notify.error(errorMsg)
         options.onError?.(errorMsg)
         return { success: false, error: 'All models failed' }
       } else {
-        const msg = isZh.value
-          ? `${successCount}/${totalCount} 个模型就绪`
-          : `${successCount}/${totalCount} models ready`
+        const msg = t('autoComplete.modelsReadyCount', {
+          success: successCount,
+          total: totalCount,
+        })
         notify.success(msg)
         return { success: true }
       }
@@ -666,7 +676,7 @@ export function useAutoComplete() {
    */
   function cancelGeneration(): void {
     llmResultsStore.cancelAllRequests()
-    notify.info(isZh.value ? '已取消生成' : 'Generation cancelled')
+    notify.info(t('notification.generationCancelled'))
   }
 
   return {

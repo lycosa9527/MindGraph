@@ -74,6 +74,8 @@ class UserCache:
             'locked_until': user.locked_until.isoformat() if user.locked_until else '',
             'created_at': user.created_at.isoformat() if user.created_at else '',
             'last_login': user.last_login.isoformat() if user.last_login else '',
+            'ui_language': getattr(user, 'ui_language', None) or '',
+            'prompt_language': getattr(user, 'prompt_language', None) or '',
         }
 
     def _deserialize_user(self, data: Dict[str, str]) -> User:
@@ -121,6 +123,9 @@ class UserCache:
                 user.last_login = None
         else:
             user.last_login = None
+
+        user.ui_language = data.get('ui_language') or None
+        user.prompt_language = data.get('prompt_language') or None
 
         return user
 

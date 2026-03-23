@@ -12,7 +12,7 @@
  */
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 
-import { ElPageHeader, ElTabs } from 'element-plus'
+import { ElPageHeader } from 'element-plus'
 
 import { Close } from '@element-plus/icons-vue'
 
@@ -130,11 +130,9 @@ function resetAllForms() {
   }
 }
 
-// Handle tab change from el-tabs
-function handleTabChange(tab: string | number) {
-  const tabStr = String(tab)
-  activeTab.value = tabStr
-  currentView.value = tabStr as ViewState
+function switchLoginRegisterTab(tab: 'login' | 'register') {
+  activeTab.value = tab
+  currentView.value = tab
   refreshCaptcha()
 }
 
@@ -169,11 +167,11 @@ async function refreshCaptcha() {
       captchaId.value = result.captcha_id
       captchaImage.value = result.captcha_image
     } else {
-      notify.error('验证码加载失败')
+      notify.error(t('auth.modal.captchaLoadFailed'))
     }
   } catch (error) {
     console.error('Captcha error:', error)
-    notify.error('网络错误，验证码加载失败')
+    notify.error(t('auth.modal.captchaNetworkError'))
   } finally {
     captchaLoading.value = false
   }
@@ -220,17 +218,17 @@ onBeforeUnmount(() => {
 // Handle login
 async function handleLogin() {
   if (!loginForm.value.phone || !loginForm.value.password) {
-    notify.warning('请填写所有字段')
+    notify.warning(t('auth.modal.fillAllFields'))
     return
   }
 
   if (!loginForm.value.captcha || loginForm.value.captcha.length !== 4) {
-    notify.warning('请输入4位验证码')
+    notify.warning(t('auth.modal.enter4DigitCaptcha'))
     return
   }
 
   if (!captchaId.value) {
-    notify.warning('请等待验证码加载')
+    notify.warning(t('auth.modal.waitCaptchaLoad'))
     return
   }
 
@@ -246,7 +244,9 @@ async function handleLogin() {
 
     if (result.success) {
       const userName = result.user?.username || ''
-      notify.success(userName ? `登录成功，${userName}欢迎你` : '登录成功')
+      notify.success(
+        userName ? t('auth.modal.loginWelcome', { name: userName }) : t('auth.modal.loginSuccessPlain')
+      )
 
       // If this is a session expired modal, emit success immediately (handler will close modal)
       // Otherwise, close modal normally after delay
@@ -265,7 +265,7 @@ async function handleLogin() {
     }
   } catch (error) {
     console.error('Login error:', error)
-    notify.error('网络错误，登录失败')
+    notify.error(t('auth.modal.networkLoginError'))
     loginForm.value.captcha = ''
     refreshCaptcha()
   } finally {
@@ -281,17 +281,17 @@ async function handleRegister() {
     !registerForm.value.name ||
     !registerForm.value.invitationCode
   ) {
-    notify.warning('请填写所有必填项')
+    notify.warning(t('auth.modal.fillRequired'))
     return
   }
 
   if (registerForm.value.password.length < 8) {
-    notify.warning('密码至少需要8个字符')
+    notify.warning(t('auth.modal.passwordMin8'))
     return
   }
 
   if (!registerForm.value.captcha || registerForm.value.captcha.length !== 4) {
-    notify.warning('请输入4位验证码')
+    notify.warning(t('auth.modal.enter4DigitCaptcha'))
     return
   }
 
@@ -314,17 +314,17 @@ async function handleRegister() {
     const data = await response.json()
 
     if (response.ok) {
-      notify.success('注册成功，请登录')
-      handleTabChange('login')
+      notify.success(t('auth.modal.registerSuccess'))
+      switchLoginRegisterTab('login')
       loginForm.value.phone = registerForm.value.phone
     } else {
-      notify.error(data.detail || '注册失败')
+      notify.error(data.detail || t('auth.modal.registerFailed'))
       registerForm.value.captcha = ''
       refreshCaptcha()
     }
   } catch (error) {
     console.error('Register error:', error)
-    notify.error('网络错误，注册失败')
+    notify.error(t('auth.modal.networkRegisterError'))
     registerForm.value.captcha = ''
     refreshCaptcha()
   } finally {
@@ -337,12 +337,12 @@ async function sendSmsCode(type: 'login' | 'reset') {
   const form = type === 'login' ? smsLoginForm.value : forgotForm.value
 
   if (!form.phone || form.phone.length !== 11) {
-    notify.warning('请输入有效的11位手机号')
+    notify.warning(t('auth.modal.phone11Digits'))
     return
   }
 
   if (!form.captcha || form.captcha.length !== 4) {
-    notify.warning('请先输入验证码')
+    notify.warning(t('auth.modal.enterCaptchaFirst'))
     return
   }
 
@@ -363,17 +363,17 @@ async function sendSmsCode(type: 'login' | 'reset') {
     const data = await response.json()
 
     if (response.ok) {
-      notify.success('短信验证码发送成功')
+      notify.success(t('auth.modal.smsSentSuccess'))
       smsSent.value = true
       startCountdown()
     } else {
-      notify.error(data.detail || '短信发送失败')
+      notify.error(data.detail || t('auth.modal.smsSendFailed'))
       form.captcha = ''
       refreshCaptcha()
     }
   } catch (error) {
     console.error('SMS error:', error)
-    notify.error('网络错误，短信发送失败')
+    notify.error(t('auth.modal.networkSmsError'))
     form.captcha = ''
     refreshCaptcha()
   } finally {
@@ -402,7 +402,7 @@ function startCountdown() {
 // Handle SMS login
 async function handleSmsLogin() {
   if (!smsLoginForm.value.smsCode || smsLoginForm.value.smsCode.length !== 6) {
-    notify.warning('请输入6位短信验证码')
+    notify.warning(t('auth.modal.enter6DigitSms'))
     return
   }
 
@@ -424,7 +424,9 @@ async function handleSmsLogin() {
       authStore.setUser(data.user)
       if (data.token) authStore.setToken(data.token)
       const userName = data.user?.name || ''
-      notify.success(userName ? `登录成功，${userName}欢迎你` : '登录成功')
+      notify.success(
+        userName ? t('auth.modal.loginWelcome', { name: userName }) : t('auth.modal.loginSuccessPlain')
+      )
 
       // If this is a session expired modal, emit success immediately (handler will close modal)
       // Otherwise, close modal normally after delay
@@ -437,11 +439,11 @@ async function handleSmsLogin() {
         }, 1500)
       }
     } else {
-      notify.error(data.detail || '短信登录失败')
+      notify.error(data.detail || t('auth.modal.smsLoginFailed'))
     }
   } catch (error) {
     console.error('SMS login error:', error)
-    notify.error('网络错误，短信登录失败')
+    notify.error(t('auth.modal.networkSmsLoginError'))
   } finally {
     isLoading.value = false
   }
@@ -450,17 +452,17 @@ async function handleSmsLogin() {
 // Handle password reset
 async function handleResetPassword() {
   if (!forgotForm.value.smsCode || forgotForm.value.smsCode.length !== 6) {
-    notify.warning('请输入6位短信验证码')
+    notify.warning(t('auth.modal.enter6DigitSms'))
     return
   }
 
   if (!forgotForm.value.newPassword || forgotForm.value.newPassword.length < 8) {
-    notify.warning('密码至少需要8个字符')
+    notify.warning(t('auth.modal.passwordMin8'))
     return
   }
 
   if (forgotForm.value.newPassword !== forgotForm.value.confirmPassword) {
-    notify.warning('两次输入的密码不一致')
+    notify.warning(t('auth.modal.passwordMismatch'))
     return
   }
 
@@ -480,15 +482,15 @@ async function handleResetPassword() {
     const data = await response.json()
 
     if (response.ok) {
-      notify.success('密码重置成功，请登录')
+      notify.success(t('auth.modal.resetSuccess'))
       backToLogin()
       loginForm.value.phone = forgotForm.value.phone
     } else {
-      notify.error(data.detail || '密码重置失败')
+      notify.error(data.detail || t('auth.modal.resetFailed'))
     }
   } catch (error) {
     console.error('Reset password error:', error)
-    notify.error('网络错误，密码重置失败')
+    notify.error(t('auth.modal.networkResetError'))
   } finally {
     isLoading.value = false
   }
@@ -537,29 +539,41 @@ function handleBackdropClick(event: MouseEvent) {
                 <span class="text-white font-semibold text-lg tracking-tight">M</span>
               </div>
               <h2 class="text-xl font-semibold text-stone-900 tracking-tight leading-none">
-                MindSpring
+                {{ t('auth.modal.productTitle') }}
               </h2>
               <p class="text-xs text-stone-400 tracking-widest uppercase mt-1.5">
-                思维教学数智化平台
+                {{ t('auth.modal.tagline') }}
               </p>
             </div>
 
-            <!-- Tabs (only show for login/register views) -->
-            <el-tabs
+            <!-- Login / Register switch (custom; Element Plus tabs use scroll/transform and mis-align in narrow modals) -->
+            <div
               v-if="currentView === 'login' || currentView === 'register'"
-              v-model="activeTab"
-              class="auth-tabs"
-              @tab-change="handleTabChange"
+              class="auth-tab-switch"
+              role="tablist"
+              :aria-label="t('auth.loginRegister')"
             >
-              <el-tab-pane
-                label="登录"
-                name="login"
-              />
-              <el-tab-pane
-                label="注册"
-                name="register"
-              />
-            </el-tabs>
+              <button
+                type="button"
+                role="tab"
+                :aria-selected="activeTab === 'login'"
+                class="auth-tab-switch__btn"
+                :class="{ 'auth-tab-switch__btn--active': activeTab === 'login' }"
+                @click="switchLoginRegisterTab('login')"
+              >
+                {{ t('auth.login') }}
+              </button>
+              <button
+                type="button"
+                role="tab"
+                :aria-selected="activeTab === 'register'"
+                class="auth-tab-switch__btn"
+                :class="{ 'auth-tab-switch__btn--active': activeTab === 'register' }"
+                @click="switchLoginRegisterTab('register')"
+              >
+                {{ t('auth.register') }}
+              </button>
+            </div>
 
             <!-- Page header for sub-views -->
             <el-page-header
@@ -583,12 +597,12 @@ function handleBackdropClick(event: MouseEvent) {
                 <label
                   class="block text-xs font-medium text-stone-500 uppercase tracking-wide mb-2"
                 >
-                  手机号
+                  {{ t('auth.phone') }}
                 </label>
                 <input
                   v-model="loginForm.phone"
                   type="tel"
-                  placeholder="11位手机号"
+                  :placeholder="t('auth.modal.phonePlaceholder11')"
                   maxlength="11"
                   autocomplete="username"
                   class="w-full px-4 py-3 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
@@ -599,13 +613,13 @@ function handleBackdropClick(event: MouseEvent) {
                 <label
                   class="block text-xs font-medium text-stone-500 uppercase tracking-wide mb-2"
                 >
-                  密码
+                  {{ t('auth.password') }}
                 </label>
                 <div class="relative">
                   <input
                     v-model="loginForm.password"
                     :type="showPassword ? 'text' : 'password'"
-                    placeholder="请输入密码"
+                    :placeholder="t('auth.modal.passwordPlaceholder')"
                     autocomplete="current-password"
                     class="w-full px-4 py-3 pr-11 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
                   />
@@ -630,22 +644,22 @@ function handleBackdropClick(event: MouseEvent) {
                 <label
                   class="block text-xs font-medium text-stone-500 uppercase tracking-wide mb-2"
                 >
-                  验证码
+                  {{ t('auth.captcha') }}
                 </label>
                 <div class="flex gap-3 items-center">
                   <input
                     v-model="loginForm.captcha"
                     type="text"
-                    placeholder="输入验证码"
+                    :placeholder="t('auth.modal.captchaPlaceholderShort')"
                     maxlength="4"
                     class="flex-1 px-4 py-3 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
                   />
                   <img
                     v-if="captchaImage && !captchaLoading"
                     :src="captchaImage"
-                    alt="Captcha"
+                    :alt="t('auth.captcha')"
                     class="captcha-image"
-                    title="Click to refresh"
+                    :title="t('auth.clickToRefresh')"
                     @click="refreshCaptcha"
                   />
                   <div
@@ -674,7 +688,7 @@ function handleBackdropClick(event: MouseEvent) {
                   v-if="isLoading"
                   class="w-4 h-4 animate-spin"
                 />
-                {{ isLoading ? '登录中...' : '登录' }}
+                {{ isLoading ? t('auth.modal.loggingIn') : t('auth.login') }}
               </button>
 
               <!-- Links -->
@@ -684,7 +698,7 @@ function handleBackdropClick(event: MouseEvent) {
                   link
                   @click="showForgotPassword"
                 >
-                  忘记密码
+                  {{ t('auth.forgotPassword') }}
                 </el-button>
                 <span class="text-stone-300">|</span>
                 <el-button
@@ -692,7 +706,7 @@ function handleBackdropClick(event: MouseEvent) {
                   link
                   @click="showSmsLogin"
                 >
-                  短信登录
+                  {{ t('auth.smsLogin') }}
                 </el-button>
               </div>
             </form>
@@ -707,12 +721,12 @@ function handleBackdropClick(event: MouseEvent) {
                 <label
                   class="block text-xs font-medium text-stone-500 uppercase tracking-wide mb-2"
                 >
-                  手机号 *
+                  {{ t('auth.phone') }} *
                 </label>
                 <input
                   v-model="registerForm.phone"
                   type="tel"
-                  placeholder="11位手机号"
+                  :placeholder="t('auth.modal.phonePlaceholder11')"
                   maxlength="11"
                   autocomplete="username"
                   class="w-full px-4 py-3 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
@@ -723,13 +737,13 @@ function handleBackdropClick(event: MouseEvent) {
                 <label
                   class="block text-xs font-medium text-stone-500 uppercase tracking-wide mb-2"
                 >
-                  密码 *
+                  {{ t('auth.password') }} *
                 </label>
                 <div class="relative">
                   <input
                     v-model="registerForm.password"
                     :type="showPassword ? 'text' : 'password'"
-                    placeholder="至少8位字符"
+                    :placeholder="t('auth.modal.passwordMinPlaceholder')"
                     autocomplete="new-password"
                     class="w-full px-4 py-3 pr-11 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
                   />
@@ -754,12 +768,12 @@ function handleBackdropClick(event: MouseEvent) {
                 <label
                   class="block text-xs font-medium text-stone-500 uppercase tracking-wide mb-2"
                 >
-                  姓名 *
+                  {{ t('auth.name') }} *
                 </label>
                 <input
                   v-model="registerForm.name"
                   type="text"
-                  placeholder="您的姓名"
+                  :placeholder="t('auth.modal.namePlaceholder')"
                   class="w-full px-4 py-3 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
                 />
               </div>
@@ -768,12 +782,12 @@ function handleBackdropClick(event: MouseEvent) {
                 <label
                   class="block text-xs font-medium text-stone-500 uppercase tracking-wide mb-2"
                 >
-                  邀请码 *
+                  {{ t('auth.invitationCode') }} *
                 </label>
                 <input
                   v-model="registerForm.invitationCode"
                   type="text"
-                  placeholder="学校邀请码"
+                  :placeholder="t('auth.modal.invitationPlaceholder')"
                   class="w-full px-4 py-3 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
                 />
               </div>
@@ -782,22 +796,22 @@ function handleBackdropClick(event: MouseEvent) {
                 <label
                   class="block text-xs font-medium text-stone-500 uppercase tracking-wide mb-2"
                 >
-                  验证码 *
+                  {{ t('auth.captcha') }} *
                 </label>
                 <div class="flex gap-3 items-center">
                   <input
                     v-model="registerForm.captcha"
                     type="text"
-                    placeholder="输入验证码"
+                    :placeholder="t('auth.modal.captchaPlaceholderShort')"
                     maxlength="4"
                     class="flex-1 px-4 py-3 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
                   />
                   <img
                     v-if="captchaImage && !captchaLoading"
                     :src="captchaImage"
-                    alt="Captcha"
+                    :alt="t('auth.captcha')"
                     class="captcha-image"
-                    title="Click to refresh"
+                    :title="t('auth.clickToRefresh')"
                     @click="refreshCaptcha"
                   />
                   <div
@@ -826,7 +840,7 @@ function handleBackdropClick(event: MouseEvent) {
                   v-if="isLoading"
                   class="w-4 h-4 animate-spin"
                 />
-                {{ isLoading ? '注册中...' : '注册' }}
+                {{ isLoading ? t('auth.modal.registering') : t('auth.register') }}
               </button>
             </form>
 
@@ -840,12 +854,12 @@ function handleBackdropClick(event: MouseEvent) {
                 <label
                   class="block text-xs font-medium text-stone-500 uppercase tracking-wide mb-2"
                 >
-                  手机号
+                  {{ t('auth.phone') }}
                 </label>
                 <input
                   v-model="smsLoginForm.phone"
                   type="tel"
-                  placeholder="已注册的手机号"
+                  :placeholder="t('auth.modal.phoneRegisteredPlaceholder')"
                   maxlength="11"
                   autocomplete="username"
                   :disabled="smsSent"
@@ -857,22 +871,22 @@ function handleBackdropClick(event: MouseEvent) {
                 <label
                   class="block text-xs font-medium text-stone-500 uppercase tracking-wide mb-2"
                 >
-                  验证码
+                  {{ t('auth.captcha') }}
                 </label>
                 <div class="flex gap-3 items-center">
                   <input
                     v-model="smsLoginForm.captcha"
                     type="text"
-                    placeholder="输入验证码"
+                    :placeholder="t('auth.modal.captchaPlaceholderShort')"
                     maxlength="4"
                     class="flex-1 px-4 py-3 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
                   />
                   <img
                     v-if="captchaImage && !captchaLoading"
                     :src="captchaImage"
-                    alt="Captcha"
+                    :alt="t('auth.captcha')"
                     class="captcha-image"
-                    title="Click to refresh"
+                    :title="t('auth.clickToRefresh')"
                     @click="refreshCaptcha"
                   />
                   <div
@@ -903,7 +917,7 @@ function handleBackdropClick(event: MouseEvent) {
                   v-if="smsSending"
                   class="w-4 h-4 animate-spin"
                 />
-                {{ smsSending ? '发送中...' : '发送短信验证码' }}
+                {{ smsSending ? t('auth.modal.sendingSms') : t('auth.modal.sendSmsCode') }}
               </button>
 
               <template v-if="smsSent">
@@ -911,17 +925,17 @@ function handleBackdropClick(event: MouseEvent) {
                   <label
                     class="block text-xs font-medium text-stone-500 uppercase tracking-wide mb-2"
                   >
-                    短信验证码
+                    {{ t('auth.modal.smsCodeLabel') }}
                   </label>
                   <input
                     v-model="smsLoginForm.smsCode"
                     type="text"
-                    placeholder="6位短信验证码"
+                    :placeholder="t('auth.modal.smsCodePlaceholder')"
                     maxlength="6"
                     class="w-full px-4 py-3 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
                   />
                   <p class="text-xs text-stone-400 mt-1">
-                    验证码已发送至
+                    {{ t('auth.modal.codeSentTo') }}
                     {{ smsLoginForm.phone.replace(/(\d{3})\d{4}(\d{4})/, '$1****$2') }}
                   </p>
                 </div>
@@ -935,7 +949,7 @@ function handleBackdropClick(event: MouseEvent) {
                     v-if="isLoading"
                     class="w-4 h-4 animate-spin"
                   />
-                  {{ isLoading ? '登录中...' : '登录' }}
+                  {{ isLoading ? t('auth.modal.loggingIn') : t('auth.login') }}
                 </button>
 
                 <div class="text-center">
@@ -945,7 +959,11 @@ function handleBackdropClick(event: MouseEvent) {
                     class="text-sm text-stone-500 hover:text-stone-900 transition-colors disabled:opacity-50"
                     @click="sendSmsCode('login')"
                   >
-                    {{ smsCountdown > 0 ? `${smsCountdown}秒后重新发送` : '重新发送验证码' }}
+                    {{
+                      smsCountdown > 0
+                        ? t('auth.modal.resendIn', { seconds: smsCountdown })
+                        : t('auth.modal.resendCaptcha')
+                    }}
                   </button>
                 </div>
               </template>
@@ -961,12 +979,12 @@ function handleBackdropClick(event: MouseEvent) {
                 <label
                   class="block text-xs font-medium text-stone-500 uppercase tracking-wide mb-2"
                 >
-                  手机号
+                  {{ t('auth.phone') }}
                 </label>
                 <input
                   v-model="forgotForm.phone"
                   type="tel"
-                  placeholder="已注册的手机号"
+                  :placeholder="t('auth.modal.phoneRegisteredPlaceholder')"
                   maxlength="11"
                   autocomplete="username"
                   :disabled="smsSent"
@@ -978,22 +996,22 @@ function handleBackdropClick(event: MouseEvent) {
                 <label
                   class="block text-xs font-medium text-stone-500 uppercase tracking-wide mb-2"
                 >
-                  验证码
+                  {{ t('auth.captcha') }}
                 </label>
                 <div class="flex gap-3 items-center">
                   <input
                     v-model="forgotForm.captcha"
                     type="text"
-                    placeholder="输入验证码"
+                    :placeholder="t('auth.modal.captchaPlaceholderShort')"
                     maxlength="4"
                     class="flex-1 px-4 py-3 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
                   />
                   <img
                     v-if="captchaImage && !captchaLoading"
                     :src="captchaImage"
-                    alt="Captcha"
+                    :alt="t('auth.captcha')"
                     class="captcha-image"
-                    title="Click to refresh"
+                    :title="t('auth.clickToRefresh')"
                     @click="refreshCaptcha"
                   />
                   <div
@@ -1024,7 +1042,7 @@ function handleBackdropClick(event: MouseEvent) {
                   v-if="smsSending"
                   class="w-4 h-4 animate-spin"
                 />
-                {{ smsSending ? '发送中...' : '发送短信验证码' }}
+                {{ smsSending ? t('auth.modal.sendingSms') : t('auth.modal.sendSmsCode') }}
               </button>
 
               <template v-if="smsSent">
@@ -1032,12 +1050,12 @@ function handleBackdropClick(event: MouseEvent) {
                   <label
                     class="block text-xs font-medium text-stone-500 uppercase tracking-wide mb-2"
                   >
-                    短信验证码
+                    {{ t('auth.modal.smsCodeLabel') }}
                   </label>
                   <input
                     v-model="forgotForm.smsCode"
                     type="text"
-                    placeholder="6位短信验证码"
+                    :placeholder="t('auth.modal.smsCodePlaceholder')"
                     maxlength="6"
                     class="w-full px-4 py-3 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
                   />
@@ -1047,13 +1065,13 @@ function handleBackdropClick(event: MouseEvent) {
                   <label
                     class="block text-xs font-medium text-stone-500 uppercase tracking-wide mb-2"
                   >
-                    新密码
+                    {{ t('auth.modal.newPassword') }}
                   </label>
                   <div class="relative">
                     <input
                       v-model="forgotForm.newPassword"
                       :type="showPassword ? 'text' : 'password'"
-                      placeholder="至少8位字符"
+                      :placeholder="t('auth.modal.passwordMinPlaceholder')"
                       autocomplete="new-password"
                       class="w-full px-4 py-3 pr-11 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
                     />
@@ -1078,13 +1096,13 @@ function handleBackdropClick(event: MouseEvent) {
                   <label
                     class="block text-xs font-medium text-stone-500 uppercase tracking-wide mb-2"
                   >
-                    确认密码
+                    {{ t('auth.modal.confirmPassword') }}
                   </label>
                   <div class="relative">
                     <input
                       v-model="forgotForm.confirmPassword"
                       :type="showConfirmPassword ? 'text' : 'password'"
-                      placeholder="再次输入新密码"
+                      :placeholder="t('auth.modal.confirmPasswordPlaceholder')"
                       autocomplete="new-password"
                       class="w-full px-4 py-3 pr-11 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
                     />
@@ -1114,7 +1132,7 @@ function handleBackdropClick(event: MouseEvent) {
                     v-if="isLoading"
                     class="w-4 h-4 animate-spin"
                   />
-                  {{ isLoading ? '重置中...' : '重置密码' }}
+                  {{ isLoading ? t('auth.modal.resetting') : t('auth.resetPassword') }}
                 </button>
 
                 <div class="text-center">
@@ -1124,7 +1142,11 @@ function handleBackdropClick(event: MouseEvent) {
                     class="text-sm text-stone-500 hover:text-stone-900 transition-colors disabled:opacity-50"
                     @click="sendSmsCode('reset')"
                   >
-                    {{ smsCountdown > 0 ? `${smsCountdown}秒后重新发送` : '重新发送验证码' }}
+                    {{
+                      smsCountdown > 0
+                        ? t('auth.modal.resendIn', { seconds: smsCountdown })
+                        : t('auth.modal.resendCaptcha')
+                    }}
                   </button>
                 </div>
               </template>
@@ -1158,53 +1180,38 @@ function handleBackdropClick(event: MouseEvent) {
   transform: scale(0.95);
 }
 
-/* Element Plus Tabs - Swiss Design Override */
-.auth-tabs {
-  --el-tabs-header-height: 44px;
-}
-
-.auth-tabs :deep(.el-tabs__header) {
-  margin: 0;
+/* Login / Register segmented control — full-width 50/50, no third-party tab layout */
+.auth-tab-switch {
+  display: flex;
+  width: 100%;
+  box-sizing: border-box;
   border-bottom: 1px solid #e7e5e4;
 }
 
-.auth-tabs :deep(.el-tabs__nav-wrap::after) {
-  display: none;
-}
-
-.auth-tabs :deep(.el-tabs__nav) {
-  width: 100%;
-  display: flex;
-}
-
-.auth-tabs :deep(.el-tabs__item) {
-  flex: 1;
-  text-align: center;
-  padding: 0;
-  height: 44px;
-  line-height: 44px;
+.auth-tab-switch__btn {
+  flex: 1 1 0;
+  min-width: 0;
+  margin: 0;
+  padding: 0.75rem 0.5rem;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: transparent;
   font-size: 14px;
   font-weight: 500;
+  line-height: 1.25;
   color: #a8a29e;
-  transition: color 0.2s;
+  text-align: center;
+  cursor: pointer;
+  transition: color 0.2s ease, border-color 0.2s ease;
 }
 
-.auth-tabs :deep(.el-tabs__item:hover) {
+.auth-tab-switch__btn:hover {
   color: #78716c;
 }
 
-.auth-tabs :deep(.el-tabs__item.is-active) {
+.auth-tab-switch__btn--active {
   color: #1c1917;
-  font-weight: 500;
-}
-
-.auth-tabs :deep(.el-tabs__active-bar) {
-  background-color: #1c1917;
-  height: 2px;
-}
-
-.auth-tabs :deep(.el-tabs__content) {
-  display: none;
+  border-bottom-color: #1c1917;
 }
 
 /* Element Plus Link Buttons - Swiss Design Override */

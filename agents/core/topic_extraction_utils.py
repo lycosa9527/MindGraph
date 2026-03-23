@@ -13,6 +13,9 @@ import logging
 import re
 import json
 
+from utils.prompt_locale import template_lang_for_registry
+from utils.prompt_output_languages import is_prompt_output_language
+
 logger = logging.getLogger(__name__)
 
 
@@ -172,7 +175,7 @@ def extract_topics_with_agent(
 
     Args:
         user_prompt (str): User's input prompt
-        language (str): Language for processing ('zh' or 'en')
+        language (str): Language for processing ('zh', 'en', or 'az'; az uses English prompts)
 
     Returns:
         tuple: (topic1, topic2) extracted topics
@@ -185,20 +188,22 @@ def extract_topics_with_agent(
         logger.error("Invalid user_prompt provided - empty or not a string")
         raise ValueError("user_prompt cannot be empty")
 
-    if not isinstance(language, str) or language not in ['zh', 'en']:
+    if not isinstance(language, str) or not is_prompt_output_language(language):
         logger.warning("Invalid language '%s', defaulting to 'zh'", language)
         language = 'zh'
+
+    registry_lang = template_lang_for_registry(language)
 
     logger.debug("Agent: Extracting topics from prompt: %s", user_prompt)
     # Create the topic extraction function
     from .prompt_helpers import create_topic_extraction_chain  # pylint: disable=import-outside-toplevel
-    topic_func = create_topic_extraction_chain(language)
+    topic_func = create_topic_extraction_chain(registry_lang)
     try:
         # Run the function directly (not a LangChain chain)
         result = topic_func(user_prompt)
         logger.debug("Agent: Topic extraction result: %s", result)
         # Parse the result using utility function
-        topics = parse_topic_extraction_result(result, language)
+        topics = parse_topic_extraction_result(result, registry_lang)
         return topics
     except Exception as e:
         logger.error("Agent: Topic extraction failed: %s", e)

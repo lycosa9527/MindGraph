@@ -26,7 +26,7 @@ import { type LLMAssignment, useDebateVerseStore } from '@/stores/debateverse'
 
 import SuggestionBubbles from '../common/SuggestionBubbles.vue'
 
-const { isZh } = useLanguage()
+const { t } = useLanguage()
 const authStore = useAuthStore()
 const store = useDebateVerseStore()
 
@@ -65,45 +65,14 @@ const canStart = computed(() => topic.value.trim().length > 0 && !isCreating.val
 const username = computed(() => authStore.user?.username || '')
 
 const roleLabel = computed(() => {
-  if (isZh.value) {
-    return userRole.value === 'viewer'
-      ? '作为观众观看'
-      : userRole.value === 'debater'
-        ? '作为辩手参与'
-        : '作为裁判评判'
-  }
-  return userRole.value === 'viewer'
-    ? 'Play as Viewer'
-    : userRole.value === 'debater'
-      ? 'Play as Debater'
-      : 'Play as Judge'
+  if (userRole.value === 'viewer') return t('debateverse.roleLabel.viewer')
+  if (userRole.value === 'debater') return t('debateverse.roleLabel.debater')
+  return t('debateverse.roleLabel.judgeRole')
 })
 
-// Debate-specific suggestions
-const debateSuggestions = computed(() => {
-  if (isZh.value) {
-    return [
-      '人工智能是否应该被赋予法律人格？',
-      '网络游戏对青少年利大于弊还是弊大于利？',
-      '应该取消高考还是保留高考？',
-      '社交媒体是否应该对用户内容进行更严格的审查？',
-      '远程办公是否应该成为主流工作方式？',
-      '是否应该对AI生成内容进行版权保护？',
-      '教育应该更注重知识传授还是能力培养？',
-      '是否应该允许基因编辑技术用于人类胚胎？',
-    ]
-  }
-  return [
-    'Should AI be granted legal personhood?',
-    'Do video games benefit or harm teenagers more?',
-    'Should college entrance exams be abolished?',
-    'Should social media platforms have stricter content moderation?',
-    'Should remote work become the mainstream?',
-    'Should AI-generated content be copyright protected?',
-    'Should education focus more on knowledge or skills?',
-    'Should gene editing be allowed for human embryos?',
-  ]
-})
+const debateSuggestions = computed(() =>
+  Array.from({ length: 8 }, (_, i) => t(`debateverse.setup.suggestion${i + 1}`))
+)
 
 // ============================================================================
 // Actions
@@ -166,11 +135,7 @@ function handleKeydown(e: Event | KeyboardEvent) {
       />
       <div class="text-center mt-6">
         <p class="debate-subtitle">
-          {{
-            isZh
-              ? `${username}你好，真正的智慧，诞生于观点的交锋。`
-              : `${username}, true wisdom is born from the clash of viewpoints.`
-          }}
+          {{ t('debateverse.setup.greeting', { username: username || '' }) }}
         </p>
       </div>
     </div>
@@ -193,7 +158,7 @@ function handleKeydown(e: Event | KeyboardEvent) {
             v-model="topic"
             type="textarea"
             :autosize="{ minRows: 1, maxRows: 4 }"
-            :placeholder="isZh ? '输入辩论主题...' : 'Enter debate topic...'"
+            :placeholder="t('debateverse.setup.topicPlaceholder')"
             :disabled="isCreating"
             class="debate-textarea"
             @keydown="handleKeydown"
@@ -221,19 +186,19 @@ function handleKeydown(e: Event | KeyboardEvent) {
                   command="viewer"
                   :class="{ 'is-selected': userRole === 'viewer' }"
                 >
-                  {{ isZh ? '作为观众观看' : 'Play as Viewer' }}
+                  {{ t('debateverse.setup.roleViewer') }}
                 </ElDropdownItem>
                 <ElDropdownItem
                   command="debater"
                   :class="{ 'is-selected': userRole === 'debater' }"
                 >
-                  {{ isZh ? '作为辩手参与' : 'Play as Debater' }}
+                  {{ t('debateverse.setup.roleDebater') }}
                 </ElDropdownItem>
                 <ElDropdownItem
                   command="judge"
                   :class="{ 'is-selected': userRole === 'judge' }"
                 >
-                  {{ isZh ? '作为裁判评判' : 'Play as Judge' }}
+                  {{ t('debateverse.setup.roleJudge') }}
                 </ElDropdownItem>
               </ElDropdownMenu>
             </template>

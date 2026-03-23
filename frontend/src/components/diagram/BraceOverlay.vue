@@ -236,7 +236,7 @@ const braceElements = computed(() => {
 })
 
 // Alternative dimensions section (like archive brace-renderer.js lines 974-1027)
-const { isZh } = useLanguage()
+const { t } = useLanguage()
 const SEPARATOR_OFFSET_Y = 15
 const ALTERNATIVE_DIMENSIONS_OFFSET_Y = 15
 const ALTERNATIVE_LABEL_FONT_SIZE = 13
@@ -255,7 +255,7 @@ const alternativeDimensions = computed(() => {
 })
 
 const alternativeDimensionsLabel = computed(() =>
-  isZh.value ? '本主题的其他可能拆解维度：' : 'Other possible dimensions for this topic:'
+  t('diagram.alternativeDimensions.braceTitle')
 )
 
 /** Archive uses simple text "• dim1  • dim2" not individual chips */

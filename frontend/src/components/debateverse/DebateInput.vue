@@ -13,7 +13,7 @@ import { Send } from 'lucide-vue-next'
 import { useLanguage } from '@/composables/useLanguage'
 import { useDebateVerseStore } from '@/stores/debateverse'
 
-const { isZh } = useLanguage()
+const { t } = useLanguage()
 const store = useDebateVerseStore()
 
 // ============================================================================
@@ -59,14 +59,12 @@ const canSend = computed(() => {
 
 const inputPlaceholder = computed(() => {
   if (isViewer.value) {
-    return isZh.value ? '你正在以观众身份观看辩论' : 'You are viewing this debate as a spectator'
+    return t('debateverse.input.spectator')
   }
   if (!store.canUserSpeak) {
-    return isZh.value ? '等待你的发言时间...' : 'Waiting for your turn to speak...'
+    return t('debateverse.input.waitTurn')
   }
-  return isZh.value
-    ? '输入你的发言... (Ctrl+Enter 发送)'
-    : 'Enter your speech... (Ctrl+Enter to send)'
+  return t('debateverse.input.speechPlaceholder')
 })
 
 // ============================================================================
@@ -143,7 +141,7 @@ function handleNext() {
             @click="handleNext"
           >
             <ArrowRight :size="18" />
-            <span class="ml-1">{{ nextButtonText || (isZh ? '下一步' : 'Next') }}</span>
+            <span class="ml-1">{{ nextButtonText || t('debateverse.next.label') }}</span>
           </ElButton>
         </div>
       </div>

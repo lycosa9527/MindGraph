@@ -25,7 +25,7 @@ const props = defineProps<{
 }>()
 
 const store = useDebateVerseStore()
-const { isZh } = useLanguage()
+const { t } = useLanguage()
 
 // ============================================================================
 // State
@@ -80,18 +80,18 @@ const roleDisplayName = computed(() => {
   if (!participant.value?.role) return ''
 
   if (participant.value.role === 'judge') {
-    return isZh.value ? '裁判' : 'Judge'
+    return t('debateverse.message.judge')
   }
 
-  const roleTranslations: Record<string, { zh: string; en: string }> = {
-    affirmative_1: { zh: '正方一辩', en: 'Affirmative 1st' },
-    affirmative_2: { zh: '正方二辩', en: 'Affirmative 2nd' },
-    negative_1: { zh: '反方一辩', en: 'Negative 1st' },
-    negative_2: { zh: '反方二辩', en: 'Negative 2nd' },
+  const roleKeys: Record<string, string> = {
+    affirmative_1: 'debateverse.message.roleAffirmative1',
+    affirmative_2: 'debateverse.message.roleAffirmative2',
+    negative_1: 'debateverse.message.roleNegative1',
+    negative_2: 'debateverse.message.roleNegative2',
   }
 
-  const translation = roleTranslations[participant.value.role]
-  return translation ? (isZh.value ? translation.zh : translation.en) : participant.value.role
+  const key = roleKeys[participant.value.role]
+  return key ? t(key) : participant.value.role
 })
 
 const md = new MarkdownIt({
@@ -197,12 +197,8 @@ const isJudge = computed(() => participant.value?.role === 'judge' || !participa
             />
             {{
               thinkingCollapsed
-                ? isZh
-                  ? '显示思考过程'
-                  : 'Show thinking'
-                : isZh
-                  ? '隐藏思考过程'
-                  : 'Hide thinking'
+                ? t('debateverse.message.showThinking')
+                : t('debateverse.message.hideThinking')
             }}
           </ElButton>
           <div

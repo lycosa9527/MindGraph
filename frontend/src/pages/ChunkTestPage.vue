@@ -30,7 +30,7 @@ import {
 import { useChunkTestDocumentsComposable } from '@/composables/useChunkTestDocuments'
 import { useLanguage } from '@/composables/useLanguage'
 
-const { isZh } = useLanguage()
+const { t } = useLanguage()
 const router = useRouter()
 
 const { data: benchmarksData, isLoading: isLoadingBenchmarks } = useBenchmarks()
@@ -109,7 +109,7 @@ const handleTestUserDocuments = async () => {
   )
 
   if (completedDocs.length === 0) {
-    notify.warning(isZh ? '没有可测试的文档' : 'No completed documents available for testing')
+    notify.warning(t('chunkTest.page.noDocsToTest'))
     return
   }
 
@@ -121,9 +121,7 @@ const handleTestUserDocuments = async () => {
       : completedDocs.map((doc: ChunkTestDocument) => doc.id)
 
   if (docIdsToTest.length === 0) {
-    notify.warning(
-      isZh ? '请选择已完成的文档进行测试' : 'Please select completed documents for testing'
-    )
+    notify.warning(t('chunkTest.page.selectCompletedDocs'))
     return
   }
 
@@ -140,7 +138,7 @@ const handleTestUserDocuments = async () => {
         ]
 
   try {
-    notify.info(isZh ? '开始测试上传文档...' : 'Starting test for uploaded documents...')
+    notify.info(t('chunkTest.page.startingUserDocTest'))
     const result = await testUserDocumentsMutation.mutateAsync({
       document_ids: docIdsToTest,
       queries,
@@ -149,19 +147,17 @@ const handleTestUserDocuments = async () => {
     if (result && result.test_id) {
       await router.push(`/chunk-test/results/${result.test_id}`)
     } else {
-      notify.error(
-        isZh ? '测试启动失败：未收到测试ID' : 'Test failed to start: No test ID received'
-      )
+      notify.error(t('chunkTest.page.testStartNoId'))
     }
   } catch (error) {
     console.error('Failed to start test:', error)
-    notify.error(error instanceof Error ? error.message : isZh ? '测试失败' : 'Test failed')
+    notify.error(error instanceof Error ? error.message : t('chunkTest.page.testFailed'))
   }
 }
 
 const handleTestAllDatasets = async () => {
   if (datasets.value.length === 0) {
-    notify.warning(isZh ? '没有可用的数据集' : 'No datasets available')
+    notify.warning(t('chunkTest.page.noDatasets'))
     return
   }
 
@@ -169,9 +165,7 @@ const handleTestAllDatasets = async () => {
   const dataset = datasets.value[0]
 
   try {
-    notify.info(
-      isZh ? `开始测试数据集: ${dataset.name}...` : `Starting test for dataset: ${dataset.name}...`
-    )
+    notify.info(t('chunkTest.page.startingDatasetTest', { name: dataset.name }))
     const result = await testBenchmarkAsyncMutation.mutateAsync({
       dataset_name: dataset.name,
     })
@@ -179,23 +173,21 @@ const handleTestAllDatasets = async () => {
     if (result && result.test_id) {
       await router.push(`/chunk-test/results/${result.test_id}`)
     } else {
-      notify.error(
-        isZh ? '测试启动失败：未收到测试ID' : 'Test failed to start: No test ID received'
-      )
+      notify.error(t('chunkTest.page.testStartNoId'))
     }
   } catch (error) {
     console.error('Failed to start test:', error)
-    notify.error(error instanceof Error ? error.message : isZh ? '测试失败' : 'Test failed')
+    notify.error(error instanceof Error ? error.message : t('chunkTest.page.testFailed'))
   }
 }
 
 const handleUpdateDatasets = async () => {
   try {
     await updateDatasetsMutation.mutateAsync()
-    notify.success(isZh ? '数据集更新成功' : 'Datasets updated successfully')
+    notify.success(t('chunkTest.page.datasetsUpdated'))
   } catch (error) {
     notify.error(
-      error instanceof Error ? error.message : isZh ? '数据集更新失败' : 'Failed to update datasets'
+      error instanceof Error ? error.message : t('chunkTest.page.datasetsUpdateFailed')
     )
   }
 }
@@ -224,7 +216,7 @@ const handleUpdateDatasets = async () => {
       <div class="mb-8">
         <div class="flex items-center justify-between mb-4">
           <h2 class="text-lg font-semibold text-stone-900">
-            {{ isZh ? '基准数据集' : 'Benchmark Datasets' }}
+            {{ t('chunkTest.page.benchmarkDatasets') }}
           </h2>
           <ElButton
             size="small"
@@ -233,7 +225,7 @@ const handleUpdateDatasets = async () => {
             @click="handleUpdateDatasets"
           >
             <ElIcon class="mr-1"><RefreshRight /></ElIcon>
-            {{ isZh ? '更新数据集' : 'Update Datasets' }}
+            {{ t('chunkTest.page.updateDatasets') }}
           </ElButton>
         </div>
         <DatasetTable
@@ -245,7 +237,7 @@ const handleUpdateDatasets = async () => {
       <!-- User Documents Section -->
       <div>
         <h2 class="text-lg font-semibold text-stone-900 mb-4">
-          {{ isZh ? '我的文档' : 'My Documents' }}
+          {{ t('chunkTest.page.myDocuments') }}
         </h2>
         <DocumentTable
           :documents="documents"

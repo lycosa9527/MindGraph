@@ -3,13 +3,21 @@
  * MindGraph App Component
  * Handles dynamic layout switching based on route meta
  */
-import { computed, defineAsyncComponent, onMounted, watch } from 'vue'
+import { computed, defineAsyncComponent, onMounted, ref, shallowRef, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+
+import { ElConfigProvider } from 'element-plus'
+import type { Language } from 'element-plus/es/locale'
+import en from 'element-plus/es/locale/lang/en'
 
 import { LoginModal } from '@/components/auth'
 import ChatMessageToast from '@/components/common/ChatMessageToast.vue'
 import VersionNotification from '@/components/common/VersionNotification.vue'
+import BrowserLocaleHintDialog from '@/components/settings/BrowserLocaleHintDialog.vue'
 import { useLanguage, useNotifications } from '@/composables'
+import { ensureFontsForLanguageCode } from '@/fonts/promptLanguageFonts'
+import { loadElementPlusLocale } from '@/i18n/elementPlusLocale'
+import { isRtlUiLocale } from '@/i18n/locales'
 import { useAuthStore, useUIStore } from '@/stores'
 
 const notify = useNotifications()
@@ -18,9 +26,32 @@ const route = useRoute()
 const router = useRouter()
 const uiStore = useUIStore()
 const authStore = useAuthStore()
-const { isZh } = useLanguage()
+const { t } = useLanguage()
 
-// Dynamically import layouts
+const elLocale = shallowRef<Language>(en)
+
+async function syncElementPlusLocale(): Promise<void> {
+  elLocale.value = await loadElementPlusLocale(uiStore.language)
+}
+
+watch(
+  () => uiStore.language,
+  () => {
+    void syncElementPlusLocale()
+  },
+  { immediate: true }
+)
+
+watch(
+  () => uiStore.promptLanguage,
+  async (code) => {
+    await ensureFontsForLanguageCode(code)
+  },
+  { immediate: true }
+)
+
+const showBrowserLocaleHint = ref(false)
+
 const layouts = {
   default: defineAsyncComponent(() => import('@/layouts/DefaultLayout.vue')),
   editor: defineAsyncComponent(() => import('@/layouts/EditorLayout.vue')),
@@ -30,13 +61,11 @@ const layouts = {
   canvas: defineAsyncComponent(() => import('@/layouts/CanvasLayout.vue')),
 }
 
-// Get current layout based on route meta
 const currentLayout = computed(() => {
   const layoutName = (route.meta.layout as keyof typeof layouts) || 'default'
   return layouts[layoutName] || layouts.default
 })
 
-// Apply theme class to document
 watch(
   () => uiStore.isDark,
   (isDark) => {
@@ -45,79 +74,88 @@ watch(
   { immediate: true }
 )
 
-// Handle successful login after session expired
+watch(
+  () => [route.meta.titleKey, uiStore.language] as const,
+  () => {
+    const raw = route.meta.titleKey
+    const key =
+      typeof raw === 'string' && raw.length > 0 ? raw : 'meta.pageTitle.default'
+    const page = t(key)
+    const brand = t('app.brandName')
+    document.title = page === key ? brand : `${page} · ${brand}`
+    document.documentElement.dir = isRtlUiLocale(uiStore.language) ? 'rtl' : 'ltr'
+  },
+  { immediate: true }
+)
+
 function handleSessionExpiredLoginSuccess() {
-  // Restore body scroll first
   document.body.style.overflow = ''
 
-  // Close the session expired modal
   authStore.closeSessionExpiredModal()
 
-  // Check for pending redirect (set when user tries to access protected route)
   const redirectPath = authStore.getAndClearPendingRedirect()
 
   if (redirectPath) {
-    // User was trying to access a protected route - navigate to it
     router.push(redirectPath).catch(() => {
-      // If push fails, try replace
       router.replace(redirectPath).catch(() => {
-        // If replace also fails, reload the page
         window.location.href = redirectPath
       })
     })
   } else {
-    // No redirect - stay on current page and refresh to reload data with new auth state
     const currentPath = router.currentRoute.value.fullPath
     router.replace(currentPath).catch(() => {
-      // If replace fails, just reload the page to ensure fresh state
       window.location.reload()
     })
   }
-
-  // Note: notification is already shown in LoginModal.vue, no need to duplicate here
 }
 
-// Check auth status on mount (non-blocking, uses cached state if available)
-// Router guard handles auth checks for protected routes
 onMounted(async () => {
-  // Silently check auth in background - uses cached user if available
-  // This ensures user data is loaded for display but doesn't block navigation
-  authStore.checkAuth().catch(() => {
-    // Ignore errors - router guard will handle auth failures for protected routes
-  })
+  await authStore.checkAuth().catch(() => false)
 
-  // Show AI content disclaimer
   setTimeout(() => {
-    notify.info(
-      isZh.value ? '内容由AI生成，请仔细甄别' : 'Content is AI-generated, please verify carefully'
-    )
+    notify.info(t('app.aiDisclaimer'))
   }, 500)
+
+  setTimeout(() => {
+    if (
+      uiStore.browserLocaleHintDismissed ||
+      uiStore.uiLanguageExplicit ||
+      uiStore.language !== 'zh'
+    ) {
+      return
+    }
+    const nav = typeof navigator !== 'undefined' ? navigator.language.toLowerCase() : ''
+    if (nav.startsWith('en') || nav.startsWith('az')) {
+      showBrowserLocaleHint.value = true
+    }
+  }, 800)
 })
 </script>
 
 <template>
-  <component :is="currentLayout">
-    <router-view v-slot="{ Component }">
-      <transition
-        name="fade"
-        mode="out-in"
-      >
-        <component :is="Component" />
-      </transition>
-    </router-view>
-  </component>
+  <ElConfigProvider :locale="elLocale">
+    <component :is="currentLayout">
+      <router-view v-slot="{ Component }">
+        <transition
+          name="fade"
+          mode="out-in"
+        >
+          <component :is="Component" />
+        </transition>
+      </router-view>
+    </component>
 
-  <!-- Global version update notification -->
-  <VersionNotification />
+    <VersionNotification />
 
-  <!-- Global in-app message toast (WeChat-style, bottom-right) -->
-  <ChatMessageToast />
+    <ChatMessageToast />
 
-  <!-- Global session expired login modal -->
-  <LoginModal
-    v-model:visible="authStore.showSessionExpiredModal"
-    @success="handleSessionExpiredLoginSuccess"
-  />
+    <LoginModal
+      v-model:visible="authStore.showSessionExpiredModal"
+      @success="handleSessionExpiredLoginSuccess"
+    />
+
+    <BrowserLocaleHintDialog v-model="showBrowserLocaleHint" />
+  </ElConfigProvider>
 </template>
 
 <style>

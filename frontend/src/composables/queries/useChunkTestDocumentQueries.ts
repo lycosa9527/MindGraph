@@ -167,18 +167,18 @@ export function useChunkTestDocuments(options?: {
  */
 export function useUploadChunkTestDocument() {
   const queryClient = useQueryClient()
-  const { isZh } = useLanguage()
+  const { t } = useLanguage()
 
   return useMutation({
     mutationKey: [...chunkTestDocumentKeys.all, 'upload'],
     mutationFn: (file: File) => uploadChunkTestDocumentAPI(file),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: chunkTestDocumentKeys.list() })
-      notify.success(isZh.value ? '文档上传成功' : 'Document uploaded successfully')
+      notify.success(t('knowledgeSpace.uploadSuccess'))
     },
     onError: (error: Error) => {
       console.error('Upload failed:', error)
-      notify.error(error.message || (isZh.value ? '文档上传失败' : 'Document upload failed'))
+      notify.error(error.message || t('knowledgeSpace.uploadFailed'))
     },
   })
 }
@@ -189,18 +189,18 @@ export function useUploadChunkTestDocument() {
  */
 export function useDeleteChunkTestDocument() {
   const queryClient = useQueryClient()
-  const { isZh } = useLanguage()
+  const { t } = useLanguage()
 
   return useMutation({
     mutationKey: [...chunkTestDocumentKeys.all, 'delete'],
     mutationFn: (documentId: number) => deleteChunkTestDocumentAPI(documentId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: chunkTestDocumentKeys.list() })
-      notify.success(isZh.value ? '文档已删除' : 'Document deleted')
+      notify.success(t('knowledgeSpace.documentDeleted'))
     },
     onError: (error: Error) => {
       console.error('Delete failed:', error)
-      notify.error(error.message || (isZh.value ? '删除失败' : 'Delete failed'))
+      notify.error(error.message || t('knowledgeSpace.deleteFailed'))
     },
   })
 }
@@ -211,7 +211,7 @@ export function useDeleteChunkTestDocument() {
  */
 export function useStartProcessingChunkTestDocuments() {
   const queryClient = useQueryClient()
-  const { isZh } = useLanguage()
+  const { t } = useLanguage()
 
   return useMutation({
     mutationKey: [...chunkTestDocumentKeys.all, 'start-processing'],
@@ -219,18 +219,14 @@ export function useStartProcessingChunkTestDocuments() {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: chunkTestDocumentKeys.list() })
       if (data.processed_count === 0) {
-        notify.info(isZh.value ? '没有待处理的文档' : 'No documents to process')
+        notify.info(t('knowledgeSpace.noPendingDocs'))
       } else {
-        notify.success(
-          isZh.value
-            ? `已开始处理 ${data.processed_count} 个文档`
-            : `Started processing ${data.processed_count} documents`
-        )
+        notify.success(t('knowledgeSpace.processingStarted', { count: data.processed_count }))
       }
     },
     onError: (error: Error) => {
       console.error('Start processing failed:', error)
-      notify.error(error.message || (isZh.value ? '启动处理失败' : 'Failed to start processing'))
+      notify.error(error.message || t('knowledgeSpace.startProcessingFailed'))
     },
   })
 }
@@ -241,7 +237,7 @@ export function useStartProcessingChunkTestDocuments() {
  */
 export function useProcessSelectedChunkTestDocuments() {
   const queryClient = useQueryClient()
-  const { isZh } = useLanguage()
+  const { t } = useLanguage()
 
   return useMutation({
     mutationKey: [...chunkTestDocumentKeys.all, 'process-selected'],
@@ -249,18 +245,14 @@ export function useProcessSelectedChunkTestDocuments() {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: chunkTestDocumentKeys.list() })
       if (data.processed_count === 0) {
-        notify.info(isZh.value ? '没有待处理的文档' : 'No documents to process')
+        notify.info(t('knowledgeSpace.noPendingDocs'))
       } else {
-        notify.success(
-          isZh.value
-            ? `已开始处理 ${data.processed_count} 个文档`
-            : `Started processing ${data.processed_count} documents`
-        )
+        notify.success(t('knowledgeSpace.processingStarted', { count: data.processed_count }))
       }
     },
     onError: (error: Error) => {
       console.error('Process selected failed:', error)
-      notify.error(error.message || (isZh.value ? '启动处理失败' : 'Failed to start processing'))
+      notify.error(error.message || t('knowledgeSpace.startProcessingFailed'))
     },
   })
 }

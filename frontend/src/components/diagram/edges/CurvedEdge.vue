@@ -16,6 +16,7 @@ import { useDiagramStore } from '@/stores'
 import { useConceptMapRelationshipStore } from '@/stores/conceptMapRelationship'
 import type { DiagramType, MindGraphEdgeData } from '@/types'
 import { splitBezierPathAtMidpoint } from '@/utils/bezierSplit'
+import { isTopicToRootConceptConnection } from '@/utils/conceptMapTopicRootEdge'
 
 const props = defineProps<EdgeProps<MindGraphEdgeData>>()
 
@@ -30,6 +31,15 @@ const { t } = useLanguage()
 const relationshipPlaceholder = computed(() => t('diagram.relationshipPlaceholder', '输入关系...'))
 
 const isConceptMap = computed(() => (props.data?.diagramType as DiagramType) === 'concept_map')
+
+/** Topic → default root concept (“根概念”): label is fixed; no inline edit */
+const isTopicRootLabelLocked = computed(() => {
+  if (!isConceptMap.value) return false
+  return isTopicToRootConceptConnection(
+    { source: props.source, target: props.target },
+    diagramStore.data?.nodes
+  )
+})
 
 const { theme } = useTheme({
   diagramType: computed(() => props.data?.diagramType as DiagramType),
@@ -53,7 +63,7 @@ watch(
 )
 
 function startEditing() {
-  if (!isConceptMap.value) return
+  if (!isConceptMap.value || isTopicRootLabelLocked.value) return
   isEditing.value = true
   editText.value = props.data?.label || ''
   useConceptMapRelationshipStore().clearAll()
@@ -61,7 +71,7 @@ function startEditing() {
 }
 
 function saveLabel() {
-  if (!isConceptMap.value) return
+  if (!isConceptMap.value || isTopicRootLabelLocked.value) return
   isEditing.value = false
   const trimmed = editText.value.trim()
   if (trimmed !== (props.data?.label || '')) {
@@ -324,13 +334,14 @@ const targetMarkerEnd = computed(() =>
           'edge-label-box': !isConceptMap,
           'pointer-events-none': !isConceptMap,
           nopan: isConceptMap,
-          'cursor-text': isConceptMap && !isEditing,
+          'cursor-text': isConceptMap && !isEditing && !isTopicRootLabelLocked,
+          'cursor-default': isConceptMap && isTopicRootLabelLocked,
         }"
         :style="{
           color: isConceptMap ? relationshipColor : undefined,
           pointerEvents: isConceptMap ? 'auto' : undefined,
         }"
-        @dblclick.stop="startEditing"
+        @dblclick.stop="startEditing()"
       >
         <span>
           <input

@@ -10,7 +10,7 @@ import { useRouter } from 'vue-router'
 import { BookOpen } from 'lucide-vue-next'
 
 import { LoginModal } from '@/components/auth'
-import { useNotifications } from '@/composables'
+import { useLanguage, useNotifications } from '@/composables'
 import { useAuthStore } from '@/stores/auth'
 import { useLibraryStore } from '@/stores/library'
 import { getLibraryDocumentCoverUrl } from '@/utils/apiClient'
@@ -19,6 +19,7 @@ const router = useRouter()
 const libraryStore = useLibraryStore()
 const authStore = useAuthStore()
 const notify = useNotifications()
+const { t } = useLanguage()
 
 const showLoginModal = ref(false)
 
@@ -55,7 +56,8 @@ onMounted(async () => {
     // Silently handle auth errors - user will see blurred empty state
     // Don't show error notification for unauthenticated users
     if (authStore.isAuthenticated) {
-      const errorMessage = error instanceof Error ? error.message : '加载文档列表失败'
+      const errorMessage =
+        error instanceof Error ? error.message : t('library.loadDocumentsFailed')
       notify.error(errorMessage)
     }
   }
@@ -66,7 +68,7 @@ watch(
   () => libraryStore.documentsError,
   (error) => {
     if (error && authStore.isAuthenticated) {
-      const errorMessage = error.message || '加载文档列表失败'
+      const errorMessage = error.message || t('library.loadDocumentsFailed')
       notify.error(errorMessage)
     }
   }
@@ -80,8 +82,8 @@ watch(
       try {
         await libraryStore.fetchDocuments(1, 20)
       } catch (error) {
-        // Handle error silently or show notification
-        const errorMessage = error instanceof Error ? error.message : '加载文档列表失败'
+        const errorMessage =
+          error instanceof Error ? error.message : t('library.loadDocumentsFailed')
         notify.error(errorMessage)
       }
     }
@@ -138,7 +140,7 @@ function handleLoginSuccess() {
   <div class="library-page flex-1 flex flex-col bg-stone-50 overflow-hidden">
     <!-- Header -->
     <div class="library-header h-14 px-4 flex items-center bg-white border-b border-stone-200">
-      <h1 class="text-sm font-semibold text-stone-900">图书馆</h1>
+      <h1 class="text-sm font-semibold text-stone-900">{{ t('sidebar.library') }}</h1>
     </div>
 
     <!-- Content -->
@@ -150,7 +152,7 @@ function handleLoginSuccess() {
         v-if="libraryStore.documentsLoading"
         class="flex items-center justify-center h-full"
       >
-        <div class="text-stone-400">加载中...</div>
+        <div class="text-stone-400">{{ t('library.loading') }}</div>
       </div>
 
       <div
@@ -158,7 +160,7 @@ function handleLoginSuccess() {
         class="flex flex-col items-center justify-center h-full text-stone-400"
       >
         <BookOpen class="w-16 h-16 mb-4 opacity-30" />
-        <p class="text-lg font-medium mb-1">加载失败</p>
+        <p class="text-lg font-medium mb-1">{{ t('library.loadFailed') }}</p>
         <p class="text-sm">{{ libraryStore.documentsError.message }}</p>
       </div>
 
@@ -169,7 +171,7 @@ function handleLoginSuccess() {
       >
         <!-- 精品案例集 Group -->
         <div v-if="premiumBooks.length > 0">
-          <h2 class="text-lg font-semibold text-stone-900 mb-3">精品案例集</h2>
+          <h2 class="text-lg font-semibold text-stone-900 mb-3">{{ t('library.premiumCollection') }}</h2>
           <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
             <div
               v-for="document in premiumBooks"
@@ -208,7 +210,7 @@ function handleLoginSuccess() {
 
         <!-- 其他 Group -->
         <div v-if="otherBooks.length > 0">
-          <h2 class="text-lg font-semibold text-stone-900 mb-3">其他</h2>
+          <h2 class="text-lg font-semibold text-stone-900 mb-3">{{ t('library.other') }}</h2>
           <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
             <div
               v-for="document in otherBooks"
@@ -252,8 +254,8 @@ function handleLoginSuccess() {
         class="flex flex-col items-center justify-center h-full text-stone-400"
       >
         <BookOpen class="w-16 h-16 mb-4 opacity-30" />
-        <p class="text-lg font-medium mb-1">暂无图书</p>
-        <p class="text-sm">图书馆中还没有PDF文档</p>
+        <p class="text-lg font-medium mb-1">{{ t('library.emptyTitle') }}</p>
+        <p class="text-sm">{{ t('library.emptySubtitle') }}</p>
       </div>
     </div>
 

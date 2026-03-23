@@ -5,9 +5,12 @@
  * Streams recommendations via SSE. Similar to useConceptMapRelationship.
  */
 import { eventBus } from '@/composables/useEventBus'
+import { ensureFontsForLanguageCode } from '@/fonts/promptLanguageFonts'
 import { useLanguage } from '@/composables/useLanguage'
 import { useNotifications } from '@/composables/useNotifications'
 import { useDiagramStore, useInlineRecommendationsStore } from '@/stores'
+
+const getInlineRecStore = () => useInlineRecommendationsStore()
 import type { DiagramType } from '@/types'
 import { authFetch } from '@/utils/api'
 
@@ -176,71 +179,82 @@ async function streamRecommendations(
   onError?: (msg: string) => void,
   signal?: AbortSignal
 ): Promise<number> {
-  const response = await authFetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-    signal,
-  })
-  if (!response.ok) {
-    onError?.(`Request failed: ${response.status}`)
-    return 0
-  }
-  const reader = response.body?.getReader()
-  if (!reader) {
-    onError?.('No response body')
-    return 0
-  }
-  const decoder = new TextDecoder()
-  let buffer = ''
+  const inlineStore = getInlineRecStore()
+  inlineStore.setStreamPhase('requesting')
   let count = 0
   try {
-    while (true) {
-      if (signal?.aborted) break
-      const chunk = await reader.read()
-      const { done, value } = chunk
-      if (done) break
-      buffer += decoder.decode(value, { stream: true })
-      const lines = buffer.split('\n')
-      buffer = lines.pop() ?? ''
-      for (const line of lines) {
-        if (!line.startsWith('data: ')) continue
-        try {
-          const data = JSON.parse(line.slice(6)) as {
-            event?: string
-            text?: string
-            message?: string
-            source_llm?: string
+    const response = await authFetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+      signal,
+    })
+    if (!response.ok) {
+      onError?.(`Request failed: ${response.status}`)
+      return 0
+    }
+    const reader = response.body?.getReader()
+    if (!reader) {
+      onError?.('No response body')
+      return 0
+    }
+    const decoder = new TextDecoder()
+    let buffer = ''
+    let firstReco = false
+    try {
+      while (true) {
+        if (signal?.aborted) break
+        const chunk = await reader.read()
+        const { done, value } = chunk
+        if (done) break
+        buffer += decoder.decode(value, { stream: true })
+        const lines = buffer.split('\n')
+        buffer = lines.pop() ?? ''
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue
+          try {
+            const data = JSON.parse(line.slice(6)) as {
+              event?: string
+              text?: string
+              message?: string
+              source_llm?: string
+            }
+            if (data.event === 'recommendation_generated' && data.text) {
+              if (!firstReco) {
+                firstReco = true
+                inlineStore.setStreamPhase('streaming')
+              }
+              count++
+              console.log(
+                `[InlineRec] #${count} from backend:`,
+                data.text,
+                data.source_llm ? `(from ${data.source_llm})` : ''
+              )
+              onText(data.text)
+            } else if (data.event === 'error' && data.message) {
+              onError?.(data.message)
+            } else if (data.event) {
+              console.debug('[InlineRec] Event:', data.event, data)
+            }
+          } catch {
+            // Skip malformed
           }
-          if (data.event === 'recommendation_generated' && data.text) {
-            count++
-            console.log(
-              `[InlineRec] #${count} from backend:`,
-              data.text,
-              data.source_llm ? `(from ${data.source_llm})` : ''
-            )
-            onText(data.text)
-          } else if (data.event === 'error' && data.message) {
-            onError?.(data.message)
-          } else if (data.event) {
-            console.debug('[InlineRec] Event:', data.event, data)
-          }
-        } catch {
-          // Skip malformed
         }
       }
+    } finally {
+      reader.releaseLock()
+      console.log(`[InlineRec] Stream complete: ${count} recommendations received from backend`)
     }
+    return count
   } finally {
-    reader.releaseLock()
-    console.log(`[InlineRec] Stream complete: ${count} recommendations received from backend`)
+    inlineStore.setStreamPhase('idle')
   }
-  return count
 }
 
 export function useInlineRecommendations() {
   const diagramStore = useDiagramStore()
   const store = useInlineRecommendationsStore()
-  const { isZh } = useLanguage()
+  const { t, promptLanguage } = useLanguage()
   const notify = useNotifications()
 
   function isGeneratingFor(nodeId: string): boolean {
@@ -353,7 +367,7 @@ export function useInlineRecommendations() {
         source: c.source,
         target: c.target,
       })),
-      language: isZh.value ? 'zh' : 'en',
+      language: promptLanguage.value,
       count: 10,
       ...(educationalContext && { educational_context: educationalContext }),
     }
@@ -370,10 +384,11 @@ export function useInlineRecommendations() {
       console.log(`[InlineRec] Store now has ${totalInStore} for ${nodeId} (latest: "${text}")`)
     }
     const onError = (msg: string) => {
-      notify.error(isZh.value ? `推荐生成失败: ${msg}` : `Recommendation failed: ${msg}`)
+      notify.error(t('notification.recommendationFailed', { msg }))
     }
 
     try {
+      await ensureFontsForLanguageCode(promptLanguage.value)
       const count = await streamRecommendations(
         INLINE_RECOMMENDATIONS_START,
         payload,
@@ -403,7 +418,7 @@ export function useInlineRecommendations() {
         return { success: false, error: 'Aborted' }
       }
       const errMsg = error instanceof Error ? error.message : 'Unknown error'
-      notify.error(isZh.value ? `推荐生成失败: ${errMsg}` : `Recommendation failed: ${errMsg}`)
+      notify.error(t('notification.recommendationFailed', { msg: errMsg }))
       return { success: false, error: errMsg }
     } finally {
       store.setStreamAbortController(null)
@@ -441,7 +456,7 @@ export function useInlineRecommendations() {
         source: c.source,
         target: c.target,
       })),
-      language: isZh.value ? 'zh' : 'en',
+      language: promptLanguage.value,
       count: 10,
       ...(educationalContext && { educational_context: educationalContext }),
     }
@@ -450,6 +465,7 @@ export function useInlineRecommendations() {
     store.setStreamAbortController(controller)
     const newOpts: string[] = []
     try {
+      await ensureFontsForLanguageCode(promptLanguage.value)
       await streamRecommendations(
         INLINE_RECOMMENDATIONS_NEXT,
         payload,

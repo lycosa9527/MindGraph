@@ -202,7 +202,7 @@ async def generate_multi_parallel(
     # Get models to use (default to all 4, Hunyuan disabled due to 5 concurrent limit)
     models = req.models if hasattr(req, 'models') and req.models else ['qwen', 'deepseek', 'kimi', 'doubao']
 
-    language = req.language.value if hasattr(req.language, 'value') else str(req.language)
+    language = req.language
     diagram_type = req.diagram_type.value if req.diagram_type and hasattr(req.diagram_type, 'value') else None
 
     logger.debug("[generate_multi_parallel] Starting parallel generation with %d models", len(models))
@@ -336,7 +336,7 @@ async def generate_multi_progressive(
     models = req.models if hasattr(req, 'models') and req.models else ['qwen', 'deepseek', 'kimi', 'doubao']
 
     # Extract language and diagram_type
-    language = req.language.value if hasattr(req.language, 'value') else str(req.language)
+    language = req.language
     diagram_type = req.diagram_type.value if req.diagram_type and hasattr(req.diagram_type, 'value') else None
 
     logger.debug(

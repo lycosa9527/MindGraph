@@ -3,16 +3,12 @@
  */
 import { nextTick } from 'vue'
 
+import { i18n } from '@/i18n'
 import { useDiagramStore, usePanelsStore } from '@/stores'
 import type { DiagramNode, DiagramType } from '@/types'
 import type { NodeSuggestion } from '@/types/panels'
 
-import {
-  BRACE_MAP_DEFAULT_SUBPARTS,
-  STAGED_DIAGRAM_TYPES,
-  getParentIdFromStageData,
-  suggestionBelongsToParent,
-} from './constants'
+import { STAGED_DIAGRAM_TYPES, getParentIdFromStageData, suggestionBelongsToParent } from './constants'
 import { getPlaceholderNodes } from './placeholderHelpers'
 import {
   type Stage2Parent,
@@ -34,7 +30,7 @@ export interface ApplySelectionContext {
   stage: string | undefined
   stageData: Record<string, unknown> | undefined
   mode: string
-  language: 'en' | 'zh'
+  language: string
   startSession: (opts?: { keepSessionId?: boolean }) => Promise<boolean>
   startSessionsForAllParents: (
     parents: Stage2Parent[],
@@ -604,7 +600,7 @@ function applyRemainder(
   }>,
   connections: Array<{ source: string; target: string }> | undefined
 ): void {
-  const { diagramStore, diagramType, stage, stageData, language } = ctx
+  const { diagramStore, diagramType, stage, stageData } = ctx
   const diagramTypeVal = normalizeDiagramType(diagramType)
   const stageDataTyped = stageData as {
     branch_id?: string
@@ -698,10 +694,11 @@ function applyRemainder(
       const stepCount = nodes.filter((n) => n.type === 'flow').length
       remainder.forEach((s, i) => {
         const stepNum = stepCount + i + 1
-        const defaultSubsteps: [string, string] =
-          language === 'zh'
-            ? [`子步骤${stepNum}.1`, `子步骤${stepNum}.2`]
-            : [`Substep ${stepNum}.1`, `Substep ${stepNum}.2`]
+        const gt = i18n.global.t as (key: string, values?: Record<string, unknown>) => string
+        const defaultSubsteps: [string, string] = [
+          gt('flowMap.defaultSubstepFirst', { n: stepNum }),
+          gt('flowMap.defaultSubstepSecond', { n: stepNum }),
+        ]
         diagramStore.addFlowMapStep(s.text, defaultSubsteps)
       })
     }
@@ -719,7 +716,11 @@ function applyRemainder(
       nodes.find((n) => n.id === 'brace-whole' || n.id === 'brace-0-0')?.id ??
       nodes.find((n) => n.type === 'topic')?.id ??
       nodes.find((n) => !targetIds.has(n.id ?? ''))?.id
-    const subpartTexts = BRACE_MAP_DEFAULT_SUBPARTS[language]
+    const gt = i18n.global.t as (key: string, values?: Record<string, unknown>) => string
+    const subpartTexts: [string, string] = [
+      gt('braceMap.defaultSubpartFirst'),
+      gt('braceMap.defaultSubpartSecond'),
+    ]
     if (stage === 'subparts' && stageData?.part_name && stageData?.part_id) {
       remainder.forEach((s) => diagramStore.addBraceMapPart(stageData.part_id as string, s.text))
     } else {

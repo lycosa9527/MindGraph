@@ -34,6 +34,11 @@ export const useInlineRecommendationsStore = defineStore('inlineRecommendations'
   const lastTopicHash = ref('')
   /** AbortController for in-flight stream */
   const streamAbortController = ref<AbortController | null>(null)
+  /**
+   * Tab rec badge (AIModelSelector): `requesting` = HTTP wait (blue ring),
+   * `streaming` = SSE tokens (green ring), `idle` = solid green (ready or finished).
+   */
+  const streamPhase = ref<'idle' | 'requesting' | 'streaming'>('idle')
 
   /** nodeId -> options for current page (first 5) */
   const options = computed(() => {
@@ -102,8 +107,13 @@ export const useInlineRecommendationsStore = defineStore('inlineRecommendations'
     }
   }
 
+  function setStreamPhase(phase: 'idle' | 'requesting' | 'streaming'): void {
+    streamPhase.value = phase
+  }
+
   function invalidateAll(): void {
     abortStream()
+    streamPhase.value = 'idle'
     const ids = Object.keys(allOptions.value)
     allOptions.value = {}
     page.value = {}
@@ -116,7 +126,10 @@ export const useInlineRecommendationsStore = defineStore('inlineRecommendations'
   }
 
   function invalidateForNode(nodeId: string): void {
-    if (nodeId in allOptions.value) abortStream()
+    if (nodeId in allOptions.value) {
+      abortStream()
+      streamPhase.value = 'idle'
+    }
     const next = { ...allOptions.value }
     const nextPage = { ...page.value }
     delete next[nodeId]
@@ -248,6 +261,8 @@ export const useInlineRecommendationsStore = defineStore('inlineRecommendations'
     canPrevPage,
     canNextPage,
     isReady,
+    streamPhase,
+    setStreamPhase,
     generatingNodeIds,
     fetchingNextBatchNodeIds,
     lastTopicHash,

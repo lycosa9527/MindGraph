@@ -36,7 +36,11 @@ const emit = defineEmits<{
   'update:selectedIds': [ids: number[]]
 }>()
 
-const { isZh } = useLanguage()
+const { t, currentLanguage } = useLanguage()
+
+const dateLocaleTag = computed(() =>
+  currentLanguage.value === 'zh' ? 'zh-CN' : currentLanguage.value === 'az' ? 'az-AZ' : 'en-US'
+)
 
 const sortedDocuments = computed(() => {
   return [...props.documents].sort((a, b) => {
@@ -47,23 +51,23 @@ const sortedDocuments = computed(() => {
 const statusConfig = (status: string) => {
   type BadgeType = 'success' | 'warning' | 'info' | 'danger'
   let type: BadgeType = 'info'
-  let text = '未知'
+  let text = t('knowledge.doc.statusUnknown')
 
   switch (status) {
     case 'pending':
-      text = isZh ? '等待处理' : 'Pending'
+      text = t('knowledge.doc.statusPending')
       type = 'info'
       break
     case 'processing':
-      text = isZh ? '处理中' : 'Processing'
+      text = t('knowledge.doc.statusProcessing')
       type = 'warning'
       break
     case 'completed':
-      text = isZh ? '已完成' : 'Completed'
+      text = t('knowledge.doc.statusCompleted')
       type = 'success'
       break
     case 'failed':
-      text = isZh ? '失败' : 'Failed'
+      text = t('knowledge.doc.statusFailed')
       type = 'danger'
       break
   }
@@ -79,7 +83,7 @@ const formatFileSize = (size: number) => {
 
 const formatDate = (dateString: string) => {
   const date = new Date(dateString)
-  return date.toLocaleDateString(isZh ? 'zh-CN' : 'en-US', {
+  return date.toLocaleDateString(dateLocaleTag.value, {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
@@ -195,11 +199,7 @@ const isRowSelected = (docId: number) => props.selectedIds.includes(docId)
     />
     <ElEmpty
       v-else-if="sortedDocuments.length === 0"
-      :description="
-        isZh
-          ? '暂无文档，请上传文档开始构建知识库'
-          : 'No documents yet. Upload documents to build your knowledge base.'
-      "
+      :description="t('knowledge.doc.emptyDescription')"
       :image-size="120"
       class="flex-1 flex items-center justify-center"
     />
@@ -208,7 +208,7 @@ const isRowSelected = (docId: number) => props.selectedIds.includes(docId)
       :data="sortedDocuments"
       stripe
       class="document-table-el"
-      :empty-text="isZh ? '暂无数据' : 'No data'"
+      :empty-text="t('knowledge.doc.noData')"
     >
       <!-- Selection Column -->
       <ElTableColumn
@@ -231,7 +231,7 @@ const isRowSelected = (docId: number) => props.selectedIds.includes(docId)
       </ElTableColumn>
 
       <ElTableColumn
-        :label="isZh ? '文档名称' : 'Document Name'"
+        :label="t('knowledge.doc.colName')"
         min-width="250"
       >
         <template #default="{ row }">
@@ -258,9 +258,7 @@ const isRowSelected = (docId: number) => props.selectedIds.includes(docId)
                   <Close />
                 </ElIcon>
                 <div class="flex-1">
-                  <span class="text-red-600 text-xs font-medium">{{
-                    isZh ? '错误：' : 'Error: '
-                  }}</span>
+                  <span class="text-red-600 text-xs font-medium">{{ t('knowledge.doc.errorPrefix') }}</span>
                   <span class="text-red-600 text-xs">{{ row.error_message }}</span>
                 </div>
               </div>
@@ -270,7 +268,7 @@ const isRowSelected = (docId: number) => props.selectedIds.includes(docId)
       </ElTableColumn>
 
       <ElTableColumn
-        :label="isZh ? '类型' : 'Type'"
+        :label="t('knowledge.doc.colType')"
         width="90"
         align="center"
       >
@@ -286,7 +284,7 @@ const isRowSelected = (docId: number) => props.selectedIds.includes(docId)
       </ElTableColumn>
 
       <ElTableColumn
-        :label="isZh ? '大小' : 'Size'"
+        :label="t('knowledge.doc.colSize')"
         width="90"
         align="right"
       >
@@ -296,7 +294,7 @@ const isRowSelected = (docId: number) => props.selectedIds.includes(docId)
       </ElTableColumn>
 
       <ElTableColumn
-        :label="isZh ? '状态' : 'Status'"
+        :label="t('knowledge.doc.colStatus')"
         width="110"
         align="center"
       >
@@ -310,7 +308,7 @@ const isRowSelected = (docId: number) => props.selectedIds.includes(docId)
       </ElTableColumn>
 
       <ElTableColumn
-        :label="isZh ? '分块数' : 'Chunks'"
+        :label="t('knowledge.doc.colChunks')"
         width="90"
         align="center"
       >
@@ -331,7 +329,7 @@ const isRowSelected = (docId: number) => props.selectedIds.includes(docId)
 
       <ElTableColumn
         v-if="showDataset"
-        :label="isZh ? '数据集' : 'Dataset'"
+        :label="t('knowledge.doc.colDataset')"
         width="120"
         align="center"
         :class-name="greyOutDataset ? 'dataset-column-greyed' : ''"
@@ -347,7 +345,7 @@ const isRowSelected = (docId: number) => props.selectedIds.includes(docId)
       </ElTableColumn>
 
       <ElTableColumn
-        :label="isZh ? '上传时间' : 'Upload Date'"
+        :label="t('knowledge.doc.colUploaded')"
         width="140"
       >
         <template #default="{ row }">
@@ -356,7 +354,7 @@ const isRowSelected = (docId: number) => props.selectedIds.includes(docId)
       </ElTableColumn>
 
       <ElTableColumn
-        :label="isZh ? '操作' : 'Actions'"
+        :label="t('knowledge.doc.colActions')"
         width="140"
         fixed="right"
         align="center"

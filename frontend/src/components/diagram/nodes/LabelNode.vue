@@ -12,14 +12,16 @@ import { useVueFlow } from '@vue-flow/core'
 import { BRANCH_NODE_HEIGHT } from '@/composables/diagrams/layoutConfig'
 import { eventBus } from '@/composables/useEventBus'
 import { translateDimension, useLanguage } from '@/composables/useLanguage'
-import { useDiagramStore } from '@/stores'
+import { useDiagramStore, useUIStore } from '@/stores'
 import type { MindGraphNodeProps } from '@/types'
+import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
 
 import InlineEditableText from './InlineEditableText.vue'
 
 const props = defineProps<MindGraphNodeProps>()
 
-const { isZh } = useLanguage()
+const { t } = useLanguage()
+const uiStore = useUIStore()
 const isPlaceholder = computed(() => props.data.isPlaceholder || !props.data.label)
 const isBridgeDimension = computed(
   () => props.data.diagramType === 'bridge_map' && props.data.isDimensionLabel
@@ -269,6 +271,7 @@ const nodeStyle = computed((): CSSProperties => {
   return {
     color: isPlaceholder.value ? '#1976d2' : isBridgeDimension ? '#1976d2' : '#1976d2',
     opacity: isPlaceholder.value ? 0.4 : isBridgeDimension ? 1 : 0.8,
+    fontFamily: props.data.style?.fontFamily || DIAGRAM_NODE_FONT_STACK,
     fontSize: `${props.data.style?.fontSize || (isBridgeDimension ? 14 : 14)}px`,
     fontStyle: props.data.style?.fontStyle || (isBridgeDimension ? 'normal' : 'italic'),
     fontWeight: props.data.style?.fontWeight || (isBridgeDimension ? 'bold' : 'normal'),
@@ -295,7 +298,7 @@ const bridgeMapDisplay = computed(() => {
     return null
   }
 
-  const labelText = isZh.value ? '类比关系:' : 'Analogy relationship:'
+  const labelText = t('diagram.labelNode.analogyRelationship')
 
   // Wrap dimension value in brackets []
   // Strip existing brackets if present to avoid double brackets
@@ -305,9 +308,7 @@ const bridgeMapDisplay = computed(() => {
   }
   const valueText = rawValue
     ? `[${rawValue}]` // Add brackets around actual value
-    : isZh.value
-      ? '[点击设置]'
-      : '[Click to set]' // Placeholder already has brackets
+    : t('diagram.labelNode.clickToSet')
 
   return {
     label: labelText,
@@ -316,42 +317,50 @@ const bridgeMapDisplay = computed(() => {
   }
 })
 
+function labeledDimensionPrefix(braceMap: boolean, dimensionValue: string): string {
+  const hasChinese = /[\u4e00-\u9fa5]/.test(dimensionValue)
+  if (hasChinese) {
+    return braceMap
+      ? t('diagram.dimension.decompositionZh')
+      : t('diagram.dimension.classificationZh')
+  }
+  if (uiStore.language === 'az') {
+    return braceMap
+      ? t('diagram.dimension.decompositionAz')
+      : t('diagram.dimension.classificationAz')
+  }
+  return braceMap
+    ? t('diagram.dimension.decompositionEn')
+    : t('diagram.dimension.classificationEn')
+}
+
 const displayText = computed(() => {
   // For bridge maps, return single string (will be handled separately in template)
   if (props.data.diagramType === 'bridge_map' && props.data.isDimensionLabel) {
     return props.data.label || ''
   }
 
+  const braceMap = props.data.diagramType === 'brace_map'
+
   if (props.data.label) {
-    // For brace_map: translate dimension to Chinese when language is zh
     const dimensionValue =
-      props.data.diagramType === 'brace_map' && isZh.value
+      braceMap && uiStore.language === 'zh'
         ? translateDimension(props.data.label, true)
         : props.data.label
-    const hasChinese = /[\u4e00-\u9fa5]/.test(dimensionValue)
-    // Brace map: decomposition dimension (part-subpart); tree map: classification dimension
-    const prefix =
-      props.data.diagramType === 'brace_map'
-        ? hasChinese
-          ? '拆解维度'
-          : 'Decomposition by'
-        : hasChinese
-          ? '分类维度'
-          : 'Classification by'
-    return `[${prefix}: ${dimensionValue}]`
+    const prefix = labeledDimensionPrefix(braceMap, dimensionValue)
+    return t('diagram.labelNode.placeholderBracket', {
+      prefix,
+      hint: dimensionValue,
+    })
   }
-  // Placeholder text - use app language; brace map: decomposition, tree map: classification
-  const placeholderPrefix =
-    props.data.diagramType === 'brace_map'
-      ? isZh.value
-        ? '拆解维度'
-        : 'Decomposition by'
-      : isZh.value
-        ? '分类维度'
-        : 'Classification by'
-  return isZh.value
-    ? `[${placeholderPrefix}: 点击填写...]`
-    : `[${placeholderPrefix}: click to specify...]`
+
+  const placeholderPrefix = braceMap
+    ? t('diagram.labelNode.emptyPrefixBrace')
+    : t('diagram.labelNode.emptyPrefixTree')
+  return t('diagram.labelNode.placeholderBracket', {
+    prefix: placeholderPrefix,
+    hint: t('diagram.labelNode.clickToFillHint'),
+  })
 })
 
 // Inline editing state
@@ -439,7 +448,6 @@ function handleEditCancel() {
   min-width: 100px;
   min-height: 24px;
   transition: opacity 0.2s ease;
-  font-family: 'Inter', 'Segoe UI', sans-serif;
 }
 
 /* Bridge map dimension labels: adaptive width and wrapping */

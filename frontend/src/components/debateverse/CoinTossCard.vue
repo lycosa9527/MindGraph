@@ -12,7 +12,7 @@ import { Coins } from 'lucide-vue-next'
 import { useLanguage } from '@/composables/useLanguage'
 import { useDebateVerseStore } from '@/stores/debateverse'
 
-const { isZh } = useLanguage()
+const { t } = useLanguage()
 const store = useDebateVerseStore()
 
 // Position generation state
@@ -222,17 +222,13 @@ onUnmounted(() => {
       <div class="flex-1">
         <!-- Stage Title -->
         <h3 class="text-sm font-semibold text-blue-900 mb-2">
-          {{ isZh ? '掷硬币阶段' : 'Coin Toss Stage' }}
+          {{ t('debateverse.coinTossStageTitle') }}
         </h3>
 
         <!-- Stage Rules/Description -->
         <div class="space-y-1.5 text-sm text-blue-700">
           <p>
-            {{
-              isZh
-                ? 'AI模型已随机分配给各个辩论角色，赛前通过掷硬币决定发言顺序或选择正反方立场'
-                : 'AI models have been randomly assigned to debate roles. Before the debate, determine speaking order or choose affirmative/negative positions through coin toss'
-            }}
+            {{ t('debateverse.coinTossRules') }}
           </p>
 
           <!-- Current Topic -->
@@ -241,7 +237,7 @@ onUnmounted(() => {
             class="mt-2 pt-2 border-t border-blue-200"
           >
             <p class="text-blue-800 font-medium">
-              <span class="font-semibold">{{ isZh ? '辩论主题：' : 'Debate Topic: ' }}</span>
+              <span class="font-semibold">{{ t('debateverse.debateTopicLabel') }}</span>
               <span>{{ store.currentSession.session.topic }}</span>
             </p>
           </div>
@@ -255,7 +251,7 @@ onUnmounted(() => {
               v-if="isGenerating"
               class="text-blue-600 italic"
             >
-              {{ isZh ? '正在生成正反方立场...' : 'Generating positions...' }}
+              {{ t('debateverse.generatingPositions') }}
             </div>
             <div
               v-else-if="affirmativePosition || negativePosition"
@@ -265,24 +261,18 @@ onUnmounted(() => {
                 v-if="affirmativePosition"
                 class="text-blue-800"
               >
-                <span class="font-semibold">{{
-                  isZh ? '正方立场：' : 'Affirmative Position: '
-                }}</span>
+                <span class="font-semibold">{{ t('debateverse.affirmativePositionLabel') }}</span>
                 <span class="whitespace-pre-wrap">{{ affirmativePosition }}</span>
               </div>
               <div
                 v-if="negativePosition"
                 class="text-blue-800"
               >
-                <span class="font-semibold">{{ isZh ? '反方立场：' : 'Negative Position: ' }}</span>
+                <span class="font-semibold">{{ t('debateverse.negativePositionLabel') }}</span>
                 <span class="whitespace-pre-wrap">{{ negativePosition }}</span>
               </div>
               <div class="text-blue-600 text-xs italic mt-2">
-                {{
-                  isZh
-                    ? '请点击下一步按钮使更改生效'
-                    : 'Please click the next button to take changes in effect'
-                }}
+                {{ t('debateverse.clickNextHint') }}
               </div>
             </div>
             <div

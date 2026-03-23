@@ -18,7 +18,7 @@ import { type ModelId, type ModelResponse, useAskOnceStore } from '@/stores/asko
 
 const store = useAskOnceStore()
 
-const { isZh } = useLanguage()
+const { t } = useLanguage()
 
 // Initialize markdown-it for rendering
 const md = new MarkdownIt({
@@ -274,12 +274,8 @@ function formatTokens(tokens: number): string {
           <span class="flex-1">
             {{
               response.status === 'streaming' && !hasContent
-                ? isZh
-                  ? '思考中...'
-                  : 'Thinking...'
-                : isZh
-                  ? '思考过程'
-                  : 'Thought process'
+                ? t('askOnce.panel.thinking')
+                : t('askOnce.panel.thoughtProcess')
             }}
           </span>
           <component
@@ -324,7 +320,7 @@ function formatTokens(tokens: number): string {
           v-else-if="response.status === 'error'"
           class="p-3 bg-red-50 text-red-600 rounded-lg"
         >
-          {{ response.error || (isZh ? '发生错误' : 'An error occurred') }}
+          {{ response.error || t('askOnce.panel.errorGeneric') }}
         </div>
 
         <!-- Placeholder -->
@@ -332,7 +328,7 @@ function formatTokens(tokens: number): string {
           v-else-if="!hasContent && response.status === 'idle'"
           class="text-gray-400 italic"
         >
-          {{ isZh ? '响应将在此显示...' : 'Response will appear here...' }}
+          {{ t('askOnce.panel.responsePlaceholder') }}
         </div>
 
         <!-- Content -->
@@ -371,11 +367,11 @@ function formatTokens(tokens: number): string {
         size="small"
         type="danger"
         text
-        :title="isZh ? '停止生成' : 'Stop generating'"
+        :title="t('askOnce.panel.stopGenerating')"
         @click="stopStream"
       >
         <Square class="w-4 h-4 mr-1" />
-        {{ isZh ? '停止' : 'Stop' }}
+        {{ t('askOnce.panel.stop') }}
       </ElButton>
       <span v-else />
 
@@ -384,7 +380,7 @@ function formatTokens(tokens: number): string {
         size="small"
         text
         :disabled="!hasContent"
-        :title="copied ? (isZh ? '已复制' : 'Copied!') : isZh ? '复制响应' : 'Copy response'"
+        :title="copied ? t('askOnce.panel.copied') : t('askOnce.panel.copyResponse')"
         @click="copyResponse"
       >
         <Check

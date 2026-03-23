@@ -12,6 +12,7 @@ import { eventBus } from '@/composables/useEventBus'
 import { useTheme } from '@/composables/useTheme'
 import type { MindGraphNodeProps } from '@/types'
 import { getBorderStyleProps } from '@/utils/borderStyleUtils'
+import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
 
 import InlineEditableText from './InlineEditableText.vue'
 
@@ -136,6 +137,7 @@ const nodeStyle = computed(() => {
   const baseStyle = {
     backgroundColor,
     color: props.data.style?.textColor || defaultStyle.value.textColor || '#ffffff',
+    fontFamily: props.data.style?.fontFamily || DIAGRAM_NODE_FONT_STACK,
     fontSize: `${props.data.style?.fontSize || defaultStyle.value.fontSize || 18}px`,
     fontWeight: props.data.style?.fontWeight || defaultStyle.value.fontWeight || 'bold',
     fontStyle: props.data.style?.fontStyle || 'normal',

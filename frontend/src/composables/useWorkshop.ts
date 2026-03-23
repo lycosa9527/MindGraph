@@ -83,7 +83,7 @@ export function useWorkshop(
 
   const authStore = useAuthStore()
   const notify = useNotifications()
-  const { isZh } = useLanguage()
+  const { t } = useLanguage()
   const router = useRouter()
 
   const isDiagramOwner = computed(() => {
@@ -188,9 +188,10 @@ export function useWorkshop(
                     String(message.user_id) !== authStore.user?.id
                   ) {
                     notify.info(
-                      isZh.value
-                        ? `${editor.username} ${editor.emoji} 正在编辑此节点`
-                        : `${editor.username} ${editor.emoji} is editing this node`
+                      t('workshopCanvas.editingNode', {
+                        username: editor.username,
+                        emoji: editor.emoji,
+                      })
                     )
                   }
 
@@ -214,9 +215,7 @@ export function useWorkshop(
                 break
               }
               participants.value = [...(participants.value || []), joinedId]
-              notify.info(
-                isZh.value ? `用户 ${message.user_id} 已加入` : `User ${message.user_id} joined`
-              )
+              notify.info(t('workshopCanvas.userJoined', { userId: String(message.user_id) }))
               break
             }
 
@@ -227,9 +226,7 @@ export function useWorkshop(
                 remoteSelectionsByUser.value.delete(leftId)
                 remoteSelectionsByUser.value = new Map(remoteSelectionsByUser.value)
               }
-              notify.info(
-                isZh.value ? `用户 ${message.user_id} 已离开` : `User ${message.user_id} left`
-              )
+              notify.info(t('workshopCanvas.userLeft', { userId: String(message.user_id) }))
               break
             }
 
@@ -256,9 +253,7 @@ export function useWorkshop(
             }
 
             case 'error':
-              notify.error(
-                message.message || (isZh.value ? '在线协作错误' : 'Collaboration error')
-              )
+              notify.error(message.message || t('workshopCanvas.errorGeneric'))
               break
 
             case 'pong':
@@ -273,11 +268,7 @@ export function useWorkshop(
       socket.onerror = (error) => {
         console.error('[WorkshopWS] WebSocket error:', error)
         isConnected.value = false
-        notify.error(
-          isZh.value
-            ? '在线协作连接错误，请检查网络连接'
-            : 'Collaboration connection error, please check your network'
-        )
+        notify.error(t('workshopCanvas.wsError'))
       }
 
       socket.onclose = (event) => {
@@ -287,23 +278,15 @@ export function useWorkshop(
         if (event.code === 4002) {
           disconnect()
           eventBus.emit('workshop:code-changed', { code: null })
-          notify.info(
-            isZh.value
-              ? '长时间未编辑图示，已返回首页'
-              : 'Returned home — no diagram edits for 30 minutes.'
-          )
+          notify.info(t('workshopCanvas.returnedHomeIdle'))
           void router.push('/mindgraph')
           return
         }
 
         // Show error notification if not a normal closure
         if (event.code !== 1000 && event.code !== 1001) {
-          const reason = event.reason || (isZh.value ? '连接已断开' : 'Connection closed')
-          notify.warning(
-            isZh.value
-              ? `在线协作连接已断开：${reason}`
-              : `Collaboration connection closed: ${reason}`
-          )
+          const reason = event.reason || t('workshopCanvas.connectionClosed')
+          notify.warning(t('workshopCanvas.connectionClosedReason', { reason }))
         }
 
         // Attempt to reconnect
@@ -318,18 +301,14 @@ export function useWorkshop(
             connect()
           }, reconnectDelay)
         } else if (reconnectAttempts.value >= maxReconnectAttempts) {
-          notify.error(
-            isZh.value
-              ? '在线协作重连失败，请刷新页面重试'
-              : 'Failed to reconnect to collaboration, please refresh the page'
-          )
+          notify.error(t('workshopCanvas.reconnectFailed'))
         }
       }
 
       ws.value = socket
     } catch (error) {
       console.error('[WorkshopWS] Failed to connect:', error)
-      notify.error(isZh.value ? '连接在线协作失败' : 'Failed to connect to collaboration')
+      notify.error(t('workshopCanvas.connectFailed'))
     }
   }
 

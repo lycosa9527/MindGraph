@@ -40,18 +40,16 @@ const store = useWorkshopChatStore()
 const isSelf = computed(() => String(props.user.id) === authStore.user?.id)
 const isAdmin = computed(() => authStore.isAdmin || authStore.isManager)
 
-type PresenceStatus = 'active' | 'idle' | 'offline'
+type PresenceStatus = 'active' | 'offline'
 
 const presence = computed<PresenceStatus>(() => {
   if (store.onlineUserIds.has(props.user.id)) return 'active'
-  if (store.idleUserIds.has(props.user.id)) return 'idle'
   return 'offline'
 })
 
 const presenceLabel = computed(() => {
   const labels: Record<PresenceStatus, string> = {
     active: t('workshop.presenceActive'),
-    idle: t('workshop.presenceIdle'),
     offline: t('workshop.presenceOffline'),
   }
   return labels[presence.value]
@@ -321,10 +319,6 @@ export default { name: 'UserCardPopover' }
 
 .user-card__presence-dot--active {
   background: hsl(143deg 55% 43%);
-}
-
-.user-card__presence-dot--idle {
-  background: hsl(38deg 85% 55%);
 }
 
 .user-card__presence-dot--offline {

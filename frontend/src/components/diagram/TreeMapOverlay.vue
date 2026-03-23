@@ -13,7 +13,7 @@ import { useDiagramStore } from '@/stores'
 
 const { viewport: vueFlowViewport, getViewport, getNodes } = useVueFlow()
 const diagramStore = useDiagramStore()
-const { isZh } = useLanguage()
+const { t } = useLanguage()
 
 const viewport = computed(() => {
   if (vueFlowViewport.value) return vueFlowViewport.value
@@ -45,7 +45,7 @@ const alternativeDimensions = computed(() => {
 })
 
 const alternativeDimensionsLabel = computed(() =>
-  isZh.value ? '本主题的其他可能分类维度：' : 'Other possible dimensions for this topic:'
+  t('diagram.alternativeDimensions.treeMapTitle')
 )
 
 const alternativeDimensionsChipsText = computed(() =>

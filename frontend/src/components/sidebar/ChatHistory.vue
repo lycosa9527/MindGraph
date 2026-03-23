@@ -33,7 +33,7 @@ const _props = defineProps<{
   isBlurred?: boolean
 }>()
 
-const { isZh } = useLanguage()
+const { t } = useLanguage()
 const _authStore = useAuthStore()
 const mindMateStore = useMindMateStore()
 
@@ -139,11 +139,11 @@ const remainingCount = computed(() => conversations.value.length - INITIAL_LIMIT
 
 // Group labels
 const groupLabels = computed(() => ({
-  pinned: isZh.value ? '置顶' : 'Pinned',
-  today: isZh.value ? '今天' : 'Today',
-  yesterday: isZh.value ? '昨天' : 'Yesterday',
-  week: isZh.value ? '上周' : 'Past Week',
-  month: isZh.value ? '上月' : 'Past Month',
+  pinned: t('sidebar.history.pinned'),
+  today: t('common.date.today'),
+  yesterday: t('common.date.yesterday'),
+  week: t('common.date.pastWeek'),
+  month: t('common.date.pastMonth'),
 }))
 
 // No need to fetch - Vue Query handles it automatically via enabled flag
@@ -160,14 +160,14 @@ async function handleRenameConversation(convId: string): Promise<void> {
 
   try {
     const result = await ElMessageBox.prompt(
-      isZh.value ? '请输入新的对话名称' : 'Enter a new name for this conversation',
-      isZh.value ? '重命名对话' : 'Rename Conversation',
+      t('sidebar.chatHistory.renamePrompt'),
+      t('sidebar.chatHistory.renameTitle'),
       {
-        confirmButtonText: isZh.value ? '确定' : 'OK',
-        cancelButtonText: isZh.value ? '取消' : 'Cancel',
+        confirmButtonText: t('common.ok'),
+        cancelButtonText: t('common.cancel'),
         inputValue: currentName,
         inputPattern: /\S+/,
-        inputErrorMessage: isZh.value ? '名称不能为空' : 'Name cannot be empty',
+        inputErrorMessage: t('sidebar.diagramHistory.nameRequired'),
       }
     )
 
@@ -190,13 +190,11 @@ async function handleRenameConversation(convId: string): Promise<void> {
 async function handleDeleteConversation(convId: string): Promise<void> {
   try {
     await ElMessageBox.confirm(
-      isZh.value
-        ? '确定要删除这个对话吗？此操作不可撤销。'
-        : 'Are you sure you want to delete this conversation? This cannot be undone.',
-      isZh.value ? '删除对话' : 'Delete Conversation',
+      t('sidebar.chatHistory.deleteConfirm'),
+      t('sidebar.chatHistory.deleteTitle'),
       {
-        confirmButtonText: isZh.value ? '删除' : 'Delete',
-        cancelButtonText: isZh.value ? '取消' : 'Cancel',
+        confirmButtonText: t('common.delete'),
+        cancelButtonText: t('common.cancel'),
         type: 'warning',
       }
     )
@@ -227,7 +225,7 @@ function toggleShowAll(): void {
     <!-- Header -->
     <div class="px-4 py-3">
       <div class="text-xs font-medium text-stone-400 uppercase tracking-wider">
-        {{ isZh ? '历史对话' : 'History' }}
+        {{ t('sidebar.chatHistory.title') }}
       </div>
     </div>
 
@@ -251,7 +249,7 @@ function toggleShowAll(): void {
         >
           <MessageCircle class="w-8 h-8 mx-auto mb-2 text-stone-300" />
           <p class="text-xs text-stone-400">
-            {{ isZh ? '暂无对话记录' : 'No conversations yet' }}
+            {{ t('sidebar.chatHistory.empty') }}
           </p>
         </div>
 
@@ -272,7 +270,7 @@ function toggleShowAll(): void {
             >
               <span class="conv-name">
                 <Pin class="w-3 h-3 inline-block mr-1 text-amber-500" />
-                {{ conv.name || (isZh ? '未命名' : 'Untitled') }}
+                {{ conv.name || t('sidebar.history.untitled') }}
               </span>
               <ElDropdown
                 trigger="click"
@@ -289,11 +287,11 @@ function toggleShowAll(): void {
                   <ElDropdownMenu>
                     <ElDropdownItem @click="handlePinConversation(conv.id)">
                       <Pin class="w-4 h-4 mr-2 text-amber-500 rotate-45" />
-                      {{ isZh ? '取消置顶' : 'Unpin' }}
+                      {{ t('sidebar.actions.unpin') }}
                     </ElDropdownItem>
                     <ElDropdownItem @click="handleRenameConversation(conv.id)">
                       <Edit3 class="w-4 h-4 mr-2" />
-                      {{ isZh ? '重命名' : 'Rename' }}
+                      {{ t('sidebar.actions.rename') }}
                     </ElDropdownItem>
                     <ElDropdownItem
                       divided
@@ -301,7 +299,7 @@ function toggleShowAll(): void {
                     >
                       <span class="delete-option">
                         <Trash2 class="w-4 h-4 mr-2" />
-                        {{ isZh ? '删除' : 'Delete' }}
+                        {{ t('sidebar.actions.delete') }}
                       </span>
                     </ElDropdownItem>
                   </ElDropdownMenu>
@@ -324,7 +322,7 @@ function toggleShowAll(): void {
               @click="handleConversationClick(conv.id, conv.name)"
             >
               <span class="conv-name">
-                {{ conv.name || (isZh ? '未命名' : 'Untitled') }}
+                {{ conv.name || t('sidebar.history.untitled') }}
               </span>
               <ElDropdown
                 trigger="click"
@@ -341,11 +339,11 @@ function toggleShowAll(): void {
                   <ElDropdownMenu>
                     <ElDropdownItem @click="handlePinConversation(conv.id)">
                       <Pin class="w-4 h-4 mr-2" />
-                      {{ isZh ? '置顶' : 'Pin to Top' }}
+                      {{ t('sidebar.actions.pinToTop') }}
                     </ElDropdownItem>
                     <ElDropdownItem @click="handleRenameConversation(conv.id)">
                       <Edit3 class="w-4 h-4 mr-2" />
-                      {{ isZh ? '重命名' : 'Rename' }}
+                      {{ t('sidebar.actions.rename') }}
                     </ElDropdownItem>
                     <ElDropdownItem
                       divided
@@ -353,7 +351,7 @@ function toggleShowAll(): void {
                     >
                       <span class="delete-option">
                         <Trash2 class="w-4 h-4 mr-2" />
-                        {{ isZh ? '删除' : 'Delete' }}
+                        {{ t('sidebar.actions.delete') }}
                       </span>
                     </ElDropdownItem>
                   </ElDropdownMenu>
@@ -376,7 +374,7 @@ function toggleShowAll(): void {
               @click="handleConversationClick(conv.id, conv.name)"
             >
               <span class="conv-name">
-                {{ conv.name || (isZh ? '未命名' : 'Untitled') }}
+                {{ conv.name || t('sidebar.history.untitled') }}
               </span>
               <ElDropdown
                 trigger="click"
@@ -393,11 +391,11 @@ function toggleShowAll(): void {
                   <ElDropdownMenu>
                     <ElDropdownItem @click="handlePinConversation(conv.id)">
                       <Pin class="w-4 h-4 mr-2" />
-                      {{ isZh ? '置顶' : 'Pin to Top' }}
+                      {{ t('sidebar.actions.pinToTop') }}
                     </ElDropdownItem>
                     <ElDropdownItem @click="handleRenameConversation(conv.id)">
                       <Edit3 class="w-4 h-4 mr-2" />
-                      {{ isZh ? '重命名' : 'Rename' }}
+                      {{ t('sidebar.actions.rename') }}
                     </ElDropdownItem>
                     <ElDropdownItem
                       divided
@@ -405,7 +403,7 @@ function toggleShowAll(): void {
                     >
                       <span class="delete-option">
                         <Trash2 class="w-4 h-4 mr-2" />
-                        {{ isZh ? '删除' : 'Delete' }}
+                        {{ t('sidebar.actions.delete') }}
                       </span>
                     </ElDropdownItem>
                   </ElDropdownMenu>
@@ -428,7 +426,7 @@ function toggleShowAll(): void {
               @click="handleConversationClick(conv.id, conv.name)"
             >
               <span class="conv-name">
-                {{ conv.name || (isZh ? '未命名' : 'Untitled') }}
+                {{ conv.name || t('sidebar.history.untitled') }}
               </span>
               <ElDropdown
                 trigger="click"
@@ -445,11 +443,11 @@ function toggleShowAll(): void {
                   <ElDropdownMenu>
                     <ElDropdownItem @click="handlePinConversation(conv.id)">
                       <Pin class="w-4 h-4 mr-2" />
-                      {{ isZh ? '置顶' : 'Pin to Top' }}
+                      {{ t('sidebar.actions.pinToTop') }}
                     </ElDropdownItem>
                     <ElDropdownItem @click="handleRenameConversation(conv.id)">
                       <Edit3 class="w-4 h-4 mr-2" />
-                      {{ isZh ? '重命名' : 'Rename' }}
+                      {{ t('sidebar.actions.rename') }}
                     </ElDropdownItem>
                     <ElDropdownItem
                       divided
@@ -457,7 +455,7 @@ function toggleShowAll(): void {
                     >
                       <span class="delete-option">
                         <Trash2 class="w-4 h-4 mr-2" />
-                        {{ isZh ? '删除' : 'Delete' }}
+                        {{ t('sidebar.actions.delete') }}
                       </span>
                     </ElDropdownItem>
                   </ElDropdownMenu>
@@ -480,7 +478,7 @@ function toggleShowAll(): void {
               @click="handleConversationClick(conv.id, conv.name)"
             >
               <span class="conv-name">
-                {{ conv.name || (isZh ? '未命名' : 'Untitled') }}
+                {{ conv.name || t('sidebar.history.untitled') }}
               </span>
               <ElDropdown
                 trigger="click"
@@ -497,11 +495,11 @@ function toggleShowAll(): void {
                   <ElDropdownMenu>
                     <ElDropdownItem @click="handlePinConversation(conv.id)">
                       <Pin class="w-4 h-4 mr-2" />
-                      {{ isZh ? '置顶' : 'Pin to Top' }}
+                      {{ t('sidebar.actions.pinToTop') }}
                     </ElDropdownItem>
                     <ElDropdownItem @click="handleRenameConversation(conv.id)">
                       <Edit3 class="w-4 h-4 mr-2" />
-                      {{ isZh ? '重命名' : 'Rename' }}
+                      {{ t('sidebar.actions.rename') }}
                     </ElDropdownItem>
                     <ElDropdownItem
                       divided
@@ -509,7 +507,7 @@ function toggleShowAll(): void {
                     >
                       <span class="delete-option">
                         <Trash2 class="w-4 h-4 mr-2" />
-                        {{ isZh ? '删除' : 'Delete' }}
+                        {{ t('sidebar.actions.delete') }}
                       </span>
                     </ElDropdownItem>
                   </ElDropdownMenu>
@@ -524,7 +522,7 @@ function toggleShowAll(): void {
             class="show-more-btn"
             @click="toggleShowAll"
           >
-            {{ isZh ? `显示更多 (${remainingCount})` : `Show more (${remainingCount})` }}
+            {{ t('sidebar.actions.showMore', { n: remainingCount }) }}
           </button>
 
           <!-- Show Less button -->
@@ -533,7 +531,7 @@ function toggleShowAll(): void {
             class="show-more-btn"
             @click="toggleShowAll"
           >
-            {{ isZh ? '收起' : 'Show less' }}
+            {{ t('sidebar.actions.showLess') }}
           </button>
         </template>
       </div>
@@ -551,7 +549,7 @@ function toggleShowAll(): void {
           <Lock class="w-5 h-5 text-stone-400" />
         </div>
         <p class="text-xs text-stone-500">
-          {{ isZh ? '登录后查看历史对话' : 'Login to view history' }}
+          {{ t('sidebar.chatHistory.loginPrompt') }}
         </p>
       </div>
     </div>

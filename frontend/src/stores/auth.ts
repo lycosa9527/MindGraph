@@ -17,8 +17,9 @@ import { useQueryClient } from '@tanstack/vue-query'
 
 import { notify } from '@/composables/notifications'
 import { difyKeys } from '@/composables/queries/difyKeys'
-import { translations } from '@/composables/useLanguage'
+import { i18n } from '@/i18n'
 import { useUIStore } from '@/stores/ui'
+import type { Language, PromptLanguage } from '@/stores/ui'
 import type {
   AuthMode,
   BackendUser,
@@ -54,9 +55,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   // Helper to get translated message
   function getTranslatedMessage(key: string): string {
-    const uiStore = useUIStore()
-    const dict = translations[uiStore.language]
-    return dict[key] || key
+    return i18n.global.t(key) as string
   }
 
   // State
@@ -73,6 +72,9 @@ export const useAuthStore = defineStore('auth', () => {
   const isCheckingAuth = ref(false) // Prevent duplicate concurrent checkAuth calls
   const lastSessionCheckTime = ref<number>(0) // Track last session status check to prevent rapid-fire calls
   const hasVerifiedAuthThisSession = ref(false) // Track if we've verified auth with server in this session
+  /** Avoid duplicate PATCH when seeding DB from client for users with no saved server prefs. */
+  const languagePrefsSeededForUserId = ref<string | null>(null)
+  let languagePrefsSeedInFlight = false
 
   // Getters
   const isAuthenticated = computed(() => !!user.value)
@@ -148,7 +150,35 @@ export const useAuthStore = defineStore('auth', () => {
       avatar,
       createdAt: backendUser.created_at || backendUser.createdAt,
       lastLogin: backendUser.last_login || backendUser.lastLogin,
+      uiLanguage: backendUser.ui_language ?? null,
+      promptLanguage: backendUser.prompt_language ?? null,
     }
+  }
+
+  function applyUserLanguageFromProfile(target: User): void {
+    const uiStore = useUIStore()
+    if (target.uiLanguage != null || target.promptLanguage != null) {
+      languagePrefsSeededForUserId.value = null
+      uiStore.applyLanguageFromServerProfile(target.uiLanguage ?? null, target.promptLanguage ?? null)
+      return
+    }
+    if (languagePrefsSeededForUserId.value === target.id) {
+      return
+    }
+    if (languagePrefsSeedInFlight) {
+      return
+    }
+    languagePrefsSeedInFlight = true
+    void (async () => {
+      try {
+        const ok = await saveLanguagePreferences(uiStore.language, uiStore.promptLanguage)
+        if (ok) {
+          languagePrefsSeededForUserId.value = target.id
+        }
+      } finally {
+        languagePrefsSeedInFlight = false
+      }
+    })()
   }
 
   function setUser(newUser: User | BackendUser): void {
@@ -162,6 +192,41 @@ export const useAuthStore = defineStore('auth', () => {
     const queryClient = getQueryClient()
     if (queryClient) {
       queryClient.invalidateQueries({ queryKey: difyKeys.all })
+    }
+
+    applyUserLanguageFromProfile(normalizedUser)
+  }
+
+  async function saveLanguagePreferences(ui: Language, prompt: PromptLanguage): Promise<boolean> {
+    try {
+      const response = await fetch(`${API_BASE}/language-preferences`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ ui_language: ui, prompt_language: prompt }),
+      })
+      const data = (await response.json().catch(() => ({}))) as {
+        detail?: string
+        ui_language?: string | null
+        prompt_language?: string | null
+      }
+      if (!response.ok) {
+        notify.error(typeof data.detail === 'string' ? data.detail : 'Failed to save preferences')
+        return false
+      }
+      if (user.value) {
+        const next: User = {
+          ...user.value,
+          uiLanguage: data.ui_language ?? ui,
+          promptLanguage: data.prompt_language ?? prompt,
+        }
+        user.value = next
+        sessionStorage.setItem(USER_KEY, JSON.stringify(next))
+      }
+      return true
+    } catch {
+      notify.error('Failed to save preferences')
+      return false
     }
   }
 
@@ -181,6 +246,8 @@ export const useAuthStore = defineStore('auth', () => {
     token.value = null
     mode.value = 'standard'
     hasVerifiedAuthThisSession.value = false // Reset verification flag
+    languagePrefsSeededForUserId.value = null
+    languagePrefsSeedInFlight = false
     // Clear sessionStorage
     sessionStorage.removeItem(USER_KEY)
     sessionStorage.removeItem(MODE_KEY)
@@ -531,6 +598,8 @@ export const useAuthStore = defineStore('auth', () => {
     // Clear auth state without redirect (unlike logout)
     user.value = null
     token.value = null
+    languagePrefsSeededForUserId.value = null
+    languagePrefsSeedInFlight = false
     sessionStorage.removeItem(USER_KEY)
     // Clear any legacy localStorage
     localStorage.removeItem('access_token')
@@ -638,5 +707,6 @@ export const useAuthStore = defineStore('auth', () => {
     refreshAccessToken,
     setPendingRedirect,
     getAndClearPendingRedirect,
+    saveLanguagePreferences,
   }
 })

@@ -78,7 +78,7 @@ async def generate_graph(
 
     request_id = f"gen_{int(time.time()*1000)}"
     llm_model = req.llm.value if hasattr(req.llm, 'value') else str(req.llm)
-    language = req.language.value if hasattr(req.language, 'value') else str(req.language)
+    language = req.language
 
     logger.debug(
         "[%s] Request: llm=%r, language=%r, diagram_type=%s",

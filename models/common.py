@@ -42,3 +42,4 @@ class Language(str, Enum):
     """Supported languages"""
     ZH = "zh"
     EN = "en"
+    AZ = "az"

@@ -22,6 +22,8 @@ from models.domain.auth import User
 from models.requests.requests_diagram import (
     FocusQuestionReviewRequest,
     FocusQuestionSuggestionsRequest,
+    RootConceptGenerateRequest,
+    RootConceptSuggestionsRequest,
 )
 from prompts import get_prompt
 from services.llm import llm_service
@@ -34,6 +36,7 @@ router = APIRouter(prefix="/concept_map", tags=["concept_map"])
 FOCUS_MODELS: Tuple[str, ...] = ("qwen", "deepseek", "doubao")
 FOCUS_SUGGESTION_COUNT = 5
 FOCUS_REASON_MAX_LEN = 4000
+ROOT_CONCEPT_MODEL = "deepseek"
 
 
 def _sse_data(obj: Dict[str, Any]) -> str:
@@ -66,6 +69,24 @@ def _avoid_section(avoid: Optional[List[str]], lang: str) -> str:
     )
 
 
+def _avoid_section_root(avoid: Optional[List[str]], lang: str) -> str:
+    if not avoid:
+        return ""
+    lines = "\n".join(f"- {a}" for a in avoid[:50])
+    if lang == "zh":
+        return (
+            "以下备选根概念已在界面上出现过，请再给出 5 条**不同**的新备选"
+            "（勿重复或仅微调同义重复）：\n"
+            + lines
+            + "\n"
+        )
+    return (
+        "These root alternatives were already shown; produce 5 **new** distinct options:\n"
+        + lines
+        + "\n"
+    )
+
+
 def _get_validate_prompts(lang: str) -> Tuple[str, str]:
     system = get_prompt("concept_map_focus_validate", lang, "system")
     user_tmpl = get_prompt("concept_map_focus_validate", lang, "user")
@@ -82,6 +103,35 @@ def _get_suggestions_prompts(lang: str) -> Tuple[str, str]:
         logger.error("[FocusQuestion] Missing suggestions prompts for language=%s", lang)
         raise HTTPException(status_code=500, detail="prompt_configuration_error")
     return system, user_tmpl
+
+
+def _get_root_concept_prompts(lang: str) -> Tuple[str, str]:
+    system = get_prompt("concept_map_root_concept", lang, "system")
+    user_tmpl = get_prompt("concept_map_root_concept", lang, "user")
+    if not system.strip() or not user_tmpl.strip():
+        logger.error("[RootConcept] Missing prompts for language=%s", lang)
+        raise HTTPException(status_code=500, detail="prompt_configuration_error")
+    return system, user_tmpl
+
+
+def _get_root_suggestions_prompts(lang: str) -> Tuple[str, str]:
+    system = get_prompt("concept_map_root_concept_suggestions", lang, "system")
+    user_tmpl = get_prompt("concept_map_root_concept_suggestions", lang, "user")
+    if not system.strip() or not user_tmpl.strip():
+        logger.error("[RootConcept] Missing suggestions prompts for language=%s", lang)
+        raise HTTPException(status_code=500, detail="prompt_configuration_error")
+    return system, user_tmpl
+
+
+def _normalize_root_concept_response(parsed: Dict[str, Any]) -> Dict[str, str]:
+    rec = str(parsed.get("recommended_root_concept", "")).strip()
+    reason = str(parsed.get("brief_reason", "")).strip()
+    if not rec:
+        raise ValueError("empty recommended_root_concept")
+    return {
+        "recommended_root_concept": rec[:400],
+        "brief_reason": reason[:4000],
+    }
 
 
 def _strip_code_fence(text: str) -> str:
@@ -137,6 +187,26 @@ def _normalize_suggestions(parsed: Dict[str, Any], lang: str) -> List[str]:
                     out.append(s)
     while len(out) < FOCUS_SUGGESTION_COUNT:
         out.append(_pad_suggestion(lang))
+    return out[:FOCUS_SUGGESTION_COUNT]
+
+
+def _pad_root_suggestion(lang: str) -> str:
+    if lang == "zh":
+        return "请提供简洁的候选根概念名称。"
+    return "Provide a concise candidate root concept name."
+
+
+def _normalize_root_suggestions(parsed: Dict[str, Any], lang: str) -> List[str]:
+    raw = parsed.get("suggestions")
+    out: List[str] = []
+    if isinstance(raw, list):
+        for item in raw:
+            if isinstance(item, str):
+                s = item.strip()
+                if s:
+                    out.append(s)
+    while len(out) < FOCUS_SUGGESTION_COUNT:
+        out.append(_pad_root_suggestion(lang))
     return out[:FOCUS_SUGGESTION_COUNT]
 
 
@@ -251,6 +321,91 @@ async def _suggestions_for_model_task(
         }
 
 
+async def _root_suggestions_for_model_task(
+    model: str,
+    question: str,
+    lang: str,
+    avoid: Optional[List[str]],
+    user_id: int,
+    organization_id: Optional[int],
+) -> Dict[str, Any]:
+    system, user_tmpl = _get_root_suggestions_prompts(lang)
+    user = user_tmpl.format(
+        question=question,
+        avoid_section=_avoid_section_root(avoid, lang),
+    )
+    try:
+        raw = await _chat_completion(
+            model,
+            system,
+            user,
+            user_id,
+            organization_id,
+            "/api/concept_map/root_concept/suggestions/stream",
+            "concept_map_root_concept_suggestions",
+            1600,
+        )
+        if not raw.strip():
+            raise ValueError("empty_response")
+        parsed = _parse_json_object(raw)
+        suggestions = _normalize_root_suggestions(parsed, lang)
+        return {
+            "event": "model_suggestions",
+            "model": model,
+            "suggestions": suggestions,
+        }
+    except Exception as exc:
+        logger.warning("[RootConcept] suggestions model=%s: %s", model, exc)
+        return {
+            "event": "model_error",
+            "model": model,
+            "message": str(exc)[:500],
+        }
+
+
+@router.post("/root_concept/generate")
+async def root_concept_generate(
+    req: RootConceptGenerateRequest,
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Given the focus question, propose a single root concept (Novak theory) using DeepSeek.
+    Used when the user presses Tab while editing the root concept node.
+    """
+    question = req.question.strip()
+    if not question:
+        raise HTTPException(status_code=400, detail="question required")
+    lang = req.language
+    user_id = current_user.id
+    org_id = getattr(current_user, "organization_id", None)
+    system, user_tmpl = _get_root_concept_prompts(lang)
+    user = user_tmpl.replace("{focus_question}", question)
+    try:
+        raw = await _chat_completion(
+            ROOT_CONCEPT_MODEL,
+            system,
+            user,
+            user_id,
+            org_id,
+            "/api/concept_map/root_concept/generate",
+            "concept_map_root_concept",
+            3200,
+        )
+        if not raw.strip():
+            raise ValueError("empty_response")
+        parsed = _parse_json_object(raw)
+        norm = _normalize_root_concept_response(parsed)
+        return JSONResponse(norm)
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.warning("[RootConcept] generate failed: %s", exc)
+        raise HTTPException(
+            status_code=500,
+            detail=str(exc)[:500],
+        ) from exc
+
+
 @router.post("/focus_question_review/validate")
 async def focus_question_validate(
     req: FocusQuestionReviewRequest,
@@ -332,6 +487,78 @@ async def focus_question_suggestions_stream(
             yield _sse_data({"event": "end"})
         except Exception as exc:
             logger.error("[FocusQuestion] suggestions stream: %s", exc, exc_info=True)
+            yield _sse_data({"event": "error", "message": str(exc)[:500]})
+
+    return StreamingResponse(
+        event_gen(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
+    )
+
+
+@router.post("/root_concept/suggestions/stream")
+async def root_concept_suggestions_stream(
+    req: RootConceptSuggestionsRequest,
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Stream root-concept batches: each model completes independently (SSE event per model).
+
+    Events:
+    - ``model_suggestions``: {event, model, suggestions: [5 strings]}
+    - ``model_error``: {event, model, message}
+    - ``end``: batch wave finished
+    """
+    question = req.question.strip()
+    if not question:
+        raise HTTPException(status_code=400, detail="question required")
+    lang = req.language
+    avoid = req.avoid
+    user_id = current_user.id
+    org_id = getattr(current_user, "organization_id", None)
+
+    async def event_gen() -> AsyncIterator[str]:
+        tasks = {
+            asyncio.create_task(
+                _root_suggestions_for_model_task(
+                    m, question, lang, avoid, user_id, org_id
+                )
+            ): m
+            for m in FOCUS_MODELS
+        }
+        try:
+            while tasks:
+                done, _ = await asyncio.wait(
+                    tasks.keys(),
+                    return_when=asyncio.FIRST_COMPLETED,
+                )
+                for finished in done:
+                    _model = tasks.pop(finished)
+                    try:
+                        payload = await finished
+                    except Exception as exc:
+                        logger.error(
+                            "[RootConcept] suggestions task %s: %s",
+                            _model,
+                            exc,
+                            exc_info=True,
+                        )
+                        yield _sse_data(
+                            {
+                                "event": "model_error",
+                                "model": _model,
+                                "message": str(exc)[:500],
+                            }
+                        )
+                        continue
+                    yield _sse_data(payload)
+            yield _sse_data({"event": "end"})
+        except Exception as exc:
+            logger.error("[RootConcept] suggestions stream: %s", exc, exc_info=True)
             yield _sse_data({"event": "error", "message": str(exc)[:500]})
 
     return StreamingResponse(

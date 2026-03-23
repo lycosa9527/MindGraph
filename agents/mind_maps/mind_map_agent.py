@@ -29,13 +29,13 @@ from agents.core.agent_utils import extract_json_from_response
 from config.settings import Config
 from prompts import get_prompt
 from services.llm import llm_service
+from utils.text_width_estimate import estimate_text_width_px
 
 
 logger = logging.getLogger(__name__)
 
 
 
-@dataclass
 @dataclass
 class NodePosition:
     """Data structure for node positioning"""
@@ -2184,71 +2184,12 @@ class MindMapAgent(BaseAgent):
         if not text:
             return 0
 
-        # Use cache key to avoid expensive character-by-character calculation
         cache_key = (text, font_size)
         if cache_key in self._text_width_cache:
             return self._text_width_cache[cache_key]
 
-        # Enhanced text width calculation with better symbol and Unicode support
-        total_width = 0
-        for char in text:
-            if char.isupper():
-                # Uppercase letters are wider
-                char_width = font_size * 0.8
-            elif char.islower():
-                # Lowercase letters are narrower
-                char_width = font_size * 0.6
-            elif char.isdigit():
-                # Numbers are medium width
-                char_width = font_size * 0.7
-            elif char in '.,;:!?':
-                # Punctuation is narrow
-                char_width = font_size * 0.3
-            elif char in 'MW':
-                # Wide characters
-                char_width = font_size * 1.0
-            elif char in 'il|':
-                # Narrow characters
-                char_width = font_size * 0.3
-            elif char in '()[]{}':
-                # Brackets and parentheses
-                char_width = font_size * 0.4
-            elif char in '+-*/=<>':
-                # Math and comparison symbols
-                char_width = font_size * 0.6
-            elif char in '&@#$%':
-                # Special symbols
-                char_width = font_size * 0.7
-            elif char in '/\\':
-                # Slashes
-                char_width = font_size * 0.4
-            elif char == ' ':
-                # Spaces
-                char_width = font_size * 0.3
-            elif ord(char) > 127:
-                # Unicode characters (Chinese, Japanese, etc.) are typically wider
-                if ord(char) >= 0x4e00 and ord(char) <= 0x9fff:
-                    # Chinese characters (CJK Unified Ideographs)
-                    char_width = font_size * 1.2
-                elif ord(char) >= 0x3040 and ord(char) <= 0x309f:
-                    # Japanese Hiragana
-                    char_width = font_size * 1.1
-                elif ord(char) >= 0x30a0 and ord(char) <= 0x30ff:
-                    # Japanese Katakana
-                    char_width = font_size * 1.1
-                else:
-                    # Other Unicode characters
-                    char_width = font_size * 0.8
-            else:
-                # Default for other characters
-                char_width = font_size * 0.7
+        total_width = estimate_text_width_px(text, float(font_size), is_topic=False)
 
-            total_width += char_width
-
-        # Add a small amount for character spacing
-        total_width += len(text) * 2
-
-        # Cache the result
         self._text_width_cache[cache_key] = total_width
         return total_width
 

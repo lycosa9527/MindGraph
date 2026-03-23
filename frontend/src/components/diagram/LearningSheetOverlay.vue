@@ -14,7 +14,7 @@ import { measureTextWidth } from '@/stores/specLoader/textMeasurement'
 
 const { viewport: vueFlowViewport, getViewport, getNodes } = useVueFlow()
 const diagramStore = useDiagramStore()
-const { isZh } = useLanguage()
+const { t } = useLanguage()
 
 const viewport = computed(() => vueFlowViewport.value ?? getViewport())
 
@@ -72,7 +72,7 @@ const separatorLine = computed(() => {
   return { x1: minX, y1: separatorY, x2: maxX, y2: separatorY }
 })
 
-const answersLabel = computed(() => (isZh.value ? '参考答案:' : 'Answers:'))
+const answersLabel = computed(() => t('diagram.learningSheet.answersLabel'))
 
 const answerSectionPosition = computed(() => {
   if (!separatorLine.value) return null

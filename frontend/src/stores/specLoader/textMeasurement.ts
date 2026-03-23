@@ -1,11 +1,17 @@
 /**
  * DOM-based text measurement for circle map nodes
  * Finds fontSize so text fits inside a circle (no truncation).
- * Supports wrap (CJK) and no-wrap (English/numbers); no-wrap fits by width.
+ * Wrap vs no-wrap uses prefersNoWrapWidthFitForCircleMap (Latin/Cyrillic vs CJK/Arabic/Thai…).
  */
 
-const FONT_FAMILY =
-  "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif"
+import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
+
+import {
+  estimateTextWidthFallbackPx,
+  prefersNoWrapWidthFitForCircleMap,
+} from './textMeasurementFallback'
+
+const MEASURE_FONT_FAMILY = DIAGRAM_NODE_FONT_STACK
 const MIN_FONT_SIZE = 6
 const TOPIC_DEFAULT_FONT_SIZE = 20
 const CONTEXT_DEFAULT_FONT_SIZE = 14
@@ -26,8 +32,13 @@ const TOPIC_CIRCLE_INNER_PADDING = 10
 
 let measureEl: HTMLDivElement | null = null
 
-function getMeasureEl(): HTMLDivElement {
+function applyMeasureFontFamily(el: HTMLDivElement, fontFamily?: string): void {
+  el.style.fontFamily = fontFamily ?? MEASURE_FONT_FAMILY
+}
+
+function getMeasureEl(fontFamily?: string): HTMLDivElement {
   if (measureEl && document.body.contains(measureEl)) {
+    applyMeasureFontFamily(measureEl, fontFamily)
     return measureEl
   }
   measureEl = document.createElement('div')
@@ -45,9 +56,26 @@ function getMeasureEl(): HTMLDivElement {
     'line-height:1.4',
     'box-sizing:border-box',
   ].join(';')
-  measureEl.style.fontFamily = FONT_FAMILY
+  applyMeasureFontFamily(measureEl, fontFamily)
   document.body.appendChild(measureEl)
   return measureEl
+}
+
+/**
+ * Await `document.fonts.ready` so Canvas/TextMeasure uses loaded @font-face metrics.
+ * Prefer {@link ensureFontsForLanguageCode} from `@/fonts/promptLanguageFonts` for diagram work:
+ * it loads script Fontsource chunks for the prompt language and already awaits `fonts.ready` at the end.
+ * Use this helper only when you need `fonts.ready` without a language-specific load (rare).
+ */
+export async function prepareDiagramTextMeasurement(): Promise<void> {
+  if (typeof document === 'undefined' || !document.fonts?.ready) {
+    return
+  }
+  try {
+    await document.fonts.ready
+  } catch {
+    /* ignore */
+  }
 }
 
 export interface MeasureTextFitOptions {
@@ -57,10 +85,13 @@ export interface MeasureTextFitOptions {
   isTopic: boolean
   /** Font size to try (default: theme default) */
   fontSize?: number
+  /** Optional override; defaults to diagram multiscript stack */
+  fontFamily?: string
 }
 
 /**
  * True when text is mostly ASCII (English, digits, common punct.); use no-wrap + width-based fit.
+ * @deprecated Prefer prefersNoWrapWidthFitForCircleMap for circle-map routing; kept for callers/tests.
  */
 export function isMostlyAscii(text: string): boolean {
   const t = (text || '').trim()
@@ -70,6 +101,29 @@ export function isMostlyAscii(text: string): boolean {
     if (t.charCodeAt(i) < 128) ascii++
   }
   return ascii / t.length >= 0.8
+}
+
+export { prefersNoWrapWidthFitForCircleMap }
+
+/**
+ * Single-line labels: nowrap when measured width (+ padding) fits within maxWidthPx. Uses diagram font stack.
+ */
+export function shouldPreferSingleLineNoWrap(
+  text: string,
+  maxWidthPx: number,
+  fontSizePx: number,
+  options?: {
+    fontWeight?: string
+    horizontalPaddingPx?: number
+    fontFamily?: string
+  }
+): boolean {
+  const pad = options?.horizontalPaddingPx ?? 8
+  const w = measureTextWidth(text || ' ', fontSizePx, {
+    fontWeight: options?.fontWeight ?? 'normal',
+    fontFamily: options?.fontFamily,
+  })
+  return w + pad <= maxWidthPx
 }
 
 /**
@@ -87,12 +141,13 @@ export function measureTextFitsInCircle(
     diameterPx,
     isTopic,
     fontSize = isTopic ? TOPIC_DEFAULT_FONT_SIZE : CONTEXT_DEFAULT_FONT_SIZE,
+    fontFamily,
   } = options
   const border = isTopic ? BORDER_TOPIC : BORDER_CONTEXT
   const effectiveHeight = diameterPx - 2 * border
   const maxW = Math.max(1, diameterPx - MAX_WIDTH_OFFSET - 2 * border)
   const t = (text || '').trim() || ' '
-  const el = getMeasureEl()
+  const el = getMeasureEl(fontFamily)
   el.style.width = `${maxW}px`
   el.style.whiteSpace = 'pre-wrap'
   el.style.padding = isTopic ? '8px 12px' : '4px 8px'
@@ -107,6 +162,8 @@ export function measureTextFitsInCircle(
 export interface MeasureTextWidthOptions {
   /** Font weight (e.g. 'normal', 'bold'). Default 'normal'. */
   fontWeight?: string
+  /** Optional override; defaults to diagram multiscript stack */
+  fontFamily?: string
 }
 
 /**
@@ -120,7 +177,7 @@ export function measureTextWidth(
 ): number {
   if (typeof document === 'undefined') return 0
   const t = (text || '').trim() || ' '
-  const el = getMeasureEl()
+  const el = getMeasureEl(options?.fontFamily)
   el.style.width = 'max-content'
   el.style.whiteSpace = 'nowrap'
   el.style.padding = '0'
@@ -139,6 +196,8 @@ export interface MeasureTextDimensionsOptions {
   paddingY?: number
   /** Font weight. Default 'normal'. */
   fontWeight?: string
+  /** Optional override; defaults to diagram multiscript stack */
+  fontFamily?: string
 }
 
 /**
@@ -152,14 +211,16 @@ export function measureTextDimensions(
   options?: MeasureTextDimensionsOptions
 ): { width: number; height: number } {
   if (typeof document === 'undefined') {
-    const w = measureTextWidth(text, fontSize, { fontWeight: options?.fontWeight })
+    const w = estimateTextWidthFallbackPx(text, fontSize, {
+      isTopic: (options?.fontWeight ?? 'normal') === 'bold',
+    })
     const h = fontSize * 1.4 + (options?.paddingY ?? 8) * 2
     return { width: w + (options?.paddingX ?? 16) * 2, height: h }
   }
   const t = (text || '').trim() || ' '
   const paddingX = options?.paddingX ?? 16
   const paddingY = options?.paddingY ?? 8
-  const el = getMeasureEl()
+  const el = getMeasureEl(options?.fontFamily)
   el.style.fontSize = `${fontSize}px`
   el.style.fontWeight = options?.fontWeight ?? 'normal'
   el.style.padding = `${paddingY}px ${paddingX}px`
@@ -181,11 +242,11 @@ export function measureTextDimensions(
 
 function measureTextWidthNoWrap(
   text: string,
-  options: { isTopic: boolean; fontSize: number }
+  options: { isTopic: boolean; fontSize: number; fontFamily?: string }
 ): number {
   if (typeof document === 'undefined') return 0
   const t = (text || '').trim() || ' '
-  const el = getMeasureEl()
+  const el = getMeasureEl(options.fontFamily)
   el.style.width = 'max-content'
   el.style.whiteSpace = 'nowrap'
   el.style.padding = options.isTopic ? '8px 12px' : '4px 8px'
@@ -216,8 +277,7 @@ function fallbackMinDiameterForNoWrap(text: string, fontSize: number, isTopic: b
   const len = (text || '').trim().length
   if (len === 0) return isTopic ? 120 : 70
   const border = isTopic ? BORDER_TOPIC : BORDER_CONTEXT
-  const approxCharWidth = isTopic ? 0.6 : 0.55
-  const w = len * fontSize * approxCharWidth + (isTopic ? 24 : 16)
+  const w = estimateTextWidthFallbackPx(text, fontSize, { isTopic }) + (isTopic ? 24 : 16)
   return Math.ceil(w + MAX_WIDTH_OFFSET + 2 * border)
 }
 
@@ -254,7 +314,7 @@ export function computeFontSizeToFitCircleNoWrap(
 
 /**
  * Find max fontSize such that text fits in circle (DOM measurement).
- * Wrap mode: fit by height. Use computeFontSizeToFitCircleNoWrap for English/no-wrap.
+ * Wrap mode: fit by height. Use computeFontSizeToFitCircleNoWrap for word-separated scripts.
  */
 export function computeFontSizeToFitCircle(
   text: string,
@@ -284,13 +344,13 @@ export function computeFontSizeToFitCircle(
 
 /**
  * Uniform context fontSize: min over all context texts so longest fits.
- * Uses no-wrap (width) for mostly-ASCII, wrap (height) otherwise.
+ * No-wrap width fit for Latin/Cyrillic/ASCII; wrap height fit for CJK, Arabic, Hebrew, Thai…
  */
 export function computeContextFontSize(texts: string[], uniformContextDiameterPx: number): number {
   if (!texts.length) return CONTEXT_DEFAULT_FONT_SIZE
   let minFs = CONTEXT_DEFAULT_FONT_SIZE
   for (const t of texts) {
-    const fs = isMostlyAscii(t)
+    const fs = prefersNoWrapWidthFitForCircleMap(t)
       ? computeFontSizeToFitCircleNoWrap(t, uniformContextDiameterPx, false)
       : computeFontSizeToFitCircle(t, uniformContextDiameterPx, false)
     minFs = Math.min(minFs, fs)
@@ -299,11 +359,11 @@ export function computeContextFontSize(texts: string[], uniformContextDiameterPx
 }
 
 function fallbackFontSizeToFit(text: string, diameterPx: number, isTopic: boolean): number {
-  const len = (text || '').trim().length
   const inner = Math.max(1, diameterPx - MAX_WIDTH_OFFSET - 24)
-  const approxCharWidth = isTopic ? 0.55 : 0.5
-  const approxLines = Math.max(1, Math.ceil((len * approxCharWidth * 14) / inner))
   const lineHeight = 1.4
+  const t = (text || '').trim() || ' '
+  const approxW = estimateTextWidthFallbackPx(t, 14, { isTopic })
+  const approxLines = Math.max(1, Math.ceil(approxW / inner))
   const maxFontSizeByHeight = (diameterPx - 24) / (approxLines * lineHeight)
   const maxFs = isTopic ? TOPIC_DEFAULT_FONT_SIZE : CONTEXT_DEFAULT_FONT_SIZE
   const fs = Math.min(maxFs, maxFontSizeByHeight)
@@ -311,54 +371,42 @@ function fallbackFontSizeToFit(text: string, diameterPx: number, isTopic: boolea
 }
 
 function fallbackFontSizeToFitNoWrap(text: string, diameterPx: number, isTopic: boolean): number {
-  const len = (text || '').trim().length
-  if (len === 0) return isTopic ? TOPIC_DEFAULT_FONT_SIZE : CONTEXT_DEFAULT_FONT_SIZE
+  const trimmed = (text || '').trim()
+  if (!trimmed.length) return isTopic ? TOPIC_DEFAULT_FONT_SIZE : CONTEXT_DEFAULT_FONT_SIZE
   const border = isTopic ? BORDER_TOPIC : BORDER_CONTEXT
   const effectiveWidth = diameterPx - MAX_WIDTH_OFFSET - 2 * border - (isTopic ? 24 : 16)
-  const approxCharWidth = isTopic ? 0.6 : 0.55
   const maxFs = isTopic ? TOPIC_DEFAULT_FONT_SIZE : CONTEXT_DEFAULT_FONT_SIZE
-  const fs = effectiveWidth / (len * approxCharWidth)
+  const wAtMax = estimateTextWidthFallbackPx(trimmed, maxFs, { isTopic })
+  if (wAtMax <= 0) return maxFs
+  const fs = (effectiveWidth / wAtMax) * maxFs
   return Math.max(MIN_FONT_SIZE, Math.min(maxFs, Math.floor(fs)))
 }
 
-/**
- * Measure text dimensions using SVG getBBox() method (as per documentation)
- * This provides the most accurate measurement for text rendering
- * @param text - Text content
- * @param fontSize - Font size in pixels
- * @param isTopic - Whether this is a topic node (affects font weight)
- * @returns Object with width and height in pixels
- */
 function measureTextWithSVG(
   text: string,
   fontSize: number,
-  isTopic: boolean
+  isTopic: boolean,
+  fontFamily?: string
 ): { width: number; height: number } {
   if (typeof document === 'undefined') {
-    // Fallback: estimate dimensions
-    const len = text.trim().length
-    const approxCharWidth = fontSize * (isTopic ? 0.6 : 0.55)
+    const w = estimateTextWidthFallbackPx(text, fontSize, { isTopic })
     const approxCharHeight = fontSize * 1.4
     return {
-      width: len * approxCharWidth,
+      width: w,
       height: approxCharHeight,
     }
   }
 
-  // Use DOM measurement (consistent with project patterns, more reliable)
-  // Reference documentation: measure text width and height, use diagonal to calculate radius
-  const el = getMeasureEl()
+  const el = getMeasureEl(fontFamily)
   el.style.width = 'max-content'
-  el.style.whiteSpace = 'nowrap' // Ensure single line display (per documentation)
+  el.style.whiteSpace = 'nowrap'
   el.style.fontSize = `${fontSize}px`
   el.style.fontWeight = isTopic ? 'bold' : 'normal'
-  el.style.fontFamily = FONT_FAMILY
   el.style.padding = '0'
   el.style.lineHeight = '1.4'
   el.style.boxSizing = 'content-box'
   el.textContent = text.trim()
 
-  // Measure width and height
   const width = el.offsetWidth || 0
   const height = el.offsetHeight || fontSize * 1.4
 
@@ -370,17 +418,10 @@ function measureTextWithSVG(
 
 /**
  * Calculate bubble map node radius based on text length
- * Uses SVG getBBox() for accurate measurement and diagonal calculation
+ * Uses DOM measurement and diagonal calculation
  * as per BUBBLE_MAP_TEXT_ADAPTATION.md and BUBBLE_MAP_SIZE_CALCULATION.md
  *
  * Formula: radius = sqrt(width² + height²) / 2 + padding
- *
- * @param text - Text content
- * @param fontSize - Font size to use for measurement
- * @param padding - Padding around text (default: 10 for attributes, 20 for topic)
- * @param minRadius - Minimum radius (default: 30)
- * @param isTopic - Whether this is a topic node (affects font weight)
- * @returns Radius in pixels
  */
 export function calculateBubbleMapRadius(
   text: string,
@@ -393,22 +434,18 @@ export function calculateBubbleMapRadius(
     return minRadius
   }
 
-  // Measure text dimensions (width and height)
   const { width, height } = measureTextWithSVG(text.trim(), fontSize, isTopic)
 
-  // If measurement fails (width/height is 0), use estimated values
-  const measuredWidth = width || text.trim().length * fontSize * (isTopic ? 0.6 : 0.55)
+  const measuredWidth =
+    width || estimateTextWidthFallbackPx(text, fontSize, { isTopic })
   const measuredHeight = height || fontSize * 1.4
 
-  // Calculate radius using diagonal: sqrt(width² + height²) / 2 + padding
-  // Per documentation BUBBLE_MAP_SIZE_CALCULATION.md requirements
   const diagonal = Math.sqrt(measuredWidth * measuredWidth + measuredHeight * measuredHeight)
   const radius = Math.ceil(diagonal / 2 + padding)
 
   return Math.max(minRadius, radius)
 }
 
-// Double bubble map: min radii and paddings per type (topic / similarity / difference); tight text fit, small inner padding
 const DOUBLE_BUBBLE_MIN_TOPIC_RADIUS = 32
 const DOUBLE_BUBBLE_MIN_SIM_RADIUS = 24
 const DOUBLE_BUBBLE_MIN_DIFF_RADIUS = 24
@@ -416,10 +453,6 @@ const DOUBLE_BUBBLE_TOPIC_PADDING = 12
 const DOUBLE_BUBBLE_SIM_PADDING = 5
 const DOUBLE_BUBBLE_DIFF_PADDING = 5
 
-/**
- * Required radius for one double-bubble node: measure text → diagonal/2 + padding; empty node uses saved radius.
- * Measure text → calculate radius; empty node uses saved radius.
- */
 export function doubleBubbleRequiredRadius(
   text: string,
   options: {
@@ -439,7 +472,6 @@ export function doubleBubbleRequiredRadius(
   return calculateBubbleMapRadius(trimmed, fontSize, padding, minR, isTopic)
 }
 
-/** Required radius for difference node (left/right); empty uses savedRadius. */
 export function doubleBubbleDiffRequiredRadius(text: string, savedRadius?: number): number {
   const trimmed = (text || '').trim()
   if (!trimmed) {
@@ -455,27 +487,17 @@ export function doubleBubbleDiffRequiredRadius(text: string, savedRadius?: numbe
   )
 }
 
-/**
- * Circle map center (topic) radius from text: measure text at same font/size as render,
- * single-line (nowrap). Radius = diagonal/2 + inner padding + border, with minimum radius.
- * Uses invisible DOM measurement for accurate width/height.
- * See CIRCLE_MAP_IMPLEMENTATION_PROMPT.md §五.
- *
- * @param text - Topic text
- * @returns Radius in pixels (to outer edge of circle, includes border)
- */
 export function computeTopicRadiusForCircleMap(text: string): number {
   const t = (text || '').trim() || ' '
   if (typeof document === 'undefined') {
-    const len = t.length
-    const approxW = len * TOPIC_FONT_SIZE * 0.6
+    const approxW = estimateTextWidthFallbackPx(t, TOPIC_FONT_SIZE, { isTopic: true })
     const approxH = TOPIC_FONT_SIZE * 1.4
     const diagonal = Math.sqrt(approxW * approxW + approxH * approxH)
     const contentR = Math.ceil(diagonal / 2 + TOPIC_CIRCLE_INNER_PADDING)
     return Math.max(MIN_TOPIC_RADIUS_CIRCLE_MAP, contentR + BORDER_TOPIC)
   }
   const { width, height } = measureTextWithSVG(t, TOPIC_FONT_SIZE, true)
-  const w = width || t.length * TOPIC_FONT_SIZE * 0.6
+  const w = width || estimateTextWidthFallbackPx(t, TOPIC_FONT_SIZE, { isTopic: true })
   const h = height || TOPIC_FONT_SIZE * 1.4
   const diagonal = Math.sqrt(w * w + h * h)
   const contentR = Math.ceil(diagonal / 2 + TOPIC_CIRCLE_INNER_PADDING)

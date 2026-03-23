@@ -5,6 +5,8 @@ Extracted from tree_map_agent to reduce complexity and improve maintainability.
 """
 from typing import Dict, List, Set, Tuple
 
+from utils.text_width_estimate import estimate_text_width_px
+
 
 def clean_text(value: str) -> str:
     """Strip and normalize text."""
@@ -107,7 +109,7 @@ def normalize_children(
 
 def _text_radius(text: str, font_px: int, min_r: int) -> int:
     """Compute radius for text at given font size."""
-    width_px = int(max(0, len(text)) * font_px * 0.6)
+    width_px = int(estimate_text_width_px(text, float(font_px), is_topic=False))
     height_px = int(font_px * 1.2)
     diameter = max(width_px, height_px) + int(font_px * 0.8)
     return max(min_r, diameter // 2)

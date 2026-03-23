@@ -1,8 +1,18 @@
 /**
- * useInlineRecommendationsCoordinator - Central event handler for inline recommendations
+ * useInlineRecommendationsCoordinator - Central event handler for inline recommendations (Tab mode)
  *
- * Subscribes to node:text_updated, paneClick, diagram changes, etc.
- * Dispatches to store actions. Call setup() in CanvasPage onMounted, teardown() onUnmounted.
+ * Supported types: INLINE_RECOMMENDATIONS_SUPPORTED_TYPES (mindmap, flow_map, tree_map, brace_map,
+ * circle_map, bubble_map, double_bubble_map, multi_flow_map, bridge_map).
+ *
+ * Behaviour (consistent across types):
+ * - Clears all: canvas pane click; topic hash change (main topic / dimension / bridge setup / DBL
+ *   left+right topics); diagram type change; full diagram load (diagram:loaded); teardown.
+ * - Keeps options after applying a numeric pick: node:text_updated does not clear (pair updates
+ *   emit twice for bridge + double bubble — still OK).
+ * - Double bubble layout refresh uses loadFromSpec(..., { emitLoaded: false }) so it does not
+ *   masquerade as a full load.
+ * - Selection: dismiss when the active session node is no longer selected; for bridge + double
+ *   bubble difference pairs, the opposite paired node still counts as “same row” context.
  */
 import { onUnmounted, watch } from 'vue'
 
@@ -34,6 +44,30 @@ function isTopicNode(nodeId: string | undefined, diagramType: string): boolean {
 }
 
 const DEBOUNCE_MS = 300
+
+/** Bridge / double-bubble: Tab session is for one “row”; selection on the paired node is still that row. */
+function selectionStillCoversInlineActive(
+  activeId: string,
+  selectedNodes: string[],
+  diagramType: string | null
+): boolean {
+  const selected = new Set(selectedNodes)
+  if (selected.has(activeId)) return true
+  const dt = diagramType === 'mind_map' ? 'mindmap' : diagramType
+  if (dt === 'double_bubble_map') {
+    const leftM = activeId.match(/^left-diff-(\d+)$/)
+    const rightM = activeId.match(/^right-diff-(\d+)$/)
+    if (leftM?.[1] && selected.has(`right-diff-${leftM[1]}`)) return true
+    if (rightM?.[1] && selected.has(`left-diff-${rightM[1]}`)) return true
+  }
+  if (dt === 'bridge_map') {
+    const leftM = activeId.match(/^pair-(\d+)-left$/)
+    const rightM = activeId.match(/^pair-(\d+)-right$/)
+    if (leftM?.[1] && selected.has(`pair-${leftM[1]}-right`)) return true
+    if (rightM?.[1] && selected.has(`pair-${rightM[1]}-left`)) return true
+  }
+  return false
+}
 
 export function useInlineRecommendationsCoordinator() {
   const diagramStore = useDiagramStore()
@@ -96,17 +130,6 @@ export function useInlineRecommendationsCoordinator() {
     }, DEBOUNCE_MS)
   }
 
-  function onOtherNodeUpdated(_nodeId: string): void {
-    const activeId = store.activeNodeId
-    if (!activeId) return
-    const hasOptions = (store.options[activeId]?.length ?? 0) > 0
-    const isGenerating = store.generatingNodeIds.has(activeId)
-    // Don't invalidate while streaming: Tab blur emits text_updated; we must keep accumulating
-    if (hasOptions && !isGenerating) {
-      store.invalidateForNode(activeId)
-    }
-  }
-
   function onDiagramChanged(): void {
     store.invalidateAll()
     revalidateReady()
@@ -119,10 +142,8 @@ export function useInlineRecommendationsCoordinator() {
   function onSelectionChanged(selectedNodes: string[]): void {
     const activeId = store.activeNodeId
     if (!activeId) return
-    const selectedSet = new Set(selectedNodes)
-    if (!selectedSet.has(activeId)) {
-      store.invalidateAll()
-    }
+    if (selectionStillCoversInlineActive(activeId, selectedNodes, diagramStore.type)) return
+    store.invalidateAll()
   }
 
   const unsubNodeText = eventBus.on(
@@ -137,9 +158,9 @@ export function useInlineRecommendationsCoordinator() {
 
       if (isTopicNode(nodeId, normalizedDt ?? '')) {
         onTopicNodeUpdated(text)
-      } else {
-        onOtherNodeUpdated(nodeId)
       }
+      // Non-topic node:text_updated (e.g. applying a Tab recommendation) must NOT clear inline
+      // recs — users may pick another option. Dismiss via pane click, selection change, or topic.
     }
   )
 

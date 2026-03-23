@@ -17,6 +17,7 @@ import {
 } from '@/composables'
 import { useDiagramStore } from '@/stores'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
+import { useUIStore } from '@/stores/ui'
 import { authFetch } from '@/utils/api'
 
 function generateQRCodeUrl(text: string): string {
@@ -39,10 +40,11 @@ interface Emits {
 const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
 
-const { isZh } = useLanguage()
+const { t, promptLanguage } = useLanguage()
 const notify = useNotifications()
 const diagramStore = useDiagramStore()
 const savedDiagramsStore = useSavedDiagramsStore()
+const uiStore = useUIStore()
 
 const workshopCode = ref<string | null>(null)
 const resolvedDiagramId = ref<string | null>(null)
@@ -59,14 +61,14 @@ const isNetworkMode = computed(() => props.mode === 'network')
 const durationOptions = computed(() => {
   if (isNetworkMode.value) {
     return [
-      { value: 'today' as const, zh: '今天（北京时间）', en: 'Today (Beijing)' },
-      { value: '2d' as const, zh: '2 天', en: '2 days' },
+      { value: 'today' as const, labelKey: 'collab.durationToday' },
+      { value: '2d' as const, labelKey: 'collab.duration2d' },
     ]
   }
   return [
-    { value: '1h' as const, zh: '1 小时', en: '1 hour' },
-    { value: 'today' as const, zh: '今天（北京时间）', en: 'Today (Beijing)' },
-    { value: '2d' as const, zh: '2 天', en: '2 days' },
+    { value: '1h' as const, labelKey: 'collab.duration1h' },
+    { value: 'today' as const, labelKey: 'collab.durationToday' },
+    { value: '2d' as const, labelKey: 'collab.duration2d' },
   ]
 })
 
@@ -82,10 +84,10 @@ function formatRemaining(): string {
   const h = Math.floor(sec / 3600)
   const m = Math.floor((sec % 3600) / 60)
   const s = sec % 60
-  if (isZh.value) {
-    return h > 0 ? `${h}小时${m}分` : `${m}分${s}秒`
+  if (h > 0) {
+    return t('collab.countdown.hoursMinutes', { h, m })
   }
-  return h > 0 ? `${h}h ${m}m` : `${m}m ${s}s`
+  return t('collab.countdown.minutesSeconds', { m, s })
 }
 
 function startCountdown() {
@@ -134,7 +136,7 @@ function getDiagramTitle(): string {
   if (diagramStore.effectiveTitle) {
     return diagramStore.effectiveTitle
   }
-  return getDefaultDiagramName(diagramStore.type, isZh.value)
+  return getDefaultDiagramName(diagramStore.type, uiStore.language)
 }
 
 async function ensureDiagramSaved(): Promise<string | null> {
@@ -147,12 +149,12 @@ async function ensureDiagramSaved(): Promise<string | null> {
     return savedDiagramsStore.activeDiagramId
   }
   if (!diagramStore.type || !diagramStore.data) {
-    notify.warning(isZh.value ? '没有可保存的图示' : 'No diagram to save')
+    notify.warning(t('collab.noDiagramToSave'))
     return null
   }
   const spec = getDiagramSpec()
   if (!spec) {
-    notify.warning(isZh.value ? '图示数据无效' : 'Invalid diagram data')
+    notify.warning(t('collab.invalidDiagramData'))
     return null
   }
   isLoading.value = true
@@ -161,29 +163,25 @@ async function ensureDiagramSaved(): Promise<string | null> {
       getDiagramTitle(),
       diagramStore.type,
       spec,
-      isZh.value ? 'zh' : 'en',
+      promptLanguage.value,
       null
     )
     if (result.success && result.diagramId) {
       savedDiagramsStore.setActiveDiagram(result.diagramId)
       resolvedDiagramId.value = result.diagramId
-      notify.success(
-        isZh.value ? '图示已保存，正在启动协同…' : 'Diagram saved, starting collaboration…'
-      )
+      notify.success(t('collab.diagramSavedStarting'))
       await new Promise((resolve) => setTimeout(resolve, 100))
       return result.diagramId
     }
     if (result.needsSlotClear) {
-      notify.warning(
-        isZh.value ? '图库已满，请先删除一个图示后再试' : 'Gallery is full. Please delete a diagram first'
-      )
+      notify.warning(t('collab.galleryFull'))
       return null
     }
-    notify.error(result.error || (isZh.value ? '保存失败' : 'Failed to save diagram'))
+    notify.error(result.error || t('collab.saveFailed'))
     return null
   } catch (error) {
     console.error('Failed to save diagram:', error)
-    notify.error(isZh.value ? '网络错误，保存失败' : 'Network error, failed to save')
+    notify.error(t('collab.networkErrorSave'))
     return null
   } finally {
     isLoading.value = false
@@ -274,26 +272,18 @@ async function startWorkshopWithId(diagramId: string) {
       participantCount.value = 1
       await checkWorkshopStatusWithId(diagramId)
       if (isNetworkMode.value) {
-        notify.success(
-          isZh.value ? '协作代码已生成，分享给其他人即可一起编辑' : 'Collaboration code generated — share to edit together.'
-        )
+        notify.success(t('collab.codeGenerated'))
       } else {
-        notify.success(
-          isZh.value
-            ? '校内协同已开启，同事可在「协同 → 校内协同」中加入'
-            : 'School collaboration is on — colleagues can join from Collaborate → School.'
-        )
+        notify.success(t('collab.schoolStarted'))
       }
     } else {
       const error = await response.json().catch(() => ({}))
       const errorMessage = error.detail || error.message || `HTTP ${response.status}`
-      notify.error(
-        isZh.value ? `启动协同失败: ${errorMessage}` : `Failed to start: ${errorMessage}`
-      )
+      notify.error(t('collab.startFailed', { msg: String(errorMessage) }))
     }
   } catch (error) {
     console.error('Start collaboration failed:', error)
-    notify.error(isZh.value ? '网络错误，启动失败' : 'Network error, failed to start')
+    notify.error(t('collab.networkErrorStart'))
   } finally {
     isLoading.value = false
   }
@@ -313,10 +303,10 @@ async function copyCode() {
   if (!workshopCode.value) return
   try {
     await navigator.clipboard.writeText(workshopCode.value)
-    notify.success(isZh.value ? '代码已复制' : 'Code copied')
+    notify.success(t('collab.codeCopied'))
   } catch (error) {
     console.error('Copy failed:', error)
-    notify.error(isZh.value ? '复制失败' : 'Failed to copy')
+    notify.error(t('collab.copyFailed'))
   }
 }
 
@@ -324,10 +314,10 @@ async function copyJoinLink() {
   if (!joinLinkDisplay.value) return
   try {
     await navigator.clipboard.writeText(joinLinkDisplay.value)
-    notify.success(isZh.value ? '链接已复制' : 'Link copied')
+    notify.success(t('collab.linkCopied'))
   } catch (error) {
     console.error('Copy failed:', error)
-    notify.error(isZh.value ? '复制失败' : 'Failed to copy')
+    notify.error(t('collab.copyFailed'))
   }
 }
 
@@ -345,16 +335,14 @@ async function endCollaboration() {
       participantCount.value = 0
       emit('collabCodeChanged', null)
       showDialog.value = false
-      notify.success(isZh.value ? '已结束协同' : 'Collaboration ended')
+      notify.success(t('collab.ended'))
     } else {
       const error = await response.json().catch(() => ({}))
-      notify.error(
-        error.detail || (isZh.value ? '结束协同失败' : 'Failed to end collaboration')
-      )
+      notify.error(error.detail || t('collab.endFailed'))
     }
   } catch (error) {
     console.error('Stop collaboration failed:', error)
-    notify.error(isZh.value ? '网络错误' : 'Network error')
+    notify.error(t('collab.networkError'))
   } finally {
     isLoading.value = false
   }
@@ -364,7 +352,7 @@ async function endCollaboration() {
 <template>
   <ElDialog
     v-model="showDialog"
-    :title="isZh ? '在线协作' : 'Online collaboration'"
+    :title="t('collab.title')"
     width="500px"
     :close-on-click-modal="false"
   >
@@ -374,31 +362,19 @@ async function endCollaboration() {
         class="collab-section"
       >
         <h3 class="section-title">
-          {{
-            isNetworkMode
-              ? isZh
-                ? '共同协同（邀请码）'
-                : 'Shared collaboration (code)'
-              : isZh
-                ? '校内协同'
-                : 'School collaboration'
-          }}
+          {{ isNetworkMode ? t('collab.sectionNetwork') : t('collab.sectionSchool') }}
         </h3>
 
         <p
           v-if="workshopCode && remainingSeconds !== null && remainingSeconds >= 0"
           class="session-remaining text-sm text-gray-500 mb-3"
         >
-          {{ isZh ? '会话剩余' : 'Session ends in' }}: {{ formatRemaining() }}
+          {{ t('collab.sessionRemaining') }}: {{ formatRemaining() }}
         </p>
 
         <div v-if="workshopCode && isNetworkMode">
           <p class="description mb-4">
-            {{
-              isZh
-                ? '分享邀请码或链接，对方在「协同 → 共同协同」中输入号码即可加入。'
-                : 'Share the code or link — others enter it under Collaborate → Shared.'
-            }}
+            {{ t('collab.shareDescNetwork') }}
           </p>
           <div class="share-container">
             <div class="qr-code-section">
@@ -410,7 +386,7 @@ async function endCollaboration() {
                   class="qr-code-image"
                 />
               </div>
-              <p class="qr-code-hint">{{ isZh ? '扫码加入' : 'Scan to join' }}</p>
+              <p class="qr-code-hint">{{ t('collab.scanToJoin') }}</p>
             </div>
             <div class="code-section">
               <div class="code-display">
@@ -428,7 +404,7 @@ async function endCollaboration() {
                   @click="copyCode"
                 >
                   <Copy class="w-4 h-4" />
-                  {{ isZh ? '复制' : 'Copy' }}
+                  {{ t('collab.copy') }}
                 </ElButton>
               </div>
               <p class="code-hint text-xs break-all px-2">{{ joinLinkDisplay }}</p>
@@ -438,7 +414,7 @@ async function endCollaboration() {
                 class="mt-1"
                 @click="copyJoinLink"
               >
-                {{ isZh ? '复制链接' : 'Copy link' }}
+                {{ t('collab.copyLink') }}
               </ElButton>
             </div>
           </div>
@@ -448,11 +424,7 @@ async function endCollaboration() {
           >
             <Users class="w-4 h-4" />
             <span>
-              {{
-                isZh
-                  ? `${participantCount} 位参与者`
-                  : `${participantCount} participant${participantCount !== 1 ? 's' : ''}`
-              }}
+              {{ t('collab.participants', { n: participantCount }) }}
             </span>
           </div>
           <div class="mt-4 flex justify-end">
@@ -462,18 +434,14 @@ async function endCollaboration() {
               :loading="isLoading"
               @click="endCollaboration"
             >
-              {{ isZh ? '结束协同' : 'End collaboration' }}
+              {{ t('collab.end') }}
             </ElButton>
           </div>
         </div>
 
         <div v-else-if="workshopCode && !isNetworkMode">
           <p class="description mb-4">
-            {{
-              isZh
-                ? '校内协同已开启。同事请在 MindGraph 首页打开「协同 → 校内协同」，在列表中选择此图示加入（无需输入邀请码）。'
-                : 'School collaboration is on. Colleagues: use Collaborate → School on the home page and pick this diagram — no code required.'
-            }}
+            {{ t('collab.schoolDescActive') }}
           </p>
           <div
             v-if="participantCount > 0"
@@ -481,11 +449,7 @@ async function endCollaboration() {
           >
             <Users class="w-4 h-4" />
             <span>
-              {{
-                isZh
-                  ? `${participantCount} 位参与者`
-                  : `${participantCount} participant${participantCount !== 1 ? 's' : ''}`
-              }}
+              {{ t('collab.participants', { n: participantCount }) }}
             </span>
           </div>
           <div class="mt-4 flex justify-end">
@@ -495,7 +459,7 @@ async function endCollaboration() {
               :loading="isLoading"
               @click="endCollaboration"
             >
-              {{ isZh ? '结束协同' : 'End collaboration' }}
+              {{ t('collab.end') }}
             </ElButton>
           </div>
         </div>
@@ -505,9 +469,7 @@ async function endCollaboration() {
           class="inactive-workshop"
         >
           <div class="duration-row mb-3 flex items-center gap-2">
-            <span class="text-sm text-gray-600">{{
-              isZh ? '会话时长' : 'Session duration'
-            }}</span>
+            <span class="text-sm text-gray-600">{{ t('collab.sessionDuration') }}</span>
             <ElPopover
               placement="bottom"
               :width="280"
@@ -518,7 +480,7 @@ async function endCollaboration() {
                   text
                   circle
                   size="small"
-                  :aria-label="isZh ? '时长选项' : 'Duration options'"
+                  :aria-label="t('collab.durationAria')"
                 >
                   <Settings class="w-4 h-4" />
                 </ElButton>
@@ -534,29 +496,21 @@ async function endCollaboration() {
                     :key="opt.value"
                     :label="opt.value"
                   >
-                    {{ isZh ? opt.zh : opt.en }}
+                    {{ t(opt.labelKey) }}
                   </ElRadioButton>
                 </ElRadioGroup>
               </div>
             </ElPopover>
           </div>
           <p class="description">
-            {{
-              isNetworkMode
-                ? isZh
-                  ? '生成邀请码后，他人可凭码加入并一起编辑。'
-                  : 'Generate a code so others can join and edit with you.'
-                : isZh
-                  ? '开启后，同校同事可从首页「协同 → 校内协同」加入。'
-                  : 'After starting, same-school colleagues can join from the home page.'
-            }}
+            {{ isNetworkMode ? t('collab.hintNetworkInactive') : t('collab.hintSchoolInactive') }}
           </p>
           <ElButton
             type="primary"
             :loading="isLoading"
             @click="handleGenerateCode"
           >
-            {{ isZh ? '开启协同' : 'Start' }}
+            {{ t('collab.start') }}
           </ElButton>
         </div>
       </div>

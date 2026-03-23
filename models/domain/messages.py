@@ -62,6 +62,25 @@ class Messages:
             "en": "Invalid request",
             "az": "Etibarsız sorğu"
         },
+        "invalid_api_language": {
+            "zh": "无效的语言参数，必须为支持的生成语言代码。",
+            "en": "Invalid language. Use a supported generation language code.",
+            "az": "Etibarsız dil. Dəstəklənən generasiya dil kodundan istifadə edin."
+        },
+        "generate_png_unclear_intent": {
+            "zh": (
+                "无法理解您的意图，请更具体地说明图表类型和主题，"
+                "或点击下方的图表卡片。"
+            ),
+            "en": (
+                "Unable to process your request. Please be more specific about the "
+                "diagram type and topic, or use the diagram cards below."
+            ),
+            "az": (
+                "Sorğunuzu emal etmək mümkün olmadı. Diaqram növü və mövzu haqqında "
+                "daha dəqiq yazın və ya aşağıdakı diaqram kartlarından istifadə edin."
+            ),
+        },
         "captcha_generate_failed": {
             "zh": (
                 "验证码生成失败，系统暂时繁忙。请等待几秒后刷新页面重试。"

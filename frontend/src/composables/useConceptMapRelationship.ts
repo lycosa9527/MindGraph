@@ -5,18 +5,20 @@
  * Shows first 5; user uses - and = for prev/next page. On next page when at end,
  * fetches more via next_batch and filters duplicates.
  *
- * Label agent: When a concept node's text changes, only regenerates edges with
- * empty labels—avoids overwriting user-edited or AI-generated labels.
+ * Label agent: Invoked from DiagramCanvas only when node:text_updated reflects a real
+ * text change (!alreadyUpdated). Regenerates edges with empty labels for that node.
  */
 import { ref } from 'vue'
 
 import { isPlaceholderText } from '@/composables/useAutoComplete'
 import { useLanguage } from '@/composables/useLanguage'
 import { useNotifications } from '@/composables/useNotifications'
+import { ALL_TOPIC_ROOT_RELATIONSHIP_LABELS } from '@/stores/diagram/diagramDefaultLabels'
 import { useConceptMapRelationshipStore } from '@/stores/conceptMapRelationship'
 import { useDiagramStore } from '@/stores/diagram'
 import { useLLMResultsStore } from '@/stores/llmResults'
 import { authFetch } from '@/utils/api'
+import { isTopicToRootConceptConnection } from '@/utils/conceptMapTopicRootEdge'
 
 import { RELATIONSHIP_LABELS_NEXT, RELATIONSHIP_LABELS_START } from './nodePalette/constants'
 
@@ -24,10 +26,11 @@ export const CONCEPT_MAP_GENERATING_KEY = Symbol('conceptMapRelationshipGenerati
 export const CONCEPT_MAP_OPTIONS_KEY = Symbol('conceptMapRelationshipOptions')
 
 /** Template-default labels (from getDefaultTemplate) — safe to regenerate when concepts change */
-const TEMPLATE_DEFAULT_LABELS = new Set([
+const TEMPLATE_DEFAULT_LABELS = new Set<string>([
   '关联',
   '包含',
   '导致',
+  ...ALL_TOPIC_ROOT_RELATIONSHIP_LABELS,
   'related to',
   'includes',
   'causes',
@@ -117,7 +120,7 @@ export function useConceptMapRelationship() {
   const diagramStore = useDiagramStore()
   const relationshipStore = useConceptMapRelationshipStore()
   const llmResultsStore = useLLMResultsStore()
-  const { isZh } = useLanguage()
+  const { t, promptLanguage } = useLanguage()
   const notify = useNotifications()
 
   const generatingConnectionIds = ref<Set<string>>(new Set())
@@ -155,6 +158,11 @@ export function useConceptMapRelationship() {
       return { success: false, error: 'Already generating' }
     }
 
+    const conn = diagramStore.data?.connections?.find((c) => c.id === connectionId)
+    if (conn && isTopicToRootConceptConnection(conn, diagramStore.data?.nodes)) {
+      return { success: false, error: 'Fixed relationship label' }
+    }
+
     const conceptA = getNodeText(sourceId)
     const conceptB = getNodeText(targetId)
 
@@ -163,8 +171,9 @@ export function useConceptMapRelationship() {
     }
 
     generatingConnectionIds.value = new Set([...generatingConnectionIds.value, connectionId])
-    const topic = diagramStore.getTopicNodeText() || ''
-    const language = isZh.value ? 'zh' : 'en'
+    const topicNode = diagramStore.data?.nodes?.find((n) => n.id === 'topic' || n.type === 'topic')
+    const topic = (topicNode?.text ?? '').trim()
+    const language = promptLanguage.value
     const linkDirection = getLinkDirection(connectionId)
 
     const payload = {
@@ -189,8 +198,7 @@ export function useConceptMapRelationship() {
         relationshipStore.setOptions(connectionId, labels, labels.length > 1)
       }
       const onError = (msg: string) => {
-        const title = isZh.value ? '关系生成失败' : 'Relationship generation failed'
-        notify.error(`${title}: ${msg}`)
+        notify.error(`${t('notification.relationshipGenerationFailed')}: ${msg}`)
       }
 
       const count = await streamRelationshipLabels(
@@ -214,8 +222,7 @@ export function useConceptMapRelationship() {
       const isAbort = error instanceof Error && error.name === 'AbortError'
       if (isAbort) return { success: false, error: 'Aborted' }
       const errMsg = error instanceof Error ? error.message : 'Unknown error'
-      const title = isZh.value ? '关系生成失败' : 'Relationship generation failed'
-      notify.error(`${title}: ${errMsg}`)
+      notify.error(`${t('notification.relationshipGenerationFailed')}: ${errMsg}`)
       return { success: false, error: errMsg }
     } finally {
       relationshipStore.setStreamAbortController(null)
@@ -237,8 +244,9 @@ export function useConceptMapRelationship() {
     if (isPlaceholderText(conceptA) || isPlaceholderText(conceptB)) return false
 
     loadingMoreConnectionIds.value = new Set([...loadingMoreConnectionIds.value, connectionId])
-    const topic = diagramStore.getTopicNodeText() || ''
-    const language = isZh.value ? 'zh' : 'en'
+    const topicNode = diagramStore.data?.nodes?.find((n) => n.id === 'topic' || n.type === 'topic')
+    const topic = (topicNode?.text ?? '').trim()
+    const language = promptLanguage.value
     const linkDirection = getLinkDirection(connectionId)
 
     const payload = {
@@ -285,8 +293,12 @@ export function useConceptMapRelationship() {
   function regenerateForNodeIfNeeded(nodeId: string): void {
     if (!llmResultsStore.selectedModel) return
     const connections = diagramStore.data?.connections ?? []
+    const nodes = diagramStore.data?.nodes
     const affected = connections.filter(
-      (c) => (c.source === nodeId || c.target === nodeId) && isLabelEmptyOrPlaceholder(c.label)
+      (c) =>
+        (c.source === nodeId || c.target === nodeId) &&
+        isLabelEmptyOrPlaceholder(c.label) &&
+        !isTopicToRootConceptConnection(c, nodes)
     )
     for (const conn of affected) {
       if (conn.id) {

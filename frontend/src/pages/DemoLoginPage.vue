@@ -10,7 +10,7 @@ import { useAuthStore } from '@/stores'
 
 const router = useRouter()
 const authStore = useAuthStore()
-const { isZh } = useLanguage()
+const { t } = useLanguage()
 const notify = useNotifications()
 
 const demoCode = ref('')
@@ -18,7 +18,7 @@ const isLoading = ref(false)
 
 async function handleDemoLogin() {
   if (!demoCode.value.trim()) {
-    notify.warning(isZh.value ? '请输入演示码' : 'Please enter a demo code')
+    notify.warning(t('demo.enterCode'))
     return
   }
 
@@ -32,21 +32,15 @@ async function handleDemoLogin() {
     if (success) {
       const userName = result.user?.username || ''
       notify.success(
-        isZh.value
-          ? userName
-            ? `${userName}，登录成功`
-            : '登录成功'
-          : userName
-            ? `Welcome, ${userName}`
-            : 'Login successful'
+        userName ? t('demo.loginSuccessNamed', { name: userName }) : t('demo.loginOk')
       )
       router.push('/')
     } else {
-      notify.error(result.message || (isZh.value ? '演示码无效' : 'Invalid demo code'))
+      notify.error(result.message || t('demo.invalidCode'))
     }
   } catch (error) {
     console.error('Demo login error:', error)
-    notify.error(isZh.value ? '网络错误，登录失败' : 'Network error, login failed')
+    notify.error(t('demo.networkError'))
   } finally {
     isLoading.value = false
   }

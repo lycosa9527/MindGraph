@@ -503,12 +503,26 @@
 
 .ws-right-contacts__row {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 8px;
   padding: 5px 12px;
   cursor: pointer;
   transition: background var(--ws-transition);
   font-size: 13px;
+}
+
+.ws-right-contacts__row-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+  gap: 2px;
+}
+
+.ws-right-contacts__last-seen {
+  font-size: 11px;
+  line-height: 1.25;
+  color: var(--ws-text-tertiary);
 }
 
 .ws-right-contacts__row:hover {
@@ -527,8 +541,8 @@
   background: hsl(143deg 55% 43%);
 }
 
-.ws-right-contacts__presence--idle {
-  background: hsl(38deg 85% 55%);
+.ws-right-contacts__presence--recent {
+  background: hsl(38deg 72% 52%);
 }
 
 .ws-right-contacts__presence--offline {

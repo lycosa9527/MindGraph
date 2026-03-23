@@ -9,13 +9,17 @@
  * Migrated from archive/static/js/editor/node-palette-manager.js
  */
 import { computed, onUnmounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
+import { storeToRefs } from 'pinia'
 
 import { isPlaceholderText } from '@/composables/useAutoComplete'
 import { type EventTypes, eventBus } from '@/composables/useEventBus'
-import { useDiagramStore, usePanelsStore } from '@/stores'
+import { ensureFontsForLanguageCode } from '@/fonts/promptLanguageFonts'
+import { useDiagramStore, usePanelsStore, useUIStore } from '@/stores'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import type { DiagramType } from '@/types'
+import type { NodeSuggestion } from '@/types/panels'
 import { authFetch } from '@/utils/api'
 
 import { applySelectionToDiagram } from './nodePalette/applySelection'
@@ -46,7 +50,6 @@ function isAbortError(err: unknown): boolean {
 }
 
 export interface UseNodePaletteOptions {
-  language?: 'en' | 'zh'
   onError?: (error: string) => void
   /** When true, clears singleton on unmount (used by getNodePalette) */
   _asSingleton?: boolean
@@ -71,11 +74,14 @@ export function getNodePalette(options: UseNodePaletteOptions = {}) {
 }
 
 export function useNodePalette(options: UseNodePaletteOptions = {}) {
-  const { language = 'en', onError, _asSingleton } = options
+  const { onError, _asSingleton } = options
+  const { t } = useI18n()
   const route = useRoute()
   const diagramStore = useDiagramStore()
   const panelsStore = usePanelsStore()
   const savedDiagramsStore = useSavedDiagramsStore()
+  const uiStore = useUIStore()
+  const { promptLanguage } = storeToRefs(uiStore)
 
   const sessionId = ref<string | null>(null)
   const centerTopic = ref('')
@@ -84,11 +90,24 @@ export function useNodePalette(options: UseNodePaletteOptions = {}) {
   const errorMessage = ref<string | null>(null)
   const abortController = ref<AbortController | null>(null)
 
+  /** Node palette tab strip: blue = request in flight, green = first SSE node received */
+  const paletteStreamPhase = ref<'idle' | 'requesting' | 'streaming'>('idle')
+  let streamBatchDepth = 0
+  let firstNodeReceivedInBatch = false
+
   const rawDiagramType = computed(() => diagramStore.type)
   const diagramType = computed(() => {
     const dt = rawDiagramType.value
     return dt === 'mind_map' ? 'mindmap' : dt
   })
+
+  function effectiveDoubleBubbleMode(s: NodeSuggestion): string {
+    if (s.mode) return s.mode
+    const l = (s.left ?? '').trim()
+    const r = (s.right ?? '').trim()
+    if (l || r) return 'differences'
+    return 'similarities'
+  }
 
   const suggestions = computed(() => {
     const all = panelsStore.nodePalettePanel.suggestions
@@ -97,7 +116,7 @@ export function useNodePalette(options: UseNodePaletteOptions = {}) {
     const stageData = panelsStore.nodePalettePanel.stage_data
     const dt = diagramType.value
     if (dt === 'double_bubble_map' && mode) {
-      return all.filter((s) => (s.mode ?? 'similarities') === mode)
+      return all.filter((s) => effectiveDoubleBubbleMode(s) === mode)
     }
     if (dt === 'multi_flow_map' && mode) {
       return all.filter((s) => (s.mode ?? 'causes') === mode)
@@ -145,7 +164,19 @@ export function useNodePalette(options: UseNodePaletteOptions = {}) {
   const showNextButton = computed(() => isDimensionsStage.value || isStage1WithNext.value)
   const diagramData = computed(() => {
     const nodes = diagramStore.data?.nodes ?? []
-    return buildDiagramData(diagramType.value, nodes)
+    const dt = diagramType.value
+    if (dt === 'concept_map') {
+      const spec = diagramStore.data as { focus_question?: string } | undefined
+      const fq =
+        typeof spec?.focus_question === 'string' && spec.focus_question.trim()
+          ? spec.focus_question.trim()
+          : undefined
+      return buildDiagramData(dt, nodes, {
+        connections: diagramStore.data?.connections,
+        focusQuestionFromSpec: fq,
+      })
+    }
+    return buildDiagramData(dt, nodes)
   })
 
   const topicText = computed(() => {
@@ -181,9 +212,22 @@ export function useNodePalette(options: UseNodePaletteOptions = {}) {
     if (diagramType.value !== 'concept_map') return topicText.value
     const mode = panelsStore.nodePalettePanel.mode
     if (!mode || mode === 'topic') return topicText.value
+    if (typeof mode === 'string' && mode.startsWith('domain_')) return topicText.value
     const node = diagramStore.data?.nodes?.find((n) => n.id === mode)
     return (node?.text ?? '').trim() || topicText.value
   })
+
+  function conceptMapStageDataForMode(mode: string | null): Record<string, unknown> | undefined {
+    if (!mode || mode === 'topic') return undefined
+    const tabs = panelsStore.nodePalettePanel.conceptMapTabs ?? []
+    const tab = tabs.find((t) => t.id === mode)
+    const domainLabel = (tab?.name ?? '').trim()
+    return {
+      center_topic: conceptMapCenterTopic.value,
+      parent_id: mode,
+      ...(domainLabel ? { domain_label: domainLabel } : {}),
+    }
+  }
 
   function generateSessionId(): string {
     return `palette_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`
@@ -196,120 +240,146 @@ export function useNodePalette(options: UseNodePaletteOptions = {}) {
       append?: boolean
       sharedExistingIds?: Set<string>
       useGlobalAbort?: boolean
+      onConceptMapDomains?: (domains: string[]) => void
     }
   ): Promise<number> {
+    streamBatchDepth += 1
+    if (streamBatchDepth === 1) {
+      firstNodeReceivedInBatch = false
+      paletteStreamPhase.value = 'requesting'
+    }
+
     const useGlobalAbort = options?.useGlobalAbort !== false
     const controller = new AbortController()
     if (useGlobalAbort) {
       abortController.value = controller
     }
 
-    const response = await authFetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-      signal: controller.signal,
-    })
-
-    if (!response.ok) {
-      const errText = await response.text()
-      throw new Error(errText || `Request failed: ${response.status}`)
-    }
-
-    const reader = response.body?.getReader()
-    if (!reader) throw new Error('No response body')
-
     const decoder = new TextDecoder()
     let nodeCount = 0
+    const onConceptMapDomains = options?.onConceptMapDomains
     const existingIds =
       options?.sharedExistingIds ??
       new Set(panelsStore.nodePalettePanel.suggestions.map((s) => s.id))
     const doAppend = options?.append ?? false
 
     try {
-      while (true) {
-        const { done, value } = await reader.read()
-        if (done) break
+      await ensureFontsForLanguageCode(promptLanguage.value)
+      const response = await authFetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        signal: controller.signal,
+      })
 
-        const chunk = decoder.decode(value, { stream: true })
-        const lines = chunk.split('\n')
+      if (!response.ok) {
+        const errText = await response.text()
+        throw new Error(errText || `Request failed: ${response.status}`)
+      }
 
-        for (const line of lines) {
-          if (!line.startsWith('data: ')) continue
-          try {
-            const data = JSON.parse(line.slice(6)) as {
-              event?: string
-              node?: {
-                id: string
-                text: string
-                type?: string
-                source_llm?: string
+      const reader = response.body?.getReader()
+      if (!reader) throw new Error('No response body')
+
+      try {
+        while (true) {
+          const { done, value } = await reader.read()
+          if (done) break
+
+          const chunk = decoder.decode(value, { stream: true })
+          const lines = chunk.split('\n')
+
+          for (const line of lines) {
+            if (!line.startsWith('data: ')) continue
+            try {
+              const data = JSON.parse(line.slice(6)) as {
+                event?: string
+                domains?: string[]
+                node?: {
+                  id: string
+                  text: string
+                  type?: string
+                  source_llm?: string
+                }
+                error_type?: string
+                message?: string
               }
-              error_type?: string
-              message?: string
+
+              if (data.event === 'concept_map_domains' && Array.isArray(data.domains)) {
+                onConceptMapDomains?.(data.domains)
+              } else if (data.event === 'node_generated' && data.node) {
+                const node = data.node as {
+                  id: string
+                  text: string
+                  type?: string
+                  source_llm?: string
+                  mode?: string
+                  parent_id?: string
+                  left?: string
+                  right?: string
+                  dimension?: string
+                  relationship_label?: string
+                }
+                if (existingIds.has(node.id)) continue
+                existingIds.add(node.id)
+                nodeCount++
+
+                if (!firstNodeReceivedInBatch) {
+                  firstNodeReceivedInBatch = true
+                  paletteStreamPhase.value = 'streaming'
+                }
+
+                const suggestion = {
+                  id: node.id,
+                  text: node.text,
+                  type: (node.type ?? 'bubble') as 'bubble' | 'branch' | 'label',
+                  source_llm: node.source_llm,
+                  mode: node.mode,
+                  parent_id: node.parent_id,
+                  left: node.left,
+                  right: node.right,
+                  dimension: node.dimension,
+                  relationship_label: node.relationship_label,
+                }
+                if (doAppend) {
+                  panelsStore.appendNodePaletteSuggestion(suggestion)
+                } else {
+                  panelsStore.setNodePaletteSuggestions([
+                    ...panelsStore.nodePalettePanel.suggestions,
+                    suggestion,
+                  ])
+                }
+                // Yield to next frame so each node paints progressively (streaming UX)
+                await new Promise<void>((r) => requestAnimationFrame(() => r()))
+              } else if (data.event === 'error') {
+                const msg = data.message ?? 'Unknown error'
+                errorMessage.value = msg
+                onError?.(msg)
+              } else if (data.event === 'batch_complete') {
+                // Stream finished for this batch
+              }
+            } catch {
+              // Skip malformed lines
             }
-
-            if (data.event === 'node_generated' && data.node) {
-              const node = data.node as {
-                id: string
-                text: string
-                type?: string
-                source_llm?: string
-                mode?: string
-                parent_id?: string
-                left?: string
-                right?: string
-                dimension?: string
-              }
-              if (existingIds.has(node.id)) continue
-              existingIds.add(node.id)
-              nodeCount++
-
-              const suggestion = {
-                id: node.id,
-                text: node.text,
-                type: (node.type ?? 'bubble') as 'bubble' | 'branch' | 'label',
-                source_llm: node.source_llm,
-                mode: node.mode,
-                parent_id: node.parent_id,
-                left: node.left,
-                right: node.right,
-                dimension: node.dimension,
-              }
-              if (doAppend) {
-                panelsStore.appendNodePaletteSuggestion(suggestion)
-              } else {
-                panelsStore.setNodePaletteSuggestions([
-                  ...panelsStore.nodePalettePanel.suggestions,
-                  suggestion,
-                ])
-              }
-              // Yield to next frame so each node paints progressively (streaming UX)
-              await new Promise<void>((r) => requestAnimationFrame(() => r()))
-            } else if (data.event === 'error') {
-              const msg = data.message ?? 'Unknown error'
-              errorMessage.value = msg
-              onError?.(msg)
-            } else if (data.event === 'batch_complete') {
-              // Stream finished for this batch
-            }
-          } catch {
-            // Skip malformed lines
           }
         }
+      } finally {
+        try {
+          reader.releaseLock()
+        } catch {
+          // Stream may already be closed; ignore
+        }
       }
+
+      return nodeCount
     } finally {
-      try {
-        reader.releaseLock()
-      } catch {
-        // Stream may already be closed; ignore
+      streamBatchDepth -= 1
+      if (streamBatchDepth === 0) {
+        paletteStreamPhase.value = 'idle'
       }
       if (useGlobalAbort) {
         abortController.value = null
       }
     }
-
-    return nodeCount
   }
 
   async function startSessionsForAllParents(
@@ -324,7 +394,7 @@ export function useNodePalette(options: UseNodePaletteOptions = {}) {
     const basePayload: Record<string, unknown> = {
       diagram_type: dt,
       diagram_data: diagramData.value,
-      language,
+      language: promptLanguage.value,
       stage: stage2StageNameForType(dt),
       mode: parents[0].name,
     }
@@ -361,11 +431,221 @@ export function useNodePalette(options: UseNodePaletteOptions = {}) {
     }
   }
 
+  async function streamConceptMapConceptsForTabsSequential(
+    domainTabs: { id: string; name: string }[]
+  ): Promise<void> {
+    const dm = domainTabs.filter((t) => t.id.startsWith('domain_'))
+    if (!dm.length || !sessionId.value) return
+    const sharedIds = new Set(panelsStore.nodePalettePanel.suggestions.map((s) => s.id))
+    for (let i = 0; i < dm.length; i += 1) {
+      const tab = dm[i]!
+      const payload: Record<string, unknown> = {
+        session_id: sessionId.value,
+        diagram_type: 'concept_map',
+        diagram_data: diagramData.value,
+        language: promptLanguage.value,
+        mode: tab.id,
+        stage_data: {
+          center_topic: topicText.value,
+          parent_id: tab.id,
+          domain_label: tab.name,
+        },
+      }
+      await streamBatch(NODE_PALETTE_START, payload, {
+        append: i > 0,
+        sharedExistingIds: sharedIds,
+        useGlobalAbort: false,
+      })
+    }
+  }
+
+  async function initializeConceptMapRootModal(): Promise<boolean> {
+    if (diagramType.value !== 'concept_map') return false
+    if (!diagramStore.data?.nodes?.length) {
+      errorMessage.value = t('nodePalette.error.createDiagramFirst')
+      return false
+    }
+    const topic = topicText.value.trim()
+    if (!topic) {
+      errorMessage.value = t('nodePalette.error.enterTopicText')
+      return false
+    }
+    const tabs = panelsStore.nodePalettePanel.conceptMapTabs ?? []
+    const hasDomainTabs = tabs.some((t) => t.id.startsWith('domain_'))
+    if (!hasDomainTabs) {
+      if (!sessionId.value) {
+        sessionId.value = generateSessionId()
+      }
+      centerTopic.value = topic
+      errorMessage.value = null
+      isLoading.value = true
+      const domainBootstrap: { names: string[] | null } = { names: null }
+      try {
+        await streamBatch(
+          NODE_PALETTE_START,
+          {
+            session_id: sessionId.value,
+            diagram_type: 'concept_map',
+            diagram_data: diagramData.value,
+            language: promptLanguage.value,
+            mode: 'topic',
+            stage_data: {
+              bootstrap_domains: true,
+              domain_count: 3,
+              existing_domain_labels: [],
+            },
+          },
+          {
+            onConceptMapDomains: (d: string[]) => {
+              domainBootstrap.names = d
+            },
+          }
+        )
+        const resolvedDomains = domainBootstrap.names
+        if (!resolvedDomains?.length) {
+          errorMessage.value = t('nodePalette.error.couldNotGenerateBranches')
+          return false
+        }
+        const newTabs = resolvedDomains.map((name: string) => ({
+          id: `domain_${crypto.randomUUID()}`,
+          name,
+        }))
+        panelsStore.updateNodePalette({
+          conceptMapTabs: newTabs,
+          mode: newTabs[0]?.id ?? null,
+        })
+        await streamConceptMapConceptsForTabsSequential(newTabs)
+        return true
+      } catch (err) {
+        if (isAbortError(err)) return false
+        const msg = err instanceof Error ? err.message : String(err)
+        errorMessage.value = msg
+        onError?.(msg)
+        return false
+      } finally {
+        isLoading.value = false
+      }
+    }
+    if (!panelsStore.nodePalettePanel.suggestions.length) {
+      if (!sessionId.value) {
+        sessionId.value = generateSessionId()
+      }
+      centerTopic.value = topic
+      isLoading.value = true
+      errorMessage.value = null
+      try {
+        await streamConceptMapConceptsForTabsSequential(
+          tabs.filter((t) => t.id.startsWith('domain_'))
+        )
+        return true
+      } catch (err) {
+        if (isAbortError(err)) return false
+        const msg = err instanceof Error ? err.message : String(err)
+        errorMessage.value = msg
+        onError?.(msg)
+        return false
+      } finally {
+        isLoading.value = false
+      }
+    }
+    return true
+  }
+
+  async function refreshConceptMapRootModal(): Promise<boolean> {
+    if (diagramType.value !== 'concept_map') return false
+    const diagramKey = getNodePaletteDiagramKey(
+      diagramType.value ?? 'unknown',
+      savedDiagramsStore.activeDiagramId,
+      route.query.diagramId as string | undefined
+    )
+    panelsStore.clearNodePaletteSession(diagramKey)
+    panelsStore.setNodePaletteSuggestions([])
+    panelsStore.updateNodePalette({ conceptMapTabs: undefined, mode: null })
+    sessionId.value = null
+    centerTopic.value = ''
+    return initializeConceptMapRootModal()
+  }
+
+  async function addConceptMapDomainTab(): Promise<boolean> {
+    if (diagramType.value !== 'concept_map') return false
+    const topic = topicText.value.trim()
+    if (!topic) {
+      errorMessage.value = t('nodePalette.error.enterTopicText')
+      return false
+    }
+    if (!sessionId.value) {
+      sessionId.value = generateSessionId()
+    }
+    centerTopic.value = topic
+    const existing = (panelsStore.nodePalettePanel.conceptMapTabs ?? []).map((t) =>
+      (t.name ?? '').trim()
+    )
+    isLoading.value = true
+    errorMessage.value = null
+    const addDomainBootstrap: { names: string[] | null } = { names: null }
+    try {
+      await streamBatch(
+        NODE_PALETTE_START,
+        {
+          session_id: sessionId.value,
+          diagram_type: 'concept_map',
+          diagram_data: diagramData.value,
+          language: promptLanguage.value,
+          mode: 'topic',
+          stage_data: {
+            bootstrap_domains: true,
+            domain_count: 1,
+            existing_domain_labels: existing,
+          },
+        },
+        {
+          onConceptMapDomains: (d: string[]) => {
+            addDomainBootstrap.names = d
+          },
+        }
+      )
+      const resolvedNames = addDomainBootstrap.names
+      if (!resolvedNames?.length) {
+        errorMessage.value = t('nodePalette.error.couldNotAddBranch')
+        return false
+      }
+      const newTab = { id: `domain_${crypto.randomUUID()}`, name: resolvedNames[0]! }
+      const tabs = [...(panelsStore.nodePalettePanel.conceptMapTabs ?? []), newTab]
+      panelsStore.updateNodePalette({ conceptMapTabs: tabs, mode: newTab.id })
+      const sharedIds = new Set(panelsStore.nodePalettePanel.suggestions.map((s) => s.id))
+      await streamBatch(
+        NODE_PALETTE_START,
+        {
+          session_id: sessionId.value,
+          diagram_type: 'concept_map',
+          diagram_data: diagramData.value,
+          language: promptLanguage.value,
+          mode: newTab.id,
+          stage_data: {
+            center_topic: topicText.value,
+            parent_id: newTab.id,
+            domain_label: newTab.name,
+          },
+        },
+        { append: true, sharedExistingIds: sharedIds, useGlobalAbort: false }
+      )
+      return true
+    } catch (err) {
+      if (isAbortError(err)) return false
+      const msg = err instanceof Error ? err.message : String(err)
+      errorMessage.value = msg
+      onError?.(msg)
+      return false
+    } finally {
+      isLoading.value = false
+    }
+  }
+
   const isWaitingForTopicInput = ref(false)
 
   async function startSession(options?: { keepSessionId?: boolean }): Promise<boolean> {
     if (!diagramType.value || !diagramStore.data?.nodes?.length) {
-      errorMessage.value = language === 'zh' ? '请先创建图示' : 'Please create a diagram first'
+      errorMessage.value = t('nodePalette.error.createDiagramFirst')
       return false
     }
 
@@ -384,8 +664,7 @@ export function useNodePalette(options: UseNodePaletteOptions = {}) {
     const canStartWithoutTopic = isDimensionsStage && diagramType.value === 'bridge_map'
     if (!canStartWithoutTopic && (!topic || !topic.trim())) {
       isWaitingForTopicInput.value = true
-      errorMessage.value =
-        language === 'zh' ? '请为主题节点输入文字' : 'Please enter text for the topic node'
+      errorMessage.value = t('nodePalette.error.enterTopicText')
       return false
     }
     if (
@@ -393,10 +672,7 @@ export function useNodePalette(options: UseNodePaletteOptions = {}) {
       (isPlaceholderText(topic) || topic.trim() === LEARNING_SHEET_PLACEHOLDER)
     ) {
       isWaitingForTopicInput.value = true
-      errorMessage.value =
-        language === 'zh'
-          ? '请输入真实主题，替换默认占位文字'
-          : 'Please enter a real topic, replace the default placeholder'
+      errorMessage.value = t('nodePalette.error.replacePlaceholder')
       return false
     }
 
@@ -482,7 +758,7 @@ export function useNodePalette(options: UseNodePaletteOptions = {}) {
           dt === 'concept_map' && displayMode && displayMode !== 'topic'
             ? { ...diagramData.value, topic: conceptMapCenterTopic.value }
             : diagramData.value,
-        language,
+        language: promptLanguage.value,
         mode: requestMode,
       }
       if (isStaged && resolvedStage) {
@@ -492,7 +768,8 @@ export function useNodePalette(options: UseNodePaletteOptions = {}) {
         }
       }
       if (dt === 'concept_map' && displayMode && displayMode !== 'topic') {
-        payload.stage_data = { center_topic: conceptMapCenterTopic.value, parent_id: displayMode }
+        const sd = conceptMapStageDataForMode(displayMode)
+        if (sd) payload.stage_data = sd
       }
       await streamBatch(NODE_PALETTE_START, payload)
       return true
@@ -551,11 +828,15 @@ export function useNodePalette(options: UseNodePaletteOptions = {}) {
         session_id: sessionId.value,
         diagram_type: dt,
         center_topic: nextBatchCenterTopic || ' ',
-        language,
+        language: promptLanguage.value,
         mode: nextBatchRequestMode,
       }
+      if (dt === 'concept_map') {
+        payload.diagram_data = diagramData.value
+      }
       if (dt === 'concept_map' && nextBatchMode && nextBatchMode !== 'topic') {
-        payload.stage_data = { center_topic: nextBatchCenterTopic, parent_id: nextBatchMode }
+        const sd = conceptMapStageDataForMode(nextBatchMode)
+        if (sd) payload.stage_data = sd
       }
       if (isStaged && stage) {
         payload.stage = stage
@@ -600,7 +881,7 @@ export function useNodePalette(options: UseNodePaletteOptions = {}) {
     if (toApply.length === 0) return false
     if (isDimensionsStage && toApply.length !== 1) return false
 
-    diagramStore.pushHistory(language === 'zh' ? '替换/添加节点' : 'Replace/add nodes')
+    diagramStore.pushHistory(t('nodePalette.history.replaceAddNodes'))
 
     const mode =
       panelsStore.nodePalettePanel.mode ??
@@ -621,7 +902,7 @@ export function useNodePalette(options: UseNodePaletteOptions = {}) {
       stage,
       stageData: panelsStore.nodePalettePanel.stage_data ?? undefined,
       mode,
-      language,
+      language: promptLanguage.value,
       startSession,
       startSessionsForAllParents,
     })
@@ -675,8 +956,10 @@ export function useNodePalette(options: UseNodePaletteOptions = {}) {
     panelsStore.updateNodePalette({ mode })
     errorMessage.value = null
     const defaultMode = isDoubleBubble ? 'similarities' : 'causes'
-    const suggestionsForMode = panelsStore.nodePalettePanel.suggestions.filter(
-      (s) => (s.mode ?? defaultMode) === mode
+    const suggestionsForMode = panelsStore.nodePalettePanel.suggestions.filter((s) =>
+      isDoubleBubble
+        ? effectiveDoubleBubbleMode(s) === mode
+        : (s.mode ?? defaultMode) === mode
     )
     if (suggestionsForMode.length > 0) {
       return true
@@ -790,26 +1073,6 @@ export function useNodePalette(options: UseNodePaletteOptions = {}) {
     }
   )
 
-  watch(
-    () =>
-      diagramType.value === 'concept_map' && panelsStore.nodePalettePanel.isOpen && topicText.value,
-    (shouldEnsure) => {
-      if (!shouldEnsure) return
-      const topic = topicText.value.trim()
-      if (!topic) return
-      const tabs = panelsStore.nodePalettePanel.conceptMapTabs ?? []
-      const hasTopic = tabs.some((t) => t.id === 'topic')
-      if (!hasTopic) {
-        const newTabs = [{ id: 'topic', name: topic }, ...tabs]
-        panelsStore.updateNodePalette({ conceptMapTabs: newTabs })
-        if (!panelsStore.nodePalettePanel.mode) {
-          panelsStore.updateNodePalette({ mode: 'topic' })
-        }
-      }
-    },
-    { immediate: true }
-  )
-
   function resetSessionState(): void {
     if (abortController.value) {
       abortController.value.abort()
@@ -860,8 +1123,8 @@ export function useNodePalette(options: UseNodePaletteOptions = {}) {
   const doubleBubbleTopics = computed(() => {
     if (diagramType.value !== 'double_bubble_map') return null
     const data = diagramData.value as { left?: string; right?: string }
-    const fallbackLeft = language === 'zh' ? '主题A' : 'Topic A'
-    const fallbackRight = language === 'zh' ? '主题B' : 'Topic B'
+    const fallbackLeft = t('nodePalette.fallbackTopicA')
+    const fallbackRight = t('nodePalette.fallbackTopicB')
     return {
       left: (data.left ?? '').trim() || fallbackLeft,
       right: (data.right ?? '').trim() || fallbackRight,
@@ -890,6 +1153,7 @@ export function useNodePalette(options: UseNodePaletteOptions = {}) {
     centerTopic,
     isLoading,
     isLoadingMore,
+    paletteStreamPhase,
     errorMessage,
     suggestions,
     selectedIds,
@@ -913,5 +1177,8 @@ export function useNodePalette(options: UseNodePaletteOptions = {}) {
     switchTab,
     switchStageTab,
     switchConceptMapTab,
+    initializeConceptMapRootModal,
+    refreshConceptMapRootModal,
+    addConceptMapDomainTab,
   }
 }

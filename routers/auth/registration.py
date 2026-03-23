@@ -316,7 +316,9 @@ async def register(
             "id": new_user.id,
             "phone": new_user.phone,
             "name": new_user.name,
-            "organization": org.name
+            "organization": org.name,
+            "ui_language": getattr(new_user, "ui_language", None),
+            "prompt_language": getattr(new_user, "prompt_language", None),
         }
     }
 
@@ -565,6 +567,8 @@ async def register_with_sms(
             "id": new_user.id,
             "phone": new_user.phone,
             "name": new_user.name,
-            "organization": org.name
+            "organization": org.name,
+            "ui_language": getattr(new_user, "ui_language", None),
+            "prompt_language": getattr(new_user, "prompt_language", None),
         }
     }

@@ -18,6 +18,8 @@ from config.characteristics_fallbacks import (
     get_fallback_characteristics,
     get_default_fallback
 )
+from utils.prompt_locale import template_lang_for_registry
+from utils.prompt_output_languages import is_prompt_output_language
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +33,7 @@ def generate_characteristics_with_agent(
     Args:
         topic1 (str): First topic
         topic2 (str): Second topic
-        language (str): Language for processing ('zh' or 'en')
+        language (str): Language for processing ('zh', 'en', or 'az'; az uses English prompts)
 
     Returns:
         dict: Characteristics specification
@@ -48,14 +50,16 @@ def generate_characteristics_with_agent(
         logger.error("Invalid topic2 provided - empty or not a string")
         raise ValueError("topic2 cannot be empty")
 
-    if not isinstance(language, str) or language not in ['zh', 'en']:
+    if not isinstance(language, str) or not is_prompt_output_language(language):
         logger.warning("Invalid language '%s', defaulting to 'zh'", language)
         language = 'zh'
+
+    registry_lang = template_lang_for_registry(language)
 
     logger.debug("Agent: Generating characteristics for %s vs %s", topic1, topic2)
     # Create the characteristics generation function
     from .prompt_helpers import create_characteristics_chain  # pylint: disable=import-outside-toplevel
-    char_func = create_characteristics_chain(language)
+    char_func = create_characteristics_chain(registry_lang)
     try:
         # Run the function directly (not a LangChain chain)
         result = char_func(topic1, topic2)

@@ -327,7 +327,9 @@ async def login(
             "name": user.name,
             "organization": org.name if org else None,
             "avatar": user.avatar or "🐈‍⬛",
-            "role": get_user_role(user)
+            "role": get_user_role(user),
+            "ui_language": getattr(user, "ui_language", None),
+            "prompt_language": getattr(user, "prompt_language", None),
         }
     }
 
@@ -475,7 +477,9 @@ async def login_with_sms(
             "name": user.name,
             "organization": org.name if org else None,
             "avatar": user.avatar or "🐈‍⬛",
-            "role": get_user_role(user)
+            "role": get_user_role(user),
+            "ui_language": getattr(user, "ui_language", None),
+            "prompt_language": getattr(user, "prompt_language", None),
         }
     }
 
@@ -655,7 +659,9 @@ async def verify_demo(
             "id": auth_user.id,
             "phone": auth_user.phone,
             "name": auth_user.name,
-            "role": "admin" if is_admin_access else "user"
+            "role": "admin" if is_admin_access else "user",
+            "ui_language": getattr(auth_user, "ui_language", None),
+            "prompt_language": getattr(auth_user, "prompt_language", None),
         }
     }
 

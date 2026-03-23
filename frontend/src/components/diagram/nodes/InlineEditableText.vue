@@ -6,13 +6,15 @@
  * - Double-click to enter edit mode
  * - Text is highlighted/selected on edit start
  * - Enter to save, Escape to cancel
+ * - Tab: emits node_editor:tab_pressed (draftText); optional syncBaselineOnTab for concept map focus
  * - Click outside to save
  * - Seamless transition between display and edit modes
  */
-import { computed, inject, nextTick, onUnmounted, ref, watch } from 'vue'
+import { computed, inject, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import { useLanguage, useNotifications } from '@/composables'
 import { eventBus } from '@/composables/useEventBus'
+import { shouldPreferSingleLineNoWrap } from '@/stores/specLoader/textMeasurement'
 
 const props = withDefaults(
   defineProps<{
@@ -44,10 +46,17 @@ const props = withDefaults(
     fullWidth?: boolean
     /** When true, display span is content-sized and centered by parent (reduces font-metric shift in circle topic). */
     centerBlockInCircle?: boolean
+    /**
+     * When true, Tab updates the saved baseline to the current draft without closing edit mode
+     * (used for concept map focus question: Tab commits draft then triggers validation in CanvasPage).
+     */
+    syncBaselineOnTab?: boolean
     /** When true, disable editing (e.g. learning sheet knocked-out nodes) */
     readonly?: boolean
     /** Text decoration (underline, line-through). Must be passed explicitly - CSS does not inherit to form controls. */
     textDecoration?: 'none' | 'underline' | 'line-through' | 'underline line-through'
+    /** When text equals prefix+suffix, display suffix with muted color (e.g. concept map focus placeholder) */
+    mutedTailSplit?: { prefix: string; suffix: string } | null
   }>(),
   {
     isEditing: false,
@@ -55,15 +64,17 @@ const props = withDefaults(
     textAlign: 'center',
     textClass: '',
     multiline: false,
-    placeholder: 'Enter text...',
+    placeholder: undefined,
     minLength: 1,
     maxLength: 200,
     truncate: false,
     noWrap: false,
     fullWidth: false,
     centerBlockInCircle: false,
+    syncBaselineOnTab: false,
     readonly: false,
     textDecoration: 'none',
+    mutedTailSplit: null,
   }
 )
 
@@ -74,11 +85,19 @@ const emit = defineEmits<{
   (e: 'widthChange', width: number): void
 }>()
 
-const collabCanvas = inject<
-  { isNodeLockedByOther?: (nodeId: string) => boolean } | undefined
->('collabCanvas', undefined)
+const collabCanvas = inject<{ isNodeLockedByOther?: (nodeId: string) => boolean } | undefined>(
+  'collabCanvas',
+  undefined
+)
 const notifyCollab = useNotifications()
-const { isZh } = useLanguage()
+const { t } = useLanguage()
+
+const resolvedPlaceholder = computed(() => {
+  if (props.placeholder != null && props.placeholder !== '') {
+    return props.placeholder
+  }
+  return String(t('diagram.editable.placeholder'))
+})
 
 // Local editing state
 const localIsEditing = ref(false)
@@ -89,6 +108,18 @@ const displayRef = ref<HTMLSpanElement | null>(null)
 const wrapperRef = ref<HTMLDivElement | null>(null)
 const inputWidth = ref<string | undefined>(undefined)
 const measureRef = ref<HTMLSpanElement | null>(null) // Hidden span for measuring text width
+
+/** Matches computed font on display/edit for measureTextWidth (multiscript stack). */
+const displayFontSizePx = ref(14)
+const displayFontWeight = ref('400')
+
+function syncFontMetrics(): void {
+  const el = displayRef.value || measureRef.value || inputRef.value
+  if (!el) return
+  const cs = getComputedStyle(el)
+  displayFontSizePx.value = parseFloat(cs.fontSize) || 14
+  displayFontWeight.value = cs.fontWeight || '400'
+}
 
 // Sync with parent's isEditing prop
 watch(
@@ -166,31 +197,37 @@ function updateInputWidth(): void {
   })
 }
 
-/**
- * Count Chinese characters in text
- * Chinese characters are in Unicode ranges:
- * - CJK Unified Ideographs: \u4E00-\u9FFF
- * - CJK Extension A: \u3400-\u4DBF
- * - CJK Extension B: \u20000-\u2A6DF
- * - CJK Extension C: \u2A700-\u2B73F
- * - CJK Extension D: \u2B740-\u2B81F
- * - CJK Extension E: \u2B820-\u2CEAF
- * - CJK Compatibility Ideographs: \uF900-\uFAFF
- */
-function countChineseCharacters(text: string): number {
-  if (!text) return 0
-  // Match Chinese characters using Unicode ranges
-  const chineseRegex = /[\u4E00-\u9FFF\u3400-\u4DBF\uF900-\uFAFF]/g
-  const matches = text.match(chineseRegex)
-  return matches ? matches.length : 0
-}
+watch(
+  [() => props.text, () => editText.value, localIsEditing],
+  () => {
+    nextTick(syncFontMetrics)
+  },
+  { flush: 'post' }
+)
 
-// Computed: should prevent wrapping (if less than 5 Chinese characters)
-// Check editText when editing, props.text when displaying
+onMounted(() => {
+  nextTick(() => {
+    syncFontMetrics()
+    requestAnimationFrame(() => {
+      syncFontMetrics()
+    })
+  })
+})
+
 const shouldPreventWrap = computed(() => {
+  if (props.noWrap || props.truncate) return false
   const textToCheck = localIsEditing.value ? editText.value : props.text
-  const chineseCount = countChineseCharacters(textToCheck)
-  return chineseCount > 0 && chineseCount < 5
+  const maxWidthPx = parseInt(props.maxWidth, 10) || 200
+  return shouldPreferSingleLineNoWrap(textToCheck || ' ', maxWidthPx, displayFontSizePx.value, {
+    fontWeight: String(displayFontWeight.value),
+    horizontalPaddingPx: 8,
+  })
+})
+
+const showMutedTailSplit = computed(() => {
+  const s = props.mutedTailSplit
+  if (!s) return false
+  return props.text === s.prefix + s.suffix
 })
 
 // Computed styles - textDecoration must be explicit (CSS does not inherit to input/textarea)
@@ -220,7 +257,7 @@ function startEditing(): void {
 
   if (collabCanvas?.isNodeLockedByOther?.(props.nodeId)) {
     notifyCollab.warning(
-      isZh.value ? '其他用户正在编辑此节点' : 'Someone else is editing this node'
+      t('collab.nodeLocked')
     )
     return
   }
@@ -270,6 +307,7 @@ function startEditing(): void {
       inputRef.value.select()
     }
     updateInputWidth()
+    syncFontMetrics()
   })
 }
 
@@ -333,7 +371,13 @@ function handleKeydown(event: KeyboardEvent): void {
   } else if (event.key === 'Tab') {
     event.preventDefault()
     event.stopPropagation()
-    eventBus.emit('node_editor:tab_pressed', { nodeId: props.nodeId })
+    eventBus.emit('node_editor:tab_pressed', {
+      nodeId: props.nodeId,
+      draftText: editText.value,
+    })
+    if (props.syncBaselineOnTab) {
+      originalText.value = editText.value
+    }
   }
 }
 
@@ -435,10 +479,11 @@ onUnmounted(() => {
           v-if="multiline"
           ref="inputRef"
           v-model="editText"
+          dir="auto"
           class="inline-edit-input"
           :class="{ 'whitespace-nowrap': noWrap || shouldPreventWrap }"
           :style="inputStyle"
-          :placeholder="placeholder"
+          :placeholder="resolvedPlaceholder"
           :maxlength="maxLength"
           rows="2"
           @keydown="handleKeydown"
@@ -450,11 +495,12 @@ onUnmounted(() => {
           <input
             ref="inputRef"
             v-model="editText"
+            dir="auto"
             type="text"
             class="inline-edit-input"
             :class="{ 'whitespace-nowrap': noWrap || shouldPreventWrap }"
             :style="inputStyle"
-            :placeholder="placeholder"
+            :placeholder="resolvedPlaceholder"
             :maxlength="maxLength"
             @keydown="handleKeydown"
             @blur="handleBlur"
@@ -465,10 +511,11 @@ onUnmounted(() => {
       </div>
     </div>
 
-    <!-- Display mode: show text -->
+    <!-- Display mode: show text (optional muted suffix, e.g. 焦点问题:请输入) -->
     <span
       v-else
       ref="displayRef"
+      dir="auto"
       class="inline-edit-display"
       :class="[
         textClass,
@@ -489,7 +536,13 @@ onUnmounted(() => {
       }"
       :title="truncate ? text : undefined"
     >
-      {{ text }}
+      <template v-if="showMutedTailSplit && mutedTailSplit">
+        <span>{{ mutedTailSplit.prefix }}</span>
+        <span class="inline-edit-muted-suffix">{{ mutedTailSplit.suffix }}</span>
+      </template>
+      <template v-else>
+        {{ text }}
+      </template>
     </span>
   </div>
 </template>
@@ -566,6 +619,14 @@ onUnmounted(() => {
   cursor: text;
   user-select: none;
   text-decoration: inherit;
+}
+
+.inline-edit-muted-suffix {
+  color: rgb(163 163 163);
+}
+
+:root.dark .inline-edit-muted-suffix {
+  color: rgb(115 115 115);
 }
 
 /* Center text in full width (circle/bubble topic) so text is visually centered in the circle */

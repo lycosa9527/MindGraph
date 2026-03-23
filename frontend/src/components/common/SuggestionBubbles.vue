@@ -22,42 +22,24 @@ const emit = defineEmits<{
   (e: 'select', suggestion: string): void
 }>()
 
-const { isZh } = useLanguage()
+const { t } = useLanguage()
 const authStore = useAuthStore()
 
 // Default suggestions if none provided
-const defaultSuggestions = computed(() => {
-  if (isZh.value) {
-    return [
-      '《平行四边形》这节课可以设计哪些认知冲突？',
-      '请帮我生成《呼吸作用》的教学设计。',
-      '学生在万有引力这个知识点上存在哪些迷思概念？',
-      '如何设计一堂有效的小组合作学习课？',
-      '怎样提升学生的科学探究能力？',
-      '小学语文阅读教学有哪些创新方法？',
-      '数学概念教学中如何联系生活实际？',
-      '如何培养学生的批判性思维能力？',
-      '英语听力教学的有效策略有哪些？',
-      '历史课堂中如何进行情境教学？',
-      '物理实验教学中应注意哪些安全问题？',
-      '如何设计符合学生认知水平的作业？',
-    ]
-  }
-  return [
-    'What cognitive conflicts can I design for a parallelogram lesson?',
-    'Help me create a lesson plan for cellular respiration.',
-    'What misconceptions do students have about gravity?',
-    'How to design an effective group learning session?',
-    'How to improve students scientific inquiry skills?',
-    'What are innovative methods for reading instruction?',
-    'How to connect math concepts to real life?',
-    'How to develop critical thinking skills?',
-    'What are effective strategies for listening instruction?',
-    'How to use situational teaching in history class?',
-    'What safety issues should be noted in physics experiments?',
-    'How to design homework that matches student cognitive level?',
-  ]
-})
+const defaultSuggestions = computed(() => [
+  t('mindmate.defaultSuggestion1'),
+  t('mindmate.defaultSuggestion2'),
+  t('mindmate.defaultSuggestion3'),
+  t('mindmate.defaultSuggestion4'),
+  t('mindmate.defaultSuggestion5'),
+  t('mindmate.defaultSuggestion6'),
+  t('mindmate.defaultSuggestion7'),
+  t('mindmate.defaultSuggestion8'),
+  t('mindmate.defaultSuggestion9'),
+  t('mindmate.defaultSuggestion10'),
+  t('mindmate.defaultSuggestion11'),
+  t('mindmate.defaultSuggestion12'),
+])
 
 const displaySuggestions = computed(() => {
   return props.suggestions.length > 0 ? props.suggestions : defaultSuggestions.value
@@ -112,7 +94,7 @@ onUnmounted(() => {
   }
 })
 
-const labelText = computed(() => (isZh.value ? '可以试着问我：' : 'Try asking me:'))
+const labelText = computed(() => t('mindmate.suggestionLabel'))
 
 const isAuthenticated = computed(() => authStore.isAuthenticated)
 </script>

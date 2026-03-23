@@ -7,7 +7,7 @@ and fix type checker issues (reportGeneralTypeIssues, ContentStream).
 import json
 import logging
 from collections.abc import AsyncIterator
-from typing import Any, Type
+from typing import Any, Dict, Optional, Type
 
 from services.infrastructure.http.error_handler import (
     LLMAccessDeniedError,
@@ -20,6 +20,7 @@ from services.infrastructure.http.error_handler import (
     LLMTimeoutError,
 )
 from utils.placeholder import is_placeholder_text
+from utils.prompt_output_languages import is_prompt_output_language
 
 logger = logging.getLogger(__name__)
 
@@ -143,6 +144,29 @@ def _yield_error_event(req: Any, error_type: str, user_message: str | None = Non
     return f"data: {json.dumps({'event': 'error', 'error_type': error_type, 'message': msg})}\n\n"
 
 
+def _merged_educational_context(req: Any) -> Optional[Dict[str, Any]]:
+    """Merge educational_context with concept_map fields and request generation language."""
+    edu: Dict[str, Any] = {}
+    raw = getattr(req, 'educational_context', None)
+    if isinstance(raw, dict):
+        edu = dict(raw)
+    if getattr(req, 'diagram_type', None) == 'concept_map':
+        dd = getattr(req, 'diagram_data', None) or {}
+        if isinstance(dd, dict):
+            fq = str(dd.get('focus_question') or '').strip()
+            rc = str(dd.get('root_concept') or '').strip()
+            if fq:
+                edu['focus_question'] = fq
+            if rc:
+                edu['root_concept'] = rc
+    req_lang = getattr(req, 'language', None)
+    if isinstance(req_lang, str):
+        stripped = req_lang.strip().lower()
+        if is_prompt_output_language(stripped):
+            edu['language'] = stripped
+    return edu if edu else None
+
+
 def _build_batch_kwargs(
     req: Any,
     session_id: str,
@@ -158,7 +182,7 @@ def _build_batch_kwargs(
     base = {
         'session_id': session_id,
         'center_topic': center_topic,
-        'educational_context': req.educational_context,
+        'educational_context': _merged_educational_context(req),
         'nodes_per_llm': 15,
         'user_id': user_id,
         'organization_id': org_id,

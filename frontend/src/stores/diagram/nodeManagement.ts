@@ -19,6 +19,12 @@ export function useNodeManagementSlice(ctx: DiagramContext) {
       ...updates,
     }
 
+    if (ctx.type.value === 'concept_map' && nodeId === 'topic' && 'text' in updates) {
+      const dr = ctx.data.value as Record<string, unknown>
+      const raw = updates.text
+      dr.focus_question = typeof raw === 'string' ? raw.trim() : ''
+    }
+
     // Sync dimension-label text to data.dimension for brace_map, tree_map, bridge_map
     if (
       nodeId === 'dimension-label' &&
@@ -48,6 +54,10 @@ export function useNodeManagementSlice(ctx: DiagramContext) {
     ctx.data.value.nodes[nodeIndex] = {
       ...ctx.data.value.nodes[nodeIndex],
       text: '',
+    }
+
+    if (ctx.type.value === 'concept_map' && nodeId === 'topic') {
+      ;(ctx.data.value as Record<string, unknown>).focus_question = ''
     }
 
     emitEvent('diagram:node_updated', { nodeId, updates: { text: '' } })

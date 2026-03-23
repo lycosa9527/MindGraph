@@ -17,7 +17,7 @@ defineProps<{
   isBlurred?: boolean
 }>()
 
-const { isZh } = useLanguage()
+const { t } = useLanguage()
 const askOnceStore = useAskOnceStore()
 
 // Show all or just 10
@@ -76,10 +76,10 @@ const remainingCount = computed(() => conversations.value.length - INITIAL_LIMIT
 
 // Group labels
 const groupLabels = computed(() => ({
-  today: isZh.value ? '今天' : 'Today',
-  yesterday: isZh.value ? '昨天' : 'Yesterday',
-  week: isZh.value ? '上周' : 'Past Week',
-  month: isZh.value ? '上月' : 'Past Month',
+  today: t('common.date.today'),
+  yesterday: t('common.date.yesterday'),
+  week: t('common.date.pastWeek'),
+  month: t('common.date.pastMonth'),
 }))
 
 // Handle conversation click
@@ -92,10 +92,7 @@ function handleRenameConversation(convId: string): void {
   const conv = conversations.value.find((c) => c.id === convId)
   const currentName = conv?.name || ''
 
-  const newName = window.prompt(
-    isZh.value ? '请输入新的对话名称' : 'Enter a new name for this conversation',
-    currentName
-  )
+  const newName = window.prompt(t('sidebar.askOnceHistory.renamePrompt'), currentName)
 
   if (newName !== null && newName.trim() !== currentName) {
     askOnceStore.renameConversation(convId, newName.trim())
@@ -104,11 +101,7 @@ function handleRenameConversation(convId: string): void {
 
 // Handle delete conversation
 function handleDeleteConversation(convId: string): void {
-  const confirmed = window.confirm(
-    isZh.value
-      ? '确定要删除这个对话吗？此操作不可撤销。'
-      : 'Are you sure you want to delete this conversation? This cannot be undone.'
-  )
+  const confirmed = window.confirm(t('sidebar.askOnceHistory.deleteConfirm'))
 
   if (confirmed) {
     askOnceStore.deleteConversation(convId)
@@ -126,7 +119,7 @@ function toggleShowAll(): void {
     <!-- Header -->
     <div class="px-4 py-3">
       <div class="text-xs font-medium text-stone-400 uppercase tracking-wider">
-        {{ isZh ? '历史对话' : 'History' }}
+        {{ t('sidebar.askOnceHistory.title') }}
       </div>
     </div>
 
@@ -140,7 +133,7 @@ function toggleShowAll(): void {
         >
           <MessageCircle class="w-8 h-8 mx-auto mb-2 text-stone-300" />
           <p class="text-xs text-stone-400">
-            {{ isZh ? '暂无对话记录' : 'No conversations yet' }}
+            {{ t('sidebar.askOnceHistory.empty') }}
           </p>
         </div>
 
@@ -160,7 +153,7 @@ function toggleShowAll(): void {
               @click="handleConversationClick(conv.id)"
             >
               <span class="conv-name">
-                {{ conv.name || (isZh ? '未命名' : 'Untitled') }}
+                {{ conv.name || t('sidebar.history.untitled') }}
               </span>
               <ElDropdown
                 trigger="click"
@@ -177,7 +170,7 @@ function toggleShowAll(): void {
                   <ElDropdownMenu>
                     <ElDropdownItem @click="handleRenameConversation(conv.id)">
                       <Edit3 class="w-4 h-4 mr-2" />
-                      {{ isZh ? '重命名' : 'Rename' }}
+                      {{ t('sidebar.actions.rename') }}
                     </ElDropdownItem>
                     <ElDropdownItem
                       divided
@@ -185,7 +178,7 @@ function toggleShowAll(): void {
                     >
                       <span class="delete-option">
                         <Trash2 class="w-4 h-4 mr-2" />
-                        {{ isZh ? '删除' : 'Delete' }}
+                        {{ t('sidebar.actions.delete') }}
                       </span>
                     </ElDropdownItem>
                   </ElDropdownMenu>
@@ -208,7 +201,7 @@ function toggleShowAll(): void {
               @click="handleConversationClick(conv.id)"
             >
               <span class="conv-name">
-                {{ conv.name || (isZh ? '未命名' : 'Untitled') }}
+                {{ conv.name || t('sidebar.history.untitled') }}
               </span>
               <ElDropdown
                 trigger="click"
@@ -225,7 +218,7 @@ function toggleShowAll(): void {
                   <ElDropdownMenu>
                     <ElDropdownItem @click="handleRenameConversation(conv.id)">
                       <Edit3 class="w-4 h-4 mr-2" />
-                      {{ isZh ? '重命名' : 'Rename' }}
+                      {{ t('sidebar.actions.rename') }}
                     </ElDropdownItem>
                     <ElDropdownItem
                       divided
@@ -233,7 +226,7 @@ function toggleShowAll(): void {
                     >
                       <span class="delete-option">
                         <Trash2 class="w-4 h-4 mr-2" />
-                        {{ isZh ? '删除' : 'Delete' }}
+                        {{ t('sidebar.actions.delete') }}
                       </span>
                     </ElDropdownItem>
                   </ElDropdownMenu>
@@ -256,7 +249,7 @@ function toggleShowAll(): void {
               @click="handleConversationClick(conv.id)"
             >
               <span class="conv-name">
-                {{ conv.name || (isZh ? '未命名' : 'Untitled') }}
+                {{ conv.name || t('sidebar.history.untitled') }}
               </span>
               <ElDropdown
                 trigger="click"
@@ -273,7 +266,7 @@ function toggleShowAll(): void {
                   <ElDropdownMenu>
                     <ElDropdownItem @click="handleRenameConversation(conv.id)">
                       <Edit3 class="w-4 h-4 mr-2" />
-                      {{ isZh ? '重命名' : 'Rename' }}
+                      {{ t('sidebar.actions.rename') }}
                     </ElDropdownItem>
                     <ElDropdownItem
                       divided
@@ -281,7 +274,7 @@ function toggleShowAll(): void {
                     >
                       <span class="delete-option">
                         <Trash2 class="w-4 h-4 mr-2" />
-                        {{ isZh ? '删除' : 'Delete' }}
+                        {{ t('sidebar.actions.delete') }}
                       </span>
                     </ElDropdownItem>
                   </ElDropdownMenu>
@@ -304,7 +297,7 @@ function toggleShowAll(): void {
               @click="handleConversationClick(conv.id)"
             >
               <span class="conv-name">
-                {{ conv.name || (isZh ? '未命名' : 'Untitled') }}
+                {{ conv.name || t('sidebar.history.untitled') }}
               </span>
               <ElDropdown
                 trigger="click"
@@ -321,7 +314,7 @@ function toggleShowAll(): void {
                   <ElDropdownMenu>
                     <ElDropdownItem @click="handleRenameConversation(conv.id)">
                       <Edit3 class="w-4 h-4 mr-2" />
-                      {{ isZh ? '重命名' : 'Rename' }}
+                      {{ t('sidebar.actions.rename') }}
                     </ElDropdownItem>
                     <ElDropdownItem
                       divided
@@ -329,7 +322,7 @@ function toggleShowAll(): void {
                     >
                       <span class="delete-option">
                         <Trash2 class="w-4 h-4 mr-2" />
-                        {{ isZh ? '删除' : 'Delete' }}
+                        {{ t('sidebar.actions.delete') }}
                       </span>
                     </ElDropdownItem>
                   </ElDropdownMenu>
@@ -344,7 +337,7 @@ function toggleShowAll(): void {
             class="show-more-btn"
             @click="toggleShowAll"
           >
-            {{ isZh ? `显示更多 (${remainingCount})` : `Show more (${remainingCount})` }}
+            {{ t('sidebar.actions.showMore', { n: remainingCount }) }}
           </button>
 
           <!-- Show Less button -->
@@ -353,7 +346,7 @@ function toggleShowAll(): void {
             class="show-more-btn"
             @click="toggleShowAll"
           >
-            {{ isZh ? '收起' : 'Show less' }}
+            {{ t('sidebar.actions.showLess') }}
           </button>
         </template>
       </div>
@@ -371,7 +364,7 @@ function toggleShowAll(): void {
           <Lock class="w-5 h-5 text-stone-400" />
         </div>
         <p class="text-xs text-stone-500">
-          {{ isZh ? '登录后查看历史对话' : 'Login to view history' }}
+          {{ t('sidebar.chatHistory.loginPrompt') }}
         </p>
       </div>
     </div>

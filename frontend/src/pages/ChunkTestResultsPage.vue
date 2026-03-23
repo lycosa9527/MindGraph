@@ -33,7 +33,7 @@ import { useLanguage } from '@/composables/useLanguage'
 
 const route = useRoute()
 const router = useRouter()
-const { isZh } = useLanguage()
+const { t } = useLanguage()
 
 const testId = computed(() => parseInt(route.params.testId as string, 10))
 
@@ -79,14 +79,14 @@ const completedMethods = computed(
 
 const allMethods = ['spacy', 'semchunk', 'chonkie', 'langchain', 'mindchunk']
 
-const stageLabels: Record<string, string> = {
-  pending: isZh.value ? '等待中' : 'Pending',
-  chunking: isZh.value ? '分块处理' : 'Chunking',
-  retrieval: isZh.value ? '检索测试' : 'Retrieval Testing',
-  evaluation: isZh.value ? '评估计算' : 'Evaluation',
-  completed: isZh.value ? '已完成' : 'Completed',
-  failed: isZh.value ? '失败' : 'Failed',
-}
+const stageLabels = computed((): Record<string, string> => ({
+  pending: t('chunkTest.stage.pending'),
+  chunking: t('chunkTest.stage.chunking'),
+  retrieval: t('chunkTest.stage.retrieval'),
+  evaluation: t('chunkTest.stage.evaluation'),
+  completed: t('chunkTest.stage.completed'),
+  failed: t('chunkTest.stage.failed'),
+}))
 
 const methodLabels: Record<string, string> = {
   spacy: 'spaCy',
@@ -192,22 +192,20 @@ const handleCloseChunks = () => {
 const handleCancelTest = async () => {
   try {
     await ElMessageBox.confirm(
-      isZh.value
-        ? '确定要取消这个测试吗？测试将在下一个检查点停止。'
-        : 'Are you sure you want to cancel this test? The test will stop at the next checkpoint.',
-      isZh.value ? '取消测试' : 'Cancel Test',
+      t('chunkTestResults.cancelConfirmBody'),
+      t('chunkTestResults.cancelTest'),
       {
-        confirmButtonText: isZh.value ? '取消测试' : 'Cancel Test',
-        cancelButtonText: isZh.value ? '返回' : 'Back',
+        confirmButtonText: t('chunkTestResults.cancelTest'),
+        cancelButtonText: t('chunkTestResults.back'),
         type: 'warning',
       }
     )
 
     await cancelTestMutation.mutateAsync(testId.value)
-    notify.success(isZh.value ? '测试取消请求已发送' : 'Test cancellation requested')
+    notify.success(t('chunkTestResults.cancelRequested'))
   } catch (error) {
     if (error instanceof Error && error.message !== 'cancel') {
-      notify.error(error.message || (isZh.value ? '取消失败' : 'Failed to cancel test'))
+      notify.error(error.message || t('chunkTestResults.cancelFailed'))
     }
   }
 }
@@ -221,7 +219,7 @@ const handleCancelTest = async () => {
     >
       <div class="flex items-center gap-3">
         <h1 class="text-lg font-semibold text-stone-900">
-          {{ isZh ? 'RAG分块测试结果' : 'RAG Chunk Test Results' }}
+          {{ t('chunkTestResults.pageTitle') }}
         </h1>
         <span class="text-sm text-stone-500">#{{ testId }}</span>
       </div>
@@ -233,13 +231,13 @@ const handleCancelTest = async () => {
           :loading="cancelTestMutation.isPending.value"
           @click="handleCancelTest"
         >
-          {{ isZh ? '取消测试' : 'Cancel Test' }}
+          {{ t('chunkTestResults.cancelTest') }}
         </ElButton>
         <ElButton
           size="small"
           @click="handleBack"
         >
-          {{ isZh ? '返回' : 'Back' }}
+          {{ t('chunkTestResults.back') }}
         </ElButton>
       </div>
     </div>
@@ -257,7 +255,7 @@ const handleCancelTest = async () => {
               <Loading />
             </ElIcon>
             <h2 class="text-lg font-semibold text-stone-900">
-              {{ isZh ? '测试进行中...' : 'Testing in progress...' }}
+              {{ t('chunkTestResults.testingInProgress') }}
             </h2>
           </div>
 
@@ -267,7 +265,7 @@ const handleCancelTest = async () => {
             class="mb-4"
           >
             <div class="text-sm text-stone-600 mb-2">
-              {{ isZh ? '当前方法' : 'Current Method' }}
+              {{ t('chunkTestResults.currentMethod') }}
             </div>
             <ElTag
               type="primary"
@@ -283,13 +281,13 @@ const handleCancelTest = async () => {
             class="mb-4"
           >
             <div class="text-sm text-stone-600 mb-2">
-              {{ isZh ? '当前阶段' : 'Current Stage' }}
+              {{ t('chunkTestResults.currentStage') }}
             </div>
             <ElTag
               type="info"
               size="large"
             >
-              {{ stageLabels[currentStage] || currentStage }}
+              {{ stageLabels[currentStage] ?? currentStage }}
             </ElTag>
           </div>
 
@@ -297,7 +295,7 @@ const handleCancelTest = async () => {
           <div class="mb-4">
             <div class="flex items-center justify-between mb-2">
               <span class="text-sm text-stone-600">
-                {{ isZh ? '总体进度' : 'Overall Progress' }}
+                {{ t('chunkTestResults.overallProgress') }}
               </span>
               <span class="text-sm font-medium text-stone-900"> {{ progressPercent }}% </span>
             </div>
@@ -313,7 +311,7 @@ const handleCancelTest = async () => {
           <!-- Completed Methods -->
           <div>
             <div class="text-sm text-stone-600 mb-2">
-              {{ isZh ? '已完成方法' : 'Completed Methods' }}
+              {{ t('chunkTestResults.completedMethods') }}
             </div>
             <div class="flex items-center gap-2 flex-wrap">
               <template
@@ -369,15 +367,11 @@ const handleCancelTest = async () => {
               <CircleClose />
             </ElIcon>
             <h2 class="text-lg font-semibold text-red-900">
-              {{ isZh ? '测试失败' : 'Test Failed' }}
+              {{ t('chunkTestResults.testFailed') }}
             </h2>
           </div>
           <p class="text-stone-700">
-            {{
-              isZh
-                ? '测试执行过程中发生错误，请重试。'
-                : 'An error occurred during test execution. Please try again.'
-            }}
+            {{ t('chunkTestResults.testFailedHint') }}
           </p>
         </div>
       </div>
@@ -386,7 +380,7 @@ const handleCancelTest = async () => {
       <div v-if="isCompleted && metricsTableData.length > 0">
         <div class="flex items-center justify-between mb-4">
           <h2 class="text-lg font-semibold text-stone-900">
-            {{ isZh ? '评估指标' : 'Evaluation Metrics' }}
+            {{ t('chunkTestResults.evaluationMetrics') }}
           </h2>
         </div>
 
@@ -398,12 +392,12 @@ const handleCancelTest = async () => {
           >
             <ElTableColumn
               prop="method"
-              :label="isZh ? '方法' : 'Method'"
+              :label="t('chunkTestResults.method')"
               width="120"
               fixed="left"
             />
             <ElTableColumn
-              :label="isZh ? '操作' : 'Actions'"
+              :label="t('chunkTestResults.actions')"
               width="240"
               fixed="right"
             >
@@ -416,7 +410,7 @@ const handleCancelTest = async () => {
                     @click="handleViewChunks(getMethodKeyFromLabel(row.method))"
                   >
                     <ElIcon class="mr-1"><View /></ElIcon>
-                    {{ isZh ? '查看分块' : 'View Chunks' }}
+                    {{ t('chunkTestResults.viewChunks') }}
                   </ElButton>
                   <ElButton
                     size="small"
@@ -425,7 +419,7 @@ const handleCancelTest = async () => {
                     @click="handleManualEvaluation(getMethodKeyFromLabel(row.method))"
                   >
                     <ElIcon class="mr-1"><Sparkles /></ElIcon>
-                    {{ isZh ? '手动评估' : 'Evaluate' }}
+                    {{ t('chunkTestResults.evaluate') }}
                   </ElButton>
                 </div>
               </template>
@@ -433,17 +427,17 @@ const handleCancelTest = async () => {
 
             <!-- Standard IR Metrics -->
             <ElTableColumn
-              :label="isZh ? '标准IR指标' : 'Standard IR Metrics'"
+              :label="t('chunkTestResults.standardIrMetrics')"
               align="center"
             >
               <ElTableColumn
                 prop="precision"
-                :label="isZh ? '精确率' : 'Precision'"
+                :label="t('chunkTestResults.precision')"
                 width="100"
               />
               <ElTableColumn
                 prop="recall"
-                :label="isZh ? '召回率' : 'Recall'"
+                :label="t('chunkTestResults.recall')"
                 width="100"
               />
               <ElTableColumn
@@ -470,61 +464,61 @@ const handleCancelTest = async () => {
 
             <!-- Chunk Quality -->
             <ElTableColumn
-              :label="isZh ? '分块质量' : 'Chunk Quality'"
+              :label="t('chunkTestResults.chunkQuality')"
               align="center"
             >
               <ElTableColumn
                 prop="coverage_score"
-                :label="isZh ? '覆盖率' : 'Coverage'"
+                :label="t('chunkTestResults.coverage')"
                 width="120"
               />
               <ElTableColumn
                 prop="semantic_coherence"
-                :label="isZh ? '语义连贯性' : 'Coherence'"
+                :label="t('chunkTestResults.coherence')"
                 width="140"
               />
             </ElTableColumn>
 
             <!-- Answer Quality -->
             <ElTableColumn
-              :label="isZh ? '答案质量' : 'Answer Quality'"
+              :label="t('chunkTestResults.answerQuality')"
               align="center"
             >
               <ElTableColumn
                 prop="answer_coverage"
-                :label="isZh ? '答案覆盖率' : 'Answer Coverage'"
+                :label="t('chunkTestResults.answerCoverage')"
                 width="140"
               />
               <ElTableColumn
                 prop="answer_completeness"
-                :label="isZh ? '答案完整性' : 'Completeness'"
+                :label="t('chunkTestResults.completeness')"
                 width="140"
               />
               <ElTableColumn
                 prop="context_recall"
-                :label="isZh ? '上下文召回' : 'Context Recall'"
+                :label="t('chunkTestResults.contextRecall')"
                 width="140"
               />
             </ElTableColumn>
 
             <!-- Diversity & Efficiency -->
             <ElTableColumn
-              :label="isZh ? '多样性 & 效率' : 'Diversity & Efficiency'"
+              :label="t('chunkTestResults.diversityEfficiency')"
               align="center"
             >
               <ElTableColumn
                 prop="storage_efficiency"
-                :label="isZh ? '存储效率' : 'Storage Eff.'"
+                :label="t('chunkTestResults.storageEff')"
                 width="130"
               />
               <ElTableColumn
                 prop="semantic_diversity"
-                :label="isZh ? '语义多样性' : 'Diversity'"
+                :label="t('chunkTestResults.diversity')"
                 width="130"
               />
               <ElTableColumn
                 prop="avg_latency_ms"
-                :label="isZh ? '平均延迟(ms)' : 'Avg Latency'"
+                :label="t('chunkTestResults.avgLatency')"
                 width="130"
               />
             </ElTableColumn>
@@ -540,16 +534,16 @@ const handleCancelTest = async () => {
         <div class="mb-4 flex items-center justify-between">
           <h2 class="text-lg font-semibold text-stone-900">
             {{
-              isZh
-                ? `查看分块 - ${methodLabels[selectedMethod] || selectedMethod}`
-                : `View Chunks - ${methodLabels[selectedMethod] || selectedMethod}`
+              t('chunkTestResults.viewChunksHeading', {
+                method: methodLabels[selectedMethod] || selectedMethod,
+              })
             }}
           </h2>
           <ElButton
             size="small"
             @click="handleCloseChunks"
           >
-            {{ isZh ? '关闭' : 'Close' }}
+            {{ t('chunkTestResults.close') }}
           </ElButton>
         </div>
         <div
@@ -560,7 +554,7 @@ const handleCancelTest = async () => {
             <Loading />
           </ElIcon>
           <p class="text-stone-600">
-            {{ isZh ? '正在生成分块...' : 'Generating chunks...' }}
+            {{ t('chunkTestResults.generatingChunks') }}
           </p>
         </div>
         <div
@@ -568,11 +562,7 @@ const handleCancelTest = async () => {
           class="chunks-container"
         >
           <div class="mb-4 text-sm text-stone-600">
-            {{
-              isZh
-                ? `共 ${chunksData.chunks.length} 个分块`
-                : `Total ${chunksData.chunks.length} chunks`
-            }}
+            {{ t('chunkTestResults.totalChunks', { n: chunksData.chunks.length }) }}
           </div>
           <div class="space-y-4">
             <ElCard
@@ -584,18 +574,17 @@ const handleCancelTest = async () => {
               <template #header>
                 <div class="flex items-center justify-between">
                   <span class="font-medium text-stone-900">
-                    {{
-                      isZh ? `分块 #${chunk.chunk_index + 1}` : `Chunk #${chunk.chunk_index + 1}`
-                    }}
+                    {{ t('chunkTestResults.chunkLabel', { n: chunk.chunk_index + 1 }) }}
                   </span>
                   <span
                     v-if="chunk.start_char !== undefined && chunk.end_char !== undefined"
                     class="text-xs text-stone-500"
                   >
                     {{
-                      isZh
-                        ? `位置: ${chunk.start_char}-${chunk.end_char}`
-                        : `Position: ${chunk.start_char}-${chunk.end_char}`
+                      t('chunkTestResults.positionRange', {
+                        start: chunk.start_char,
+                        end: chunk.end_char,
+                      })
                     }}
                   </span>
                 </div>
@@ -624,7 +613,7 @@ const handleCancelTest = async () => {
           v-else-if="chunksData && chunksData.chunks.length === 0"
           class="text-center py-8 text-stone-500"
         >
-          {{ isZh ? '没有找到分块' : 'No chunks found' }}
+          {{ t('chunkTestResults.noChunks') }}
         </div>
       </div>
 
@@ -637,7 +626,7 @@ const handleCancelTest = async () => {
           <Loading />
         </ElIcon>
         <p class="text-stone-600">
-          {{ isZh ? '加载中...' : 'Loading...' }}
+          {{ t('chunkTestResults.loading') }}
         </p>
       </div>
     </div>

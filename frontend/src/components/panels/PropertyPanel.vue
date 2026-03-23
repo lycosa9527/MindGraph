@@ -13,7 +13,7 @@ const emit = defineEmits<{
 }>()
 
 const diagramStore = useDiagramStore()
-const { t, isZh } = useLanguage()
+const { t } = useLanguage()
 const notify = useNotifications()
 
 // Local form state
@@ -88,10 +88,10 @@ function deleteNode() {
 }
 
 // Font weight options
-const fontWeightOptions = [
-  { label: isZh.value ? '正常' : 'Normal', value: 'normal' },
-  { label: isZh.value ? '粗体' : 'Bold', value: 'bold' },
-]
+const fontWeightOptions = computed(() => [
+  { label: t('panels.property.fontNormal'), value: 'normal' as const },
+  { label: t('panels.property.fontBold'), value: 'bold' as const },
+])
 </script>
 
 <template>
@@ -127,10 +127,10 @@ const fontWeightOptions = [
           ><InfoFilled
         /></el-icon>
         <p>
-          {{ diagramStore.selectedNodes.length }} {{ isZh ? '个节点已选择' : 'nodes selected' }}
+          {{ t('panels.property.multiSelectLine', { n: diagramStore.selectedNodes.length }) }}
         </p>
         <p class="text-sm mt-1">
-          {{ isZh ? '选择单个节点以编辑属性' : 'Select a single node to edit properties' }}
+          {{ t('panels.property.selectSingle') }}
         </p>
       </div>
 
@@ -141,17 +141,17 @@ const fontWeightOptions = [
         size="small"
       >
         <!-- Text -->
-        <el-form-item :label="isZh ? '文本' : 'Text'">
+        <el-form-item :label="t('panels.property.text')">
           <el-input
             v-model="formData.text"
             type="textarea"
             :rows="3"
-            :placeholder="isZh ? '节点文本' : 'Node text'"
+            :placeholder="t('panels.property.nodeTextPlaceholder')"
           />
         </el-form-item>
 
         <!-- Font Size -->
-        <el-form-item :label="isZh ? '字体大小' : 'Font Size'">
+        <el-form-item :label="t('panels.property.fontSize')">
           <el-slider
             v-model="formData.fontSize"
             :min="10"
@@ -163,7 +163,7 @@ const fontWeightOptions = [
         </el-form-item>
 
         <!-- Font Weight -->
-        <el-form-item :label="isZh ? '字体粗细' : 'Font Weight'">
+        <el-form-item :label="t('panels.property.fontWeight')">
           <el-radio-group v-model="formData.fontWeight">
             <el-radio-button
               v-for="opt in fontWeightOptions"
@@ -177,19 +177,19 @@ const fontWeightOptions = [
 
         <!-- Colors -->
         <div class="grid grid-cols-3 gap-3">
-          <el-form-item :label="isZh ? '背景色' : 'Background'">
+          <el-form-item :label="t('panels.property.background')">
             <el-color-picker v-model="formData.backgroundColor" />
           </el-form-item>
-          <el-form-item :label="isZh ? '边框色' : 'Border'">
+          <el-form-item :label="t('panels.property.border')">
             <el-color-picker v-model="formData.borderColor" />
           </el-form-item>
-          <el-form-item :label="isZh ? '文字色' : 'Text'">
+          <el-form-item :label="t('panels.property.textColor')">
             <el-color-picker v-model="formData.textColor" />
           </el-form-item>
         </div>
 
         <!-- Border Width -->
-        <el-form-item :label="isZh ? '边框宽度' : 'Border Width'">
+        <el-form-item :label="t('panels.property.borderWidth')">
           <el-slider
             v-model="formData.borderWidth"
             :min="0"
@@ -201,7 +201,7 @@ const fontWeightOptions = [
         </el-form-item>
 
         <!-- Border Radius -->
-        <el-form-item :label="isZh ? '圆角' : 'Border Radius'">
+        <el-form-item :label="t('panels.property.borderRadius')">
           <el-slider
             v-model="formData.borderRadius"
             :min="0"
@@ -240,7 +240,7 @@ const fontWeightOptions = [
           class="mb-2"
           ><Select
         /></el-icon>
-        <p>{{ isZh ? '选择一个节点以编辑属性' : 'Select a node to edit properties' }}</p>
+        <p>{{ t('panels.property.selectNode') }}</p>
       </div>
     </div>
   </div>

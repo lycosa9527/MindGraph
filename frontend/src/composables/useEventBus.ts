@@ -237,7 +237,7 @@ export type EventTypes = {
   'interaction:edit_text_requested': { nodeId: string }
   'node_editor:opening': { nodeId: string }
   'node_editor:closed': { nodeId: string }
-  'node_editor:tab_pressed': { nodeId: string }
+  'node_editor:tab_pressed': { nodeId: string; draftText?: string }
 
   // Workshop Events
   'workshop:code-changed': { code: string | null }

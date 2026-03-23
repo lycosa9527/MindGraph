@@ -27,6 +27,9 @@ from routers.features.workshop_chat.dependencies import (
 from services.features.workshop_chat import (
     channel_service, message_service, dm_service,
 )
+from services.features.workshop_chat.presence_last_seen import (
+    record_workshop_last_seen,
+)
 from services.features.workshop_chat.mention_resolution import (
     MentionResolutionError,
 )
@@ -175,6 +178,12 @@ async def chat_websocket(websocket: WebSocket):
         await chat_ws_manager.broadcast_presence(
             user.id, "offline", channel_ids=old_channels,
         )
+        if presence_org is not None:
+            db = SessionLocal()
+            try:
+                record_workshop_last_seen(db, user.id)
+            finally:
+                db.close()
 
 
 async def _handle_message(websocket: WebSocket, user, data: dict):

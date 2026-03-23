@@ -11,31 +11,79 @@
  * - Glow effect when result becomes available
  * - Checkmark icon shows currently displayed result
  */
-import { computed, watch } from 'vue'
+import { computed } from 'vue'
 
 import { ElTooltip } from 'element-plus'
 
-import { Loader2, Sparkles, X } from 'lucide-vue-next'
+import { Sparkles, X } from 'lucide-vue-next'
 
 import { useAutoComplete, useLanguage } from '@/composables'
 import { LLM_MODEL_COLORS } from '@/config/llmModelColors'
-import { useDiagramStore, useInlineRecommendationsStore, useLLMResultsStore } from '@/stores'
+import {
+  useAuthStore,
+  useConceptMapFocusReviewStore,
+  useConceptMapRootConceptReviewStore,
+  useDiagramStore,
+  useInlineRecommendationsStore,
+  useLLMResultsStore,
+} from '@/stores'
 
-const { isZh } = useLanguage()
+const { t } = useLanguage()
 const { switchToModel } = useAutoComplete()
 const diagramStore = useDiagramStore()
 const llmResultsStore = useLLMResultsStore()
 const inlineRecStore = useInlineRecommendationsStore()
+const authStore = useAuthStore()
+const focusReviewStore = useConceptMapFocusReviewStore()
+const rootConceptReviewStore = useConceptMapRootConceptReviewStore()
 
 const isConceptMap = computed(() => diagramStore.type === 'concept_map')
 
-/** Show "关系" indicator when concept map and a model is selected—AI ready for relationship generation */
+/** Concept map: single AI toggle enables relationship-label generation (all models on backend) */
+function toggleConceptMapAi(): void {
+  if (llmResultsStore.selectedModel) {
+    llmResultsStore.setSelectedModel(null)
+  } else {
+    llmResultsStore.setSelectedModel('qwen')
+  }
+}
+
+/** Show "关系" when concept map AI is on */
 const showRelationshipReady = computed(
   () => isConceptMap.value && llmResultsStore.selectedModel != null
 )
 
+/** Tab-style badge when focus topic is long enough to validate (Tab while editing the topic node) */
+const showFocusReviewBadge = computed(
+  () => isConceptMap.value && authStore.isAuthenticated && focusReviewStore.isFocusTopicReady
+)
+
+const focusTabBadgeGlowClass = computed(() => {
+  if (!showFocusReviewBadge.value) return ''
+  const phase =
+    focusReviewStore.streamPhase !== 'idle'
+      ? focusReviewStore.streamPhase
+      : rootConceptReviewStore.streamPhase
+  if (phase === 'streaming') return 'tab-rec-badge-wrap--streaming'
+  if (phase === 'requesting') return 'tab-rec-badge-wrap--requesting'
+  return 'tab-rec-badge-wrap--idle'
+})
+
 /** Show "Tab推荐" indicator when topic fixed—AI ready for inline recommendations (edit node, press Tab) */
 const showInlineRecReady = computed(() => !isConceptMap.value && inlineRecStore.isReady)
+
+/**
+ * Tab rec badge ring matches inline SSE store (`streamPhase`):
+ * requesting = blue traveling ring, streaming = green traveling ring,
+ * idle = solid green ring (ready / stream finished / no request in flight).
+ */
+const tabRecBadgeGlowClass = computed(() => {
+  if (!showInlineRecReady.value) return ''
+  const phase = inlineRecStore.streamPhase
+  if (phase === 'streaming') return 'tab-rec-badge-wrap--streaming'
+  if (phase === 'requesting') return 'tab-rec-badge-wrap--requesting'
+  return 'tab-rec-badge-wrap--idle'
+})
 
 // Model display names
 const modelDisplayNames: Record<string, string> = {
@@ -83,25 +131,23 @@ function getTooltipContent(modelKey: string): string {
   const state = getModelState(modelKey)
   const displayName = modelDisplayNames[modelKey]
 
+  const name = displayName ?? modelKey
+
   switch (state) {
     case 'loading':
-      return isZh.value ? `${displayName} 生成中...` : `${displayName} generating...`
+      return String(t('aiModel.tooltip.generating', { name }))
     case 'ready':
       if (isSelectedModel(modelKey)) {
-        return isZh.value
-          ? `当前显示 ${displayName} 结果`
-          : `Currently showing ${displayName} result`
+        return String(t('aiModel.tooltip.showingResult', { name }))
       }
-      return isZh.value
-        ? `点击切换到 ${displayName} 结果`
-        : `Click to switch to ${displayName} result`
+      return String(t('aiModel.tooltip.clickSwitch', { name }))
     case 'error':
-      return isZh.value ? `${displayName} 生成失败` : `${displayName} generation failed`
+      return String(t('aiModel.tooltip.modelFailed', { name }))
     default:
       if (isSelectedModel(modelKey)) {
-        return isZh.value ? `点击取消选择 ${displayName}` : `Click to deselect ${displayName}`
+        return String(t('aiModel.tooltip.clickDeselect', { name }))
       }
-      return isZh.value ? `点击选择 ${displayName}` : `Click to select ${displayName}`
+      return String(t('aiModel.tooltip.clickSelect', { name }))
   }
 }
 
@@ -144,43 +190,59 @@ function getButtonStyle(modelKey: string) {
   }
   return {}
 }
-
-// Should show glow animation
-const _glowingModels = computed(() => {
-  return Object.entries(llmResultsStore.modelStates)
-    .filter(([_, state]) => state === 'ready')
-    .map(([model]) => model)
-})
-
-// Watch for new ready models to trigger glow animation
-const _recentlyReady = computed(() => new Set<string>())
-watch(
-  () => llmResultsStore.modelStates,
-  (newStates, oldStates) => {
-    for (const [model, state] of Object.entries(newStates)) {
-      if (state === 'ready' && oldStates?.[model] === 'loading') {
-        // Just became ready - could trigger animation here
-        console.log(`[AIModelSelector] ${model} just became ready`)
-      }
-    }
-  },
-  { deep: true }
-)
 </script>
 
 <template>
   <div class="ai-model-selector z-20 max-w-full min-w-0">
     <div class="glass-container px-3 py-1.5 flex items-center gap-3">
-      <!-- Label with icon -->
+      <!-- Label with icon (hidden for concept map — single AI control only) -->
       <div
+        v-if="!isConceptMap"
         class="flex items-center gap-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 shrink-0"
       >
         <Sparkles class="w-3.5 h-3.5 text-purple-500" />
-        <span>{{ isZh ? 'AI模型' : 'AI Model' }}</span>
+        <span>{{ t('aiModel.label') }}</span>
       </div>
 
-      <!-- Model buttons -->
-      <div class="flex gap-1 flex-1 justify-center min-w-0">
+      <!-- Concept map: intrinsic width only (picker sits beside us in bottom bar; avoid flex-1 overlap) -->
+      <div
+        v-if="isConceptMap"
+        class="flex gap-2 shrink-0 justify-center items-center"
+      >
+        <ElTooltip
+          :content="
+            llmResultsStore.selectedModel ? t('aiModel.conceptAiOn') : t('aiModel.conceptAiOff')
+          "
+          placement="top"
+        >
+          <button
+            type="button"
+            class="concept-ai-toggle-btn"
+            :class="{ 'concept-ai-toggle-btn--on': llmResultsStore.selectedModel }"
+            @click="toggleConceptMapAi"
+          >
+            <span class="font-semibold">{{ t('aiModel.enableAi') }}</span>
+          </button>
+        </ElTooltip>
+        <ElTooltip
+          v-if="showFocusReviewBadge"
+          :content="t('aiModel.tabFocusTooltip')"
+          placement="top"
+        >
+          <span
+            class="tab-rec-badge-wrap inline-flex"
+            :class="focusTabBadgeGlowClass"
+          >
+            <span class="tab-rec-badge-inner relationship-ready-badge">{{
+              t('aiModel.tabFocusBadge')
+            }}</span>
+          </span>
+        </ElTooltip>
+      </div>
+      <div
+        v-else
+        class="flex gap-1 flex-1 justify-center min-w-0"
+      >
         <ElTooltip
           v-for="modelKey in llmResultsStore.models"
           :key="modelKey"
@@ -193,20 +255,16 @@ watch(
             :disabled="getModelState(modelKey) === 'loading'"
             @click="handleModelClick(modelKey)"
           >
-            <!-- Icon based on state -->
-            <span class="btn-icon">
-              <Loader2
-                v-if="getModelState(modelKey) === 'loading'"
-                class="w-3.5 h-3.5 animate-spin"
-              />
-              <X
-                v-else-if="getModelState(modelKey) === 'error'"
-                class="w-3.5 h-3.5"
-              />
+            <span class="model-btn-content">
+              <!-- Icon: errors only (loading uses border animation, no spinner) -->
+              <span class="btn-icon">
+                <X
+                  v-if="getModelState(modelKey) === 'error'"
+                  class="w-3.5 h-3.5"
+                />
+              </span>
+              <span class="btn-label">{{ modelDisplayNames[modelKey] }}</span>
             </span>
-
-            <!-- Model name -->
-            <span class="btn-label">{{ modelDisplayNames[modelKey] }}</span>
           </button>
         </ElTooltip>
       </div>
@@ -214,28 +272,31 @@ watch(
       <!-- 关系 ready indicator (concept map: AI ready for link generation) - right of buttons -->
       <ElTooltip
         v-if="showRelationshipReady"
-        :content="
-          isZh ? '拖拽概念连线即可生成关系' : 'Drag to link concepts—AI will generate relationships'
-        "
+        :content="t('aiModel.relationshipsTooltip')"
         placement="top"
       >
-        <span class="relationship-ready-badge">{{ isZh ? '关系' : 'Relationships' }}</span>
+        <span class="relationship-ready-badge">{{ t('aiModel.relationshipsBadge') }}</span>
       </ElTooltip>
 
       <!-- Inline rec ready indicator (thinking maps: edit node, press Tab for AI recommendations) -->
       <ElTooltip
         v-if="showInlineRecReady"
-        :content="
-          isZh ? '编辑节点后按Tab获取AI推荐' : 'Press Tab while editing node for AI recommendations'
-        "
+        :content="t('aiModel.inlineRecTooltip')"
         placement="top"
       >
-        <span class="relationship-ready-badge">{{ isZh ? 'Tab推荐' : 'Tab rec' }}</span>
+        <span
+          class="tab-rec-badge-wrap inline-flex"
+          :class="tabRecBadgeGlowClass"
+        >
+          <span class="tab-rec-badge-inner relationship-ready-badge">{{
+            t('aiModel.tabRecBadge')
+          }}</span>
+        </span>
       </ElTooltip>
 
-      <!-- Ready count indicator -->
+      <!-- Ready count indicator (hidden for concept map — no multi-model autocomplete) -->
       <div
-        v-if="llmResultsStore.isGenerating || llmResultsStore.hasAnyResults"
+        v-if="!isConceptMap && (llmResultsStore.isGenerating || llmResultsStore.hasAnyResults)"
         class="text-[10px] text-gray-500 dark:text-gray-400"
       >
         <span v-if="llmResultsStore.isGenerating">
@@ -247,9 +308,7 @@ watch(
           v-else-if="llmResultsStore.hasAnyResults"
           class="text-green-600 dark:text-green-400"
         >
-          {{
-            isZh ? `${llmResultsStore.successCount}个就绪` : `${llmResultsStore.successCount} ready`
-          }}
+          {{ t('aiModel.readyCount', { count: llmResultsStore.successCount }) }}
         </span>
       </div>
     </div>
@@ -257,9 +316,130 @@ watch(
 </template>
 
 <style scoped>
+@property --model-ring-angle {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+
+@property --tab-rec-border-angle {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+
 /* Transparent container - no background */
 .glass-container {
   background: transparent;
+}
+
+.tab-rec-badge-wrap {
+  position: relative;
+  border-radius: 6px;
+  vertical-align: middle;
+}
+
+.tab-rec-badge-wrap--idle,
+.tab-rec-badge-wrap--requesting,
+.tab-rec-badge-wrap--streaming {
+  padding: 2px;
+}
+
+.tab-rec-badge-wrap::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 2px;
+  --tab-rec-border-angle: 0deg;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 0;
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  -webkit-mask-composite: xor;
+  animation: tab-rec-border-travel 2.5s linear infinite;
+  transition: opacity 0.15s ease;
+}
+
+.tab-rec-badge-wrap--idle::before {
+  opacity: 1;
+  animation: none;
+  background: #22c55e;
+}
+
+.tab-rec-badge-wrap--requesting::before {
+  opacity: 1;
+  background: conic-gradient(
+    from var(--tab-rec-border-angle) at 50% 50%,
+    rgba(16, 185, 129, 0.15) 0deg,
+    rgba(16, 185, 129, 0.08) 50deg,
+    #93c5fd 130deg,
+    #3b82f6 180deg,
+    #60a5fa 230deg,
+    rgba(16, 185, 129, 0.08) 310deg,
+    rgba(16, 185, 129, 0.15) 360deg
+  );
+}
+
+.tab-rec-badge-wrap--streaming::before {
+  opacity: 1;
+  background: conic-gradient(
+    from var(--tab-rec-border-angle) at 50% 50%,
+    rgba(16, 185, 129, 0.15) 0deg,
+    rgba(16, 185, 129, 0.08) 50deg,
+    #86efac 130deg,
+    #22c55e 180deg,
+    #4ade80 230deg,
+    rgba(16, 185, 129, 0.08) 310deg,
+    rgba(16, 185, 129, 0.15) 360deg
+  );
+}
+
+:global(.dark) .tab-rec-badge-wrap--idle::before {
+  background: #34d399;
+}
+
+:global(.dark) .tab-rec-badge-wrap--requesting::before {
+  background: conic-gradient(
+    from var(--tab-rec-border-angle) at 50% 50%,
+    rgba(52, 211, 153, 0.12) 0deg,
+    rgba(31, 41, 55, 0.9) 50deg,
+    #60a5fa 130deg,
+    #2563eb 180deg,
+    #38bdf8 230deg,
+    rgba(31, 41, 55, 0.9) 310deg,
+    rgba(52, 211, 153, 0.12) 360deg
+  );
+}
+
+:global(.dark) .tab-rec-badge-wrap--streaming::before {
+  background: conic-gradient(
+    from var(--tab-rec-border-angle) at 50% 50%,
+    rgba(52, 211, 153, 0.12) 0deg,
+    rgba(31, 41, 55, 0.9) 50deg,
+    #4ade80 130deg,
+    #16a34a 180deg,
+    #86efac 230deg,
+    rgba(31, 41, 55, 0.9) 310deg,
+    rgba(52, 211, 153, 0.12) 360deg
+  );
+}
+
+.tab-rec-badge-inner {
+  position: relative;
+  z-index: 1;
+}
+
+@keyframes tab-rec-border-travel {
+  to {
+    --tab-rec-border-angle: 360deg;
+  }
 }
 
 .relationship-ready-badge {
@@ -283,6 +463,47 @@ watch(
   background: transparent;
 }
 
+.concept-ai-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid rgba(139, 92, 246, 0.35);
+  background: rgba(139, 92, 246, 0.12);
+  color: #7c3aed;
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    box-shadow 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.concept-ai-toggle-btn:hover {
+  background: rgba(139, 92, 246, 0.2);
+}
+
+.concept-ai-toggle-btn--on {
+  border-color: #10b981;
+  background: rgba(16, 185, 129, 0.18);
+  color: #047857;
+  box-shadow: 0 0 0 1px rgba(16, 185, 129, 0.35);
+}
+
+.dark .concept-ai-toggle-btn {
+  border-color: rgba(167, 139, 250, 0.45);
+  background: rgba(139, 92, 246, 0.2);
+  color: #c4b5fd;
+}
+
+.dark .concept-ai-toggle-btn--on {
+  border-color: #34d399;
+  background: rgba(16, 185, 129, 0.22);
+  color: #6ee7b7;
+}
+
 .model-btn {
   display: flex;
   align-items: center;
@@ -301,6 +522,10 @@ watch(
   white-space: nowrap;
   position: relative;
   overflow: hidden;
+}
+
+.model-btn-content {
+  display: contents;
 }
 
 .model-btn .btn-icon {
@@ -339,23 +564,109 @@ watch(
   color: #f97316 !important;
 }
 
-/* Loading state */
+/* Loading: model-colored traveling border, solid inner (no spinner) */
 .model-btn.loading {
-  border-color: #fbbf24;
-  background-color: rgba(254, 243, 199, 0.8);
-  backdrop-filter: blur(8px);
-  color: #92400e;
+  border-color: transparent !important;
+  background-color: transparent !important;
+  padding: 2px;
   cursor: wait;
-  animation: pulse 2s ease-in-out infinite;
+  overflow: visible;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
-@keyframes pulse {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.7;
+.model-btn.loading::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 7px;
+  padding: 2px;
+  --model-ring-angle: 0deg;
+  pointer-events: none;
+  z-index: 0;
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  -webkit-mask-composite: xor;
+  animation: model-ring-spin 2.5s linear infinite;
+}
+
+.model-btn.loading .model-btn-content {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 4px 10px;
+  border-radius: 5px;
+  position: relative;
+  z-index: 1;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.model-btn.loading.model-btn-qwen::before {
+  background: conic-gradient(
+    from var(--model-ring-angle) at 50% 50%,
+    rgba(99, 102, 241, 0.2) 0deg,
+    rgba(226, 232, 240, 0.85) 55deg,
+    #a5b4fc 130deg,
+    #6366f1 180deg,
+    #818cf8 230deg,
+    rgba(226, 232, 240, 0.85) 305deg,
+    rgba(99, 102, 241, 0.2) 360deg
+  );
+}
+
+.model-btn.loading.model-btn-qwen .model-btn-content {
+  background-color: rgba(99, 102, 241, 0.12);
+  border: 1px solid rgba(99, 102, 241, 0.28);
+  color: #6366f1;
+}
+
+.model-btn.loading.model-btn-deepseek::before {
+  background: conic-gradient(
+    from var(--model-ring-angle) at 50% 50%,
+    rgba(16, 185, 129, 0.2) 0deg,
+    rgba(226, 232, 240, 0.85) 55deg,
+    #6ee7b7 130deg,
+    #10b981 180deg,
+    #34d399 230deg,
+    rgba(226, 232, 240, 0.85) 305deg,
+    rgba(16, 185, 129, 0.2) 360deg
+  );
+}
+
+.model-btn.loading.model-btn-deepseek .model-btn-content {
+  background-color: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.28);
+  color: #10b981;
+}
+
+.model-btn.loading.model-btn-doubao::before {
+  background: conic-gradient(
+    from var(--model-ring-angle) at 50% 50%,
+    rgba(249, 115, 22, 0.2) 0deg,
+    rgba(226, 232, 240, 0.85) 55deg,
+    #fdba74 130deg,
+    #f97316 180deg,
+    #fb923c 230deg,
+    rgba(226, 232, 240, 0.85) 305deg,
+    rgba(249, 115, 22, 0.2) 360deg
+  );
+}
+
+.model-btn.loading.model-btn-doubao .model-btn-content {
+  background-color: rgba(249, 115, 22, 0.12);
+  border: 1px solid rgba(249, 115, 22, 0.28);
+  color: #f97316;
+}
+
+@keyframes model-ring-spin {
+  to {
+    --model-ring-angle: 360deg;
   }
 }
 
@@ -455,10 +766,61 @@ watch(
   color: #93c5fd;
 }
 
-.dark .model-btn.loading {
-  border-color: #fbbf24;
-  background-color: #451a03;
-  color: #fcd34d;
+.dark .model-btn.loading.model-btn-qwen::before {
+  background: conic-gradient(
+    from var(--model-ring-angle) at 50% 50%,
+    rgba(99, 102, 241, 0.25) 0deg,
+    rgba(31, 41, 55, 0.95) 55deg,
+    #818cf8 130deg,
+    #6366f1 180deg,
+    #a78bfa 230deg,
+    rgba(31, 41, 55, 0.95) 305deg,
+    rgba(99, 102, 241, 0.25) 360deg
+  );
+}
+
+.dark .model-btn.loading.model-btn-qwen .model-btn-content {
+  background-color: rgba(99, 102, 241, 0.18);
+  border-color: rgba(129, 140, 248, 0.35);
+  color: #a5b4fc;
+}
+
+.dark .model-btn.loading.model-btn-deepseek::before {
+  background: conic-gradient(
+    from var(--model-ring-angle) at 50% 50%,
+    rgba(16, 185, 129, 0.25) 0deg,
+    rgba(31, 41, 55, 0.95) 55deg,
+    #34d399 130deg,
+    #10b981 180deg,
+    #6ee7b7 230deg,
+    rgba(31, 41, 55, 0.95) 305deg,
+    rgba(16, 185, 129, 0.25) 360deg
+  );
+}
+
+.dark .model-btn.loading.model-btn-deepseek .model-btn-content {
+  background-color: rgba(16, 185, 129, 0.18);
+  border-color: rgba(52, 211, 153, 0.35);
+  color: #34d399;
+}
+
+.dark .model-btn.loading.model-btn-doubao::before {
+  background: conic-gradient(
+    from var(--model-ring-angle) at 50% 50%,
+    rgba(249, 115, 22, 0.25) 0deg,
+    rgba(31, 41, 55, 0.95) 55deg,
+    #fb923c 130deg,
+    #f97316 180deg,
+    #fdba74 230deg,
+    rgba(31, 41, 55, 0.95) 305deg,
+    rgba(249, 115, 22, 0.25) 360deg
+  );
+}
+
+.dark .model-btn.loading.model-btn-doubao .model-btn-content {
+  background-color: rgba(249, 115, 22, 0.18);
+  border-color: rgba(251, 146, 60, 0.35);
+  color: #fb923c;
 }
 
 .dark .model-btn.ready {

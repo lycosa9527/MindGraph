@@ -74,6 +74,13 @@ class User(Base):
     # Timestamps
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     last_login: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    workshop_last_seen_at: Mapped[datetime | None] = mapped_column(
+        DateTime, nullable=True,
+    )
+
+    # Client preferences (interface + LLM prompt language); persisted for signed-in users
+    ui_language: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    prompt_language: Mapped[str | None] = mapped_column(String(32), nullable=True)
 
     # Relationships
     organization = relationship("Organization", back_populates="users")

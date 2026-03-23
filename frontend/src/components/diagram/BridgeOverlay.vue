@@ -11,6 +11,7 @@ import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useVueFlow } from '@vue-flow/core'
 
 import { DEFAULT_NODE_HEIGHT, DEFAULT_NODE_WIDTH } from '@/composables/diagrams/layoutConfig'
+import { useLanguage } from '@/composables/useLanguage'
 import { useDiagramStore } from '@/stores'
 
 // Helper function to get timestamp for logging
@@ -23,6 +24,7 @@ const { viewport: vueFlowViewport, getViewport, getNodes } = useVueFlow()
 
 // Diagram store for diagram type and spec metadata
 const diagramStore = useDiagramStore()
+const { t } = useLanguage()
 
 // Hover state for pairs
 const hoveredPairIndex = ref<number | null>(null)
@@ -312,17 +314,6 @@ const asLabelText = computed(() => {
 })
 
 /**
- * Detect if diagram contains Chinese characters
- */
-const hasChineseContent = computed(() => {
-  const nodes = getNodes.value
-  return nodes.some((node) => {
-    const text = node.data?.label || ''
-    return /[\u4e00-\u9fa5]/.test(text)
-  })
-})
-
-/**
  * Get alternative dimensions from diagram store metadata
  */
 const alternativeDimensions = computed(() => {
@@ -339,14 +330,9 @@ const alternativeDimensions = computed(() => {
   return []
 })
 
-/**
- * Get alternative dimensions label text (language-aware)
- */
-const alternativeDimensionsLabel = computed(() => {
-  return hasChineseContent.value
-    ? '本主题的其他可能类比关系:'
-    : 'Other possible analogy patterns for this topic:'
-})
+const alternativeDimensionsLabel = computed(() =>
+  t('diagram.alternativeDimensions.bridgeAnalogiesTitle')
+)
 
 /**
  * Calculate alternative dimensions section position
@@ -471,7 +457,7 @@ function handleDeletePair(pairIndex: number, event: MouseEvent) {
 
   // Delete both nodes
   if (diagramStore.removeNode(leftNodeId) && diagramStore.removeNode(rightNodeId)) {
-    diagramStore.pushHistory('删除类比对')
+    diagramStore.pushHistory(t('diagram.history.deleteAnalogyPair'))
     hoveredPairIndex.value = null
   }
 }
@@ -670,7 +656,7 @@ onUnmounted(() => {
           text-anchor="middle"
           dominant-baseline="middle"
         >
-          {{ hasChineseContent ? '[替代关系将在此显示]' : '[Alternatives will appear here]' }}
+          {{ t('diagram.bridgeMap.alternativesEmpty') }}
         </text>
       </g>
 

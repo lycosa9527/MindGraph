@@ -15,6 +15,7 @@ import { getMindmapBranchColor } from '@/config/mindmapColors'
 import type { Connection, DiagramNode } from '@/types'
 
 import { measureTextWidth } from './textMeasurement'
+import { estimateTextWidthFallbackPx } from './textMeasurementFallback'
 import type { SpecLoaderResult } from './types'
 
 /** FlowNode font size (matches FlowNode.vue defaultStyle) */
@@ -28,7 +29,10 @@ const FLOW_NODE_PADDING_X = 40
  */
 function computeFlowNodeWidth(text: string): number {
   const trimmed = (text || '').trim() || ' '
-  const textW = typeof document !== 'undefined' ? measureTextWidth(trimmed, FLOW_NODE_FONT_SIZE) : 0
+  const textW =
+    typeof document !== 'undefined'
+      ? measureTextWidth(trimmed, FLOW_NODE_FONT_SIZE)
+      : estimateTextWidthFallbackPx(trimmed, FLOW_NODE_FONT_SIZE)
   return Math.max(DEFAULT_NODE_WIDTH, Math.ceil(textW + FLOW_NODE_PADDING_X))
 }
 

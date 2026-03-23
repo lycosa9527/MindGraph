@@ -2,9 +2,18 @@
  * Node Palette diagram data builder - builds diagram_data for API from current diagram
  */
 import { isPlaceholderText } from '@/composables/useAutoComplete'
-import type { DiagramType } from '@/types'
+import { stripConceptMapFocusQuestionPrefix } from '@/stores/diagram/diagramDefaultLabels'
+import type { Connection, DiagramType } from '@/types'
+import { getTopicRootConceptTargetId } from '@/utils/conceptMapTopicRootEdge'
 
 import { LEARNING_SHEET_PLACEHOLDER } from './constants'
+
+/** Optional context for concept_map (focus question + root concept for palette prompts) */
+export type BuildDiagramDataOptions = {
+  connections?: Connection[] | undefined
+  /** When set (e.g. from diagram spec), overrides topic-node parsing for focus body */
+  focusQuestionFromSpec?: string
+}
 
 function normalizeDiagramType(dt: DiagramType | null): DiagramType | null {
   return dt === 'mind_map' ? 'mindmap' : dt
@@ -15,7 +24,8 @@ function normalizeDiagramType(dt: DiagramType | null): DiagramType | null {
  */
 export function buildDiagramData(
   diagramType: DiagramType | null,
-  nodes: Array<{ id: string; text: string; type?: string }>
+  nodes: Array<{ id: string; text: string; type?: string }>,
+  options?: BuildDiagramDataOptions
 ): Record<string, unknown> {
   const dt = normalizeDiagramType(diagramType)
   if (!dt || !nodes.length) {
@@ -57,8 +67,8 @@ export function buildDiagramData(
       }
     }
     case 'double_bubble_map': {
-      const leftNode = nodes.find((n) => n.id === 'left' || n.id?.includes('left'))
-      const rightNode = nodes.find((n) => n.id === 'right' || n.id?.includes('right'))
+      const leftNode = nodes.find((n) => n.id === 'left-topic')
+      const rightNode = nodes.find((n) => n.id === 'right-topic')
       return {
         left: leftNode?.text ?? '',
         right: rightNode?.text ?? '',
@@ -114,7 +124,23 @@ export function buildDiagramData(
         dimension: dimNode?.text ?? '',
       }
     }
-    case 'concept_map':
+    case 'concept_map': {
+      const topicNode = nodes.find((n) => n.id === 'topic' || n.type === 'topic')
+      let focusQuestion = (options?.focusQuestionFromSpec ?? '').trim()
+      if (!focusQuestion && topicNode?.text) {
+        const raw = topicNode.text.trim()
+        focusQuestion = stripConceptMapFocusQuestionPrefix(raw)
+      }
+      const rootId = getTopicRootConceptTargetId(options?.connections)
+      const rootNode = rootId ? nodes.find((n) => n.id === rootId) : undefined
+      const rootConcept = (rootNode?.text ?? '').trim()
+      return {
+        topic: topicText,
+        center: { text: topicText },
+        focus_question: focusQuestion,
+        root_concept: rootConcept,
+      }
+    }
     case 'mindmap':
     default:
       return {

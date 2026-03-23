@@ -25,6 +25,10 @@ import {
   writeCachedChannels,
   writeCachedTopics,
 } from '@/utils/workshopChatLocalCache'
+import {
+  loadLastSeenOnlineFromStorage,
+  saveLastSeenOnlineToStorage,
+} from '@/utils/workshopContactLastSeenStorage'
 import { registerWorkshopChatResetOnAuthClear } from '@/utils/workshopChatWsRegistry'
 
 export interface ChatChannel {
@@ -146,6 +150,8 @@ export interface OrgMember {
   id: number
   name: string
   avatar: string | null
+  /** ISO 8601 from server: last workshop chat org-presence disconnect. */
+  last_seen_at?: string | null
 }
 
 export interface OrgMembersPage {
@@ -200,7 +206,8 @@ export const useWorkshopChatStore = defineStore('workshopChat', () => {
   const activeTab = ref<'channels' | 'dms'>('channels')
 
   const onlineUserIds = ref<Set<number>>(new Set())
-  const idleUserIds = ref<Set<number>>(new Set())
+  /** Last time user was seen online (ms); used for "recently online" when they disconnect. */
+  const lastSeenOnlineAtByUserId = ref<Record<number, number>>({})
   const typingUsers = ref<
     Map<string, { username: string; timeout: ReturnType<typeof setTimeout> }>
   >(new Map())
@@ -723,8 +730,26 @@ export const useWorkshopChatStore = defineStore('workshopChat', () => {
     }
   }
 
+  function hydrateLastSeenOnlineFromStorage(): void {
+    const scope = getCacheScope()
+    if (!scope) {
+      lastSeenOnlineAtByUserId.value = {}
+      return
+    }
+    lastSeenOnlineAtByUserId.value = loadLastSeenOnlineFromStorage(scope)
+  }
+
+  function persistLastSeenOnlineIfNeeded(): void {
+    const scope = getCacheScope()
+    if (!scope) {
+      return
+    }
+    saveLastSeenOnlineToStorage(scope, lastSeenOnlineAtByUserId.value)
+  }
+
   function setAdminOrgId(orgId: number | null): void {
     adminOrgId.value = orgId
+    hydrateLastSeenOnlineFromStorage()
   }
 
   async function joinChannel(channelId: number): Promise<boolean> {
@@ -1200,19 +1225,25 @@ export const useWorkshopChatStore = defineStore('workshopChat', () => {
 
   function updatePresence(userId: number, status: string): void {
     const online = new Set(onlineUserIds.value)
-    const idle = new Set(idleUserIds.value)
     if (status === 'offline') {
+      if (online.has(userId)) {
+        lastSeenOnlineAtByUserId.value = {
+          ...lastSeenOnlineAtByUserId.value,
+          [userId]: Date.now(),
+        }
+        persistLastSeenOnlineIfNeeded()
+      }
       online.delete(userId)
-      idle.delete(userId)
-    } else if (status === 'idle') {
-      online.delete(userId)
-      idle.add(userId)
     } else {
       online.add(userId)
-      idle.delete(userId)
+      if (lastSeenOnlineAtByUserId.value[userId] !== undefined) {
+        const next = { ...lastSeenOnlineAtByUserId.value }
+        delete next[userId]
+        lastSeenOnlineAtByUserId.value = next
+        persistLastSeenOnlineIfNeeded()
+      }
     }
     onlineUserIds.value = online
-    idleUserIds.value = idle
   }
 
   function updateTopic(topicData: ChatTopic): void {
@@ -1522,7 +1553,7 @@ export const useWorkshopChatStore = defineStore('workshopChat', () => {
     adminOrgId.value = null
     activeTab.value = 'channels'
     onlineUserIds.value = new Set()
-    idleUserIds.value = new Set()
+    lastSeenOnlineAtByUserId.value = {}
     typingUsers.value.clear()
     messageReactions.value.clear()
     starredMessageIds.value.clear()
@@ -1555,7 +1586,8 @@ export const useWorkshopChatStore = defineStore('workshopChat', () => {
     channelMembers,
     activeTab,
     onlineUserIds,
-    idleUserIds,
+    lastSeenOnlineAtByUserId,
+    hydrateLastSeenOnlineFromStorage,
     typingUsers,
     loading,
     currentChannel,

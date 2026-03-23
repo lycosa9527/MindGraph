@@ -7,12 +7,17 @@ import { useAuthStore } from '@/stores/auth'
 import { useFeatureFlagsStore } from '@/stores/featureFlags'
 import { userCanAccessWorkshopChat } from '@/utils/workshopAccess'
 
+/** Localized `document.title` via `meta.pageTitle.*` keys. */
+function pageTitle(segment: string): { titleKey: string } {
+  return { titleKey: `meta.pageTitle.${segment}` }
+}
+
 const routes: RouteRecordRaw[] = [
   {
     path: '/smart-response',
     name: 'SmartResponse',
     component: () => import('@/pages/SmartResponsePage.vue'),
-    meta: { requiresAuth: true, requiresAdmin: true, layout: 'main' },
+    meta: { requiresAuth: true, requiresAdmin: true, layout: 'main', ...pageTitle('smartResponse') },
   },
   {
     path: '/',
@@ -23,91 +28,91 @@ const routes: RouteRecordRaw[] = [
     path: '/mindmate',
     name: 'MindMate',
     component: () => import('@/pages/MindMatePage.vue'),
-    meta: { layout: 'main' },
+    meta: { layout: 'main', ...pageTitle('mindmate') },
   },
   {
     path: '/mindgraph',
     name: 'MindGraph',
     component: () => import('@/pages/MindGraphPage.vue'),
-    meta: { layout: 'main' },
+    meta: { layout: 'main', ...pageTitle('mindgraph') },
   },
   {
     path: '/canvas',
     name: 'Canvas',
     component: () => import('@/pages/CanvasPage.vue'),
-    meta: { requiresAuth: true, layout: 'canvas' },
+    meta: { requiresAuth: true, layout: 'canvas', ...pageTitle('canvas') },
   },
   {
     path: '/admin',
     name: 'Admin',
     component: () => import('@/pages/AdminPage.vue'),
-    meta: { requiresAuth: true, requiresAdmin: true, layout: 'main' },
+    meta: { requiresAuth: true, requiresAdmin: true, layout: 'main', ...pageTitle('admin') },
   },
   {
     path: '/login',
     name: 'Login',
     component: () => import('@/pages/LoginPage.vue'),
-    meta: { layout: 'auth', guestOnly: true },
+    meta: { layout: 'auth', guestOnly: true, ...pageTitle('login') },
   },
   {
     path: '/auth',
     name: 'Auth',
     component: () => import('@/pages/LoginPage.vue'),
-    meta: { layout: 'auth', guestOnly: true },
+    meta: { layout: 'auth', guestOnly: true, ...pageTitle('auth') },
   },
   {
     path: '/demo',
     name: 'DemoLogin',
     component: () => import('@/pages/DemoLoginPage.vue'),
-    meta: { layout: 'auth', guestOnly: true },
+    meta: { layout: 'auth', guestOnly: true, ...pageTitle('demoLogin') },
   },
   {
     path: '/template',
     name: 'Template',
     component: () => import('@/pages/TemplatePage.vue'),
-    meta: { layout: 'main' },
+    meta: { layout: 'main', ...pageTitle('template') },
   },
   {
     path: '/course',
     name: 'Course',
     component: () => import('@/pages/CoursePage.vue'),
-    meta: { layout: 'main' },
+    meta: { layout: 'main', ...pageTitle('course') },
   },
   {
     path: '/community',
     name: 'Community',
     component: () => import('@/pages/CommunityPage.vue'),
-    meta: { requiresAuth: true, layout: 'main' },
+    meta: { requiresAuth: true, layout: 'main', ...pageTitle('community') },
   },
   {
     path: '/school-zone',
     name: 'SchoolZone',
     component: () => import('@/pages/SchoolZonePage.vue'),
-    meta: { requiresAuth: true, requiresOrganization: true, layout: 'main' },
+    meta: { requiresAuth: true, requiresOrganization: true, layout: 'main', ...pageTitle('schoolZone') },
   },
   {
     path: '/school-dashboard',
     name: 'SchoolDashboard',
     component: () => import('@/pages/SchoolDashboardPage.vue'),
-    meta: { requiresAuth: true, requiresAdminOrManager: true, layout: 'main' },
+    meta: { requiresAuth: true, requiresAdminOrManager: true, layout: 'main', ...pageTitle('schoolDashboard') },
   },
   {
     path: '/askonce',
     name: 'AskOnce',
     component: () => import('@/pages/AskOncePage.vue'),
-    meta: { layout: 'main' },
+    meta: { layout: 'main', ...pageTitle('askOnce') },
   },
   {
     path: '/debateverse',
     name: 'DebateVerse',
     component: () => import('@/pages/DebateVersePage.vue'),
-    meta: { layout: 'main' },
+    meta: { layout: 'main', ...pageTitle('debateverse') },
   },
   {
     path: '/knowledge-space',
     name: 'KnowledgeSpace',
     component: () => import('@/pages/KnowledgeSpacePage.vue'),
-    meta: { requiresAuth: true, layout: 'main' },
+    meta: { requiresAuth: true, layout: 'main', ...pageTitle('knowledgeSpace') },
   },
   {
     path: '/chunk-test',
@@ -117,6 +122,7 @@ const routes: RouteRecordRaw[] = [
       requiresAuth: true,
       requiresFeatureFlag: 'ragChunkTest',
       layout: 'main',
+      ...pageTitle('chunkTest'),
     },
   },
   {
@@ -127,25 +133,26 @@ const routes: RouteRecordRaw[] = [
       requiresAuth: true,
       requiresFeatureFlag: 'ragChunkTest',
       layout: 'main',
+      ...pageTitle('chunkTestResults'),
     },
   },
   {
     path: '/library',
     name: 'Library',
     component: () => import('@/pages/LibraryPage.vue'),
-    meta: { layout: 'main' },
+    meta: { layout: 'main', ...pageTitle('library') },
   },
   {
     path: '/library/:id',
     name: 'LibraryViewer',
     component: () => import('@/pages/LibraryViewerPage.vue'),
-    meta: { layout: 'main' },
+    meta: { layout: 'main', ...pageTitle('libraryViewer') },
   },
   {
     path: '/library/bookmark/:uuid',
     name: 'LibraryBookmark',
     component: () => import('@/pages/LibraryBookmarkPage.vue'),
-    meta: { layout: 'main', requiresAuth: true },
+    meta: { layout: 'main', requiresAuth: true, ...pageTitle('libraryBookmark') },
   },
   {
     path: '/gewe',
@@ -155,37 +162,38 @@ const routes: RouteRecordRaw[] = [
       layout: 'main',
       requiresAuth: true,
       requiresAdmin: true,
+      ...pageTitle('gewe'),
     },
   },
   {
     path: '/teacher-usage',
     name: 'TeacherUsage',
     component: () => import('@/pages/TeacherUsagePage.vue'),
-    meta: { requiresAuth: true, requiresAdmin: true, layout: 'main' },
+    meta: { requiresAuth: true, requiresAdmin: true, layout: 'main', ...pageTitle('teacherUsage') },
   },
   {
     path: '/workshop-chat',
     name: 'WorkshopChat',
     component: () => import('@/pages/WorkshopChatPage.vue'),
-    meta: { requiresAuth: true, requiresAdminOrManager: true, layout: 'main' },
+    meta: { requiresAuth: true, requiresAdminOrManager: true, layout: 'main', ...pageTitle('workshopChat') },
   },
   {
     path: '/dashboard',
     name: 'PublicDashboard',
     component: () => import('@/pages/PublicDashboardPage.vue'),
-    meta: { layout: 'default' },
+    meta: { layout: 'default', ...pageTitle('publicDashboard') },
   },
   {
     path: '/dashboard/login',
     name: 'DashboardLogin',
     component: () => import('@/pages/DashboardLoginPage.vue'),
-    meta: { layout: 'auth' },
+    meta: { layout: 'auth', ...pageTitle('dashboardLogin') },
   },
   {
     path: '/:pathMatch(.*)*',
     name: 'NotFound',
     component: () => import('@/pages/NotFoundPage.vue'),
-    meta: { layout: 'default' },
+    meta: { layout: 'default', ...pageTitle('notFound') },
   },
 ]
 

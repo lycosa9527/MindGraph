@@ -13,6 +13,7 @@ import { eventBus } from '@/composables/useEventBus'
 import { getMindmapBranchColor } from '@/config/mindmapColors'
 import type { MindGraphNodeProps } from '@/types'
 import { getBorderStyleProps } from '@/utils/borderStyleUtils'
+import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
 
 import InlineEditableText from './InlineEditableText.vue'
 
@@ -33,6 +34,7 @@ const nodeStyle = computed(() => {
   const baseStyle = {
     backgroundColor,
     color: props.data.style?.textColor || '#333333',
+    fontFamily: props.data.style?.fontFamily || DIAGRAM_NODE_FONT_STACK,
     fontSize: `${props.data.style?.fontSize || 12}px`,
     fontWeight: props.data.style?.fontWeight || 'normal',
     fontStyle: props.data.style?.fontStyle || 'normal',

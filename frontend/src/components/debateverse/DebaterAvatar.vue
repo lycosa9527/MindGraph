@@ -19,7 +19,7 @@ const props = defineProps<{
   isSpeaking?: boolean
 }>()
 
-const { isZh } = useLanguage()
+const { t } = useLanguage()
 
 // ============================================================================
 // Computed
@@ -51,23 +51,22 @@ const roleLabel = computed(() => {
   const role = props.participant.role
 
   if (role === 'judge') {
-    return isZh.value ? '裁判' : 'Judge'
+    return t('debateverse.message.judge')
   }
 
   if (role === 'viewer') {
-    return isZh.value ? '观众' : 'Viewer'
+    return t('debateverse.avatar.viewer')
   }
 
-  // Translate debate roles
-  const roleTranslations: Record<string, { zh: string; en: string }> = {
-    affirmative_1: { zh: '正方一辩', en: 'Affirmative 1st' },
-    affirmative_2: { zh: '正方二辩', en: 'Affirmative 2nd' },
-    negative_1: { zh: '反方一辩', en: 'Negative 1st' },
-    negative_2: { zh: '反方二辩', en: 'Negative 2nd' },
+  const roleKeys: Record<string, string> = {
+    affirmative_1: 'debateverse.message.roleAffirmative1',
+    affirmative_2: 'debateverse.message.roleAffirmative2',
+    negative_1: 'debateverse.message.roleNegative1',
+    negative_2: 'debateverse.message.roleNegative2',
   }
 
-  const translation = roleTranslations[role]
-  return translation ? (isZh.value ? translation.zh : translation.en) : role
+  const key = roleKeys[role]
+  return key ? t(key) : role
 })
 
 const avatarSize = 96

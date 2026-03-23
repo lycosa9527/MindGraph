@@ -24,7 +24,7 @@ const router = useRouter()
 const libraryStore = useLibraryStore()
 const authStore = useAuthStore()
 const notify = useNotifications()
-const { isZh } = useLanguage()
+const { t } = useLanguage()
 
 const showLoginModal = ref(false)
 const imageViewerRef = ref<InstanceType<typeof ImageViewer> | null>(null)
@@ -133,7 +133,7 @@ async function handleToggleBookmark() {
       await libraryStore.deleteBookmark(bookmarkId.value)
       isBookmarked.value = false
       bookmarkId.value = null
-      notify.success(isZh.value ? '书签已删除' : 'Bookmark removed')
+      notify.success(t('libraryViewer.bookmarkRemoved'))
     } else {
       // Create bookmark
       const data = {
@@ -144,14 +144,14 @@ async function handleToggleBookmark() {
       console.log('[LibraryViewerPage] Bookmark created:', bookmark)
       isBookmarked.value = true
       bookmarkId.value = bookmark.id
-      notify.success(isZh.value ? '书签已添加' : 'Bookmark added')
+      notify.success(t('libraryViewer.bookmarkAdded'))
     }
   } catch (error) {
     console.error('[LibraryViewerPage] Failed to toggle bookmark:', error)
     if (error instanceof Error) {
-      notify.error(error.message || (isZh.value ? '操作失败' : 'Operation failed'))
+      notify.error(error.message || t('libraryViewer.operationFailed'))
     } else {
-      notify.error(isZh.value ? '操作失败' : 'Operation failed')
+      notify.error(t('libraryViewer.operationFailed'))
     }
   }
 }
@@ -352,7 +352,7 @@ watch(
   () => libraryStore.currentDocumentError,
   (error) => {
     if (error) {
-      const errorMessage = error.message || '加载文档失败'
+      const errorMessage = error.message || t('library.loadDocumentFailed')
       // Check if it's a 404 error
       if (errorMessage.includes('404') || errorMessage.includes('not found')) {
         router.replace({ name: 'NotFound' })
@@ -367,7 +367,7 @@ watch(
   () => libraryStore.danmakuError,
   (error) => {
     if (error) {
-      const errorMessage = error.message || '加载评论失败'
+      const errorMessage = error.message || t('library.loadCommentsFailed')
       notify.error(errorMessage)
     }
   }
@@ -514,7 +514,7 @@ watch([() => selectedDanmakuId.value, () => pinPlacementPosition.value], () => {
           <ArrowLeft class="w-4 h-4" />
         </ElButton>
         <h1 class="text-sm font-semibold text-stone-900 truncate">
-          {{ libraryStore.currentDocument?.title || '加载中...' }}
+          {{ libraryStore.currentDocument?.title || t('library.loading') }}
         </h1>
       </div>
     </div>

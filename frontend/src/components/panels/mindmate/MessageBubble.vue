@@ -37,7 +37,7 @@ const emit = defineEmits<{
   (e: 'mouseleave'): void
 }>()
 
-const { isZh } = useLanguage()
+const { t } = useLanguage()
 
 // Markdown renderer
 const md = new MarkdownIt({
@@ -166,14 +166,14 @@ function handleMarkdownClick(event: MouseEvent) {
                 size="small"
                 @click="handleCancelEdit"
               >
-                {{ isZh ? '取消' : 'Cancel' }}
+                {{ t('common.cancel') }}
               </ElButton>
               <ElButton
                 type="primary"
                 size="small"
                 @click="handleSaveEdit"
               >
-                {{ isZh ? '保存' : 'Save' }}
+                {{ t('common.save') }}
               </ElButton>
             </div>
           </div>
@@ -242,7 +242,7 @@ function handleMarkdownClick(event: MouseEvent) {
               opacity: isHovered ? 1 : 0,
             }"
           >
-            <ElTooltip :content="isZh ? '编辑' : 'Edit'">
+            <ElTooltip :content="t('mindmate.tooltip.edit')">
               <ElButton
                 text
                 circle
@@ -252,7 +252,7 @@ function handleMarkdownClick(event: MouseEvent) {
                 <ElIcon class="text-xs"><Edit /></ElIcon>
               </ElButton>
             </ElTooltip>
-            <ElTooltip :content="isZh ? '复制' : 'Copy'">
+            <ElTooltip :content="t('mindmate.tooltip.copy')">
               <ElButton
                 text
                 circle
@@ -275,7 +275,7 @@ function handleMarkdownClick(event: MouseEvent) {
           >
             <!-- Copy -->
             <ElTooltip
-              :content="isZh ? '复制' : 'Copy'"
+              :content="t('mindmate.tooltip.copy')"
               placement="top"
             >
               <ElButton
@@ -290,7 +290,7 @@ function handleMarkdownClick(event: MouseEvent) {
             <!-- Regenerate -->
             <ElTooltip
               v-if="hasPreviousUserMessage"
-              :content="isZh ? '重新生成' : 'Regenerate'"
+              :content="t('mindmate.tooltip.regenerate')"
               placement="top"
             >
               <ElButton
@@ -305,7 +305,7 @@ function handleMarkdownClick(event: MouseEvent) {
 
             <!-- Like -->
             <ElTooltip
-              :content="isZh ? '点赞' : 'Like'"
+              :content="t('mindmate.tooltip.like')"
               placement="top"
             >
               <ElButton
@@ -320,7 +320,7 @@ function handleMarkdownClick(event: MouseEvent) {
 
             <!-- Dislike -->
             <ElTooltip
-              :content="isZh ? '踩' : 'Dislike'"
+              :content="t('mindmate.tooltip.dislike')"
               placement="top"
             >
               <ElButton
@@ -337,7 +337,7 @@ function handleMarkdownClick(event: MouseEvent) {
 
             <!-- Share -->
             <ElTooltip
-              :content="isZh ? '分享' : 'Share'"
+              :content="t('mindmate.tooltip.share')"
               placement="top"
             >
               <ElButton
@@ -356,7 +356,7 @@ function handleMarkdownClick(event: MouseEvent) {
     <!-- Image Preview Modal -->
     <ImagePreviewModal
       v-model:visible="showImagePreview"
-      :title="isZh ? '图片预览' : 'Image Preview'"
+      :title="t('mindmate.imagePreview')"
       :image-url="previewImageUrl"
     />
   </div>

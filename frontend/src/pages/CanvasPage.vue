@@ -27,13 +27,14 @@ import {
   AIModelSelector,
   CanvasToolbar,
   CanvasTopBar,
-  ConceptMapFocusQuestionModal,
+  ConceptMapFocusReviewPicker,
   ConceptMapLabelPicker,
+  ConceptMapRootConceptPicker,
   InlineRecommendationsPicker,
   ZoomControls,
 } from '@/components/canvas'
 import DiagramCanvas from '@/components/diagram/DiagramCanvas.vue'
-import { MindmatePanel, NodePalettePanel } from '@/components/panels'
+import { MindmatePanel, NodePalettePanel, RootConceptModal } from '@/components/panels'
 import {
   eventBus,
   getDefaultDiagramName,
@@ -54,6 +55,8 @@ import { ANIMATION, PANEL, PANEL_INSET } from '@/config/uiConfig'
 import {
   type LLMResult,
   useAuthStore,
+  useConceptMapFocusReviewStore,
+  useConceptMapRootConceptReviewStore,
   useConceptMapRelationshipStore,
   useDiagramStore,
   useInlineRecommendationsStore,
@@ -61,8 +64,13 @@ import {
   usePanelsStore,
   useUIStore,
 } from '@/stores'
+import { intlLocaleForUiCode } from '@/i18n'
+import { stripConceptMapFocusQuestionPrefix } from '@/stores/diagram/diagramDefaultLabels'
+import type { LocaleCode } from '@/i18n/locales'
+import { ensureFontsForLanguageCode } from '@/fonts/promptLanguageFonts'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import type { DiagramType } from '@/types'
+import { getTopicRootConceptTargetId } from '@/utils/conceptMapTopicRootEdge'
 
 const route = useRoute()
 const router = useRouter()
@@ -73,38 +81,42 @@ const authStore = useAuthStore()
 const savedDiagramsStore = useSavedDiagramsStore()
 const llmResultsStore = useLLMResultsStore()
 const panelsStore = usePanelsStore()
-const { isZh, t } = useLanguage()
+const { promptLanguage, t, currentLanguage } = useLanguage()
 const notify = useNotifications()
 const { activeEntry: relationshipActiveEntry } = storeToRefs(relationshipStore)
+const focusReviewStore = useConceptMapFocusReviewStore()
+const rootConceptReviewStore = useConceptMapRootConceptReviewStore()
 const inlineRecStore = useInlineRecommendationsStore()
 const { activeNodeId: inlineRecActiveNodeId } = storeToRefs(inlineRecStore)
 
 // Hide zoom/pan when concept map label picker or inline recommendations picker is showing
-const showZoomControls = computed(
-  () =>
-    !(
-      (diagramStore.type === 'concept_map' && relationshipActiveEntry.value) ||
-      inlineRecActiveNodeId.value
-    )
-)
-
-const conceptMapFocusQuestionDisplay = computed((): string | null => {
-  if (diagramStore.type !== 'concept_map' || !diagramStore.data) return null
-  const fq = diagramStore.data.focus_question
-  if (typeof fq !== 'string' || !fq.trim()) return null
-  return fq.trim()
+const showZoomControls = computed(() => {
+  const rel = diagramStore.type === 'concept_map' && relationshipActiveEntry.value
+  const rootPick =
+    diagramStore.type === 'concept_map' &&
+    rootConceptReviewStore.showPicker &&
+    !relationshipActiveEntry.value
+  const focusPick =
+    diagramStore.type === 'concept_map' &&
+    focusReviewStore.showPicker &&
+    !relationshipActiveEntry.value &&
+    !rootPick
+  return !(rel || rootPick || focusPick || inlineRecActiveNodeId.value)
 })
 
-const showConceptMapFocusGate = computed(
-  () =>
-    diagramStore.type === 'concept_map' &&
-    Boolean(diagramStore.data) &&
-    !conceptMapFocusQuestionDisplay.value
-)
-
-function handleConceptMapFocusConfirmed(text: string): void {
-  diagramStore.setConceptMapFocusQuestion(text)
-}
+/** Topic/focus_question text after optional 「焦点问题:」 — used in top bar as 焦点问题: {body} */
+const conceptMapFocusQuestionDisplay = computed((): string | null => {
+  if (diagramStore.type !== 'concept_map' || !diagramStore.data) return null
+  const topicNode = diagramStore.data.nodes.find((n) => n.id === 'topic' || n.type === 'topic')
+  let raw = topicNode?.text?.trim()
+  if (!raw) {
+    const fq = diagramStore.data.focus_question
+    if (typeof fq === 'string' && fq.trim()) raw = fq.trim()
+  }
+  if (!raw) return null
+  const body = stripConceptMapFocusQuestionPrefix(raw)
+  return body || null
+})
 
 const inlineRecCoordinator = useInlineRecommendationsCoordinator()
 const { startRecommendations } = useInlineRecommendations()
@@ -177,25 +189,17 @@ const autoSavedStatusText = computed(() => {
   if (!authStore.isAuthenticated) return null
   // Slots full + new diagram (not saved): show space-full message
   if (savedDiagramsStore.isSlotsFullyUsed && !savedDiagramsStore.activeDiagramId) {
-    return t(
-      'editor.slotsFull',
-      isZh.value
-        ? '空间已满，暂无法自动保存。请删除现有图示以释放空间。'
-        : 'Space full, auto-save not available at the moment. Please delete existing diagrams to free more space.'
-    )
+    return t('editor.slotsFull')
   }
   const at = diagramAutoSave.lastSavedAt.value
   if (!at) return null
-  const timeStr = at.toLocaleTimeString(isZh.value ? 'zh-CN' : 'en-US', {
+  const timeStr = at.toLocaleTimeString(intlLocaleForUiCode(currentLanguage.value as LocaleCode), {
     hour: '2-digit',
     minute: '2-digit',
     second: '2-digit',
     hour12: false,
   })
-  return t('editor.autoSavedAt', isZh.value ? '已自动保存 {time}' : 'Auto-saved at {time}').replace(
-    '{time}',
-    timeStr
-  )
+  return t('editor.autoSavedAt').replace('{time}', timeStr)
 })
 
 // When slots full + new diagram, clicking status should open slot management modal
@@ -340,9 +344,7 @@ watch(
         el.removeAttribute('data-collab-remote-user')
       })
       for (const [, sel] of next) {
-        const el = document.querySelector(
-          `#${CSS.escape(sel.nodeId)}`
-        ) as HTMLElement | null
+        const el = document.querySelector(`#${CSS.escape(sel.nodeId)}`) as HTMLElement | null
         if (el) {
           el.classList.add('collab-remote-selected')
           el.setAttribute('data-collab-remote-user', sel.username)
@@ -456,11 +458,7 @@ eventBus.onWithOwner(
 eventBus.onWithOwner(
   'diagram:collab_delete_blocked',
   () => {
-    notify.warning(
-      isZh.value
-        ? '无法删除：其他用户正在编辑相关节点'
-        : 'Cannot delete while another user is editing a selected node'
-    )
+    notify.warning(t('notification.collabDeleteBlocked'))
   },
   'CanvasPage'
 )
@@ -491,9 +489,7 @@ eventBus.onWithOwner(
     }
     const ed = activeEditors.value.get(nodeId)
     if (ed && ed.user_id !== Number(authStore.user?.id)) {
-      notify.warning(
-        isZh.value ? '其他用户正在编辑此节点' : 'Someone else is editing this node'
-      )
+      notify.warning(t('notification.canvasSomeoneEditingNode'))
       return
     }
     notifyNodeEditing(nodeId, true)
@@ -601,7 +597,7 @@ async function handleStartPresentation() {
     await canvasPageRef.value.requestFullscreen()
   } catch (err) {
     console.warn('Fullscreen request failed:', err)
-    notify.error(isZh.value ? '无法进入全屏模式' : 'Could not enter fullscreen')
+    notify.error(t('notification.fullscreenFailed'))
   }
 }
 
@@ -686,13 +682,14 @@ function handleUndoKey() {
     const prevEntry = diagramStore.history[diagramStore.historyIndex - 1]
     const cur = diagramStore.data
     if (prevEntry?.data && cur) {
-      const changed = nodeIdsDiffBetweenDiagrams(cur, prevEntry.data as { nodes?: { id: string }[] })
+      const changed = nodeIdsDiffBetweenDiagrams(
+        cur,
+        prevEntry.data as { nodes?: { id: string }[] }
+      )
       for (const nid of changed) {
         const ed = activeEditors.value.get(nid)
         if (ed && ed.user_id !== Number(authStore.user?.id)) {
-          notify.warning(
-            isZh.value ? '无法撤销：其他用户正在编辑相关节点' : 'Cannot undo while another user is editing'
-          )
+          notify.warning(t('notification.collabUndoBlocked'))
           return
         }
       }
@@ -717,9 +714,7 @@ function handleRedoKey() {
       for (const nid of changed) {
         const ed = activeEditors.value.get(nid)
         if (ed && ed.user_id !== Number(authStore.user?.id)) {
-          notify.warning(
-            isZh.value ? '无法重做：其他用户正在编辑相关节点' : 'Cannot redo while another user is editing'
-          )
+          notify.warning(t('notification.collabRedoBlocked'))
           return
         }
       }
@@ -733,7 +728,7 @@ function handleClearNodeTextKey() {
   if (relationshipActiveEntry.value) return
   const selected = [...diagramStore.selectedNodes]
   if (selected.length === 0) {
-    notify.warning(isZh.value ? '请先选择要清空的节点' : 'Please select a node to clear')
+    notify.warning(t('notification.selectNodeToClear'))
     return
   }
   const protectedIds = [
@@ -766,29 +761,19 @@ function handleClearNodeTextKey() {
 
   if (clearedCount > 0) {
     diagramStore.pushHistory(
-      isLearningSheet
-        ? isZh.value
-          ? '留空节点并添加答案'
-          : 'Empty node and add answer'
-        : isZh.value
-          ? '清空节点文字'
-          : 'Clear node text'
+      isLearningSheet ? t('notification.historyEmptyLearning') : t('notification.historyClearNodes')
     )
     notify.success(
       isLearningSheet
-        ? isZh.value
-          ? `已留空 ${clearedCount} 个节点，答案已添加`
-          : `Emptied ${clearedCount} node(s), added to answers`
-        : isZh.value
-          ? `已清空 ${clearedCount} 个节点`
-          : `Cleared ${clearedCount} node(s)`
+        ? t('notification.canvasClearNodesLearning', { count: clearedCount })
+        : t('notification.canvasClearNodes', { count: clearedCount })
     )
     // Save immediately when emptying nodes (learning sheet answers) so state persists
     if (isLearningSheet) {
       diagramAutoSave.performSave()
     }
   } else {
-    notify.warning(isZh.value ? '无法清空主题或中心节点' : 'Cannot clear topic or center nodes')
+    notify.warning(t('notification.cannotClearTopicOrCenter'))
   }
 }
 
@@ -848,6 +833,40 @@ eventBus.onWithOwner(
 eventBus.onWithOwner(
   'diagram:type_changed',
   () => panelsStore.clearNodePaletteState(),
+  'CanvasPage'
+)
+
+// Concept map Tab mode (focus + root pickers): dismiss like inline rec — pane click or selection away
+eventBus.onWithOwner(
+  'canvas:pane_clicked',
+  () => {
+    if (diagramStore.type !== 'concept_map') return
+    focusReviewStore.clear()
+    rootConceptReviewStore.clear()
+  },
+  'CanvasPage'
+)
+eventBus.onWithOwner(
+  'state:selection_changed',
+  ({ selectedNodes }: { selectedNodes: string[] }) => {
+    if (diagramStore.type !== 'concept_map') return
+    const nodes = selectedNodes ?? []
+    const rootId = getTopicRootConceptTargetId(diagramStore.data?.connections)
+
+    const focusActive =
+      focusReviewStore.validating || focusReviewStore.reviewWaveComplete
+    if (focusActive && !nodes.includes('topic')) {
+      focusReviewStore.clear()
+    }
+
+    const rootActive =
+      rootConceptReviewStore.streamPhase !== 'idle' ||
+      rootConceptReviewStore.reviewWaveComplete ||
+      rootConceptReviewStore.loadingMoreSuggestions
+    if (rootActive && (!rootId || !nodes.includes(rootId))) {
+      rootConceptReviewStore.clear()
+    }
+  },
   'CanvasPage'
 )
 
@@ -1011,6 +1030,8 @@ async function loadDiagramFromLibrary(diagramId: string): Promise<void> {
 }
 
 onMounted(async () => {
+  await ensureFontsForLanguageCode(uiStore.promptLanguage)
+
   document.addEventListener('fullscreenchange', handleFullscreenChange)
 
   // Initialize panel coordinator so panel:open_requested (e.g. 瀑布流) is handled
@@ -1018,12 +1039,38 @@ onMounted(async () => {
   // Initialize inline recommendations coordinator (topic updates, pane click, etc.)
   inlineRecCoordinator.setup()
 
-  // Inline recommendations: Tab triggers when user is editing a node (after double-click)
+  // Tab while editing: concept map topic → focus validation; other diagrams → inline recommendations
   eventBus.onWithOwner(
     'node_editor:tab_pressed',
-    (data: { nodeId?: string }) => {
+    (data: { nodeId?: string; draftText?: string }) => {
       const nodeId = data?.nodeId
       if (!nodeId) return
+
+      if (diagramStore.type === 'concept_map' && nodeId === 'topic') {
+        const draft = typeof data.draftText === 'string' ? data.draftText.trim() : ''
+        if (draft) {
+          eventBus.emit('node:text_updated', { nodeId: 'topic', text: draft })
+        }
+        void focusReviewStore.runFocusReviewManual()
+        return
+      }
+
+      if (diagramStore.type === 'concept_map') {
+        const rootTid = getTopicRootConceptTargetId(diagramStore.data?.connections)
+        if (rootTid && nodeId === rootTid) {
+          const draft = typeof data.draftText === 'string' ? data.draftText.trim() : ''
+          if (draft) {
+            eventBus.emit('node:text_updated', { nodeId: rootTid, text: draft })
+          }
+          if (!authStore.isAuthenticated) {
+            notify.warning(t('notification.signInToUse'))
+            return
+          }
+          void rootConceptReviewStore.runRootConceptManual()
+          return
+        }
+      }
+
       const nodes = diagramStore.data?.nodes ?? []
       const node = nodes.find((n: { id?: string }) => n.id === nodeId) as
         | { id?: string; type?: string }
@@ -1037,7 +1084,6 @@ onMounted(async () => {
 
   // Initialize node palette singleton and listen for open events (start session when no restore)
   const { startSession } = getNodePalette({
-    language: isZh.value ? 'zh' : 'en',
     onError: (err) => notify.error(err),
   })
   eventBus.onWithOwner(
@@ -1077,9 +1123,7 @@ onMounted(async () => {
         sessionStorage.removeItem(IMPORT_SPEC_KEY)
         const diagramType = (spec.type as DiagramType) || null
         if (!diagramType || !VALID_DIAGRAM_TYPES.includes(diagramType)) {
-          notify.error(
-            isZh.value ? '导入失败，不支持的图示类型' : 'Import failed: unsupported diagram type'
-          )
+          notify.error(t('notification.importUnsupportedType'))
         } else {
           const llmResults = spec.llm_results as
             | { results?: Record<string, unknown>; selectedModel?: string }
@@ -1108,7 +1152,7 @@ onMounted(async () => {
             const importTitle =
               topicText ||
               diagramStore.effectiveTitle ||
-              getDefaultDiagramName(diagramType, isZh.value)
+              getDefaultDiagramName(diagramType, currentLanguage.value)
             diagramStore.initTitle(importTitle)
             const getDiagramSpec = useDiagramSpecForSave()
             const specToSave = getDiagramSpec()
@@ -1117,33 +1161,24 @@ onMounted(async () => {
                 importTitle,
                 diagramType,
                 specToSave,
-                isZh.value ? 'zh' : 'en',
+                promptLanguage.value,
                 null
               )
               if (saveResult.success) {
-                notify.success(
-                  isZh.value ? '图示已导入并保存到图库' : 'Diagram imported and saved to library'
-                )
+                notify.success(t('notification.importSuccess'))
               } else if (saveResult.needsSlotClear) {
                 eventBus.emit('canvas:show_slot_full_modal', {})
               } else if (!saveResult.success) {
-                notify.warning(
-                  saveResult.error ||
-                    (isZh.value
-                      ? '导入成功，但保存到图库失败'
-                      : 'Imported, but save to library failed')
-                )
+                notify.warning(saveResult.error || t('notification.importSavePartial'))
               }
             }
             return
           }
-          notify.error(
-            isZh.value ? '导入失败，图示数据无法加载' : 'Import failed: diagram could not be loaded'
-          )
+          notify.error(t('notification.importLoadFailed'))
         }
       } catch (error) {
         console.error('Import load failed:', error)
-        notify.error(isZh.value ? '导入失败，图示数据无效' : 'Import failed: invalid diagram data')
+        notify.error(t('notification.importInvalidData'))
       }
     }
   }
@@ -1227,21 +1262,9 @@ onUnmounted(() => {
       class="fixed top-0 left-0 right-0 z-40 flex items-center justify-center gap-2 px-3 py-1.5 text-xs text-white bg-slate-800/90 backdrop-blur-sm border-b border-slate-600/60 pointer-events-none"
       role="status"
     >
-      <span>{{ isZh ? '在线协作' : 'Collaboration' }}</span>
+      <span>{{ t('canvasPage.collaborationFooter') }}</span>
       <span class="opacity-60">·</span>
       <span class="font-mono">{{ workshopCode }}</span>
-    </div>
-
-    <!-- Concept map standard mode: blur canvas until focus question is set -->
-    <div
-      v-if="showConceptMapFocusGate"
-      class="absolute top-12 left-0 right-0 bottom-0 z-[90] flex items-center justify-center p-4 bg-slate-900/25 dark:bg-black/40 backdrop-blur-md"
-      aria-hidden="false"
-    >
-      <ConceptMapFocusQuestionModal
-        :is-authenticated="authStore.isAuthenticated"
-        @confirm="handleConceptMapFocusConfirmed"
-      />
     </div>
 
     <!-- Floating toolbar (only UI bar visible in presentation mode) -->
@@ -1266,7 +1289,14 @@ onUnmounted(() => {
             maxHeight: `calc(100vh - ${PANEL_INSET.VERTICAL_TOTAL}px)`,
           }"
         >
-          <NodePalettePanel @close="panelsStore.closeNodePalette" />
+          <RootConceptModal
+            v-if="diagramStore.type === 'concept_map'"
+            @close="panelsStore.closeNodePalette"
+          />
+          <NodePalettePanel
+            v-else
+            @close="panelsStore.closeNodePalette"
+          />
         </div>
       </Transition>
 
@@ -1314,18 +1344,31 @@ onUnmounted(() => {
       <div
         class="bottom-controls-card flex flex-col md:flex-row md:items-center gap-2 md:gap-3 rounded-xl shadow-lg p-1.5 md:p-2 border border-gray-200/80 dark:border-gray-600/80 bg-white/90 dark:bg-gray-800/90 backdrop-blur-md w-fit max-w-[95vw] min-w-0"
       >
+        <!-- shrink-0: AI block + focus picker width follows content (no flex-1 stretch) -->
         <div
-          class="ai-selector-wrap flex flex-1 justify-center md:justify-center min-w-0 order-2 md:order-1"
+          class="ai-selector-wrap flex shrink-0 justify-center md:justify-center min-w-0 order-2 md:order-1"
         >
           <AIModelSelector @model-change="handleModelChange" />
         </div>
         <ConceptMapLabelPicker
-          v-if="diagramStore.type === 'concept_map'"
-          class="label-picker-wrap order-3 shrink-0 min-w-0"
+          v-if="diagramStore.type === 'concept_map' && relationshipActiveEntry"
+          class="label-picker-wrap order-3 flex-1 min-w-0"
+        />
+        <ConceptMapRootConceptPicker
+          v-else-if="
+            diagramStore.type === 'concept_map' &&
+            rootConceptReviewStore.showPicker &&
+            !relationshipActiveEntry
+          "
+          class="label-picker-wrap order-3 shrink-0 w-fit max-w-[min(95vw,640px)] min-w-0"
+        />
+        <ConceptMapFocusReviewPicker
+          v-else-if="diagramStore.type === 'concept_map' && focusReviewStore.showPicker"
+          class="label-picker-wrap order-3 shrink-0 w-fit max-w-[min(95vw,640px)] min-w-0"
         />
         <InlineRecommendationsPicker
           v-else-if="inlineRecActiveNodeId"
-          class="label-picker-wrap order-3 shrink-0 min-w-0"
+          class="label-picker-wrap order-3 flex-1 min-w-0"
         />
         <div
           v-if="showZoomControls"

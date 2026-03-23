@@ -112,6 +112,7 @@ async def list_org_members(
             id=u.id,
             name=u.name or f"User {u.id}",
             avatar=u.avatar,
+            last_seen_at=u.workshop_last_seen_at,
         )
         for u in users
     ]

@@ -33,7 +33,12 @@ import type { DiagramContext, MindMapCurveExtents } from './diagram/types'
 import { useVueFlowIntegrationSlice } from './diagram/vueFlowIntegration'
 
 export { subscribeToDiagramEvents } from './diagram/events'
-export type { DiagramEvent, DiagramEventType, MindMapCurveExtents } from './diagram/types'
+export type {
+  DiagramEvent,
+  DiagramEventType,
+  LoadFromSpecOptions,
+  MindMapCurveExtents,
+} from './diagram/types'
 
 export const useDiagramStore = defineStore('diagram', () => {
   // Core state refs

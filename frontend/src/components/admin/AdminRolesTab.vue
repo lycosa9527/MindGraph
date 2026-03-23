@@ -7,6 +7,7 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useDebounceFn } from '@vueuse/core'
 
 import { ElMessageBox } from 'element-plus'
+import type { TabPaneName } from 'element-plus'
 
 import { Loading, Plus, Refresh, Search, UserFilled } from '@element-plus/icons-vue'
 
@@ -272,7 +273,7 @@ async function revokeManager(manager: ManagerUser) {
   }
 }
 
-function onTabChange(tab: string) {
+function onTabChange(tab: TabPaneName) {
   if (tab === 'managers') {
     loadManagers()
   }

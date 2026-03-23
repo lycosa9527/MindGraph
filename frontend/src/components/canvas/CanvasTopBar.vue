@@ -26,10 +26,13 @@ import { ChatDotRound, Download } from '@element-plus/icons-vue'
 // Using Lucide icons for a more modern, cute look
 import {
   ArrowLeft,
+  Check,
+  CircleSlash,
   FileImage,
   FileJson,
   FileText,
   ImageDown,
+  Loader2,
   RotateCcw,
   Share2,
   Users,
@@ -46,8 +49,17 @@ import {
   useWorkshop,
 } from '@/composables'
 import { useLanguage } from '@/composables'
-import { useAuthStore, useDiagramStore, useLLMResultsStore, usePanelsStore } from '@/stores'
+import { FOCUS_MODELS, type FocusModel } from '@/composables/conceptMapFocusQuestionApi'
+import { getLLMColor } from '@/config/llmModelColors'
+import {
+  useAuthStore,
+  useConceptMapFocusReviewStore,
+  useDiagramStore,
+  useLLMResultsStore,
+  usePanelsStore,
+} from '@/stores'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
+import { useUIStore } from '@/stores/ui'
 import type { DiagramType } from '@/types'
 
 const notify = useNotifications()
@@ -65,11 +77,76 @@ const emit = defineEmits<{
 
 const route = useRoute()
 const router = useRouter()
-const { isZh } = useLanguage()
+const { promptLanguage, t, currentLanguage } = useLanguage()
 const diagramStore = useDiagramStore()
+
+const focusQuestionCenterTitle = computed(() => {
+  if (!props.focusQuestion) return ''
+  const prefix = t('canvas.topBar.focusQuestionLabel')
+  return `${prefix} ${props.focusQuestion}`
+})
 const savedDiagramsStore = useSavedDiagramsStore()
 const authStore = useAuthStore()
+const focusReviewStore = useConceptMapFocusReviewStore()
+const uiStore = useUIStore()
 const panelsStore = usePanelsStore()
+
+const FOCUS_MODEL_LABELS: Record<FocusModel, string> = {
+  qwen: 'Qwen',
+  deepseek: 'DeepSeek',
+  doubao: 'Doubao',
+}
+
+/**
+ * Three LLM focus-question validation chips: only while the topic node alone is selected.
+ * Clicking the canvas (clearing selection) or selecting another node hides them — validation is “done” for this focus.
+ */
+const showFocusValidationChips = computed(() => {
+  if (diagramStore.type !== 'concept_map' || !props.focusQuestion) return false
+  const nodes = diagramStore.selectedNodes
+  return nodes.length === 1 && nodes[0] === 'topic'
+})
+
+function focusVState(m: FocusModel) {
+  return (
+    focusReviewStore.validationByModel[m] ?? {
+      valid: null,
+      reason: '',
+      error: null,
+      loading: false,
+    }
+  )
+}
+
+function focusChipSurface(m: FocusModel): Record<string, string> {
+  const c = getLLMColor(m, uiStore.isDark)
+  if (!c) return {}
+  return { backgroundColor: c.bg, borderColor: c.border }
+}
+
+function focusChipLabelStyle(m: FocusModel): Record<string, string> {
+  const c = getLLMColor(m, uiStore.isDark)
+  if (!c) return {}
+  return { color: c.text }
+}
+
+function focusChipTooltip(m: FocusModel): string {
+  if (!authStore.isAuthenticated) {
+    return t('canvas.topBar.focusChipSignIn')
+  }
+  const v = focusVState(m)
+  const label = FOCUS_MODEL_LABELS[m]
+  if (v.loading) return t('canvas.topBar.focusChipValidating', { label })
+  if (v.error) return `${label} · ${v.error}`
+  if (v.valid === true) {
+    return `${label} · ${v.reason || t('canvas.topBar.focusChipPass')}`
+  }
+  if (v.valid === false) {
+    return `${label} · ${v.reason || t('canvas.topBar.focusChipWeak')}`
+  }
+  return t('canvas.topBar.focusChipHint', { label })
+}
+
 const { featureCommunity } = useFeatureFlags()
 
 // Diagram type from store (when loaded) or route query (for new diagrams)
@@ -82,7 +159,7 @@ const diagramTypeForName = computed(
  * Format: "新圆圈图" / "New Circle Map"
  */
 function generateDefaultName(): string {
-  return getDefaultDiagramName(diagramTypeForName.value, isZh.value)
+  return getDefaultDiagramName(diagramTypeForName.value, currentLanguage.value)
 }
 
 // File name editing state (UI only)
@@ -300,21 +377,17 @@ function handleCollabCommand(cmd: string) {
 async function handleReset() {
   const diagramType = diagramStore.type as DiagramType | null
   if (!diagramType) {
-    notify.warning(
-      isZh.value ? '无法重置：请先选择图示类型' : 'Cannot reset: select a diagram type first'
-    )
+    notify.warning(t('canvas.reset.warnSelectType'))
     return
   }
 
   try {
     await ElMessageBox.confirm(
-      isZh.value
-        ? '确定要重置吗？当前图示、节点调色板等所有内容将丢失，且无法恢复。'
-        : 'Are you sure? All current content will be lost, including the diagram and node palette. This cannot be undone.',
-      isZh.value ? '重置为默认模板' : 'Reset to Default',
+      t('canvas.reset.confirmBody'),
+      t('canvas.reset.confirmTitle'),
       {
-        confirmButtonText: isZh.value ? '重置' : 'Reset',
-        cancelButtonText: isZh.value ? '取消' : 'Cancel',
+        confirmButtonText: t('canvas.reset.confirmButton'),
+        cancelButtonText: t('common.cancel'),
         type: 'warning',
       }
     )
@@ -332,7 +405,7 @@ async function handleReset() {
   diagramStore.loadDefaultTemplate(diagramType)
   diagramStore.initTitle(generateDefaultName())
   eventBus.emit('view:fit_to_canvas_requested', { animate: true })
-  notify.success(isZh.value ? '已重置为默认模板' : 'Reset to default template')
+  notify.success(t('notification.resetDefaultTemplate'))
 }
 </script>
 
@@ -344,7 +417,7 @@ async function handleReset() {
     <div class="flex items-center gap-1 shrink-0 min-w-0 max-w-[min(300px,40vw)] z-10">
       <!-- Back button -->
       <ElTooltip
-        :content="isZh ? '返回' : 'Back'"
+        :content="t('canvas.topBar.back')"
         placement="bottom"
       >
         <ElButton
@@ -372,7 +445,7 @@ async function handleReset() {
         />
         <ElTooltip
           v-else
-          :content="isZh ? '点击编辑文件名' : 'Click to edit filename'"
+          :content="t('canvas.topBar.editFilename')"
           placement="bottom"
         >
           <span
@@ -387,12 +460,8 @@ async function handleReset() {
           class="auto-saved-status text-xs text-gray-500 dark:text-gray-400 shrink-0 cursor-pointer hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
           :title="
             props.slotFullAndNewDiagram
-              ? isZh
-                ? '点击管理图库空间'
-                : 'Click to manage gallery space'
-              : isZh
-                ? '点击保存'
-                : 'Click to save'
+              ? t('canvas.topBar.autoSaveTitleSlotFull')
+              : t('canvas.topBar.autoSaveTitleSave')
           "
           @click="handleAutoSaveStatusClick"
         >
@@ -401,24 +470,62 @@ async function handleReset() {
       </div>
     </div>
 
-    <!-- Center: concept map focus question (viewport-centered text) -->
+    <!-- Center: focus question + 3-LLM validation (concept map) -->
     <div
       v-if="props.focusQuestion"
-      class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 max-w-[min(50vw,560px)] px-2 pointer-events-none z-[5]"
+      class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 max-w-[min(92vw,980px)] px-2 z-[5] flex flex-row items-center gap-2 pointer-events-auto"
     >
       <p
-        class="text-xs text-gray-600 dark:text-gray-300 text-center truncate"
-        :title="props.focusQuestion"
+        class="text-xs text-gray-600 dark:text-gray-300 min-w-0 flex-1 truncate text-left"
+        :title="focusQuestionCenterTitle"
       >
-        <span class="text-gray-400 dark:text-gray-500">{{ isZh ? '焦点 · ' : 'Focus · ' }}</span
-        >{{ props.focusQuestion }}
+        <span class="text-gray-400 dark:text-gray-500">{{ t('canvas.topBar.focusQuestionLabel') }}</span>
+        <span class="ml-1">{{ props.focusQuestion }}</span>
       </p>
+      <div
+        v-if="showFocusValidationChips"
+        class="flex shrink-0 items-center flex-nowrap gap-1.5 max-w-[min(44vw,380px)]"
+      >
+        <div
+          v-for="m in FOCUS_MODELS"
+          :key="m"
+          class="flex items-center gap-1 rounded-lg border border-solid px-2 py-1"
+          :class="{ 'opacity-60': !authStore.isAuthenticated }"
+          :style="focusChipSurface(m)"
+        >
+          <ElTooltip
+            :content="focusChipTooltip(m)"
+            placement="bottom"
+          >
+            <span class="inline-flex items-center gap-1">
+              <span
+                class="text-[10px] font-semibold"
+                :style="focusChipLabelStyle(m)"
+                >{{ FOCUS_MODEL_LABELS[m] }}</span
+              >
+              <Loader2
+                v-if="focusVState(m).loading"
+                class="w-3.5 h-3.5 animate-spin text-blue-500 shrink-0"
+              />
+              <template v-else-if="focusVState(m).error">
+                <CircleSlash class="w-3.5 h-3.5 text-amber-600 shrink-0" />
+              </template>
+              <template v-else-if="focusVState(m).valid === true">
+                <Check class="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+              </template>
+              <template v-else-if="focusVState(m).valid === false">
+                <CircleSlash class="w-3.5 h-3.5 text-red-600 shrink-0" />
+              </template>
+            </span>
+          </ElTooltip>
+        </div>
+      </div>
     </div>
 
     <!-- Right section: Online collaboration + participants + teaching design + export -->
     <div class="ml-auto flex items-center gap-4 shrink-0 z-10">
       <ElTooltip
-        :content="isZh ? '在线协作（校内 / 共同）' : 'Collaborate (school or shared)'"
+        :content="t('canvas.topBar.collabTooltip')"
         placement="bottom"
       >
         <ElDropdown
@@ -432,15 +539,15 @@ async function handleReset() {
             :disabled="!currentDiagramId"
           >
             <Users class="w-4 h-4 mr-1" />
-            {{ isZh ? '在线协作' : 'Collaborate' }}
+            {{ t('canvas.topBar.collab') }}
           </ElButton>
           <template #dropdown>
             <ElDropdownMenu>
               <ElDropdownItem command="organization">
-                {{ isZh ? '校内协同' : 'School collaboration' }}
+                {{ t('canvas.topBar.schoolCollab') }}
               </ElDropdownItem>
               <ElDropdownItem command="network">
-                {{ isZh ? '共同协同' : 'Shared collaboration' }}
+                {{ t('canvas.topBar.sharedCollab') }}
               </ElDropdownItem>
             </ElDropdownMenu>
           </template>
@@ -510,7 +617,7 @@ async function handleReset() {
       <!-- Action buttons: 教学设计, Reset, Export (even spacing) -->
       <div class="flex items-center gap-2">
         <ElTooltip
-          :content="isZh ? '教学设计' : 'Teaching Design'"
+          :content="t('canvas.topBar.teachingDesign')"
           placement="bottom"
         >
           <ElButton
@@ -519,12 +626,12 @@ async function handleReset() {
             :icon="ChatDotRound"
             @click="handleOpenMindmate"
           >
-            教学设计
+            {{ t('canvas.topBar.teachingDesign') }}
           </ElButton>
         </ElTooltip>
 
         <ElTooltip
-          :content="isZh ? '重置为默认模板' : 'Reset to default template'"
+          :content="t('canvas.topBar.resetTemplate')"
           placement="bottom"
         >
           <ElButton
@@ -533,7 +640,7 @@ async function handleReset() {
             :icon="RotateCcw"
             @click="handleReset"
           >
-            {{ isZh ? '重置' : 'Reset' }}
+            {{ t('canvas.topBar.reset') }}
           </ElButton>
         </ElTooltip>
 
@@ -546,28 +653,28 @@ async function handleReset() {
             size="small"
             :icon="Download"
           >
-            {{ isZh ? '图示导出' : 'Export' }}
+            {{ t('canvas.topBar.export') }}
           </ElButton>
           <template #dropdown>
             <ElDropdownMenu>
               <ElDropdownItem command="png">
                 <ImageDown class="w-4 h-4 mr-2 text-emerald-500" />
-                {{ isZh ? '导出为 PNG' : 'Export as PNG' }}
+                {{ t('canvas.topBar.exportPng') }}
               </ElDropdownItem>
               <ElDropdownItem command="svg">
                 <FileImage class="w-4 h-4 mr-2 text-violet-500" />
-                {{ isZh ? '导出为 SVG' : 'Export as SVG' }}
+                {{ t('canvas.topBar.exportSvg') }}
               </ElDropdownItem>
               <ElDropdownItem command="pdf">
                 <FileText class="w-4 h-4 mr-2 text-red-500" />
-                {{ isZh ? '导出为 PDF' : 'Export as PDF' }}
+                {{ t('canvas.topBar.exportPdf') }}
               </ElDropdownItem>
               <ElDropdownItem
                 divided
                 command="json"
               >
                 <FileJson class="w-4 h-4 mr-2 text-amber-500" />
-                {{ isZh ? '导出为 JSON' : 'Export as JSON' }}
+                {{ t('canvas.topBar.exportJson') }}
               </ElDropdownItem>
               <ElDropdownItem
                 v-if="featureCommunity && authStore.isAuthenticated"
@@ -575,7 +682,7 @@ async function handleReset() {
                 command="community"
               >
                 <Share2 class="w-4 h-4 mr-2 text-rose-500" />
-                {{ isZh ? '分享到社区' : 'Share to Community' }}
+                {{ t('canvas.topBar.shareCommunity') }}
               </ElDropdownItem>
             </ElDropdownMenu>
           </template>
@@ -589,7 +696,7 @@ async function handleReset() {
       :pending-title="fileName"
       :pending-diagram-type="diagramStore.type || ''"
       :pending-spec="getDiagramSpec() || {}"
-      :pending-language="isZh ? 'zh' : 'en'"
+      :pending-language="promptLanguage"
       @success="handleSlotModalSuccess"
       @cancel="handleSlotModalCancel"
     />

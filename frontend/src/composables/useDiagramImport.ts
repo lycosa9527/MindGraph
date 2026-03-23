@@ -34,7 +34,7 @@ function isValidDiagramSpec(obj: unknown): obj is Record<string, unknown> {
 
 export function useDiagramImport() {
   const router = useRouter()
-  const { isZh } = useLanguage()
+  const { t } = useLanguage()
   const notify = useNotifications()
 
   function triggerImport(): void {
@@ -48,20 +48,14 @@ export function useDiagramImport() {
         const text = await file.text()
         const parsed = JSON.parse(text) as unknown
         if (!isValidDiagramSpec(parsed)) {
-          notify.error(
-            isZh.value
-              ? '无效的图示文件，请选择 MindGraph 导出的 JSON 文件'
-              : 'Invalid diagram file. Please select a JSON file exported from MindGraph.'
-          )
+          notify.error(t('canvas.import.invalidFile'))
           return
         }
         sessionStorage.setItem(IMPORT_SPEC_KEY, text)
         router.push({ path: '/canvas', query: { import: '1' } })
       } catch (error) {
         console.error('Import failed:', error)
-        notify.error(
-          isZh.value ? '无法解析 JSON 文件，请重试' : 'Failed to parse JSON file, please try again'
-        )
+        notify.error(t('canvas.import.parseError'))
       }
     }
     input.click()

@@ -48,7 +48,7 @@ import { type BorderStyleType, getBorderStyleProps } from '@/utils/borderStyleUt
 
 const notify = useNotifications()
 
-const { isZh } = useLanguage()
+const { t } = useLanguage()
 const { isGenerating: isAIGenerating, autoComplete, validateForAutoComplete } = useAutoComplete()
 
 const props = withDefaults(
@@ -208,31 +208,31 @@ function getBorderPreviewStyle(style: BorderStyleType) {
 // Style presets: WCAG AA contrast-compliant palettes (bg + text + border)
 const stylePresets: Array<
   {
-    name: string
+    nameKey: string
     bgClass: string
     borderClass: string
   } & StylePresetColors
 > = [
   {
-    name: '简约风格',
+    nameKey: 'canvas.toolbar.stylePresetSimple',
     bgClass: 'bg-blue-50',
     borderClass: 'border-blue-600',
     ...PRESET_SIMPLE,
   },
   {
-    name: '创意风格',
+    nameKey: 'canvas.toolbar.stylePresetCreative',
     bgClass: 'bg-purple-50',
     borderClass: 'border-purple-600',
     ...PRESET_CREATIVE,
   },
   {
-    name: '商务风格',
+    nameKey: 'canvas.toolbar.stylePresetBusiness',
     bgClass: 'bg-green-50',
     borderClass: 'border-green-600',
     ...PRESET_BUSINESS,
   },
   {
-    name: '活力风格',
+    nameKey: 'canvas.toolbar.stylePresetVibrant',
     bgClass: 'bg-yellow-50',
     borderClass: 'border-yellow-600',
     ...PRESET_VIBRANT,
@@ -249,39 +249,42 @@ type MoreAppItem = {
   iconBg: string
   iconColor: string
   handlerKey?: MoreAppHandlerKey
+  appKey?: 'waterfall' | 'learning_sheet'
 }
 
-// More apps items (hide 瀑布流 for concept_map - uses dedicated 生成概念 button)
+// More apps items (hide waterfall for concept_map — dedicated concept generation button)
 const moreApps = computed((): MoreAppItem[] => {
   const conceptMapModesRow: MoreAppItem = {
-    name: isZh.value ? '概念图模式' : 'Concept map modes',
+    name: t('canvas.toolbar.moreAppConceptMapModes'),
     icon: Layers,
-    desc: isZh.value
-      ? '当前为标准模式，更多模式即将推出'
-      : 'Standard mode now; more modes coming soon',
-    tag: isZh.value ? '即将推出' : 'Soon',
+    desc: t('canvas.toolbar.moreAppConceptMapModesDesc'),
+    tag: t('canvas.toolbar.tagSoon'),
     iconBg: 'bg-emerald-100',
     iconColor: 'text-emerald-600',
     handlerKey: 'concept_map_modes',
   }
   const apps: MoreAppItem[] = [
     {
-      name: '瀑布流',
+      appKey: 'waterfall',
+      name: t('canvas.toolbar.moreAppWaterfall'),
       icon: LayoutGrid,
-      desc: '在批量节点中选择，发散聚合思维显性化',
-      tag: '热门',
+      desc: t('canvas.toolbar.moreAppWaterfallDesc'),
+      tag: t('canvas.toolbar.tagHot'),
       iconBg: 'bg-blue-100',
       iconColor: 'text-blue-600',
     },
     {
-      name: '半成品图示',
+      appKey: 'learning_sheet',
+      name: t('canvas.toolbar.moreAppLearningSheet'),
       icon: Package,
-      desc: '随机留空，学习复习好搭子',
+      desc: t('canvas.toolbar.moreAppLearningSheetDesc'),
       iconBg: 'bg-purple-100',
       iconColor: 'text-purple-600',
     },
   ]
-  const withoutWaterfall = isConceptMap.value ? apps.filter((a) => a.name !== '瀑布流') : apps
+  const withoutWaterfall = isConceptMap.value
+    ? apps.filter((a) => a.appKey !== 'waterfall')
+    : apps
   if (isConceptMap.value) {
     return [conceptMapModesRow, ...withoutWaterfall]
   }
@@ -290,11 +293,11 @@ const moreApps = computed((): MoreAppItem[] => {
 
 function handleApplyStylePreset(preset: StylePresetColors) {
   if (!diagramStore.data?.nodes?.length) {
-    notify.warning(isZh.value ? '请先创建图示' : 'Please create a diagram first')
+    notify.warning(t('canvas.toolbar.createDiagramFirst'))
     return
   }
   diagramStore.applyStylePreset(preset)
-  notify.success(isZh.value ? '已应用样式' : 'Style applied')
+  notify.success(t('canvas.toolbar.styleApplied'))
 }
 
 function applyTextStyleToSelected(updates: {
@@ -307,10 +310,10 @@ function applyTextStyleToSelected(updates: {
 }) {
   const ids = diagramStore.selectedNodes
   if (!ids.length) {
-    notify.warning(isZh.value ? '请先选择节点' : 'Please select node(s) first')
+    notify.warning(t('canvas.toolbar.selectNodesFirst'))
     return
   }
-  diagramStore.pushHistory(isZh.value ? '更新文本样式' : 'Update text style')
+  diagramStore.pushHistory(t('canvas.toolbar.updateTextStyle'))
   ids.forEach((nodeId) => {
     const node = diagramStore.data?.nodes?.find((n) => n.id === nodeId)
     if (node) {
@@ -318,19 +321,19 @@ function applyTextStyleToSelected(updates: {
       diagramStore.updateNode(nodeId, { style: mergedStyle })
     }
   })
-  notify.success(isZh.value ? '已应用' : 'Applied')
+  notify.success(t('canvas.toolbar.applied'))
 }
 
 function applyBackgroundToSelected(color?: string) {
   const ids = diagramStore.selectedNodes
   if (!ids.length) {
-    notify.warning(isZh.value ? '请先选择节点' : 'Please select node(s) first')
+    notify.warning(t('canvas.toolbar.selectNodesFirst'))
     return
   }
   const baseColor = color ?? backgroundColor.value
   backgroundColor.value = colorToHex(baseColor)
   const value = hexToRgba(colorToHex(baseColor), backgroundOpacity.value)
-  diagramStore.pushHistory(isZh.value ? '更新背景' : 'Update background')
+  diagramStore.pushHistory(t('canvas.toolbar.updateBackground'))
   ids.forEach((nodeId) => {
     const node = diagramStore.data?.nodes?.find((n) => n.id === nodeId)
     if (node) {
@@ -338,7 +341,7 @@ function applyBackgroundToSelected(color?: string) {
       diagramStore.updateNode(nodeId, { style: mergedStyle })
     }
   })
-  notify.success(isZh.value ? '已应用' : 'Applied')
+  notify.success(t('canvas.toolbar.applied'))
 }
 
 function applyBorderToSelected(updates: {
@@ -348,13 +351,13 @@ function applyBorderToSelected(updates: {
 }) {
   const ids = diagramStore.selectedNodes
   if (!ids.length) {
-    notify.warning(isZh.value ? '请先选择节点' : 'Please select node(s) first')
+    notify.warning(t('canvas.toolbar.selectNodesFirst'))
     return
   }
   if (updates.borderColor !== undefined) borderColor.value = updates.borderColor
   if (updates.borderWidth !== undefined) borderWidth.value = updates.borderWidth
   if (updates.borderStyle !== undefined) borderStyle.value = updates.borderStyle
-  diagramStore.pushHistory(isZh.value ? '更新边框' : 'Update border')
+  diagramStore.pushHistory(t('canvas.toolbar.updateBorder'))
   ids.forEach((nodeId) => {
     const node = diagramStore.data?.nodes?.find((n) => n.id === nodeId)
     if (node) {
@@ -362,7 +365,7 @@ function applyBorderToSelected(updates: {
       diagramStore.updateNode(nodeId, { style: mergedStyle })
     }
   })
-  notify.success(isZh.value ? '已应用' : 'Applied')
+  notify.success(t('canvas.toolbar.applied'))
 }
 
 function handleToggleBold() {
@@ -462,7 +465,7 @@ function handleAddNode() {
   const diagramType = diagramStore.type
 
   if (!diagramStore.data?.nodes) {
-    notify.warning('请先创建图示')
+    notify.warning(t('canvas.toolbar.createDiagramFirst'))
     return
   }
 
@@ -475,13 +478,13 @@ function handleAddNode() {
 
     diagramStore.addNode({
       id: `bubble-${newIndex}`,
-      text: isZh.value ? '新属性' : 'New Attribute',
+      text: t('canvas.toolbar.newAttribute'),
       type: 'bubble',
       position: { x: 0, y: 0 },
     })
 
-    diagramStore.pushHistory(isZh.value ? '添加属性' : 'Add Attribute')
-    notify.success(isZh.value ? '已添加新属性' : 'Attribute added')
+    diagramStore.pushHistory(t('canvas.toolbar.addAttributeHistory'))
+    notify.success(t('canvas.toolbar.attributeAdded'))
     return
   }
 
@@ -496,13 +499,13 @@ function handleAddNode() {
     // Add new context node (layout will be recalculated automatically)
     diagramStore.addNode({
       id: `context-${newIndex}`,
-      text: '新联想',
+      text: t('canvas.toolbar.newAssociation'),
       type: 'bubble',
       position: { x: 0, y: 0 }, // Will be recalculated
     })
 
-    diagramStore.pushHistory('添加节点')
-    notify.success('已添加新节点')
+    diagramStore.pushHistory(t('canvas.toolbar.addNodeHistory'))
+    notify.success(t('canvas.toolbar.nodeAddedCircle'))
     return
   }
 
@@ -560,7 +563,7 @@ function handleAddNode() {
     // Create left node
     const leftNode: DiagramNode = {
       id: `pair-${newPairIndex}-left`,
-      text: isZh.value ? '新事物A' : 'New Item A',
+      text: t('canvas.toolbar.newItemA'),
       type: 'branch',
       position: { x: nextX, y: leftNodeY },
       data: {
@@ -573,7 +576,7 @@ function handleAddNode() {
     // Create right node
     const rightNode: DiagramNode = {
       id: `pair-${newPairIndex}-right`,
-      text: isZh.value ? '新事物B' : 'New Item B',
+      text: t('canvas.toolbar.newItemB'),
       type: 'branch',
       position: { x: nextX, y: rightNodeY },
       data: {
@@ -587,8 +590,8 @@ function handleAddNode() {
     diagramStore.addNode(leftNode)
     diagramStore.addNode(rightNode)
 
-    diagramStore.pushHistory(isZh.value ? '添加类比对' : 'Add Analogy Pair')
-    notify.success(isZh.value ? '已添加类比对' : 'Analogy pair added')
+    diagramStore.pushHistory(t('canvas.toolbar.addAnalogyPairHistory'))
+    notify.success(t('canvas.toolbar.analogyPairAdded'))
     return
   }
 
@@ -607,20 +610,21 @@ function handleAddNode() {
     const isStepSelected = selectedNode?.type === 'flow'
     if (isStepSelected && selectedNode?.text) {
       if (
-        diagramStore.addFlowMapSubstep(selectedNode.text, isZh.value ? '新子步骤' : 'New Substep')
+        diagramStore.addFlowMapSubstep(selectedNode.text, t('canvas.toolbar.newSubstep'))
       ) {
-        diagramStore.pushHistory(isZh.value ? '添加子步骤' : 'Add Substep')
-        notify.success(isZh.value ? '已添加子步骤' : 'Substep added')
+        diagramStore.pushHistory(t('canvas.toolbar.addSubstepHistory'))
+        notify.success(t('canvas.toolbar.substepAdded'))
       }
     } else {
       const stepCount = diagramStore.data?.nodes?.filter((n) => n.type === 'flow').length ?? 0
       const stepNum = stepCount + 1
-      const defaultSubsteps: [string, string] = isZh.value
-        ? [`子步骤${stepNum}.1`, `子步骤${stepNum}.2`]
-        : [`Substep ${stepNum}.1`, `Substep ${stepNum}.2`]
-      if (diagramStore.addFlowMapStep(isZh.value ? '新步骤' : 'New Step', defaultSubsteps)) {
-        diagramStore.pushHistory(isZh.value ? '添加步骤' : 'Add Step')
-        notify.success(isZh.value ? '已添加步骤' : 'Step added')
+      const defaultSubsteps: [string, string] = [
+        t('canvas.toolbar.substepDefault1', { n: stepNum }),
+        t('canvas.toolbar.substepDefault2', { n: stepNum }),
+      ]
+      if (diagramStore.addFlowMapStep(t('canvas.toolbar.newStep'), defaultSubsteps)) {
+        diagramStore.pushHistory(t('canvas.toolbar.addStepHistory'))
+        notify.success(t('canvas.toolbar.stepAdded'))
       }
     }
     return
@@ -632,11 +636,7 @@ function handleAddNode() {
     const selectedId = diagramStore.selectedNodes[0]
     const group = getDoubleBubbleGroupFromNodeId(selectedId)
     if (!group) {
-      notify.warning(
-        isZh.value
-          ? '请先选择相似点或不同点节点'
-          : 'Please select a similarity or difference node first'
-      )
+      notify.warning(t('canvas.toolbar.selectSimilarityOrDifferenceFirst'))
       return
     }
     const spec = diagramStore.getDoubleBubbleSpecFromData()
@@ -644,31 +644,26 @@ function handleAddNode() {
     const similarities = (spec.similarities as string[]) || []
     const leftDifferences = (spec.leftDifferences as string[]) || []
     const rightDifferences = (spec.rightDifferences as string[]) || []
-    const newSimText = isZh.value
-      ? `相似点 ${similarities.length + 1}`
-      : `Similarity ${similarities.length + 1}`
+    const simIndex = similarities.length + 1
+    const newSimText = t('canvas.toolbar.similarityWithIndex', { n: simIndex })
     const pairIndex = Math.max(leftDifferences.length, rightDifferences.length) + 1
-    const newLeftText = isZh.value ? `不同点A${pairIndex}` : `Difference A${pairIndex}`
-    const newRightText = isZh.value ? `不同点B${pairIndex}` : `Difference B${pairIndex}`
+    const newLeftText = t('canvas.toolbar.differenceAWithIndex', { n: pairIndex })
+    const newRightText = t('canvas.toolbar.differenceBWithIndex', { n: pairIndex })
     const text = group === 'similarity' ? newSimText : newLeftText
     const pairText = group === 'similarity' ? undefined : newRightText
     if (diagramStore.addDoubleBubbleMapNode(group, text, pairText)) {
-      diagramStore.pushHistory(isZh.value ? '添加节点' : 'Add node')
+      diagramStore.pushHistory(t('canvas.toolbar.addNodeHistory'))
       notify.success(
         group === 'similarity'
-          ? isZh.value
-            ? '已添加节点'
-            : 'Node added'
-          : isZh.value
-            ? '已添加一对不同点'
-            : 'Difference pair added'
+          ? t('canvas.toolbar.nodeAddedGeneric')
+          : t('canvas.toolbar.differencePairAdded')
       )
     }
     return
   }
 
   // For other diagram types, show under development message
-  notify.info('增加节点功能开发中')
+  notify.info(t('canvas.toolbar.addNodeInDevelopment'))
 }
 
 /** Resolve double bubble group from node id: similarity-*, left-diff-*, right-diff-* */
@@ -686,23 +681,24 @@ function handleAddBranch() {
   const diagramType = diagramStore.type
   if (diagramType === 'flow_map') {
     if (!diagramStore.data?.nodes) {
-      notify.warning(isZh.value ? '请先创建图示' : 'Please create a diagram first')
+      notify.warning(t('canvas.toolbar.createDiagramFirst'))
       return
     }
     const stepCount = diagramStore.data.nodes.filter((n) => n.type === 'flow').length
     const stepNum = stepCount + 1
-    const defaultSubsteps: [string, string] = isZh.value
-      ? [`子步骤${stepNum}.1`, `子步骤${stepNum}.2`]
-      : [`Substep ${stepNum}.1`, `Substep ${stepNum}.2`]
-    if (diagramStore.addFlowMapStep(isZh.value ? '新步骤' : 'New Step', defaultSubsteps)) {
-      diagramStore.pushHistory(isZh.value ? '添加步骤' : 'Add Step')
-      notify.success(isZh.value ? '已添加步骤' : 'Step added')
+    const defaultSubsteps: [string, string] = [
+      t('canvas.toolbar.substepDefault1', { n: stepNum }),
+      t('canvas.toolbar.substepDefault2', { n: stepNum }),
+    ]
+    if (diagramStore.addFlowMapStep(t('canvas.toolbar.newStep'), defaultSubsteps)) {
+      diagramStore.pushHistory(t('canvas.toolbar.addStepHistory'))
+      notify.success(t('canvas.toolbar.stepAdded'))
     }
     return
   }
   if (diagramType === 'brace_map') {
     if (!diagramStore.data?.nodes) {
-      notify.warning(isZh.value ? '请先创建图示' : 'Please create a diagram first')
+      notify.warning(t('canvas.toolbar.createDiagramFirst'))
       return
     }
     const targetIds = new Set(diagramStore.data.connections?.map((c) => c.target) ?? [])
@@ -710,28 +706,29 @@ function handleAddBranch() {
       diagramStore.data.nodes.find((n) => n.type === 'topic')?.id ??
       diagramStore.data.nodes.find((n) => !targetIds.has(n.id))?.id
     if (!rootId) return
-    const text = isZh.value ? '新部分' : 'New Part'
-    const subpartTexts: [string, string] = isZh.value
-      ? ['子部分1', '子部分2']
-      : ['Subpart 1', 'Subpart 2']
+    const text = t('canvas.toolbar.newPart')
+    const subpartTexts: [string, string] = [
+      t('canvas.toolbar.subpartLabel1'),
+      t('canvas.toolbar.subpartLabel2'),
+    ]
     if (diagramStore.addBraceMapPart(rootId, text, subpartTexts)) {
-      notify.success(isZh.value ? '已添加部分' : 'Part added')
+      notify.success(t('canvas.toolbar.partAdded'))
     }
     return
   }
   if (diagramType !== 'mindmap' && diagramType !== 'mind_map') return
   if (!diagramStore.data?.nodes) {
-    notify.warning(isZh.value ? '请先创建图示' : 'Please create a diagram first')
+    notify.warning(t('canvas.toolbar.createDiagramFirst'))
     return
   }
 
   const selectedId = diagramStore.selectedNodes[0]
   const side: 'left' | 'right' = selectedId?.startsWith('branch-l-') ? 'left' : 'right'
-  const text = isZh.value ? '新分支' : 'New Branch'
-  const childText = isZh.value ? '新子项' : 'New Child'
+  const text = t('canvas.toolbar.newBranch')
+  const childText = t('canvas.toolbar.newChild')
 
   if (diagramStore.addMindMapBranch(side, text, childText)) {
-    notify.success(isZh.value ? '已添加分支' : 'Branch added')
+    notify.success(t('canvas.toolbar.branchAdded'))
   }
 }
 
@@ -739,7 +736,7 @@ function handleAddChild() {
   const diagramType = diagramStore.type
   if (diagramType === 'flow_map') {
     if (!diagramStore.data?.nodes) {
-      notify.warning(isZh.value ? '请先创建图示' : 'Please create a diagram first')
+      notify.warning(t('canvas.toolbar.createDiagramFirst'))
       return
     }
     const selectedId = diagramStore.selectedNodes[0]
@@ -747,29 +744,25 @@ function handleAddChild() {
       ? diagramStore.data?.nodes?.find((n) => n.id === selectedId)
       : undefined
     if (selectedNode?.type !== 'flow' || !selectedNode?.text) {
-      notify.warning(
-        isZh.value ? '请先选择要添加子步骤的步骤节点' : 'Please select a step to add substep to'
-      )
+      notify.warning(t('canvas.toolbar.selectStepForSubstep'))
       return
     }
     if (
-      diagramStore.addFlowMapSubstep(selectedNode.text, isZh.value ? '新子步骤' : 'New Substep')
+      diagramStore.addFlowMapSubstep(selectedNode.text, t('canvas.toolbar.newSubstep'))
     ) {
-      diagramStore.pushHistory(isZh.value ? '添加子步骤' : 'Add Substep')
-      notify.success(isZh.value ? '已添加子步骤' : 'Substep added')
+      diagramStore.pushHistory(t('canvas.toolbar.addSubstepHistory'))
+      notify.success(t('canvas.toolbar.substepAdded'))
     }
     return
   }
   if (diagramType === 'brace_map') {
     if (!diagramStore.data?.nodes) {
-      notify.warning(isZh.value ? '请先创建图示' : 'Please create a diagram first')
+      notify.warning(t('canvas.toolbar.createDiagramFirst'))
       return
     }
     const selectedId = diagramStore.selectedNodes[0]
     if (!selectedId) {
-      notify.warning(
-        isZh.value ? '请先选择要添加子部分的节点' : 'Please select a part to add subpart to'
-      )
+      notify.warning(t('canvas.toolbar.selectPartForSubpart'))
       return
     }
     const targetIds = new Set(diagramStore.data.connections?.map((c) => c.target) ?? [])
@@ -777,36 +770,32 @@ function handleAddChild() {
       diagramStore.data.nodes.find((n) => n.type === 'topic')?.id ??
       diagramStore.data.nodes.find((n) => !targetIds.has(n.id))?.id
     if (selectedId === rootId || selectedId === 'dimension-label') {
-      notify.warning(
-        isZh.value
-          ? '请选择部分节点后按 Enter 添加子部分'
-          : 'Select a part node, then press Enter to add subpart'
-      )
+      notify.warning(t('canvas.toolbar.selectPartThenEnter'))
       return
     }
-    const text = isZh.value ? '新子部分' : 'New Subpart'
+    const text = t('canvas.toolbar.newSubpart')
     if (diagramStore.addBraceMapPart(selectedId, text)) {
-      notify.success(isZh.value ? '已添加子部分' : 'Subpart added')
+      notify.success(t('canvas.toolbar.subpartAdded'))
     }
     return
   }
   if (diagramType !== 'mindmap' && diagramType !== 'mind_map') return
   if (!diagramStore.data?.nodes) {
-    notify.warning(isZh.value ? '请先创建图示' : 'Please create a diagram first')
+    notify.warning(t('canvas.toolbar.createDiagramFirst'))
     return
   }
 
   const selectedId = diagramStore.selectedNodes[0]
   if (!selectedId || selectedId === 'topic') {
-    notify.warning(isZh.value ? '请先选择分支或子节点' : 'Please select a branch or child node')
+    notify.warning(t('canvas.toolbar.selectBranchOrChild'))
     return
   }
 
-  const text = isZh.value ? '新子项' : 'New Child'
+  const text = t('canvas.toolbar.newChild')
   if (diagramStore.addMindMapChild(selectedId, text)) {
-    notify.success(isZh.value ? '已添加子项' : 'Child added')
+    notify.success(t('canvas.toolbar.childAdded'))
   } else {
-    notify.warning(isZh.value ? '无法添加子项' : 'Cannot add child')
+    notify.warning(t('canvas.toolbar.cannotAddChild'))
   }
 }
 
@@ -814,7 +803,7 @@ function handleAddCause() {
   const diagramType = diagramStore.type
 
   if (!diagramStore.data?.nodes) {
-    notify.warning('请先创建图示')
+    notify.warning(t('canvas.toolbar.createDiagramFirst'))
     return
   }
 
@@ -825,21 +814,21 @@ function handleAddCause() {
   // Add new cause node (layout will be recalculated automatically)
   diagramStore.addNode({
     id: 'cause-temp', // Temporary ID, will be re-indexed
-    text: '新原因',
+    text: t('canvas.toolbar.newCause'),
     type: 'flow',
     position: { x: 0, y: 0 }, // Will be recalculated
     category: 'causes', // Pass category to addNode
   } as DiagramNode & { category?: string })
 
-  diagramStore.pushHistory('添加原因')
-  notify.success('已添加原因节点')
+  diagramStore.pushHistory(t('canvas.toolbar.addCauseHistory'))
+  notify.success(t('canvas.toolbar.causeAdded'))
 }
 
 function handleAddEffect() {
   const diagramType = diagramStore.type
 
   if (!diagramStore.data?.nodes) {
-    notify.warning('请先创建图示')
+    notify.warning(t('canvas.toolbar.createDiagramFirst'))
     return
   }
 
@@ -850,14 +839,14 @@ function handleAddEffect() {
   // Add new effect node (layout will be recalculated automatically)
   diagramStore.addNode({
     id: 'effect-temp', // Temporary ID, will be re-indexed
-    text: '新结果',
+    text: t('canvas.toolbar.newEffect'),
     type: 'flow',
     position: { x: 0, y: 0 }, // Will be recalculated
     category: 'effects', // Pass category to addNode
   } as DiagramNode & { category?: string })
 
-  diagramStore.pushHistory('添加结果')
-  notify.success('已添加结果节点')
+  diagramStore.pushHistory(t('canvas.toolbar.addEffectHistory'))
+  notify.success(t('canvas.toolbar.effectAdded'))
 }
 
 function repositionBridgeMapPairs() {
@@ -945,7 +934,7 @@ async function handleDeleteNode() {
   const diagramType = diagramStore.type
 
   if (!diagramStore.data?.nodes) {
-    notify.warning('请先创建图示')
+    notify.warning(t('canvas.toolbar.createDiagramFirst'))
     return
   }
 
@@ -959,7 +948,7 @@ async function handleDeleteNode() {
       diagramType: diagramStore.type,
       totalNodes: diagramStore.data?.nodes?.length || 0,
     })
-    notify.warning('请先选择要删除的节点')
+    notify.warning(t('canvas.toolbar.selectNodesToDelete'))
     return
   }
 
@@ -980,12 +969,10 @@ async function handleDeleteNode() {
 
     if (deletedCount > 0) {
       diagramStore.clearSelection()
-      diagramStore.pushHistory(isZh.value ? '删除属性' : 'Delete Attribute')
-      notify.success(
-        isZh.value ? `已删除 ${deletedCount} 个属性` : `Deleted ${deletedCount} attribute(s)`
-      )
+      diagramStore.pushHistory(t('canvas.toolbar.deleteAttributeHistory'))
+      notify.success(t('canvas.toolbar.deletedAttributes', { count: deletedCount }))
     } else {
-      notify.warning(isZh.value ? '无法删除主题节点' : 'Cannot delete topic node')
+      notify.warning(t('canvas.toolbar.cannotDeleteTopic'))
     }
     return
   }
@@ -1013,10 +1000,10 @@ async function handleDeleteNode() {
       })
 
       diagramStore.clearSelection()
-      diagramStore.pushHistory('删除节点')
-      notify.success(`已删除 ${deletedCount} 个节点`)
+      diagramStore.pushHistory(t('canvas.toolbar.deleteNodesHistory'))
+      notify.success(t('canvas.toolbar.deletedNodes', { count: deletedCount }))
     } else {
-      notify.warning('无法删除主题节点')
+      notify.warning(t('canvas.toolbar.cannotDeleteTopic'))
     }
     return
   }
@@ -1028,12 +1015,10 @@ async function handleDeleteNode() {
 
     if (deletedCount > 0) {
       diagramStore.clearSelection()
-      diagramStore.pushHistory(isZh.value ? '删除节点' : 'Delete nodes')
-      notify.success(
-        isZh.value ? `已删除 ${deletedCount} 个节点` : `Deleted ${deletedCount} node(s)`
-      )
+      diagramStore.pushHistory(t('canvas.toolbar.deleteNodesHistory'))
+      notify.success(t('canvas.toolbar.deletedNodes', { count: deletedCount }))
     } else {
-      notify.warning(isZh.value ? '无法删除主题节点' : 'Cannot delete topic node')
+      notify.warning(t('canvas.toolbar.cannotDeleteTopic'))
     }
     return
   }
@@ -1056,10 +1041,10 @@ async function handleDeleteNode() {
 
     if (deletedCount > 0) {
       diagramStore.clearSelection()
-      diagramStore.pushHistory('删除节点')
-      notify.success(`已删除 ${deletedCount} 个节点`)
+      diagramStore.pushHistory(t('canvas.toolbar.deleteNodesHistory'))
+      notify.success(t('canvas.toolbar.deletedNodes', { count: deletedCount }))
     } else {
-      notify.warning('无法删除事件节点')
+      notify.warning(t('canvas.toolbar.cannotDeleteEvent'))
     }
     return
   }
@@ -1071,10 +1056,10 @@ async function handleDeleteNode() {
 
     if (deletedCount > 0) {
       diagramStore.clearSelection()
-      diagramStore.pushHistory(isZh.value ? '删除节点' : 'Delete nodes')
-      notify.success(`已删除 ${deletedCount} 个节点`)
+      diagramStore.pushHistory(t('canvas.toolbar.deleteNodesHistory'))
+      notify.success(t('canvas.toolbar.deletedNodes', { count: deletedCount }))
     } else {
-      notify.warning(isZh.value ? '无法删除主题节点' : 'Cannot delete topic node')
+      notify.warning(t('canvas.toolbar.cannotDeleteTopic'))
     }
     return
   }
@@ -1087,21 +1072,15 @@ async function handleDeleteNode() {
         /^similarity-\d+$/.test(id) || /^left-diff-\d+$/.test(id) || /^right-diff-\d+$/.test(id)
     )
     if (toDelete.length === 0) {
-      notify.warning(
-        isZh.value
-          ? '请选择相似点或不同点节点（主题节点不可删除）'
-          : 'Please select similarity or difference nodes (topic nodes cannot be deleted)'
-      )
+      notify.warning(t('canvas.toolbar.selectSimilarityOrDifferenceDelete'))
       return
     }
 
     const deletedCount = diagramStore.removeDoubleBubbleMapNodes(toDelete)
     if (deletedCount > 0) {
       diagramStore.clearSelection()
-      diagramStore.pushHistory(isZh.value ? '删除节点' : 'Delete nodes')
-      notify.success(
-        isZh.value ? `已删除 ${deletedCount} 个节点` : `Deleted ${deletedCount} node(s)`
-      )
+      diagramStore.pushHistory(t('canvas.toolbar.deleteNodesHistory'))
+      notify.success(t('canvas.toolbar.deletedNodes', { count: deletedCount }))
     }
     return
   }
@@ -1113,23 +1092,17 @@ async function handleDeleteNode() {
       (id) => /^tree-cat-\d+$/.test(id) || /^tree-leaf-\d+-\d+$/.test(id)
     )
     if (toDelete.length === 0) {
-      notify.warning(
-        isZh.value
-          ? '请选择分类或子项节点（主题节点不可删除）'
-          : 'Please select category or leaf nodes (topic node cannot be deleted)'
-      )
+      notify.warning(t('canvas.toolbar.selectCategoryOrLeafDelete'))
       return
     }
 
     const deletedCount = diagramStore.removeTreeMapNodes(toDelete)
     if (deletedCount > 0) {
       diagramStore.clearSelection()
-      diagramStore.pushHistory(isZh.value ? '删除节点' : 'Delete nodes')
-      notify.success(
-        isZh.value ? `已删除 ${deletedCount} 个节点` : `Deleted ${deletedCount} node(s)`
-      )
+      diagramStore.pushHistory(t('canvas.toolbar.deleteNodesHistory'))
+      notify.success(t('canvas.toolbar.deletedNodes', { count: deletedCount }))
     } else {
-      notify.warning(isZh.value ? '无法删除主题节点' : 'Cannot delete topic node')
+      notify.warning(t('canvas.toolbar.cannotDeleteTopicGeneric'))
     }
     return
   }
@@ -1230,14 +1203,10 @@ async function handleDeleteNode() {
       console.debug(`[CanvasToolbar] [${getTimestamp()}] Repositioning complete`)
       diagramStore.clearSelection()
       const pairCount = pairIndicesToDelete.size
-      diagramStore.pushHistory(isZh.value ? '删除类比对' : 'Delete Analogy Pair')
-      notify.success(
-        isZh.value
-          ? `已删除 ${pairCount} 个类比对`
-          : `Deleted ${pairCount} analogy pair${pairCount > 1 ? 's' : ''}`
-      )
+      diagramStore.pushHistory(t('canvas.toolbar.deleteAnalogyPairHistory'))
+      notify.success(t('canvas.toolbar.deletedAnalogyPairs', { count: pairCount }))
     } else {
-      notify.warning(isZh.value ? '无法删除维度标签' : 'Cannot delete dimension label')
+      notify.warning(t('canvas.toolbar.cannotDeleteDimension'))
     }
     return
   }
@@ -1254,15 +1223,15 @@ async function handleDeleteNode() {
 
   if (deletedCount > 0) {
     diagramStore.clearSelection()
-    diagramStore.pushHistory('删除节点')
-    notify.success(`已删除 ${deletedCount} 个节点`)
+    diagramStore.pushHistory(t('canvas.toolbar.deleteNodesHistory'))
+    notify.success(t('canvas.toolbar.deletedNodes', { count: deletedCount }))
   } else {
-    notify.warning('无法删除选中的节点')
+    notify.warning(t('canvas.toolbar.cannotDeleteSelected'))
   }
 }
 
 function handleFormatBrush() {
-  notify.info('格式刷功能开发中')
+  notify.info(t('canvas.toolbar.formatBrushDev'))
 }
 
 /**
@@ -1271,17 +1240,13 @@ function handleFormatBrush() {
  */
 async function handleAIGenerate() {
   if (aiBlockedByCollab.value) {
-    notify.warning(
-      isZh.value
-        ? '协作模式下仅图示所有者可以使用 AI 生成'
-        : 'Only the diagram owner can use AI generation during collaboration'
-    )
+    notify.warning(t('canvas.toolbar.collabAiBlocked'))
     return
   }
   // Validate before generating
   const validation = validateForAutoComplete()
   if (!validation.valid) {
-    notify.warning(validation.error || (isZh.value ? '无法生成' : 'Cannot generate'))
+    notify.warning(validation.error || t('canvas.toolbar.cannotGenerate'))
     return
   }
 
@@ -1297,7 +1262,7 @@ async function handleAIGenerate() {
 
 function handleConceptGeneration() {
   if (!diagramStore.data?.nodes?.length) {
-    notify.warning(isZh.value ? '请先创建图示' : 'Please create a diagram first')
+    notify.warning(t('canvas.toolbar.createDiagramFirst'))
     return
   }
   const options: Record<string, unknown> = {}
@@ -1317,32 +1282,32 @@ function handleConceptGeneration() {
 
 function handleMoreAppItem(app: MoreAppItem) {
   if (app.handlerKey === 'concept_map_modes') {
-    notify.info(isZh.value ? '概念图模式功能开发中' : 'Concept map modes are in development')
+    notify.info(t('canvas.toolbar.conceptMapModesDev'))
     return
   }
-  void handleMoreApp(app.name)
+  void handleMoreApp(app)
 }
 
-async function handleMoreApp(appName: string) {
-  if (appName === '瀑布流') {
+async function handleMoreApp(app: MoreAppItem) {
+  if (app.appKey === 'waterfall') {
     if (!diagramStore.data?.nodes?.length) {
-      notify.warning(isZh.value ? '请先创建图示' : 'Please create a diagram first')
+      notify.warning(t('canvas.toolbar.createDiagramFirst'))
       return
     }
     eventBus.emit('panel:open_requested', { panel: 'nodePalette', source: 'toolbar' })
     return
   }
-  if (appName === '半成品图示') {
+  if (app.appKey === 'learning_sheet') {
     if (!diagramStore.data?.nodes?.length) {
-      notify.warning(isZh.value ? '请先创建图示' : 'Please create a diagram first')
+      notify.warning(t('canvas.toolbar.createDiagramFirst'))
       return
     }
     if (diagramStore.isLearningSheet) {
       diagramStore.restoreFromLearningSheetMode()
-      notify.success(isZh.value ? '已切换回普通模式' : 'Switched back to regular mode')
+      notify.success(t('canvas.toolbar.switchedToRegular'))
     } else if (diagramStore.hasPreservedLearningSheet()) {
       diagramStore.applyLearningSheetView()
-      notify.success(isZh.value ? '已恢复学习单' : 'Learning sheet restored')
+      notify.success(t('canvas.toolbar.learningSheetRestored'))
     } else {
       diagramStore.setLearningSheetMode(true)
       const spec = diagramStore.getSpecForSave()
@@ -1353,12 +1318,12 @@ async function handleMoreApp(appName: string) {
           hidden_node_percentage: 0.2,
         }
         diagramStore.loadFromSpec(enrichedSpec, diagramStore.type)
-        notify.success(isZh.value ? '已切换为半成品图示模式' : 'Switched to learning sheet mode')
+        notify.success(t('canvas.toolbar.switchedLearningSheetMode'))
       }
     }
     return
   }
-  notify.info(`${appName}功能开发中`)
+  notify.info(t('canvas.toolbar.featureInDevelopment', { name: app.name }))
 }
 
 // Flow map orientation toggle (only visible for flow_map)
@@ -1366,7 +1331,7 @@ const isFlowMap = computed(() => diagramStore.type === 'flow_map')
 
 function handleToggleOrientation() {
   diagramStore.toggleFlowMapOrientation()
-  notify.success(isZh.value ? '已切换布局方向' : 'Layout direction toggled')
+  notify.success(t('canvas.toolbar.layoutDirectionToggled'))
 }
 
 onMounted(() => {
@@ -1400,7 +1365,7 @@ onUnmounted(() => {
         <!-- Exit fullscreen (canvas chrome hidden) -->
         <template v-if="props.isPresentationMode">
           <ElTooltip
-            :content="isZh ? '退出全屏' : 'Exit Fullscreen'"
+            :content="t('canvas.toolbar.exitFullscreen')"
             placement="bottom"
           >
             <ElButton
@@ -1410,7 +1375,7 @@ onUnmounted(() => {
               @click="emit('exitPresentation')"
             >
               <X class="w-4 h-4" />
-              <span>{{ isZh ? '退出' : 'Exit' }}</span>
+              <span>{{ t('canvas.toolbar.exit') }}</span>
             </ElButton>
           </ElTooltip>
           <div class="divider" />
@@ -1418,7 +1383,7 @@ onUnmounted(() => {
 
         <!-- Undo/Redo -->
         <ElTooltip
-          :content="isZh ? '撤销' : 'Undo'"
+          :content="t('canvas.toolbar.undo')"
           placement="bottom"
         >
           <ElButton
@@ -1431,7 +1396,7 @@ onUnmounted(() => {
           </ElButton>
         </ElTooltip>
         <ElTooltip
-          :content="isZh ? '重做' : 'Redo'"
+          :content="t('canvas.toolbar.redo')"
           placement="bottom"
         >
           <ElButton
@@ -1450,7 +1415,7 @@ onUnmounted(() => {
         <!-- For multi-flow maps, show two separate buttons: Add Cause and Add Effect -->
         <template v-if="isMultiFlowMap">
           <ElTooltip
-            :content="isZh ? '添加原因' : 'Add Cause'"
+            :content="t('canvas.toolbar.addCause')"
             placement="bottom"
           >
             <ElButton
@@ -1459,11 +1424,11 @@ onUnmounted(() => {
               @click="handleAddCause"
             >
               <Plus class="w-4 h-4" />
-              <span>{{ isZh ? '添加原因' : 'Add Cause' }}</span>
+              <span>{{ t('canvas.toolbar.addCause') }}</span>
             </ElButton>
           </ElTooltip>
           <ElTooltip
-            :content="isZh ? '添加结果' : 'Add Effect'"
+            :content="t('canvas.toolbar.addEffect')"
             placement="bottom"
           >
             <ElButton
@@ -1472,7 +1437,7 @@ onUnmounted(() => {
               @click="handleAddEffect"
             >
               <Plus class="w-4 h-4" />
-              <span>{{ isZh ? '添加结果' : 'Add Effect' }}</span>
+              <span>{{ t('canvas.toolbar.addEffect') }}</span>
             </ElButton>
           </ElTooltip>
         </template>
@@ -1480,7 +1445,7 @@ onUnmounted(() => {
         <!-- For bridge maps, show "Add Analogy Pair" button -->
         <template v-else-if="isBridgeMap">
           <ElTooltip
-            :content="isZh ? '添加类比对' : 'Add Analogy Pair'"
+            :content="t('canvas.toolbar.addAnalogyPair')"
             placement="bottom"
           >
             <ElButton
@@ -1489,7 +1454,7 @@ onUnmounted(() => {
               @click="handleAddNode"
             >
               <Plus class="w-4 h-4" />
-              <span>{{ isZh ? '添加类比对' : 'Add Pair' }}</span>
+              <span>{{ t('canvas.toolbar.addPairShort') }}</span>
             </ElButton>
           </ElTooltip>
         </template>
@@ -1497,7 +1462,7 @@ onUnmounted(() => {
         <!-- For other diagram types, show simple button -->
         <ElTooltip
           v-else
-          :content="isZh ? '增加节点' : 'Add Node'"
+          :content="t('canvas.toolbar.addNode')"
           placement="bottom"
         >
           <ElButton
@@ -1506,11 +1471,11 @@ onUnmounted(() => {
             @click="handleAddNode"
           >
             <Plus class="w-4 h-4" />
-            <span>{{ isZh ? '增加节点' : 'Add' }}</span>
+            <span>{{ t('canvas.toolbar.addShort') }}</span>
           </ElButton>
         </ElTooltip>
         <ElTooltip
-          :content="isZh ? '删除节点' : 'Delete Node'"
+          :content="t('canvas.toolbar.deleteNode')"
           placement="bottom"
         >
           <ElButton
@@ -1519,7 +1484,7 @@ onUnmounted(() => {
             @click="handleDeleteNode"
           >
             <Trash2 class="w-4 h-4" />
-            <span>{{ isZh ? '删除节点' : 'Delete' }}</span>
+            <span>{{ t('canvas.toolbar.deleteShort') }}</span>
           </ElButton>
         </ElTooltip>
 
@@ -1527,7 +1492,7 @@ onUnmounted(() => {
 
         <!-- Format brush -->
         <ElTooltip
-          :content="isZh ? '格式刷' : 'Format Painter'"
+          :content="t('canvas.toolbar.formatPainter')"
           placement="bottom"
         >
           <ElButton
@@ -1542,7 +1507,7 @@ onUnmounted(() => {
         <!-- Flow Map Direction Toggle (only for flow_map) -->
         <ElTooltip
           v-if="isFlowMap"
-          :content="isZh ? '切换布局方向' : 'Toggle Direction'"
+          :content="t('canvas.toolbar.toggleDirection')"
           placement="bottom"
         >
           <ElButton
@@ -1551,7 +1516,7 @@ onUnmounted(() => {
             @click="handleToggleOrientation"
           >
             <ArrowDownUp class="w-4 h-4 text-blue-500" />
-            <span>{{ isZh ? '方向' : 'Direction' }}</span>
+            <span>{{ t('canvas.toolbar.directionLabel') }}</span>
           </ElButton>
         </ElTooltip>
 
@@ -1567,23 +1532,23 @@ onUnmounted(() => {
             size="small"
           >
             <Brush class="w-4 h-4" />
-            <span>{{ isZh ? '风格' : 'Style' }}</span>
+            <span>{{ t('canvas.toolbar.styleMenu') }}</span>
           </ElButton>
           <template #dropdown>
             <ElDropdownMenu>
               <div class="p-3 w-48">
                 <div class="text-xs font-medium text-gray-500 mb-2">
-                  {{ isZh ? '预设样式' : 'Presets' }}
+                  {{ t('canvas.toolbar.presetsLabel') }}
                 </div>
                 <div class="grid grid-cols-2 gap-2">
                   <ElDropdownItem
                     v-for="preset in stylePresets"
-                    :key="preset.name"
+                    :key="preset.nameKey"
                     class="p-2! rounded border text-xs text-center"
                     :class="[preset.bgClass, preset.borderClass]"
                     @click="handleApplyStylePreset(preset)"
                   >
-                    {{ preset.name }}
+                    {{ t(preset.nameKey) }}
                   </ElDropdownItem>
                 </div>
                 <div class="border-t border-gray-200 my-2" />
@@ -1592,7 +1557,7 @@ onUnmounted(() => {
                   @click="uiStore.toggleWireframe()"
                 >
                   <PenLine class="w-3 h-3 mr-2 text-gray-500" />
-                  {{ isZh ? '线稿模式' : 'Wireframe' }}
+                  {{ t('canvas.toolbar.wireframe') }}
                 </ElDropdownItem>
               </div>
             </ElDropdownMenu>
@@ -1609,7 +1574,7 @@ onUnmounted(() => {
             size="small"
           >
             <Type class="w-4 h-4" />
-            <span>{{ isZh ? '文本样式' : 'Text' }}</span>
+            <span>{{ t('canvas.toolbar.textStyleMenu') }}</span>
           </ElButton>
           <template #dropdown>
             <ElDropdownMenu>
@@ -1617,7 +1582,7 @@ onUnmounted(() => {
                 <!-- Format buttons: B I U S -->
                 <div class="mb-2">
                   <div class="text-[10px] font-medium text-gray-500 uppercase tracking-wide mb-1.5">
-                    {{ isZh ? '格式' : 'Format' }}
+                    {{ t('canvas.toolbar.formatLabel') }}
                   </div>
                   <div class="grid grid-cols-4 gap-1.5">
                     <button
@@ -1676,7 +1641,7 @@ onUnmounted(() => {
                 <!-- Font & Size -->
                 <div class="mb-2">
                   <div class="text-[10px] font-medium text-gray-500 uppercase tracking-wide mb-1.5">
-                    {{ isZh ? '字体' : 'Font' }}
+                    {{ t('canvas.toolbar.fontLabel') }}
                   </div>
                   <div class="grid grid-cols-2 gap-1.5">
                     <select
@@ -1684,14 +1649,14 @@ onUnmounted(() => {
                       class="w-full border border-gray-200 rounded py-1.5 px-2 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-blue-500/40 focus:border-blue-400"
                       @change="handleFontFamilyChange"
                     >
-                      <optgroup :label="isZh ? '中文字体' : 'Chinese'">
+                      <optgroup :label="t('canvas.toolbar.fontGroupChinese')">
                         <option value="Microsoft YaHei">微软雅黑</option>
                         <option value="SimSun">宋体</option>
                         <option value="SimHei">黑体</option>
                         <option value="KaiTi">楷体</option>
                         <option value="FangSong">仿宋</option>
                       </optgroup>
-                      <optgroup :label="isZh ? '英文字体' : 'English'">
+                      <optgroup :label="t('canvas.toolbar.fontGroupEnglish')">
                         <option value="Arial">Arial</option>
                         <option value="Inter">Inter</option>
                         <option value="Georgia">Georgia</option>
@@ -1714,7 +1679,7 @@ onUnmounted(() => {
                 <!-- Color -->
                 <div>
                   <div class="text-[10px] font-medium text-gray-500 uppercase tracking-wide mb-1.5">
-                    {{ isZh ? '颜色' : 'Color' }}
+                    {{ t('canvas.toolbar.colorLabel') }}
                   </div>
                   <div class="grid grid-cols-6 gap-1">
                     <div
@@ -1746,14 +1711,14 @@ onUnmounted(() => {
             size="small"
           >
             <ImageIcon class="w-4 h-4" />
-            <span>{{ isZh ? '背景' : 'BG' }}</span>
+            <span>{{ t('canvas.toolbar.bgMenu') }}</span>
           </ElButton>
           <template #dropdown>
             <ElDropdownMenu>
               <div class="p-3 w-56">
                 <div class="mb-3">
                   <label class="text-xs text-gray-500 block mb-1"
-                    >{{ isZh ? '背景颜色' : 'Background Color' }}:</label
+                    >{{ t('canvas.toolbar.bgColorLabel') }}:</label
                   >
                   <div class="grid grid-cols-5 gap-1">
                     <div
@@ -1767,7 +1732,7 @@ onUnmounted(() => {
                 </div>
                 <div class="mb-2">
                   <label class="text-xs text-gray-500 block mb-1"
-                    >{{ isZh ? '透明度' : 'Opacity' }}:</label
+                    >{{ t('canvas.toolbar.opacityLabel') }}:</label
                   >
                   <input
                     v-model.number="backgroundOpacity"
@@ -1797,14 +1762,14 @@ onUnmounted(() => {
             size="small"
           >
             <Square class="w-4 h-4" />
-            <span>{{ isZh ? '边框' : 'Border' }}</span>
+            <span>{{ t('canvas.toolbar.borderMenu') }}</span>
           </ElButton>
           <template #dropdown>
             <ElDropdownMenu>
               <div class="p-3 w-56">
                 <div class="mb-2">
                   <label class="text-xs text-gray-500 block mb-1"
-                    >{{ isZh ? '颜色' : 'Color' }}:</label
+                    >{{ t('canvas.toolbar.colorLabel') }}:</label
                   >
                   <div class="grid grid-cols-5 gap-1">
                     <div
@@ -1819,7 +1784,7 @@ onUnmounted(() => {
                 </div>
                 <div class="mb-2">
                   <label class="text-xs text-gray-500 block mb-1"
-                    >{{ isZh ? '粗细' : 'Width' }}:</label
+                    >{{ t('canvas.toolbar.borderWidthLabel') }}:</label
                   >
                   <input
                     v-model.number="borderWidth"
@@ -1832,7 +1797,7 @@ onUnmounted(() => {
                 </div>
                 <div class="mb-2">
                   <label class="text-xs text-gray-500 block mb-1.5"
-                    >{{ isZh ? '样式' : 'Style' }}:</label
+                    >{{ t('canvas.toolbar.borderStyleLabel') }}:</label
                   >
                   <div class="grid grid-cols-3 gap-1.5">
                     <button
@@ -1875,7 +1840,7 @@ onUnmounted(() => {
             @click="handleConceptGeneration"
           >
             <Sparkles class="w-4 h-4" />
-            <span>{{ isZh ? '生成概念' : 'Concept Generation' }}</span>
+            <span>{{ t('canvas.toolbar.conceptGeneration') }}</span>
           </ElButton>
         </template>
         <template v-else>
@@ -1885,22 +1850,19 @@ onUnmounted(() => {
             type="primary"
             size="small"
             class="ai-btn"
-            :loading="isAIGenerating"
-            :disabled="aiBlockedByCollab"
+            :class="{ 'ai-btn--generating': isAIGenerating }"
+            :disabled="isAIGenerating || aiBlockedByCollab"
             @click="handleAIGenerate"
           >
             <Wand2
-              v-if="!isAIGenerating"
-              class="w-4 h-4"
+              class="w-4 h-4 shrink-0"
+              :class="isAIGenerating ? 'opacity-30' : ''"
+              aria-hidden="true"
             />
             <span>{{
               isAIGenerating
-                ? isZh
-                  ? '生成中...'
-                  : 'Generating...'
-                : isZh
-                  ? 'AI生成图示'
-                  : 'AI Generate'
+                ? t('canvas.toolbar.aiGenerating')
+                : t('canvas.toolbar.aiGenerate')
             }}</span>
           </ElButton>
         </template>
@@ -1916,14 +1878,14 @@ onUnmounted(() => {
             size="small"
             class="more-apps-btn"
           >
-            <span>{{ isZh ? '更多应用' : 'More Apps' }}</span>
+            <span>{{ t('canvas.toolbar.moreApps') }}</span>
             <ChevronDown class="w-3.5 h-3.5" />
           </ElButton>
           <template #dropdown>
             <ElDropdownMenu class="more-apps-menu">
               <ElDropdownItem
                 v-for="app in moreApps"
-                :key="app.name"
+                :key="app.appKey ?? app.handlerKey ?? app.name"
                 @click="handleMoreAppItem(app)"
               >
                 <div class="flex items-start py-1">
@@ -2039,6 +2001,7 @@ onUnmounted(() => {
   padding: 6px 16px !important;
   margin-left: 8px !important;
   gap: 6px !important;
+  box-sizing: border-box !important;
 }
 
 :deep(.ai-btn:hover) {
@@ -2049,6 +2012,90 @@ onUnmounted(() => {
 
 :deep(.ai-btn span) {
   color: white !important;
+}
+
+@property --ai-toolbar-ring-angle {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+
+/* AI Generate: traveling border while generating (no Element Plus spinner) */
+:deep(.ai-btn--generating) {
+  position: relative !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  /* Outer 2px + inner padding matches idle 6px 16px so size stays stable */
+  padding: 2px !important;
+}
+
+:deep(.ai-btn--generating:hover) {
+  transform: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+
+:deep(.ai-btn--generating::before) {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 6px;
+  padding: 2px;
+  --ai-toolbar-ring-angle: 0deg;
+  pointer-events: none;
+  z-index: 0;
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  -webkit-mask-composite: xor;
+  animation: ai-toolbar-ring-spin 2.5s linear infinite;
+  background: conic-gradient(
+    from var(--ai-toolbar-ring-angle) at 50% 50%,
+    rgba(59, 130, 246, 0.35) 0deg,
+    rgba(255, 255, 255, 0.75) 52deg,
+    #93c5fd 130deg,
+    #3b82f6 180deg,
+    #60a5fa 228deg,
+    rgba(255, 255, 255, 0.75) 308deg,
+    rgba(59, 130, 246, 0.35) 360deg
+  );
+}
+
+:deep(.ai-btn--generating .el-button__inner),
+:deep(.ai-btn--generating > span) {
+  position: relative;
+  z-index: 1;
+  box-sizing: border-box !important;
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%) !important;
+  border-radius: 4px !important;
+  /* 4px + 2px ring = 6px vertical; 14px + 2px = 16px horizontal (matches idle 6px 16px) */
+  padding: 4px 14px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+}
+
+:deep(.dark .ai-btn--generating::before) {
+  background: conic-gradient(
+    from var(--ai-toolbar-ring-angle) at 50% 50%,
+    rgba(59, 130, 246, 0.4) 0deg,
+    rgba(31, 41, 55, 0.92) 52deg,
+    #60a5fa 130deg,
+    #2563eb 180deg,
+    #38bdf8 228deg,
+    rgba(31, 41, 55, 0.92) 308deg,
+    rgba(59, 130, 246, 0.4) 360deg
+  );
+}
+
+@keyframes ai-toolbar-ring-spin {
+  to {
+    --ai-toolbar-ring-angle: 360deg;
+  }
 }
 
 /* More apps button styling */

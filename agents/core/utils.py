@@ -13,6 +13,8 @@ import re
 import time
 import logging
 
+from utils.prompt_output_languages import is_prompt_output_language
+
 logger = logging.getLogger(__name__)
 
 
@@ -57,8 +59,8 @@ def validate_inputs(user_prompt: str, language: str) -> None:
     if len(user_prompt.strip()) > 10000:  # Reasonable limit
         raise ValueError("User prompt too long (max 10,000 characters)")
 
-    if not language or language not in ['zh', 'en']:
-        raise ValueError("Language must be 'zh' or 'en'")
+    if not language or not is_prompt_output_language(language):
+        raise ValueError("Language must be a supported generation language code")
 
 
 def _salvage_json_string(raw: str) -> str:

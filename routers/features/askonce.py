@@ -64,7 +64,8 @@ class HealthResponse(BaseModel):
 
 ASKONCE_MODELS = {
     'qwen': {
-        'model_name': 'qwen3-235b-a22b-thinking',
+        # Backend sends this id to DashScope (overrides QWEN_MODEL_* env for AskOnce only).
+        'model_name': 'qwen3.5-397b-a17b',
         'default_temperature': 0.9,
         'enable_thinking': True,
         'display_name': 'Qwen'
@@ -129,6 +130,10 @@ async def stream_from_llm(
     try:
         logger.debug("[ASKONCE:%s] Starting stream via LLMService with %s messages", model_id.upper(), len(messages))
 
+        stream_extra = {}
+        if model_id == 'qwen':
+            stream_extra['dashscope_model'] = model_config['model_name']
+
         # Stream from LLMService with full messages array for proper multi-turn support
         async for chunk in llm_service.chat_stream(
             messages=messages,  # Pass full messages array for multi-turn context
@@ -140,7 +145,8 @@ async def stream_from_llm(
             # Token tracking parameters
             user_id=user_id,
             request_type='askonce',
-            endpoint_path=f'/api/askonce/stream/{model_id}'
+            endpoint_path=f'/api/askonce/stream/{model_id}',
+            **stream_extra
         ):
             if isinstance(chunk, dict):
                 chunk_type = chunk.get('type', 'token')

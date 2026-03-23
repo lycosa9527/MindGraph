@@ -135,15 +135,17 @@ onUnmounted(() => {
   store.reset()
 })
 
-function getStatusType(status: string) {
-  const types: Record<string, string> = {
+type ElTagType = 'success' | 'warning' | 'info' | 'primary' | 'danger'
+
+function getStatusType(status: string): ElTagType {
+  const types: Record<string, ElTagType> = {
     unassigned: 'info',
     assigned: 'warning',
     connected: 'success',
     learning_mode: 'success',
     offline: 'danger',
   }
-  return types[status] || 'info'
+  return types[status] ?? 'info'
 }
 
 function showAssignModal(watch: Watch) {

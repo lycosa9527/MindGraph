@@ -323,7 +323,9 @@ async def get_me(
             "last_login": (
                 current_user.last_login.isoformat()
                 if current_user.last_login else None
-            )
+            ),
+            "ui_language": getattr(current_user, "ui_language", None),
+            "prompt_language": getattr(current_user, "prompt_language", None),
         }
     except Exception as me_error:
         logger.error(

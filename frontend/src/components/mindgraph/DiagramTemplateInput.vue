@@ -15,6 +15,7 @@ import { ChevronDown } from 'lucide-vue-next'
 import { useLanguage, useNotifications } from '@/composables'
 import {
   DIAGRAM_TEMPLATES,
+  getDiagramTemplateBody,
   useAuthStore,
   useDiagramStore,
   useLLMResultsStore,
@@ -32,7 +33,7 @@ const uiStore = useUIStore()
 const authStore = useAuthStore()
 const diagramStore = useDiagramStore()
 const router = useRouter()
-const { isZh } = useLanguage()
+const { promptLanguage, t } = useLanguage()
 const notify = useNotifications()
 
 const isGenerating = ref(false)
@@ -67,6 +68,28 @@ const chartTypes = [
   '思维导图',
 ]
 
+const CHART_TYPE_I18N_KEY: Record<string, string> = {
+  选择具体图示: 'landing.chartType.selectPlaceholder',
+  圆圈图: 'landing.chartType.circle_map',
+  气泡图: 'landing.chartType.bubble_map',
+  双气泡图: 'landing.chartType.double_bubble_map',
+  树形图: 'landing.chartType.tree_map',
+  括号图: 'landing.chartType.brace_map',
+  流程图: 'landing.chartType.flow_map',
+  复流程图: 'landing.chartType.multi_flow_map',
+  桥形图: 'landing.chartType.bridge_map',
+  思维导图: 'landing.chartType.mindmap',
+}
+
+function chartTypeLabel(chartType: string): string {
+  const key = CHART_TYPE_I18N_KEY[chartType]
+  return key ? String(t(key)) : chartType
+}
+
+function slotPlaceholder(slotId: string): string {
+  return String(t(`landing.template.slot.${slotId}`))
+}
+
 const selectedType = computed(() => uiStore.selectedChartType)
 const templateSlots = computed(() => uiStore.templateSlots)
 
@@ -74,7 +97,12 @@ const canSubmit = computed(() => uiStore.hasValidSlots() && authStore.isAuthenti
 
 const currentTemplate = computed(() => {
   if (selectedType.value === '选择具体图示') return null
-  return DIAGRAM_TEMPLATES[selectedType.value] || null
+  const def = DIAGRAM_TEMPLATES[selectedType.value]
+  if (!def) return null
+  return {
+    template: getDiagramTemplateBody(def, uiStore.language),
+    slots: def.slots,
+  }
 })
 
 function handleTypeChange(type: string) {
@@ -100,9 +128,10 @@ async function generateFromLanding() {
 
   if (requestText.length > MAX_PROMPT_LENGTH) {
     notify.error(
-      isZh.value
-        ? `输入内容过长（${requestText.length}字符）。最大允许${MAX_PROMPT_LENGTH}字符。`
-        : `Prompt too long (${requestText.length} chars). Maximum is ${MAX_PROMPT_LENGTH} chars.`
+      t('diagramTemplate.promptTooLong', {
+        length: requestText.length,
+        max: MAX_PROMPT_LENGTH,
+      })
     )
     return
   }
@@ -110,7 +139,7 @@ async function generateFromLanding() {
   const requestBody: Record<string, unknown> = {
     prompt: requestText,
     diagram_type: diagramTypeParam,
-    language: isZh.value ? 'zh' : 'en',
+    language: promptLanguage.value,
   }
 
   if (isSpecificDiagram) {
@@ -156,21 +185,19 @@ async function generateFromLanding() {
     const loaded = diagramStore.loadFromSpec(result.spec, finalDiagramType)
     if (loaded) {
       useLLMResultsStore().reset()
-      notify.success(
-        isZh.value ? `图表生成成功 (${winningModel})` : `Diagram generated (${winningModel})`
-      )
+      notify.success(t('diagramTemplate.generated', { model: winningModel }))
       router.push({ path: '/canvas' })
     } else {
       throw new Error('Failed to load diagram data')
     }
   } catch (error) {
     if (error instanceof Error && error.name === 'AggregateError') {
-      const msg = isZh.value ? '所有模型均生成失败，请重试' : 'All models failed, please try again'
+      const msg = t('diagramTemplate.allModelsFailed')
       notify.error(msg)
     } else {
       console.error('Generate from landing failed:', error)
       const errorMessage =
-        error instanceof Error ? error.message : isZh.value ? '生成失败' : 'Generation failed'
+        error instanceof Error ? error.message : t('diagramTemplate.generationFailed')
       notify.error(errorMessage)
     }
   } finally {
@@ -240,11 +267,7 @@ const templateParts = computed(() => {
         size="large"
         :maxlength="50"
         show-word-limit
-        :placeholder="
-          isZh
-            ? '描述你的图示，或从下方选择具体图示模板...'
-            : 'Describe your diagram, or select a template below...'
-        "
+        :placeholder="t('landing.template.freePlaceholder')"
         :disabled="!authStore.isAuthenticated"
         class="mindgraph-free-input"
         @update:model-value="uiStore.setFreeInputValue"
@@ -261,7 +284,7 @@ const templateParts = computed(() => {
           <span
             class="diagram-type-tag bg-blue-50 text-blue-600 px-3 py-1.5 pr-7 rounded-md font-medium"
           >
-            {{ selectedType }}
+            {{ chartTypeLabel(selectedType) }}
           </span>
           <ElButton
             :icon="Close"
@@ -286,7 +309,7 @@ const templateParts = computed(() => {
             <ElInput
               v-else
               :model-value="templateSlots[part.name] || ''"
-              :placeholder="part.name"
+              :placeholder="slotPlaceholder(part.name)"
               size="small"
               class="template-slot-input"
               :disabled="!authStore.isAuthenticated"
@@ -314,7 +337,7 @@ const templateParts = computed(() => {
             :key="type"
             :value="type"
           >
-            {{ type }}
+            {{ chartTypeLabel(type) }}
           </option>
         </select>
         <div class="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">

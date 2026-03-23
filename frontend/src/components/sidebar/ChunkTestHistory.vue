@@ -32,7 +32,7 @@ defineProps<{
   isBlurred?: boolean
 }>()
 
-const { isZh } = useLanguage()
+const { t } = useLanguage()
 const router = useRouter()
 
 // Show all or just 10
@@ -98,19 +98,19 @@ const remainingCount = computed(() => tests.value.length - INITIAL_LIMIT)
 
 // Group labels
 const groupLabels = computed(() => ({
-  today: isZh.value ? '今天' : 'Today',
-  yesterday: isZh.value ? '昨天' : 'Yesterday',
-  week: isZh.value ? '上周' : 'Past Week',
-  month: isZh.value ? '上月' : 'Past Month',
+  today: t('common.date.today'),
+  yesterday: t('common.date.yesterday'),
+  week: t('common.date.pastWeek'),
+  month: t('common.date.pastMonth'),
 }))
 
 // Status labels and colors
 type TagType = 'success' | 'warning' | 'info' | 'primary' | 'danger'
 const statusConfig = computed(() => ({
-  pending: { label: isZh.value ? '等待中' : 'Pending', color: 'info' as TagType },
-  processing: { label: isZh.value ? '处理中' : 'Processing', color: 'primary' as TagType },
-  completed: { label: isZh.value ? '已完成' : 'Completed', color: 'success' as TagType },
-  failed: { label: isZh.value ? '失败' : 'Failed', color: 'danger' as TagType },
+  pending: { label: t('chunkTest.history.statusPending'), color: 'info' as TagType },
+  processing: { label: t('chunkTest.history.statusProcessing'), color: 'primary' as TagType },
+  completed: { label: t('chunkTest.history.statusCompleted'), color: 'success' as TagType },
+  failed: { label: t('chunkTest.history.statusFailed'), color: 'danger' as TagType },
 }))
 
 // Get tag type for status
@@ -124,11 +124,9 @@ function getTestName(test: ChunkTestHistoryItem): string {
     return test.dataset_name
   }
   if (test.document_ids && test.document_ids.length > 0) {
-    return isZh.value
-      ? `用户文档 (${test.document_ids.length})`
-      : `User Documents (${test.document_ids.length})`
+    return t('chunkTest.history.userDocumentsCount', { n: test.document_ids.length })
   }
-  return isZh.value ? '未命名测试' : 'Untitled Test'
+  return t('chunkTest.history.untitledTest')
 }
 
 // Handle test click
@@ -140,22 +138,20 @@ function handleTestClick(testId: number): void {
 async function handleDeleteTest(testId: number): Promise<void> {
   try {
     await ElMessageBox.confirm(
-      isZh.value
-        ? '确定要删除这个测试记录吗？此操作不可撤销。'
-        : 'Are you sure you want to delete this test? This cannot be undone.',
-      isZh.value ? '删除测试' : 'Delete Test',
+      t('chunkTest.history.confirmDeleteBody'),
+      t('chunkTest.history.confirmDeleteTitle'),
       {
-        confirmButtonText: isZh.value ? '删除' : 'Delete',
-        cancelButtonText: isZh.value ? '取消' : 'Cancel',
+        confirmButtonText: t('common.delete'),
+        cancelButtonText: t('common.cancel'),
         type: 'warning',
       }
     )
 
     await deleteTestMutation.mutateAsync(testId)
-    notify.success(isZh.value ? '测试记录已删除' : 'Test deleted successfully')
+    notify.success(t('chunkTest.history.deleted'))
   } catch (error) {
     if (error instanceof Error && error.message !== 'cancel') {
-      notify.error(error.message || (isZh.value ? '删除失败' : 'Failed to delete test'))
+      notify.error(error.message || t('chunkTest.history.deleteFailed'))
     }
     // User cancelled - do nothing
   }
@@ -172,7 +168,7 @@ function toggleShowAll(): void {
     <!-- Header -->
     <div class="px-4 py-3">
       <div class="text-xs font-medium text-stone-400 uppercase tracking-wider">
-        {{ isZh ? '测试历史' : 'Test History' }}
+        {{ t('chunkTest.history.testHistory') }}
       </div>
     </div>
 
@@ -196,7 +192,7 @@ function toggleShowAll(): void {
         >
           <TestTube class="w-8 h-8 mx-auto mb-2 text-stone-300" />
           <p class="text-xs text-stone-400">
-            {{ isZh ? '暂无测试记录' : 'No tests yet' }}
+            {{ t('chunkTest.history.empty') }}
           </p>
         </div>
 
@@ -250,7 +246,7 @@ function toggleShowAll(): void {
                     >
                       <span class="delete-option">
                         <Trash2 class="w-4 h-4 mr-2" />
-                        {{ isZh ? '删除' : 'Delete' }}
+                        {{ t('common.delete') }}
                       </span>
                     </ElDropdownItem>
                   </ElDropdownMenu>
@@ -307,7 +303,7 @@ function toggleShowAll(): void {
                     >
                       <span class="delete-option">
                         <Trash2 class="w-4 h-4 mr-2" />
-                        {{ isZh ? '删除' : 'Delete' }}
+                        {{ t('common.delete') }}
                       </span>
                     </ElDropdownItem>
                   </ElDropdownMenu>
@@ -364,7 +360,7 @@ function toggleShowAll(): void {
                     >
                       <span class="delete-option">
                         <Trash2 class="w-4 h-4 mr-2" />
-                        {{ isZh ? '删除' : 'Delete' }}
+                        {{ t('common.delete') }}
                       </span>
                     </ElDropdownItem>
                   </ElDropdownMenu>
@@ -421,7 +417,7 @@ function toggleShowAll(): void {
                     >
                       <span class="delete-option">
                         <Trash2 class="w-4 h-4 mr-2" />
-                        {{ isZh ? '删除' : 'Delete' }}
+                        {{ t('common.delete') }}
                       </span>
                     </ElDropdownItem>
                   </ElDropdownMenu>
@@ -436,7 +432,7 @@ function toggleShowAll(): void {
             class="show-more-btn"
             @click="toggleShowAll"
           >
-            {{ isZh ? `显示更多 (${remainingCount})` : `Show more (${remainingCount})` }}
+            {{ t('chunkTest.history.showMore', { n: remainingCount }) }}
           </button>
 
           <!-- Show Less button -->
@@ -445,7 +441,7 @@ function toggleShowAll(): void {
             class="show-more-btn"
             @click="toggleShowAll"
           >
-            {{ isZh ? '收起' : 'Show less' }}
+            {{ t('chunkTest.history.showLess') }}
           </button>
         </template>
       </div>
@@ -463,7 +459,7 @@ function toggleShowAll(): void {
           <Lock class="w-5 h-5 text-stone-400" />
         </div>
         <p class="text-xs text-stone-500">
-          {{ isZh ? '登录后查看测试历史' : 'Login to view history' }}
+          {{ t('chunkTest.history.loginToView') }}
         </p>
       </div>
     </div>

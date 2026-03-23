@@ -7,6 +7,10 @@
  * - fitToFullCanvas(): Fits diagram to full canvas (no panel space reserved)
  * - fitWithPanel(): Fits diagram with space reserved for right-side panels
  * - Automatically re-fits when panels open/close
+ *
+ * SVG text / RTL: primary labels use InlineEditableText (HTML, dir=auto). Decorative
+ * overlays (brace/tree/bridge) use SVG <text>; bidi for all-RTL strings can be weaker
+ * in some browsers — if reported, consider foreignObject + HTML for those labels.
  */
 import { computed, markRaw, nextTick, onMounted, onUnmounted, provide, ref, watch } from 'vue'
 
@@ -29,10 +33,15 @@ import {
 } from '@/composables/useConceptMapRelationship'
 import { eventBus } from '@/composables/useEventBus'
 import { useTheme } from '@/composables/useTheme'
+import { PALETTE_CONCEPT_DRAG_MIME } from '@/composables/nodePalette/constants'
 import { ANIMATION, FIT_PADDING, GRID, PANEL, ZOOM } from '@/config/uiConfig'
 import { useDiagramStore, useLLMResultsStore, usePanelsStore, useUIStore } from '@/stores'
 import { getFlowTopicCenteredPosition } from '@/stores/specLoader/flowMap'
 import type { MindGraphNode } from '@/types'
+import {
+  getTopicRootConceptTargetId,
+  normalizeAllConceptMapTopicRootLabels,
+} from '@/utils/conceptMapTopicRootEdge'
 
 import BraceOverlay from './BraceOverlay.vue'
 import BridgeOverlay from './BridgeOverlay.vue'
@@ -107,14 +116,13 @@ const { backgroundColor } = useTheme({
   diagramType: computed(() => diagramStore.type),
 })
 
-// Language for export messages
-const { isZh } = useLanguage()
+const { currentLanguage, t } = useLanguage()
 
 // Export composable
 function getExportTitle(): string {
   const topicText = diagramStore.getTopicNodeText()
   if (topicText) return topicText
-  return diagramStore.effectiveTitle || getDefaultDiagramName(diagramStore.type, isZh.value)
+  return diagramStore.effectiveTitle || getDefaultDiagramName(diagramStore.type, currentLanguage.value)
 }
 
 const getExportSpec = useDiagramSpecForSave()
@@ -123,7 +131,6 @@ const { exportByFormat } = useDiagramExport({
   getContainer: () => vueFlowWrapper.value,
   getDiagramSpec: getExportSpec,
   getTitle: getExportTitle,
-  isZh: () => isZh.value,
 })
 
 // Vue Flow instance
@@ -267,9 +274,7 @@ const nodes = computed(() => {
     return list
   }
   const lockedSet = new Set(locked)
-  return list.map((n) =>
-    lockedSet.has(n.id) ? { ...n, draggable: false } : n
-  )
+  return list.map((n) => (lockedSet.has(n.id) ? { ...n, draggable: false } : n))
 })
 // For brace maps, hide individual edges since BraceOverlay draws the braces
 const edges = computed(() => {
@@ -338,7 +343,6 @@ onNodeDragStop(({ node }) => {
 
 // Concept map link drag state
 const CONCEPT_LINK_DATA_TYPE = 'application/mindgraph-concept-link'
-const PALETTE_CONCEPT_DATA_TYPE = 'application/mindgraph-palette-concept'
 const linkDragSourceId = ref<string | null>(null)
 const linkDragCursor = ref<{ x: number; y: number } | null>(null)
 /** When hovering over an existing node during link drag, its id; null when over empty space */
@@ -567,7 +571,7 @@ function handleConceptMapDragOver(event: DragEvent) {
   if (diagramStore.type !== 'concept_map') return
   const types = event.dataTransfer?.types ?? []
   const hasLinkData = types.includes(CONCEPT_LINK_DATA_TYPE)
-  const hasPaletteConcept = types.includes(PALETTE_CONCEPT_DATA_TYPE)
+  const hasPaletteConcept = types.includes(PALETTE_CONCEPT_DRAG_MIME)
   if ((hasLinkData || hasPaletteConcept) && event.dataTransfer) {
     event.preventDefault()
     event.dataTransfer.dropEffect = 'copy'
@@ -584,24 +588,37 @@ function handleConceptMapDragOver(event: DragEvent) {
 function handleConceptMapDrop(event: DragEvent) {
   if (diagramStore.type !== 'concept_map') return
 
-  const paletteData = event.dataTransfer?.getData(PALETTE_CONCEPT_DATA_TYPE)
+  const paletteData = event.dataTransfer?.getData(PALETTE_CONCEPT_DRAG_MIME)
   if (paletteData) {
     event.preventDefault()
     const target = event.target as HTMLElement
     if (target.closest('.vue-flow__node')) return
     try {
-      const { text } = JSON.parse(paletteData) as { text: string }
+      const parsed = JSON.parse(paletteData) as {
+        text: string
+        relationship_label?: string
+      }
+      const text = parsed.text
+      const rootLinkLabel = (parsed.relationship_label ?? '').trim()
       const flowPos = screenToFlowCoordinate({
         x: event.clientX,
         y: event.clientY,
       })
       diagramStore.addNode({
         id: '',
-        text: text || '新概念',
+        text: text || t('diagram.defaultNewConcept'),
         type: 'branch',
         position: { x: flowPos.x - 50, y: flowPos.y - 18 },
       })
-      diagramStore.pushHistory('Add concept')
+      const nodesAfter = diagramStore.data?.nodes ?? []
+      const newId = nodesAfter[nodesAfter.length - 1]?.id
+      const rootId = getTopicRootConceptTargetId(diagramStore.data?.connections)
+      if (newId && rootId) {
+        diagramStore.addConnection(rootId, newId, rootLinkLabel)
+      }
+      diagramStore.pushHistory(
+        newId && rootId ? 'Add concept and link from root' : 'Add concept'
+      )
     } catch {
       // Ignore malformed palette data
     }
@@ -624,7 +641,7 @@ function handleConceptMapDrop(event: DragEvent) {
   })
   diagramStore.addNode({
     id: '',
-    text: '新概念',
+    text: t('diagram.defaultNewConcept'),
     type: 'branch',
     position: { x: flowPos.x - 50, y: flowPos.y - 18 },
   })
@@ -660,7 +677,7 @@ function handlePaneClick(event?: MouseEvent) {
     })
     diagramStore.addNode({
       id: '',
-      text: '新概念',
+      text: t('diagram.defaultNewConcept'),
       type: 'branch',
       position: { x: flowPos.x - 50, y: flowPos.y - 18 },
     })
@@ -771,7 +788,7 @@ function handleContextMenuAddConcept(position: { x: number; y: number }) {
   const flowPos = screenToFlowCoordinate({ x: position.x, y: position.y })
   diagramStore.addNode({
     id: '',
-    text: '新概念',
+    text: t('diagram.defaultNewConcept'),
     type: 'branch',
     position: { x: flowPos.x - 50, y: flowPos.y - 18 },
   })
@@ -1058,7 +1075,8 @@ function scheduleDoubleBubbleRebuild(): void {
     doubleBubbleRebuildTimer = null
     const spec = diagramStore.getDoubleBubbleSpecFromData()
     if (spec) {
-      diagramStore.loadFromSpec(spec, 'double_bubble_map')
+      // Same-document layout refresh: must not emit diagram:loaded (inline Tab recs, palette, etc.)
+      diagramStore.loadFromSpec(spec, 'double_bubble_map', { emitLoaded: false })
     }
   }, DOUBLE_BUBBLE_REBUILD_DEBOUNCE_MS)
 }
@@ -1169,8 +1187,20 @@ onMounted(() => {
           diagramStore.updateNode(nodeId, { text })
         }
       }
-      // Concept map label agent: regenerate only edges with empty labels (when AI on)
-      if (diagramStore.type === 'concept_map') {
+      if (
+        diagramStore.type === 'concept_map' &&
+        diagramStore.data?.connections &&
+        diagramStore.data.nodes
+      ) {
+        normalizeAllConceptMapTopicRootLabels(
+          diagramStore.data.connections,
+          diagramStore.data.nodes
+        )
+      }
+      // Label agent: only when this event actually changed node text. Duplicate emissions
+      // (same text as store) must not trigger AI — otherwise empty edges (e.g. palette→canvas
+      // root links) get relationship streams without a real edit.
+      if (diagramStore.type === 'concept_map' && !alreadyUpdated) {
         regenerateForNodeIfNeeded(nodeId)
       }
       // Double bubble map: debounced rebuild (avoids 2 rebuilds when diff pair updates)

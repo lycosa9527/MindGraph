@@ -12,7 +12,7 @@ import { Hand, Maximize2, Minus, Play, Plus, Square } from 'lucide-vue-next'
 import { useLanguage } from '@/composables'
 import { ZOOM } from '@/config/uiConfig'
 
-const { isZh } = useLanguage()
+const { t } = useLanguage()
 
 const ZOOM_OPTIONS = [
   { label: '50%', value: 50 },
@@ -114,7 +114,7 @@ defineExpose({
     <div class="rounded-xl p-1.5 flex items-center gap-0.5">
       <!-- Hand tool -->
       <ElTooltip
-        :content="isZh ? '抓手工具' : 'Hand Tool'"
+        :content="t('canvas.zoomControls.hand')"
         placement="top"
       >
         <ElButton
@@ -131,7 +131,7 @@ defineExpose({
 
       <!-- Zoom out -->
       <ElTooltip
-        :content="isZh ? '缩小' : 'Zoom Out'"
+        :content="t('editor.zoomOut')"
         placement="top"
       >
         <ElButton
@@ -161,7 +161,7 @@ defineExpose({
 
       <!-- Zoom in -->
       <ElTooltip
-        :content="isZh ? '放大' : 'Zoom In'"
+        :content="t('editor.zoomIn')"
         placement="top"
       >
         <ElButton
@@ -178,7 +178,7 @@ defineExpose({
 
       <!-- Fit to screen -->
       <ElTooltip
-        :content="isZh ? '适应画布' : 'Fit to Screen'"
+        :content="t('canvas.zoomControls.fitCanvas')"
         placement="top"
       >
         <ElButton
@@ -197,12 +197,8 @@ defineExpose({
       <ElTooltip
         :content="
           props.isPresentationMode
-            ? isZh
-              ? '退出全屏'
-              : 'Exit fullscreen'
-            : isZh
-              ? '全屏'
-              : 'Fullscreen'
+            ? t('canvas.zoomControls.exitFullscreen')
+            : t('canvas.zoomControls.fullscreen')
         "
         placement="top"
       >

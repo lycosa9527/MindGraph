@@ -11,8 +11,12 @@ import { ElButton, ElRadio, ElRadioGroup } from 'element-plus'
 
 import { AlertTriangle, Loader2, Trash2 } from 'lucide-vue-next'
 
+import { getDiagramTypeDisplayName } from '@/composables/useDiagramLabels'
 import { useNotifications } from '@/composables'
 import { useLanguage } from '@/composables'
+import type { LocaleCode } from '@/i18n/locales'
+import { intlLocaleForUiCode } from '@/i18n'
+import { useUIStore } from '@/stores'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 
 const notify = useNotifications()
@@ -38,7 +42,8 @@ const emit = defineEmits<{
 }>()
 
 const savedDiagramsStore = useSavedDiagramsStore()
-const { isZh } = useLanguage()
+const uiStore = useUIStore()
+const { t } = useLanguage()
 
 // State - use empty string instead of null for ElRadioGroup compatibility
 const selectedDiagramId = ref<string>('')
@@ -66,22 +71,8 @@ watch(
   }
 )
 
-// Get diagram type display name
 function getDiagramTypeName(type: string): string {
-  const typeMap: Record<string, string> = {
-    circle_map: isZh.value ? '圆圈图' : 'Circle Map',
-    bubble_map: isZh.value ? '气泡图' : 'Bubble Map',
-    double_bubble_map: isZh.value ? '双气泡图' : 'Double Bubble',
-    tree_map: isZh.value ? '树形图' : 'Tree Map',
-    brace_map: isZh.value ? '括号图' : 'Brace Map',
-    flow_map: isZh.value ? '流程图' : 'Flow Map',
-    multi_flow_map: isZh.value ? '复流程图' : 'Multi-Flow Map',
-    bridge_map: isZh.value ? '桥形图' : 'Bridge Map',
-    mindmap: isZh.value ? '思维导图' : 'Mind Map',
-    mind_map: isZh.value ? '思维导图' : 'Mind Map',
-    concept_map: isZh.value ? '概念图' : 'Concept Map',
-  }
-  return typeMap[type] || type
+  return getDiagramTypeDisplayName(type, uiStore.language as LocaleCode)
 }
 
 // Format date
@@ -92,17 +83,18 @@ function formatDate(dateStr: string): string {
   const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
 
   if (diffDays === 0) {
-    return isZh.value ? '今天' : 'Today'
-  } else if (diffDays === 1) {
-    return isZh.value ? '昨天' : 'Yesterday'
-  } else if (diffDays < 7) {
-    return isZh.value ? `${diffDays}天前` : `${diffDays} days ago`
-  } else {
-    return date.toLocaleDateString(isZh.value ? 'zh-CN' : 'en-US', {
-      month: 'short',
-      day: 'numeric',
-    })
+    return t('common.date.today')
   }
+  if (diffDays === 1) {
+    return t('common.date.yesterday')
+  }
+  if (diffDays < 7) {
+    return t('common.date.daysAgo', { n: diffDays })
+  }
+  return date.toLocaleDateString(intlLocaleForUiCode(uiStore.language as LocaleCode), {
+    month: 'short',
+    day: 'numeric',
+  })
 }
 
 // Close modal
@@ -114,7 +106,7 @@ function closeModal(): void {
 // Handle delete and save
 async function handleDeleteAndSave(): Promise<void> {
   if (!selectedDiagramId.value) {
-    notify.warning(isZh.value ? '请选择要删除的图示' : 'Please select a diagram to delete')
+    notify.warning(t('library.slotFull.selectDiagram'))
     return
   }
 
@@ -131,15 +123,15 @@ async function handleDeleteAndSave(): Promise<void> {
     )
 
     if (result.success && result.diagramId) {
-      notify.success(isZh.value ? '图示保存成功' : 'Diagram saved successfully')
+      notify.success(t('library.slotFull.saveSuccess'))
       isVisible.value = false
       emit('success', result.diagramId)
     } else {
-      notify.error(result.error || (isZh.value ? '保存失败' : 'Save failed'))
+      notify.error(result.error || t('library.slotFull.saveFailed'))
     }
   } catch (error) {
     console.error('Delete and save error:', error)
-    notify.error(isZh.value ? '网络错误，操作失败' : 'Network error, operation failed')
+    notify.error(t('library.slotFull.networkError'))
   } finally {
     isDeleting.value = false
   }
@@ -161,14 +153,10 @@ async function handleDeleteAndSave(): Promise<void> {
               <AlertTriangle class="w-6 h-6 text-amber-500" />
             </div>
             <h2 class="modal-title">
-              {{ isZh ? '图库已满' : 'Gallery Full' }}
+              {{ t('library.slotFull.title') }}
             </h2>
             <p class="modal-subtitle">
-              {{
-                isZh
-                  ? `您已保存 ${maxDiagrams} 个图示，请删除一个以保存新图示`
-                  : `You have ${maxDiagrams} saved diagrams. Delete one to save new diagram`
-              }}
+              {{ t('library.slotFull.body', { max: maxDiagrams }) }}
             </p>
           </div>
 
@@ -231,7 +219,7 @@ async function handleDeleteAndSave(): Promise<void> {
               class="cancel-btn"
               @click="closeModal"
             >
-              {{ isZh ? '取消' : 'Cancel' }}
+              {{ t('library.slotFull.cancel') }}
             </ElButton>
             <ElButton
               type="danger"
@@ -247,7 +235,7 @@ async function handleDeleteAndSave(): Promise<void> {
                 v-else
                 class="w-4 h-4 mr-2"
               />
-              {{ isZh ? '删除并保存' : 'Delete & Save' }}
+              {{ t('library.slotFull.deleteAndSave') }}
             </ElButton>
           </div>
         </div>

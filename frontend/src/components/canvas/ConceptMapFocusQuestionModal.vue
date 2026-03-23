@@ -33,7 +33,7 @@ const emit = defineEmits<{
   confirm: [text: string]
 }>()
 
-const { isZh } = useLanguage()
+const { t, promptLanguage } = useLanguage()
 const notify = useNotifications()
 const uiStore = useUIStore()
 
@@ -86,26 +86,16 @@ const suggestionsStreamEnded = ref(false)
 const selectedSlot = ref(0)
 
 const labels = computed(() => ({
-  title: isZh.value
-    ? '标准模式 · 本概念图想要回答的焦点问题是什么？'
-    : 'Standard mode · What focus question should this concept map answer?',
-  help: isZh.value
-    ? '焦点问题是概念图试图解决或回答的具体问题。它界定了概念图的领域和范围，例如如果构建一个关于「水」的概念图，焦点问题可以是「水在地球上的循环过程是怎样的？」或者「水的物理性质有哪些？」'
-    : 'A focus question is the specific issue your map addresses. It sets scope—for a map about “water”, examples could be “How does water cycle on Earth?” or “What are water’s physical properties?”',
-  validate: isZh.value ? 'AI检验' : 'AI check',
-  skip: isZh.value ? '跳过' : 'Skip',
-  confirm: isZh.value ? '确认并进入画布' : 'Confirm and open canvas',
-  loginHint: isZh.value
-    ? '登录后可使用 AI 检验焦点问题并获取建议。您仍可先输入问题并直接进入画布。'
-    : 'Sign in to validate with AI and get suggestions. You can still enter a question and continue.',
-  needValidate: isZh.value ? '请先完成检验或选择跳过 AI' : 'Run AI check or skip AI first',
-  tooShort: isZh.value ? '请至少输入几个字的焦点问题' : 'Please enter a short focus question',
-  suggestionsHint: isZh.value
-    ? '备选问题（5 条/页，- 上一页 = 下一页；末页 = 加载更多）'
-    : 'Alternatives (5 per page: − prev, = next; at last page = loads more)',
-  suggestionsEmpty: isZh.value
-    ? '暂无备选。可按 = 再拉一批。'
-    : 'No suggestions yet. Press = to fetch another batch.',
+  title: t('focusQuestion.title'),
+  help: t('focusQuestion.help'),
+  validate: t('focusQuestion.validate'),
+  skip: t('focusQuestion.skip'),
+  confirm: t('focusQuestion.confirm'),
+  loginHint: t('focusQuestion.loginHint'),
+  needValidate: t('focusQuestion.needValidate'),
+  tooShort: t('focusQuestion.tooShort'),
+  suggestionsHint: t('focusQuestion.suggestionsHint'),
+  suggestionsEmpty: t('focusQuestion.suggestionsEmpty'),
 }))
 
 const visibleRows = computed(() => {
@@ -202,7 +192,7 @@ function parseSseDataLine(line: string): Record<string, unknown> | null {
 
 async function runValidateParallel(
   question: string,
-  lang: 'zh' | 'en',
+  lang: string,
   signal: AbortSignal
 ): Promise<void> {
   for (const m of FOCUS_MODELS) {
@@ -222,9 +212,7 @@ async function runValidateParallel(
     const msg =
       typeof errBody.detail === 'string'
         ? errBody.detail
-        : isZh.value
-          ? '检验请求失败'
-          : 'Validation request failed'
+        : t('focusQuestion.validationRequestFailed')
     notify.error(msg)
     for (const m of FOCUS_MODELS) {
       validationByModel.value[m] = {
@@ -265,7 +253,7 @@ async function runValidateParallel(
       validationByModel.value[m] = {
         valid: false,
         reason: '',
-        error: isZh.value ? '无结果' : 'No result',
+        error: t('focusQuestion.noResult'),
         loading: false,
       }
     }
@@ -274,7 +262,7 @@ async function runValidateParallel(
 
 async function consumeSuggestionsStream(
   question: string,
-  lang: 'zh' | 'en',
+  lang: string,
   avoid: string[],
   append: boolean,
   signal: AbortSignal
@@ -298,16 +286,14 @@ async function consumeSuggestionsStream(
     notify.error(
       typeof errBody.detail === 'string'
         ? errBody.detail
-        : isZh.value
-          ? '获取建议失败'
-          : 'Suggestions request failed'
+        : t('focusQuestion.suggestionsRequestFailed')
     )
     suggestionsStreamEnded.value = true
     return
   }
   const reader = response.body?.getReader()
   if (!reader) {
-    notify.error(isZh.value ? '无法读取建议流' : 'Could not read suggestion stream')
+    notify.error(t('focusQuestion.cannotReadStream'))
     suggestionsStreamEnded.value = true
     return
   }
@@ -376,7 +362,7 @@ async function runValidation() {
   validating.value = true
   skipAi.value = false
   resetReviewState()
-  const lang = isZh.value ? 'zh' : 'en'
+  const lang = promptLanguage.value
 
   try {
     await Promise.all([
@@ -393,7 +379,7 @@ async function runValidation() {
       return
     }
     console.error(e)
-    notify.error(isZh.value ? '网络错误' : 'Network error')
+    notify.error(t('focusQuestion.networkError'))
   } finally {
     validating.value = false
   }
@@ -406,7 +392,7 @@ async function loadMoreSuggestions() {
   streamAbortController.value = new AbortController()
   const signal = streamAbortController.value.signal
   loadingMoreSuggestions.value = true
-  const lang = isZh.value ? 'zh' : 'en'
+  const lang = promptLanguage.value
   const avoid = suggestionRows.value.map((r) => r.text)
   try {
     await consumeSuggestionsStream(q, lang, avoid, true, signal)
@@ -416,7 +402,7 @@ async function loadMoreSuggestions() {
   } catch (e) {
     if (!(e instanceof Error && e.name === 'AbortError')) {
       console.error(e)
-      notify.error(isZh.value ? '加载更多失败' : 'Could not load more')
+      notify.error(t('focusQuestion.loadMoreFailed'))
     }
   } finally {
     loadingMoreSuggestions.value = false
@@ -534,7 +520,7 @@ function confirm() {
       :model-value="draft"
       type="textarea"
       :rows="4"
-      :placeholder="isZh ? '在此输入你的焦点问题…' : 'Type your focus question…'"
+      :placeholder="t('focusQuestion.placeholder')"
       class="mb-3"
       @update:model-value="onDraftInput"
     />
@@ -616,7 +602,7 @@ function confirm() {
           </template>
           <template v-else-if="vState(m).valid === true">
             <ElTooltip
-              :content="`${MODEL_LABELS[m]} · ${vState(m).reason || (isZh ? '通过' : 'OK')}`"
+              :content="`${MODEL_LABELS[m]} · ${vState(m).reason || t('focusQuestion.passLabel')}`"
               placement="top"
             >
               <Check class="w-4 h-4 text-emerald-600 shrink-0 cursor-help" />
@@ -624,7 +610,7 @@ function confirm() {
           </template>
           <template v-else-if="vState(m).valid === false">
             <ElTooltip
-              :content="`${MODEL_LABELS[m]} · ${vState(m).reason || (isZh ? '未通过' : 'Weak')}`"
+              :content="`${MODEL_LABELS[m]} · ${vState(m).reason || t('focusQuestion.weakLabel')}`"
               placement="top"
             >
               <CircleSlash class="w-4 h-4 text-red-600 shrink-0 cursor-help" />
@@ -648,7 +634,7 @@ function confirm() {
         <div
           class="flex items-center gap-1 shrink-0"
           role="toolbar"
-          :aria-label="isZh ? '翻页' : 'Paging'"
+          :aria-label="t('focusQuestion.pagingAria')"
         >
           <button
             type="button"
@@ -691,7 +677,7 @@ function confirm() {
       <ul
         class="flex flex-col gap-2 mb-1 list-none p-0 m-0"
         role="listbox"
-        :aria-label="isZh ? '备选焦点问题' : 'Alternative focus questions'"
+        :aria-label="t('focusQuestion.alternativesAria')"
       >
         <li>
           <button
@@ -702,7 +688,7 @@ function confirm() {
                 ? 'border-blue-500 bg-blue-50/90 dark:bg-blue-950/40 ring-1 ring-blue-400/50'
                 : 'border-gray-200 dark:border-gray-600 bg-gray-50/50 dark:bg-gray-800/50 hover:border-blue-300 dark:hover:border-blue-600'
             "
-            :title="ownQuestion.trim() || (isZh ? '（尚未输入）' : '(empty)')"
+            :title="ownQuestion.trim() || t('focusQuestion.emptyOwn')"
             @click="selectedSlot = 0"
           >
             <span
@@ -710,7 +696,7 @@ function confirm() {
               >0</span
             >
             <span class="min-w-0 flex-1 truncate text-left text-gray-800 dark:text-gray-100">{{
-              ownQuestion.trim() || (isZh ? '（尚未输入）' : '(empty)')
+              ownQuestion.trim() || t('focusQuestion.emptyOwn')
             }}</span>
           </button>
         </li>

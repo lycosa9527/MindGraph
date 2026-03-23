@@ -23,6 +23,7 @@ from agents.core.agent_utils import extract_json_from_response
 from config.settings import config
 from prompts import get_prompt
 from services.llm import llm_service
+from utils.text_width_estimate import estimate_text_width_px
 
 
 
@@ -347,7 +348,6 @@ class FlowMapAgent(BaseAgent):
             # 2) Estimate text-based sizes for each step and title
             font_step = 14
             font_title = 18
-            avg_char_px = 0.6  # Approx pixels per char relative to font size
             hpad_step = 14
             vpad_step = 10
             hpad_title = 12
@@ -355,7 +355,7 @@ class FlowMapAgent(BaseAgent):
             padding = 40
 
             def estimate_text_size(text: str, font_px: int) -> Tuple[int, int]:
-                width_px = int(max(0, len(text)) * font_px * avg_char_px)
+                width_px = int(estimate_text_width_px(text, float(font_px), is_topic=False))
                 height_px = int(font_px * 1.2)
                 return max(1, width_px), max(1, height_px)
 

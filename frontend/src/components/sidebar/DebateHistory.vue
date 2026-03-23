@@ -18,7 +18,7 @@ defineProps<{
   isBlurred?: boolean
 }>()
 
-const { isZh } = useLanguage()
+const { t } = useLanguage()
 const router = useRouter()
 const debateStore = useDebateVerseStore()
 
@@ -78,10 +78,10 @@ const remainingCount = computed(() => debates.value.length - INITIAL_LIMIT)
 
 // Group labels
 const groupLabels = computed(() => ({
-  today: isZh.value ? '今天' : 'Today',
-  yesterday: isZh.value ? '昨天' : 'Yesterday',
-  week: isZh.value ? '上周' : 'Past Week',
-  month: isZh.value ? '上月' : 'Past Month',
+  today: t('common.date.today'),
+  yesterday: t('common.date.yesterday'),
+  week: t('common.date.pastWeek'),
+  month: t('common.date.pastMonth'),
 }))
 
 // Handle debate click
@@ -95,10 +95,7 @@ function handleRenameDebate(debateId: string): void {
   const debate = debates.value.find((d) => d.id === debateId)
   const currentTopic = debate?.topic || ''
 
-  const newTopic = window.prompt(
-    isZh.value ? '请输入新的辩论主题' : 'Enter a new topic for this debate',
-    currentTopic
-  )
+  const newTopic = window.prompt(t('sidebar.debateHistory.renamePrompt'), currentTopic)
 
   if (newTopic !== null && newTopic.trim() !== currentTopic) {
     debateStore.renameRecentDebate(debateId, newTopic.trim())
@@ -107,11 +104,7 @@ function handleRenameDebate(debateId: string): void {
 
 // Handle delete debate
 function handleDeleteDebate(debateId: string): void {
-  const confirmed = window.confirm(
-    isZh.value
-      ? '确定要删除这个辩论记录吗？此操作不可撤销。'
-      : 'Are you sure you want to delete this debate? This cannot be undone.'
-  )
+  const confirmed = window.confirm(t('sidebar.debateHistory.deleteConfirm'))
 
   if (confirmed) {
     debateStore.removeRecentDebate(debateId)
@@ -129,7 +122,7 @@ function toggleShowAll(): void {
     <!-- Header -->
     <div class="px-4 py-3">
       <div class="text-xs font-medium text-stone-400 uppercase tracking-wider">
-        {{ isZh ? '最近辩论' : 'Recent Debates' }}
+        {{ t('sidebar.debateHistory.title') }}
       </div>
     </div>
 
@@ -143,7 +136,7 @@ function toggleShowAll(): void {
         >
           <MessageCircle class="w-8 h-8 mx-auto mb-2 text-stone-300" />
           <p class="text-xs text-stone-400">
-            {{ isZh ? '暂无辩论记录' : 'No debates yet' }}
+            {{ t('sidebar.debateHistory.empty') }}
           </p>
         </div>
 
@@ -163,7 +156,7 @@ function toggleShowAll(): void {
               @click="handleDebateClick(debate.id)"
             >
               <span class="debate-topic">
-                {{ debate.topic || (isZh ? '未命名' : 'Untitled') }}
+                {{ debate.topic || t('sidebar.history.untitled') }}
               </span>
               <ElDropdown
                 trigger="click"
@@ -180,7 +173,7 @@ function toggleShowAll(): void {
                   <ElDropdownMenu>
                     <ElDropdownItem @click="handleRenameDebate(debate.id)">
                       <Edit3 class="w-4 h-4 mr-2" />
-                      {{ isZh ? '重命名' : 'Rename' }}
+                      {{ t('sidebar.actions.rename') }}
                     </ElDropdownItem>
                     <ElDropdownItem
                       divided
@@ -188,7 +181,7 @@ function toggleShowAll(): void {
                     >
                       <span class="delete-option">
                         <Trash2 class="w-4 h-4 mr-2" />
-                        {{ isZh ? '删除' : 'Delete' }}
+                        {{ t('sidebar.actions.delete') }}
                       </span>
                     </ElDropdownItem>
                   </ElDropdownMenu>
@@ -211,7 +204,7 @@ function toggleShowAll(): void {
               @click="handleDebateClick(debate.id)"
             >
               <span class="debate-topic">
-                {{ debate.topic || (isZh ? '未命名' : 'Untitled') }}
+                {{ debate.topic || t('sidebar.history.untitled') }}
               </span>
               <ElDropdown
                 trigger="click"
@@ -228,7 +221,7 @@ function toggleShowAll(): void {
                   <ElDropdownMenu>
                     <ElDropdownItem @click="handleRenameDebate(debate.id)">
                       <Edit3 class="w-4 h-4 mr-2" />
-                      {{ isZh ? '重命名' : 'Rename' }}
+                      {{ t('sidebar.actions.rename') }}
                     </ElDropdownItem>
                     <ElDropdownItem
                       divided
@@ -236,7 +229,7 @@ function toggleShowAll(): void {
                     >
                       <span class="delete-option">
                         <Trash2 class="w-4 h-4 mr-2" />
-                        {{ isZh ? '删除' : 'Delete' }}
+                        {{ t('sidebar.actions.delete') }}
                       </span>
                     </ElDropdownItem>
                   </ElDropdownMenu>
@@ -259,7 +252,7 @@ function toggleShowAll(): void {
               @click="handleDebateClick(debate.id)"
             >
               <span class="debate-topic">
-                {{ debate.topic || (isZh ? '未命名' : 'Untitled') }}
+                {{ debate.topic || t('sidebar.history.untitled') }}
               </span>
               <ElDropdown
                 trigger="click"
@@ -276,7 +269,7 @@ function toggleShowAll(): void {
                   <ElDropdownMenu>
                     <ElDropdownItem @click="handleRenameDebate(debate.id)">
                       <Edit3 class="w-4 h-4 mr-2" />
-                      {{ isZh ? '重命名' : 'Rename' }}
+                      {{ t('sidebar.actions.rename') }}
                     </ElDropdownItem>
                     <ElDropdownItem
                       divided
@@ -284,7 +277,7 @@ function toggleShowAll(): void {
                     >
                       <span class="delete-option">
                         <Trash2 class="w-4 h-4 mr-2" />
-                        {{ isZh ? '删除' : 'Delete' }}
+                        {{ t('sidebar.actions.delete') }}
                       </span>
                     </ElDropdownItem>
                   </ElDropdownMenu>
@@ -307,7 +300,7 @@ function toggleShowAll(): void {
               @click="handleDebateClick(debate.id)"
             >
               <span class="debate-topic">
-                {{ debate.topic || (isZh ? '未命名' : 'Untitled') }}
+                {{ debate.topic || t('sidebar.history.untitled') }}
               </span>
               <ElDropdown
                 trigger="click"
@@ -324,7 +317,7 @@ function toggleShowAll(): void {
                   <ElDropdownMenu>
                     <ElDropdownItem @click="handleRenameDebate(debate.id)">
                       <Edit3 class="w-4 h-4 mr-2" />
-                      {{ isZh ? '重命名' : 'Rename' }}
+                      {{ t('sidebar.actions.rename') }}
                     </ElDropdownItem>
                     <ElDropdownItem
                       divided
@@ -332,7 +325,7 @@ function toggleShowAll(): void {
                     >
                       <span class="delete-option">
                         <Trash2 class="w-4 h-4 mr-2" />
-                        {{ isZh ? '删除' : 'Delete' }}
+                        {{ t('sidebar.actions.delete') }}
                       </span>
                     </ElDropdownItem>
                   </ElDropdownMenu>
@@ -347,7 +340,7 @@ function toggleShowAll(): void {
             class="show-more-btn"
             @click="toggleShowAll"
           >
-            {{ isZh ? `显示更多 (${remainingCount})` : `Show more (${remainingCount})` }}
+            {{ t('sidebar.actions.showMore', { n: remainingCount }) }}
           </button>
 
           <!-- Show Less button -->
@@ -356,7 +349,7 @@ function toggleShowAll(): void {
             class="show-more-btn"
             @click="toggleShowAll"
           >
-            {{ isZh ? '收起' : 'Show less' }}
+            {{ t('sidebar.actions.showLess') }}
           </button>
         </template>
       </div>
@@ -374,7 +367,7 @@ function toggleShowAll(): void {
           <Lock class="w-5 h-5 text-stone-400" />
         </div>
         <p class="text-xs text-stone-500">
-          {{ isZh ? '登录后查看历史辩论' : 'Login to view history' }}
+          {{ t('sidebar.debateHistory.loginPrompt') }}
         </p>
       </div>
     </div>

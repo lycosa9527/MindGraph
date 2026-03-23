@@ -13,7 +13,24 @@ from typing import Optional, Dict, Any, List
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
-from ..common import DiagramType, Language, LLMModel
+from utils.prompt_output_languages import is_prompt_output_language
+
+from ..common import DiagramType, LLMModel
+
+
+def _validate_prompt_output_language(value: str) -> str:
+    """Ensure API language is in the prompt-output registry."""
+    if not is_prompt_output_language(value):
+        raise ValueError("Language must be a supported generation language code")
+    return value
+
+
+def _coerce_prompt_output_language(value: str) -> str:
+    """Default invalid codes to zh (lenient validators for optional fields)."""
+    lowered = (value or 'zh').lower().strip()
+    if is_prompt_output_language(lowered):
+        return lowered
+    return 'zh'
 
 
 class GenerateRequest(BaseModel):
@@ -26,8 +43,8 @@ class GenerateRequest(BaseModel):
     diagram_type: Optional[DiagramType] = Field(
         None, description="Diagram type (auto-detected if not provided)"
     )
-    language: Language = Field(
-        Language.ZH, description="Language for diagram generation"
+    language: str = Field(
+        'zh', description="Language code for diagram generation (see prompt output registry)"
     )
     llm: LLMModel = Field(LLMModel.QWEN, description="LLM model to use")
     models: Optional[List[str]] = Field(
@@ -117,6 +134,12 @@ class GenerateRequest(BaseModel):
         )
     )
 
+    @field_validator('language')
+    @classmethod
+    def validate_generate_language(cls, value: str) -> str:
+        """Reject unknown generation language codes."""
+        return _validate_prompt_output_language(value)
+
     @field_validator('diagram_type', mode='before')
     @classmethod
     def normalize_diagram_type(cls, v):
@@ -169,10 +192,16 @@ class EnhanceRequest(BaseModel):
     enhancement_type: str = Field(
         ..., description="Type of enhancement to apply"
     )
-    language: Language = Field(
-        Language.ZH, description="Language for enhancement"
+    language: str = Field(
+        'zh', description="Language code for enhancement"
     )
     llm: LLMModel = Field(LLMModel.QWEN, description="LLM model to use")
+
+    @field_validator('language')
+    @classmethod
+    def validate_enhance_language(cls, value: str) -> str:
+        """Reject unknown generation language codes."""
+        return _validate_prompt_output_language(value)
 
     class Config:
         """Configuration for EnhanceRequest model."""
@@ -224,9 +253,9 @@ class GeneratePNGRequest(BaseModel):
         ..., min_length=1,
         description="Natural language description of diagram"
     )
-    language: Optional[Language] = Field(
-        Language.ZH,
-        description="Language code (en or zh, defaults to Chinese)"
+    language: str = Field(
+        'zh',
+        description="Language code for diagram text (prompt output registry)"
     )
     llm: Optional[LLMModel] = Field(
         LLMModel.QWEN, description="LLM model to use for generation"
@@ -247,6 +276,12 @@ class GeneratePNGRequest(BaseModel):
         2, ge=1, le=4, description="Scale factor for high-DPI"
     )
 
+    @field_validator('language')
+    @classmethod
+    def validate_generate_png_language(cls, value: str) -> str:
+        """Reject unknown generation language codes."""
+        return _validate_prompt_output_language(value)
+
     class Config:
         """Configuration for GeneratePNGRequest model."""
 
@@ -266,8 +301,8 @@ class GenerateDingTalkRequest(BaseModel):
     prompt: str = Field(
         ..., min_length=1, description="Natural language description"
     )
-    language: Optional[Language] = Field(
-        Language.ZH, description="Language code (defaults to Chinese)"
+    language: str = Field(
+        'zh', description="Language code (prompt output registry)"
     )
     llm: Optional[LLMModel] = Field(
         LLMModel.QWEN, description="LLM model to use"
@@ -278,6 +313,12 @@ class GenerateDingTalkRequest(BaseModel):
     dimension_preference: Optional[str] = Field(
         None, description="Dimension preference hint"
     )
+
+    @field_validator('language')
+    @classmethod
+    def validate_dingtalk_language(cls, value: str) -> str:
+        """Reject unknown generation language codes."""
+        return _validate_prompt_output_language(value)
 
     class Config:
         """Configuration for GenerateDingTalkRequest model."""
@@ -333,11 +374,9 @@ class DiagramCreateRequest(BaseModel):
 
     @field_validator('language')
     @classmethod
-    def validate_language(cls, v):
-        """Validate language code"""
-        if v not in ['zh', 'en']:
-            raise ValueError("Language must be 'zh' or 'en'")
-        return v
+    def validate_language(cls, value: str) -> str:
+        """Reject unknown generation language codes."""
+        return _validate_prompt_output_language(value)
 
     class Config:
         """Configuration for DiagramCreateRequest model."""
@@ -399,11 +438,8 @@ class FocusQuestionReviewRequest(BaseModel):
     @field_validator('language')
     @classmethod
     def normalize_language(cls, value: str) -> str:
-        """Allow only zh or en."""
-        lowered = (value or 'zh').lower()
-        if lowered not in ('zh', 'en'):
-            return 'zh'
-        return lowered
+        """Map focus-question review language to a supported generation code."""
+        return _coerce_prompt_output_language(value)
 
 
 class FocusQuestionSuggestionsRequest(BaseModel):
@@ -424,15 +460,65 @@ class FocusQuestionSuggestionsRequest(BaseModel):
     @field_validator('language')
     @classmethod
     def normalize_language_suggestions(cls, value: str) -> str:
-        """Allow only zh or en."""
-        lowered = (value or 'zh').lower()
-        if lowered not in ('zh', 'en'):
-            return 'zh'
-        return lowered
+        """Map suggestion request language to a supported generation code."""
+        return _coerce_prompt_output_language(value)
 
     @field_validator('avoid')
     @classmethod
     def cap_avoid_list(cls, value: Optional[List[str]]) -> Optional[List[str]]:
+        """Limit list size and string length."""
+        if not value:
+            return value
+        out: List[str] = []
+        for item in value[:80]:
+            s = str(item).strip()
+            if s and len(s) <= 400:
+                out.append(s)
+        return out or None
+
+
+class RootConceptGenerateRequest(BaseModel):
+    """Derive a Novak-style root concept from the concept-map focus question (Tab on root concept node)."""
+
+    question: str = Field(
+        ...,
+        min_length=1,
+        max_length=4000,
+        description="Focus question (topic) text",
+    )
+    language: str = Field(default='zh', description="zh or en")
+
+    @field_validator('language')
+    @classmethod
+    def normalize_language_root_concept(cls, value: str) -> str:
+        """Map root-concept generation language to a supported generation code."""
+        return _coerce_prompt_output_language(value)
+
+
+class RootConceptSuggestionsRequest(BaseModel):
+    """Streaming root-concept suggestions (3 models, 5 strings each per wave)."""
+
+    question: str = Field(
+        ...,
+        min_length=1,
+        max_length=4000,
+        description="Focus question (topic) text",
+    )
+    language: str = Field(default='zh', description="zh or en")
+    avoid: Optional[List[str]] = Field(
+        default=None,
+        description="Previously shown root suggestions to avoid repeating",
+    )
+
+    @field_validator('language')
+    @classmethod
+    def normalize_language_root_suggestions(cls, value: str) -> str:
+        """Map root-concept suggestion language to a supported generation code."""
+        return _coerce_prompt_output_language(value)
+
+    @field_validator('avoid')
+    @classmethod
+    def cap_avoid_list_root(cls, value: Optional[List[str]]) -> Optional[List[str]]:
         """Limit list size and string length."""
         if not value:
             return value

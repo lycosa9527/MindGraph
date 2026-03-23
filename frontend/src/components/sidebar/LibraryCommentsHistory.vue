@@ -21,7 +21,7 @@ defineProps<{
   isBlurred?: boolean
 }>()
 
-const { isZh } = useLanguage()
+const { t } = useLanguage()
 const router = useRouter()
 const notify = useNotifications()
 const authStore = useAuthStore()
@@ -95,10 +95,10 @@ const remainingCount = computed(() => bookmarks.value.length - INITIAL_LIMIT)
 
 // Group labels
 const groupLabels = computed(() => ({
-  today: isZh.value ? '今天' : 'Today',
-  yesterday: isZh.value ? '昨天' : 'Yesterday',
-  week: isZh.value ? '上周' : 'Past Week',
-  month: isZh.value ? '上月' : 'Past Month',
+  today: t('common.date.today'),
+  yesterday: t('common.date.yesterday'),
+  week: t('common.date.pastWeek'),
+  month: t('common.date.pastMonth'),
 }))
 
 // Handle bookmark click - navigate to document and page
@@ -132,10 +132,10 @@ async function handleDeleteBookmark(bookmark: LibraryBookmark, event: Event): Pr
   try {
     await libraryStore.deleteBookmark(bookmark.id)
     // Store automatically updates bookmarks list
-    notify.success(isZh.value ? '书签已删除' : 'Bookmark deleted')
+    notify.success(t('sidebar.bookmarks.deleted'))
   } catch (error) {
     console.error('[LibraryCommentsHistory] Failed to delete bookmark:', error)
-    notify.error(isZh.value ? '删除书签失败' : 'Failed to delete bookmark')
+    notify.error(t('sidebar.bookmarks.deleteFailed'))
   }
 }
 
@@ -152,7 +152,7 @@ function toggleShowAll(): void {
     <!-- Header -->
     <div class="px-4 py-3">
       <div class="text-xs font-medium text-stone-400 uppercase tracking-wider">
-        {{ isZh ? '最近书签' : 'Recent Bookmarks' }}
+        {{ t('sidebar.bookmarks.title') }}
       </div>
     </div>
 
@@ -165,7 +165,7 @@ function toggleShowAll(): void {
           class="text-center py-8"
         >
           <div class="text-xs text-stone-400">
-            {{ isZh ? '加载中...' : 'Loading...' }}
+            {{ t('common.loading') }}
           </div>
         </div>
 
@@ -176,7 +176,7 @@ function toggleShowAll(): void {
         >
           <Bookmark class="w-8 h-8 mx-auto mb-2 text-stone-300" />
           <p class="text-xs text-stone-400">
-            {{ isZh ? '暂无书签' : 'No bookmarks yet' }}
+            {{ t('sidebar.bookmarks.empty') }}
           </p>
         </div>
 
@@ -198,18 +198,18 @@ function toggleShowAll(): void {
                 @click="handleBookmarkClick(bookmark)"
               >
                 <div class="comment-text">
-                  {{ bookmark.document?.title || (isZh ? '未知文档' : 'Unknown Document') }}
+                  {{ bookmark.document?.title || t('sidebar.bookmarks.unknownDoc') }}
                 </div>
                 <div class="comment-meta">
                   <FileText class="w-3 h-3" />
                   <span class="text-xs text-stone-400">
-                    {{ isZh ? `第 ${bookmark.page_number} 页` : `Page ${bookmark.page_number}` }}
+                    {{ t('sidebar.bookmarks.pageN', { n: bookmark.page_number }) }}
                   </span>
                 </div>
               </div>
               <button
                 class="delete-btn"
-                :title="isZh ? '删除书签' : 'Delete bookmark'"
+                :title="t('sidebar.bookmarks.deleteTitle')"
                 @click.stop="handleDeleteBookmark(bookmark, $event)"
               >
                 <Trash2 class="w-4 h-4" />
@@ -233,18 +233,18 @@ function toggleShowAll(): void {
                 @click="handleBookmarkClick(bookmark)"
               >
                 <div class="comment-text">
-                  {{ bookmark.document?.title || (isZh ? '未知文档' : 'Unknown Document') }}
+                  {{ bookmark.document?.title || t('sidebar.bookmarks.unknownDoc') }}
                 </div>
                 <div class="comment-meta">
                   <FileText class="w-3 h-3" />
                   <span class="text-xs text-stone-400">
-                    {{ isZh ? `第 ${bookmark.page_number} 页` : `Page ${bookmark.page_number}` }}
+                    {{ t('sidebar.bookmarks.pageN', { n: bookmark.page_number }) }}
                   </span>
                 </div>
               </div>
               <button
                 class="delete-btn"
-                :title="isZh ? '删除书签' : 'Delete bookmark'"
+                :title="t('sidebar.bookmarks.deleteTitle')"
                 @click.stop="handleDeleteBookmark(bookmark, $event)"
               >
                 <Trash2 class="w-4 h-4" />
@@ -268,18 +268,18 @@ function toggleShowAll(): void {
                 @click="handleBookmarkClick(bookmark)"
               >
                 <div class="comment-text">
-                  {{ bookmark.document?.title || (isZh ? '未知文档' : 'Unknown Document') }}
+                  {{ bookmark.document?.title || t('sidebar.bookmarks.unknownDoc') }}
                 </div>
                 <div class="comment-meta">
                   <FileText class="w-3 h-3" />
                   <span class="text-xs text-stone-400">
-                    {{ isZh ? `第 ${bookmark.page_number} 页` : `Page ${bookmark.page_number}` }}
+                    {{ t('sidebar.bookmarks.pageN', { n: bookmark.page_number }) }}
                   </span>
                 </div>
               </div>
               <button
                 class="delete-btn"
-                :title="isZh ? '删除书签' : 'Delete bookmark'"
+                :title="t('sidebar.bookmarks.deleteTitle')"
                 @click.stop="handleDeleteBookmark(bookmark, $event)"
               >
                 <Trash2 class="w-4 h-4" />
@@ -303,18 +303,18 @@ function toggleShowAll(): void {
                 @click="handleBookmarkClick(bookmark)"
               >
                 <div class="comment-text">
-                  {{ bookmark.document?.title || (isZh ? '未知文档' : 'Unknown Document') }}
+                  {{ bookmark.document?.title || t('sidebar.bookmarks.unknownDoc') }}
                 </div>
                 <div class="comment-meta">
                   <FileText class="w-3 h-3" />
                   <span class="text-xs text-stone-400">
-                    {{ isZh ? `第 ${bookmark.page_number} 页` : `Page ${bookmark.page_number}` }}
+                    {{ t('sidebar.bookmarks.pageN', { n: bookmark.page_number }) }}
                   </span>
                 </div>
               </div>
               <button
                 class="delete-btn"
-                :title="isZh ? '删除书签' : 'Delete bookmark'"
+                :title="t('sidebar.bookmarks.deleteTitle')"
                 @click.stop="handleDeleteBookmark(bookmark, $event)"
               >
                 <Trash2 class="w-4 h-4" />
@@ -328,7 +328,7 @@ function toggleShowAll(): void {
             class="show-more-btn"
             @click="toggleShowAll"
           >
-            {{ isZh ? `显示更多 (${remainingCount})` : `Show more (${remainingCount})` }}
+            {{ t('sidebar.actions.showMore', { n: remainingCount }) }}
           </button>
 
           <!-- Show Less button -->
@@ -337,7 +337,7 @@ function toggleShowAll(): void {
             class="show-more-btn"
             @click="toggleShowAll"
           >
-            {{ isZh ? '收起' : 'Show less' }}
+            {{ t('sidebar.actions.showLess') }}
           </button>
         </template>
       </div>
@@ -355,7 +355,7 @@ function toggleShowAll(): void {
           <Bookmark class="w-5 h-5 text-stone-400" />
         </div>
         <p class="text-xs text-stone-500">
-          {{ isZh ? '登录后查看最近书签' : 'Login to view recent bookmarks' }}
+          {{ t('sidebar.bookmarks.loginPrompt') }}
         </p>
       </div>
     </div>

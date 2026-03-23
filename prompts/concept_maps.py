@@ -349,6 +349,112 @@ CONCEPT_MAP_FOCUS_SUGGESTIONS_USER_EN = """Learner's focus question:
 {avoid_section}""".strip()
 
 # ============================================================================
+# ROOT CONCEPT (topic → root node): Tab on root concept node; single DeepSeek call
+# ============================================================================
+
+CONCEPT_MAP_ROOT_CONCEPT_SYSTEM_ZH = """
+你是资深教学设计专家，熟悉约瑟夫·诺瓦克（Joseph D. Novak）的概念图理论。
+请严格按用户消息中的任务与示例思考，并**只输出一个 JSON 对象**，不要 Markdown 代码块，不要其它说明文字。
+JSON 仅包含两个字符串字段：
+- "recommended_root_concept"：推荐根概念名（名词或名词短语，简洁明确）
+- "brief_reason"：简要说明为何该概念适合作为根概念
+""".strip()
+
+CONCEPT_MAP_ROOT_CONCEPT_USER_ZH = """
+请根据诺瓦克概念图理论，为以下焦点问题确定一个合适的根概念（根节点）。
+
+**根概念选择标准**：
+1. **核心性**：直接回答焦点问题中最核心的对象或系统。
+2. **包容性**：在知识层级中处于最上位，能够涵盖图中将出现的其他主要概念。
+3. **名词性**：通常是一个名词或名词短语，简洁明确。
+4. **可展开性**：能够向下衍生出多个子概念和命题。
+
+**参考示例**：
+- **K12科学（小学）**
+  焦点问题：地球上的水是如何在江河、海洋、大气和生物之间不断运动并保持平衡的？
+  根概念：水循环
+  理由：直接聚焦核心系统，可向下展开蒸发、凝结、降水、径流、蒸腾等概念，并连接太阳能量与动态平衡。
+
+- **K12数学（初中）**
+  焦点问题：如何用坐标系中的点来表示有序数对，并通过图形变换（平移、旋转、反射）理解几何与代数的联系？
+  根概念：平面直角坐标系
+  理由：是连接代数与几何的核心工具，可向下衍生坐标轴、原点、象限、点的坐标、变换规则等。
+
+- **STEM学科（高中物理+工程）**
+  焦点问题：在设计一个能够自主保持平衡的两轮机器人时，陀螺仪传感器数据、PID控制算法和电机驱动之间是如何协同工作的？
+  根概念：两轮自平衡控制系统
+  理由：系统级概念，可直接分解为传感、控制、执行子系统，并引出反馈控制、稳定性等交叉连接。
+
+- **STEM学科（高中生物+信息技术）**
+  焦点问题：计算机算法中的“机器学习”是如何模仿生物神经网络的信号传递与学习机制来实现模式识别的？
+  根概念：神经网络（或“人工神经网络与生物神经网络的类比”）
+  理由：同时引出生物神经元、突触等生物学概念，以及人工神经元、权重、激活函数等计算机科学概念，促成交叉连接。
+
+**请按以下格式输出**：
+- 焦点问题：[输入的问题]
+- 推荐根概念：[推荐的概念]
+- 简要理由：[说明为什么这个概念适合作为根概念]
+
+焦点问题：{focus_question}
+""".strip()
+
+CONCEPT_MAP_ROOT_CONCEPT_SYSTEM_EN = """
+You are an instructional design expert familiar with Joseph D. Novak's concept mapping theory.
+Follow the user's instructions and examples, then output **only one JSON object** — no markdown fences, no extra text.
+Keys (string values only):
+- "recommended_root_concept": concise noun phrase for the root concept
+- "brief_reason": short rationale why it fits as the map's root
+""".strip()
+
+CONCEPT_MAP_ROOT_CONCEPT_USER_EN = """
+Using Novak-style concept mapping, propose ONE suitable root concept for the learner's focus question below.
+
+Criteria for the root concept:
+1. Centrality — addresses the core object or system in the question.
+2. Inclusiveness — top of the knowledge hierarchy; can subsume other major concepts.
+3. Nominal — usually a noun or short noun phrase.
+4. Expandable — can branch into sub-concepts and propositions.
+
+Focus question:
+{focus_question}
+
+Output only JSON with keys recommended_root_concept and brief_reason.
+""".strip()
+
+# ============================================================================
+# ROOT CONCEPT SUGGESTIONS (3 LLMs × 5 per wave, SSE — Tab on root concept node)
+# ============================================================================
+
+CONCEPT_MAP_ROOT_CONCEPT_SUGGESTIONS_SYSTEM_ZH = """
+你是资深教学设计专家，熟悉约瑟夫·诺瓦克（Joseph D. Novak）的概念图理论。
+根据用户给出的「焦点问题」，产出恰好 5 条**新的**根概念（名词或名词短语）备选，用于概念图最上位节点。
+每条应适合作为该焦点问题下的总括概念，且 5 条之间角度或表述应有明显差异；不要逐字复制用户已给出的词。
+
+输出要求：只输出一个 JSON 对象，不要 Markdown。形状严格为：
+{"suggestions": ["……", "……", "……", "……", "……"]}
+数组长度必须恰好为 5。
+""".strip()
+
+CONCEPT_MAP_ROOT_CONCEPT_SUGGESTIONS_SYSTEM_EN = """
+You are an expert in Novak-style concept mapping. Given the learner's focus question, output exactly **five**
+distinct candidate root concepts (nouns or short noun phrases) for the topmost node of the map.
+They should fit the focus question; vary angles; do not copy the user's wording verbatim.
+
+Output ONE JSON object only, no markdown. Shape: {"suggestions": ["...", "...", "...", "...", "..."]}
+The array must have exactly five strings.
+""".strip()
+
+CONCEPT_MAP_ROOT_CONCEPT_SUGGESTIONS_USER_ZH = """学习者的焦点问题：
+{question}
+
+{avoid_section}""".strip()
+
+CONCEPT_MAP_ROOT_CONCEPT_SUGGESTIONS_USER_EN = """Learner's focus question:
+{question}
+
+{avoid_section}""".strip()
+
+# ============================================================================
 # PROMPT REGISTRY
 # ============================================================================
 
@@ -368,4 +474,12 @@ CONCEPT_MAP_PROMPTS = {
     "concept_map_focus_suggestions_system_en": CONCEPT_MAP_FOCUS_SUGGESTIONS_SYSTEM_EN,
     "concept_map_focus_suggestions_user_zh": CONCEPT_MAP_FOCUS_SUGGESTIONS_USER_ZH,
     "concept_map_focus_suggestions_user_en": CONCEPT_MAP_FOCUS_SUGGESTIONS_USER_EN,
+    "concept_map_root_concept_system_zh": CONCEPT_MAP_ROOT_CONCEPT_SYSTEM_ZH,
+    "concept_map_root_concept_user_zh": CONCEPT_MAP_ROOT_CONCEPT_USER_ZH,
+    "concept_map_root_concept_system_en": CONCEPT_MAP_ROOT_CONCEPT_SYSTEM_EN,
+    "concept_map_root_concept_user_en": CONCEPT_MAP_ROOT_CONCEPT_USER_EN,
+    "concept_map_root_concept_suggestions_system_zh": CONCEPT_MAP_ROOT_CONCEPT_SUGGESTIONS_SYSTEM_ZH,
+    "concept_map_root_concept_suggestions_system_en": CONCEPT_MAP_ROOT_CONCEPT_SUGGESTIONS_SYSTEM_EN,
+    "concept_map_root_concept_suggestions_user_zh": CONCEPT_MAP_ROOT_CONCEPT_SUGGESTIONS_USER_ZH,
+    "concept_map_root_concept_suggestions_user_en": CONCEPT_MAP_ROOT_CONCEPT_SUGGESTIONS_USER_EN,
 }

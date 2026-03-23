@@ -3,8 +3,7 @@
  * Node Palette Panel (瀑布流) - AI-suggested nodes with streaming
  *
  * Displays AI-generated node suggestions in a grid.
- * - Concept map: nodes are draggable onto canvas (free-form)
- * - Other diagrams: select nodes and click Finish to add
+ * - Select nodes and click Finish to add (concept map uses RootConceptModal)
  *
  * For double_bubble_map: shows tabs (相似点/Similarities | 差异点/Differences).
  * Differences tab displays paired attributes for both Topic A and Topic B.
@@ -18,22 +17,22 @@ import { Check, Loader2, RefreshCw, X } from 'lucide-vue-next'
 import { useLanguage, useNotifications } from '@/composables'
 import { getNodePalette } from '@/composables/useNodePalette'
 import { getLLMColor } from '@/config/llmModelColors'
-import { useDiagramStore, usePanelsStore, useUIStore } from '@/stores'
+import { usePanelsStore, useUIStore } from '@/stores'
 import type { NodeSuggestion } from '@/types/panels'
 
 const emit = defineEmits<{
   (e: 'close'): void
 }>()
 
-const { isZh } = useLanguage()
+const { t } = useLanguage()
 const notify = useNotifications()
 const uiStore = useUIStore()
 const panelsStore = usePanelsStore()
-const diagramStore = useDiagramStore()
 
 const {
   isLoading,
   isLoadingMore,
+  paletteStreamPhase,
   errorMessage,
   suggestions,
   selectedIds,
@@ -57,16 +56,13 @@ const {
   dismiss,
   switchTab,
   switchStageTab,
-  switchConceptMapTab,
 } = getNodePalette({
-  language: isZh.value ? 'zh' : 'en',
   onError: (err) => notify.error(err),
 })
 
 const isDoubleBubble = computed(() => diagramType.value === 'double_bubble_map')
 const isMultiFlowMap = computed(() => diagramType.value === 'multi_flow_map')
 const isBridgeMap = computed(() => diagramType.value === 'bridge_map')
-const isConceptMap = computed(() => diagramType.value === 'concept_map')
 const currentMode = computed(
   () =>
     (panelsStore.nodePalettePanel.mode as 'similarities' | 'differences' | 'causes' | 'effects') ??
@@ -87,35 +83,26 @@ const showPairedFormat = computed(
     (isBridgeMap.value && (panelsStore.nodePalettePanel.mode as string) === 'pairs')
 )
 
-/** Concept map tabs (main topic + per-node sub-concept tabs), excluding tabs for deleted nodes */
-const conceptMapTabs = computed(() => {
-  const tabs = panelsStore.nodePalettePanel.conceptMapTabs ?? []
-  if (!isConceptMap.value) return tabs
-  const nodes = diagramStore.data?.nodes ?? []
-  const nodeIds = new Set(nodes.map((n) => n.id))
-  return tabs.filter((t) => t.id === 'topic' || nodeIds.has(t.id))
-})
-const showConceptMapTabs = computed(() => isConceptMap.value && conceptMapTabs.value.length > 0)
-
-/** When current tab is for a deleted node, switch to topic */
-watch(
-  () => [conceptMapTabs.value, panelsStore.nodePalettePanel.mode] as const,
-  ([tabs, mode]) => {
-    if (!isConceptMap.value || !mode || !tabs.length) return
-    const valid = tabs.some((t) => t.id === mode)
-    if (!valid) switchConceptMapTab('topic')
-  }
+/** Taller header + topic legend when viewing double-bubble differences */
+const showDoubleBubbleDiffLegend = computed(
+  () => isDoubleBubble.value && currentMode.value === 'differences'
 )
+
+/** Traveling border on tab strip: blue = request in flight, green = SSE nodes arriving */
+const paletteTabStripGlowClass = computed(() => {
+  if (!isLoading.value && !isLoadingMore.value) return ''
+  if (paletteStreamPhase.value === 'streaming') return 'palette-tab-strip-wrap--streaming'
+  if (paletteStreamPhase.value === 'requesting') return 'palette-tab-strip-wrap--requesting'
+  return 'palette-tab-strip-wrap--requesting'
+})
 
 /** Labels for paired display: Topic A/B for double bubble, Source/Analogy for bridge map */
 const pairedLabelLeft = computed(() =>
-  isBridgeMap.value ? (isZh.value ? '原词' : 'Source') : (doubleBubbleTopics?.value?.left ?? 'A')
+  isBridgeMap.value ? t('nodePalette.bridgeSource') : (doubleBubbleTopics?.value?.left ?? 'A')
 )
 const pairedLabelRight = computed(() =>
   isBridgeMap.value
-    ? isZh.value
-      ? '类比词'
-      : 'Analogy'
+    ? t('nodePalette.bridgeAnalogy')
     : (doubleBubbleTopics?.value?.right ?? 'B')
 )
 
@@ -214,12 +201,43 @@ async function handleStageTabSwitch(parentId: string, parentName: string) {
   await switchStageTab(parentId, parentName)
 }
 
-const PALETTE_CONCEPT_DATA_TYPE = 'application/mindgraph-palette-concept'
+/** Parse paired lines for double-bubble differences (API fields or "left | right" in text) */
+function getDoubleBubblePairedParts(suggestion: NodeSuggestion): { left: string; right: string } {
+  const l = (suggestion.left ?? '').trim()
+  const r = (suggestion.right ?? '').trim()
+  if (l || r) {
+    return { left: l, right: r }
+  }
+  const t = (suggestion.text ?? '').trim()
+  if (!t) return { left: '', right: '' }
+  if (t.includes('|')) {
+    const parts = t.split('|').map((x) => x.trim())
+    const left = parts[0] ?? ''
+    if (parts.length === 2) {
+      return { left, right: parts[1] ?? '' }
+    }
+    if (parts.length >= 3) {
+      return { left, right: parts[1] ?? '' }
+    }
+    return { left, right: '' }
+  }
+  return { left: t, right: '' }
+}
 
-function handleConceptMapDragStart(event: DragEvent, suggestion: NodeSuggestion) {
-  if (!event.dataTransfer) return
-  event.dataTransfer.setData(PALETTE_CONCEPT_DATA_TYPE, JSON.stringify({ text: suggestion.text }))
-  event.dataTransfer.effectAllowed = 'copy'
+function getPairedPartsForSuggestion(suggestion: NodeSuggestion): { left: string; right: string } {
+  if (isDoubleBubble.value && currentMode.value === 'differences') {
+    return getDoubleBubblePairedParts(suggestion)
+  }
+  return {
+    left: (suggestion.left ?? '').trim(),
+    right: (suggestion.right ?? '').trim(),
+  }
+}
+
+function showPairedCardRows(suggestion: NodeSuggestion): boolean {
+  if (!showPairedFormat.value) return false
+  const p = getPairedPartsForSuggestion(suggestion)
+  return !!(p.left || p.right)
 }
 
 function getDisplayText(suggestion: NodeSuggestion): string {
@@ -227,6 +245,11 @@ function getDisplayText(suggestion: NodeSuggestion): string {
     const left = suggestion.left ?? ''
     const right = suggestion.right ?? ''
     return left && right ? `${left} | ${right}` : suggestion.text
+  }
+  if (showPairedFormat.value && isDoubleBubble.value && currentMode.value === 'differences') {
+    const p = getDoubleBubblePairedParts(suggestion)
+    if (p.left && p.right) return `${p.left} | ${p.right}`
+    if (p.left || p.right) return p.left || p.right
   }
   return suggestion.text
 }
@@ -236,119 +259,139 @@ function getDisplayText(suggestion: NodeSuggestion): string {
   <div class="node-palette-panel bg-white dark:bg-gray-800 flex flex-col h-full">
     <!-- Header (matches MindMate panel) -->
     <div
-      class="panel-header h-14 px-4 flex items-center justify-between border-b border-gray-200 dark:border-gray-700 shrink-0"
+      class="panel-header px-4 flex justify-between border-b border-gray-200 dark:border-gray-700 shrink-0"
+      :class="
+        showDoubleBubbleDiffLegend
+          ? 'min-h-[7rem] items-start py-2'
+          : 'h-14 items-center'
+      "
     >
-      <div class="flex items-center gap-3 min-w-0 flex-1">
+      <div
+        class="flex gap-3 min-w-0 flex-1"
+        :class="showDoubleBubbleDiffLegend ? 'items-start' : 'items-center'"
+      >
         <h3 class="text-sm font-semibold text-gray-800 dark:text-white truncate shrink-0">
-          瀑布流
+          {{ t('nodePalette.panelTitle') }}
         </h3>
         <!-- Staged diagram stage 2 tabs (one per parent) -->
         <div
           v-if="showStage2Tabs"
-          class="flex flex-1 min-w-0 rounded-lg bg-gray-100 dark:bg-gray-700 p-0.5 overflow-x-auto"
+          class="palette-tab-strip-wrap flex flex-1 min-w-0"
+          :class="paletteTabStripGlowClass"
         >
-          <button
-            v-for="parent in stage2Parents"
-            :key="parent.id"
-            type="button"
-            class="px-2 py-1 text-xs font-medium rounded-md transition-colors shrink-0"
-            :class="
-              panelsStore.nodePalettePanel.mode === parent.name
-                ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
-                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
-            "
-            :disabled="isLoading"
-            :title="parent.name"
-            @click="handleStageTabSwitch(parent.id, parent.name)"
+          <div
+            class="palette-tab-strip-inner flex flex-1 min-w-0 rounded-lg bg-gray-100 dark:bg-gray-700 p-0.5 overflow-x-auto"
           >
-            {{ parent.name.length > 8 ? parent.name.slice(0, 7) + '…' : parent.name }}
-          </button>
+            <button
+              v-for="parent in stage2Parents"
+              :key="parent.id"
+              type="button"
+              class="px-2 py-1 text-xs font-medium rounded-md transition-colors shrink-0"
+              :class="
+                panelsStore.nodePalettePanel.mode === parent.name
+                  ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+              "
+              :disabled="isLoading"
+              :title="parent.name"
+              @click="handleStageTabSwitch(parent.id, parent.name)"
+            >
+              {{ parent.name.length > 8 ? parent.name.slice(0, 7) + '…' : parent.name }}
+            </button>
+          </div>
         </div>
-        <!-- Double bubble map tabs: Similarities | Differences -->
+        <!-- Double bubble map tabs: Similarities | Differences (+ stacked topic legend in differences) -->
         <div
           v-else-if="isDoubleBubble"
-          class="flex flex-1 min-w-0 rounded-lg bg-gray-100 dark:bg-gray-700 p-0.5 overflow-x-auto"
+          class="palette-tab-strip-wrap flex flex-col flex-1 min-w-0 gap-1.5"
+          :class="paletteTabStripGlowClass"
         >
-          <button
-            type="button"
-            class="px-2.5 py-1 text-xs font-medium rounded-md transition-colors"
-            :class="
-              currentMode === 'similarities'
-                ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
-                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
-            "
-            :disabled="isLoading"
-            @click="handleTabSwitch('similarities')"
+          <div
+            class="palette-tab-strip-inner flex flex-1 min-w-0 rounded-lg bg-gray-100 dark:bg-gray-700 p-0.5 overflow-x-auto"
           >
-            {{ isZh ? '相似点' : 'Similarities' }}
-          </button>
-          <button
-            type="button"
-            class="px-2.5 py-1 text-xs font-medium rounded-md transition-colors"
-            :class="
-              currentMode === 'differences'
-                ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
-                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
-            "
-            :disabled="isLoading"
-            @click="handleTabSwitch('differences')"
+            <button
+              type="button"
+              class="px-2.5 py-1 text-xs font-medium rounded-md transition-colors"
+              :class="
+                currentMode === 'similarities'
+                  ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+              "
+              :disabled="isLoading"
+              @click="handleTabSwitch('similarities')"
+            >
+              {{ t('nodePalette.similarities') }}
+            </button>
+            <button
+              type="button"
+              class="px-2.5 py-1 text-xs font-medium rounded-md transition-colors"
+              :class="
+                currentMode === 'differences'
+                  ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+              "
+              :disabled="isLoading"
+              @click="handleTabSwitch('differences')"
+            >
+              {{ t('nodePalette.differences') }}
+            </button>
+          </div>
+          <div
+            v-if="currentMode === 'differences'"
+            class="db-diff-topic-legend flex flex-col gap-0.5 w-full min-w-0 pl-0.5 pr-1"
           >
-            {{ isZh ? '差异点' : 'Differences' }}
-          </button>
-        </div>
-        <!-- Concept map tabs: main topic + per-node sub-concept tabs -->
-        <div
-          v-else-if="showConceptMapTabs"
-          class="flex flex-1 min-w-0 rounded-lg bg-gray-100 dark:bg-gray-700 p-0.5 overflow-x-auto"
-        >
-          <button
-            v-for="tab in conceptMapTabs"
-            :key="tab.id"
-            type="button"
-            class="px-2 py-1 text-xs font-medium rounded-md transition-colors shrink-0"
-            :class="
-              panelsStore.nodePalettePanel.mode === tab.id
-                ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
-                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
-            "
-            :disabled="isLoading"
-            :title="tab.name"
-            @click="switchConceptMapTab(tab.id)"
-          >
-            {{ tab.name.length > 10 ? tab.name.slice(0, 9) + '…' : tab.name }}
-          </button>
+            <div
+              class="text-[10px] leading-tight font-medium text-blue-600 dark:text-blue-400 truncate"
+              :title="`${pairedLabelLeft}: ${doubleBubbleTopics?.left ?? ''}`"
+            >
+              <span class="font-normal text-gray-500 dark:text-gray-400">{{ pairedLabelLeft }} · </span>
+              {{ doubleBubbleTopics?.left ?? '—' }}
+            </div>
+            <div
+              class="text-[10px] leading-tight font-medium text-amber-600 dark:text-amber-400 truncate"
+              :title="`${pairedLabelRight}: ${doubleBubbleTopics?.right ?? ''}`"
+            >
+              <span class="font-normal text-gray-500 dark:text-gray-400">{{ pairedLabelRight }} · </span>
+              {{ doubleBubbleTopics?.right ?? '—' }}
+            </div>
+          </div>
         </div>
         <!-- Multi flow map tabs: Causes | Effects -->
         <div
           v-else-if="isMultiFlowMap"
-          class="flex flex-1 min-w-0 rounded-lg bg-gray-100 dark:bg-gray-700 p-0.5 overflow-x-auto"
+          class="palette-tab-strip-wrap flex flex-1 min-w-0"
+          :class="paletteTabStripGlowClass"
         >
-          <button
-            type="button"
-            class="px-2.5 py-1 text-xs font-medium rounded-md transition-colors"
-            :class="
-              currentMode === 'causes'
-                ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
-                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
-            "
-            :disabled="isLoading"
-            @click="handleTabSwitch('causes')"
+          <div
+            class="palette-tab-strip-inner flex flex-1 min-w-0 rounded-lg bg-gray-100 dark:bg-gray-700 p-0.5 overflow-x-auto"
           >
-            {{ isZh ? '原因' : 'Causes' }}
-          </button>
-          <button
-            type="button"
-            class="px-2.5 py-1 text-xs font-medium rounded-md transition-colors"
-            :class="
-              currentMode === 'effects'
-                ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
-                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
-            "
-            :disabled="isLoading"
-            @click="handleTabSwitch('effects')"
-          >
-            {{ isZh ? '结果' : 'Effects' }}
-          </button>
+            <button
+              type="button"
+              class="px-2.5 py-1 text-xs font-medium rounded-md transition-colors"
+              :class="
+                currentMode === 'causes'
+                  ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+              "
+              :disabled="isLoading"
+              @click="handleTabSwitch('causes')"
+            >
+              {{ t('nodePalette.causes') }}
+            </button>
+            <button
+              type="button"
+              class="px-2.5 py-1 text-xs font-medium rounded-md transition-colors"
+              :class="
+                currentMode === 'effects'
+                  ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+              "
+              :disabled="isLoading"
+              @click="handleTabSwitch('effects')"
+            >
+              {{ t('nodePalette.effects') }}
+            </button>
+          </div>
         </div>
         <!-- Bridge map: dimension tab when in pairs stage -->
         <div
@@ -369,14 +412,14 @@ function getDisplayText(suggestion: NodeSuggestion): string {
       </div>
       <div class="flex items-center gap-2 shrink-0">
         <span
-          v-if="!isConceptMap && selectedIds.length > 0"
+          v-if="selectedIds.length > 0"
           class="text-xs text-gray-500 dark:text-gray-400"
         >
-          {{ selectedIds.length }} {{ isZh ? '已选' : 'selected' }}
+          {{ selectedIds.length }} {{ t('nodePalette.selected') }}
         </span>
         <div class="flex items-center gap-0">
           <ElTooltip
-            :content="isZh ? '重新生成' : 'Refresh'"
+            :content="t('nodePalette.refresh')"
             placement="bottom"
           >
             <ElButton
@@ -412,7 +455,7 @@ function getDisplayText(suggestion: NodeSuggestion): string {
       >
         <Loader2 class="w-8 h-8 animate-spin text-blue-500" />
         <p class="text-sm text-gray-500 dark:text-gray-400">
-          {{ isZh ? '正在生成创意...' : 'Generating ideas...' }}
+          {{ t('nodePalette.generatingIdeas') }}
         </p>
       </div>
 
@@ -434,11 +477,7 @@ function getDisplayText(suggestion: NodeSuggestion): string {
           class="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1.5"
         >
           <Loader2 class="w-3.5 h-3.5 animate-spin shrink-0" />
-          {{
-            isZh
-              ? `正在生成... 已收到 ${suggestions.length} 个`
-              : `Generating... ${suggestions.length} received`
-          }}
+          {{ t('nodePalette.generatingProgress', { count: suggestions.length }) }}
         </p>
         <div class="grid grid-cols-2 gap-2">
           <div
@@ -446,43 +485,37 @@ function getDisplayText(suggestion: NodeSuggestion): string {
             :key="suggestion.id"
             class="node-card p-3 rounded-lg border-2 transition-all"
             :class="[
-              isConceptMap ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer',
-              !suggestion.source_llm && (isConceptMap || !selectedIds.includes(suggestion.id))
+              'cursor-pointer',
+              !suggestion.source_llm && !selectedIds.includes(suggestion.id)
                 ? 'border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-700'
                 : '',
             ]"
-            :style="
-              isConceptMap
-                ? getNodeCardStyle(suggestion, false)
-                : getNodeCardStyle(suggestion, selectedIds.includes(suggestion.id))
-            "
-            :draggable="isConceptMap"
-            @dragstart="isConceptMap ? handleConceptMapDragStart($event, suggestion) : undefined"
-            @click="!isConceptMap ? toggleSelection(suggestion.id) : undefined"
+            :style="getNodeCardStyle(suggestion, selectedIds.includes(suggestion.id))"
+            @click="toggleSelection(suggestion.id)"
           >
             <div class="flex items-start gap-2">
               <div
-                v-if="!isConceptMap && selectedIds.includes(suggestion.id)"
+                v-if="selectedIds.includes(suggestion.id)"
                 class="w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center shrink-0 mt-0.5"
               >
                 <Check class="w-3 h-3 text-white" />
               </div>
-              <!-- Paired format (one up, one down): double bubble differences or bridge map pairs -->
+              <!-- Paired format (A over B): double bubble differences (incl. parsed text) or bridge pairs -->
               <div
-                v-if="showPairedFormat && (suggestion.left || suggestion.right)"
+                v-if="showPairedCardRows(suggestion)"
                 class="flex flex-col gap-1 text-sm min-w-0 flex-1"
               >
                 <div class="text-gray-700 dark:text-gray-300">
                   <span class="font-medium text-blue-600 dark:text-blue-400">
                     {{ pairedLabelLeft }}:
                   </span>
-                  {{ suggestion.left ?? '—' }}
+                  {{ getPairedPartsForSuggestion(suggestion).left || '—' }}
                 </div>
                 <div class="text-gray-700 dark:text-gray-300">
                   <span class="font-medium text-amber-600 dark:text-amber-400">
                     {{ pairedLabelRight }}:
                   </span>
-                  {{ suggestion.right ?? '—' }}
+                  {{ getPairedPartsForSuggestion(suggestion).right || '—' }}
                 </div>
               </div>
               <!-- Similarities or fallback: plain text -->
@@ -506,7 +539,7 @@ function getDisplayText(suggestion: NodeSuggestion): string {
           size="small"
           @click="loadNextBatch"
         >
-          {{ isZh ? '加载更多' : 'Load more' }}
+          {{ t('nodePalette.loadMore') }}
         </el-button>
       </div>
       <div
@@ -523,36 +556,24 @@ function getDisplayText(suggestion: NodeSuggestion): string {
       >
         <p class="text-xs text-gray-500 dark:text-gray-400">
           {{
-            isConceptMap
-              ? isZh
-                ? '拖拽概念到画布上添加。'
-                : 'Drag concepts onto the canvas to add.'
-              : isDimensionsStage
-                ? isZh
-                  ? '仅可选择1个维度，点击「下一步」继续。'
-                  : 'Select exactly 1 dimension only, then click Next to continue.'
-                : showNextButton
-                  ? isZh
-                    ? '选择节点，点击「下一步」生成下一阶段节点。'
-                    : 'Select nodes, then click Next to generate second-stage nodes.'
-                  : isZh
-                    ? '点击选择节点，选择完成后点击下方「完成」添加到图示。'
-                    : 'Click to select nodes, then click Finish to add to diagram.'
+            isDimensionsStage
+              ? t('nodePalette.helpDimension')
+              : showNextButton
+                ? t('nodePalette.helpNext')
+                : t('nodePalette.helpFinish')
           }}
         </p>
       </div>
     </div>
 
-    <!-- Footer: hide Finish for concept_map (drag-only) -->
     <div
-      v-if="!isConceptMap"
       class="panel-footer p-4 border-t border-gray-200 dark:border-gray-700 flex gap-2 justify-center shrink-0"
     >
       <el-button
         size="default"
         @click="handleCancel"
       >
-        {{ isZh ? '取消' : 'Cancel' }}
+        {{ t('nodePalette.cancel') }}
       </el-button>
       <el-button
         type="primary"
@@ -560,28 +581,121 @@ function getDisplayText(suggestion: NodeSuggestion): string {
         :disabled="isDimensionsStage ? selectedIds.length !== 1 : selectedIds.length === 0"
         @click="handleFinish"
       >
-        {{ showNextButton ? (isZh ? '下一步' : 'Next') : isZh ? '完成' : 'Finish' }}
-      </el-button>
-    </div>
-    <!-- Concept map: minimal footer with close only -->
-    <div
-      v-else
-      class="panel-footer p-4 border-t border-gray-200 dark:border-gray-700 flex gap-2 justify-center shrink-0"
-    >
-      <el-button
-        size="default"
-        @click="handleCancel"
-      >
-        {{ isZh ? '关闭' : 'Close' }}
+        {{ showNextButton ? t('nodePalette.next') : t('nodePalette.finish') }}
       </el-button>
     </div>
   </div>
 </template>
 
 <style scoped>
+@property --palette-border-angle {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+
 .node-palette-panel {
   display: flex;
   flex-direction: column;
+}
+
+.palette-tab-strip-wrap {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  border-radius: 0.5rem;
+}
+
+.palette-tab-strip-wrap--requesting,
+.palette-tab-strip-wrap--streaming {
+  padding: 2px;
+}
+
+.palette-tab-strip-wrap::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 2px;
+  --palette-border-angle: 0deg;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 0;
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  -webkit-mask-composite: xor;
+  animation: palette-border-travel 2.5s linear infinite;
+  transition: opacity 0.15s ease;
+}
+
+.palette-tab-strip-wrap--requesting::before {
+  opacity: 1;
+  background: conic-gradient(
+    from var(--palette-border-angle) at 50% 50%,
+    #e7e5e4 0deg,
+    #d6d3d1 50deg,
+    #93c5fd 130deg,
+    #3b82f6 180deg,
+    #60a5fa 230deg,
+    #d6d3d1 310deg,
+    #e7e5e4 360deg
+  );
+}
+
+.palette-tab-strip-wrap--streaming::before {
+  opacity: 1;
+  background: conic-gradient(
+    from var(--palette-border-angle) at 50% 50%,
+    #e7e5e4 0deg,
+    #d6d3d1 50deg,
+    #86efac 130deg,
+    #22c55e 180deg,
+    #4ade80 230deg,
+    #d6d3d1 310deg,
+    #e7e5e4 360deg
+  );
+}
+
+:global(.dark) .palette-tab-strip-wrap--requesting::before {
+  background: conic-gradient(
+    from var(--palette-border-angle) at 50% 50%,
+    #1f2937 0deg,
+    #374151 50deg,
+    #60a5fa 130deg,
+    #2563eb 180deg,
+    #38bdf8 230deg,
+    #374151 310deg,
+    #1f2937 360deg
+  );
+}
+
+:global(.dark) .palette-tab-strip-wrap--streaming::before {
+  background: conic-gradient(
+    from var(--palette-border-angle) at 50% 50%,
+    #1f2937 0deg,
+    #374151 50deg,
+    #4ade80 130deg,
+    #16a34a 180deg,
+    #86efac 230deg,
+    #374151 310deg,
+    #1f2937 360deg
+  );
+}
+
+.palette-tab-strip-inner {
+  position: relative;
+  z-index: 1;
+}
+
+@keyframes palette-border-travel {
+  to {
+    --palette-border-angle: 360deg;
+  }
 }
 
 .node-card:hover {

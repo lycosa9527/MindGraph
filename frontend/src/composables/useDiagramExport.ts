@@ -8,6 +8,9 @@ import { toPng, toSvg } from 'html-to-image'
 import { jsPDF } from 'jspdf'
 
 import { useNotifications } from '@/composables'
+import { useLanguage } from '@/composables/useLanguage'
+import { ensureFontsForLanguageCode } from '@/fonts/promptLanguageFonts'
+import { useUIStore } from '@/stores/ui'
 import { apiRequest } from '@/utils/apiClient'
 
 function sanitizeFilename(name: string): string {
@@ -43,24 +46,33 @@ export interface UseDiagramExportOptions {
   getContainer: () => HTMLElement | null
   getDiagramSpec: () => Record<string, unknown> | null
   getTitle: () => string
-  isZh: () => boolean
 }
 
 export function useDiagramExport(options: UseDiagramExportOptions) {
-  const { getContainer, getDiagramSpec, getTitle, isZh } = options
+  const { getContainer, getDiagramSpec, getTitle } = options
+  const { t } = useLanguage()
   const notify = useNotifications()
+  const uiStore = useUIStore()
 
   const isExporting = ref(false)
+
+  async function waitForExportFonts(): Promise<void> {
+    await ensureFontsForLanguageCode(uiStore.promptLanguage)
+    if (typeof document !== 'undefined' && document.fonts?.ready) {
+      await document.fonts.ready
+    }
+  }
 
   async function exportAsPng(): Promise<void> {
     const container = getContainer()
     if (!container) {
-      notify.warning(isZh() ? '无法导出：画布未就绪' : 'Cannot export: canvas not ready')
+      notify.warning(t('canvas.export.canvasNotReady'))
       return
     }
 
     isExporting.value = true
     try {
+      await waitForExportFonts()
       const dataUrl = await toPng(container, {
         backgroundColor: '#ffffff',
         pixelRatio: 2,
@@ -72,10 +84,10 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
       triggerDownload(dataUrl, `${baseName}_${timestamp}.png`)
 
       logDiagramExport('png')
-      notify.success(isZh() ? 'PNG图片导出成功' : 'PNG exported successfully')
+      notify.success(t('canvas.export.pngSuccess'))
     } catch (error) {
       console.error('PNG export failed:', error)
-      notify.error(isZh() ? 'PNG导出失败，请重试' : 'PNG export failed, please try again')
+      notify.error(t('canvas.export.pngError'))
     } finally {
       isExporting.value = false
     }
@@ -84,12 +96,13 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
   async function exportAsSvg(): Promise<void> {
     const container = getContainer()
     if (!container) {
-      notify.warning(isZh() ? '无法导出：画布未就绪' : 'Cannot export: canvas not ready')
+      notify.warning(t('canvas.export.canvasNotReady'))
       return
     }
 
     isExporting.value = true
     try {
+      await waitForExportFonts()
       const dataUrl = await toSvg(container, {
         backgroundColor: '#ffffff',
         style: { transform: 'none' },
@@ -100,10 +113,10 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
       triggerDownload(dataUrl, `${baseName}_${timestamp}.svg`)
 
       logDiagramExport('svg')
-      notify.success(isZh() ? 'SVG导出成功' : 'SVG exported successfully')
+      notify.success(t('canvas.export.svgSuccess'))
     } catch (error) {
       console.error('SVG export failed:', error)
-      notify.error(isZh() ? 'SVG导出失败，请重试' : 'SVG export failed, please try again')
+      notify.error(t('canvas.export.svgError'))
     } finally {
       isExporting.value = false
     }
@@ -112,12 +125,13 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
   async function exportAsPdf(): Promise<void> {
     const container = getContainer()
     if (!container) {
-      notify.warning(isZh() ? '无法导出：画布未就绪' : 'Cannot export: canvas not ready')
+      notify.warning(t('canvas.export.canvasNotReady'))
       return
     }
 
     isExporting.value = true
     try {
+      await waitForExportFonts()
       const dataUrl = await toPng(container, {
         backgroundColor: '#ffffff',
         pixelRatio: 1,
@@ -143,10 +157,10 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
       pdf.save(`${baseName}_${timestamp}.pdf`)
 
       logDiagramExport('pdf')
-      notify.success(isZh() ? 'PDF导出成功' : 'PDF exported successfully')
+      notify.success(t('canvas.export.pdfSuccess'))
     } catch (error) {
       console.error('PDF export failed:', error)
-      notify.error(isZh() ? 'PDF导出失败，请重试' : 'PDF export failed, please try again')
+      notify.error(t('canvas.export.pdfError'))
     } finally {
       isExporting.value = false
     }
@@ -155,7 +169,7 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
   async function exportAsJson(): Promise<void> {
     const spec = getDiagramSpec()
     if (!spec) {
-      notify.warning(isZh() ? '没有可导出的图示数据' : 'No diagram data to export')
+      notify.warning(t('canvas.export.noDiagramData'))
       return
     }
 
@@ -168,10 +182,10 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
       triggerDownloadBlob(blob, `${baseName}_${timestamp}.json`)
 
       logDiagramExport('json')
-      notify.success(isZh() ? 'JSON导出成功' : 'JSON exported successfully')
+      notify.success(t('canvas.export.jsonSuccess'))
     } catch (error) {
       console.error('JSON export failed:', error)
-      notify.error(isZh() ? 'JSON导出失败，请重试' : 'JSON export failed, please try again')
+      notify.error(t('canvas.export.jsonError'))
     } finally {
       isExporting.value = false
     }
@@ -192,7 +206,7 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
         await exportAsJson()
         break
       default:
-        notify.warning(isZh() ? `未知导出格式: ${format}` : `Unknown export format: ${format}`)
+        notify.warning(t('canvas.export.unknownFormat', { format }))
     }
   }
 

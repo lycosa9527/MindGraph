@@ -58,7 +58,7 @@ export interface MindMateConversation {
 
 export interface MindMateOptions {
   ownerId?: string
-  language?: 'en' | 'zh'
+  language?: string
   onMessageChunk?: (chunk: string) => void
   onMessageComplete?: () => void
   onError?: (error: string) => void

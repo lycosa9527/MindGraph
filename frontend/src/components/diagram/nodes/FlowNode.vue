@@ -11,16 +11,20 @@ import { Handle, Position } from '@vue-flow/core'
 
 import { X } from 'lucide-vue-next'
 
+import { useLanguage } from '@/composables'
 import { eventBus } from '@/composables/useEventBus'
 import { useTheme } from '@/composables/useTheme'
 import { getMindmapBranchColor } from '@/config/mindmapColors'
 import { useDiagramStore } from '@/stores'
 import type { MindGraphNodeProps } from '@/types'
 import { getBorderStyleProps } from '@/utils/borderStyleUtils'
+import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
 
 import InlineEditableText from './InlineEditableText.vue'
 
 const props = defineProps<MindGraphNodeProps>()
+
+const { t } = useLanguage()
 
 // Get theme defaults matching old StyleManager
 const { getNodeStyle } = useTheme({
@@ -62,7 +66,7 @@ const nodeStyle = computed(() => {
   const baseStyle = {
     backgroundColor,
     color: props.data.style?.textColor || defaultStyle.value.textColor || '#303133',
-    fontFamily: props.data.style?.fontFamily,
+    fontFamily: props.data.style?.fontFamily || DIAGRAM_NODE_FONT_STACK,
     fontSize: `${props.data.style?.fontSize || defaultStyle.value.fontSize || 13}px`,
     fontWeight: props.data.style?.fontWeight || defaultStyle.value.fontWeight || 'normal',
     fontStyle: props.data.style?.fontStyle || 'normal',
@@ -166,7 +170,7 @@ function handleWidthChange(width: number) {
 function handleDeleteClick(event: MouseEvent) {
   event.stopPropagation()
   if (diagramStore.removeNode(props.id)) {
-    diagramStore.pushHistory('删除节点')
+    diagramStore.pushHistory(t('diagram.history.deleteNode'))
   }
 }
 

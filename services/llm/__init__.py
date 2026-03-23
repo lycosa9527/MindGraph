@@ -505,6 +505,7 @@ class LLMService:
             yield_structured: If True, yield structured dicts; if False, yield plain content strings
             use_knowledge_base: Enable RAG context injection from user's knowledge space
             **kwargs: Additional model-specific parameters:
+                - dashscope_model: Override DashScope model id for Qwen routes (e.g. AskOnce)
                 - top_p: Nucleus sampling threshold (0.0 to 1.0)
                 - top_k: Top-k sampling (DashScope-specific, via extra_body)
                 - presence_penalty: Repetition control (-2.0 to 2.0)

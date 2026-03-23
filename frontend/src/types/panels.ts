@@ -41,6 +41,8 @@ export interface NodeSuggestion {
   right?: string
   /** For double bubble differences: comparison dimension */
   dimension?: string
+  /** Concept map (domain palette): pre-generated root→concept proposition link label */
+  relationship_label?: string
 }
 
 /** Concept map tab: main topic or a specific node for sub-concept generation */

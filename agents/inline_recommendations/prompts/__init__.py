@@ -11,6 +11,8 @@ Proprietary License
 """
 from typing import Any, Dict, List, Optional
 
+from utils.prompt_locale import output_language_instruction
+
 from .brace_map import (
     build_brace_dimensions_prompt,
     build_brace_parts_prompt,
@@ -110,4 +112,7 @@ def build_prompt(
                 break
     if not builder:
         return ''
-    return builder(context, language, count, batch_num, existing)
+    text = builder(context, language, count, batch_num, existing)
+    if not text:
+        return ''
+    return text + output_language_instruction(language)

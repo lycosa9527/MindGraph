@@ -5,6 +5,7 @@
  */
 import { useRouter } from 'vue-router'
 
+import { useLanguage } from '@/composables'
 import { useUIStore } from '@/stores'
 import type { DiagramType } from '@/types'
 
@@ -12,23 +13,43 @@ import DiagramPreviewSvg from './DiagramPreviewSvg.vue'
 
 const uiStore = useUIStore()
 const router = useRouter()
+const { t } = useLanguage()
+
+/** Store keeps Chinese diagram names; map from DiagramType for setSelectedChartType */
+const TYPE_TO_ZH_NAME: Record<DiagramType, string> = {
+  circle_map: '圆圈图',
+  bubble_map: '气泡图',
+  double_bubble_map: '双气泡图',
+  tree_map: '树形图',
+  brace_map: '括号图',
+  flow_map: '流程图',
+  multi_flow_map: '复流程图',
+  bridge_map: '桥形图',
+  mindmap: '思维导图',
+  mind_map: '思维导图',
+  concept_map: '概念图',
+  diagram: '图表',
+}
 
 // All 10 diagram types (8 Thinking Maps + 2 extra), displayed in 2 rows of 5
-const allDiagramTypes: Array<{ name: string; desc: string; type: DiagramType }> = [
-  { name: '圆圈图', desc: '联想 脑暴', type: 'circle_map' },
-  { name: '气泡图', desc: '描述特性', type: 'bubble_map' },
-  { name: '双气泡图', desc: '比较与对比', type: 'double_bubble_map' },
-  { name: '树形图', desc: '分类与归纳', type: 'tree_map' },
-  { name: '括号图', desc: '整体与部分', type: 'brace_map' },
-  { name: '流程图', desc: '顺序与步骤', type: 'flow_map' },
-  { name: '复流程图', desc: '因果分析', type: 'multi_flow_map' },
-  { name: '桥形图', desc: '类比推理', type: 'bridge_map' },
-  { name: '思维导图', desc: '概念梳理', type: 'mindmap' },
-  { name: '概念图', desc: '概念关系', type: 'concept_map' },
+const allDiagramTypes: Array<{ titleKey: string; descKey: string; type: DiagramType }> = [
+  { titleKey: 'landing.diagramGrid.circle_map.title', descKey: 'landing.diagramGrid.circle_map.desc', type: 'circle_map' },
+  { titleKey: 'landing.diagramGrid.bubble_map.title', descKey: 'landing.diagramGrid.bubble_map.desc', type: 'bubble_map' },
+  { titleKey: 'landing.diagramGrid.double_bubble_map.title', descKey: 'landing.diagramGrid.double_bubble_map.desc', type: 'double_bubble_map' },
+  { titleKey: 'landing.diagramGrid.tree_map.title', descKey: 'landing.diagramGrid.tree_map.desc', type: 'tree_map' },
+  { titleKey: 'landing.diagramGrid.brace_map.title', descKey: 'landing.diagramGrid.brace_map.desc', type: 'brace_map' },
+  { titleKey: 'landing.diagramGrid.flow_map.title', descKey: 'landing.diagramGrid.flow_map.desc', type: 'flow_map' },
+  { titleKey: 'landing.diagramGrid.multi_flow_map.title', descKey: 'landing.diagramGrid.multi_flow_map.desc', type: 'multi_flow_map' },
+  { titleKey: 'landing.diagramGrid.bridge_map.title', descKey: 'landing.diagramGrid.bridge_map.desc', type: 'bridge_map' },
+  { titleKey: 'landing.diagramGrid.mindmap.title', descKey: 'landing.diagramGrid.mindmap.desc', type: 'mindmap' },
+  { titleKey: 'landing.diagramGrid.concept_map.title', descKey: 'landing.diagramGrid.concept_map.desc', type: 'concept_map' },
 ]
 
-function handleNewCanvas(item: { name: string; type: DiagramType }) {
-  uiStore.setSelectedChartType(item.name)
+function handleNewCanvas(item: { type: DiagramType }) {
+  const zhName = TYPE_TO_ZH_NAME[item.type]
+  if (zhName) {
+    uiStore.setSelectedChartType(zhName)
+  }
   router.push({
     path: '/canvas',
     query: { type: item.type },
@@ -39,13 +60,15 @@ function handleNewCanvas(item: { name: string; type: DiagramType }) {
 <template>
   <div class="diagram-type-grid">
     <!-- Section title -->
-    <div class="text-left text-sm font-semibold text-stone-500 mb-4">在画布中创建</div>
+    <div class="text-left text-sm font-semibold text-stone-500 mb-4">
+      {{ t('landing.diagramGrid.sectionTitle') }}
+    </div>
 
     <!-- 2 rows of 5 diagram cards with SVG previews -->
     <div class="grid grid-cols-2 sm:grid-cols-5 gap-3">
       <div
         v-for="item in allDiagramTypes"
-        :key="item.name"
+        :key="item.type"
         class="diagram-card group flex flex-col items-center p-3 border border-gray-200 rounded-lg hover:border-blue-400 hover:shadow-md transition-all cursor-pointer"
         @click="handleNewCanvas(item)"
       >
@@ -53,11 +76,11 @@ function handleNewCanvas(item: { name: string; type: DiagramType }) {
         <div class="diagram-preview-wrapper mb-2">
           <DiagramPreviewSvg :type="item.type" />
         </div>
-        <div class="text-sm font-medium text-gray-800 mb-1">
-          {{ item.name }}
+        <div class="text-sm font-medium text-gray-800 mb-1 text-center leading-snug">
+          {{ t(item.titleKey) }}
         </div>
-        <div class="text-xs text-gray-500 text-center">
-          {{ item.desc }}
+        <div class="text-xs text-gray-500 text-center leading-snug">
+          {{ t(item.descKey) }}
         </div>
       </div>
     </div>

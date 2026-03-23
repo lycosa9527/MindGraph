@@ -5,8 +5,10 @@ import {
 } from '@/composables/diagrams/layoutConfig'
 import { eventBus } from '@/composables/useEventBus'
 import type { Connection, DiagramNode, DiagramType } from '@/types'
+import { normalizeAllConceptMapTopicRootLabels } from '@/utils/conceptMapTopicRootEdge'
 
 import { useConceptMapRelationshipStore } from '../conceptMapRelationship'
+import { useUIStore } from '../ui'
 import {
   getDefaultTemplate,
   loadSpecForDiagramType,
@@ -14,10 +16,14 @@ import {
   recalculateBubbleMapLayout,
 } from '../specLoader'
 import { getMindMapCurveExtents } from './events'
-import type { DiagramContext } from './types'
+import type { DiagramContext, LoadFromSpecOptions } from './types'
 
 export function useSpecIOSlice(ctx: DiagramContext) {
-  function loadFromSpec(spec: Record<string, unknown>, diagramTypeValue: DiagramType): boolean {
+  function loadFromSpec(
+    spec: Record<string, unknown>,
+    diagramTypeValue: DiagramType,
+    options?: LoadFromSpecOptions
+  ): boolean {
     if (!spec || !diagramTypeValue) return false
 
     ctx.resetSessionEditCount()
@@ -89,7 +95,13 @@ export function useSpecIOSlice(ctx: DiagramContext) {
       ...(result.metadata || {}),
     }
 
-    eventBus.emit('diagram:loaded', { diagramType: diagramTypeValue })
+    if (diagramTypeValue === 'concept_map' && ctx.data.value?.connections && ctx.data.value.nodes) {
+      normalizeAllConceptMapTopicRootLabels(ctx.data.value.connections, ctx.data.value.nodes)
+    }
+
+    if (options?.emitLoaded !== false) {
+      eventBus.emit('diagram:loaded', { diagramType: diagramTypeValue })
+    }
     return true
   }
 
@@ -251,7 +263,7 @@ export function useSpecIOSlice(ctx: DiagramContext) {
   }
 
   function loadDefaultTemplate(diagramTypeValue: DiagramType): boolean {
-    const template = getDefaultTemplate(diagramTypeValue)
+    const template = getDefaultTemplate(diagramTypeValue, useUIStore().language)
     if (!template) return false
     return loadFromSpec(template, diagramTypeValue)
   }
@@ -304,6 +316,10 @@ export function useSpecIOSlice(ctx: DiagramContext) {
           conns.push(updatedConn as unknown as Connection)
         }
       }
+    }
+
+    if (ctx.type.value === 'concept_map' && ctx.data.value?.connections && ctx.data.value.nodes) {
+      normalizeAllConceptMapTopicRootLabels(ctx.data.value.connections, ctx.data.value.nodes)
     }
 
     return true

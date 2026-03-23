@@ -12,6 +12,7 @@ from routers.features.voice.diagram_execute import execute_diagram_update
 from routers.features.voice.messaging import build_voice_instructions, safe_websocket_send
 from routers.features.voice.session_ops import get_agent_session_id, get_session_omni_client
 from routers.features.voice.state import logger, voice_sessions
+from utils.prompt_locale import output_language_instruction
 
 try:
     from prompts.voice_agent import VOICE_AGENT_PROMPTS
@@ -131,6 +132,7 @@ async def process_paragraph_with_qwen_plus(
             current_nodes_count=len(current_nodes),
             has_existing_content=has_existing_content
         )
+        prompt = prompt + output_language_instruction(language)
 
         # Use Qwen Plus (generation model) for paragraph processing
         response = await llm_service.chat(

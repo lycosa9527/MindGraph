@@ -41,7 +41,7 @@ const emit = defineEmits<{
   (e: 'update:visible', value: boolean): void
 }>()
 
-const { isZh } = useLanguage()
+const { t } = useLanguage()
 
 const loading = ref(false)
 const chunks = ref<Chunk[]>([])
@@ -105,7 +105,7 @@ watch(
 <template>
   <ElDialog
     v-model="dialogVisible"
-    :title="isZh ? `文档分块预览 - ${fileName}` : `Document Chunks - ${fileName}`"
+    :title="t('knowledge.chunkPreview.title', { fileName: props.fileName })"
     width="800px"
     :close-on-click-modal="false"
     class="chunk-preview-modal"
@@ -123,7 +123,7 @@ watch(
       v-else-if="chunks.length === 0"
       class="py-8"
     >
-      <ElEmpty :description="isZh ? '暂无分块数据' : 'No chunks found'" />
+      <ElEmpty :description="t('knowledge.chunkPreview.empty')" />
     </div>
 
     <div
@@ -131,7 +131,7 @@ watch(
       class="chunk-list"
     >
       <div class="mb-4 text-sm text-stone-500">
-        {{ isZh ? `共 ${total} 个分块` : `Total ${total} chunks` }}
+        {{ t('knowledge.chunkPreview.totalChunks', { n: total }) }}
       </div>
 
       <div class="space-y-4 max-h-[500px] overflow-y-auto pr-2">
@@ -145,20 +145,22 @@ watch(
               <Document />
             </ElIcon>
             <span class="text-sm font-medium text-stone-700">
-              {{ isZh ? `分块 #${chunk.chunk_index + 1}` : `Chunk #${chunk.chunk_index + 1}` }}
+              {{ t('chunkTestResults.chunkLabel', { n: chunk.chunk_index + 1 }) }}
             </span>
             <ElTag
               size="small"
               type="info"
             >
-              {{ chunk.text.length }} {{ isZh ? '字符' : 'chars' }}
+              {{ chunk.text.length }} {{ t('common.unit.chars') }}
             </ElTag>
             <ElTag
               v-if="chunk.metadata?.page_number"
               size="small"
             >
               {{
-                isZh ? `第${chunk.metadata.page_number}页` : `Page ${chunk.metadata.page_number}`
+                t('knowledge.chunkPreview.pageLabel', {
+                  n: chunk.metadata.page_number as number,
+                })
               }}
             </ElTag>
           </div>

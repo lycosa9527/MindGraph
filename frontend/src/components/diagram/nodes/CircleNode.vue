@@ -19,6 +19,7 @@ import { TOPIC_FONT_SIZE } from '@/stores/specLoader/textMeasurement'
 import { calculateAdaptiveCircleSize, getTopicCircleDiameter } from '@/stores/specLoader/utils'
 import type { MindGraphNodeProps } from '@/types'
 import { getBorderStyleProps } from '@/utils/borderStyleUtils'
+import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
 
 import InlineEditableText from './InlineEditableText.vue'
 
@@ -153,6 +154,7 @@ const nodeStyle = computed(() => {
       props.data.style?.textColor ||
       defaultStyle.value.textColor ||
       (isTopicNode.value ? '#ffffff' : '#333333'),
+    fontFamily: props.data.style?.fontFamily || DIAGRAM_NODE_FONT_STACK,
     fontSize: `${props.data.style?.fontSize ?? ((diagramStore.type === 'circle_map' || diagramStore.type === 'bubble_map') && isTopicNode.value ? TOPIC_FONT_SIZE : (defaultStyle.value.fontSize ?? (isTopicNode.value ? 20 : 14)))}px`,
     fontWeight:
       props.data.style?.fontWeight ||

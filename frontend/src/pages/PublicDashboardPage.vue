@@ -5,8 +5,11 @@
 import { onMounted, ref } from 'vue'
 
 import { useLanguage, useNotifications } from '@/composables'
+import { useUIStore } from '@/stores/ui'
+import { formatUserNumber } from '@/utils/intlDisplay'
 
-const { isZh } = useLanguage()
+const { t } = useLanguage()
+const uiStore = useUIStore()
 const notify = useNotifications()
 
 const isLoading = ref(true)
@@ -34,9 +37,7 @@ async function loadPublicStats() {
       ],
     }
   } catch {
-    notify.error(
-      isZh.value ? '网络错误，加载仪表盘失败' : 'Network error, failed to load dashboard'
-    )
+    notify.error(t('publicDashboard.networkError'))
   } finally {
     isLoading.value = false
   }
@@ -84,7 +85,7 @@ onMounted(() => {
               ><Document
             /></el-icon>
             <p class="text-4xl font-bold text-gray-800 dark:text-white mb-2">
-              {{ stats.totalDiagrams.toLocaleString() }}
+              {{ formatUserNumber(stats.totalDiagrams, uiStore.language) }}
             </p>
             <p class="text-gray-500 dark:text-gray-400">Total Diagrams Created</p>
           </div>
@@ -102,7 +103,7 @@ onMounted(() => {
               ><User
             /></el-icon>
             <p class="text-4xl font-bold text-gray-800 dark:text-white mb-2">
-              {{ stats.totalUsers.toLocaleString() }}
+              {{ formatUserNumber(stats.totalUsers, uiStore.language) }}
             </p>
             <p class="text-gray-500 dark:text-gray-400">Registered Users</p>
           </div>
@@ -120,7 +121,7 @@ onMounted(() => {
               ><TrendCharts
             /></el-icon>
             <p class="text-4xl font-bold text-gray-800 dark:text-white mb-2">
-              {{ stats.diagramsToday.toLocaleString() }}
+              {{ formatUserNumber(stats.diagramsToday, uiStore.language) }}
             </p>
             <p class="text-gray-500 dark:text-gray-400">Diagrams Today</p>
           </div>
@@ -142,7 +143,9 @@ onMounted(() => {
             <div class="flex-1">
               <div class="flex items-center justify-between mb-1">
                 <span class="font-medium text-gray-700 dark:text-gray-300">{{ item.type }}</span>
-                <span class="text-sm text-gray-500">{{ item.count.toLocaleString() }}</span>
+                <span class="text-sm text-gray-500">{{
+                  formatUserNumber(item.count, uiStore.language)
+                }}</span>
               </div>
               <el-progress
                 :percentage="(item.count / stats.popularTypes[0].count) * 100"

@@ -1,6 +1,8 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, defineAsyncComponent, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+
+import { useTimestamp } from '@vueuse/core'
 
 import { ElMessage } from 'element-plus'
 
@@ -8,7 +10,6 @@ import { CirclePlus } from '@element-plus/icons-vue'
 
 import { MoreVertical, School, Users } from 'lucide-vue-next'
 
-import { AccountInfoModal } from '@/components/auth'
 import {
   ChannelBrowser,
   ChannelMemberList,
@@ -18,16 +19,14 @@ import {
   UserCardPopover,
 } from '@/components/workshop-chat'
 import ChannelActionsPopover from '@/components/workshop-chat/ChannelActionsPopover.vue'
-import ChannelSettingsDialog from '@/components/workshop-chat/ChannelSettingsDialog.vue'
-import CreateChannelDialog from '@/components/workshop-chat/CreateChannelDialog.vue'
 import TeachingGroupLanding from '@/components/workshop-chat/TeachingGroupLanding.vue'
-import TeachingGroupsManageDialog from '@/components/workshop-chat/TeachingGroupsManageDialog.vue'
-import TopicEditDialog from '@/components/workshop-chat/TopicEditDialog.vue'
 import WorkshopGearMenu from '@/components/workshop-chat/WorkshopGearMenu.vue'
 import WorkshopInboxWelcome from '@/components/workshop-chat/WorkshopInboxWelcome.vue'
 import WorkshopPersonalMenu from '@/components/workshop-chat/WorkshopPersonalMenu.vue'
 import { useLanguage } from '@/composables/useLanguage'
 import { useWorkshopChatComposable } from '@/composables/useWorkshopChat'
+import { intlLocaleForUiCode } from '@/i18n'
+import type { LocaleCode } from '@/i18n/locales'
 import { useAuthStore } from '@/stores/auth'
 import {
   type ChatMessage,
@@ -36,6 +35,7 @@ import {
   useWorkshopChatStore,
 } from '@/stores/workshopChat'
 import { apiRequest } from '@/utils/apiClient'
+import { formatContactLastOnlineLabel } from '@/utils/formatContactLastOnline'
 import { formatDeadlineRelative, lessonStudyDeadlineBadge } from '@/utils/lessonStudyDeadline'
 import {
   normalizeWorkshopNarrowQuery,
@@ -46,15 +46,35 @@ import {
   workshopQueryFromState,
   workshopRouteQueriesEqual,
 } from '@/utils/workshopChatRoute'
+import { LAST_SEEN_ONLINE_MAX_AGE_MS } from '@/utils/workshopContactLastSeenStorage'
+
+const AccountInfoModal = defineAsyncComponent(
+  () => import('@/components/auth/AccountInfoModal.vue')
+)
+const ChannelSettingsDialog = defineAsyncComponent(
+  () => import('@/components/workshop-chat/ChannelSettingsDialog.vue')
+)
+const CreateChannelDialog = defineAsyncComponent(
+  () => import('@/components/workshop-chat/CreateChannelDialog.vue')
+)
+const TeachingGroupsManageDialog = defineAsyncComponent(
+  () => import('@/components/workshop-chat/TeachingGroupsManageDialog.vue')
+)
+const TopicEditDialog = defineAsyncComponent(
+  () => import('@/components/workshop-chat/TopicEditDialog.vue')
+)
 
 const { t, currentLanguage } = useLanguage()
 
-const intlLocale = computed(() => (currentLanguage.value === 'zh' ? 'zh-CN' : 'en-US'))
+const intlLocale = computed(() => intlLocaleForUiCode(currentLanguage.value as LocaleCode))
 const route = useRoute()
 const router = useRouter()
 const store = useWorkshopChatStore()
 const authStore = useAuthStore()
 const ws = useWorkshopChatComposable()
+
+/** Ticks every minute so "online … ago" labels stay current. */
+const nowMs = useTimestamp({ interval: 60_000 })
 
 const applyingWorkshopRoute = ref(false)
 
@@ -419,9 +439,42 @@ const parentGroupName = computed(() => {
 
 const selfContactUserId = computed(() => Number(authStore.user?.id) || 0)
 
+/** Max of server `last_seen_at` and client-observed disconnect time. */
+function effectiveContactLastSeenMs(memberId: number): number | undefined {
+  const member = store.orgMembers.find((m) => m.id === memberId)
+  let serverMs: number | undefined
+  if (member?.last_seen_at) {
+    const parsed = Date.parse(member.last_seen_at)
+    if (!Number.isNaN(parsed)) {
+      serverMs = parsed
+    }
+  }
+  const localMs = store.lastSeenOnlineAtByUserId[memberId]
+  if (serverMs === undefined && localMs === undefined) {
+    return undefined
+  }
+  if (serverMs === undefined) {
+    return localMs
+  }
+  if (localMs === undefined) {
+    return serverMs
+  }
+  return Math.max(serverMs, localMs)
+}
+
 function contactPresenceRank(memberId: number): number {
-  if (store.onlineUserIds.has(memberId)) return 0
-  if (store.idleUserIds.has(memberId)) return 1
+  void nowMs.value
+  if (store.onlineUserIds.has(memberId)) {
+    return 0
+  }
+  const ts = effectiveContactLastSeenMs(memberId)
+  if (
+    ts !== undefined &&
+    nowMs.value - ts >= 0 &&
+    nowMs.value - ts <= LAST_SEEN_ONLINE_MAX_AGE_MS
+  ) {
+    return 1
+  }
   return 2
 }
 
@@ -440,25 +493,56 @@ function sortContactsWithSelfFirst(members: OrgMember[]): OrgMember[] {
   return copy
 }
 
+/** Recently online: most recently seen first (after self). */
+function sortRecentlyContactsWithSelfFirst(members: OrgMember[]): OrgMember[] {
+  const sid = selfContactUserId.value
+  const copy = [...members]
+  copy.sort((a, b) => {
+    if (sid) {
+      if (a.id === sid) return -1
+      if (b.id === sid) return 1
+    }
+    const ta = effectiveContactLastSeenMs(a.id) ?? 0
+    const tb = effectiveContactLastSeenMs(b.id) ?? 0
+    return tb - ta
+  })
+  return copy
+}
+
 const contactsOnline = computed(() => {
-  const list = store.orgMembers.filter((m) => contactPresenceRank(m.id) <= 1)
+  void nowMs.value
+  const list = store.orgMembers.filter((m) => contactPresenceRank(m.id) === 0)
   return sortContactsWithSelfFirst(list)
 })
 
+const contactsRecentlyOnline = computed(() => {
+  void nowMs.value
+  const list = store.orgMembers.filter((m) => contactPresenceRank(m.id) === 1)
+  return sortRecentlyContactsWithSelfFirst(list)
+})
+
 const contactsOffline = computed(() => {
+  void nowMs.value
   const list = store.orgMembers.filter((m) => contactPresenceRank(m.id) === 2)
   return sortContactsWithSelfFirst(list)
 })
 
 const contactsOnlineCount = computed(
-  () =>
-    store.orgMembers.filter((m) => store.onlineUserIds.has(m.id) || store.idleUserIds.has(m.id))
-      .length
+  () => store.orgMembers.filter((m) => store.onlineUserIds.has(m.id)).length
 )
 
 function isContactSelf(memberId: number): boolean {
   const sid = selfContactUserId.value
   return sid !== 0 && memberId === sid
+}
+
+function contactLastOnlineSubtitle(memberId: number): string {
+  void nowMs.value
+  const ts = effectiveContactLastSeenMs(memberId)
+  if (ts === undefined) {
+    return ''
+  }
+  return formatContactLastOnlineLabel(ts, nowMs.value, t)
 }
 
 interface ContactSection {
@@ -468,7 +552,9 @@ interface ContactSection {
 }
 
 const contactSections = computed((): ContactSection[] => {
+  void nowMs.value
   const on = contactsOnline.value
+  const recent = contactsRecentlyOnline.value
   const off = contactsOffline.value
   const sections: ContactSection[] = []
   if (on.length > 0) {
@@ -478,10 +564,17 @@ const contactSections = computed((): ContactSection[] => {
       members: on,
     })
   }
+  if (recent.length > 0) {
+    sections.push({
+      key: 'recently_online',
+      labelKey: 'workshop.contactsRecentlyOnline',
+      members: recent,
+    })
+  }
   if (off.length > 0) {
     sections.push({
       key: 'offline',
-      labelKey: on.length > 0 ? 'workshop.contactsNotOnline' : null,
+      labelKey: 'workshop.contactsOffline',
       members: off,
     })
   }
@@ -643,6 +736,7 @@ onMounted(async () => {
   await store.initializeDefaults()
   await Promise.all([store.fetchChannels(), store.fetchDMConversations(), store.fetchOrgMembers()])
   await applyWorkshopRouteFromQuery()
+  store.hydrateLastSeenOnlineFromStorage()
   ws.connect()
   store.loading = false
   window.addEventListener('keydown', onGlobalKeydown)
@@ -1758,26 +1852,32 @@ function handleTopicMove(topicId: number): void {
                     <span
                       class="ws-right-contacts__presence"
                       :class="{
-                        'ws-right-contacts__presence--online': store.onlineUserIds.has(member.id),
-                        'ws-right-contacts__presence--idle': store.idleUserIds.has(member.id),
-                        'ws-right-contacts__presence--offline':
-                          !store.onlineUserIds.has(member.id) && !store.idleUserIds.has(member.id),
+                        'ws-right-contacts__presence--online': section.key === 'online',
+                        'ws-right-contacts__presence--recent': section.key === 'recently_online',
+                        'ws-right-contacts__presence--offline': section.key === 'offline',
                       }"
                     />
-                    <span
-                      class="ws-right-contacts__name"
-                      :class="{
-                        'ws-right-contacts__name--online':
-                          store.onlineUserIds.has(member.id) || store.idleUserIds.has(member.id),
-                      }"
-                    >
-                      {{ member.name
-                      }}<span
-                        v-if="isContactSelf(member.id)"
-                        class="ws-right-contacts__you"
-                        >{{ t('workshop.you') }}</span
+                    <div class="ws-right-contacts__row-text">
+                      <span
+                        class="ws-right-contacts__name"
+                        :class="{
+                          'ws-right-contacts__name--online': section.key === 'online',
+                        }"
                       >
-                    </span>
+                        {{ member.name
+                        }}<span
+                          v-if="isContactSelf(member.id)"
+                          class="ws-right-contacts__you"
+                          >{{ t('workshop.you') }}</span
+                        >
+                      </span>
+                      <span
+                        v-if="section.key === 'recently_online'"
+                        class="ws-right-contacts__last-seen"
+                      >
+                        {{ contactLastOnlineSubtitle(member.id) }}
+                      </span>
+                    </div>
                   </div>
                 </UserCardPopover>
               </div>
@@ -1865,6 +1965,7 @@ function handleTopicMove(topicId: number): void {
     />
 
     <CreateChannelDialog
+      v-if="store.createChannelDialogVisible"
       :visible="store.createChannelDialogVisible"
       @update:visible="
         (v: boolean) => {
@@ -1874,6 +1975,7 @@ function handleTopicMove(topicId: number): void {
     />
 
     <TeachingGroupsManageDialog
+      v-if="showTeachingGroupsManage"
       v-model:visible="showTeachingGroupsManage"
       @openChannelSettings="handleOpenChannelSettings"
     />
@@ -1942,7 +2044,10 @@ function handleTopicMove(topicId: number): void {
       </div>
     </el-dialog>
 
-    <AccountInfoModal v-model:visible="showAccountModal" />
+    <AccountInfoModal
+      v-if="showAccountModal"
+      v-model:visible="showAccountModal"
+    />
   </div>
 </template>
 

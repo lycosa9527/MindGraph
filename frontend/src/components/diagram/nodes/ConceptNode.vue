@@ -14,19 +14,42 @@ import { Menu } from '@element-plus/icons-vue'
 
 import { eventBus } from '@/composables/useEventBus'
 import { useTheme } from '@/composables/useTheme'
+import { useDiagramStore } from '@/stores'
+import { focusQuestionMutedParts } from '@/stores/diagram/diagramDefaultLabels'
 import type { MindGraphNodeProps } from '@/types'
 import { getBorderStyleProps } from '@/utils/borderStyleUtils'
+import { getTopicRootConceptTargetId } from '@/utils/conceptMapTopicRootEdge'
+import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
 
 import InlineEditableText from './InlineEditableText.vue'
 
 const props = defineProps<MindGraphNodeProps>()
+
+const diagramStore = useDiagramStore()
 
 const { getNodeStyle } = useTheme({
   diagramType: computed(() => props.data.diagramType),
 })
 
 const isTopic = computed(() => props.data.nodeType === 'topic')
+const isConceptMapFocusTopic = computed(
+  () => isTopic.value && props.data.diagramType === 'concept_map'
+)
+/** Topic→根概念连线目标节点：Tab 触发生成根概念（与焦点问题 Tab 分流） */
+const isConceptMapRootConceptNode = computed(() => {
+  if (props.data.diagramType !== 'concept_map' || isTopic.value) return false
+  return getTopicRootConceptTargetId(diagramStore.data?.connections) === props.id
+})
+const conceptMapSyncBaselineOnTab = computed(
+  () => isConceptMapFocusTopic.value || isConceptMapRootConceptNode.value
+)
 const defaultStyle = computed(() => getNodeStyle(isTopic.value ? 'topic' : 'branch'))
+
+const focusQuestionMutedTailSplit = computed(() => {
+  if (!isTopic.value) return null
+  const label = props.data.label ?? ''
+  return focusQuestionMutedParts(label)
+})
 
 const nodeStyle = computed(() => {
   const pillRadius = '9999px'
@@ -39,7 +62,7 @@ const nodeStyle = computed(() => {
     return {
       backgroundColor,
       color: props.data.style?.textColor || defaultStyle.value.textColor || '#000000',
-      fontFamily: props.data.style?.fontFamily,
+      fontFamily: props.data.style?.fontFamily || DIAGRAM_NODE_FONT_STACK,
       fontSize: `${props.data.style?.fontSize || defaultStyle.value.fontSize || 18}px`,
       fontWeight: props.data.style?.fontWeight || defaultStyle.value.fontWeight || 'bold',
       fontStyle: props.data.style?.fontStyle || 'normal',
@@ -59,7 +82,7 @@ const nodeStyle = computed(() => {
   return {
     backgroundColor,
     color: props.data.style?.textColor || defaultStyle.value.textColor || '#333333',
-    fontFamily: props.data.style?.fontFamily,
+    fontFamily: props.data.style?.fontFamily || DIAGRAM_NODE_FONT_STACK,
     fontSize: `${props.data.style?.fontSize || defaultStyle.value.fontSize || 16}px`,
     fontWeight: props.data.style?.fontWeight || defaultStyle.value.fontWeight || 'normal',
     fontStyle: props.data.style?.fontStyle || 'normal',
@@ -293,7 +316,8 @@ function handleLinkDrop(event: DragEvent) {
         :max-width="isTopic ? '300px' : '150px'"
         text-align="center"
         :text-decoration="data.style?.textDecoration || 'none'"
-        placeholder="输入文本..."
+        :muted-tail-split="focusQuestionMutedTailSplit"
+        :sync-baseline-on-tab="conceptMapSyncBaselineOnTab"
         @save="handleTextSave"
         @cancel="handleEditCancel"
         @edit-start="isEditing = true"

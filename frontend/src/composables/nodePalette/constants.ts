@@ -5,6 +5,9 @@
 export const NODE_PALETTE_START = '/thinking_mode/node_palette/start'
 export const NODE_PALETTE_NEXT = '/thinking_mode/node_palette/next_batch'
 
+/** Drag payload MIME for concept-map palette → canvas drops (see DiagramCanvas, RootConceptModal) */
+export const PALETTE_CONCEPT_DRAG_MIME = 'application/mindgraph-palette-concept'
+
 export const RELATIONSHIP_LABELS_START = '/thinking_mode/relationship_labels/start'
 export const RELATIONSHIP_LABELS_NEXT = '/thinking_mode/relationship_labels/next_batch'
 export const RELATIONSHIP_LABELS_CLEANUP = '/thinking_mode/relationship_labels/cleanup'
@@ -36,12 +39,6 @@ export const STAGED_DIAGRAM_TYPES = [
 ] as const
 
 export const DIMENSION_FIRST_TYPES = ['tree_map', 'brace_map', 'bridge_map'] as const
-
-/** Default subpart texts when adding a new brace map part (part with 2 subparts) */
-export const BRACE_MAP_DEFAULT_SUBPARTS: Record<'zh' | 'en', [string, string]> = {
-  zh: ['新子部分 1', '新子部分 2'],
-  en: ['New Subpart 1', 'New Subpart 2'],
-}
 
 /** Get stable parent_id from stage_data for tab routing. Prefer ID over name. */
 export function getParentIdFromStageData(

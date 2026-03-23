@@ -10,6 +10,9 @@ Proprietary License
 """
 
 from typing import Dict, Any
+
+from utils.prompt_locale import output_language_instruction, template_lang_for_registry
+
 from .thinking_maps import THINKING_MAP_PROMPTS
 from .concept_maps import CONCEPT_MAP_PROMPTS
 from .mind_maps import MIND_MAP_PROMPTS
@@ -31,22 +34,26 @@ PROMPT_REGISTRY = {
 def get_prompt(diagram_type: str, language: str = 'en', prompt_type: str = 'generation') -> str:
     """
     Get a prompt for a specific diagram type and language.
-    
+
     Args:
         diagram_type: Type of diagram (e.g., 'bridge_map', 'bubble_map', 'prompt_to_diagram')
-        language: Language code ('en' or 'zh')
+        language: Language code ('en', 'zh', or 'az'; az uses English template keys)
         prompt_type: Type of prompt ('generation', 'classification', 'extraction')
-    
+
     Returns:
-        str: The prompt template
+        str: The prompt template with an explicit output-language footer for zh/en/az.
     """
+    registry_lang = template_lang_for_registry(language)
     # Handle prompt_to_diagram specially
     if diagram_type == 'prompt_to_diagram':
-        key = f"prompt_to_diagram_{language}"
-        return PROMPT_REGISTRY.get(key, "")
-
-    key = f"{diagram_type}_{prompt_type}_{language}"
-    return PROMPT_REGISTRY.get(key, "")
+        key = f"prompt_to_diagram_{registry_lang}"
+        text = PROMPT_REGISTRY.get(key, "")
+    else:
+        key = f"{diagram_type}_{prompt_type}_{registry_lang}"
+        text = PROMPT_REGISTRY.get(key, "")
+    if not text:
+        return ""
+    return text + output_language_instruction(language)
 
 def get_available_diagram_types() -> list:
     """Get list of all available diagram types that the application supports."""
@@ -100,4 +107,3 @@ def get_prompt_metadata(diagram_type: str) -> Dict[str, Any]:
 
     metadata['languages'] = list(set(metadata['languages']))
     return metadata
-

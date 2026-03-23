@@ -23,7 +23,7 @@ import DebateInput from './DebateInput.vue'
 import DebateSection from './DebateSection.vue'
 import DebaterAvatar from './DebaterAvatar.vue'
 
-const { isZh } = useLanguage()
+const { t } = useLanguage()
 const store = useDebateVerseStore()
 
 // ============================================================================
@@ -48,21 +48,21 @@ const canTriggerNext = computed(() => {
 
 const nextButtonText = computed(() => {
   if (isTriggeringNext.value) {
-    return isZh.value ? '触发中...' : 'Triggering...'
+    return t('debateverse.next.triggering')
   }
   if (store.isStreaming) {
-    return isZh.value ? '进行中...' : 'In Progress...'
+    return t('debateverse.next.inProgress')
   }
-  return isZh.value ? '下一步' : 'Next'
+  return t('debateverse.next.label')
 })
 
 const debateStages = [
-  { key: 'coin_toss' as const, zh: '掷硬币', en: 'Coin Toss', icon: Coins },
-  { key: 'opening' as const, zh: '立论发言', en: 'Opening', icon: Mic },
-  { key: 'rebuttal' as const, zh: '驳论发言', en: 'Rebuttal', icon: MessageSquare },
-  { key: 'cross_exam' as const, zh: '交叉质询', en: 'Cross-Exam', icon: MessageCircleQuestion },
-  { key: 'closing' as const, zh: '总结陈词', en: 'Closing', icon: CheckCircle },
-  { key: 'judgment' as const, zh: '评判', en: 'Judgment', icon: Gavel },
+  { key: 'coin_toss' as const, icon: Coins },
+  { key: 'opening' as const, icon: Mic },
+  { key: 'rebuttal' as const, icon: MessageSquare },
+  { key: 'cross_exam' as const, icon: MessageCircleQuestion },
+  { key: 'closing' as const, icon: CheckCircle },
+  { key: 'judgment' as const, icon: Gavel },
 ]
 
 const currentStageIndex = computed(() => {
@@ -154,7 +154,7 @@ function handleAdvanceStage() {
                 'text-gray-500': index > currentStageIndex,
               }"
             >
-              {{ isZh ? stage.zh : stage.en }}
+              {{ t(`debateverse.stage.${stage.key}`) }}
             </span>
           </div>
         </div>
@@ -164,7 +164,7 @@ function handleAdvanceStage() {
           v-if="store.currentSpeaker"
           class="mt-3 text-center text-xs text-gray-500"
         >
-          {{ isZh ? '发言中' : 'Speaking' }}:
+          {{ t('debateverse.speaking') }}:
           <span class="font-medium text-gray-700 ml-1">
             {{ store.participants.find((p) => p.id === store.currentSpeaker)?.name || '' }}
           </span>
@@ -185,7 +185,7 @@ function handleAdvanceStage() {
           size="small"
           @click="handleAdvanceStage"
         >
-          {{ isZh ? '进入下一阶段' : 'Advance Stage' }}
+          {{ t('debateverse.advanceStage') }}
         </ElButton>
       </div>
     </div>
@@ -206,7 +206,7 @@ function handleAdvanceStage() {
         <!-- Affirmative Side -->
         <div class="flex flex-col items-center gap-4">
           <h3 class="text-sm font-semibold text-green-700">
-            {{ isZh ? '正方' : 'Affirmative' }}
+            {{ t('debateverse.side.affirmative') }}
           </h3>
           <div class="flex flex-col gap-4 w-full">
             <DebaterAvatar
@@ -221,7 +221,7 @@ function handleAdvanceStage() {
         <!-- Judge Area (Center) -->
         <div class="flex flex-col items-center gap-4 bg-gray-100 rounded-lg p-4 mt-16">
           <h3 class="text-sm font-semibold text-gray-700">
-            {{ isZh ? '裁判' : 'Judge' }}
+            {{ t('debateverse.side.judge') }}
           </h3>
           <div class="flex flex-col gap-4 w-full">
             <DebaterAvatar
@@ -235,7 +235,7 @@ function handleAdvanceStage() {
         <!-- Negative Side -->
         <div class="flex flex-col items-center gap-4">
           <h3 class="text-sm font-semibold text-red-700">
-            {{ isZh ? '反方' : 'Negative' }}
+            {{ t('debateverse.side.negative') }}
           </h3>
           <div class="flex flex-col gap-4 w-full">
             <DebaterAvatar

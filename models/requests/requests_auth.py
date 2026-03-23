@@ -9,7 +9,12 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+from typing import Optional
+
 from pydantic import BaseModel, Field, field_validator
+
+from utils.prompt_output_languages import is_prompt_output_language
+from utils.ui_languages import UI_LANGUAGE_CODES
 
 
 # ============================================================================
@@ -687,3 +692,30 @@ class ChangePhoneRequest(BaseModel):
                 "sms_code": "123456"
             }
         }
+
+
+class LanguagePreferencesUpdate(BaseModel):
+    """PATCH body for /api/auth/language-preferences (at least one field)."""
+
+    ui_language: Optional[str] = Field(None, max_length=32)
+    prompt_language: Optional[str] = Field(None, max_length=32)
+
+    @field_validator('ui_language')
+    @classmethod
+    def validate_ui_language(cls, value):
+        if value is None:
+            return value
+        stripped = value.strip().lower()
+        if stripped not in UI_LANGUAGE_CODES:
+            raise ValueError("ui_language must be one of: zh, en, az")
+        return stripped
+
+    @field_validator('prompt_language')
+    @classmethod
+    def validate_prompt_language(cls, value):
+        if value is None:
+            return value
+        stripped = value.strip().lower()
+        if not is_prompt_output_language(stripped):
+            raise ValueError("prompt_language must be a supported generation language code")
+        return stripped

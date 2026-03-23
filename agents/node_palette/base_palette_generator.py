@@ -24,6 +24,8 @@ import re
 import time
 
 from services.llm import llm_service
+from utils.prompt_locale import output_language_instruction
+from utils.prompt_output_languages import is_prompt_output_language
 
 logger = logging.getLogger(__name__)
 
@@ -117,6 +119,8 @@ class BasePaletteGenerator(ABC):
         prompt = self._build_prompt(
             center_topic, educational_context, nodes_per_llm, batch_num
         )
+        palette_lang = self._detect_language(center_topic, educational_context)
+        prompt = prompt + output_language_instruction(palette_lang)
         system_message = self._get_system_message(educational_context, center_topic)
 
         # Get temperature for diversity
@@ -467,12 +471,12 @@ class BasePaletteGenerator(ABC):
 
     def _detect_language(self, center_topic: str, educational_context: Optional[Dict[str, Any]] = None) -> str:
         """
-        Detect language from content, prioritizing Chinese character detection.
+        Resolve palette output language for output_language_instruction().
 
         Priority order:
-        1. If center_topic contains Chinese characters -> 'zh'
-        2. If educational_context.raw_message contains Chinese -> 'zh'
-        3. If educational_context.language is explicitly set -> use it
+        1. educational_context.language when a valid prompt-output code (from API req.language)
+        2. Chinese characters in center_topic -> 'zh'
+        3. Chinese in educational_context.raw_message -> 'zh'
         4. Default -> 'en'
 
         Args:
@@ -480,22 +484,23 @@ class BasePaletteGenerator(ABC):
             educational_context: Educational context dict
 
         Returns:
-            'zh' or 'en'
+            Language code in the prompt-output registry (e.g. 'fr', 'zh', 'en').
         """
-        # Check center_topic for Chinese characters (highest priority)
+        if educational_context:
+            raw_lang = educational_context.get('language')
+            if isinstance(raw_lang, str):
+                normalized = raw_lang.strip().lower()
+                if is_prompt_output_language(normalized):
+                    return normalized
+
         if center_topic and re.search(r'[\u4e00-\u9fff]', center_topic):
             return 'zh'
 
-        # Check raw_message for Chinese characters
         if educational_context and 'raw_message' in educational_context:
-            if re.search(r'[\u4e00-\u9fff]', educational_context['raw_message']):
+            raw_msg = educational_context['raw_message']
+            if isinstance(raw_msg, str) and re.search(r'[\u4e00-\u9fff]', raw_msg):
                 return 'zh'
 
-        # Fall back to explicit language setting
-        if educational_context and educational_context.get('language'):
-            return educational_context['language']
-
-        # Default to English
         return 'en'
 
     def end_session(self, session_id: str, reason: str = "complete") -> None:

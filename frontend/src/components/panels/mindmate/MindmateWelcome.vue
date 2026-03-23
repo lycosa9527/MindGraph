@@ -17,7 +17,7 @@ const props = withDefaults(
   }
 )
 
-const { isZh } = useLanguage()
+const { t } = useLanguage()
 const authStore = useAuthStore()
 const isFullpageMode = computed(() => props.mode === 'fullpage')
 const username = computed(() => authStore.user?.username || '')
@@ -38,11 +38,7 @@ const username = computed(() => authStore.user?.username || '')
     <div class="text-center mt-6">
       <div class="text-2xl font-medium text-gray-800 mb-2">MindMate</div>
       <div class="text-lg text-gray-600">
-        {{
-          isZh
-            ? `${username}你好，我是你的虚拟教研伙伴`
-            : `Hello ${username}, I'm your virtual teaching partner`
-        }}
+        {{ t('mindmate.welcome', { username }) }}
       </div>
     </div>
   </div>
@@ -62,11 +58,7 @@ const username = computed(() => authStore.user?.username || '')
         class="mindmate-avatar mx-auto mb-3"
       />
       <p class="text-sm text-gray-600 dark:text-gray-300">
-        {{
-          isZh
-            ? `${username}你好，我是你的虚拟教研伙伴`
-            : `Hello ${username}, I'm your virtual teaching partner`
-        }}
+        {{ t('mindmate.welcome', { username }) }}
       </p>
     </div>
   </div>

@@ -34,7 +34,7 @@ const emit = defineEmits<{
 // Computed for mode checks
 const isFullpageMode = computed(() => props.mode === 'fullpage')
 
-const { isZh } = useLanguage()
+const { promptLanguage, t } = useLanguage()
 const notify = useNotifications()
 const authStore = useAuthStore()
 const mindMateStore = useMindMateStore()
@@ -45,7 +45,7 @@ const isTypingTitle = ref(false)
 
 // Use MindMate composable for SSE streaming
 const mindMate = useMindMate({
-  language: isZh.value ? 'zh' : 'en',
+  language: promptLanguage.value,
   onError: (error) => {
     notify.error(error)
   },
@@ -157,9 +157,9 @@ async function loadConversationFromHistory(convId: string) {
 async function deleteConversationFromHistory(convId: string) {
   const success = await mindMate.deleteConversation(convId)
   if (success) {
-    notify.success(isZh.value ? '会话已删除' : 'Conversation deleted')
+    notify.success(t('notification.conversationDeleted'))
   } else {
-    notify.error(isZh.value ? '删除失败' : 'Failed to delete')
+    notify.error(t('notification.deleteFailed'))
   }
 }
 
@@ -201,9 +201,9 @@ function stopGeneration() {
 async function copyMessage(content: string) {
   try {
     await navigator.clipboard.writeText(content)
-    notify.success(isZh.value ? '已复制到剪贴板' : 'Copied to clipboard')
+    notify.success(t('notification.copied'))
   } catch {
-    notify.error(isZh.value ? '复制失败' : 'Failed to copy')
+    notify.error(t('notification.copyFailed'))
   }
 }
 
@@ -223,17 +223,11 @@ async function handleFeedback(messageId: string, rating: FeedbackRating) {
   const success = await mindMate.submitFeedback(messageId, newRating)
   if (success) {
     notify.success(
-      isZh.value
-        ? newRating === 'like'
-          ? '感谢您的反馈'
-          : newRating === 'dislike'
-            ? '感谢您的反馈，我们会努力改进'
-            : '已取消反馈'
-        : newRating === 'like'
-          ? 'Thanks for your feedback'
-          : newRating === 'dislike'
-            ? 'Thanks for your feedback, we will improve'
-            : 'Feedback removed'
+      newRating === 'like'
+        ? t('notification.feedbackThanks')
+        : newRating === 'dislike'
+          ? t('notification.feedbackThanksDislike')
+          : t('notification.feedbackCancelled')
     )
   }
 }

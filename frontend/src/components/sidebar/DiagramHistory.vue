@@ -31,7 +31,7 @@ const emit = defineEmits<{
   (e: 'select', diagram: SavedDiagram): void
 }>()
 
-const { isZh } = useLanguage()
+const { t } = useLanguage()
 const notify = useNotifications()
 const authStore = useAuthStore()
 const savedDiagramsStore = useSavedDiagramsStore()
@@ -103,32 +103,18 @@ const remainingCount = computed(() => diagrams.value.length - INITIAL_LIMIT)
 
 // Group labels
 const groupLabels = computed(() => ({
-  pinned: isZh.value ? '置顶' : 'Pinned',
-  today: isZh.value ? '今天' : 'Today',
-  yesterday: isZh.value ? '昨天' : 'Yesterday',
-  week: isZh.value ? '上周' : 'Past Week',
-  month: isZh.value ? '上月' : 'Past Month',
+  pinned: t('sidebar.history.pinned'),
+  today: t('common.date.today'),
+  yesterday: t('common.date.yesterday'),
+  week: t('common.date.pastWeek'),
+  month: t('common.date.pastMonth'),
 }))
 
-// Diagram type labels
-const diagramTypeLabels: Record<string, { zh: string; en: string }> = {
-  mind_map: { zh: '思维导图', en: 'Mind Map' },
-  mindmap: { zh: '思维导图', en: 'Mind Map' },
-  concept_map: { zh: '概念图', en: 'Concept Map' },
-  bubble_map: { zh: '气泡图', en: 'Bubble Map' },
-  double_bubble_map: { zh: '双气泡图', en: 'Double Bubble Map' },
-  tree_map: { zh: '树形图', en: 'Tree Map' },
-  circle_map: { zh: '圆圈图', en: 'Circle Map' },
-  flow_map: { zh: '流程图', en: 'Flow Map' },
-  brace_map: { zh: '括号图', en: 'Brace Map' },
-  multi_flow_map: { zh: '复流图', en: 'Multi-flow Map' },
-  bridge_map: { zh: '桥形图', en: 'Bridge Map' },
-}
-
 function getDiagramTypeLabel(type: string): string {
-  const labels = diagramTypeLabels[type]
-  if (labels) {
-    return isZh.value ? labels.zh : labels.en
+  const key = `sidebar.diagramType.${type}`
+  const translated = t(key)
+  if (translated !== key) {
+    return translated
   }
   return type
 }
@@ -165,14 +151,14 @@ async function handleRenameDiagram(diagramId: string): Promise<void> {
 
   try {
     const result = await ElMessageBox.prompt(
-      isZh.value ? '请输入新的图示名称' : 'Enter a new name for this diagram',
-      isZh.value ? '重命名图示' : 'Rename Diagram',
+      t('sidebar.diagramHistory.renamePrompt'),
+      t('sidebar.diagramHistory.renameTitle'),
       {
-        confirmButtonText: isZh.value ? '确定' : 'OK',
-        cancelButtonText: isZh.value ? '取消' : 'Cancel',
+        confirmButtonText: t('common.ok'),
+        cancelButtonText: t('common.cancel'),
         inputValue: currentName,
         inputPattern: /\S+/,
-        inputErrorMessage: isZh.value ? '名称不能为空' : 'Name cannot be empty',
+        inputErrorMessage: t('sidebar.diagramHistory.nameRequired'),
       }
     )
 
@@ -193,13 +179,13 @@ async function handleDeleteDiagram(diagramId: string): Promise<void> {
   try {
     const success = await savedDiagramsStore.deleteDiagram(diagramId)
     if (success) {
-      notify.success(isZh.value ? '图示已删除' : 'Diagram deleted')
+      notify.success(t('sidebar.diagramHistory.deleted'))
     } else {
-      notify.error(isZh.value ? '删除失败' : 'Failed to delete diagram')
+      notify.error(t('sidebar.diagramHistory.deleteFailed'))
     }
   } catch (error) {
     console.error('[DiagramHistory] Delete error:', error)
-    notify.error(isZh.value ? '删除失败' : 'Failed to delete diagram')
+    notify.error(t('sidebar.diagramHistory.deleteFailed'))
   }
 }
 
@@ -223,7 +209,7 @@ function toggleShowAll(): void {
     <!-- Header -->
     <div class="px-4 py-3 flex items-center justify-between">
       <div class="text-xs font-medium text-stone-400 uppercase tracking-wider">
-        {{ isZh ? '历史图示' : 'Diagrams' }}
+        {{ t('sidebar.diagramHistory.title') }}
       </div>
       <div
         v-if="!isBlurred && diagrams.length > 0"
@@ -253,10 +239,10 @@ function toggleShowAll(): void {
         >
           <FileImage class="w-8 h-8 mx-auto mb-2 text-stone-300" />
           <p class="text-xs text-stone-400">
-            {{ isZh ? '暂无保存的图示' : 'No saved diagrams' }}
+            {{ t('sidebar.diagramHistory.empty') }}
           </p>
           <p class="text-xs text-stone-300 mt-1">
-            {{ isZh ? `可保存 ${maxDiagrams} 个图示` : `Can save up to ${maxDiagrams} diagrams` }}
+            {{ t('sidebar.diagramHistory.capacity', { n: maxDiagrams }) }}
           </p>
         </div>
 
@@ -278,7 +264,7 @@ function toggleShowAll(): void {
               <div class="diagram-info">
                 <span class="diagram-name">
                   <Pin class="w-3 h-3 inline-block mr-1 text-amber-500" />
-                  {{ diagram.title || (isZh ? '未命名' : 'Untitled') }}
+                  {{ diagram.title || t('mindmate.untitled') }}
                 </span>
                 <span class="diagram-type">
                   {{ getDiagramTypeLabel(diagram.diagram_type) }}
@@ -286,7 +272,7 @@ function toggleShowAll(): void {
               </div>
               <button
                 class="delete-btn"
-                :title="isZh ? '删除' : 'Delete'"
+                :title="t('sidebar.actions.delete')"
                 @click.stop="handleDeleteDiagram(diagram.id)"
               >
                 <Trash2 class="w-4 h-4" />
@@ -306,11 +292,11 @@ function toggleShowAll(): void {
                   <ElDropdownMenu>
                     <ElDropdownItem @click="handlePinDiagram(diagram.id)">
                       <Pin class="w-4 h-4 mr-2 text-amber-500 rotate-45" />
-                      {{ isZh ? '取消置顶' : 'Unpin' }}
+                      {{ t('sidebar.actions.unpin') }}
                     </ElDropdownItem>
                     <ElDropdownItem @click="handleRenameDiagram(diagram.id)">
                       <Edit3 class="w-4 h-4 mr-2" />
-                      {{ isZh ? '重命名' : 'Rename' }}
+                      {{ t('sidebar.actions.rename') }}
                     </ElDropdownItem>
                     <ElDropdownItem
                       divided
@@ -318,7 +304,7 @@ function toggleShowAll(): void {
                     >
                       <span class="delete-option">
                         <Trash2 class="w-4 h-4 mr-2" />
-                        {{ isZh ? '删除' : 'Delete' }}
+                        {{ t('sidebar.actions.delete') }}
                       </span>
                     </ElDropdownItem>
                   </ElDropdownMenu>
@@ -342,7 +328,7 @@ function toggleShowAll(): void {
             >
               <div class="diagram-info">
                 <span class="diagram-name">
-                  {{ diagram.title || (isZh ? '未命名' : 'Untitled') }}
+                  {{ diagram.title || t('mindmate.untitled') }}
                 </span>
                 <span class="diagram-type">
                   {{ getDiagramTypeLabel(diagram.diagram_type) }}
@@ -350,7 +336,7 @@ function toggleShowAll(): void {
               </div>
               <button
                 class="delete-btn"
-                :title="isZh ? '删除' : 'Delete'"
+                :title="t('sidebar.actions.delete')"
                 @click.stop="handleDeleteDiagram(diagram.id)"
               >
                 <Trash2 class="w-4 h-4" />
@@ -370,11 +356,11 @@ function toggleShowAll(): void {
                   <ElDropdownMenu>
                     <ElDropdownItem @click="handlePinDiagram(diagram.id)">
                       <Pin class="w-4 h-4 mr-2" />
-                      {{ isZh ? '置顶' : 'Pin to Top' }}
+                      {{ t('sidebar.actions.pinToTop') }}
                     </ElDropdownItem>
                     <ElDropdownItem @click="handleRenameDiagram(diagram.id)">
                       <Edit3 class="w-4 h-4 mr-2" />
-                      {{ isZh ? '重命名' : 'Rename' }}
+                      {{ t('sidebar.actions.rename') }}
                     </ElDropdownItem>
                     <ElDropdownItem
                       divided
@@ -382,7 +368,7 @@ function toggleShowAll(): void {
                     >
                       <span class="delete-option">
                         <Trash2 class="w-4 h-4 mr-2" />
-                        {{ isZh ? '删除' : 'Delete' }}
+                        {{ t('sidebar.actions.delete') }}
                       </span>
                     </ElDropdownItem>
                   </ElDropdownMenu>
@@ -406,7 +392,7 @@ function toggleShowAll(): void {
             >
               <div class="diagram-info">
                 <span class="diagram-name">
-                  {{ diagram.title || (isZh ? '未命名' : 'Untitled') }}
+                  {{ diagram.title || t('mindmate.untitled') }}
                 </span>
                 <span class="diagram-type">
                   {{ getDiagramTypeLabel(diagram.diagram_type) }}
@@ -414,7 +400,7 @@ function toggleShowAll(): void {
               </div>
               <button
                 class="delete-btn"
-                :title="isZh ? '删除' : 'Delete'"
+                :title="t('sidebar.actions.delete')"
                 @click.stop="handleDeleteDiagram(diagram.id)"
               >
                 <Trash2 class="w-4 h-4" />
@@ -434,11 +420,11 @@ function toggleShowAll(): void {
                   <ElDropdownMenu>
                     <ElDropdownItem @click="handlePinDiagram(diagram.id)">
                       <Pin class="w-4 h-4 mr-2" />
-                      {{ isZh ? '置顶' : 'Pin to Top' }}
+                      {{ t('sidebar.actions.pinToTop') }}
                     </ElDropdownItem>
                     <ElDropdownItem @click="handleRenameDiagram(diagram.id)">
                       <Edit3 class="w-4 h-4 mr-2" />
-                      {{ isZh ? '重命名' : 'Rename' }}
+                      {{ t('sidebar.actions.rename') }}
                     </ElDropdownItem>
                     <ElDropdownItem
                       divided
@@ -446,7 +432,7 @@ function toggleShowAll(): void {
                     >
                       <span class="delete-option">
                         <Trash2 class="w-4 h-4 mr-2" />
-                        {{ isZh ? '删除' : 'Delete' }}
+                        {{ t('sidebar.actions.delete') }}
                       </span>
                     </ElDropdownItem>
                   </ElDropdownMenu>
@@ -470,7 +456,7 @@ function toggleShowAll(): void {
             >
               <div class="diagram-info">
                 <span class="diagram-name">
-                  {{ diagram.title || (isZh ? '未命名' : 'Untitled') }}
+                  {{ diagram.title || t('mindmate.untitled') }}
                 </span>
                 <span class="diagram-type">
                   {{ getDiagramTypeLabel(diagram.diagram_type) }}
@@ -478,7 +464,7 @@ function toggleShowAll(): void {
               </div>
               <button
                 class="delete-btn"
-                :title="isZh ? '删除' : 'Delete'"
+                :title="t('sidebar.actions.delete')"
                 @click.stop="handleDeleteDiagram(diagram.id)"
               >
                 <Trash2 class="w-4 h-4" />
@@ -498,11 +484,11 @@ function toggleShowAll(): void {
                   <ElDropdownMenu>
                     <ElDropdownItem @click="handlePinDiagram(diagram.id)">
                       <Pin class="w-4 h-4 mr-2" />
-                      {{ isZh ? '置顶' : 'Pin to Top' }}
+                      {{ t('sidebar.actions.pinToTop') }}
                     </ElDropdownItem>
                     <ElDropdownItem @click="handleRenameDiagram(diagram.id)">
                       <Edit3 class="w-4 h-4 mr-2" />
-                      {{ isZh ? '重命名' : 'Rename' }}
+                      {{ t('sidebar.actions.rename') }}
                     </ElDropdownItem>
                     <ElDropdownItem
                       divided
@@ -510,7 +496,7 @@ function toggleShowAll(): void {
                     >
                       <span class="delete-option">
                         <Trash2 class="w-4 h-4 mr-2" />
-                        {{ isZh ? '删除' : 'Delete' }}
+                        {{ t('sidebar.actions.delete') }}
                       </span>
                     </ElDropdownItem>
                   </ElDropdownMenu>
@@ -534,7 +520,7 @@ function toggleShowAll(): void {
             >
               <div class="diagram-info">
                 <span class="diagram-name">
-                  {{ diagram.title || (isZh ? '未命名' : 'Untitled') }}
+                  {{ diagram.title || t('mindmate.untitled') }}
                 </span>
                 <span class="diagram-type">
                   {{ getDiagramTypeLabel(diagram.diagram_type) }}
@@ -542,7 +528,7 @@ function toggleShowAll(): void {
               </div>
               <button
                 class="delete-btn"
-                :title="isZh ? '删除' : 'Delete'"
+                :title="t('sidebar.actions.delete')"
                 @click.stop="handleDeleteDiagram(diagram.id)"
               >
                 <Trash2 class="w-4 h-4" />
@@ -562,11 +548,11 @@ function toggleShowAll(): void {
                   <ElDropdownMenu>
                     <ElDropdownItem @click="handlePinDiagram(diagram.id)">
                       <Pin class="w-4 h-4 mr-2" />
-                      {{ isZh ? '置顶' : 'Pin to Top' }}
+                      {{ t('sidebar.actions.pinToTop') }}
                     </ElDropdownItem>
                     <ElDropdownItem @click="handleRenameDiagram(diagram.id)">
                       <Edit3 class="w-4 h-4 mr-2" />
-                      {{ isZh ? '重命名' : 'Rename' }}
+                      {{ t('sidebar.actions.rename') }}
                     </ElDropdownItem>
                     <ElDropdownItem
                       divided
@@ -574,7 +560,7 @@ function toggleShowAll(): void {
                     >
                       <span class="delete-option">
                         <Trash2 class="w-4 h-4 mr-2" />
-                        {{ isZh ? '删除' : 'Delete' }}
+                        {{ t('sidebar.actions.delete') }}
                       </span>
                     </ElDropdownItem>
                   </ElDropdownMenu>
@@ -589,7 +575,7 @@ function toggleShowAll(): void {
             class="show-more-btn"
             @click="toggleShowAll"
           >
-            {{ isZh ? `显示更多 (${remainingCount})` : `Show more (${remainingCount})` }}
+            {{ t('sidebar.actions.showMore', { n: remainingCount }) }}
           </button>
 
           <!-- Show Less button -->
@@ -598,7 +584,7 @@ function toggleShowAll(): void {
             class="show-more-btn"
             @click="toggleShowAll"
           >
-            {{ isZh ? '收起' : 'Show less' }}
+            {{ t('sidebar.actions.showLess') }}
           </button>
         </template>
       </div>
@@ -616,7 +602,7 @@ function toggleShowAll(): void {
           <Lock class="w-5 h-5 text-stone-400" />
         </div>
         <p class="text-xs text-stone-500">
-          {{ isZh ? '登录后查看历史图示' : 'Login to view diagrams' }}
+          {{ t('sidebar.diagramHistory.loginPrompt') }}
         </p>
       </div>
     </div>

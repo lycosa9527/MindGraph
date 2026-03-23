@@ -33,6 +33,9 @@ from utils.migration.diagram_workshop_session_columns import (
 from utils.migration.diagram_workshop_visibility import (
     ensure_diagram_workshop_visibility_column,
 )
+from utils.migration.user_language_preferences_columns import (
+    ensure_user_language_preferences_columns,
+)
 from utils.migration.postgresql.schema_migration import run_migrations
 
 # Optional import for critical alerts (lazy import to avoid circular dependency)
@@ -491,6 +494,7 @@ def init_db():
     _ensure_chat_channels_display_order(engine)
     ensure_diagram_workshop_visibility_column(engine)
     ensure_diagram_workshop_session_columns(engine)
+    ensure_user_language_preferences_columns(engine)
 
     # Seed organizations
     db = SessionLocal()

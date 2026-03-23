@@ -7,20 +7,21 @@
 import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
-import { ElButton, ElDialog, ElForm, ElFormItem, ElInput } from 'element-plus'
+import { ElButton, ElDialog, ElForm, ElFormItem, ElInput, ElOption, ElSelect } from 'element-plus'
 
 import { toPng } from 'html-to-image'
 
 import { useLanguage, useNotifications } from '@/composables'
 import { type CommunityPost, createCommunityPost, updateCommunityPost } from '@/utils/apiClient'
 
-const categoryOptions = [
-  '学习笔记',
-  '教学设计',
-  '读书感悟',
-  '工作总结',
-  '创意灵感',
-  '知识整理',
+/** Stored category values (Chinese) — API / existing posts use these strings */
+const CATEGORY_CATALOG = [
+  { value: '学习笔记', key: 'studyNotes' as const },
+  { value: '教学设计', key: 'teachingDesign' as const },
+  { value: '读书感悟', key: 'readingReflection' as const },
+  { value: '工作总结', key: 'workSummary' as const },
+  { value: '创意灵感', key: 'creative' as const },
+  { value: '知识整理', key: 'knowledge' as const },
 ] as const
 
 const props = withDefaults(
@@ -46,7 +47,7 @@ const emit = defineEmits<{
 }>()
 
 const router = useRouter()
-const { isZh } = useLanguage()
+const { t } = useLanguage()
 const notify = useNotifications()
 
 const title = ref('')
@@ -56,17 +57,15 @@ const isSubmitting = ref(false)
 
 const isEdit = computed(() => props.mode === 'edit')
 const modalTitle = computed(() =>
-  isZh.value
-    ? isEdit.value
-      ? '编辑分享'
-      : '分享到社区'
-    : isEdit.value
-      ? 'Edit Post'
-      : 'Share to Community'
+  isEdit.value ? t('community.shareModal.titleEdit') : t('community.shareModal.titleCreate')
 )
 const submitLabel = computed(() =>
-  isZh.value ? (isEdit.value ? '保存' : '发布') : isEdit.value ? 'Save' : 'Publish'
+  isEdit.value ? t('community.shareModal.save') : t('community.shareModal.publish')
 )
+
+function categoryLabelKey(k: (typeof CATEGORY_CATALOG)[number]['key']): string {
+  return `community.category.${k}`
+}
 
 watch(
   () => [props.visible, props.initialPost] as const,
@@ -103,7 +102,7 @@ function dataUrlToBlob(dataUrl: string): Blob {
 async function generateThumbnail(): Promise<Blob | null> {
   const container = props.getContainer()
   if (!container) {
-    notify.warning(isZh.value ? '无法生成预览图' : 'Cannot generate preview')
+    notify.warning(t('community.shareModal.cannotPreview'))
     return null
   }
   try {
@@ -115,14 +114,14 @@ async function generateThumbnail(): Promise<Blob | null> {
     return dataUrlToBlob(dataUrl)
   } catch (e) {
     console.error('[ExportToCommunity] Thumbnail generation failed:', e)
-    notify.error(isZh.value ? '预览图生成失败' : 'Failed to generate preview')
+    notify.error(t('community.shareModal.previewFailed'))
     return null
   }
 }
 
 async function submit() {
   if (!title.value.trim()) {
-    notify.warning(isZh.value ? '请输入标题' : 'Please enter a title')
+    notify.warning(t('community.shareModal.enterTitle'))
     return
   }
 
@@ -137,7 +136,7 @@ async function submit() {
   }
 
   if (!spec) {
-    notify.warning(isZh.value ? '没有可分享的图示数据' : 'No diagram data to share')
+    notify.warning(t('community.shareModal.noDiagramData'))
     return
   }
 
@@ -153,7 +152,7 @@ async function submit() {
         spec,
         thumbnail: thumbnail || undefined,
       })
-      notify.success(isZh.value ? '已更新' : 'Updated')
+      notify.success(t('community.shareModal.updated'))
       emit('success', result.post)
       close()
     } else {
@@ -168,13 +167,13 @@ async function submit() {
         spec,
         thumbnail,
       })
-      notify.success(isZh.value ? '已发布到社区' : 'Published to community')
+      notify.success(t('community.shareModal.published'))
       emit('success', result.post)
       close()
       router.push('/community')
     }
   } catch (e) {
-    const msg = e instanceof Error ? e.message : isZh.value ? '操作失败' : 'Operation failed'
+    const msg = e instanceof Error ? e.message : t('community.shareModal.operationFailed')
     notify.error(msg)
   } finally {
     isSubmitting.value = false
@@ -196,38 +195,38 @@ async function submit() {
       class="community-form"
     >
       <el-form-item
-        :label="isZh ? '标题' : 'Title'"
+        :label="t('community.shareModal.titleLabel')"
         required
       >
         <el-input
           v-model="title"
-          :placeholder="isZh ? '给你的分享起个标题' : 'Give your post a title'"
+          :placeholder="t('community.shareModal.titlePlaceholder')"
           maxlength="200"
           show-word-limit
         />
       </el-form-item>
-      <el-form-item :label="isZh ? '描述' : 'Description'">
+      <el-form-item :label="t('community.shareModal.descriptionLabel')">
         <el-input
           v-model="description"
           type="textarea"
           :rows="4"
-          :placeholder="isZh ? '介绍一下你的作品...' : 'Describe your work...'"
+          :placeholder="t('community.shareModal.descriptionPlaceholder')"
           maxlength="2000"
           show-word-limit
         />
       </el-form-item>
-      <el-form-item :label="isZh ? '分类' : 'Category'">
+      <el-form-item :label="t('community.shareModal.categoryLabel')">
         <el-select
           v-model="category"
-          :placeholder="isZh ? '选择分类' : 'Select category'"
+          :placeholder="t('community.shareModal.categoryPlaceholder')"
           clearable
           class="w-full"
         >
           <el-option
-            v-for="opt in categoryOptions"
-            :key="opt"
-            :label="opt"
-            :value="opt"
+            v-for="cat in CATEGORY_CATALOG"
+            :key="cat.value"
+            :label="t(categoryLabelKey(cat.key))"
+            :value="cat.value"
           />
         </el-select>
       </el-form-item>
@@ -236,7 +235,7 @@ async function submit() {
     <template #footer>
       <div class="dialog-footer">
         <el-button @click="close">
-          {{ isZh ? '取消' : 'Cancel' }}
+          {{ t('community.shareModal.cancel') }}
         </el-button>
         <el-button
           type="primary"

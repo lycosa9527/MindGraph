@@ -11,7 +11,19 @@ Proprietary License
 """
 from typing import Optional, Dict, Any, List
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+
+from utils.prompt_output_languages import is_prompt_output_language
+
+
+def _validate_node_palette_language(value: str) -> str:
+    """Generation language code (prompt-output registry)."""
+    if not isinstance(value, str) or not value.strip():
+        return 'en'
+    lowered = value.strip().lower()
+    if not is_prompt_output_language(lowered):
+        raise ValueError("Language must be a supported generation language code")
+    return lowered
 
 
 # ============================================================================
@@ -40,7 +52,10 @@ class NodePaletteStartRequest(BaseModel):
     user_id: Optional[str] = Field(
         None, description="User identifier for analytics"
     )
-    language: str = Field('en', description="UI language (en or zh)")
+    language: str = Field(
+        'en',
+        description="Prompt / generation language code (see prompt output registry)",
+    )
     mode: Optional[str] = Field(
         'similarities',
         description=(
@@ -63,6 +78,12 @@ class NodePaletteStartRequest(BaseModel):
             "(e.g., {'dimension': 'Habitat', 'category_name': 'Water Animals'})"
         )
     )
+
+    @field_validator('language')
+    @classmethod
+    def validate_start_language(cls, value: str) -> str:
+        """Reject unknown generation language codes."""
+        return _validate_node_palette_language(value)
 
     class Config:
         """Configuration for NodePaletteStartRequest model."""
@@ -104,10 +125,20 @@ class NodePaletteNextRequest(BaseModel):
     center_topic: str = Field(
         ..., min_length=1, description="Center topic from diagram"
     )
+    diagram_data: Optional[Dict[str, Any]] = Field(
+        None,
+        description=(
+            "Optional diagram snapshot; concept_map sends focus_question and root_concept "
+            "for palette prompts"
+        ),
+    )
     educational_context: Optional[Dict[str, Any]] = Field(
         None, description="Educational context"
     )
-    language: str = Field('en', description="UI language (en or zh)")
+    language: str = Field(
+        'en',
+        description="Prompt / generation language code (see prompt output registry)",
+    )
     mode: Optional[str] = Field(
         'similarities',
         description=(
@@ -130,6 +161,12 @@ class NodePaletteNextRequest(BaseModel):
             "(e.g., {'dimension': 'Habitat', 'category_name': 'Water Animals'})"
         )
     )
+
+    @field_validator('language')
+    @classmethod
+    def validate_next_language(cls, value: str) -> str:
+        """Reject unknown generation language codes."""
+        return _validate_node_palette_language(value)
 
     class Config:
         """Configuration for NodePaletteNextRequest model."""
@@ -225,7 +262,16 @@ class RelationshipLabelsStartRequest(BaseModel):
         None,
         description="Arrow direction: source_to_target, target_to_source, both, none"
     )
-    language: str = Field('en', description="UI language (en or zh)")
+    language: str = Field(
+        'en',
+        description="Prompt / generation language code (see prompt output registry)",
+    )
+
+    @field_validator('language')
+    @classmethod
+    def validate_relationship_labels_start_language(cls, value: str) -> str:
+        """Reject unknown generation language codes."""
+        return _validate_node_palette_language(value)
 
 
 class RelationshipLabelsCleanupRequest(BaseModel):
@@ -249,7 +295,16 @@ class RelationshipLabelsNextRequest(BaseModel):
     concept_b: str = Field(..., description="Target concept text")
     topic: str = Field('', description="Concept map main topic")
     link_direction: Optional[str] = Field(None, description="Arrow direction")
-    language: str = Field('en', description="UI language (en or zh)")
+    language: str = Field(
+        'en',
+        description="Prompt / generation language code (see prompt output registry)",
+    )
+
+    @field_validator('language')
+    @classmethod
+    def validate_relationship_labels_next_language(cls, value: str) -> str:
+        """Reject unknown generation language codes."""
+        return _validate_node_palette_language(value)
 
 
 class InlineRecommendationsStartRequest(BaseModel):
@@ -281,7 +336,10 @@ class InlineRecommendationsStartRequest(BaseModel):
         default_factory=list,
         description="Current diagram connections",
     )
-    language: str = Field('en', description="UI language (en or zh)")
+    language: str = Field(
+        'en',
+        description="Prompt / generation language code (see prompt output registry)",
+    )
     count: int = Field(15, ge=5, le=30, description="Recommendations to generate per LLM")
     models: Optional[List[str]] = Field(
         default=None,
@@ -291,6 +349,12 @@ class InlineRecommendationsStartRequest(BaseModel):
         default=None,
         description="Educational context (raw_message, grade, subject) for prompt enrichment",
     )
+
+    @field_validator('language')
+    @classmethod
+    def validate_inline_recommendations_start_language(cls, value: str) -> str:
+        """Reject unknown generation language codes."""
+        return _validate_node_palette_language(value)
 
 
 class InlineRecommendationsNextRequest(BaseModel):
@@ -307,7 +371,10 @@ class InlineRecommendationsNextRequest(BaseModel):
     node_id: str = Field(..., description="Node ID")
     nodes: List[Dict[str, Any]] = Field(default_factory=list)
     connections: Optional[List[Dict[str, Any]]] = Field(default_factory=list)
-    language: str = Field('en')
+    language: str = Field(
+        'en',
+        description="Prompt / generation language code (see prompt output registry)",
+    )
     count: int = Field(15, ge=5, le=30, description="Recommendations per LLM")
     models: Optional[List[str]] = Field(
         default=None,
@@ -317,6 +384,12 @@ class InlineRecommendationsNextRequest(BaseModel):
         default=None,
         description="Educational context for prompt enrichment",
     )
+
+    @field_validator('language')
+    @classmethod
+    def validate_inline_recommendations_next_language(cls, value: str) -> str:
+        """Reject unknown generation language codes."""
+        return _validate_node_palette_language(value)
 
 
 class InlineRecommendationsCleanupRequest(BaseModel):

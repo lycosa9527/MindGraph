@@ -22,6 +22,42 @@ const isLoadingMore = computed(() =>
   activeNodeId.value ? isLoadingMoreFor(activeNodeId.value) : false
 )
 
+/**
+ * Double-bubble differences + bridge map pair cells: show Tab rec as A-over-B (fraction-style),
+ * not "a | b".
+ */
+const isFractionPairTabRec = computed(() => {
+  const id = activeNodeId.value ?? ''
+  if (diagramStore.type === 'double_bubble_map') {
+    return id.startsWith('left-diff-') || id.startsWith('right-diff-')
+  }
+  if (diagramStore.type === 'bridge_map') {
+    return /^pair-\d+-left$/.test(id) || /^pair-\d+-right$/.test(id)
+  }
+  return false
+})
+
+function parsePairedOption(opt: string): { top: string; bottom: string; dimension?: string } | null {
+  if (!opt.includes('|')) return null
+  const parts = opt.split('|').map((s) => s.trim())
+  if (parts.length < 2) return null
+  return {
+    top: parts[0] ?? '',
+    bottom: parts[1] ?? '',
+    dimension: parts.length >= 3 ? parts.slice(2).join('|').trim() : undefined,
+  }
+}
+
+const pickerRows = computed(() => {
+  const entry = activeEntry.value
+  if (!entry) return []
+  return entry[1].map((opt, idx) => ({
+    opt,
+    idx,
+    pair: isFractionPairTabRec.value ? parsePairedOption(opt) : null,
+  }))
+})
+
 /** Current text for the active node (to highlight selected option) */
 const currentNodeText = computed(() => {
   const entry = activeEntry.value
@@ -29,6 +65,28 @@ const currentNodeText = computed(() => {
   const node = diagramStore.data?.nodes?.find((n) => n.id === entry[0])
   return (node?.text ?? '').trim()
 })
+
+/** Top line of fraction = left-diff / pair-*-left; bottom = right-diff / pair-*-right */
+function isLeftLineOfPair(nodeId: string): boolean {
+  if (nodeId.startsWith('left-diff-')) return true
+  if (nodeId.startsWith('right-diff-')) return false
+  if (nodeId.endsWith('-left')) return true
+  if (nodeId.endsWith('-right')) return false
+  return true
+}
+
+/** For fraction rows, compare the line that matches this node (left vs right cell). */
+function isRowHighlighted(
+  row: { opt: string; pair: ReturnType<typeof parsePairedOption> },
+  nodeId: string,
+  nodeText: string
+): boolean {
+  if (!row.pair || !isFractionPairTabRec.value) {
+    return nodeText === row.opt
+  }
+  const line = isLeftLineOfPair(nodeId) ? row.pair.top : row.pair.bottom
+  return line.trim() === nodeText
+}
 
 /** Defense: clear stale options when node was deleted via another path */
 watch(
@@ -90,22 +148,55 @@ onUnmounted(() => {
   <div
     v-if="activeEntry"
     class="inline-recommendations-picker flex items-center gap-2 shrink-0"
+    :class="isFractionPairTabRec ? 'min-h-[4.5rem] py-1' : ''"
   >
     <span
-      class="picker-options flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs min-h-[1.5rem]"
+      class="picker-options flex flex-wrap gap-x-2 gap-y-1 text-xs"
+      :class="
+        isFractionPairTabRec
+          ? 'items-stretch min-h-[3.5rem]'
+          : 'items-center min-h-[1.5rem] gap-y-0.5'
+      "
     >
       <span
-        v-for="(opt, idx) in activeEntry[1]"
-        :key="idx"
-        class="picker-option px-1.5 py-0.5 rounded cursor-pointer transition-colors"
-        :class="{
-          'bg-green-100 dark:bg-green-900/50 font-medium': currentNodeText === opt,
-          'hover:bg-green-50 dark:hover:bg-green-900/30': currentNodeText !== opt,
-        }"
-        @click="selectOption(activeEntry![0], idx)"
+        v-for="row in pickerRows"
+        :key="row.idx"
+        class="picker-option px-1.5 py-0.5 rounded cursor-pointer transition-colors flex gap-1.5 items-center"
+        :class="[
+          activeEntry && isRowHighlighted(row, activeEntry[0], currentNodeText)
+            ? 'bg-green-100 dark:bg-green-900/50 font-medium'
+            : 'hover:bg-green-50 dark:hover:bg-green-900/30',
+          isFractionPairTabRec && row.pair ? 'picker-option--fraction' : '',
+        ]"
+        @click="selectOption(activeEntry![0], row.idx)"
       >
-        <span class="font-semibold text-green-600 dark:text-green-400">{{ idx + 1 }}</span>
-        {{ opt }}
+        <span class="font-semibold text-green-600 dark:text-green-400 shrink-0">{{
+          row.idx + 1
+        }}</span>
+        <div
+          v-if="isFractionPairTabRec && row.pair"
+          class="inline-rec-fraction inline-flex w-max min-w-0 max-w-[11rem] shrink-0 flex-col items-stretch gap-0.5"
+        >
+          <span
+            class="text-center text-blue-600 dark:text-blue-400 leading-snug text-[11px] break-words"
+          >{{ row.pair.top }}</span>
+          <div
+            class="fraction-rule h-px w-full min-w-0 shrink-0 bg-gray-400/90 dark:bg-gray-500"
+            aria-hidden="true"
+          />
+          <span
+            class="text-center text-amber-600 dark:text-amber-400 leading-snug text-[11px] break-words"
+          >{{ row.pair.bottom }}</span>
+          <span
+            v-if="row.pair.dimension"
+            class="text-center text-[9px] text-gray-500 dark:text-gray-400 leading-tight truncate max-w-full"
+            :title="row.pair.dimension"
+          >{{ row.pair.dimension }}</span>
+        </div>
+        <span
+          v-else
+          class="min-w-0 whitespace-nowrap"
+        >{{ row.opt }}</span>
       </span>
     </span>
     <span
@@ -144,5 +235,8 @@ onUnmounted(() => {
 <style scoped>
 .picker-option {
   white-space: nowrap;
+}
+.picker-option--fraction {
+  white-space: normal;
 }
 </style>

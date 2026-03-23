@@ -24,7 +24,7 @@ const emit = defineEmits<{
   (e: 'close'): void
 }>()
 
-const { isZh } = useLanguage()
+const { t } = useLanguage()
 const uploadRef = ref()
 
 const handleFileChange = (file: UploadFile) => {
@@ -32,7 +32,7 @@ const handleFileChange = (file: UploadFile) => {
     // Validate file size (10MB)
     const maxSize = 10 * 1024 * 1024
     if (file.raw.size > maxSize) {
-      notify.error(isZh ? '文件大小不能超过10MB' : 'File size cannot exceed 10MB')
+      notify.error(t('knowledge.upload.fileTooLarge'))
       uploadRef.value?.clearFiles()
       return false
     }
@@ -53,7 +53,7 @@ const handleFileChange = (file: UploadFile) => {
     const allowedExts = ['pdf', 'docx', 'txt', 'md', 'jpg', 'jpeg', 'png']
 
     if (!allowedTypes.includes(file.raw.type) && !allowedExts.includes(ext || '')) {
-      notify.error(isZh ? '不支持的文件类型' : 'Unsupported file type')
+      notify.error(t('knowledge.upload.unsupportedType'))
       uploadRef.value?.clearFiles()
       return false
     }
@@ -85,7 +85,7 @@ const handleClose = () => {
 <template>
   <ElDrawer
     :model-value="visible"
-    :title="isZh ? '上传文档' : 'Upload Document'"
+    :title="t('knowledge.upload.title')"
     size="500px"
     @update:model-value="emit('update:visible', $event)"
     @close="handleClose"
@@ -95,7 +95,7 @@ const handleClose = () => {
         v-if="!canUpload"
         class="mb-4 p-3 bg-stone-100 rounded-lg text-sm text-stone-600"
       >
-        {{ isZh ? '已达到最大文档数量限制 (5个)' : 'Maximum document limit reached (5)' }}
+        {{ t('knowledge.upload.maxDocs') }}
       </div>
 
       <div
@@ -119,16 +119,12 @@ const handleClose = () => {
             </el-icon>
             <div class="text-stone-600 mb-2">
               <span class="text-stone-900 font-medium">
-                {{ isZh ? '点击上传' : 'Click to upload' }}
+                {{ t('knowledge.upload.click') }}
               </span>
-              {{ isZh ? '或拖拽文件到此处' : 'or drag file here' }}
+              {{ t('knowledge.upload.drag') }}
             </div>
             <div class="text-xs text-stone-500">
-              {{
-                isZh
-                  ? '支持 PDF, DOCX, TXT, MD, 图片 (最大10MB)'
-                  : 'Supports PDF, DOCX, TXT, MD, Images (max 10MB)'
-              }}
+              {{ t('knowledge.upload.hintFormats') }}
             </div>
           </div>
         </ElUpload>

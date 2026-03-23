@@ -1,6 +1,9 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import tailwindcss from '@tailwindcss/vite'
+import AutoImport from 'unplugin-auto-import/vite'
+import Components from 'unplugin-vue-components/vite'
+import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
 import { resolve, dirname } from 'path'
 import { readFileSync } from 'fs'
 import { fileURLToPath } from 'url'
@@ -12,6 +15,10 @@ const vendorChunkGroups = [
   {
     name: 'vendor-element-plus',
     test: /node_modules[\\/](?:element-plus|@element-plus\/icons-vue)[\\/]/,
+  },
+  {
+    name: 'vendor-echarts',
+    test: /node_modules[\\/](?:echarts|zrender)[\\/]/,
   },
   {
     name: 'vendor-vueflow',
@@ -37,8 +44,23 @@ const version = readFileSync(resolve(__dirname, '../VERSION'), 'utf-8').trim()
 const backendHost = process.env.VITE_BACKEND_HOST || 'http://localhost:9527'
 const backendHostWs = backendHost.replace('http://', 'ws://').replace('https://', 'wss://')
 
+const elementPlusResolver = ElementPlusResolver({
+  importStyle: 'css',
+})
+
 export default defineConfig({
-  plugins: [vue(), tailwindcss()],
+  plugins: [
+    vue(),
+    tailwindcss(),
+    AutoImport({
+      dts: 'src/auto-imports.d.ts',
+      resolvers: [elementPlusResolver],
+    }),
+    Components({
+      dts: 'src/components.d.ts',
+      resolvers: [elementPlusResolver],
+    }),
+  ],
   define: {
     __APP_VERSION__: JSON.stringify(version),
     __BUILD_TIME__: JSON.stringify(Date.now()),
@@ -49,6 +71,7 @@ export default defineConfig({
     tsconfigPaths: true,
     alias: {
       '@': resolve(__dirname, 'src'),
+      '@data': resolve(__dirname, '../data'),
     },
   },
   server: {
@@ -85,9 +108,8 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     sourcemap: true,
-    // Element Plus is ~1MB (expected for a full UI framework)
-    // Suppress warning since we've already split vendors optimally
-    chunkSizeWarningLimit: 1100,
+    // Full `app.use(ElementPlus)` keeps a ~1.1MB minified vendor chunk until on-demand components are adopted.
+    chunkSizeWarningLimit: 1200,
     rolldownOptions: {
       output: {
         codeSplitting: {

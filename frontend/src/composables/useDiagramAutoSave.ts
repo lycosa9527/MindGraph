@@ -68,7 +68,7 @@ export interface UseDiagramAutoSaveOptions {
 export function useDiagramAutoSave(options: UseDiagramAutoSaveOptions = {}) {
   const router = useRouter()
   const route = useRoute()
-  const { isZh } = useLanguage()
+  const { promptLanguage, currentLanguage } = useLanguage()
   const diagramStore = useDiagramStore()
   const savedDiagramsStore = useSavedDiagramsStore()
   const llmResultsStore = useLLMResultsStore()
@@ -88,7 +88,7 @@ export function useDiagramAutoSave(options: UseDiagramAutoSaveOptions = {}) {
     const topicText = diagramStore.getTopicNodeText()
     if (topicText) return topicText
     return (
-      diagramStore.effectiveTitle || getDefaultDiagramName(diagramTypeForName.value, isZh.value)
+      diagramStore.effectiveTitle || getDefaultDiagramName(diagramTypeForName.value, currentLanguage.value)
     )
   }
 
@@ -126,7 +126,7 @@ export function useDiagramAutoSave(options: UseDiagramAutoSaveOptions = {}) {
         getTitle(),
         diagramType,
         spec,
-        isZh.value ? 'zh' : 'en',
+        promptLanguage.value,
         null,
         diagramStore.sessionEditCount
       )

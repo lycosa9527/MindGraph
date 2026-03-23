@@ -21,7 +21,7 @@ const emit = defineEmits<{
   (e: 'delete', conversationId: string): void
 }>()
 
-const { isZh } = useLanguage()
+const { t, currentLanguage } = useLanguage()
 const _mindMateStore = useMindMateStore()
 
 const showHistory = computed({
@@ -35,17 +35,20 @@ function formatConversationDate(timestamp: number): string {
   const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24))
 
   if (diffDays === 0) {
-    return isZh.value ? '今天' : 'Today'
-  } else if (diffDays === 1) {
-    return isZh.value ? '昨天' : 'Yesterday'
-  } else if (diffDays < 7) {
-    return isZh.value ? `${diffDays}天前` : `${diffDays} days ago`
-  } else {
-    return date.toLocaleDateString(isZh.value ? 'zh-CN' : 'en-US', {
-      month: 'short',
-      day: 'numeric',
-    })
+    return t('common.date.today')
   }
+  if (diffDays === 1) {
+    return t('common.date.yesterday')
+  }
+  if (diffDays < 7) {
+    return t('common.date.daysAgo', { n: diffDays })
+  }
+  const lang = currentLanguage.value
+  const localeTag = lang === 'zh' ? 'zh-CN' : lang === 'az' ? 'az-AZ' : 'en-US'
+  return date.toLocaleDateString(localeTag, {
+    month: 'short',
+    day: 'numeric',
+  })
 }
 
 function handleLoad(conversationId: string) {
@@ -62,7 +65,7 @@ function handleDelete(conversationId: string, event: Event) {
 <template>
   <ElDrawer
     v-model="showHistory"
-    :title="isZh ? '历史会话' : 'Conversation History'"
+    :title="t('mindmate.historyTitle')"
     direction="ltr"
     size="280px"
     :with-header="true"
@@ -79,7 +82,7 @@ function handleDelete(conversationId: string, event: Event) {
         <div
           class="animate-spin w-6 h-6 border-2 border-primary-500 border-t-transparent rounded-full mx-auto mb-2"
         />
-        <span class="text-sm">{{ isZh ? '加载中...' : 'Loading...' }}</span>
+        <span class="text-sm">{{ t('common.loading') }}</span>
       </div>
 
       <!-- Empty State -->
@@ -88,7 +91,7 @@ function handleDelete(conversationId: string, event: Event) {
         class="text-center py-8 text-gray-500"
       >
         <ElIcon class="text-4xl mb-2 text-gray-300"><DocumentCopy /></ElIcon>
-        <p class="text-sm">{{ isZh ? '暂无历史会话' : 'No conversation history' }}</p>
+        <p class="text-sm">{{ t('mindmate.noHistoryPanel') }}</p>
       </div>
 
       <!-- Conversation List -->
@@ -108,7 +111,7 @@ function handleDelete(conversationId: string, event: Event) {
           <div class="flex items-start justify-between gap-2">
             <div class="flex-1 min-w-0">
               <p class="text-sm font-medium text-gray-800 dark:text-white truncate">
-                {{ conv.name || (isZh ? '未命名会话' : 'Untitled') }}
+                {{ conv.name || t('mindmate.untitled') }}
               </p>
               <p class="text-xs text-gray-500 mt-0.5">
                 {{ formatConversationDate(conv.updated_at) }}

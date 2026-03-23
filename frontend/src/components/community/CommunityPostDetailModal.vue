@@ -44,7 +44,7 @@ const emit = defineEmits<{
 
 const authStore = useAuthStore()
 const savedDiagramsStore = useSavedDiagramsStore()
-const { isZh } = useLanguage()
+const { t, currentLanguage } = useLanguage()
 const notify = useNotifications()
 
 const post = ref<CommunityPost | null>(null)
@@ -66,15 +66,18 @@ const likesDisplayText = computed(() => {
   if (likesTotal.value === 0) return ''
   const names = likerNames.value
   if (names.length === 0) {
-    return isZh.value ? `${likesTotal.value}人喜欢` : `${likesTotal.value} people liked this`
+    return t('community.post.likesTotal', { n: likesTotal.value })
   }
-  const nameList = names.join('、')
+  const sep = currentLanguage.value === 'zh' ? '、' : ', '
+  const nameList = names.join(sep)
   if (likesTotal.value <= names.length) {
-    return isZh.value ? `${nameList} 喜欢` : `${nameList} liked this`
+    return t('community.post.likesListed', { names: nameList })
   }
-  return isZh.value
-    ? `${nameList} 等${likesTotal.value}人喜欢`
-    : `${nameList} and ${likesTotal.value - names.length} others liked this`
+  return t('community.post.likesWithOthers', {
+    names: nameList,
+    others: likesTotal.value - names.length,
+    total: likesTotal.value,
+  })
 })
 
 async function loadPost() {
@@ -172,13 +175,13 @@ async function toggleLike() {
 async function importToLibrary() {
   const p = post.value
   if (!p || !authStore.isAuthenticated) {
-    notify.warning(isZh.value ? '请先登录' : 'Please log in first')
+    notify.warning(t('community.post.loginFirst'))
     return
   }
   const fullPost = p as CommunityPost & { spec?: unknown }
   const spec = fullPost.spec as Record<string, unknown> | undefined
   if (!spec || typeof spec !== 'object') {
-    notify.error(isZh.value ? '无法获取图示数据' : 'Failed to get diagram data')
+    notify.error(t('community.post.diagramLoadFailed'))
     return
   }
   isImporting.value = true
@@ -186,14 +189,14 @@ async function importToLibrary() {
     const saved = await savedDiagramsStore.saveDiagram(p.title, p.diagram_type, spec, 'zh', null)
     if (saved) {
       savedDiagramsStore.setActiveDiagram(saved.id)
-      notify.success(isZh.value ? '已导入到图库' : 'Imported to library')
+      notify.success(t('community.post.importOk'))
     } else if (savedDiagramsStore.error) {
       notify.error(savedDiagramsStore.error)
     } else {
-      notify.error(isZh.value ? '导入失败，图库可能已满' : 'Import failed. Library may be full.')
+      notify.error(t('community.post.importFull'))
     }
   } catch (e) {
-    notify.error(e instanceof Error ? e.message : isZh.value ? '导入失败' : 'Import failed')
+    notify.error(e instanceof Error ? e.message : t('community.post.importFail'))
   } finally {
     isImporting.value = false
   }
@@ -225,12 +228,12 @@ async function deleteComment(comment: CommunityPostComment) {
   if (!props.postId || !comment.can_delete) return
   try {
     await ElMessageBox.confirm(
-      isZh.value ? '确定删除这条评论？' : 'Delete this comment?',
-      isZh.value ? '删除评论' : 'Delete comment',
+      t('community.post.deleteCommentConfirm'),
+      t('community.post.deleteCommentTitle'),
       {
         type: 'warning',
-        confirmButtonText: isZh.value ? '删除' : 'Delete',
-        cancelButtonText: isZh.value ? '取消' : 'Cancel',
+        confirmButtonText: t('common.delete'),
+        cancelButtonText: t('common.cancel'),
         confirmButtonClass: 'el-button--danger',
       }
     )
@@ -245,7 +248,7 @@ async function deleteComment(comment: CommunityPostComment) {
     if (post.value) {
       post.value.comments_count = totalComments.value
     }
-    notify.success(isZh.value ? '评论已删除' : 'Comment deleted')
+    notify.success(t('community.post.commentDeleted'))
   } catch (e) {
     notify.error(e instanceof Error ? e.message : 'Failed to delete comment')
   } finally {
@@ -260,10 +263,13 @@ function formatDate(iso: string): string {
   const diffMins = Math.floor(diffMs / 60000)
   const diffHours = Math.floor(diffMs / 3600000)
   const diffDays = Math.floor(diffMs / 86400000)
-  if (diffMins < 60) return isZh.value ? `${diffMins}分钟前` : `${diffMins}m ago`
-  if (diffHours < 24) return isZh.value ? `${diffHours}小时前` : `${diffHours}h ago`
-  if (diffDays < 7) return isZh.value ? `${diffDays}天前` : `${diffDays}d ago`
-  return isZh.value ? d.toLocaleDateString('zh-CN') : d.toLocaleDateString()
+  if (diffMins < 60) return t('community.time.minutesAgo', { n: diffMins })
+  if (diffHours < 24) return t('community.time.hoursAgo', { n: diffHours })
+  if (diffDays < 7) return t('community.time.daysAgo', { n: diffDays })
+  const lang = currentLanguage.value
+  if (lang === 'zh') return d.toLocaleDateString('zh-CN')
+  if (lang === 'az') return d.toLocaleDateString('az-AZ')
+  return d.toLocaleDateString()
 }
 </script>
 
@@ -282,7 +288,7 @@ function formatDate(iso: string): string {
       v-if="isLoading"
       class="detail-loading flex items-center justify-center py-20"
     >
-      <span class="text-stone-400">{{ isZh ? '加载中...' : 'Loading...' }}</span>
+      <span class="text-stone-400">{{ t('common.loading') }}</span>
     </div>
 
     <div
@@ -307,7 +313,7 @@ function formatDate(iso: string): string {
             v-else
             class="text-stone-400 text-sm"
           >
-            {{ isZh ? '暂无预览' : 'No preview' }}
+            {{ t('community.post.noPreview') }}
           </div>
 
           <!-- Top-left: name · organization · time (no avatar) -->
@@ -346,7 +352,7 @@ function formatDate(iso: string): string {
             v-else
             class="detail-likes-text text-xs text-stone-400 flex-1"
           >
-            {{ isZh ? '暂无喜欢' : 'No likes yet' }}
+            {{ t('community.post.noLikes') }}
           </p>
           <ElDropdown
             trigger="click"
@@ -368,14 +374,14 @@ function formatDate(iso: string): string {
                       post.is_liked ? 'text-rose-500' : 'text-stone-400',
                     ]"
                   />
-                  {{ post.is_liked ? (isZh ? '取消喜欢' : 'Unlike') : isZh ? '喜欢' : 'Like' }}
+                  {{ post.is_liked ? t('community.post.unlike') : t('community.post.like') }}
                 </ElDropdownItem>
                 <ElDropdownItem
                   command="import"
                   :disabled="!authStore.isAuthenticated || isImporting"
                 >
                   <Download class="w-4 h-4 mr-2 shrink-0 text-stone-400" />
-                  {{ isZh ? '导入' : 'Import' }}
+                  {{ t('community.post.importAction') }}
                 </ElDropdownItem>
               </ElDropdownMenu>
             </template>
@@ -458,7 +464,7 @@ function formatDate(iso: string): string {
                       type="button"
                       class="ml-auto shrink-0 p-1 rounded text-stone-400 hover:text-rose-500 hover:bg-rose-50 transition-colors"
                       :disabled="deletingCommentId === c.id"
-                      :aria-label="isZh ? '删除评论' : 'Delete comment'"
+                      :aria-label="t('community.post.deleteCommentTitle')"
                       @click="deleteComment(c)"
                     >
                       <Trash2 class="w-4 h-4" />
@@ -475,14 +481,14 @@ function formatDate(iso: string): string {
               v-if="isCommentsLoading"
               class="text-center py-4 text-stone-400 text-sm"
             >
-              {{ isZh ? '加载评论...' : 'Loading comments...' }}
+              {{ t('community.post.loadingComments') }}
             </div>
 
             <div
               v-else-if="!post.title && !post.description && comments.length === 0"
               class="text-center py-8 text-stone-400 text-sm"
             >
-              {{ isZh ? '暂无评论' : 'No comments yet' }}
+              {{ t('community.post.noComments') }}
             </div>
           </div>
         </el-scrollbar>
@@ -499,7 +505,7 @@ function formatDate(iso: string): string {
             :is-loading="isSubmittingComment"
             :show-file-upload="false"
             :show-suggestions="false"
-            :placeholder="isZh ? '添加评论...' : 'Add a comment...'"
+            :placeholder="t('community.post.commentPlaceholder')"
             :maxlength="120"
             @send="submitComment"
           />
@@ -507,7 +513,7 @@ function formatDate(iso: string): string {
             v-else
             class="text-xs text-stone-400"
           >
-            {{ isZh ? '登录后即可评论' : 'Log in to comment' }}
+            {{ t('community.post.loginToComment') }}
           </p>
         </div>
       </div>

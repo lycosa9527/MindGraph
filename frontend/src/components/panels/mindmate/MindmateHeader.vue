@@ -38,7 +38,7 @@ const emit = defineEmits<{
   (e: 'deleteHistory', conversationId: string): void
 }>()
 
-const { isZh } = useLanguage()
+const { t, currentLanguage } = useLanguage()
 const isFullpageMode = computed(() => props.mode === 'fullpage')
 
 function formatConversationDate(timestamp: number): string {
@@ -47,17 +47,20 @@ function formatConversationDate(timestamp: number): string {
   const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24))
 
   if (diffDays === 0) {
-    return isZh.value ? '今天' : 'Today'
-  } else if (diffDays === 1) {
-    return isZh.value ? '昨天' : 'Yesterday'
-  } else if (diffDays < 7) {
-    return isZh.value ? `${diffDays}天前` : `${diffDays} days ago`
-  } else {
-    return date.toLocaleDateString(isZh.value ? 'zh-CN' : 'en-US', {
-      month: 'short',
-      day: 'numeric',
-    })
+    return t('common.date.today')
   }
+  if (diffDays === 1) {
+    return t('common.date.yesterday')
+  }
+  if (diffDays < 7) {
+    return t('common.date.daysAgo', { n: diffDays })
+  }
+  const lang = currentLanguage.value
+  const localeTag = lang === 'zh' ? 'zh-CN' : lang === 'az' ? 'az-AZ' : 'en-US'
+  return date.toLocaleDateString(localeTag, {
+    month: 'short',
+    day: 'numeric',
+  })
 }
 
 function handleLoadHistory(convId: string) {
@@ -78,7 +81,7 @@ function handleDeleteHistory(convId: string, event: Event) {
       <!-- History button (drawer) - fullpage mode only -->
       <ElTooltip
         v-if="isFullpageMode"
-        :content="isZh ? '历史会话' : 'Conversation History'"
+        :content="t('mindmate.historyTitle')"
       >
         <ElButton
           text
@@ -107,7 +110,7 @@ function handleDeleteHistory(convId: string, event: Event) {
         @click="emit('newConversation')"
       >
         <ElIcon class="mr-1"><Plus /></ElIcon>
-        {{ isZh ? '新建对话' : 'New Chat' }}
+        {{ t('mindmate.newChat') }}
       </ElButton>
       <!-- History dropdown - panel mode only, left of close -->
       <ElDropdown
@@ -136,14 +139,14 @@ function handleDeleteHistory(convId: string, event: Event) {
                 <div
                   class="animate-spin w-5 h-5 border-2 border-primary-500 border-t-transparent rounded-full"
                 />
-                <span class="text-xs text-gray-500">{{ isZh ? '加载中...' : 'Loading...' }}</span>
+                <span class="text-xs text-gray-500">{{ t('common.loading') }}</span>
               </div>
               <div
                 v-else-if="!conversations?.length"
                 class="history-dropdown-empty"
               >
                 <ElIcon class="text-2xl text-gray-300"><DocumentCopy /></ElIcon>
-                <p class="text-xs text-gray-500">{{ isZh ? '暂无历史会话' : 'No history' }}</p>
+                <p class="text-xs text-gray-500">{{ t('mindmate.noHistory') }}</p>
               </div>
               <ElScrollbar
                 v-else
@@ -159,7 +162,7 @@ function handleDeleteHistory(convId: string, event: Event) {
                 >
                   <div class="history-item-content">
                     <p class="history-item-title">
-                      {{ conv.name || (isZh ? '未命名会话' : 'Untitled') }}
+                      {{ conv.name || t('mindmate.untitled') }}
                     </p>
                     <p class="history-item-date">
                       {{ formatConversationDate(conv.updated_at) }}

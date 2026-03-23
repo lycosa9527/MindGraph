@@ -25,6 +25,7 @@ import { useDiagramStore } from './diagram'
 import { useLLMResultsStore } from './llmResults'
 import { usePanelsStore } from './panels'
 import { getDefaultTemplate, loadSpecForDiagramType } from './specLoader'
+import { useUIStore } from './ui'
 
 // Security constants - must match backend limits
 const MAX_THUMBNAIL_SIZE = 150000 // Max base64 chars (~100KB decoded)
@@ -56,31 +57,19 @@ function isDiagramEmpty(spec: Record<string, unknown>, diagramType: DiagramType)
     return true
   }
 
-  // Get default template for this diagram type
-  const defaultTemplate = getDefaultTemplate(diagramType)
-  if (!defaultTemplate) {
-    // If no default template exists, consider it non-empty
+  const zhTemplate = getDefaultTemplate(diagramType, 'zh')
+  const enTemplate = getDefaultTemplate(diagramType, 'en')
+  const templates = [zhTemplate, enTemplate].filter(
+    (t): t is Record<string, unknown> => t != null
+  )
+  if (templates.length === 0) {
     return false
   }
 
-  // Convert default template to nodes using the same loader
-  let defaultNodes: Array<{ text: string }>
-  try {
-    const defaultResult = loadSpecForDiagramType(defaultTemplate, diagramType)
-    defaultNodes = defaultResult.nodes.map((node) => ({
-      text: String(node.text || '').trim(),
-    }))
-  } catch (error) {
-    // If loading fails, fall back to false (not empty)
-    console.warn('[SavedDiagrams] Failed to load default template for comparison:', error)
-    return false
-  }
-
-  // Normalize and sort node texts for comparison
   const normalizeTexts = (nodes: Array<{ text: string }>): string[] => {
     return nodes
       .map((node) => node.text)
-      .filter((text) => text.length > 0) // Filter out empty texts
+      .filter((text) => text.length > 0)
       .sort()
   }
 
@@ -89,15 +78,27 @@ function isDiagramEmpty(spec: Record<string, unknown>, diagramType: DiagramType)
       text: String(node.text || '').trim(),
     }))
   )
-  const defaultTexts = normalizeTexts(defaultNodes)
 
-  // Compare: if texts match exactly, diagram is empty/unmodified
-  if (currentTexts.length !== defaultTexts.length) {
-    return false
+  for (const defaultTemplate of templates) {
+    let defaultNodes: Array<{ text: string }>
+    try {
+      const defaultResult = loadSpecForDiagramType(defaultTemplate, diagramType)
+      defaultNodes = defaultResult.nodes.map((node) => ({
+        text: String(node.text || '').trim(),
+      }))
+    } catch (error) {
+      console.warn('[SavedDiagrams] Failed to load default template for comparison:', error)
+      continue
+    }
+    const defaultTexts = normalizeTexts(defaultNodes)
+    if (currentTexts.length !== defaultTexts.length) {
+      continue
+    }
+    if (currentTexts.every((text, index) => text === defaultTexts[index])) {
+      return true
+    }
   }
-
-  // Check if all current texts match default texts
-  return currentTexts.every((text, index) => text === defaultTexts[index])
+  return false
 }
 
 // Types
@@ -151,6 +152,7 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
 
   // Getters
   const authStore = useAuthStore()
+  const uiStore = useUIStore()
   const canSaveMore = computed(() => diagrams.value.length < maxDiagrams.value)
   const remainingSlots = computed(() => maxDiagrams.value - diagrams.value.length)
   const isActiveDiagramSaved = computed(() => activeDiagramId.value !== null)
@@ -609,14 +611,14 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
     const title =
       diagramStore.getTopicNodeText() ||
       diagramStore.effectiveTitle ||
-      getDefaultDiagramName(diagramStore.type, true)
+      getDefaultDiagramName(diagramStore.type, uiStore.language)
 
     try {
       await autoSaveDiagram(
         title,
         diagramStore.type,
         spec,
-        'zh',
+        uiStore.language,
         null,
         diagramStore.sessionEditCount
       )

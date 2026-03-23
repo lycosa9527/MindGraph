@@ -21,7 +21,7 @@ import DiscoveryGallery from './DiscoveryGallery.vue'
 
 const route = useRoute()
 const router = useRouter()
-const { isZh } = useLanguage()
+const { t } = useLanguage()
 const { triggerImport } = useDiagramImport()
 const authStore = useAuthStore()
 const notify = useNotifications()
@@ -100,19 +100,13 @@ async function joinWorkshop() {
 
   if (code.length !== 7) {
     // xxx-xxx = 7 characters
-    notify.warning(
-      isZh.value ? '请输入完整的演示代码' : 'Please enter the complete presentation code'
-    )
+    notify.warning(t('mindgraphLanding.codeIncomplete'))
     return
   }
 
   // Validate format (xxx-xxx)
   if (!/^\d{3}-\d{3}$/.test(code)) {
-    notify.warning(
-      isZh.value
-        ? '演示代码格式不正确（应为 xxx-xxx）'
-        : 'Invalid presentation code format (should be xxx-xxx)'
-    )
+    notify.warning(t('mindgraphLanding.codeFormatInvalid'))
     return
   }
 
@@ -124,21 +118,17 @@ async function joinWorkshop() {
 
     if (response.ok) {
       const data = await response.json()
-      notify.success(
-        isZh.value
-          ? `已加入演示：${data.workshop.title}`
-          : `Joined presentation: ${data.workshop.title}`
-      )
+      notify.success(t('mindgraphLanding.joinedPresentation', { title: data.workshop.title }))
       // Navigate to the diagram; carry code so canvas can connect WS without re-entry
       const enc = encodeURIComponent(code)
       window.location.href = `/canvas?diagramId=${encodeURIComponent(data.workshop.diagram_id)}&join_workshop=${enc}`
     } else {
       const error = await response.json().catch(() => ({}))
-      notify.error(error.detail || (isZh.value ? '加入演示失败' : 'Failed to join presentation'))
+      notify.error(error.detail || t('mindgraphLanding.joinPresentationFailed'))
     }
   } catch (error) {
     console.error('Failed to join presentation mode:', error)
-    notify.error(isZh.value ? '网络错误，加入失败' : 'Network error, failed to join')
+    notify.error(t('mindgraphLanding.networkErrorJoin'))
   } finally {
     isJoining.value = false
   }
@@ -154,11 +144,11 @@ async function openOrgSessionsDialog() {
       const data = await response.json()
       orgSessions.value = data.sessions || []
     } else {
-      notify.error(isZh.value ? '无法加载校内会话' : 'Could not load school sessions')
+      notify.error(t('mindgraphLanding.loadOrgSessionsFailed'))
     }
   } catch (error) {
     console.error(error)
-    notify.error(isZh.value ? '网络错误' : 'Network error')
+    notify.error(t('mindgraphLanding.networkError'))
   } finally {
     orgSessionsLoading.value = false
   }
@@ -176,18 +166,16 @@ async function joinOrgSession(session: { diagram_id: string }) {
       const data = await response.json()
       const code = data.workshop.code as string
       const enc = encodeURIComponent(code)
-      notify.success(
-        isZh.value ? `加入协同：${data.workshop.title}` : `Joined: ${data.workshop.title}`
-      )
+      notify.success(t('mindgraphLanding.joinedCollab', { title: data.workshop.title }))
       showOrgSessionsDialog.value = false
       window.location.href = `/canvas?diagramId=${encodeURIComponent(data.workshop.diagram_id)}&join_workshop=${enc}`
     } else {
       const error = await response.json().catch(() => ({}))
-      notify.error(error.detail || (isZh.value ? '加入失败' : 'Failed to join'))
+      notify.error(error.detail || t('mindgraphLanding.joinFailed'))
     }
   } catch (error) {
     console.error(error)
-    notify.error(isZh.value ? '网络错误' : 'Network error')
+    notify.error(t('mindgraphLanding.networkError'))
   } finally {
     isJoining.value = false
   }
@@ -239,7 +227,7 @@ onMounted(() => {
           :icon="Upload"
           @click="triggerImport"
         >
-          {{ isZh ? '导入' : 'Import' }}
+          {{ t('mindgraphLanding.import') }}
         </ElButton>
         <ElDropdown
           trigger="click"
@@ -250,15 +238,15 @@ onMounted(() => {
             size="small"
             :icon="User"
           >
-            {{ isZh ? '协同' : 'Collaborate' }}
+            {{ t('mindgraphLanding.collaborate') }}
           </ElButton>
           <template #dropdown>
             <ElDropdownMenu>
               <ElDropdownItem command="organization">
-                {{ isZh ? '校内协同' : 'School collaboration' }}
+                {{ t('mindgraphLanding.schoolCollab') }}
               </ElDropdownItem>
               <ElDropdownItem command="network">
-                {{ isZh ? '共同协同' : 'Shared collaboration' }}
+                {{ t('mindgraphLanding.sharedCollab') }}
               </ElDropdownItem>
             </ElDropdownMenu>
           </template>
@@ -269,7 +257,7 @@ onMounted(() => {
     <!-- 校内：同校可加入的会话列表 -->
     <ElDialog
       v-model="showOrgSessionsDialog"
-      :title="isZh ? '校内协同' : 'School collaboration'"
+      :title="t('mindgraphLanding.dialogSchoolTitle')"
       width="480px"
     >
       <div
@@ -280,11 +268,7 @@ onMounted(() => {
           v-if="!orgSessionsLoading && orgSessions.length === 0"
           class="text-gray-500 text-sm"
         >
-          {{
-            isZh
-              ? '当前没有可加入的校内协同会话（需同事已开启「校内协同」）。'
-              : 'No school sessions right now. A colleague must start “School collaboration” on the canvas.'
-          }}
+          {{ t('mindgraphLanding.orgSessionsEmpty') }}
         </p>
         <ul
           v-else
@@ -299,11 +283,7 @@ onMounted(() => {
               <div class="font-medium text-gray-900 truncate">{{ s.title }}</div>
               <div class="text-xs text-gray-500">
                 {{ s.owner_username }} ·
-                {{
-                  isZh
-                    ? `${s.participant_count} 人在线`
-                    : `${s.participant_count} online`
-                }}
+                {{ t('mindgraphLanding.participantsOnline', { n: s.participant_count }) }}
               </div>
             </div>
             <ElButton
@@ -312,7 +292,7 @@ onMounted(() => {
               :loading="isJoining"
               @click="joinOrgSession(s)"
             >
-              {{ isZh ? '加入' : 'Join' }}
+              {{ t('mindgraphLanding.join') }}
             </ElButton>
           </li>
         </ul>
@@ -322,16 +302,12 @@ onMounted(() => {
     <!-- 共同：输入邀请码 -->
     <ElDialog
       v-model="showSharedCodeDialog"
-      :title="isZh ? '共同协同' : 'Shared collaboration'"
+      :title="t('mindgraphLanding.dialogSharedTitle')"
       width="400px"
     >
       <div class="join-workshop-dialog">
         <p class="mb-4 text-gray-600">
-          {{
-            isZh
-              ? '输入邀请码（xxx-xxx），加入对方的协同会话。'
-              : 'Enter the invitation code (xxx-xxx) to join their session.'
-          }}
+          {{ t('mindgraphLanding.sharedCodeHint') }}
         </p>
         <div class="code-input-container">
           <div class="code-input-boxes">
@@ -374,14 +350,14 @@ onMounted(() => {
         </div>
         <div class="mt-4 flex justify-end gap-2">
           <ElButton @click="showSharedCodeDialog = false">
-            {{ isZh ? '取消' : 'Cancel' }}
+            {{ t('mindgraphLanding.cancel') }}
           </ElButton>
           <ElButton
             type="primary"
             :loading="isJoining"
             @click="joinWorkshop"
           >
-            {{ isZh ? '加入' : 'Join' }}
+            {{ t('mindgraphLanding.join') }}
           </ElButton>
         </div>
       </div>
@@ -403,11 +379,7 @@ onMounted(() => {
             </div>
           </div>
           <div class="text-lg text-gray-600">
-            {{
-              isZh
-                ? `${username}你好，我是你的AI思维图示助手`
-                : `Hello ${username}, I'm your AI visual thinking assistant`
-            }}
+            {{ t('mindgraphLanding.welcome', { username }) }}
           </div>
         </div>
 

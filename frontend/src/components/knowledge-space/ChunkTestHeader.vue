@@ -23,7 +23,7 @@ const emit = defineEmits<{
   (e: 'processDocuments'): void
 }>()
 
-const { isZh } = useLanguage()
+const { t } = useLanguage()
 </script>
 
 <template>
@@ -32,16 +32,16 @@ const { isZh } = useLanguage()
   >
     <div class="flex items-center gap-3 min-w-0 flex-1">
       <h1 class="text-lg font-semibold text-stone-900">
-        {{ isZh ? 'RAG分块测试' : 'RAG Chunk Test' }}
+        {{ t('knowledge.chunkHeader.title') }}
       </h1>
       <span class="text-sm text-stone-500">
-        {{ isZh ? `(${documentCount}/5)` : `(${documentCount}/5)` }}
+        ({{ documentCount }}/5)
       </span>
     </div>
     <div class="flex items-center gap-2 shrink-0">
       <!-- Process Documents Button -->
       <ElTooltip
-        :content="isZh ? '处理待处理的文档' : 'Process pending documents'"
+        :content="t('knowledge.chunkHeader.processPending')"
         :disabled="hasPendingDocuments"
         placement="bottom"
       >
@@ -52,16 +52,12 @@ const { isZh } = useLanguage()
           @click="emit('processDocuments')"
         >
           <ElIcon class="mr-1"><RefreshRight /></ElIcon>
-          {{ isZh ? '处理文档' : 'Process Documents' }}
+          {{ t('knowledge.chunkHeader.processDocs') }}
         </ElButton>
       </ElTooltip>
       <!-- Test Upload Documents Button -->
       <ElTooltip
-        :content="
-          isZh
-            ? '请等待文档处理完成后再进行测试'
-            : 'Please wait for documents to finish processing before testing'
-        "
+        :content="t('knowledge.chunkHeader.waitForProcessing')"
         :disabled="hasDocuments"
         placement="bottom"
       >
@@ -72,7 +68,7 @@ const { isZh } = useLanguage()
           @click="emit('testUserDocuments')"
         >
           <ElIcon class="mr-1"><VideoPlay /></ElIcon>
-          {{ isZh ? '测试上传文档' : 'Test Upload Documents' }}
+          {{ t('knowledge.chunkHeader.testUpload') }}
         </ElButton>
       </ElTooltip>
       <!-- Test All Datasets Button -->
@@ -82,7 +78,7 @@ const { isZh } = useLanguage()
         @click="emit('testAllDatasets')"
       >
         <ElIcon class="mr-1"><VideoPlay /></ElIcon>
-        {{ isZh ? '测试所有数据集' : 'Test All Datasets' }}
+        {{ t('knowledge.chunkHeader.testAllDatasets') }}
       </ElButton>
       <!-- Upload Documents Button -->
       <ElButton
@@ -92,7 +88,7 @@ const { isZh } = useLanguage()
         @click="emit('upload')"
       >
         <ElIcon class="mr-1"><Upload /></ElIcon>
-        {{ isZh ? '上传文档' : 'Upload Documents' }}
+        {{ t('knowledge.header.upload') }}
       </ElButton>
     </div>
   </div>

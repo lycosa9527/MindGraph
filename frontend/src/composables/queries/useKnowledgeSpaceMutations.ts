@@ -95,7 +95,7 @@ async function processSelectedAPI(documentIds: number[]): Promise<StartProcessin
  */
 export function useUploadDocument() {
   const queryClient = useQueryClient()
-  const { isZh } = useLanguage()
+  const { t } = useLanguage()
 
   return useMutation({
     mutationKey: [...knowledgeSpaceKeys.all, 'upload'],
@@ -135,9 +135,7 @@ export function useUploadDocument() {
     onSuccess: (_data) => {
       // Invalidate to refetch with real data
       queryClient.invalidateQueries({ queryKey: knowledgeSpaceKeys.documents() })
-      notify.success(
-        isZh.value ? '文档上传成功，正在处理中...' : 'Document uploaded successfully, processing...'
-      )
+      notify.success(t('knowledgeSpace.uploadSuccessProcessing'))
     },
     onError: (error: Error, _file, context) => {
       // Rollback optimistic update
@@ -145,7 +143,7 @@ export function useUploadDocument() {
         queryClient.setQueryData(knowledgeSpaceKeys.documents(), context.previousData)
       }
       console.error('Upload failed:', error)
-      notify.error(error.message || (isZh.value ? '文档上传失败' : 'Document upload failed'))
+      notify.error(error.message || t('knowledgeSpace.uploadFailed'))
     },
   })
 }
@@ -157,7 +155,7 @@ export function useUploadDocument() {
  */
 export function useDeleteDocument() {
   const queryClient = useQueryClient()
-  const { isZh } = useLanguage()
+  const { t } = useLanguage()
 
   return useMutation({
     mutationKey: [...knowledgeSpaceKeys.all, 'delete'],
@@ -186,7 +184,7 @@ export function useDeleteDocument() {
     onSuccess: () => {
       // Invalidate to ensure consistency
       queryClient.invalidateQueries({ queryKey: knowledgeSpaceKeys.documents() })
-      notify.success(isZh.value ? '文档已删除' : 'Document deleted')
+      notify.success(t('knowledgeSpace.documentDeleted'))
     },
     onError: (error: Error, _documentId, context) => {
       // Rollback optimistic update
@@ -194,7 +192,7 @@ export function useDeleteDocument() {
         queryClient.setQueryData(knowledgeSpaceKeys.documents(), context.previousData)
       }
       console.error('Delete failed:', error)
-      notify.error(error.message || (isZh.value ? '删除失败' : 'Delete failed'))
+      notify.error(error.message || t('knowledgeSpace.deleteFailed'))
     },
   })
 }
@@ -205,7 +203,7 @@ export function useDeleteDocument() {
  */
 export function useStartProcessing() {
   const queryClient = useQueryClient()
-  const { isZh } = useLanguage()
+  const { t } = useLanguage()
 
   return useMutation({
     mutationKey: [...knowledgeSpaceKeys.all, 'start-processing'],
@@ -214,18 +212,14 @@ export function useStartProcessing() {
       // Invalidate documents to refresh status
       queryClient.invalidateQueries({ queryKey: knowledgeSpaceKeys.documents() })
       if (data.processed_count === 0) {
-        notify.info(isZh.value ? '没有待处理的文档' : 'No documents to process')
+        notify.info(t('knowledgeSpace.noPendingDocs'))
       } else {
-        notify.success(
-          isZh.value
-            ? `已开始处理 ${data.processed_count} 个文档`
-            : `Started processing ${data.processed_count} documents`
-        )
+        notify.success(t('knowledgeSpace.processingStarted', { count: data.processed_count }))
       }
     },
     onError: (error: Error) => {
       console.error('Start processing failed:', error)
-      notify.error(error.message || (isZh.value ? '启动处理失败' : 'Failed to start processing'))
+      notify.error(error.message || t('knowledgeSpace.startProcessingFailed'))
     },
   })
 }
@@ -236,7 +230,7 @@ export function useStartProcessing() {
  */
 export function useProcessSelected() {
   const queryClient = useQueryClient()
-  const { isZh } = useLanguage()
+  const { t } = useLanguage()
 
   return useMutation({
     mutationKey: [...knowledgeSpaceKeys.all, 'process-selected'],
@@ -245,18 +239,14 @@ export function useProcessSelected() {
       // Invalidate documents to refresh status
       queryClient.invalidateQueries({ queryKey: knowledgeSpaceKeys.documents() })
       if (data.processed_count === 0) {
-        notify.info(isZh.value ? '没有待处理的文档' : 'No documents to process')
+        notify.info(t('knowledgeSpace.noPendingDocs'))
       } else {
-        notify.success(
-          isZh.value
-            ? `已开始处理 ${data.processed_count} 个文档`
-            : `Started processing ${data.processed_count} documents`
-        )
+        notify.success(t('knowledgeSpace.processingStarted', { count: data.processed_count }))
       }
     },
     onError: (error: Error) => {
       console.error('Process selected failed:', error)
-      notify.error(error.message || (isZh.value ? '启动处理失败' : 'Failed to start processing'))
+      notify.error(error.message || t('knowledgeSpace.startProcessingFailed'))
     },
   })
 }
@@ -267,18 +257,16 @@ export function useProcessSelected() {
  */
 export function useDeleteDocumentWithConfirmation() {
   const deleteMutation = useDeleteDocument()
-  const { isZh } = useLanguage()
+  const { t } = useLanguage()
 
   const deleteWithConfirmation = async (documentId: number) => {
     try {
       await ElMessageBox.confirm(
-        isZh.value
-          ? '确定要删除这个文档吗？删除后无法恢复。'
-          : 'Are you sure you want to delete this document? This action cannot be undone.',
-        isZh.value ? '确认删除' : 'Confirm Delete',
+        t('knowledgeSpace.confirmDeleteBody'),
+        t('knowledgeSpace.confirmDeleteTitle'),
         {
-          confirmButtonText: isZh.value ? '删除' : 'Delete',
-          cancelButtonText: isZh.value ? '取消' : 'Cancel',
+          confirmButtonText: t('common.delete'),
+          cancelButtonText: t('common.cancel'),
           type: 'warning',
         }
       )

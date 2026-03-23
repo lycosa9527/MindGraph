@@ -17,7 +17,7 @@ const props = defineProps<{
   documents: KnowledgeDocument[]
 }>()
 
-const { isZh } = useLanguage()
+const { t } = useLanguage()
 
 const processingDocuments = computed(() => props.documents.filter((d) => d.status === 'processing'))
 
@@ -99,14 +99,14 @@ watch(
 )
 
 const progressLabels = computed<Record<string, string>>(() => ({
-  queued: isZh.value ? '排队中' : 'Queued',
-  extracting: isZh.value ? '提取文本' : 'Extracting',
-  cleaning: isZh.value ? '清理文本' : 'Cleaning',
-  chunking: isZh.value ? '分块处理' : 'Chunking',
-  embedding: isZh.value ? '生成向量' : 'Embedding',
-  indexing: isZh.value ? '建立索引' : 'Indexing',
-  starting: isZh.value ? '开始处理' : 'Starting',
-  completed: isZh.value ? '已完成' : 'Completed',
+  queued: t('knowledge.processing.queued'),
+  extracting: t('knowledge.processing.extracting'),
+  cleaning: t('knowledge.processing.cleaning'),
+  chunking: t('knowledge.processing.chunking'),
+  embedding: t('knowledge.processing.embedding'),
+  indexing: t('knowledge.processing.indexing'),
+  starting: t('knowledge.processing.starting'),
+  completed: t('knowledge.processing.completed'),
 }))
 
 const getProgressLabel = (progress: string | null | undefined): string => {
@@ -222,7 +222,7 @@ const getProgressColor = (progress: string | null | undefined): string => {
         class="method-progress-grid mt-3"
       >
         <div class="text-xs font-medium text-stone-700 mb-2">
-          {{ isZh ? '方法处理进度' : 'Method Progress' }}
+          {{ t('knowledge.processing.methodProgress') }}
         </div>
         <ElTable
           :data="
@@ -233,7 +233,7 @@ const getProgressColor = (progress: string | null | undefined): string => {
           class="method-table"
         >
           <ElTableColumn
-            :label="isZh ? '方法' : 'Method'"
+            :label="t('knowledge.processing.colMethod')"
             prop="method"
             width="100"
           >
@@ -242,7 +242,7 @@ const getProgressColor = (progress: string | null | undefined): string => {
             </template>
           </ElTableColumn>
           <ElTableColumn
-            :label="isZh ? '分块' : 'Chunk'"
+            :label="t('knowledge.processing.colChunk')"
             prop="chunk"
             width="80"
             align="center"
@@ -257,7 +257,7 @@ const getProgressColor = (progress: string | null | undefined): string => {
             </template>
           </ElTableColumn>
           <ElTableColumn
-            :label="isZh ? '向量化' : 'Embed'"
+            :label="t('knowledge.processing.colEmbed')"
             prop="embed"
             width="80"
             align="center"
@@ -272,7 +272,7 @@ const getProgressColor = (progress: string | null | undefined): string => {
             </template>
           </ElTableColumn>
           <ElTableColumn
-            :label="isZh ? '索引' : 'Index'"
+            :label="t('knowledge.processing.colIndex')"
             prop="index"
             width="80"
             align="center"

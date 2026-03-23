@@ -33,7 +33,7 @@ const emit = defineEmits<{
   (e: 'close'): void
 }>()
 
-const { isZh } = useLanguage()
+const { t } = useLanguage()
 
 const query = ref('')
 const method = ref<'hybrid' | 'semantic' | 'keyword'>('hybrid')
@@ -75,7 +75,7 @@ watch(
 
 function testRetrieval() {
   if (!query.value.trim()) {
-    notify.warning(isZh.value ? '请输入测试查询' : 'Please enter a test query')
+    notify.warning(t('knowledge.retrieval.enterQuery'))
     return
   }
 
@@ -91,7 +91,7 @@ function testRetrieval() {
 <template>
   <ElDrawer
     :model-value="visible"
-    :title="isZh ? '检索测试' : 'Retrieval Test'"
+    :title="t('knowledge.retrieval.title')"
     size="800px"
     @update:model-value="emit('update:visible', $event)"
     @close="handleClose"
@@ -102,34 +102,34 @@ function testRetrieval() {
         label-width="120px"
         label-position="left"
       >
-        <ElFormItem :label="isZh ? '测试查询' : 'Test Query'">
+        <ElFormItem :label="t('knowledge.retrieval.testQuery')">
           <ElInput
             v-model="query"
-            :placeholder="isZh ? '输入测试查询...' : 'Enter test query...'"
+            :placeholder="t('knowledge.retrieval.testQueryPlaceholder')"
             :maxlength="250"
             show-word-limit
           />
         </ElFormItem>
-        <ElFormItem :label="isZh ? '检索方法' : 'Retrieval Method'">
+        <ElFormItem :label="t('knowledge.retrieval.method')">
           <ElSelect
             v-model="method"
             style="width: 100%"
           >
             <el-option
-              :label="isZh ? '混合检索' : 'Hybrid Search'"
+              :label="t('knowledge.retrieval.hybrid')"
               value="hybrid"
             />
             <el-option
-              :label="isZh ? '语义检索' : 'Semantic Search'"
+              :label="t('knowledge.retrieval.semantic')"
               value="semantic"
             />
             <el-option
-              :label="isZh ? '关键词检索' : 'Keyword Search'"
+              :label="t('knowledge.retrieval.keyword')"
               value="keyword"
             />
           </ElSelect>
         </ElFormItem>
-        <ElFormItem :label="isZh ? '返回数量' : 'Top K'">
+        <ElFormItem :label="t('knowledge.retrieval.topK')">
           <ElSelect
             v-model="topK"
             style="width: 120px"
@@ -142,7 +142,7 @@ function testRetrieval() {
             />
           </ElSelect>
         </ElFormItem>
-        <ElFormItem :label="isZh ? '分数阈值' : 'Score Threshold'">
+        <ElFormItem :label="t('knowledge.retrieval.scoreThreshold')">
           <ElInput
             v-model.number="scoreThreshold"
             type="number"
@@ -160,7 +160,7 @@ function testRetrieval() {
             class="test-btn"
             @click="testRetrieval"
           >
-            {{ isZh ? '测试检索' : 'Test Retrieval' }}
+            {{ t('knowledge.retrieval.run') }}
           </ElButton>
         </ElFormItem>
       </ElForm>
@@ -177,12 +177,12 @@ function testRetrieval() {
         >
           <template #header>
             <div class="flex justify-between items-center">
-              <span class="font-semibold">{{ isZh ? '检索结果' : 'Retrieval Results' }}</span>
+              <span class="font-semibold">{{ t('knowledge.retrieval.results') }}</span>
               <div class="text-sm text-stone-500">
-                {{ isZh ? '耗时' : 'Time' }}: {{ results.timing.total_ms.toFixed(0) }}ms ({{
-                  isZh ? '嵌入' : 'Embed'
-                }}: {{ results.timing.embedding_ms.toFixed(0) }}ms, {{ isZh ? '搜索' : 'Search' }}:
-                {{ results.timing.search_ms.toFixed(0) }}ms, {{ isZh ? '重排' : 'Rerank' }}:
+                {{ t('knowledge.retrieval.timingTotal') }}: {{ results.timing.total_ms.toFixed(0) }}ms ({{
+                  t('knowledge.retrieval.timingEmbed')
+                }}: {{ results.timing.embedding_ms.toFixed(0) }}ms, {{ t('knowledge.retrieval.timingSearch') }}:
+                {{ results.timing.search_ms.toFixed(0) }}ms, {{ t('knowledge.retrieval.timingRerank') }}:
                 {{ results.timing.rerank_ms.toFixed(0) }}ms)
               </div>
             </div>
@@ -194,7 +194,7 @@ function testRetrieval() {
             class="results-table"
           >
             <ElTableColumn
-              :label="isZh ? '文档' : 'Document'"
+              :label="t('knowledge.retrieval.colDocument')"
               width="150"
             >
               <template #default="{ row }">
@@ -202,7 +202,7 @@ function testRetrieval() {
               </template>
             </ElTableColumn>
             <ElTableColumn
-              :label="isZh ? '分数' : 'Score'"
+              :label="t('knowledge.retrieval.colScore')"
               width="100"
             >
               <template #default="{ row }">
@@ -220,7 +220,7 @@ function testRetrieval() {
               </template>
             </ElTableColumn>
             <ElTableColumn
-              :label="isZh ? '内容' : 'Content'"
+              :label="t('knowledge.retrieval.colContent')"
               show-overflow-tooltip
             >
               <template #default="{ row }">
@@ -233,17 +233,17 @@ function testRetrieval() {
 
           <div class="mt-4 text-sm text-stone-500 space-y-1">
             <div>
-              {{ isZh ? '总搜索块数' : 'Total chunks searched' }}:
+              {{ t('knowledge.retrieval.statsTotalChunks') }}:
               {{ results.stats.total_chunks_searched }}
             </div>
             <div>
-              {{ isZh ? '重排前' : 'Before rerank' }}: {{ results.stats.chunks_before_rerank }}
+              {{ t('knowledge.retrieval.statsBeforeRerank') }}: {{ results.stats.chunks_before_rerank }}
             </div>
             <div>
-              {{ isZh ? '重排后' : 'After rerank' }}: {{ results.stats.chunks_after_rerank }}
+              {{ t('knowledge.retrieval.statsAfterRerank') }}: {{ results.stats.chunks_after_rerank }}
             </div>
             <div>
-              {{ isZh ? '阈值过滤' : 'Filtered by threshold' }}:
+              {{ t('knowledge.retrieval.statsFiltered') }}:
               {{ results.stats.chunks_filtered_by_threshold }}
             </div>
           </div>

@@ -8,72 +8,61 @@ import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import { ArrowDown, ArrowUp, Loading } from '@element-plus/icons-vue'
 
-import * as echarts from 'echarts'
+import { BarChart, LineChart, PieChart } from 'echarts/charts'
+import {
+  GridComponent,
+  LegendComponent,
+  TitleComponent,
+  TooltipComponent,
+} from 'echarts/components'
+import * as echarts from 'echarts/core'
+import type { EChartsType } from 'echarts/core'
+import { LabelLayout } from 'echarts/features'
+import { CanvasRenderer } from 'echarts/renderers'
 
-import { useLanguage, useNotifications } from '@/composables'
+import { useLanguage } from '@/composables/useLanguage'
+import { useNotifications } from '@/composables/useNotifications'
+import { useUIStore } from '@/stores/ui'
 import { apiRequest } from '@/utils/apiClient'
+import { formatUserNumber } from '@/utils/intlDisplay'
 
-const { isZh } = useLanguage()
+echarts.use([
+  BarChart,
+  LineChart,
+  PieChart,
+  TitleComponent,
+  TooltipComponent,
+  GridComponent,
+  LegendComponent,
+  LabelLayout,
+  CanvasRenderer,
+])
+
+const { t, currentLanguage } = useLanguage()
+const uiStore = useUIStore()
 const notify = useNotifications()
 
 interface GroupDefinition {
   id: string
-  nameEn: string
-  nameZh: string
-  descriptionEn: string
-  descriptionZh: string
 }
 
-const TOTAL_GROUP: GroupDefinition = {
-  id: 'total',
-  nameEn: 'Total Teachers',
-  nameZh: '总教师数',
-  descriptionEn: 'All teachers in the system.',
-  descriptionZh: '系统中所有教师。',
-}
-
-const TOP_LEVEL_GROUPS: GroupDefinition[] = [
-  {
-    id: 'unused',
-    nameEn: 'Unused',
-    nameZh: '未使用',
-    descriptionEn: 'No usage records within the observation window.',
-    descriptionZh: '观察窗内完全无使用记录。',
-  },
-  {
-    id: 'continuous',
-    nameEn: 'Continuous Usage',
-    nameZh: '持续使用',
-    descriptionEn: 'Used most of the time, active in both halves, short gaps.',
-    descriptionZh: '大部分时间在用，前后半窗均有活跃，且最长断档相对短。',
-  },
-]
+const TOP_LEVEL_GROUPS: GroupDefinition[] = [{ id: 'unused' }, { id: 'continuous' }]
 
 const SUB_GROUPS: GroupDefinition[] = [
-  {
-    id: 'rejection',
-    nameEn: 'Rejection',
-    nameZh: '拒绝使用',
-    descriptionEn: 'Early trial then long-term non-use.',
-    descriptionZh: '早期试用后长期不再使用。',
-  },
-  {
-    id: 'stopped',
-    nameEn: 'Stopped Usage',
-    nameZh: '停止使用',
-    descriptionEn: 'Stopped using after a period of use.',
-    descriptionZh: '教师在经历一段时间使用后不再使用。',
-  },
-  {
-    id: 'intermittent',
-    nameEn: 'Intermittent Usage',
-    nameZh: '间歇式使用',
-    descriptionEn: 'Burst-silent intermittent cycles.',
-    descriptionZh: '教师使用呈现"爆发式——沉寂式"的间歇循环。',
-  },
+  { id: 'rejection' },
+  { id: 'stopped' },
+  { id: 'intermittent' },
 ]
 
 const GROUPS = [...TOP_LEVEL_GROUPS, ...SUB_GROUPS]
+
+function teacherGroupName(groupId: string): string {
+  return t(`teacher.analytics.group.${groupId}.name`)
+}
+
+function teacherGroupDescription(groupId: string): string {
+  return t(`teacher.analytics.group.${groupId}.description`)
+}
 
 interface Teacher {
   id: number
@@ -142,7 +131,7 @@ const showUserChartModal = ref(false)
 const selectedUser = ref<Teacher | null>(null)
 const userChartLoading = ref(false)
 const userChartRef = ref<HTMLDivElement | null>(null)
-let userChart: echarts.ECharts | null = null
+let userChart: EChartsType | null = null
 
 const activeTab = ref('overview')
 const allUsers = ref<Teacher[]>([])
@@ -197,16 +186,7 @@ function getTeachersForStatCard(type: StatCardType): Teacher[] {
 }
 
 function getModalTitle(type: StatCardType): string {
-  const titles: Record<StatCardType, { zh: string; en: string }> = {
-    total: { zh: '总教师数', en: 'Total Teachers' },
-    unused: { zh: '未使用', en: 'Unused' },
-    continuous: { zh: '持续使用', en: 'Continuous Usage' },
-    rejection: { zh: '拒绝使用', en: 'Rejection' },
-    stopped: { zh: '停止使用', en: 'Stopped Usage' },
-    intermittent: { zh: '间歇式使用', en: 'Intermittent Usage' },
-  }
-  const t = titles[type]
-  return isZh.value ? t.zh : t.en
+  return t(`teacher.analytics.modalTitle.${type}`)
 }
 
 function openTeachersModal(type: StatCardType) {
@@ -244,7 +224,7 @@ async function openUserChart(row: Teacher) {
     }
   } catch (error) {
     console.error('Failed to load user detail:', error)
-    notify.error(isZh.value ? '加载失败' : 'Load failed')
+    notify.error(t('teacher.analytics.notify.loadFailed'))
   } finally {
     userChartLoading.value = false
   }
@@ -263,7 +243,7 @@ function initUserChart() {
   const hasData = dates.length > 0
   userChart.setOption({
     title: {
-      text: isZh.value ? '每日修改/导出/自动生成趋势' : 'Daily Edit/Export/AutoGen Trend',
+      text: t('teacher.analytics.chart.dailyTrend'),
       left: 'center',
     },
     tooltip: {
@@ -271,15 +251,15 @@ function initUserChart() {
     },
     legend: {
       data: [
-        isZh.value ? '每日修改次数' : 'Edits',
-        isZh.value ? '导出次数' : 'Exports',
-        isZh.value ? '自动生成次数' : 'AutoGen',
+        t('teacher.analytics.chart.edits'),
+        t('teacher.analytics.chart.exports'),
+        t('teacher.analytics.chart.autoGen'),
       ],
       top: 28,
     },
     xAxis: {
       type: 'category',
-      data: hasData ? dates : [isZh.value ? '暂无数据' : 'No data'],
+      data: hasData ? dates : [t('teacher.analytics.chart.noData')],
       axisLabel: { rotate: dates.length > 14 ? 45 : 0 },
     },
     yAxis: {
@@ -288,19 +268,19 @@ function initUserChart() {
     },
     series: [
       {
-        name: isZh.value ? '每日修改次数' : 'Edits',
+        name: t('teacher.analytics.chart.edits'),
         type: 'line',
         data: hasData ? editCounts : [0],
         smooth: true,
       },
       {
-        name: isZh.value ? '导出次数' : 'Exports',
+        name: t('teacher.analytics.chart.exports'),
         type: 'line',
         data: hasData ? exportCounts : [0],
         smooth: true,
       },
       {
-        name: isZh.value ? '自动生成次数' : 'AutoGen',
+        name: t('teacher.analytics.chart.autoGen'),
         type: 'line',
         data: hasData ? autocompleteCounts : [0],
         smooth: true,
@@ -321,11 +301,11 @@ async function loadAllUsers(page = 1) {
       usersTotal.value = data.total ?? 0
       usersPage.value = data.page ?? page
     } else {
-      notify.error(isZh.value ? '加载用户列表失败' : 'Failed to load users')
+      notify.error(t('teacher.analytics.notify.loadUsersFailed'))
     }
   } catch (error) {
     console.error('Failed to load users:', error)
-    notify.error(isZh.value ? '加载用户列表失败' : 'Failed to load users')
+    notify.error(t('teacher.analytics.notify.loadUsersFailed'))
   } finally {
     allUsersLoading.value = false
   }
@@ -388,14 +368,14 @@ async function saveConfig() {
     })
     if (!response.ok) {
       const data = await response.json().catch(() => ({}))
-      notify.error(data.detail || (isZh.value ? '保存失败' : 'Save failed'))
+      notify.error(data.detail || t('teacher.analytics.notify.saveFailed'))
       return
     }
-    notify.success(isZh.value ? '配置已保存' : 'Config saved')
+    notify.success(t('teacher.analytics.notify.configSaved'))
     await loadTeacherUsage()
   } catch (error) {
     console.error('Failed to save config:', error)
-    notify.error(isZh.value ? '保存失败' : 'Save failed')
+    notify.error(t('teacher.analytics.notify.saveFailed'))
   } finally {
     isSavingConfig.value = false
   }
@@ -410,7 +390,7 @@ async function recomputeClassifications() {
       body: JSON.stringify(configForm.value),
     })
     if (!saveRes.ok) {
-      notify.error(isZh.value ? '保存失败' : 'Save failed')
+      notify.error(t('teacher.analytics.notify.saveFailed'))
       return
     }
     const recomputeRes = await apiRequest('auth/admin/teacher-usage/recompute', {
@@ -418,19 +398,15 @@ async function recomputeClassifications() {
     })
     if (!recomputeRes.ok) {
       const data = await recomputeRes.json().catch(() => ({}))
-      notify.error(data.detail || (isZh.value ? '重算失败' : 'Recompute failed'))
+      notify.error(data.detail || t('teacher.analytics.notify.recomputeFailed'))
       return
     }
     const data = await recomputeRes.json()
-    notify.success(
-      isZh.value
-        ? `已保存并重算 ${data.recomputed} 位教师`
-        : `Saved and recomputed ${data.recomputed} teachers`
-    )
+    notify.success(t('teacher.analytics.notify.savedRecomputed', { n: data.recomputed }))
     await loadTeacherUsage()
   } catch (error) {
     console.error('Failed to recompute:', error)
-    notify.error(isZh.value ? '重算失败' : 'Recompute failed')
+    notify.error(t('teacher.analytics.notify.recomputeFailed'))
   } finally {
     isRecomputing.value = false
   }
@@ -452,9 +428,9 @@ const stats = ref({
 
 const groupStats = ref<Record<string, GroupStats>>({})
 
-let pieChart: echarts.ECharts | null = null
-let barChart: echarts.ECharts | null = null
-const groupCharts: Record<string, echarts.ECharts | null> = {}
+let pieChart: EChartsType | null = null
+let barChart: EChartsType | null = null
+const groupCharts: Record<string, EChartsType | null> = {}
 
 async function loadTeacherUsage() {
   isLoading.value = true
@@ -462,9 +438,7 @@ async function loadTeacherUsage() {
     const response = await apiRequest('auth/admin/teacher-usage')
     if (!response.ok) {
       const data = await response.json().catch(() => ({}))
-      notify.error(
-        data.detail || (isZh.value ? '加载教师使用度数据失败' : 'Failed to load teacher usage data')
-      )
+      notify.error(data.detail || t('teacher.analytics.notify.loadDataFailed'))
       return
     }
     const data = await response.json()
@@ -517,9 +491,7 @@ async function loadTeacherUsage() {
     }
   } catch (error) {
     console.error('Failed to load teacher usage:', error)
-    notify.error(
-      isZh.value ? '网络错误，加载教师使用度失败' : 'Network error, failed to load teacher usage'
-    )
+    notify.error(t('teacher.analytics.notify.networkError'))
   } finally {
     isLoading.value = false
   }
@@ -528,14 +500,14 @@ async function loadTeacherUsage() {
 function formatNumber(num: number): string {
   if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M'
   if (num >= 1000) return (num / 1000).toFixed(1) + 'K'
-  return num.toLocaleString()
+  return formatUserNumber(num, uiStore.language)
 }
 
 function initPieChart() {
   if (!pieChartRef.value) return
   pieChart = echarts.init(pieChartRef.value)
   const data = GROUPS.map((g, _i) => ({
-    name: isZh.value ? g.nameZh : g.nameEn,
+    name: t(`teacher.analytics.group.${g.id}.name`),
     value: groupStats.value[g.id]?.count ?? 0,
   }))
   pieChart.setOption({
@@ -562,7 +534,7 @@ function initPieChart() {
 function initBarChart() {
   if (!barChartRef.value) return
   barChart = echarts.init(barChartRef.value)
-  const xData = GROUPS.map((g) => (isZh.value ? g.nameZh : g.nameEn))
+  const xData = GROUPS.map((g) => t(`teacher.analytics.group.${g.id}.name`))
   const yData = GROUPS.map((g) => groupStats.value[g.id]?.totalTokens ?? 0)
   barChart.setOption({
     tooltip: {
@@ -620,7 +592,7 @@ watch(expandedGroupIds, async () => {
   setTimeout(initGroupCharts, 150)
 })
 
-watch(isZh, () => {
+watch(currentLanguage, () => {
   initPieChart()
   initBarChart()
   if (showUserChartModal.value && userChartRef.value) {
@@ -674,14 +646,14 @@ onBeforeUnmount(() => {
       class="teacher-usage-header h-14 px-4 flex items-center justify-between bg-white border-b border-stone-200"
     >
       <h1 class="text-sm font-semibold text-stone-900">
-        {{ isZh ? '教师使用度' : 'Teacher Usage' }}
+        {{ t('teacher.analytics.title') }}
       </h1>
       <el-button
         size="small"
         :loading="isLoading || allUsersLoading"
         @click="activeTab === 'overview' ? loadTeacherUsage() : loadAllUsers(usersPage)"
       >
-        {{ isZh ? '刷新' : 'Refresh' }}
+        {{ t('common.refresh') }}
       </el-button>
     </div>
 
@@ -692,7 +664,7 @@ onBeforeUnmount(() => {
         class="teacher-usage-tabs"
       >
         <el-tab-pane
-          :label="isZh ? '概况' : 'Overview'"
+          :label="t('teacher.analytics.overview')"
           name="overview"
         >
           <div
@@ -717,10 +689,10 @@ onBeforeUnmount(() => {
                 @click="openTeachersModal('total')"
               >
                 <p class="text-xs text-gray-500 mb-1">
-                  {{ isZh ? '总教师数' : 'Total Teachers' }}
+                  {{ t('teacher.analytics.totalTeachers') }}
                 </p>
                 <p class="text-2xl font-bold text-gray-800 dark:text-white">
-                  {{ stats.totalTeachers.toLocaleString() }}
+                  {{ formatUserNumber(stats.totalTeachers, uiStore.language) }}
                 </p>
               </el-card>
               <el-card
@@ -729,7 +701,7 @@ onBeforeUnmount(() => {
                 @click="openTeachersModal('unused')"
               >
                 <p class="text-xs text-gray-500 mb-1">
-                  {{ isZh ? '未使用' : 'Unused' }}
+                  {{ t('teacher.analytics.modalTitle.unused') }}
                 </p>
                 <p class="text-2xl font-bold text-gray-500 dark:text-gray-400">
                   {{ stats.unused }}
@@ -741,7 +713,7 @@ onBeforeUnmount(() => {
                 @click="openTeachersModal('continuous')"
               >
                 <p class="text-xs text-gray-500 mb-1">
-                  {{ isZh ? '持续使用' : 'Continuous Usage' }}
+                  {{ t('teacher.analytics.modalTitle.continuous') }}
                 </p>
                 <p class="text-2xl font-bold text-green-600 dark:text-green-400">
                   {{ stats.continuous }}
@@ -753,7 +725,7 @@ onBeforeUnmount(() => {
                 @click="openTeachersModal('rejection')"
               >
                 <p class="text-xs text-gray-500 mb-1">
-                  {{ isZh ? '拒绝使用' : 'Rejection' }}
+                  {{ t('teacher.analytics.modalTitle.rejection') }}
                 </p>
                 <p class="text-2xl font-bold text-orange-600 dark:text-orange-400">
                   {{ stats.rejection }}
@@ -765,7 +737,7 @@ onBeforeUnmount(() => {
                 @click="openTeachersModal('stopped')"
               >
                 <p class="text-xs text-gray-500 mb-1">
-                  {{ isZh ? '停止使用' : 'Stopped Usage' }}
+                  {{ t('teacher.analytics.modalTitle.stopped') }}
                 </p>
                 <p class="text-2xl font-bold text-red-600 dark:text-red-400">
                   {{ stats.stopped }}
@@ -777,7 +749,7 @@ onBeforeUnmount(() => {
                 @click="openTeachersModal('intermittent')"
               >
                 <p class="text-xs text-gray-500 mb-1">
-                  {{ isZh ? '间歇式使用' : 'Intermittent Usage' }}
+                  {{ t('teacher.analytics.modalTitle.intermittent') }}
                 </p>
                 <p class="text-2xl font-bold text-blue-600 dark:text-blue-400">
                   {{ stats.intermittent }}
@@ -789,7 +761,7 @@ onBeforeUnmount(() => {
               <el-card shadow="hover">
                 <template #header>
                   <span class="font-medium">
-                    {{ isZh ? '教师分组分布' : 'Group Distribution' }}
+                    {{ t('teacher.analytics.groupDistribution') }}
                   </span>
                 </template>
                 <div
@@ -800,7 +772,7 @@ onBeforeUnmount(() => {
               <el-card shadow="hover">
                 <template #header>
                   <span class="font-medium">
-                    {{ isZh ? '各组 Token 使用量' : 'Token Usage by Group' }}
+                    {{ t('teacher.analytics.tokenByGroup') }}
                   </span>
                 </template>
                 <div
@@ -822,16 +794,16 @@ onBeforeUnmount(() => {
                 <div class="flex items-center justify-between">
                   <div>
                     <span class="font-semibold text-stone-900">
-                      {{ isZh ? TOTAL_GROUP.nameZh : TOTAL_GROUP.nameEn }}
+                      {{ t('teacher.analytics.group.total.name') }}
                     </span>
                     <div class="text-xs text-stone-500 mt-0.5">
-                      {{ isZh ? TOTAL_GROUP.descriptionZh : TOTAL_GROUP.descriptionEn }}
+                      {{ t('teacher.analytics.group.total.description') }}
                     </div>
                   </div>
                   <div class="flex items-center gap-2">
                     <el-tag size="small">
                       {{ groupStats.total?.count ?? 0 }}
-                      {{ isZh ? '位教师' : ' teachers' }}
+                      {{ t('teacher.analytics.teachersUnit') }}
                     </el-tag>
                     <el-icon
                       :size="18"
@@ -856,27 +828,27 @@ onBeforeUnmount(() => {
                       >
                         <el-table-column
                           prop="username"
-                          :label="isZh ? '教师' : 'Teacher'"
+                          :label="t('teacher.analytics.colTeacher')"
                           width="140"
                         />
                         <el-table-column
                           prop="diagrams"
-                          :label="isZh ? '智能补全次数' : 'Auto-complete'"
+                          :label="t('teacher.analytics.colAutocompleteCount')"
                           width="80"
                         />
                         <el-table-column
                           prop="conceptGen"
-                          :label="isZh ? '概念生成' : 'Concept Gen'"
+                          :label="t('teacher.analytics.colConceptGen')"
                           width="80"
                         />
                         <el-table-column
                           prop="relationshipLabels"
-                          :label="isZh ? '关系标签' : 'Rel Labels'"
+                          :label="t('teacher.analytics.colRelLabels')"
                           width="80"
                         />
                         <el-table-column
                           prop="tokens"
-                          :label="isZh ? 'Token' : 'Tokens'"
+                          :label="t('teacher.analytics.colTokens')"
                           width="100"
                         >
                           <template #default="{ row }">
@@ -885,7 +857,7 @@ onBeforeUnmount(() => {
                         </el-table-column>
                         <el-table-column
                           prop="lastActive"
-                          :label="isZh ? '最后活跃' : 'Last Active'"
+                          :label="t('teacher.analytics.colLastActive')"
                         />
                       </el-table>
                     </div>
@@ -915,16 +887,16 @@ onBeforeUnmount(() => {
                 <div class="flex items-center justify-between">
                   <div>
                     <span class="font-semibold text-stone-900">
-                      {{ isZh ? group.nameZh : group.nameEn }}
+                      {{ teacherGroupName(group.id) }}
                     </span>
                     <div class="text-xs text-stone-500 mt-0.5">
-                      {{ isZh ? group.descriptionZh : group.descriptionEn }}
+                      {{ teacherGroupDescription(group.id) }}
                     </div>
                   </div>
                   <div class="flex items-center gap-2">
                     <el-tag size="small">
                       {{ groupStats[group.id]?.count ?? 0 }}
-                      {{ isZh ? '位教师' : ' teachers' }}
+                      {{ t('teacher.analytics.teachersUnit') }}
                     </el-tag>
                     <el-icon
                       :size="18"
@@ -949,27 +921,27 @@ onBeforeUnmount(() => {
                       >
                         <el-table-column
                           prop="username"
-                          :label="isZh ? '教师' : 'Teacher'"
+                          :label="t('teacher.analytics.colTeacher')"
                           width="140"
                         />
                         <el-table-column
                           prop="diagrams"
-                          :label="isZh ? '智能补全次数' : 'Auto-complete'"
+                          :label="t('teacher.analytics.colAutocompleteCount')"
                           width="80"
                         />
                         <el-table-column
                           prop="conceptGen"
-                          :label="isZh ? '概念生成' : 'Concept Gen'"
+                          :label="t('teacher.analytics.colConceptGen')"
                           width="80"
                         />
                         <el-table-column
                           prop="relationshipLabels"
-                          :label="isZh ? '关系标签' : 'Rel Labels'"
+                          :label="t('teacher.analytics.colRelLabels')"
                           width="80"
                         />
                         <el-table-column
                           prop="tokens"
-                          :label="isZh ? 'Token' : 'Tokens'"
+                          :label="t('teacher.analytics.colTokens')"
                           width="100"
                         >
                           <template #default="{ row }">
@@ -978,7 +950,7 @@ onBeforeUnmount(() => {
                         </el-table-column>
                         <el-table-column
                           prop="lastActive"
-                          :label="isZh ? '最后活跃' : 'Last Active'"
+                          :label="t('teacher.analytics.colLastActive')"
                         />
                       </el-table>
                     </div>
@@ -1001,7 +973,7 @@ onBeforeUnmount(() => {
                 class="sub-groups-box rounded-lg border-2 border-stone-300 bg-stone-100/50 p-4 dark:border-stone-600 dark:bg-stone-800/30"
               >
                 <div class="text-sm font-semibold text-stone-700 dark:text-stone-300 mb-4">
-                  {{ isZh ? '非持续使用' : 'Non-continuous Usage' }}
+                  {{ t('teacher.analytics.nonContinuous') }}
                 </div>
                 <div class="space-y-4">
                   <el-card
@@ -1015,16 +987,16 @@ onBeforeUnmount(() => {
                     <div class="flex items-center justify-between">
                       <div>
                         <span class="font-semibold text-stone-900">
-                          {{ isZh ? group.nameZh : group.nameEn }}
+                          {{ teacherGroupName(group.id) }}
                         </span>
                         <div class="text-xs text-stone-500 mt-0.5">
-                          {{ isZh ? group.descriptionZh : group.descriptionEn }}
+                          {{ teacherGroupDescription(group.id) }}
                         </div>
                       </div>
                       <div class="flex items-center gap-2">
                         <el-tag size="small">
                           {{ groupStats[group.id]?.count ?? 0 }}
-                          {{ isZh ? '位教师' : ' teachers' }}
+                          {{ t('teacher.analytics.teachersUnit') }}
                         </el-tag>
                         <el-icon
                           :size="18"
@@ -1049,27 +1021,27 @@ onBeforeUnmount(() => {
                           >
                             <el-table-column
                               prop="username"
-                              :label="isZh ? '教师' : 'Teacher'"
+                              :label="t('teacher.analytics.colTeacher')"
                               width="140"
                             />
                             <el-table-column
                               prop="diagrams"
-                              :label="isZh ? '智能补全次数' : 'Auto-complete'"
+                              :label="t('teacher.analytics.colAutocompleteCount')"
                               width="80"
                             />
                             <el-table-column
                               prop="conceptGen"
-                              :label="isZh ? '概念生成' : 'Concept Gen'"
+                              :label="t('teacher.analytics.colConceptGen')"
                               width="80"
                             />
                             <el-table-column
                               prop="relationshipLabels"
-                              :label="isZh ? '关系标签' : 'Rel Labels'"
+                              :label="t('teacher.analytics.colRelLabels')"
                               width="80"
                             />
                             <el-table-column
                               prop="tokens"
-                              :label="isZh ? 'Token' : 'Tokens'"
+                              :label="t('teacher.analytics.colTokens')"
                               width="100"
                             >
                               <template #default="{ row }">
@@ -1078,7 +1050,7 @@ onBeforeUnmount(() => {
                             </el-table-column>
                             <el-table-column
                               prop="lastActive"
-                              :label="isZh ? '最后活跃' : 'Last Active'"
+                              :label="t('teacher.analytics.colLastActive')"
                             />
                           </el-table>
                         </div>
@@ -1102,7 +1074,7 @@ onBeforeUnmount(() => {
         </el-tab-pane>
 
         <el-tab-pane
-          :label="isZh ? '教师情况' : 'Teachers'"
+          :label="t('teacher.analytics.teachersTab')"
           name="teachers"
         >
           <div
@@ -1128,27 +1100,27 @@ onBeforeUnmount(() => {
             >
               <el-table-column
                 prop="username"
-                :label="isZh ? '教师' : 'Teacher'"
+                :label="t('teacher.analytics.colTeacher')"
                 width="180"
               />
               <el-table-column
                 prop="diagrams"
-                :label="isZh ? '智能补全' : 'Auto-complete'"
+                :label="t('teacher.analytics.colAutocomplete')"
                 width="100"
               />
               <el-table-column
                 prop="conceptGen"
-                :label="isZh ? '概念生成' : 'Concept Gen'"
+                :label="t('teacher.analytics.colConceptGen')"
                 width="100"
               />
               <el-table-column
                 prop="relationshipLabels"
-                :label="isZh ? '关系标签' : 'Rel Labels'"
+                :label="t('teacher.analytics.colRelLabels')"
                 width="100"
               />
               <el-table-column
                 prop="tokens"
-                :label="isZh ? 'Token' : 'Tokens'"
+                :label="t('teacher.analytics.colTokens')"
                 width="120"
               >
                 <template #default="{ row }">
@@ -1157,7 +1129,7 @@ onBeforeUnmount(() => {
               </el-table-column>
               <el-table-column
                 prop="lastActive"
-                :label="isZh ? '最后活跃' : 'Last Active'"
+                :label="t('teacher.analytics.colLastActive')"
               />
             </el-table>
             <div class="mt-4 flex justify-end">
@@ -1187,7 +1159,7 @@ onBeforeUnmount(() => {
         class="mb-4 pb-4 border-b border-stone-200"
       >
         <h4 class="text-sm font-semibold text-stone-700 mb-3">
-          {{ isZh ? '操作判定规则' : 'Operation Judgment Rules' }}
+          {{ t('teacher.analytics.rulesTitle') }}
         </h4>
         <!-- 未使用: active_days = 0 (fixed, read-only) -->
         <div
@@ -1195,11 +1167,9 @@ onBeforeUnmount(() => {
           class="text-sm text-stone-600"
         >
           <code class="bg-stone-100 px-2 py-1 rounded">{{
-            isZh ? '活跃日数 = 0' : 'active_days = 0'
+            t('teacher.analytics.ruleUnusedLine')
           }}</code>
-          <span class="ml-2">{{
-            isZh ? '（观察窗内完全无使用记录）' : '(No usage within observation window)'
-          }}</span>
+          <span class="ml-2">{{ t('teacher.analytics.ruleUnusedHint') }}</span>
         </div>
         <!-- 持续使用 -->
         <el-form
@@ -1207,7 +1177,7 @@ onBeforeUnmount(() => {
           label-position="top"
           class="grid grid-cols-2 md:grid-cols-4 gap-3"
         >
-          <el-form-item :label="isZh ? '活跃周数 ≥' : 'active_weeks ≥'">
+          <el-form-item :label="t('teacher.analytics.form.activeWeeks')">
             <el-input-number
               v-model="configForm.continuous.active_weeks_min"
               :min="1"
@@ -1215,7 +1185,7 @@ onBeforeUnmount(() => {
               size="small"
             />
           </el-form-item>
-          <el-form-item :label="isZh ? '前4周活跃周数 ≥' : 'active_weeks_first4 ≥'">
+          <el-form-item :label="t('teacher.analytics.form.activeWeeksFirst4')">
             <el-input-number
               v-model="configForm.continuous.active_weeks_first4_min"
               :min="0"
@@ -1223,7 +1193,7 @@ onBeforeUnmount(() => {
               size="small"
             />
           </el-form-item>
-          <el-form-item :label="isZh ? '后4周活跃周数 ≥' : 'active_weeks_last4 ≥'">
+          <el-form-item :label="t('teacher.analytics.form.activeWeeksLast4')">
             <el-input-number
               v-model="configForm.continuous.active_weeks_last4_min"
               :min="0"
@@ -1231,7 +1201,7 @@ onBeforeUnmount(() => {
               size="small"
             />
           </el-form-item>
-          <el-form-item :label="isZh ? '最长断档天数 ≤' : 'max_zero_gap_days ≤'">
+          <el-form-item :label="t('teacher.analytics.form.maxZeroGapMax')">
             <el-input-number
               v-model="configForm.continuous.max_zero_gap_days_max"
               :min="1"
@@ -1246,7 +1216,7 @@ onBeforeUnmount(() => {
           label-position="top"
           class="grid grid-cols-2 md:grid-cols-4 gap-3"
         >
-          <el-form-item :label="isZh ? '活跃日数 ≤' : 'active_days ≤'">
+          <el-form-item :label="t('teacher.analytics.form.activeDaysMax')">
             <el-input-number
               v-model="configForm.rejection.active_days_max"
               :min="0"
@@ -1254,7 +1224,7 @@ onBeforeUnmount(() => {
               size="small"
             />
           </el-form-item>
-          <el-form-item :label="isZh ? '前10天活跃日数 ≥' : 'active_days_first10 ≥'">
+          <el-form-item :label="t('teacher.analytics.form.activeDaysFirst10')">
             <el-input-number
               v-model="configForm.rejection.active_days_first10_min"
               :min="0"
@@ -1262,7 +1232,7 @@ onBeforeUnmount(() => {
               size="small"
             />
           </el-form-item>
-          <el-form-item :label="isZh ? '后25天活跃日数 =' : 'active_days_last25 ='">
+          <el-form-item :label="t('teacher.analytics.form.activeDaysLast25')">
             <el-input-number
               v-model="configForm.rejection.active_days_last25_max"
               :min="0"
@@ -1270,7 +1240,7 @@ onBeforeUnmount(() => {
               size="small"
             />
           </el-form-item>
-          <el-form-item :label="isZh ? '最长断档天数 ≥' : 'max_zero_gap_days ≥'">
+          <el-form-item :label="t('teacher.analytics.form.maxZeroGapMinRej')">
             <el-input-number
               v-model="configForm.rejection.max_zero_gap_days_min"
               :min="1"
@@ -1285,7 +1255,7 @@ onBeforeUnmount(() => {
           label-position="top"
           class="grid grid-cols-2 md:grid-cols-3 gap-3"
         >
-          <el-form-item :label="isZh ? '前25天活跃日数 ≥' : 'active_days_first25 ≥'">
+          <el-form-item :label="t('teacher.analytics.form.activeDaysFirst25')">
             <el-input-number
               v-model="configForm.stopped.active_days_first25_min"
               :min="0"
@@ -1293,7 +1263,7 @@ onBeforeUnmount(() => {
               size="small"
             />
           </el-form-item>
-          <el-form-item :label="isZh ? '后14天活跃日数 =' : 'active_days_last14 ='">
+          <el-form-item :label="t('teacher.analytics.form.activeDaysLast14')">
             <el-input-number
               v-model="configForm.stopped.active_days_last14_max"
               :min="0"
@@ -1301,7 +1271,7 @@ onBeforeUnmount(() => {
               size="small"
             />
           </el-form-item>
-          <el-form-item :label="isZh ? '最长断档天数 ≥' : 'max_zero_gap_days ≥'">
+          <el-form-item :label="t('teacher.analytics.form.maxZeroGapMinStop')">
             <el-input-number
               v-model="configForm.stopped.max_zero_gap_days_min"
               :min="1"
@@ -1316,7 +1286,7 @@ onBeforeUnmount(() => {
           label-position="top"
           class="grid grid-cols-2 gap-3"
         >
-          <el-form-item :label="isZh ? '活跃段数 ≥' : 'n_bursts ≥'">
+          <el-form-item :label="t('teacher.analytics.form.nBursts')">
             <el-input-number
               v-model="configForm.intermittent.n_bursts_min"
               :min="1"
@@ -1324,7 +1294,7 @@ onBeforeUnmount(() => {
               size="small"
             />
           </el-form-item>
-          <el-form-item :label="isZh ? '内部最大沉寂断档 ≥' : 'internal_max_zero_gap_days ≥'">
+          <el-form-item :label="t('teacher.analytics.form.internalMaxGap')">
             <el-input-number
               v-model="configForm.intermittent.internal_max_zero_gap_days_min"
               :min="1"
@@ -1342,14 +1312,14 @@ onBeforeUnmount(() => {
             :loading="isSavingConfig"
             @click="saveConfig"
           >
-            {{ isZh ? '仅保存' : 'Save Only' }}
+            {{ t('teacher.analytics.saveOnly') }}
           </el-button>
           <el-button
             size="small"
             :loading="isRecomputing"
             @click="recomputeClassifications"
           >
-            {{ isZh ? '保存并重算' : 'Save & Recompute' }}
+            {{ t('teacher.analytics.saveRecompute') }}
           </el-button>
         </div>
       </div>
@@ -1363,27 +1333,27 @@ onBeforeUnmount(() => {
       >
         <el-table-column
           prop="username"
-          :label="isZh ? '教师' : 'Teacher'"
+          :label="t('teacher.analytics.colTeacher')"
           width="160"
         />
         <el-table-column
           prop="diagrams"
-          :label="isZh ? '智能补全次数' : 'Auto-complete'"
+          :label="t('teacher.analytics.colAutocompleteCount')"
           width="90"
         />
         <el-table-column
           prop="conceptGen"
-          :label="isZh ? '概念生成' : 'Concept Gen'"
+          :label="t('teacher.analytics.colConceptGen')"
           width="90"
         />
         <el-table-column
           prop="relationshipLabels"
-          :label="isZh ? '关系标签' : 'Rel Labels'"
+          :label="t('teacher.analytics.colRelLabels')"
           width="90"
         />
         <el-table-column
           prop="tokens"
-          :label="isZh ? 'Token' : 'Tokens'"
+          :label="t('teacher.analytics.colTokens')"
           width="100"
         >
           <template #default="{ row }">
@@ -1392,7 +1362,7 @@ onBeforeUnmount(() => {
         </el-table-column>
         <el-table-column
           prop="lastActive"
-          :label="isZh ? '最后活跃' : 'Last Active'"
+          :label="t('teacher.analytics.colLastActive')"
         />
       </el-table>
       <template #footer>
@@ -1400,7 +1370,7 @@ onBeforeUnmount(() => {
           type="primary"
           @click="showTeachersModal = false"
         >
-          {{ isZh ? '关闭' : 'Close' }}
+          {{ t('common.close') }}
         </el-button>
       </template>
     </el-dialog>
@@ -1439,7 +1409,7 @@ onBeforeUnmount(() => {
             class="token-stat-card"
           >
             <p class="text-xs text-gray-500 mb-1">
-              {{ isZh ? '今日' : 'Today' }}
+              {{ t('common.date.today') }}
             </p>
             <p class="text-lg font-semibold">
               {{ formatNumber(userDetailData.tokenStats.today.total_tokens) }}
@@ -1450,7 +1420,7 @@ onBeforeUnmount(() => {
             class="token-stat-card"
           >
             <p class="text-xs text-gray-500 mb-1">
-              {{ isZh ? '本周' : 'This Week' }}
+              {{ t('teacher.analytics.periodWeek') }}
             </p>
             <p class="text-lg font-semibold">
               {{ formatNumber(userDetailData.tokenStats.week.total_tokens) }}
@@ -1461,7 +1431,7 @@ onBeforeUnmount(() => {
             class="token-stat-card"
           >
             <p class="text-xs text-gray-500 mb-1">
-              {{ isZh ? '本月' : 'This Month' }}
+              {{ t('teacher.analytics.periodMonth') }}
             </p>
             <p class="text-lg font-semibold">
               {{ formatNumber(userDetailData.tokenStats.month.total_tokens) }}
@@ -1472,7 +1442,7 @@ onBeforeUnmount(() => {
             class="token-stat-card"
           >
             <p class="text-xs text-gray-500 mb-1">
-              {{ isZh ? '总计' : 'Total' }}
+              {{ t('teacher.analytics.periodTotal') }}
             </p>
             <p class="text-lg font-semibold">
               {{ formatNumber(userDetailData.tokenStats.total.total_tokens) }}
@@ -1485,7 +1455,7 @@ onBeforeUnmount(() => {
           type="primary"
           @click="closeUserChartModal"
         >
-          {{ isZh ? '关闭' : 'Close' }}
+          {{ t('common.close') }}
         </el-button>
       </template>
     </el-dialog>

@@ -39,7 +39,13 @@ const emit = defineEmits<{
   (e: 'update:visible', value: boolean): void
 }>()
 
-const { isZh } = useLanguage()
+const { t } = useLanguage()
+
+function metricLabel(key: string): string {
+  const path = `knowledge.manualEval.metric.${key}`
+  const out = t(path)
+  return out === path ? key : out
+}
 
 const dialogVisible = computed({
   get: () => props.visible,
@@ -85,7 +91,7 @@ const chunks = computed(() => chunksData.value?.chunks || [])
 
 const handleEvaluate = async () => {
   if (!query.value.trim()) {
-    notify.warning(isZh.value ? '请输入查询问题' : 'Please enter a query')
+    notify.warning(t('knowledge.manualEval.notify.enterQuery'))
     return
   }
 
@@ -102,10 +108,10 @@ const handleEvaluate = async () => {
     })
 
     evaluationResults.value = result
-    notify.success(isZh.value ? '评估完成' : 'Evaluation completed')
+    notify.success(t('knowledge.manualEval.notify.completed'))
   } catch (error) {
     notify.error(
-      error instanceof Error ? error.message : isZh.value ? '评估失败' : 'Evaluation failed'
+      error instanceof Error ? error.message : t('knowledge.manualEval.notify.failed')
     )
   }
 }
@@ -152,11 +158,7 @@ watch(
 <template>
   <ElDialog
     v-model="dialogVisible"
-    :title="
-      isZh
-        ? `手动评估 - ${methodLabels[method] || method}`
-        : `Manual Evaluation - ${methodLabels[method] || method}`
-    "
+    :title="t('knowledge.manualEval.dialogTitle', { method: methodLabels[method] || method })"
     width="900px"
     :close-on-click-modal="false"
     class="manual-evaluation-modal"
@@ -167,13 +169,13 @@ watch(
       <div class="form-section mb-6">
         <div class="mb-4">
           <label class="block text-sm font-medium text-stone-700 mb-2">
-            {{ isZh ? '查询问题' : 'Query' }} <span class="text-red-500">*</span>
+            {{ t('knowledge.manualEval.queryLabel') }} <span class="text-red-500">*</span>
           </label>
           <ElInput
             v-model="query"
             type="textarea"
             :rows="3"
-            :placeholder="isZh ? '输入要评估的查询问题...' : 'Enter the query to evaluate...'"
+            :placeholder="t('knowledge.manualEval.queryPlaceholder')"
             maxlength="500"
             show-word-limit
           />
@@ -181,23 +183,19 @@ watch(
 
         <div class="mb-4">
           <label class="block text-sm font-medium text-stone-700 mb-2">
-            {{ isZh ? '标准答案（可选）' : 'Ground Truth Answer (Optional)' }}
+            {{ t('knowledge.manualEval.groundTruthLabel') }}
           </label>
           <ElInput
             v-model="answer"
             type="textarea"
             :rows="2"
-            :placeholder="
-              isZh
-                ? '输入标准答案以评估答案相关性...'
-                : 'Enter ground truth answer for answer relevance evaluation...'
-            "
+            :placeholder="t('knowledge.manualEval.groundTruthPlaceholder')"
           />
         </div>
 
         <div class="mb-4">
           <label class="block text-sm font-medium text-stone-700 mb-2">
-            {{ isZh ? '模型' : 'Model' }}
+            {{ t('knowledge.manualEval.modelLabel') }}
           </label>
           <ElSelect
             v-model="model"
@@ -215,11 +213,7 @@ watch(
         <div class="mb-4">
           <div class="flex items-center justify-between mb-2">
             <label class="block text-sm font-medium text-stone-700">
-              {{
-                isZh
-                  ? '选择要评估的分块（留空则评估所有）'
-                  : 'Select Chunks to Evaluate (leave empty to evaluate all)'
-              }}
+              {{ t('knowledge.manualEval.selectChunksHeading') }}
             </label>
             <ElButton
               size="small"
@@ -228,12 +222,8 @@ watch(
             >
               {{
                 selectedChunkIds.length === chunks.length
-                  ? isZh
-                    ? '取消全选'
-                    : 'Deselect All'
-                  : isZh
-                    ? '全选'
-                    : 'Select All'
+                  ? t('knowledge.manualEval.deselectAll')
+                  : t('knowledge.manualEval.selectAll')
               }}
             </ElButton>
           </div>
@@ -249,7 +239,7 @@ watch(
             v-else-if="chunks.length === 0"
             class="text-center py-8 text-stone-500"
           >
-            {{ isZh ? '没有找到分块' : 'No chunks found' }}
+            {{ t('knowledge.manualEval.noChunks') }}
           </div>
           <div
             v-else
@@ -270,7 +260,7 @@ watch(
               />
               <div class="flex-1 min-w-0">
                 <div class="text-sm font-medium text-stone-900 mb-1">
-                  {{ isZh ? `分块 #${chunk.chunk_index + 1}` : `Chunk #${chunk.chunk_index + 1}` }}
+                  {{ t('chunkTestResults.chunkLabel', { n: chunk.chunk_index + 1 }) }}
                 </div>
                 <div class="text-xs text-stone-600 truncate">
                   {{ chunk.text.substring(0, 100) }}{{ chunk.text.length > 100 ? '...' : '' }}
@@ -281,11 +271,7 @@ watch(
               v-if="chunks.length > 20"
               class="text-xs text-stone-500 text-center py-2"
             >
-              {{
-                isZh
-                  ? `显示前 20 个，共 ${chunks.length} 个分块`
-                  : `Showing first 20 of ${chunks.length} chunks`
-              }}
+              {{ t('knowledge.manualEval.showingFirst20', { total: chunks.length }) }}
             </div>
           </div>
         </div>
@@ -298,7 +284,7 @@ watch(
           @click="handleEvaluate"
         >
           <ElIcon class="mr-1"><Sparkles /></ElIcon>
-          {{ isZh ? '开始评估' : 'Start Evaluation' }}
+          {{ t('knowledge.manualEval.startEvaluation') }}
         </ElButton>
       </div>
 
@@ -309,7 +295,7 @@ watch(
       >
         <ElDivider>
           <span class="text-sm font-medium text-stone-700">
-            {{ isZh ? '评估结果' : 'Evaluation Results' }}
+            {{ t('knowledge.manualEval.resultsTitle') }}
           </span>
         </ElDivider>
 
@@ -325,12 +311,8 @@ watch(
                 <div class="font-semibold text-stone-900">
                   {{
                     result.type === 'answer_relevance'
-                      ? isZh
-                        ? '答案相关性评估'
-                        : 'Answer Relevance Evaluation'
-                      : isZh
-                        ? '分块质量评估'
-                        : 'Chunk Quality Evaluation'
+                      ? t('knowledge.manualEval.result.answerRelevance')
+                      : t('knowledge.manualEval.result.chunkQuality')
                   }}
                 </div>
               </template>
@@ -347,33 +329,7 @@ watch(
                     class="score-item"
                   >
                     <div class="text-xs text-stone-500 mb-1">
-                      {{
-                        key === 'answer_coverage'
-                          ? isZh
-                            ? '答案覆盖率'
-                            : 'Answer Coverage'
-                          : key === 'answer_faithfulness'
-                            ? isZh
-                              ? '答案忠实度'
-                              : 'Answer Faithfulness'
-                            : key === 'context_utilization'
-                              ? isZh
-                                ? '上下文利用度'
-                                : 'Context Utilization'
-                              : key === 'information_completeness'
-                                ? isZh
-                                  ? '信息完整性'
-                                  : 'Information Completeness'
-                                : key === 'overall_score'
-                                  ? isZh
-                                    ? '总体评分'
-                                    : 'Overall Score'
-                                  : key === 'reasoning'
-                                    ? isZh
-                                      ? '评估理由'
-                                      : 'Reasoning'
-                                    : key
-                      }}
+                      {{ metricLabel(String(key)) }}
                     </div>
                     <div
                       v-if="key === 'reasoning'"
@@ -409,11 +365,7 @@ watch(
                   class="chunk-eval-item mb-4 pb-4 border-b border-stone-200 last:border-0"
                 >
                   <div class="font-medium text-stone-900 mb-2">
-                    {{
-                      isZh
-                        ? `分块 #${eval_item.chunk_index + 1}`
-                        : `Chunk #${eval_item.chunk_index + 1}`
-                    }}
+                    {{ t('chunkTestResults.chunkLabel', { n: eval_item.chunk_index + 1 }) }}
                   </div>
                   <div class="grid grid-cols-3 gap-3">
                     <div
@@ -422,33 +374,7 @@ watch(
                       class="score-item"
                     >
                       <div class="text-xs text-stone-500 mb-1">
-                        {{
-                          key === 'relevance'
-                            ? isZh
-                              ? '相关性'
-                              : 'Relevance'
-                            : key === 'completeness'
-                              ? isZh
-                                ? '完整性'
-                                : 'Completeness'
-                              : key === 'clarity'
-                                ? isZh
-                                  ? '清晰度'
-                                  : 'Clarity'
-                                : key === 'information_density'
-                                  ? isZh
-                                    ? '信息密度'
-                                    : 'Information Density'
-                                  : key === 'overall_score'
-                                    ? isZh
-                                      ? '总体评分'
-                                      : 'Overall Score'
-                                    : key === 'reasoning'
-                                      ? isZh
-                                        ? '评估理由'
-                                        : 'Reasoning'
-                                      : key
-                        }}
+                        {{ metricLabel(String(key)) }}
                       </div>
                       <div
                         v-if="key === 'reasoning'"

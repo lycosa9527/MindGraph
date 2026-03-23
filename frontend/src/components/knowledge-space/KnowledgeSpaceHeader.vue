@@ -28,7 +28,7 @@ const emit = defineEmits<{
   (e: 'processSelected'): void
 }>()
 
-const { isZh } = useLanguage()
+const { t } = useLanguage()
 
 const showStartProcessing = computed(() => props.pendingCount > 0)
 const hasSelectedPending = computed(() => props.selectedPendingCount > 0)
@@ -40,10 +40,10 @@ const hasSelectedPending = computed(() => props.selectedPendingCount > 0)
   >
     <div class="flex items-center gap-3 min-w-0 flex-1">
       <h1 class="text-lg font-semibold text-stone-900">
-        {{ isZh ? '个人知识库' : 'Knowledge Base' }}
+        {{ t('knowledge.header.title') }}
       </h1>
       <span class="text-sm text-stone-500">
-        {{ isZh ? `(${documentCount}/5)` : `(${documentCount}/5)` }}
+        ({{ documentCount }}/5)
       </span>
     </div>
     <div class="flex items-center gap-2 shrink-0">
@@ -55,7 +55,7 @@ const hasSelectedPending = computed(() => props.selectedPendingCount > 0)
         @click="emit('upload')"
       >
         <ElIcon class="mr-1"><Upload /></ElIcon>
-        {{ isZh ? '上传文档' : 'Upload Documents' }}
+        {{ t('knowledge.header.upload') }}
       </ElButton>
 
       <!-- Selected Count Badge -->
@@ -63,7 +63,7 @@ const hasSelectedPending = computed(() => props.selectedPendingCount > 0)
         v-if="selectedCount > 0"
         class="selected-badge"
       >
-        {{ isZh ? `已选 ${selectedCount} 项` : `${selectedCount} selected` }}
+        {{ t('knowledge.header.selected', { n: selectedCount }) }}
       </span>
 
       <!-- Process Selected Button (when documents are selected) -->
@@ -74,9 +74,7 @@ const hasSelectedPending = computed(() => props.selectedPendingCount > 0)
         @click="emit('processSelected')"
       >
         <ElIcon class="mr-1"><VideoPlay /></ElIcon>
-        {{
-          isZh ? `处理选中 (${selectedPendingCount})` : `Process Selected (${selectedPendingCount})`
-        }}
+        {{ t('knowledge.header.processSelected', { n: selectedPendingCount }) }}
       </ElButton>
 
       <!-- Start All Processing Button (when no selection but has pending) -->
@@ -87,11 +85,11 @@ const hasSelectedPending = computed(() => props.selectedPendingCount > 0)
         @click="emit('startProcessing')"
       >
         <ElIcon class="mr-1"><VideoPlay /></ElIcon>
-        {{ isZh ? '处理全部' : 'Process All' }}
+        {{ t('knowledge.header.processAll') }}
       </ElButton>
 
       <!-- Retrieval Test Button -->
-      <ElTooltip :content="isZh ? '检索测试' : 'Retrieval Test'">
+      <ElTooltip :content="t('knowledge.header.retrievalTest')">
         <ElButton
           text
           circle
@@ -105,7 +103,7 @@ const hasSelectedPending = computed(() => props.selectedPendingCount > 0)
       </ElTooltip>
 
       <!-- Settings Button -->
-      <ElTooltip :content="isZh ? '设置' : 'Settings'">
+      <ElTooltip :content="t('knowledge.header.settings')">
         <ElButton
           text
           circle

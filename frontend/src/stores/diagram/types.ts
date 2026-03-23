@@ -2,6 +2,12 @@ import type { Ref } from 'vue'
 
 import type { DiagramData, DiagramNode, DiagramType, HistoryEntry } from '@/types'
 
+/** Optional flags for `loadFromSpec` (same-document layout refresh vs full load). */
+export type LoadFromSpecOptions = {
+  /** When false, skip `diagram:loaded` so listeners do not treat it as a new diagram. */
+  emitLoaded?: boolean
+}
+
 export type DiagramEventType =
   | 'diagram:node_added'
   | 'diagram:node_updated'
@@ -62,7 +68,11 @@ export interface DiagramContext {
   clearNodeStyle: (nodeId: string) => void
   removeFromSelection: (nodeId: string) => void
   saveCustomPosition: (nodeId: string, x: number, y: number) => void
-  loadFromSpec: (spec: Record<string, unknown>, diagramType: DiagramType) => boolean
+  loadFromSpec: (
+    spec: Record<string, unknown>,
+    diagramType: DiagramType,
+    options?: LoadFromSpecOptions
+  ) => boolean
   getDoubleBubbleSpecFromData: () => Record<string, unknown> | null
   buildFlowMapSpecFromNodes: () => Record<string, unknown> | null
   setNodeWidth: (nodeId: string, width: number | null) => void

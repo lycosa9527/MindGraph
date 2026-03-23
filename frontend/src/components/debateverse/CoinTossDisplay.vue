@@ -9,7 +9,7 @@ import { ElButton } from 'element-plus'
 import { useLanguage } from '@/composables/useLanguage'
 import { useDebateVerseStore } from '@/stores/debateverse'
 
-const { isZh } = useLanguage()
+const { t } = useLanguage()
 const store = useDebateVerseStore()
 
 // ============================================================================
@@ -28,12 +28,8 @@ const result = computed(() => store.currentSession?.session.coin_toss_result)
 const resultText = computed(() => {
   if (!result.value) return ''
   return result.value === 'affirmative_first'
-    ? isZh
-      ? '正方先发言'
-      : 'Affirmative speaks first'
-    : isZh
-      ? '反方先发言'
-      : 'Negative speaks first'
+    ? t('debateverse.coinTossAffirmativeFirst')
+    : t('debateverse.coinTossNegativeFirst')
 })
 
 // ============================================================================
@@ -65,7 +61,7 @@ async function executeCoinToss() {
   <div class="flex items-center justify-center h-full">
     <div class="text-center">
       <h2 class="text-2xl font-semibold text-gray-900 mb-8">
-        {{ isZh ? '掷硬币决定发言顺序' : 'Coin Toss to Determine Speaking Order' }}
+        {{ t('debateverse.coinTossOrder') }}
       </h2>
 
       <!-- Coin Animation -->
@@ -98,7 +94,7 @@ async function executeCoinToss() {
         :loading="isFlipping"
         @click="executeCoinToss"
       >
-        {{ isZh ? '执行掷硬币' : 'Execute Coin Toss' }}
+        {{ t('debateverse.executeCoinToss') }}
       </ElButton>
       <ElButton
         v-else
@@ -106,7 +102,7 @@ async function executeCoinToss() {
         size="large"
         @click="store.advanceStage('opening')"
       >
-        {{ isZh ? '开始辩论' : 'Start Debate' }}
+        {{ t('debateverse.startDebate') }}
       </ElButton>
     </div>
   </div>

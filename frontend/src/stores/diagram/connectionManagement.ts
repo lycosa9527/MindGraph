@@ -3,6 +3,7 @@ import {
   getConceptMapNodeCenter,
 } from '@/composables/diagrams/conceptMapHandles'
 import type { Connection } from '@/types'
+import { normalizeTopicRootLabelIfNeeded } from '@/utils/conceptMapTopicRootEdge'
 
 import type { DiagramContext } from './types'
 
@@ -40,6 +41,7 @@ export function useConnectionManagementSlice(ctx: DiagramContext) {
       }
     }
     ctx.data.value.connections.push(conn)
+    normalizeTopicRootLabelIfNeeded(conn, ctx.data.value.nodes)
     return connId
   }
 
@@ -50,6 +52,7 @@ export function useConnectionManagementSlice(ctx: DiagramContext) {
     if (!conn) return false
 
     conn.label = label
+    normalizeTopicRootLabelIfNeeded(conn, ctx.data.value.nodes)
     return true
   }
 

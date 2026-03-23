@@ -17,7 +17,7 @@ import DebateVerseStage from '@/components/debateverse/DebateVerseStage.vue'
 import { useLanguage } from '@/composables/useLanguage'
 import { useDebateVerseStore } from '@/stores/debateverse'
 
-const { isZh } = useLanguage()
+const { t } = useLanguage()
 const store = useDebateVerseStore()
 
 // ============================================================================
@@ -47,7 +47,7 @@ onUnmounted(() => {
       class="h-14 px-4 flex items-center justify-between bg-white border-b border-gray-200"
     >
       <div class="flex items-center gap-3">
-        <h1 class="text-sm font-semibold text-gray-800">{{ isZh ? '论境' : 'DebateVerse' }}</h1>
+        <h1 class="text-sm font-semibold text-gray-800">{{ t('debateverse.page.title') }}</h1>
         <span
           v-if="store.currentSession"
           class="text-gray-300"
@@ -68,7 +68,7 @@ onUnmounted(() => {
           @click="store.createSession('', store.llmAssignments)"
         >
           <ElIcon class="mr-1"><Plus /></ElIcon>
-          {{ isZh ? '新建辩论' : 'New Debate' }}
+          {{ t('debateverse.page.newDebate') }}
         </ElButton>
       </div>
     </header>
@@ -93,12 +93,12 @@ onUnmounted(() => {
         class="flex items-center justify-center h-full"
       >
         <div class="text-center text-gray-500">
-          <p class="text-lg mb-2">{{ isZh ? '还没有辩论' : 'No debate yet' }}</p>
+          <p class="text-lg mb-2">{{ t('debateverse.page.empty') }}</p>
           <ElButton
             type="primary"
             @click="store.createSession('', store.llmAssignments)"
           >
-            {{ isZh ? '创建新辩论' : 'Create New Debate' }}
+            {{ t('debateverse.page.create') }}
           </ElButton>
         </div>
       </div>

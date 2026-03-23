@@ -24,6 +24,10 @@ export interface User {
   avatar?: string
   createdAt?: string
   lastLogin?: string
+  /** Persisted UI locale (zh | en | az); absent until loaded from server */
+  uiLanguage?: string | null
+  /** Persisted prompt output language code; absent until loaded from server */
+  promptLanguage?: string | null
 }
 
 /**
@@ -45,6 +49,8 @@ export interface BackendUser {
   createdAt?: string
   last_login?: string
   lastLogin?: string
+  ui_language?: string | null
+  prompt_language?: string | null
   user?: {
     id?: string | number
     phone?: string

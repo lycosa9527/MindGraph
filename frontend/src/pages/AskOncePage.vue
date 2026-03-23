@@ -17,7 +17,7 @@ import { Send, Settings } from 'lucide-vue-next'
 import { AskOncePanel } from '@/components/askonce'
 import { LoginModal } from '@/components/auth'
 import { useLanguage } from '@/composables/useLanguage'
-import { ASKONCE_PROMPT_TEMPLATES } from '@/config/askOncePrompts'
+import { type PromptTemplate, ASKONCE_PROMPT_TEMPLATES } from '@/config/askOncePrompts'
 import { type ModelId, useAskOnceStore } from '@/stores/askonce'
 import { useAuthStore } from '@/stores/auth'
 
@@ -25,7 +25,13 @@ import { useAuthStore } from '@/stores/auth'
 // i18n
 // ============================================================================
 
-const { t, isZh } = useLanguage()
+const { t, currentLanguage } = useLanguage()
+
+function promptTemplateLabel(template: PromptTemplate): string {
+  const lang = currentLanguage.value
+  if (lang === 'zh') return template.name.zh
+  return template.name.en
+}
 
 // ============================================================================
 // Store
@@ -47,7 +53,7 @@ const selectedTemplate = ref('')
 const MODEL_IDS: ModelId[] = ['qwen', 'deepseek', 'kimi']
 
 const MODEL_CONFIG: Record<ModelId, { modelName: string }> = {
-  qwen: { modelName: 'qwen3-235b' },
+  qwen: { modelName: 'qwen3.5-397b-a17b' },
   deepseek: { modelName: 'deepseek-v3.2' },
   kimi: { modelName: 'kimi-k2' },
 }
@@ -62,17 +68,13 @@ const canSend = computed(
   () => promptInput.value.trim().length > 0 && !store.isStreaming && authStore.isAuthenticated
 )
 
-const placeholderText = computed(() =>
-  isZh.value
-    ? '输入您的问题... 按 Ctrl+Enter 或点击发送'
-    : 'Enter your prompt... Press Ctrl+Enter or click Send'
-)
+const placeholderText = computed(() => t('askOnce.placeholder'))
 
 // Current conversation title for display
 const conversationTitle = computed(() => {
   const conv = store.currentConversation
-  if (!conv) return isZh.value ? '新对话' : 'New Conversation'
-  return conv.name || (isZh.value ? '未命名对话' : 'Untitled Conversation')
+  if (!conv) return t('askOnce.newConversation')
+  return conv.name || t('askOnce.untitledConversation')
 })
 
 // ============================================================================
@@ -332,7 +334,7 @@ onUnmounted(() => {
           @click="clearAll"
         >
           <ElIcon class="mr-1"><Plus /></ElIcon>
-          {{ isZh ? '新建对话' : 'New Chat' }}
+          {{ t('askOnce.newChat') }}
         </ElButton>
       </div>
     </header>
@@ -353,12 +355,12 @@ onUnmounted(() => {
         />
         <div class="flex items-center justify-between mt-3">
           <div class="flex items-center gap-4 text-sm text-gray-500">
-            <span>{{ charCount }} {{ isZh ? '字符' : 'chars' }}</span>
+            <span>{{ charCount }} {{ t('common.unit.chars') }}</span>
             <span
               v-if="store.hasSystemPrompt"
               class="text-green-600"
             >
-              ✓ {{ isZh ? '提示词模板已应用' : 'Template active' }}
+              ✓ {{ t('askOnce.templateActive') }}
             </span>
           </div>
           <div class="flex items-center gap-2">
@@ -367,7 +369,7 @@ onUnmounted(() => {
               :disabled="!authStore.isAuthenticated"
               @click="openSystemModal"
             >
-              {{ isZh ? '提示词模板' : 'Templates' }}
+              {{ t('askOnce.templates') }}
             </ElButton>
             <ElButton
               type="primary"
@@ -375,7 +377,7 @@ onUnmounted(() => {
               :disabled="!canSend || !authStore.isAuthenticated"
               @click="sendToAllModels"
             >
-              {{ isZh ? '发送' : 'Send' }}
+              {{ t('askOnce.send') }}
             </ElButton>
           </div>
         </div>
@@ -396,48 +398,48 @@ onUnmounted(() => {
     <!-- Prompt Template Modal -->
     <ElDialog
       v-model="showSystemModal"
-      :title="isZh ? '提示词模板' : 'Prompt Templates'"
+      :title="t('askOnce.promptTemplatesTitle')"
       width="600px"
     >
       <div class="mb-4">
         <label class="block text-sm text-gray-600 mb-2">
-          {{ isZh ? '选择模板' : 'Select Template' }}
+          {{ t('askOnce.selectTemplate') }}
         </label>
         <ElSelect
           v-model="selectedTemplate"
-          :placeholder="isZh ? '选择预设模板...' : 'Select a preset template...'"
+          :placeholder="t('askOnce.selectTemplatePlaceholder')"
           class="w-full"
           @change="loadTemplate"
         >
           <ElOption
             v-for="(template, key) in ASKONCE_PROMPT_TEMPLATES"
             :key="key"
-            :label="isZh ? template.name.zh : template.name.en"
+            :label="promptTemplateLabel(template)"
             :value="key"
           />
         </ElSelect>
       </div>
       <div>
         <label class="block text-sm text-gray-600 mb-2">
-          {{ isZh ? '提示词内容' : 'Prompt Content' }}
+          {{ t('askOnce.promptContent') }}
         </label>
         <ElInput
           v-model="systemPromptDraft"
           type="textarea"
           :rows="10"
-          :placeholder="isZh ? '输入或选择模板后编辑...' : 'Enter or select a template to edit...'"
+          :placeholder="t('askOnce.promptEditPlaceholder')"
         />
       </div>
       <template #footer>
         <div class="flex justify-end gap-2">
           <ElButton @click="clearPromptDraft">
-            {{ isZh ? '清空' : 'Clear' }}
+            {{ t('askOnce.clearDraft') }}
           </ElButton>
           <ElButton
             type="primary"
             @click="saveSystemPrompt"
           >
-            {{ isZh ? '应用' : 'Apply' }}
+            {{ t('askOnce.apply') }}
           </ElButton>
         </div>
       </template>

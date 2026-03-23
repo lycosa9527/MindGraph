@@ -3,6 +3,8 @@
  */
 
 export { useConceptMapRelationshipStore } from './conceptMapRelationship'
+export { useConceptMapFocusReviewStore } from './conceptMapFocusReview'
+export { useConceptMapRootConceptReviewStore } from './conceptMapRootConceptReview'
 export { useInlineRecommendationsStore } from './inlineRecommendations'
 export {
   useDiagramStore,
@@ -12,7 +14,13 @@ export {
 } from './diagram'
 export { usePanelsStore } from './panels'
 export { useAuthStore } from './auth'
-export { useUIStore, type AppMode, DIAGRAM_TEMPLATES } from './ui'
+export {
+  useUIStore,
+  type AppMode,
+  type Language,
+  DIAGRAM_TEMPLATES,
+  getDiagramTemplateBody,
+} from './ui'
 export { useVoiceStore } from './voice'
 export { useMindMateStore, type MindMateConversation } from './mindmate'
 export {

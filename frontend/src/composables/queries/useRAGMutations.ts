@@ -74,7 +74,7 @@ async function retrievalTestAPI(params: RetrievalTestRequest): Promise<Retrieval
  */
 export function useRetrievalTest() {
   const queryClient = useQueryClient()
-  const { isZh } = useLanguage()
+  const { t } = useLanguage()
 
   return useMutation({
     mutationKey: ragKeys.retrievalTest(),
@@ -82,11 +82,11 @@ export function useRetrievalTest() {
     onSuccess: () => {
       // Invalidate retrieval test history to refresh the list
       queryClient.invalidateQueries({ queryKey: ragKeys.retrievalTestHistory() })
-      notify.success(isZh.value ? '检索测试完成' : 'Retrieval test completed')
+      notify.success(t('rag.retrievalTest.success'))
     },
     onError: (error: Error) => {
       console.error('Retrieval test failed:', error)
-      notify.error(error.message || (isZh.value ? '检索测试失败' : 'Retrieval test failed'))
+      notify.error(error.message || t('rag.retrievalTest.failed'))
     },
   })
 }

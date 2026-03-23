@@ -25,9 +25,9 @@ import {
 
 const notify = useNotifications()
 const authStore = useAuthStore()
-const { isZh } = useLanguage()
+const { t } = useLanguage()
 
-// Filter options - 我的 is shown as header button when authenticated
+/** API / state values stay in Chinese where the backend whitelist requires it. */
 const typeOptions = ['全部', 'MindMate', 'MindGraph'] as const
 
 const categoryOptions = [
@@ -41,6 +41,33 @@ const categoryOptions = [
 ] as const
 
 const sortOptions = ['最新发布', '最多点赞', '最多评论'] as const
+
+const TYPE_LABEL_MAP: Record<string, string> = {
+  全部: 'community.filter.all',
+  MindMate: 'community.type.mindmate',
+  MindGraph: 'community.type.mindgraph',
+}
+
+const CATEGORY_LABEL_MAP: Record<string, string> = {
+  全部: 'community.filter.all',
+  学习笔记: 'community.category.studyNotes',
+  教学设计: 'community.category.teachingDesign',
+  读书感悟: 'community.category.readingReflection',
+  工作总结: 'community.category.workSummary',
+  创意灵感: 'community.category.creative',
+  知识整理: 'community.category.knowledge',
+}
+
+const SORT_LABEL_MAP: Record<string, string> = {
+  最新发布: 'community.sort.newest',
+  最多点赞: 'community.sort.mostLikes',
+  最多评论: 'community.sort.mostComments',
+}
+
+function filterLabel(map: Record<string, string>, value: string): string {
+  const key = map[value]
+  return key ? String(t(key)) : value
+}
 
 const sortToApi = (s: string) =>
   s === '最多点赞' ? 'likes' : s === '最多评论' ? 'comments' : 'newest'
@@ -186,10 +213,10 @@ function formatDate(iso: string): string {
   const diffMins = Math.floor(diffMs / 60000)
   const diffHours = Math.floor(diffMs / 3600000)
   const diffDays = Math.floor(diffMs / 86400000)
-  if (diffMins < 60) return isZh.value ? `${diffMins}分钟前` : `${diffMins}m ago`
-  if (diffHours < 24) return isZh.value ? `${diffHours}小时前` : `${diffHours}h ago`
-  if (diffDays < 7) return isZh.value ? `${diffDays}天前` : `${diffDays}d ago`
-  return isZh.value ? d.toLocaleDateString('zh-CN') : d.toLocaleDateString()
+  if (diffMins < 60) return String(t('community.time.minutesAgo', { n: diffMins }))
+  if (diffHours < 24) return String(t('community.time.hoursAgo', { n: diffHours }))
+  if (diffDays < 7) return String(t('community.time.daysAgo', { n: diffDays }))
+  return d.toLocaleDateString()
 }
 
 async function toggleLike(post: CommunityPost) {
@@ -232,22 +259,18 @@ async function handleEditSuccess(updated: CommunityPost) {
 
 async function confirmDelete(post: CommunityPost) {
   try {
-    await ElMessageBox.confirm(
-      isZh.value ? '确定删除此分享？' : 'Delete this post?',
-      isZh.value ? '确认删除' : 'Confirm Delete',
-      {
-        confirmButtonText: isZh.value ? '删除' : 'Delete',
-        cancelButtonText: isZh.value ? '取消' : 'Cancel',
-        type: 'warning',
-      }
-    )
+    await ElMessageBox.confirm(t('community.deleteConfirmBody'), t('community.deleteConfirmTitle'), {
+      confirmButtonText: t('common.delete'),
+      cancelButtonText: t('common.cancel'),
+      type: 'warning',
+    })
   } catch {
     return
   }
 
   try {
     await deleteCommunityPost(post.id)
-    notify.success(isZh.value ? '已删除' : 'Deleted')
+    notify.success(t('community.deleted'))
     posts.value = posts.value.filter((p) => p.id !== post.id)
     total.value = Math.max(0, total.value - 1)
   } catch (e) {
@@ -276,14 +299,14 @@ function getPlaceholderColor(id: string): string {
     <!-- Header -->
     <div class="community-header px-6 py-5 bg-white border-b border-stone-200">
       <div class="flex items-center justify-between mb-4">
-        <h1 class="text-xl font-semibold text-stone-900">社区分享</h1>
+        <h1 class="text-xl font-semibold text-stone-900">{{ t('community.title') }}</h1>
         <div class="flex items-center gap-3">
           <div class="relative">
             <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" />
             <input
               v-model="searchQuery"
               type="text"
-              :placeholder="isZh ? '搜索作品...' : 'Search posts...'"
+              :placeholder="t('community.searchPlaceholder')"
               class="pl-10 pr-4 py-2 w-64 rounded-lg border border-stone-200 text-sm focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
             />
           </div>
@@ -294,7 +317,7 @@ function getPlaceholderColor(id: string): string {
             class="my-posts-btn"
             @click="setType('我的')"
           >
-            {{ isZh ? '我的' : 'My posts' }}
+            {{ t('community.myPosts') }}
           </ElButton>
         </div>
       </div>
@@ -302,7 +325,9 @@ function getPlaceholderColor(id: string): string {
       <!-- Filter rows -->
       <div class="space-y-3">
         <div class="flex items-center gap-3">
-          <span class="text-sm font-medium text-stone-600 w-12 flex-shrink-0">类型</span>
+          <span class="text-sm font-medium text-stone-600 w-12 flex-shrink-0">{{
+            t('community.filterType')
+          }}</span>
           <div class="flex flex-wrap gap-2">
             <button
               v-for="type in typeOptions"
@@ -315,13 +340,15 @@ function getPlaceholderColor(id: string): string {
               ]"
               @click="setType(type)"
             >
-              {{ type }}
+              {{ filterLabel(TYPE_LABEL_MAP, type) }}
             </button>
           </div>
         </div>
 
         <div class="flex items-center gap-3">
-          <span class="text-sm font-medium text-stone-600 w-12 flex-shrink-0">分类</span>
+          <span class="text-sm font-medium text-stone-600 w-12 flex-shrink-0">{{
+            t('community.filterCategory')
+          }}</span>
           <div class="flex flex-wrap gap-2">
             <button
               v-for="cat in categoryOptions"
@@ -334,13 +361,15 @@ function getPlaceholderColor(id: string): string {
               ]"
               @click="setCategory(cat)"
             >
-              {{ cat }}
+              {{ filterLabel(CATEGORY_LABEL_MAP, cat) }}
             </button>
           </div>
         </div>
 
         <div class="flex items-center gap-3">
-          <span class="text-sm font-medium text-stone-600 w-12 flex-shrink-0">排序</span>
+          <span class="text-sm font-medium text-stone-600 w-12 flex-shrink-0">{{
+            t('community.filterSort')
+          }}</span>
           <div class="flex flex-wrap gap-2">
             <button
               v-for="sort in sortOptions"
@@ -353,7 +382,7 @@ function getPlaceholderColor(id: string): string {
               ]"
               @click="setSort(sort)"
             >
-              {{ sort }}
+              {{ filterLabel(SORT_LABEL_MAP, sort) }}
             </button>
           </div>
         </div>
@@ -435,7 +464,7 @@ function getPlaceholderColor(id: string): string {
               v-if="post.category"
               class="absolute top-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded-full"
             >
-              {{ post.category }}
+              {{ filterLabel(CATEGORY_LABEL_MAP, post.category) }}
             </div>
           </div>
 
@@ -488,7 +517,7 @@ function getPlaceholderColor(id: string): string {
                   @click.stop="openEdit(post)"
                 >
                   <Pencil class="w-4 h-4" />
-                  {{ isZh ? '编辑' : 'Edit' }}
+                  {{ t('common.edit') }}
                 </button>
                 <button
                   v-if="canEditPost(post)"
@@ -496,7 +525,7 @@ function getPlaceholderColor(id: string): string {
                   @click.stop="confirmDelete(post)"
                 >
                   <Trash2 class="w-4 h-4" />
-                  {{ isZh ? '删除' : 'Delete' }}
+                  {{ t('common.delete') }}
                 </button>
               </div>
             </div>
@@ -507,17 +536,13 @@ function getPlaceholderColor(id: string): string {
           v-if="isLoadingMore"
           class="col-span-full flex justify-center py-6 text-stone-400 text-sm"
         >
-          {{ isZh ? '加载更多...' : 'Loading more...' }}
+          {{ t('community.loadingMore') }}
         </div>
       </div>
 
       <ElEmpty
         v-else
-        :description="
-          isZh
-            ? '没有找到匹配的作品，尝试调整筛选条件或搜索关键词'
-            : 'No posts found. Try adjusting filters or search'
-        "
+        :description="t('community.emptyNoPosts')"
         :image-size="120"
         class="flex-1 flex items-center justify-center min-h-[300px]"
       />

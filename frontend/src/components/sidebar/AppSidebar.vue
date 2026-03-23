@@ -25,6 +25,7 @@ import {
 import {
   ChevronDown,
   KeyRound,
+  Languages,
   LogIn,
   LogOut,
   Menu,
@@ -35,6 +36,7 @@ import {
 } from 'lucide-vue-next'
 
 import { AccountInfoModal, ChangePasswordModal, LoginModal } from '@/components/auth'
+import LanguageSettingsModal from '@/components/settings/LanguageSettingsModal.vue'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useLanguage } from '@/composables/useLanguage'
 import { useAuthStore, useMindMateStore, useUIStore } from '@/stores'
@@ -51,7 +53,7 @@ import KnowledgeSpaceHistory from './KnowledgeSpaceHistory.vue'
 import LibraryCommentsHistory from './LibraryCommentsHistory.vue'
 import WorkshopChatHistory from './WorkshopChatHistory.vue'
 
-const { t, isZh } = useLanguage()
+const { t } = useLanguage()
 
 const router = useRouter()
 const uiStore = useUIStore()
@@ -124,7 +126,7 @@ const canAccessWorkshopChat = computed(() => {
 const userName = computed(() => authStore.user?.username || '')
 const userSubtitle = computed(() => {
   const schoolName = authStore.user?.schoolName
-  return schoolName && schoolName.trim() ? schoolName : 'MindGraph专业版'
+  return schoolName && schoolName.trim() ? schoolName : t('sidebar.userSubtitleDefault')
 })
 const userAvatar = computed(() => {
   const avatar = authStore.user?.avatar || '🐈‍⬛'
@@ -139,6 +141,7 @@ const userAvatar = computed(() => {
 const showLoginModal = ref(false)
 const showAccountModal = ref(false)
 const showPasswordModal = ref(false)
+const showLanguageSettingsModal = ref(false)
 
 function toggleSidebar() {
   uiStore.toggleSidebar()
@@ -187,6 +190,10 @@ function openPasswordModal() {
 
 function openAccountModal() {
   showAccountModal.value = true
+}
+
+function openLanguageSettingsModal() {
+  showLanguageSettingsModal.value = true
 }
 
 async function handleLogout() {
@@ -273,14 +280,14 @@ watch(currentMode, () => {
         <span
           v-if="!isCollapsed"
           class="font-semibold text-lg text-stone-900 tracking-tight"
-          >Mind思维平台</span
+          >{{ t('sidebar.brandTitle') }}</span
         >
       </div>
       <el-button
         text
         circle
         class="toggle-btn"
-        :title="isCollapsed ? '展开侧边栏' : '收起侧边栏'"
+        :title="isCollapsed ? t('sidebar.expandSidebar') : t('sidebar.collapseSidebar')"
         @click="toggleSidebar"
       >
         <Menu class="w-4 h-4" />
@@ -297,7 +304,7 @@ watch(currentMode, () => {
     >
       <!-- MindMate -->
       <el-tooltip
-        content="MindMate"
+        :content="t('sidebar.mindMate')"
         placement="right"
         :disabled="!isCollapsed"
       >
@@ -310,7 +317,7 @@ watch(currentMode, () => {
           <span
             v-if="!isCollapsed"
             class="nav-label"
-            >MindMate</span
+            >{{ t('sidebar.mindMate') }}</span
           >
         </div>
       </el-tooltip>
@@ -325,7 +332,7 @@ watch(currentMode, () => {
 
       <!-- MindGraph -->
       <el-tooltip
-        content="MindGraph"
+        :content="t('sidebar.mindGraph')"
         placement="right"
         :disabled="!isCollapsed"
       >
@@ -338,7 +345,7 @@ watch(currentMode, () => {
           <span
             v-if="!isCollapsed"
             class="nav-label"
-            >MindGraph</span
+            >{{ t('sidebar.mindGraph') }}</span
           >
         </div>
       </el-tooltip>
@@ -357,7 +364,7 @@ watch(currentMode, () => {
       <!-- Knowledge Space -->
       <el-tooltip
         v-if="isAuthenticated && featureKnowledgeSpace"
-        content="个人知识库"
+        :content="t('sidebar.knowledgeSpace')"
         placement="right"
         :disabled="!isCollapsed"
       >
@@ -370,7 +377,7 @@ watch(currentMode, () => {
           <span
             v-if="!isCollapsed"
             class="nav-label"
-            >个人知识库</span
+            >{{ t('sidebar.knowledgeSpace') }}</span
           >
         </div>
       </el-tooltip>
@@ -386,7 +393,7 @@ watch(currentMode, () => {
       <!-- Chunk Test -->
       <el-tooltip
         v-if="isAuthenticated && featureRagChunkTest"
-        content="RAG分块测试"
+        :content="t('sidebar.chunkTest')"
         placement="right"
         :disabled="!isCollapsed"
       >
@@ -399,7 +406,7 @@ watch(currentMode, () => {
           <span
             v-if="!isCollapsed"
             class="nav-label"
-            >RAG分块测试</span
+            >{{ t('sidebar.chunkTest') }}</span
           >
         </div>
       </el-tooltip>
@@ -444,7 +451,7 @@ watch(currentMode, () => {
       <!-- Debateverse -->
       <el-tooltip
         v-if="featureDebateverse"
-        content="论境"
+        :content="t('sidebar.debateverse')"
         placement="right"
         :disabled="!isCollapsed"
       >
@@ -457,7 +464,7 @@ watch(currentMode, () => {
           <span
             v-if="!isCollapsed"
             class="nav-label"
-            >论境</span
+            >{{ t('sidebar.debateverse') }}</span
           >
         </div>
       </el-tooltip>
@@ -473,7 +480,7 @@ watch(currentMode, () => {
       <!-- School Zone -->
       <el-tooltip
         v-if="hasOrganization && featureSchoolZone"
-        content="学校专区"
+        :content="t('sidebar.schoolZone')"
         placement="right"
         :disabled="!isCollapsed"
       >
@@ -486,7 +493,7 @@ watch(currentMode, () => {
           <span
             v-if="!isCollapsed"
             class="nav-label"
-            >学校专区</span
+            >{{ t('sidebar.schoolZone') }}</span
           >
         </div>
       </el-tooltip>
@@ -494,7 +501,7 @@ watch(currentMode, () => {
       <!-- Templates -->
       <el-tooltip
         v-if="featureTemplate"
-        content="模板资源"
+        :content="t('sidebar.templateResources')"
         placement="right"
         :disabled="!isCollapsed"
       >
@@ -507,7 +514,7 @@ watch(currentMode, () => {
           <span
             v-if="!isCollapsed"
             class="nav-label"
-            >模板资源</span
+            >{{ t('sidebar.templateResources') }}</span
           >
         </div>
       </el-tooltip>
@@ -515,7 +522,7 @@ watch(currentMode, () => {
       <!-- Courses -->
       <el-tooltip
         v-if="featureCourse"
-        content="思维课程"
+        :content="t('sidebar.courses')"
         placement="right"
         :disabled="!isCollapsed"
       >
@@ -528,7 +535,7 @@ watch(currentMode, () => {
           <span
             v-if="!isCollapsed"
             class="nav-label"
-            >思维课程</span
+            >{{ t('sidebar.courses') }}</span
           >
         </div>
       </el-tooltip>
@@ -536,7 +543,7 @@ watch(currentMode, () => {
       <!-- Community -->
       <el-tooltip
         v-if="featureCommunity"
-        content="社区分享"
+        :content="t('sidebar.community')"
         placement="right"
         :disabled="!isCollapsed"
       >
@@ -549,7 +556,7 @@ watch(currentMode, () => {
           <span
             v-if="!isCollapsed"
             class="nav-label"
-            >社区分享</span
+            >{{ t('sidebar.community') }}</span
           >
         </div>
       </el-tooltip>
@@ -557,7 +564,7 @@ watch(currentMode, () => {
       <!-- Library -->
       <el-tooltip
         v-if="featureLibrary"
-        content="图书馆"
+        :content="t('sidebar.library')"
         placement="right"
         :disabled="!isCollapsed"
       >
@@ -570,7 +577,7 @@ watch(currentMode, () => {
           <span
             v-if="!isCollapsed"
             class="nav-label"
-            >图书馆</span
+            >{{ t('sidebar.library') }}</span
           >
         </div>
       </el-tooltip>
@@ -643,7 +650,7 @@ watch(currentMode, () => {
 
         <el-tooltip
           v-if="isAdminOrManager && featureSmartResponse"
-          :content="isZh ? 'Smart Response 智回' : 'Smart Response'"
+          :content="t('sidebar.smartResponse')"
           placement="right"
           :disabled="!isCollapsed"
         >
@@ -656,14 +663,14 @@ watch(currentMode, () => {
             <span
               v-if="!isCollapsed"
               class="nav-label"
-              >{{ isZh ? 'Smart Response 智回' : 'Smart Response' }}</span
+              >{{ t('sidebar.smartResponse') }}</span
             >
           </div>
         </el-tooltip>
 
         <el-tooltip
           v-if="isAdmin && featureTeacherUsage"
-          :content="isZh ? '教师使用度' : 'Teacher Usage'"
+          :content="t('sidebar.teacherUsage')"
           placement="right"
           :disabled="!isCollapsed"
         >
@@ -676,7 +683,7 @@ watch(currentMode, () => {
             <span
               v-if="!isCollapsed"
               class="nav-label"
-              >{{ isZh ? '教师使用度' : 'Teacher Usage' }}</span
+              >{{ t('sidebar.teacherUsage') }}</span
             >
           </div>
         </el-tooltip>
@@ -730,14 +737,16 @@ watch(currentMode, () => {
     >
       <!-- Not authenticated: Show login button -->
       <template v-if="!isAuthenticated">
-        <div :class="isCollapsed ? 'p-2' : 'p-4'">
+        <div
+          :class="isCollapsed ? 'p-2 flex flex-col gap-2' : 'p-4 flex flex-col gap-2'"
+        >
           <el-button
             v-if="!isCollapsed"
             type="primary"
             class="login-btn w-full"
             @click="openLoginModal"
           >
-            登录 / 注册
+            {{ t('auth.loginRegister') }}
           </el-button>
           <el-button
             v-else
@@ -806,20 +815,24 @@ watch(currentMode, () => {
           </div>
           <template #dropdown>
             <el-dropdown-menu class="user-menu">
+              <el-dropdown-item @click="openLanguageSettingsModal">
+                <Languages class="w-4 h-4 mr-2" />
+                {{ t('sidebar.languageSettings') }}
+              </el-dropdown-item>
               <el-dropdown-item @click="openAccountModal">
                 <UserRound class="w-4 h-4 mr-2" />
-                账户信息
+                {{ t('auth.accountInfo') }}
               </el-dropdown-item>
               <el-dropdown-item @click="openPasswordModal">
                 <KeyRound class="w-4 h-4 mr-2" />
-                修改密码
+                {{ t('auth.changePassword') }}
               </el-dropdown-item>
               <el-dropdown-item
                 divided
                 @click="handleLogout"
               >
                 <LogOut class="w-4 h-4 mr-2" />
-                退出登录
+                {{ t('auth.logout') }}
               </el-dropdown-item>
             </el-dropdown-menu>
           </template>
@@ -854,20 +867,24 @@ watch(currentMode, () => {
           </el-badge>
           <template #dropdown>
             <el-dropdown-menu class="user-menu">
+              <el-dropdown-item @click="openLanguageSettingsModal">
+                <Languages class="w-4 h-4 mr-2" />
+                {{ t('sidebar.languageSettings') }}
+              </el-dropdown-item>
               <el-dropdown-item @click="openAccountModal">
                 <UserRound class="w-4 h-4 mr-2" />
-                账户信息
+                {{ t('auth.accountInfo') }}
               </el-dropdown-item>
               <el-dropdown-item @click="openPasswordModal">
                 <KeyRound class="w-4 h-4 mr-2" />
-                修改密码
+                {{ t('auth.changePassword') }}
               </el-dropdown-item>
               <el-dropdown-item
                 divided
                 @click="handleLogout"
               >
                 <LogOut class="w-4 h-4 mr-2" />
-                退出登录
+                {{ t('auth.logout') }}
               </el-dropdown-item>
             </el-dropdown-menu>
           </template>
@@ -876,6 +893,7 @@ watch(currentMode, () => {
     </div>
 
     <!-- Modals -->
+    <LanguageSettingsModal v-model="showLanguageSettingsModal" />
     <LoginModal v-model:visible="showLoginModal" />
     <AccountInfoModal
       v-model:visible="showAccountModal"

@@ -93,7 +93,7 @@ export function useWorkshopChatComposable() {
     send(JSON.stringify({ type: 'subscribe_presence', org_id: orgId }))
   }
 
-  function sendPresence(presenceStatus: 'active' | 'idle'): void {
+  function sendPresence(presenceStatus: 'active'): void {
     if (isConnected.value) {
       send(JSON.stringify({ type: 'presence', status: presenceStatus }))
     }
@@ -165,8 +165,9 @@ export function useWorkshopChatComposable() {
         const ids = data.user_ids
         if (!Array.isArray(ids)) break
         for (const uid of ids) {
-          if (typeof uid === 'number') {
-            store.updatePresence(uid, 'active')
+          const n = typeof uid === 'number' ? uid : Number(uid)
+          if (Number.isFinite(n)) {
+            store.updatePresence(n, 'active')
           }
         }
         break

@@ -13,7 +13,7 @@ import {
   DEFAULT_PADDING,
 } from '@/composables/diagrams/layoutConfig'
 import { eventBus } from '@/composables/useEventBus'
-import { useDiagramStore } from '@/stores'
+import { useDiagramStore, useUIStore } from '@/stores'
 import type { DiagramNode, MindGraphNode } from '@/types'
 
 interface MenuItem {
@@ -41,7 +41,8 @@ const emit = defineEmits<{
 }>()
 
 const diagramStore = useDiagramStore()
-const { isZh } = useLanguage()
+const uiStore = useUIStore()
+const { t } = useLanguage()
 const notify = useNotifications()
 const menuRef = ref<HTMLElement | null>(null)
 
@@ -55,8 +56,9 @@ function getDoubleBubbleGroupFromNodeId(
   return null
 }
 
-// Build menu items based on context
+// Build menu items based on context (reactive to UI locale via uiStore.language)
 const menuItems = computed<MenuItem[]>(() => {
+  void uiStore.language
   const items: MenuItem[] = []
 
   if (props.target === 'node' && props.node) {
@@ -65,21 +67,18 @@ const menuItems = computed<MenuItem[]>(() => {
     const isTopicNode = nodeData?.nodeType === 'topic'
     const isBoundaryNode = nodeData?.nodeType === 'boundary'
 
-    // Edit action
     items.push({
-      label: '编辑',
+      label: t('diagram.contextMenu.edit'),
       action: () => {
         emit('close')
-        // Emit event to trigger edit mode
         eventBus.emit('node:edit_requested', { nodeId: node.id })
       },
     })
 
     items.push({ divider: true })
 
-    // Delete action (disabled for topic/center/boundary nodes)
     items.push({
-      label: '删除',
+      label: t('diagram.contextMenu.delete'),
       action: () => {
         const diagramType = diagramStore.type
         let deleted = false
@@ -95,7 +94,7 @@ const menuItems = computed<MenuItem[]>(() => {
           deleted = diagramStore.removeNode(node.id)
         }
         if (deleted) {
-          diagramStore.pushHistory('删除节点')
+          diagramStore.pushHistory(t('diagram.history.deleteNode'))
           emit('close')
         }
       },
@@ -104,35 +103,34 @@ const menuItems = computed<MenuItem[]>(() => {
 
     items.push({ divider: true })
 
-    // For multi-flow map, add "Add Cause" or "Add Effect" based on node type
     if (diagramStore.type === 'multi_flow_map') {
       if (node.id.startsWith('cause-')) {
         items.push({
-          label: '添加原因',
+          label: t('diagram.contextMenu.addCause'),
           action: () => {
             diagramStore.addNode({
               id: 'cause-temp',
-              text: '新原因',
+              text: t('diagram.flow.newCause'),
               type: 'flow',
               position: { x: 0, y: 0 },
               category: 'causes',
             } as DiagramNode & { category?: string })
-            diagramStore.pushHistory('添加原因')
+            diagramStore.pushHistory(t('diagram.history.addCause'))
             emit('close')
           },
         })
       } else if (node.id.startsWith('effect-')) {
         items.push({
-          label: '添加结果',
+          label: t('diagram.contextMenu.addEffect'),
           action: () => {
             diagramStore.addNode({
               id: 'effect-temp',
-              text: '新结果',
+              text: t('diagram.flow.newEffect'),
               type: 'flow',
               position: { x: 0, y: 0 },
               category: 'effects',
             } as DiagramNode & { category?: string })
-            diagramStore.pushHistory('添加结果')
+            diagramStore.pushHistory(t('diagram.history.addEffect'))
             emit('close')
           },
         })
@@ -141,8 +139,6 @@ const menuItems = computed<MenuItem[]>(() => {
       items.push({ divider: true })
     }
 
-    // For double bubble map: add "Add to this group" when right-clicking similarity/diff node.
-    // Similarity: one node. Difference: adds a PAIR (left + right for both topics).
     if (diagramStore.type === 'double_bubble_map') {
       const group = getDoubleBubbleGroupFromNodeId(node.id)
       if (group) {
@@ -151,19 +147,19 @@ const menuItems = computed<MenuItem[]>(() => {
           const similarities = (spec.similarities as string[]) || []
           const leftDifferences = (spec.leftDifferences as string[]) || []
           const rightDifferences = (spec.rightDifferences as string[]) || []
-          const newSimText = isZh.value
-            ? `相似点 ${similarities.length + 1}`
-            : `Similarity ${similarities.length + 1}`
+          const newSimText = t('diagram.doubleBubble.similarityN', {
+            n: similarities.length + 1,
+          })
           const pairIndex = Math.max(leftDifferences.length, rightDifferences.length) + 1
-          const newLeftText = isZh.value ? `不同点A${pairIndex}` : `Difference A${pairIndex}`
-          const newRightText = isZh.value ? `不同点B${pairIndex}` : `Difference B${pairIndex}`
+          const newLeftText = t('diagram.doubleBubble.differenceAn', { n: pairIndex })
+          const newRightText = t('diagram.doubleBubble.differenceBn', { n: pairIndex })
           const text = group === 'similarity' ? newSimText : newLeftText
           const pairText = group === 'similarity' ? undefined : newRightText
           items.push({
-            label: isZh.value ? '在此组添加节点' : 'Add to this group',
+            label: t('diagram.contextMenu.addToGroup'),
             action: () => {
               if (diagramStore.addDoubleBubbleMapNode(group, text, pairText)) {
-                diagramStore.pushHistory(isZh.value ? '添加节点' : 'Add node')
+                diagramStore.pushHistory(t('diagram.history.addNode'))
               }
               emit('close')
             },
@@ -176,24 +172,22 @@ const menuItems = computed<MenuItem[]>(() => {
     if (diagramStore.type === 'mindmap' || diagramStore.type === 'mind_map') {
       if (node.id !== 'topic') {
         items.push({
-          label: isZh.value ? '添加子项' : 'Add Child',
+          label: t('diagram.contextMenu.addChild'),
           action: () => {
-            if (diagramStore.addMindMapChild(node.id, isZh.value ? '新子项' : 'New Child')) {
-              diagramStore.pushHistory(isZh.value ? '添加子项' : 'Add Child')
+            if (diagramStore.addMindMapChild(node.id, t('diagram.newChild'))) {
+              diagramStore.pushHistory(t('diagram.history.addChild'))
             }
             emit('close')
           },
         })
       }
       items.push({
-        label: isZh.value ? '添加分支' : 'Add Branch',
+        label: t('diagram.contextMenu.addBranch'),
         action: () => {
           const side = node.id.startsWith('branch-l-') ? 'left' : 'right'
-          const childText = isZh.value ? '新子项' : 'New Child'
-          if (
-            diagramStore.addMindMapBranch(side, isZh.value ? '新分支' : 'New Branch', childText)
-          ) {
-            diagramStore.pushHistory(isZh.value ? '添加分支' : 'Add Branch')
+          const childText = t('diagram.newChild')
+          if (diagramStore.addMindMapBranch(side, t('diagram.newBranch'), childText)) {
+            diagramStore.pushHistory(t('diagram.history.addBranch'))
           }
           emit('close')
         },
@@ -201,9 +195,8 @@ const menuItems = computed<MenuItem[]>(() => {
       items.push({ divider: true })
     }
 
-    // Copy action
     items.push({
-      label: '复制',
+      label: t('diagram.contextMenu.copy'),
       action: () => {
         diagramStore.copySelectedNodes()
         emit('close')
@@ -211,9 +204,8 @@ const menuItems = computed<MenuItem[]>(() => {
       disabled: !diagramStore.hasSelection,
     })
 
-    // Paste action
     items.push({
-      label: '粘贴',
+      label: t('diagram.contextMenu.paste'),
       action: () => {
         emit('paste', { x: props.x, y: props.y })
         emit('close')
@@ -221,46 +213,43 @@ const menuItems = computed<MenuItem[]>(() => {
       disabled: !diagramStore.canPaste,
     })
   } else if (props.target === 'pane') {
-    // Pane context menu
     const diagramType = diagramStore.type
     if (diagramType === 'multi_flow_map') {
-      // Add cause option
       items.push({
-        label: '添加原因',
+        label: t('diagram.contextMenu.addCause'),
         action: () => {
           diagramStore.addNode({
             id: 'cause-temp',
-            text: '新原因',
+            text: t('diagram.flow.newCause'),
             type: 'flow',
             position: { x: 0, y: 0 },
             category: 'causes',
           } as DiagramNode & { category?: string })
-          diagramStore.pushHistory('添加原因')
+          diagramStore.pushHistory(t('diagram.history.addCause'))
           emit('close')
         },
       })
 
-      // Add effect option
       items.push({
-        label: '添加结果',
+        label: t('diagram.contextMenu.addEffect'),
         action: () => {
           diagramStore.addNode({
             id: 'effect-temp',
-            text: '新结果',
+            text: t('diagram.flow.newEffect'),
             type: 'flow',
             position: { x: 0, y: 0 },
             category: 'effects',
           } as DiagramNode & { category?: string })
-          diagramStore.pushHistory('添加结果')
+          diagramStore.pushHistory(t('diagram.history.addEffect'))
           emit('close')
         },
       })
     } else if (diagramType === 'bubble_map') {
       items.push({
-        label: '添加属性',
+        label: t('diagram.contextMenu.addAttribute'),
         action: () => {
           if (!diagramStore.data?.nodes) {
-            notify.warning(isZh.value ? '请先创建图示' : 'Please create a diagram first')
+            notify.warning(t('diagram.contextMenu.warningCreateDiagramFirst'))
             emit('close')
             return
           }
@@ -270,20 +259,20 @@ const menuItems = computed<MenuItem[]>(() => {
           const newIndex = bubbleNodes.length
           diagramStore.addNode({
             id: `bubble-${newIndex}`,
-            text: isZh.value ? '新属性' : 'New Attribute',
+            text: t('diagram.newAttribute'),
             type: 'bubble',
             position: { x: 0, y: 0 },
           })
-          diagramStore.pushHistory(isZh.value ? '添加属性' : 'Add Attribute')
+          diagramStore.pushHistory(t('diagram.history.addAttribute'))
           emit('close')
         },
       })
     } else if (diagramType === 'circle_map') {
       items.push({
-        label: '添加节点',
+        label: t('diagram.contextMenu.addNode'),
         action: () => {
           if (!diagramStore.data?.nodes) {
-            notify.warning(isZh.value ? '请先创建图示' : 'Please create a diagram first')
+            notify.warning(t('diagram.contextMenu.warningCreateDiagramFirst'))
             emit('close')
             return
           }
@@ -293,17 +282,17 @@ const menuItems = computed<MenuItem[]>(() => {
           const newIndex = contextNodes.length
           diagramStore.addNode({
             id: `context-${newIndex}`,
-            text: isZh.value ? '新联想' : 'New Idea',
+            text: t('diagram.contextMenu.circleNewIdea'),
             type: 'bubble',
             position: { x: 0, y: 0 },
           })
-          diagramStore.pushHistory(isZh.value ? '添加节点' : 'Add node')
+          diagramStore.pushHistory(t('diagram.history.addNode'))
           emit('close')
         },
       })
     } else if (diagramType === 'concept_map') {
       items.push({
-        label: isZh.value ? '添加概念' : 'Add Concept',
+        label: t('diagram.contextMenu.addConcept'),
         action: () => {
           emit('addConcept', { x: props.x, y: props.y })
           emit('close')
@@ -311,10 +300,10 @@ const menuItems = computed<MenuItem[]>(() => {
       })
     } else if (diagramType === 'bridge_map') {
       items.push({
-        label: '添加节点',
+        label: t('diagram.contextMenu.addNode'),
         action: () => {
           if (!diagramStore.data?.nodes) {
-            notify.warning(isZh.value ? '请先创建图示' : 'Please create a diagram first')
+            notify.warning(t('diagram.contextMenu.warningCreateDiagramFirst'))
             emit('close')
             return
           }
@@ -355,7 +344,7 @@ const menuItems = computed<MenuItem[]>(() => {
           const rightNodeY = centerY + verticalGap
           const leftNode: DiagramNode = {
             id: `pair-${newPairIndex}-left`,
-            text: isZh.value ? '新事物A' : 'New Item A',
+            text: t('diagram.contextMenu.bridgeItemA'),
             type: 'branch',
             position: { x: nextX, y: leftNodeY },
             data: {
@@ -366,7 +355,7 @@ const menuItems = computed<MenuItem[]>(() => {
           }
           const rightNode: DiagramNode = {
             id: `pair-${newPairIndex}-right`,
-            text: isZh.value ? '新事物B' : 'New Item B',
+            text: t('diagram.contextMenu.bridgeItemB'),
             type: 'branch',
             position: { x: nextX, y: rightNodeY },
             data: {
@@ -377,7 +366,7 @@ const menuItems = computed<MenuItem[]>(() => {
           }
           diagramStore.addNode(leftNode)
           diagramStore.addNode(rightNode)
-          diagramStore.pushHistory(isZh.value ? '添加类比对' : 'Add Analogy Pair')
+          diagramStore.pushHistory(t('diagram.history.addAnalogyPair'))
           emit('close')
         },
       })
@@ -385,14 +374,10 @@ const menuItems = computed<MenuItem[]>(() => {
       const selectedId = diagramStore.selectedNodes[0]
       const group = getDoubleBubbleGroupFromNodeId(selectedId)
       items.push({
-        label: isZh.value ? '添加节点' : 'Add node',
+        label: t('diagram.contextMenu.addNode'),
         action: () => {
           if (!group) {
-            notify.warning(
-              isZh.value
-                ? '请先选择相似点或不同点节点'
-                : 'Please select a similarity or difference node first'
-            )
+            notify.warning(t('diagram.contextMenu.warningSelectSimilarityOrDiff'))
             emit('close')
             return
           }
@@ -404,16 +389,16 @@ const menuItems = computed<MenuItem[]>(() => {
           const similarities = (spec.similarities as string[]) || []
           const leftDifferences = (spec.leftDifferences as string[]) || []
           const rightDifferences = (spec.rightDifferences as string[]) || []
-          const newSimText = isZh.value
-            ? `相似点 ${similarities.length + 1}`
-            : `Similarity ${similarities.length + 1}`
+          const newSimText = t('diagram.doubleBubble.similarityN', {
+            n: similarities.length + 1,
+          })
           const pairIndex = Math.max(leftDifferences.length, rightDifferences.length) + 1
-          const newLeftText = isZh.value ? `不同点A${pairIndex}` : `Difference A${pairIndex}`
-          const newRightText = isZh.value ? `不同点B${pairIndex}` : `Difference B${pairIndex}`
+          const newLeftText = t('diagram.doubleBubble.differenceAn', { n: pairIndex })
+          const newRightText = t('diagram.doubleBubble.differenceBn', { n: pairIndex })
           const text = group === 'similarity' ? newSimText : newLeftText
           const pairText = group === 'similarity' ? undefined : newRightText
           if (diagramStore.addDoubleBubbleMapNode(group, text, pairText)) {
-            diagramStore.pushHistory(isZh.value ? '添加节点' : 'Add node')
+            diagramStore.pushHistory(t('diagram.history.addNode'))
           }
           emit('close')
         },
@@ -421,9 +406,9 @@ const menuItems = computed<MenuItem[]>(() => {
       })
     } else {
       items.push({
-        label: isZh.value ? '添加节点' : 'Add node',
+        label: t('diagram.contextMenu.addNode'),
         action: () => {
-          notify.info(isZh.value ? '增加节点功能开发中' : 'Add node feature coming soon')
+          notify.info(t('diagram.contextMenu.infoAddNodeSoon'))
           emit('close')
         },
       })
@@ -432,7 +417,7 @@ const menuItems = computed<MenuItem[]>(() => {
     items.push({ divider: true })
 
     items.push({
-      label: '粘贴',
+      label: t('diagram.contextMenu.paste'),
       action: () => {
         emit('paste', { x: props.x, y: props.y })
         emit('close')

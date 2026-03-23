@@ -17,16 +17,20 @@ const props = defineProps<{
   loading: boolean
 }>()
 
-const { isZh } = useLanguage()
+const { t, currentLanguage } = useLanguage()
 
 const sortedDatasets = computed(() => {
   return [...props.datasets].sort((a, b) => a.name.localeCompare(b.name))
 })
 
+const dateLocaleTag = computed(() =>
+  currentLanguage.value === 'zh' ? 'zh-CN' : currentLanguage.value === 'az' ? 'az-AZ' : 'en-US'
+)
+
 const formatDate = (dateString?: string) => {
   if (!dateString) return '-'
   const date = new Date(dateString)
-  return date.toLocaleDateString(isZh ? 'zh-CN' : 'en-US', {
+  return date.toLocaleDateString(dateLocaleTag.value, {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
@@ -55,7 +59,7 @@ const getVersionInfo = (dataset: Benchmark) => {
     />
     <ElEmpty
       v-else-if="sortedDatasets.length === 0"
-      :description="isZh ? '暂无数据集' : 'No datasets available'"
+      :description="t('knowledge.dataset.empty')"
       :image-size="120"
       class="flex-1 flex items-center justify-center"
     />
@@ -64,10 +68,10 @@ const getVersionInfo = (dataset: Benchmark) => {
       :data="sortedDatasets"
       stripe
       class="dataset-table-el"
-      :empty-text="isZh ? '暂无数据' : 'No data'"
+      :empty-text="t('knowledge.dataset.noData')"
     >
       <ElTableColumn
-        :label="isZh ? '数据集名称' : 'Dataset Name'"
+        :label="t('knowledge.dataset.colName')"
         width="180"
         show-overflow-tooltip
       >
@@ -85,7 +89,7 @@ const getVersionInfo = (dataset: Benchmark) => {
       </ElTableColumn>
 
       <ElTableColumn
-        :label="isZh ? '描述' : 'Description'"
+        :label="t('knowledge.dataset.colDescription')"
         min-width="200"
         show-overflow-tooltip
       >
@@ -95,7 +99,7 @@ const getVersionInfo = (dataset: Benchmark) => {
       </ElTableColumn>
 
       <ElTableColumn
-        :label="isZh ? '来源' : 'Source'"
+        :label="t('knowledge.dataset.colSource')"
         min-width="200"
         show-overflow-tooltip
       >
@@ -113,7 +117,7 @@ const getVersionInfo = (dataset: Benchmark) => {
       </ElTableColumn>
 
       <ElTableColumn
-        :label="isZh ? '版本/日期' : 'Version/Date'"
+        :label="t('knowledge.dataset.colVersion')"
         width="180"
         show-overflow-tooltip
       >

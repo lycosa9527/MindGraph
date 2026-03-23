@@ -2,7 +2,7 @@
 /**
  * ChannelMemberList - Zulip-style buddy list with three sections:
  * "THIS CONVERSATION", "THIS CHANNEL", "OTHERS".
- * Presence states: active (green), idle (orange), offline (gray).
+ * Presence states: active (green) when on workshop chat; offline (gray).
  */
 import { computed, ref, watch } from 'vue'
 
@@ -48,7 +48,7 @@ watch(searchQuery, (val) => {
 const collapsedSections = ref<Set<string>>(new Set())
 const popoverUserId = ref<number | null>(null)
 
-type PresenceStatus = 'active' | 'idle' | 'offline'
+type PresenceStatus = 'active' | 'offline'
 
 interface BuddyEntry extends ChannelMember {
   presence: PresenceStatus
@@ -57,7 +57,6 @@ interface BuddyEntry extends ChannelMember {
 
 function getPresence(userId: number): PresenceStatus {
   if (store.onlineUserIds.has(userId)) return 'active'
-  if (store.idleUserIds.has(userId)) return 'idle'
   return 'offline'
 }
 
@@ -68,7 +67,7 @@ function matchesSearch(name: string): boolean {
 }
 
 function sortEntries(entries: BuddyEntry[]): BuddyEntry[] {
-  const order: Record<PresenceStatus, number> = { active: 0, idle: 1, offline: 2 }
+  const order: Record<PresenceStatus, number> = { active: 0, offline: 1 }
   return entries.sort((a, b) => {
     if (a.isCurrentUser) return -1
     if (b.isCurrentUser) return 1
@@ -524,10 +523,6 @@ function handleManageUser(userId: number): void {
 
 .buddy-circle--active {
   background: hsl(143deg 55% 43%);
-}
-
-.buddy-circle--idle {
-  background: hsl(38deg 85% 55%);
 }
 
 .buddy-circle--offline {
