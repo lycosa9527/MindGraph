@@ -1,6 +1,14 @@
 """
-PNG Export Core Module
-======================
+PNG Export Core Module (DEPRECATED)
+====================================
+
+.. deprecated::
+    This module used D3.js-based server-side rendering which required
+    static/js/d3.min.js and custom JS renderers on the server.
+    It has been replaced by ``vueflow_screenshot.py`` which loads the
+    Vue Flow frontend in Playwright for pixel-perfect rendering.
+    This file is kept temporarily for reference and will be removed
+    in a future cleanup.
 
 Core functionality for PNG export that embeds JS and fonts directly.
 This module contains the low-level export logic separated from the API endpoints.

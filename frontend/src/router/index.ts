@@ -190,6 +190,12 @@ const routes: RouteRecordRaw[] = [
     meta: { layout: 'auth', ...pageTitle('dashboardLogin') },
   },
   {
+    path: '/export-render',
+    name: 'ExportRender',
+    component: () => import('@/pages/ExportRenderPage.vue'),
+    meta: { layout: 'canvas' },
+  },
+  {
     path: '/:pathMatch(.*)*',
     name: 'NotFound',
     component: () => import('@/pages/NotFoundPage.vue'),

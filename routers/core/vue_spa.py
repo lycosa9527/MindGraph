@@ -141,6 +141,12 @@ async def vue_canvas():
     return await _serve_index()
 
 
+@router.get("/export-render", response_class=HTMLResponse)
+async def vue_export_render():
+    """Serve Vue SPA for headless export-render route (Playwright screenshot)."""
+    return await _serve_index()
+
+
 @router.get("/template", response_class=HTMLResponse)
 async def vue_template():
     """Serve Vue SPA for template route."""

@@ -13,7 +13,7 @@ All Rights Reserved
 Proprietary License
 """
 from pathlib import Path
-from typing import Dict, Any, Optional
+from typing import Optional
 import logging
 import os
 import time
@@ -49,36 +49,11 @@ from .helpers import (
     generate_signed_url,
     verify_signed_url
 )
-from .png_export_core import export_png_core
+from .vueflow_screenshot import capture_diagram_screenshot
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["api"])
-
-
-async def _export_png_core(
-    diagram_data: Dict[str, Any],
-    diagram_type: str,
-    width: int = 1200,
-    height: int = 800,
-    scale: int = 2,
-    _x_language: Optional[str] = None,
-    _base_url: Optional[str] = None
-) -> bytes:
-    """
-    Wrapper for core PNG export function.
-
-    Delegates to png_export_core module to keep this file manageable.
-    """
-    return await export_png_core(
-        diagram_data=diagram_data,
-        diagram_type=diagram_type,
-        width=width,
-        height=height,
-        scale=scale,
-        _x_language=_x_language,
-        _base_url=_base_url
-    )
 
 
 @router.post('/export_png')
@@ -89,10 +64,10 @@ async def export_png(
     current_user: Optional[User] = Depends(get_current_user_or_api_key)
 ):
     """
-    Export diagram as PNG using Playwright browser automation (async).
+    Export diagram as PNG using Vue Flow frontend rendering via Playwright (async).
 
-    Uses the core export function that embeds JS directly for reliability.
-    This avoids HTTP script loading issues and ensures consistent behavior.
+    Loads the Vue Flow frontend in headless Chromium, renders the diagram,
+    and captures a screenshot for pixel-perfect output matching the editor.
 
     Rate limited: 100 requests per minute per user/IP (PNG generation is expensive).
     """
@@ -128,15 +103,12 @@ async def export_png(
             if 'hidden_node_percentage' not in diagram_data:
                 diagram_data['hidden_node_percentage'] = 0
 
-        # Use the core export function which embeds JS directly (more reliable than HTTP loading)
-        # Match generate_dingtalk exactly: same defaults, same parameters
-        screenshot_bytes = await _export_png_core(
+        # Render via Vue Flow frontend and capture screenshot
+        screenshot_bytes = await capture_diagram_screenshot(
             diagram_data=diagram_data,
             diagram_type=diagram_type,
             width=req.width or 1200,
             height=req.height or 800,
-            scale=req.scale or 2,
-            _x_language=x_language
         )
 
         # Return PNG as response
@@ -317,14 +289,12 @@ async def generate_png_from_prompt(
             except Exception as e:
                 logger.warning("[GeneratePNG] Token tracking failed (non-critical): %s", e, exc_info=False)
 
-        # Export PNG using core function
-        screenshot_bytes = await _export_png_core(
+        # Render via Vue Flow frontend and capture screenshot
+        screenshot_bytes = await capture_diagram_screenshot(
             diagram_data=spec,
             diagram_type=diagram_type,
             width=req.width or 1200,
             height=req.height or 800,
-            scale=req.scale or 2,
-            _x_language=x_language
         )
 
         # Broadcast activity to dashboard stream (if user is authenticated)
@@ -524,14 +494,12 @@ async def generate_dingtalk_png(
             except Exception as e:
                 logger.warning("[GenerateDingTalk] Token tracking failed (non-critical): %s", e, exc_info=False)
 
-        # Export PNG using core helper function
-        screenshot_bytes = await _export_png_core(
+        # Export PNG via Vue Flow frontend rendering (replaces old D3 pipeline)
+        screenshot_bytes = await capture_diagram_screenshot(
             diagram_data=spec,
             diagram_type=diagram_type,
             width=1200,
             height=800,
-            scale=2,
-            _x_language=x_language
         )
 
         # Broadcast activity to dashboard stream (if user is authenticated)
